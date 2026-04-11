@@ -1,0 +1,151 @@
+<script setup lang="ts">
+const faqItems = [
+	{
+		answer: [
+			"A sample ballot is the list of contests and measures expected to appear on a voter's ballot for a specific election and location.",
+			"A voter guide adds explanation around those items. Ballot Clarity is designed as a voter guide that points back to source material and official records."
+		],
+		question: "What is the difference between a sample ballot and a voter guide?"
+	},
+	{
+		answer: [
+			"Yes. Many jurisdictions allow voters to bring notes or a printed sample ballot, but users should still review their local election office guidance before Election Day.",
+			"This help hub is informational only and is not a substitute for official rules issued by the election office."
+		],
+		question: "Can I bring notes or a printed guide with me when I vote?"
+	},
+	{
+		answer: [
+			"Check the updated timestamp, review the linked sources, and verify the latest information with the official election office when a deadline or location is time-sensitive.",
+			"Ballot Clarity is designed to show what changed and when, but official election offices remain the final authority."
+		],
+		question: "What should I do if election information changes close to voting?"
+	},
+	{
+		answer: [
+			"No. Ballot Clarity is a nonprofit civic-information concept and not an official government website.",
+			"The site is designed to help voters inspect information more clearly, but official election offices should be used to confirm final deadlines, locations, and ballot rules."
+		],
+		question: "Is Ballot Clarity an official government site?"
+	},
+	{
+		answer: [
+			"The lookup is sent to the Ballot Clarity demo API only to match a sample ballot. The current MVP does not create user accounts or advertising profiles from that lookup.",
+			"The app does save your selected location label, compare list, and ballot-plan choices in your browser so the guide stays usable across refreshes. The privacy page explains that boundary in more detail."
+		],
+		question: "What happens to the address or ZIP code I enter?"
+	},
+	{
+		answer: [
+			"Because this MVP uses realistic demo data to model the product before real civic-data integrations are connected.",
+			"Demo labels are visible so users can understand the current limits of the product and avoid mistaking the prototype for a live election-service tool."
+		],
+		question: "Why are some pages labeled as demo data?"
+	},
+	{
+		answer: [
+			"The product is designed to show factual summaries, source links, and uncertainty notes without ranking or recommending candidates or measures.",
+			"Methodology, neutrality, and sourcing notes are published so users can inspect how information is gathered and displayed."
+		],
+		question: "How does Ballot Clarity try to stay neutral?"
+	}
+];
+
+usePageSeo({
+	description: "Voting help, ballot basics, and trust notes for Ballot Clarity. Clear answers with source-first guidance and links back to official election offices.",
+	jsonLd: {
+		"@context": "https://schema.org",
+		"@type": "FAQPage",
+		"mainEntity": faqItems.map(item => ({
+			"@type": "Question",
+			"acceptedAnswer": {
+				"@type": "Answer",
+				"text": item.answer.join(" ")
+			},
+			"name": item.question
+		}))
+	},
+	path: "/help",
+	title: "Voting Help and FAQ"
+});
+
+const accordionItems = faqItems.map(item => ({
+	body: item.answer,
+	title: item.question
+}));
+</script>
+
+<template>
+	<section class="app-shell section-gap space-y-8">
+		<header class="gap-6 grid lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
+			<div>
+				<div class="flex flex-wrap gap-2">
+					<TrustBadge label="Help hub" tone="accent" />
+					<TrustBadge label="Plain language" />
+					<TrustBadge label="Official verification encouraged" tone="warning" />
+				</div>
+				<h1 class="text-5xl text-app-ink font-serif mt-5 dark:text-app-text-dark">
+					Voting help and ballot basics
+				</h1>
+				<p class="text-base text-app-muted leading-8 mt-5 max-w-3xl dark:text-app-muted-dark">
+					This page answers common questions about sample ballots, voter guides, timing, and how to verify election information without turning the site into advice or advocacy.
+				</p>
+			</div>
+
+			<InfoCallout title="Important reminder" tone="warning">
+				Ballot Clarity is not an official government website. Use this site to understand the landscape, then confirm time-sensitive details with the election office for your jurisdiction.
+			</InfoCallout>
+		</header>
+
+		<MethodologyAccordion :items="accordionItems" />
+
+		<section class="gap-6 grid lg:grid-cols-3">
+			<div class="surface-panel">
+				<h2 class="text-2xl text-app-ink font-serif dark:text-app-text-dark">
+					Start with the location hub
+				</h2>
+				<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
+					The jurisdiction page is the best starting point when you need election-office contacts, voting methods, and the current election guide for Metro County.
+				</p>
+				<NuxtLink to="/locations/metro-county-franklin" class="btn-primary mt-6">
+					Open the Metro County hub
+				</NuxtLink>
+			</div>
+
+			<div class="surface-panel">
+				<h2 class="text-2xl text-app-ink font-serif dark:text-app-text-dark">
+					Review trust, privacy, and accessibility standards
+				</h2>
+				<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
+					Methodology, neutrality, privacy, and accessibility notes explain how sources are attached, how summaries are constrained, how lookups are handled, and how the ballot guide is designed for keyboard, print, and plain-language use.
+				</p>
+				<div class="mt-6 flex flex-wrap gap-3">
+					<NuxtLink to="/methodology" class="btn-secondary">
+						Read methodology
+					</NuxtLink>
+					<NuxtLink to="/neutrality" class="btn-secondary">
+						Read neutrality policy
+					</NuxtLink>
+					<NuxtLink to="/privacy" class="btn-secondary">
+						Read privacy notice
+					</NuxtLink>
+					<NuxtLink to="/accessibility" class="btn-secondary">
+						Read accessibility standards
+					</NuxtLink>
+				</div>
+			</div>
+
+			<div class="surface-panel">
+				<h2 class="text-2xl text-app-ink font-serif dark:text-app-text-dark">
+					Report an issue
+				</h2>
+				<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
+					If a ballot, candidate, or measure page looks incomplete or inaccurate, use the public correction path instead of assuming the summary is final.
+				</p>
+				<NuxtLink to="/contact" class="btn-secondary mt-6">
+					Open contact page
+				</NuxtLink>
+			</div>
+		</section>
+	</section>
+</template>

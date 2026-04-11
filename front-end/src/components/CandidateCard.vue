@@ -4,17 +4,35 @@ import { storeToRefs } from "pinia";
 
 const props = defineProps<{
 	candidate: Candidate;
+	viewMode?: "deep" | "quick";
 }>();
 
 const civicStore = useCivicStore();
-const { compareList } = storeToRefs(civicStore);
+const { ballotPlan, compareList } = storeToRefs(civicStore);
 const { formatCurrency } = useFormatters();
 
 const isCompared = computed(() => compareList.value.includes(props.candidate.slug));
 const compareLimitReached = computed(() => compareList.value.length >= 3 && !isCompared.value);
+const isPlanned = computed(() => {
+	const selection = ballotPlan.value[props.candidate.contestSlug];
+
+	return selection?.type === "candidate" && selection.candidateSlug === props.candidate.slug;
+});
+const coverageNote = computed(() => {
+	if (props.candidate.comparison.questionnaireResponses.some(response => response.responseStatus !== "answered"))
+		return "Some direct candidate responses are missing in the current archive. This card falls back to verified ballot status, public records, and published campaign materials.";
+
+	return props.candidate.whatWeDoNotKnow[0]?.text
+		?? "This card is based on the current demo archive and may not capture late campaign developments.";
+});
+const isQuickView = computed(() => (props.viewMode ?? "quick") === "quick");
 
 function toggleCompare() {
 	civicStore.toggleCompare(props.candidate.slug);
+}
+
+function saveToPlan() {
+	civicStore.selectCandidateForPlan(props.candidate.contestSlug, props.candidate.slug);
 }
 </script>
 
@@ -48,7 +66,16 @@ function toggleCompare() {
 				<IssueChip v-for="issue in candidate.topIssues" :key="issue.slug" :label="issue.label" />
 			</div>
 
-			<div class="mt-6 space-y-4">
+			<div class="mt-5 p-4 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70">
+				<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+					Coverage note
+				</p>
+				<p class="text-sm text-app-muted leading-6 mt-2 dark:text-app-muted-dark">
+					{{ coverageNote }}
+				</p>
+			</div>
+
+			<div v-if="!isQuickView" class="mt-6 space-y-4">
 				<div>
 					<p class="text-xs text-app-muted tracking-[0.22em] font-semibold uppercase dark:text-app-muted-dark">
 						Key actions
@@ -77,12 +104,25 @@ function toggleCompare() {
 					</p>
 				</div>
 			</div>
+
+			<div v-else class="mt-6 p-4 border border-app-line/80 rounded-2xl bg-white/70 dark:border-app-line-dark dark:bg-app-panel-dark/70">
+				<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+					Quick view
+				</p>
+				<p class="text-sm text-app-muted leading-6 mt-2 dark:text-app-muted-dark">
+					Start with the summary and issues. Open the detail page when you want the full action history, funding context, or evidence trail.
+				</p>
+			</div>
 		</div>
 
 		<div class="mt-8 flex flex-wrap gap-3">
 			<NuxtLink :to="`/candidate/${candidate.slug}`" class="btn-primary">
 				View details
 			</NuxtLink>
+			<button type="button" class="btn-secondary" @click="saveToPlan">
+				<span :class="isPlanned ? 'i-carbon-checkmark' : 'i-carbon-notebook'" />
+				{{ isPlanned ? 'Saved to plan' : 'Save to my plan' }}
+			</button>
 			<button type="button" class="btn-secondary" :disabled="compareLimitReached" @click="toggleCompare">
 				<span :class="isCompared ? 'i-carbon-checkmark' : 'i-carbon-compare'" />
 				{{ isCompared ? 'Added to compare' : 'Compare candidate' }}

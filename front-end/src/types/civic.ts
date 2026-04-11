@@ -8,14 +8,69 @@ export type SourceType
 		| "research brief"
 		| "voter guide";
 
+export type SourceAuthority
+	= | "ballot-clarity-demo"
+		| "candidate-campaign"
+		| "commercial-provider"
+		| "nonprofit-provider"
+		| "official-government"
+		| "open-data";
+
 export interface Source {
 	id: string;
 	title: string;
 	publisher: string;
 	type: SourceType;
+	authority: SourceAuthority;
+	sourceSystem: string;
 	date: string;
 	url: string;
 	note?: string;
+}
+
+export interface OfficialResource {
+	label: string;
+	url: string;
+	sourceLabel: string;
+	authority: SourceAuthority;
+	sourceSystem: string;
+	note?: string;
+}
+
+export interface ElectionKeyDate {
+	label: string;
+	date: string;
+	note?: string;
+}
+
+export interface ChangeLogEntry {
+	id: string;
+	date: string;
+	summary: string;
+}
+
+export interface ElectionOffice {
+	name: string;
+	address: string;
+	phone: string;
+	email: string;
+	website: string;
+	hours: string;
+}
+
+export interface VotingMethod {
+	slug: string;
+	title: string;
+	summary: string;
+	details: string[];
+	officialResource?: OfficialResource;
+}
+
+export interface ArchivedGuide {
+	id: string;
+	title: string;
+	date: string;
+	href: string;
 }
 
 export interface IssueTag {
@@ -54,10 +109,119 @@ export interface EvidenceBlock {
 	sources: Source[];
 }
 
+export interface MeasureChangeItem {
+	id: string;
+	text: string;
+	sources: Source[];
+}
+
+export interface MeasureTimelineItem {
+	id: string;
+	label: string;
+	timing: string;
+	summary: string;
+	sources: Source[];
+}
+
+export interface MeasureFiscalItem {
+	id: string;
+	label: string;
+	value: string;
+	scope: string;
+	horizon: string;
+	note: string;
+	sources: Source[];
+}
+
+export interface MeasureArgument {
+	id: string;
+	title: string;
+	summary: string;
+	attribution: string;
+	sources: Source[];
+}
+
 export interface AlignmentModule {
 	status: "not-live";
 	summary: string;
 	considerations: string[];
+}
+
+export type FreshnessStatus = "incomplete" | "out-of-date" | "up-to-date" | "updating";
+
+export interface FreshnessMeta {
+	contentLastVerifiedAt: string;
+	dataLastUpdatedAt?: string;
+	nextReviewAt: string;
+	status: FreshnessStatus;
+	statusLabel: string;
+	statusNote: string;
+}
+
+export interface TrustBullet {
+	id: string;
+	text: string;
+	note?: string;
+	sources: Source[];
+}
+
+export type ComparisonProvenanceStatus
+	= | "candidate-quoted"
+		| "candidate-submitted"
+		| "unclear"
+		| "verified-official";
+
+export interface ComparisonProvenance {
+	status: ComparisonProvenanceStatus;
+	label: string;
+	detail: string;
+	capturedAt?: string;
+}
+
+export interface CandidateLink {
+	label: string;
+	url: string;
+	note?: string;
+}
+
+export interface ComparableStatement {
+	id: string;
+	text: string | null;
+	provenance: ComparisonProvenance;
+	sources: Source[];
+}
+
+export interface CandidateBallotStatus {
+	status: "on-ballot-verified" | "unknown";
+	asOf: string;
+	label: string;
+	provenance: ComparisonProvenance;
+	sources: Source[];
+}
+
+export interface QuestionnaireResponse {
+	questionId: string;
+	category: string;
+	questionPrompt: string;
+	answerType: "short-text" | "yes-no-explanation";
+	answerText: string | null;
+	responseStatus: "answered" | "no-response" | "unclear";
+	answerReceivedAt?: string;
+	provenance: ComparisonProvenance;
+	sources: Source[];
+}
+
+export interface CandidateComparisonProfile {
+	ballotName: string;
+	displayName: string;
+	ballotOrder: number;
+	partyOnBallot: string;
+	campaignWebsiteUrl: string;
+	contactChannels: CandidateLink[];
+	ballotStatus: CandidateBallotStatus;
+	whyRunning: ComparableStatement;
+	topPriorities: ComparableStatement[];
+	questionnaireResponses: QuestionnaireResponse[];
 }
 
 export interface Candidate {
@@ -77,9 +241,11 @@ export interface Candidate {
 	lobbyingContext: EvidenceBlock[];
 	publicStatements: EvidenceBlock[];
 	alignmentModule: AlignmentModule;
-	whatWeKnow: string[];
-	whatWeDoNotKnow: string[];
+	freshness: FreshnessMeta;
+	whatWeKnow: TrustBullet[];
+	whatWeDoNotKnow: TrustBullet[];
 	methodologyNotes: string[];
+	comparison: CandidateComparisonProfile;
 	sources: Source[];
 	updatedAt: string;
 }
@@ -92,13 +258,33 @@ export interface Measure {
 	summary: string;
 	ballotSummary: string;
 	plainLanguageExplanation: string;
+	currentLawOverview: string;
+	currentPractice: MeasureChangeItem[];
+	proposedChanges: MeasureChangeItem[];
 	yesMeaning: string;
 	noMeaning: string;
+	yesHighlights: string[];
+	noHighlights: string[];
 	fiscalContextNote: string;
+	implementationOverview: string;
+	implementationTimeline: MeasureTimelineItem[];
+	fiscalSummary: MeasureFiscalItem[];
 	potentialImpacts: EvidenceBlock[];
+	supportArguments: MeasureArgument[];
+	opposeArguments: MeasureArgument[];
+	argumentsDisclaimer: string;
 	argumentsAndConsiderations: EvidenceBlock[];
+	freshness: FreshnessMeta;
+	whatWeKnow: TrustBullet[];
+	whatWeDoNotKnow: TrustBullet[];
 	sources: Source[];
 	updatedAt: string;
+}
+
+export interface ContestRoleGuide {
+	summary: string;
+	whyItMatters: string;
+	decisionAreas: string[];
 }
 
 export interface Contest {
@@ -108,6 +294,7 @@ export interface Contest {
 	jurisdiction: "Federal" | "State" | "Local" | "Ballot measure";
 	type: "candidate" | "measure";
 	description: string;
+	roleGuide: ContestRoleGuide;
 	candidates?: Candidate[];
 	measures?: Measure[];
 }
@@ -116,6 +303,7 @@ export interface ElectionSummary {
 	slug: string;
 	name: string;
 	date: string;
+	jurisdictionSlug: string;
 	locationName: string;
 	updatedAt: string;
 }
@@ -123,6 +311,10 @@ export interface ElectionSummary {
 export interface Election extends ElectionSummary {
 	description: string;
 	contests: Contest[];
+	freshness: FreshnessMeta;
+	keyDates: ElectionKeyDate[];
+	officialResources: OfficialResource[];
+	changeLog: ChangeLogEntry[];
 }
 
 export interface LocationSelection {
@@ -143,6 +335,84 @@ export interface ElectionsResponse {
 	elections: ElectionSummary[];
 }
 
+export interface JurisdictionSummary {
+	slug: string;
+	name: string;
+	displayName: string;
+	state: string;
+	jurisdictionType: string;
+	description: string;
+	nextElectionName: string;
+	nextElectionSlug: string;
+	updatedAt: string;
+}
+
+export interface Jurisdiction extends JurisdictionSummary {
+	officialOffice: ElectionOffice;
+	officialResources: OfficialResource[];
+	votingMethods: VotingMethod[];
+	upcomingElections: ElectionSummary[];
+	archivedGuides: ArchivedGuide[];
+	coverageNotes: string[];
+}
+
+export interface JurisdictionsResponse {
+	jurisdictions: JurisdictionSummary[];
+}
+
+export type DataSourceOptionStatus = "planned-live" | "reference-pattern" | "research-layer";
+
+export interface DataSourceOption {
+	id: string;
+	name: string;
+	authority: SourceAuthority;
+	status: DataSourceOptionStatus;
+	accessMethod: string;
+	coverage: string;
+	updatePattern: string;
+	summary: string;
+	bestUse: string;
+	notes: string[];
+}
+
+export interface DataSourceCategory {
+	slug: string;
+	title: string;
+	summary: string;
+	authoritativeRule: string;
+	liveApproach: string;
+	options: DataSourceOption[];
+}
+
+export interface DataArchitectureStage {
+	id: string;
+	title: string;
+	summary: string;
+	details: string[];
+}
+
+export interface DataMigrationWatchItem {
+	id: string;
+	title: string;
+	summary: string;
+	implication: string;
+}
+
+export interface DataRoadmapMilestone {
+	id: string;
+	title: string;
+	summary: string;
+}
+
+export interface DataSourcesResponse {
+	updatedAt: string;
+	principles: string[];
+	categories: DataSourceCategory[];
+	architectureStages: DataArchitectureStage[];
+	migrationWatch: DataMigrationWatchItem[];
+	roadmap: DataRoadmapMilestone[];
+}
+
 export interface BallotResponse {
 	demo: true;
 	location: LocationSelection;
@@ -153,7 +423,30 @@ export interface BallotResponse {
 
 export interface CompareResponse {
 	requestedSlugs: string[];
+	contestSlug: string | null;
 	office: string | null;
+	sameContest: boolean;
 	candidates: Candidate[];
 	note: string;
 }
+
+export type BallotViewMode = "deep" | "quick";
+
+export interface PlannedCandidateChoice {
+	type: "candidate";
+	contestSlug: string;
+	candidateSlug: string;
+	savedAt: string;
+}
+
+export type PlannedMeasureDecision = "no" | "review" | "yes";
+
+export interface PlannedMeasureChoice {
+	type: "measure";
+	contestSlug: string;
+	measureSlug: string;
+	decision: PlannedMeasureDecision;
+	savedAt: string;
+}
+
+export type BallotPlanSelection = PlannedCandidateChoice | PlannedMeasureChoice;

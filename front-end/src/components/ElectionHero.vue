@@ -8,6 +8,9 @@ const props = defineProps<{
 }>();
 
 const { formatDate } = useFormatters();
+const contestCount = computed(() => props.election.contests.length);
+const measureCount = computed(() => props.election.contests.reduce((count, contest) => count + (contest.measures?.length ?? 0), 0));
+const personalizationLabel = computed(() => props.location.lookupInput ?? props.location.displayName);
 
 function printBallot() {
 	if (import.meta.client)
@@ -41,6 +44,41 @@ function printBallot() {
 						</span>
 						<UpdatedAt :value="props.election.updatedAt" />
 					</div>
+					<div class="mt-6 gap-4 grid sm:grid-cols-3">
+						<div class="px-5 py-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
+							<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+								Personalized to
+							</p>
+							<p class="text-sm text-app-ink font-semibold mt-3 dark:text-app-text-dark">
+								{{ personalizationLabel }}
+							</p>
+							<p class="text-xs text-app-muted leading-6 mt-2 dark:text-app-muted-dark">
+								Showing contests for your districts in {{ props.location.displayName }}.
+							</p>
+						</div>
+						<div class="px-5 py-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
+							<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+								Contests
+							</p>
+							<p class="text-3xl text-app-ink font-semibold mt-3 dark:text-app-text-dark">
+								{{ contestCount }}
+							</p>
+							<p class="text-xs text-app-muted leading-6 mt-2 dark:text-app-muted-dark">
+								Candidate and measure sections included in this ballot guide.
+							</p>
+						</div>
+						<div class="px-5 py-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
+							<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+								Measures
+							</p>
+							<p class="text-3xl text-app-ink font-semibold mt-3 dark:text-app-text-dark">
+								{{ measureCount }}
+							</p>
+							<p class="text-xs text-app-muted leading-6 mt-2 dark:text-app-muted-dark">
+								Countywide measures with plain-language summaries and sources.
+							</p>
+						</div>
+					</div>
 				</div>
 
 				<div class="surface-panel flex flex-col justify-between relative z-10">
@@ -50,6 +88,9 @@ function printBallot() {
 						</p>
 						<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
 							Each contest below includes plainspoken summaries, record highlights, funding context, and direct source lists. Information may still be incomplete, so review original records before voting.
+						</p>
+						<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
+							This ballot is personalized to {{ personalizationLabel }}. If you use ZIP only, treat the result as a partial guide until you confirm district-specific details with the election office.
 						</p>
 					</div>
 

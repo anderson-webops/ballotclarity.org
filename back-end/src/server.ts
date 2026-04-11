@@ -4,12 +4,15 @@ import cors from "cors";
 import dotenv from "dotenv";
 import express from "express";
 import {
+	demoDataSources,
 	demoElection,
 	demoElectionSummaries,
+	demoJurisdictionSummaries,
 	demoLocation,
 	getCandidateBySlug,
 	getCandidatesBySlugs,
 	getElectionBySlug,
+	getJurisdictionBySlug,
 	getMeasureBySlug
 } from "./demo-data.js";
 
@@ -28,8 +31,10 @@ export function createApp() {
 		response.json({ ok: true });
 	});
 
-	app.get("/api/location", (request, response) => {
-		const raw = typeof request.query.q === "string" ? request.query.q.trim() : "";
+	app.post("/api/location", (request, response) => {
+		const raw = typeof request.body?.q === "string" ? request.body.q.trim() : "";
+
+		response.set("Cache-Control", "no-store");
 
 		if (raw.length < 3) {
 			response.status(400).json({
@@ -40,10 +45,7 @@ export function createApp() {
 
 		response.json({
 			electionSlug: demoElection.slug,
-			location: {
-				...demoLocation,
-				lookupInput: raw
-			},
+			location: demoLocation,
 			note: "Demo mode accepts any address or ZIP and returns Metro County sample data."
 		});
 	});
@@ -52,6 +54,29 @@ export function createApp() {
 		response.json({
 			elections: demoElectionSummaries
 		});
+	});
+
+	app.get("/api/jurisdictions", (_request, response) => {
+		response.json({
+			jurisdictions: demoJurisdictionSummaries
+		});
+	});
+
+	app.get("/api/data-sources", (_request, response) => {
+		response.json(demoDataSources);
+	});
+
+	app.get("/api/jurisdictions/:slug", (request, response) => {
+		const jurisdiction = getJurisdictionBySlug(request.params.slug);
+
+		if (!jurisdiction) {
+			response.status(404).json({
+				message: "Jurisdiction not found."
+			});
+			return;
+		}
+
+		response.json(jurisdiction);
 	});
 
 	app.get("/api/ballot", (request, response) => {
@@ -117,11 +142,15 @@ export function createApp() {
 		const requestedSlugs = raw.split(",").map(item => item.trim()).filter(Boolean).slice(0, 3);
 		const candidates = getCandidatesBySlugs(requestedSlugs);
 		const offices = Array.from(new Set(candidates.map(candidate => candidate.officeSought)));
+		const contests = Array.from(new Set(candidates.map(candidate => candidate.contestSlug)));
+		const sameContest = contests.length === 1;
 
 		response.json({
 			candidates,
-			note: "Compare tables are informational only. They do not rank or score candidates.",
+			contestSlug: sameContest ? contests[0] : null,
+			note: "Compare pages are informational only. They do not rank candidates, show polls, or score fit.",
 			office: offices.length === 1 ? offices[0] : null,
+			sameContest,
 			requestedSlugs
 		});
 	});

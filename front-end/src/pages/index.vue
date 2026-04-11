@@ -1,14 +1,19 @@
 <script setup lang="ts">
 import type { BallotResponse, ElectionsResponse } from "~/types/civic";
+import { contactEmail } from "~/constants";
 
 const api = useApiClient();
 const civicStore = useCivicStore();
+const { data: jurisdictionsData } = await useJurisdictions();
+const { data: dataSources } = await useDataSources();
 
 const { data: electionsData } = await useAsyncData<ElectionsResponse>(
 	"home-elections",
 	() => api<ElectionsResponse>("/elections")
 );
 const featuredElection = computed(() => electionsData.value?.elections[0] ?? null);
+const featuredJurisdiction = computed(() => jurisdictionsData.value?.jurisdictions[0] ?? null);
+const roadmapPreview = computed(() => dataSources.value?.categories.slice(0, 3) ?? []);
 
 const { data: ballotPreview } = await useAsyncData<BallotResponse | null>(
 	"home-preview-ballot",
@@ -30,6 +35,20 @@ watchEffect(() => {
 
 usePageSeo({
 	description: "Understand who is on your ballot, what candidates and measures actually say and do, and where the supporting information comes from.",
+	jsonLd: {
+		"@context": "https://schema.org",
+		"@type": "Organization",
+		"contactPoint": [
+			{
+				"@type": "ContactPoint",
+				"contactType": "editorial",
+				"email": `mailto:${contactEmail}`
+			}
+		],
+		"description": "A nonprofit, nonpartisan website providing source-cited ballot and voting information for local elections.",
+		"name": "Ballot Clarity",
+		"url": "https://ballotclarity.jacobdanderson.net/"
+	},
 	path: "/",
 	title: "Understand Your Ballot"
 });
@@ -44,8 +63,8 @@ const valueSections = [
 		title: "Understand candidates and measures"
 	},
 	{
-		text: "Inspect source lists, see what is known and unknown, and understand how summaries are put together.",
-		title: "Review sources and methodology"
+		text: "Save one choice per contest, print a portable checklist, and bring a clean reference into the booth.",
+		title: "Build a booth-ready plan"
 	}
 ];
 </script>
@@ -117,6 +136,9 @@ const valueSections = [
 							>
 								Explore the sample ballot
 							</NuxtLink>
+							<NuxtLink to="/plan" class="btn-secondary">
+								Open ballot plan
+							</NuxtLink>
 							<NuxtLink to="/methodology" class="btn-secondary">
 								See methodology
 							</NuxtLink>
@@ -163,6 +185,129 @@ const valueSections = [
 					<p>
 						This MVP emphasizes source-backed summaries, plain-language measure explanations, and clear limits on what is known. It is informational, not advisory.
 					</p>
+				</div>
+			</div>
+		</section>
+
+		<section class="app-shell">
+			<div class="gap-6 grid lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
+				<div class="surface-panel">
+					<div class="flex flex-wrap gap-2">
+						<TrustBadge label="Jurisdiction-first navigation" tone="accent" />
+						<TrustBadge label="Official links visible" />
+					</div>
+					<h2 class="text-4xl text-app-ink font-serif mt-5 dark:text-app-text-dark">
+						Start from a location hub, not just a search box.
+					</h2>
+					<p class="text-base text-app-muted leading-8 mt-5 dark:text-app-muted-dark">
+						The research direction for this site is clear: voters need stable place-based entry pages with election-office contacts, current election links, archive guides, and voting-method basics. The Metro County hub models that pattern.
+					</p>
+					<div v-if="featuredJurisdiction" class="mt-6 p-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
+						<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+							Featured jurisdiction
+						</p>
+						<h3 class="text-2xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
+							{{ featuredJurisdiction.displayName }}
+						</h3>
+						<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
+							{{ featuredJurisdiction.description }}
+						</p>
+						<div class="mt-5 flex flex-wrap gap-3">
+							<NuxtLink :to="`/locations/${featuredJurisdiction.slug}`" class="btn-primary">
+								Open location hub
+							</NuxtLink>
+							<NuxtLink :to="`/elections/${featuredJurisdiction.nextElectionSlug}`" class="btn-secondary">
+								Open election overview
+							</NuxtLink>
+						</div>
+					</div>
+				</div>
+
+				<div class="surface-panel">
+					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+						New trust-first entry points
+					</p>
+					<ul class="mt-6 space-y-4">
+						<li class="p-4 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70">
+							<p class="text-app-ink font-semibold dark:text-app-text-dark">
+								Election overview pages
+							</p>
+							<p class="text-sm text-app-muted leading-7 mt-2 dark:text-app-muted-dark">
+								Stable, indexable pages for key dates, official links, and change logs before the user opens the longer ballot guide.
+							</p>
+						</li>
+						<li class="p-4 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70">
+							<p class="text-app-ink font-semibold dark:text-app-text-dark">
+								Help and FAQ hub
+							</p>
+							<p class="text-sm text-app-muted leading-7 mt-2 dark:text-app-muted-dark">
+								Answers common voter questions in plain language and keeps routing back to official authorities clear.
+							</p>
+						</li>
+						<li class="p-4 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70">
+							<p class="text-app-ink font-semibold dark:text-app-text-dark">
+								Canonical trust metadata
+							</p>
+							<p class="text-sm text-app-muted leading-7 mt-2 dark:text-app-muted-dark">
+								Major pages now expose canonical links and structured data to support clearer search interpretation.
+							</p>
+						</li>
+					</ul>
+					<div class="mt-6 flex flex-wrap gap-3">
+						<NuxtLink to="/help" class="btn-secondary">
+							Open help hub
+						</NuxtLink>
+						<NuxtLink to="/methodology" class="btn-secondary">
+							Review methodology
+						</NuxtLink>
+						<NuxtLink to="/data-sources" class="btn-secondary">
+							Review data roadmap
+						</NuxtLink>
+					</div>
+				</div>
+			</div>
+		</section>
+
+		<section v-if="roadmapPreview.length" class="app-shell">
+			<div class="gap-8 grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
+				<div>
+					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+						Live data roadmap
+					</p>
+					<h2 class="text-4xl text-app-ink font-serif mt-3 max-w-2xl dark:text-app-text-dark">
+						Use official sources where they are authoritative, then normalize the rest.
+					</h2>
+					<p class="text-base text-app-muted leading-8 mt-5 max-w-3xl dark:text-app-muted-dark">
+						The next major product step is not another UI flourish. It is replacing the demo layer with a public, auditable data stack: official election-office notices for logistics, normalized ballot providers for scale, and separate federal pipelines for money and influence.
+					</p>
+					<div class="mt-6 flex flex-wrap gap-3">
+						<NuxtLink to="/data-sources" class="btn-primary">
+							Open data sources roadmap
+						</NuxtLink>
+						<NuxtLink to="/methodology" class="btn-secondary">
+							See methodology
+						</NuxtLink>
+					</div>
+				</div>
+
+				<div class="gap-4 grid">
+					<article v-for="item in roadmapPreview" :key="item.slug" class="surface-panel">
+						<div class="flex flex-wrap gap-2 items-center">
+							<TrustBadge label="Planned live stack" tone="accent" />
+						</div>
+						<h3 class="text-2xl text-app-ink font-serif mt-4 dark:text-app-text-dark">
+							{{ item.title }}
+						</h3>
+						<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
+							{{ item.summary }}
+						</p>
+						<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
+							<strong class="text-app-ink dark:text-app-text-dark">Rule:</strong> {{ item.authoritativeRule }}
+						</p>
+						<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
+							<strong class="text-app-ink dark:text-app-text-dark">Approach:</strong> {{ item.liveApproach }}
+						</p>
+					</article>
 				</div>
 			</div>
 		</section>

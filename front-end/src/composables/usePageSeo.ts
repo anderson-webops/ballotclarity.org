@@ -2,24 +2,48 @@ import { appDescription, appName, appUrl } from "~/constants";
 
 interface PageSeoInput {
 	description?: string;
+	canonicalPath?: string;
+	jsonLd?: Record<string, unknown> | Array<Record<string, unknown>>;
+	ogType?: "article" | "profile" | "website";
 	path?: string;
+	robots?: string;
 	title: string;
 }
 
 export function usePageSeo(input: PageSeoInput) {
 	const description = input.description ?? appDescription;
-	const url = input.path ? `${appUrl}${input.path}` : appUrl;
+	const resolvedPath = input.path ?? input.canonicalPath;
+	const url = resolvedPath ? `${appUrl}${resolvedPath}` : appUrl;
+	const canonicalUrl = input.canonicalPath ? `${appUrl}${input.canonicalPath}` : url;
+	const jsonLdEntries = (Array.isArray(input.jsonLd) ? input.jsonLd : [input.jsonLd]).filter(
+		(entry): entry is Record<string, unknown> => Boolean(entry)
+	);
 
 	useSeoMeta({
 		description,
 		ogDescription: description,
 		ogSiteName: appName,
 		ogTitle: input.title,
-		ogType: "website",
-		ogUrl: url,
+		ogType: input.ogType ?? "website",
+		ogUrl: canonicalUrl,
+		robots: input.robots,
 		title: input.title,
 		twitterCard: "summary_large_image",
 		twitterDescription: description,
 		twitterTitle: input.title,
+	});
+
+	useHead({
+		link: [
+			{
+				href: canonicalUrl,
+				rel: "canonical"
+			}
+		],
+		script: jsonLdEntries.map((entry, index) => ({
+			children: JSON.stringify(entry),
+			key: `jsonld-${index}`,
+			type: "application/ld+json"
+		}))
 	});
 }

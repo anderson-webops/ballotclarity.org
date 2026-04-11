@@ -1,6 +1,6 @@
 # Ballot Clarity
 
-Ballot Clarity is a nonpartisan civic-information MVP built as an npm workspace monorepo. It presents a demo ballot guide that helps voters review who is on the ballot, what candidates and measures mean, and which public sources support each summary.
+Ballot Clarity is a nonpartisan civic-information MVP built as an npm workspace monorepo. It presents a demo ballot guide that helps voters review who is on the ballot, what candidates and measures mean, which public sources support each summary, and how to move between jurisdiction hubs, election overview pages, and detailed contest records.
 
 ## Workspace layout
 
@@ -54,12 +54,15 @@ npm run server:once
 - State: global civic selection state lives in `front-end/src/stores/civic.ts`
 - Shared front-end models: civic data types live in `front-end/src/types/civic.ts`
 - Demo data: realistic but clearly labeled mock records live in `back-end/src/demo-data.ts`
+- Search/trust layer: major pages now use canonical tags and JSON-LD, while the printable ballot guide is treated as a follow-on reading surface rather than the primary indexable election landing page
 - Automated verification: unit tests cover frontend config and backend API behavior, and an end-to-end smoke test validates the built front-end against the built API
 
 ## Mock API endpoints
 
 - `GET /api/location`
 - `GET /api/elections`
+- `GET /api/jurisdictions`
+- `GET /api/jurisdictions/:slug`
 - `GET /api/ballot`
 - `GET /api/candidates/:slug`
 - `GET /api/measures/:slug`

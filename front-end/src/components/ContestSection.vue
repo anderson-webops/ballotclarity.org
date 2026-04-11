@@ -3,6 +3,7 @@ import type { Contest } from "~/types/civic";
 
 defineProps<{
 	contest: Contest;
+	viewMode?: "deep" | "quick";
 }>();
 </script>
 
@@ -20,6 +21,9 @@ defineProps<{
 					{{ contest.description }}
 				</p>
 			</div>
+			<div class="max-w-md">
+				<ContestRoleGuide :contest="contest" />
+			</div>
 		</div>
 
 		<div
@@ -30,6 +34,7 @@ defineProps<{
 				v-for="candidate in contest.candidates"
 				:key="candidate.slug"
 				:candidate="candidate"
+				:view-mode="viewMode"
 			/>
 		</div>
 
@@ -41,6 +46,7 @@ defineProps<{
 				v-for="measure in contest.measures"
 				:key="measure.slug"
 				:measure="measure"
+				:view-mode="viewMode"
 			/>
 		</div>
 	</section>

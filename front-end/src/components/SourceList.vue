@@ -32,6 +32,7 @@ const { formatDate } = useFormatters();
 				:class="compact ? 'p-3' : 'p-4'"
 			>
 				<div class="flex flex-wrap gap-2 items-center">
+					<SourceAuthorityBadge :authority="source.authority" />
 					<span class="text-[11px] text-app-muted tracking-[0.14em] font-semibold px-2.5 py-1 rounded-full bg-app-bg uppercase dark:text-app-muted-dark dark:bg-app-bg-dark/70">
 						{{ source.type }}
 					</span>
@@ -43,6 +44,9 @@ const { formatDate } = useFormatters();
 				</a>
 				<p class="text-xs text-app-muted mt-2 dark:text-app-muted-dark">
 					{{ source.publisher }}
+				</p>
+				<p class="text-xs text-app-muted mt-1 dark:text-app-muted-dark">
+					Source system: {{ source.sourceSystem }}
 				</p>
 				<p v-if="source.note" class="text-xs text-app-muted mt-2 dark:text-app-muted-dark">
 					{{ source.note }}

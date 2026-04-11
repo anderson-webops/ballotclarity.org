@@ -29,8 +29,10 @@ export function useCandidates(candidateSlugs: MaybeRefOrGetter<string[] | undefi
 			if (!slugs.value.length) {
 				return {
 					candidates: [],
+					contestSlug: null,
 					note: "Select two or three candidates to compare.",
 					office: null,
+					sameContest: false,
 					requestedSlugs: []
 				};
 			}
@@ -44,8 +46,10 @@ export function useCandidates(candidateSlugs: MaybeRefOrGetter<string[] | undefi
 		{
 			default: () => ({
 				candidates: [],
+				contestSlug: null,
 				note: "Select two or three candidates to compare.",
 				office: null,
+				sameContest: false,
 				requestedSlugs: []
 			}),
 			watch: [slugs]

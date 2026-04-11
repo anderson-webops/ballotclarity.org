@@ -1,9 +1,29 @@
 <script setup lang="ts">
 import type { Measure } from "~/types/civic";
+import { storeToRefs } from "pinia";
 
-defineProps<{
+const props = defineProps<{
 	measure: Measure;
+	viewMode?: "deep" | "quick";
 }>();
+
+const civicStore = useCivicStore();
+const { ballotPlan } = storeToRefs(civicStore);
+
+const currentSelection = computed(() => {
+	const selection = ballotPlan.value[props.measure.contestSlug];
+
+	return selection?.type === "measure" && selection.measureSlug === props.measure.slug
+		? selection.decision
+		: null;
+});
+const coverageNote = computed(() => props.measure.whatWeDoNotKnow[0]?.text
+	?? "Implementation details can change after passage because later budgets, legal interpretation, and agency rules still matter.");
+const isQuickView = computed(() => (props.viewMode ?? "quick") === "quick");
+
+function saveMeasure(decision: "no" | "review" | "yes") {
+	civicStore.selectMeasureForPlan(props.measure.contestSlug, props.measure.slug, decision);
+}
 </script>
 
 <template>
@@ -28,6 +48,15 @@ defineProps<{
 			{{ measure.ballotSummary }}
 		</p>
 
+		<div class="mt-5 p-4 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70">
+			<p class="text-xs text-app-muted tracking-[0.22em] font-semibold uppercase dark:text-app-muted-dark">
+				Coverage note
+			</p>
+			<p class="text-sm text-app-muted leading-6 mt-2 dark:text-app-muted-dark">
+				{{ coverageNote }}
+			</p>
+		</div>
+
 		<dl class="mt-6 gap-4 grid sm:grid-cols-2">
 			<div class="p-4 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70">
 				<dt class="text-xs text-app-muted tracking-[0.22em] font-semibold uppercase dark:text-app-muted-dark">
@@ -47,9 +76,50 @@ defineProps<{
 			</div>
 		</dl>
 
-		<p class="text-sm text-app-muted leading-6 mt-5 dark:text-app-muted-dark">
+		<p v-if="!isQuickView" class="text-sm text-app-muted leading-6 mt-5 dark:text-app-muted-dark">
 			{{ measure.fiscalContextNote }}
 		</p>
+		<p v-else class="text-sm text-app-muted leading-6 mt-5 dark:text-app-muted-dark">
+			Quick view keeps the decision effect visible first. Open the detail page for fiscal context, sourced arguments, and implementation limits.
+		</p>
+
+		<div class="mt-6">
+			<p class="text-xs text-app-muted tracking-[0.22em] font-semibold uppercase dark:text-app-muted-dark">
+				Save your current decision
+			</p>
+			<div class="mt-3 flex flex-wrap gap-2">
+				<button
+					type="button"
+					class="text-xs font-semibold px-3 py-2 border rounded-full transition focus-ring"
+					:class="currentSelection === 'yes'
+						? 'border-app-accent bg-app-accent text-white'
+						: 'border-app-line bg-white text-app-muted hover:border-app-accent hover:text-app-accent dark:border-app-line-dark dark:bg-app-panel-dark dark:text-app-muted-dark'"
+					@click="saveMeasure('yes')"
+				>
+					Mark YES
+				</button>
+				<button
+					type="button"
+					class="text-xs font-semibold px-3 py-2 border rounded-full transition focus-ring"
+					:class="currentSelection === 'review'
+						? 'border-app-accent bg-app-accent text-white'
+						: 'border-app-line bg-white text-app-muted hover:border-app-accent hover:text-app-accent dark:border-app-line-dark dark:bg-app-panel-dark dark:text-app-muted-dark'"
+					@click="saveMeasure('review')"
+				>
+					Review later
+				</button>
+				<button
+					type="button"
+					class="text-xs font-semibold px-3 py-2 border rounded-full transition focus-ring"
+					:class="currentSelection === 'no'
+						? 'border-app-accent bg-app-accent text-white'
+						: 'border-app-line bg-white text-app-muted hover:border-app-accent hover:text-app-accent dark:border-app-line-dark dark:bg-app-panel-dark dark:text-app-muted-dark'"
+					@click="saveMeasure('no')"
+				>
+					Mark NO
+				</button>
+			</div>
+		</div>
 
 		<div class="mt-8">
 			<NuxtLink :to="`/measure/${measure.slug}`" class="btn-primary">

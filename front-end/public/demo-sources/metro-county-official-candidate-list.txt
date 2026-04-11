@@ -1,0 +1,23 @@
+Metro County 2026 Official Candidate List
+
+Document type: official candidate filing list
+Status: local demo source
+Published by: Metro County Elections Office
+As of: March 31, 2026
+
+Contests included in this demo:
+- U.S. House, District 7
+- State Senate, District 12
+- Metro County School Board, At-Large Seat B
+
+Filed candidates shown in the MVP:
+- Elena Torres
+- Daniel Brooks
+- Naomi Park
+- Thomas Bell
+- Alicia Greene
+- Marcus Hill
+- Sandra Patel
+
+Use note:
+This file stands in for the official candidate list an election office would publish before ballot finalization.

@@ -1,0 +1,16 @@
+Metro County Vote-by-Mail and Ballot Return Guide Demo
+Last updated: March 31, 2026
+
+Requesting a ballot:
+The county elections office accepts vote-by-mail requests through October 27, 2026 for this demo election.
+
+Returning a ballot:
+Ballots may be returned by mail, by secure county drop box, or in person at the elections office during posted hours.
+
+Tracking:
+The demo county describes a ballot tracking process that confirms when a mailed ballot is issued, received, and accepted for counting.
+
+Important note:
+Mail delivery times and ballot signature rules are governed by the county office and should be verified before relying on mailed return.
+
+This is a demo source file created for the Ballot Clarity MVP.

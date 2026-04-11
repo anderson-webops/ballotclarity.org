@@ -1,13 +1,179 @@
 <script setup lang="ts">
+import type { Source, SourceType } from "~/types/civic";
+import { storeToRefs } from "pinia";
+import { appUrl, contactEmail } from "~/constants";
+
+const civicStore = useCivicStore();
 const route = useRoute();
+const runtimeConfig = useRuntimeConfig();
+const { ballotPlan } = storeToRefs(civicStore);
 const measureSlug = computed(() => String(route.params.slug));
 const { data: measure, error, pending } = await useMeasure(measureSlug);
+const electionOverviewHref = "/elections/2026-metro-county-general";
+const locationHubHref = "/locations/metro-county-franklin";
+const sectionLinks = [
+	{ href: "#at-a-glance", label: "At a glance" },
+	{ href: "#baseline", label: "Current law" },
+	{ href: "#outcomes", label: "YES / NO" },
+	{ href: "#implementation", label: "Timeline" },
+	{ href: "#fiscal", label: "Fiscal impact" },
+	{ href: "#arguments", label: "Arguments" },
+	{ href: "#sources", label: "Sources" }
+] as const;
+
+const sourceTypeLabels: Record<SourceType, string> = {
+	"campaign filing": "Campaign filing",
+	"ethics filing": "Ethics filing",
+	"hearing transcript": "Hearing transcript",
+	"official record": "Official record",
+	"policy memo": "Policy memo",
+	"questionnaire": "Questionnaire",
+	"research brief": "Research brief",
+	"voter guide": "Official voter guide"
+};
+
+function uniqueSources(sources: Source[]) {
+	const seen = new Map<string, Source>();
+
+	for (const source of sources)
+		seen.set(source.id, source);
+
+	return [...seen.values()];
+}
+
+const measureJsonHref = computed(() => measure.value ? `${runtimeConfig.public.apiBase}/measures/${measure.value.slug}` : "");
+const officialSources = computed(() => {
+	if (!measure.value)
+		return [];
+
+	return uniqueSources(measure.value.sources.filter(source => ["official record", "voter guide"].includes(source.type)));
+});
+const baselineSources = computed(() => {
+	if (!measure.value)
+		return [];
+
+	return uniqueSources([
+		...measure.value.currentPractice.flatMap(item => item.sources),
+		...measure.value.proposedChanges.flatMap(item => item.sources),
+	]);
+});
+const fiscalAndTradeoffSources = computed(() => {
+	if (!measure.value)
+		return [];
+
+	return uniqueSources([
+		...measure.value.fiscalSummary.flatMap(item => item.sources),
+		...measure.value.potentialImpacts.flatMap(item => item.sources),
+		...measure.value.argumentsAndConsiderations.flatMap(item => item.sources)
+	]);
+});
+const implementationSources = computed(() => {
+	if (!measure.value)
+		return [];
+
+	return uniqueSources(measure.value.implementationTimeline.flatMap(item => item.sources));
+});
+const argumentSources = computed(() => {
+	if (!measure.value)
+		return [];
+
+	return uniqueSources([
+		...measure.value.supportArguments.flatMap(item => item.sources),
+		...measure.value.opposeArguments.flatMap(item => item.sources)
+	]);
+});
+const presentSourceTypes = computed(() => {
+	if (!measure.value)
+		return [];
+
+	return [...new Set(measure.value.sources.map(source => source.type))].map(type => sourceTypeLabels[type]);
+});
+const authorshipNotes = computed(() => {
+	if (!measure.value)
+		return [];
+
+	return [
+		"Official ballot summary: comes from the attached official record and voter-guide style sources in the demo archive.",
+		"Ballot Clarity summary: rewrites the source material into plain language without recommending a vote.",
+		"Arguments and tradeoffs: presented as attributed positions or documented considerations, not as endorsements."
+	];
+});
+const readabilityNotes = [
+	"YES and NO meanings use mirrored wording so the legal change and status quo can be compared side by side.",
+	"Current law, proposed changes, implementation timing, and fiscal notes are separated into different blocks instead of one blended summary.",
+	"Argument sections stay clearly attributed so Ballot Clarity does not speak in an advocacy voice."
+];
+const reportIssueHref = computed(() => measure.value
+	? `mailto:${contactEmail}?subject=${encodeURIComponent(`Ballot Clarity measure review: ${measure.value.title}`)}`
+	: `mailto:${contactEmail}?subject=${encodeURIComponent("Ballot Clarity measure review")}`);
+const currentDecision = computed(() => {
+	if (!measure.value)
+		return null;
+
+	const selection = ballotPlan.value[measure.value.contestSlug];
+
+	return selection?.type === "measure" && selection.measureSlug === measure.value.slug
+		? selection.decision
+		: null;
+});
+
+const measureMethodItems = computed(() => {
+	if (!measure.value)
+		return [];
+
+	return [
+		{
+			body: [
+				"This page uses the attached ballot-language summary, fiscal note, and supporting public-record documents listed in the evidence panel.",
+				`The current demo measure page links ${measure.value.sources.length} source records for inspection.`,
+			],
+			label: "Sources"
+		},
+		{
+			body: [
+				"Ballot Clarity rewrites ballot language into plain language while keeping the original source set visible and easy to inspect.",
+				"The goal is to explain the documented tradeoffs without telling the user how to vote.",
+			],
+			label: "Processing"
+		},
+		{
+			body: [
+				"Measures can change meaning depending on later implementation rules, legal interpretation, and budget decisions after passage.",
+				"This demo page cannot replace the official ballot language, fiscal note, or election-office notices."
+			],
+			label: "Limits"
+		},
+	];
+});
 
 usePageSeo({
 	description: measure.value?.summary ?? "Review a plain-language ballot measure explanation with sources.",
+	jsonLd: measure.value
+		? {
+				"@context": "https://schema.org",
+				"@type": "Legislation",
+				"abstract": measure.value.summary,
+				"dateModified": measure.value.updatedAt,
+				"datePublished": measure.value.updatedAt,
+				"legislationIdentifier": `${measure.value.slug}-demo`,
+				"legislationJurisdiction": {
+					"@type": "AdministrativeArea",
+					"name": measure.value.location
+				},
+				"legislationType": "BallotMeasure",
+				"name": measure.value.title,
+				"url": `${appUrl}/measure/${measure.value.slug}`
+			}
+		: undefined,
+	ogType: "article",
 	path: `/measure/${measureSlug.value}`,
 	title: measure.value?.title ?? "Ballot measure detail",
 });
+
+function saveMeasure(decision: "no" | "review" | "yes") {
+	if (measure.value)
+		civicStore.selectMeasureForPlan(measure.value.contestSlug, measure.value.slug, decision);
+}
 </script>
 
 <template>
@@ -15,7 +181,7 @@ usePageSeo({
 		<div v-if="pending" class="gap-8 grid xl:grid-cols-[minmax(0,1.35fr)_minmax(22rem,0.85fr)]">
 			<div class="space-y-6">
 				<div class="surface-panel bg-white/70 h-72 animate-pulse dark:bg-app-panel-dark/70" />
-				<div v-for="index in 3" :key="index" class="surface-panel bg-white/70 h-52 animate-pulse dark:bg-app-panel-dark/70" />
+				<div v-for="index in 4" :key="index" class="surface-panel bg-white/70 h-52 animate-pulse dark:bg-app-panel-dark/70" />
 			</div>
 			<div class="surface-panel bg-white/70 h-96 animate-pulse dark:bg-app-panel-dark/70" />
 		</div>
@@ -31,7 +197,8 @@ usePageSeo({
 				<header class="surface-panel">
 					<div class="flex flex-wrap gap-2">
 						<TrustBadge label="Demo measure detail" tone="warning" />
-						<TrustBadge label="Plain-language summary" tone="accent" />
+						<TrustBadge label="Official text linked" tone="accent" />
+						<TrustBadge label="Plain-language summary" />
 					</div>
 					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold mt-5 uppercase dark:text-app-muted-dark">
 						{{ measure.location }}
@@ -42,51 +209,332 @@ usePageSeo({
 					<p class="text-base text-app-muted leading-8 mt-6 dark:text-app-muted-dark">
 						{{ measure.summary }}
 					</p>
+					<div class="mt-6 flex flex-wrap gap-3 items-center">
+						<UpdatedAt :value="measure.freshness.dataLastUpdatedAt ?? measure.updatedAt" label="Data through" />
+						<span class="text-app-line dark:text-app-line-dark">•</span>
+						<p class="text-sm text-app-muted dark:text-app-muted-dark">
+							{{ measure.sources.length }} source records attached
+						</p>
+					</div>
 					<div class="mt-6 flex flex-wrap gap-4">
-						<UpdatedAt :value="measure.updatedAt" />
-						<NuxtLink to="/ballot/2026-metro-county-general" class="btn-secondary">
+						<SourceDrawer :sources="measure.sources" :title="`${measure.title} evidence and sources`" button-label="Evidence & sources" />
+						<div class="flex flex-wrap gap-2">
+							<button
+								type="button"
+								class="text-xs font-semibold px-3 py-2 border rounded-full transition focus-ring"
+								:class="currentDecision === 'yes'
+									? 'border-app-accent bg-app-accent text-white'
+									: 'border-app-line bg-white text-app-muted hover:border-app-accent hover:text-app-accent dark:border-app-line-dark dark:bg-app-panel-dark dark:text-app-muted-dark'"
+								@click="saveMeasure('yes')"
+							>
+								Mark YES
+							</button>
+							<button
+								type="button"
+								class="text-xs font-semibold px-3 py-2 border rounded-full transition focus-ring"
+								:class="currentDecision === 'review'
+									? 'border-app-accent bg-app-accent text-white'
+									: 'border-app-line bg-white text-app-muted hover:border-app-accent hover:text-app-accent dark:border-app-line-dark dark:bg-app-panel-dark dark:text-app-muted-dark'"
+								@click="saveMeasure('review')"
+							>
+								Review later
+							</button>
+							<button
+								type="button"
+								class="text-xs font-semibold px-3 py-2 border rounded-full transition focus-ring"
+								:class="currentDecision === 'no'
+									? 'border-app-accent bg-app-accent text-white'
+									: 'border-app-line bg-white text-app-muted hover:border-app-accent hover:text-app-accent dark:border-app-line-dark dark:bg-app-panel-dark dark:text-app-muted-dark'"
+								@click="saveMeasure('no')"
+							>
+								Mark NO
+							</button>
+						</div>
+						<a v-if="measureJsonHref" :href="measureJsonHref" class="btn-secondary" rel="noreferrer" target="_blank">
+							<span class="i-carbon-download" />
+							Download JSON
+						</a>
+						<NuxtLink :to="electionOverviewHref" class="btn-secondary">
+							Election overview
+						</NuxtLink>
+						<NuxtLink to="/ballot/2026-metro-county-general" class="btn-primary">
 							Back to ballot
 						</NuxtLink>
 					</div>
 				</header>
 
-				<section class="surface-panel">
-					<div class="flex gap-4 items-center justify-between">
-						<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
-							Plain-language explanation
-						</h2>
-						<SourceDrawer :sources="measure.sources" :title="`${measure.title} sources`" />
-					</div>
-					<p class="text-base text-app-muted leading-8 mt-6 dark:text-app-muted-dark">
-						{{ measure.plainLanguageExplanation }}
+				<FreshnessStrip :freshness="measure.freshness" />
+
+				<nav aria-label="Jump to section" class="surface-panel px-5 py-4 top-20 sticky z-10">
+					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+						Jump to section
 					</p>
+					<div class="mt-3 px-1 pb-1 flex gap-2 overflow-x-auto -mx-1">
+						<a
+							v-for="section in sectionLinks"
+							:key="section.href"
+							:href="section.href"
+							class="text-xs text-app-ink px-4 py-2 border border-app-line rounded-full whitespace-nowrap dark:text-app-text-dark hover:text-app-accent dark:border-app-line-dark hover:border-app-accent/50 focus-ring dark:hover:text-[#9ed4e3] dark:hover:border-app-accent/60"
+						>
+							{{ section.label }}
+						</a>
+					</div>
+				</nav>
+
+				<section id="at-a-glance" class="surface-panel scroll-mt-28">
+					<div class="flex flex-wrap gap-4 items-start justify-between">
+						<div>
+							<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+								At a glance
+							</p>
+							<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
+								Official text and plain-language summary
+							</h2>
+						</div>
+						<SourceDrawer :sources="officialSources.length ? officialSources : measure.sources" :title="`${measure.title} official measure sources`" button-label="Official sources" />
+					</div>
+					<div class="mt-6 gap-4 grid lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1.1fr)]">
+						<article class="px-5 py-5 border border-app-line/80 rounded-3xl bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
+							<div class="flex flex-wrap gap-3 items-start justify-between">
+								<div>
+									<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+										Official ballot summary
+									</p>
+									<h3 class="text-xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
+										What appears in the attached official material
+									</h3>
+								</div>
+								<TrustBadge label="Official text" tone="accent" />
+							</div>
+							<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
+								{{ measure.ballotSummary }}
+							</p>
+						</article>
+						<article class="px-5 py-5 border border-app-line/80 rounded-3xl bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
+							<div class="flex flex-wrap gap-3 items-start justify-between">
+								<div>
+									<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+										Ballot Clarity summary
+									</p>
+									<h3 class="text-xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
+										Plain-language explanation
+									</h3>
+								</div>
+								<TrustBadge label="Plain-language rewrite" />
+							</div>
+							<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
+								{{ measure.plainLanguageExplanation }}
+							</p>
+						</article>
+					</div>
+					<div class="mt-6 gap-4 grid lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]">
+						<InfoCallout title="Who wrote what on this page">
+							<ul class="space-y-2">
+								<li v-for="item in authorshipNotes" :key="item">
+									{{ item }}
+								</li>
+							</ul>
+						</InfoCallout>
+						<div class="px-5 py-5 border border-app-line/80 rounded-3xl bg-white/80 dark:border-app-line-dark dark:bg-app-panel-dark/70">
+							<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+								Source types in this page
+							</p>
+							<div class="mt-4 flex flex-wrap gap-2">
+								<TrustBadge
+									v-for="label in presentSourceTypes"
+									:key="label"
+									:label="label"
+								/>
+							</div>
+							<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
+								These labels help separate official text from Ballot Clarity interpretation and other supporting records in the demo archive.
+							</p>
+						</div>
+					</div>
+					<div class="mt-6">
+						<InfoCallout title="How this explainer stays readable">
+							<ul class="space-y-2">
+								<li v-for="item in readabilityNotes" :key="item">
+									{{ item }}
+								</li>
+							</ul>
+						</InfoCallout>
+					</div>
 				</section>
 
-				<section class="gap-6 grid md:grid-cols-2">
-					<div class="surface-panel">
-						<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
-							What a YES vote means
-						</h2>
-						<p class="text-sm text-app-muted leading-7 mt-5 dark:text-app-muted-dark">
-							{{ measure.yesMeaning }}
-						</p>
+				<EpistemicSummary :known-items="measure.whatWeKnow" :unknown-items="measure.whatWeDoNotKnow" />
+
+				<section id="baseline" class="surface-panel scroll-mt-28">
+					<div class="flex flex-wrap gap-4 items-start justify-between">
+						<div>
+							<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+								Current law and proposed change
+							</p>
+							<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
+								What exists now, and what this measure would change
+							</h2>
+						</div>
+						<SourceDrawer :sources="baselineSources.length ? baselineSources : measure.sources" :title="`${measure.title} current-law and proposal sources`" button-label="Baseline sources" />
 					</div>
-					<div class="surface-panel">
-						<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
-							What a NO vote means
-						</h2>
-						<p class="text-sm text-app-muted leading-7 mt-5 dark:text-app-muted-dark">
-							{{ measure.noMeaning }}
-						</p>
+					<p class="text-sm text-app-muted leading-7 mt-5 dark:text-app-muted-dark">
+						{{ measure.currentLawOverview }}
+					</p>
+					<div class="mt-6 gap-6 grid lg:grid-cols-2">
+						<article class="px-5 py-5 border border-app-line/80 rounded-3xl bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
+							<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+								Current practice
+							</p>
+							<ul class="mt-4 space-y-3">
+								<li v-for="item in measure.currentPractice" :key="item.id" class="px-4 py-4 rounded-2xl bg-white/80 dark:bg-app-panel-dark/70">
+									<div class="flex flex-wrap gap-3 items-start justify-between">
+										<p class="text-sm text-app-muted leading-7 max-w-2xl dark:text-app-muted-dark">
+											{{ item.text }}
+										</p>
+										<SourceDrawer :sources="item.sources" :title="item.text" button-label="Sources" />
+									</div>
+								</li>
+							</ul>
+						</article>
+						<article class="px-5 py-5 border border-app-line/80 rounded-3xl bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
+							<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+								Proposed changes
+							</p>
+							<ul class="mt-4 space-y-3">
+								<li v-for="item in measure.proposedChanges" :key="item.id" class="px-4 py-4 rounded-2xl bg-white/80 dark:bg-app-panel-dark/70">
+									<div class="flex flex-wrap gap-3 items-start justify-between">
+										<p class="text-sm text-app-muted leading-7 max-w-2xl dark:text-app-muted-dark">
+											{{ item.text }}
+										</p>
+										<SourceDrawer :sources="item.sources" :title="item.text" button-label="Sources" />
+									</div>
+								</li>
+							</ul>
+						</article>
 					</div>
 				</section>
 
-				<section class="surface-panel">
-					<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
-						Potential impacts
-					</h2>
+				<section id="outcomes" class="surface-panel scroll-mt-28">
+					<div class="flex flex-wrap gap-4 items-start justify-between">
+						<div>
+							<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+								YES / NO outcomes
+							</p>
+							<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
+								If you vote YES or NO
+							</h2>
+						</div>
+						<SourceDrawer :sources="officialSources.length ? officialSources : measure.sources" :title="`${measure.title} yes and no meanings`" button-label="Outcome sources" />
+					</div>
+					<p class="text-sm text-app-muted leading-7 mt-5 dark:text-app-muted-dark">
+						The two cards below use mirrored structure so the change from a YES vote and the status quo after a NO vote can be read side by side without scoring either option.
+					</p>
+					<div class="mt-6 gap-6 grid md:grid-cols-2">
+						<article class="px-5 py-5 border border-app-line/80 rounded-3xl bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
+							<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+								If you vote YES
+							</p>
+							<h3 class="text-2xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
+								Proposed change would take effect
+							</h3>
+							<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
+								{{ measure.yesMeaning }}
+							</p>
+							<ul class="text-sm text-app-muted leading-7 mt-4 space-y-3 dark:text-app-muted-dark">
+								<li v-for="item in measure.yesHighlights" :key="item" class="px-4 py-3 rounded-2xl bg-white/80 dark:bg-app-panel-dark/70">
+									{{ item }}
+								</li>
+							</ul>
+						</article>
+						<article class="px-5 py-5 border border-app-line/80 rounded-3xl bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
+							<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+								If you vote NO
+							</p>
+							<h3 class="text-2xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
+								Current rules stay in place
+							</h3>
+							<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
+								{{ measure.noMeaning }}
+							</p>
+							<ul class="text-sm text-app-muted leading-7 mt-4 space-y-3 dark:text-app-muted-dark">
+								<li v-for="item in measure.noHighlights" :key="item" class="px-4 py-3 rounded-2xl bg-white/80 dark:bg-app-panel-dark/70">
+									{{ item }}
+								</li>
+							</ul>
+						</article>
+					</div>
+				</section>
+
+				<section id="implementation" class="surface-panel scroll-mt-28">
+					<div class="flex flex-wrap gap-4 items-start justify-between">
+						<div>
+							<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+								Implementation timeline
+							</p>
+							<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
+								When the legal change starts and what still depends on later decisions
+							</h2>
+						</div>
+						<SourceDrawer :sources="implementationSources.length ? implementationSources : measure.sources" :title="`${measure.title} implementation timeline sources`" button-label="Timeline sources" />
+					</div>
+					<p class="text-sm text-app-muted leading-7 mt-5 dark:text-app-muted-dark">
+						{{ measure.implementationOverview }}
+					</p>
 					<div class="mt-6 space-y-4">
-						<article v-for="impact in measure.potentialImpacts" :key="impact.id" class="p-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
+						<article v-for="item in measure.implementationTimeline" :key="item.id" class="px-5 py-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
+							<div class="flex flex-wrap gap-3 items-start justify-between">
+								<div>
+									<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+										{{ item.label }}
+									</p>
+									<h3 class="text-xl text-app-ink font-serif mt-2 dark:text-app-text-dark">
+										{{ item.timing }}
+									</h3>
+								</div>
+								<SourceDrawer :sources="item.sources" :title="item.label" button-label="Sources" />
+							</div>
+							<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
+								{{ item.summary }}
+							</p>
+						</article>
+					</div>
+				</section>
+
+				<section id="fiscal" class="surface-panel scroll-mt-28">
+					<div class="flex flex-wrap gap-4 items-center justify-between">
+						<div>
+							<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+								Fiscal impact and tradeoffs
+							</p>
+							<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
+								Costs, timing, and practical effects
+							</h2>
+						</div>
+						<SourceDrawer :sources="fiscalAndTradeoffSources" :title="`${measure.title} fiscal and tradeoff sources`" />
+					</div>
+					<InfoCallout class="mt-5" title="Fiscal and context note">
+						{{ measure.fiscalContextNote }}
+					</InfoCallout>
+					<div class="mt-6 gap-4 grid lg:grid-cols-3">
+						<article v-for="item in measure.fiscalSummary" :key="item.id" class="px-5 py-5 border border-app-line/80 rounded-3xl bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
+							<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+								{{ item.label }}
+							</p>
+							<p class="text-2xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
+								{{ item.value }}
+							</p>
+							<p class="text-xs text-app-muted mt-3 dark:text-app-muted-dark">
+								{{ item.scope }} · {{ item.horizon }}
+							</p>
+							<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
+								{{ item.note }}
+							</p>
+							<div class="mt-4">
+								<SourceDrawer :sources="item.sources" :title="item.label" button-label="Sources" />
+							</div>
+						</article>
+					</div>
+					<div class="mt-6 space-y-4">
+						<article v-for="impact in measure.potentialImpacts" :key="impact.id" class="px-5 py-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
 							<div class="flex flex-wrap gap-3 items-start justify-between">
 								<h3 class="text-lg text-app-ink font-semibold dark:text-app-text-dark">
 									{{ impact.title }}
@@ -98,17 +546,8 @@ usePageSeo({
 							</p>
 						</article>
 					</div>
-				</section>
-
-				<section class="surface-panel">
-					<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
-						Arguments and considerations
-					</h2>
-					<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-						These notes are framed to show the main tradeoffs described in the attached records. They are not endorsements.
-					</p>
 					<div class="mt-6 space-y-4">
-						<article v-for="item in measure.argumentsAndConsiderations" :key="item.id" class="p-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
+						<article v-for="item in measure.argumentsAndConsiderations" :key="item.id" class="px-5 py-5 rounded-3xl bg-white/80 dark:bg-app-panel-dark/70">
 							<div class="flex flex-wrap gap-3 items-start justify-between">
 								<h3 class="text-lg text-app-ink font-semibold dark:text-app-text-dark">
 									{{ item.title }}
@@ -122,19 +561,125 @@ usePageSeo({
 					</div>
 				</section>
 
-				<InfoCallout title="Fiscal and context note">
-					{{ measure.fiscalContextNote }}
-				</InfoCallout>
+				<section id="arguments" class="surface-panel scroll-mt-28">
+					<div class="flex flex-wrap gap-4 items-start justify-between">
+						<div>
+							<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+								Arguments in the attached record
+							</p>
+							<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
+								Attributed arguments for and against
+							</h2>
+						</div>
+						<SourceDrawer :sources="argumentSources" :title="`${measure.title} support and oppose arguments`" />
+					</div>
+					<p class="text-sm text-app-muted leading-7 mt-5 dark:text-app-muted-dark">
+						These are parallel argument summaries drawn from the attached demo record. They are framed neutrally so the user can compare the reasoning without the page taking a side.
+					</p>
+					<InfoCallout class="mt-5" title="Arguments are attributed, not adopted">
+						{{ measure.argumentsDisclaimer }}
+					</InfoCallout>
+					<div class="mt-6 gap-6 grid lg:grid-cols-2">
+						<div class="space-y-4">
+							<div class="flex flex-wrap gap-2 items-center">
+								<TrustBadge label="Arguments emphasizing approval" tone="accent" />
+							</div>
+							<article v-for="item in measure.supportArguments" :key="item.id" class="px-5 py-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
+								<div class="flex flex-wrap gap-3 items-start justify-between">
+									<div>
+										<h3 class="text-lg text-app-ink font-semibold dark:text-app-text-dark">
+											{{ item.title }}
+										</h3>
+										<p class="text-xs text-app-muted mt-2 dark:text-app-muted-dark">
+											{{ item.attribution }}
+										</p>
+									</div>
+									<SourceDrawer :sources="item.sources" :title="item.title" button-label="Sources" />
+								</div>
+								<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
+									{{ item.summary }}
+								</p>
+							</article>
+						</div>
+						<div class="space-y-4">
+							<div class="flex flex-wrap gap-2 items-center">
+								<TrustBadge label="Arguments emphasizing rejection" />
+							</div>
+							<article v-for="item in measure.opposeArguments" :key="item.id" class="px-5 py-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
+								<div class="flex flex-wrap gap-3 items-start justify-between">
+									<div>
+										<h3 class="text-lg text-app-ink font-semibold dark:text-app-text-dark">
+											{{ item.title }}
+										</h3>
+										<p class="text-xs text-app-muted mt-2 dark:text-app-muted-dark">
+											{{ item.attribution }}
+										</p>
+									</div>
+									<SourceDrawer :sources="item.sources" :title="item.title" button-label="Sources" />
+								</div>
+								<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
+									{{ item.summary }}
+								</p>
+							</article>
+						</div>
+					</div>
+				</section>
+
+				<section id="sources" class="surface-panel scroll-mt-28">
+					<div class="flex flex-wrap gap-4 items-start justify-between">
+						<div>
+							<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+								Full text and official sources
+							</p>
+							<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
+								Inspect the original records
+							</h2>
+						</div>
+						<SourceDrawer :sources="measure.sources" :title="`${measure.title} full source list`" />
+					</div>
+					<p class="text-sm text-app-muted leading-7 mt-5 dark:text-app-muted-dark">
+						Official ballot language, fiscal notes, and county guide records remain the primary sources. Ballot Clarity adds a reading aid on top of those materials; it does not replace them.
+					</p>
+					<div class="mt-6">
+						<SourceList :sources="officialSources.length ? officialSources : measure.sources" title="Official source trail in this demo" />
+					</div>
+				</section>
 			</div>
 
 			<aside class="xl:self-start xl:top-28 xl:sticky">
 				<div class="surface-panel">
 					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-						Source list
+						Evidence rail
 					</p>
 					<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
-						Information may still be incomplete or subject to later election-office updates. Review original records before relying on this page for a real ballot.
+						Use this rail for the full demo source archive, method notes, and official links while you read the measure explanation.
 					</p>
+					<div class="mt-5 space-y-3">
+						<UpdatedAt :value="measure.freshness.dataLastUpdatedAt ?? measure.updatedAt" label="Data through" />
+						<p class="text-sm text-app-muted leading-7 dark:text-app-muted-dark">
+							{{ measure.freshness.statusNote }}
+						</p>
+					</div>
+					<div class="mt-4 flex flex-wrap gap-3">
+						<a :href="reportIssueHref" class="btn-secondary text-xs px-4 py-2">
+							Report an issue
+						</a>
+						<NuxtLink :to="locationHubHref" class="btn-secondary text-xs px-4 py-2">
+							Location hub
+						</NuxtLink>
+						<NuxtLink :to="electionOverviewHref" class="btn-secondary text-xs px-4 py-2">
+							Election overview
+						</NuxtLink>
+					</div>
+					<InfoCallout class="mt-5" title="Source-first reminder">
+						This explainer is a neutral reading aid. Official ballot language, fiscal notes, and election-office notices remain the primary sources.
+					</InfoCallout>
+					<div class="mt-6">
+						<MethodologySummaryCard
+							:items="measureMethodItems"
+							summary="This page keeps the official measure text visible, separates Ballot Clarity interpretation from source material, and states what remains uncertain."
+						/>
+					</div>
 					<div class="mt-6">
 						<SourceList :sources="measure.sources" compact title="Attached sources" />
 					</div>

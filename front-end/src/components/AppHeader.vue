@@ -7,13 +7,15 @@ const colorMode = useColorMode();
 const route = useRoute();
 const isMenuOpen = ref(false);
 
-const { compareCount, selectedLocation } = storeToRefs(civicStore);
+const { ballotPlanCount, compareCount, selectedLocation } = storeToRefs(civicStore);
 
 const navLinks = [
 	{ label: "Home", to: "/" },
 	{ label: "Ballot", to: "/ballot" },
+	{ label: "Plan", to: "/plan" },
 	{ label: "Compare", to: "/compare" },
 	{ label: "Methodology", to: "/methodology" },
+	{ label: "Help", to: "/help" },
 	{ label: "About", to: "/about" },
 ];
 
@@ -62,6 +64,9 @@ function toggleColorMode() {
 						: 'text-app-muted hover:bg-white hover:text-app-ink dark:text-app-muted-dark dark:hover:bg-app-panel-dark dark:hover:text-app-text-dark'"
 				>
 					{{ link.label }}
+					<span v-if="link.to === '/plan' && ballotPlanCount" class="text-[11px] text-app-ink font-bold ml-2 px-1.5 rounded-full bg-app-warm inline-flex h-5 min-w-5 items-center justify-center">
+						{{ ballotPlanCount }}
+					</span>
 					<span v-if="link.to === '/compare' && compareCount" class="text-[11px] text-app-ink font-bold ml-2 px-1.5 rounded-full bg-app-warm inline-flex h-5 min-w-5 items-center justify-center">
 						{{ compareCount }}
 					</span>
@@ -110,6 +115,9 @@ function toggleColorMode() {
 						: 'bg-white text-app-ink dark:bg-app-panel-dark dark:text-app-text-dark'"
 				>
 					{{ link.label }}
+					<span v-if="link.to === '/plan' && ballotPlanCount" class="text-[11px] text-app-ink font-bold ml-2 px-2 py-0.5 rounded-full bg-app-warm">
+						{{ ballotPlanCount }}
+					</span>
 					<span v-if="link.to === '/compare' && compareCount" class="text-[11px] text-app-ink font-bold ml-2 px-2 py-0.5 rounded-full bg-app-warm">
 						{{ compareCount }}
 					</span>

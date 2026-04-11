@@ -71,6 +71,9 @@ usePageSeo({
 				<a :href="`mailto:${contactEmail}`" class="btn-primary">
 					Contact the project
 				</a>
+				<NuxtLink to="/neutrality" class="btn-secondary">
+					Read neutrality policy
+				</NuxtLink>
 				<NuxtLink to="/methodology" class="btn-secondary">
 					Review methodology
 				</NuxtLink>

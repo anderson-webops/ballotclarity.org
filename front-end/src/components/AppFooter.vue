@@ -5,9 +5,16 @@ const year = new Date().getFullYear();
 
 const footerLinks = [
 	{ label: "About", to: "/about" },
+	{ label: "My ballot plan", to: "/plan" },
+	{ label: "Metro County hub", to: "/locations/metro-county-franklin" },
+	{ label: "Voting FAQ", to: "/help" },
 	{ label: "Methodology", to: "/methodology" },
+	{ label: "Data sources", to: "/data-sources" },
+	{ label: "Neutrality policy", to: "/neutrality" },
+	{ label: "Accessibility", to: "/accessibility" },
 	{ label: "Privacy", to: "/privacy" },
 	{ label: "Terms", to: "/terms" },
+	{ label: "Contact", to: "/contact" },
 ];
 </script>
 
@@ -23,6 +30,9 @@ const footerLinks = [
 				</p>
 				<p class="text-sm text-app-muted mt-4 dark:text-app-muted-dark">
 					This MVP uses clearly labeled demo data. Always review the original public record before relying on any election information.
+				</p>
+				<p class="text-sm text-app-muted mt-4 dark:text-app-muted-dark">
+					Not an official election website. Ballot Clarity aims to provide nonpartisan civic information and cite sources where possible. Content can change, so verify critical election details with the official authorities linked throughout the site.
 				</p>
 			</div>
 

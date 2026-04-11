@@ -14,6 +14,10 @@ let apiProcess: ChildProcessWithoutNullStreams | null = null;
 let appProcess: ChildProcessWithoutNullStreams | null = null;
 let apiBaseUrl = "";
 let appBaseUrl = "";
+const adminApiKey = "smoke-admin-key";
+const adminPassword = "smoke-password";
+const adminSessionSecret = "smoke-session-secret";
+const adminUsername = "smoke-admin";
 
 async function getFreePort() {
 	return await new Promise<number>((resolve, reject) => {
@@ -88,6 +92,7 @@ before(async () => {
 
 	const api = startProcess(process.execPath, ["back-end/dist/server.js"], {
 		...process.env,
+		ADMIN_API_KEY: adminApiKey,
 		PORT: String(apiPort)
 	});
 	apiProcess = api.child;
@@ -96,6 +101,11 @@ before(async () => {
 
 	const app = startProcess(process.execPath, ["front-end/.output/server/index.mjs"], {
 		...process.env,
+		ADMIN_API_BASE: `${apiBaseUrl}/api`,
+		ADMIN_API_KEY: adminApiKey,
+		ADMIN_PASSWORD: adminPassword,
+		ADMIN_SESSION_SECRET: adminSessionSecret,
+		ADMIN_USERNAME: adminUsername,
 		PORT: String(appPort),
 		NUXT_PUBLIC_API_BASE: `${apiBaseUrl}/api`
 	});
@@ -259,4 +269,57 @@ test("built app renders the key ballot guide pages against the built API", async
 	assert.match(compareHtml, /Show only questions answered by all selected candidates/);
 	assert.match(compareHtml, /Would you support expanding federal transportation and clinic-access grants in District 7/);
 	assert.match(compareHtml, /No response submitted/);
+});
+
+test("built app exposes a protected admin portal when admin env is configured", async () => {
+	const loginPage = await fetch(`${appBaseUrl}/admin/login`);
+	const loginHtml = await loginPage.text();
+	const unauthorizedOverview = await fetch(`${appBaseUrl}/api/admin/overview`);
+	const loginResponse = await fetch(`${appBaseUrl}/api/admin/session`, {
+		body: JSON.stringify({
+			password: adminPassword,
+			username: adminUsername
+		}),
+		headers: {
+			"Content-Type": "application/json"
+		},
+		method: "POST"
+	});
+	const sessionCookie = loginResponse.headers.get("set-cookie")?.split(";")[0];
+	const dashboardPage = await fetch(`${appBaseUrl}/admin`, {
+		headers: {
+			cookie: sessionCookie || ""
+		}
+	});
+	const dashboardHtml = await dashboardPage.text();
+	const correctionsPage = await fetch(`${appBaseUrl}/admin/corrections`, {
+		headers: {
+			cookie: sessionCookie || ""
+		}
+	});
+	const correctionsHtml = await correctionsPage.text();
+	const adminOverviewResponse = await fetch(`${appBaseUrl}/api/admin/overview`, {
+		headers: {
+			cookie: sessionCookie || ""
+		}
+	});
+	const adminOverview = await adminOverviewResponse.json();
+
+	assert.equal(loginPage.status, 200);
+	assert.match(loginHtml, /Editorial and source operations/);
+	assert.match(loginHtml, /Sign in to admin/);
+	assert.equal(unauthorizedOverview.status, 401);
+	assert.equal(loginResponse.status, 200);
+	assert.ok(sessionCookie);
+	assert.equal(dashboardPage.status, 200);
+	assert.match(dashboardHtml, /Internal editorial control room/);
+	assert.match(dashboardHtml, /Current operational priorities/);
+	assert.match(dashboardHtml, /Latest queue and publish events/);
+	assert.match(dashboardHtml, /Open corrections/);
+	assert.equal(correctionsPage.status, 200);
+	assert.match(correctionsHtml, /Reported issues and next steps/);
+	assert.match(correctionsHtml, /Reader and internal reports/);
+	assert.equal(adminOverviewResponse.status, 200);
+	assert.equal(adminOverview.metrics[0].label, "Open corrections");
+	assert.ok(adminOverview.recentActivity.length >= 3);
 });

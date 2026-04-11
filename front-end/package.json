@@ -16,8 +16,8 @@
 		"serve": "nuxt dev --port 3333 --open --host",
 		"preview": "nuxt preview --port 3333 --host",
 		"typecheck": "nuxt typecheck",
-		"lint": "nuxt prepare && eslint \"src/**/*.{js,ts,vue}\" \"test/**/*.ts\" \"*.config.{js,ts,mjs}\"",
-		"lint-fix": "nuxt prepare && eslint \"src/**/*.{js,ts,vue}\" \"test/**/*.ts\" \"*.config.{js,ts,mjs}\" --fix",
+		"lint": "nuxt prepare && eslint \"src/**/*.{js,ts,vue}\" \"server/**/*.ts\" \"test/**/*.ts\" \"*.config.{js,ts,mjs}\"",
+		"lint-fix": "nuxt prepare && eslint \"src/**/*.{js,ts,vue}\" \"server/**/*.ts\" \"test/**/*.ts\" \"*.config.{js,ts,mjs}\" --fix",
 		"test:unit": "node --test --import tsx test/*.test.ts"
 	},
 	"dependencies": {

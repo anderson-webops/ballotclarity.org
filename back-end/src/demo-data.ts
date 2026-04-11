@@ -1,4 +1,11 @@
 import type {
+	AdminCorrectionRequest,
+	AdminCorrectionsResponse,
+	AdminOverviewResponse,
+	AdminReviewItem,
+	AdminReviewResponse,
+	AdminSourceMonitorItem,
+	AdminSourceMonitorResponse,
 	Candidate,
 	CandidateComparisonProfile,
 	CandidateLink,
@@ -2444,6 +2451,198 @@ export const demoDataSources: DataSourcesResponse = {
 			id: "milestone-six",
 			title: "Milestone six: historical results and analytics",
 			summary: "Bring historical open-data archives into a separate research layer rather than the critical path."
+		}
+	]
+};
+
+const adminCorrections: AdminCorrectionRequest[] = [
+	{
+		id: "corr-001",
+		subject: "Candidate funding summary should include March amendment filing",
+		entityType: "candidate",
+		entityLabel: "Elena Torres",
+		status: "researching",
+		priority: "high",
+		submittedAt: "2026-04-10T14:30:00.000Z",
+		reportedBy: "reader@metrocounty.example",
+		summary: "Reader flagged that the current funding narrative omits an amended quarterly filing posted after the last review pass.",
+		nextStep: "Verify the amended filing, update the finance block, and log the refresh timestamp.",
+		sourceCount: 2
+	},
+	{
+		id: "corr-002",
+		subject: "Measure timeline should clarify when audit rules take effect",
+		entityType: "measure",
+		entityLabel: "Charter Amendment A",
+		status: "triaged",
+		priority: "medium",
+		submittedAt: "2026-04-09T16:05:00.000Z",
+		reportedBy: "volunteer@ballotclarity.org",
+		summary: "Internal review noted that the rollout timing could be read as immediate rather than tied to the next fiscal year.",
+		nextStep: "Check the certified text against the county explanatory statement and adjust the timeline module if needed.",
+		sourceCount: 3
+	},
+	{
+		id: "corr-003",
+		subject: "Privacy page should mention browser-stored ballot plan state more explicitly",
+		entityType: "policy",
+		entityLabel: "Privacy Policy",
+		status: "new",
+		priority: "low",
+		submittedAt: "2026-04-08T19:20:00.000Z",
+		reportedBy: "hello@ballotclarity.org",
+		summary: "A policy review note asks for clearer wording around local-only plan persistence and how to clear it.",
+		nextStep: "Decide whether to add a dedicated settings control before updating the policy copy.",
+		sourceCount: 1
+	}
+];
+
+const adminReviewItems: AdminReviewItem[] = [
+	{
+		id: "review-001",
+		title: "Metro County general-election ballot package",
+		entityType: "election",
+		status: "in-review",
+		priority: "high",
+		updatedAt: "2026-04-11T12:15:00.000Z",
+		assignedTo: "Editorial review",
+		summary: "Cross-checking contest ordering, official resources, and print layout before public demo refresh.",
+		sourceCoverage: "5 contests with official office and ballot text attached."
+	},
+	{
+		id: "review-002",
+		title: "Sandra Patel profile refresh",
+		entityType: "candidate",
+		status: "needs-sources",
+		priority: "medium",
+		updatedAt: "2026-04-10T18:40:00.000Z",
+		assignedTo: "Research queue",
+		blocker: "Waiting on a source-backed campaign-finance crosswalk note.",
+		summary: "Public statements and ballot-status fields are ready, but the funding module still needs reconciled supporting records.",
+		sourceCoverage: "3 public sources attached; 1 missing finance corroboration."
+	},
+	{
+		id: "review-003",
+		title: "Bond Question 1 plain-language review",
+		entityType: "measure",
+		status: "ready-to-publish",
+		priority: "medium",
+		updatedAt: "2026-04-11T09:05:00.000Z",
+		assignedTo: "Managing editor",
+		summary: "YES/NO consequences and fiscal summary passed internal clarity review and are queued for publication.",
+		sourceCoverage: "Certified ballot text, county fiscal note, and explanatory statement attached."
+	}
+];
+
+const adminSourceMonitor: AdminSourceMonitorItem[] = [
+	{
+		id: "source-001",
+		label: "Metro County Elections Office candidate filing list",
+		authority: "official-government",
+		health: "healthy",
+		lastCheckedAt: "2026-04-11T13:00:00.000Z",
+		nextCheckAt: "2026-04-12T13:00:00.000Z",
+		owner: "Election ops",
+		note: "No structural changes detected. Last content hash matched the April 10 snapshot."
+	},
+	{
+		id: "source-002",
+		label: "FEC OpenFEC committee summaries",
+		authority: "official-government",
+		health: "review-soon",
+		lastCheckedAt: "2026-04-11T11:15:00.000Z",
+		nextCheckAt: "2026-04-11T23:15:00.000Z",
+		owner: "Money and influence",
+		note: "API is healthy, but one demo mapping still needs manual candidate-to-committee validation."
+	},
+	{
+		id: "source-003",
+		label: "Candidate questionnaire archive",
+		authority: "nonprofit-provider",
+		health: "incident",
+		lastCheckedAt: "2026-04-11T10:20:00.000Z",
+		nextCheckAt: "2026-04-11T14:20:00.000Z",
+		owner: "Editorial systems",
+		note: "Source is reachable, but export formatting changed and requires parser review before the next import."
+	}
+];
+
+export const demoAdminCorrections: AdminCorrectionsResponse = {
+	corrections: adminCorrections
+};
+
+export const demoAdminReview: AdminReviewResponse = {
+	items: adminReviewItems
+};
+
+export const demoAdminSourceMonitor: AdminSourceMonitorResponse = {
+	sources: adminSourceMonitor
+};
+
+export const demoAdminOverview: AdminOverviewResponse = {
+	metrics: [
+		{
+			id: "open-corrections",
+			label: "Open corrections",
+			value: String(adminCorrections.filter(item => item.status !== "resolved").length),
+			helpText: "Reader reports and internal corrections not fully closed yet.",
+			tone: "attention"
+		},
+		{
+			id: "review-queue",
+			label: "Review queue",
+			value: String(adminReviewItems.filter(item => item.status !== "published").length),
+			helpText: "Profiles, measures, or ballot packages waiting on editorial review.",
+			tone: "review"
+		},
+		{
+			id: "healthy-sources",
+			label: "Healthy sources",
+			value: `${adminSourceMonitor.filter(item => item.health === "healthy").length}/${adminSourceMonitor.length}`,
+			helpText: "Tracked upstream sources currently passing routine checks.",
+			tone: "healthy"
+		},
+		{
+			id: "next-publish",
+			label: "Next publish window",
+			value: "Today, 4:00 PM",
+			helpText: "Target window for the next editorially reviewed demo refresh.",
+			tone: "review"
+		}
+	],
+	needsAttention: [
+		"Questionnaire import formatting changed and the parser needs review before the next sync.",
+		"One candidate finance module is blocked on a crosswalk note between ballot name and committee records.",
+		"Reader-reported funding correction for Elena Torres should be resolved before the next publish window."
+	],
+	recentActivity: [
+		{
+			id: "activity-001",
+			label: "Published measure clarity update",
+			type: "publish",
+			timestamp: "2026-04-11T09:30:00.000Z",
+			summary: "Updated Charter Amendment A with the revised current-law explainer and rollout timeline note."
+		},
+		{
+			id: "activity-002",
+			label: "Triaged new correction request",
+			type: "correction",
+			timestamp: "2026-04-10T16:15:00.000Z",
+			summary: "Marked the charter-timeline ambiguity report as triaged and assigned it to measure review."
+		},
+		{
+			id: "activity-003",
+			label: "Ran source health check",
+			type: "source-check",
+			timestamp: "2026-04-10T13:05:00.000Z",
+			summary: "Confirmed the Metro County filing list was unchanged and flagged the questionnaire export for parser review."
+		},
+		{
+			id: "activity-004",
+			label: "Moved ballot package into review",
+			type: "review",
+			timestamp: "2026-04-09T18:45:00.000Z",
+			summary: "Queued the Metro County general-election ballot package for editorial verification and print QA."
 		}
 	]
 };

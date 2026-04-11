@@ -429,3 +429,100 @@ export interface CompareResponse {
 	candidates: Candidate[];
 	note: string;
 }
+
+export type AdminPriority = "high" | "medium" | "low";
+
+export type AdminSignalTone = "attention" | "healthy" | "review";
+
+export type AdminReviewStatus
+	= | "draft"
+		| "in-review"
+		| "needs-sources"
+		| "ready-to-publish"
+		| "published";
+
+export type AdminCorrectionStatus = "new" | "researching" | "resolved" | "triaged";
+
+export type AdminSourceHealth = "healthy" | "incident" | "review-soon" | "stale";
+
+export type AdminEntityType = "candidate" | "election" | "measure" | "policy";
+
+export type AdminActivityType = "correction" | "publish" | "review" | "source-check";
+
+export interface AdminDashboardMetric {
+	id: string;
+	label: string;
+	value: string;
+	helpText: string;
+	tone: AdminSignalTone;
+}
+
+export interface AdminCorrectionRequest {
+	id: string;
+	subject: string;
+	entityType: AdminEntityType;
+	entityLabel: string;
+	status: AdminCorrectionStatus;
+	priority: AdminPriority;
+	submittedAt: string;
+	reportedBy: string;
+	summary: string;
+	nextStep: string;
+	sourceCount: number;
+}
+
+export interface AdminReviewItem {
+	id: string;
+	title: string;
+	entityType: AdminEntityType;
+	status: AdminReviewStatus;
+	priority: AdminPriority;
+	updatedAt: string;
+	assignedTo: string;
+	blocker?: string;
+	summary: string;
+	sourceCoverage: string;
+}
+
+export interface AdminSourceMonitorItem {
+	id: string;
+	label: string;
+	authority: SourceAuthority;
+	health: AdminSourceHealth;
+	lastCheckedAt: string;
+	nextCheckAt: string;
+	owner: string;
+	note: string;
+}
+
+export interface AdminActivityItem {
+	id: string;
+	label: string;
+	type: AdminActivityType;
+	timestamp: string;
+	summary: string;
+}
+
+export interface AdminOverviewResponse {
+	metrics: AdminDashboardMetric[];
+	needsAttention: string[];
+	recentActivity: AdminActivityItem[];
+}
+
+export interface AdminCorrectionsResponse {
+	corrections: AdminCorrectionRequest[];
+}
+
+export interface AdminReviewResponse {
+	items: AdminReviewItem[];
+}
+
+export interface AdminSourceMonitorResponse {
+	sources: AdminSourceMonitorItem[];
+}
+
+export interface AdminSessionResponse {
+	authenticated: boolean;
+	configured: boolean;
+	username: string | null;
+}

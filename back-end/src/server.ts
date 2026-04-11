@@ -1,9 +1,15 @@
+import { Buffer } from "node:buffer";
+import { timingSafeEqual } from "node:crypto";
 import process from "node:process";
 import { pathToFileURL } from "node:url";
 import cors from "cors";
 import dotenv from "dotenv";
 import express from "express";
 import {
+	demoAdminCorrections,
+	demoAdminOverview,
+	demoAdminReview,
+	demoAdminSourceMonitor,
 	demoDataSources,
 	demoElection,
 	demoElectionSummaries,
@@ -18,8 +24,26 @@ import {
 
 dotenv.config();
 
-export function createApp() {
+interface CreateAppOptions {
+	adminApiKey?: string | null;
+}
+
+function isAuthorizedAdminRequest(requestKey: string | undefined, configuredKey: string | null) {
+	if (!requestKey || !configuredKey)
+		return false;
+
+	const left = Buffer.from(requestKey);
+	const right = Buffer.from(configuredKey);
+
+	if (left.length !== right.length)
+		return false;
+
+	return timingSafeEqual(left, right);
+}
+
+export function createApp(options: CreateAppOptions = {}) {
 	const app = express();
+	const adminApiKey = options.adminApiKey ?? process.env.ADMIN_API_KEY ?? null;
 
 	app.use(cors({
 		origin: true
@@ -29,6 +53,26 @@ export function createApp() {
 
 	app.get("/health", (_request, response) => {
 		response.json({ ok: true });
+	});
+
+	app.use("/api/admin", (request, response, next) => {
+		if (!adminApiKey) {
+			response.status(503).json({
+				message: "Admin API is not configured on this server."
+			});
+			return;
+		}
+
+		const requestKey = request.header("x-admin-api-key");
+
+		if (!isAuthorizedAdminRequest(requestKey, adminApiKey)) {
+			response.status(401).json({
+				message: "Unauthorized admin request."
+			});
+			return;
+		}
+
+		next();
 	});
 
 	app.post("/api/location", (request, response) => {
@@ -153,6 +197,22 @@ export function createApp() {
 			sameContest,
 			requestedSlugs
 		});
+	});
+
+	app.get("/api/admin/overview", (_request, response) => {
+		response.json(demoAdminOverview);
+	});
+
+	app.get("/api/admin/corrections", (_request, response) => {
+		response.json(demoAdminCorrections);
+	});
+
+	app.get("/api/admin/review", (_request, response) => {
+		response.json(demoAdminReview);
+	});
+
+	app.get("/api/admin/sources", (_request, response) => {
+		response.json(demoAdminSourceMonitor);
 	});
 
 	return app;

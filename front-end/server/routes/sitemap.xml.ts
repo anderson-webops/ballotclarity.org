@@ -34,12 +34,12 @@ export default defineEventHandler((event) => {
 	const ballotRoutes = [`/ballot/${demoElection.slug}`];
 	const jurisdictionRoutes = demoJurisdictionSummaries.map(({ slug }) => `/locations/${slug}`);
 	const candidateRoutes = unique(
-		demoElection.contests.flatMap((contest) =>
+		demoElection.contests.flatMap(contest =>
 			contest.type === "candidate" ? (contest.candidates ?? []).map(candidate => `/candidate/${candidate.slug}`) : []
 		)
 	);
 	const measureRoutes = unique(
-		demoElection.contests.flatMap((contest) =>
+		demoElection.contests.flatMap(contest =>
 			contest.type === "measure" ? (contest.measures ?? []).map(measure => `/measure/${measure.slug}`) : []
 		)
 	);

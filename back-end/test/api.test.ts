@@ -7,9 +7,12 @@ import { createApp } from "../src/server.js";
 
 let server: Server;
 let baseUrl = "";
+const adminApiKey = "test-admin-key";
 
 before(async () => {
-	server = createApp().listen(0, "127.0.0.1");
+	server = createApp({
+		adminApiKey
+	}).listen(0, "127.0.0.1");
 	await once(server, "listening");
 	const address = server.address() as AddressInfo;
 	baseUrl = `http://127.0.0.1:${address.port}`;
@@ -182,4 +185,51 @@ test("GET /api/compare returns a same-contest questionnaire-first comparison pay
 	assert.equal(body.candidates[0].comparison.questionnaireResponses.length, 3);
 	assert.equal(body.candidates[1].comparison.questionnaireResponses[2].responseStatus, "no-response");
 	assert.match(body.note, /do not rank candidates/i);
+});
+
+test("GET /api/admin/overview rejects unauthenticated access", async () => {
+	const response = await fetch(`${baseUrl}/api/admin/overview`);
+	const body = await response.json();
+
+	assert.equal(response.status, 401);
+	assert.match(body.message, /Unauthorized admin request/i);
+});
+
+test("GET /api/admin/overview returns operational metrics for authorized requests", async () => {
+	const response = await fetch(`${baseUrl}/api/admin/overview`, {
+		headers: {
+			"x-admin-api-key": adminApiKey
+		}
+	});
+	const body = await response.json();
+
+	assert.equal(response.status, 200);
+	assert.equal(body.metrics.length, 4);
+	assert.equal(body.metrics[0].label, "Open corrections");
+	assert.ok(body.needsAttention.length >= 2);
+	assert.equal(body.recentActivity[0].type, "publish");
+});
+
+test("GET /api/admin/review and /api/admin/sources return protected operational queues", async () => {
+	const [reviewResponse, sourcesResponse] = await Promise.all([
+		fetch(`${baseUrl}/api/admin/review`, {
+			headers: {
+				"x-admin-api-key": adminApiKey
+			}
+		}),
+		fetch(`${baseUrl}/api/admin/sources`, {
+			headers: {
+				"x-admin-api-key": adminApiKey
+			}
+		})
+	]);
+	const reviewBody = await reviewResponse.json();
+	const sourcesBody = await sourcesResponse.json();
+
+	assert.equal(reviewResponse.status, 200);
+	assert.equal(sourcesResponse.status, 200);
+	assert.equal(reviewBody.items[0].entityType, "election");
+	assert.match(reviewBody.items[1].blocker, /finance/i);
+	assert.equal(sourcesBody.sources[0].authority, "official-government");
+	assert.equal(sourcesBody.sources[2].health, "incident");
 });

@@ -32,6 +32,26 @@ npm run dev
 
 The front-end runs at `http://127.0.0.1:3333` and expects the API at `http://127.0.0.1:3001/api` by default.
 
+## Environment configuration
+
+Copy the root example file and set real credentials before using the internal admin portal:
+
+```bash
+cp .env.example .env
+```
+
+Important variables:
+
+- `NUXT_PUBLIC_API_BASE`: public front-end API base for ballot and content reads
+- `ADMIN_API_BASE`: server-side Nuxt proxy target for admin-only API requests
+- `ADMIN_API_KEY`: shared internal secret between the Nuxt admin proxy and the Express admin endpoints
+- `ADMIN_USERNAME`: username for the admin login
+- `ADMIN_PASSWORD`: password for the admin login
+- `ADMIN_SESSION_SECRET`: cookie-signing secret for Nuxt admin sessions
+- `PORT`: Express API port
+
+For production, use unique random values for `ADMIN_API_KEY`, `ADMIN_PASSWORD`, and `ADMIN_SESSION_SECRET`. The front-end and back-end must share the same `ADMIN_API_KEY`.
+
 ## Useful npm commands
 
 ```bash
@@ -56,6 +76,7 @@ npm run server:once
 - Demo data: realistic but clearly labeled mock records live in `back-end/src/demo-data.ts`
 - Search/trust layer: major pages now use canonical tags and JSON-LD, while the printable ballot guide is treated as a follow-on reading surface rather than the primary indexable election landing page
 - Automated verification: unit tests cover frontend config and backend API behavior, and an end-to-end smoke test validates the built front-end against the built API
+- Admin operations: Nuxt server routes provide cookie-based admin auth and proxy protected review, correction, and source-health data from the backend without exposing the backend admin key to the browser
 
 ## Mock API endpoints
 
@@ -67,6 +88,22 @@ npm run server:once
 - `GET /api/candidates/:slug`
 - `GET /api/measures/:slug`
 - `GET /api/compare`
+- `GET /api/admin/overview` (protected by `x-admin-api-key`)
+- `GET /api/admin/corrections` (protected by `x-admin-api-key`)
+- `GET /api/admin/review` (protected by `x-admin-api-key`)
+- `GET /api/admin/sources` (protected by `x-admin-api-key`)
+
+## Admin portal
+
+Internal operations routes are available when the admin environment variables are configured:
+
+- `/admin/login`
+- `/admin`
+- `/admin/review`
+- `/admin/corrections`
+- `/admin/sources`
+
+The admin UI is intentionally not linked from the public navigation. It is protected by a same-origin session cookie at the Nuxt layer, while the Nuxt server proxies admin data to the backend using the private `ADMIN_API_KEY`.
 
 ## Swapping mock data for real civic APIs later
 

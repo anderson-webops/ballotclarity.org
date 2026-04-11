@@ -1,0 +1,8 @@
+School Board Candidate Questionnaire Responses
+
+Used by the MVP for:
+- candidate biographies
+- public statements on literacy, tutoring, and budgeting
+- small-donor campaign context in the local race
+
+This file is a demo substitute for a civic questionnaire archive.

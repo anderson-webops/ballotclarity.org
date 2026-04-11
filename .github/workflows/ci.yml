@@ -1,0 +1,116 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+          cache: npm
+
+      - name: Pin npm version
+        run: |
+          npm -v
+          npm i -g npm@11.12.0
+          npm -v
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+  typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+          cache: npm
+
+      - name: Pin npm version
+        run: |
+          npm i -g npm@11.12.0
+          npm -v
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+          cache: npm
+          registry-url: https://registry.npmjs.org/
+
+      - name: Pin npm version
+        run: |
+          npm i -g npm@11.12.0
+          npm -v
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Unit tests
+        run: npm run test
+
+  test-e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+          cache: npm
+          registry-url: https://registry.npmjs.org/
+
+      - name: Pin npm version
+        run: |
+          npm i -g npm@11.12.0
+          npm -v
+
+      - name: Install deps
+        run: npm ci
+
+      - name: End-to-end smoke test
+        run: npm run test:e2e
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+          cache: npm
+
+      - name: Pin npm version
+        run: |
+          npm i -g npm@11.12.0
+          npm -v
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Build
+        run: npm run build

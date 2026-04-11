@@ -1,0 +1,150 @@
+:root {
+  --app-bg: #f7f4ee;
+  --app-bg-dark: #09131f;
+  --app-ink: #10253e;
+  --app-text-dark: #e6edf4;
+  --app-muted: #667787;
+  --app-muted-dark: #91a0b4;
+  --app-line: #d2d7dd;
+  --app-line-dark: #334458;
+  --app-accent: #2b6678;
+  --app-accent-strong: #1e4d5c;
+  --app-paper: #fffdfc;
+  --app-paper-dark: #112032;
+  --app-warm: #e8d8b5;
+}
+
+html {
+  background: var(--app-bg);
+  color: var(--app-ink);
+  scroll-behavior: smooth;
+}
+
+body {
+  min-height: 100vh;
+  margin: 0;
+  background:
+    radial-gradient(circle at top left, rgba(232, 216, 181, 0.25), transparent 28rem),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(247, 244, 238, 1));
+  color: var(--app-ink);
+  font-family: 'Public Sans', sans-serif;
+  line-height: 1.5;
+  text-rendering: optimizeLegibility;
+}
+
+#__nuxt {
+  min-height: 100vh;
+}
+
+html.dark {
+  color-scheme: dark;
+  background: var(--app-bg-dark);
+}
+
+html.dark body {
+  background:
+    radial-gradient(circle at top left, rgba(43, 102, 120, 0.16), transparent 24rem),
+    linear-gradient(180deg, rgba(9, 19, 31, 0.98), rgba(9, 19, 31, 1));
+  color: var(--app-text-dark);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+::selection {
+  background: rgba(43, 102, 120, 0.22);
+}
+
+.skip-link {
+  position: absolute;
+  left: 1rem;
+  top: -3rem;
+  z-index: 100;
+  padding: 0.75rem 1rem;
+  border-radius: 9999px;
+  background: var(--app-ink);
+  color: white;
+  transition: top 0.2s ease;
+}
+
+.skip-link:focus {
+  top: 1rem;
+}
+
+.pamphlet-surface {
+  position: relative;
+  overflow: hidden;
+}
+
+.pamphlet-surface::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(
+    to bottom,
+    rgba(16, 37, 62, 0.04) 0,
+    rgba(16, 37, 62, 0.04) 1px,
+    transparent 1px,
+    transparent 4rem
+  );
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.print-only {
+  display: none !important;
+}
+
+@media (max-width: 640px) {
+  body {
+    background:
+      radial-gradient(circle at top left, rgba(232, 216, 181, 0.22), transparent 18rem),
+      linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(247, 244, 238, 1));
+  }
+}
+
+@media print {
+  html,
+  body {
+    background: white !important;
+    color: black !important;
+  }
+
+  .print-hidden {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+
+  .surface-panel,
+  .pamphlet-surface {
+    box-shadow: none !important;
+    border-color: #cbd5df !important;
+    background: white !important;
+  }
+
+  a {
+    text-decoration: none !important;
+  }
+
+  main {
+    padding: 0 !important;
+  }
+}

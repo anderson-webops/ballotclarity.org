@@ -1,0 +1,8 @@
+Measure 4 Fiscal Note and Debt Service Estimate
+
+Key points in this demo file:
+- projected annual debt service range: $12M to $15M
+- phased bond issuance over multiple years
+- note that future boards would still control project sequencing
+
+This is a locally hosted demo fiscal note.

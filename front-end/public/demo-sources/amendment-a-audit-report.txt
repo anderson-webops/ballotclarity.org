@@ -1,0 +1,8 @@
+Public Records Response Time Audit
+
+Sample findings used in the MVP:
+- agencies often acknowledged requests inconsistently
+- written delay explanations were uneven across departments
+- shared tracking software could reduce administrative confusion
+
+This document is a demo audit report.

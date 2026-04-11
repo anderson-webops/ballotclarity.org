@@ -1,0 +1,8 @@
+Naomi Park Rental Stability Hearing Notes
+
+Document contents:
+- rent-increase notice discussion
+- landlord repair-compliance dashboard concept
+- groundwater reporting proposal released during the campaign
+
+This is a demo hearing-note file for the MVP.

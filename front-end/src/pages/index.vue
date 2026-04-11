@@ -75,7 +75,7 @@ usePageSeo({
 		{
 			"@context": "https://schema.org",
 			"@type": "FAQPage",
-			"mainEntity": faqEntries.map((entry) => ({
+			"mainEntity": faqEntries.map(entry => ({
 				"@type": "Question",
 				"acceptedAnswer": {
 					"@type": "Answer",

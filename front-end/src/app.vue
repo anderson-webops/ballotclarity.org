@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { appDescription, appName, appUrl } from "~/constants";
 
+const planPathPattern = /^\/plan(?:\/|$)/;
+
 const route = useRoute();
-const shouldNoindex = computed(() => /^\/plan(?:\/|$)/.test(route.path));
+const shouldNoindex = computed(() => planPathPattern.test(route.path));
 const siteSchema = {
 	"@context": "https://schema.org",
 	"@type": "WebSite",
-		"description": appDescription,
+	"description": appDescription,
 	"name": appName,
 	"url": appUrl
 };

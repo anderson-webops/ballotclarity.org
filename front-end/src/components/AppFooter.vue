@@ -7,6 +7,8 @@ const exploreLinks = [
 	{ label: "About", to: "/about" },
 	{ label: "My ballot plan", to: "/plan" },
 	{ label: "Metro County hub", to: "/locations/metro-county-franklin" },
+	{ label: "Search", to: "/search" },
+	{ label: "Source directory", to: "/sources" },
 	{ label: "Voting FAQ", to: "/help" },
 	{ label: "Compare candidates", to: "/compare" },
 ];
@@ -29,13 +31,13 @@ const policyLinks = [
 					<div class="flex flex-wrap gap-2">
 						<TrustBadge label="Nonpartisan" tone="accent" />
 						<TrustBadge label="Source-first" />
-						<TrustBadge label="Demo data" tone="warning" />
+						<TrustBadge label="Current coverage" tone="warning" />
 					</div>
 					<p class="text-2xl text-app-ink font-serif mt-4 dark:text-app-text-dark">
 						Ballot Clarity
 					</p>
 					<p class="bc-measure text-base text-app-muted mt-4 dark:text-app-muted-dark">
-						Ballot Clarity is a nonprofit civic-information concept focused on source-first ballot summaries, transparent methodology, and readable public-interest data.
+						Ballot Clarity is a nonprofit civic-information platform focused on source-first ballot summaries, transparent methodology, and readable public-interest data.
 					</p>
 					<div class="mt-6 gap-4 grid sm:grid-cols-2">
 						<div class="p-5 rounded-[1.5rem] bg-app-bg/70 dark:bg-app-bg-dark/70">
@@ -112,7 +114,7 @@ const policyLinks = [
 					Not an official election website. Ballot Clarity aims to provide nonpartisan civic information and cite sources where possible. Content can change, so verify critical election details with the official authorities linked throughout the site.
 				</p>
 				<p class="text-sm text-app-muted whitespace-nowrap dark:text-app-muted-dark">
-					© {{ year }} Ballot Clarity Demo
+					© {{ year }} Ballot Clarity
 				</p>
 			</div>
 		</div>

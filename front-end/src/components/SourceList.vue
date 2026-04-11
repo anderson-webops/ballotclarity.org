@@ -38,10 +38,10 @@ const { formatDate } = useFormatters();
 					</span>
 					<span class="text-xs text-app-muted dark:text-app-muted-dark">{{ formatDate(source.date) }}</span>
 				</div>
-				<a :href="source.url" target="_blank" rel="noreferrer" class="text-sm text-app-ink font-semibold mt-3 rounded-lg inline-flex gap-2 transition items-start dark:text-app-text-dark hover:text-app-accent focus-ring dark:hover:text-white">
-					<span class="i-carbon-launch text-base mt-0.5" />
+				<NuxtLink :to="`/sources/${source.id}`" class="text-sm text-app-ink font-semibold mt-3 rounded-lg inline-flex gap-2 transition items-start dark:text-app-text-dark hover:text-app-accent focus-ring dark:hover:text-white">
+					<span class="i-carbon-document text-base mt-0.5" />
 					<span>{{ source.title }}</span>
-				</a>
+				</NuxtLink>
 				<p class="text-xs text-app-muted mt-2 dark:text-app-muted-dark">
 					{{ source.publisher }}
 				</p>
@@ -51,6 +51,10 @@ const { formatDate } = useFormatters();
 				<p v-if="source.note" class="text-xs text-app-muted mt-2 dark:text-app-muted-dark">
 					{{ source.note }}
 				</p>
+				<a :href="source.url" target="_blank" rel="noreferrer" class="text-xs text-app-accent font-semibold mt-3 rounded-lg inline-flex gap-2 items-center focus-ring">
+					<span class="i-carbon-launch" />
+					Open source file
+				</a>
 			</li>
 		</ul>
 	</div>

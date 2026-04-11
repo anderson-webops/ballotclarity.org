@@ -52,7 +52,7 @@ usePageSeo({
 
 		<div v-else-if="error || !data" class="max-w-3xl">
 			<InfoCallout title="Election overview not available" tone="warning">
-				This demo election page could not be loaded. Return to the location hub or the home page and try again.
+				This election overview could not be loaded. Return to the location hub or the home page and try again.
 			</InfoCallout>
 		</div>
 
@@ -62,7 +62,7 @@ usePageSeo({
 					<div class="flex flex-wrap gap-2">
 						<TrustBadge label="Election overview" tone="accent" />
 						<TrustBadge label="Source-first" />
-						<TrustBadge label="Demo data" tone="warning" />
+						<TrustBadge label="Current coverage" tone="warning" />
 					</div>
 					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold mt-6 uppercase dark:text-app-muted-dark">
 						{{ data.location.displayName }}

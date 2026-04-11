@@ -1,8 +1,0 @@
-Measure 4 Capital Improvement Plan Summary
-
-Project categories:
-- bus-stop shelters
-- sidewalk upgrades near schools and clinics
-- drainage and storm-safety improvements for transit stops
-
-This file is a demo capital plan summary for the measure detail page.

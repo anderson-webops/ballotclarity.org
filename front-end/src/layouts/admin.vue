@@ -2,12 +2,20 @@
 const route = useRoute();
 const { data: session } = await useAdminSession(`admin-layout-session-${route.fullPath}`);
 
-const navLinks = [
+const baseLinks = [
 	{ label: "Dashboard", to: "/admin" },
+	{ label: "Content", to: "/admin/content" },
 	{ label: "Review queue", to: "/admin/review" },
 	{ label: "Corrections", to: "/admin/corrections" },
 	{ label: "Source health", to: "/admin/sources" }
 ];
+
+const navLinks = computed(() => {
+	if (session.value?.role === "admin")
+		return [...baseLinks, { label: "Users", to: "/admin/users" }];
+
+	return baseLinks;
+});
 
 function isActive(path: string) {
 	return path === "/admin"
@@ -58,7 +66,7 @@ async function signOut() {
 
 				<div class="flex flex-wrap gap-3 items-center">
 					<div class="text-xs text-app-muted px-3 py-2 border border-app-line rounded-full bg-white dark:text-app-muted-dark dark:border-app-line-dark dark:bg-app-panel-dark">
-						Signed in as {{ session?.username || "admin" }}
+						{{ session?.displayName || session?.username || "Admin" }} · {{ session?.role || "admin" }}
 					</div>
 					<NuxtLink to="/" class="btn-secondary">
 						View public site

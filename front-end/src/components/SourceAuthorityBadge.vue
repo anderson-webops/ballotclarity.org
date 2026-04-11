@@ -19,7 +19,7 @@ const config = computed(() => {
 			};
 		case "ballot-clarity-demo":
 			return {
-				label: "Demo archive",
+				label: "Project archive",
 				tone: "warning" as const
 			};
 		case "commercial-provider":

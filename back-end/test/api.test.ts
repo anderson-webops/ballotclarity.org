@@ -63,18 +63,18 @@ test("POST /api/location returns the demo Metro County location for valid lookup
 	assert.equal(body.location.lookupInput, undefined);
 });
 
-test("GET /api/ballot returns the demo election and contests", async () => {
+test("GET /api/ballot returns the election guide and contests", async () => {
 	const response = await fetch(`${baseUrl}/api/ballot?election=2026-metro-county-general`);
 	const body = await response.json();
 
 	assert.equal(response.status, 200);
-	assert.equal(body.demo, true);
 	assert.equal(body.election.slug, "2026-metro-county-general");
 	assert.equal(body.election.jurisdictionSlug, "metro-county-franklin");
 	assert.equal(body.election.contests.length, 5);
 	assert.equal(body.election.contests[0].title, "Federal Race");
 	assert.equal(body.election.contests[0].roleGuide.decisionAreas.length, 3);
 	assert.match(body.election.contests[0].roleGuide.summary, /federal law/i);
+	assert.match(body.note, /staged records/i);
 });
 
 test("GET /api/jurisdictions returns the demo jurisdiction summary", async () => {
@@ -225,11 +225,15 @@ test("GET /api/admin/review and /api/admin/sources return protected operational 
 	]);
 	const reviewBody = await reviewResponse.json();
 	const sourcesBody = await sourcesResponse.json();
+	const electionItem = reviewBody.items.find((item: { entityType: string; title: string }) => item.entityType === "election");
+	const blockedCandidate = reviewBody.items.find((item: { blocker?: string; entityType: string }) => item.entityType === "candidate" && item.blocker);
+	const officialSource = sourcesBody.sources.find((item: { authority: string; label: string }) => item.authority === "official-government");
+	const incidentSource = sourcesBody.sources.find((item: { health: string }) => item.health === "incident");
 
 	assert.equal(reviewResponse.status, 200);
 	assert.equal(sourcesResponse.status, 200);
-	assert.equal(reviewBody.items[0].entityType, "election");
-	assert.match(reviewBody.items[1].blocker, /finance/i);
-	assert.equal(sourcesBody.sources[0].authority, "official-government");
-	assert.equal(sourcesBody.sources[2].health, "incident");
+	assert.equal(electionItem?.title, "Metro County, Franklin ballot package");
+	assert.match(blockedCandidate?.blocker || "", /finance/i);
+	assert.equal(officialSource?.label, "FEC OpenFEC committee summaries");
+	assert.equal(incidentSource?.health, "incident");
 });

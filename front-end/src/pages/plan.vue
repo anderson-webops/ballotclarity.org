@@ -116,7 +116,7 @@ function printPlan() {
 			<div class="flex flex-wrap gap-2">
 				<TrustBadge label="Booth-ready workflow" tone="accent" />
 				<TrustBadge label="Print-friendly" />
-				<TrustBadge label="Demo ballot plan" tone="warning" />
+				<TrustBadge label="Current ballot plan" tone="warning" />
 			</div>
 			<p class="text-xs text-app-muted tracking-[0.24em] font-semibold mt-5 uppercase dark:text-app-muted-dark">
 				My ballot plan
@@ -154,7 +154,7 @@ function printPlan() {
 
 		<div v-else-if="error || !data" class="max-w-3xl">
 			<InfoCallout title="Ballot plan unavailable" tone="warning">
-				The plan page needs a ballot context. Start from the ballot guide first so Ballot Clarity can load the demo election and location.
+				The plan page needs a ballot context. Start from the ballot guide first so Ballot Clarity can load the current election and location.
 			</InfoCallout>
 		</div>
 
@@ -225,7 +225,7 @@ function printPlan() {
 
 			<section class="print-only surface-panel">
 				<p class="text-xs tracking-[0.24em] font-semibold uppercase">
-					Ballot Clarity demo printout
+					Ballot Clarity printout
 				</p>
 				<h2 class="text-3xl font-serif mt-3">
 					{{ data.election.name }}

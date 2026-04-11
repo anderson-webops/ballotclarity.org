@@ -23,7 +23,7 @@ const coverageNote = computed(() => {
 		return "Some direct candidate responses are missing in the current archive. This card falls back to verified ballot status, public records, and published campaign materials.";
 
 	return props.candidate.whatWeDoNotKnow[0]?.text
-		?? "This card is based on the current demo archive and may not capture late campaign developments.";
+		?? "This card is based on the current project archive and may not capture late campaign developments.";
 });
 const isQuickView = computed(() => (props.viewMode ?? "quick") === "quick");
 

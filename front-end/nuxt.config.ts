@@ -48,9 +48,7 @@ export default defineNuxtConfig({
 	runtimeConfig: {
 		adminApiBase: process.env.ADMIN_API_BASE || process.env.NUXT_PUBLIC_API_BASE || "http://127.0.0.1:3001/api",
 		adminApiKey: process.env.ADMIN_API_KEY || "",
-		adminPassword: process.env.ADMIN_PASSWORD || "",
 		adminSessionSecret: process.env.ADMIN_SESSION_SECRET || "",
-		adminUsername: process.env.ADMIN_USERNAME || "",
 		public: {
 			apiBase: process.env.NUXT_PUBLIC_API_BASE || "http://127.0.0.1:3001/api"
 		}

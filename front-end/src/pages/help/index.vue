@@ -30,17 +30,17 @@ const faqItems = [
 	},
 	{
 		answer: [
-			"The lookup is sent to the Ballot Clarity demo API only to match a sample ballot. The current MVP does not create user accounts or advertising profiles from that lookup.",
+			"The lookup is sent only to match ballot coverage. The current public build does not create user accounts or advertising profiles from that lookup.",
 			"The app does save your selected location label, compare list, and ballot-plan choices in your browser so the guide stays usable across refreshes. The privacy page explains that boundary in more detail."
 		],
 		question: "What happens to the address or ZIP code I enter?"
 	},
 	{
 		answer: [
-			"Because this MVP uses realistic demo data to model the product before real civic-data integrations are connected.",
-			"Demo labels are visible so users can understand the current limits of the product and avoid mistaking the prototype for a live election-service tool."
+			"Because the current public build uses staged public-record examples while live civic-data integrations are being connected.",
+			"Coverage notes remain visible so users can understand the current limits of the product and avoid mistaking staged records for live election-service data."
 		],
-		question: "Why are some pages labeled as demo data?"
+		question: "Why are some pages labeled as current coverage?"
 	},
 	{
 		answer: [

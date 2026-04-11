@@ -5,7 +5,7 @@ const effectiveAt = "2026-04-11T09:00:00-04:00";
 
 const summaryCards = [
 	{
-		body: "Ballot lookup input is used only to match a sample ballot and jurisdiction in the current MVP.",
+		body: "Ballot lookup input is used only to match ballot coverage and jurisdiction in the current public build.",
 		title: "Lookup use is narrow"
 	},
 	{
@@ -21,15 +21,15 @@ const summaryCards = [
 const collectionSections = [
 	{
 		body: [
-			"When you use the ballot lookup, the address or ZIP code is sent to the Ballot Clarity demo API with a POST request so the service can determine a sample location and ballot.",
-			"The application is designed not to publish the raw lookup text in the demo dataset and not to persist it in browser storage used for saved ballot preferences."
+			"When you use the ballot lookup, the address or ZIP code is sent with a POST request so the service can determine a location and ballot guide.",
+			"The application is designed not to publish the raw lookup text in the public archive and not to persist it in browser storage used for saved ballot preferences."
 		],
 		title: "Address or ZIP lookup input"
 	},
 	{
 		body: [
 			"The app stores selected location labels, compare selections, saved ballot-plan choices, issue filters, and reading mode in local browser storage so the guide remains usable across refreshes.",
-			"This local storage is tied to the browser on your device. Ballot Clarity does not maintain a server-side user account for that state in the current MVP."
+			"This local storage is tied to the browser on your device. Ballot Clarity does not maintain a server-side user account for that state in the current public build."
 		],
 		title: "Information stored on your device"
 	},
@@ -50,7 +50,7 @@ const collectionSections = [
 ];
 
 const useSections = [
-	"Provide location-based sample ballot guides and related civic-information pages.",
+	"Provide location-based ballot guides and related civic-information pages.",
 	"Preserve local usability features such as saved ballot-plan choices, compare state, and reading preferences.",
 	"Operate, secure, debug, and improve the website and its reliability.",
 	"Review and respond to correction requests, privacy questions, and public-interest inquiries."
@@ -58,7 +58,7 @@ const useSections = [
 
 const sharingSections = [
 	"Ballot Clarity may rely on hosting, content-delivery, security, logging, and similar service providers needed to operate the site.",
-	"The current MVP does not disclose address lookup input to advertising networks and is not designed to sell or share personal data for cross-context behavioral advertising.",
+	"The current public build does not disclose address lookup input to advertising networks and is not designed to sell or share personal data for cross-context behavioral advertising.",
 	"When you follow external source links, official agencies, filing systems, campaigns, or other third-party sites operate under their own privacy practices.",
 	"If future live civic-data APIs require transmitting lookup data or derived district information to third parties, this policy should be updated before that architecture ships."
 ];
@@ -67,7 +67,7 @@ const retentionRows = [
 	{
 		access: "Runtime handling only during the request.",
 		category: "Raw ballot lookup input",
-		deletion: "The current app flow is designed to avoid adding the raw lookup string to published demo records or saved browser state.",
+		deletion: "The current app flow is designed to avoid adding the raw lookup string to published source records or saved browser state.",
 		retention: "Request-time processing only.",
 		scope: "Street address or ZIP entered into the lookup."
 	},
@@ -97,30 +97,30 @@ const retentionRows = [
 const rightsNotes = [
 	"You can browse much of the site without using the ballot lookup.",
 	"You can clear browser storage on your device to remove saved ballot-plan state and selected location labels kept locally by the app.",
-	"Because the current MVP does not create accounts and is designed to keep some data ephemeral, Ballot Clarity may have limited ability to associate a privacy request with operational logs or transient lookup activity.",
+	"Because the current public build does not create public user accounts and is designed to keep some data ephemeral, Ballot Clarity may have limited ability to associate a privacy request with operational logs or transient lookup activity.",
 	"If applicable law gives you rights to request access, deletion, correction, or appeal, contact the project and describe the data or interaction as specifically as possible."
 ];
 
 const cookieNotes = [
-	"The current MVP does not use an advertising-cookie stack and is not designed for targeted advertising or sale/sharing of personal data.",
+	"The current public build does not use an advertising-cookie stack and is not designed for targeted advertising or sale/sharing of personal data.",
 	"The site may still use browser storage for user-facing preferences and may rely on infrastructure-level cookies or similar technical mechanisms that support delivery, security, or basic functionality.",
 	"If Ballot Clarity later adds analytics, experiments, donations, newsletters, or embedded third-party tools, the cookie and tracking section should be updated before those features go live."
 ];
 
 const childrenNotes = [
 	"Ballot Clarity is a general-audience civic-information site and is not designed for children under 13.",
-	"The current MVP does not offer child-directed accounts, community posting, or other features intended to collect personal information from children.",
+	"The current public build does not offer child-directed accounts, community posting, or other features intended to collect personal information from children.",
 	"If you believe a child has sent personal information to the project through email or another channel, contact the project so the issue can be reviewed."
 ];
 
 const securityNotes = [
-	"Ballot Clarity aims to use reasonable administrative, technical, and organizational safeguards appropriate to the current MVP.",
+	"Ballot Clarity aims to use reasonable administrative, technical, and organizational safeguards appropriate to the current public build.",
 	"Those safeguards are intended to reduce unnecessary data collection, limit retention, and protect the integrity of the service and its operational systems.",
 	"No internet service can guarantee absolute security. If the project's data practices or incident posture changes materially, this policy should change as well."
 ];
 
 usePageSeo({
-	description: "Privacy Policy for Ballot Clarity, covering address lookup handling, browser storage, operational metadata, third-party disclosures, retention, user choices, and current MVP limits.",
+	description: "Privacy Policy for Ballot Clarity, covering address lookup handling, browser storage, operational metadata, third-party disclosures, retention, user choices, and current public-build limits.",
 	path: "/privacy",
 	title: "Privacy Policy"
 });
@@ -130,7 +130,7 @@ usePageSeo({
 	<section class="app-shell section-gap space-y-8">
 		<header class="max-w-4xl">
 			<div class="flex flex-wrap gap-2">
-				<TrustBadge label="Current MVP policy" tone="accent" />
+				<TrustBadge label="Current policy" tone="accent" />
 				<TrustBadge label="Lookup handling disclosed" />
 				<TrustBadge label="No targeted advertising" tone="warning" />
 			</div>
@@ -138,7 +138,7 @@ usePageSeo({
 				Privacy Policy
 			</h1>
 			<p class="text-base text-app-muted leading-8 mt-5 max-w-3xl dark:text-app-muted-dark">
-				This policy describes how {{ appName }} currently handles address lookup input, browser-stored guide preferences, operational metadata, and direct contact messages. It is written for the current public MVP at {{ appUrl }}, not for a future product that collects more data than the site collects today.
+				This policy describes how {{ appName }} currently handles address lookup input, browser-stored guide preferences, operational metadata, and direct contact messages. It is written for the current public build at {{ appUrl }}, not for a future product that collects more data than the site collects today.
 			</p>
 			<div class="mt-5">
 				<UpdatedAt label="Effective" :value="effectiveAt" />
@@ -146,7 +146,7 @@ usePageSeo({
 		</header>
 
 		<InfoCallout title="Plain-language summary">
-			The current MVP uses address or ZIP input only to match a sample ballot. It does not create user accounts, does not run targeted advertising, and is not designed to sell or share personal data. The app does save selected location labels and ballot-plan preferences locally in your browser so the guide remains usable across refreshes.
+			The current public build uses address or ZIP input only to match ballot coverage. It does not create public user accounts, does not run targeted advertising, and is not designed to sell or share personal data. The app does save selected location labels and ballot-plan preferences locally in your browser so the guide remains usable across refreshes.
 		</InfoCallout>
 
 		<section class="gap-6 grid lg:grid-cols-3">
@@ -190,7 +190,7 @@ usePageSeo({
 					How we use data
 				</p>
 				<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-					Why the current MVP uses data
+					Why the current build uses data
 				</h2>
 				<ul class="text-sm text-app-muted leading-7 mt-6 space-y-3 dark:text-app-muted-dark">
 					<li v-for="item in useSections" :key="item" class="px-4 py-3 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70">
@@ -220,7 +220,7 @@ usePageSeo({
 					Cookies and tracking
 				</p>
 				<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-					No sale, sharing, or targeted advertising in the current MVP
+					No sale, sharing, or targeted advertising in the current build
 				</h2>
 				<ul class="text-sm text-app-muted leading-7 mt-6 space-y-3 dark:text-app-muted-dark">
 					<li v-for="item in cookieNotes" :key="item" class="px-4 py-3 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70">
@@ -291,7 +291,7 @@ usePageSeo({
 					Your choices and requests
 				</p>
 				<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-					Rights requests and limits in a no-account MVP
+					Rights requests and limits in a no-account public build
 				</h2>
 				<ul class="text-sm text-app-muted leading-7 mt-6 space-y-3 dark:text-app-muted-dark">
 					<li v-for="item in rightsNotes" :key="item" class="px-4 py-3 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70">

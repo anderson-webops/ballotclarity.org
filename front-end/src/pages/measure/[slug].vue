@@ -98,7 +98,7 @@ const authorshipNotes = computed(() => {
 		return [];
 
 	return [
-		"Official ballot summary: comes from the attached official record and voter-guide style sources in the demo archive.",
+		"Official ballot summary: comes from the attached official record and voter-guide style sources in the project archive.",
 		"Ballot Clarity summary: rewrites the source material into plain language without recommending a vote.",
 		"Arguments and tradeoffs: presented as attributed positions or documented considerations, not as endorsements."
 	];
@@ -130,7 +130,7 @@ const measureMethodItems = computed(() => {
 		{
 			body: [
 				"This page uses the attached ballot-language summary, fiscal note, and supporting public-record documents listed in the evidence panel.",
-				`The current demo measure page links ${measure.value.sources.length} source records for inspection.`,
+				`The current measure page links ${measure.value.sources.length} source records for inspection.`,
 			],
 			label: "Sources"
 		},
@@ -144,7 +144,7 @@ const measureMethodItems = computed(() => {
 		{
 			body: [
 				"Measures can change meaning depending on later implementation rules, legal interpretation, and budget decisions after passage.",
-				"This demo page cannot replace the official ballot language, fiscal note, or election-office notices."
+				"This page cannot replace the official ballot language, fiscal note, or election-office notices."
 			],
 			label: "Limits"
 		},
@@ -160,7 +160,7 @@ usePageSeo({
 				"abstract": measure.value.summary,
 				"dateModified": measure.value.updatedAt,
 				"datePublished": measure.value.updatedAt,
-				"legislationIdentifier": `${measure.value.slug}-demo`,
+				"legislationIdentifier": measure.value.slug,
 				"legislationJurisdiction": {
 					"@type": "AdministrativeArea",
 					"name": measure.value.location
@@ -203,7 +203,7 @@ function saveMeasure(decision: "no" | "review" | "yes") {
 
 				<header class="surface-panel">
 					<div class="flex flex-wrap gap-2">
-						<TrustBadge label="Demo measure detail" tone="warning" />
+						<TrustBadge label="Current measure detail" tone="warning" />
 						<TrustBadge label="Official text linked" tone="accent" />
 						<TrustBadge label="Plain-language summary" />
 					</div>
@@ -354,7 +354,7 @@ function saveMeasure(decision: "no" | "review" | "yes") {
 								/>
 							</div>
 							<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-								These labels help separate official text from Ballot Clarity interpretation and other supporting records in the demo archive.
+								These labels help separate official text from Ballot Clarity interpretation and other supporting records in the project archive.
 							</p>
 						</div>
 					</div>
@@ -581,7 +581,7 @@ function saveMeasure(decision: "no" | "review" | "yes") {
 						<SourceDrawer :sources="argumentSources" :title="`${measure.title} support and oppose arguments`" />
 					</div>
 					<p class="text-sm text-app-muted leading-7 mt-5 dark:text-app-muted-dark">
-						These are parallel argument summaries drawn from the attached demo record. They are framed neutrally so the user can compare the reasoning without the page taking a side.
+						These are parallel argument summaries drawn from the attached record set. They are framed neutrally so the user can compare the reasoning without the page taking a side.
 					</p>
 					<InfoCallout class="mt-5" title="Arguments are attributed, not adopted">
 						{{ measure.argumentsDisclaimer }}
@@ -648,7 +648,7 @@ function saveMeasure(decision: "no" | "review" | "yes") {
 						Official ballot language, fiscal notes, and county guide records remain the primary sources. Ballot Clarity adds a reading aid on top of those materials; it does not replace them.
 					</p>
 					<div class="mt-6">
-						<SourceList :sources="officialSources.length ? officialSources : measure.sources" title="Official source trail in this demo" />
+						<SourceList :sources="officialSources.length ? officialSources : measure.sources" title="Official source trail in this guide" />
 					</div>
 				</section>
 			</div>
@@ -659,7 +659,7 @@ function saveMeasure(decision: "no" | "review" | "yes") {
 						Evidence rail
 					</p>
 					<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
-						Use this rail for the full demo source archive, method notes, and official links while you read the measure explanation.
+						Use this rail for the full source archive, method notes, and official links while you read the measure explanation.
 					</p>
 					<div class="mt-5 space-y-3">
 						<UpdatedAt :value="measure.freshness.dataLastUpdatedAt ?? measure.updatedAt" label="Data through" />

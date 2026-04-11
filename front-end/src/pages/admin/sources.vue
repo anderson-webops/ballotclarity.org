@@ -1,10 +1,46 @@
 <script setup lang="ts">
+import type { AdminSourceHealth } from "~/types/civic";
+import { FetchError } from "ofetch";
+
 definePageMeta({
 	layout: "admin",
 	middleware: "admin"
 });
 
-const { data } = await useAdminSourceMonitor();
+const { data, refresh } = await useAdminSourceMonitor();
+const healthOptions: AdminSourceHealth[] = ["healthy", "review-soon", "stale", "incident"];
+const savingId = ref<string | null>(null);
+const feedbackMessage = ref("");
+const feedbackTone = ref<"error" | "success">("success");
+
+async function saveSource(id: string, payload: {
+	health?: AdminSourceHealth;
+	nextCheckAt?: string;
+	note?: string;
+	owner?: string;
+}) {
+	savingId.value = id;
+	feedbackMessage.value = "";
+
+	try {
+		await $fetch(`/api/admin/sources/${id}`, {
+			body: payload,
+			method: "PATCH"
+		});
+		feedbackMessage.value = "Source monitor updated.";
+		feedbackTone.value = "success";
+		await refresh();
+	}
+	catch (error) {
+		feedbackMessage.value = error instanceof FetchError
+			? error.data?.message || error.statusMessage || "Unable to update source monitor."
+			: "Unable to update source monitor.";
+		feedbackTone.value = "error";
+	}
+	finally {
+		savingId.value = null;
+	}
+}
 
 usePageSeo({
 	description: "Internal Ballot Clarity source-health monitor.",
@@ -28,9 +64,19 @@ usePageSeo({
 			</p>
 		</header>
 
+		<p
+			v-if="feedbackMessage"
+			class="text-sm px-4 py-3 rounded-2xl"
+			:class="feedbackTone === 'success'
+				? 'text-[#0f5b45] bg-[#e6f4ef] dark:text-[#9ae6c2] dark:bg-[#11352c]'
+				: 'text-[#8B3A2E] bg-[#F8E6E1] dark:text-[#FFD4CB] dark:bg-[#472722]'"
+		>
+			{{ feedbackMessage }}
+		</p>
+
 		<div class="space-y-5">
 			<article v-for="item in data?.sources ?? []" :key="item.id" class="surface-panel">
-				<div class="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+				<div class="gap-6 grid xl:grid-cols-[minmax(0,1fr)_minmax(0,0.95fr)]">
 					<div class="min-w-0">
 						<div class="flex flex-wrap gap-2">
 							<TrustBadge :label="item.authority" />
@@ -44,22 +90,52 @@ usePageSeo({
 						</p>
 					</div>
 
-					<div class="gap-3 grid w-full sm:grid-cols-2 xl:grid-cols-1 xl:max-w-sm">
-						<div class="px-4 py-4 border border-app-line/80 rounded-[1.4rem] bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
-							<p class="text-xs text-app-muted tracking-[0.16em] font-semibold uppercase dark:text-app-muted-dark">
-								Owner
-							</p>
-							<p class="text-sm text-app-ink font-semibold mt-2 dark:text-app-text-dark">
-								{{ item.owner }}
-							</p>
-						</div>
+					<form class="space-y-4" @submit.prevent="saveSource(item.id, item)">
 						<div class="px-4 py-4 border border-app-line/80 rounded-[1.4rem] bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
 							<UpdatedAt :value="item.lastCheckedAt" label="Last checked" />
 						</div>
 						<div class="px-4 py-4 border border-app-line/80 rounded-[1.4rem] bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
 							<UpdatedAt :value="item.nextCheckAt" label="Next check" />
 						</div>
-					</div>
+						<label class="block">
+							<span class="text-sm text-app-ink font-semibold dark:text-app-text-dark">Health</span>
+							<select
+								v-model="item.health"
+								class="text-sm text-app-ink mt-2 px-4 border border-app-line rounded-2xl bg-white h-13 w-full shadow-sm dark:text-app-text-dark dark:border-app-line-dark dark:bg-app-panel-dark focus-ring"
+							>
+								<option v-for="health in healthOptions" :key="health" :value="health">
+									{{ health }}
+								</option>
+							</select>
+						</label>
+						<label class="block">
+							<span class="text-sm text-app-ink font-semibold dark:text-app-text-dark">Owner</span>
+							<input
+								v-model="item.owner"
+								type="text"
+								class="text-sm text-app-ink mt-2 px-4 border border-app-line rounded-2xl bg-white h-13 w-full shadow-sm dark:text-app-text-dark dark:border-app-line-dark dark:bg-app-panel-dark focus-ring"
+							>
+						</label>
+						<label class="block">
+							<span class="text-sm text-app-ink font-semibold dark:text-app-text-dark">Next check (ISO timestamp)</span>
+							<input
+								v-model="item.nextCheckAt"
+								type="text"
+								class="text-sm text-app-ink mt-2 px-4 border border-app-line rounded-2xl bg-white h-13 w-full shadow-sm dark:text-app-text-dark dark:border-app-line-dark dark:bg-app-panel-dark focus-ring"
+							>
+						</label>
+						<label class="block">
+							<span class="text-sm text-app-ink font-semibold dark:text-app-text-dark">Operational note</span>
+							<textarea
+								v-model="item.note"
+								rows="4"
+								class="text-sm text-app-ink mt-2 px-4 py-3 border border-app-line rounded-2xl bg-white min-h-28 w-full shadow-sm dark:text-app-text-dark dark:border-app-line-dark dark:bg-app-panel-dark focus-ring"
+							/>
+						</label>
+						<button type="submit" class="btn-primary w-full" :disabled="savingId === item.id">
+							{{ savingId === item.id ? "Saving..." : "Save source status" }}
+						</button>
+					</form>
 				</div>
 			</article>
 		</div>

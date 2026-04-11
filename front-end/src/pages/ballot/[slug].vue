@@ -27,7 +27,7 @@ watchEffect(() => {
 });
 
 usePageSeo({
-	description: data.value?.election.description ?? "Review the sample ballot, candidates, measures, and attached sources.",
+	description: data.value?.election.description ?? "Review the ballot, candidates, measures, and attached sources.",
 	canonicalPath: `/elections/${ballotSlug.value}`,
 	path: `/ballot/${ballotSlug.value}`,
 	robots: "noindex,follow",
@@ -164,7 +164,7 @@ const coverageNotes = computed(() => {
 	return [
 		`This ballot is personalized to ${personalizationLabel.value}. Use a full street address for the most specific district match.`,
 		`${data.value.election.officialResources.length} official links are attached for election logistics, notices, and office contact details.`,
-		`${ballotCounts.value.sourceLinkedItems} contest items in this guide link to source drawers or evidence panels in the demo archive.`,
+		`${ballotCounts.value.sourceLinkedItems} contest items in this guide link to source drawers or evidence panels in the project archive.`,
 		`${ballotPlanCount.value} contest${ballotPlanCount.value === 1 ? "" : "s"} saved to your ballot plan so far.`,
 		"Time-sensitive deadlines, polling logistics, and late campaign activity should still be verified in official election-office notices."
 	];
@@ -197,7 +197,7 @@ const ballotContentsGroups = computed(() => {
 const ballotMethodItems = [
 	{
 		body: [
-			"This ballot guide uses the demo election object, attached official-resource files, and contest-level source records linked from each candidate and measure card.",
+			"This ballot guide uses the current election object, attached official-resource files, and contest-level source records linked from each candidate and measure card.",
 			"Official logistics should still be verified in the election overview and jurisdiction pages."
 		],
 		label: "Sources"
@@ -245,7 +245,7 @@ function clearFilters() {
 			<div class="print-guide">
 				<header class="print-guide-header">
 					<p class="print-guide-kicker">
-						Ballot Clarity demo print guide
+						Ballot Clarity print guide
 					</p>
 					<h1 class="text-4xl font-serif mt-3">
 						{{ data.election.name }}
@@ -296,7 +296,7 @@ function clearFilters() {
 				</div>
 
 				<p class="print-guide-footnote">
-					Demo data. Review original records and official notices before relying on any election information.
+					Current coverage uses staged public records. Review original records and official notices before relying on any election information.
 				</p>
 			</div>
 		</section>
@@ -439,7 +439,7 @@ function clearFilters() {
 					<div class="mt-6">
 						<OfficialResourceList
 							:resources="data.election.officialResources"
-							title="Official notices linked in this demo"
+							title="Official notices linked in this guide"
 							note="The printable ballot guide is useful for reading contests. Use the official notices for time-sensitive logistics."
 						/>
 					</div>
@@ -644,7 +644,7 @@ function clearFilters() {
 
 		<section v-else-if="error" class="app-shell">
 			<InfoCallout title="Unable to load ballot" tone="warning">
-				The demo ballot could not be loaded. Refresh the page or return to the home page and try again.
+				The ballot guide could not be loaded. Refresh the page or return to the home page and try again.
 			</InfoCallout>
 		</section>
 
@@ -663,7 +663,7 @@ function clearFilters() {
 					No ballot items match the current filters.
 				</h2>
 				<p class="text-sm text-app-muted leading-7 mx-auto mt-4 max-w-2xl dark:text-app-muted-dark">
-					Try clearing the search field or removing selected issues to restore the full sample ballot.
+					Try clearing the search field or removing selected issues to restore the full ballot guide.
 				</p>
 				<button type="button" class="btn-primary mt-6" @click="clearFilters">
 					Clear filters

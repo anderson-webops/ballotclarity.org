@@ -28,6 +28,28 @@ export interface Source {
 	note?: string;
 }
 
+export interface SourceCitationTarget {
+	id: string;
+	label: string;
+	href: string;
+	type: "candidate" | "election" | "jurisdiction" | "measure";
+}
+
+export interface SourceDirectoryItem extends Source {
+	citationCount: number;
+	citedBy: SourceCitationTarget[];
+}
+
+export interface SourcesDirectoryResponse {
+	sources: SourceDirectoryItem[];
+	updatedAt: string;
+}
+
+export interface SourceRecordResponse {
+	source: SourceDirectoryItem;
+	updatedAt: string;
+}
+
 export interface OfficialResource {
 	label: string;
 	url: string;
@@ -414,7 +436,6 @@ export interface DataSourcesResponse {
 }
 
 export interface BallotResponse {
-	demo: true;
 	location: LocationSelection;
 	election: Election;
 	updatedAt: string;
@@ -430,7 +451,36 @@ export interface CompareResponse {
 	note: string;
 }
 
+export type SearchResultType = "candidate" | "election" | "jurisdiction" | "measure" | "source";
+
+export interface SearchResultItem {
+	id: string;
+	type: SearchResultType;
+	title: string;
+	summary: string;
+	href: string;
+	meta: string;
+	updatedAt?: string;
+	sourceCount?: number;
+	authority?: SourceAuthority;
+}
+
+export interface SearchResultGroup {
+	label: string;
+	type: SearchResultType;
+	items: SearchResultItem[];
+}
+
+export interface SearchResponse {
+	query: string;
+	total: number;
+	groups: SearchResultGroup[];
+	suggestions: string[];
+}
+
 export type AdminPriority = "high" | "medium" | "low";
+
+export type AdminUserRole = "admin" | "editor";
 
 export type AdminSignalTone = "attention" | "healthy" | "review";
 
@@ -449,6 +499,8 @@ export type AdminEntityType = "candidate" | "election" | "measure" | "policy";
 
 export type AdminActivityType = "correction" | "publish" | "review" | "source-check";
 
+export type AdminSubmissionType = "correction" | "feedback";
+
 export interface AdminDashboardMetric {
 	id: string;
 	label: string;
@@ -459,6 +511,7 @@ export interface AdminDashboardMetric {
 
 export interface AdminCorrectionRequest {
 	id: string;
+	submissionType: AdminSubmissionType;
 	subject: string;
 	entityType: AdminEntityType;
 	entityLabel: string;
@@ -469,6 +522,7 @@ export interface AdminCorrectionRequest {
 	summary: string;
 	nextStep: string;
 	sourceCount: number;
+	pageUrl?: string;
 }
 
 export interface AdminReviewItem {
@@ -482,6 +536,22 @@ export interface AdminReviewItem {
 	blocker?: string;
 	summary: string;
 	sourceCoverage: string;
+}
+
+export interface AdminContentItem {
+	id: string;
+	title: string;
+	entityType: AdminEntityType;
+	entitySlug: string;
+	status: AdminReviewStatus;
+	priority: AdminPriority;
+	updatedAt: string;
+	assignedTo: string;
+	blocker?: string;
+	summary: string;
+	sourceCoverage: string;
+	published: boolean;
+	publishedAt?: string;
 }
 
 export interface AdminSourceMonitorItem {
@@ -503,6 +573,15 @@ export interface AdminActivityItem {
 	summary: string;
 }
 
+export interface AdminUser {
+	id: string;
+	username: string;
+	displayName: string;
+	role: AdminUserRole;
+	createdAt: string;
+	lastLoginAt?: string;
+}
+
 export interface AdminOverviewResponse {
 	metrics: AdminDashboardMetric[];
 	needsAttention: string[];
@@ -517,13 +596,23 @@ export interface AdminReviewResponse {
 	items: AdminReviewItem[];
 }
 
+export interface AdminContentResponse {
+	items: AdminContentItem[];
+}
+
 export interface AdminSourceMonitorResponse {
 	sources: AdminSourceMonitorItem[];
+}
+
+export interface AdminUsersResponse {
+	users: AdminUser[];
 }
 
 export interface AdminSessionResponse {
 	authenticated: boolean;
 	configured: boolean;
+	displayName: string | null;
+	role: AdminUserRole | null;
 	username: string | null;
 }
 

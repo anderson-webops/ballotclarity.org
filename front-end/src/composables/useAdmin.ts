@@ -1,9 +1,11 @@
 import type {
+	AdminContentResponse,
 	AdminCorrectionsResponse,
 	AdminOverviewResponse,
 	AdminReviewResponse,
 	AdminSessionResponse,
-	AdminSourceMonitorResponse
+	AdminSourceMonitorResponse,
+	AdminUsersResponse
 } from "~/types/civic";
 
 function adminRequestHeaders() {
@@ -35,8 +37,20 @@ export function useAdminReview() {
 	});
 }
 
+export function useAdminContent() {
+	return useFetch<AdminContentResponse>("/api/admin/content", {
+		headers: adminRequestHeaders()
+	});
+}
+
 export function useAdminSourceMonitor() {
 	return useFetch<AdminSourceMonitorResponse>("/api/admin/sources", {
+		headers: adminRequestHeaders()
+	});
+}
+
+export function useAdminUsers() {
+	return useFetch<AdminUsersResponse>("/api/admin/users", {
 		headers: adminRequestHeaders()
 	});
 }

@@ -20,6 +20,7 @@
 		"dev": "npm run -w front-end dev",
 		"server": "npm run -w back-end server",
 		"server:once": "npm run -w back-end server:once",
+		"bootstrap-admin": "npm run -w back-end bootstrap-admin --",
 		"serve": "npm run -w front-end serve",
 		"preview": "npm run -w front-end preview",
 		"test": "npm run test:unit",

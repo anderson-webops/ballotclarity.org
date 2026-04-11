@@ -4,6 +4,7 @@ import { Buffer } from "node:buffer";
 import { spawn } from "node:child_process";
 import { once } from "node:events";
 import { createServer } from "node:net";
+import { join } from "node:path";
 import process from "node:process";
 import test, { after, before } from "node:test";
 import { setTimeout as delay } from "node:timers/promises";
@@ -18,6 +19,7 @@ const adminApiKey = "smoke-admin-key";
 const adminPassword = "smoke-password";
 const adminSessionSecret = "smoke-session-secret";
 const adminUsername = "smoke-admin";
+const adminDbPath = join(repoRoot, "back-end/data/e2e-smoke.sqlite");
 
 async function getFreePort() {
 	return await new Promise<number>((resolve, reject) => {
@@ -93,19 +95,22 @@ before(async () => {
 	const api = startProcess(process.execPath, ["back-end/dist/server.js"], {
 		...process.env,
 		ADMIN_API_KEY: adminApiKey,
+		ADMIN_BOOTSTRAP_DISPLAY_NAME: "Smoke Admin",
+		ADMIN_BOOTSTRAP_PASSWORD: adminPassword,
+		ADMIN_BOOTSTRAP_ROLE: "admin",
+		ADMIN_BOOTSTRAP_USERNAME: adminUsername,
+		ADMIN_DB_PATH: adminDbPath,
 		PORT: String(apiPort)
 	});
 	apiProcess = api.child;
 
-	await waitForUrl(`${apiBaseUrl}/health`, "demo API");
+	await waitForUrl(`${apiBaseUrl}/health`, "API");
 
 	const app = startProcess(process.execPath, ["front-end/.output/server/index.mjs"], {
 		...process.env,
 		ADMIN_API_BASE: `${apiBaseUrl}/api`,
 		ADMIN_API_KEY: adminApiKey,
-		ADMIN_PASSWORD: adminPassword,
 		ADMIN_SESSION_SECRET: adminSessionSecret,
-		ADMIN_USERNAME: adminUsername,
 		PORT: String(appPort),
 		NUXT_PUBLIC_API_BASE: `${apiBaseUrl}/api`
 	});
@@ -163,15 +168,14 @@ test("built app renders the key ballot guide pages against the built API", async
 	const compareHtml = await comparePage.text();
 
 	assert.equal(ballotResponse.status, 200);
-	assert.equal(ballot.demo, true);
 	assert.equal(homePage.status, 200);
 	assert.match(homeHtml, /Understand your ballot without the overload/);
-	assert.match(homeHtml, /Demo ballot preview/);
+	assert.match(homeHtml, /Current ballot preview/);
 	assert.match(homeHtml, /Start from a location hub/);
 	assert.match(homeHtml, /Live data roadmap/);
 	assert.match(homeHtml, /Use official sources where they are authoritative, then normalize the rest/);
 	assert.match(homeHtml, /Why we ask for your address/);
-	assert.match(homeHtml, /Data use: your lookup is sent to the Ballot Clarity demo API only to match a sample ballot/);
+	assert.match(homeHtml, /Data use: your lookup is sent only to match ballot coverage/);
 	assert.match(ballotHtml, /Questions to ask before you vote/);
 	assert.match(ballotHtml, /Key dates and official links/);
 	assert.match(ballotHtml, /Guide freshness and review status/);
@@ -184,12 +188,12 @@ test("built app renders the key ballot guide pages against the built API", async
 	assert.match(ballotHtml, /Quick view/);
 	assert.match(ballotHtml, /Next review/);
 	assert.match(ballotHtml, /Metro County, Franklin/);
-	assert.match(ballotHtml, /Demo data/i);
+	assert.match(ballotHtml, /staged public records/i);
 	assert.match(electionHtml, /Official links and notices/);
 	assert.match(electionHtml, /Contest index/);
 	assert.match(electionHtml, /Data sources roadmap/);
 	assert.match(locationHtml, /Official election office/);
-	assert.match(locationHtml, /Voting methods in this demo jurisdiction/);
+	assert.match(locationHtml, /Voting methods in the current coverage area/);
 	assert.match(locationHtml, /Data sources roadmap/);
 	assert.equal(dataSourcesPage.status, 200);
 	assert.match(dataSourcesHtml, /Data sources and live API roadmap/);
@@ -240,14 +244,14 @@ test("built app renders the key ballot guide pages against the built API", async
 	assert.match(accessibilityHtml, /WCAG 2\.2 Level AA/);
 	assert.match(accessibilityHtml, /44 by 44 pixel minimum target|44 x 44 pixel minimum target|44 x 44 px/);
 	assert.match(accessibilityHtml, /does not yet generate a downloadable tagged PDF/);
-	assert.match(methodologyHtml, /How the demo layer is meant to be replaced/);
+	assert.match(methodologyHtml, /How the staged archive is meant to be replaced/);
 	assert.match(methodologyHtml, /Open data sources roadmap/);
 	assert.equal(privacyPage.status, 200);
 	assert.match(privacyHtml, /Privacy Policy/);
 	assert.match(privacyHtml, /What data Ballot Clarity handles today/);
 	assert.match(privacyHtml, /The application is designed not to publish the raw lookup text/);
-	assert.match(privacyHtml, /No sale, sharing, or targeted advertising in the current MVP/);
-	assert.match(privacyHtml, /Rights requests and limits in a no-account MVP/);
+	assert.match(privacyHtml, /No sale, sharing, or targeted advertising in the current build/);
+	assert.match(privacyHtml, /Rights requests and limits in a no-account public build/);
 	assert.match(privacyHtml, /Children(?:&#39;|&apos;|’|')s privacy/);
 	assert.equal(termsPage.status, 200);
 	assert.match(termsHtml, /Terms of Service/);

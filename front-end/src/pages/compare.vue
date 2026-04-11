@@ -143,7 +143,7 @@ usePageSeo({
 			</InfoCallout>
 			<div class="mt-6 flex flex-wrap gap-3">
 				<NuxtLink to="/ballot/2026-metro-county-general" class="btn-primary">
-					Open demo ballot
+					Open ballot guide
 				</NuxtLink>
 				<button type="button" class="btn-secondary" @click="civicStore.clearCompare()">
 					Clear compare list

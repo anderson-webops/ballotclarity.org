@@ -1,8 +1,0 @@
-Selected House Votes for District 7 Incumbent
-
-Included examples:
-- freight corridor package vote
-- continuing resolution vote related to flood mitigation funding
-
-Interpretation note:
-This is not a full roll call archive. It is a narrowed demo extract chosen to illustrate how district-relevant vote summaries could be attached to an incumbent profile.

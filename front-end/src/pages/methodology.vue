@@ -10,14 +10,14 @@ usePageSeo({
 const items = [
 	{
 		body: [
-			"This MVP uses structured demo data and prewritten plain-language summaries to model how a source-first civic-information product could work. In a live version, summaries would be generated from public records, then reviewed against source citations and editorial rules.",
+			"The current public build uses structured staged data and prewritten plain-language summaries to model how a source-first civic-information product could work. In a live version, summaries would be generated from public records, then reviewed against source citations and editorial rules.",
 			"Summaries are designed to describe what is documented, not to predict outcomes or recommend a vote.",
 		],
 		title: "How summaries are generated",
 	},
 	{
 		body: [
-			"Each candidate, measure, and evidence block includes attached source objects. In this demo those sources point to local text files that stand in for public records like filings, hearing notes, and budget documents.",
+			"Each candidate, measure, and evidence block includes attached source objects. In the current build those sources point to local text files that stand in for public records like filings, hearing notes, and budget documents.",
 			"The interface keeps source counts visible and offers drawers or side panels so users can inspect source context without losing their place.",
 		],
 		title: "How sources are attached",
@@ -39,7 +39,7 @@ const items = [
 	{
 		body: [
 			"A future alignment module could compare district concerns with public records and stated positions. It would need transparent methodology, clear weighting rules, and strong explanations of uncertainty.",
-			"That feature is not live in this MVP. It is labeled as experimental wherever it appears so users do not mistake it for a finished recommendation system.",
+			"That feature is not live in the current build. It is labeled as experimental wherever it appears so users do not mistake it for a finished recommendation system.",
 		],
 		title: "Future constituent alignment",
 	},
@@ -74,7 +74,7 @@ const items = [
 	{
 		body: [
 			"Address lookup is used to estimate districts and ballot style. ZIP-only lookup can return a partial result, so the interface should say that clearly wherever personalization matters.",
-			"The current MVP sends lookup input to the demo API with a POST request, avoids persisting the raw lookup text in browser storage, and keeps the data-use explanation near the lookup form rather than burying it in legal copy."
+			"The current build sends lookup input with a POST request, avoids persisting the raw lookup text in browser storage, and keeps the data-use explanation near the lookup form rather than burying it in legal copy."
 		],
 		title: "Privacy and personalization",
 	},
@@ -88,7 +88,7 @@ const items = [
 	{
 		body: [
 			"Public data is incomplete, uneven across race types, and often delayed. Challengers usually have fewer public records than incumbents, and local races can depend heavily on meeting minutes or questionnaires.",
-			"This MVP makes those limits explicit through demo labels, “What we know” and “What we do not know” sections, and repeated reminders to consult original records.",
+			"This build makes those limits explicit through coverage notes, “What we know” and “What we do not know” sections, and repeated reminders to consult original records.",
 		],
 		title: "Limitations and uncertainty",
 	},
@@ -197,7 +197,7 @@ const informationTypes = [
 						Live data roadmap
 					</p>
 					<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-						How the demo layer is meant to be replaced
+						How the staged archive is meant to be replaced
 					</h2>
 				</div>
 				<TrustBadge label="Implementation order" tone="accent" />
@@ -240,8 +240,8 @@ const informationTypes = [
 			</div>
 
 			<div class="space-y-4">
-				<InfoCallout title="Current MVP status" tone="warning">
-					This site is a demo environment. The architecture is ready for real civic APIs later, but the current content is simulated and intentionally labeled as such throughout the product.
+				<InfoCallout title="Current build status" tone="warning">
+					This site currently uses staged archive data. The architecture is ready for real civic APIs later, but the current content is intentionally labeled so users can distinguish present coverage from future live integrations.
 				</InfoCallout>
 				<InfoCallout title="Neutrality policy">
 					Ballot Clarity is designed to explain what is documented, not to endorse candidates, oppose parties, or tell users how to vote.

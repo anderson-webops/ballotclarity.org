@@ -27,7 +27,7 @@ const contextTerms = [
 		term: "Incumbent"
 	},
 	{
-		description: "The latest date through which this demo profile says its structured records were reviewed.",
+		description: "The latest date through which this profile says its structured records were reviewed.",
 		term: "Data through"
 	},
 	{
@@ -43,7 +43,7 @@ const contextTerms = [
 watchEffect(() => {
 	if (candidate.value) {
 		civicStore.setLocation({
-			coverageLabel: "Demo coverage: Metro County, Franklin",
+			coverageLabel: "Current coverage: Metro County, Franklin",
 			displayName: candidate.value.location,
 			slug: "metro-county-franklin",
 			state: "Franklin",
@@ -61,7 +61,7 @@ function uniqueSources(sources: Source[]) {
 }
 
 usePageSeo({
-	description: candidate.value?.summary ?? "Review a source-backed candidate profile in the Ballot Clarity demo.",
+	description: candidate.value?.summary ?? "Review a source-backed candidate profile in Ballot Clarity.",
 	jsonLd: candidate.value
 		? {
 				"@context": "https://schema.org",
@@ -123,8 +123,8 @@ const atGlanceStats = computed(() => {
 
 	const activityLabel = candidate.value.incumbent ? "Documented votes and actions" : "Documented campaign actions";
 	const activityNote = candidate.value.incumbent
-		? "Selected official actions in this demo archive. This page is not a full legislative ledger."
-		: "Published policy releases, local-government actions, and other source-backed items included in this demo archive.";
+		? "Selected official actions in the current project archive. This page is not a full legislative ledger."
+		: "Published policy releases, local-government actions, and other source-backed items included in the current project archive.";
 	const influenceSectors = [...new Set(candidate.value.funding.topFunders.map(funder => funder.category))].slice(0, 2);
 	const influenceNote = influenceSectors.length
 		? `Context draws on ${influenceSectors.join(" and ")}. This is context only, not proof of influence.`
@@ -138,7 +138,7 @@ const atGlanceStats = computed(() => {
 		},
 		{
 			label: "Money in",
-			note: `Reported fundraising in the current demo filing window. Data through ${dataThroughLabel.value}.`,
+			note: `Reported fundraising in the current filing window. Data through ${dataThroughLabel.value}.`,
 			value: formatCurrency(candidate.value.funding.totalRaised)
 		},
 		{
@@ -153,8 +153,8 @@ const actionCoverageNote = computed(() => {
 		return "";
 
 	return candidate.value.incumbent
-		? "This section highlights selected official actions tied to the current demo archive. Use the evidence drawer and source rail to inspect the attached records and page limits."
-		: "This section highlights source-backed campaign, policy, or local-government actions available in the current demo archive. It does not stand in for a full voting ledger.";
+		? "This section highlights selected official actions tied to the current project archive. Use the evidence drawer and source rail to inspect the attached records and page limits."
+		: "This section highlights source-backed campaign, policy, or local-government actions available in the current project archive. It does not stand in for a full voting ledger.";
 });
 const reportIssueHref = computed(() => candidate.value
 	? `mailto:${contactEmail}?subject=${encodeURIComponent(`Ballot Clarity candidate review: ${candidate.value.name}`)}`
@@ -168,7 +168,7 @@ const candidateMethodItems = computed(() => {
 		{
 			body: [
 				"This page uses the attached campaign filings, questionnaires, and public records listed in the evidence panel.",
-				`The current demo profile links ${candidate.value.sources.length} source records for direct inspection.`,
+				`The current profile links ${candidate.value.sources.length} source records for direct inspection.`,
 			],
 			label: "Sources"
 		},
@@ -190,7 +190,7 @@ const coverageItems = computed(() => {
 		return [];
 
 	return [
-		"Published campaign materials and questionnaires included in the demo archive.",
+		"Published campaign materials and questionnaires included in the project archive.",
 		"Source-backed actions selected for relevance to this office and district context.",
 		"Funding summaries tied to the attached campaign-finance records.",
 		"Method notes explaining what is included, what is missing, and when the page was last reviewed."
@@ -225,7 +225,7 @@ function saveToPlan() {
 
 		<div v-else-if="error || !candidate" class="max-w-3xl">
 			<InfoCallout title="Candidate profile not available" tone="warning">
-				This demo candidate page could not be loaded. Return to the ballot overview to choose another profile.
+				This candidate page could not be loaded. Return to the ballot overview to choose another profile.
 			</InfoCallout>
 		</div>
 
@@ -235,7 +235,7 @@ function saveToPlan() {
 
 				<header class="surface-panel">
 					<div class="flex flex-wrap gap-2 items-center">
-						<TrustBadge label="Demo candidate profile" tone="warning" />
+						<TrustBadge label="Current candidate profile" tone="warning" />
 						<TrustBadge label="Source-backed" tone="accent" />
 					</div>
 					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold mt-5 uppercase dark:text-app-muted-dark">
@@ -378,7 +378,7 @@ function saveToPlan() {
 										Sources attached
 									</dt>
 									<dd class="text-sm text-app-ink mt-2 dark:text-app-text-dark">
-										{{ candidate.sources.length }} source records in this demo profile
+										{{ candidate.sources.length }} source records in this profile
 									</dd>
 								</div>
 								<div>
@@ -509,7 +509,7 @@ function saveToPlan() {
 							<div class="flex flex-wrap gap-3 items-start justify-between">
 								<div>
 									<h3 class="text-lg text-app-ink font-semibold dark:text-app-text-dark">
-										Questionnaire responses in this demo archive
+										Questionnaire responses in the project archive
 									</h3>
 									<p class="text-sm text-app-muted mt-2 dark:text-app-muted-dark">
 										Responses are shown as submitted, with provenance labels and attached evidence.
@@ -531,7 +531,7 @@ function saveToPlan() {
 										<ProvenanceBadge :provenance="response.provenance" />
 									</div>
 									<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-										{{ response.answerText ?? "No response submitted in the current demo archive." }}
+										{{ response.answerText ?? "No response submitted in the current project archive." }}
 									</p>
 									<div class="mt-4 flex flex-wrap gap-3 items-center justify-between">
 										<UpdatedAt v-if="response.answerReceivedAt" :value="response.answerReceivedAt" label="Received" />
@@ -605,7 +605,7 @@ function saveToPlan() {
 						<SourceDrawer :sources="candidate.funding.sources" title="Campaign funding sources" />
 					</div>
 					<p class="text-sm text-app-muted leading-7 mt-5 dark:text-app-muted-dark">
-						Reported fundraising in this profile is shown with the current demo filing window and attached source documents. Review original filings for late amendments or newly reported independent spending.
+						Reported fundraising in this profile is shown with the current filing window and attached source documents. Review original filings for late amendments or newly reported independent spending.
 					</p>
 					<div class="mt-6 gap-4 grid md:grid-cols-3">
 						<div class="p-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
@@ -710,7 +710,7 @@ function saveToPlan() {
 						<SourceDrawer :sources="candidate.sources" :title="`${candidate.name} full source list`" />
 					</div>
 					<p class="text-sm text-app-muted leading-7 mt-5 dark:text-app-muted-dark">
-						Use this section to inspect how the profile was assembled, where the demo evidence came from, and what records remain outside the current archive.
+						Use this section to inspect how the profile was assembled, where the archive evidence came from, and what records remain outside the current archive.
 					</p>
 					<ul class="text-sm text-app-muted leading-7 mt-6 space-y-3 dark:text-app-muted-dark">
 						<li v-for="note in candidate.methodologyNotes" :key="note" class="px-4 py-3 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70">
@@ -726,7 +726,7 @@ function saveToPlan() {
 						Evidence rail
 					</p>
 					<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
-						Every summary on this page is tied to the source set below. Use the evidence drawer for section-level claims, and use this rail for the full demo archive and page method notes.
+						Every summary on this page is tied to the source set below. Use the evidence drawer for section-level claims, and use this rail for the full archive and page method notes.
 					</p>
 					<div class="mt-5 space-y-3">
 						<UpdatedAt :value="candidate.freshness.dataLastUpdatedAt ?? candidate.updatedAt" label="Data through" />

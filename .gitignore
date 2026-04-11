@@ -10,5 +10,8 @@ dist
 front-end/.output
 front-end/.nuxt
 back-end/dist
+back-end/data/*.sqlite
+back-end/data/*.sqlite-shm
+back-end/data/*.sqlite-wal
 .env
 .idea/

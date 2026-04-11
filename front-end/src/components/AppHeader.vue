@@ -11,7 +11,9 @@ const { ballotPlanCount, compareCount, selectedLocation } = storeToRefs(civicSto
 
 const navLinks = [
 	{ label: "Home", to: "/" },
-	{ label: "Sample ballot", to: "/ballot" },
+	{ label: "Ballot guide", to: "/ballot" },
+	{ label: "Search", to: "/search" },
+	{ label: "Sources", to: "/sources" },
 	{ label: "My plan", to: "/plan" },
 	{ label: "Compare", to: "/compare" },
 	{ label: "How it works", to: "/methodology" },
@@ -125,7 +127,7 @@ function toggleColorMode() {
 
 				<div class="text-sm mt-2 px-4 py-3 border border-app-line rounded-2xl bg-white flex items-center justify-between dark:border-app-line-dark dark:bg-app-panel-dark">
 					<span class="text-app-muted dark:text-app-muted-dark">
-						{{ selectedLocation?.displayName || 'Demo ballot not yet selected' }}
+						{{ selectedLocation?.displayName || 'Ballot context not yet selected' }}
 					</span>
 					<button type="button" class="text-xs font-semibold px-3 py-2 border border-app-line rounded-full dark:border-app-line-dark focus-ring" @click="toggleColorMode">
 						{{ isDark ? 'Light mode' : 'Dark mode' }}

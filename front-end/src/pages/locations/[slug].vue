@@ -15,7 +15,7 @@ const earlyVotingDate = computed(() => nextElectionData.value?.election.keyDates
 watchEffect(() => {
 	if (jurisdiction.value) {
 		civicStore.setLocation({
-			coverageLabel: `Demo coverage: ${jurisdiction.value.displayName}`,
+			coverageLabel: `Current coverage: ${jurisdiction.value.displayName}`,
 			displayName: jurisdiction.value.displayName,
 			slug: jurisdiction.value.slug,
 			state: jurisdiction.value.state
@@ -69,7 +69,7 @@ usePageSeo({
 
 		<div v-else-if="error || !jurisdiction" class="max-w-3xl">
 			<InfoCallout title="Location hub not available" tone="warning">
-				This demo jurisdiction page could not be loaded. Return to the home page and reopen the Metro County location hub.
+				This location hub could not be loaded. Return to the home page and reopen the Metro County location hub.
 			</InfoCallout>
 		</div>
 
@@ -79,7 +79,7 @@ usePageSeo({
 					<div class="flex flex-wrap gap-2">
 						<TrustBadge label="Jurisdiction hub" tone="accent" />
 						<TrustBadge label="Official office links" />
-						<TrustBadge label="Demo data" tone="warning" />
+						<TrustBadge label="Current coverage" tone="warning" />
 					</div>
 					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold mt-6 uppercase dark:text-app-muted-dark">
 						{{ jurisdiction.jurisdictionType }} guide
@@ -115,7 +115,7 @@ usePageSeo({
 						{{ nextElectionData?.election.name || jurisdiction.nextElectionName }}
 					</p>
 					<p class="text-sm text-app-muted mt-3 dark:text-app-muted-dark">
-						{{ nextElectionData ? formatDate(nextElectionData.election.date) : "Current demo election" }}
+						{{ nextElectionData ? formatDate(nextElectionData.election.date) : "Current published election" }}
 					</p>
 				</div>
 				<div class="surface-panel">
@@ -199,7 +199,7 @@ usePageSeo({
 					<OfficialResourceList
 						:resources="jurisdiction.officialResources"
 						title="Official links and notices"
-						note="These demo links stand in for election-office calendars, office contact sheets, and voting-method instructions."
+						note="These links stand in for election-office calendars, office contact sheets, and voting-method instructions while live integrations are being connected."
 					/>
 				</div>
 			</section>
@@ -260,7 +260,7 @@ usePageSeo({
 			<section class="gap-6 grid xl:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]">
 				<div class="surface-panel">
 					<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
-						Voting methods in this demo jurisdiction
+						Voting methods in the current coverage area
 					</h2>
 					<div class="mt-6 space-y-4">
 						<article v-for="method in jurisdiction.votingMethods" :key="method.slug" class="p-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">

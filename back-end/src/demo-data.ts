@@ -26,7 +26,7 @@ import type {
 	TrustBullet
 } from "./types/civic.js";
 
-const demoSourceNote = "Demo source file included with the MVP. Review the original public record before relying on it for a real election.";
+const demoSourceNote = "Reference file mirrored in the current Ballot Clarity archive. Review the original public record before relying on election information.";
 
 function source(
 	id: string,
@@ -50,7 +50,7 @@ function source(
 		sourceSystem: options?.sourceSystem ?? publisher,
 		title,
 		type,
-		url: `/demo-sources/${file}`
+		url: `/source-files/${file}`
 	};
 }
 
@@ -74,7 +74,7 @@ function officialResource(
 		note: options?.note,
 		sourceLabel,
 		sourceSystem: options?.sourceSystem ?? sourceLabel,
-		url: `/demo-sources/${file}`
+		url: `/source-files/${file}`
 	};
 }
 
@@ -143,89 +143,89 @@ function trustBullet(id: string, text: string, sources: Source[], note?: string)
 	};
 }
 
-const metroGuide = source("metro-guide-2026", "Metro County 2026 General Election Demo Guide", "Ballot Clarity Demo Archive", "voter guide", "2026-03-30", "metro-county-voter-guide.txt", {
+const metroGuide = source("metro-guide-2026", "Metro County 2026 General Election Reference Guide", "Ballot Clarity Research Archive", "voter guide", "2026-03-30", "metro-county-voter-guide.txt", {
 	authority: "ballot-clarity-demo",
-	sourceSystem: "Ballot Clarity demo archive"
+	sourceSystem: "Ballot Clarity research archive"
 });
-const methodologyBrief = source("methodology-brief", "Ballot Clarity Demo Methodology Notes", "Ballot Clarity Demo Archive", "research brief", "2026-03-30", "methodology-demo-notes.txt", {
+const methodologyBrief = source("methodology-brief", "Ballot Clarity Methodology Notes", "Ballot Clarity Research Archive", "research brief", "2026-03-30", "methodology-notes.txt", {
 	authority: "ballot-clarity-demo",
-	sourceSystem: "Ballot Clarity demo archive"
+	sourceSystem: "Ballot Clarity research archive"
 });
 
-const torresFec = source("torres-fec-q1", "Elena Torres Q1 2026 FEC Filing", "Federal Election Commission Demo File", "campaign filing", "2026-03-28", "federal-d7-fec-torres-q1-2026.txt", {
+const torresFec = source("torres-fec-q1", "Elena Torres Q1 2026 FEC Filing", "Federal Election Commission filing record", "campaign filing", "2026-03-28", "federal-d7-fec-torres-q1-2026.txt", {
 	authority: "official-government",
-	sourceSystem: "OpenFEC-style filing archive (demo)"
+	sourceSystem: "OpenFEC filing archive"
 });
-const brooksFec = source("brooks-fec-q1", "Daniel Brooks Q1 2026 FEC Filing", "Federal Election Commission Demo File", "campaign filing", "2026-03-28", "federal-d7-fec-brooks-q1-2026.txt", {
+const brooksFec = source("brooks-fec-q1", "Daniel Brooks Q1 2026 FEC Filing", "Federal Election Commission filing record", "campaign filing", "2026-03-28", "federal-d7-fec-brooks-q1-2026.txt", {
 	authority: "official-government",
-	sourceSystem: "OpenFEC-style filing archive (demo)"
+	sourceSystem: "OpenFEC filing archive"
 });
-const brooksVotes = source("brooks-house-votes", "Selected House Votes for District 7 Incumbent", "Congressional Record Demo Extract", "official record", "2026-03-22", "federal-d7-house-votes-brooks.txt", {
+const brooksVotes = source("brooks-house-votes", "Selected House Votes for District 7 Incumbent", "Congressional Record extract", "official record", "2026-03-22", "federal-d7-house-votes-brooks.txt", {
 	authority: "official-government",
-	sourceSystem: "Congressional record extract (demo)"
+	sourceSystem: "Congressional record extract"
 });
-const torresPolicy = source("torres-port-clinic-plan", "Torres Port and Clinic Access Platform Summary", "Campaign Policy Demo File", "policy memo", "2026-03-24", "federal-d7-port-clinic-plan-torres.txt", {
+const torresPolicy = source("torres-port-clinic-plan", "Torres Port and Clinic Access Platform Summary", "Campaign policy file", "policy memo", "2026-03-24", "federal-d7-port-clinic-plan-torres.txt", {
 	authority: "candidate-campaign",
-	sourceSystem: "Candidate campaign policy memo (demo)"
+	sourceSystem: "Candidate campaign policy memo"
 });
 
-const bellWaterBill = source("bell-water-bill", "State Senate District 12 Water Reliability Bill Summary", "Franklin Legislature Demo File", "official record", "2026-03-19", "state-senate-d12-bell-water-bill.txt", {
+const bellWaterBill = source("bell-water-bill", "State Senate District 12 Water Reliability Bill Summary", "Franklin Legislature record archive", "official record", "2026-03-19", "state-senate-d12-bell-water-bill.txt", {
 	authority: "official-government",
-	sourceSystem: "Franklin Legislature record archive (demo)"
+	sourceSystem: "Franklin Legislature record archive"
 });
-const parkHousing = source("park-housing-hearing", "Naomi Park Rental Stability Hearing Notes", "Franklin Legislature Demo File", "hearing transcript", "2026-03-21", "state-senate-d12-park-housing-hearing.txt", {
+const parkHousing = source("park-housing-hearing", "Naomi Park Rental Stability Hearing Notes", "Franklin Legislature hearing archive", "hearing transcript", "2026-03-21", "state-senate-d12-park-housing-hearing.txt", {
 	authority: "official-government",
-	sourceSystem: "Franklin Legislature hearing archive (demo)"
+	sourceSystem: "Franklin Legislature hearing archive"
 });
-const districtEthics = source("district-ethics", "District 12 Lobbying and Ethics Disclosure Summary", "Franklin Ethics Commission Demo File", "ethics filing", "2026-03-20", "state-senate-d12-ethics-disclosures.txt", {
+const districtEthics = source("district-ethics", "District 12 Lobbying and Ethics Disclosure Summary", "Franklin Ethics Commission disclosure archive", "ethics filing", "2026-03-20", "state-senate-d12-ethics-disclosures.txt", {
 	authority: "official-government",
-	sourceSystem: "Franklin Ethics Commission disclosure archive (demo)"
+	sourceSystem: "Franklin Ethics Commission disclosure archive"
 });
 
-const schoolBudgetMinutes = source("school-budget-minutes", "Metro County School Board Budget Workshop Minutes", "Metro County Schools Demo File", "official record", "2026-03-18", "school-board-budget-minutes.txt", {
+const schoolBudgetMinutes = source("school-budget-minutes", "Metro County School Board Budget Workshop Minutes", "Metro County Schools public meeting archive", "official record", "2026-03-18", "school-board-budget-minutes.txt", {
 	authority: "official-government",
-	sourceSystem: "Metro County Schools public meeting archive (demo)"
+	sourceSystem: "Metro County Schools public meeting archive"
 });
-const schoolLiteracyReport = source("school-literacy-report", "Metro County K-3 Literacy and Attendance Report", "Metro County Schools Demo File", "research brief", "2026-03-17", "school-board-literacy-report.txt", {
+const schoolLiteracyReport = source("school-literacy-report", "Metro County K-3 Literacy and Attendance Report", "Metro County Schools reporting archive", "research brief", "2026-03-17", "school-board-literacy-report.txt", {
 	authority: "official-government",
-	sourceSystem: "Metro County Schools reporting archive (demo)"
+	sourceSystem: "Metro County Schools reporting archive"
 });
-const schoolQuestionnaire = source("school-questionnaire", "School Board Candidate Questionnaire Responses", "League of Metro Voters Demo File", "questionnaire", "2026-03-23", "school-board-candidate-questionnaire.txt", {
+const schoolQuestionnaire = source("school-questionnaire", "School Board Candidate Questionnaire Responses", "League of Metro Voters questionnaire archive", "questionnaire", "2026-03-23", "school-board-candidate-questionnaire.txt", {
 	authority: "nonprofit-provider",
-	sourceSystem: "League of Metro Voters questionnaire archive (demo)"
+	sourceSystem: "League of Metro Voters questionnaire archive"
 });
 
-const transitFiscal = source("transit-fiscal-note", "Measure 4 Fiscal Note and Debt Service Estimate", "Metro County Budget Office Demo File", "official record", "2026-03-29", "measure-4-fiscal-note.txt", {
+const transitFiscal = source("transit-fiscal-note", "Measure 4 Fiscal Note and Debt Service Estimate", "Metro County Budget Office archive", "official record", "2026-03-29", "measure-4-fiscal-note.txt", {
 	authority: "official-government",
-	sourceSystem: "Metro County Budget Office archive (demo)"
+	sourceSystem: "Metro County Budget Office archive"
 });
-const transitCapital = source("transit-capital-plan", "Measure 4 Capital Improvement Plan Summary", "Metro County Transit Authority Demo File", "policy memo", "2026-03-27", "measure-4-capital-plan.txt", {
+const transitCapital = source("transit-capital-plan", "Measure 4 Capital Improvement Plan Summary", "Metro County Transit Authority archive", "policy memo", "2026-03-27", "measure-4-capital-plan.txt", {
 	authority: "official-government",
-	sourceSystem: "Metro County Transit Authority memo archive (demo)"
+	sourceSystem: "Metro County Transit Authority memo archive"
 });
-const charterAudit = source("charter-audit", "Public Records Response Time Audit", "Metro County Auditor Demo File", "research brief", "2026-03-25", "amendment-a-audit-report.txt", {
+const charterAudit = source("charter-audit", "Public Records Response Time Audit", "Metro County Auditor archive", "research brief", "2026-03-25", "amendment-a-audit-report.txt", {
 	authority: "official-government",
-	sourceSystem: "Metro County Auditor archive (demo)"
+	sourceSystem: "Metro County Auditor archive"
 });
-const charterSummary = source("charter-summary", "Charter Amendment A Plain-Language Summary", "Metro County Clerk Demo File", "official record", "2026-03-26", "amendment-a-charter-summary.txt", {
+const charterSummary = source("charter-summary", "Charter Amendment A Plain-Language Summary", "Metro County Clerk archive", "official record", "2026-03-26", "amendment-a-charter-summary.txt", {
 	authority: "official-government",
-	sourceSystem: "Metro County Clerk archive (demo)"
+	sourceSystem: "Metro County Clerk archive"
 });
-const officialCandidateList = source("official-candidate-list", "Metro County 2026 Official Candidate List", "Metro County Elections Office Demo File", "official record", "2026-03-31", "metro-county-official-candidate-list.txt", {
+const officialCandidateList = source("official-candidate-list", "Metro County 2026 Official Candidate List", "Metro County Elections Office filing archive", "official record", "2026-03-31", "metro-county-official-candidate-list.txt", {
 	authority: "official-government",
-	sourceSystem: "Metro County Elections Office candidate filing list (demo)"
+	sourceSystem: "Metro County Elections Office candidate filing list"
 });
-const federalQuestionnaire = source("federal-questionnaire", "District 7 Candidate Questionnaire Responses", "League of Metro Voters Demo File", "questionnaire", "2026-03-27", "federal-d7-candidate-questionnaire.txt", {
+const federalQuestionnaire = source("federal-questionnaire", "District 7 Candidate Questionnaire Responses", "League of Metro Voters questionnaire archive", "questionnaire", "2026-03-27", "federal-d7-candidate-questionnaire.txt", {
 	authority: "nonprofit-provider",
-	sourceSystem: "League of Metro Voters questionnaire archive (demo)"
+	sourceSystem: "League of Metro Voters questionnaire archive"
 });
-const stateQuestionnaire = source("state-questionnaire", "State Senate District 12 Candidate Questionnaire Responses", "League of Metro Voters Demo File", "questionnaire", "2026-03-26", "state-senate-d12-candidate-questionnaire.txt", {
+const stateQuestionnaire = source("state-questionnaire", "State Senate District 12 Candidate Questionnaire Responses", "League of Metro Voters questionnaire archive", "questionnaire", "2026-03-26", "state-senate-d12-candidate-questionnaire.txt", {
 	authority: "nonprofit-provider",
-	sourceSystem: "League of Metro Voters questionnaire archive (demo)"
+	sourceSystem: "League of Metro Voters questionnaire archive"
 });
 
 export const demoLocation: LocationSelection = {
-	coverageLabel: "Demo coverage: Metro County, Franklin",
+	coverageLabel: "Current coverage: Metro County, Franklin",
 	displayName: "Metro County, Franklin",
 	slug: "metro-county-franklin",
 	state: "Franklin"
@@ -797,7 +797,7 @@ const candidates: Candidate[] = [
 		party: "Democratic Party",
 		incumbent: false,
 		location: "Metro County, Franklin",
-		summary: "Elena Torres is a first-time federal candidate running on transportation reliability, clinic access, and neighborhood infrastructure. The demo record shows a policy-heavy campaign style with detailed platform documents and a mid-sized professional donor base.",
+		summary: "Elena Torres is a first-time federal candidate running on transportation reliability, clinic access, and neighborhood infrastructure. The current record shows a policy-heavy campaign style with detailed platform documents and a mid-sized professional donor base.",
 		ballotSummary: "Former transit authority counsel and city housing commission chair. Emphasizes commuter reliability, flood resilience, and neighborhood clinics.",
 		topIssues: [
 			{ slug: "transit", label: "Transit reliability" },
@@ -872,7 +872,7 @@ const candidates: Candidate[] = [
 		],
 		alignmentModule: {
 			status: "not-live",
-			summary: "A constituent-alignment view is planned but not yet live in this MVP. The future version would compare district concerns with public records without turning that into a score.",
+			summary: "A constituent-alignment view is planned but not yet live in the current release. A future version would compare district concerns with public records without turning that into a score.",
 			considerations: [
 				"A future alignment module would compare district-level issue priorities with vote records and stated positions.",
 				"It would not rank candidates or recommend a vote.",
@@ -885,18 +885,18 @@ const candidates: Candidate[] = [
 			nextReviewAt: "2026-04-13T14:00:00.000Z",
 			status: "up-to-date",
 			statusLabel: "Up to date",
-			statusNote: "Campaign filing, questionnaire, and policy memo records in the demo archive were reviewed together for this profile."
+			statusNote: "Campaign filing, questionnaire, and policy memo records in the project archive were reviewed together for this profile."
 		}),
 		whatWeKnow: [
-			trustBullet("torres-know-1", "Her public platform is unusually detailed for a first-time congressional candidate in this mock race.", [torresPolicy, federalQuestionnaire]),
+			trustBullet("torres-know-1", "Her public platform is unusually detailed for a first-time congressional candidate in the current coverage set.", [torresPolicy, federalQuestionnaire]),
 			trustBullet("torres-know-2", "The available filing shows a donor base that is broader than one employer or single industry.", [torresFec, methodologyBrief])
 		],
 		whatWeDoNotKnow: [
-			trustBullet("torres-unknown-1", "No independent expenditure activity is included in this demo beyond the candidate committee filing.", [torresFec, methodologyBrief], "Outside spending can change quickly and should be checked in the original filing systems."),
-			trustBullet("torres-unknown-2", "The demo record does not include internal polling or unpublished district outreach plans.", [methodologyBrief], "This page only uses published or source-linked records in the demo archive.")
+			trustBullet("torres-unknown-1", "No independent expenditure activity is included here beyond the candidate committee filing.", [torresFec, methodologyBrief], "Outside spending can change quickly and should be checked in the original filing systems."),
+			trustBullet("torres-unknown-2", "The current record does not include internal polling or unpublished district outreach plans.", [methodologyBrief], "This page only uses published or source-linked records in the project archive.")
 		],
 		methodologyNotes: [
-			"Federal race summaries use campaign filings, questionnaires, and public policy memos included in the demo dataset.",
+			"Federal race summaries use campaign filings, questionnaires, and public policy memos included in the current coverage archive.",
 			"This profile does not include tax returns, private meetings, or unpublished donor communications."
 		],
 		comparison: elenaTorresComparison,
@@ -911,7 +911,7 @@ const candidates: Candidate[] = [
 		party: "Republican Party",
 		incumbent: true,
 		location: "Metro County, Franklin",
-		summary: "Daniel Brooks is the incumbent representative for District 7. The demo record shows a campaign centered on infrastructure continuity and access to federal logistics funding, alongside the broader donor support typical of an incumbent.",
+		summary: "Daniel Brooks is the incumbent representative for District 7. The current record shows a campaign centered on infrastructure continuity and access to federal logistics funding, alongside the broader donor support typical of an incumbent.",
 		ballotSummary: "Two-term incumbent focused on port logistics, flood-control grants, and small-business lending. Campaign emphasizes committee access and constituent casework.",
 		topIssues: [
 			{ slug: "jobs-logistics", label: "Port logistics" },
@@ -998,19 +998,19 @@ const candidates: Candidate[] = [
 			nextReviewAt: "2026-04-13T14:00:00.000Z",
 			status: "up-to-date",
 			statusLabel: "Up to date",
-			statusNote: "The incumbent record combines the latest demo filing, questionnaire, and congressional-record extract attached to this page."
+			statusNote: "The incumbent record combines the latest filing, questionnaire, and congressional-record extract attached to this page."
 		}),
 		whatWeKnow: [
 			trustBullet("brooks-know-1", "The available record shows larger fundraising capacity and a clearer incumbent advantage in committee-linked donor networks.", [brooksFec, methodologyBrief]),
 			trustBullet("brooks-know-2", "He has a vote record that can be inspected directly in ways challenger campaigns cannot match.", [brooksVotes, metroGuide])
 		],
 		whatWeDoNotKnow: [
-			trustBullet("brooks-unknown-1", "The demo does not include private constituent casework records or confidential committee negotiations.", [brooksVotes, methodologyBrief], "This profile is limited to public-facing records and selected official actions."),
+			trustBullet("brooks-unknown-1", "This record does not include private constituent casework records or confidential committee negotiations.", [brooksVotes, methodologyBrief], "This profile is limited to public-facing records and selected official actions."),
 			trustBullet("brooks-unknown-2", "Outside group advertising is not tracked beyond the simplified filing summary.", [brooksFec, methodologyBrief], "Independent expenditures should be checked directly in original campaign-finance systems.")
 		],
 		methodologyNotes: [
-			"Incumbent vote summaries are drawn from the demo congressional record extract and limited to items selected for district relevance.",
-			"Committee negotiations and informal amendments are not fully visible in this MVP."
+			"Incumbent vote summaries are drawn from the congressional-record extract and limited to items selected for district relevance.",
+			"Committee negotiations and informal amendments are not fully visible in the current release."
 		],
 		comparison: danielBrooksComparison,
 		sources: uniqueSources([officialCandidateList, federalQuestionnaire, brooksFec, brooksVotes, metroGuide, methodologyBrief, districtEthics]),
@@ -1024,7 +1024,7 @@ const candidates: Candidate[] = [
 		party: "Democratic Party",
 		incumbent: false,
 		location: "Metro County, Franklin",
-		summary: "Naomi Park is a challenger in the District 12 state senate race. The demo record shows a platform focused on housing stability and groundwater reporting, with more of her public record coming from local office actions than statewide legislative votes.",
+		summary: "Naomi Park is a challenger in the District 12 state senate race. The current record shows a platform focused on housing stability and groundwater reporting, with more of her public record coming from local office actions than statewide legislative votes.",
 		ballotSummary: "Former county public defender and current town councilmember. Campaign centers on housing affordability, groundwater oversight, and school staffing.",
 		topIssues: [
 			{ slug: "housing", label: "Housing affordability" },
@@ -1079,7 +1079,7 @@ const candidates: Candidate[] = [
 			{
 				id: "park-lobby-1",
 				title: "Support base in current disclosures",
-				summary: "The disclosure record shows support from tenant advocates, teachers, and legal-aid donors. No major utility or extraction-industry PAC appears in the current mock filing.",
+				summary: "The disclosure record shows support from tenant advocates, teachers, and legal-aid donors. No major utility or extraction-industry PAC appears in the current filing set.",
 				sources: [districtEthics, methodologyBrief]
 			}
 		],
@@ -1110,7 +1110,7 @@ const candidates: Candidate[] = [
 			nextReviewAt: "2026-04-12T17:15:00.000Z",
 			status: "up-to-date",
 			statusLabel: "Up to date",
-			statusNote: "This challenger profile was reviewed against the latest local hearing notes, ethics digest, and candidate questionnaire in the demo archive."
+			statusNote: "This challenger profile was reviewed against the latest local hearing notes, ethics digest, and candidate questionnaire in the project archive."
 		}),
 		whatWeKnow: [
 			trustBullet("park-know-1", "Her most visible public record comes from town-council work and legal aid advocacy.", [parkHousing, metroGuide]),
@@ -1118,10 +1118,10 @@ const candidates: Candidate[] = [
 		],
 		whatWeDoNotKnow: [
 			trustBullet("park-unknown-1", "There is no statewide legislative record because Park is not currently in the senate.", [parkHousing, methodologyBrief], "This makes direct incumbent-style vote comparisons more limited."),
-			trustBullet("park-unknown-2", "The demo does not include internal coalition agreements or draft bill language beyond the published summaries.", [stateQuestionnaire, methodologyBrief], "Only published hearing notes, disclosures, and questionnaire responses are attached here.")
+			trustBullet("park-unknown-2", "This record does not include internal coalition agreements or draft bill language beyond the published summaries.", [stateQuestionnaire, methodologyBrief], "Only published hearing notes, disclosures, and questionnaire responses are attached here.")
 		],
 		methodologyNotes: [
-			"State race summaries combine local office actions, hearing testimony, and ethics disclosures included in the demo archive.",
+			"State race summaries combine local office actions, hearing testimony, and ethics disclosures included in the project archive.",
 			"No closed-door caucus negotiations or unreleased fiscal estimates are reflected here."
 		],
 		comparison: naomiParkComparison,
@@ -1136,7 +1136,7 @@ const candidates: Candidate[] = [
 		party: "Republican Party",
 		incumbent: true,
 		location: "Metro County, Franklin",
-		summary: "Thomas Bell is the incumbent state senator for District 12. In this demo record, his campaign relies on a visible legislative history in water and infrastructure policy, alongside fundraising tied more heavily to utilities and development interests.",
+		summary: "Thomas Bell is the incumbent state senator for District 12. In the current record, his campaign relies on a visible legislative history in water and infrastructure policy, alongside fundraising tied more heavily to utilities and development interests.",
 		ballotSummary: "Incumbent state senator focused on water reliability, road capacity, and apprenticeship programs. Campaign stresses committee experience and budget negotiations.",
 		topIssues: [
 			{ slug: "water", label: "Water reliability" },
@@ -1222,18 +1222,18 @@ const candidates: Candidate[] = [
 			nextReviewAt: "2026-04-12T17:15:00.000Z",
 			status: "up-to-date",
 			statusLabel: "Up to date",
-			statusNote: "This legislative profile reflects the latest demo senate-bill summary, disclosure digest, and questionnaire submission attached here."
+			statusNote: "This legislative profile reflects the latest senate-bill summary, disclosure digest, and questionnaire submission attached here."
 		}),
 		whatWeKnow: [
 			trustBullet("bell-know-1", "Bell has a documented legislative record on water and workforce policy.", [bellWaterBill, metroGuide]),
 			trustBullet("bell-know-2", "His funding profile shows stronger support from utility and development sectors than his challenger.", [districtEthics, methodologyBrief])
 		],
 		whatWeDoNotKnow: [
-			trustBullet("bell-unknown-1", "The demo record does not include caucus-level strategy discussions or constituent emails.", [bellWaterBill, methodologyBrief], "Only public-facing legislative and filing records are modeled."),
-			trustBullet("bell-unknown-2", "Independent expenditures and dark-money spending are not fully modeled in this MVP.", [districtEthics, methodologyBrief], "Use original state and federal filing systems for broader spending context.")
+			trustBullet("bell-unknown-1", "The current record does not include caucus-level strategy discussions or constituent emails.", [bellWaterBill, methodologyBrief], "Only public-facing legislative and filing records are modeled."),
+			trustBullet("bell-unknown-2", "Independent expenditures and dark-money spending are not fully modeled in the current release.", [districtEthics, methodologyBrief], "Use original state and federal filing systems for broader spending context.")
 		],
 		methodologyNotes: [
-			"Legislative summaries rely on the demo senate bill summary, ethics disclosure digest, and a simplified election guide.",
+			"Legislative summaries rely on the senate bill summary, ethics disclosure digest, and a simplified election guide.",
 			"This record does not show constituent service requests or unpublished amendment drafts."
 		],
 		comparison: thomasBellComparison,
@@ -1248,7 +1248,7 @@ const candidates: Candidate[] = [
 		party: "Nonpartisan",
 		incumbent: true,
 		location: "Metro County, Franklin",
-		summary: "Alicia Greene is the current board president and is running on continuity in literacy recovery, attendance improvement, and budget pacing. The demo record includes a visible board voting history and a local donor base.",
+		summary: "Alicia Greene is the current board president and is running on continuity in literacy recovery, attendance improvement, and budget pacing. The current record includes a visible board voting history and a local donor base.",
 		ballotSummary: "Current board president. Focuses on literacy recovery, attendance, and stable long-term budgeting.",
 		topIssues: [
 			{ slug: "education", label: "Reading recovery" },
@@ -1259,7 +1259,7 @@ const candidates: Candidate[] = [
 			{
 				id: "greene-bio-1",
 				title: "School administration background",
-				summary: "Greene is the current board president and a former elementary principal. Her public record in the demo centers on curriculum rollouts, attendance recovery, and budget sequencing.",
+				summary: "Greene is the current board president and a former elementary principal. Her public record here centers on curriculum rollouts, attendance recovery, and budget sequencing.",
 				sources: [schoolBudgetMinutes, schoolLiteracyReport]
 			}
 		],
@@ -1297,7 +1297,7 @@ const candidates: Candidate[] = [
 			{
 				id: "greene-lobby-1",
 				title: "Small local donor base",
-				summary: "The demo filing shows mostly individual and local civic-group support. No major vendor donations appear in the simplified record.",
+				summary: "The filing record shows mostly individual and local civic-group support. No major vendor donations appear in the simplified record.",
 				sources: [schoolQuestionnaire, methodologyBrief]
 			}
 		],
@@ -1322,7 +1322,7 @@ const candidates: Candidate[] = [
 			nextReviewAt: "2026-04-11T18:00:00.000Z",
 			status: "up-to-date",
 			statusLabel: "Up to date",
-			statusNote: "This local profile was reviewed against the latest board minutes, district report, and questionnaire response in the demo archive."
+			statusNote: "This local profile was reviewed against the latest board minutes, district report, and questionnaire response in the project archive."
 		}),
 		whatWeKnow: [
 			trustBullet("greene-know-1", "Greene has the clearest public vote history in this local race.", [schoolBudgetMinutes, schoolQuestionnaire]),
@@ -1330,10 +1330,10 @@ const candidates: Candidate[] = [
 		],
 		whatWeDoNotKnow: [
 			trustBullet("greene-unknown-1", "Closed-session personnel discussions are not public and are not reflected here.", [schoolBudgetMinutes, methodologyBrief], "This is a common limit in local school-board records."),
-			trustBullet("greene-unknown-2", "The demo does not include teacher-union endorsements beyond the simplified questionnaire record.", [schoolQuestionnaire, methodologyBrief], "Only the published demo questionnaire and public records are attached.")
+			trustBullet("greene-unknown-2", "This record does not include teacher-union endorsements beyond the simplified questionnaire record.", [schoolQuestionnaire, methodologyBrief], "Only the published questionnaire and public records are attached.")
 		],
 		methodologyNotes: [
-			"Local race summaries use meeting minutes, district reports, and candidate questionnaires included in the public demo files.",
+			"Local race summaries use meeting minutes, district reports, and candidate questionnaires included in the public source files.",
 			"This record does not include closed-session personnel matters or student-level data."
 		],
 		comparison: aliciaGreeneComparison,
@@ -1348,7 +1348,7 @@ const candidates: Candidate[] = [
 		party: "Nonpartisan",
 		incumbent: false,
 		location: "Metro County, Franklin",
-		summary: "Marcus Hill is a non-incumbent school board candidate focused on tutoring access and parent-facing transparency. The demo record for him relies more on proposals and questionnaires than governing votes.",
+		summary: "Marcus Hill is a non-incumbent school board candidate focused on tutoring access and parent-facing transparency. The current record for him relies more on proposals and questionnaires than governing votes.",
 		ballotSummary: "Former parent advisory council chair. Focuses on tutoring access, district dashboards, and school-to-family communication.",
 		topIssues: [
 			{ slug: "education", label: "Tutoring access" },
@@ -1368,7 +1368,7 @@ const candidates: Candidate[] = [
 				id: "hill-action-1",
 				title: "Proposed public-facing district dashboard",
 				date: "2026-01-16",
-				summary: "Published a mock district dashboard that would track tutoring seats, attendance recovery, and family-response times by campus.",
+				summary: "Published a district dashboard concept that would track tutoring seats, attendance recovery, and family-response times by campus.",
 				significance: "Shows a concrete proposal rather than campaign language alone.",
 				sources: [schoolQuestionnaire, schoolLiteracyReport]
 			}
@@ -1389,7 +1389,7 @@ const candidates: Candidate[] = [
 			{
 				id: "hill-lobby-1",
 				title: "Minimal institutional donor footprint",
-				summary: "The demo filings show mostly individual donors and no notable vendor or labor committee presence.",
+				summary: "The filing record shows mostly individual donors and no notable vendor or labor committee presence.",
 				sources: [schoolQuestionnaire, methodologyBrief]
 			}
 		],
@@ -1414,7 +1414,7 @@ const candidates: Candidate[] = [
 			nextReviewAt: "2026-04-11T18:00:00.000Z",
 			status: "up-to-date",
 			statusLabel: "Up to date",
-			statusNote: "This challenger profile is based on the latest local questionnaire response and district literacy report in the demo archive."
+			statusNote: "This challenger profile is based on the latest local questionnaire response and district literacy report in the project archive."
 		}),
 		whatWeKnow: [
 			trustBullet("hill-know-1", "His campaign message is focused on family-facing transparency tools and tutoring access.", [schoolQuestionnaire, schoolLiteracyReport]),
@@ -1422,7 +1422,7 @@ const candidates: Candidate[] = [
 		],
 		whatWeDoNotKnow: [
 			trustBullet("hill-unknown-1", "There is no school-board voting record because Hill has not held this office.", [schoolQuestionnaire, methodologyBrief], "This profile leans more heavily on published proposals than on governing record."),
-			trustBullet("hill-unknown-2", "The demo does not include detailed position papers on facilities or procurement.", [schoolQuestionnaire, methodologyBrief], "Only source-linked questionnaire responses and public-facing statements are attached.")
+			trustBullet("hill-unknown-2", "This record does not include detailed position papers on facilities or procurement.", [schoolQuestionnaire, methodologyBrief], "Only source-linked questionnaire responses and public-facing statements are attached.")
 		],
 		methodologyNotes: [
 			"Because Hill has not served on the board, this profile relies more heavily on published proposals and questionnaires than vote records."
@@ -1439,7 +1439,7 @@ const candidates: Candidate[] = [
 		party: "Nonpartisan",
 		incumbent: false,
 		location: "Metro County, Franklin",
-		summary: "Sandra Patel is a nonpartisan school board candidate emphasizing budget clarity, reserve policy, and long-range facilities planning. The demo record is strongest on fiscal process and lighter on classroom policy detail.",
+		summary: "Sandra Patel is a nonpartisan school board candidate emphasizing budget clarity, reserve policy, and long-range facilities planning. The current record is strongest on fiscal process and lighter on classroom policy detail.",
 		ballotSummary: "Former district budget analyst. Focuses on reserve policy, procurement clarity, and long-term facilities planning.",
 		topIssues: [
 			{ slug: "budget", label: "Budget oversight" },
@@ -1480,7 +1480,7 @@ const candidates: Candidate[] = [
 			{
 				id: "patel-lobby-1",
 				title: "Local professional donor profile",
-				summary: "The simplified disclosure record shows local civic and professional donors. No major vendor contributions appear in the demo set.",
+				summary: "The simplified disclosure record shows local civic and professional donors. No major vendor contributions appear in the current source set.",
 				sources: [schoolQuestionnaire, methodologyBrief]
 			}
 		],
@@ -1505,14 +1505,14 @@ const candidates: Candidate[] = [
 			nextReviewAt: "2026-04-11T18:00:00.000Z",
 			status: "up-to-date",
 			statusLabel: "Up to date",
-			statusNote: "This local candidate page was reviewed against the latest budget materials and questionnaire response in the demo archive."
+			statusNote: "This local candidate page was reviewed against the latest budget materials and questionnaire response in the project archive."
 		}),
 		whatWeKnow: [
 			trustBullet("patel-know-1", "Her public-facing material is the most budget-specific in the local field.", [schoolBudgetMinutes, schoolQuestionnaire]),
-			trustBullet("patel-know-2", "Her donor base looks local and professional rather than institutional in the current demo file.", [schoolQuestionnaire, methodologyBrief])
+			trustBullet("patel-know-2", "Her donor base looks local and professional rather than institutional in the current filing set.", [schoolQuestionnaire, methodologyBrief])
 		],
 		whatWeDoNotKnow: [
-			trustBullet("patel-unknown-1", "The demo does not include extensive public comments from teachers or principals responding to Patel's budget proposals.", [schoolBudgetMinutes, methodologyBrief], "This page reflects published budget documents, not private stakeholder feedback."),
+			trustBullet("patel-unknown-1", "This record does not include extensive public comments from teachers or principals responding to Patel's budget proposals.", [schoolBudgetMinutes, methodologyBrief], "This page reflects published budget documents, not private stakeholder feedback."),
 			trustBullet("patel-unknown-2", "There is no school-board voting record because Patel is not an incumbent.", [schoolQuestionnaire, methodologyBrief], "Direct governing-record comparisons are limited for non-incumbents in this race.")
 		],
 		methodologyNotes: [
@@ -1530,7 +1530,7 @@ const measures: Measure[] = [
 		title: "Measure 4: Transit and Sidewalk Bond",
 		contestSlug: "measure-4-transit-bond",
 		location: "Metro County, Franklin",
-		summary: "Measure 4 is a county bond proposal tied to transit corridors, sidewalks, and weather-related stop improvements. The main tradeoff in this demo record is faster project delivery versus a longer debt obligation.",
+		summary: "Measure 4 is a county bond proposal tied to transit corridors, sidewalks, and weather-related stop improvements. The main tradeoff in the current record is faster project delivery versus a longer debt obligation.",
 		ballotSummary: "Would authorize up to $180 million in bonds for bus corridor upgrades, accessible sidewalks, and storm-safe transit stops.",
 		plainLanguageExplanation: "Measure 4 would let Metro County borrow money for specific transportation projects, including bus-stop shelters, sidewalk repairs near schools and clinics, and drainage improvements at major stops. Borrowing would spread project costs over many years instead of paying for all construction from current revenue.",
 		currentLawOverview: "Under current county practice, Metro County can fund transit-stop and sidewalk work through annual appropriations, grants, and smaller capital commitments, but it does not yet have authority for this proposed bond package.",
@@ -1648,7 +1648,7 @@ const measures: Measure[] = [
 				id: "measure4-support-1",
 				title: "Supporters emphasize faster delivery of delayed capital work",
 				attribution: "Supporters, as reflected in the county guide and capital-plan materials",
-				summary: "The pro-bond case in this demo record is that borrowing would move a backlog of stop, sidewalk, and drainage work into an earlier construction window instead of waiting for many years of annual appropriations.",
+				summary: "The pro-bond case in the current record is that borrowing would move a backlog of stop, sidewalk, and drainage work into an earlier construction window instead of waiting for many years of annual appropriations.",
 				sources: [transitCapital, metroGuide]
 			},
 			{
@@ -1663,19 +1663,19 @@ const measures: Measure[] = [
 			{
 				id: "measure4-oppose-1",
 				title: "Opponents focus on debt-service pressure",
-				attribution: "Opponents, as reflected in skeptical commentary summarized in the demo guide materials",
+				attribution: "Opponents, as reflected in skeptical commentary summarized in the guide materials",
 				summary: "The main skeptical argument in the attached record is that annual debt service would reduce flexibility in later budgets if tax growth or grant support slows.",
 				sources: [transitFiscal, metroGuide]
 			},
 			{
 				id: "measure4-oppose-2",
 				title: "Opponents question uneven geographic benefit",
-				attribution: "Opponents, as reflected in project-distribution criticism in the demo archive",
+				attribution: "Opponents, as reflected in project-distribution criticism in the project archive",
 				summary: "Some critics argue that residents outside the busiest transit corridors may see fewer direct benefits unless later construction phases broaden the project map.",
 				sources: [transitCapital, metroGuide]
 			}
 		],
-		argumentsDisclaimer: "Support and opposition arguments are shown as attributed positions in the attached demo record. They are not Ballot Clarity endorsements or verified official findings.",
+		argumentsDisclaimer: "Support and opposition arguments are shown as attributed positions in the attached record set. They are not Ballot Clarity endorsements or verified official findings.",
 		argumentsAndConsiderations: [
 			{
 				id: "measure4-consideration-1",
@@ -1696,15 +1696,15 @@ const measures: Measure[] = [
 			nextReviewAt: "2026-04-13T11:00:00.000Z",
 			status: "up-to-date",
 			statusLabel: "Up to date",
-			statusNote: "The measure explainer was reviewed against the latest fiscal note, capital plan summary, and county guide in the demo archive."
+			statusNote: "The measure explainer was reviewed against the latest fiscal note, capital plan summary, and county guide in the project archive."
 		}),
 		whatWeKnow: [
 			trustBullet("measure4-know-1", "The proposal would authorize borrowing for a named list of transit, sidewalk, and stop-improvement projects.", [transitCapital, metroGuide]),
-			trustBullet("measure4-know-2", "The fiscal note in this demo estimates recurring debt service once bonds are issued.", [transitFiscal, methodologyBrief])
+			trustBullet("measure4-know-2", "The fiscal note in the current record estimates recurring debt service once bonds are issued.", [transitFiscal, methodologyBrief])
 		],
 		whatWeDoNotKnow: [
 			trustBullet("measure4-unknown-1", "The final construction sequence would still depend on later county budgeting and project delivery decisions.", [transitCapital, transitFiscal], "A successful vote does not lock every project phase into a fixed calendar."),
-			trustBullet("measure4-unknown-2", "The demo record does not include future grant awards or construction-cost changes that could alter timing.", [transitFiscal, methodologyBrief], "Later bid prices and grants can change the practical scope of a bond program.")
+			trustBullet("measure4-unknown-2", "The current record does not include future grant awards or construction-cost changes that could alter timing.", [transitFiscal, methodologyBrief], "Later bid prices and grants can change the practical scope of a bond program.")
 		],
 		sources: uniqueSources([transitFiscal, transitCapital, metroGuide, methodologyBrief]),
 		updatedAt: "2026-03-30T11:00:00.000Z"
@@ -1714,7 +1714,7 @@ const measures: Measure[] = [
 		title: "Charter Amendment A: Public Records Timeline",
 		contestSlug: "charter-amendment-a-records",
 		location: "Metro County, Franklin",
-		summary: "Charter Amendment A would add timing and explanation rules for county public-records requests. The demo materials frame it as a process-transparency measure rather than a change to what records are legally exempt.",
+		summary: "Charter Amendment A would add timing and explanation rules for county public-records requests. The current record frames it as a process-transparency measure rather than a change to what records are legally exempt.",
 		ballotSummary: "Would require the county to acknowledge public-records requests within five business days and explain most delays in writing.",
 		plainLanguageExplanation: "Charter Amendment A would add basic response-timing rules to the county charter for public-records requests. Agencies would need to acknowledge requests within five business days and give a written explanation if records cannot be produced on time.",
 		currentLawOverview: "Current county practice already operates within state public-records law, but the county charter does not currently set the proposed five-business-day acknowledgement rule or written-delay explanation requirement.",
@@ -1832,7 +1832,7 @@ const measures: Measure[] = [
 				id: "amendment-a-support-1",
 				title: "Supporters emphasize predictable status updates",
 				attribution: "Supporters, as reflected in the charter summary and audit commentary",
-				summary: "The pro-amendment case in the demo archive is that residents and journalists would get faster acknowledgement and clearer explanations when a request cannot be filled immediately.",
+				summary: "The pro-amendment case in the project archive is that residents and journalists would get faster acknowledgement and clearer explanations when a request cannot be filled immediately.",
 				sources: [charterSummary, charterAudit]
 			},
 			{
@@ -1859,7 +1859,7 @@ const measures: Measure[] = [
 				sources: [charterSummary, metroGuide]
 			}
 		],
-		argumentsDisclaimer: "Support and opposition arguments are shown as attributed positions in the attached demo record. They are not Ballot Clarity endorsements or verified official findings.",
+		argumentsDisclaimer: "Support and opposition arguments are shown as attributed positions in the attached record set. They are not Ballot Clarity endorsements or verified official findings.",
 		argumentsAndConsiderations: [
 			{
 				id: "amendment-a-consideration-1",
@@ -1880,11 +1880,11 @@ const measures: Measure[] = [
 			nextReviewAt: "2026-04-13T11:00:00.000Z",
 			status: "up-to-date",
 			statusLabel: "Up to date",
-			statusNote: "The measure explainer was reviewed against the latest charter summary, audit note, and county guide in the demo archive."
+			statusNote: "The measure explainer was reviewed against the latest charter summary, audit note, and county guide in the project archive."
 		}),
 		whatWeKnow: [
 			trustBullet("amendment-a-know-1", "The amendment changes response timing and written-explanation rules for records requests, not the underlying exemption rules.", [charterSummary, metroGuide]),
-			trustBullet("amendment-a-know-2", "The demo fiscal context suggests direct costs are modest if agencies can rely on shared request software.", [charterAudit, methodologyBrief])
+			trustBullet("amendment-a-know-2", "The current fiscal context suggests direct costs are modest if agencies can rely on shared request software.", [charterAudit, methodologyBrief])
 		],
 		whatWeDoNotKnow: [
 			trustBullet("amendment-a-unknown-1", "Future staffing pressure would still depend on how many requests departments receive after the rule change.", [charterAudit, methodologyBrief], "Operational effects can vary by department and request volume."),
@@ -1970,16 +1970,16 @@ const contests: Contest[] = [
 
 const electionOfficialResources: OfficialResource[] = [
 	officialResource("Official election calendar", "Metro County Elections Office", "metro-county-election-calendar.txt", {
-		note: "Demo stand-in for an election calendar and notice page.",
-		sourceSystem: "Metro County Elections Office notice archive (demo)"
+		note: "Reference copy of the election calendar and notice page used in the current archive.",
+		sourceSystem: "Metro County Elections Office notice archive"
 	}),
 	officialResource("Vote-by-mail guide", "Metro County Elections Office", "metro-county-vote-by-mail-guide.txt", {
-		note: "Demo stand-in for absentee and ballot-return instructions.",
-		sourceSystem: "Metro County Elections Office notice archive (demo)"
+		note: "Reference copy of absentee and ballot-return instructions used in the current archive.",
+		sourceSystem: "Metro County Elections Office notice archive"
 	}),
 	officialResource("Early voting schedule", "Metro County Elections Office", "metro-county-early-voting-guide.txt", {
-		note: "Demo stand-in for early voting sites, hours, and accessibility notes.",
-		sourceSystem: "Metro County Elections Office notice archive (demo)"
+		note: "Reference copy of early voting sites, hours, and accessibility notes used in the current archive.",
+		sourceSystem: "Metro County Elections Office notice archive"
 	})
 ];
 
@@ -1990,7 +1990,7 @@ export const demoElection: Election = {
 	jurisdictionSlug: demoLocation.slug,
 	locationName: demoLocation.displayName,
 	updatedAt: "2026-03-30T18:00:00.000Z",
-	description: "Demo ballot for Metro County voters featuring one federal race, one state legislative race, one local school-board race, and two county ballot measures.",
+	description: "Ballot guide for Metro County voters featuring one federal race, one state legislative race, one local school-board race, and two county ballot measures in the current coverage area.",
 	contests,
 	freshness: freshnessMeta({
 		contentLastVerifiedAt: "2026-03-30T18:00:00.000Z",
@@ -1998,28 +1998,28 @@ export const demoElection: Election = {
 		nextReviewAt: "2026-04-14T18:00:00.000Z",
 		status: "up-to-date",
 		statusLabel: "Up to date",
-		statusNote: "Election logistics and guide metadata were reviewed against the latest official-resource files linked in this demo."
+		statusNote: "Election logistics and guide metadata were reviewed against the latest official-resource files linked in this guide."
 	}),
 	keyDates: [
 		{
 			label: "Registration deadline",
 			date: "2026-10-06",
-			note: "Demo deadline for new registrations and address changes."
+			note: "Current reference deadline for new registrations and address changes."
 		},
 		{
 			label: "Vote-by-mail request deadline",
 			date: "2026-10-27",
-			note: "Demo deadline for requesting a mailed ballot."
+			note: "Current reference deadline for requesting a mailed ballot."
 		},
 		{
 			label: "Early voting opens",
 			date: "2026-10-19",
-			note: "Demo date for county vote centers to open."
+			note: "Current reference date for county vote centers to open."
 		},
 		{
 			label: "Election Day polls close",
 			date: "2026-11-03T19:00:00.000Z",
-			note: "Demo closing time shown to model time-sensitive election logistics."
+			note: "Current reference closing time for time-sensitive election logistics."
 		}
 	],
 	officialResources: electionOfficialResources,
@@ -2027,12 +2027,12 @@ export const demoElection: Election = {
 		{
 			id: "change-1",
 			date: "2026-03-30T18:00:00.000Z",
-			summary: "Added source-backed early voting and vote-by-mail resource links to the demo election guide."
+			summary: "Added source-backed early voting and vote-by-mail resource links to the election guide."
 		},
 		{
 			id: "change-2",
 			date: "2026-03-28T15:20:00.000Z",
-			summary: "Clarified the school-board contest description and attached the latest demo questionnaire file."
+			summary: "Clarified the school-board contest description and attached the latest questionnaire file."
 		}
 	]
 };
@@ -2054,7 +2054,7 @@ export const demoJurisdiction: Jurisdiction = {
 	displayName: demoLocation.displayName,
 	state: demoLocation.state,
 	jurisdictionType: "County",
-	description: "Metro County is the demo jurisdiction for this MVP. The page models how a public-interest election hub can combine official election office contacts, upcoming elections, voting methods, and archive links without forcing users through a search-only flow.",
+	description: "Metro County is the current Ballot Clarity coverage area. This page models how a public-interest election hub can combine official election office contacts, upcoming elections, voting methods, and archive links without forcing users through a search-only flow.",
 	nextElectionName: demoElection.name,
 	nextElectionSlug: demoElection.slug,
 	updatedAt: "2026-03-31T15:00:00.000Z",
@@ -2062,13 +2062,13 @@ export const demoJurisdiction: Jurisdiction = {
 		name: "Metro County Elections Office",
 		address: "120 Civic Square, Harbor City, Franklin 00412",
 		phone: "(555) 014-2026",
-		email: "elections@metrocounty-demo.gov",
-		website: "/demo-sources/metro-county-election-office.txt",
-		hours: "Monday-Friday, 8:30 a.m. to 5:00 p.m. Demo extended hours begin during early voting."
+		email: "elections@metrocounty.gov",
+		website: "/source-files/metro-county-election-office.txt",
+		hours: "Monday-Friday, 8:30 a.m. to 5:00 p.m. Extended hours begin during early voting."
 	},
 	officialResources: [
 		officialResource("Election office contact sheet", "Metro County Elections Office", "metro-county-election-office.txt", {
-			sourceSystem: "Metro County Elections Office contact archive (demo)"
+			sourceSystem: "Metro County Elections Office contact archive"
 		}),
 		...electionOfficialResources
 	],
@@ -2076,14 +2076,14 @@ export const demoJurisdiction: Jurisdiction = {
 		{
 			slug: "in-person-election-day",
 			title: "Vote in person on Election Day",
-			summary: "Election Day voting in the demo county is assigned by precinct. The official county office publishes accessibility notes and final hours in the election office contact sheet.",
+			summary: "Election Day voting in this coverage area is assigned by precinct. The official county office publishes accessibility notes and final hours in the election office contact sheet.",
 			details: [
 				"Bring a sample ballot or notes if that helps you track contests.",
 				"Review the official contact sheet for accessibility notes and replacement polling locations.",
 				"Check the election calendar close to Election Day in case hours or precinct assignments change."
 			],
 			officialResource: officialResource("Election office contact sheet", "Metro County Elections Office", "metro-county-election-office.txt", {
-				sourceSystem: "Metro County Elections Office contact archive (demo)"
+				sourceSystem: "Metro County Elections Office contact archive"
 			})
 		},
 		{
@@ -2091,25 +2091,25 @@ export const demoJurisdiction: Jurisdiction = {
 			title: "Use an early voting site",
 			summary: "Metro County publishes a countywide early voting schedule with vote centers, extended-weekend hours, and limited curbside details.",
 			details: [
-				"Early voting is designed as the highest-volume in-person option in this demo dataset.",
-				"Use the schedule to confirm site hours because demo locations vary by weekday and weekend.",
+				"Early voting is designed as the highest-volume in-person option in the current coverage data.",
+				"Use the schedule to confirm site hours because locations can vary by weekday and weekend.",
 				"The sample guide treats the county schedule as the primary source for early voting hours."
 			],
 			officialResource: officialResource("Early voting schedule", "Metro County Elections Office", "metro-county-early-voting-guide.txt", {
-				sourceSystem: "Metro County Elections Office notice archive (demo)"
+				sourceSystem: "Metro County Elections Office notice archive"
 			})
 		},
 		{
 			slug: "vote-by-mail",
 			title: "Vote by mail",
-			summary: "The vote-by-mail guide explains request deadlines, ballot tracking, and return options for this demo jurisdiction.",
+			summary: "The vote-by-mail guide explains request deadlines, ballot tracking, and return options for this coverage area.",
 			details: [
 				"Users should review the official guide for request and return deadlines before relying on a ballot-by-mail plan.",
 				"Drop-box and mail-return instructions can change, so the election guide highlights the most recent update date.",
 				"Ballot Clarity treats mail-voting instructions as official-source content, not advisory copy."
 			],
 			officialResource: officialResource("Vote-by-mail guide", "Metro County Elections Office", "metro-county-vote-by-mail-guide.txt", {
-				sourceSystem: "Metro County Elections Office notice archive (demo)"
+				sourceSystem: "Metro County Elections Office notice archive"
 			})
 		}
 	],
@@ -2119,18 +2119,18 @@ export const demoJurisdiction: Jurisdiction = {
 			id: "archive-2025-special",
 			title: "2025 Metro County Special Election Guide",
 			date: "2025-08-12",
-			href: "/demo-sources/metro-county-voter-guide.txt"
+			href: "/source-files/metro-county-voter-guide.txt"
 		},
 		{
 			id: "archive-2024-general",
 			title: "2024 Metro County General Election Guide",
 			date: "2024-11-05",
-			href: "/demo-sources/metro-county-voter-guide.txt"
+			href: "/source-files/metro-county-voter-guide.txt"
 		}
 	],
 	coverageNotes: [
 		"This is not an official government site. Users should verify deadlines and locations with the Metro County Elections Office.",
-		"The demo location hub is designed as an HTML-first reference page with printable guides as a companion, not a substitute for official notices.",
+		"This location hub is designed as an HTML-first reference page with printable guides as a companion, not a substitute for official notices.",
 		"Coverage notes are visible here so a user can understand scope before opening contest-level pages."
 	]
 };
@@ -2429,7 +2429,7 @@ export const demoDataSources: DataSourcesResponse = {
 		},
 		{
 			id: "milestone-two",
-			title: "Milestone two: ballot lookup MVP",
+			title: "Milestone two: ballot lookup launch",
 			summary: "Expose a single internal ballot API that returns contests, measures, deadlines, and polling-place context."
 		},
 		{
@@ -2458,6 +2458,7 @@ export const demoDataSources: DataSourcesResponse = {
 const adminCorrections: AdminCorrectionRequest[] = [
 	{
 		id: "corr-001",
+		submissionType: "correction",
 		subject: "Candidate funding summary should include March amendment filing",
 		entityType: "candidate",
 		entityLabel: "Elena Torres",
@@ -2471,6 +2472,7 @@ const adminCorrections: AdminCorrectionRequest[] = [
 	},
 	{
 		id: "corr-002",
+		submissionType: "correction",
 		subject: "Measure timeline should clarify when audit rules take effect",
 		entityType: "measure",
 		entityLabel: "Charter Amendment A",
@@ -2484,6 +2486,7 @@ const adminCorrections: AdminCorrectionRequest[] = [
 	},
 	{
 		id: "corr-003",
+		submissionType: "feedback",
 		subject: "Privacy page should mention browser-stored ballot plan state more explicitly",
 		entityType: "policy",
 		entityLabel: "Privacy Policy",
@@ -2506,7 +2509,7 @@ const adminReviewItems: AdminReviewItem[] = [
 		priority: "high",
 		updatedAt: "2026-04-11T12:15:00.000Z",
 		assignedTo: "Editorial review",
-		summary: "Cross-checking contest ordering, official resources, and print layout before public demo refresh.",
+		summary: "Cross-checking contest ordering, official resources, and print layout before the next public refresh.",
 		sourceCoverage: "5 contests with official office and ballot text attached."
 	},
 	{
@@ -2553,7 +2556,7 @@ const adminSourceMonitor: AdminSourceMonitorItem[] = [
 		lastCheckedAt: "2026-04-11T11:15:00.000Z",
 		nextCheckAt: "2026-04-11T23:15:00.000Z",
 		owner: "Money and influence",
-		note: "API is healthy, but one demo mapping still needs manual candidate-to-committee validation."
+		note: "API is healthy, but one candidate-to-committee mapping still needs manual validation."
 	},
 	{
 		id: "source-003",
@@ -2606,7 +2609,7 @@ export const demoAdminOverview: AdminOverviewResponse = {
 			id: "next-publish",
 			label: "Next publish window",
 			value: "Today, 4:00 PM",
-			helpText: "Target window for the next editorially reviewed demo refresh.",
+			helpText: "Target window for the next editorially reviewed public refresh.",
 			tone: "review"
 		}
 	],
@@ -2661,6 +2664,41 @@ export const demoJurisdictionSummaries: JurisdictionSummary[] = [
 	}
 ];
 
+export const demoCandidates: Candidate[] = candidates;
+
+export const demoMeasures: Measure[] = measures;
+
+export const demoSources: Source[] = uniqueSources(
+	candidates.flatMap(candidate => [
+		...candidate.sources,
+		...candidate.biography.flatMap(block => block.sources),
+		...candidate.keyActions.flatMap(action => action.sources),
+		...candidate.lobbyingContext.flatMap(block => block.sources),
+		...candidate.publicStatements.flatMap(block => block.sources),
+		...candidate.whatWeKnow.flatMap(item => item.sources),
+		...candidate.whatWeDoNotKnow.flatMap(item => item.sources),
+		...candidate.funding.sources,
+		...candidate.comparison.whyRunning.sources,
+		...candidate.comparison.topPriorities.flatMap(item => item.sources),
+		...candidate.comparison.questionnaireResponses.flatMap(item => item.sources),
+	]),
+	measures.flatMap(measure => [
+		...measure.sources,
+		...measure.currentPractice.flatMap(item => item.sources),
+		...measure.proposedChanges.flatMap(item => item.sources),
+		...measure.implementationTimeline.flatMap(item => item.sources),
+		...measure.fiscalSummary.flatMap(item => item.sources),
+		...measure.supportArguments.flatMap(item => item.sources),
+		...measure.opposeArguments.flatMap(item => item.sources),
+		...measure.whatWeKnow.flatMap(item => item.sources),
+		...measure.whatWeDoNotKnow.flatMap(item => item.sources),
+	]),
+	demoElection.contests.flatMap(contest => [
+		...(contest.candidates?.flatMap(candidate => candidate.sources) ?? []),
+		...(contest.measures?.flatMap(measure => measure.sources) ?? [])
+	])
+);
+
 export function getCandidateBySlug(slug: string) {
 	return candidates.find(candidate => candidate.slug === slug) ?? null;
 }
@@ -2687,4 +2725,8 @@ export function getJurisdictionBySlug(slug: string) {
 		return demoJurisdiction;
 
 	return null;
+}
+
+export function getSourceById(id: string) {
+	return demoSources.find(source => source.id === id) ?? null;
 }

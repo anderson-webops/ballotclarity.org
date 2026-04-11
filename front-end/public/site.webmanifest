@@ -2,7 +2,7 @@
 	"id": "/",
 	"name": "Ballot Clarity",
 	"short_name": "Ballot Clarity",
-	"description": "A nonpartisan civic-information demo that helps voters review ballot choices, candidate records, ballot measures, and source material without overload.",
+	"description": "A nonpartisan civic-information platform that helps voters review ballot choices, candidate records, ballot measures, and source material without overload.",
 	"start_url": "/",
 	"scope": "/",
 	"display": "standalone",

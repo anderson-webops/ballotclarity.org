@@ -24,7 +24,7 @@ function printBallot() {
 			<div class="px-6 py-8 gap-8 grid lg:px-10 sm:px-8 lg:grid-cols-[minmax(0,1.4fr)_minmax(19rem,0.8fr)]">
 				<div>
 					<div class="flex flex-wrap gap-2 items-center">
-						<TrustBadge label="Demo data" tone="warning" />
+						<TrustBadge label="Current coverage" tone="warning" />
 						<TrustBadge label="Nonpartisan" tone="accent" />
 						<TrustBadge label="Sources attached" />
 					</div>
@@ -95,7 +95,7 @@ function printBallot() {
 					</div>
 
 					<div class="mt-6 space-y-3">
-						<InfoCallout title="Demo notice" tone="warning">
+						<InfoCallout title="Coverage note" tone="warning">
 							{{ props.note }}
 						</InfoCallout>
 

@@ -1,0 +1,11 @@
+Ballot Clarity Methodology Notes
+
+Purpose:
+- document the editorial rules used in the current release
+- explain that summaries are descriptive, not advisory
+- note common limitations in public election data
+
+Key rules:
+- every summary should be traceable to an attached source
+- uncertainty should be stated plainly
+- the product should not rank or recommend candidates

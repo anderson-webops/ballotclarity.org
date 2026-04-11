@@ -41,7 +41,7 @@ async function handleSubmit() {
 	catch (error) {
 		if (error instanceof FetchError) {
 			errorMessage.value = error.statusCode === 503
-				? "Admin access is not configured for this deployment yet."
+				? "No admin users are configured for this deployment yet."
 				: "The admin credentials were not accepted.";
 		}
 		else {
@@ -122,7 +122,7 @@ usePageSeo({
 						Admin access
 					</h2>
 					<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-						Use the configured admin credentials for this deployment. Browser access is session-based and the upstream admin API remains server-to-server only.
+						Use a persisted Ballot Clarity admin or editor account. Browser access is session-based and the upstream admin API remains server-to-server only.
 					</p>
 
 					<form class="mt-6 space-y-4" @submit.prevent="handleSubmit">
@@ -158,7 +158,7 @@ usePageSeo({
 					</form>
 
 					<InfoCallout title="Operational note" class="mt-6">
-						In production, set unique admin credentials, a strong session secret, and a private admin API key for the backend proxy. Do not ship with placeholder values.
+						In production, bootstrap the first admin user, rotate the private admin API key, and keep the session secret unique per deployment.
 					</InfoCallout>
 				</section>
 			</div>

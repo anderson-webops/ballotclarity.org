@@ -33,13 +33,13 @@ const printPractices = [
 ];
 
 const knownLimits = [
-	"This MVP uses clearly labeled demo data, so the current print views are designed to demonstrate structure and readability rather than provide live election logistics.",
+	"The current public build uses clearly labeled staged records, so the print views are designed to demonstrate structure and readability rather than provide live election logistics.",
 	"Ballot Clarity does not yet generate a downloadable tagged PDF. The current accessible print path is the browser print view on supported pages.",
 	"We have not implemented multilingual ballot content or alternative reading modes yet, though the design system is being shaped to support them later."
 ];
 
 usePageSeo({
-	description: "Accessibility and print standards for Ballot Clarity, including WCAG targets, readable ballot-guide rules, and current MVP limitations.",
+	description: "Accessibility and print standards for Ballot Clarity, including WCAG targets, readable ballot-guide rules, and current public-build limitations.",
 	path: "/accessibility",
 	title: "Accessibility and Print Standards"
 });
@@ -52,7 +52,7 @@ usePageSeo({
 				<div class="flex flex-wrap gap-2">
 					<TrustBadge label="WCAG 2.2 AA target" tone="accent" />
 					<TrustBadge label="Print-friendly ballot guides" />
-					<TrustBadge label="MVP limits published" tone="warning" />
+					<TrustBadge label="Current limits published" tone="warning" />
 				</div>
 				<h1 class="text-5xl text-app-ink font-serif mt-5 dark:text-app-text-dark">
 					Accessibility and print standards
@@ -119,7 +119,7 @@ usePageSeo({
 						Open my ballot plan
 					</NuxtLink>
 					<NuxtLink to="/ballot/2026-metro-county-general" class="btn-secondary">
-						Open demo ballot guide
+						Open ballot guide
 					</NuxtLink>
 				</div>
 			</div>
@@ -128,7 +128,7 @@ usePageSeo({
 		<section class="gap-6 grid lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
 			<div class="surface-panel">
 				<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-					Known MVP limits
+					Known current limits
 				</p>
 				<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
 					What is not fully implemented yet

@@ -1,8 +1,0 @@
-Elena Torres Q1 2026 FEC Filing
-
-Reported totals in this demo file:
-- receipts: $1,285,000
-- cash on hand: $742,000
-- notable donor sectors: legal, transportation, health policy
-
-This local file is a demo stand-in for a federal campaign finance filing.

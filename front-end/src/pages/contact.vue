@@ -1,9 +1,23 @@
 <script setup lang="ts">
+import { FetchError } from "ofetch";
 import { contactEmail } from "~/constants";
 
+const api = useApiClient();
 const correctionHref = `mailto:${contactEmail}?subject=${encodeURIComponent("Ballot Clarity correction or dispute")}`;
 const volunteerHref = `mailto:${contactEmail}?subject=${encodeURIComponent("Ballot Clarity volunteer or research inquiry")}`;
 const generalHref = `mailto:${contactEmail}?subject=${encodeURIComponent("Ballot Clarity general inquiry")}`;
+const form = reactive({
+	email: "",
+	message: "",
+	name: "",
+	pageUrl: "",
+	sourceLinks: "",
+	subject: "",
+	submissionType: "correction" as "correction" | "feedback"
+});
+const isSubmitting = ref(false);
+const formMessage = ref("");
+const formTone = ref<"error" | "success">("success");
 
 const correctionChecklist = [
 	"The page URL or route where you found the issue.",
@@ -46,6 +60,38 @@ const handlingNotes = [
 	"Do not send Social Security numbers, financial account data, unpublished home addresses, or other sensitive personal information."
 ];
 
+async function submitForm() {
+	isSubmitting.value = true;
+	formMessage.value = "";
+
+	try {
+		await api("/feedback", {
+			body: form,
+			method: "POST"
+		});
+		formMessage.value = form.submissionType === "correction"
+			? "Correction request submitted. It has been added to the editorial queue."
+			: "Feedback submitted. It has been added to the editorial queue.";
+		formTone.value = "success";
+		form.email = "";
+		form.message = "";
+		form.name = "";
+		form.pageUrl = "";
+		form.sourceLinks = "";
+		form.subject = "";
+		form.submissionType = "correction";
+	}
+	catch (error) {
+		formMessage.value = error instanceof FetchError
+			? error.data?.message || error.statusMessage || "Unable to submit the form right now."
+			: "Unable to submit the form right now.";
+		formTone.value = "error";
+	}
+	finally {
+		isSubmitting.value = false;
+	}
+}
+
 usePageSeo({
 	description: "Contact Ballot Clarity, request a correction, or review the public dispute and update process for source-backed civic information.",
 	path: "/contact",
@@ -68,6 +114,113 @@ usePageSeo({
 				Use this page to report factual issues, flag missing context, challenge framing, or send research and volunteer inquiries. Corrections are treated as part of the product's trust model, not as a private side channel.
 			</p>
 		</header>
+
+		<section class="surface-panel">
+			<div class="gap-6 grid lg:grid-cols-[minmax(0,1fr)_minmax(0,0.95fr)]">
+				<div>
+					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+						Submit online
+					</p>
+					<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
+						Send a correction request or product note
+					</h2>
+					<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
+						Use this form when a page appears inaccurate, incomplete, unevenly framed, or hard to use. Submissions are added to the internal editorial queue with the page URL and supporting notes you provide.
+					</p>
+				</div>
+
+				<form class="space-y-4" @submit.prevent="submitForm">
+					<label class="block">
+						<span class="text-sm text-app-ink font-semibold dark:text-app-text-dark">Request type</span>
+						<select
+							v-model="form.submissionType"
+							class="text-sm text-app-ink mt-2 px-4 border border-app-line rounded-2xl bg-white h-13 w-full shadow-sm dark:text-app-text-dark dark:border-app-line-dark dark:bg-app-panel-dark focus-ring"
+						>
+							<option value="correction">
+								correction
+							</option>
+							<option value="feedback">
+								feedback
+							</option>
+						</select>
+					</label>
+
+					<div class="gap-4 grid sm:grid-cols-2">
+						<label class="block">
+							<span class="text-sm text-app-ink font-semibold dark:text-app-text-dark">Name</span>
+							<input
+								v-model="form.name"
+								type="text"
+								class="text-sm text-app-ink mt-2 px-4 border border-app-line rounded-2xl bg-white h-13 w-full shadow-sm dark:text-app-text-dark dark:border-app-line-dark dark:bg-app-panel-dark focus-ring"
+							>
+						</label>
+						<label class="block">
+							<span class="text-sm text-app-ink font-semibold dark:text-app-text-dark">Email</span>
+							<input
+								v-model="form.email"
+								type="email"
+								required
+								class="text-sm text-app-ink mt-2 px-4 border border-app-line rounded-2xl bg-white h-13 w-full shadow-sm dark:text-app-text-dark dark:border-app-line-dark dark:bg-app-panel-dark focus-ring"
+							>
+						</label>
+					</div>
+
+					<label class="block">
+						<span class="text-sm text-app-ink font-semibold dark:text-app-text-dark">Subject</span>
+						<input
+							v-model="form.subject"
+							type="text"
+							required
+							class="text-sm text-app-ink mt-2 px-4 border border-app-line rounded-2xl bg-white h-13 w-full shadow-sm dark:text-app-text-dark dark:border-app-line-dark dark:bg-app-panel-dark focus-ring"
+						>
+					</label>
+
+					<label class="block">
+						<span class="text-sm text-app-ink font-semibold dark:text-app-text-dark">Page URL or route</span>
+						<input
+							v-model="form.pageUrl"
+							type="text"
+							placeholder="/candidate/elena-torres"
+							class="text-sm text-app-ink mt-2 px-4 border border-app-line rounded-2xl bg-white h-13 w-full shadow-sm dark:text-app-text-dark dark:border-app-line-dark dark:bg-app-panel-dark focus-ring"
+						>
+					</label>
+
+					<label class="block">
+						<span class="text-sm text-app-ink font-semibold dark:text-app-text-dark">Message</span>
+						<textarea
+							v-model="form.message"
+							required
+							rows="5"
+							class="text-sm text-app-ink mt-2 px-4 py-3 border border-app-line rounded-2xl bg-white min-h-32 w-full shadow-sm dark:text-app-text-dark dark:border-app-line-dark dark:bg-app-panel-dark focus-ring"
+						/>
+					</label>
+
+					<label class="block">
+						<span class="text-sm text-app-ink font-semibold dark:text-app-text-dark">Supporting links</span>
+						<textarea
+							v-model="form.sourceLinks"
+							rows="3"
+							placeholder="One link per line"
+							class="text-sm text-app-ink mt-2 px-4 py-3 border border-app-line rounded-2xl bg-white min-h-24 w-full shadow-sm dark:text-app-text-dark dark:border-app-line-dark dark:bg-app-panel-dark focus-ring"
+						/>
+					</label>
+
+					<p
+						v-if="formMessage"
+						class="text-sm px-4 py-3 rounded-2xl"
+						:class="formTone === 'success'
+							? 'text-[#0f5b45] bg-[#e6f4ef] dark:text-[#9ae6c2] dark:bg-[#11352c]'
+							: 'text-[#8B3A2E] bg-[#F8E6E1] dark:text-[#FFD4CB] dark:bg-[#472722]'"
+					>
+						{{ formMessage }}
+					</p>
+
+					<button type="submit" class="btn-primary w-full" :disabled="isSubmitting">
+						{{ isSubmitting ? "Submitting..." : "Submit to editorial queue" }}
+					</button>
+				</form>
+			</div>
+		</section>
 
 		<section class="gap-6 grid lg:grid-cols-3">
 			<div class="surface-panel">
@@ -99,7 +252,7 @@ usePageSeo({
 					General contact
 				</h2>
 				<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-					For general questions about Ballot Clarity, the MVP, or the nonprofit concept, use the direct project inbox.
+					For general questions about Ballot Clarity, the current public build, or the nonprofit concept, use the direct project inbox.
 				</p>
 				<a :href="generalHref" class="btn-secondary mt-6">
 					Email {{ contactEmail }}

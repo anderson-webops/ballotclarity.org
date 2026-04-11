@@ -1,8 +1,0 @@
-Torres Port and Clinic Access Platform Summary
-
-Highlights in this demo source:
-- sidewalk work near three transit corridors
-- clinic access permitting track for rural towns
-- phased local matching funds rather than a district-specific sales tax
-
-This document is a locally hosted demo policy memo.

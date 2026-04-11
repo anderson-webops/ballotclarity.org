@@ -1,6 +1,6 @@
 <script setup lang="ts">
 usePageSeo({
-	description: "The page you requested could not be found in the Ballot Clarity demo.",
+	description: "The page you requested could not be found on Ballot Clarity.",
 	path: "/404",
 	title: "Page Not Found",
 });
@@ -13,17 +13,20 @@ usePageSeo({
 				404
 			</p>
 			<h1 class="text-4xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-				This page is not part of the demo ballot guide.
+				This page could not be found.
 			</h1>
 			<p class="text-base text-app-muted leading-7 mt-4 max-w-2xl dark:text-app-muted-dark">
-				The page may have moved, or the link may be incomplete. Return to the home page to start a ballot lookup or browse the methodology and demo ballot.
+				The page may have moved, the link may be incomplete, or the record may not be available in the current coverage area. Return to the home page, search the site, or open the source directory.
 			</p>
 			<div class="mt-8 flex flex-wrap gap-3">
 				<NuxtLink to="/" class="btn-primary">
 					Back to home
 				</NuxtLink>
-				<NuxtLink to="/ballot" class="btn-secondary">
-					Open demo ballot
+				<NuxtLink to="/search" class="btn-secondary">
+					Search the site
+				</NuxtLink>
+				<NuxtLink to="/sources" class="btn-secondary">
+					Open source directory
 				</NuxtLink>
 			</div>
 		</div>

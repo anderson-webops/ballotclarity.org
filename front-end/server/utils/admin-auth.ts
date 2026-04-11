@@ -1,17 +1,20 @@
 import type { H3Event } from "h3";
 import type {
+	AdminContentResponse,
 	AdminCorrectionsResponse,
 	AdminOverviewResponse,
 	AdminReviewResponse,
 	AdminSessionResponse,
-	AdminSourceMonitorResponse
+	AdminSourceMonitorResponse,
+	AdminUserRole,
+	AdminUsersResponse
 } from "~/types/civic";
 import { Buffer } from "node:buffer";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import process from "node:process";
 import { useRuntimeConfig } from "#imports";
 import { createError, deleteCookie, getCookie, setCookie } from "h3";
-import { $fetch } from "ofetch";
+import { $fetch, FetchError } from "ofetch";
 
 const adminCookieName = "ballot_clarity_admin_session";
 const adminSessionMaxAge = 60 * 60 * 12;
@@ -19,13 +22,21 @@ const adminSessionMaxAge = 60 * 60 * 12;
 interface AdminConfig {
 	apiBase: string;
 	apiKey: string;
-	password: string;
 	sessionSecret: string;
-	username: string;
+}
+
+interface BackendLoginResponse {
+	authenticated: boolean;
+	configured: boolean;
+	displayName: string | null;
+	role: AdminUserRole | null;
+	username: string | null;
 }
 
 interface AdminSessionPayload {
+	displayName: string;
 	expiresAt: number;
+	role: AdminUserRole;
 	username: string;
 }
 
@@ -45,14 +56,12 @@ function getAdminConfig(event: H3Event): AdminConfig {
 	return {
 		apiBase: process.env.NUXT_ADMIN_API_BASE || process.env.ADMIN_API_BASE || String(runtimeConfig.adminApiBase || ""),
 		apiKey: process.env.NUXT_ADMIN_API_KEY || process.env.ADMIN_API_KEY || String(runtimeConfig.adminApiKey || ""),
-		password: process.env.NUXT_ADMIN_PASSWORD || process.env.ADMIN_PASSWORD || String(runtimeConfig.adminPassword || ""),
-		sessionSecret: process.env.NUXT_ADMIN_SESSION_SECRET || process.env.ADMIN_SESSION_SECRET || String(runtimeConfig.adminSessionSecret || ""),
-		username: process.env.NUXT_ADMIN_USERNAME || process.env.ADMIN_USERNAME || String(runtimeConfig.adminUsername || "")
+		sessionSecret: process.env.NUXT_ADMIN_SESSION_SECRET || process.env.ADMIN_SESSION_SECRET || String(runtimeConfig.adminSessionSecret || "")
 	};
 }
 
 function isAdminConfigured(config: AdminConfig) {
-	return Boolean(config.apiBase && config.apiKey && config.password && config.sessionSecret && config.username);
+	return Boolean(config.apiBase && config.apiKey && config.sessionSecret);
 }
 
 function signPayload(payload: string, sessionSecret: string) {
@@ -83,7 +92,7 @@ function parseSession(rawValue: string | undefined, sessionSecret: string) {
 	try {
 		const payload = JSON.parse(Buffer.from(encodedPayload, "base64url").toString("utf8")) as Partial<AdminSessionPayload>;
 
-		if (!payload.username || typeof payload.expiresAt !== "number")
+		if (!payload.username || !payload.displayName || !payload.role || typeof payload.expiresAt !== "number")
 			return null;
 
 		if (payload.expiresAt <= Date.now())
@@ -103,6 +112,8 @@ export function getAdminSession(event: H3Event): AdminSessionResponse {
 		return {
 			authenticated: false,
 			configured: false,
+			displayName: null,
+			role: null,
 			username: null
 		};
 	}
@@ -110,10 +121,12 @@ export function getAdminSession(event: H3Event): AdminSessionResponse {
 	const cookieValue = getCookie(event, adminCookieName);
 	const session = parseSession(cookieValue, config.sessionSecret);
 
-	if (!session || !constantTimeEqual(session.username, config.username)) {
+	if (!session) {
 		return {
 			authenticated: false,
 			configured: true,
+			displayName: null,
+			role: null,
 			username: null
 		};
 	}
@@ -121,6 +134,8 @@ export function getAdminSession(event: H3Event): AdminSessionResponse {
 	return {
 		authenticated: true,
 		configured: true,
+		displayName: session.displayName,
+		role: session.role,
 		username: session.username
 	};
 }
@@ -155,6 +170,8 @@ export function clearAdminSession(event: H3Event): AdminSessionResponse {
 	return {
 		authenticated: false,
 		configured: currentSession.configured,
+		displayName: null,
+		role: null,
 		username: null
 	};
 }
@@ -169,7 +186,29 @@ export async function createAdminSession(event: H3Event, username: string, passw
 		});
 	}
 
-	if (!constantTimeEqual(username, config.username) || !constantTimeEqual(password, config.password)) {
+	let loginResponse: BackendLoginResponse;
+
+	try {
+		loginResponse = await $fetch<BackendLoginResponse>(`${config.apiBase}/admin/auth/login`, {
+			body: {
+				password,
+				username
+			},
+			method: "POST"
+		});
+	}
+	catch (error) {
+		if (error instanceof FetchError) {
+			throw createError({
+				statusCode: error.statusCode || 500,
+				statusMessage: error.data?.message || error.statusMessage || "Unable to verify admin credentials."
+			});
+		}
+
+		throw error;
+	}
+
+	if (!loginResponse.authenticated || !loginResponse.username || !loginResponse.displayName || !loginResponse.role) {
 		throw createError({
 			statusCode: 401,
 			statusMessage: "Invalid admin credentials."
@@ -177,8 +216,10 @@ export async function createAdminSession(event: H3Event, username: string, passw
 	}
 
 	const serializedSession = serializeSession({
+		displayName: loginResponse.displayName,
 		expiresAt: Date.now() + (adminSessionMaxAge * 1000),
-		username: config.username
+		role: loginResponse.role,
+		username: loginResponse.username
 	}, config.sessionSecret);
 
 	setCookie(event, adminCookieName, serializedSession, {
@@ -192,11 +233,16 @@ export async function createAdminSession(event: H3Event, username: string, passw
 	return {
 		authenticated: true,
 		configured: true,
-		username: config.username
+		displayName: loginResponse.displayName,
+		role: loginResponse.role,
+		username: loginResponse.username
 	} satisfies AdminSessionResponse;
 }
 
-async function fetchAdminApi<T>(event: H3Event, path: string) {
+async function fetchAdminApi<T>(event: H3Event, path: string, options?: {
+	body?: Record<string, unknown>;
+	method?: "GET" | "PATCH" | "POST";
+}) {
 	const config = getAdminConfig(event);
 
 	if (!isAdminConfigured(config)) {
@@ -207,9 +253,11 @@ async function fetchAdminApi<T>(event: H3Event, path: string) {
 	}
 
 	return await $fetch<T>(`${config.apiBase}${path}`, {
+		body: options?.body,
 		headers: {
 			"x-admin-api-key": config.apiKey
-		}
+		},
+		method: options?.method
 	});
 }
 
@@ -223,12 +271,70 @@ export async function getAdminCorrections(event: H3Event) {
 	return await fetchAdminApi<AdminCorrectionsResponse>(event, "/admin/corrections");
 }
 
+export async function updateAdminCorrection(event: H3Event, id: string, body: Record<string, unknown>) {
+	requireAdminSession(event);
+	return await fetchAdminApi<AdminCorrectionsResponse>(event, `/admin/corrections/${id}`, {
+		body,
+		method: "PATCH"
+	});
+}
+
 export async function getAdminReview(event: H3Event) {
 	requireAdminSession(event);
 	return await fetchAdminApi<AdminReviewResponse>(event, "/admin/review");
 }
 
+export async function getAdminContent(event: H3Event) {
+	requireAdminSession(event);
+	return await fetchAdminApi<AdminContentResponse>(event, "/admin/content");
+}
+
+export async function updateAdminContent(event: H3Event, id: string, body: Record<string, unknown>) {
+	requireAdminSession(event);
+	return await fetchAdminApi<AdminContentResponse>(event, `/admin/content/${id}`, {
+		body,
+		method: "PATCH"
+	});
+}
+
 export async function getAdminSourceMonitor(event: H3Event) {
 	requireAdminSession(event);
 	return await fetchAdminApi<AdminSourceMonitorResponse>(event, "/admin/sources");
+}
+
+export async function updateAdminSource(event: H3Event, id: string, body: Record<string, unknown>) {
+	requireAdminSession(event);
+	return await fetchAdminApi<AdminSourceMonitorResponse>(event, `/admin/sources/${id}`, {
+		body,
+		method: "PATCH"
+	});
+}
+
+export async function getAdminUsers(event: H3Event) {
+	const session = requireAdminSession(event);
+
+	if (session.role !== "admin") {
+		throw createError({
+			statusCode: 403,
+			statusMessage: "Only admin users can manage accounts."
+		});
+	}
+
+	return await fetchAdminApi<AdminUsersResponse>(event, "/admin/users");
+}
+
+export async function createAdminUser(event: H3Event, body: Record<string, unknown>) {
+	const session = requireAdminSession(event);
+
+	if (session.role !== "admin") {
+		throw createError({
+			statusCode: 403,
+			statusMessage: "Only admin users can manage accounts."
+		});
+	}
+
+	return await fetchAdminApi<AdminUsersResponse>(event, "/admin/users", {
+		body,
+		method: "POST"
+	});
 }

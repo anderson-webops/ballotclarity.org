@@ -43,7 +43,7 @@ const faqEntries = [
 		question: "Does Ballot Clarity endorse candidates or measures?"
 	},
 	{
-		answer: "Each major page links back to source files, official records, or clearly labeled demo materials so readers can verify the underlying evidence directly.",
+		answer: "Each major page links back to source files, official records, or clearly labeled archive materials so readers can verify the underlying evidence directly.",
 		question: "Where does the site get its ballot information?"
 	}
 ];
@@ -123,9 +123,9 @@ const primaryPaths = computed(() => [
 ]);
 
 const trustFacts = [
-	"Nonpartisan nonprofit concept",
+	"Nonpartisan nonprofit product",
 	"Sources linked on every major reading page",
-	"Demo data clearly labeled",
+	"Current coverage limits stated clearly",
 	"Print-friendly ballot guides supported"
 ];
 </script>
@@ -139,7 +139,7 @@ const trustFacts = [
 						<div class="flex flex-wrap gap-2">
 							<TrustBadge label="Nonpartisan" tone="accent" />
 							<TrustBadge label="Source-first" />
-							<TrustBadge label="Demo data" tone="warning" />
+							<TrustBadge label="Current coverage" tone="warning" />
 						</div>
 						<p class="text-xs text-app-muted tracking-[0.26em] font-semibold mt-8 uppercase dark:text-app-muted-dark">
 							Public-interest ballot guide
@@ -197,7 +197,7 @@ const trustFacts = [
 								:to="`/ballot/${featuredElection.slug}`"
 								class="btn-primary"
 							>
-								Open sample ballot guide
+								Open ballot guide
 							</NuxtLink>
 							<NuxtLink to="/plan" class="btn-secondary">
 								Open ballot plan
@@ -259,7 +259,7 @@ const trustFacts = [
 			<div class="gap-6 grid lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
 				<div class="surface-panel">
 					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-						Demo ballot preview
+						Current ballot preview
 					</p>
 					<h2 class="text-4xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
 						See the ballot guide before you open a detail page.
@@ -292,7 +292,7 @@ const trustFacts = [
 							:to="`/ballot/${featuredElection.slug}`"
 							class="btn-primary"
 						>
-							Explore the sample ballot
+							Explore the ballot guide
 						</NuxtLink>
 						<NuxtLink to="/compare" class="btn-secondary">
 							Open compare
@@ -353,7 +353,7 @@ const trustFacts = [
 						Use official sources where they are authoritative, then normalize the rest.
 					</h2>
 					<p class="bc-measure text-base text-app-muted leading-8 mt-5 dark:text-app-muted-dark">
-						The next major iteration is operational, not decorative: replacing the demo layer with a public, auditable data stack that separates official logistics, normalized ballot data, and federal money and influence pipelines.
+						The next major iteration is operational, not decorative: replacing the staged archive with a public, auditable data stack that separates official logistics, normalized ballot data, and federal money and influence pipelines.
 					</p>
 					<div class="mt-6 flex flex-wrap gap-3">
 						<NuxtLink to="/data-sources" class="btn-primary">
@@ -391,7 +391,7 @@ const trustFacts = [
 			<div class="gap-8 grid lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
 				<div class="surface-panel">
 					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-						How the demo is organized
+						How the current coverage is organized
 					</p>
 					<ul class="mt-6 space-y-5">
 						<li class="flex gap-4">
@@ -401,7 +401,7 @@ const trustFacts = [
 									One federal, one state, one local race
 								</p>
 								<p class="text-sm text-app-muted leading-7 mt-2 dark:text-app-muted-dark">
-									The sample ballot shows different contest types so the UI can be tested against different evidence shapes and ballot layouts.
+									The ballot guide shows different contest types so the product can be tested against different evidence shapes and ballot layouts.
 								</p>
 							</div>
 						</li>
@@ -423,7 +423,7 @@ const trustFacts = [
 									Future-ready data architecture
 								</p>
 								<p class="text-sm text-app-muted leading-7 mt-2 dark:text-app-muted-dark">
-									The front end already consumes API-driven data, so real civic sources can replace the demo layer later without rewriting the page structure.
+									The front end already consumes API-driven data, so real civic sources can replace the staged archive later without rewriting the page structure.
 								</p>
 							</div>
 						</li>
@@ -431,7 +431,7 @@ const trustFacts = [
 				</div>
 
 				<InfoCallout title="Important note" tone="warning">
-					This site currently runs on realistic mock data for design and product validation. It is built to be trustworthy about its limits: demo labels stay prominent, sources stay visible, and every summary reminds users to review original records.
+					This site currently runs on staged public-record examples for product validation. It is built to be trustworthy about its limits: coverage notes stay prominent, sources stay visible, and every summary reminds users to review original records.
 				</InfoCallout>
 			</div>
 		</section>

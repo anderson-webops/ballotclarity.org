@@ -24,7 +24,7 @@
 	"dependencies": {
 		"@iconify-json/carbon": "^1.2.19",
 		"@iconify-json/twemoji": "^1.2.5",
-		"@nuxt/devtools": "^3.2.4",
+		"@nuxt/devtools": "^4.0.0-alpha.4",
 		"@nuxt/eslint": "^1.15.2",
 		"@nuxtjs/color-mode": "^4.0.0",
 		"@pinia/nuxt": "^0.11.3",
@@ -41,7 +41,7 @@
 		"@types/node": "^25.5.0",
 		"eslint-plugin-format": "^2.0.1",
 		"tsx": "^4.21.0",
-		"typescript": "^5.9.3",
+		"typescript": "^6.0.2",
 		"vue-tsc": "^3.2.6"
 	}
 }

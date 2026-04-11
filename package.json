@@ -3,7 +3,7 @@
 	"type": "module",
 	"version": "1.0.0",
 	"private": true,
-	"packageManager": "npm@11.12.0",
+	"packageManager": "npm@11.7.0",
 	"description": "Monorepo for the Ballot Clarity civic-information MVP",
 	"author": "Jacob Anderson",
 	"license": "ISC",

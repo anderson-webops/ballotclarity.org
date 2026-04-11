@@ -1,6 +1,5 @@
 import process from "node:process";
 import { defineNuxtConfig } from "nuxt/config";
-import { pwa } from "./src/config/pwa";
 import { appDescription, appName } from "./src/constants/index";
 
 export default defineNuxtConfig({
@@ -9,7 +8,6 @@ export default defineNuxtConfig({
 		"@unocss/nuxt",
 		"@pinia/nuxt",
 		"@nuxtjs/color-mode",
-		"@vite-pwa/nuxt",
 		"@nuxt/eslint"
 	],
 
@@ -25,7 +23,8 @@ export default defineNuxtConfig({
 			link: [
 				{ rel: "icon", href: "/favicon.ico", sizes: "any" },
 				{ rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
-				{ rel: "apple-touch-icon", href: "/apple-touch-icon.png" }
+				{ rel: "apple-touch-icon", href: "/apple-touch-icon.png" },
+				{ rel: "manifest", href: "/site.webmanifest" }
 			],
 			meta: [
 				{ name: "viewport", content: "width=device-width, initial-scale=1" },
@@ -91,7 +90,5 @@ export default defineNuxtConfig({
 				sortConfigKeys: true
 			}
 		}
-	},
-
-	pwa,
+	}
 });

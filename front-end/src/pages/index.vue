@@ -53,245 +53,284 @@ usePageSeo({
 	title: "Understand Your Ballot"
 });
 
-const valueSections = [
+const quickStartSteps = [
 	{
-		text: "Start with an address or ZIP code and get a readable ballot guide organized by contest.",
-		title: "See your ballot"
+		step: "1",
+		text: "Enter an address or ZIP code to generate a readable ballot guide."
 	},
 	{
-		text: "Review neutral summaries, public records, funding context, and plain-language measure explanations.",
-		title: "Understand candidates and measures"
+		step: "2",
+		text: "Scan contests first, then open detail pages only when you need more depth."
 	},
 	{
-		text: "Save one choice per contest, print a portable checklist, and bring a clean reference into the booth.",
-		title: "Build a booth-ready plan"
+		step: "3",
+		text: "Save a plan and print a clean checklist for the voting booth."
 	}
+];
+
+const primaryPaths = computed(() => [
+	{
+		description: "Open the ballot guide organized as a table of contents, then drill into the contests that matter most.",
+		label: "See your ballot",
+		to: featuredElection.value ? `/ballot/${featuredElection.value.slug}` : "/ballot"
+	},
+	{
+		description: "Review neutral candidate dossiers and ballot-measure explainers with sources one click away.",
+		label: "Understand candidates and measures",
+		to: "/methodology"
+	},
+	{
+		description: "Check how information is sourced, how freshness is handled, and where official records take precedence.",
+		label: "Review sources and methodology",
+		to: "/data-sources"
+	}
+]);
+
+const trustFacts = [
+	"Nonpartisan nonprofit concept",
+	"Sources linked on every major reading page",
+	"Demo data clearly labeled",
+	"Print-friendly ballot guides supported"
 ];
 </script>
 
 <template>
 	<div class="pb-10 space-y-16 sm:space-y-20">
 		<section class="app-shell">
-			<div class="border border-app-line rounded-[2rem] bg-white shadow-[0_36px_80px_-54px_rgba(16,37,62,0.68)] overflow-hidden dark:border-app-line-dark dark:bg-app-panel-dark">
-				<div class="px-6 py-8 gap-10 grid lg:px-10 sm:px-8 sm:py-10 lg:grid-cols-[minmax(0,1.25fr)_minmax(22rem,0.9fr)]">
-					<div class="flex flex-col justify-between">
-						<div>
-							<div class="flex flex-wrap gap-2">
-								<TrustBadge label="Nonpartisan" tone="accent" />
-								<TrustBadge label="Source-first" />
-								<TrustBadge label="Demo data" tone="warning" />
+			<div class="gap-6 grid xl:grid-cols-[minmax(0,1.18fr)_minmax(21rem,0.82fr)] xl:items-start">
+				<div class="border border-app-line rounded-[2.2rem] bg-white shadow-[0_36px_84px_-58px_rgba(16,37,62,0.62)] overflow-hidden dark:border-app-line-dark dark:bg-app-panel-dark">
+					<div class="px-6 py-8 lg:px-10 sm:px-8 sm:py-10">
+						<div class="flex flex-wrap gap-2">
+							<TrustBadge label="Nonpartisan" tone="accent" />
+							<TrustBadge label="Source-first" />
+							<TrustBadge label="Demo data" tone="warning" />
+						</div>
+						<p class="text-xs text-app-muted tracking-[0.26em] font-semibold mt-8 uppercase dark:text-app-muted-dark">
+							Public-interest ballot guide
+						</p>
+						<h1 class="text-5xl text-app-ink leading-tight font-serif mt-4 max-w-4xl sm:text-6xl dark:text-app-text-dark">
+							Understand your ballot without the overload.
+						</h1>
+						<p class="bc-measure text-lg text-app-muted leading-8 mt-6 dark:text-app-muted-dark">
+							Ballot Clarity is designed like a calm public-service start page: one clear task up front, readable ballot guides, visible sources, and plain-language context that stays separate from advocacy.
+						</p>
+
+						<div class="mt-8 gap-4 grid md:grid-cols-2 xl:grid-cols-4">
+							<div
+								v-for="fact in trustFacts"
+								:key="fact"
+								class="px-4 py-4 border border-app-line/80 rounded-[1.5rem] bg-app-bg/70 dark:border-app-line-dark dark:bg-app-bg-dark/70"
+							>
+								<p class="text-sm text-app-ink leading-6 font-medium dark:text-app-text-dark">
+									{{ fact }}
+								</p>
 							</div>
-							<p class="text-xs text-app-muted tracking-[0.26em] font-semibold mt-8 uppercase dark:text-app-muted-dark">
-								Trustworthy civic information
-							</p>
-							<h1 class="text-5xl text-app-ink leading-tight font-serif mt-4 max-w-3xl sm:text-6xl dark:text-app-text-dark">
-								Understand your ballot without the overload.
-							</h1>
-							<p class="text-lg text-app-muted leading-8 mt-6 max-w-2xl dark:text-app-muted-dark">
-								Ballot Clarity is a nonprofit civic-information concept built to help voters see who is on the ballot, what those candidates and measures actually do, and where the information came from.
-							</p>
 						</div>
 
-						<div class="mt-10">
-							<AddressLookupForm :election="featuredElection" />
+						<div class="mt-8 pt-8 border-t border-app-line/80 gap-5 grid dark:border-app-line-dark md:grid-cols-3">
+							<div v-for="item in quickStartSteps" :key="item.step">
+								<p class="text-sm text-app-accent font-semibold">
+									Step {{ item.step }}
+								</p>
+								<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
+									{{ item.text }}
+								</p>
+							</div>
 						</div>
 					</div>
+				</div>
 
-					<div class="pamphlet-surface surface-panel relative">
+				<div class="space-y-5">
+					<AddressLookupForm :election="featuredElection" />
+
+					<div class="surface-panel">
 						<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-							Demo ballot preview
+							Start here
 						</p>
-						<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-							{{ featuredElection?.name || 'Metro County sample ballot' }}
+						<h2 class="text-2xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
+							One task, then a clear reading path
 						</h2>
-						<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-							Designed to feel like a digital voters’ pamphlet: clean sections, clear headings, and source access visible wherever claims are summarized.
-						</p>
-
-						<ul class="mt-6 space-y-4">
-							<li
-								v-for="contest in ballotPreview?.election.contests"
-								:key="contest.slug"
-								class="text-sm pb-4 border-b border-app-line/80 flex gap-4 items-start justify-between dark:border-app-line-dark"
-							>
-								<div>
-									<p class="text-app-ink font-semibold dark:text-app-text-dark">
-										{{ contest.office }}
-									</p>
-									<p class="text-app-muted mt-1 dark:text-app-muted-dark">
-										{{ contest.description }}
-									</p>
-								</div>
-								<span class="text-xs text-app-muted font-semibold px-3 py-1 rounded-full bg-app-bg dark:text-app-muted-dark dark:bg-app-bg-dark/70">
-									{{ contest.type === 'candidate' ? `${contest.candidates?.length || 0} candidates` : `${contest.measures?.length || 0} measure` }}
-								</span>
-							</li>
+						<ul class="readable-list text-sm text-app-muted mt-4 dark:text-app-muted-dark">
+							<li>Use the lookup to open a personalized ballot guide.</li>
+							<li>Start with contest summaries before opening any dossier or full explainer.</li>
+							<li>Save choices to your ballot plan only after checking the evidence links.</li>
 						</ul>
-
-						<div class="mt-8 flex flex-wrap gap-3">
+						<div class="mt-6 flex flex-wrap gap-3">
 							<NuxtLink
 								v-if="featuredElection"
 								:to="`/ballot/${featuredElection.slug}`"
 								class="btn-primary"
 							>
-								Explore the sample ballot
+								Open sample ballot guide
 							</NuxtLink>
 							<NuxtLink to="/plan" class="btn-secondary">
 								Open ballot plan
 							</NuxtLink>
-							<NuxtLink to="/methodology" class="btn-secondary">
-								See methodology
-							</NuxtLink>
 						</div>
 					</div>
+
+					<div class="surface-panel">
+						<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+							Why we ask for your address
+						</p>
+						<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
+							A full address helps determine districts and ballot style. ZIP-only searches are useful for previewing the guide, but they can miss district-specific contests and should be treated as partial.
+						</p>
+						<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
+							Trust signals stay compact on purpose: the home page explains the path, while freshness, evidence drawers, and methodology stay closer to the reading surfaces where they matter.
+						</p>
+					</div>
 				</div>
 			</div>
 		</section>
 
 		<section class="app-shell">
-			<div class="gap-6 grid lg:grid-cols-3">
-				<div
-					v-for="section in valueSections"
-					:key="section.title"
-					class="px-1 pt-6 border-t border-app-line dark:border-app-line-dark"
-				>
-					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-						Value
-					</p>
-					<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-						{{ section.title }}
-					</h2>
-					<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-						{{ section.text }}
-					</p>
-				</div>
-			</div>
-		</section>
-
-		<section class="app-shell">
-			<div class="gap-8 grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] lg:items-start">
+			<div class="gap-6 grid lg:grid-cols-[minmax(0,0.52fr)_minmax(0,1fr)] lg:items-start">
 				<div>
 					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-						Nonprofit mission
+						Primary pathways
 					</p>
-					<h2 class="text-4xl text-app-ink font-serif mt-3 max-w-2xl dark:text-app-text-dark">
-						Public-interest election information should be readable, transparent, and calm.
+					<h2 class="text-4xl text-app-ink font-serif mt-3 max-w-xl dark:text-app-text-dark">
+						Start with the task you are trying to complete.
 					</h2>
+					<p class="bc-measure text-base text-app-muted leading-8 mt-5 dark:text-app-muted-dark">
+						The interface is meant to feel predictable. Find the ballot first, use the ballot page as the table of contents, then open deeper pages only when you need record-level detail.
+					</p>
 				</div>
-				<div class="text-base text-app-muted leading-8 space-y-4 dark:text-app-muted-dark">
-					<p>
-						Many voters encounter a mix of campaign ads, dense legal text, and fragmented public records. Ballot Clarity is designed to slow that down. The goal is not to tell people what to think. The goal is to make it easier to inspect what is actually documented.
-					</p>
-					<p>
-						This MVP emphasizes source-backed summaries, plain-language measure explanations, and clear limits on what is known. It is informational, not advisory.
-					</p>
+
+				<div class="divide-app-line divide-y dark:divide-app-line-dark">
+					<NuxtLink
+						v-for="path in primaryPaths"
+						:key="path.label"
+						:to="path.to"
+						class="py-5 flex flex-col gap-3 transition hover:text-app-accent focus-ring"
+					>
+						<div class="flex gap-4 items-center justify-between">
+							<h3 class="text-2xl text-app-ink font-serif dark:text-app-text-dark">
+								{{ path.label }}
+							</h3>
+							<span class="i-carbon-arrow-right text-lg text-app-accent" aria-hidden="true" />
+						</div>
+						<p class="text-sm text-app-muted leading-7 max-w-3xl dark:text-app-muted-dark">
+							{{ path.description }}
+						</p>
+					</NuxtLink>
 				</div>
 			</div>
 		</section>
 
 		<section class="app-shell">
-			<div class="gap-6 grid lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
+			<div class="gap-6 grid lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
 				<div class="surface-panel">
-					<div class="flex flex-wrap gap-2">
-						<TrustBadge label="Jurisdiction-first navigation" tone="accent" />
-						<TrustBadge label="Official links visible" />
-					</div>
-					<h2 class="text-4xl text-app-ink font-serif mt-5 dark:text-app-text-dark">
-						Start from a location hub, not just a search box.
-					</h2>
-					<p class="text-base text-app-muted leading-8 mt-5 dark:text-app-muted-dark">
-						The research direction for this site is clear: voters need stable place-based entry pages with election-office contacts, current election links, archive guides, and voting-method basics. The Metro County hub models that pattern.
+					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+						Demo ballot preview
 					</p>
-					<div v-if="featuredJurisdiction" class="mt-6 p-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
-						<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
-							Featured jurisdiction
+					<h2 class="text-4xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
+						See the ballot guide before you open a detail page.
+					</h2>
+					<p class="bc-measure text-base text-app-muted leading-8 mt-5 dark:text-app-muted-dark">
+						The ballot view works like a contents page for the rest of the product. It groups contests cleanly, keeps official links nearby, and makes saved-plan status visible without forcing the user into a side-by-side comparison too early.
+					</p>
+					<ul class="mt-6 divide-app-line divide-y dark:divide-app-line-dark">
+						<li
+							v-for="contest in ballotPreview?.election.contests"
+							:key="contest.slug"
+							class="py-4 flex gap-4 items-start justify-between"
+						>
+							<div>
+								<p class="text-app-ink font-semibold dark:text-app-text-dark">
+									{{ contest.office }}
+								</p>
+								<p class="text-sm text-app-muted leading-7 mt-1 dark:text-app-muted-dark">
+									{{ contest.description }}
+								</p>
+							</div>
+							<span class="text-xs text-app-muted font-semibold px-3 py-1 rounded-full bg-app-bg whitespace-nowrap dark:text-app-muted-dark dark:bg-app-bg-dark/70">
+								{{ contest.type === "candidate" ? `${contest.candidates?.length || 0} candidates` : `${contest.measures?.length || 0} measure` }}
+							</span>
+						</li>
+					</ul>
+					<div class="mt-8 flex flex-wrap gap-3">
+						<NuxtLink
+							v-if="featuredElection"
+							:to="`/ballot/${featuredElection.slug}`"
+							class="btn-primary"
+						>
+							Explore the sample ballot
+						</NuxtLink>
+						<NuxtLink to="/compare" class="btn-secondary">
+							Open compare
+						</NuxtLink>
+					</div>
+				</div>
+
+				<div class="gap-5 grid">
+					<div class="surface-panel">
+						<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+							Nonprofit mission
 						</p>
-						<h3 class="text-2xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-							{{ featuredJurisdiction.displayName }}
-						</h3>
-						<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
-							{{ featuredJurisdiction.description }}
+						<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
+							Public-interest election information should be readable, transparent, and calm.
+						</h2>
+						<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
+							Many voters see a mix of campaign messaging, fragmented records, and dense ballot language. Ballot Clarity is meant to slow that down and make the documented record easier to inspect.
 						</p>
-						<div class="mt-5 flex flex-wrap gap-3">
+						<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
+							The product is informational, not advisory. Every major reading page is built to keep sources, freshness notes, and limits visible.
+						</p>
+					</div>
+
+					<div class="surface-panel">
+						<div class="flex flex-wrap gap-2">
+							<TrustBadge label="Jurisdiction-first navigation" tone="accent" />
+							<TrustBadge label="Official links visible" />
+						</div>
+						<h2 class="text-3xl text-app-ink font-serif mt-5 dark:text-app-text-dark">
+							Start from a location hub.
+						</h2>
+						<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
+							Stable place-based pages reduce search friction. They give voters a known entry point for official office contacts, voting methods, key dates, archive guides, and the current election overview.
+						</p>
+						<div v-if="featuredJurisdiction" class="mt-6 flex flex-wrap gap-3">
 							<NuxtLink :to="`/locations/${featuredJurisdiction.slug}`" class="btn-primary">
 								Open location hub
 							</NuxtLink>
 							<NuxtLink :to="`/elections/${featuredJurisdiction.nextElectionSlug}`" class="btn-secondary">
 								Open election overview
 							</NuxtLink>
+							<NuxtLink to="/help" class="btn-secondary">
+								Open help hub
+							</NuxtLink>
 						</div>
-					</div>
-				</div>
-
-				<div class="surface-panel">
-					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-						New trust-first entry points
-					</p>
-					<ul class="mt-6 space-y-4">
-						<li class="p-4 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70">
-							<p class="text-app-ink font-semibold dark:text-app-text-dark">
-								Election overview pages
-							</p>
-							<p class="text-sm text-app-muted leading-7 mt-2 dark:text-app-muted-dark">
-								Stable, indexable pages for key dates, official links, and change logs before the user opens the longer ballot guide.
-							</p>
-						</li>
-						<li class="p-4 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70">
-							<p class="text-app-ink font-semibold dark:text-app-text-dark">
-								Help and FAQ hub
-							</p>
-							<p class="text-sm text-app-muted leading-7 mt-2 dark:text-app-muted-dark">
-								Answers common voter questions in plain language and keeps routing back to official authorities clear.
-							</p>
-						</li>
-						<li class="p-4 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70">
-							<p class="text-app-ink font-semibold dark:text-app-text-dark">
-								Canonical trust metadata
-							</p>
-							<p class="text-sm text-app-muted leading-7 mt-2 dark:text-app-muted-dark">
-								Major pages now expose canonical links and structured data to support clearer search interpretation.
-							</p>
-						</li>
-					</ul>
-					<div class="mt-6 flex flex-wrap gap-3">
-						<NuxtLink to="/help" class="btn-secondary">
-							Open help hub
-						</NuxtLink>
-						<NuxtLink to="/methodology" class="btn-secondary">
-							Review methodology
-						</NuxtLink>
-						<NuxtLink to="/data-sources" class="btn-secondary">
-							Review data roadmap
-						</NuxtLink>
 					</div>
 				</div>
 			</div>
 		</section>
 
 		<section v-if="roadmapPreview.length" class="app-shell">
-			<div class="gap-8 grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
+			<div class="gap-8 grid lg:grid-cols-[minmax(0,0.58fr)_minmax(0,1fr)]">
 				<div>
 					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
 						Live data roadmap
 					</p>
-					<h2 class="text-4xl text-app-ink font-serif mt-3 max-w-2xl dark:text-app-text-dark">
+					<h2 class="text-4xl text-app-ink font-serif mt-3 max-w-xl dark:text-app-text-dark">
 						Use official sources where they are authoritative, then normalize the rest.
 					</h2>
-					<p class="text-base text-app-muted leading-8 mt-5 max-w-3xl dark:text-app-muted-dark">
-						The next major product step is not another UI flourish. It is replacing the demo layer with a public, auditable data stack: official election-office notices for logistics, normalized ballot providers for scale, and separate federal pipelines for money and influence.
+					<p class="bc-measure text-base text-app-muted leading-8 mt-5 dark:text-app-muted-dark">
+						The next major iteration is operational, not decorative: replacing the demo layer with a public, auditable data stack that separates official logistics, normalized ballot data, and federal money and influence pipelines.
 					</p>
 					<div class="mt-6 flex flex-wrap gap-3">
 						<NuxtLink to="/data-sources" class="btn-primary">
 							Open data sources roadmap
 						</NuxtLink>
 						<NuxtLink to="/methodology" class="btn-secondary">
-							See methodology
+							Review methodology
 						</NuxtLink>
 					</div>
 				</div>
 
-				<div class="gap-4 grid">
-					<article v-for="item in roadmapPreview" :key="item.slug" class="surface-panel">
+				<div class="divide-app-line divide-y dark:divide-app-line-dark">
+					<article v-for="item in roadmapPreview" :key="item.slug" class="py-5">
 						<div class="flex flex-wrap gap-2 items-center">
 							<TrustBadge label="Planned live stack" tone="accent" />
 						</div>
@@ -301,7 +340,7 @@ const valueSections = [
 						<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
 							{{ item.summary }}
 						</p>
-						<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
+						<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
 							<strong class="text-app-ink dark:text-app-text-dark">Rule:</strong> {{ item.authoritativeRule }}
 						</p>
 						<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
@@ -313,7 +352,7 @@ const valueSections = [
 		</section>
 
 		<section class="app-shell">
-			<div class="gap-8 grid lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.9fr)]">
+			<div class="gap-8 grid lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
 				<div class="surface-panel">
 					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
 						How the demo is organized
@@ -326,7 +365,7 @@ const valueSections = [
 									One federal, one state, one local race
 								</p>
 								<p class="text-sm text-app-muted leading-7 mt-2 dark:text-app-muted-dark">
-									The sample ballot shows a range of race types so the design can support different record shapes and source patterns.
+									The sample ballot shows different contest types so the UI can be tested against different evidence shapes and ballot layouts.
 								</p>
 							</div>
 						</li>
@@ -337,7 +376,7 @@ const valueSections = [
 									Plain-language ballot measure pages
 								</p>
 								<p class="text-sm text-app-muted leading-7 mt-2 dark:text-app-muted-dark">
-									Measures are framed around what YES and NO do, potential impacts, and source-backed considerations without using advocacy language.
+									Measures separate current law, proposed change, YES and NO outcomes, fiscal context, and attributed arguments so the user can scan structure before reading details.
 								</p>
 							</div>
 						</li>
@@ -348,7 +387,7 @@ const valueSections = [
 									Future-ready data architecture
 								</p>
 								<p class="text-sm text-app-muted leading-7 mt-2 dark:text-app-muted-dark">
-									The front end consumes mock API routes, so real civic data sources can replace the demo layer later without rewriting every page.
+									The front end already consumes API-driven data, so real civic sources can replace the demo layer later without rewriting the page structure.
 								</p>
 							</div>
 						</li>
@@ -356,7 +395,7 @@ const valueSections = [
 				</div>
 
 				<InfoCallout title="Important note" tone="warning">
-					This site currently runs on realistic mock data for design and product validation. It is built to be trustworthy about its limits: demo labels are prominent, sources are visible, and every summary reminds users to review original records.
+					This site currently runs on realistic mock data for design and product validation. It is built to be trustworthy about its limits: demo labels stay prominent, sources stay visible, and every summary reminds users to review original records.
 				</InfoCallout>
 			</div>
 		</section>

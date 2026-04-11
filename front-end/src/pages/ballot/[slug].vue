@@ -5,7 +5,7 @@ import { storeToRefs } from "pinia";
 const civicStore = useCivicStore();
 const route = useRoute();
 const { formatDate, formatDateTime } = useFormatters();
-const { ballotPlanCount, ballotViewMode, compareList, selectedIssues } = storeToRefs(civicStore);
+const { ballotPlan, ballotPlanCount, ballotViewMode, compareList, selectedIssues } = storeToRefs(civicStore);
 
 const ballotSlug = computed(() => String(route.params.slug));
 const locationSlug = computed(() => typeof route.query.location === "string" ? route.query.location : undefined);
@@ -118,6 +118,20 @@ const planHref = computed(() => ({
 
 const electionOverviewHref = computed(() => data.value ? `/elections/${data.value.election.slug}` : "/ballot");
 const jurisdictionHref = computed(() => data.value ? `/locations/${data.value.election.jurisdictionSlug}` : "/");
+const ballotBreadcrumbs = computed(() => {
+	if (!data.value) {
+		return [
+			{ label: "Home", to: "/" },
+			{ label: "Ballot guide" }
+		];
+	}
+
+	return [
+		{ label: "Home", to: "/" },
+		{ label: "Election overview", to: electionOverviewHref.value },
+		{ label: "Ballot guide" }
+	];
+});
 const ballotCounts = computed(() => {
 	if (!data.value) {
 		return {
@@ -154,6 +168,30 @@ const coverageNotes = computed(() => {
 		`${ballotPlanCount.value} contest${ballotPlanCount.value === 1 ? "" : "s"} saved to your ballot plan so far.`,
 		"Time-sensitive deadlines, polling logistics, and late campaign activity should still be verified in official election-office notices."
 	];
+});
+const ballotContentsGroups = computed(() => {
+	const contests = filteredContests.value.map(contest => ({
+		countLabel: contest.type === "candidate"
+			? `${contest.candidates?.length ?? 0} candidate${contest.candidates?.length === 1 ? "" : "s"}`
+			: `${contest.measures?.length ?? 0} measure${contest.measures?.length === 1 ? "" : "s"}`,
+		href: `#${contest.slug}`,
+		label: contest.office,
+		meta: contest.jurisdiction,
+		saved: Boolean(ballotPlan.value[contest.slug]),
+		slug: contest.slug,
+		type: contest.type
+	}));
+
+	return [
+		{
+			items: contests.filter(contest => contest.type === "candidate"),
+			label: "Offices and races"
+		},
+		{
+			items: contests.filter(contest => contest.type === "measure"),
+			label: "Ballot measures"
+		}
+	].filter(group => group.items.length);
 });
 
 const ballotMethodItems = [
@@ -197,6 +235,10 @@ function clearFilters() {
 
 		<section v-if="data" class="app-shell print-hidden">
 			<FreshnessStrip :change-log="data.election.changeLog" :freshness="data.election.freshness" title="Guide freshness and review status" />
+		</section>
+
+		<section v-if="data" class="app-shell print-hidden">
+			<AppBreadcrumbs :items="ballotBreadcrumbs" />
 		</section>
 
 		<section v-if="data" class="print-only app-shell">
@@ -432,105 +474,160 @@ function clearFilters() {
 		</section>
 
 		<section class="app-shell print-hidden">
-			<div class="surface-panel">
-				<div class="gap-6 grid xl:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
-					<div>
-						<label for="ballot-search" class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
-							Search this ballot
-						</label>
-						<div class="mt-3 relative">
-							<span class="i-carbon-search text-app-muted pointer-events-none left-4 top-1/2 absolute dark:text-app-muted-dark -translate-y-1/2" />
-							<input
-								id="ballot-search"
-								v-model="searchQuery"
-								type="search"
-								placeholder="Search candidates, measures, or issues"
-								class="text-sm text-app-ink pl-11 pr-4 border border-app-line rounded-full bg-white h-[3.25rem] w-full dark:text-app-text-dark placeholder:text-app-muted dark:border-app-line-dark dark:bg-app-panel-dark focus-ring dark:placeholder:text-app-muted-dark"
-							>
+			<div class="gap-6 grid xl:grid-cols-[minmax(18rem,0.72fr)_minmax(0,1.28fr)]">
+				<nav
+					v-if="ballotContentsGroups.length"
+					aria-label="Ballot contents"
+					class="surface-panel self-start xl:top-24 xl:sticky"
+				>
+					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+						Ballot contents
+					</p>
+					<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
+						Use this page like a table of contents.
+					</h2>
+					<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
+						Start with the contest list, then open detail pages only when you need the full dossier or measure explainer. Saved items stay labeled so you can see what still needs attention.
+					</p>
+
+					<div v-for="group in ballotContentsGroups" :key="group.label" class="mt-6">
+						<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+							{{ group.label }}
+						</p>
+						<ol class="mt-3 space-y-2">
+							<li v-for="item in group.items" :key="item.slug">
+								<a
+									:href="item.href"
+									class="p-3 border border-app-line/80 rounded-[1.4rem] bg-app-bg/55 flex gap-3 transition items-start justify-between dark:border-app-line-dark hover:border-app-accent/60 dark:bg-app-bg-dark/70 focus-ring"
+								>
+									<div class="min-w-0">
+										<p class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
+											{{ item.label }}
+										</p>
+										<p class="text-xs text-app-muted leading-6 mt-1 dark:text-app-muted-dark">
+											{{ item.meta }}
+										</p>
+									</div>
+									<div class="text-right flex flex-col gap-2 items-end">
+										<span class="text-[11px] text-app-muted font-semibold px-2.5 py-1 rounded-full bg-white whitespace-nowrap dark:text-app-muted-dark dark:bg-app-panel-dark">
+											{{ item.countLabel }}
+										</span>
+										<span
+											class="text-[11px] font-semibold px-2.5 py-1 rounded-full inline-flex gap-1 whitespace-nowrap items-center"
+											:class="item.saved
+												? 'bg-app-accent text-white'
+												: 'bg-app-warm/75 text-app-ink dark:bg-app-bg-dark dark:text-app-text-dark'"
+										>
+											<span :class="item.saved ? 'i-carbon-checkmark' : 'i-carbon-time'" aria-hidden="true" />
+											{{ item.saved ? "Saved" : "Open" }}
+										</span>
+									</div>
+								</a>
+							</li>
+						</ol>
+					</div>
+				</nav>
+
+				<div class="space-y-6">
+					<div class="surface-panel">
+						<div class="gap-6 grid xl:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
+							<div>
+								<label for="ballot-search" class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
+									Search this ballot
+								</label>
+								<div class="mt-3 relative">
+									<span class="i-carbon-search text-app-muted pointer-events-none left-4 top-1/2 absolute dark:text-app-muted-dark -translate-y-1/2" />
+									<input
+										id="ballot-search"
+										v-model="searchQuery"
+										type="search"
+										placeholder="Search candidates, measures, or issues"
+										class="text-sm text-app-ink pl-11 pr-4 border border-app-line rounded-full bg-white h-[3.25rem] w-full dark:text-app-text-dark placeholder:text-app-muted dark:border-app-line-dark dark:bg-app-panel-dark focus-ring dark:placeholder:text-app-muted-dark"
+									>
+								</div>
+							</div>
+
+							<div>
+								<div class="flex gap-4 items-center justify-between">
+									<p class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
+										Filter by issue
+									</p>
+									<button type="button" class="text-xs text-app-accent font-semibold rounded-full focus-ring" @click="clearFilters">
+										Clear filters
+									</button>
+								</div>
+								<div class="mt-3 flex flex-wrap gap-2">
+									<button
+										v-for="issue in issueOptions"
+										:key="issue.slug"
+										type="button"
+										class="text-xs font-semibold px-3 py-2 border rounded-full transition focus-ring"
+										:class="selectedIssues.includes(issue.slug)
+											? 'border-app-accent bg-app-accent text-white'
+											: 'border-app-line bg-white text-app-muted hover:border-app-accent hover:text-app-accent dark:border-app-line-dark dark:bg-app-panel-dark dark:text-app-muted-dark'"
+										:aria-pressed="selectedIssues.includes(issue.slug)"
+										@click="civicStore.toggleIssue(issue.slug)"
+									>
+										<span v-if="selectedIssues.includes(issue.slug)" class="i-carbon-checkmark mr-1" aria-hidden="true" />
+										{{ issue.label }}
+									</button>
+								</div>
+							</div>
+						</div>
+
+						<div class="mt-6 gap-4 grid lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
+							<div>
+								<p class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
+									Reading mode
+								</p>
+								<p class="text-sm text-app-muted leading-7 mt-2 dark:text-app-muted-dark">
+									Quick view reduces overload for first-pass reading. Deep view keeps funding, action highlights, and longer context visible on each card.
+								</p>
+							</div>
+							<div class="flex flex-wrap gap-2">
+								<button
+									type="button"
+									class="text-xs font-semibold px-3 py-2 border rounded-full transition focus-ring"
+									:class="ballotViewMode === 'quick'
+										? 'border-app-accent bg-app-accent text-white'
+										: 'border-app-line bg-white text-app-muted hover:border-app-accent hover:text-app-accent dark:border-app-line-dark dark:bg-app-panel-dark dark:text-app-muted-dark'"
+									:aria-pressed="ballotViewMode === 'quick'"
+									@click="civicStore.setBallotViewMode('quick')"
+								>
+									<span v-if="ballotViewMode === 'quick'" class="i-carbon-checkmark mr-1" aria-hidden="true" />
+									Quick view
+								</button>
+								<button
+									type="button"
+									class="text-xs font-semibold px-3 py-2 border rounded-full transition focus-ring"
+									:class="ballotViewMode === 'deep'
+										? 'border-app-accent bg-app-accent text-white'
+										: 'border-app-line bg-white text-app-muted hover:border-app-accent hover:text-app-accent dark:border-app-line-dark dark:bg-app-panel-dark dark:text-app-muted-dark'"
+									:aria-pressed="ballotViewMode === 'deep'"
+									@click="civicStore.setBallotViewMode('deep')"
+								>
+									<span v-if="ballotViewMode === 'deep'" class="i-carbon-checkmark mr-1" aria-hidden="true" />
+									Deep view
+								</button>
+								<NuxtLink to="/accessibility" class="btn-secondary">
+									Accessibility and print standards
+								</NuxtLink>
+								<NuxtLink :to="planHref" class="btn-secondary">
+									{{ ballotPlanCount ? `Open plan (${ballotPlanCount})` : "Open plan" }}
+								</NuxtLink>
+							</div>
 						</div>
 					</div>
 
-					<div>
-						<div class="flex gap-4 items-center justify-between">
-							<p class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
-								Filter by issue
-							</p>
-							<button type="button" class="text-xs text-app-accent font-semibold rounded-full focus-ring" @click="clearFilters">
-								Clear filters
-							</button>
-						</div>
-						<div class="mt-3 flex flex-wrap gap-2">
-							<button
-								v-for="issue in issueOptions"
-								:key="issue.slug"
-								type="button"
-								class="text-xs font-semibold px-3 py-2 border rounded-full transition focus-ring"
-								:class="selectedIssues.includes(issue.slug)
-									? 'border-app-accent bg-app-accent text-white'
-									: 'border-app-line bg-white text-app-muted hover:border-app-accent hover:text-app-accent dark:border-app-line-dark dark:bg-app-panel-dark dark:text-app-muted-dark'"
-								:aria-pressed="selectedIssues.includes(issue.slug)"
-								@click="civicStore.toggleIssue(issue.slug)"
-							>
-								<span v-if="selectedIssues.includes(issue.slug)" class="i-carbon-checkmark mr-1" aria-hidden="true" />
-								{{ issue.label }}
-							</button>
-						</div>
-					</div>
-				</div>
-
-				<div class="mt-6 gap-4 grid lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
-					<div>
-						<p class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
-							Reading mode
-						</p>
-						<p class="text-sm text-app-muted leading-7 mt-2 dark:text-app-muted-dark">
-							Quick view reduces overload for first-pass reading. Deep view keeps funding, action highlights, and longer context visible on each card.
-						</p>
-					</div>
-					<div class="flex flex-wrap gap-2">
-						<button
-							type="button"
-							class="text-xs font-semibold px-3 py-2 border rounded-full transition focus-ring"
-							:class="ballotViewMode === 'quick'
-								? 'border-app-accent bg-app-accent text-white'
-								: 'border-app-line bg-white text-app-muted hover:border-app-accent hover:text-app-accent dark:border-app-line-dark dark:bg-app-panel-dark dark:text-app-muted-dark'"
-							:aria-pressed="ballotViewMode === 'quick'"
-							@click="civicStore.setBallotViewMode('quick')"
-						>
-							<span v-if="ballotViewMode === 'quick'" class="i-carbon-checkmark mr-1" aria-hidden="true" />
-							Quick view
-						</button>
-						<button
-							type="button"
-							class="text-xs font-semibold px-3 py-2 border rounded-full transition focus-ring"
-							:class="ballotViewMode === 'deep'
-								? 'border-app-accent bg-app-accent text-white'
-								: 'border-app-line bg-white text-app-muted hover:border-app-accent hover:text-app-accent dark:border-app-line-dark dark:bg-app-panel-dark dark:text-app-muted-dark'"
-							:aria-pressed="ballotViewMode === 'deep'"
-							@click="civicStore.setBallotViewMode('deep')"
-						>
-							<span v-if="ballotViewMode === 'deep'" class="i-carbon-checkmark mr-1" aria-hidden="true" />
-							Deep view
-						</button>
-						<NuxtLink to="/accessibility" class="btn-secondary">
-							Accessibility and print standards
-						</NuxtLink>
-						<NuxtLink :to="planHref" class="btn-secondary">
-							{{ ballotPlanCount ? `Open plan (${ballotPlanCount})` : "Open plan" }}
-						</NuxtLink>
-					</div>
+					<InfoCallout title="Questions to ask before you vote">
+						<ul class="space-y-2">
+							<li>What is directly documented here, and what still requires checking an original record?</li>
+							<li>Which issues matter most in this contest, and what evidence is attached to each summary?</li>
+							<li>What might change if the measure passes or fails, and who would carry the cost or benefit?</li>
+						</ul>
+					</InfoCallout>
 				</div>
 			</div>
-		</section>
-
-		<section class="app-shell print-hidden">
-			<InfoCallout title="Questions to ask before you vote">
-				<ul class="space-y-2">
-					<li>What is directly documented here, and what still requires checking an original record?</li>
-					<li>Which issues matter most in this contest, and what evidence is attached to each summary?</li>
-					<li>What might change if the measure passes or fails, and who would carry the cost or benefit?</li>
-				</ul>
-			</InfoCallout>
 		</section>
 
 		<section v-if="pending" class="app-shell space-y-6">

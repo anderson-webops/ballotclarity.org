@@ -42,6 +42,11 @@ function uniqueSources(sources: Source[]) {
 }
 
 const measureJsonHref = computed(() => measure.value ? `${runtimeConfig.public.apiBase}/measures/${measure.value.slug}` : "");
+const measureBreadcrumbs = computed(() => [
+	{ label: "Home", to: "/" },
+	{ label: "Ballot guide", to: "/ballot/2026-metro-county-general" },
+	{ label: measure.value?.title ?? "Measure explainer" }
+]);
 const officialSources = computed(() => {
 	if (!measure.value)
 		return [];
@@ -194,6 +199,8 @@ function saveMeasure(decision: "no" | "review" | "yes") {
 
 		<div v-else class="gap-8 grid xl:grid-cols-[minmax(0,1.35fr)_minmax(22rem,0.85fr)]">
 			<div class="space-y-6">
+				<AppBreadcrumbs :items="measureBreadcrumbs" />
+
 				<header class="surface-panel">
 					<div class="flex flex-wrap gap-2">
 						<TrustBadge label="Demo measure detail" tone="warning" />
@@ -206,7 +213,7 @@ function saveMeasure(decision: "no" | "review" | "yes") {
 					<h1 class="text-5xl text-app-ink leading-tight font-serif mt-3 dark:text-app-text-dark">
 						{{ measure.title }}
 					</h1>
-					<p class="text-base text-app-muted leading-8 mt-6 dark:text-app-muted-dark">
+					<p class="bc-measure text-base text-app-muted leading-8 mt-6 dark:text-app-muted-dark">
 						{{ measure.summary }}
 					</p>
 					<div class="mt-6 flex flex-wrap gap-3 items-center">

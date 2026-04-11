@@ -169,6 +169,7 @@ test("built app renders the key ballot guide pages against the built API", async
 	assert.match(ballotHtml, /Showing contests for your districts/);
 	assert.match(ballotHtml, /Need a page reviewed/);
 	assert.match(ballotHtml, /Build a booth-ready plan/);
+	assert.match(ballotHtml, /Ballot contents/);
 	assert.match(ballotHtml, /Reading mode/);
 	assert.match(ballotHtml, /Quick view/);
 	assert.match(ballotHtml, /Next review/);
@@ -254,6 +255,7 @@ test("built app renders the key ballot guide pages against the built API", async
 	assert.match(compareHtml, /Compare candidates side by side/);
 	assert.match(compareHtml, /candidate-provided statements by attribute/i);
 	assert.match(compareHtml, /Use compare to eliminate, then save a choice/);
+	assert.match(compareHtml, /Show only rows with meaningful differences/);
 	assert.match(compareHtml, /Show only questions answered by all selected candidates/);
 	assert.match(compareHtml, /Would you support expanding federal transportation and clinic-access grants in District 7/);
 	assert.match(compareHtml, /No response submitted/);

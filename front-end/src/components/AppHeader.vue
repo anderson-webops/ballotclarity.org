@@ -11,10 +11,10 @@ const { ballotPlanCount, compareCount, selectedLocation } = storeToRefs(civicSto
 
 const navLinks = [
 	{ label: "Home", to: "/" },
-	{ label: "Ballot", to: "/ballot" },
-	{ label: "Plan", to: "/plan" },
+	{ label: "Sample ballot", to: "/ballot" },
+	{ label: "My plan", to: "/plan" },
 	{ label: "Compare", to: "/compare" },
-	{ label: "Methodology", to: "/methodology" },
+	{ label: "How it works", to: "/methodology" },
 	{ label: "Help", to: "/help" },
 	{ label: "About", to: "/about" },
 ];
@@ -37,7 +37,7 @@ function toggleColorMode() {
 </script>
 
 <template>
-	<header class="border-b border-app-line/80 bg-app-bg/92 top-0 sticky z-40 backdrop-blur dark:border-app-line-dark dark:bg-app-bg-dark/90">
+	<header class="border-b border-app-line/80 bg-app-bg/94 top-0 sticky z-40 backdrop-blur dark:border-app-line-dark dark:bg-app-bg-dark/92">
 		<div class="app-shell py-4 flex gap-4 items-center justify-between">
 			<div class="flex gap-3 min-w-0 items-center">
 				<NuxtLink to="/" class="rounded-full focus-ring">
@@ -47,7 +47,7 @@ function toggleColorMode() {
 						</span>
 						<span class="min-w-0">
 							<span class="text-lg text-app-ink leading-none font-serif block dark:text-app-text-dark">{{ appName }}</span>
-							<span class="text-xs text-app-muted mt-1 block dark:text-app-muted-dark">Nonpartisan ballot literacy demo</span>
+							<span class="text-xs text-app-muted mt-1 block dark:text-app-muted-dark">Nonpartisan ballot guide and source archive</span>
 						</span>
 					</span>
 				</NuxtLink>

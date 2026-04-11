@@ -18,6 +18,7 @@ watchEffect(() => {
 const { data, pending } = await useCandidates(selectedSlugs);
 
 const selectedCategory = ref<string | null>(null);
+const showOnlyDifferences = ref(false);
 const showOnlyMutualResponses = ref(false);
 
 const sortedCandidates = computed(() => {
@@ -39,6 +40,18 @@ watchEffect(() => {
 });
 
 const sameContest = computed(() => Boolean(data.value?.sameContest));
+const compareBreadcrumbs = computed(() => [
+	{ label: "Home", to: "/" },
+	{ label: "Ballot guide", to: "/ballot/2026-metro-county-general" },
+	{ label: "Compare" }
+]);
+const comparisonStats = computed(() => ({
+	candidateCount: sortedCandidates.value.length,
+	categoryCount: questionCategories.value.length,
+	questionCount: sortedCandidates.value.length
+		? new Set(sortedCandidates.value.flatMap(candidate => candidate.comparison.questionnaireResponses.map(response => response.questionId))).size
+		: 0
+}));
 
 function uniqueSources(...groups: Source[][]) {
 	return Array.from(new Map(groups.flat().map(source => [source.id, source])).values());
@@ -67,6 +80,8 @@ usePageSeo({
 
 <template>
 	<section class="app-shell section-gap space-y-8">
+		<AppBreadcrumbs :items="compareBreadcrumbs" />
+
 		<header class="max-w-5xl">
 			<div class="flex flex-wrap gap-2">
 				<TrustBadge label="Neutral compare view" tone="accent" />
@@ -81,12 +96,43 @@ usePageSeo({
 			</p>
 		</header>
 
-		<InfoCallout title="Comparison policy">
-			Ballot Clarity does not endorse or rank candidates. The default comparison focuses on ballot status, candidate-verbatim statements, and standardized question responses with visible sources and missing-data labels.
-		</InfoCallout>
+		<section class="surface-panel">
+			<div class="gap-5 grid xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.3fr)] md:grid-cols-3">
+				<div class="px-5 py-5 rounded-[1.5rem] bg-app-bg/70 dark:bg-app-bg-dark/70">
+					<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+						Candidates
+					</p>
+					<p class="text-3xl text-app-ink font-semibold mt-3 dark:text-app-text-dark">
+						{{ comparisonStats.candidateCount }}
+					</p>
+					<p class="text-xs text-app-muted leading-6 mt-2 dark:text-app-muted-dark">
+						Compared side by side in the current view.
+					</p>
+				</div>
+				<div class="px-5 py-5 rounded-[1.5rem] bg-app-bg/70 dark:bg-app-bg-dark/70">
+					<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+						Question categories
+					</p>
+					<p class="text-3xl text-app-ink font-semibold mt-3 dark:text-app-text-dark">
+						{{ comparisonStats.categoryCount }}
+					</p>
+					<p class="text-xs text-app-muted leading-6 mt-2 dark:text-app-muted-dark">
+						Standardized issue areas available in the questionnaire set.
+					</p>
+				</div>
+				<div class="px-5 py-5 rounded-[1.5rem] bg-app-bg/70 dark:bg-app-bg-dark/70">
+					<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+						How to read this page
+					</p>
+					<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
+						Columns are candidates and rows are shared attributes. Use the differences-only toggle to cut visual noise, then return to the ballot guide or profile page when you want deeper funding or action context.
+					</p>
+				</div>
+			</div>
+		</section>
 
-		<InfoCallout title="Use compare to eliminate, then save a choice">
-			Start with one or two questions that matter most in this contest. After comparing, return to the ballot guide or candidate page and save the option you want to carry into your ballot plan.
+		<InfoCallout title="Comparison policy">
+			Ballot Clarity does not endorse or rank candidates. The default comparison focuses on ballot status, candidate-verbatim statements, and standardized question responses with visible sources, clear provenance, and missing-data labels. Use compare to eliminate, then save a choice only after checking the deeper ballot guide or profile page.
 		</InfoCallout>
 
 		<div v-if="pending" class="surface-panel bg-white/70 h-96 animate-pulse dark:bg-app-panel-dark/70" />
@@ -194,16 +240,23 @@ usePageSeo({
 						</div>
 					</div>
 
-					<label class="text-sm text-app-muted px-4 py-3 border border-app-line rounded-2xl bg-white flex gap-3 items-center self-start dark:text-app-muted-dark dark:border-app-line-dark dark:bg-app-panel-dark">
-						<input v-model="showOnlyMutualResponses" type="checkbox" class="accent-app-accent h-4 w-4">
-						Show only questions answered by all selected candidates
-					</label>
+					<div class="flex flex-col gap-3">
+						<label class="text-sm text-app-muted px-4 py-3 border border-app-line rounded-2xl bg-white flex gap-3 items-center self-start dark:text-app-muted-dark dark:border-app-line-dark dark:bg-app-panel-dark">
+							<input v-model="showOnlyDifferences" type="checkbox" class="accent-app-accent h-4 w-4">
+							Show only rows with meaningful differences
+						</label>
+						<label class="text-sm text-app-muted px-4 py-3 border border-app-line rounded-2xl bg-white flex gap-3 items-center self-start dark:text-app-muted-dark dark:border-app-line-dark dark:bg-app-panel-dark">
+							<input v-model="showOnlyMutualResponses" type="checkbox" class="accent-app-accent h-4 w-4">
+							Show only questions answered by all selected candidates
+						</label>
+					</div>
 				</div>
 			</section>
 
 			<CompareTable
 				:candidates="sortedCandidates"
 				:question-category="selectedCategory"
+				:show-only-differences="showOnlyDifferences"
 				:show-only-mutual-responses="showOnlyMutualResponses"
 			/>
 

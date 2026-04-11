@@ -101,6 +101,11 @@ const dataThroughLabel = computed(() => {
 	return formatDate(candidate.value.freshness.dataLastUpdatedAt ?? candidate.value.updatedAt);
 });
 const candidateJsonHref = computed(() => candidate.value ? `${runtimeConfig.public.apiBase}/candidates/${candidate.value.slug}` : "");
+const candidateBreadcrumbs = computed(() => [
+	{ label: "Home", to: "/" },
+	{ label: "Ballot guide", to: "/ballot/2026-metro-county-general" },
+	{ label: candidate.value?.name ?? "Candidate profile" }
+]);
 const issuePositionSources = computed(() => {
 	if (!candidate.value)
 		return [];
@@ -226,6 +231,8 @@ function saveToPlan() {
 
 		<div v-else class="gap-8 grid xl:grid-cols-[minmax(0,1.45fr)_minmax(21rem,0.85fr)]">
 			<div class="space-y-6">
+				<AppBreadcrumbs :items="candidateBreadcrumbs" />
+
 				<header class="surface-panel">
 					<div class="flex flex-wrap gap-2 items-center">
 						<TrustBadge label="Demo candidate profile" tone="warning" />

@@ -13,9 +13,9 @@
   --app-paper-dark: #112032;
   --app-warm: #e8d8b5;
   --app-font-body: clamp(1rem, 0.96rem + 0.22vw, 1.125rem);
-  --app-line-body: 1.65;
+  --app-line-body: 1.7;
   --app-line-heading: 1.18;
-  --app-reading-measure: 68ch;
+  --app-reading-measure: 66ch;
   --app-target-min: 44px;
   --app-focus-width: 3px;
   --app-focus-offset: 3px;
@@ -25,6 +25,7 @@ html {
   background: var(--app-bg);
   color: var(--app-ink);
   scroll-behavior: smooth;
+  scroll-padding-top: 7rem;
   text-size-adjust: 100%;
 }
 
@@ -110,6 +111,10 @@ h6 {
   font-size: var(--app-font-body);
   line-height: var(--app-line-body);
   max-width: var(--app-reading-measure);
+}
+
+.bc-measure {
+  max-width: min(100%, var(--app-reading-measure));
 }
 
 .bc-prose p + p {

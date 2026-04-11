@@ -20,7 +20,7 @@ jobs:
       - name: Pin npm version
         run: |
           npm -v
-          npm i -g npm@11.12.0
+          npm i -g npm@11.7.0
           npm -v
 
       - name: Install deps
@@ -41,7 +41,7 @@ jobs:
 
       - name: Pin npm version
         run: |
-          npm i -g npm@11.12.0
+          npm i -g npm@11.7.0
           npm -v
 
       - name: Install deps
@@ -63,7 +63,7 @@ jobs:
 
       - name: Pin npm version
         run: |
-          npm i -g npm@11.12.0
+          npm i -g npm@11.7.0
           npm -v
 
       - name: Install deps
@@ -85,7 +85,7 @@ jobs:
 
       - name: Pin npm version
         run: |
-          npm i -g npm@11.12.0
+          npm i -g npm@11.7.0
           npm -v
 
       - name: Install deps
@@ -106,7 +106,7 @@ jobs:
 
       - name: Pin npm version
         run: |
-          npm i -g npm@11.12.0
+          npm i -g npm@11.7.0
           npm -v
 
       - name: Install deps

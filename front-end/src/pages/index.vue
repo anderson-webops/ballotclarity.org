@@ -33,22 +33,58 @@ watchEffect(() => {
 		civicStore.setElection(featuredElection.value);
 });
 
+const faqEntries = [
+	{
+		answer: "Start with the ballot guide. It keeps contests, summaries, and source links together so voters can move from overview to detail without losing context.",
+		question: "How should a voter use Ballot Clarity?"
+	},
+	{
+		answer: "No. Ballot Clarity is designed as a nonpartisan public-interest guide that separates neutral summaries, evidence links, and methodology from advocacy.",
+		question: "Does Ballot Clarity endorse candidates or measures?"
+	},
+	{
+		answer: "Each major page links back to source files, official records, or clearly labeled demo materials so readers can verify the underlying evidence directly.",
+		question: "Where does the site get its ballot information?"
+	}
+];
+
 usePageSeo({
 	description: "Understand who is on your ballot, what candidates and measures actually say and do, and where the supporting information comes from.",
-	jsonLd: {
-		"@context": "https://schema.org",
-		"@type": "Organization",
-		"contactPoint": [
-			{
-				"@type": "ContactPoint",
-				"contactType": "editorial",
-				"email": `mailto:${contactEmail}`
-			}
-		],
-		"description": "A nonprofit, nonpartisan website providing source-cited ballot and voting information for local elections.",
-		"name": "Ballot Clarity",
-		"url": "https://ballotclarity.jacobdanderson.net/"
-	},
+	jsonLd: [
+		{
+			"@context": "https://schema.org",
+			"@type": "Organization",
+			"contactPoint": [
+				{
+					"@type": "ContactPoint",
+					"contactType": "editorial",
+					"email": `mailto:${contactEmail}`
+				}
+			],
+			"description": "A nonprofit, nonpartisan website providing source-cited ballot and voting information for local elections.",
+			"name": "Ballot Clarity",
+			"url": "https://ballotclarity.jacobdanderson.net/"
+		},
+		{
+			"@context": "https://schema.org",
+			"@type": "WebSite",
+			"description": "A nonprofit, nonpartisan website providing source-cited ballot and voting information for local elections.",
+			"name": "Ballot Clarity",
+			"url": "https://ballotclarity.jacobdanderson.net/"
+		},
+		{
+			"@context": "https://schema.org",
+			"@type": "FAQPage",
+			"mainEntity": faqEntries.map((entry) => ({
+				"@type": "Question",
+				"acceptedAnswer": {
+					"@type": "Answer",
+					"text": entry.answer
+				},
+				"name": entry.question
+			}))
+		}
+	],
 	path: "/",
 	title: "Understand Your Ballot"
 });

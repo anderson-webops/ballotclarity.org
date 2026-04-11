@@ -1,2 +1,42 @@
+User-agent: GPTBot
+Disallow: /
+
+User-agent: ClaudeBot
+Disallow: /
+
+User-agent: Googlebot
+Allow: /
+Disallow: /api
+Disallow: /plan
+
+User-agent: Bingbot
+Allow: /
+Disallow: /api
+Disallow: /plan
+
+User-agent: OAI-SearchBot
+Allow: /
+Disallow: /api
+Disallow: /plan
+
+User-agent: PerplexityBot
+Allow: /
+Disallow: /api
+Disallow: /plan
+
+User-agent: Perplexity-User
+Allow: /
+Disallow: /api
+Disallow: /plan
+
+User-agent: Claude-User
+Allow: /
+Disallow: /api
+Disallow: /plan
+
 User-agent: *
 Allow: /
+Disallow: /api
+Disallow: /plan
+
+Sitemap: https://ballotclarity.jacobdanderson.net/sitemap.xml

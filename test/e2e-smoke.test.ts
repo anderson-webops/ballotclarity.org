@@ -232,10 +232,12 @@ test("built app renders the key ballot guide pages against the built API", async
 	assert.match(methodologyHtml, /How the demo layer is meant to be replaced/);
 	assert.match(methodologyHtml, /Open data sources roadmap/);
 	assert.equal(privacyPage.status, 200);
-	assert.match(privacyHtml, /Privacy notice/);
-	assert.match(privacyHtml, /Current data flows in the MVP/);
-	assert.match(privacyHtml, /The app is now designed not to persist the raw street-address or ZIP input itself/);
-	assert.match(privacyHtml, /The current MVP does not run an advertising-cookie stack/);
+	assert.match(privacyHtml, /Privacy Policy/);
+	assert.match(privacyHtml, /What data Ballot Clarity handles today/);
+	assert.match(privacyHtml, /The application is designed not to publish the raw lookup text/);
+	assert.match(privacyHtml, /No sale, sharing, or targeted advertising in the current MVP/);
+	assert.match(privacyHtml, /Rights requests and limits in a no-account MVP/);
+	assert.match(privacyHtml, /Children(?:&#39;|&apos;|’|')s privacy/);
 	assert.equal(termsPage.status, 200);
 	assert.match(termsHtml, /Terms of Service/);
 	assert.match(termsHtml, /How the service may and may not be used/);

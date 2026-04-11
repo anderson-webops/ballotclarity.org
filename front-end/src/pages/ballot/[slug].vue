@@ -296,7 +296,7 @@ function clearFilters() {
 				</div>
 
 				<p class="print-guide-footnote">
-					Current coverage uses staged public records. Review original records and official notices before relying on any election information.
+					Current coverage uses a limited public-record archive. Review original records and official notices before relying on any election information.
 				</p>
 			</div>
 		</section>

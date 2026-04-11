@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { appName, appUrl, contactEmail } from "~/constants";
+import { appName, contactEmail } from "~/constants";
 
 const effectiveAt = "2026-04-11T09:00:00-04:00";
+const siteUrl = useSiteUrl();
 
 const summaryCards = [
 	{
@@ -13,7 +14,7 @@ const summaryCards = [
 		title: "Not official"
 	},
 	{
-		body: "This public build still includes clearly labeled staged data and experimental product surfaces. Time-sensitive election details should be verified with the relevant public authority.",
+		body: "This release still covers a limited public-record archive and a few clearly labeled future-analysis areas. Time-sensitive election details should be verified with the relevant public authority.",
 		title: "Coverage and verification limits"
 	}
 ];
@@ -21,14 +22,14 @@ const summaryCards = [
 const serviceScope = [
 	"Ballot lookup and location-based ballot guides.",
 	"Candidate, measure, compare, methodology, neutrality, privacy, accessibility, and help pages.",
-	"Printable or shareable ballot-guide views generated from the current public build.",
+	"Printable or shareable ballot-guide views generated from the current release.",
 	"Public contact and correction-request routes."
 ];
 
 const coreTerms = [
-	`By accessing or using the Ballot Clarity website at ${appUrl}, you agree to these Terms of Service and the Privacy Notice.`,
+	`By accessing or using the Ballot Clarity website at ${siteUrl}, you agree to these Terms of Service and the Privacy Notice.`,
 	"If you do not agree to these terms, do not use the site.",
-	"The current public build does not require a public account. A later launch may add a clearer click-through assent step before higher-risk features go live."
+	"The current release does not require a public account. A later launch may add a clearer click-through assent step before higher-risk features go live."
 ];
 
 const noAdviceRules = [
@@ -70,7 +71,7 @@ const futureFeatureRules = [
 ];
 
 const legalLimits = [
-	"The site is provided on an \"as is\" and \"as available\" basis while the product remains in a staged public-build phase.",
+	"The site is provided on an \"as is\" and \"as available\" basis while Ballot Clarity remains in a limited-coverage release phase.",
 	"Ballot Clarity does not guarantee that every page will be complete, current, uninterrupted, secure, or free from error.",
 	"To the fullest extent permitted by applicable law, Ballot Clarity disclaims warranties of accuracy, merchantability, fitness for a particular purpose, and non-infringement.",
 	"To the fullest extent permitted by applicable law, Ballot Clarity is not liable for indirect, incidental, special, consequential, or punitive damages arising from use of the site.",
@@ -78,13 +79,13 @@ const legalLimits = [
 ];
 
 const disputeNotes = [
-	"For the current public build, Ballot Clarity has not yet published a final governing-law, venue, or arbitration clause because the production operating entity and legal posture are still being finalized.",
+	"For the current release, Ballot Clarity has not yet published a final governing-law, venue, or arbitration clause because the production operating entity and legal posture are still being finalized.",
 	"If you believe a legal or factual issue needs review, start with the public contact path so the project can evaluate the issue and respond.",
 	"A production launch should publish the operating legal entity, legal notice address, and any final dispute-resolution terms before the service is treated as a mature public product."
 ];
 
 usePageSeo({
-	description: "Terms of Service for Ballot Clarity, covering informational use, current-coverage limits, permitted public-interest reuse, prohibited conduct, and service disclaimers for the current public build.",
+	description: "Terms of Service for Ballot Clarity, covering informational use, current-coverage limits, permitted public-interest reuse, prohibited conduct, and service disclaimers for the current release.",
 	path: "/terms",
 	title: "Terms of Service"
 });
@@ -110,7 +111,7 @@ usePageSeo({
 		</header>
 
 		<InfoCallout title="Current scope">
-			This page is written for the current public build. A production launch should add the final operator legal name, legal notice address, and any governing-law or dispute-resolution clause chosen by counsel.
+			This page is written for the current release. A production launch should add the final operator legal name, legal notice address, and any governing-law or dispute-resolution clause chosen by counsel.
 		</InfoCallout>
 
 		<section class="gap-6 grid lg:grid-cols-3">
@@ -312,7 +313,7 @@ usePageSeo({
 						</a>.
 					</p>
 					<p>
-						If Ballot Clarity moves beyond the current public-build phase, this page should be updated with the final operator identity, legal notice address, and versioned material-change process.
+						If Ballot Clarity moves beyond the current release phase, this page should be updated with the final operator identity, legal notice address, and versioned material-change process.
 					</p>
 				</div>
 			</div>

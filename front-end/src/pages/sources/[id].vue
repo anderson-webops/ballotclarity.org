@@ -1,5 +1,6 @@
 <script setup lang="ts">
 const route = useRoute();
+const siteUrl = useSiteUrl();
 const sourceId = computed(() => String(route.params.id));
 const { formatDate } = useFormatters();
 const { data, pending, error } = await useSourceRecord(sourceId);
@@ -12,7 +13,7 @@ usePageSeo({
 				"@type": "CreativeWork",
 				"name": data.value.source.title,
 				"publisher": data.value.source.publisher,
-				"url": `https://ballotclarity.jacobdanderson.net/sources/${data.value.source.id}`
+				"url": `${siteUrl}/sources/${data.value.source.id}`
 			}
 		: undefined,
 	path: `/sources/${sourceId.value}`,

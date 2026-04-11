@@ -3,14 +3,19 @@ import { contactEmail } from "~/constants";
 
 const year = new Date().getFullYear();
 
-const exploreLinks = [
-	{ label: "About", to: "/about" },
+const guideLinks = [
 	{ label: "My ballot plan", to: "/plan" },
-	{ label: "Metro County hub", to: "/locations/metro-county-franklin" },
+	{ label: "Ballot guide", to: "/ballot" },
+	{ label: "Compare candidates", to: "/compare" },
 	{ label: "Search", to: "/search" },
+];
+
+const discoveryLinks = [
+	{ label: "About", to: "/about" },
+	{ label: "Metro County hub", to: "/locations/metro-county-franklin" },
+	{ label: "Election overview", to: "/elections/2026-metro-county-general" },
 	{ label: "Source directory", to: "/sources" },
 	{ label: "Voting FAQ", to: "/help" },
-	{ label: "Compare candidates", to: "/compare" },
 ];
 
 const policyLinks = [
@@ -60,13 +65,26 @@ const policyLinks = [
 					</div>
 				</div>
 
-				<div class="gap-6 grid xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(15rem,0.95fr)] md:grid-cols-2">
+				<div class="gap-6 grid md:grid-cols-2">
 					<div>
 						<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-							Explore
+							Use the guide
 						</p>
 						<ul class="text-sm mt-4 space-y-3">
-							<li v-for="link in exploreLinks" :key="link.to">
+							<li v-for="link in guideLinks" :key="link.to">
+								<NuxtLink :to="link.to" class="text-app-ink rounded-md transition dark:text-app-text-dark hover:text-app-accent focus-ring dark:hover:text-white">
+									{{ link.label }}
+								</NuxtLink>
+							</li>
+						</ul>
+					</div>
+
+					<div>
+						<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+							Learn and verify
+						</p>
+						<ul class="text-sm mt-4 space-y-3">
+							<li v-for="link in discoveryLinks" :key="link.to">
 								<NuxtLink :to="link.to" class="text-app-ink rounded-md transition dark:text-app-text-dark hover:text-app-accent focus-ring dark:hover:text-white">
 									{{ link.label }}
 								</NuxtLink>
@@ -87,7 +105,7 @@ const policyLinks = [
 						</ul>
 					</div>
 
-					<div class="p-5 border border-app-line/80 rounded-[1.7rem] bg-app-bg/70 dark:border-app-line-dark dark:bg-app-bg-dark/70">
+					<div class="p-5 border border-app-line/80 rounded-[1.7rem] bg-app-bg/70 dark:border-app-line-dark dark:bg-app-bg-dark/70 md:col-span-2">
 						<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
 							Contact
 						</p>

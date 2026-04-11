@@ -1,4 +1,4 @@
-import { appDescription, appName, appUrl } from "~/constants";
+import { appDescription, appName } from "~/constants";
 
 interface PageSeoInput {
 	description?: string;
@@ -11,10 +11,11 @@ interface PageSeoInput {
 }
 
 export function usePageSeo(input: PageSeoInput) {
+	const siteUrl = useSiteUrl();
 	const description = input.description ?? appDescription;
 	const resolvedPath = input.path ?? input.canonicalPath;
-	const url = resolvedPath ? `${appUrl}${resolvedPath}` : appUrl;
-	const canonicalUrl = input.canonicalPath ? `${appUrl}${input.canonicalPath}` : url;
+	const url = resolvedPath ? buildSiteUrl(resolvedPath) : siteUrl;
+	const canonicalUrl = input.canonicalPath ? buildSiteUrl(input.canonicalPath) : url;
 	const jsonLdEntries = (Array.isArray(input.jsonLd) ? input.jsonLd : [input.jsonLd]).filter(
 		(entry): entry is Record<string, unknown> => Boolean(entry)
 	);

@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import { appUrl } from "~/constants";
-
 const civicStore = useCivicStore();
 const route = useRoute();
+const siteUrl = useSiteUrl();
 const { formatDate } = useFormatters();
 const jurisdictionSlug = computed(() => String(route.params.slug));
 const { data: jurisdiction, error, pending } = await useJurisdiction(jurisdictionSlug);
@@ -50,7 +49,7 @@ usePageSeo({
 				"email": jurisdiction.value.officialOffice.email,
 				"name": jurisdiction.value.officialOffice.name,
 				"telephone": jurisdiction.value.officialOffice.phone,
-				"url": `${appUrl}/locations/${jurisdiction.value.slug}`
+				"url": `${siteUrl}/locations/${jurisdiction.value.slug}`
 			}
 		: undefined,
 	path: `/locations/${jurisdictionSlug.value}`,

@@ -4,6 +4,7 @@ import { contactEmail } from "~/constants";
 
 const api = useApiClient();
 const civicStore = useCivicStore();
+const siteUrl = useSiteUrl();
 const { data: jurisdictionsData } = await useJurisdictions();
 const { data: dataSources } = await useDataSources();
 
@@ -63,14 +64,14 @@ usePageSeo({
 			],
 			"description": "A nonprofit, nonpartisan website providing source-cited ballot and voting information for local elections.",
 			"name": "Ballot Clarity",
-			"url": "https://ballotclarity.jacobdanderson.net/"
+			"url": `${siteUrl}/`
 		},
 		{
 			"@context": "https://schema.org",
 			"@type": "WebSite",
 			"description": "A nonprofit, nonpartisan website providing source-cited ballot and voting information for local elections.",
 			"name": "Ballot Clarity",
-			"url": "https://ballotclarity.jacobdanderson.net/"
+			"url": `${siteUrl}/`
 		},
 		{
 			"@context": "https://schema.org",
@@ -353,7 +354,7 @@ const trustFacts = [
 						Use official sources where they are authoritative, then normalize the rest.
 					</h2>
 					<p class="bc-measure text-base text-app-muted leading-8 mt-5 dark:text-app-muted-dark">
-						The next major iteration is operational, not decorative: replacing the staged archive with a public, auditable data stack that separates official logistics, normalized ballot data, and federal money and influence pipelines.
+						The next major iteration is operational, not decorative: replacing the current archive with a public, auditable data stack that separates official logistics, normalized ballot data, and federal money and influence pipelines.
 					</p>
 					<div class="mt-6 flex flex-wrap gap-3">
 						<NuxtLink to="/data-sources" class="btn-primary">
@@ -423,7 +424,7 @@ const trustFacts = [
 									Future-ready data architecture
 								</p>
 								<p class="text-sm text-app-muted leading-7 mt-2 dark:text-app-muted-dark">
-									The front end already consumes API-driven data, so real civic sources can replace the staged archive later without rewriting the page structure.
+									The front end already consumes API-driven data, so real civic sources can replace the current archive later without rewriting the page structure.
 								</p>
 							</div>
 						</li>
@@ -431,7 +432,7 @@ const trustFacts = [
 				</div>
 
 				<InfoCallout title="Important note" tone="warning">
-					This site currently runs on staged public-record examples for product validation. It is built to be trustworthy about its limits: coverage notes stay prominent, sources stay visible, and every summary reminds users to review original records.
+					This site currently runs on a limited public-record archive while live data integrations are being connected. It is built to be trustworthy about its limits: coverage notes stay prominent, sources stay visible, and every summary reminds users to review original records.
 				</InfoCallout>
 			</div>
 		</section>

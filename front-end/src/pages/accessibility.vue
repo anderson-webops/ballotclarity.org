@@ -33,13 +33,13 @@ const printPractices = [
 ];
 
 const knownLimits = [
-	"The current public build uses clearly labeled staged records, so the print views are designed to demonstrate structure and readability rather than provide live election logistics.",
+	"The current release uses a clearly labeled public-record archive, so the print views are designed to demonstrate structure and readability rather than provide live election logistics.",
 	"Ballot Clarity does not yet generate a downloadable tagged PDF. The current accessible print path is the browser print view on supported pages.",
 	"We have not implemented multilingual ballot content or alternative reading modes yet, though the design system is being shaped to support them later."
 ];
 
 usePageSeo({
-	description: "Accessibility and print standards for Ballot Clarity, including WCAG targets, readable ballot-guide rules, and current public-build limitations.",
+	description: "Accessibility and print standards for Ballot Clarity, including WCAG targets, readable ballot-guide rules, and current release limitations.",
 	path: "/accessibility",
 	title: "Accessibility and Print Standards"
 });

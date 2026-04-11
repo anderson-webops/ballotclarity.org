@@ -8,7 +8,7 @@ Ballot Clarity is a nonpartisan civic-information platform built as an npm works
 - `front-end/src/`: public pages, admin pages, layouts, components, composables, stores, and shared front-end types
 - `front-end/public/source-files/`: reference source files that power the public source directory and evidence links
 - `back-end/`: Express API for ballot content, public search, source records, and admin operations
-- `back-end/src/demo-data.ts`: seeded Ballot Clarity coverage data that can later be replaced with live providers or database reads
+- `back-end/src/coverage-data.ts`: seeded Ballot Clarity coverage data that can later be replaced with live providers or database reads
 - `back-end/src/admin-store.ts`: SQLite-backed admin persistence for users, content review, source monitoring, corrections, and activity
 - `back-end/admin-schema.sql`: schema for persisted admin and operations data
 
@@ -48,20 +48,30 @@ The front-end runs at `http://127.0.0.1:3333` and expects the API at `http://127
 
 ## Environment configuration
 
-Important variables in `.env`:
+Public runtime variables:
 
+- `NUXT_PUBLIC_SITE_URL`: canonical public origin used for metadata, schema, and canonical URLs
 - `NUXT_PUBLIC_API_BASE`: public API base used by the front-end for ballot, search, sources, and content reads
+
+Server-only variables:
+
 - `ADMIN_API_BASE`: server-side Nuxt proxy target for admin-only API requests
 - `ADMIN_API_KEY`: shared secret between the Nuxt admin proxy and the Express admin endpoints
 - `ADMIN_SESSION_SECRET`: cookie-signing secret for Nuxt admin sessions
 - `ADMIN_DB_PATH`: SQLite database path for persisted admin users and editorial operations data
+
+One-time bootstrap variables:
+
 - `ADMIN_BOOTSTRAP_USERNAME`: username used by `npm run bootstrap-admin`
 - `ADMIN_BOOTSTRAP_PASSWORD`: password used by `npm run bootstrap-admin`
 - `ADMIN_BOOTSTRAP_DISPLAY_NAME`: display label for the initial admin user
 - `ADMIN_BOOTSTRAP_ROLE`: initial role, usually `admin`
+
+Runtime variable:
+
 - `PORT`: Express API port
 
-For production, use unique random values for `ADMIN_API_KEY`, `ADMIN_BOOTSTRAP_PASSWORD`, and `ADMIN_SESSION_SECRET`. The front-end and back-end must share the same `ADMIN_API_KEY`.
+For production, use unique random values for `ADMIN_API_KEY`, `ADMIN_BOOTSTRAP_PASSWORD`, and `ADMIN_SESSION_SECRET`. The front-end and back-end must share the same `ADMIN_API_KEY`. Keep every `ADMIN_*` variable in the server environment only.
 
 ## Useful npm commands
 
@@ -80,19 +90,38 @@ npm run preview
 
 ## Public product structure
 
-Key public routes:
+Canonical public discovery pages:
 
 - `/`: homepage and address lookup entry
+- `/about`
+- `/help`
+- `/methodology`
+- `/neutrality`
+- `/data-sources`
+- `/accessibility`
+- `/privacy`
+- `/terms`
+- `/contact`
+- `/locations/:slug`
+- `/elections/:slug`
+- `/candidate/:slug`
+- `/measure/:slug`
+- `/sources`
+- `/sources/:id`
+
+Public guide and utility pages:
+
 - `/ballot/:slug`: printable ballot guide and contest-reading surface
-- `/elections/:slug`: indexable election overview page
-- `/locations/:slug`: jurisdiction hub
-- `/candidate/:slug`: candidate dossier with evidence links and trust framing
-- `/measure/:slug`: ballot-measure explainer with mirrored YES / NO outcomes
-- `/compare`: side-by-side comparison surface
 - `/search`: full-site search across elections, candidates, measures, and source records
-- `/sources`: source directory
-- `/sources/:id`: citation-ready source detail page
-- `/methodology`, `/neutrality`, `/data-sources`, `/help`, `/about`, `/privacy`, `/terms`, `/contact`
+- `/compare`: side-by-side comparison surface
+- `/plan`: saved ballot plan and print checklist
+
+These guide and utility pages are public, but they are treated as app-like surfaces rather than canonical discovery pages. They are not included in the sitemap, and the Nuxt app marks them `noindex`.
+
+Experimental public routes:
+
+- None are shipped as standalone public routes in the current release.
+- Future-analysis modules may appear inside public pages when clearly labeled, but unfinished features should not be exposed as top-level navigation targets.
 
 ## Admin and editorial operations
 
@@ -155,17 +184,35 @@ Protected admin API endpoints:
 - Trust layer: freshness, methodology, corrections, neutrality, and source authority are modeled explicitly in the data layer and rendered in the UI
 - Admin model: persisted users, content status, correction queue, and source-health tracking all live behind a protected internal surface
 
-## Swapping staged coverage for live civic data later
+## Production mode
 
-1. Replace the seeded objects and lookup helpers in `back-end/src/demo-data.ts` with live civic adapters or database reads.
+- Set `NUXT_PUBLIC_SITE_URL` to the final public origin so metadata, schema, and canonical URLs match the deployed domain.
+- Set `NUXT_PUBLIC_API_BASE` to the public API origin used by the browser.
+- Set `ADMIN_API_BASE` to the server-side admin API origin the Nuxt server can reach privately.
+- Set `ADMIN_API_KEY` and `ADMIN_SESSION_SECRET` in the server environments only.
+- Point `ADMIN_DB_PATH` at durable storage outside the repo checkout.
+- Run `npm run bootstrap-admin` once on the server, then remove the bootstrap password from routine shell history and secrets tooling if a different operational process is preferred.
+
+## Swapping seeded coverage for live civic data later
+
+1. Replace the seeded objects and lookup helpers in `back-end/src/coverage-data.ts` with live civic adapters or database reads.
 2. Keep the response contracts stable in the backend so the Nuxt composables and pages do not need to change.
 3. Update `back-end/src/server.ts` to normalize provider payloads into the existing public response shapes.
 4. Replace the mirrored source files in `front-end/public/source-files/` with direct public URLs, mirrored records, or provider-backed source storage.
 5. Keep `back-end/admin-schema.sql` and `back-end/src/admin-store.ts` as the operational layer for publish status, corrections, and source monitoring even after the read-side data becomes live.
 
+## Server-side provisioning after merge
+
+1. Provision separate public and admin-capable server environments for the Nuxt front end and Express API.
+2. Set `NUXT_PUBLIC_SITE_URL`, `NUXT_PUBLIC_API_BASE`, `ADMIN_API_BASE`, `ADMIN_API_KEY`, `ADMIN_SESSION_SECRET`, and `ADMIN_DB_PATH`.
+3. Create the directory that will hold the SQLite file referenced by `ADMIN_DB_PATH`, with backup and restore procedures in place.
+4. Run `npm run bootstrap-admin` once to create the first persisted admin account.
+5. Put the API behind HTTPS and a reverse proxy or platform ingress that can keep the admin API off the public browser boundary except through the Nuxt server routes.
+6. Decide whether SQLite on durable disk is sufficient for the initial launch or whether the admin store should move to a managed database before multi-editor production use.
+
 ## Notes
 
 - Ballot Clarity is informational only. It does not recommend candidates, measures, or voting choices.
-- The current public coverage is limited to Metro County, Franklin, and should be treated as staged reference coverage rather than live nationwide election data.
+- The current public coverage is limited to Metro County, Franklin, and should be treated as reference coverage rather than live nationwide election data.
 - Time-sensitive election logistics should always be checked against official election-office notices.
 - Light mode is the default, dark mode is supported, and ballot pages are designed to print cleanly.

@@ -252,7 +252,7 @@ usePageSeo({
 					General contact
 				</h2>
 				<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-					For general questions about Ballot Clarity, the current public build, or the nonprofit concept, use the direct project inbox.
+					For general questions about Ballot Clarity, the current release, or the nonprofit concept, use the direct project inbox.
 				</p>
 				<a :href="generalHref" class="btn-secondary mt-6">
 					Email {{ contactEmail }}

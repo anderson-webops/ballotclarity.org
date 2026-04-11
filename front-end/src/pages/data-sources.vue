@@ -3,7 +3,7 @@ const { formatDateTime } = useFormatters();
 const { data, error, pending } = await useDataSources();
 
 usePageSeo({
-	description: "Ballot Clarity's live data roadmap: official source hierarchy, provider strategy, migration risks, and the backend architecture planned to replace the current staged archive.",
+	description: "Ballot Clarity's live data roadmap: official source hierarchy, provider strategy, migration risks, and the backend architecture planned to replace the current archive.",
 	path: "/data-sources",
 	title: "Data Sources and Live API Roadmap"
 });
@@ -59,7 +59,7 @@ function statusTone(status: "planned-live" | "reference-pattern" | "research-lay
 						The trust model depends on the data stack, not just the interface.
 					</h1>
 					<p class="bc-prose text-app-muted mt-5 dark:text-app-muted-dark">
-						Ballot Clarity currently runs on staged public-record content. This page shows how the site is designed to move to live civic data without pretending there is a single perfect national source. The rule is simple: official sources where they are authoritative, normalized providers where scale matters, and a separate research layer for archives and analytics.
+						Ballot Clarity currently runs on a limited public-record archive. This page shows how the site is designed to move to live civic data without pretending there is a single perfect national source. The rule is simple: official sources where they are authoritative, normalized providers where scale matters, and a separate research layer for archives and analytics.
 					</p>
 					<div class="mt-6 flex flex-wrap gap-4 items-center">
 						<UpdatedAt :value="data.updatedAt" label="Roadmap updated" />
@@ -260,7 +260,7 @@ function statusTone(status: "planned-live" | "reference-pattern" | "research-lay
 					</p>
 				</div>
 				<p class="bc-prose text-app-muted mt-5 dark:text-app-muted-dark">
-					When Ballot Clarity eventually moves beyond staged archive data, the interface should keep exposing source authority, source system, and freshness at the field level. That is what lets a voter tell the difference between an official office notice, a provider-normalized ballot package, a candidate-submitted statement, and an archival research source.
+					When Ballot Clarity eventually moves beyond the current archive, the interface should keep exposing source authority, source system, and freshness at the field level. That is what lets a voter tell the difference between an official office notice, a provider-normalized ballot package, a candidate-submitted statement, and an archival research source.
 				</p>
 			</section>
 		</div>

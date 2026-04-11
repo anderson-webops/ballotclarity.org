@@ -1,5 +1,6 @@
 <script setup lang="ts">
 const route = useRoute();
+const siteUrl = useSiteUrl();
 const searchInput = ref(typeof route.query.q === "string" ? route.query.q : "");
 const activeQuery = computed(() => typeof route.query.q === "string" ? route.query.q : "");
 const { data, pending } = await useSearchResults(activeQuery);
@@ -26,7 +27,7 @@ usePageSeo({
 				"@context": "https://schema.org",
 				"@type": "SearchResultsPage",
 				"name": `Search results for ${activeQuery.value}`,
-				"url": `https://ballotclarity.jacobdanderson.net/search?q=${encodeURIComponent(activeQuery.value)}`
+				"url": `${siteUrl}/search?q=${encodeURIComponent(activeQuery.value)}`
 			}
 		: undefined,
 	path: "/search",

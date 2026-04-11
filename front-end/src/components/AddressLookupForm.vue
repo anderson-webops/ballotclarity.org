@@ -61,7 +61,7 @@ async function handleSubmit() {
 			Enter a street address or ZIP code
 		</label>
 		<p :id="descriptionId" class="text-sm text-app-muted mt-2 dark:text-app-muted-dark">
-			Current public coverage accepts any U.S. address or ZIP and returns staged Metro County ballot coverage while live district integrations are being connected.
+			Current coverage accepts any U.S. address or ZIP and returns the Metro County guide while live district integrations are being connected.
 		</p>
 		<p :id="usageId" class="text-sm text-app-muted leading-6 mt-3 dark:text-app-muted-dark">
 			Why we ask for your address: it helps determine districts and ballot style. A ZIP code can return partial results with less specific contest matching.

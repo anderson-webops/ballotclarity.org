@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import type { Source } from "~/types/civic";
 import { storeToRefs } from "pinia";
-import { appUrl, contactEmail } from "~/constants";
+import { contactEmail } from "~/constants";
 
 const civicStore = useCivicStore();
 const route = useRoute();
 const runtimeConfig = useRuntimeConfig();
+const siteUrl = useSiteUrl();
 const { ballotPlan, compareList } = storeToRefs(civicStore);
 const candidateSlug = computed(() => String(route.params.slug));
 const { formatCompactNumber, formatCurrency, formatDate, formatPercent } = useFormatters();
@@ -75,9 +76,9 @@ usePageSeo({
 						"name": candidate.value.location
 					},
 					"name": candidate.value.name,
-					"url": `${appUrl}/candidate/${candidate.value.slug}`
+					"url": `${siteUrl}/candidate/${candidate.value.slug}`
 				},
-				"url": `${appUrl}/candidate/${candidate.value.slug}`
+				"url": `${siteUrl}/candidate/${candidate.value.slug}`
 			}
 		: undefined,
 	ogType: "profile",
@@ -685,9 +686,9 @@ function saveToPlan() {
 
 				<section class="surface-panel">
 					<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
-						Constituent-alignment placeholder
+						Constituent context and future analysis
 					</h2>
-					<InfoCallout class="mt-5" title="Experimental feature not yet live" tone="warning">
+					<InfoCallout class="mt-5" title="Planned analysis area" tone="warning">
 						{{ candidate.alignmentModule.summary }}
 					</InfoCallout>
 					<ul class="text-sm text-app-muted leading-7 mt-5 space-y-3 dark:text-app-muted-dark">

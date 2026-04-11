@@ -9,13 +9,15 @@ const isMenuOpen = ref(false);
 
 const { ballotPlanCount, compareCount, selectedLocation } = storeToRefs(civicStore);
 
-const navLinks = [
-	{ label: "Home", to: "/" },
+const guideLinks = [
 	{ label: "Ballot guide", to: "/ballot" },
-	{ label: "Search", to: "/search" },
-	{ label: "Sources", to: "/sources" },
 	{ label: "My plan", to: "/plan" },
 	{ label: "Compare", to: "/compare" },
+	{ label: "Search", to: "/search" },
+];
+
+const discoveryLinks = [
+	{ label: "Sources", to: "/sources" },
 	{ label: "How it works", to: "/methodology" },
 	{ label: "Help", to: "/help" },
 	{ label: "About", to: "/about" },
@@ -55,24 +57,48 @@ function toggleColorMode() {
 				</NuxtLink>
 			</div>
 
-			<nav class="gap-1 hidden items-center lg:flex" aria-label="Primary">
-				<NuxtLink
-					v-for="link in navLinks"
-					:key="link.to"
-					:to="link.to"
-					class="text-sm font-medium px-4 py-2 rounded-full transition focus-ring"
-					:class="isActive(link.to)
-						? 'bg-app-ink text-white'
-						: 'text-app-muted hover:bg-white hover:text-app-ink dark:text-app-muted-dark dark:hover:bg-app-panel-dark dark:hover:text-app-text-dark'"
-				>
-					{{ link.label }}
-					<span v-if="link.to === '/plan' && ballotPlanCount" class="text-[11px] text-app-ink font-bold ml-2 px-1.5 rounded-full bg-app-warm inline-flex h-5 min-w-5 items-center justify-center">
-						{{ ballotPlanCount }}
+			<nav class="hidden items-center lg:flex" aria-label="Primary">
+				<div class="flex gap-1 items-center">
+					<span class="text-[11px] text-app-muted tracking-[0.18em] font-semibold mr-2 uppercase dark:text-app-muted-dark">
+						Use the guide
 					</span>
-					<span v-if="link.to === '/compare' && compareCount" class="text-[11px] text-app-ink font-bold ml-2 px-1.5 rounded-full bg-app-warm inline-flex h-5 min-w-5 items-center justify-center">
-						{{ compareCount }}
+					<NuxtLink
+						v-for="link in guideLinks"
+						:key="link.to"
+						:to="link.to"
+						class="text-sm font-medium px-4 py-2 rounded-full transition focus-ring"
+						:class="isActive(link.to)
+							? 'bg-app-ink text-white'
+							: 'text-app-muted hover:bg-white hover:text-app-ink dark:text-app-muted-dark dark:hover:bg-app-panel-dark dark:hover:text-app-text-dark'"
+					>
+						{{ link.label }}
+						<span v-if="link.to === '/plan' && ballotPlanCount" class="text-[11px] text-app-ink font-bold ml-2 px-1.5 rounded-full bg-app-warm inline-flex h-5 min-w-5 items-center justify-center">
+							{{ ballotPlanCount }}
+						</span>
+						<span v-if="link.to === '/compare' && compareCount" class="text-[11px] text-app-ink font-bold ml-2 px-1.5 rounded-full bg-app-warm inline-flex h-5 min-w-5 items-center justify-center">
+							{{ compareCount }}
+						</span>
+					</NuxtLink>
+				</div>
+
+				<div class="mx-4 bg-app-line/80 h-6 w-px dark:bg-app-line-dark" />
+
+				<div class="flex gap-1 items-center">
+					<span class="text-[11px] text-app-muted tracking-[0.18em] font-semibold mr-2 uppercase dark:text-app-muted-dark">
+						Learn
 					</span>
-				</NuxtLink>
+					<NuxtLink
+						v-for="link in discoveryLinks"
+						:key="link.to"
+						:to="link.to"
+						class="text-sm font-medium px-4 py-2 rounded-full transition focus-ring"
+						:class="isActive(link.to)
+							? 'bg-app-ink text-white'
+							: 'text-app-muted hover:bg-white hover:text-app-ink dark:text-app-muted-dark dark:hover:bg-app-panel-dark dark:hover:text-app-text-dark'"
+					>
+						{{ link.label }}
+					</NuxtLink>
+				</div>
 			</nav>
 
 			<div class="gap-3 hidden items-center lg:flex">
@@ -107,8 +133,11 @@ function toggleColorMode() {
 
 		<div v-if="isMenuOpen" class="px-4 pb-4 pt-3 border-t border-app-line/80 bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark lg:hidden">
 			<nav class="flex flex-col gap-2" aria-label="Mobile navigation">
+				<p class="text-[11px] text-app-muted tracking-[0.18em] font-semibold px-2 pt-2 uppercase dark:text-app-muted-dark">
+					Use the guide
+				</p>
 				<NuxtLink
-					v-for="link in navLinks"
+					v-for="link in guideLinks"
 					:key="link.to"
 					:to="link.to"
 					class="text-sm font-medium px-4 py-3 rounded-2xl transition focus-ring"
@@ -123,6 +152,21 @@ function toggleColorMode() {
 					<span v-if="link.to === '/compare' && compareCount" class="text-[11px] text-app-ink font-bold ml-2 px-2 py-0.5 rounded-full bg-app-warm">
 						{{ compareCount }}
 					</span>
+				</NuxtLink>
+
+				<p class="text-[11px] text-app-muted tracking-[0.18em] font-semibold px-2 pt-4 uppercase dark:text-app-muted-dark">
+					Learn
+				</p>
+				<NuxtLink
+					v-for="link in discoveryLinks"
+					:key="link.to"
+					:to="link.to"
+					class="text-sm font-medium px-4 py-3 rounded-2xl transition focus-ring"
+					:class="isActive(link.to)
+						? 'bg-app-ink text-white'
+						: 'bg-white text-app-ink dark:bg-app-panel-dark dark:text-app-text-dark'"
+				>
+					{{ link.label }}
 				</NuxtLink>
 
 				<div class="text-sm mt-2 px-4 py-3 border border-app-line rounded-2xl bg-white flex items-center justify-between dark:border-app-line-dark dark:bg-app-panel-dark">

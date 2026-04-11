@@ -188,7 +188,7 @@ test("built app renders the key ballot guide pages against the built API", async
 	assert.match(ballotHtml, /Quick view/);
 	assert.match(ballotHtml, /Next review/);
 	assert.match(ballotHtml, /Metro County, Franklin/);
-	assert.match(ballotHtml, /staged public records/i);
+	assert.match(ballotHtml, /limited public-record archive/i);
 	assert.match(electionHtml, /Official links and notices/);
 	assert.match(electionHtml, /Contest index/);
 	assert.match(electionHtml, /Data sources roadmap/);
@@ -230,7 +230,7 @@ test("built app renders the key ballot guide pages against the built API", async
 	assert.match(measureHtml, /What we(?:&#39;|’|')re still checking/);
 	assert.match(measureHtml, /Review later/);
 	assert.match(helpHtml, /Voting help and ballot basics/);
-	assert.match(helpHtml, /What is the difference between a sample ballot and a voter guide/);
+	assert.match(helpHtml, /What is the difference between an official ballot listing and a voter guide/);
 	assert.match(helpHtml, /What happens to the address or ZIP code I enter/);
 	assert.match(helpHtml, /Read neutrality policy/);
 	assert.match(helpHtml, /Read accessibility standards/);
@@ -244,7 +244,7 @@ test("built app renders the key ballot guide pages against the built API", async
 	assert.match(accessibilityHtml, /WCAG 2\.2 Level AA/);
 	assert.match(accessibilityHtml, /44 by 44 pixel minimum target|44 x 44 pixel minimum target|44 x 44 px/);
 	assert.match(accessibilityHtml, /does not yet generate a downloadable tagged PDF/);
-	assert.match(methodologyHtml, /How the staged archive is meant to be replaced/);
+	assert.match(methodologyHtml, /How the current archive is meant to be replaced/);
 	assert.match(methodologyHtml, /Open data sources roadmap/);
 	assert.equal(privacyPage.status, 200);
 	assert.match(privacyHtml, /Privacy Policy/);

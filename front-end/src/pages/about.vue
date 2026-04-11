@@ -65,7 +65,7 @@ usePageSeo({
 				Volunteer or contact
 			</h2>
 			<p class="text-sm text-app-muted leading-7 mt-5 dark:text-app-muted-dark">
-				Ballot Clarity is still in a staged public-build phase. Researchers, civic technologists, designers, and election-information volunteers are welcome to get in touch.
+				Ballot Clarity is in an early public release with limited geographic coverage. Researchers, civic technologists, designers, and election-information volunteers are welcome to get in touch.
 			</p>
 			<div class="mt-6 flex flex-wrap gap-3">
 				<a :href="`mailto:${contactEmail}`" class="btn-primary">

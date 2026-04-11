@@ -74,7 +74,7 @@ test("GET /api/ballot returns the election guide and contests", async () => {
 	assert.equal(body.election.contests[0].title, "Federal Race");
 	assert.equal(body.election.contests[0].roleGuide.decisionAreas.length, 3);
 	assert.match(body.election.contests[0].roleGuide.summary, /federal law/i);
-	assert.match(body.note, /staged records/i);
+	assert.match(body.note, /reference archive/i);
 });
 
 test("GET /api/jurisdictions returns the demo jurisdiction summary", async () => {

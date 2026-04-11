@@ -9,7 +9,7 @@ export type SourceType
 		| "voter guide";
 
 export type SourceAuthority
-	= | "ballot-clarity-demo"
+	= | "ballot-clarity-archive"
 		| "candidate-campaign"
 		| "commercial-provider"
 		| "nonprofit-provider"

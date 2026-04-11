@@ -17,7 +17,7 @@ const config = computed(() => {
 				label: "Candidate-supplied",
 				tone: "warning" as const
 			};
-		case "ballot-clarity-demo":
+		case "ballot-clarity-archive":
 			return {
 				label: "Project archive",
 				tone: "warning" as const

@@ -10,7 +10,7 @@ usePageSeo({
 const items = [
 	{
 		body: [
-			"The current public build uses structured staged data and prewritten plain-language summaries to model how a source-first civic-information product could work. In a live version, summaries would be generated from public records, then reviewed against source citations and editorial rules.",
+			"The current release uses a structured public-record archive and prewritten plain-language summaries to model how a source-first civic-information product can work. In a live version, summaries would be generated from public records, then reviewed against source citations and editorial rules.",
 			"Summaries are designed to describe what is documented, not to predict outcomes or recommend a vote.",
 		],
 		title: "How summaries are generated",
@@ -197,7 +197,7 @@ const informationTypes = [
 						Live data roadmap
 					</p>
 					<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-						How the staged archive is meant to be replaced
+						How the current archive is meant to be replaced
 					</h2>
 				</div>
 				<TrustBadge label="Implementation order" tone="accent" />
@@ -241,7 +241,7 @@ const informationTypes = [
 
 			<div class="space-y-4">
 				<InfoCallout title="Current build status" tone="warning">
-					This site currently uses staged archive data. The architecture is ready for real civic APIs later, but the current content is intentionally labeled so users can distinguish present coverage from future live integrations.
+					This site currently uses a limited archive of public records. The architecture is ready for real civic APIs later, but the current content is intentionally labeled so users can distinguish present coverage from future live integrations.
 				</InfoCallout>
 				<InfoCallout title="Neutrality policy">
 					Ballot Clarity is designed to explain what is documented, not to endorse candidates, oppose parties, or tell users how to vote.

@@ -2,14 +2,14 @@
 const faqItems = [
 	{
 		answer: [
-			"A sample ballot is the list of contests and measures expected to appear on a voter's ballot for a specific election and location.",
+			"An official ballot listing is the set of contests and measures expected to appear on a voter's ballot for a specific election and location.",
 			"A voter guide adds explanation around those items. Ballot Clarity is designed as a voter guide that points back to source material and official records."
 		],
-		question: "What is the difference between a sample ballot and a voter guide?"
+		question: "What is the difference between an official ballot listing and a voter guide?"
 	},
 	{
 		answer: [
-			"Yes. Many jurisdictions allow voters to bring notes or a printed sample ballot, but users should still review their local election office guidance before Election Day.",
+			"Yes. Many jurisdictions allow voters to bring notes or a printed ballot guide, but users should still review their local election office guidance before Election Day.",
 			"This help hub is informational only and is not a substitute for official rules issued by the election office."
 		],
 		question: "Can I bring notes or a printed guide with me when I vote?"
@@ -30,15 +30,15 @@ const faqItems = [
 	},
 	{
 		answer: [
-			"The lookup is sent only to match ballot coverage. The current public build does not create user accounts or advertising profiles from that lookup.",
+			"The lookup is sent only to match ballot coverage. The current release does not create user accounts or advertising profiles from that lookup.",
 			"The app does save your selected location label, compare list, and ballot-plan choices in your browser so the guide stays usable across refreshes. The privacy page explains that boundary in more detail."
 		],
 		question: "What happens to the address or ZIP code I enter?"
 	},
 	{
 		answer: [
-			"Because the current public build uses staged public-record examples while live civic-data integrations are being connected.",
-			"Coverage notes remain visible so users can understand the current limits of the product and avoid mistaking staged records for live election-service data."
+			"Because the current release uses a limited public-record archive while live civic-data integrations are being connected.",
+			"Coverage notes remain visible so users can understand the current limits of the product and avoid mistaking archived reference coverage for live election-service data."
 		],
 		question: "Why are some pages labeled as current coverage?"
 	},
@@ -88,7 +88,7 @@ const accordionItems = faqItems.map(item => ({
 					Voting help and ballot basics
 				</h1>
 				<p class="text-base text-app-muted leading-8 mt-5 max-w-3xl dark:text-app-muted-dark">
-					This page answers common questions about sample ballots, voter guides, timing, and how to verify election information without turning the site into advice or advocacy.
+					This page answers common questions about ballot listings, voter guides, timing, and how to verify election information without turning the site into advice or advocacy.
 				</p>
 			</div>
 

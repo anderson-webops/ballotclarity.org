@@ -23,7 +23,7 @@ import {
 	getJurisdictionBySlug,
 	getMeasureBySlug,
 	getSourceById
-} from "./demo-data.js";
+} from "./coverage-data.js";
 
 dotenv.config();
 
@@ -351,7 +351,7 @@ export function createApp(options: CreateAppOptions = {}) {
 		response.json({
 			electionSlug: demoElection.slug,
 			location: demoLocation,
-			note: "The current launch returns staged Metro County coverage while live district integrations are being connected."
+			note: "The current launch returns Metro County coverage from the current reference archive while live district integrations are being connected."
 		});
 	});
 
@@ -457,7 +457,7 @@ export function createApp(options: CreateAppOptions = {}) {
 				...demoLocation,
 				slug: locationSlug
 			},
-			note: "Current public coverage uses staged records while live civic-data integrations are being connected. Verify official election logistics with the linked election office.",
+			note: "Current public coverage uses the current reference archive while live civic-data integrations are being connected. Verify official election logistics with the linked election office.",
 			updatedAt: election.updatedAt
 		});
 	});

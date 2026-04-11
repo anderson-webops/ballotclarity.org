@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import type { Source, SourceType } from "~/types/civic";
 import { storeToRefs } from "pinia";
-import { appUrl, contactEmail } from "~/constants";
+import { contactEmail } from "~/constants";
 
 const civicStore = useCivicStore();
 const route = useRoute();
 const runtimeConfig = useRuntimeConfig();
+const siteUrl = useSiteUrl();
 const { ballotPlan } = storeToRefs(civicStore);
 const measureSlug = computed(() => String(route.params.slug));
 const { data: measure, error, pending } = await useMeasure(measureSlug);
@@ -167,7 +168,7 @@ usePageSeo({
 				},
 				"legislationType": "BallotMeasure",
 				"name": measure.value.title,
-				"url": `${appUrl}/measure/${measure.value.slug}`
+				"url": `${siteUrl}/measure/${measure.value.slug}`
 			}
 		: undefined,
 	ogType: "article",

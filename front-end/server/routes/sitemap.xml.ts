@@ -1,4 +1,4 @@
-import { demoElection, demoElectionSummaries, demoJurisdictionSummaries } from "../../../back-end/src/demo-data";
+import { demoElection, demoElectionSummaries, demoJurisdictionSummaries, demoSources } from "../../../back-end/src/coverage-data";
 
 function xmlEscape(value: string) {
 	return value
@@ -19,20 +19,19 @@ export default defineEventHandler((event) => {
 		"/",
 		"/about",
 		"/accessibility",
-		"/ballot",
-		"/compare",
 		"/contact",
 		"/data-sources",
 		"/help",
 		"/methodology",
 		"/neutrality",
 		"/privacy",
+		"/sources",
 		"/terms"
 	];
 
 	const electionRoutes = demoElectionSummaries.map(({ slug }) => `/elections/${slug}`);
-	const ballotRoutes = [`/ballot/${demoElection.slug}`];
 	const jurisdictionRoutes = demoJurisdictionSummaries.map(({ slug }) => `/locations/${slug}`);
+	const sourceRoutes = demoSources.map(({ id }) => `/sources/${id}`);
 	const candidateRoutes = unique(
 		demoElection.contests.flatMap(contest =>
 			contest.type === "candidate" ? (contest.candidates ?? []).map(candidate => `/candidate/${candidate.slug}`) : []
@@ -47,10 +46,10 @@ export default defineEventHandler((event) => {
 	const body = unique([
 		...staticRoutes,
 		...electionRoutes,
-		...ballotRoutes,
 		...jurisdictionRoutes,
 		...candidateRoutes,
-		...measureRoutes
+		...measureRoutes,
+		...sourceRoutes
 	])
 		.map((route) => {
 			const loc = new URL(route, `${origin}/`).toString();

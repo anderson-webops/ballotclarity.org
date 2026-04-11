@@ -32,7 +32,7 @@ import {
 	demoCandidates,
 	demoElection,
 	demoMeasures
-} from "./demo-data.js";
+} from "./coverage-data.js";
 
 interface AdminRepositoryOptions {
 	dbPath?: string | null;

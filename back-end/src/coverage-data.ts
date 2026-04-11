@@ -42,7 +42,7 @@ function source(
 	}
 ): Source {
 	return {
-		authority: options?.authority ?? "ballot-clarity-demo",
+		authority: options?.authority ?? "ballot-clarity-archive",
 		date,
 		id,
 		note: options?.note ?? demoSourceNote,
@@ -144,11 +144,11 @@ function trustBullet(id: string, text: string, sources: Source[], note?: string)
 }
 
 const metroGuide = source("metro-guide-2026", "Metro County 2026 General Election Reference Guide", "Ballot Clarity Research Archive", "voter guide", "2026-03-30", "metro-county-voter-guide.txt", {
-	authority: "ballot-clarity-demo",
+	authority: "ballot-clarity-archive",
 	sourceSystem: "Ballot Clarity research archive"
 });
 const methodologyBrief = source("methodology-brief", "Ballot Clarity Methodology Notes", "Ballot Clarity Research Archive", "research brief", "2026-03-30", "methodology-notes.txt", {
-	authority: "ballot-clarity-demo",
+	authority: "ballot-clarity-archive",
 	sourceSystem: "Ballot Clarity research archive"
 });
 
@@ -2078,7 +2078,7 @@ export const demoJurisdiction: Jurisdiction = {
 			title: "Vote in person on Election Day",
 			summary: "Election Day voting in this coverage area is assigned by precinct. The official county office publishes accessibility notes and final hours in the election office contact sheet.",
 			details: [
-				"Bring a sample ballot or notes if that helps you track contests.",
+				"Bring a printed guide or notes if that helps you track contests.",
 				"Review the official contact sheet for accessibility notes and replacement polling locations.",
 				"Check the election calendar close to Election Day in case hours or precinct assignments change."
 			],
@@ -2093,7 +2093,7 @@ export const demoJurisdiction: Jurisdiction = {
 			details: [
 				"Early voting is designed as the highest-volume in-person option in the current coverage data.",
 				"Use the schedule to confirm site hours because locations can vary by weekday and weekend.",
-				"The sample guide treats the county schedule as the primary source for early voting hours."
+				"The county schedule is treated as the primary source for early voting hours in this release."
 			],
 			officialResource: officialResource("Early voting schedule", "Metro County Elections Office", "metro-county-early-voting-guide.txt", {
 				sourceSystem: "Metro County Elections Office notice archive"

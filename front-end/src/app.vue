@@ -1,16 +1,17 @@
 <script setup lang="ts">
-import { appDescription, appName, appUrl } from "~/constants";
+import { appDescription, appName } from "~/constants";
 
-const noindexPathPattern = /^\/(?:plan|admin)(?:\/|$)/;
+const noindexPathPattern = /^\/(?:admin|ballot|compare|plan|search)(?:\/|$)/;
 
 const route = useRoute();
+const siteUrl = useSiteUrl();
 const shouldNoindex = computed(() => noindexPathPattern.test(route.path));
 const siteSchema = {
 	"@context": "https://schema.org",
 	"@type": "WebSite",
 	"description": appDescription,
 	"name": appName,
-	"url": appUrl
+	"url": siteUrl
 };
 
 useHead(() => ({

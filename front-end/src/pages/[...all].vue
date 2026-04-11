@@ -16,7 +16,7 @@ usePageSeo({
 				This page could not be found.
 			</h1>
 			<p class="text-base text-app-muted leading-7 mt-4 max-w-2xl dark:text-app-muted-dark">
-				The page may have moved, the link may be incomplete, or the record may not be available in the current coverage area. Return to the home page, search the site, or open the source directory.
+				The page may have moved, the link may be incomplete, or the record may not be published in the current release. Return to the home page, search the site, or open the source directory.
 			</p>
 			<div class="mt-8 flex flex-wrap gap-3">
 				<NuxtLink to="/" class="btn-primary">

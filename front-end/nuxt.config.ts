@@ -50,7 +50,8 @@ export default defineNuxtConfig({
 		adminApiKey: process.env.ADMIN_API_KEY || "",
 		adminSessionSecret: process.env.ADMIN_SESSION_SECRET || "",
 		public: {
-			apiBase: process.env.NUXT_PUBLIC_API_BASE || "http://127.0.0.1:3001/api"
+			apiBase: process.env.NUXT_PUBLIC_API_BASE || "http://127.0.0.1:3001/api",
+			siteUrl: process.env.NUXT_PUBLIC_SITE_URL || "https://ballotclarity.jacobdanderson.net"
 		}
 	},
 

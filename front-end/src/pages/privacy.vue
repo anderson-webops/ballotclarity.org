@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { appName, appUrl, contactEmail } from "~/constants";
+import { appName, contactEmail } from "~/constants";
 
 const effectiveAt = "2026-04-11T09:00:00-04:00";
+const siteUrl = useSiteUrl();
 
 const summaryCards = [
 	{
-		body: "Ballot lookup input is used only to match ballot coverage and jurisdiction in the current public build.",
+		body: "Ballot lookup input is used only to match ballot coverage and jurisdiction in the current release.",
 		title: "Lookup use is narrow"
 	},
 	{
@@ -29,7 +30,7 @@ const collectionSections = [
 	{
 		body: [
 			"The app stores selected location labels, compare selections, saved ballot-plan choices, issue filters, and reading mode in local browser storage so the guide remains usable across refreshes.",
-			"This local storage is tied to the browser on your device. Ballot Clarity does not maintain a server-side user account for that state in the current public build."
+			"This local storage is tied to the browser on your device. Ballot Clarity does not maintain a server-side user account for that state in the current release."
 		],
 		title: "Information stored on your device"
 	},
@@ -58,7 +59,7 @@ const useSections = [
 
 const sharingSections = [
 	"Ballot Clarity may rely on hosting, content-delivery, security, logging, and similar service providers needed to operate the site.",
-	"The current public build does not disclose address lookup input to advertising networks and is not designed to sell or share personal data for cross-context behavioral advertising.",
+	"The current release does not disclose address lookup input to advertising networks and is not designed to sell or share personal data for cross-context behavioral advertising.",
 	"When you follow external source links, official agencies, filing systems, campaigns, or other third-party sites operate under their own privacy practices.",
 	"If future live civic-data APIs require transmitting lookup data or derived district information to third parties, this policy should be updated before that architecture ships."
 ];
@@ -97,30 +98,30 @@ const retentionRows = [
 const rightsNotes = [
 	"You can browse much of the site without using the ballot lookup.",
 	"You can clear browser storage on your device to remove saved ballot-plan state and selected location labels kept locally by the app.",
-	"Because the current public build does not create public user accounts and is designed to keep some data ephemeral, Ballot Clarity may have limited ability to associate a privacy request with operational logs or transient lookup activity.",
+	"Because the current release does not create public user accounts and is designed to keep some data ephemeral, Ballot Clarity may have limited ability to associate a privacy request with operational logs or transient lookup activity.",
 	"If applicable law gives you rights to request access, deletion, correction, or appeal, contact the project and describe the data or interaction as specifically as possible."
 ];
 
 const cookieNotes = [
-	"The current public build does not use an advertising-cookie stack and is not designed for targeted advertising or sale/sharing of personal data.",
+	"The current release does not use an advertising-cookie stack and is not designed for targeted advertising or sale or sharing of personal data.",
 	"The site may still use browser storage for user-facing preferences and may rely on infrastructure-level cookies or similar technical mechanisms that support delivery, security, or basic functionality.",
 	"If Ballot Clarity later adds analytics, experiments, donations, newsletters, or embedded third-party tools, the cookie and tracking section should be updated before those features go live."
 ];
 
 const childrenNotes = [
 	"Ballot Clarity is a general-audience civic-information site and is not designed for children under 13.",
-	"The current public build does not offer child-directed accounts, community posting, or other features intended to collect personal information from children.",
+	"The current release does not offer child-directed accounts, community posting, or other features intended to collect personal information from children.",
 	"If you believe a child has sent personal information to the project through email or another channel, contact the project so the issue can be reviewed."
 ];
 
 const securityNotes = [
-	"Ballot Clarity aims to use reasonable administrative, technical, and organizational safeguards appropriate to the current public build.",
+	"Ballot Clarity aims to use reasonable administrative, technical, and organizational safeguards appropriate to the current release.",
 	"Those safeguards are intended to reduce unnecessary data collection, limit retention, and protect the integrity of the service and its operational systems.",
 	"No internet service can guarantee absolute security. If the project's data practices or incident posture changes materially, this policy should change as well."
 ];
 
 usePageSeo({
-	description: "Privacy Policy for Ballot Clarity, covering address lookup handling, browser storage, operational metadata, third-party disclosures, retention, user choices, and current public-build limits.",
+	description: "Privacy Policy for Ballot Clarity, covering address lookup handling, browser storage, operational metadata, third-party disclosures, retention, user choices, and current release limits.",
 	path: "/privacy",
 	title: "Privacy Policy"
 });
@@ -138,7 +139,7 @@ usePageSeo({
 				Privacy Policy
 			</h1>
 			<p class="text-base text-app-muted leading-8 mt-5 max-w-3xl dark:text-app-muted-dark">
-				This policy describes how {{ appName }} currently handles address lookup input, browser-stored guide preferences, operational metadata, and direct contact messages. It is written for the current public build at {{ appUrl }}, not for a future product that collects more data than the site collects today.
+				This policy describes how {{ appName }} currently handles address lookup input, browser-stored guide preferences, operational metadata, and direct contact messages. It is written for the current release at {{ siteUrl }}, not for a future product that collects more data than the site collects today.
 			</p>
 			<div class="mt-5">
 				<UpdatedAt label="Effective" :value="effectiveAt" />
@@ -146,7 +147,7 @@ usePageSeo({
 		</header>
 
 		<InfoCallout title="Plain-language summary">
-			The current public build uses address or ZIP input only to match ballot coverage. It does not create public user accounts, does not run targeted advertising, and is not designed to sell or share personal data. The app does save selected location labels and ballot-plan preferences locally in your browser so the guide remains usable across refreshes.
+			The current release uses address or ZIP input only to match ballot coverage. It does not create public user accounts, does not run targeted advertising, and is not designed to sell or share personal data. The app does save selected location labels and ballot-plan preferences locally in your browser so the guide remains usable across refreshes.
 		</InfoCallout>
 
 		<section class="gap-6 grid lg:grid-cols-3">

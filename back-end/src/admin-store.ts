@@ -20,7 +20,7 @@ import type {
 } from "./types/civic.js";
 import { Buffer } from "node:buffer";
 import { randomUUID, scryptSync, timingSafeEqual } from "node:crypto";
-import { mkdirSync, readFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync } from "node:fs";
 import { dirname } from "node:path";
 import process from "node:process";
 import { DatabaseSync } from "node:sqlite";
@@ -147,7 +147,17 @@ interface ActivityRow {
 }
 
 const defaultDbPath = fileURLToPath(new URL("../data/ballot-clarity.sqlite", import.meta.url));
-const schemaPath = new URL("../admin-schema.sql", import.meta.url);
+const packagedSchemaPath = new URL("./admin-schema.sql", import.meta.url);
+const sourceSchemaPath = new URL("../admin-schema.sql", import.meta.url);
+
+function resolveSchemaPath() {
+	const packagedPathname = fileURLToPath(packagedSchemaPath);
+
+	if (existsSync(packagedPathname))
+		return packagedPathname;
+
+	return fileURLToPath(sourceSchemaPath);
+}
 
 function hashPassword(password: string) {
 	const salt = randomUUID().replaceAll("-", "");
@@ -314,7 +324,7 @@ function ensureDatabasePath(pathname: string) {
 export function createAdminRepository(options: AdminRepositoryOptions = {}) {
 	const resolvedPath = ensureDatabasePath(options.dbPath || process.env.ADMIN_DB_PATH || defaultDbPath);
 	const database = new DatabaseSync(resolvedPath);
-	const schema = readFileSync(schemaPath, "utf8");
+	const schema = readFileSync(resolveSchemaPath(), "utf8");
 
 	database.exec(schema);
 

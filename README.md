@@ -11,6 +11,7 @@ Ballot Clarity is a nonpartisan civic-information platform built as an npm works
 - `back-end/src/coverage-data.ts`: seeded Ballot Clarity coverage data that can later be replaced with live providers or database reads
 - `back-end/src/admin-store.ts`: SQLite-backed admin persistence for users, content review, source monitoring, corrections, and activity
 - `back-end/admin-schema.sql`: schema for persisted admin and operations data
+- `back-end/dist/admin-schema.sql`: runtime copy emitted during `npm run build` so compiled deployments can initialize the admin store
 
 ## Install and run
 
@@ -55,7 +56,7 @@ Public runtime variables:
 
 Server-only variables:
 
-- `ADMIN_API_BASE`: server-side Nuxt proxy target for admin-only API requests
+- `ADMIN_API_BASE`: server-side Nuxt proxy target for admin-only API requests; this should be private to the Nuxt server and never exposed as the browser's direct `/api/admin/*` target
 - `ADMIN_API_KEY`: shared secret between the Nuxt admin proxy and the Express admin endpoints
 - `ADMIN_SESSION_SECRET`: cookie-signing secret for Nuxt admin sessions
 - `ADMIN_DB_PATH`: SQLite database path for persisted admin users and editorial operations data
@@ -72,6 +73,7 @@ Runtime variable:
 - `PORT`: Express API port
 
 For production, use unique random values for `ADMIN_API_KEY`, `ADMIN_BOOTSTRAP_PASSWORD`, and `ADMIN_SESSION_SECRET`. The front-end and back-end must share the same `ADMIN_API_KEY`. Keep every `ADMIN_*` variable in the server environment only.
+The public browser should call `/api/admin/*` on the Nuxt origin only. Those requests must terminate at the Nuxt server so the session cookie and server-held `ADMIN_API_KEY` stay inside the bridge layer.
 
 ## Useful npm commands
 
@@ -140,6 +142,7 @@ How the admin model works:
 - Admin and editor accounts are persisted in SQLite, not hardcoded deployment credentials.
 - The browser authenticates against Nuxt server routes, which issue a same-origin session cookie.
 - Nuxt proxies protected admin requests to the Express API using `ADMIN_API_KEY`, so the backend key never reaches the browser.
+- Browser traffic for `/api/admin/*` is expected to terminate at Nuxt. The Express admin endpoints are internal API surfaces behind `ADMIN_API_BASE`, not public browser routes.
 - Admin data includes content publish state, correction intake, source-health monitoring, activity logs, and user management.
 
 ## API surface
@@ -161,6 +164,8 @@ Public API endpoints:
 - `GET /api/data-sources`
 
 Protected admin API endpoints:
+
+These endpoints live on the Express service, but they are intended to be reached by the Nuxt admin bridge, not by the public browser directly.
 
 - `POST /api/admin/auth/login`
 - `GET /api/admin/overview`
@@ -192,6 +197,7 @@ Protected admin API endpoints:
 - Set `ADMIN_API_KEY` and `ADMIN_SESSION_SECRET` in the server environments only.
 - Point `ADMIN_DB_PATH` at durable storage outside the repo checkout.
 - Run `npm run bootstrap-admin` once on the server, then remove the bootstrap password from routine shell history and secrets tooling if a different operational process is preferred.
+- Keep the public reverse proxy pointed at Nuxt for `/api/admin/*`; do not route those browser requests straight to the Express backend.
 
 ## Swapping seeded coverage for live civic data later
 
@@ -207,8 +213,9 @@ Protected admin API endpoints:
 2. Set `NUXT_PUBLIC_SITE_URL`, `NUXT_PUBLIC_API_BASE`, `ADMIN_API_BASE`, `ADMIN_API_KEY`, `ADMIN_SESSION_SECRET`, and `ADMIN_DB_PATH`.
 3. Create the directory that will hold the SQLite file referenced by `ADMIN_DB_PATH`, with backup and restore procedures in place.
 4. Run `npm run bootstrap-admin` once to create the first persisted admin account.
-5. Put the API behind HTTPS and a reverse proxy or platform ingress that can keep the admin API off the public browser boundary except through the Nuxt server routes.
-6. Decide whether SQLite on durable disk is sufficient for the initial launch or whether the admin store should move to a managed database before multi-editor production use.
+5. Put the API behind HTTPS and a reverse proxy or platform ingress that sends public `/api/admin/*` traffic to Nuxt, while the Nuxt server reaches the Express admin API over `ADMIN_API_BASE`.
+6. Ensure the backend deploy artifact includes `dist/admin-schema.sql`; the build now copies it automatically, but the deployed runtime should still be checked once after merge.
+7. Decide whether SQLite on durable disk is sufficient for the initial launch or whether the admin store should move to a managed database before multi-editor production use.
 
 ## Notes
 

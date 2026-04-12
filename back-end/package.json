@@ -10,7 +10,7 @@
 		"server:once": "tsx -r dotenv/config src/server.ts",
 		"bootstrap-admin": "tsx -r dotenv/config src/bootstrap-admin.ts",
 		"start": "node dist/server.js",
-		"build": "tsc -p tsconfig.json",
+		"build": "tsc -p tsconfig.json && node ./scripts/copy-runtime-assets.mjs",
 		"watch": "tsc -w",
 		"dev": "tsx watch -r dotenv/config src/server.ts",
 		"lint": "eslint \"src/**/*.{js,ts}\" \"test/**/*.ts\"",

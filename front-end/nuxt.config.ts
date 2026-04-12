@@ -73,6 +73,63 @@ export default defineNuxtConfig({
 				target: "esnext"
 			}
 		},
+		routeRules: {
+			"/admin": {
+				headers: {
+					"X-Robots-Tag": "noindex, nofollow"
+				}
+			},
+			"/admin/**": {
+				headers: {
+					"X-Robots-Tag": "noindex, nofollow"
+				}
+			},
+			"/api/**": {
+				headers: {
+					"X-Robots-Tag": "noindex, nofollow"
+				}
+			},
+			"/ballot": {
+				headers: {
+					"X-Robots-Tag": "noindex, nofollow"
+				}
+			},
+			"/ballot/**": {
+				headers: {
+					"X-Robots-Tag": "noindex, nofollow"
+				}
+			},
+			"/compare": {
+				headers: {
+					"X-Robots-Tag": "noindex, nofollow"
+				}
+			},
+			"/compare/**": {
+				headers: {
+					"X-Robots-Tag": "noindex, nofollow"
+				}
+			},
+			"/plan": {
+				headers: {
+					"X-Robots-Tag": "noindex, nofollow"
+				}
+			},
+			"/plan/**": {
+				headers: {
+					"X-Robots-Tag": "noindex, nofollow"
+				}
+			},
+			"/search": {
+				headers: {
+					"X-Robots-Tag": "noindex, nofollow"
+				}
+			},
+			"/search/**": {
+				headers: {
+					"X-Robots-Tag": "noindex, nofollow"
+				}
+			}
+		},
 		prerender: {
 			crawlLinks: false,
 			routes: []

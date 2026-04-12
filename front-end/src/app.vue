@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { appDescription, appName } from "~/constants";
 
-const noindexPathPattern = /^\/(?:admin|ballot|compare|plan|search)(?:\/|$)/;
+const noindexPathPattern = /^\/(?:admin|api|ballot|compare|plan|search)(?:\/|$)/;
 
 const route = useRoute();
 const siteUrl = useSiteUrl();
@@ -29,7 +29,7 @@ useHead(() => ({
 	titleTemplate: title => title ? `${title} | ${appName}` : appName,
 	script: [
 		{
-			children: JSON.stringify(siteSchema),
+			innerHTML: JSON.stringify(siteSchema),
 			key: "website-jsonld",
 			type: "application/ld+json"
 		}

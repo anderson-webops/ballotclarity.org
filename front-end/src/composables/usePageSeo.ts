@@ -42,7 +42,7 @@ export function usePageSeo(input: PageSeoInput) {
 			}
 		],
 		script: jsonLdEntries.map((entry, index) => ({
-			children: JSON.stringify(entry),
+			innerHTML: JSON.stringify(entry),
 			key: `jsonld-${index}`,
 			type: "application/ld+json"
 		}))

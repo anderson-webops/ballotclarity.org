@@ -4,39 +4,79 @@ Disallow: /
 User-agent: ClaudeBot
 Disallow: /
 
+User-agent: Google-Extended
+Disallow: /
+
 User-agent: Googlebot
 Allow: /
+Disallow: /admin
 Disallow: /api
+Disallow: /ballot
+Disallow: /compare
 Disallow: /plan
+Disallow: /search
 
 User-agent: Bingbot
 Allow: /
+Disallow: /admin
 Disallow: /api
+Disallow: /ballot
+Disallow: /compare
 Disallow: /plan
+Disallow: /search
 
 User-agent: OAI-SearchBot
 Allow: /
+Disallow: /admin
 Disallow: /api
+Disallow: /ballot
+Disallow: /compare
 Disallow: /plan
+Disallow: /search
+
+User-agent: Claude-SearchBot
+Allow: /
+Disallow: /admin
+Disallow: /api
+Disallow: /ballot
+Disallow: /compare
+Disallow: /plan
+Disallow: /search
 
 User-agent: PerplexityBot
 Allow: /
+Disallow: /admin
 Disallow: /api
+Disallow: /ballot
+Disallow: /compare
 Disallow: /plan
+Disallow: /search
 
 User-agent: Perplexity-User
 Allow: /
+Disallow: /admin
 Disallow: /api
+Disallow: /ballot
+Disallow: /compare
 Disallow: /plan
+Disallow: /search
 
 User-agent: Claude-User
 Allow: /
+Disallow: /admin
 Disallow: /api
+Disallow: /ballot
+Disallow: /compare
 Disallow: /plan
+Disallow: /search
 
 User-agent: *
 Allow: /
+Disallow: /admin
 Disallow: /api
+Disallow: /ballot
+Disallow: /compare
 Disallow: /plan
+Disallow: /search
 
 Sitemap: https://ballotclarity.jacobdanderson.net/sitemap.xml

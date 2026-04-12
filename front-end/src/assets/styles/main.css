@@ -92,19 +92,20 @@ h6 {
 }
 
 .skip-link {
-  position: absolute;
+  position: fixed;
   left: 1rem;
-  top: -3rem;
+  top: 1rem;
   z-index: 100;
   padding: 0.75rem 1rem;
   border-radius: 9999px;
   background: var(--app-ink);
   color: white;
-  transition: top 0.2s ease;
+  transform: translateY(calc(-100% - 1rem));
+  transition: transform 0.2s ease;
 }
 
 .skip-link:focus {
-  top: 1rem;
+  transform: translateY(0);
 }
 
 .bc-prose {

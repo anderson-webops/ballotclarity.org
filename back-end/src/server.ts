@@ -1,4 +1,4 @@
-import type { Candidate, Measure, SearchResponse, Source, SourceDirectoryItem, SourceRecordResponse } from "./types/civic.js";
+import type { AdminEntityType, Candidate, Contest, Election, Measure, SearchResponse, Source, SourceDirectoryItem, SourceRecordResponse } from "./types/civic.js";
 import { Buffer } from "node:buffer";
 import { timingSafeEqual } from "node:crypto";
 import process from "node:process";
@@ -82,7 +82,7 @@ function collectMeasureSources(measure: Measure) {
 	]);
 }
 
-function buildSourceDirectory(): SourceDirectoryItem[] {
+function buildSourceDirectory(candidates: Candidate[] = demoCandidates, measures: Measure[] = demoMeasures, sources: Source[] = demoSources): SourceDirectoryItem[] {
 	const citations = new Map<string, SourceDirectoryItem["citedBy"]>();
 
 	function addCitation(sourceId: string, citation: SourceDirectoryItem["citedBy"][number]) {
@@ -94,7 +94,7 @@ function buildSourceDirectory(): SourceDirectoryItem[] {
 		citations.set(sourceId, existing);
 	}
 
-	for (const candidate of demoCandidates) {
+	for (const candidate of candidates) {
 		for (const source of collectCandidateSources(candidate)) {
 			addCitation(source.id, {
 				href: `/candidate/${candidate.slug}`,
@@ -105,7 +105,7 @@ function buildSourceDirectory(): SourceDirectoryItem[] {
 		}
 	}
 
-	for (const measure of demoMeasures) {
+	for (const measure of measures) {
 		for (const source of collectMeasureSources(measure)) {
 			addCitation(source.id, {
 				href: `/measure/${measure.slug}`,
@@ -116,24 +116,30 @@ function buildSourceDirectory(): SourceDirectoryItem[] {
 		}
 	}
 
-	return demoSources
+	return sources
 		.map(source => ({
 			...source,
 			citationCount: (citations.get(source.id) ?? []).length,
 			citedBy: citations.get(source.id) ?? []
 		}))
+		.filter(source => source.citationCount > 0)
 		.sort((left, right) => {
 			return right.date.localeCompare(left.date) || left.title.localeCompare(right.title);
 		});
 }
 
-function buildSourceRecord(id: string): SourceRecordResponse | null {
+function buildSourceRecord(
+	id: string,
+	candidates: Candidate[] = demoCandidates,
+	measures: Measure[] = demoMeasures,
+	sources: Source[] = demoSources
+): SourceRecordResponse | null {
 	const source = getSourceById(id);
 
 	if (!source)
 		return null;
 
-	const directoryItem = buildSourceDirectory().find(item => item.id === id);
+	const directoryItem = buildSourceDirectory(candidates, measures, sources).find(item => item.id === id);
 
 	if (!directoryItem)
 		return null;
@@ -144,7 +150,13 @@ function buildSourceRecord(id: string): SourceRecordResponse | null {
 	};
 }
 
-function buildSearchResponse(rawQuery: string): SearchResponse {
+function buildSearchResponse(
+	rawQuery: string,
+	candidates: Candidate[] = demoCandidates,
+	measures: Measure[] = demoMeasures,
+	election: Election = demoElection,
+	sourceDirectory: SourceDirectoryItem[] = buildSourceDirectory(candidates, measures)
+): SearchResponse {
 	const query = rawQuery.trim();
 	const lowerQuery = query.toLowerCase();
 	const suggestions = [
@@ -164,7 +176,7 @@ function buildSearchResponse(rawQuery: string): SearchResponse {
 		};
 	}
 
-	const candidateResults = demoCandidates
+	const candidateResults = candidates
 		.filter(candidate => [
 			candidate.name,
 			candidate.officeSought,
@@ -182,7 +194,7 @@ function buildSearchResponse(rawQuery: string): SearchResponse {
 			updatedAt: candidate.updatedAt
 		}));
 
-	const measureResults = demoMeasures
+	const measureResults = measures
 		.filter(measure => [
 			measure.title,
 			measure.summary,
@@ -201,7 +213,7 @@ function buildSearchResponse(rawQuery: string): SearchResponse {
 			updatedAt: measure.updatedAt
 		}));
 
-	const electionResults = [demoElection]
+	const electionResults = [election]
 		.filter(election => [
 			election.name,
 			election.locationName,
@@ -233,7 +245,7 @@ function buildSearchResponse(rawQuery: string): SearchResponse {
 			updatedAt: jurisdiction.updatedAt
 		}));
 
-	const sourceResults = buildSourceDirectory()
+	const sourceResults = sourceDirectory
 		.filter(source => [
 			source.title,
 			source.publisher,
@@ -276,6 +288,127 @@ export function createApp(options: CreateAppOptions = {}) {
 		bootstrapUsername: options.bootstrapUsername,
 		dbPath: options.adminDbPath
 	});
+
+	function maxUpdatedAt(...values: Array<string | undefined>) {
+		return values
+			.filter((value): value is string => Boolean(value))
+			.sort((left, right) => right.localeCompare(left))[0];
+	}
+
+	function getContentRecord(entityType: AdminEntityType, entitySlug: string) {
+		return adminRepository.getContentRecord(entityType, entitySlug);
+	}
+
+	function applyCandidateContent(candidate: Candidate): Candidate | null {
+		const content = getContentRecord("candidate", candidate.slug);
+
+		if (content && !content.published)
+			return null;
+
+		return {
+			...candidate,
+			ballotSummary: content?.publicBallotSummary?.trim() || candidate.ballotSummary,
+			summary: content?.publicSummary?.trim() || candidate.summary,
+			updatedAt: maxUpdatedAt(content?.updatedAt, candidate.updatedAt) || candidate.updatedAt
+		};
+	}
+
+	function applyMeasureContent(measure: Measure): Measure | null {
+		const content = getContentRecord("measure", measure.slug);
+
+		if (content && !content.published)
+			return null;
+
+		return {
+			...measure,
+			ballotSummary: content?.publicBallotSummary?.trim() || measure.ballotSummary,
+			summary: content?.publicSummary?.trim() || measure.summary,
+			updatedAt: maxUpdatedAt(content?.updatedAt, measure.updatedAt) || measure.updatedAt
+		};
+	}
+
+	function applyContestContent(contest: Contest): Contest | null {
+		if (contest.type === "candidate") {
+			const candidates = (contest.candidates ?? [])
+				.map(applyCandidateContent)
+				.filter((candidate): candidate is Candidate => Boolean(candidate));
+
+			if (!candidates.length)
+				return null;
+
+			return {
+				...contest,
+				candidates
+			};
+		}
+
+		const measures = (contest.measures ?? [])
+			.map(applyMeasureContent)
+			.filter((measure): measure is Measure => Boolean(measure));
+
+		if (!measures.length)
+			return null;
+
+		return {
+			...contest,
+			measures
+		};
+	}
+
+	function applyElectionContent(election: Election): Election | null {
+		const content = getContentRecord("election", election.slug);
+
+		if (content && !content.published)
+			return null;
+
+		const contests = election.contests
+			.map(applyContestContent)
+			.filter((contest): contest is Contest => Boolean(contest));
+
+		return {
+			...election,
+			contests,
+			description: content?.publicSummary?.trim() || election.description,
+			updatedAt: maxUpdatedAt(content?.updatedAt, election.updatedAt) || election.updatedAt
+		};
+	}
+
+	function listPublicCandidates() {
+		return demoCandidates
+			.map(applyCandidateContent)
+			.filter((candidate): candidate is Candidate => Boolean(candidate));
+	}
+
+	function listPublicMeasures() {
+		return demoMeasures
+			.map(applyMeasureContent)
+			.filter((measure): measure is Measure => Boolean(measure));
+	}
+
+	function getPublicCandidate(slug: string) {
+		const candidate = getCandidateBySlug(slug);
+		return candidate ? applyCandidateContent(candidate) : null;
+	}
+
+	function getPublicMeasure(slug: string) {
+		const measure = getMeasureBySlug(slug);
+		return measure ? applyMeasureContent(measure) : null;
+	}
+
+	function getPublicCandidatesBySlugs(slugs: string[]) {
+		return getCandidatesBySlugs(slugs)
+			.map(applyCandidateContent)
+			.filter((candidate): candidate is Candidate => Boolean(candidate));
+	}
+
+	function getPublicElection(slug: string) {
+		const election = getElectionBySlug(slug);
+		return election ? applyElectionContent(election) : null;
+	}
+
+	function getPublicElectionSummaries() {
+		return demoElectionSummaries.filter(summary => Boolean(getPublicElection(summary.slug)));
+	}
 
 	app.use(cors({
 		origin: true
@@ -351,7 +484,7 @@ export function createApp(options: CreateAppOptions = {}) {
 		response.json({
 			electionSlug: demoElection.slug,
 			location: demoLocation,
-			note: "The current launch returns Metro County coverage from the current reference archive while live district integrations are being connected."
+			note: "The current launch returns Metro County coverage from the current release while live district integrations are being connected."
 		});
 	});
 
@@ -378,7 +511,7 @@ export function createApp(options: CreateAppOptions = {}) {
 
 	app.get("/api/elections", (_request, response) => {
 		response.json({
-			elections: demoElectionSummaries
+			elections: getPublicElectionSummaries()
 		});
 	});
 
@@ -394,19 +527,42 @@ export function createApp(options: CreateAppOptions = {}) {
 
 	app.get("/api/search", (request, response) => {
 		const query = typeof request.query.q === "string" ? request.query.q : "";
+		const election = getPublicElection(demoElection.slug);
+		const candidates = listPublicCandidates();
+		const measures = listPublicMeasures();
+		const sourceDirectory = buildSourceDirectory(candidates, measures);
 
-		response.json(buildSearchResponse(query));
+		if (!election) {
+			response.json({
+				groups: [],
+				query: query.trim(),
+				suggestions: [
+					"Metro County",
+					"U.S. House District 7",
+					"Charter Amendment A",
+					"Sandra Patel",
+					"Transit bond"
+				],
+				total: 0
+			});
+			return;
+		}
+
+		response.json(buildSearchResponse(query, candidates, measures, election, sourceDirectory));
 	});
 
 	app.get("/api/sources", (_request, response) => {
+		const candidates = listPublicCandidates();
+		const measures = listPublicMeasures();
+
 		response.json({
-			sources: buildSourceDirectory(),
+			sources: buildSourceDirectory(candidates, measures),
 			updatedAt: demoElection.updatedAt
 		});
 	});
 
 	app.get("/api/sources/:id", (request, response) => {
-		const record = buildSourceRecord(request.params.id);
+		const record = buildSourceRecord(request.params.id, listPublicCandidates(), listPublicMeasures());
 
 		if (!record) {
 			response.status(404).json({
@@ -442,7 +598,7 @@ export function createApp(options: CreateAppOptions = {}) {
 			return;
 		}
 
-		const election = getElectionBySlug(electionSlug);
+		const election = getPublicElection(electionSlug);
 
 		if (!election) {
 			response.status(404).json({
@@ -457,13 +613,13 @@ export function createApp(options: CreateAppOptions = {}) {
 				...demoLocation,
 				slug: locationSlug
 			},
-			note: "Current public coverage uses the current reference archive while live civic-data integrations are being connected. Verify official election logistics with the linked election office.",
+			note: "Current public coverage uses the current release while live civic-data integrations are being connected. Verify official election logistics with the linked election office.",
 			updatedAt: election.updatedAt
 		});
 	});
 
 	app.get("/api/candidates/:slug", (request, response) => {
-		const candidate = getCandidateBySlug(request.params.slug);
+		const candidate = getPublicCandidate(request.params.slug);
 
 		if (!candidate) {
 			response.status(404).json({
@@ -476,7 +632,7 @@ export function createApp(options: CreateAppOptions = {}) {
 	});
 
 	app.get("/api/measures/:slug", (request, response) => {
-		const measure = getMeasureBySlug(request.params.slug);
+		const measure = getPublicMeasure(request.params.slug);
 
 		if (!measure) {
 			response.status(404).json({
@@ -491,7 +647,7 @@ export function createApp(options: CreateAppOptions = {}) {
 	app.get("/api/compare", (request, response) => {
 		const raw = typeof request.query.slugs === "string" ? request.query.slugs : "";
 		const requestedSlugs = raw.split(",").map(item => item.trim()).filter(Boolean).slice(0, 3);
-		const candidates = getCandidatesBySlugs(requestedSlugs);
+		const candidates = getPublicCandidatesBySlugs(requestedSlugs);
 		const offices = Array.from(new Set(candidates.map(candidate => candidate.officeSought)));
 		const contests = Array.from(new Set(candidates.map(candidate => candidate.contestSlug)));
 		const sameContest = contests.length === 1;
@@ -547,6 +703,12 @@ export function createApp(options: CreateAppOptions = {}) {
 						? request.body.blocker
 						: undefined,
 				priority: request.body?.priority,
+				publicBallotSummary: request.body?.publicBallotSummary === null
+					? null
+					: typeof request.body?.publicBallotSummary === "string"
+						? request.body.publicBallotSummary
+						: undefined,
+				publicSummary: typeof request.body?.publicSummary === "string" ? request.body.publicSummary : undefined,
 				published: typeof request.body?.published === "boolean" ? request.body.published : undefined,
 				status: request.body?.status
 			}));

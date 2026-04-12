@@ -11,7 +11,8 @@ const adminApiKey = "test-admin-key";
 
 before(async () => {
 	server = createApp({
-		adminApiKey
+		adminApiKey,
+		adminDbPath: ":memory:"
 	}).listen(0, "127.0.0.1");
 	await once(server, "listening");
 	const address = server.address() as AddressInfo;
@@ -74,7 +75,7 @@ test("GET /api/ballot returns the election guide and contests", async () => {
 	assert.equal(body.election.contests[0].title, "Federal Race");
 	assert.equal(body.election.contests[0].roleGuide.decisionAreas.length, 3);
 	assert.match(body.election.contests[0].roleGuide.summary, /federal law/i);
-	assert.match(body.note, /reference archive/i);
+	assert.match(body.note, /current release/i);
 });
 
 test("GET /api/jurisdictions returns the demo jurisdiction summary", async () => {
@@ -236,4 +237,84 @@ test("GET /api/admin/review and /api/admin/sources return protected operational 
 	assert.match(blockedCandidate?.blocker || "", /finance/i);
 	assert.equal(officialSource?.label, "FEC OpenFEC committee summaries");
 	assert.equal(incidentSource?.health, "incident");
+});
+
+test("PATCH /api/admin/content updates public content fields and publish gating", async () => {
+	const isolatedServer = createApp({
+		adminApiKey,
+		adminDbPath: ":memory:"
+	}).listen(0, "127.0.0.1");
+
+	await once(isolatedServer, "listening");
+	const isolatedAddress = isolatedServer.address() as AddressInfo;
+	const isolatedBaseUrl = `http://127.0.0.1:${isolatedAddress.port}`;
+
+	try {
+		const contentResponse = await fetch(`${isolatedBaseUrl}/api/admin/content`, {
+			headers: {
+				"x-admin-api-key": adminApiKey
+			}
+		});
+		const contentBody = await contentResponse.json();
+		const elenaRecord = contentBody.items.find((item: { entitySlug: string }) => item.entitySlug === "elena-torres");
+
+		assert.equal(contentResponse.status, 200);
+		assert.equal(typeof elenaRecord?.publicSummary, "string");
+		assert.equal(typeof elenaRecord?.publicBallotSummary, "string");
+
+		const updatedSummary = "Updated public summary for production editorial testing.";
+		const updatedBallotSummary = "Updated short ballot summary for editorial control.";
+
+		const patchResponse = await fetch(`${isolatedBaseUrl}/api/admin/content/content-elena-torres`, {
+			body: JSON.stringify({
+				publicBallotSummary: updatedBallotSummary,
+				publicSummary: updatedSummary,
+				published: true,
+				status: "published"
+			}),
+			headers: {
+				"Content-Type": "application/json",
+				"x-admin-api-key": adminApiKey
+			},
+			method: "PATCH"
+		});
+
+		assert.equal(patchResponse.status, 200);
+
+		const candidateResponse = await fetch(`${isolatedBaseUrl}/api/candidates/elena-torres`);
+		const candidateBody = await candidateResponse.json();
+
+		assert.equal(candidateResponse.status, 200);
+		assert.equal(candidateBody.summary, updatedSummary);
+		assert.equal(candidateBody.ballotSummary, updatedBallotSummary);
+
+		const unpublishResponse = await fetch(`${isolatedBaseUrl}/api/admin/content/content-elena-torres`, {
+			body: JSON.stringify({
+				published: false,
+				status: "draft"
+			}),
+			headers: {
+				"Content-Type": "application/json",
+				"x-admin-api-key": adminApiKey
+			},
+			method: "PATCH"
+		});
+
+		assert.equal(unpublishResponse.status, 200);
+
+		const hiddenCandidateResponse = await fetch(`${isolatedBaseUrl}/api/candidates/elena-torres`);
+		const ballotResponse = await fetch(`${isolatedBaseUrl}/api/ballot?election=2026-metro-county-general`);
+		const ballotBody = await ballotResponse.json();
+		const houseContest = ballotBody.election.contests.find((contest: { slug: string }) => contest.slug === "us-house-district-7");
+
+		assert.equal(hiddenCandidateResponse.status, 404);
+		assert.equal(ballotResponse.status, 200);
+		assert.equal(houseContest.candidates.length, 1);
+		assert.equal(houseContest.candidates[0].slug, "daniel-brooks");
+	}
+	finally {
+		await new Promise<void>((resolve, reject) => {
+			isolatedServer.close(error => error ? reject(error) : resolve());
+		});
+	}
 });

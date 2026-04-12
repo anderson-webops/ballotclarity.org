@@ -20,6 +20,8 @@ async function saveItem(id: string, payload: {
 	assignedTo?: string;
 	blocker?: string | null;
 	priority?: AdminPriority;
+	publicBallotSummary?: string | null;
+	publicSummary?: string;
 	published?: boolean;
 	status?: AdminReviewStatus;
 }) {
@@ -61,10 +63,10 @@ usePageSeo({
 				Content control
 			</p>
 			<h1 class="text-5xl text-app-ink font-serif mt-4 dark:text-app-text-dark">
-				Manage publish status and assignment
+				Manage publish state and public copy
 			</h1>
 			<p class="text-base text-app-muted leading-8 mt-5 dark:text-app-muted-dark">
-				Use this page to keep public content operationally coherent: who owns the item, whether it is published, and what is still blocking release.
+				Use this page to keep public content operationally coherent: who owns the item, whether it is published, and what summary text the public site should show without requiring a code deploy.
 			</p>
 		</header>
 
@@ -90,9 +92,26 @@ usePageSeo({
 						<h2 class="text-3xl text-app-ink font-serif mt-4 dark:text-app-text-dark">
 							{{ item.title }}
 						</h2>
-						<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
+						<p class="text-xs text-app-muted tracking-[0.18em] font-semibold mt-4 uppercase dark:text-app-muted-dark">
+							Internal workflow summary
+						</p>
+						<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
 							{{ item.summary }}
 						</p>
+						<p class="text-xs text-app-muted tracking-[0.18em] font-semibold mt-5 uppercase dark:text-app-muted-dark">
+							Public page summary
+						</p>
+						<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
+							{{ item.publicSummary }}
+						</p>
+						<div v-if="item.publicBallotSummary" class="mt-4">
+							<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+								Ballot card summary
+							</p>
+							<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
+								{{ item.publicBallotSummary }}
+							</p>
+						</div>
 						<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
 							{{ item.sourceCoverage }}
 						</p>
@@ -162,6 +181,26 @@ usePageSeo({
 								rows="3"
 								class="text-sm text-app-ink mt-2 px-4 py-3 border border-app-line rounded-2xl bg-white min-h-28 w-full shadow-sm dark:text-app-text-dark dark:border-app-line-dark dark:bg-app-panel-dark focus-ring"
 								placeholder="Leave blank if there is no blocker."
+							/>
+						</label>
+
+						<label class="block">
+							<span class="text-sm text-app-ink font-semibold dark:text-app-text-dark">Public page summary</span>
+							<textarea
+								v-model="item.publicSummary"
+								rows="4"
+								class="text-sm text-app-ink mt-2 px-4 py-3 border border-app-line rounded-2xl bg-white min-h-32 w-full shadow-sm dark:text-app-text-dark dark:border-app-line-dark dark:bg-app-panel-dark focus-ring"
+								placeholder="Short, source-backed summary shown on the public page."
+							/>
+						</label>
+
+						<label v-if="item.entityType === 'candidate' || item.entityType === 'measure'" class="block">
+							<span class="text-sm text-app-ink font-semibold dark:text-app-text-dark">Ballot card summary</span>
+							<textarea
+								v-model="item.publicBallotSummary"
+								rows="3"
+								class="text-sm text-app-ink mt-2 px-4 py-3 border border-app-line rounded-2xl bg-white min-h-28 w-full shadow-sm dark:text-app-text-dark dark:border-app-line-dark dark:bg-app-panel-dark focus-ring"
+								placeholder="Short summary used on ballot cards and search previews."
 							/>
 						</label>
 

@@ -21,6 +21,8 @@ CREATE TABLE IF NOT EXISTS admin_content (
 	assigned_to TEXT NOT NULL,
 	blocker TEXT,
 	summary TEXT NOT NULL,
+	public_summary TEXT NOT NULL DEFAULT '',
+	ballot_summary TEXT,
 	source_coverage TEXT NOT NULL,
 	published INTEGER NOT NULL DEFAULT 0,
 	published_at TEXT,

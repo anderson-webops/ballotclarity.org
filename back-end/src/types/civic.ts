@@ -549,6 +549,8 @@ export interface AdminContentItem {
 	assignedTo: string;
 	blocker?: string;
 	summary: string;
+	publicSummary: string;
+	publicBallotSummary?: string;
 	sourceCoverage: string;
 	published: boolean;
 	publishedAt?: string;

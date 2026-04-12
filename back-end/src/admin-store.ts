@@ -56,6 +56,8 @@ interface ContentPatch {
 	assignedTo?: string;
 	blocker?: string | null;
 	priority?: AdminPriority;
+	publicBallotSummary?: string | null;
+	publicSummary?: string;
 	published?: boolean;
 	status?: AdminReviewStatus;
 }
@@ -106,6 +108,8 @@ interface ContentRow {
 	assigned_to: string;
 	blocker: string | null;
 	summary: string;
+	public_summary: string | null;
+	ballot_summary: string | null;
 	source_coverage: string;
 	published: number;
 	published_at: string | null;
@@ -200,6 +204,8 @@ function rowToContent(row: ContentRow): AdminContentItem {
 		entityType: row.entity_type,
 		id: row.id,
 		priority: row.priority,
+		publicBallotSummary: row.ballot_summary || undefined,
+		publicSummary: row.public_summary || "",
 		published: Boolean(row.published),
 		publishedAt: row.published_at || undefined,
 		sourceCoverage: row.source_coverage,
@@ -266,8 +272,10 @@ function defaultContentSeed(): AdminContentItem[] {
 			entityType: "candidate" as const,
 			id: `content-${candidate.slug}`,
 			priority,
-			published: candidate.slug !== "sandra-patel",
-			publishedAt: candidate.slug !== "sandra-patel" ? candidate.updatedAt : undefined,
+			publicBallotSummary: candidate.ballotSummary,
+			publicSummary: candidate.summary,
+			published: true,
+			publishedAt: candidate.updatedAt,
 			sourceCoverage,
 			status,
 			summary: candidate.summary,
@@ -283,10 +291,12 @@ function defaultContentSeed(): AdminContentItem[] {
 		entityType: "measure" as const,
 		id: `content-${measure.slug}`,
 		priority: index === 0 ? "medium" as const : "low" as const,
-		published: index !== 0,
-		publishedAt: index !== 0 ? measure.updatedAt : undefined,
+		publicBallotSummary: measure.ballotSummary,
+		publicSummary: measure.summary,
+		published: true,
+		publishedAt: measure.updatedAt,
 		sourceCoverage: `${measure.sources.length} attached source${measure.sources.length === 1 ? "" : "s"} with yes/no impact sections and fiscal notes.`,
-		status: index === 0 ? "ready-to-publish" as const : "published" as const,
+		status: index === 0 ? "in-review" as const : "published" as const,
 		summary: measure.summary,
 		title: measure.title,
 		updatedAt: measure.updatedAt
@@ -300,8 +310,9 @@ function defaultContentSeed(): AdminContentItem[] {
 			entityType: "election",
 			id: `content-${demoElection.slug}`,
 			priority: "high",
-			published: false,
-			publishedAt: undefined,
+			publicSummary: demoElection.description,
+			published: true,
+			publishedAt: demoElection.updatedAt,
 			sourceCoverage: `${demoElection.contests.length} contest sections with official notices and guide freshness metadata attached.`,
 			status: "in-review",
 			summary: "Cross-checking contest ordering, official resources, and print layout before the next public refresh.",
@@ -321,12 +332,26 @@ function ensureDatabasePath(pathname: string) {
 	return pathname;
 }
 
+function hasColumn(database: DatabaseSync, table: string, column: string) {
+	const rows = database.prepare(`PRAGMA table_info(${table})`).all() as Array<{ name: string }>;
+	return rows.some(row => row.name === column);
+}
+
+function ensureColumn(database: DatabaseSync, table: string, column: string, definition: string) {
+	if (hasColumn(database, table, column))
+		return;
+
+	database.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+}
+
 export function createAdminRepository(options: AdminRepositoryOptions = {}) {
 	const resolvedPath = ensureDatabasePath(options.dbPath || process.env.ADMIN_DB_PATH || defaultDbPath);
 	const database = new DatabaseSync(resolvedPath);
 	const schema = readFileSync(resolveSchemaPath(), "utf8");
 
 	database.exec(schema);
+	ensureColumn(database, "admin_content", "public_summary", "TEXT");
+	ensureColumn(database, "admin_content", "ballot_summary", "TEXT");
 
 	const countStatement = (table: string) => database.prepare(`SELECT COUNT(*) AS count FROM ${table}`);
 
@@ -348,11 +373,13 @@ export function createAdminRepository(options: AdminRepositoryOptions = {}) {
 				assigned_to,
 				blocker,
 				summary,
+				public_summary,
+				ballot_summary,
 				source_coverage,
 				published,
 				published_at,
 				updated_at
-			) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		`);
 
 		for (const item of defaultContentSeed()) {
@@ -366,12 +393,46 @@ export function createAdminRepository(options: AdminRepositoryOptions = {}) {
 				item.assignedTo,
 				item.blocker || null,
 				item.summary,
+				item.publicSummary,
+				item.publicBallotSummary || null,
 				item.sourceCoverage,
 				item.published ? 1 : 0,
 				item.publishedAt || null,
 				item.updatedAt
 			);
 		}
+	}
+
+	const backfillContentFields = database.prepare(`
+		UPDATE admin_content
+		SET public_summary = CASE
+				WHEN public_summary IS NULL OR trim(public_summary) = '' THEN ?
+				ELSE public_summary
+			END,
+			ballot_summary = CASE
+				WHEN ballot_summary IS NULL OR trim(ballot_summary) = '' THEN ?
+				ELSE ballot_summary
+			END,
+			published = CASE
+				WHEN public_summary IS NULL OR trim(public_summary) = '' THEN ?
+				ELSE published
+			END,
+			published_at = CASE
+				WHEN public_summary IS NULL OR trim(public_summary) = '' THEN COALESCE(published_at, ?)
+				ELSE published_at
+			END
+		WHERE entity_type = ? AND entity_slug = ?
+	`);
+
+	for (const item of defaultContentSeed()) {
+		backfillContentFields.run(
+			item.publicSummary,
+			item.publicBallotSummary || null,
+			item.published ? 1 : 0,
+			item.publishedAt || null,
+			item.entityType,
+			item.entitySlug
+		);
 	}
 
 	if (!correctionsCount) {
@@ -592,7 +653,7 @@ export function createAdminRepository(options: AdminRepositoryOptions = {}) {
 
 	function listContent(): AdminContentResponse {
 		const rows = database.prepare(`
-			SELECT id, title, entity_type, entity_slug, status, priority, updated_at, assigned_to, blocker, summary, source_coverage, published, published_at
+			SELECT id, title, entity_type, entity_slug, status, priority, updated_at, assigned_to, blocker, summary, public_summary, ballot_summary, source_coverage, published, published_at
 			FROM admin_content
 			ORDER BY published ASC, priority DESC, updated_at DESC
 		`).all() as unknown as ContentRow[];
@@ -602,9 +663,19 @@ export function createAdminRepository(options: AdminRepositoryOptions = {}) {
 		};
 	}
 
+	function getContentRecord(entityType: AdminEntityType, entitySlug: string) {
+		const row = database.prepare(`
+			SELECT id, title, entity_type, entity_slug, status, priority, updated_at, assigned_to, blocker, summary, public_summary, ballot_summary, source_coverage, published, published_at
+			FROM admin_content
+			WHERE entity_type = ? AND entity_slug = ?
+		`).get(entityType, entitySlug) as ContentRow | undefined;
+
+		return row ? rowToContent(row) : null;
+	}
+
 	function updateContent(id: string, patch: ContentPatch) {
 		const current = database.prepare(`
-			SELECT id, title, entity_type, entity_slug, status, priority, updated_at, assigned_to, blocker, summary, source_coverage, published, published_at
+			SELECT id, title, entity_type, entity_slug, status, priority, updated_at, assigned_to, blocker, summary, public_summary, ballot_summary, source_coverage, published, published_at
 			FROM admin_content
 			WHERE id = ?
 		`).get(id) as ContentRow | undefined;
@@ -617,6 +688,16 @@ export function createAdminRepository(options: AdminRepositoryOptions = {}) {
 		const nextStatus = patch.status
 			|| (nextPublished ? "published" : current.status === "published" ? "in-review" : current.status);
 		const nextPublishedAt = nextPublished ? current.published_at || now : null;
+		const nextPublicSummary = patch.publicSummary === undefined
+			? current.public_summary || ""
+			: patch.publicSummary.trim();
+
+		if (!nextPublicSummary)
+			throw new Error("Public page summary is required.");
+
+		const nextBallotSummary = patch.publicBallotSummary === undefined
+			? current.ballot_summary
+			: patch.publicBallotSummary?.trim() || null;
 
 		database.prepare(`
 			UPDATE admin_content
@@ -624,6 +705,8 @@ export function createAdminRepository(options: AdminRepositoryOptions = {}) {
 				priority = ?,
 				assigned_to = ?,
 				blocker = ?,
+				public_summary = ?,
+				ballot_summary = ?,
 				published = ?,
 				published_at = ?,
 				updated_at = ?
@@ -633,6 +716,8 @@ export function createAdminRepository(options: AdminRepositoryOptions = {}) {
 			patch.priority ?? current.priority,
 			patch.assignedTo?.trim() || current.assigned_to,
 			patch.blocker === undefined ? current.blocker : patch.blocker?.trim() || null,
+			nextPublicSummary,
+			nextBallotSummary,
 			nextPublished ? 1 : 0,
 			nextPublishedAt,
 			now,
@@ -877,6 +962,7 @@ export function createAdminRepository(options: AdminRepositoryOptions = {}) {
 		authenticateUser,
 		createCorrectionSubmission,
 		createUser,
+		getContentRecord,
 		getOverview,
 		hasUsers,
 		listContent,

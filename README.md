@@ -143,7 +143,7 @@ How the admin model works:
 - The browser authenticates against Nuxt server routes, which issue a same-origin session cookie.
 - Nuxt proxies protected admin requests to the Express API using `ADMIN_API_KEY`, so the backend key never reaches the browser.
 - Browser traffic for `/api/admin/*` is expected to terminate at Nuxt. The Express admin endpoints are internal API surfaces behind `ADMIN_API_BASE`, not public browser routes.
-- Admin data includes content publish state, correction intake, source-health monitoring, activity logs, and user management.
+- Admin data includes content publish state, persisted public-summary overrides, correction intake, source-health monitoring, activity logs, and user management.
 
 ## API surface
 
@@ -188,6 +188,7 @@ These endpoints live on the Express service, but they are intended to be reached
 - Search and sourcing: every major reading surface links to the source directory and source detail pages
 - Trust layer: freshness, methodology, corrections, neutrality, and source authority are modeled explicitly in the data layer and rendered in the UI
 - Admin model: persisted users, content status, correction queue, and source-health tracking all live behind a protected internal surface
+- Production roadmap: see `docs/production-readiness-roadmap.md` for the staged path from seeded coverage to a real operated civic-information service
 
 ## Production mode
 

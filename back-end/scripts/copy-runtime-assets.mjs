@@ -2,11 +2,21 @@ import { copyFileSync, existsSync, mkdirSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 
 const projectRoot = resolve(import.meta.dirname, "..");
-const sourceSchemaPath = resolve(projectRoot, "admin-schema.sql");
-const distSchemaPath = resolve(projectRoot, "dist", "admin-schema.sql");
+const runtimeAssets = [
+	{
+		sourcePath: resolve(projectRoot, "admin-schema.sql"),
+		targetPath: resolve(projectRoot, "dist", "admin-schema.sql")
+	},
+	{
+		sourcePath: resolve(projectRoot, "admin-schema.postgres.sql"),
+		targetPath: resolve(projectRoot, "dist", "admin-schema.postgres.sql")
+	}
+];
 
-if (!existsSync(sourceSchemaPath))
-	throw new Error(`Missing runtime schema file: ${sourceSchemaPath}`);
+for (const asset of runtimeAssets) {
+	if (!existsSync(asset.sourcePath))
+		throw new Error(`Missing runtime asset file: ${asset.sourcePath}`);
 
-mkdirSync(dirname(distSchemaPath), { recursive: true });
-copyFileSync(sourceSchemaPath, distSchemaPath);
+	mkdirSync(dirname(asset.targetPath), { recursive: true });
+	copyFileSync(asset.sourcePath, asset.targetPath);
+}

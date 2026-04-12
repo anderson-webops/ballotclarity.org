@@ -10,10 +10,10 @@ let baseUrl = "";
 const adminApiKey = "test-admin-key";
 
 before(async () => {
-	server = createApp({
+	server = (await createApp({
 		adminApiKey,
 		adminDbPath: ":memory:"
-	}).listen(0, "127.0.0.1");
+	})).listen(0, "127.0.0.1");
 	await once(server, "listening");
 	const address = server.address() as AddressInfo;
 	baseUrl = `http://127.0.0.1:${address.port}`;
@@ -25,12 +25,17 @@ after(async () => {
 	});
 });
 
-test("GET /health returns a simple readiness payload", async () => {
+test("GET /health returns readiness and coverage metadata", async () => {
 	const response = await fetch(`${baseUrl}/health`);
 	const body = await response.json();
 
 	assert.equal(response.status, 200);
-	assert.deepEqual(body, { ok: true });
+	assert.equal(body.ok, true);
+	assert.equal(body.ready, true);
+	assert.equal(body.driver, "sqlite");
+	assert.equal(body.coverageMode, "seed");
+	assert.equal(body.assetMode, "public-mirror");
+	assert.match(body.timestamp, /^\d{4}-\d{2}-\d{2}T/);
 });
 
 test("POST /api/location validates short lookups", async () => {
@@ -100,6 +105,8 @@ test("GET /api/data-sources returns the live-data roadmap and migration notes", 
 	assert.match(body.migrationWatch[0].title, /April 30, 2025/);
 	assert.match(body.migrationWatch[1].title, /June 30, 2026/);
 	assert.equal(body.roadmap.length, 6);
+	assert.equal(body.coverageMode, "seed");
+	assert.equal(body.assetMode, "public-mirror");
 });
 
 test("GET /api/jurisdictions/:slug returns the official office and voting-method data", async () => {
@@ -240,10 +247,10 @@ test("GET /api/admin/review and /api/admin/sources return protected operational 
 });
 
 test("PATCH /api/admin/content updates public content fields and publish gating", async () => {
-	const isolatedServer = createApp({
+	const isolatedServer = (await createApp({
 		adminApiKey,
 		adminDbPath: ":memory:"
-	}).listen(0, "127.0.0.1");
+	})).listen(0, "127.0.0.1");
 
 	await once(isolatedServer, "listening");
 	const isolatedAddress = isolatedServer.address() as AddressInfo;
@@ -311,6 +318,77 @@ test("PATCH /api/admin/content updates public content fields and publish gating"
 		assert.equal(ballotResponse.status, 200);
 		assert.equal(houseContest.candidates.length, 1);
 		assert.equal(houseContest.candidates[0].slug, "daniel-brooks");
+	}
+	finally {
+		await new Promise<void>((resolve, reject) => {
+			isolatedServer.close(error => error ? reject(error) : resolve());
+		});
+	}
+});
+
+test("POST /api/admin/auth/login authenticates a configured user and throttles repeated failures", async () => {
+	const isolatedServer = (await createApp({
+		adminApiKey,
+		adminDbPath: ":memory:",
+		bootstrapDisplayName: "Operations Admin",
+		bootstrapPassword: "correct-horse-battery-staple",
+		bootstrapUsername: "ops-admin"
+	})).listen(0, "127.0.0.1");
+
+	await once(isolatedServer, "listening");
+	const isolatedAddress = isolatedServer.address() as AddressInfo;
+	const isolatedBaseUrl = `http://127.0.0.1:${isolatedAddress.port}`;
+
+	try {
+		const successResponse = await fetch(`${isolatedBaseUrl}/api/admin/auth/login`, {
+			body: JSON.stringify({
+				password: "correct-horse-battery-staple",
+				username: "ops-admin"
+			}),
+			headers: {
+				"Content-Type": "application/json",
+				"x-forwarded-for": "203.0.113.10"
+			},
+			method: "POST"
+		});
+		const successBody = await successResponse.json();
+
+		assert.equal(successResponse.status, 200);
+		assert.equal(successBody.authenticated, true);
+		assert.equal(successBody.username, "ops-admin");
+
+		for (let index = 0; index < 5; index += 1) {
+			const failureResponse = await fetch(`${isolatedBaseUrl}/api/admin/auth/login`, {
+				body: JSON.stringify({
+					password: "wrong-password",
+					username: "ops-admin"
+				}),
+				headers: {
+					"Content-Type": "application/json",
+					"x-forwarded-for": "203.0.113.10"
+				},
+				method: "POST"
+			});
+
+			assert.equal(failureResponse.status, 401);
+		}
+
+		const throttledResponse = await fetch(`${isolatedBaseUrl}/api/admin/auth/login`, {
+			body: JSON.stringify({
+				password: "wrong-password",
+				username: "ops-admin"
+			}),
+			headers: {
+				"Content-Type": "application/json",
+				"x-forwarded-for": "203.0.113.10"
+			},
+			method: "POST"
+		});
+		const throttledBody = await throttledResponse.json();
+
+		assert.equal(throttledResponse.status, 429);
+		assert.match(throttledBody.message, /Too many failed admin login attempts/i);
+		assert.ok(Number(throttledResponse.headers.get("retry-after")) >= 1);
 	}
 	finally {
 		await new Promise<void>((resolve, reject) => {

@@ -9,6 +9,9 @@ The repo already has:
 - a public civic-information surface with candidate, measure, election, search, and source pages
 - a protected admin bridge where browser requests to `/api/admin/*` terminate at Nuxt
 - persisted admin/editor accounts and operational state in the backend store
+- an optional Postgres-backed admin repository for production deployments
+- structured backend request logging, health metadata, and admin login throttling
+- a snapshot-based live-coverage loader plus an operator import CLI
 
 The repo does not yet have:
 
@@ -132,6 +135,9 @@ These changes can be shipped directly from code:
 - publish gating in the public API
 - stronger admin workflow
 - database abstractions that prepare for Postgres
+- optional Postgres-backed admin persistence
+- imported live-coverage snapshots without changing public API routes
+- source-asset URL rewriting for object storage/CDN delivery
 - logging hooks, health checks, and test coverage
 
 ## What requires server-side provisioning after merge

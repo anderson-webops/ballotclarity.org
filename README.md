@@ -9,9 +9,13 @@ Ballot Clarity is a nonpartisan civic-information platform built as an npm works
 - `front-end/public/source-files/`: reference source files that power the public source directory and evidence links
 - `back-end/`: Express API for ballot content, public search, source records, and admin operations
 - `back-end/src/coverage-data.ts`: seeded Ballot Clarity coverage data that can later be replaced with live providers or database reads
+- `back-end/src/coverage-repository.ts`: runtime coverage loader that falls back to seeds or reads an imported live snapshot file
+- `back-end/src/import-live-coverage.ts`: operator CLI that imports a vetted coverage snapshot from a file or URL
 - `back-end/src/admin-store.ts`: SQLite-backed admin persistence for users, content review, source monitoring, corrections, and activity
+- `back-end/src/postgres-admin-store.ts`: Postgres-backed admin persistence for multi-instance production deployments
 - `back-end/admin-schema.sql`: schema for persisted admin and operations data
-- `back-end/dist/admin-schema.sql`: runtime copy emitted during `npm run build` so compiled deployments can initialize the admin store
+- `back-end/admin-schema.postgres.sql`: schema for Postgres-backed admin persistence
+- `back-end/dist/admin-schema.sql` and `back-end/dist/admin-schema.postgres.sql`: runtime copies emitted during `npm run build` so compiled deployments can initialize the configured admin store
 
 ## Install and run
 
@@ -31,6 +35,7 @@ Bootstrap the first admin user before using `/admin`:
 
 ```bash
 npm run bootstrap-admin
+npm run ingest:coverage -- --from-file ./ops/live-coverage.json
 ```
 
 Run the API in one terminal:
@@ -59,7 +64,15 @@ Server-only variables:
 - `ADMIN_API_BASE`: server-side Nuxt proxy target for admin-only API requests; this should be private to the Nuxt server and never exposed as the browser's direct `/api/admin/*` target
 - `ADMIN_API_KEY`: shared secret between the Nuxt admin proxy and the Express admin endpoints
 - `ADMIN_SESSION_SECRET`: cookie-signing secret for Nuxt admin sessions
+- `ADMIN_STORE_DRIVER`: `sqlite` or `postgres`; when omitted, the backend will auto-select Postgres if `ADMIN_DATABASE_URL` or `DATABASE_URL` is present
 - `ADMIN_DB_PATH`: SQLite database path for persisted admin users and editorial operations data
+- `ADMIN_DATABASE_URL`: Postgres connection string for the admin and editorial operations store
+- `SOURCE_ASSET_BASE_URL`: optional public object-storage or CDN base URL for mirrored source files
+- `LIVE_COVERAGE_FILE`: path to the imported coverage snapshot consumed by the public API
+- `LIVE_COVERAGE_REQUIRED`: when `true`, fail startup if `LIVE_COVERAGE_FILE` is missing
+- `TRUST_PROXY`: set to `true` when Express is behind a reverse proxy so request IP and forwarded headers are trusted
+- `LOG_LEVEL`: structured backend log level, such as `info`, `warn`, or `error`
+- `ADMIN_LOGIN_WINDOW_MS`, `ADMIN_LOGIN_MAX_ATTEMPTS`, `ADMIN_LOGIN_LOCKOUT_MS`: admin login-throttle controls for the backend auth endpoint
 
 One-time bootstrap variables:
 
@@ -72,6 +85,11 @@ Runtime variable:
 
 - `PORT`: Express API port
 
+One-time or scheduled ingestion variables:
+
+- `LIVE_COVERAGE_SOURCE_FILE`: local JSON file path consumed by `npm run ingest:coverage`
+- `LIVE_COVERAGE_SOURCE_URL`: remote JSON URL consumed by `npm run ingest:coverage`
+
 For production, use unique random values for `ADMIN_API_KEY`, `ADMIN_BOOTSTRAP_PASSWORD`, and `ADMIN_SESSION_SECRET`. The front-end and back-end must share the same `ADMIN_API_KEY`. Keep every `ADMIN_*` variable in the server environment only.
 The public browser should call `/api/admin/*` on the Nuxt origin only. Those requests must terminate at the Nuxt server so the session cookie and server-held `ADMIN_API_KEY` stay inside the bridge layer.
 
@@ -81,6 +99,7 @@ The public browser should call `/api/admin/*` on the Nuxt origin only. Those req
 npm run dev
 npm run server
 npm run bootstrap-admin
+npm run ingest:coverage -- --from-file ./ops/live-coverage.json
 npm run lint
 npm run typecheck
 npm run test
@@ -183,11 +202,15 @@ These endpoints live on the Express service, but they are intended to be reached
 
 - Front-end stack: Nuxt 4, Vite, TypeScript, UnoCSS, Pinia, file-based routing, layouts, composables, and `<script setup>`
 - Back-end stack: Express plus a small SQLite-backed operations layer
+- Back-end persistence: SQLite by default, with an optional Postgres-backed admin store for multi-instance production
 - State model: public civic state lives in `front-end/src/stores/civic.ts`, including selected location, election context, compare list, and saved ballot plan
 - Content flow: public pages consume the Express API instead of embedding content directly in page files
 - Search and sourcing: every major reading surface links to the source directory and source detail pages
 - Trust layer: freshness, methodology, corrections, neutrality, and source authority are modeled explicitly in the data layer and rendered in the UI
 - Admin model: persisted users, content status, correction queue, and source-health tracking all live behind a protected internal surface
+- Coverage runtime: the public API serves the seed dataset by default, but can switch to an imported live snapshot file without changing route contracts
+- Asset delivery: mirrored source-document URLs can be rewritten to object storage or a CDN via `SOURCE_ASSET_BASE_URL`
+- Observability: the backend emits structured request logs, health metadata, and admin-auth throttle events
 - Production roadmap: see `docs/production-readiness-roadmap.md` for the staged path from seeded coverage to a real operated civic-information service
 
 ## Production mode
@@ -196,27 +219,32 @@ These endpoints live on the Express service, but they are intended to be reached
 - Set `NUXT_PUBLIC_API_BASE` to the public API origin used by the browser.
 - Set `ADMIN_API_BASE` to the server-side admin API origin the Nuxt server can reach privately.
 - Set `ADMIN_API_KEY` and `ADMIN_SESSION_SECRET` in the server environments only.
-- Point `ADMIN_DB_PATH` at durable storage outside the repo checkout.
+- Use `ADMIN_STORE_DRIVER=postgres` together with `ADMIN_DATABASE_URL` for multi-instance or multi-editor production. Otherwise point `ADMIN_DB_PATH` at durable storage outside the repo checkout.
+- Set `SOURCE_ASSET_BASE_URL` when mirrored source documents should resolve to object storage or a CDN instead of files bundled under `front-end/public/source-files/`.
+- Import a vetted snapshot with `npm run ingest:coverage` and set `LIVE_COVERAGE_REQUIRED=true` once production should refuse to start without current snapshot data.
 - Run `npm run bootstrap-admin` once on the server, then remove the bootstrap password from routine shell history and secrets tooling if a different operational process is preferred.
 - Keep the public reverse proxy pointed at Nuxt for `/api/admin/*`; do not route those browser requests straight to the Express backend.
 
 ## Swapping seeded coverage for live civic data later
 
-1. Replace the seeded objects and lookup helpers in `back-end/src/coverage-data.ts` with live civic adapters or database reads.
-2. Keep the response contracts stable in the backend so the Nuxt composables and pages do not need to change.
-3. Update `back-end/src/server.ts` to normalize provider payloads into the existing public response shapes.
-4. Replace the mirrored source files in `front-end/public/source-files/` with direct public URLs, mirrored records, or provider-backed source storage.
-5. Keep `back-end/admin-schema.sql` and `back-end/src/admin-store.ts` as the operational layer for publish status, corrections, and source monitoring even after the read-side data becomes live.
+1. Normalize upstream civic data into the snapshot shape used by `back-end/src/coverage-repository.ts`.
+2. Run `npm run ingest:coverage -- --from-file <path>` or `--from-url <url>` from a trusted operator environment to write `LIVE_COVERAGE_FILE`.
+3. Keep the public response contracts stable in the backend so the Nuxt composables and pages do not need to change.
+4. Replace bundled source files with object storage or CDN delivery behind `SOURCE_ASSET_BASE_URL`.
+5. Keep the admin store as the operational layer for publish status, corrections, source monitoring, and editorial overrides even after the read-side data becomes live.
 
 ## Server-side provisioning after merge
 
 1. Provision separate public and admin-capable server environments for the Nuxt front end and Express API.
 2. Set `NUXT_PUBLIC_SITE_URL`, `NUXT_PUBLIC_API_BASE`, `ADMIN_API_BASE`, `ADMIN_API_KEY`, `ADMIN_SESSION_SECRET`, and `ADMIN_DB_PATH`.
-3. Create the directory that will hold the SQLite file referenced by `ADMIN_DB_PATH`, with backup and restore procedures in place.
+3. Choose the admin store mode:
+   Set `ADMIN_STORE_DRIVER=postgres` plus `ADMIN_DATABASE_URL` for managed Postgres, or create the directory that will hold the SQLite file referenced by `ADMIN_DB_PATH`, with backup and restore procedures in place.
 4. Run `npm run bootstrap-admin` once to create the first persisted admin account.
-5. Put the API behind HTTPS and a reverse proxy or platform ingress that sends public `/api/admin/*` traffic to Nuxt, while the Nuxt server reaches the Express admin API over `ADMIN_API_BASE`.
-6. Ensure the backend deploy artifact includes `dist/admin-schema.sql`; the build now copies it automatically, but the deployed runtime should still be checked once after merge.
-7. Decide whether SQLite on durable disk is sufficient for the initial launch or whether the admin store should move to a managed database before multi-editor production use.
+5. Import the first vetted coverage snapshot with `npm run ingest:coverage`, then enable `LIVE_COVERAGE_REQUIRED=true` when the environment should fail closed without current snapshot data.
+6. Configure `SOURCE_ASSET_BASE_URL` when source files should resolve to object storage or a CDN instead of bundled static files.
+7. Put the API behind HTTPS and a reverse proxy or platform ingress that sends public `/api/admin/*` traffic to Nuxt, while the Nuxt server reaches the Express admin API over `ADMIN_API_BASE`.
+8. Ensure the backend deploy artifact includes `dist/admin-schema.sql` and `dist/admin-schema.postgres.sql`; the build now copies both automatically, but the deployed runtime should still be checked once after merge.
+9. Configure log drains, alerts, and request-ID propagation in the platform so structured backend logs are actually usable during incidents.
 
 ## Notes
 

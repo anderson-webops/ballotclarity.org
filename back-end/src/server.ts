@@ -1,4 +1,5 @@
-import type { AdminEntityType, Candidate, Contest, Election, Measure, SearchResponse, Source, SourceDirectoryItem, SourceRecordResponse } from "./types/civic.js";
+import type { ErrorRequestHandler } from "express";
+import type { Candidate, Contest, Election, EvidenceBlock, FundingSummary, Jurisdiction, Measure, MeasureArgument, MeasureChangeItem, MeasureFiscalItem, MeasureTimelineItem, OfficialResource, QuestionnaireResponse, SearchResponse, Source, SourceDirectoryItem, SourceRecordResponse, TrustBullet, VoteRecordSummary } from "./types/civic.js";
 import { Buffer } from "node:buffer";
 import { timingSafeEqual } from "node:crypto";
 import process from "node:process";
@@ -6,24 +7,19 @@ import { pathToFileURL } from "node:url";
 import cors from "cors";
 import dotenv from "dotenv";
 import express from "express";
-import { createAdminRepository } from "./admin-store.js";
+import { createAdminLoginThrottle } from "./admin-login-throttle.js";
+import { createAdminRepository } from "./admin-repository.js";
 import {
 	demoCandidates,
-	demoDataSources,
 	demoElection,
-	demoElectionSummaries,
 	demoJurisdiction,
-	demoJurisdictionSummaries,
-	demoLocation,
 	demoMeasures,
 	demoSources,
-	getCandidateBySlug,
-	getCandidatesBySlugs,
-	getElectionBySlug,
-	getJurisdictionBySlug,
-	getMeasureBySlug,
 	getSourceById
 } from "./coverage-data.js";
+import { createCoverageRepository } from "./coverage-repository.js";
+import { createLogger, createRequestLoggingMiddleware } from "./logger.js";
+import { createSourceAssetStore } from "./source-asset-store.js";
 
 dotenv.config();
 
@@ -134,7 +130,7 @@ function buildSourceRecord(
 	measures: Measure[] = demoMeasures,
 	sources: Source[] = demoSources
 ): SourceRecordResponse | null {
-	const source = getSourceById(id);
+	const source = sources.find(item => item.id === id) ?? getSourceById(id);
 
 	if (!source)
 		return null;
@@ -155,6 +151,7 @@ function buildSearchResponse(
 	candidates: Candidate[] = demoCandidates,
 	measures: Measure[] = demoMeasures,
 	election: Election = demoElection,
+	jurisdiction: Jurisdiction = demoJurisdiction,
 	sourceDirectory: SourceDirectoryItem[] = buildSourceDirectory(candidates, measures)
 ): SearchResponse {
 	const query = rawQuery.trim();
@@ -222,14 +219,14 @@ function buildSearchResponse(
 		.map(election => ({
 			href: `/elections/${election.slug}`,
 			id: election.slug,
-			meta: `${demoJurisdiction.displayName} · ${election.date}`,
+			meta: `${jurisdiction.displayName} · ${election.date}`,
 			summary: election.description,
 			title: election.name,
 			type: "election" as const,
 			updatedAt: election.updatedAt
 		}));
 
-	const jurisdictionResults = [demoJurisdiction]
+	const jurisdictionResults = [jurisdiction]
 		.filter(jurisdiction => [
 			jurisdiction.name,
 			jurisdiction.displayName,
@@ -279,15 +276,21 @@ function buildSearchResponse(
 	};
 }
 
-export function createApp(options: CreateAppOptions = {}) {
+export async function createApp(options: CreateAppOptions = {}) {
 	const app = express();
 	const adminApiKey = options.adminApiKey ?? process.env.ADMIN_API_KEY ?? null;
-	const adminRepository = createAdminRepository({
+	const coverageRepository = await createCoverageRepository();
+	const adminRepository = await createAdminRepository({
 		bootstrapDisplayName: options.bootstrapDisplayName,
 		bootstrapPassword: options.bootstrapPassword,
 		bootstrapUsername: options.bootstrapUsername,
-		dbPath: options.adminDbPath
+		dbPath: options.adminDbPath,
+		databaseUrl: process.env.ADMIN_DATABASE_URL || process.env.DATABASE_URL || null
 	});
+	const logger = createLogger("ballot-clarity-api");
+	const sourceAssetStore = createSourceAssetStore();
+	const adminLoginThrottle = createAdminLoginThrottle();
+	const resolvedSourceInventory = resolveSources(coverageRepository.data.sources);
 
 	function maxUpdatedAt(...values: Array<string | undefined>) {
 		return values
@@ -295,42 +298,203 @@ export function createApp(options: CreateAppOptions = {}) {
 			.sort((left, right) => right.localeCompare(left))[0];
 	}
 
-	function getContentRecord(entityType: AdminEntityType, entitySlug: string) {
-		return adminRepository.getContentRecord(entityType, entitySlug);
+	function resolveSource(source: Source): Source {
+		return {
+			...source,
+			url: sourceAssetStore.resolve(source.url)
+		};
 	}
 
-	function applyCandidateContent(candidate: Candidate): Candidate | null {
-		const content = getContentRecord("candidate", candidate.slug);
+	function resolveSources(sources: Source[]) {
+		return sources.map(resolveSource);
+	}
 
-		if (content && !content.published)
-			return null;
+	function resolveOfficialResource(resource: OfficialResource): OfficialResource {
+		return {
+			...resource,
+			url: sourceAssetStore.resolve(resource.url)
+		};
+	}
 
+	function resolveEvidenceBlock(block: EvidenceBlock): EvidenceBlock {
+		return {
+			...block,
+			sources: resolveSources(block.sources)
+		};
+	}
+
+	function resolveVoteRecord(item: VoteRecordSummary): VoteRecordSummary {
+		return {
+			...item,
+			sources: resolveSources(item.sources)
+		};
+	}
+
+	function resolveTrustBullet(item: TrustBullet): TrustBullet {
+		return {
+			...item,
+			sources: resolveSources(item.sources)
+		};
+	}
+
+	function resolveFundingSummary(funding: FundingSummary): FundingSummary {
+		return {
+			...funding,
+			sources: resolveSources(funding.sources)
+		};
+	}
+
+	function resolveQuestionnaireResponse(item: QuestionnaireResponse): QuestionnaireResponse {
+		return {
+			...item,
+			sources: resolveSources(item.sources)
+		};
+	}
+
+	function resolveMeasureChangeItem(item: MeasureChangeItem): MeasureChangeItem {
+		return {
+			...item,
+			sources: resolveSources(item.sources)
+		};
+	}
+
+	function resolveMeasureTimelineItem(item: MeasureTimelineItem): MeasureTimelineItem {
+		return {
+			...item,
+			sources: resolveSources(item.sources)
+		};
+	}
+
+	function resolveMeasureFiscalItem(item: MeasureFiscalItem): MeasureFiscalItem {
+		return {
+			...item,
+			sources: resolveSources(item.sources)
+		};
+	}
+
+	function resolveMeasureArgument(item: MeasureArgument): MeasureArgument {
+		return {
+			...item,
+			sources: resolveSources(item.sources)
+		};
+	}
+
+	function resolveCandidate(candidate: Candidate): Candidate {
 		return {
 			...candidate,
-			ballotSummary: content?.publicBallotSummary?.trim() || candidate.ballotSummary,
-			summary: content?.publicSummary?.trim() || candidate.summary,
-			updatedAt: maxUpdatedAt(content?.updatedAt, candidate.updatedAt) || candidate.updatedAt
+			biography: candidate.biography.map(resolveEvidenceBlock),
+			comparison: {
+				...candidate.comparison,
+				ballotStatus: {
+					...candidate.comparison.ballotStatus,
+					sources: resolveSources(candidate.comparison.ballotStatus.sources)
+				},
+				campaignWebsiteUrl: sourceAssetStore.resolve(candidate.comparison.campaignWebsiteUrl),
+				contactChannels: candidate.comparison.contactChannels.map(channel => ({
+					...channel,
+					url: sourceAssetStore.resolve(channel.url)
+				})),
+				questionnaireResponses: candidate.comparison.questionnaireResponses.map(resolveQuestionnaireResponse),
+				topPriorities: candidate.comparison.topPriorities.map(item => ({
+					...item,
+					sources: resolveSources(item.sources)
+				})),
+				whyRunning: {
+					...candidate.comparison.whyRunning,
+					sources: resolveSources(candidate.comparison.whyRunning.sources)
+				}
+			},
+			funding: resolveFundingSummary(candidate.funding),
+			keyActions: candidate.keyActions.map(resolveVoteRecord),
+			lobbyingContext: candidate.lobbyingContext.map(resolveEvidenceBlock),
+			publicStatements: candidate.publicStatements.map(resolveEvidenceBlock),
+			sources: resolveSources(candidate.sources),
+			whatWeDoNotKnow: candidate.whatWeDoNotKnow.map(resolveTrustBullet),
+			whatWeKnow: candidate.whatWeKnow.map(resolveTrustBullet)
 		};
 	}
 
-	function applyMeasureContent(measure: Measure): Measure | null {
-		const content = getContentRecord("measure", measure.slug);
+	function resolveMeasure(measure: Measure): Measure {
+		return {
+			...measure,
+			argumentsAndConsiderations: measure.argumentsAndConsiderations.map(resolveEvidenceBlock),
+			currentPractice: measure.currentPractice.map(resolveMeasureChangeItem),
+			fiscalSummary: measure.fiscalSummary.map(resolveMeasureFiscalItem),
+			implementationTimeline: measure.implementationTimeline.map(resolveMeasureTimelineItem),
+			opposeArguments: measure.opposeArguments.map(resolveMeasureArgument),
+			potentialImpacts: measure.potentialImpacts.map(resolveEvidenceBlock),
+			proposedChanges: measure.proposedChanges.map(resolveMeasureChangeItem),
+			sources: resolveSources(measure.sources),
+			supportArguments: measure.supportArguments.map(resolveMeasureArgument),
+			whatWeDoNotKnow: measure.whatWeDoNotKnow.map(resolveTrustBullet),
+			whatWeKnow: measure.whatWeKnow.map(resolveTrustBullet)
+		};
+	}
+
+	function resolveContest(contest: Contest): Contest {
+		if (contest.type === "candidate") {
+			return {
+				...contest,
+				candidates: (contest.candidates ?? []).map(resolveCandidate)
+			};
+		}
+
+		return {
+			...contest,
+			measures: (contest.measures ?? []).map(resolveMeasure)
+		};
+	}
+
+	function resolveElection(election: Election): Election {
+		return {
+			...election,
+			contests: election.contests.map(resolveContest),
+			officialResources: election.officialResources.map(resolveOfficialResource)
+		};
+	}
+
+	async function getContentIndex() {
+		const content = await adminRepository.listContent();
+
+		return new Map(content.items.map(item => [`${item.entityType}:${item.entitySlug}`, item] as const));
+	}
+
+	function applyCandidateContent(candidate: Candidate, contentIndex: Map<string, Awaited<ReturnType<typeof adminRepository.listContent>>["items"][number]>): Candidate | null {
+		const content = contentIndex.get(`candidate:${candidate.slug}`);
 
 		if (content && !content.published)
 			return null;
 
+		const resolvedCandidate = resolveCandidate(candidate);
+
 		return {
-			...measure,
-			ballotSummary: content?.publicBallotSummary?.trim() || measure.ballotSummary,
-			summary: content?.publicSummary?.trim() || measure.summary,
-			updatedAt: maxUpdatedAt(content?.updatedAt, measure.updatedAt) || measure.updatedAt
+			...resolvedCandidate,
+			ballotSummary: content?.publicBallotSummary?.trim() || resolvedCandidate.ballotSummary,
+			summary: content?.publicSummary?.trim() || resolvedCandidate.summary,
+			updatedAt: maxUpdatedAt(content?.updatedAt, resolvedCandidate.updatedAt) || resolvedCandidate.updatedAt
 		};
 	}
 
-	function applyContestContent(contest: Contest): Contest | null {
+	function applyMeasureContent(measure: Measure, contentIndex: Map<string, Awaited<ReturnType<typeof adminRepository.listContent>>["items"][number]>): Measure | null {
+		const content = contentIndex.get(`measure:${measure.slug}`);
+
+		if (content && !content.published)
+			return null;
+
+		const resolvedMeasure = resolveMeasure(measure);
+
+		return {
+			...resolvedMeasure,
+			ballotSummary: content?.publicBallotSummary?.trim() || resolvedMeasure.ballotSummary,
+			summary: content?.publicSummary?.trim() || resolvedMeasure.summary,
+			updatedAt: maxUpdatedAt(content?.updatedAt, resolvedMeasure.updatedAt) || resolvedMeasure.updatedAt
+		};
+	}
+
+	function applyContestContent(contest: Contest, contentIndex: Map<string, Awaited<ReturnType<typeof adminRepository.listContent>>["items"][number]>): Contest | null {
 		if (contest.type === "candidate") {
 			const candidates = (contest.candidates ?? [])
-				.map(applyCandidateContent)
+				.map(candidate => applyCandidateContent(candidate, contentIndex))
 				.filter((candidate): candidate is Candidate => Boolean(candidate));
 
 			if (!candidates.length)
@@ -343,7 +507,7 @@ export function createApp(options: CreateAppOptions = {}) {
 		}
 
 		const measures = (contest.measures ?? [])
-			.map(applyMeasureContent)
+			.map(measure => applyMeasureContent(measure, contentIndex))
 			.filter((measure): measure is Measure => Boolean(measure));
 
 		if (!measures.length)
@@ -355,90 +519,184 @@ export function createApp(options: CreateAppOptions = {}) {
 		};
 	}
 
-	function applyElectionContent(election: Election): Election | null {
-		const content = getContentRecord("election", election.slug);
+	function applyElectionContent(election: Election, contentIndex: Map<string, Awaited<ReturnType<typeof adminRepository.listContent>>["items"][number]>): Election | null {
+		const content = contentIndex.get(`election:${election.slug}`);
 
 		if (content && !content.published)
 			return null;
 
-		const contests = election.contests
-			.map(applyContestContent)
+		const resolvedElection = resolveElection(election);
+		const contests = resolvedElection.contests
+			.map(contest => applyContestContent(contest, contentIndex))
 			.filter((contest): contest is Contest => Boolean(contest));
 
 		return {
-			...election,
+			...resolvedElection,
 			contests,
-			description: content?.publicSummary?.trim() || election.description,
-			updatedAt: maxUpdatedAt(content?.updatedAt, election.updatedAt) || election.updatedAt
+			description: content?.publicSummary?.trim() || resolvedElection.description,
+			updatedAt: maxUpdatedAt(content?.updatedAt, resolvedElection.updatedAt) || resolvedElection.updatedAt
 		};
 	}
 
-	function listPublicCandidates() {
-		return demoCandidates
-			.map(applyCandidateContent)
+	async function listPublicCandidates() {
+		const contentIndex = await getContentIndex();
+
+		return coverageRepository.data.candidates
+			.map(candidate => applyCandidateContent(candidate, contentIndex))
 			.filter((candidate): candidate is Candidate => Boolean(candidate));
 	}
 
-	function listPublicMeasures() {
-		return demoMeasures
-			.map(applyMeasureContent)
+	async function listPublicMeasures() {
+		const contentIndex = await getContentIndex();
+
+		return coverageRepository.data.measures
+			.map(measure => applyMeasureContent(measure, contentIndex))
 			.filter((measure): measure is Measure => Boolean(measure));
 	}
 
-	function getPublicCandidate(slug: string) {
-		const candidate = getCandidateBySlug(slug);
-		return candidate ? applyCandidateContent(candidate) : null;
+	async function getPublicCandidate(slug: string) {
+		const candidate = coverageRepository.getCandidateBySlug(slug);
+		const contentIndex = await getContentIndex();
+		return candidate ? applyCandidateContent(candidate, contentIndex) : null;
 	}
 
-	function getPublicMeasure(slug: string) {
-		const measure = getMeasureBySlug(slug);
-		return measure ? applyMeasureContent(measure) : null;
+	async function getPublicMeasure(slug: string) {
+		const measure = coverageRepository.getMeasureBySlug(slug);
+		const contentIndex = await getContentIndex();
+		return measure ? applyMeasureContent(measure, contentIndex) : null;
 	}
 
-	function getPublicCandidatesBySlugs(slugs: string[]) {
-		return getCandidatesBySlugs(slugs)
-			.map(applyCandidateContent)
+	async function getPublicCandidatesBySlugs(slugs: string[]) {
+		const contentIndex = await getContentIndex();
+
+		return coverageRepository.getCandidatesBySlugs(slugs)
+			.map(candidate => applyCandidateContent(candidate, contentIndex))
 			.filter((candidate): candidate is Candidate => Boolean(candidate));
 	}
 
-	function getPublicElection(slug: string) {
-		const election = getElectionBySlug(slug);
-		return election ? applyElectionContent(election) : null;
+	async function getPublicElection(slug: string) {
+		const election = coverageRepository.getElectionBySlug(slug);
+		const contentIndex = await getContentIndex();
+		return election ? applyElectionContent(election, contentIndex) : null;
 	}
 
-	function getPublicElectionSummaries() {
-		return demoElectionSummaries.filter(summary => Boolean(getPublicElection(summary.slug)));
+	async function getPublicElectionSummaries() {
+		const contentIndex = await getContentIndex();
+		return coverageRepository.data.electionSummaries.filter((summary) => {
+			const election = coverageRepository.getElectionBySlug(summary.slug);
+			return Boolean(election && applyElectionContent(election, contentIndex));
+		});
 	}
+
+	function applyJurisdictionAssets(jurisdiction: Jurisdiction): Jurisdiction {
+		return {
+			...jurisdiction,
+			archivedGuides: jurisdiction.archivedGuides.map(guide => ({
+				...guide,
+				href: sourceAssetStore.resolve(guide.href)
+			})),
+			officialOffice: {
+				...jurisdiction.officialOffice,
+				website: sourceAssetStore.resolve(jurisdiction.officialOffice.website)
+			},
+			officialResources: jurisdiction.officialResources.map(resolveOfficialResource),
+			votingMethods: jurisdiction.votingMethods.map(method => ({
+				...method,
+				officialResource: method.officialResource ? resolveOfficialResource(method.officialResource) : undefined
+			}))
+		};
+	}
+
+	if (process.env.TRUST_PROXY === "true")
+		app.set("trust proxy", true);
 
 	app.use(cors({
 		origin: true
 	}));
 
 	app.use(express.json());
-
-	app.get("/health", (_request, response) => {
-		response.json({ ok: true });
+	app.use(createRequestLoggingMiddleware(logger));
+	logger.info("coverage.loaded", {
+		assetMode: sourceAssetStore.mode,
+		coverageMode: coverageRepository.mode,
+		coverageUpdatedAt: coverageRepository.data.updatedAt,
+		snapshotPath: coverageRepository.mode === "snapshot" ? coverageRepository.snapshotPath : undefined
 	});
 
-	app.post("/api/admin/auth/login", (request, response) => {
+	app.get("/health", async (_request, response) => {
+		try {
+			await adminRepository.getHealth();
+			response.json({
+				assetMode: sourceAssetStore.mode,
+				coverageMode: coverageRepository.mode,
+				coverageUpdatedAt: coverageRepository.data.updatedAt,
+				driver: adminRepository.driver,
+				ok: true,
+				ready: true,
+				timestamp: new Date().toISOString()
+			});
+		}
+		catch (error) {
+			response.status(503).json({
+				assetMode: sourceAssetStore.mode,
+				coverageMode: coverageRepository.mode,
+				driver: adminRepository.driver,
+				message: error instanceof Error ? error.message : "Admin repository health check failed.",
+				ok: false,
+				ready: false,
+				timestamp: new Date().toISOString()
+			});
+		}
+	});
+
+	app.post("/api/admin/auth/login", async (request, response) => {
 		const username = typeof request.body?.username === "string" ? request.body.username : "";
 		const password = typeof request.body?.password === "string" ? request.body.password : "";
+		const throttleState = adminLoginThrottle.check(username, request.header("x-forwarded-for") || request.ip || "");
 
-		if (!adminRepository.hasUsers()) {
+		if (!await adminRepository.hasUsers()) {
 			response.status(503).json({
 				message: "No admin users are configured yet. Set bootstrap credentials or create the first admin account."
 			});
 			return;
 		}
 
-		const user = adminRepository.authenticateUser(username, password);
+		if (!throttleState.allowed) {
+			logger.warn("admin.login.throttled", {
+				ip: request.header("x-forwarded-for") || request.ip || "",
+				requestId: response.locals.requestId,
+				retryAfterSeconds: throttleState.retryAfterSeconds,
+				username
+			});
+			response.setHeader("Retry-After", String(throttleState.retryAfterSeconds));
+			response.status(429).json({
+				message: "Too many failed admin login attempts. Try again later.",
+				retryAfterSeconds: throttleState.retryAfterSeconds
+			});
+			return;
+		}
+
+		const user = await adminRepository.authenticateUser(username, password);
 
 		if (!user) {
+			adminLoginThrottle.recordFailure(throttleState.key);
+			logger.warn("admin.login.failed", {
+				ip: request.header("x-forwarded-for") || request.ip || "",
+				requestId: response.locals.requestId,
+				username
+			});
 			response.status(401).json({
 				message: "Invalid admin credentials."
 			});
 			return;
 		}
+
+		adminLoginThrottle.clear(throttleState.key);
+		logger.info("admin.login.succeeded", {
+			requestId: response.locals.requestId,
+			role: user.role,
+			username: user.username
+		});
 
 		response.json({
 			authenticated: true,
@@ -482,15 +740,17 @@ export function createApp(options: CreateAppOptions = {}) {
 		}
 
 		response.json({
-			electionSlug: demoElection.slug,
-			location: demoLocation,
-			note: "The current launch returns Metro County coverage from the current release while live district integrations are being connected."
+			electionSlug: coverageRepository.data.election.slug,
+			location: coverageRepository.data.location,
+			note: coverageRepository.mode === "snapshot"
+				? "This lookup is returning the latest imported coverage snapshot for the configured jurisdiction."
+				: "The current launch returns Metro County coverage from the current release while live district integrations are being connected."
 		});
 	});
 
-	app.post("/api/feedback", (request, response) => {
+	app.post("/api/feedback", async (request, response) => {
 		try {
-			const result = adminRepository.createCorrectionSubmission({
+			const result = await adminRepository.createCorrectionSubmission({
 				email: typeof request.body?.email === "string" ? request.body.email : "",
 				message: typeof request.body?.message === "string" ? request.body.message : "",
 				name: typeof request.body?.name === "string" ? request.body.name : undefined,
@@ -509,28 +769,33 @@ export function createApp(options: CreateAppOptions = {}) {
 		}
 	});
 
-	app.get("/api/elections", (_request, response) => {
+	app.get("/api/elections", async (_request, response) => {
 		response.json({
-			elections: getPublicElectionSummaries()
+			elections: await getPublicElectionSummaries()
 		});
 	});
 
 	app.get("/api/jurisdictions", (_request, response) => {
 		response.json({
-			jurisdictions: demoJurisdictionSummaries
+			jurisdictions: coverageRepository.data.jurisdictionSummaries
 		});
 	});
 
 	app.get("/api/data-sources", (_request, response) => {
-		response.json(demoDataSources);
+		response.json({
+			...coverageRepository.data.dataSources,
+			assetMode: sourceAssetStore.mode,
+			coverageMode: coverageRepository.mode,
+			sourceAssetBaseUrl: sourceAssetStore.baseUrl
+		});
 	});
 
-	app.get("/api/search", (request, response) => {
+	app.get("/api/search", async (request, response) => {
 		const query = typeof request.query.q === "string" ? request.query.q : "";
-		const election = getPublicElection(demoElection.slug);
-		const candidates = listPublicCandidates();
-		const measures = listPublicMeasures();
-		const sourceDirectory = buildSourceDirectory(candidates, measures);
+		const election = await getPublicElection(coverageRepository.data.election.slug);
+		const candidates = await listPublicCandidates();
+		const measures = await listPublicMeasures();
+		const sourceDirectory = buildSourceDirectory(candidates, measures, resolvedSourceInventory);
 
 		if (!election) {
 			response.json({
@@ -548,21 +813,21 @@ export function createApp(options: CreateAppOptions = {}) {
 			return;
 		}
 
-		response.json(buildSearchResponse(query, candidates, measures, election, sourceDirectory));
+		response.json(buildSearchResponse(query, candidates, measures, election, coverageRepository.data.jurisdiction, sourceDirectory));
 	});
 
-	app.get("/api/sources", (_request, response) => {
-		const candidates = listPublicCandidates();
-		const measures = listPublicMeasures();
+	app.get("/api/sources", async (_request, response) => {
+		const candidates = await listPublicCandidates();
+		const measures = await listPublicMeasures();
 
 		response.json({
-			sources: buildSourceDirectory(candidates, measures),
-			updatedAt: demoElection.updatedAt
+			sources: buildSourceDirectory(candidates, measures, resolvedSourceInventory),
+			updatedAt: coverageRepository.data.updatedAt
 		});
 	});
 
-	app.get("/api/sources/:id", (request, response) => {
-		const record = buildSourceRecord(request.params.id, listPublicCandidates(), listPublicMeasures());
+	app.get("/api/sources/:id", async (request, response) => {
+		const record = buildSourceRecord(request.params.id, await listPublicCandidates(), await listPublicMeasures(), resolvedSourceInventory);
 
 		if (!record) {
 			response.status(404).json({
@@ -575,7 +840,7 @@ export function createApp(options: CreateAppOptions = {}) {
 	});
 
 	app.get("/api/jurisdictions/:slug", (request, response) => {
-		const jurisdiction = getJurisdictionBySlug(request.params.slug);
+		const jurisdiction = coverageRepository.getJurisdictionBySlug(request.params.slug);
 
 		if (!jurisdiction) {
 			response.status(404).json({
@@ -584,12 +849,13 @@ export function createApp(options: CreateAppOptions = {}) {
 			return;
 		}
 
-		response.json(jurisdiction);
+		response.json(applyJurisdictionAssets(jurisdiction));
 	});
 
-	app.get("/api/ballot", (request, response) => {
+	app.get("/api/ballot", async (request, response) => {
 		const electionSlug = typeof request.query.election === "string" ? request.query.election : "";
-		const locationSlug = typeof request.query.location === "string" ? request.query.location : demoLocation.slug;
+		const defaultLocation = coverageRepository.data.location;
+		const locationSlug = typeof request.query.location === "string" ? request.query.location : defaultLocation.slug;
 
 		if (!electionSlug) {
 			response.status(400).json({
@@ -598,7 +864,7 @@ export function createApp(options: CreateAppOptions = {}) {
 			return;
 		}
 
-		const election = getPublicElection(electionSlug);
+		const election = await getPublicElection(electionSlug);
 
 		if (!election) {
 			response.status(404).json({
@@ -610,16 +876,18 @@ export function createApp(options: CreateAppOptions = {}) {
 		response.json({
 			election,
 			location: {
-				...demoLocation,
+				...defaultLocation,
 				slug: locationSlug
 			},
-			note: "Current public coverage uses the current release while live civic-data integrations are being connected. Verify official election logistics with the linked election office.",
+			note: coverageRepository.mode === "snapshot"
+				? "Current public coverage is running from the latest imported civic-data snapshot. Verify official election logistics with the linked election office."
+				: "Current public coverage uses the current release while live civic-data integrations are being connected. Verify official election logistics with the linked election office.",
 			updatedAt: election.updatedAt
 		});
 	});
 
-	app.get("/api/candidates/:slug", (request, response) => {
-		const candidate = getPublicCandidate(request.params.slug);
+	app.get("/api/candidates/:slug", async (request, response) => {
+		const candidate = await getPublicCandidate(request.params.slug);
 
 		if (!candidate) {
 			response.status(404).json({
@@ -631,8 +899,8 @@ export function createApp(options: CreateAppOptions = {}) {
 		response.json(candidate);
 	});
 
-	app.get("/api/measures/:slug", (request, response) => {
-		const measure = getPublicMeasure(request.params.slug);
+	app.get("/api/measures/:slug", async (request, response) => {
+		const measure = await getPublicMeasure(request.params.slug);
 
 		if (!measure) {
 			response.status(404).json({
@@ -644,10 +912,10 @@ export function createApp(options: CreateAppOptions = {}) {
 		response.json(measure);
 	});
 
-	app.get("/api/compare", (request, response) => {
+	app.get("/api/compare", async (request, response) => {
 		const raw = typeof request.query.slugs === "string" ? request.query.slugs : "";
 		const requestedSlugs = raw.split(",").map(item => item.trim()).filter(Boolean).slice(0, 3);
-		const candidates = getPublicCandidatesBySlugs(requestedSlugs);
+		const candidates = await getPublicCandidatesBySlugs(requestedSlugs);
 		const offices = Array.from(new Set(candidates.map(candidate => candidate.officeSought)));
 		const contests = Array.from(new Set(candidates.map(candidate => candidate.contestSlug)));
 		const sameContest = contests.length === 1;
@@ -662,17 +930,17 @@ export function createApp(options: CreateAppOptions = {}) {
 		});
 	});
 
-	app.get("/api/admin/overview", (_request, response) => {
-		response.json(adminRepository.getOverview());
+	app.get("/api/admin/overview", async (_request, response) => {
+		response.json(await adminRepository.getOverview());
 	});
 
-	app.get("/api/admin/corrections", (_request, response) => {
-		response.json(adminRepository.listCorrections());
+	app.get("/api/admin/corrections", async (_request, response) => {
+		response.json(await adminRepository.listCorrections());
 	});
 
-	app.patch("/api/admin/corrections/:id", (request, response) => {
+	app.patch("/api/admin/corrections/:id", async (request, response) => {
 		try {
-			response.json(adminRepository.updateCorrection(request.params.id, {
+			response.json(await adminRepository.updateCorrection(request.params.id, {
 				nextStep: typeof request.body?.nextStep === "string" ? request.body.nextStep : undefined,
 				priority: request.body?.priority,
 				status: request.body?.status
@@ -685,17 +953,17 @@ export function createApp(options: CreateAppOptions = {}) {
 		}
 	});
 
-	app.get("/api/admin/review", (_request, response) => {
-		response.json(adminRepository.listReview());
+	app.get("/api/admin/review", async (_request, response) => {
+		response.json(await adminRepository.listReview());
 	});
 
-	app.get("/api/admin/content", (_request, response) => {
-		response.json(adminRepository.listContent());
+	app.get("/api/admin/content", async (_request, response) => {
+		response.json(await adminRepository.listContent());
 	});
 
-	app.patch("/api/admin/content/:id", (request, response) => {
+	app.patch("/api/admin/content/:id", async (request, response) => {
 		try {
-			response.json(adminRepository.updateContent(request.params.id, {
+			response.json(await adminRepository.updateContent(request.params.id, {
 				assignedTo: typeof request.body?.assignedTo === "string" ? request.body.assignedTo : undefined,
 				blocker: request.body?.blocker === null
 					? null
@@ -720,13 +988,13 @@ export function createApp(options: CreateAppOptions = {}) {
 		}
 	});
 
-	app.get("/api/admin/sources", (_request, response) => {
-		response.json(adminRepository.listSourceMonitor());
+	app.get("/api/admin/sources", async (_request, response) => {
+		response.json(await adminRepository.listSourceMonitor());
 	});
 
-	app.patch("/api/admin/sources/:id", (request, response) => {
+	app.patch("/api/admin/sources/:id", async (request, response) => {
 		try {
-			response.json(adminRepository.updateSource(request.params.id, {
+			response.json(await adminRepository.updateSource(request.params.id, {
 				health: request.body?.health,
 				nextCheckAt: typeof request.body?.nextCheckAt === "string" ? request.body.nextCheckAt : undefined,
 				note: typeof request.body?.note === "string" ? request.body.note : undefined,
@@ -740,20 +1008,20 @@ export function createApp(options: CreateAppOptions = {}) {
 		}
 	});
 
-	app.get("/api/admin/users", (_request, response) => {
-		response.json(adminRepository.listUsers());
+	app.get("/api/admin/users", async (_request, response) => {
+		response.json(await adminRepository.listUsers());
 	});
 
-	app.post("/api/admin/users", (request, response) => {
+	app.post("/api/admin/users", async (request, response) => {
 		try {
-			adminRepository.createUser({
+			await adminRepository.createUser({
 				displayName: typeof request.body?.displayName === "string" ? request.body.displayName : "",
 				password: typeof request.body?.password === "string" ? request.body.password : "",
 				role: request.body?.role === "editor" ? "editor" : "admin",
 				username: typeof request.body?.username === "string" ? request.body.username : ""
 			});
 
-			response.status(201).json(adminRepository.listUsers());
+			response.status(201).json(await adminRepository.listUsers());
 		}
 		catch (error) {
 			response.status(400).json({
@@ -762,11 +1030,31 @@ export function createApp(options: CreateAppOptions = {}) {
 		}
 	});
 
+	const errorHandler: ErrorRequestHandler = (error, request, response, _next) => {
+		logger.error("request.failed", {
+			error: error instanceof Error ? error.message : "Unhandled request error.",
+			method: request.method,
+			path: request.originalUrl,
+			requestId: response.locals.requestId,
+			stack: error instanceof Error ? error.stack : undefined
+		});
+
+		if (response.headersSent)
+			return;
+
+		response.status(500).json({
+			message: "Internal server error.",
+			requestId: response.locals.requestId
+		});
+	};
+
+	app.use(errorHandler);
+
 	return app;
 }
 
-export function startServer(port = Number(process.env.PORT || 3001)) {
-	const app = createApp();
+export async function startServer(port = Number(process.env.PORT || 3001)) {
+	const app = await createApp();
 	const server = app.listen(port, () => {
 		console.log(`Ballot Clarity API listening on http://127.0.0.1:${port}`);
 	});
@@ -779,4 +1067,4 @@ function isDirectExecution(metaUrl: string) {
 }
 
 if (isDirectExecution(import.meta.url))
-	startServer();
+	void startServer();

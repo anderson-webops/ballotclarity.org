@@ -64,6 +64,24 @@ function isAdminConfigured(config: AdminConfig) {
 	return Boolean(config.apiBase && config.apiKey && config.sessionSecret);
 }
 
+function normalizeHeaderValue(value: string | string[] | undefined) {
+	return Array.isArray(value) ? value.join(", ") : value;
+}
+
+function getForwardHeaders(event: H3Event, extraHeaders: Record<string, string> = {}) {
+	const forwardedFor = normalizeHeaderValue(event.node.req.headers["x-forwarded-for"]);
+	const remoteAddress = event.node.req.socket.remoteAddress;
+	const userAgent = normalizeHeaderValue(event.node.req.headers["user-agent"]);
+	const requestId = normalizeHeaderValue(event.node.req.headers["x-request-id"]);
+
+	return {
+		...(forwardedFor ? { "x-forwarded-for": forwardedFor } : remoteAddress ? { "x-forwarded-for": remoteAddress } : {}),
+		...(requestId ? { "x-request-id": requestId } : {}),
+		...(userAgent ? { "user-agent": userAgent } : {}),
+		...extraHeaders
+	};
+}
+
 function signPayload(payload: string, sessionSecret: string) {
 	return createHmac("sha256", sessionSecret).update(payload).digest("hex");
 }
@@ -194,6 +212,7 @@ export async function createAdminSession(event: H3Event, username: string, passw
 				password,
 				username
 			},
+			headers: getForwardHeaders(event),
 			method: "POST"
 		});
 	}
@@ -254,9 +273,9 @@ async function fetchAdminApi<T>(event: H3Event, path: string, options?: {
 
 	return await $fetch<T>(`${config.apiBase}${path}`, {
 		body: options?.body,
-		headers: {
+		headers: getForwardHeaders(event, {
 			"x-admin-api-key": config.apiKey
-		},
+		}),
 		method: options?.method
 	});
 }

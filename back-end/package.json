@@ -9,6 +9,7 @@
 		"server": "tsx watch -r dotenv/config src/server.ts",
 		"server:once": "tsx -r dotenv/config src/server.ts",
 		"bootstrap-admin": "tsx -r dotenv/config src/bootstrap-admin.ts",
+		"ingest:coverage": "tsx -r dotenv/config src/import-live-coverage.ts",
 		"start": "node dist/server.js",
 		"build": "tsc -p tsconfig.json && node ./scripts/copy-runtime-assets.mjs",
 		"watch": "tsc -w",
@@ -21,12 +22,14 @@
 	"dependencies": {
 		"cors": "^2.8.5",
 		"dotenv": "^17.2.3",
-		"express": "^5.1.0"
+		"express": "^5.1.0",
+		"pg": "^8.16.3"
 	},
 	"devDependencies": {
 		"@types/cors": "^2.8.19",
 		"@types/express": "^5.0.3",
 		"@types/node": "^25.5.0",
+		"@types/pg": "^8.15.6",
 		"tsx": "^4.21.0",
 		"typescript": "^6.0.2"
 	}

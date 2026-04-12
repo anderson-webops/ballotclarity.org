@@ -34,15 +34,16 @@ import {
 	demoMeasures
 } from "./coverage-data.js";
 
-interface AdminRepositoryOptions {
+export interface AdminRepositoryOptions {
 	dbPath?: string | null;
+	databaseUrl?: string | null;
 	bootstrapDisplayName?: string | null;
 	bootstrapPassword?: string | null;
 	bootstrapRole?: AdminUserRole | null;
 	bootstrapUsername?: string | null;
 }
 
-interface CorrectionSubmissionInput {
+export interface CorrectionSubmissionInput {
 	email: string;
 	message: string;
 	name?: string;
@@ -52,7 +53,7 @@ interface CorrectionSubmissionInput {
 	submissionType: AdminSubmissionType;
 }
 
-interface ContentPatch {
+export interface ContentPatch {
 	assignedTo?: string;
 	blocker?: string | null;
 	priority?: AdminPriority;
@@ -62,24 +63,43 @@ interface ContentPatch {
 	status?: AdminReviewStatus;
 }
 
-interface CorrectionPatch {
+export interface CorrectionPatch {
 	nextStep?: string;
 	priority?: AdminPriority;
 	status?: AdminCorrectionStatus;
 }
 
-interface SourcePatch {
+export interface SourcePatch {
 	health?: AdminSourceHealth;
 	nextCheckAt?: string;
 	note?: string;
 	owner?: string;
 }
 
-interface CreateUserInput {
+export interface CreateUserInput {
 	displayName: string;
 	password: string;
 	role: AdminUserRole;
 	username: string;
+}
+
+export interface AdminRepository {
+	driver: "postgres" | "sqlite";
+	authenticateUser: (username: string, password: string) => AdminUser | null | Promise<AdminUser | null>;
+	createCorrectionSubmission: (input: CorrectionSubmissionInput) => { ok: true; submittedAt: string } | Promise<{ ok: true; submittedAt: string }>;
+	createUser: (input: CreateUserInput) => AdminUser | Promise<AdminUser>;
+	getContentRecord: (entityType: AdminEntityType, entitySlug: string) => AdminContentItem | null | Promise<AdminContentItem | null>;
+	getOverview: () => AdminOverviewResponse | Promise<AdminOverviewResponse>;
+	getHealth: () => { ok: true } | Promise<{ ok: true }>;
+	hasUsers: () => boolean | Promise<boolean>;
+	listContent: () => AdminContentResponse | Promise<AdminContentResponse>;
+	listCorrections: () => AdminCorrectionsResponse | Promise<AdminCorrectionsResponse>;
+	listReview: () => AdminReviewResponse | Promise<AdminReviewResponse>;
+	listSourceMonitor: () => AdminSourceMonitorResponse | Promise<AdminSourceMonitorResponse>;
+	listUsers: () => AdminUsersResponse | Promise<AdminUsersResponse>;
+	updateContent: (id: string, patch: ContentPatch) => AdminContentResponse | Promise<AdminContentResponse>;
+	updateCorrection: (id: string, patch: CorrectionPatch) => AdminCorrectionsResponse | Promise<AdminCorrectionsResponse>;
+	updateSource: (id: string, patch: SourcePatch) => AdminSourceMonitorResponse | Promise<AdminSourceMonitorResponse>;
 }
 
 interface DatabaseCountRow {
@@ -150,11 +170,11 @@ interface ActivityRow {
 	summary: string;
 }
 
-const defaultDbPath = fileURLToPath(new URL("../data/ballot-clarity.sqlite", import.meta.url));
+export const defaultDbPath = fileURLToPath(new URL("../data/ballot-clarity.sqlite", import.meta.url));
 const packagedSchemaPath = new URL("./admin-schema.sql", import.meta.url);
 const sourceSchemaPath = new URL("../admin-schema.sql", import.meta.url);
 
-function resolveSchemaPath() {
+export function resolveSqliteSchemaPath() {
 	const packagedPathname = fileURLToPath(packagedSchemaPath);
 
 	if (existsSync(packagedPathname))
@@ -163,14 +183,14 @@ function resolveSchemaPath() {
 	return fileURLToPath(sourceSchemaPath);
 }
 
-function hashPassword(password: string) {
+export function hashPassword(password: string) {
 	const salt = randomUUID().replaceAll("-", "");
 	const derived = scryptSync(password, salt, 64).toString("hex");
 
 	return `scrypt:${salt}:${derived}`;
 }
 
-function verifyPassword(password: string, storedHash: string) {
+export function verifyPassword(password: string, storedHash: string) {
 	const [algorithm, salt, digest] = storedHash.split(":");
 
 	if (algorithm !== "scrypt" || !salt || !digest)
@@ -257,7 +277,7 @@ function rowToActivity(row: ActivityRow): AdminActivityItem {
 	};
 }
 
-function defaultContentSeed(): AdminContentItem[] {
+export function defaultContentSeed(): AdminContentItem[] {
 	const candidateItems = demoCandidates.map((candidate) => {
 		const sourceCoverage = `${candidate.sources.length} attached source${candidate.sources.length === 1 ? "" : "s"} with ${candidate.whatWeKnow.length} documented knowledge checks.`;
 		const priority: AdminPriority = candidate.slug === "sandra-patel" ? "medium" : "low";
@@ -344,10 +364,10 @@ function ensureColumn(database: DatabaseSync, table: string, column: string, def
 	database.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
 }
 
-export function createAdminRepository(options: AdminRepositoryOptions = {}) {
+export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}): AdminRepository {
 	const resolvedPath = ensureDatabasePath(options.dbPath || process.env.ADMIN_DB_PATH || defaultDbPath);
 	const database = new DatabaseSync(resolvedPath);
-	const schema = readFileSync(resolveSchemaPath(), "utf8");
+	const schema = readFileSync(resolveSqliteSchemaPath(), "utf8");
 
 	database.exec(schema);
 	ensureColumn(database, "admin_content", "public_summary", "TEXT");
@@ -822,7 +842,7 @@ export function createAdminRepository(options: AdminRepositoryOptions = {}) {
 		return {
 			ok: true,
 			submittedAt: now
-		};
+		} as const;
 	}
 
 	function updateCorrection(id: string, patch: CorrectionPatch) {
@@ -959,10 +979,12 @@ export function createAdminRepository(options: AdminRepositoryOptions = {}) {
 	}
 
 	return {
+		driver: "sqlite",
 		authenticateUser,
 		createCorrectionSubmission,
 		createUser,
 		getContentRecord,
+		getHealth: () => ({ ok: true }),
 		getOverview,
 		hasUsers,
 		listContent,

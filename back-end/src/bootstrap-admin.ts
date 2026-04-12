@@ -1,5 +1,5 @@
 import process from "node:process";
-import { createAdminRepository } from "./admin-store.js";
+import { createAdminRepository } from "./admin-repository.js";
 
 function readFlag(flag: string) {
 	const index = process.argv.indexOf(flag);
@@ -21,18 +21,29 @@ if (!username || !password) {
 	process.exit(1);
 }
 
-try {
-	const repository = createAdminRepository({ dbPath });
-	const user = repository.createUser({
-		displayName,
-		password,
-		role,
-		username
-	});
+async function main() {
+	try {
+		if (!username || !password) {
+			throw new Error("Username and password are required.");
+		}
 
-	console.log(`Created ${user.role} user ${user.username} in ${dbPath || "default admin database"}.`);
+		const repository = await createAdminRepository({
+			databaseUrl: process.env.ADMIN_DATABASE_URL || process.env.DATABASE_URL || null,
+			dbPath
+		});
+		const user = await repository.createUser({
+			displayName,
+			password,
+			role,
+			username
+		});
+
+		console.log(`Created ${user.role} user ${user.username} in ${(process.env.ADMIN_DATABASE_URL || process.env.DATABASE_URL) ? "configured admin database" : dbPath || "default admin database"}.`);
+	}
+	catch (error) {
+		console.error(error instanceof Error ? error.message : "Unable to create admin user.");
+		process.exit(1);
+	}
 }
-catch (error) {
-	console.error(error instanceof Error ? error.message : "Unable to create admin user.");
-	process.exit(1);
-}
+
+void main();

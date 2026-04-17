@@ -274,22 +274,6 @@ function saveMeasure(decision: "no" | "review" | "yes") {
 
 				<FreshnessStrip :freshness="measure.freshness" />
 
-				<nav aria-label="Jump to section" class="surface-panel px-5 py-4 top-20 sticky z-10">
-					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-						Jump to section
-					</p>
-					<div class="mt-3 px-1 pb-1 flex gap-2 overflow-x-auto -mx-1">
-						<a
-							v-for="section in sectionLinks"
-							:key="section.href"
-							:href="section.href"
-							class="text-xs text-app-ink px-4 py-2 border border-app-line rounded-full whitespace-nowrap dark:text-app-text-dark hover:text-app-accent dark:border-app-line-dark hover:border-app-accent/50 focus-ring dark:hover:text-[#9ed4e3] dark:hover:border-app-accent/60"
-						>
-							{{ section.label }}
-						</a>
-					</div>
-				</nav>
-
 				<section id="at-a-glance" class="surface-panel scroll-mt-28">
 					<div class="flex flex-wrap gap-4 items-start justify-between">
 						<div>
@@ -373,21 +357,16 @@ function saveMeasure(decision: "no" | "review" | "yes") {
 
 				<EpistemicSummary :known-items="measure.whatWeKnow" :unknown-items="measure.whatWeDoNotKnow" />
 
-				<section id="baseline" class="surface-panel scroll-mt-28">
-					<div class="flex flex-wrap gap-4 items-start justify-between">
-						<div>
-							<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-								Current law and proposed change
-							</p>
-							<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-								What exists now, and what this measure would change
-							</h2>
-						</div>
+				<ExpandableSection
+					id="baseline"
+					eyebrow="Current law and proposed change"
+					title="What exists now, and what this measure would change"
+					:description="measure.currentLawOverview"
+					open
+				>
+					<template #meta>
 						<SourceDrawer :sources="baselineSources.length ? baselineSources : measure.sources" :title="`${measure.title} current-law and proposal sources`" button-label="Baseline sources" />
-					</div>
-					<p class="text-sm text-app-muted leading-7 mt-5 dark:text-app-muted-dark">
-						{{ measure.currentLawOverview }}
-					</p>
+					</template>
 					<div class="mt-6 gap-6 grid lg:grid-cols-2">
 						<article class="px-5 py-5 border border-app-line/80 rounded-3xl bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
 							<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
@@ -420,23 +399,18 @@ function saveMeasure(decision: "no" | "review" | "yes") {
 							</ul>
 						</article>
 					</div>
-				</section>
+				</ExpandableSection>
 
-				<section id="outcomes" class="surface-panel scroll-mt-28">
-					<div class="flex flex-wrap gap-4 items-start justify-between">
-						<div>
-							<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-								YES / NO outcomes
-							</p>
-							<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-								If you vote YES or NO
-							</h2>
-						</div>
+				<ExpandableSection
+					id="outcomes"
+					eyebrow="YES / NO outcomes"
+					title="If you vote YES or NO"
+					description="The two cards below use mirrored structure so the change from a YES vote and the status quo after a NO vote can be read side by side without scoring either option."
+					open
+				>
+					<template #meta>
 						<SourceDrawer :sources="officialSources.length ? officialSources : measure.sources" :title="`${measure.title} yes and no meanings`" button-label="Outcome sources" />
-					</div>
-					<p class="text-sm text-app-muted leading-7 mt-5 dark:text-app-muted-dark">
-						The two cards below use mirrored structure so the change from a YES vote and the status quo after a NO vote can be read side by side without scoring either option.
-					</p>
+					</template>
 					<div class="mt-6 gap-6 grid md:grid-cols-2">
 						<article class="px-5 py-5 border border-app-line/80 rounded-3xl bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
 							<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
@@ -471,23 +445,17 @@ function saveMeasure(decision: "no" | "review" | "yes") {
 							</ul>
 						</article>
 					</div>
-				</section>
+				</ExpandableSection>
 
-				<section id="implementation" class="surface-panel scroll-mt-28">
-					<div class="flex flex-wrap gap-4 items-start justify-between">
-						<div>
-							<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-								Implementation timeline
-							</p>
-							<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-								When the legal change starts and what still depends on later decisions
-							</h2>
-						</div>
+				<ExpandableSection
+					id="implementation"
+					eyebrow="Implementation timeline"
+					title="When the legal change starts and what still depends on later decisions"
+					:description="measure.implementationOverview"
+				>
+					<template #meta>
 						<SourceDrawer :sources="implementationSources.length ? implementationSources : measure.sources" :title="`${measure.title} implementation timeline sources`" button-label="Timeline sources" />
-					</div>
-					<p class="text-sm text-app-muted leading-7 mt-5 dark:text-app-muted-dark">
-						{{ measure.implementationOverview }}
-					</p>
+					</template>
 					<div class="mt-6 space-y-4">
 						<article v-for="item in measure.implementationTimeline" :key="item.id" class="px-5 py-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
 							<div class="flex flex-wrap gap-3 items-start justify-between">
@@ -506,20 +474,16 @@ function saveMeasure(decision: "no" | "review" | "yes") {
 							</p>
 						</article>
 					</div>
-				</section>
+				</ExpandableSection>
 
-				<section id="fiscal" class="surface-panel scroll-mt-28">
-					<div class="flex flex-wrap gap-4 items-center justify-between">
-						<div>
-							<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-								Fiscal impact and tradeoffs
-							</p>
-							<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-								Costs, timing, and practical effects
-							</h2>
-						</div>
+				<ExpandableSection
+					id="fiscal"
+					eyebrow="Fiscal impact and tradeoffs"
+					title="Costs, timing, and practical effects"
+				>
+					<template #meta>
 						<SourceDrawer :sources="fiscalAndTradeoffSources" :title="`${measure.title} fiscal and tradeoff sources`" />
-					</div>
+					</template>
 					<InfoCallout class="mt-5" title="Fiscal and context note">
 						{{ measure.fiscalContextNote }}
 					</InfoCallout>
@@ -568,23 +532,17 @@ function saveMeasure(decision: "no" | "review" | "yes") {
 							</p>
 						</article>
 					</div>
-				</section>
+				</ExpandableSection>
 
-				<section id="arguments" class="surface-panel scroll-mt-28">
-					<div class="flex flex-wrap gap-4 items-start justify-between">
-						<div>
-							<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-								Arguments in the attached record
-							</p>
-							<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-								Attributed arguments for and against
-							</h2>
-						</div>
+				<ExpandableSection
+					id="arguments"
+					eyebrow="Arguments in the attached record"
+					title="Attributed arguments for and against"
+					description="These are parallel argument summaries drawn from the attached record set. They are framed neutrally so the user can compare the reasoning without the page taking a side."
+				>
+					<template #meta>
 						<SourceDrawer :sources="argumentSources" :title="`${measure.title} support and oppose arguments`" />
-					</div>
-					<p class="text-sm text-app-muted leading-7 mt-5 dark:text-app-muted-dark">
-						These are parallel argument summaries drawn from the attached record set. They are framed neutrally so the user can compare the reasoning without the page taking a side.
-					</p>
+					</template>
 					<InfoCallout class="mt-5" title="Arguments are attributed, not adopted">
 						{{ measure.argumentsDisclaimer }}
 					</InfoCallout>
@@ -632,31 +590,31 @@ function saveMeasure(decision: "no" | "review" | "yes") {
 							</article>
 						</div>
 					</div>
-				</section>
+				</ExpandableSection>
 
-				<section id="sources" class="surface-panel scroll-mt-28">
-					<div class="flex flex-wrap gap-4 items-start justify-between">
-						<div>
-							<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-								Full text and official sources
-							</p>
-							<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-								Inspect the original records
-							</h2>
-						</div>
+				<ExpandableSection
+					id="sources"
+					eyebrow="Full text and official sources"
+					title="Inspect the original records"
+					description="Official ballot language, fiscal notes, and county guide records remain the primary sources. Ballot Clarity adds a reading aid on top of those materials; it does not replace them."
+				>
+					<template #meta>
 						<SourceDrawer :sources="measure.sources" :title="`${measure.title} full source list`" />
-					</div>
-					<p class="text-sm text-app-muted leading-7 mt-5 dark:text-app-muted-dark">
-						Official ballot language, fiscal notes, and county guide records remain the primary sources. Ballot Clarity adds a reading aid on top of those materials; it does not replace them.
-					</p>
+					</template>
 					<div class="mt-6">
 						<SourceList :sources="officialSources.length ? officialSources : measure.sources" title="Official source trail in this guide" />
 					</div>
-				</section>
+				</ExpandableSection>
 			</div>
 
 			<aside class="xl:self-start xl:top-28 xl:sticky">
-				<div class="surface-panel">
+				<PageSectionNav
+					title="Jump to section"
+					description="Read the overview first, then open only the parts of the measure you need."
+					:items="sectionLinks.map(section => ({ href: section.href, label: section.label }))"
+				/>
+
+				<div class="mt-4 surface-panel">
 					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
 						Evidence rail
 					</p>

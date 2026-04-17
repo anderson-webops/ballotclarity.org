@@ -3,6 +3,19 @@ import { storeToRefs } from "pinia";
 import { appName } from "~/constants";
 import { buildCompareRoute } from "~/stores/civic";
 
+interface HeaderLink {
+	badge?: "compare" | "plan";
+	description: string;
+	label: string;
+	to: string;
+}
+
+interface HeaderGroup {
+	description: string;
+	label: string;
+	links: HeaderLink[];
+}
+
 const civicStore = useCivicStore();
 const colorMode = useColorMode();
 const route = useRoute();
@@ -17,17 +30,37 @@ let scrollFramePending = false;
 
 const { ballotPlanCount, compareCount, compareList, isHydrated, selectedLocation } = storeToRefs(civicStore);
 
-const primaryLinks = [
-	{ label: "Ballot guide", to: "/ballot" },
-	{ label: "Compare", to: "/compare" },
-	{ label: "Search", to: "/search" },
-	{ label: "Sources", to: "/sources" }
-];
-
-const secondaryLinks = [
-	{ label: "Coverage", to: "/coverage" },
-	{ label: "Methodology", to: "/methodology" },
-	{ label: "About", to: "/about" }
+const navGroups: HeaderGroup[] = [
+	{
+		description: "Ballot-reading tools and active voter workflows.",
+		label: "Use the guide",
+		links: [
+			{ badge: "plan", description: "Saved checklist and print-friendly plan.", label: "My plan", to: "/plan" },
+			{ description: "Contest reading view with filters and official links.", label: "Ballot guide", to: "/ballot" },
+			{ badge: "compare", description: "Side-by-side candidate comparison.", label: "Compare", to: "/compare" },
+			{ description: "Search the current public coverage archive.", label: "Search", to: "/search" }
+		]
+	},
+	{
+		description: "How Ballot Clarity works and how to verify it.",
+		label: "Learn and verify",
+		links: [
+			{ description: "Source directory and citation targets.", label: "Sources", to: "/sources" },
+			{ description: "Coverage scope and launch profile.", label: "Coverage", to: "/coverage" },
+			{ description: "How summaries and links are produced.", label: "Methodology", to: "/methodology" },
+			{ description: "Neutrality, sourcing, and editorial rules.", label: "Neutrality", to: "/neutrality" }
+		]
+	},
+	{
+		description: "Help, public standards, and organization context.",
+		label: "Project and help",
+		links: [
+			{ description: "Voting FAQ and how to use the site.", label: "Help", to: "/help" },
+			{ description: "Corrections workflow and public updates.", label: "Corrections", to: "/corrections" },
+			{ description: "Public site status and source review notes.", label: "Status", to: "/status" },
+			{ description: "About the nonprofit and contact options.", label: "About", to: "/about" }
+		]
+	}
 ];
 
 const isDark = computed(() => colorMode.value === "dark");
@@ -55,7 +88,21 @@ function isActive(path: string) {
 		: route.path.startsWith(path);
 }
 
-function resolvePrimaryLinkTo(path: string) {
+function isGroupActive(group: HeaderGroup) {
+	return group.links.some(link => isActive(link.to));
+}
+
+function linkBadge(link: HeaderLink) {
+	if (link.badge === "compare" && effectiveCompareCount.value)
+		return String(effectiveCompareCount.value);
+
+	if (link.badge === "plan" && effectiveBallotPlanCount.value)
+		return String(effectiveBallotPlanCount.value);
+
+	return "";
+}
+
+function resolveLinkTo(path: string) {
 	return path === "/compare"
 		? buildCompareRoute(effectiveCompareList.value)
 		: path;
@@ -119,42 +166,63 @@ onBeforeUnmount(() => {
 							</span>
 							<span class="min-w-0">
 								<span class="text-lg text-app-ink leading-none font-serif block dark:text-app-text-dark">{{ appName }}</span>
-								<span class="text-xs text-app-muted mt-1 block dark:text-app-muted-dark">Nonpartisan ballot guide and source archive</span>
+								<span class="text-xs text-app-muted mt-1 block dark:text-app-muted-dark">Nonpartisan ballot guide and public-record archive</span>
 							</span>
 						</span>
 					</NuxtLink>
 				</div>
 
 				<nav class="flex-1 min-w-0 hidden justify-center xl:flex" aria-label="Primary">
-					<div class="px-2 py-2 border border-app-line/80 rounded-full bg-white/88 flex gap-1 max-w-full shadow-sm items-center dark:border-app-line-dark dark:bg-app-panel-dark/92">
-						<NuxtLink
-							v-for="link in primaryLinks"
-							:key="link.to"
-							:to="resolvePrimaryLinkTo(link.to)"
-							class="text-sm font-medium px-3 py-2 rounded-full whitespace-nowrap transition focus-ring"
-							:class="isActive(link.to)
-								? 'bg-app-ink text-white'
-								: 'text-app-muted hover:bg-app-bg hover:text-app-ink dark:text-app-muted-dark dark:hover:bg-app-bg-dark/70 dark:hover:text-app-text-dark'"
+					<div class="px-2 py-2 border border-app-line/80 rounded-full bg-white/88 flex gap-2 max-w-full shadow-sm items-center dark:border-app-line-dark dark:bg-app-panel-dark/92">
+						<details
+							v-for="group in navGroups"
+							:key="group.label"
+							class="group relative"
 						>
-							{{ link.label }}
-							<span v-if="link.to === '/compare' && effectiveCompareCount" class="text-[11px] text-app-ink font-bold ml-2 px-1.5 rounded-full bg-app-warm inline-flex h-5 min-w-5 items-center justify-center">
-								{{ effectiveCompareCount }}
-							</span>
-						</NuxtLink>
-
-						<div class="mx-2 bg-app-line/80 h-6 w-px dark:bg-app-line-dark" />
-
-						<NuxtLink
-							v-for="link in secondaryLinks"
-							:key="link.to"
-							:to="link.to"
-							class="text-sm font-medium px-3 py-2 rounded-full whitespace-nowrap transition focus-ring"
-							:class="isActive(link.to)
-								? 'bg-app-ink text-white'
-								: 'text-app-muted hover:bg-app-bg hover:text-app-ink dark:text-app-muted-dark dark:hover:bg-app-bg-dark/70 dark:hover:text-app-text-dark'"
-						>
-							{{ link.label }}
-						</NuxtLink>
+							<summary
+								class="text-sm font-medium px-4 py-2 list-none rounded-full cursor-pointer whitespace-nowrap transition focus-ring"
+								:class="isGroupActive(group)
+									? 'bg-app-ink text-white'
+									: 'text-app-muted hover:bg-app-bg hover:text-app-ink dark:text-app-muted-dark dark:hover:bg-app-bg-dark/70 dark:hover:text-app-text-dark'"
+							>
+								<span class="inline-flex gap-2 items-center">
+									<span>{{ group.label }}</span>
+									<span class="i-carbon-chevron-down text-xs transition group-open:rotate-180" />
+								</span>
+							</summary>
+							<div class="pt-3 left-0 top-full absolute">
+								<div class="p-3 border border-app-line/80 rounded-[1.4rem] bg-white min-w-[20rem] shadow-[0_22px_48px_-30px_rgba(16,37,62,0.45)] dark:border-app-line-dark dark:bg-app-panel-dark">
+									<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+										{{ group.label }}
+									</p>
+									<p class="text-xs text-app-muted leading-6 mt-2 dark:text-app-muted-dark">
+										{{ group.description }}
+									</p>
+									<div class="mt-3 gap-1 grid">
+										<NuxtLink
+											v-for="link in group.links"
+											:key="link.to"
+											:to="resolveLinkTo(link.to)"
+											class="px-3 py-3 rounded-[1rem] transition hover:bg-app-bg focus-ring dark:hover:bg-app-bg-dark/70"
+										>
+											<div class="flex gap-3 items-start justify-between">
+												<div class="min-w-0">
+													<p class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
+														{{ link.label }}
+													</p>
+													<p class="text-xs text-app-muted leading-6 mt-1 dark:text-app-muted-dark">
+														{{ link.description }}
+													</p>
+												</div>
+												<span v-if="linkBadge(link)" class="text-[11px] text-app-ink font-bold px-1.5 rounded-full bg-app-warm inline-flex h-5 min-w-5 items-center justify-center">
+													{{ linkBadge(link) }}
+												</span>
+											</div>
+										</NuxtLink>
+									</div>
+								</div>
+							</div>
+						</details>
 					</div>
 				</nav>
 
@@ -211,55 +279,61 @@ onBeforeUnmount(() => {
 		</div>
 
 		<div v-if="isMenuOpen" class="px-4 pb-4 pt-3 border-t border-app-line/80 bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark xl:hidden">
-			<nav class="flex flex-col gap-2" aria-label="Mobile navigation">
-				<NuxtLink
-					to="/plan"
-					class="text-sm font-medium px-4 py-3 rounded-2xl transition focus-ring"
-					:class="isActive('/plan')
-						? 'bg-app-ink text-white'
-						: 'bg-white text-app-ink dark:bg-app-panel-dark dark:text-app-text-dark'"
-				>
-					My plan
-					<span v-if="effectiveBallotPlanCount" class="text-[11px] text-app-ink font-bold ml-2 px-2 py-0.5 rounded-full bg-app-warm">
-						{{ effectiveBallotPlanCount }}
-					</span>
-				</NuxtLink>
-
-				<NuxtLink
-					v-for="link in primaryLinks"
-					:key="link.to"
-					:to="resolvePrimaryLinkTo(link.to)"
-					class="text-sm font-medium px-4 py-3 rounded-2xl transition focus-ring"
-					:class="isActive(link.to)
-						? 'bg-app-ink text-white'
-						: 'bg-white text-app-ink dark:bg-app-panel-dark dark:text-app-text-dark'"
-				>
-					{{ link.label }}
-					<span v-if="link.to === '/compare' && effectiveCompareCount" class="text-[11px] text-app-ink font-bold ml-2 px-2 py-0.5 rounded-full bg-app-warm">
-						{{ effectiveCompareCount }}
-					</span>
-				</NuxtLink>
-
-				<NuxtLink
-					v-for="link in secondaryLinks"
-					:key="link.to"
-					:to="link.to"
-					class="text-sm font-medium px-4 py-3 rounded-2xl transition focus-ring"
-					:class="isActive(link.to)
-						? 'bg-app-ink text-white'
-						: 'bg-white text-app-ink dark:bg-app-panel-dark dark:text-app-text-dark'"
-				>
-					{{ link.label }}
-				</NuxtLink>
-
-				<div class="text-sm mt-2 px-4 py-3 border border-app-line rounded-2xl bg-white flex items-center justify-between dark:border-app-line-dark dark:bg-app-panel-dark">
-					<span class="text-app-muted dark:text-app-muted-dark">
-						{{ effectiveSelectedLocation?.displayName || "Ballot context not yet selected" }}
-					</span>
-					<button type="button" class="text-xs font-semibold px-3 py-2 border border-app-line rounded-full dark:border-app-line-dark focus-ring" @click="toggleColorMode">
-						{{ isDark ? "Light mode" : "Dark mode" }}
-					</button>
+			<nav class="space-y-5" aria-label="Mobile navigation">
+				<div class="space-y-2">
+					<NuxtLink
+						to="/plan"
+						class="text-sm font-medium px-4 py-3 rounded-2xl flex transition items-center justify-between focus-ring"
+						:class="isActive('/plan')
+							? 'bg-app-ink text-white'
+							: 'bg-white text-app-ink dark:bg-app-panel-dark dark:text-app-text-dark'"
+					>
+						<span>My plan</span>
+						<span v-if="effectiveBallotPlanCount" class="text-[11px] text-app-ink font-bold ml-2 px-2 py-0.5 rounded-full bg-app-warm">
+							{{ effectiveBallotPlanCount }}
+						</span>
+					</NuxtLink>
+					<div class="text-sm px-4 py-3 border border-app-line rounded-2xl bg-white flex items-center justify-between dark:border-app-line-dark dark:bg-app-panel-dark">
+						<span class="text-app-muted dark:text-app-muted-dark">
+							{{ effectiveSelectedLocation?.displayName || "Ballot context not yet selected" }}
+						</span>
+						<button type="button" class="text-xs font-semibold px-3 py-2 border border-app-line rounded-full dark:border-app-line-dark focus-ring" @click="toggleColorMode">
+							{{ isDark ? "Light mode" : "Dark mode" }}
+						</button>
+					</div>
 				</div>
+
+				<section v-for="group in navGroups" :key="group.label" class="space-y-2">
+					<div class="px-1">
+						<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+							{{ group.label }}
+						</p>
+						<p class="text-xs text-app-muted leading-6 mt-1 dark:text-app-muted-dark">
+							{{ group.description }}
+						</p>
+					</div>
+					<NuxtLink
+						v-for="link in group.links"
+						:key="link.to"
+						:to="resolveLinkTo(link.to)"
+						class="px-4 py-3 rounded-2xl flex gap-3 transition items-start justify-between focus-ring"
+						:class="isActive(link.to)
+							? 'bg-app-ink text-white'
+							: 'bg-white text-app-ink dark:bg-app-panel-dark dark:text-app-text-dark'"
+					>
+						<span class="min-w-0">
+							<span class="text-sm font-semibold block">
+								{{ link.label }}
+							</span>
+							<span class="text-xs mt-1 block" :class="isActive(link.to) ? 'text-white/75' : 'text-app-muted dark:text-app-muted-dark'">
+								{{ link.description }}
+							</span>
+						</span>
+						<span v-if="linkBadge(link)" class="text-[11px] text-app-ink font-bold px-2 py-0.5 rounded-full bg-app-warm">
+							{{ linkBadge(link) }}
+						</span>
+					</NuxtLink>
+				</section>
 			</nav>
 		</div>
 	</header>

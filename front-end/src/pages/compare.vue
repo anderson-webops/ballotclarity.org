@@ -57,6 +57,23 @@ const comparisonStats = computed(() => ({
 		? new Set(sortedCandidates.value.flatMap(candidate => candidate.comparison.questionnaireResponses.map(response => response.questionId))).size
 		: 0
 }));
+const compareSummaryItems = computed(() => ([
+	{
+		label: "Candidates",
+		note: "Included in the current side-by-side view.",
+		value: comparisonStats.value.candidateCount
+	},
+	{
+		label: "Question categories",
+		note: "Standardized issue areas available here.",
+		value: comparisonStats.value.categoryCount
+	},
+	{
+		label: "Shared questions",
+		note: "Questionnaire prompts shown in the table.",
+		value: comparisonStats.value.questionCount
+	}
+]));
 const emptyStateTitle = computed(() => {
 	if (selectedSlugs.value.length === 1)
 		return "Select one more candidate to compare";
@@ -122,43 +139,14 @@ usePageSeo({
 		</header>
 
 		<section class="surface-panel">
-			<div class="gap-5 grid xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.3fr)] md:grid-cols-3">
-				<div class="px-5 py-5 rounded-[1.5rem] bg-app-bg/70 dark:bg-app-bg-dark/70">
-					<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
-						Candidates
-					</p>
-					<p class="text-3xl text-app-ink font-semibold mt-3 dark:text-app-text-dark">
-						{{ comparisonStats.candidateCount }}
-					</p>
-					<p class="text-xs text-app-muted leading-6 mt-2 dark:text-app-muted-dark">
-						Compared side by side in the current view.
-					</p>
-				</div>
-				<div class="px-5 py-5 rounded-[1.5rem] bg-app-bg/70 dark:bg-app-bg-dark/70">
-					<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
-						Question categories
-					</p>
-					<p class="text-3xl text-app-ink font-semibold mt-3 dark:text-app-text-dark">
-						{{ comparisonStats.categoryCount }}
-					</p>
-					<p class="text-xs text-app-muted leading-6 mt-2 dark:text-app-muted-dark">
-						Standardized issue areas available in the questionnaire set.
-					</p>
-				</div>
-				<div class="px-5 py-5 rounded-[1.5rem] bg-app-bg/70 dark:bg-app-bg-dark/70">
-					<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
-						How to read this page
-					</p>
-					<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
-						Columns are candidates and rows are shared attributes. Use the differences-only toggle to cut visual noise, then return to the ballot guide or profile page when you want deeper funding or action context.
-					</p>
-				</div>
-			</div>
+			<PageSummaryStrip :items="compareSummaryItems" />
+			<p class="text-sm text-app-muted leading-7 mt-5 max-w-4xl dark:text-app-muted-dark">
+				Columns are candidates and rows are shared attributes. Use the differences-only toggle to cut visual noise, then return to the ballot guide or profile page when you want deeper funding or action context.
+			</p>
+			<InfoCallout class="mt-5" title="Comparison policy">
+				Ballot Clarity does not endorse or rank candidates. The default comparison focuses on ballot status, candidate-verbatim statements, and standardized question responses with visible sources, clear provenance, and missing-data labels. Use compare to eliminate, then save a choice only after checking the deeper ballot guide or profile page.
+			</InfoCallout>
 		</section>
-
-		<InfoCallout title="Comparison policy">
-			Ballot Clarity does not endorse or rank candidates. The default comparison focuses on ballot status, candidate-verbatim statements, and standardized question responses with visible sources, clear provenance, and missing-data labels. Use compare to eliminate, then save a choice only after checking the deeper ballot guide or profile page.
-		</InfoCallout>
 
 		<div v-if="pending" class="surface-panel bg-white/70 h-96 animate-pulse dark:bg-app-panel-dark/70" />
 
@@ -293,79 +281,85 @@ usePageSeo({
 				:show-only-mutual-responses="showOnlyMutualResponses"
 			/>
 
-			<section class="gap-6 grid xl:grid-cols-3">
-				<article v-for="candidate in sortedCandidates" :key="candidate.slug" class="surface-panel">
-					<div class="flex flex-wrap gap-3 items-center justify-between">
-						<div>
-							<div class="flex flex-wrap gap-2 items-center">
-								<h3 class="text-2xl text-app-ink font-serif dark:text-app-text-dark">
-									{{ candidate.comparison.displayName }}
-								</h3>
-								<IncumbentBadge v-if="candidate.incumbent" />
+			<ExpandableSection
+				eyebrow="Source deep dives"
+				title="Open source-heavy context only when needed"
+				description="The comparison table is the primary reading surface. Use the profiles below only when you want campaign links, disclosure sources, or quoted issue context."
+			>
+				<div class="gap-6 grid xl:grid-cols-3">
+					<article v-for="candidate in sortedCandidates" :key="candidate.slug" class="surface-panel">
+						<div class="flex flex-wrap gap-3 items-center justify-between">
+							<div>
+								<div class="flex flex-wrap gap-2 items-center">
+									<h3 class="text-2xl text-app-ink font-serif dark:text-app-text-dark">
+										{{ candidate.comparison.displayName }}
+									</h3>
+									<IncumbentBadge v-if="candidate.incumbent" />
+								</div>
+								<p class="text-sm text-app-muted mt-2 dark:text-app-muted-dark">
+									Context deep dive
+								</p>
 							</div>
-							<p class="text-sm text-app-muted mt-2 dark:text-app-muted-dark">
-								Context deep dive
-							</p>
-						</div>
-						<NuxtLink :to="`/candidate/${candidate.slug}`" class="btn-secondary">
-							Full profile
-						</NuxtLink>
-					</div>
-
-					<div class="mt-6 space-y-5">
-						<div>
-							<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
-								Campaign links
-							</p>
-							<ul class="mt-3 space-y-2">
-								<li v-for="item in candidate.comparison.contactChannels" :key="item.url">
-									<a :href="item.url" target="_blank" rel="noreferrer" class="text-sm text-app-accent rounded-md inline-flex gap-2 items-center hover:text-app-ink focus-ring dark:hover:text-white">
-										<span class="i-carbon-launch" />
-										<span>{{ item.label }}</span>
-									</a>
-								</li>
-							</ul>
+							<NuxtLink :to="`/candidate/${candidate.slug}`" class="btn-secondary">
+								Full profile
+							</NuxtLink>
 						</div>
 
-						<div>
-							<SourceList
-								:sources="publicRecordSources(candidate)"
-								compact
-								title="Official and public record links"
-								note="Shown here as linked source material, not summarized into a score or ranking."
-							/>
-						</div>
+						<div class="mt-6 space-y-5">
+							<div>
+								<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+									Campaign links
+								</p>
+								<ul class="mt-3 space-y-2">
+									<li v-for="item in candidate.comparison.contactChannels" :key="item.url">
+										<a :href="item.url" target="_blank" rel="noreferrer" class="text-sm text-app-accent rounded-md inline-flex gap-2 items-center hover:text-app-ink focus-ring dark:hover:text-white">
+											<span class="i-carbon-launch" />
+											<span>{{ item.label }}</span>
+										</a>
+									</li>
+								</ul>
+							</div>
 
-						<div>
-							<SourceList
-								:sources="financeSources(candidate)"
-								compact
-								title="Finance and disclosure links"
-								note="Included as context deep dives outside the default side-by-side frame."
-							/>
-						</div>
+							<div>
+								<SourceList
+									:sources="publicRecordSources(candidate)"
+									compact
+									title="Official and public record links"
+									note="Shown here as linked source material, not summarized into a score or ranking."
+								/>
+							</div>
 
-						<div>
-							<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
-								Candidate-quoted issue context
-							</p>
-							<div class="mt-3 space-y-3">
-								<article v-for="statement in candidate.publicStatements" :key="statement.id" class="p-4 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70">
-									<p class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
-										{{ statement.title }}
-									</p>
-									<p class="text-sm text-app-muted leading-7 mt-2 dark:text-app-muted-dark">
-										{{ statement.summary }}
-									</p>
-									<div class="mt-3">
-										<SourceDrawer :sources="statement.sources" :title="statement.title" button-label="Sources" />
-									</div>
-								</article>
+							<div>
+								<SourceList
+									:sources="financeSources(candidate)"
+									compact
+									title="Finance and disclosure links"
+									note="Included as context deep dives outside the default side-by-side frame."
+								/>
+							</div>
+
+							<div>
+								<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+									Candidate-quoted issue context
+								</p>
+								<div class="mt-3 space-y-3">
+									<article v-for="statement in candidate.publicStatements" :key="statement.id" class="p-4 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70">
+										<p class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
+											{{ statement.title }}
+										</p>
+										<p class="text-sm text-app-muted leading-7 mt-2 dark:text-app-muted-dark">
+											{{ statement.summary }}
+										</p>
+										<div class="mt-3">
+											<SourceDrawer :sources="statement.sources" :title="statement.title" button-label="Sources" />
+										</div>
+									</article>
+								</div>
 							</div>
 						</div>
-					</div>
-				</article>
-			</section>
+					</article>
+				</div>
+			</ExpandableSection>
 		</template>
 	</section>
 </template>

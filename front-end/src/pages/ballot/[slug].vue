@@ -160,30 +160,34 @@ const ballotCounts = computed(() => {
 		sourceLinkedItems: 0
 	});
 });
-const ballotOverviewCards = computed(() => ([
+const personalizationLabel = computed(() => data.value?.location.lookupInput ?? data.value?.location.displayName ?? "");
+const guideSummaryItems = computed(() => ([
 	{
-		description: "Total contest sections in this ballot guide.",
-		href: "#contests-section",
-		key: "contests",
+		label: "Personalized to",
+		note: "Full address gives the most specific district match.",
+		value: personalizationLabel.value
+	},
+	{
 		label: "Contests",
+		note: "Total sections in this ballot guide.",
 		value: ballotCounts.value.contestCount
 	},
 	{
-		description: "Candidate profiles linked from this ballot.",
-		href: ballotCounts.value.candidateCount ? "#candidate-contests-section" : undefined,
-		key: "candidates",
 		label: "Candidates",
+		note: "Candidate profiles linked from this ballot.",
 		value: ballotCounts.value.candidateCount
 	},
 	{
-		description: "Measure explainers with yes/no summaries and sources.",
-		href: ballotCounts.value.measureCount ? "#measure-contests-section" : undefined,
-		key: "measures",
 		label: "Measures",
+		note: "Measure explainers with yes / no summaries.",
 		value: ballotCounts.value.measureCount
+	},
+	{
+		label: "Saved to plan",
+		note: "Contests currently saved in your checklist.",
+		value: effectiveBallotPlanCount.value
 	}
 ]));
-const personalizationLabel = computed(() => data.value?.location.lookupInput ?? data.value?.location.displayName ?? "");
 const coverageNotes = computed(() => {
 	if (!data.value)
 		return [];
@@ -220,6 +224,39 @@ const ballotContentsGroups = computed(() => {
 		}
 	].filter(group => group.items.length);
 });
+const guideSectionItems = computed(() => ([
+	{
+		href: "#guide-overview",
+		label: "Ballot at a glance",
+		note: "Coverage notes and top-level counts."
+	},
+	{
+		href: "#guide-logistics",
+		label: "Key dates and official links",
+		note: "Official notices, deadlines, and recent updates."
+	},
+	{
+		href: "#guide-controls",
+		label: "Reading mode and filters",
+		note: "Search, issue filters, and quick vs deep view."
+	},
+	...(filteredCandidateContests.value.length
+		? [{
+				badge: String(filteredCandidateContests.value.length),
+				href: "#candidate-contests-section",
+				label: "Candidate contests",
+				note: "Races with candidate profiles."
+			}]
+		: []),
+	...(filteredMeasureContests.value.length
+		? [{
+				badge: String(filteredMeasureContests.value.length),
+				href: "#measure-contests-section",
+				label: "Ballot measures",
+				note: "Questions and measures on this ballot."
+			}]
+		: [])
+]));
 
 const ballotMethodItems = [
 	{
@@ -329,9 +366,81 @@ function clearFilters() {
 		</section>
 
 		<section v-if="data" class="app-shell print-hidden">
-			<div class="surface-panel">
-				<div class="flex flex-wrap gap-4 items-start justify-between">
-					<div>
+			<div class="gap-6 grid xl:grid-cols-[minmax(17rem,0.62fr)_minmax(0,1.38fr)]">
+				<div class="self-start space-y-4 xl:top-24 xl:sticky">
+					<PageSectionNav
+						title="Guide map"
+						description="Start with the overview, then use filters and contest sections only where you need more detail."
+						:items="guideSectionItems"
+					>
+						<template #actions>
+							<div class="flex flex-wrap gap-2">
+								<NuxtLink :to="planHref" class="btn-primary">
+									Open my ballot plan
+								</NuxtLink>
+								<NuxtLink :to="electionOverviewHref" class="btn-secondary">
+									Election overview
+								</NuxtLink>
+								<NuxtLink :to="jurisdictionHref" class="btn-secondary">
+									Location hub
+								</NuxtLink>
+							</div>
+						</template>
+					</PageSectionNav>
+
+					<nav
+						v-if="ballotContentsGroups.length"
+						aria-label="Ballot contents"
+						class="surface-panel"
+					>
+						<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+							Ballot contents
+						</p>
+						<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
+							Use this page like a table of contents. Saved contests stay marked so you can see what still needs attention.
+						</p>
+
+						<div v-for="group in ballotContentsGroups" :key="group.label" class="mt-5">
+							<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+								{{ group.label }}
+							</p>
+							<ol class="mt-3 space-y-2">
+								<li v-for="item in group.items" :key="item.slug">
+									<a
+										:href="item.href"
+										class="p-3 border border-app-line/80 rounded-[1.15rem] bg-app-bg/55 flex gap-3 transition items-start justify-between dark:border-app-line-dark hover:border-app-accent/60 dark:bg-app-bg-dark/70 focus-ring"
+									>
+										<div class="min-w-0">
+											<p class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
+												{{ item.label }}
+											</p>
+											<p class="text-xs text-app-muted leading-6 mt-1 dark:text-app-muted-dark">
+												{{ item.meta }}
+											</p>
+										</div>
+										<div class="text-right flex flex-col gap-2 items-end">
+											<span class="text-[11px] text-app-muted font-semibold px-2.5 py-1 rounded-full bg-white whitespace-nowrap dark:text-app-muted-dark dark:bg-app-panel-dark">
+												{{ item.countLabel }}
+											</span>
+											<span
+												class="text-[11px] font-semibold px-2.5 py-1 rounded-full inline-flex gap-1 whitespace-nowrap items-center"
+												:class="item.saved
+													? 'bg-app-accent text-white'
+													: 'bg-app-warm/75 text-app-ink dark:bg-app-bg-dark dark:text-app-text-dark'"
+											>
+												<span :class="item.saved ? 'i-carbon-checkmark' : 'i-carbon-time'" aria-hidden="true" />
+												{{ item.saved ? "Saved" : "Open" }}
+											</span>
+										</div>
+									</a>
+								</li>
+							</ol>
+						</div>
+					</nav>
+				</div>
+
+				<div class="space-y-6">
+					<section id="guide-overview" class="surface-panel scroll-mt-28">
 						<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
 							Ballot at a glance
 						</p>
@@ -341,218 +450,91 @@ function clearFilters() {
 						<p class="text-sm text-app-muted leading-7 mt-4 max-w-3xl dark:text-app-muted-dark">
 							This guide is personalized to {{ personalizationLabel }}. It is designed to reduce overload, but district matching and time-sensitive logistics should still be checked against the official election overview.
 						</p>
-					</div>
-					<div class="flex flex-wrap gap-3">
-						<NuxtLink :to="planHref" class="btn-primary">
-							Open my ballot plan
-						</NuxtLink>
-						<NuxtLink :to="electionOverviewHref" class="btn-secondary">
-							Election overview
-						</NuxtLink>
-						<NuxtLink :to="jurisdictionHref" class="btn-secondary">
-							Location hub
-						</NuxtLink>
-					</div>
-				</div>
-				<div class="mt-6 gap-4 grid md:grid-cols-3 xl:grid-cols-4">
-					<div class="px-5 py-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
-						<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
-							Personalized to
-						</p>
-						<p class="text-sm text-app-ink font-semibold mt-3 dark:text-app-text-dark">
-							{{ personalizationLabel }}
-						</p>
-						<p class="text-xs text-app-muted leading-6 mt-2 dark:text-app-muted-dark">
-							Use a full address for the most specific result.
-						</p>
-					</div>
-					<component
-						:is="card.href ? 'a' : 'div'"
-						v-for="card in ballotOverviewCards"
-						:key="card.key"
-						:href="card.href"
-						class="px-5 py-5 rounded-3xl bg-app-bg block dark:bg-app-bg-dark/70"
-						:class="card.href
-							? 'cursor-pointer transition hover:bg-white hover:-translate-y-0.5 hover:shadow-[0_16px_36px_-28px_rgba(16,37,62,0.6)] focus-ring dark:hover:bg-app-panel-dark'
-							: 'opacity-80'"
-					>
-						<div class="flex gap-4 items-start justify-between">
-							<div>
+
+						<div class="mt-6">
+							<PageSummaryStrip :items="guideSummaryItems" />
+						</div>
+
+						<div class="mt-6 gap-5 grid lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
+							<div class="p-5 rounded-[1.5rem] bg-app-bg dark:bg-app-bg-dark/70">
 								<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
-									{{ card.label }}
+									Coverage and certainty
 								</p>
-								<p class="text-3xl text-app-ink font-semibold mt-3 dark:text-app-text-dark">
-									{{ card.value }}
+								<ul class="text-sm text-app-muted leading-7 mt-4 space-y-2 dark:text-app-muted-dark">
+									<li v-for="item in coverageNotes" :key="item">
+										{{ item }}
+									</li>
+								</ul>
+							</div>
+							<div class="space-y-4">
+								<InfoCallout title="Why we ask for your address">
+									A full address helps determine districts and ballot style. ZIP-only lookups can be useful for a quick preview, but they may not reflect every district-specific contest.
+								</InfoCallout>
+								<InfoCallout title="Build a booth-ready plan">
+									Save one choice per contest as you read. The
+									<NuxtLink :to="planHref" class="underline underline-offset-3">
+										ballot plan page
+									</NuxtLink>
+									keeps your current picks in a print-friendly checklist.
+								</InfoCallout>
+								<InfoCallout title="Need a page reviewed?">
+									Use the <NuxtLink to="/contact" class="underline underline-offset-3">
+										contact page
+									</NuxtLink> if a ballot item looks incomplete, inaccurate, or unevenly framed.
+								</InfoCallout>
+							</div>
+						</div>
+					</section>
+
+					<section id="guide-logistics" class="surface-panel scroll-mt-28">
+						<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+							Key dates and official links
+						</p>
+						<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
+							Use the ballot guide with the election overview
+						</h2>
+						<div class="mt-6 gap-4 grid md:grid-cols-2 xl:grid-cols-4">
+							<div v-for="item in data.election.keyDates" :key="item.label" class="p-4 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70">
+								<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+									{{ item.label }}
+								</p>
+								<p class="text-sm text-app-ink font-semibold mt-3 dark:text-app-text-dark">
+									{{ item.date.includes("T") ? formatDateTime(item.date) : formatDate(item.date) }}
 								</p>
 								<p class="text-xs text-app-muted leading-6 mt-2 dark:text-app-muted-dark">
-									{{ card.description }}
+									{{ item.note || "Review the official notice for details." }}
 								</p>
 							</div>
-							<span
-								v-if="card.href"
-								class="i-carbon-arrow-down-right text-lg text-app-accent mt-1 shrink-0"
-								aria-hidden="true"
+						</div>
+						<div class="mt-6 gap-5 grid lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
+							<OfficialResourceList
+								:resources="data.election.officialResources"
+								title="Official notices linked in this guide"
+								note="The printable ballot guide is useful for reading contests. Use the official notices for time-sensitive logistics."
 							/>
+							<div class="space-y-4">
+								<div class="p-5 rounded-[1.5rem] bg-app-bg dark:bg-app-bg-dark/70">
+									<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+										Recent updates
+									</p>
+									<ul class="mt-4 space-y-3">
+										<li v-for="entry in data.election.changeLog" :key="entry.id" class="text-sm text-app-muted leading-7 dark:text-app-muted-dark">
+											<span class="text-app-ink font-semibold dark:text-app-text-dark">{{ formatDateTime(entry.date) }}</span>
+											<span class="text-app-line mx-2 dark:text-app-line-dark">·</span>
+											{{ entry.summary }}
+										</li>
+									</ul>
+								</div>
+								<MethodologySummaryCard
+									:items="ballotMethodItems"
+									summary="This ballot page foregrounds freshness, official links, and contest-level evidence so the voter can verify details without leaving the guide."
+									title="How this ballot guide is built"
+								/>
+							</div>
 						</div>
-					</component>
-				</div>
-				<div class="mt-6 gap-4 grid lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]">
-					<InfoCallout title="Coverage and certainty">
-						<ul class="space-y-2">
-							<li v-for="item in coverageNotes" :key="item">
-								{{ item }}
-							</li>
-						</ul>
-					</InfoCallout>
-					<div class="space-y-4">
-						<InfoCallout title="Why we ask for your address">
-							A full address helps determine districts and ballot style. ZIP-only lookups can be useful for a quick preview, but they may not reflect every district-specific contest.
-						</InfoCallout>
-						<InfoCallout title="Build a booth-ready plan">
-							Save one choice per contest as you read. The
-							<NuxtLink :to="planHref" class="underline underline-offset-3">
-								ballot plan page
-							</NuxtLink>
-							keeps your current picks in a print-friendly checklist.
-						</InfoCallout>
-						<InfoCallout title="Need a page reviewed?">
-							Use the <NuxtLink to="/contact" class="underline underline-offset-3">
-								contact page
-							</NuxtLink> if a ballot item looks incomplete, inaccurate, or unevenly framed.
-						</InfoCallout>
-					</div>
-				</div>
-			</div>
-		</section>
+					</section>
 
-		<section class="app-shell print-hidden">
-			<div v-if="data" class="gap-6 grid xl:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]">
-				<div class="surface-panel">
-					<div class="flex flex-wrap gap-4 items-center justify-between">
-						<div>
-							<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-								Key dates and official links
-							</p>
-							<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-								Use the ballot guide with the election overview
-							</h2>
-						</div>
-						<div class="flex flex-wrap gap-3">
-							<NuxtLink :to="electionOverviewHref" class="btn-secondary">
-								Election overview
-							</NuxtLink>
-							<NuxtLink :to="jurisdictionHref" class="btn-secondary">
-								Location hub
-							</NuxtLink>
-						</div>
-					</div>
-					<div class="mt-6 gap-4 grid md:grid-cols-2 xl:grid-cols-4">
-						<div v-for="item in data.election.keyDates" :key="item.label" class="p-4 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70">
-							<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
-								{{ item.label }}
-							</p>
-							<p class="text-sm text-app-ink font-semibold mt-3 dark:text-app-text-dark">
-								{{ item.date.includes("T") ? formatDateTime(item.date) : formatDate(item.date) }}
-							</p>
-							<p class="text-xs text-app-muted leading-6 mt-2 dark:text-app-muted-dark">
-								{{ item.note || "Review the official notice for details." }}
-							</p>
-						</div>
-					</div>
-					<div class="mt-6">
-						<OfficialResourceList
-							:resources="data.election.officialResources"
-							title="Official notices linked in this guide"
-							note="The printable ballot guide is useful for reading contests. Use the official notices for time-sensitive logistics."
-						/>
-					</div>
-				</div>
-
-				<div class="surface-panel">
-					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-						Recent updates
-					</p>
-					<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
-						This guide is intentionally marked as a follow-on reading surface. Search-facing election discovery should start on the overview page, while this view stays focused on contest reading and printing.
-					</p>
-					<ul class="mt-6 space-y-3">
-						<li v-for="entry in data.election.changeLog" :key="entry.id" class="px-4 py-4 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70">
-							<p class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
-								{{ formatDateTime(entry.date) }}
-							</p>
-							<p class="text-sm text-app-muted leading-7 mt-2 dark:text-app-muted-dark">
-								{{ entry.summary }}
-							</p>
-						</li>
-					</ul>
-					<div class="mt-6">
-						<MethodologySummaryCard
-							:items="ballotMethodItems"
-							summary="This ballot page foregrounds freshness, official links, and contest-level evidence so the voter can verify details without leaving the guide."
-							title="How this ballot guide is built"
-						/>
-					</div>
-				</div>
-			</div>
-		</section>
-
-		<section class="app-shell print-hidden">
-			<div class="gap-6 grid xl:grid-cols-[minmax(18rem,0.72fr)_minmax(0,1.28fr)]">
-				<nav
-					v-if="ballotContentsGroups.length"
-					aria-label="Ballot contents"
-					class="surface-panel self-start xl:top-24 xl:sticky"
-				>
-					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-						Ballot contents
-					</p>
-					<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-						Use this page like a table of contents.
-					</h2>
-					<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-						Start with the contest list, then open detail pages only when you need the full dossier or measure explainer. Saved items stay labeled so you can see what still needs attention.
-					</p>
-
-					<div v-for="group in ballotContentsGroups" :key="group.label" class="mt-6">
-						<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
-							{{ group.label }}
-						</p>
-						<ol class="mt-3 space-y-2">
-							<li v-for="item in group.items" :key="item.slug">
-								<a
-									:href="item.href"
-									class="p-3 border border-app-line/80 rounded-[1.4rem] bg-app-bg/55 flex gap-3 transition items-start justify-between dark:border-app-line-dark hover:border-app-accent/60 dark:bg-app-bg-dark/70 focus-ring"
-								>
-									<div class="min-w-0">
-										<p class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
-											{{ item.label }}
-										</p>
-										<p class="text-xs text-app-muted leading-6 mt-1 dark:text-app-muted-dark">
-											{{ item.meta }}
-										</p>
-									</div>
-									<div class="text-right flex flex-col gap-2 items-end">
-										<span class="text-[11px] text-app-muted font-semibold px-2.5 py-1 rounded-full bg-white whitespace-nowrap dark:text-app-muted-dark dark:bg-app-panel-dark">
-											{{ item.countLabel }}
-										</span>
-										<span
-											class="text-[11px] font-semibold px-2.5 py-1 rounded-full inline-flex gap-1 whitespace-nowrap items-center"
-											:class="item.saved
-												? 'bg-app-accent text-white'
-												: 'bg-app-warm/75 text-app-ink dark:bg-app-bg-dark dark:text-app-text-dark'"
-										>
-											<span :class="item.saved ? 'i-carbon-checkmark' : 'i-carbon-time'" aria-hidden="true" />
-											{{ item.saved ? "Saved" : "Open" }}
-										</span>
-									</div>
-								</a>
-							</li>
-						</ol>
-					</div>
-				</nav>
-
-				<div class="space-y-6">
-					<div class="surface-panel">
+					<section id="guide-controls" class="surface-panel scroll-mt-28">
 						<div class="gap-6 grid xl:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
 							<div>
 								<label for="ballot-search" class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
@@ -598,7 +580,7 @@ function clearFilters() {
 							</div>
 						</div>
 
-						<div class="mt-6 gap-4 grid lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
+						<div class="mt-6 gap-5 grid lg:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)]">
 							<div>
 								<p class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
 									Reading mode
@@ -606,49 +588,49 @@ function clearFilters() {
 								<p class="text-sm text-app-muted leading-7 mt-2 dark:text-app-muted-dark">
 									Quick view reduces overload for first-pass reading. Deep view keeps funding, action highlights, and longer context visible on each card.
 								</p>
+								<div class="mt-4 flex flex-wrap gap-2">
+									<button
+										type="button"
+										class="text-xs font-semibold px-3 py-2 border rounded-full transition focus-ring"
+										:class="effectiveBallotViewMode === 'quick'
+											? 'border-app-accent bg-app-accent text-white'
+											: 'border-app-line bg-white text-app-muted hover:border-app-accent hover:text-app-accent dark:border-app-line-dark dark:bg-app-panel-dark dark:text-app-muted-dark'"
+										:aria-pressed="effectiveBallotViewMode === 'quick'"
+										@click="civicStore.setBallotViewMode('quick')"
+									>
+										<span v-if="effectiveBallotViewMode === 'quick'" class="i-carbon-checkmark mr-1" aria-hidden="true" />
+										Quick view
+									</button>
+									<button
+										type="button"
+										class="text-xs font-semibold px-3 py-2 border rounded-full transition focus-ring"
+										:class="effectiveBallotViewMode === 'deep'
+											? 'border-app-accent bg-app-accent text-white'
+											: 'border-app-line bg-white text-app-muted hover:border-app-accent hover:text-app-accent dark:border-app-line-dark dark:bg-app-panel-dark dark:text-app-muted-dark'"
+										:aria-pressed="effectiveBallotViewMode === 'deep'"
+										@click="civicStore.setBallotViewMode('deep')"
+									>
+										<span v-if="effectiveBallotViewMode === 'deep'" class="i-carbon-checkmark mr-1" aria-hidden="true" />
+										Deep view
+									</button>
+									<NuxtLink to="/accessibility" class="btn-secondary">
+										Accessibility and print standards
+									</NuxtLink>
+									<NuxtLink :to="planHref" class="btn-secondary">
+										{{ effectiveBallotPlanCount ? `Open plan (${effectiveBallotPlanCount})` : "Open plan" }}
+									</NuxtLink>
+								</div>
 							</div>
-							<div class="flex flex-wrap gap-2">
-								<button
-									type="button"
-									class="text-xs font-semibold px-3 py-2 border rounded-full transition focus-ring"
-									:class="effectiveBallotViewMode === 'quick'
-										? 'border-app-accent bg-app-accent text-white'
-										: 'border-app-line bg-white text-app-muted hover:border-app-accent hover:text-app-accent dark:border-app-line-dark dark:bg-app-panel-dark dark:text-app-muted-dark'"
-									:aria-pressed="effectiveBallotViewMode === 'quick'"
-									@click="civicStore.setBallotViewMode('quick')"
-								>
-									<span v-if="effectiveBallotViewMode === 'quick'" class="i-carbon-checkmark mr-1" aria-hidden="true" />
-									Quick view
-								</button>
-								<button
-									type="button"
-									class="text-xs font-semibold px-3 py-2 border rounded-full transition focus-ring"
-									:class="effectiveBallotViewMode === 'deep'
-										? 'border-app-accent bg-app-accent text-white'
-										: 'border-app-line bg-white text-app-muted hover:border-app-accent hover:text-app-accent dark:border-app-line-dark dark:bg-app-panel-dark dark:text-app-muted-dark'"
-									:aria-pressed="effectiveBallotViewMode === 'deep'"
-									@click="civicStore.setBallotViewMode('deep')"
-								>
-									<span v-if="effectiveBallotViewMode === 'deep'" class="i-carbon-checkmark mr-1" aria-hidden="true" />
-									Deep view
-								</button>
-								<NuxtLink to="/accessibility" class="btn-secondary">
-									Accessibility and print standards
-								</NuxtLink>
-								<NuxtLink :to="planHref" class="btn-secondary">
-									{{ effectiveBallotPlanCount ? `Open plan (${effectiveBallotPlanCount})` : "Open plan" }}
-								</NuxtLink>
-							</div>
-						</div>
-					</div>
 
-					<InfoCallout title="Questions to ask before you vote">
-						<ul class="space-y-2">
-							<li>What is directly documented here, and what still requires checking an original record?</li>
-							<li>Which issues matter most in this contest, and what evidence is attached to each summary?</li>
-							<li>What might change if the measure passes or fails, and who would carry the cost or benefit?</li>
-						</ul>
-					</InfoCallout>
+							<InfoCallout title="Questions to ask before you vote">
+								<ul class="space-y-2">
+									<li>What is directly documented here, and what still requires checking an original record?</li>
+									<li>Which issues matter most in this contest, and what evidence is attached to each summary?</li>
+									<li>What might change if the measure passes or fails, and who would carry the cost or benefit?</li>
+								</ul>
+							</InfoCallout>
+						</div>
+					</section>
 				</div>
 			</div>
 		</section>
@@ -685,9 +667,10 @@ function clearFilters() {
 					</p>
 				</div>
 				<ContestSection
-					v-for="contest in filteredCandidateContests"
+					v-for="(contest, index) in filteredCandidateContests"
 					:key="contest.slug"
 					:contest="contest"
+					:open="index === 0"
 					:view-mode="effectiveBallotViewMode"
 				/>
 			</div>
@@ -705,9 +688,10 @@ function clearFilters() {
 					</p>
 				</div>
 				<ContestSection
-					v-for="contest in filteredMeasureContests"
+					v-for="(contest, index) in filteredMeasureContests"
 					:key="contest.slug"
 					:contest="contest"
+					:open="index === 0 && !filteredCandidateContests.length"
 					:view-mode="effectiveBallotViewMode"
 				/>
 			</div>

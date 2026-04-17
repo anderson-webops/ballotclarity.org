@@ -34,6 +34,28 @@ const completionStats = computed(() => {
 		savedCount
 	};
 });
+const planSummaryItems = computed(() => ([
+	{
+		label: "Saved",
+		note: "Contests already recorded in your plan.",
+		value: completionStats.value.savedCount
+	},
+	{
+		label: "Still reviewing",
+		note: "Contests not yet saved.",
+		value: completionStats.value.pendingCount
+	},
+	{
+		label: "Election day",
+		note: data.value?.location.displayName ?? "Current location context",
+		value: data.value ? formatDate(data.value.election.date) : "Not loaded"
+	},
+	{
+		label: "Last guide update",
+		note: "Freshness of the current ballot guide.",
+		value: data.value ? formatDateTime(data.value.updatedAt) : "Not loaded"
+	}
+]));
 
 const decisionLabels: Record<PlannedMeasureDecision, string> = {
 	no: "Marked NO",
@@ -183,31 +205,8 @@ function printPlan() {
 							:style="{ width: `${completionStats.progressPercent}%` }"
 						/>
 					</div>
-					<div class="mt-6 gap-4 grid sm:grid-cols-3">
-						<div class="p-4 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70">
-							<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
-								Saved
-							</p>
-							<p class="text-3xl text-app-ink font-semibold mt-3 dark:text-app-text-dark">
-								{{ completionStats.savedCount }}
-							</p>
-						</div>
-						<div class="p-4 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70">
-							<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
-								Still reviewing
-							</p>
-							<p class="text-3xl text-app-ink font-semibold mt-3 dark:text-app-text-dark">
-								{{ completionStats.pendingCount }}
-							</p>
-						</div>
-						<div class="p-4 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70">
-							<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
-								Last guide update
-							</p>
-							<p class="text-sm text-app-ink font-semibold mt-3 dark:text-app-text-dark">
-								{{ formatDateTime(data.updatedAt) }}
-							</p>
-						</div>
+					<div class="mt-6">
+						<PageSummaryStrip :items="planSummaryItems" />
 					</div>
 				</div>
 
@@ -260,7 +259,7 @@ function printPlan() {
 				<div class="print-plan-grid mt-6 space-y-4">
 					<article v-for="entry in plannedEntries" :key="entry.contest.slug" class="print-plan-entry px-5 py-5 border border-app-line/80 rounded-3xl bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
 						<div class="flex flex-wrap gap-4 items-start justify-between">
-							<div>
+							<div class="min-w-0">
 								<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
 									{{ entry.contest.office }}
 								</p>
@@ -279,27 +278,21 @@ function printPlan() {
 						<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
 							{{ entry.summary }}
 						</p>
-						<div class="mt-5 gap-4 grid lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]">
-							<ContestRoleGuide :contest="entry.contest" />
-							<div class="px-5 py-5 border border-app-line/80 rounded-3xl bg-white/80 dark:border-app-line-dark dark:bg-app-panel-dark/70">
-								<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
-									Next action
-								</p>
-								<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-									Use the linked detail page if you want to check sources again, compare another option, or change this saved choice.
-								</p>
-								<p class="text-sm text-app-ink font-semibold mt-4 dark:text-app-text-dark">
-									{{ entry.sourceCount }} sources linked in the detail page
-								</p>
-								<div class="mt-5 flex flex-wrap gap-3">
-									<NuxtLink :to="entry.href" class="btn-secondary">
-										Open detail page
-									</NuxtLink>
-									<button type="button" class="btn-secondary" @click="civicStore.clearPlannedContest(entry.contest.slug)">
-										Remove from plan
-									</button>
-								</div>
+						<div class="mt-4 flex flex-wrap gap-3 items-center justify-between">
+							<p class="text-sm text-app-muted dark:text-app-muted-dark">
+								{{ entry.sourceCount }} sources linked in the detail page.
+							</p>
+							<div class="flex flex-wrap gap-3">
+								<NuxtLink :to="entry.href" class="btn-secondary">
+									Open detail page
+								</NuxtLink>
+								<button type="button" class="btn-secondary" @click="civicStore.clearPlannedContest(entry.contest.slug)">
+									Remove from plan
+								</button>
 							</div>
+						</div>
+						<div class="mt-4 p-4 rounded-2xl bg-white/80 dark:bg-app-panel-dark/70">
+							<ContestRoleGuide :contest="entry.contest" />
 						</div>
 					</article>
 				</div>
@@ -317,13 +310,12 @@ function printPlan() {
 				</NuxtLink>
 			</section>
 
-			<section v-if="unplannedContests.length" class="surface-panel print-hidden">
-				<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-					Still open
-				</p>
-				<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-					Contests still marked for review
-				</h2>
+			<ExpandableSection
+				v-if="unplannedContests.length"
+				eyebrow="Still open"
+				title="Contests still marked for review"
+				class="print-hidden"
+			>
 				<div class="mt-6 gap-4 grid md:grid-cols-2">
 					<article v-for="contest in unplannedContests" :key="contest.slug" class="p-4 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70">
 						<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
@@ -337,7 +329,7 @@ function printPlan() {
 						</p>
 					</article>
 				</div>
-			</section>
+			</ExpandableSection>
 		</div>
 	</section>
 </template>

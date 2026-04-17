@@ -302,22 +302,6 @@ function saveToPlan() {
 
 				<FreshnessStrip :freshness="candidate.freshness" />
 
-				<nav aria-label="Jump to section" class="surface-panel px-5 py-4 top-20 sticky z-10">
-					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-						Jump to section
-					</p>
-					<div class="mt-3 px-1 pb-1 flex gap-2 overflow-x-auto -mx-1">
-						<a
-							v-for="section in sectionLinks"
-							:key="section.href"
-							:href="section.href"
-							class="text-xs text-app-ink px-4 py-2 border border-app-line rounded-full whitespace-nowrap dark:text-app-text-dark hover:text-app-accent dark:border-app-line-dark hover:border-app-accent/50 focus-ring dark:hover:text-[#9ed4e3] dark:hover:border-app-accent/60"
-						>
-							{{ section.label }}
-						</a>
-					</div>
-				</nav>
-
 				<InfoCallout title="Before you rely on this profile">
 					Information may be incomplete. Review attached source files and original public records where possible, especially for late campaign activity, independent spending, and unpublished negotiations.
 				</InfoCallout>
@@ -334,18 +318,8 @@ function saveToPlan() {
 						</div>
 						<SourceDrawer :sources="candidate.sources" :title="`${candidate.name} ballot context and coverage`" button-label="See page sources" />
 					</div>
-					<div class="mt-6 gap-4 grid lg:grid-cols-3">
-						<article v-for="stat in atGlanceStats" :key="stat.label" class="px-5 py-5 border border-app-line/80 rounded-3xl bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
-							<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
-								{{ stat.label }}
-							</p>
-							<p class="text-3xl text-app-ink font-semibold mt-3 dark:text-app-text-dark">
-								{{ stat.value }}
-							</p>
-							<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
-								{{ stat.note }}
-							</p>
-						</article>
+					<div class="mt-6">
+						<PageSummaryStrip :items="atGlanceStats" />
 					</div>
 					<div class="mt-6 gap-4 grid lg:grid-cols-[minmax(0,1.3fr)_minmax(18rem,0.9fr)]">
 						<div class="px-5 py-5 border border-app-line/80 rounded-3xl bg-white/80 dark:border-app-line-dark dark:bg-app-panel-dark/70">
@@ -433,21 +407,16 @@ function saveToPlan() {
 
 				<EpistemicSummary :known-items="candidate.whatWeKnow" :unknown-items="candidate.whatWeDoNotKnow" />
 
-				<section id="biography" class="surface-panel scroll-mt-28">
-					<div class="flex gap-4 items-center justify-between">
-						<div>
-							<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-								Biography
-							</p>
-							<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-								Background and public resume
-							</h2>
-						</div>
+				<ExpandableSection
+					id="biography"
+					eyebrow="Biography"
+					title="Background and public resume"
+					description="This section combines verified public background details with self-described campaign biography so users can see where identity, work history, and public narrative come from."
+					open
+				>
+					<template #meta>
 						<SourceDrawer :sources="candidate.biography.flatMap(block => block.sources)" :title="`${candidate.name} background sources`" />
-					</div>
-					<p class="text-sm text-app-muted leading-7 mt-5 dark:text-app-muted-dark">
-						This section combines verified public background details with self-described campaign biography so users can see where identity, work history, and public narrative come from.
-					</p>
+					</template>
 					<div class="mt-6 space-y-4">
 						<article v-for="block in candidate.biography" :key="block.id" class="p-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
 							<div class="flex flex-wrap gap-3 items-start justify-between">
@@ -461,23 +430,18 @@ function saveToPlan() {
 							</p>
 						</article>
 					</div>
-				</section>
+				</ExpandableSection>
 
-				<section id="issues" class="surface-panel scroll-mt-28">
-					<div class="flex gap-4 items-center justify-between">
-						<div>
-							<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-								Issue positions
-							</p>
-							<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-								What this candidate says and emphasizes
-							</h2>
-						</div>
+				<ExpandableSection
+					id="issues"
+					eyebrow="Issue positions"
+					title="What this candidate says and emphasizes"
+					description="This section separates candidate-submitted responses, public issue statements, and the source documents attached to them so users can inspect both the claim and its provenance."
+					open
+				>
+					<template #meta>
 						<SourceDrawer :sources="issuePositionSources" :title="`${candidate.name} issue position sources`" />
-					</div>
-					<p class="text-sm text-app-muted leading-7 mt-5 dark:text-app-muted-dark">
-						This section separates candidate-submitted responses, public issue statements, and the source documents attached to them so users can inspect both the claim and its provenance.
-					</p>
+					</template>
 					<div class="mt-5 flex flex-wrap gap-2">
 						<IssueChip v-for="issue in candidate.topIssues" :key="issue.slug" :label="issue.label" />
 					</div>
@@ -570,20 +534,17 @@ function saveToPlan() {
 							</p>
 						</article>
 					</div>
-				</section>
+				</ExpandableSection>
 
-				<section id="actions" class="surface-panel scroll-mt-28">
-					<div class="flex gap-4 items-center justify-between">
-						<div>
-							<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-								Votes & actions
-							</p>
-							<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-								Selected documented actions
-							</h2>
-						</div>
+				<ExpandableSection
+					id="actions"
+					eyebrow="Votes & actions"
+					title="Selected documented actions"
+					open
+				>
+					<template #meta>
 						<SourceDrawer :sources="candidate.keyActions.flatMap(action => action.sources)" :title="`${candidate.name} key actions`" />
-					</div>
+					</template>
 					<InfoCallout class="mt-5" title="How selected actions work">
 						{{ actionCoverageNote }}
 					</InfoCallout>
@@ -606,23 +567,17 @@ function saveToPlan() {
 							</p>
 						</article>
 					</div>
-				</section>
+				</ExpandableSection>
 
-				<section id="funding" class="surface-panel scroll-mt-28">
-					<div class="flex gap-4 items-center justify-between">
-						<div>
-							<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-								Funding
-							</p>
-							<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-								Campaign funding overview
-							</h2>
-						</div>
+				<ExpandableSection
+					id="funding"
+					eyebrow="Funding"
+					title="Campaign funding overview"
+					description="Reported fundraising in this profile is shown with the current filing window and attached source documents. Review original filings for late amendments or newly reported independent spending."
+				>
+					<template #meta>
 						<SourceDrawer :sources="candidate.funding.sources" title="Campaign funding sources" />
-					</div>
-					<p class="text-sm text-app-muted leading-7 mt-5 dark:text-app-muted-dark">
-						Reported fundraising in this profile is shown with the current filing window and attached source documents. Review original filings for late amendments or newly reported independent spending.
-					</p>
+					</template>
 					<div class="mt-6 gap-4 grid md:grid-cols-3">
 						<div class="p-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
 							<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
@@ -667,20 +622,16 @@ function saveToPlan() {
 							</span>
 						</li>
 					</ul>
-				</section>
+				</ExpandableSection>
 
-				<section id="influence" class="surface-panel scroll-mt-28">
-					<div class="flex gap-4 items-center justify-between">
-						<div>
-							<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-								Lobbying & influence context
-							</p>
-							<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-								Public context around funding and policy exposure
-							</h2>
-						</div>
+				<ExpandableSection
+					id="influence"
+					eyebrow="Lobbying & influence context"
+					title="Public context around funding and policy exposure"
+				>
+					<template #meta>
 						<SourceDrawer :sources="candidate.lobbyingContext.flatMap(block => block.sources)" :title="`${candidate.name} influence context`" />
-					</div>
+					</template>
 					<InfoCallout class="mt-5" title="Read this section carefully">
 						Influence context is presented to help users inspect relevant sectors, donors, and public disclosures. It should not be read as proof that any donor or organization controlled a candidate action.
 					</InfoCallout>
@@ -697,12 +648,12 @@ function saveToPlan() {
 							</p>
 						</article>
 					</div>
-				</section>
+				</ExpandableSection>
 
-				<section class="surface-panel">
-					<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
-						Constituent context and future analysis
-					</h2>
+				<ExpandableSection
+					eyebrow="Future analysis"
+					title="Constituent context and future analysis"
+				>
 					<InfoCallout class="mt-5" title="Planned analysis area" tone="warning">
 						{{ candidate.alignmentModule.summary }}
 					</InfoCallout>
@@ -711,33 +662,33 @@ function saveToPlan() {
 							{{ consideration }}
 						</li>
 					</ul>
-				</section>
+				</ExpandableSection>
 
-				<section id="sources" class="surface-panel scroll-mt-28">
-					<div class="flex gap-4 items-center justify-between">
-						<div>
-							<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-								Sources & methods
-							</p>
-							<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-								Sources and methodology notes
-							</h2>
-						</div>
+				<ExpandableSection
+					id="sources"
+					eyebrow="Sources & methods"
+					title="Sources and methodology notes"
+					description="Use this section to inspect how the profile was assembled, where the archive evidence came from, and what records remain outside the current archive."
+				>
+					<template #meta>
 						<SourceDrawer :sources="candidate.sources" :title="`${candidate.name} full source list`" />
-					</div>
-					<p class="text-sm text-app-muted leading-7 mt-5 dark:text-app-muted-dark">
-						Use this section to inspect how the profile was assembled, where the archive evidence came from, and what records remain outside the current archive.
-					</p>
+					</template>
 					<ul class="text-sm text-app-muted leading-7 mt-6 space-y-3 dark:text-app-muted-dark">
 						<li v-for="note in candidate.methodologyNotes" :key="note" class="px-4 py-3 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70">
 							{{ note }}
 						</li>
 					</ul>
-				</section>
+				</ExpandableSection>
 			</div>
 
 			<aside class="xl:self-start xl:top-28 xl:sticky">
-				<div class="surface-panel">
+				<PageSectionNav
+					title="Jump to section"
+					description="Use the summary first, then open only the sections you need."
+					:items="sectionLinks.map(section => ({ href: section.href, label: section.label }))"
+				/>
+
+				<div class="mt-4 surface-panel">
 					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
 						Evidence rail
 					</p>

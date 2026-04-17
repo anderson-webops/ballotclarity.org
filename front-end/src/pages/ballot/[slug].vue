@@ -169,16 +169,19 @@ const guideSummaryItems = computed(() => ([
 	},
 	{
 		label: "Contests",
+		href: "#contests-section",
 		note: "Total sections in this ballot guide.",
 		value: ballotCounts.value.contestCount
 	},
 	{
 		label: "Candidates",
+		href: filteredCandidateContests.value.length ? "#candidate-contests-section" : "#contests-section",
 		note: "Candidate profiles linked from this ballot.",
 		value: ballotCounts.value.candidateCount
 	},
 	{
 		label: "Measures",
+		href: filteredMeasureContests.value.length ? "#measure-contests-section" : "#contests-section",
 		note: "Measure explainers with yes / no summaries.",
 		value: ballotCounts.value.measureCount
 	},

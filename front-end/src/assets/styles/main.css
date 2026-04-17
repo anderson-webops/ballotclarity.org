@@ -168,9 +168,28 @@ h6 {
   background: rgba(255, 255, 255, 0.82);
 }
 
+.summary-strip__item--interactive {
+  text-decoration: none;
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    transform 0.18s ease;
+}
+
+.summary-strip__item--interactive:hover {
+  border-color: rgba(30, 91, 137, 0.38);
+  box-shadow: 0 16px 28px -24px rgba(16, 37, 62, 0.45);
+  transform: translateY(-1px);
+}
+
 html.dark .summary-strip__item {
   border-color: rgba(51, 68, 88, 0.9);
   background: rgba(17, 32, 50, 0.78);
+}
+
+html.dark .summary-strip__item--interactive:hover {
+  border-color: rgba(113, 194, 209, 0.42);
+  box-shadow: 0 16px 28px -24px rgba(0, 0, 0, 0.5);
 }
 
 .summary-strip__label {

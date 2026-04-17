@@ -4,9 +4,6 @@
 	"version": "1.0.0",
 	"private": true,
 	"packageManager": "npm@11.7.0",
-	"engines": {
-		"node": ">=22 <23"
-	},
 	"description": "Monorepo for the Ballot Clarity civic-information MVP",
 	"author": "Jacob Anderson",
 	"license": "ISC",

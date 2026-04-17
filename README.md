@@ -24,11 +24,8 @@ Ballot Clarity is a nonpartisan civic-information platform built as an npm works
 Install dependencies from the repo root:
 
 ```bash
-nvm use
 npm install
 ```
-
-Use Node 22 for local development. This repo is validated on the active even-numbered LTS line; odd-numbered Node releases such as 25.x can cause unstable Nuxt/Vite dev-server behavior.
 
 Copy the environment template:
 

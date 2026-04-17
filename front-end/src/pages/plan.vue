@@ -129,7 +129,7 @@ function printPlan() {
 			<p class="text-base text-app-muted leading-8 mt-6 max-w-3xl dark:text-app-muted-dark">
 				This page turns the ballot guide into a portable reference. Save one choice per contest, mark measures for review, and print the result if you do not want to rely on a phone at the polling place.
 			</p>
-			<div class="mt-6 flex flex-wrap gap-4 items-center">
+			<div class="mt-8 flex flex-wrap gap-x-4 gap-y-5 items-center">
 				<button type="button" class="btn-primary" @click="printPlan">
 					<span class="i-carbon-printer" />
 					Print this plan
@@ -160,8 +160,8 @@ function printPlan() {
 			</InfoCallout>
 		</div>
 
-		<div v-else class="space-y-6">
-			<section class="gap-6 grid lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] print-hidden">
+		<div v-else class="space-y-8 lg:space-y-10">
+			<section class="gap-8 grid lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] print-hidden">
 				<div class="surface-panel">
 					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
 						Plan progress

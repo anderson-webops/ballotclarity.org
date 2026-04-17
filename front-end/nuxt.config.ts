@@ -2,6 +2,8 @@ import process from "node:process";
 import { defineNuxtConfig } from "nuxt/config";
 import { appDescription, appName } from "./src/constants/index";
 
+const assetVersion = "20260417";
+
 export default defineNuxtConfig({
 	modules: [
 		"@vueuse/nuxt",
@@ -21,10 +23,13 @@ export default defineNuxtConfig({
 		head: {
 			viewport: "width=device-width,initial-scale=1",
 			link: [
-				{ rel: "icon", href: "/favicon.ico", sizes: "any" },
-				{ rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
-				{ rel: "apple-touch-icon", href: "/apple-touch-icon.png" },
-				{ rel: "manifest", href: "/site.webmanifest" }
+				{ rel: "shortcut icon", href: `/favicon.ico?v=${assetVersion}` },
+				{ rel: "icon", href: `/favicon.ico?v=${assetVersion}`, sizes: "any" },
+				{ rel: "icon", type: "image/svg+xml", href: `/favicon.svg?v=${assetVersion}` },
+				{ rel: "icon", type: "image/png", href: `/favicon-32x32.png?v=${assetVersion}`, sizes: "32x32" },
+				{ rel: "icon", type: "image/png", href: `/favicon-16x16.png?v=${assetVersion}`, sizes: "16x16" },
+				{ rel: "apple-touch-icon", href: `/apple-touch-icon.png?v=${assetVersion}` },
+				{ rel: "manifest", href: `/site.webmanifest?v=${assetVersion}` }
 			],
 			meta: [
 				{ name: "viewport", content: "width=device-width, initial-scale=1" },

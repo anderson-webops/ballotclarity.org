@@ -144,9 +144,9 @@ function trustBullet(id: string, text: string, sources: Source[], note?: string)
 	};
 }
 
-const metroGuide = source("metro-guide-2026", "Metro County 2026 General Election Reference Guide", "Ballot Clarity Research Archive", "voter guide", "2026-03-30", "metro-county-voter-guide.txt", {
+const metroGuide = source("metro-guide-2026", "Current election guide reference archive", "Ballot Clarity reference archive", "voter guide", "2026-03-30", "reference-archive-election-guide.txt", {
 	authority: "ballot-clarity-archive",
-	sourceSystem: "Ballot Clarity research archive"
+	sourceSystem: "Ballot Clarity reference archive"
 });
 const methodologyBrief = source("methodology-brief", "Ballot Clarity Methodology Notes", "Ballot Clarity Research Archive", "research brief", "2026-03-30", "methodology-notes.txt", {
 	authority: "ballot-clarity-archive",
@@ -170,51 +170,51 @@ const torresPolicy = source("torres-port-clinic-plan", "Torres Port and Clinic A
 	sourceSystem: "Candidate campaign policy memo"
 });
 
-const bellWaterBill = source("bell-water-bill", "State Senate District 12 Water Reliability Bill Summary", "Franklin Legislature record archive", "official record", "2026-03-19", "state-senate-d12-bell-water-bill.txt", {
+const bellWaterBill = source("bell-water-bill", "State Senate District 12 Water Reliability Bill Summary", "State legislative record archive", "official record", "2026-03-19", "state-senate-d12-bell-water-bill.txt", {
 	authority: "official-government",
-	sourceSystem: "Franklin Legislature record archive"
+	sourceSystem: "State legislative record archive"
 });
-const parkHousing = source("park-housing-hearing", "Naomi Park Rental Stability Hearing Notes", "Franklin Legislature hearing archive", "hearing transcript", "2026-03-21", "state-senate-d12-park-housing-hearing.txt", {
+const parkHousing = source("park-housing-hearing", "Naomi Park Rental Stability Hearing Notes", "State legislative hearing archive", "hearing transcript", "2026-03-21", "state-senate-d12-park-housing-hearing.txt", {
 	authority: "official-government",
-	sourceSystem: "Franklin Legislature hearing archive"
+	sourceSystem: "State legislative hearing archive"
 });
-const districtEthics = source("district-ethics", "District 12 Lobbying and Ethics Disclosure Summary", "Franklin Ethics Commission disclosure archive", "ethics filing", "2026-03-20", "state-senate-d12-ethics-disclosures.txt", {
+const districtEthics = source("district-ethics", "District 12 Lobbying and Ethics Disclosure Summary", "State ethics disclosure archive", "ethics filing", "2026-03-20", "state-senate-d12-ethics-disclosures.txt", {
 	authority: "official-government",
-	sourceSystem: "Franklin Ethics Commission disclosure archive"
+	sourceSystem: "State ethics disclosure archive"
 });
 
-const schoolBudgetMinutes = source("school-budget-minutes", "Metro County School Board Budget Workshop Minutes", "Metro County Schools public meeting archive", "official record", "2026-03-18", "school-board-budget-minutes.txt", {
+const schoolBudgetMinutes = source("school-budget-minutes", "Local school board budget workshop minutes", "Local school board meeting archive", "official record", "2026-03-18", "school-board-budget-minutes.txt", {
 	authority: "official-government",
-	sourceSystem: "Metro County Schools public meeting archive"
+	sourceSystem: "Local school board meeting archive"
 });
-const schoolLiteracyReport = source("school-literacy-report", "Metro County K-3 Literacy and Attendance Report", "Metro County Schools reporting archive", "research brief", "2026-03-17", "school-board-literacy-report.txt", {
+const schoolLiteracyReport = source("school-literacy-report", "Local K-3 literacy and attendance report", "Local school reporting archive", "research brief", "2026-03-17", "school-board-literacy-report.txt", {
 	authority: "official-government",
-	sourceSystem: "Metro County Schools reporting archive"
+	sourceSystem: "Local school reporting archive"
 });
 const schoolQuestionnaire = source("school-questionnaire", "School Board Candidate Questionnaire Responses", "League of Metro Voters questionnaire archive", "questionnaire", "2026-03-23", "school-board-candidate-questionnaire.txt", {
 	authority: "nonprofit-provider",
 	sourceSystem: "League of Metro Voters questionnaire archive"
 });
 
-const transitFiscal = source("transit-fiscal-note", "Measure 4 Fiscal Note and Debt Service Estimate", "Metro County Budget Office archive", "official record", "2026-03-29", "measure-4-fiscal-note.txt", {
+const transitFiscal = source("transit-fiscal-note", "County transit fiscal note and debt service estimate", "County budget office archive", "official record", "2026-03-29", "measure-4-fiscal-note.txt", {
 	authority: "official-government",
-	sourceSystem: "Metro County Budget Office archive"
+	sourceSystem: "County budget office archive"
 });
-const transitCapital = source("transit-capital-plan", "Measure 4 Capital Improvement Plan Summary", "Metro County Transit Authority archive", "policy memo", "2026-03-27", "measure-4-capital-plan.txt", {
+const transitCapital = source("transit-capital-plan", "County transit capital improvement plan summary", "County transit planning archive", "policy memo", "2026-03-27", "measure-4-capital-plan.txt", {
 	authority: "official-government",
-	sourceSystem: "Metro County Transit Authority memo archive"
+	sourceSystem: "County transit planning archive"
 });
-const charterAudit = source("charter-audit", "Public Records Response Time Audit", "Metro County Auditor archive", "research brief", "2026-03-25", "amendment-a-audit-report.txt", {
+const charterAudit = source("charter-audit", "County public-records response-time audit", "County auditor archive", "research brief", "2026-03-25", "amendment-a-audit-report.txt", {
 	authority: "official-government",
-	sourceSystem: "Metro County Auditor archive"
+	sourceSystem: "County auditor archive"
 });
-const charterSummary = source("charter-summary", "Charter Amendment A Plain-Language Summary", "Metro County Clerk archive", "official record", "2026-03-26", "amendment-a-charter-summary.txt", {
+const charterSummary = source("charter-summary", "County charter amendment plain-language summary", "County clerk archive", "official record", "2026-03-26", "amendment-a-charter-summary.txt", {
 	authority: "official-government",
-	sourceSystem: "Metro County Clerk archive"
+	sourceSystem: "County clerk archive"
 });
-const officialCandidateList = source("official-candidate-list", "Metro County 2026 Official Candidate List", "Metro County Elections Office filing archive", "official record", "2026-03-31", "metro-county-official-candidate-list.txt", {
+const officialCandidateList = source("official-candidate-list", "Current reference candidate filing list", "Reference archive candidate filing list", "official record", "2026-03-31", "reference-archive-candidate-filing-list.txt", {
 	authority: "official-government",
-	sourceSystem: "Metro County Elections Office candidate filing list"
+	sourceSystem: "Reference archive candidate filing list"
 });
 const federalQuestionnaire = source("federal-questionnaire", "District 7 Candidate Questionnaire Responses", "League of Metro Voters questionnaire archive", "questionnaire", "2026-03-27", "federal-d7-candidate-questionnaire.txt", {
 	authority: "nonprofit-provider",
@@ -226,10 +226,10 @@ const stateQuestionnaire = source("state-questionnaire", "State Senate District 
 });
 
 export const demoLocation: LocationSelection = {
-	coverageLabel: "Current coverage: Metro County, Franklin",
-	displayName: "Metro County, Franklin",
-	slug: "metro-county-franklin",
-	state: "Franklin"
+	coverageLabel: "Current launch jurisdiction: Fulton County, Georgia",
+	displayName: "Fulton County, Georgia",
+	slug: "fulton-county-georgia",
+	state: "Georgia"
 };
 
 const federalDistrict7Questions = {
@@ -308,7 +308,7 @@ const elenaTorresComparison = comparisonProfile({
 	ballotStatus: {
 		asOf: "2026-03-31T10:00:00.000Z",
 		label: "On ballot (verified)",
-		provenance: verifiedOfficial("Confirmed from the Metro County official candidate list.", "2026-03-31T10:00:00.000Z"),
+		provenance: verifiedOfficial("Confirmed from the current reference candidate filing list.", "2026-03-31T10:00:00.000Z"),
 		sources: [officialCandidateList],
 		status: "on-ballot-verified"
 	},
@@ -379,7 +379,7 @@ const danielBrooksComparison = comparisonProfile({
 	ballotStatus: {
 		asOf: "2026-03-31T10:00:00.000Z",
 		label: "On ballot (verified)",
-		provenance: verifiedOfficial("Confirmed from the Metro County official candidate list.", "2026-03-31T10:00:00.000Z"),
+		provenance: verifiedOfficial("Confirmed from the current reference candidate filing list.", "2026-03-31T10:00:00.000Z"),
 		sources: [officialCandidateList],
 		status: "on-ballot-verified"
 	},
@@ -449,7 +449,7 @@ const naomiParkComparison = comparisonProfile({
 	ballotStatus: {
 		asOf: "2026-03-31T10:00:00.000Z",
 		label: "On ballot (verified)",
-		provenance: verifiedOfficial("Confirmed from the Metro County official candidate list.", "2026-03-31T10:00:00.000Z"),
+		provenance: verifiedOfficial("Confirmed from the current reference candidate filing list.", "2026-03-31T10:00:00.000Z"),
 		sources: [officialCandidateList],
 		status: "on-ballot-verified"
 	},
@@ -520,7 +520,7 @@ const thomasBellComparison = comparisonProfile({
 	ballotStatus: {
 		asOf: "2026-03-31T10:00:00.000Z",
 		label: "On ballot (verified)",
-		provenance: verifiedOfficial("Confirmed from the Metro County official candidate list.", "2026-03-31T10:00:00.000Z"),
+		provenance: verifiedOfficial("Confirmed from the current reference candidate filing list.", "2026-03-31T10:00:00.000Z"),
 		sources: [officialCandidateList],
 		status: "on-ballot-verified"
 	},
@@ -590,7 +590,7 @@ const aliciaGreeneComparison = comparisonProfile({
 	ballotStatus: {
 		asOf: "2026-03-31T10:00:00.000Z",
 		label: "On ballot (verified)",
-		provenance: verifiedOfficial("Confirmed from the Metro County official candidate list.", "2026-03-31T10:00:00.000Z"),
+		provenance: verifiedOfficial("Confirmed from the current reference candidate filing list.", "2026-03-31T10:00:00.000Z"),
 		sources: [officialCandidateList],
 		status: "on-ballot-verified"
 	},
@@ -661,7 +661,7 @@ const marcusHillComparison = comparisonProfile({
 	ballotStatus: {
 		asOf: "2026-03-31T10:00:00.000Z",
 		label: "On ballot (verified)",
-		provenance: verifiedOfficial("Confirmed from the Metro County official candidate list.", "2026-03-31T10:00:00.000Z"),
+		provenance: verifiedOfficial("Confirmed from the current reference candidate filing list.", "2026-03-31T10:00:00.000Z"),
 		sources: [officialCandidateList],
 		status: "on-ballot-verified"
 	},
@@ -732,7 +732,7 @@ const sandraPatelComparison = comparisonProfile({
 	ballotStatus: {
 		asOf: "2026-03-31T10:00:00.000Z",
 		label: "On ballot (verified)",
-		provenance: verifiedOfficial("Confirmed from the Metro County official candidate list.", "2026-03-31T10:00:00.000Z"),
+		provenance: verifiedOfficial("Confirmed from the current reference candidate filing list.", "2026-03-31T10:00:00.000Z"),
 		sources: [officialCandidateList],
 		status: "on-ballot-verified"
 	},
@@ -797,7 +797,7 @@ const candidates: Candidate[] = [
 		contestSlug: "us-house-district-7",
 		party: "Democratic Party",
 		incumbent: false,
-		location: "Metro County, Franklin",
+		location: "Fulton County, Georgia",
 		summary: "Elena Torres is a first-time federal candidate running on transportation reliability, clinic access, and neighborhood infrastructure. The current record shows a policy-heavy campaign style with detailed platform documents and a mid-sized professional donor base.",
 		ballotSummary: "Former transit authority counsel and city housing commission chair. Emphasizes commuter reliability, flood resilience, and neighborhood clinics.",
 		topIssues: [
@@ -911,7 +911,7 @@ const candidates: Candidate[] = [
 		contestSlug: "us-house-district-7",
 		party: "Republican Party",
 		incumbent: true,
-		location: "Metro County, Franklin",
+		location: "Fulton County, Georgia",
 		summary: "Daniel Brooks is the incumbent representative for District 7. The current record shows a campaign centered on infrastructure continuity and access to federal logistics funding, alongside the broader donor support typical of an incumbent.",
 		ballotSummary: "Two-term incumbent focused on port logistics, flood-control grants, and small-business lending. Campaign emphasizes committee access and constituent casework.",
 		topIssues: [
@@ -923,7 +923,7 @@ const candidates: Candidate[] = [
 			{
 				id: "brooks-bio-1",
 				title: "Local-to-federal career path",
-				summary: "Brooks previously served on the Metro County Board of Supervisors before winning this congressional seat in 2022. His public profile highlights constituent services and federal grant navigation.",
+				summary: "Brooks previously served on a county board of supervisors before winning this congressional seat in 2022. His public profile highlights constituent services and federal grant navigation.",
 				sources: [metroGuide, brooksVotes]
 			},
 			{
@@ -1024,7 +1024,7 @@ const candidates: Candidate[] = [
 		contestSlug: "state-senate-district-12",
 		party: "Democratic Party",
 		incumbent: false,
-		location: "Metro County, Franklin",
+		location: "Fulton County, Georgia",
 		summary: "Naomi Park is a challenger in the District 12 state senate race. The current record shows a platform focused on housing stability and groundwater reporting, with more of her public record coming from local office actions than statewide legislative votes.",
 		ballotSummary: "Former county public defender and current town councilmember. Campaign centers on housing affordability, groundwater oversight, and school staffing.",
 		topIssues: [
@@ -1071,7 +1071,7 @@ const candidates: Candidate[] = [
 			summary: "Park reports a smaller overall fundraising total than the incumbent, with more small-dollar participation and several housing-advocacy donors.",
 			topFunders: [
 				{ name: "Homes First Network", amount: 18000, category: "Housing advocacy" },
-				{ name: "Teachers for Franklin", amount: 14500, category: "Education donors" },
+				{ name: "Teachers policy PAC", amount: 14500, category: "Education donors" },
 				{ name: "District 12 Civic Donors", amount: 12000, category: "Local professionals" }
 			],
 			sources: [districtEthics, methodologyBrief]
@@ -1136,7 +1136,7 @@ const candidates: Candidate[] = [
 		contestSlug: "state-senate-district-12",
 		party: "Republican Party",
 		incumbent: true,
-		location: "Metro County, Franklin",
+		location: "Fulton County, Georgia",
 		summary: "Thomas Bell is the incumbent state senator for District 12. In the current record, his campaign relies on a visible legislative history in water and infrastructure policy, alongside fundraising tied more heavily to utilities and development interests.",
 		ballotSummary: "Incumbent state senator focused on water reliability, road capacity, and apprenticeship programs. Campaign stresses committee experience and budget negotiations.",
 		topIssues: [
@@ -1182,9 +1182,9 @@ const candidates: Candidate[] = [
 			smallDonorShare: 0.18,
 			summary: "Bell reports more overall money than his challenger, with donor support concentrated in utilities, real estate, and statewide business committees.",
 			topFunders: [
-				{ name: "Franklin Water and Power PAC", amount: 30000, category: "Utilities" },
+				{ name: "Water and Power PAC", amount: 30000, category: "Utilities" },
 				{ name: "District Growth Coalition", amount: 24000, category: "Real estate" },
-				{ name: "Franklin Jobs Committee", amount: 18000, category: "Business association" }
+				{ name: "Jobs Committee", amount: 18000, category: "Business association" }
 			],
 			sources: [districtEthics, methodologyBrief]
 		},
@@ -1244,11 +1244,11 @@ const candidates: Candidate[] = [
 	{
 		slug: "alicia-greene",
 		name: "Alicia Greene",
-		officeSought: "Metro County School Board At-Large",
+		officeSought: "Local school board at-large",
 		contestSlug: "county-school-board-at-large",
 		party: "Nonpartisan",
 		incumbent: true,
-		location: "Metro County, Franklin",
+		location: "Fulton County, Georgia",
 		summary: "Alicia Greene is the current board president and is running on continuity in literacy recovery, attendance improvement, and budget pacing. The current record includes a visible board voting history and a local donor base.",
 		ballotSummary: "Current board president. Focuses on literacy recovery, attendance, and stable long-term budgeting.",
 		topIssues: [
@@ -1344,11 +1344,11 @@ const candidates: Candidate[] = [
 	{
 		slug: "marcus-hill",
 		name: "Marcus Hill",
-		officeSought: "Metro County School Board At-Large",
+		officeSought: "Local school board at-large",
 		contestSlug: "county-school-board-at-large",
 		party: "Nonpartisan",
 		incumbent: false,
-		location: "Metro County, Franklin",
+		location: "Fulton County, Georgia",
 		summary: "Marcus Hill is a non-incumbent school board candidate focused on tutoring access and parent-facing transparency. The current record for him relies more on proposals and questionnaires than governing votes.",
 		ballotSummary: "Former parent advisory council chair. Focuses on tutoring access, district dashboards, and school-to-family communication.",
 		topIssues: [
@@ -1435,11 +1435,11 @@ const candidates: Candidate[] = [
 	{
 		slug: "sandra-patel",
 		name: "Sandra Patel",
-		officeSought: "Metro County School Board At-Large",
+		officeSought: "Local school board at-large",
 		contestSlug: "county-school-board-at-large",
 		party: "Nonpartisan",
 		incumbent: false,
-		location: "Metro County, Franklin",
+		location: "Fulton County, Georgia",
 		summary: "Sandra Patel is a nonpartisan school board candidate emphasizing budget clarity, reserve policy, and long-range facilities planning. The current record is strongest on fiscal process and lighter on classroom policy detail.",
 		ballotSummary: "Former district budget analyst. Focuses on reserve policy, procurement clarity, and long-term facilities planning.",
 		topIssues: [
@@ -1530,11 +1530,11 @@ const measures: Measure[] = [
 		slug: "measure-4-transit-bond",
 		title: "Measure 4: Transit and Sidewalk Bond",
 		contestSlug: "measure-4-transit-bond",
-		location: "Metro County, Franklin",
+		location: "Fulton County, Georgia",
 		summary: "Measure 4 is a county bond proposal tied to transit corridors, sidewalks, and weather-related stop improvements. The main tradeoff in the current record is faster project delivery versus a longer debt obligation.",
 		ballotSummary: "Would authorize up to $180 million in bonds for bus corridor upgrades, accessible sidewalks, and storm-safe transit stops.",
-		plainLanguageExplanation: "Measure 4 would let Metro County borrow money for specific transportation projects, including bus-stop shelters, sidewalk repairs near schools and clinics, and drainage improvements at major stops. Borrowing would spread project costs over many years instead of paying for all construction from current revenue.",
-		currentLawOverview: "Under current county practice, Metro County can fund transit-stop and sidewalk work through annual appropriations, grants, and smaller capital commitments, but it does not yet have authority for this proposed bond package.",
+		plainLanguageExplanation: "Measure 4 would let the county borrow money for specific transportation projects, including bus-stop shelters, sidewalk repairs near schools and clinics, and drainage improvements at major stops. Borrowing would spread project costs over many years instead of paying for all construction from current revenue.",
+		currentLawOverview: "Under current county practice, the county can fund transit-stop and sidewalk work through annual appropriations, grants, and smaller capital commitments, but it does not yet have authority for this proposed bond package.",
 		currentPractice: [
 			{
 				id: "measure4-current-1",
@@ -1555,7 +1555,7 @@ const measures: Measure[] = [
 			},
 			{
 				id: "measure4-change-2",
-				text: "Allow Metro County to phase design, acquisition, and construction over multiple budget cycles while repaying the borrowing over time.",
+				text: "Allow the county to phase design, acquisition, and construction over multiple budget cycles while repaying the borrowing over time.",
 				sources: [transitFiscal, transitCapital]
 			},
 			{
@@ -1564,7 +1564,7 @@ const measures: Measure[] = [
 				sources: [transitFiscal, metroGuide]
 			}
 		],
-		yesMeaning: "A YES vote would allow Metro County to issue the proposed bonds and begin the listed capital projects, with repayment spread over future budgets.",
+		yesMeaning: "A YES vote would allow the county to issue the proposed bonds and begin the listed capital projects, with repayment spread over future budgets.",
 		noMeaning: "A NO vote would keep current funding rules in place. The county could still pursue smaller projects with existing revenue or grants, but the bond-backed project list would not move forward as proposed.",
 		yesHighlights: [
 			"The county could issue the proposed bonds and move forward with the named project list in the capital plan.",
@@ -1714,7 +1714,7 @@ const measures: Measure[] = [
 		slug: "charter-amendment-a",
 		title: "Charter Amendment A: Public Records Timeline",
 		contestSlug: "charter-amendment-a-records",
-		location: "Metro County, Franklin",
+		location: "Fulton County, Georgia",
 		summary: "Charter Amendment A would add timing and explanation rules for county public-records requests. The current record frames it as a process-transparency measure rather than a change to what records are legally exempt.",
 		ballotSummary: "Would require the county to acknowledge public-records requests within five business days and explain most delays in writing.",
 		plainLanguageExplanation: "Charter Amendment A would add basic response-timing rules to the county charter for public-records requests. Agencies would need to acknowledge requests within five business days and give a written explanation if records cannot be produced on time.",
@@ -1928,10 +1928,10 @@ const contests: Contest[] = [
 	{
 		slug: "county-school-board-at-large",
 		title: "Local Race",
-		office: "Metro County School Board At-Large",
+		office: "Local school board at-large",
 		jurisdiction: "Local",
 		type: "candidate",
-		description: "Nonpartisan local contest for an at-large seat on the Metro County School Board.",
+		description: "Nonpartisan local school board contest in the current reference archive.",
 		roleGuide: {
 			summary: "This office helps set district policy, approves budgets, hires and evaluates the superintendent, and makes governance decisions for county schools.",
 			whyItMatters: "School-board races can shape classroom priorities, spending, facilities decisions, and family-facing district rules.",
@@ -1970,28 +1970,28 @@ const contests: Contest[] = [
 ];
 
 const electionOfficialResources: OfficialResource[] = [
-	officialResource("Official election calendar", "Metro County Elections Office", "metro-county-election-calendar.txt", {
-		note: "Reference copy of the election calendar and notice page used in the current archive.",
-		sourceSystem: "Metro County Elections Office notice archive"
+	officialResource("2026 election key dates", "Fulton County Registration and Elections", "fulton-county-2026-election-notice.txt", {
+		note: "Mirrored summary of the Fulton County key-election-dates page for the November 3, 2026 election.",
+		sourceSystem: "Fulton County key election dates"
 	}),
-	officialResource("Vote-by-mail guide", "Metro County Elections Office", "metro-county-vote-by-mail-guide.txt", {
-		note: "Reference copy of absentee and ballot-return instructions used in the current archive.",
-		sourceSystem: "Metro County Elections Office notice archive"
+	officialResource("Polling-place and precinct lookup", "Fulton County Registration and Elections", "fulton-county-polling-tools.txt", {
+		note: "County polling-tools page captured with instructions for checking precincts and election-day locations.",
+		sourceSystem: "Fulton County polling tools"
 	}),
-	officialResource("Early voting schedule", "Metro County Elections Office", "metro-county-early-voting-guide.txt", {
-		note: "Reference copy of early voting sites, hours, and accessibility notes used in the current archive.",
-		sourceSystem: "Metro County Elections Office notice archive"
+	officialResource("Georgia My Voter Page", "Georgia Secretary of State", "georgia-my-voter-page.txt", {
+		note: "Statewide voter portal summary for registration checks, sample ballots, precinct lookup, and early-voting location search.",
+		sourceSystem: "Georgia Secretary of State My Voter Page"
 	})
 ];
 
 export const demoElection: Election = {
-	slug: "2026-metro-county-general",
-	name: "2026 Metro County General Election",
+	slug: "2026-fulton-county-general",
+	name: "November 3, 2026 Fulton County election guide",
 	date: "2026-11-03",
 	jurisdictionSlug: demoLocation.slug,
 	locationName: demoLocation.displayName,
 	updatedAt: "2026-03-30T18:00:00.000Z",
-	description: "Ballot guide for Metro County voters featuring one federal race, one state legislative race, one local school-board race, and two county ballot measures in the current coverage area.",
+	description: "Current launch-jurisdiction guide for Fulton County, Georgia. Election logistics and office links are grounded in official county and statewide sources, while contest-level dossiers remain reference-archive content until verified Fulton County ballot data is loaded.",
 	contests,
 	freshness: freshnessMeta({
 		contentLastVerifiedAt: "2026-03-30T18:00:00.000Z",
@@ -2004,23 +2004,28 @@ export const demoElection: Election = {
 	keyDates: [
 		{
 			label: "Registration deadline",
-			date: "2026-10-06",
-			note: "Current reference deadline for new registrations and address changes."
+			date: "2026-10-05",
+			note: "Fulton County lists October 5, 2026 as the voter registration deadline for the November 3, 2026 general election."
 		},
 		{
 			label: "Vote-by-mail request deadline",
-			date: "2026-10-27",
-			note: "Current reference deadline for requesting a mailed ballot."
+			date: "2026-10-23",
+			note: "Fulton County lists October 23, 2026 as the last day to request an absentee ballot."
 		},
 		{
 			label: "Early voting opens",
-			date: "2026-10-19",
-			note: "Current reference date for county vote centers to open."
+			date: "2026-10-13",
+			note: "Fulton County lists October 13, 2026 as the first day of early voting for this election."
+		},
+		{
+			label: "Early voting ends",
+			date: "2026-10-30",
+			note: "Fulton County lists October 30, 2026 as the last day of early voting."
 		},
 		{
 			label: "Election Day polls close",
 			date: "2026-11-03T19:00:00.000Z",
-			note: "Current reference closing time for time-sensitive election logistics."
+			note: "Polls close at 7:00 p.m. local time on Election Day."
 		}
 	],
 	officialResources: electionOfficialResources,
@@ -2028,12 +2033,12 @@ export const demoElection: Election = {
 		{
 			id: "change-1",
 			date: "2026-03-30T18:00:00.000Z",
-			summary: "Added source-backed early voting and vote-by-mail resource links to the election guide."
+			summary: "Replaced placeholder county logistics with official Fulton County and Georgia election links."
 		},
 		{
 			id: "change-2",
 			date: "2026-03-28T15:20:00.000Z",
-			summary: "Clarified the school-board contest description and attached the latest questionnaire file."
+			summary: "Labeled contest-level pages as reference-archive content until verified Fulton County ballot packaging is available."
 		}
 	]
 };
@@ -2051,25 +2056,25 @@ export const demoElectionSummaries: ElectionSummary[] = [
 
 export const demoJurisdiction: Jurisdiction = {
 	slug: demoLocation.slug,
-	name: "Metro County",
+	name: "Fulton County",
 	displayName: demoLocation.displayName,
 	state: demoLocation.state,
 	jurisdictionType: "County",
-	description: "Metro County is the current Ballot Clarity coverage area. This page models how a public-interest election hub can combine official election office contacts, upcoming elections, voting methods, and archive links without forcing users through a search-only flow.",
+	description: "Fulton County, Georgia is the current launch jurisdiction. This page uses real county and statewide election-office links while the broader candidate, measure, and ballot dossiers remain reference-archive content until verified Fulton-specific ballot packaging is ready.",
 	nextElectionName: demoElection.name,
 	nextElectionSlug: demoElection.slug,
 	updatedAt: "2026-03-31T15:00:00.000Z",
 	officialOffice: {
-		name: "Metro County Elections Office",
-		address: "120 Civic Square, Harbor City, Franklin 00412",
-		phone: "(555) 014-2026",
-		email: "elections@metrocounty.gov",
-		website: "/source-files/metro-county-election-office.txt",
-		hours: "Monday-Friday, 8:30 a.m. to 5:00 p.m. Extended hours begin during early voting."
+		name: "Fulton County Registration and Elections",
+		address: "Election Hub and Operation Center (EHOC), 5600 Campbellton Fairburn Road, Union City, GA 30213",
+		phone: "(404) 612-7020",
+		email: "elections.voterregistration@fultoncountyga.gov",
+		website: "https://fultoncountyga.gov/inside-fulton-county/fulton-county-departments/registration-and-elections",
+		hours: "See Fulton County Registration and Elections for current office and service hours."
 	},
 	officialResources: [
-		officialResource("Election office contact sheet", "Metro County Elections Office", "metro-county-election-office.txt", {
-			sourceSystem: "Metro County Elections Office contact archive"
+		officialResource("Election office contacts", "Fulton County Registration and Elections", "fulton-county-election-office.txt", {
+			sourceSystem: "Fulton County elections contacts"
 		}),
 		...electionOfficialResources
 	],
@@ -2077,62 +2082,49 @@ export const demoJurisdiction: Jurisdiction = {
 		{
 			slug: "in-person-election-day",
 			title: "Vote in person on Election Day",
-			summary: "Election Day voting in this coverage area is assigned by precinct. The official county office publishes accessibility notes and final hours in the election office contact sheet.",
+			summary: "Fulton County directs voters to confirm their assigned Election Day precinct and polling place before traveling.",
 			details: [
 				"Bring a printed guide or notes if that helps you track contests.",
-				"Review the official contact sheet for accessibility notes and replacement polling locations.",
-				"Check the election calendar close to Election Day in case hours or precinct assignments change."
+				"Use Georgia My Voter Page to verify your precinct, polling place, and sample ballot.",
+				"Check the county polling-tools page close to Election Day in case precinct assignments or access notes change."
 			],
-			officialResource: officialResource("Election office contact sheet", "Metro County Elections Office", "metro-county-election-office.txt", {
-				sourceSystem: "Metro County Elections Office contact archive"
+			officialResource: officialResource("Polling-place and precinct lookup", "Fulton County Registration and Elections", "fulton-county-polling-tools.txt", {
+				sourceSystem: "Fulton County polling tools"
 			})
 		},
 		{
 			slug: "early-voting",
 			title: "Use an early voting site",
-			summary: "Metro County publishes a countywide early voting schedule with vote centers, extended-weekend hours, and limited curbside details.",
+			summary: "Georgia allows Fulton voters to use any early-voting location in the county, with site lists and hours verified through statewide and county election tools.",
 			details: [
-				"Early voting is designed as the highest-volume in-person option in the current coverage data.",
-				"Use the schedule to confirm site hours because locations can vary by weekday and weekend.",
-				"The county schedule is treated as the primary source for early voting hours in this release."
+				"Georgia says voters can use any early-voting location in their county.",
+				"Use My Voter Page and the Fulton County polling-tools page to confirm which early-voting sites are active and when they open.",
+				"Hours can vary by date and location, so check again shortly before traveling."
 			],
-			officialResource: officialResource("Early voting schedule", "Metro County Elections Office", "metro-county-early-voting-guide.txt", {
-				sourceSystem: "Metro County Elections Office notice archive"
+			officialResource: officialResource("Georgia My Voter Page", "Georgia Secretary of State", "georgia-my-voter-page.txt", {
+				sourceSystem: "Georgia Secretary of State My Voter Page"
 			})
 		},
 		{
 			slug: "vote-by-mail",
 			title: "Vote by mail",
-			summary: "The vote-by-mail guide explains request deadlines, ballot tracking, and return options for this coverage area.",
+			summary: "Fulton County publishes absentee-voting contact details, and Georgia provides the statewide absentee-voting rules and voter portal.",
 			details: [
-				"Users should review the official guide for request and return deadlines before relying on a ballot-by-mail plan.",
-				"Drop-box and mail-return instructions can change, so the election guide highlights the most recent update date.",
-				"Ballot Clarity treats mail-voting instructions as official-source content, not advisory copy."
+				"The first day to request an absentee ballot is August 17, 2026, and Fulton County lists October 23, 2026 as the last day to request one for this election.",
+				"Use the county contacts sheet for absentee-specific phone and email details before relying on vote-by-mail.",
+				"Georgia My Voter Page is the statewide place to review your voter record, sample ballot, and polling-location information."
 			],
-			officialResource: officialResource("Vote-by-mail guide", "Metro County Elections Office", "metro-county-vote-by-mail-guide.txt", {
-				sourceSystem: "Metro County Elections Office notice archive"
+			officialResource: officialResource("Election office contacts", "Fulton County Registration and Elections", "fulton-county-election-office.txt", {
+				sourceSystem: "Fulton County elections contacts"
 			})
 		}
 	],
 	upcomingElections: demoElectionSummaries,
-	archivedGuides: [
-		{
-			id: "archive-2025-special",
-			title: "2025 Metro County Special Election Guide",
-			date: "2025-08-12",
-			href: "/source-files/metro-county-voter-guide.txt"
-		},
-		{
-			id: "archive-2024-general",
-			title: "2024 Metro County General Election Guide",
-			date: "2024-11-05",
-			href: "/source-files/metro-county-voter-guide.txt"
-		}
-	],
+	archivedGuides: [],
 	coverageNotes: [
-		"This is not an official government site. Users should verify deadlines and locations with the Metro County Elections Office.",
-		"This location hub is designed as an HTML-first reference page with printable guides as a companion, not a substitute for official notices.",
-		"Coverage notes are visible here so a user can understand scope before opening contest-level pages."
+		"This is not an official government site. Verify deadlines, polling locations, and absentee rules with Fulton County Registration and Elections and Georgia My Voter Page.",
+		"This location hub uses real Fulton County logistics sources, but the wider ballot, candidate, and measure pages still include reference-archive content until verified Fulton-specific contest data is loaded.",
+		"Coverage notes are visible here so users can see what is grounded in official county systems and what is still staged."
 	]
 };
 

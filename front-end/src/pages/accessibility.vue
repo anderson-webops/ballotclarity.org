@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { contactEmail } from "~/constants";
+import { contactEmail, currentCoverageElectionSlug } from "~/constants";
 
 const standards = [
 	{
@@ -118,7 +118,7 @@ usePageSeo({
 					<NuxtLink to="/plan" class="btn-primary">
 						Open my ballot plan
 					</NuxtLink>
-					<NuxtLink to="/ballot/2026-metro-county-general" class="btn-secondary">
+					<NuxtLink :to="`/ballot/${currentCoverageElectionSlug}`" class="btn-secondary">
 						Open ballot guide
 					</NuxtLink>
 				</div>

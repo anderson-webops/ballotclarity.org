@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import type { ElectionsResponse } from "~/types/civic";
+import { currentCoverageElectionSlug } from "~/constants";
 
 const api = useApiClient();
 const { data } = await useAsyncData<ElectionsResponse>(
 	"ballot-index-elections",
 	() => api<ElectionsResponse>("/elections")
 );
-const target = data.value?.elections[0]?.slug ?? "2026-metro-county-general";
+const target = data.value?.elections[0]?.slug ?? currentCoverageElectionSlug;
 
 await navigateTo(`/ballot/${target}`, { replace: true });
 </script>

@@ -136,15 +136,15 @@ test("built app renders the key ballot guide pages against the built API", async
 	assert.equal(existsSync(join(repoRoot, "back-end/dist/admin-schema.sql")), true);
 	assert.equal(existsSync(join(repoRoot, "back-end/dist/admin-schema.postgres.sql")), true);
 
-	const ballotResponse = await fetch(`${apiBaseUrl}/api/ballot?election=2026-metro-county-general`);
+	const ballotResponse = await fetch(`${apiBaseUrl}/api/ballot?election=2026-fulton-county-general`);
 	const ballot = await ballotResponse.json();
 	const homePage = await fetch(`${appBaseUrl}/`);
 	const homeHtml = await homePage.text();
-	const ballotPage = await fetch(`${appBaseUrl}/ballot/2026-metro-county-general`);
+	const ballotPage = await fetch(`${appBaseUrl}/ballot/2026-fulton-county-general`);
 	const ballotHtml = await ballotPage.text();
-	const electionPage = await fetch(`${appBaseUrl}/elections/2026-metro-county-general`);
+	const electionPage = await fetch(`${appBaseUrl}/elections/2026-fulton-county-general`);
 	const electionHtml = await electionPage.text();
-	const locationPage = await fetch(`${appBaseUrl}/locations/metro-county-franklin`);
+	const locationPage = await fetch(`${appBaseUrl}/locations/fulton-county-georgia`);
 	const locationHtml = await locationPage.text();
 	const dataSourcesPage = await fetch(`${appBaseUrl}/data-sources`);
 	const dataSourcesHtml = await dataSourcesPage.text();
@@ -203,7 +203,7 @@ test("built app renders the key ballot guide pages against the built API", async
 	assert.match(ballotHtml, /Reading mode/);
 	assert.match(ballotHtml, /Quick view/);
 	assert.match(ballotHtml, /Next review/);
-	assert.match(ballotHtml, /Metro County, Franklin/);
+	assert.match(ballotHtml, /Fulton County, Georgia/);
 	assert.match(ballotHtml, /limited public-record archive/i);
 	assert.match(electionHtml, /Official links and notices/);
 	assert.match(electionHtml, /Contest index/);

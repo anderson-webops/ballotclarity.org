@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { Source } from "~/types/civic";
 import { storeToRefs } from "pinia";
-import { contactEmail } from "~/constants";
+import { contactEmail, currentCoverageElectionSlug, currentCoverageLocationName, currentCoverageLocationSlug } from "~/constants";
 import { buildCompareLaunchSlugs, buildCompareRoute } from "~/stores/civic";
 
 const civicStore = useCivicStore();
@@ -12,8 +12,8 @@ const { ballotPlan, compareList } = storeToRefs(civicStore);
 const candidateSlug = computed(() => String(route.params.slug));
 const { formatCompactNumber, formatCurrency, formatDate, formatPercent } = useFormatters();
 const { data: candidate, error, pending } = await useCandidate(candidateSlug);
-const electionOverviewHref = "/elections/2026-metro-county-general";
-const locationHubHref = "/locations/metro-county-franklin";
+const electionOverviewHref = `/elections/${currentCoverageElectionSlug}`;
+const locationHubHref = `/locations/${currentCoverageLocationSlug}`;
 const sectionLinks = [
 	{ href: "#at-a-glance", label: "At a glance" },
 	{ href: "#biography", label: "Bio" },
@@ -45,10 +45,10 @@ const contextTerms = [
 watchEffect(() => {
 	if (candidate.value) {
 		civicStore.setLocation({
-			coverageLabel: "Current coverage: Metro County, Franklin",
+			coverageLabel: `Current launch jurisdiction: ${currentCoverageLocationName}`,
 			displayName: candidate.value.location,
-			slug: "metro-county-franklin",
-			state: "Franklin",
+			slug: currentCoverageLocationSlug,
+			state: "Georgia",
 		});
 	}
 });
@@ -114,7 +114,7 @@ const dataThroughLabel = computed(() => {
 const candidateJsonHref = computed(() => candidate.value ? `${runtimeConfig.public.apiBase}/candidates/${candidate.value.slug}` : "");
 const candidateBreadcrumbs = computed(() => [
 	{ label: "Home", to: "/" },
-	{ label: "Ballot guide", to: "/ballot/2026-metro-county-general" },
+	{ label: "Ballot guide", to: `/ballot/${currentCoverageElectionSlug}` },
 	{ label: candidate.value?.name ?? "Candidate profile" }
 ]);
 const issuePositionSources = computed(() => {
@@ -292,7 +292,7 @@ function saveToPlan() {
 							<span class="i-carbon-download" />
 							Download JSON
 						</a>
-						<NuxtLink to="/ballot/2026-metro-county-general" class="btn-primary">
+						<NuxtLink :to="`/ballot/${currentCoverageElectionSlug}`" class="btn-primary">
 							Back to ballot
 						</NuxtLink>
 					</div>

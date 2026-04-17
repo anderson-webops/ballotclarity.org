@@ -14,7 +14,7 @@ const earlyVotingDate = computed(() => nextElectionData.value?.election.keyDates
 watchEffect(() => {
 	if (jurisdiction.value) {
 		civicStore.setLocation({
-			coverageLabel: `Current coverage: ${jurisdiction.value.displayName}`,
+			coverageLabel: `Current launch jurisdiction: ${jurisdiction.value.displayName}`,
 			displayName: jurisdiction.value.displayName,
 			slug: jurisdiction.value.slug,
 			state: jurisdiction.value.state
@@ -42,7 +42,7 @@ usePageSeo({
 				"address": {
 					"@type": "PostalAddress",
 					"addressCountry": "US",
-					"addressLocality": "Harbor City",
+					"addressLocality": "Union City",
 					"addressRegion": jurisdiction.value.state,
 					"streetAddress": jurisdiction.value.officialOffice.address
 				},
@@ -68,7 +68,7 @@ usePageSeo({
 
 		<div v-else-if="error || !jurisdiction" class="max-w-3xl">
 			<InfoCallout title="Location hub not available" tone="warning">
-				This location hub could not be loaded. Return to the home page and reopen the Metro County location hub.
+				This location hub could not be loaded. Return to the home page and reopen the Fulton County location hub.
 			</InfoCallout>
 		</div>
 
@@ -99,7 +99,7 @@ usePageSeo({
 
 				<div class="space-y-4">
 					<InfoCallout title="Not an official government site" tone="warning">
-						Use this page to orient yourself, then verify deadlines, polling logistics, and late changes with the Metro County Elections Office.
+						Use this page to orient yourself, then verify deadlines, polling logistics, and late changes with Fulton County Registration and Elections and Georgia My Voter Page.
 					</InfoCallout>
 					<AddressLookupForm compact :election="jurisdiction.upcomingElections[0] ?? null" />
 				</div>
@@ -235,7 +235,7 @@ usePageSeo({
 					</ul>
 				</div>
 
-				<div class="surface-panel">
+				<div v-if="jurisdiction.archivedGuides.length" class="surface-panel">
 					<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
 						Archive guides
 					</h2>

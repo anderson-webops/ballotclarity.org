@@ -1,0 +1,17 @@
+Fulton County Polling and Precinct Tools
+Last reviewed: April 16, 2026
+
+Fulton County directs voters to its polling-tools page for:
+- precinct and polling-place lookup
+- election-day location checks
+- links to Georgia My Voter Page
+
+The county page tells voters to use Georgia My Voter Page to confirm:
+- voter registration status
+- Election Day polling place
+- sample ballot
+
+Practical use:
+Check the county polling-tools page and Georgia My Voter Page shortly before traveling, especially if you are relying on a polling-place assignment or need the latest election-day logistics.
+
+This mirrored note summarizes the Fulton County "Find My Polling Site" guidance and should be verified against the live county page.

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { currentCoverageLocationSlug } from "~/constants";
+
 const { data: dataSources } = await useDataSources();
 
 usePageSeo({
@@ -219,7 +221,7 @@ const informationTypes = [
 				<NuxtLink to="/data-sources" class="btn-secondary">
 					Open data sources roadmap
 				</NuxtLink>
-				<NuxtLink to="/locations/metro-county-franklin" class="btn-secondary">
+				<NuxtLink :to="`/locations/${currentCoverageLocationSlug}`" class="btn-secondary">
 					Open location hub
 				</NuxtLink>
 			</div>

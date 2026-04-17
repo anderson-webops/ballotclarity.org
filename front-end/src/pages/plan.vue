@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import type { BallotPlanSelection, Contest, PlannedMeasureDecision } from "~/types/civic";
 import { storeToRefs } from "pinia";
+import { currentCoverageElectionSlug } from "~/constants";
 import { buildCompareRoute } from "~/stores/civic";
 
 const civicStore = useCivicStore();
 const { ballotPlan, ballotPlanCount, compareCount, compareList, selectedElection, selectedLocation } = storeToRefs(civicStore);
 const { formatDate, formatDateTime } = useFormatters();
 
-const electionSlug = computed(() => selectedElection.value?.slug ?? "2026-metro-county-general");
+const electionSlug = computed(() => selectedElection.value?.slug ?? currentCoverageElectionSlug);
 const locationSlug = computed(() => selectedLocation.value?.slug);
 const { data, error, pending } = await useBallot(electionSlug, locationSlug);
 

@@ -1,14 +1,14 @@
-Metro County 2026 Official Candidate List
+Current Reference Candidate Filing List
 
 Document type: official candidate filing list
 Status: local reference source
-Published by: Metro County Elections Office
+Published by: Reference archive candidate filing list
 As of: March 31, 2026
 
 Contests included in this reference file:
 - U.S. House, District 7
 - State Senate, District 12
-- Metro County School Board, At-Large Seat B
+- Local school board at-large seat
 
 Filed candidates shown in the current coverage:
 - Elena Torres
@@ -20,4 +20,4 @@ Filed candidates shown in the current coverage:
 - Sandra Patel
 
 Use note:
-This file stands in for the official candidate list an election office would publish before ballot finalization.
+This file is a staged reference archive used for non-live contest content. It is not a live Fulton County filing list.

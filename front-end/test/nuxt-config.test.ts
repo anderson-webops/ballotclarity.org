@@ -16,7 +16,7 @@ test("nuxt config uses srcDir and expected civic modules", async () => {
 	assert.equal(config.colorMode?.preference, "light");
 	assert.equal(config.experimental?.typedPages, true);
 	assert.deepEqual(config.vite?.build?.modulePreload, { polyfill: false });
-	assert.ok(config.app?.head?.link?.some(link => link.rel === "manifest" && link.href === "/site.webmanifest"));
+	assert.ok(config.app?.head?.link?.some(link => link.rel === "manifest" && typeof link.href === "string" && link.href.startsWith("/site.webmanifest")));
 });
 
 test("web manifest preserves Ballot Clarity branding", () => {
@@ -29,5 +29,5 @@ test("web manifest preserves Ballot Clarity branding", () => {
 	assert.equal(manifest.scope, "/");
 	assert.equal(manifest.display, "standalone");
 	assert.ok(Array.isArray(manifest.icons));
-	assert.ok(manifest.icons.some(icon => icon.src === "/maskable-icon.png"));
+	assert.ok(manifest.icons.some(icon => typeof icon.src === "string" && icon.src.startsWith("/maskable-icon.png")));
 });

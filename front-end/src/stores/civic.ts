@@ -45,9 +45,9 @@ export function normalizeCompareSlugs(slugs: readonly string[]) {
 	)).slice(0, 3);
 }
 
-export function parseCompareQuerySlugs(value: string | string[] | null | undefined) {
+export function parseCompareQuerySlugs(value: string | readonly (string | null)[] | null | undefined) {
 	const rawValues = Array.isArray(value)
-		? value
+		? value.filter((item): item is string => typeof item === "string")
 		: typeof value === "string"
 			? [value]
 			: [];

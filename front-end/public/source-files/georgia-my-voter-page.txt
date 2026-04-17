@@ -1,0 +1,20 @@
+Georgia My Voter Page (MVP)
+Last reviewed: April 16, 2026
+
+The Georgia Secretary of State describes My Voter Page as the statewide portal to:
+- access and update voter information
+- check registration status
+- locate advance-voting and Election Day polling locations
+- view a sample ballot
+- view elected officials
+
+Georgia early-voting guidance on the same page says:
+- Georgia voters have three weeks before Election Day for early voting
+- counties can offer Sunday voting
+- voters can use any early-voting location in their county
+
+Georgia absentee-voting guidance says:
+- no-excuse absentee voting is available
+- voters can request an absentee ballot online or by mail
+
+Use the live MVP site and Georgia Secretary of State elections pages for current statewide voting rules and polling-location lookup.

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { BallotResponse, ElectionsResponse } from "~/types/civic";
-import { contactEmail } from "~/constants";
+import { contactEmail, currentCoverageElectionSlug } from "~/constants";
 
 const api = useApiClient();
 const civicStore = useCivicStore();
@@ -20,7 +20,7 @@ const { data: ballotPreview } = await useAsyncData<BallotResponse | null>(
 	"home-preview-ballot",
 	() => api<BallotResponse>("/ballot", {
 		query: {
-			election: featuredElection.value?.slug ?? "2026-metro-county-general"
+			election: featuredElection.value?.slug ?? currentCoverageElectionSlug
 		}
 	}),
 	{

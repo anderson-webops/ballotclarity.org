@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Candidate, Source } from "~/types/civic";
+import { currentCoverageElectionSlug } from "~/constants";
 import { buildCompareRoute, normalizeCompareSlugs, parseCompareQuerySlugs } from "~/stores/civic";
 
 const civicStore = useCivicStore();
@@ -44,7 +45,7 @@ watchEffect(() => {
 const sameContest = computed(() => Boolean(data.value?.sameContest));
 const compareBreadcrumbs = computed(() => [
 	{ label: "Home", to: "/" },
-	{ label: "Ballot guide", to: "/ballot/2026-metro-county-general" },
+	{ label: "Ballot guide", to: `/ballot/${currentCoverageElectionSlug}` },
 	{ label: "Compare" }
 ]);
 const comparisonStats = computed(() => ({
@@ -164,7 +165,7 @@ usePageSeo({
 				{{ emptyStateBody }}
 			</InfoCallout>
 			<div class="mt-6 flex flex-wrap gap-3">
-				<NuxtLink to="/ballot/2026-metro-county-general" class="btn-primary">
+				<NuxtLink :to="`/ballot/${currentCoverageElectionSlug}`" class="btn-primary">
 					Open ballot guide
 				</NuxtLink>
 				<NuxtLink v-if="hasSavedCompareSelection" :to="resumeCompareHref" class="btn-secondary">
@@ -227,7 +228,7 @@ usePageSeo({
 						</p>
 					</div>
 					<div class="flex flex-wrap gap-3">
-						<NuxtLink to="/ballot/2026-metro-county-general" class="btn-secondary">
+						<NuxtLink :to="`/ballot/${currentCoverageElectionSlug}`" class="btn-secondary">
 							Back to ballot
 						</NuxtLink>
 						<NuxtLink to="/plan" class="btn-secondary">

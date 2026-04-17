@@ -52,7 +52,7 @@ test("POST /api/location validates short lookups", async () => {
 	assert.match(body.message, /Enter at least/);
 });
 
-test("POST /api/location returns the demo Metro County location for valid lookups", async () => {
+test("POST /api/location returns the current Fulton County launch location for valid lookups", async () => {
 	const response = await fetch(`${baseUrl}/api/location`, {
 		body: JSON.stringify({ q: "30309" }),
 		headers: {
@@ -64,23 +64,24 @@ test("POST /api/location returns the demo Metro County location for valid lookup
 
 	assert.equal(response.status, 200);
 	assert.equal(response.headers.get("cache-control"), "no-store");
-	assert.equal(body.electionSlug, "2026-metro-county-general");
-	assert.equal(body.location.slug, "metro-county-franklin");
+	assert.equal(body.electionSlug, "2026-fulton-county-general");
+	assert.equal(body.location.slug, "fulton-county-georgia");
 	assert.equal(body.location.lookupInput, undefined);
 });
 
 test("GET /api/ballot returns the election guide and contests", async () => {
-	const response = await fetch(`${baseUrl}/api/ballot?election=2026-metro-county-general`);
+	const response = await fetch(`${baseUrl}/api/ballot?election=2026-fulton-county-general`);
 	const body = await response.json();
 
 	assert.equal(response.status, 200);
-	assert.equal(body.election.slug, "2026-metro-county-general");
-	assert.equal(body.election.jurisdictionSlug, "metro-county-franklin");
+	assert.equal(body.election.slug, "2026-fulton-county-general");
+	assert.equal(body.election.jurisdictionSlug, "fulton-county-georgia");
 	assert.equal(body.election.contests.length, 5);
 	assert.equal(body.election.contests[0].title, "Federal Race");
 	assert.equal(body.election.contests[0].roleGuide.decisionAreas.length, 3);
 	assert.match(body.election.contests[0].roleGuide.summary, /federal law/i);
 	assert.match(body.note, /current release/i);
+	assert.match(body.election.name, /Fulton County/i);
 });
 
 test("GET /api/jurisdictions returns the demo jurisdiction summary", async () => {
@@ -89,8 +90,8 @@ test("GET /api/jurisdictions returns the demo jurisdiction summary", async () =>
 
 	assert.equal(response.status, 200);
 	assert.equal(body.jurisdictions.length, 1);
-	assert.equal(body.jurisdictions[0].slug, "metro-county-franklin");
-	assert.equal(body.jurisdictions[0].nextElectionSlug, "2026-metro-county-general");
+	assert.equal(body.jurisdictions[0].slug, "fulton-county-georgia");
+	assert.equal(body.jurisdictions[0].nextElectionSlug, "2026-fulton-county-general");
 });
 
 test("GET /api/data-sources returns the live-data roadmap and migration notes", async () => {
@@ -149,15 +150,15 @@ test("GET /api/corrections returns the public corrections log", async () => {
 });
 
 test("GET /api/jurisdictions/:slug returns the official office and voting-method data", async () => {
-	const response = await fetch(`${baseUrl}/api/jurisdictions/metro-county-franklin`);
+	const response = await fetch(`${baseUrl}/api/jurisdictions/fulton-county-georgia`);
 	const body = await response.json();
 
 	assert.equal(response.status, 200);
-	assert.equal(body.officialOffice.name, "Metro County Elections Office");
+	assert.equal(body.officialOffice.name, "Fulton County Registration and Elections");
 	assert.equal(body.votingMethods.length, 3);
 	assert.ok(body.officialResources.length >= 3);
 	assert.equal(body.officialResources[0].authority, "official-government");
-	assert.match(body.officialResources[0].sourceSystem, /Elections Office/i);
+	assert.match(body.officialResources[0].sourceSystem, /Fulton County elections contacts/i);
 });
 
 test("GET /api/contests/:slug returns a canonical contest page payload with sources", async () => {
@@ -166,8 +167,8 @@ test("GET /api/contests/:slug returns a canonical contest page payload with sour
 
 	assert.equal(response.status, 200);
 	assert.equal(body.contest.slug, "us-house-district-7");
-	assert.equal(body.election.slug, "2026-metro-county-general");
-	assert.equal(body.jurisdiction.slug, "metro-county-franklin");
+	assert.equal(body.election.slug, "2026-fulton-county-general");
+	assert.equal(body.jurisdiction.slug, "fulton-county-georgia");
 	assert.ok(body.sourceCount >= 4);
 	assert.ok(body.relatedContests.length >= 1);
 	assert.equal(body.sources[0].authority, "official-government");
@@ -389,7 +390,7 @@ test("PATCH /api/admin/content updates public content fields and publish gating"
 		assert.equal(unpublishResponse.status, 200);
 
 		const hiddenCandidateResponse = await fetch(`${isolatedBaseUrl}/api/candidates/elena-torres`);
-		const ballotResponse = await fetch(`${isolatedBaseUrl}/api/ballot?election=2026-metro-county-general`);
+		const ballotResponse = await fetch(`${isolatedBaseUrl}/api/ballot?election=2026-fulton-county-general`);
 		const ballotBody = await ballotResponse.json();
 		const houseContest = ballotBody.election.contests.find((contest: { slug: string }) => contest.slug === "us-house-district-7");
 

@@ -44,7 +44,9 @@ import {
 } from "./coverage-data.js";
 import { createCoverageRepository } from "./coverage-repository.js";
 import { buildCoverageResponse, launchTargetProfile } from "./launch-profile.js";
+import { buildLocationLookupResponse, validateLookupInput } from "./location-lookup.js";
 import { createLogger, createRequestLoggingMiddleware } from "./logger.js";
+import { buildProviderSummary } from "./provider-config.js";
 import { createSourceAssetStore } from "./source-asset-store.js";
 
 dotenv.config();
@@ -839,6 +841,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 				coverageUpdatedAt: coverageRepository.data.updatedAt,
 				driver: adminRepository.driver,
 				ok: true,
+				providerSummary: buildProviderSummary(),
 				ready: true,
 				timestamp: new Date().toISOString()
 			});
@@ -850,6 +853,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 				driver: adminRepository.driver,
 				message: error instanceof Error ? error.message : "Admin repository health check failed.",
 				ok: false,
+				providerSummary: buildProviderSummary(),
 				ready: false,
 				timestamp: new Date().toISOString()
 			});
@@ -936,23 +940,28 @@ export async function createApp(options: CreateAppOptions = {}) {
 
 	app.post("/api/location", (request, response) => {
 		const raw = typeof request.body?.q === "string" ? request.body.q.trim() : "";
+		const coverage = buildCoverageResponse(coverageRepository.mode, coverageRepository.data.updatedAt);
 
 		response.set("Cache-Control", "no-store");
 
-		if (raw.length < 3) {
+		const validationError = validateLookupInput(raw);
+
+		if (validationError) {
 			response.status(400).json({
-				message: "Enter at least a street address or ZIP code fragment to continue."
+				message: validationError
 			});
 			return;
 		}
 
-		response.json({
-			electionSlug: coverageRepository.data.election.slug,
-			location: coverageRepository.data.location,
-			note: coverageRepository.mode === "snapshot"
-				? "This lookup is returning the latest imported coverage snapshot for the configured jurisdiction."
-				: "The current public archive is still being used while Fulton County, Georgia district and ballot integrations are being connected."
-		});
+		response.json(buildLocationLookupResponse(
+			raw,
+			coverageRepository.data.jurisdiction,
+			coverageRepository.data.jurisdictionSummaries,
+			coverageRepository.data.location,
+			coverageRepository.data.election.slug,
+			coverageRepository.mode,
+			coverage
+		));
 	});
 
 	app.post("/api/feedback", async (request, response) => {

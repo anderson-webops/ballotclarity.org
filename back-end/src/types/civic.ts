@@ -350,13 +350,33 @@ export interface LocationSelection {
 	displayName: string;
 	state: string;
 	coverageLabel: string;
+	lookupMode?: "address-submitted" | "coverage-selection" | "zip-preview";
+	requiresOfficialConfirmation?: boolean;
 	lookupInput?: string;
 }
 
+export type LocationLookupActionKind = "ballot-guide" | "official-verification";
+export type LocationLookupInputKind = "address" | "zip";
+export type LocationLookupResult = "resolved" | "selection-required";
+
+export interface LocationLookupAction {
+	id: string;
+	kind: LocationLookupActionKind;
+	title: string;
+	description: string;
+	badge?: string;
+	electionSlug?: string;
+	location?: LocationSelection;
+	url?: string;
+}
+
 export interface LocationLookupResponse {
-	location: LocationSelection;
-	electionSlug: string;
+	result: LocationLookupResult;
+	inputKind: LocationLookupInputKind;
 	note: string;
+	location?: LocationSelection;
+	electionSlug?: string;
+	actions?: LocationLookupAction[];
 }
 
 export interface ElectionsResponse {

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { ElectionSummary, LocationLookupResponse } from "~/types/civic";
+import type { ElectionSummary, LocationLookupAction, LocationLookupResponse } from "~/types/civic";
 
 const props = defineProps<{
 	compact?: boolean;
@@ -12,17 +12,41 @@ const civicStore = useCivicStore();
 const query = ref("");
 const isPending = ref(false);
 const errorMessage = ref("");
+const lookupActions = ref<LocationLookupAction[]>([]);
+const lookupNote = ref("");
 const inputId = `address-lookup-${useId()}`;
 const descriptionId = `${inputId}-description`;
 const usageId = `${inputId}-usage`;
 const privacyId = `${inputId}-privacy`;
 const errorId = `${inputId}-error`;
+const actionsId = `${inputId}-actions`;
 const lookupInput = ref<HTMLInputElement | null>(null);
 
-const inputDescribedBy = computed(() => [descriptionId, usageId, privacyId, errorMessage.value ? errorId : ""].filter(Boolean).join(" "));
+const inputDescribedBy = computed(() => [descriptionId, usageId, privacyId, lookupActions.value.length ? actionsId : "", errorMessage.value ? errorId : ""].filter(Boolean).join(" "));
+
+watch(query, () => {
+	if (lookupActions.value.length) {
+		lookupActions.value = [];
+		lookupNote.value = "";
+	}
+});
+
+async function openLookupAction(action: LocationLookupAction) {
+	if (action.kind !== "ballot-guide" || !action.location || !action.electionSlug)
+		return;
+
+	civicStore.setLocation(action.location);
+
+	if (props.election)
+		civicStore.setElection(props.election);
+
+	await navigateTo(`/ballot/${action.electionSlug}?location=${action.location.slug}`);
+}
 
 async function handleSubmit() {
 	errorMessage.value = "";
+	lookupActions.value = [];
+	lookupNote.value = "";
 
 	if (!query.value.trim()) {
 		errorMessage.value = "Enter an address or ZIP code to load the ballot guide.";
@@ -38,6 +62,18 @@ async function handleSubmit() {
 			body: { q: query.value },
 			method: "POST"
 		});
+
+		lookupNote.value = response.note;
+
+		if (response.result === "selection-required") {
+			lookupActions.value = response.actions ?? [];
+			return;
+		}
+
+		if (!response.location || !response.electionSlug) {
+			errorMessage.value = "Unable to load the ballot guide right now.";
+			return;
+		}
 
 		civicStore.setLocation(response.location);
 
@@ -58,13 +94,13 @@ async function handleSubmit() {
 <template>
 	<form class="surface-panel" :class="compact ? 'p-5' : 'p-6 sm:p-7'" :aria-busy="isPending" @submit.prevent="handleSubmit">
 		<label :for="inputId" class="text-sm text-app-ink font-semibold block dark:text-app-text-dark">
-			Enter a street address or ZIP code
+			Enter a full street address or 5-digit ZIP code
 		</label>
 		<p :id="descriptionId" class="text-sm text-app-muted mt-2 dark:text-app-muted-dark">
 			Current public coverage still returns the reference ballot guide while live Fulton County, Georgia district and ballot integrations are being connected.
 		</p>
 		<p :id="usageId" class="text-sm text-app-muted leading-6 mt-3 dark:text-app-muted-dark">
-			Why we ask for your address: it helps determine districts and ballot style. A ZIP code can return partial results with less specific contest matching.
+			Why we ask for your address: a full address is the only input that can support exact district and ballot matching. A ZIP code is useful for previewing the right coverage area, but ZIP-only results should be treated as approximate.
 		</p>
 		<p :id="privacyId" class="text-sm text-app-muted leading-6 mt-3 dark:text-app-muted-dark">
 			Data use: your lookup is sent only to match ballot coverage. The raw lookup is not added to the public content archive or used for advertising, and the app saves only your selected location label and ballot-plan preferences locally in your browser. Read the
@@ -82,7 +118,7 @@ async function handleSubmit() {
 					v-model="query"
 					type="text"
 					autocomplete="street-address"
-					placeholder="Example: 100 Main Street or 10001"
+					placeholder="Example: 5600 Campbellton Fairburn Rd or 30303"
 					class="text-sm text-app-ink pl-11 pr-4 border border-app-line rounded-full bg-white h-13 w-full shadow-sm dark:text-app-text-dark placeholder:text-app-muted/80 dark:border-app-line-dark dark:bg-app-panel-dark focus-ring dark:placeholder:text-app-muted-dark"
 					:aria-invalid="Boolean(errorMessage)"
 					:aria-describedby="inputDescribedBy"
@@ -102,5 +138,64 @@ async function handleSubmit() {
 		>
 			{{ errorMessage }}
 		</p>
+
+		<div
+			v-if="lookupActions.length"
+			:id="actionsId"
+			class="mt-5 p-4 border border-app-line rounded-3xl bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/60"
+		>
+			<p class="text-xs text-app-muted tracking-[0.2em] font-semibold uppercase dark:text-app-muted-dark">
+				Choose how to continue
+			</p>
+			<p class="text-sm text-app-muted leading-6 mt-3 dark:text-app-muted-dark">
+				{{ lookupNote }}
+			</p>
+			<div class="mt-4 gap-3 grid">
+				<div
+					v-for="action in lookupActions"
+					:key="action.id"
+					class="p-4 border border-app-line rounded-2xl bg-white dark:border-app-line-dark dark:bg-app-panel-dark"
+				>
+					<div class="flex flex-wrap gap-2 items-center">
+						<p class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
+							{{ action.title }}
+						</p>
+						<span
+							v-if="action.badge"
+							class="text-[11px] text-app-muted tracking-[0.16em] font-semibold px-2 py-1 border border-app-line rounded-full uppercase dark:text-app-muted-dark dark:border-app-line-dark"
+						>
+							{{ action.badge }}
+						</span>
+					</div>
+					<p class="text-sm text-app-muted leading-6 mt-2 dark:text-app-muted-dark">
+						{{ action.description }}
+					</p>
+					<div class="mt-4 flex flex-wrap gap-3">
+						<button
+							v-if="action.kind === 'ballot-guide'"
+							type="button"
+							class="btn-primary"
+							@click="openLookupAction(action)"
+						>
+							<span class="i-carbon-arrow-right" />
+							Open guide
+						</button>
+						<a
+							v-else-if="action.url"
+							:href="action.url"
+							target="_blank"
+							rel="noreferrer"
+							class="btn-secondary"
+						>
+							<span class="i-carbon-launch" />
+							Open official tool
+						</a>
+					</div>
+				</div>
+			</div>
+			<p class="text-xs text-app-muted leading-6 mt-4 dark:text-app-muted-dark">
+				If you want the most specific district match, replace the ZIP code with a full street address before continuing.
+			</p>
+		</div>
 	</form>
 </template>

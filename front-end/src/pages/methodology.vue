@@ -75,7 +75,7 @@ const items = [
 	},
 	{
 		body: [
-			"Address lookup is used to estimate districts and ballot style. ZIP-only lookup can return a partial result, so the interface should say that clearly wherever personalization matters.",
+			"Address lookup is used to estimate districts and ballot style. ZIP-only lookup can preview the likely coverage area, but it cannot stand in for exact district-level ballot matching.",
 			"The current build sends lookup input with a POST request, avoids persisting the raw lookup text in browser storage, and keeps the data-use explanation near the lookup form rather than burying it in legal copy."
 		],
 		title: "Privacy and personalization",

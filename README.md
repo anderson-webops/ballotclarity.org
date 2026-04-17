@@ -11,6 +11,7 @@ Ballot Clarity is a nonpartisan civic-information platform built as an npm works
 - `back-end/src/coverage-data.ts`: seeded Ballot Clarity coverage data that can later be replaced with live providers or database reads
 - `back-end/src/coverage-repository.ts`: runtime coverage loader that falls back to seeds or reads an imported live snapshot file
 - `back-end/src/import-live-coverage.ts`: operator CLI that imports a vetted coverage snapshot from a file or URL
+- `back-end/live-data-schema.sql`: draft Postgres schema scaffold for the future live-data read model
 - `back-end/src/admin-store.ts`: SQLite-backed fallback admin persistence for users, content review, source monitoring, corrections, and activity
 - `back-end/src/postgres-admin-store.ts`: Postgres-backed admin persistence for multi-instance production deployments
 - `back-end/src/launch-profile.ts`: Fulton County, Georgia launch profile, official source links, and coverage-state metadata
@@ -230,6 +231,7 @@ These endpoints live on the Express service, but they are intended to be reached
 - Asset delivery: mirrored source-document URLs can be rewritten to object storage or a CDN via `SOURCE_ASSET_BASE_URL`
 - Observability: the backend emits structured request logs, health metadata, and admin-auth throttle events
 - Production roadmap: see `docs/production-readiness-roadmap.md` for the staged path from seeded coverage to a real operated civic-information service
+- Live-data sequence: see `docs/live-data-implementation-sequence.md` for the concrete schema, env, provider, and rollout order for replacing seeded coverage with real civic data
 - Launch brief: see `docs/fulton-county-ga-launch.md` for the selected official systems and provider stack
 
 ## Production mode

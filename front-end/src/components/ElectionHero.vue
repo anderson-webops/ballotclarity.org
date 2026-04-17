@@ -11,6 +11,15 @@ const { formatDate } = useFormatters();
 const contestCount = computed(() => props.election.contests.length);
 const measureCount = computed(() => props.election.contests.reduce((count, contest) => count + (contest.measures?.length ?? 0), 0));
 const personalizationLabel = computed(() => props.location.lookupInput ?? props.location.displayName);
+const matchGuidance = computed(() => {
+	if (props.location.lookupMode === "zip-preview")
+		return "This guide was opened from a ZIP-only preview. ZIPs can span multiple districts, so verify the exact ballot in the official election tools before relying on district-specific contests.";
+
+	if (props.location.lookupMode === "address-submitted")
+		return "A full address is the correct input for exact ballot matching. Ballot Clarity still treats the current result as a reference guide until verified address-to-ballot matching is live.";
+
+	return "Use the official election office links for final district, polling-place, and ballot verification when details are time-sensitive.";
+});
 
 function printBallot() {
 	if (import.meta.client)
@@ -90,7 +99,7 @@ function printBallot() {
 							Each contest below includes plainspoken summaries, record highlights, funding context, and direct source lists. Information may still be incomplete, so review original records before voting.
 						</p>
 						<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-							This ballot is personalized to {{ personalizationLabel }}. If you use ZIP only, treat the result as a partial guide until you confirm district-specific details with the election office.
+							This ballot is personalized to {{ personalizationLabel }}. {{ matchGuidance }}
 						</p>
 					</div>
 

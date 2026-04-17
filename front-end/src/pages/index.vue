@@ -93,7 +93,7 @@ usePageSeo({
 const quickStartSteps = [
 	{
 		step: "1",
-		text: "Enter an address or ZIP code to generate a readable ballot guide."
+		text: "Enter a full address for the best district match, or use a 5-digit ZIP code to preview the current coverage area."
 	},
 	{
 		step: "2",

@@ -161,10 +161,22 @@ const ballotCounts = computed(() => {
 	});
 });
 const personalizationLabel = computed(() => data.value?.location.lookupInput ?? data.value?.location.displayName ?? "");
+const personalizationNote = computed(() => {
+	if (!data.value)
+		return "Use a full address for the most specific district match.";
+
+	if (data.value.location.lookupMode === "zip-preview")
+		return "ZIP-only preview. Confirm district-specific contests in the official election tools.";
+
+	if (data.value.location.lookupMode === "address-submitted")
+		return "Full address submitted. Official verification is still recommended until exact ballot matching is live.";
+
+	return "Use a full address for the most specific district match.";
+});
 const guideSummaryItems = computed(() => ([
 	{
 		label: "Personalized to",
-		note: "Full address gives the most specific district match.",
+		note: personalizationNote.value,
 		value: personalizationLabel.value
 	},
 	{
@@ -196,7 +208,7 @@ const coverageNotes = computed(() => {
 		return [];
 
 	return [
-		`This ballot is personalized to ${personalizationLabel.value}. Use a full street address for the most specific district match.`,
+		`This ballot is personalized to ${personalizationLabel.value}. ${personalizationNote.value}`,
 		`${data.value.election.officialResources.length} official links are attached for election logistics, notices, and office contact details.`,
 		`${ballotCounts.value.sourceLinkedItems} contest items in this guide link to source drawers or evidence panels in the project archive.`,
 		`${effectiveBallotPlanCount.value} contest${effectiveBallotPlanCount.value === 1 ? "" : "s"} saved to your ballot plan so far.`,

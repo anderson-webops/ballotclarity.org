@@ -35,6 +35,7 @@ test("GET /health returns readiness and coverage metadata", async () => {
 	assert.equal(body.driver, "sqlite");
 	assert.equal(body.coverageMode, "seed");
 	assert.equal(body.assetMode, "public-mirror");
+	assert.equal(body.providerSummary.total >= 6, true);
 	assert.match(body.timestamp, /^\d{4}-\d{2}-\d{2}T/);
 });
 
@@ -52,7 +53,21 @@ test("POST /api/location validates short lookups", async () => {
 	assert.match(body.message, /Enter at least/);
 });
 
-test("POST /api/location returns the current Fulton County launch location for valid lookups", async () => {
+test("POST /api/location validates incomplete numeric ZIP fragments", async () => {
+	const response = await fetch(`${baseUrl}/api/location`, {
+		body: JSON.stringify({ q: "3030" }),
+		headers: {
+			"Content-Type": "application/json"
+		},
+		method: "POST"
+	});
+	const body = await response.json();
+
+	assert.equal(response.status, 400);
+	assert.match(body.message, /full 5-digit ZIP code/i);
+});
+
+test("POST /api/location returns ZIP lookup choices instead of pretending to have an exact ballot", async () => {
 	const response = await fetch(`${baseUrl}/api/location`, {
 		body: JSON.stringify({ q: "30309" }),
 		headers: {
@@ -64,8 +79,31 @@ test("POST /api/location returns the current Fulton County launch location for v
 
 	assert.equal(response.status, 200);
 	assert.equal(response.headers.get("cache-control"), "no-store");
+	assert.equal(body.result, "selection-required");
+	assert.equal(body.inputKind, "zip");
+	assert.equal(body.actions[0].kind, "ballot-guide");
+	assert.equal(body.actions[0].location.slug, "fulton-county-georgia");
+	assert.equal(body.actions[0].location.lookupMode, "zip-preview");
+	assert.equal(body.actions.some((item: { kind: string; title: string }) => item.kind === "official-verification" && /My Voter Page/i.test(item.title)), true);
+});
+
+test("POST /api/location returns the current Fulton County launch location for full addresses", async () => {
+	const response = await fetch(`${baseUrl}/api/location`, {
+		body: JSON.stringify({ q: "5600 Campbellton Fairburn Road, Union City, GA 30213" }),
+		headers: {
+			"Content-Type": "application/json"
+		},
+		method: "POST"
+	});
+	const body = await response.json();
+
+	assert.equal(response.status, 200);
+	assert.equal(response.headers.get("cache-control"), "no-store");
+	assert.equal(body.result, "resolved");
+	assert.equal(body.inputKind, "address");
 	assert.equal(body.electionSlug, "2026-fulton-county-general");
 	assert.equal(body.location.slug, "fulton-county-georgia");
+	assert.equal(body.location.lookupMode, "address-submitted");
 	assert.equal(body.location.lookupInput, undefined);
 });
 

@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { Buffer } from "node:buffer";
 import { spawn } from "node:child_process";
 import { once } from "node:events";
+import { existsSync } from "node:fs";
 import { createServer } from "node:net";
 import { join } from "node:path";
 import process from "node:process";
@@ -132,6 +133,9 @@ after(async () => {
 });
 
 test("built app renders the key ballot guide pages against the built API", async () => {
+	assert.equal(existsSync(join(repoRoot, "back-end/dist/admin-schema.sql")), true);
+	assert.equal(existsSync(join(repoRoot, "back-end/dist/admin-schema.postgres.sql")), true);
+
 	const ballotResponse = await fetch(`${apiBaseUrl}/api/ballot?election=2026-metro-county-general`);
 	const ballot = await ballotResponse.json();
 	const homePage = await fetch(`${appBaseUrl}/`);

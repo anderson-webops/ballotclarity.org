@@ -140,7 +140,7 @@ function printPlan() {
 </script>
 
 <template>
-	<section class="app-shell section-gap">
+	<section class="app-shell section-gap space-y-8 lg:space-y-10">
 		<header class="surface-panel overflow-hidden">
 			<div class="gap-8 grid xl:gap-12 xl:grid-cols-[minmax(0,1.18fr)_minmax(19rem,0.82fr)] xl:items-end">
 				<div>

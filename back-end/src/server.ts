@@ -29,7 +29,7 @@ import type {
 import { Buffer } from "node:buffer";
 import { timingSafeEqual } from "node:crypto";
 import process from "node:process";
-import { pathToFileURL } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import cors from "cors";
 import dotenv from "dotenv";
 import express from "express";
@@ -51,7 +51,9 @@ import { createLogger, createRequestLoggingMiddleware } from "./logger.js";
 import { buildProviderSummary } from "./provider-config.js";
 import { createSourceAssetStore } from "./source-asset-store.js";
 
-dotenv.config();
+dotenv.config({
+	path: fileURLToPath(new URL("../../.env", import.meta.url))
+});
 
 interface CreateAppOptions {
 	adminApiKey?: string | null;

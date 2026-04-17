@@ -81,6 +81,17 @@ For local Google Civic testing:
 
 When the key is configured, Ballot Clarity will call Google Civic server-side for full-address verification and show any official links returned by the provider before continuing into the ballot guide. ZIP-only input remains approximate by design.
 
+For federal provider setup:
+
+- `DATA_API_KEY` is the shared `api.data.gov` credential. Ballot Clarity will use it as a fallback for both Congress.gov and OpenFEC when `CONGRESS_API_KEY` or `OPENFEC_API_KEY` are unset.
+- If you prefer separate credentials later, set `CONGRESS_API_KEY` and `OPENFEC_API_KEY` explicitly and they will take precedence over `DATA_API_KEY`.
+
+To verify the currently configured provider keys without printing them:
+
+```bash
+npm run providers:test
+```
+
 ## Environment configuration
 
 Public runtime variables:
@@ -123,6 +134,7 @@ One-time or scheduled ingestion variables:
 
 - `LIVE_COVERAGE_SOURCE_FILE`: local JSON file path consumed by `npm run ingest:coverage`
 - `LIVE_COVERAGE_SOURCE_URL`: remote JSON URL consumed by `npm run ingest:coverage`
+- `DATA_API_KEY`: shared `api.data.gov` credential used as a fallback for Congress.gov and OpenFEC
 
 For production, use unique random values for `ADMIN_API_KEY`, `ADMIN_BOOTSTRAP_PASSWORD`, and `ADMIN_SESSION_SECRET`. The front-end and back-end must share the same `ADMIN_API_KEY`. Keep every `ADMIN_*` variable in the server environment only.
 The public browser should call `/api/admin/*` on the Nuxt origin only. Those requests must terminate at the Nuxt server so the session cookie and server-held `ADMIN_API_KEY` stay inside the bridge layer.
@@ -138,6 +150,7 @@ npm run stack:up
 npm run coverage:seed-local
 npm run bootstrap-admin
 npm run ingest:coverage -- --from-file ./ops/live-coverage.json
+npm run providers:test
 npm run lint
 npm run typecheck
 npm run test

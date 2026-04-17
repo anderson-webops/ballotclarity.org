@@ -10,8 +10,17 @@ let server: Server;
 let baseUrl = "";
 const adminApiKey = "test-admin-key";
 const coverageSnapshot = buildSeedCoverageSnapshot();
+const previousAdminStoreDriver = process.env.ADMIN_STORE_DRIVER;
+const previousAdminDatabaseUrl = process.env.ADMIN_DATABASE_URL;
+const previousDatabaseUrl = process.env.DATABASE_URL;
+const previousSourceAssetBaseUrl = process.env.SOURCE_ASSET_BASE_URL;
 
 before(async () => {
+	process.env.ADMIN_STORE_DRIVER = "sqlite";
+	delete process.env.ADMIN_DATABASE_URL;
+	delete process.env.DATABASE_URL;
+	delete process.env.SOURCE_ASSET_BASE_URL;
+
 	server = (await createApp({
 		adminApiKey,
 		adminDbPath: ":memory:",
@@ -64,9 +73,31 @@ before(async () => {
 });
 
 after(async () => {
-	await new Promise<void>((resolve, reject) => {
-		server.close(error => error ? reject(error) : resolve());
-	});
+	if (server) {
+		await new Promise<void>((resolve, reject) => {
+			server.close(error => error ? reject(error) : resolve());
+		});
+	}
+
+	if (previousAdminStoreDriver === undefined)
+		delete process.env.ADMIN_STORE_DRIVER;
+	else
+		process.env.ADMIN_STORE_DRIVER = previousAdminStoreDriver;
+
+	if (previousAdminDatabaseUrl === undefined)
+		delete process.env.ADMIN_DATABASE_URL;
+	else
+		process.env.ADMIN_DATABASE_URL = previousAdminDatabaseUrl;
+
+	if (previousDatabaseUrl === undefined)
+		delete process.env.DATABASE_URL;
+	else
+		process.env.DATABASE_URL = previousDatabaseUrl;
+
+	if (previousSourceAssetBaseUrl === undefined)
+		delete process.env.SOURCE_ASSET_BASE_URL;
+	else
+		process.env.SOURCE_ASSET_BASE_URL = previousSourceAssetBaseUrl;
 });
 
 test("GET /health returns readiness and coverage metadata", async () => {

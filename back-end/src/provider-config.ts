@@ -1,6 +1,7 @@
 import process from "node:process";
 
 export interface ProviderConfigItem {
+	fallbackEnvVar?: string;
 	id: string;
 	label: string;
 	envVar?: string;
@@ -9,8 +10,55 @@ export interface ProviderConfigItem {
 	setupUrl: string;
 }
 
+export type ProviderId = "census-geocoder" | "data-gov" | "google-civic" | "congress" | "openfec" | "openstates" | "lda" | "openai";
+
+function getEnv(name: string) {
+	return process.env[name]?.trim() || "";
+}
+
 function hasEnv(name: string) {
-	return Boolean(process.env[name]?.trim());
+	return Boolean(getEnv(name));
+}
+
+export function resolveProviderCredential(id: ProviderId) {
+	switch (id) {
+		case "google-civic":
+			return hasEnv("GOOGLE_CIVIC_API_KEY")
+				? { source: "GOOGLE_CIVIC_API_KEY", value: getEnv("GOOGLE_CIVIC_API_KEY") }
+				: null;
+		case "data-gov":
+			return hasEnv("DATA_API_KEY")
+				? { source: "DATA_API_KEY", value: getEnv("DATA_API_KEY") }
+				: null;
+		case "congress":
+			if (hasEnv("CONGRESS_API_KEY"))
+				return { source: "CONGRESS_API_KEY", value: getEnv("CONGRESS_API_KEY") };
+
+			return hasEnv("DATA_API_KEY")
+				? { source: "DATA_API_KEY", value: getEnv("DATA_API_KEY") }
+				: null;
+		case "openfec":
+			if (hasEnv("OPENFEC_API_KEY"))
+				return { source: "OPENFEC_API_KEY", value: getEnv("OPENFEC_API_KEY") };
+
+			return hasEnv("DATA_API_KEY")
+				? { source: "DATA_API_KEY", value: getEnv("DATA_API_KEY") }
+				: null;
+		case "openstates":
+			return hasEnv("OPENSTATES_API_KEY")
+				? { source: "OPENSTATES_API_KEY", value: getEnv("OPENSTATES_API_KEY") }
+				: null;
+		case "lda":
+			return hasEnv("LDA_API_KEY")
+				? { source: "LDA_API_KEY", value: getEnv("LDA_API_KEY") }
+				: null;
+		case "openai":
+			return hasEnv("OPENAI_API_KEY")
+				? { source: "OPENAI_API_KEY", value: getEnv("OPENAI_API_KEY") }
+				: null;
+		default:
+			return null;
+	}
 }
 
 export function getProviderConfigItems(): ProviderConfigItem[] {
@@ -23,6 +71,14 @@ export function getProviderConfigItems(): ProviderConfigItem[] {
 			setupUrl: "https://www.census.gov/programs-surveys/geography/technical-documentation/complete-technical-documentation/census-geocoder.html"
 		},
 		{
+			configured: hasEnv("DATA_API_KEY"),
+			envVar: "DATA_API_KEY",
+			id: "data-gov",
+			label: "api.data.gov shared key",
+			requiredFor: "Shared credential source for Congress.gov and OpenFEC when service-specific keys are not set",
+			setupUrl: "https://api.data.gov/signup/"
+		},
+		{
 			configured: hasEnv("GOOGLE_CIVIC_API_KEY"),
 			envVar: "GOOGLE_CIVIC_API_KEY",
 			id: "google-civic",
@@ -31,16 +87,18 @@ export function getProviderConfigItems(): ProviderConfigItem[] {
 			setupUrl: "https://developers.google.com/civic-information"
 		},
 		{
-			configured: hasEnv("CONGRESS_API_KEY"),
+			configured: Boolean(resolveProviderCredential("congress")),
 			envVar: "CONGRESS_API_KEY",
+			fallbackEnvVar: "DATA_API_KEY",
 			id: "congress",
 			label: "Congress.gov API",
 			requiredFor: "Federal legislative officeholder and activity context",
 			setupUrl: "https://api.congress.gov/sign-up/"
 		},
 		{
-			configured: hasEnv("OPENFEC_API_KEY"),
+			configured: Boolean(resolveProviderCredential("openfec")),
 			envVar: "OPENFEC_API_KEY",
+			fallbackEnvVar: "DATA_API_KEY",
 			id: "openfec",
 			label: "OpenFEC",
 			requiredFor: "Federal campaign-finance enrichment",

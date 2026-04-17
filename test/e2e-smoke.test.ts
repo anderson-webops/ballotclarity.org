@@ -21,6 +21,7 @@ const adminPassword = "smoke-password";
 const adminSessionSecret = "smoke-session-secret";
 const adminUsername = "smoke-admin";
 const adminDbPath = join(repoRoot, "back-end/data/e2e-smoke.sqlite");
+const localCoverageFile = join(repoRoot, "back-end/data/live-coverage.local.json");
 
 async function getFreePort() {
 	return await new Promise<number>((resolve, reject) => {
@@ -101,6 +102,10 @@ before(async () => {
 		ADMIN_BOOTSTRAP_ROLE: "admin",
 		ADMIN_BOOTSTRAP_USERNAME: adminUsername,
 		ADMIN_DB_PATH: adminDbPath,
+		ADMIN_DATABASE_URL: "",
+		ADMIN_STORE_DRIVER: "sqlite",
+		DATABASE_URL: "",
+		LIVE_COVERAGE_FILE: localCoverageFile,
 		PORT: String(apiPort)
 	});
 	apiProcess = api.child;
@@ -230,7 +235,8 @@ test("built app renders the key ballot guide pages against the built API", async
 	assert.match(statusHtml, /Public status/);
 	assert.match(statusHtml, /Tracked public sources/);
 	assert.match(statusHtml, /Active notices/);
-	assert.match(statusHtml, /reference archive while Fulton County launch integrations are being connected/i);
+	assert.match(statusHtml, /public-facing source health/i);
+	assert.match(statusHtml, /Imported snapshot|Reference archive/i);
 	assert.equal(correctionsPage.status, 200);
 	assert.match(correctionsHtml, /Corrections log/);
 	assert.match(correctionsHtml, /Reporter identity withheld/);

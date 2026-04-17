@@ -350,7 +350,7 @@ export interface LocationSelection {
 	displayName: string;
 	state: string;
 	coverageLabel: string;
-	lookupMode?: "address-submitted" | "coverage-selection" | "zip-preview";
+	lookupMode?: "address-submitted" | "address-verified" | "coverage-selection" | "zip-preview";
 	requiresOfficialConfirmation?: boolean;
 	lookupInput?: string;
 }

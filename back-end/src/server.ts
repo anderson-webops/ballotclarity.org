@@ -1,4 +1,5 @@
 import type { ErrorRequestHandler } from "express";
+import type { CoverageRepository } from "./coverage-repository.js";
 import type {
 	Candidate,
 	Contest,
@@ -43,8 +44,9 @@ import {
 	getSourceById
 } from "./coverage-data.js";
 import { createCoverageRepository } from "./coverage-repository.js";
+import { createGoogleCivicClient } from "./google-civic.js";
 import { buildCoverageResponse, launchTargetProfile } from "./launch-profile.js";
-import { buildLocationLookupResponse, validateLookupInput } from "./location-lookup.js";
+import { buildLocationLookupResponse, classifyLookupInput, validateLookupInput } from "./location-lookup.js";
 import { createLogger, createRequestLoggingMiddleware } from "./logger.js";
 import { buildProviderSummary } from "./provider-config.js";
 import { createSourceAssetStore } from "./source-asset-store.js";
@@ -57,6 +59,8 @@ interface CreateAppOptions {
 	bootstrapDisplayName?: string | null;
 	bootstrapPassword?: string | null;
 	bootstrapUsername?: string | null;
+	coverageRepository?: CoverageRepository;
+	googleCivicClient?: ReturnType<typeof createGoogleCivicClient>;
 }
 
 function isAuthorizedAdminRequest(requestKey: string | undefined, configuredKey: string | null) {
@@ -355,7 +359,7 @@ function buildSearchResponse(
 export async function createApp(options: CreateAppOptions = {}) {
 	const app = express();
 	const adminApiKey = options.adminApiKey ?? process.env.ADMIN_API_KEY ?? null;
-	const coverageRepository = await createCoverageRepository();
+	const coverageRepository = options.coverageRepository ?? await createCoverageRepository();
 	const adminRepository = await createAdminRepository({
 		bootstrapDisplayName: options.bootstrapDisplayName,
 		bootstrapPassword: options.bootstrapPassword,
@@ -366,6 +370,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 	const logger = createLogger("ballot-clarity-api");
 	const sourceAssetStore = createSourceAssetStore();
 	const adminLoginThrottle = createAdminLoginThrottle();
+	const googleCivicClient = options.googleCivicClient === undefined ? createGoogleCivicClient() : options.googleCivicClient;
 	const resolvedSourceInventory = resolveSources(coverageRepository.data.sources);
 
 	function maxUpdatedAt(...values: Array<string | undefined>) {
@@ -938,7 +943,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 		next();
 	});
 
-	app.post("/api/location", (request, response) => {
+	app.post("/api/location", async (request, response) => {
 		const raw = typeof request.body?.q === "string" ? request.body.q.trim() : "";
 		const coverage = buildCoverageResponse(coverageRepository.mode, coverageRepository.data.updatedAt);
 
@@ -953,6 +958,20 @@ export async function createApp(options: CreateAppOptions = {}) {
 			return;
 		}
 
+		let officialLookup = null;
+
+		if (googleCivicClient && classifyLookupInput(raw) === "address") {
+			try {
+				officialLookup = await googleCivicClient.lookupVoterInfo(raw);
+			}
+			catch (error) {
+				logger.warn("provider.google-civic.lookup-failed", {
+					message: error instanceof Error ? error.message : "Unknown provider error.",
+					requestId: response.locals.requestId
+				});
+			}
+		}
+
 		response.json(buildLocationLookupResponse(
 			raw,
 			coverageRepository.data.jurisdiction,
@@ -960,7 +979,8 @@ export async function createApp(options: CreateAppOptions = {}) {
 			coverageRepository.data.location,
 			coverageRepository.data.election.slug,
 			coverageRepository.mode,
-			coverage
+			coverage,
+			officialLookup
 		));
 	});
 

@@ -14,6 +14,8 @@ const isPending = ref(false);
 const errorMessage = ref("");
 const lookupActions = ref<LocationLookupAction[]>([]);
 const lookupNote = ref("");
+const resolvedElectionSlug = ref("");
+const resolvedLocation = ref<LocationLookupResponse["location"] | null>(null);
 const inputId = `address-lookup-${useId()}`;
 const descriptionId = `${inputId}-description`;
 const usageId = `${inputId}-usage`;
@@ -29,6 +31,11 @@ watch(query, () => {
 		lookupActions.value = [];
 		lookupNote.value = "";
 	}
+
+	if (resolvedLocation.value) {
+		resolvedLocation.value = null;
+		resolvedElectionSlug.value = "";
+	}
 });
 
 async function openLookupAction(action: LocationLookupAction) {
@@ -43,10 +50,24 @@ async function openLookupAction(action: LocationLookupAction) {
 	await navigateTo(`/ballot/${action.electionSlug}?location=${action.location.slug}`);
 }
 
+async function continueToResolvedGuide() {
+	if (!resolvedLocation.value || !resolvedElectionSlug.value)
+		return;
+
+	civicStore.setLocation(resolvedLocation.value);
+
+	if (props.election)
+		civicStore.setElection(props.election);
+
+	await navigateTo(`/ballot/${props.election?.slug ?? resolvedElectionSlug.value}?location=${resolvedLocation.value.slug}`);
+}
+
 async function handleSubmit() {
 	errorMessage.value = "";
 	lookupActions.value = [];
 	lookupNote.value = "";
+	resolvedElectionSlug.value = "";
+	resolvedLocation.value = null;
 
 	if (!query.value.trim()) {
 		errorMessage.value = "Enter an address or ZIP code to load the ballot guide.";
@@ -72,6 +93,13 @@ async function handleSubmit() {
 
 		if (!response.location || !response.electionSlug) {
 			errorMessage.value = "Unable to load the ballot guide right now.";
+			return;
+		}
+
+		if (response.actions?.length) {
+			lookupActions.value = response.actions;
+			resolvedElectionSlug.value = response.electionSlug;
+			resolvedLocation.value = response.location;
 			return;
 		}
 
@@ -150,6 +178,12 @@ async function handleSubmit() {
 			<p class="text-sm text-app-muted leading-6 mt-3 dark:text-app-muted-dark">
 				{{ lookupNote }}
 			</p>
+			<p
+				v-if="resolvedLocation"
+				class="text-xs text-app-muted leading-6 mt-3 dark:text-app-muted-dark"
+			>
+				The configured official provider returned these links for your address. Review them, then continue into the guide.
+			</p>
 			<div class="mt-4 gap-3 grid">
 				<div
 					v-for="action in lookupActions"
@@ -193,8 +227,18 @@ async function handleSubmit() {
 					</div>
 				</div>
 			</div>
+			<div v-if="resolvedLocation" class="mt-4 flex flex-wrap gap-3">
+				<button
+					type="button"
+					class="btn-primary"
+					@click="continueToResolvedGuide"
+				>
+					<span class="i-carbon-arrow-right" />
+					Continue to ballot guide
+				</button>
+			</div>
 			<p class="text-xs text-app-muted leading-6 mt-4 dark:text-app-muted-dark">
-				If you want the most specific district match, replace the ZIP code with a full street address before continuing.
+				{{ resolvedLocation ? "Ballot Clarity still opens the current guide surface after official verification because exact contest packaging is still being connected." : "If you want the most specific district match, replace the ZIP code with a full street address before continuing." }}
 			</p>
 		</div>
 	</form>

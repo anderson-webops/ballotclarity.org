@@ -3,16 +3,60 @@ import type { AddressInfo } from "node:net";
 import assert from "node:assert/strict";
 import { once } from "node:events";
 import test, { after, before } from "node:test";
+import { buildSeedCoverageSnapshot } from "../src/coverage-repository.js";
 import { createApp } from "../src/server.js";
 
 let server: Server;
 let baseUrl = "";
 const adminApiKey = "test-admin-key";
+const coverageSnapshot = buildSeedCoverageSnapshot();
 
 before(async () => {
 	server = (await createApp({
 		adminApiKey,
-		adminDbPath: ":memory:"
+		adminDbPath: ":memory:",
+		coverageRepository: {
+			data: coverageSnapshot,
+			getCandidateBySlug(slug) {
+				return coverageSnapshot.candidates.find(candidate => candidate.slug === slug) ?? null;
+			},
+			getCandidatesBySlugs(slugs) {
+				const requested = new Set(slugs);
+				return coverageSnapshot.candidates.filter(candidate => requested.has(candidate.slug));
+			},
+			getElectionBySlug(slug) {
+				return coverageSnapshot.election.slug === slug ? coverageSnapshot.election : null;
+			},
+			getJurisdictionBySlug(slug) {
+				return coverageSnapshot.jurisdiction.slug === slug ? coverageSnapshot.jurisdiction : null;
+			},
+			getMeasureBySlug(slug) {
+				return coverageSnapshot.measures.find(measure => measure.slug === slug) ?? null;
+			},
+			getSourceById(id) {
+				return coverageSnapshot.sources.find(source => source.id === id) ?? null;
+			},
+			mode: "seed",
+			snapshotPath: ":memory:"
+		},
+		googleCivicClient: {
+			async lookupVoterInfo() {
+				return {
+					actions: [
+						{
+							badge: "Official",
+							description: "Open the official ballot or sample-ballot page returned for this address.",
+							id: "google-civic:sample-ballot",
+							kind: "official-verification",
+							title: "Official ballot information",
+							url: "https://example.org/ballot"
+						}
+					],
+					note: "Google Civic accepted the address as 5600 Campbellton Fairburn Rd, Union City, GA 30213.",
+					verified: true
+				};
+			}
+		}
 	})).listen(0, "127.0.0.1");
 	await once(server, "listening");
 	const address = server.address() as AddressInfo;
@@ -103,7 +147,10 @@ test("POST /api/location returns the current Fulton County launch location for f
 	assert.equal(body.inputKind, "address");
 	assert.equal(body.electionSlug, "2026-fulton-county-general");
 	assert.equal(body.location.slug, "fulton-county-georgia");
-	assert.equal(body.location.lookupMode, "address-submitted");
+	assert.equal(body.location.lookupMode, "address-verified");
+	assert.equal(body.location.requiresOfficialConfirmation, false);
+	assert.equal(body.actions[0].kind, "official-verification");
+	assert.match(body.note, /Google Civic accepted the address/i);
 	assert.equal(body.location.lookupInput, undefined);
 });
 

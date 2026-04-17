@@ -9,6 +9,7 @@
 		"server": "tsx watch -r dotenv/config src/server.ts",
 		"server:once": "tsx -r dotenv/config src/server.ts",
 		"bootstrap-admin": "tsx -r dotenv/config src/bootstrap-admin.ts",
+		"export-seed-coverage": "tsx -r dotenv/config src/export-seed-coverage.ts",
 		"ingest:coverage": "tsx -r dotenv/config src/import-live-coverage.ts",
 		"start": "node dist/server.js",
 		"build": "tsc -p tsconfig.json && node ./scripts/copy-runtime-assets.mjs",

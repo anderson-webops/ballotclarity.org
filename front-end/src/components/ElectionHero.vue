@@ -15,6 +15,9 @@ const matchGuidance = computed(() => {
 	if (props.location.lookupMode === "zip-preview")
 		return "This guide was opened from a ZIP-only preview. ZIPs can span multiple districts, so verify the exact ballot in the official election tools before relying on district-specific contests.";
 
+	if (props.location.lookupMode === "address-verified")
+		return "This address was accepted by the configured official voter-information provider. Ballot Clarity still opens the current guide surface while exact contest packaging is being connected.";
+
 	if (props.location.lookupMode === "address-submitted")
 		return "A full address is the correct input for exact ballot matching. Ballot Clarity still treats the current result as a reference guide until verified address-to-ballot matching is live.";
 

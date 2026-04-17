@@ -31,20 +31,31 @@ npm install
 Copy the environment template:
 
 ```bash
-cp .env.example .env
+npm run env:local
 ```
 
-Start local Postgres:
+Bring up the local service stack:
 
 ```bash
-npm run db:up
+npm run stack:up
+```
+
+This starts:
+
+- local Postgres on `127.0.0.1:5432`
+- local MinIO object storage on `127.0.0.1:9000`
+- local MinIO console on `127.0.0.1:9001`
+
+Write a local coverage snapshot so the API can run in snapshot mode instead of raw in-memory seed mode:
+
+```bash
+npm run coverage:seed-local
 ```
 
 Bootstrap the first admin user before using `/admin`:
 
 ```bash
 npm run bootstrap-admin
-npm run ingest:coverage -- --from-file ./ops/live-coverage.json
 ```
 
 Run the API in one terminal:
@@ -61,12 +72,26 @@ npm run dev
 
 The front-end runs at `http://127.0.0.1:3333` and expects the API at `http://127.0.0.1:3001/api` by default.
 
+For local Google Civic testing:
+
+1. Open the generated `.env`
+2. Paste your `GOOGLE_CIVIC_API_KEY`
+3. Restart the backend
+4. Submit a full street address in the lookup form
+
+When the key is configured, Ballot Clarity will call Google Civic server-side for full-address verification and show any official links returned by the provider before continuing into the ballot guide. ZIP-only input remains approximate by design.
+
 ## Environment configuration
 
 Public runtime variables:
 
 - `NUXT_PUBLIC_SITE_URL`: canonical public origin used for metadata, schema, and canonical URLs
 - `NUXT_PUBLIC_API_BASE`: public API base used by the front-end for ballot, search, sources, and content reads
+
+Local infrastructure variables:
+
+- `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_PORT`: values used by the local Docker Postgres service and the derived `ADMIN_DATABASE_URL`
+- `MINIO_ROOT_USER`, `MINIO_ROOT_PASSWORD`, `MINIO_BUCKET`, `MINIO_PORT`, `MINIO_CONSOLE_PORT`: values used by the local MinIO service and bucket bootstrap
 
 Server-only variables:
 
@@ -108,6 +133,9 @@ The public browser should call `/api/admin/*` on the Nuxt origin only. Those req
 npm run dev
 npm run server
 npm run db:up
+npm run env:local
+npm run stack:up
+npm run coverage:seed-local
 npm run bootstrap-admin
 npm run ingest:coverage -- --from-file ./ops/live-coverage.json
 npm run lint
@@ -245,6 +273,29 @@ These endpoints live on the Express service, but they are intended to be reached
 - Import a vetted snapshot with `npm run ingest:coverage` and set `LIVE_COVERAGE_REQUIRED=true` once production should refuse to start without current snapshot data.
 - Run `npm run bootstrap-admin` once on the server, then remove the bootstrap password from routine shell history and secrets tooling if a different operational process is preferred.
 - Keep the public reverse proxy pointed at Nuxt for `/api/admin/*`; do not route those browser requests straight to the Express backend.
+
+## Local operator runbook
+
+1. `npm run env:local`
+2. Fill `GOOGLE_CIVIC_API_KEY` in `.env` if you want live address verification.
+3. `npm run stack:up`
+4. `npm run coverage:seed-local`
+5. `npm run bootstrap-admin`
+6. `npm run server`
+7. `npm run dev`
+
+Useful local URLs:
+
+- public site: `http://127.0.0.1:3333`
+- API health: `http://127.0.0.1:3001/health`
+- local source-file bucket: `http://127.0.0.1:9000/source-files`
+- MinIO console: `http://127.0.0.1:9001`
+
+Local stack notes:
+
+- Postgres is the actual local admin/editor persistence layer.
+- MinIO is only needed when you want to test `SOURCE_ASSET_BASE_URL` against object-storage-style URLs. If you leave `SOURCE_ASSET_BASE_URL` blank, the app will continue using bundled static files under `front-end/public/source-files/`.
+- Monitoring and scheduled imports are not separate local services yet because the current repo does not have a runtime monitor/worker subsystem to stand up. Health and provider readiness are exposed through `/health`, and coverage imports are still operator-triggered CLI commands.
 
 ## Swapping seeded coverage for live civic data later
 

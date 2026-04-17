@@ -1,3 +1,4 @@
+import type { OfficialAddressMatch } from "./google-civic.js";
 import type {
 	CoverageResponse,
 	Jurisdiction,
@@ -86,7 +87,8 @@ export function buildLocationLookupResponse(
 	location: LocationSelection,
 	electionSlug: string,
 	coverageMode: "seed" | "snapshot",
-	coverage: CoverageResponse
+	coverage: CoverageResponse,
+	officialLookup?: OfficialAddressMatch | null
 ): LocationLookupResponse {
 	const inputKind = classifyLookupInput(rawQuery);
 
@@ -110,16 +112,17 @@ export function buildLocationLookupResponse(
 	}
 
 	return {
+		actions: officialLookup?.actions?.length ? officialLookup.actions : undefined,
 		electionSlug,
 		inputKind,
 		location: {
 			...location,
-			lookupMode: "address-submitted",
-			requiresOfficialConfirmation: true
+			lookupMode: officialLookup?.verified ? "address-verified" : "address-submitted",
+			requiresOfficialConfirmation: !officialLookup?.verified
 		},
-		note: coverageMode === "snapshot"
+		note: officialLookup?.note || (coverageMode === "snapshot"
 			? "A full address is the right input for exact ballot matching. The current release still opens the latest imported public coverage snapshot and should be verified against official election tools for the final district-level ballot."
-			: "A full address is the right input for exact ballot matching. The current release still opens the Fulton County reference guide while verified address-to-ballot matching is being connected, so confirm the final ballot in the official election tools.",
+			: "A full address is the right input for exact ballot matching. The current release still opens the Fulton County reference guide while verified address-to-ballot matching is being connected, so confirm the final ballot in the official election tools."),
 		result: "resolved"
 	};
 }

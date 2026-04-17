@@ -168,6 +168,9 @@ const personalizationNote = computed(() => {
 	if (data.value.location.lookupMode === "zip-preview")
 		return "ZIP-only preview. Confirm district-specific contests in the official election tools.";
 
+	if (data.value.location.lookupMode === "address-verified")
+		return "Official provider accepted this address. Ballot Clarity still opens the current guide surface until exact contest packaging is live.";
+
 	if (data.value.location.lookupMode === "address-submitted")
 		return "Full address submitted. Official verification is still recommended until exact ballot matching is live.";
 

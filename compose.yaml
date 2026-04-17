@@ -4,18 +4,53 @@ services:
     container_name: ballot-clarity-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_DB: ballot_clarity
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ${POSTGRES_DB:-ballot_clarity}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - ballot_clarity_postgres:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d ballot_clarity"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-ballot_clarity}"]
       interval: 10s
       timeout: 5s
       retries: 10
 
+  minio:
+    image: minio/minio:latest
+    container_name: ballot-clarity-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+    ports:
+      - "${MINIO_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+    volumes:
+      - ballot_clarity_minio:/data
+
+  minio-init:
+    image: minio/mc:latest
+    container_name: ballot-clarity-minio-init
+    depends_on:
+      - minio
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+      MINIO_BUCKET: ${MINIO_BUCKET:-source-files}
+    entrypoint: /bin/sh
+    command: >-
+      -c "
+      until mc alias set local http://minio:9000 \"$MINIO_ROOT_USER\" \"$MINIO_ROOT_PASSWORD\"; do sleep 1; done;
+      mc mb -p local/\"$MINIO_BUCKET\" || true;
+      mc anonymous set download local/\"$MINIO_BUCKET\";
+      mc mirror --overwrite /seed-source-files local/\"$MINIO_BUCKET\";
+      "
+    volumes:
+      - ./front-end/public/source-files:/seed-source-files:ro
+
 volumes:
   ballot_clarity_postgres:
+  ballot_clarity_minio:

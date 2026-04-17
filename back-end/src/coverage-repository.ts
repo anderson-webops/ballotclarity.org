@@ -54,7 +54,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function defaultCoverageFilePath() {
-	return resolve(process.cwd(), "back-end", "data", "live-coverage.json");
+	return resolve(dirname(new URL(import.meta.url).pathname), "..", "data", "live-coverage.local.json");
 }
 
 export function buildSeedCoverageSnapshot(): CoverageSnapshot {

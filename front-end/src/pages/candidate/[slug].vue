@@ -2,6 +2,7 @@
 import type { Source } from "~/types/civic";
 import { storeToRefs } from "pinia";
 import { contactEmail } from "~/constants";
+import { buildCompareLaunchSlugs, buildCompareRoute } from "~/stores/civic";
 
 const civicStore = useCivicStore();
 const route = useRoute();
@@ -87,6 +88,15 @@ usePageSeo({
 });
 
 const isCompared = computed(() => candidate.value ? compareList.value.includes(candidate.value.slug) : false);
+const compareLimitReached = computed(() => compareList.value.length >= 3 && !isCompared.value);
+const compareLaunchSlugs = computed(() => {
+	if (!candidate.value || compareLimitReached.value)
+		return [];
+
+	return buildCompareLaunchSlugs(compareList.value, candidate.value.slug);
+});
+const compareHref = computed(() => buildCompareRoute(compareLaunchSlugs.value));
+const canOpenCompare = computed(() => compareLaunchSlugs.value.length >= 2);
 const isPlanned = computed(() => {
 	if (!candidate.value)
 		return false;
@@ -264,9 +274,12 @@ function saveToPlan() {
 					</div>
 					<div class="mt-6 flex flex-wrap gap-4 items-center">
 						<SourceDrawer :sources="candidate.sources" :title="`${candidate.name} evidence and sources`" button-label="Evidence & sources" />
-						<button type="button" class="btn-secondary" @click="toggleCompare">
+						<NuxtLink v-if="canOpenCompare" :to="compareHref" class="btn-secondary">
+							Open compare
+						</NuxtLink>
+						<button type="button" class="btn-secondary" :disabled="compareLimitReached" @click="toggleCompare">
 							<span :class="isCompared ? 'i-carbon-checkmark' : 'i-carbon-compare'" />
-							{{ isCompared ? 'Added to compare' : 'Compare candidate' }}
+							{{ isCompared ? 'Remove from compare' : 'Add to compare' }}
 						</button>
 						<button type="button" class="btn-secondary" @click="saveToPlan">
 							<span :class="isPlanned ? 'i-carbon-checkmark' : 'i-carbon-notebook'" />

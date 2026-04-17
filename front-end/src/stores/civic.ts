@@ -37,6 +37,62 @@ function sanitizeLocationSelection(location: LocationSelection | null) {
 	return safeLocation;
 }
 
+export function normalizeCompareSlugs(slugs: readonly string[]) {
+	return Array.from(new Set(
+		slugs
+			.map(slug => slug.trim())
+			.filter(Boolean)
+	)).slice(0, 3);
+}
+
+export function parseCompareQuerySlugs(value: string | string[] | null | undefined) {
+	const rawValues = Array.isArray(value)
+		? value
+		: typeof value === "string"
+			? [value]
+			: [];
+
+	return normalizeCompareSlugs(rawValues.flatMap(item => item.split(",")));
+}
+
+export function buildCompareRoute(slugs: readonly string[]) {
+	const normalized = normalizeCompareSlugs(slugs);
+
+	return normalized.length
+		? {
+				path: "/compare",
+				query: {
+					slugs: normalized.join(",")
+				}
+			}
+		: {
+				path: "/compare"
+			};
+}
+
+export function toggleCompareSelection(currentSlugs: readonly string[], slug: string) {
+	const normalized = normalizeCompareSlugs(currentSlugs);
+
+	if (normalized.includes(slug))
+		return normalized.filter(item => item !== slug);
+
+	if (normalized.length >= 3)
+		return normalized;
+
+	return [...normalized, slug];
+}
+
+export function buildCompareLaunchSlugs(currentSlugs: readonly string[], slug?: string) {
+	if (!slug)
+		return normalizeCompareSlugs(currentSlugs);
+
+	return normalizeCompareSlugs(
+		normalizeCompareSlugs(currentSlugs).includes(slug)
+			? [...currentSlugs]
+			: [...currentSlugs, slug]
+	);
+}
+
 function readSnapshot(): CivicStoreSnapshot {
 	if (!import.meta.client)
 		return defaultSnapshot();
@@ -96,7 +152,7 @@ export const useCivicStore = defineStore("civic", {
 			const snapshot = readSnapshot();
 			this.ballotPlan = snapshot.ballotPlan;
 			this.ballotViewMode = snapshot.ballotViewMode;
-			this.compareList = snapshot.compareList;
+			this.compareList = normalizeCompareSlugs(snapshot.compareList);
 			this.selectedElection = snapshot.selectedElection;
 			this.selectedIssues = snapshot.selectedIssues;
 			this.selectedLocation = sanitizeLocationSelection(snapshot.selectedLocation);
@@ -119,7 +175,7 @@ export const useCivicStore = defineStore("civic", {
 			this.persist();
 		},
 		replaceCompare(slugs: string[]) {
-			this.compareList = Array.from(new Set(slugs)).slice(0, 3);
+			this.compareList = normalizeCompareSlugs(slugs);
 			this.persist();
 		},
 		selectCandidateForPlan(contestSlug: string, candidateSlug: string) {
@@ -160,15 +216,7 @@ export const useCivicStore = defineStore("civic", {
 			this.persist();
 		},
 		toggleCompare(slug: string) {
-			if (this.compareList.includes(slug)) {
-				this.compareList = this.compareList.filter(item => item !== slug);
-				this.persist();
-				return;
-			}
-
-			if (this.compareList.length < 3)
-				this.compareList = [...this.compareList, slug];
-
+			this.compareList = toggleCompareSelection(this.compareList, slug);
 			this.persist();
 		},
 		toggleIssue(issue: string) {

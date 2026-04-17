@@ -1,7 +1,11 @@
 <script setup lang="ts">
+import { storeToRefs } from "pinia";
 import { contactEmail } from "~/constants";
+import { buildCompareRoute } from "~/stores/civic";
 
 const year = new Date().getFullYear();
+const civicStore = useCivicStore();
+const { compareList } = storeToRefs(civicStore);
 
 const guideLinks = [
 	{ label: "My ballot plan", to: "/plan" },
@@ -27,6 +31,12 @@ const policyLinks = [
 	{ label: "Privacy", to: "/privacy" },
 	{ label: "Terms", to: "/terms" },
 ];
+
+function resolveGuideLinkTo(path: string) {
+	return path === "/compare"
+		? buildCompareRoute(compareList.value)
+		: path;
+}
 </script>
 
 <template>
@@ -73,7 +83,7 @@ const policyLinks = [
 						</p>
 						<ul class="text-sm mt-4 space-y-3">
 							<li v-for="link in guideLinks" :key="link.to">
-								<NuxtLink :to="link.to" class="text-app-ink rounded-md transition dark:text-app-text-dark hover:text-app-accent focus-ring dark:hover:text-white">
+								<NuxtLink :to="resolveGuideLinkTo(link.to)" class="text-app-ink rounded-md transition dark:text-app-text-dark hover:text-app-accent focus-ring dark:hover:text-white">
 									{{ link.label }}
 								</NuxtLink>
 							</li>

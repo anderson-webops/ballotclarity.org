@@ -22,20 +22,20 @@ export function useCandidate(candidateSlug: MaybeRefOrGetter<string | undefined>
 export function useCandidates(candidateSlugs: MaybeRefOrGetter<string[] | undefined>) {
 	const api = useApiClient();
 	const slugs = computed(() => (toValue(candidateSlugs) ?? []).filter(Boolean).slice(0, 3));
+	const emptyCompareResponse = {
+		candidates: [],
+		contestSlug: null,
+		note: "No compare candidates were selected in this URL yet. Choose two or three candidates, then reopen compare.",
+		office: null,
+		sameContest: false,
+		requestedSlugs: []
+	} satisfies CompareResponse;
 
 	return useAsyncData<CompareResponse>(
 		() => `compare:${slugs.value.join(",") || "empty"}`,
 		async () => {
-			if (!slugs.value.length) {
-				return {
-					candidates: [],
-					contestSlug: null,
-					note: "Select two or three candidates to compare.",
-					office: null,
-					sameContest: false,
-					requestedSlugs: []
-				};
-			}
+			if (!slugs.value.length)
+				return emptyCompareResponse;
 
 			return api<CompareResponse>("/compare", {
 				query: {
@@ -44,14 +44,7 @@ export function useCandidates(candidateSlugs: MaybeRefOrGetter<string[] | undefi
 			});
 		},
 		{
-			default: () => ({
-				candidates: [],
-				contestSlug: null,
-				note: "Select two or three candidates to compare.",
-				office: null,
-				sameContest: false,
-				requestedSlugs: []
-			}),
+			default: () => emptyCompareResponse,
 			watch: [slugs]
 		}
 	);

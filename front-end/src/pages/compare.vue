@@ -1,19 +1,21 @@
 <script setup lang="ts">
 import type { Candidate, Source } from "~/types/civic";
+import { buildCompareRoute, normalizeCompareSlugs, parseCompareQuerySlugs } from "~/stores/civic";
 
 const civicStore = useCivicStore();
 const route = useRoute();
+const router = useRouter();
 
-const selectedSlugs = computed(() => {
-	if (typeof route.query.slugs === "string" && route.query.slugs.length)
-		return route.query.slugs.split(",").map(item => item.trim()).filter(Boolean).slice(0, 3);
+const selectedSlugs = computed(() => parseCompareQuerySlugs(route.query.slugs));
+const cachedCompareSlugs = computed(() => normalizeCompareSlugs(civicStore.compareList));
+const hasCanonicalSelection = computed(() => selectedSlugs.value.length > 0);
+const hasSavedCompareSelection = computed(() => !hasCanonicalSelection.value && cachedCompareSlugs.value.length >= 2);
+const resumeCompareHref = computed(() => buildCompareRoute(cachedCompareSlugs.value));
 
-	return civicStore.compareList;
-});
-
-watchEffect(() => {
-	civicStore.replaceCompare(selectedSlugs.value);
-});
+watch(selectedSlugs, (slugs) => {
+	if (slugs.length)
+		civicStore.replaceCompare(slugs);
+}, { immediate: true });
 
 const { data, pending } = await useCandidates(selectedSlugs);
 
@@ -52,6 +54,21 @@ const comparisonStats = computed(() => ({
 		? new Set(sortedCandidates.value.flatMap(candidate => candidate.comparison.questionnaireResponses.map(response => response.questionId))).size
 		: 0
 }));
+const emptyStateTitle = computed(() => {
+	if (selectedSlugs.value.length === 1)
+		return "Select one more candidate to compare";
+
+	return "No compare candidates selected";
+});
+const emptyStateBody = computed(() => {
+	if (selectedSlugs.value.length === 1)
+		return "This compare link includes only one candidate. Add one or two more candidates from the ballot guide or a candidate profile, then reopen compare with the updated URL.";
+
+	if (hasSavedCompareSelection.value)
+		return "This compare link does not include any selected candidates yet. You can reopen the saved compare selection from this browser, or start a fresh compare from the ballot guide.";
+
+	return "This compare page needs candidate slugs in the URL to render a side-by-side view. Start from the ballot guide or a candidate profile and open compare with two or three selected candidates.";
+});
 
 function uniqueSources(...groups: Source[][]) {
 	return Array.from(new Map(groups.flat().map(source => [source.id, source])).values());
@@ -69,6 +86,11 @@ function financeSources(candidate: Candidate) {
 		candidate.funding.sources,
 		candidate.lobbyingContext.flatMap(block => block.sources)
 	);
+}
+
+async function clearCompareSelection() {
+	civicStore.clearCompare();
+	await router.push("/compare");
 }
 
 usePageSeo({
@@ -138,15 +160,23 @@ usePageSeo({
 		<div v-if="pending" class="surface-panel bg-white/70 h-96 animate-pulse dark:bg-app-panel-dark/70" />
 
 		<div v-else-if="(data?.candidates.length ?? 0) < 2" class="max-w-3xl">
-			<InfoCallout title="Select at least two candidates to compare" tone="warning">
-				Add candidates from the ballot page first, or open this page with a `slugs` query string. The compare tool supports up to three candidates at a time.
+			<InfoCallout :title="emptyStateTitle" tone="warning">
+				{{ emptyStateBody }}
 			</InfoCallout>
 			<div class="mt-6 flex flex-wrap gap-3">
 				<NuxtLink to="/ballot/2026-metro-county-general" class="btn-primary">
 					Open ballot guide
 				</NuxtLink>
-				<button type="button" class="btn-secondary" @click="civicStore.clearCompare()">
-					Clear compare list
+				<NuxtLink v-if="hasSavedCompareSelection" :to="resumeCompareHref" class="btn-secondary">
+					Resume saved compare
+				</NuxtLink>
+				<button
+					v-if="cachedCompareSlugs.length"
+					type="button"
+					class="btn-secondary"
+					@click="clearCompareSelection"
+				>
+					Clear saved compare list
 				</button>
 			</div>
 		</div>
@@ -203,7 +233,7 @@ usePageSeo({
 						<NuxtLink to="/plan" class="btn-secondary">
 							Open ballot plan
 						</NuxtLink>
-						<button type="button" class="btn-primary" @click="civicStore.clearCompare()">
+						<button type="button" class="btn-primary" @click="clearCompareSelection">
 							Clear compare list
 						</button>
 					</div>

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { Candidate } from "~/types/civic";
 import { storeToRefs } from "pinia";
+import { buildCompareLaunchSlugs, buildCompareRoute } from "~/stores/civic";
 
 const props = defineProps<{
 	candidate: Candidate;
@@ -13,6 +14,14 @@ const { formatCurrency } = useFormatters();
 
 const isCompared = computed(() => compareList.value.includes(props.candidate.slug));
 const compareLimitReached = computed(() => compareList.value.length >= 3 && !isCompared.value);
+const compareLaunchSlugs = computed(() => {
+	if (compareLimitReached.value)
+		return [];
+
+	return buildCompareLaunchSlugs(compareList.value, props.candidate.slug);
+});
+const compareHref = computed(() => buildCompareRoute(compareLaunchSlugs.value));
+const canOpenCompare = computed(() => compareLaunchSlugs.value.length >= 2);
 const isPlanned = computed(() => {
 	const selection = ballotPlan.value[props.candidate.contestSlug];
 
@@ -119,13 +128,16 @@ function saveToPlan() {
 			<NuxtLink :to="`/candidate/${candidate.slug}`" class="btn-primary">
 				View details
 			</NuxtLink>
+			<NuxtLink v-if="canOpenCompare" :to="compareHref" class="btn-secondary">
+				Open compare
+			</NuxtLink>
 			<button type="button" class="btn-secondary" @click="saveToPlan">
 				<span :class="isPlanned ? 'i-carbon-checkmark' : 'i-carbon-notebook'" />
 				{{ isPlanned ? 'Saved to plan' : 'Save to my plan' }}
 			</button>
 			<button type="button" class="btn-secondary" :disabled="compareLimitReached" @click="toggleCompare">
 				<span :class="isCompared ? 'i-carbon-checkmark' : 'i-carbon-compare'" />
-				{{ isCompared ? 'Added to compare' : 'Compare candidate' }}
+				{{ isCompared ? 'Remove from compare' : 'Add to compare' }}
 			</button>
 		</div>
 	</article>

@@ -176,6 +176,8 @@ test("built app renders the key ballot guide pages against the built API", async
 	const contactHtml = await contactPage.text();
 	const planPage = await fetch(`${appBaseUrl}/plan`);
 	const planHtml = await planPage.text();
+	const compareEmptyPage = await fetch(`${appBaseUrl}/compare`);
+	const compareEmptyHtml = await compareEmptyPage.text();
 	const comparePage = await fetch(`${appBaseUrl}/compare?slugs=elena-torres,daniel-brooks`);
 	const compareHtml = await comparePage.text();
 
@@ -302,6 +304,9 @@ test("built app renders the key ballot guide pages against the built API", async
 	assert.match(planHtml, /My ballot plan/);
 	assert.match(planHtml, /Print this plan/);
 	assert.match(planHtml, /No contests saved yet/);
+	assert.equal(compareEmptyPage.status, 200);
+	assert.match(compareEmptyHtml, /No compare candidates selected/);
+	assert.match(compareEmptyHtml, /needs candidate slugs in the URL/i);
 	assert.match(compareHtml, /Compare candidates side by side/);
 	assert.match(compareHtml, /candidate-provided statements by attribute/i);
 	assert.match(compareHtml, /Use compare to eliminate, then save a choice/);

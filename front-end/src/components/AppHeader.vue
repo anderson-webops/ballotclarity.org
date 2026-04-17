@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { storeToRefs } from "pinia";
 import { appName } from "~/constants";
+import { buildCompareRoute } from "~/stores/civic";
 
 const civicStore = useCivicStore();
 const colorMode = useColorMode();
@@ -14,7 +15,7 @@ const headerDirectionThreshold = 12;
 
 let scrollFramePending = false;
 
-const { ballotPlanCount, compareCount, selectedLocation } = storeToRefs(civicStore);
+const { ballotPlanCount, compareCount, compareList, selectedLocation } = storeToRefs(civicStore);
 
 const primaryLinks = [
 	{ label: "Ballot guide", to: "/ballot" },
@@ -48,6 +49,12 @@ function isActive(path: string) {
 	return path === "/"
 		? route.path === path
 		: route.path.startsWith(path);
+}
+
+function resolvePrimaryLinkTo(path: string) {
+	return path === "/compare"
+		? buildCompareRoute(compareList.value)
+		: path;
 }
 
 function toggleColorMode() {
@@ -119,7 +126,7 @@ onBeforeUnmount(() => {
 						<NuxtLink
 							v-for="link in primaryLinks"
 							:key="link.to"
-							:to="link.to"
+							:to="resolvePrimaryLinkTo(link.to)"
 							class="text-sm font-medium px-3 py-2 rounded-full whitespace-nowrap transition focus-ring"
 							:class="isActive(link.to)
 								? 'bg-app-ink text-white'
@@ -217,7 +224,7 @@ onBeforeUnmount(() => {
 				<NuxtLink
 					v-for="link in primaryLinks"
 					:key="link.to"
-					:to="link.to"
+					:to="resolvePrimaryLinkTo(link.to)"
 					class="text-sm font-medium px-4 py-3 rounded-2xl transition focus-ring"
 					:class="isActive(link.to)
 						? 'bg-app-ink text-white'

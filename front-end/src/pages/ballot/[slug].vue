@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { Contest } from "~/types/civic";
 import { storeToRefs } from "pinia";
+import { buildCompareRoute } from "~/stores/civic";
 
 const civicStore = useCivicStore();
 const route = useRoute();
@@ -103,12 +104,7 @@ const filteredContests = computed<Contest[]>(() => {
 			: Boolean(contest.measures?.length)));
 });
 
-const compareHref = computed(() => ({
-	path: "/compare",
-	query: {
-		slugs: compareList.value.join(","),
-	},
-}));
+const compareHref = computed(() => buildCompareRoute(compareList.value));
 const planHref = computed(() => ({
 	path: "/plan",
 	query: {

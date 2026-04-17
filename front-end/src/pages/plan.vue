@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import type { BallotPlanSelection, Contest, PlannedMeasureDecision } from "~/types/civic";
 import { storeToRefs } from "pinia";
+import { buildCompareRoute } from "~/stores/civic";
 
 const civicStore = useCivicStore();
-const { ballotPlan, ballotPlanCount, compareCount, selectedElection, selectedLocation } = storeToRefs(civicStore);
+const { ballotPlan, ballotPlanCount, compareCount, compareList, selectedElection, selectedLocation } = storeToRefs(civicStore);
 const { formatDate, formatDateTime } = useFormatters();
 
 const electionSlug = computed(() => selectedElection.value?.slug ?? "2026-metro-county-general");
@@ -61,6 +62,7 @@ const unplannedContests = computed(() => {
 	return data.value.election.contests.filter(contest => !ballotPlan.value[contest.slug]);
 });
 const mostRecentSavedAt = computed(() => plannedEntries.value.at(-1)?.savedAt ?? data.value?.updatedAt ?? "");
+const compareHref = computed(() => buildCompareRoute(compareList.value));
 
 function buildPlannedEntry(contest: Contest, selection: BallotPlanSelection) {
 	const index = data.value?.election.contests.findIndex(item => item.slug === contest.slug) ?? -1;
@@ -141,7 +143,7 @@ function printPlan() {
 				<button type="button" class="btn-secondary" @click="civicStore.clearBallotPlan()">
 					Clear saved choices
 				</button>
-				<NuxtLink v-if="compareCount >= 2" to="/compare" class="btn-secondary">
+				<NuxtLink v-if="compareCount >= 2" :to="compareHref" class="btn-secondary">
 					Open compare
 				</NuxtLink>
 			</div>

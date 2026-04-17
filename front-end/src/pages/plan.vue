@@ -15,6 +15,8 @@ const effectiveCompareList = computed(() => isHydrated.value ? compareList.value
 const electionSlug = computed(() => isHydrated.value ? (selectedElection.value?.slug ?? currentCoverageElectionSlug) : currentCoverageElectionSlug);
 const locationSlug = computed(() => isHydrated.value ? selectedLocation.value?.slug : undefined);
 const { data, error, pending } = await useBallot(electionSlug, locationSlug);
+const lookupElection = computed(() => selectedElection.value ?? data.value?.election ?? null);
+const activeLocationLabel = computed(() => data.value?.location.displayName ?? (isHydrated.value ? selectedLocation.value?.displayName ?? null : null));
 
 usePageSeo({
 	description: "Build a booth-ready ballot plan with saved selections, official links, and a print-friendly summary.",
@@ -190,6 +192,26 @@ function printPlan() {
 				</div>
 			</div>
 		</header>
+
+		<section id="change-location" class="surface-panel print-hidden">
+			<div class="gap-6 grid xl:grid-cols-[minmax(0,0.78fr)_minmax(0,1.22fr)] xl:items-start">
+				<div>
+					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+						Change location
+					</p>
+					<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
+						Not the right location? Select a new district.
+					</h2>
+					<p v-if="activeLocationLabel" class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
+						You are currently viewing {{ activeLocationLabel }}.
+					</p>
+					<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
+						Enter a ZIP code to choose from the available coverage area, or use a full street address for the closest district match. Ballot Clarity does not auto-select a district from your IP address.
+					</p>
+				</div>
+				<AddressLookupForm compact :election="lookupElection" :framed="false" />
+			</div>
+		</section>
 
 		<div v-if="pending" class="space-y-6">
 			<div class="surface-panel bg-white/70 h-48 animate-pulse dark:bg-app-panel-dark/70" />

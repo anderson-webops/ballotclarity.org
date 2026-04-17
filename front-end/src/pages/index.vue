@@ -176,7 +176,20 @@ const trustFacts = computed(() => [
 				</div>
 
 				<div class="space-y-5">
-					<AddressLookupForm :election="featuredElection" />
+					<div id="location-lookup" class="surface-panel">
+						<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+							Choose your area
+						</p>
+						<h2 class="text-2xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
+							Not the right location? Select a new district.
+						</h2>
+						<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
+							Enter a ZIP code to preview the available coverage area, or use a full street address for the closest district match. Ballot Clarity does not auto-select from your IP address.
+						</p>
+						<div class="mt-5">
+							<AddressLookupForm compact :election="featuredElection" :framed="false" />
+						</div>
+					</div>
 
 					<div class="surface-panel">
 						<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
@@ -202,18 +215,6 @@ const trustFacts = computed(() => [
 								Open ballot plan
 							</NuxtLink>
 						</div>
-					</div>
-
-					<div class="surface-panel">
-						<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-							Why we ask for your address
-						</p>
-						<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-							A full address helps determine districts and ballot style. ZIP-only searches are useful for previewing the guide, but they can miss district-specific contests and should be treated as partial.
-						</p>
-						<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-							Trust signals stay compact on purpose: the home page explains the path, while freshness, evidence drawers, and methodology stay closer to the reading surfaces where they matter.
-						</p>
 					</div>
 				</div>
 			</div>

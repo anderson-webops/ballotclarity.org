@@ -4,6 +4,7 @@ import type { ElectionSummary, LocationLookupAction, LocationLookupResponse } fr
 const props = defineProps<{
 	compact?: boolean;
 	election?: ElectionSummary | null;
+	framed?: boolean;
 }>();
 
 const api = useApiClient();
@@ -120,15 +121,15 @@ async function handleSubmit() {
 </script>
 
 <template>
-	<form class="surface-panel" :class="compact ? 'p-5' : 'p-6 sm:p-7'" :aria-busy="isPending" @submit.prevent="handleSubmit">
+	<form :class="[props.framed === false ? '' : 'surface-panel', compact ? 'p-5' : 'p-6 sm:p-7']" :aria-busy="isPending" @submit.prevent="handleSubmit">
 		<label :for="inputId" class="text-sm text-app-ink font-semibold block dark:text-app-text-dark">
-			Enter a full street address or 5-digit ZIP code
+			Choose a location with a full street address or 5-digit ZIP code
 		</label>
 		<p :id="descriptionId" class="text-sm text-app-muted mt-2 dark:text-app-muted-dark">
-			Current public coverage still returns the reference ballot guide while live Fulton County, Georgia district and ballot integrations are being connected.
+			Ballot Clarity does not auto-detect your district from IP. The guide changes only when you choose a location here.
 		</p>
 		<p :id="usageId" class="text-sm text-app-muted leading-6 mt-3 dark:text-app-muted-dark">
-			Why we ask for your address: a full address is the only input that can support exact district and ballot matching. A ZIP code is useful for previewing the right coverage area, but ZIP-only results should be treated as approximate.
+			Current public coverage still returns the reference ballot guide while live Fulton County, Georgia district and ballot integrations are being connected. Why we ask for your address: a full address is the only input that can support exact district and ballot matching. A ZIP code is useful for previewing the right coverage area, but ZIP-only results should be treated as approximate.
 		</p>
 		<p :id="privacyId" class="text-sm text-app-muted leading-6 mt-3 dark:text-app-muted-dark">
 			Data use: your lookup is sent only to match ballot coverage. The raw lookup is not added to the public content archive or used for advertising, and the app saves only your selected location label and ballot-plan preferences locally in your browser. Read the

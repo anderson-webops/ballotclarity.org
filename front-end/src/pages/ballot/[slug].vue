@@ -104,6 +104,9 @@ const filteredContests = computed<Contest[]>(() => {
 			: Boolean(contest.measures?.length)));
 });
 
+const filteredCandidateContests = computed(() => filteredContests.value.filter(contest => contest.type === "candidate"));
+const filteredMeasureContests = computed(() => filteredContests.value.filter(contest => contest.type === "measure"));
+
 const compareHref = computed(() => buildCompareRoute(compareList.value));
 const planHref = computed(() => ({
 	path: "/plan",
@@ -152,6 +155,29 @@ const ballotCounts = computed(() => {
 		sourceLinkedItems: 0
 	});
 });
+const ballotOverviewCards = computed(() => ([
+	{
+		description: "Total contest sections in this ballot guide.",
+		href: "#contests-section",
+		key: "contests",
+		label: "Contests",
+		value: ballotCounts.value.contestCount
+	},
+	{
+		description: "Candidate profiles linked from this ballot.",
+		href: ballotCounts.value.candidateCount ? "#candidate-contests-section" : undefined,
+		key: "candidates",
+		label: "Candidates",
+		value: ballotCounts.value.candidateCount
+	},
+	{
+		description: "Measure explainers with yes/no summaries and sources.",
+		href: ballotCounts.value.measureCount ? "#measure-contests-section" : undefined,
+		key: "measures",
+		label: "Measures",
+		value: ballotCounts.value.measureCount
+	}
+]));
 const personalizationLabel = computed(() => data.value?.location.lookupInput ?? data.value?.location.displayName ?? "");
 const coverageNotes = computed(() => {
 	if (!data.value)
@@ -335,39 +361,35 @@ function clearFilters() {
 							Use a full address for the most specific result.
 						</p>
 					</div>
-					<div class="px-5 py-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
-						<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
-							Contests
-						</p>
-						<p class="text-3xl text-app-ink font-semibold mt-3 dark:text-app-text-dark">
-							{{ ballotCounts.contestCount }}
-						</p>
-						<p class="text-xs text-app-muted leading-6 mt-2 dark:text-app-muted-dark">
-							Total contest sections in this ballot guide.
-						</p>
-					</div>
-					<div class="px-5 py-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
-						<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
-							Candidates
-						</p>
-						<p class="text-3xl text-app-ink font-semibold mt-3 dark:text-app-text-dark">
-							{{ ballotCounts.candidateCount }}
-						</p>
-						<p class="text-xs text-app-muted leading-6 mt-2 dark:text-app-muted-dark">
-							Candidate profiles linked from this ballot.
-						</p>
-					</div>
-					<div class="px-5 py-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
-						<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
-							Measures
-						</p>
-						<p class="text-3xl text-app-ink font-semibold mt-3 dark:text-app-text-dark">
-							{{ ballotCounts.measureCount }}
-						</p>
-						<p class="text-xs text-app-muted leading-6 mt-2 dark:text-app-muted-dark">
-							Measure explainers with yes/no summaries and sources.
-						</p>
-					</div>
+					<component
+						:is="card.href ? 'a' : 'div'"
+						v-for="card in ballotOverviewCards"
+						:key="card.key"
+						:href="card.href"
+						class="px-5 py-5 rounded-3xl bg-app-bg block dark:bg-app-bg-dark/70"
+						:class="card.href
+							? 'cursor-pointer transition hover:bg-white hover:-translate-y-0.5 hover:shadow-[0_16px_36px_-28px_rgba(16,37,62,0.6)] focus-ring dark:hover:bg-app-panel-dark'
+							: 'opacity-80'"
+					>
+						<div class="flex gap-4 items-start justify-between">
+							<div>
+								<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+									{{ card.label }}
+								</p>
+								<p class="text-3xl text-app-ink font-semibold mt-3 dark:text-app-text-dark">
+									{{ card.value }}
+								</p>
+								<p class="text-xs text-app-muted leading-6 mt-2 dark:text-app-muted-dark">
+									{{ card.description }}
+								</p>
+							</div>
+							<span
+								v-if="card.href"
+								class="i-carbon-arrow-down-right text-lg text-app-accent mt-1 shrink-0"
+								aria-hidden="true"
+							/>
+						</div>
+					</component>
 				</div>
 				<div class="mt-6 gap-4 grid lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]">
 					<InfoCallout title="Coverage and certainty">
@@ -644,13 +666,46 @@ function clearFilters() {
 			</InfoCallout>
 		</section>
 
-		<section v-else-if="filteredContests.length" class="app-shell space-y-6">
-			<ContestSection
-				v-for="contest in filteredContests"
-				:key="contest.slug"
-				:contest="contest"
-				:view-mode="ballotViewMode"
-			/>
+		<section v-else-if="filteredContests.length" id="contests-section" class="app-shell space-y-10">
+			<div v-if="filteredCandidateContests.length" id="candidate-contests-section" class="scroll-mt-28 space-y-6">
+				<div class="surface-panel">
+					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+						Candidate contests
+					</p>
+					<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
+						Races with candidate profiles
+					</h2>
+					<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
+						These sections group the offices on your ballot where voters are choosing between candidates. Each card links out to deeper profiles when available.
+					</p>
+				</div>
+				<ContestSection
+					v-for="contest in filteredCandidateContests"
+					:key="contest.slug"
+					:contest="contest"
+					:view-mode="ballotViewMode"
+				/>
+			</div>
+
+			<div v-if="filteredMeasureContests.length" id="measure-contests-section" class="scroll-mt-28 space-y-6">
+				<div class="surface-panel">
+					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+						Ballot measures
+					</p>
+					<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
+						Questions and measures on this ballot
+					</h2>
+					<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
+						These sections explain what each measure would do, what a yes or no vote means, and which source records are attached to the summary.
+					</p>
+				</div>
+				<ContestSection
+					v-for="contest in filteredMeasureContests"
+					:key="contest.slug"
+					:contest="contest"
+					:view-mode="ballotViewMode"
+				/>
+			</div>
 		</section>
 
 		<section v-else class="app-shell">

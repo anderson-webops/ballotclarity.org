@@ -6,6 +6,13 @@ const civicStore = useCivicStore();
 const colorMode = useColorMode();
 const route = useRoute();
 const isMenuOpen = ref(false);
+const isHeaderVisible = ref(true);
+const lastScrollY = ref(0);
+
+const headerTopRevealOffset = 24;
+const headerDirectionThreshold = 12;
+
+let scrollFramePending = false;
 
 const { ballotPlanCount, compareCount, selectedLocation } = storeToRefs(civicStore);
 
@@ -26,6 +33,15 @@ const isDark = computed(() => colorMode.value === "dark");
 
 watch(() => route.fullPath, () => {
 	isMenuOpen.value = false;
+	isHeaderVisible.value = true;
+
+	if (import.meta.client)
+		lastScrollY.value = window.scrollY;
+});
+
+watch(isMenuOpen, (menuOpen) => {
+	if (menuOpen)
+		isHeaderVisible.value = true;
 });
 
 function isActive(path: string) {
@@ -37,10 +53,51 @@ function isActive(path: string) {
 function toggleColorMode() {
 	colorMode.preference = isDark.value ? "light" : "dark";
 }
+
+function updateHeaderVisibility(nextScrollY: number) {
+	const clampedScrollY = Math.max(nextScrollY, 0);
+	const scrollDelta = clampedScrollY - lastScrollY.value;
+
+	if (isMenuOpen.value || clampedScrollY <= headerTopRevealOffset) {
+		isHeaderVisible.value = true;
+	}
+	else if (scrollDelta >= headerDirectionThreshold) {
+		isHeaderVisible.value = false;
+	}
+	else if (scrollDelta <= -headerDirectionThreshold) {
+		isHeaderVisible.value = true;
+	}
+
+	lastScrollY.value = clampedScrollY;
+}
+
+function handleScroll() {
+	if (scrollFramePending)
+		return;
+
+	scrollFramePending = true;
+
+	window.requestAnimationFrame(() => {
+		scrollFramePending = false;
+		updateHeaderVisibility(window.scrollY);
+	});
+}
+
+onMounted(() => {
+	lastScrollY.value = window.scrollY;
+	window.addEventListener("scroll", handleScroll, { passive: true });
+});
+
+onBeforeUnmount(() => {
+	window.removeEventListener("scroll", handleScroll);
+});
 </script>
 
 <template>
-	<header class="border-b border-app-line/80 bg-app-bg/94 top-0 sticky z-40 backdrop-blur dark:border-app-line-dark dark:bg-app-bg-dark/92">
+	<header
+		class="will-change-transform border-b border-app-line/80 bg-app-bg/94 transition-transform duration-250 ease-out top-0 sticky z-40 backdrop-blur dark:border-app-line-dark dark:bg-app-bg-dark/92 focus-within:translate-y-0"
+		:class="isHeaderVisible ? 'translate-y-0' : '-translate-y-full'"
+	>
 		<div class="mx-auto px-4 py-4 max-w-[96rem] w-full lg:px-8 sm:px-6">
 			<div class="flex gap-4 items-center justify-between xl:gap-6">
 				<div class="flex shrink-0 min-w-0 items-center">

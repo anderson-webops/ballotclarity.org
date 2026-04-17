@@ -199,7 +199,6 @@ test("built app renders the key ballot guide pages against the built API", async
 	assert.match(homeHtml, /Data use: your lookup is sent only to match ballot coverage/);
 	assert.match(ballotHtml, /Questions to ask before you vote/);
 	assert.match(ballotHtml, /Key dates and official links/);
-	assert.match(ballotHtml, /Guide freshness and review status/);
 	assert.match(ballotHtml, /Ballot at a glance/);
 	assert.match(ballotHtml, /Showing contests for your districts/);
 	assert.match(ballotHtml, /Need a page reviewed/);
@@ -207,7 +206,8 @@ test("built app renders the key ballot guide pages against the built API", async
 	assert.match(ballotHtml, /Ballot contents/);
 	assert.match(ballotHtml, /Reading mode/);
 	assert.match(ballotHtml, /Quick view/);
-	assert.match(ballotHtml, /Next review/);
+	assert.match(ballotHtml, /Recent updates/);
+	assert.match(ballotHtml, /How verification is handled/);
 	assert.match(ballotHtml, /Fulton County, Georgia/);
 	assert.match(ballotHtml, /limited public-record archive/i);
 	assert.match(electionHtml, /Official links and notices/);
@@ -249,11 +249,11 @@ test("built app renders the key ballot guide pages against the built API", async
 	assert.match(candidateHtml, /At a glance/);
 	assert.match(candidateHtml, /Jump to section/);
 	assert.match(candidateHtml, /What we know/);
-	assert.match(candidateHtml, /What we(?:&#39;|’|')re still checking/);
+	assert.match(candidateHtml, /Still checking/);
 	assert.match(candidateHtml, /Issue positions/);
 	assert.match(candidateHtml, /Context and terms/);
 	assert.match(candidateHtml, /Votes(?:\s*&amp;\s*|\s*&\s*|\s*&#38;\s*)actions/);
-	assert.match(candidateHtml, /How this page is built/);
+	assert.match(candidateHtml, /Sources and methodology notes/);
 	assert.match(candidateHtml, /Evidence(?:\s*&amp;\s*|\s*&\s*|\s*&#38;\s*)sources/);
 	assert.match(candidateHtml, /Download JSON/);
 	assert.match(candidateHtml, /Report an issue/);
@@ -269,9 +269,9 @@ test("built app renders the key ballot guide pages against the built API", async
 	assert.match(measureHtml, /Arguments emphasizing approval/);
 	assert.match(measureHtml, /Full text and official sources/);
 	assert.match(measureHtml, /Report an issue/);
-	assert.match(measureHtml, /How this page is built/);
+	assert.match(measureHtml, /Inspect the original records/);
 	assert.match(measureHtml, /How this explainer stays readable/);
-	assert.match(measureHtml, /What we(?:&#39;|’|')re still checking/);
+	assert.match(measureHtml, /Still checking/);
 	assert.match(measureHtml, /Review later/);
 	assert.match(helpHtml, /Voting help and ballot basics/);
 	assert.match(helpHtml, /What is the difference between an official ballot listing and a voter guide/);

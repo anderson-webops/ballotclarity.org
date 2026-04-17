@@ -42,5 +42,5 @@ const config = computed(() => {
 </script>
 
 <template>
-	<TrustBadge :label="config.label" :tone="config.tone" />
+	<VerificationBadge :label="config.label" :tone="config.tone" />
 </template>

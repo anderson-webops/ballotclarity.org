@@ -193,24 +193,24 @@ onBeforeUnmount(() => {
 		class="will-change-transform border-b border-app-line/80 bg-app-bg/94 transition-transform duration-250 ease-out top-0 sticky z-40 backdrop-blur dark:border-app-line-dark dark:bg-app-bg-dark/92 focus-within:translate-y-0"
 		:class="isHeaderVisible ? 'translate-y-0' : '-translate-y-full'"
 	>
-		<div class="mx-auto px-4 py-4 max-w-[96rem] w-full lg:px-8 sm:px-6">
+		<div class="mx-auto px-4 py-3 max-w-[96rem] w-full lg:px-8 sm:px-6">
 			<div class="flex gap-4 items-center justify-between xl:gap-6">
 				<div class="flex shrink-0 min-w-0 items-center">
 					<NuxtLink to="/" class="rounded-full min-w-0 focus-ring">
 						<span class="flex gap-3 items-center">
-							<span class="text-app-ink border border-app-line rounded-2xl bg-white flex shrink-0 h-11 w-11 shadow-sm items-center justify-center dark:text-app-text-dark dark:border-app-line-dark dark:bg-app-panel-dark">
-								<span class="i-carbon-notebook text-xl" />
+							<span class="text-app-ink border border-app-line rounded-2xl bg-white flex shrink-0 h-10 w-10 shadow-sm items-center justify-center dark:text-app-text-dark dark:border-app-line-dark dark:bg-app-panel-dark">
+								<span class="i-carbon-notebook text-lg" />
 							</span>
 							<span class="min-w-0">
-								<span class="text-lg text-app-ink leading-none font-serif block dark:text-app-text-dark">{{ appName }}</span>
-								<span class="text-xs text-app-muted mt-1 block dark:text-app-muted-dark">Nonpartisan ballot guide and public-record archive</span>
+								<span class="text-[1.05rem] text-app-ink leading-none font-serif block dark:text-app-text-dark">{{ appName }}</span>
+								<span class="text-[11px] text-app-muted mt-1 hidden dark:text-app-muted-dark 2xl:block">Nonpartisan ballot guide and public-record archive</span>
 							</span>
 						</span>
 					</NuxtLink>
 				</div>
 
 				<nav ref="desktopNavRef" class="flex-1 min-w-0 hidden justify-center xl:flex" aria-label="Primary">
-					<div class="px-2 py-2 border border-app-line/80 rounded-full bg-white/88 flex gap-2 max-w-full shadow-sm items-center dark:border-app-line-dark dark:bg-app-panel-dark/92">
+					<div class="px-2 py-1.5 border border-app-line/80 rounded-full bg-white/88 flex gap-1.5 max-w-full shadow-sm items-center dark:border-app-line-dark dark:bg-app-panel-dark/92">
 						<div
 							v-for="(group, index) in navGroups"
 							:key="group.label"
@@ -218,7 +218,7 @@ onBeforeUnmount(() => {
 						>
 							<button
 								type="button"
-								class="text-sm font-medium px-4 py-2 list-none rounded-full cursor-pointer whitespace-nowrap transition focus-ring"
+								class="text-sm font-medium px-4 py-1.5 list-none rounded-full cursor-pointer whitespace-nowrap transition focus-ring"
 								:aria-controls="`header-group-panel-${index}`"
 								:aria-expanded="isDesktopGroupOpen(group)"
 								:class="isGroupActive(group) || isDesktopGroupOpen(group)
@@ -231,8 +231,8 @@ onBeforeUnmount(() => {
 									<span class="i-carbon-chevron-down text-xs transition" :class="isDesktopGroupOpen(group) ? 'rotate-180' : ''" />
 								</span>
 							</button>
-							<div v-if="isDesktopGroupOpen(group)" class="pt-3 left-0 top-full absolute">
-								<div class="p-3 border border-app-line/80 rounded-[1.4rem] bg-white min-w-[20rem] shadow-[0_22px_48px_-30px_rgba(16,37,62,0.45)] dark:border-app-line-dark dark:bg-app-panel-dark">
+							<div v-if="isDesktopGroupOpen(group)" class="pt-2.5 left-0 top-full absolute">
+								<div class="p-3 border border-app-line/80 rounded-[1.2rem] bg-white min-w-[18rem] shadow-[0_22px_48px_-30px_rgba(16,37,62,0.45)] dark:border-app-line-dark dark:bg-app-panel-dark">
 									<div :id="`header-group-panel-${index}`">
 										<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
 											{{ group.label }}
@@ -245,7 +245,7 @@ onBeforeUnmount(() => {
 												v-for="link in group.links"
 												:key="link.to"
 												:to="resolveLinkTo(link.to)"
-												class="px-3 py-3 rounded-[1rem] transition hover:bg-app-bg focus-ring dark:hover:bg-app-bg-dark/70"
+												class="px-3 py-2.5 rounded-[0.95rem] transition hover:bg-app-bg focus-ring dark:hover:bg-app-bg-dark/70"
 												@click="closeDesktopGroups"
 											>
 												<div class="flex gap-3 items-start justify-between">
@@ -273,7 +273,7 @@ onBeforeUnmount(() => {
 				<div class="shrink-0 gap-3 hidden items-center md:flex">
 					<NuxtLink
 						to="/plan"
-						class="text-sm text-app-ink font-medium px-4 py-2 border border-app-line rounded-full bg-white inline-flex gap-2 min-h-11 shadow-sm transition items-center dark:text-app-text-dark hover:text-app-accent dark:border-app-line-dark hover:border-app-accent dark:bg-app-panel-dark focus-ring dark:hover:text-white"
+						class="text-sm text-app-ink font-medium px-4 py-2 border border-app-line rounded-full bg-white inline-flex gap-2 min-h-10 shadow-sm transition items-center dark:text-app-text-dark hover:text-app-accent dark:border-app-line-dark hover:border-app-accent dark:bg-app-panel-dark focus-ring dark:hover:text-white"
 						:class="isActive('/plan') ? 'border-app-accent text-app-accent dark:border-app-accent dark:text-white' : ''"
 					>
 						<span>My plan</span>
@@ -292,7 +292,7 @@ onBeforeUnmount(() => {
 
 					<button
 						type="button"
-						class="text-app-ink border border-app-line rounded-full bg-white inline-flex shrink-0 h-11 w-11 shadow-sm transition items-center justify-center dark:text-app-text-dark hover:text-app-accent dark:border-app-line-dark hover:border-app-accent dark:bg-app-panel-dark focus-ring"
+						class="text-app-ink border border-app-line rounded-full bg-white inline-flex shrink-0 h-10 w-10 shadow-sm transition items-center justify-center dark:text-app-text-dark hover:text-app-accent dark:border-app-line-dark hover:border-app-accent dark:bg-app-panel-dark focus-ring"
 						:aria-label="isDark ? 'Switch to light mode' : 'Switch to dark mode'"
 						@click="toggleColorMode"
 					>
@@ -301,7 +301,7 @@ onBeforeUnmount(() => {
 
 					<button
 						type="button"
-						class="text-app-ink border border-app-line rounded-full bg-white inline-flex shrink-0 h-11 w-11 shadow-sm transition items-center justify-center dark:text-app-text-dark hover:text-app-accent dark:border-app-line-dark hover:border-app-accent dark:bg-app-panel-dark xl:hidden focus-ring"
+						class="text-app-ink border border-app-line rounded-full bg-white inline-flex shrink-0 h-10 w-10 shadow-sm transition items-center justify-center dark:text-app-text-dark hover:text-app-accent dark:border-app-line-dark hover:border-app-accent dark:bg-app-panel-dark xl:hidden focus-ring"
 						:aria-expanded="isMenuOpen"
 						aria-label="Toggle navigation"
 						@click="isMenuOpen = !isMenuOpen"
@@ -312,7 +312,7 @@ onBeforeUnmount(() => {
 
 				<button
 					type="button"
-					class="text-app-ink border border-app-line rounded-full bg-white inline-flex shrink-0 h-11 w-11 shadow-sm transition items-center justify-center dark:text-app-text-dark hover:text-app-accent dark:border-app-line-dark hover:border-app-accent dark:bg-app-panel-dark md:hidden focus-ring"
+					class="text-app-ink border border-app-line rounded-full bg-white inline-flex shrink-0 h-10 w-10 shadow-sm transition items-center justify-center dark:text-app-text-dark hover:text-app-accent dark:border-app-line-dark hover:border-app-accent dark:bg-app-panel-dark md:hidden focus-ring"
 					:aria-expanded="isMenuOpen"
 					aria-label="Toggle navigation"
 					@click="isMenuOpen = !isMenuOpen"

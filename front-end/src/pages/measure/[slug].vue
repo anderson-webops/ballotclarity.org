@@ -8,6 +8,7 @@ const route = useRoute();
 const runtimeConfig = useRuntimeConfig();
 const siteUrl = useSiteUrl();
 const { ballotPlan, isHydrated } = storeToRefs(civicStore);
+const { formatDateTime } = useFormatters();
 const measureSlug = computed(() => String(route.params.slug));
 const { data: measure, error, pending } = await useMeasure(measureSlug);
 const effectiveBallotPlan = computed(() => isHydrated.value ? ballotPlan.value : {});
@@ -124,35 +125,6 @@ const currentDecision = computed(() => {
 		: null;
 });
 
-const measureMethodItems = computed(() => {
-	if (!measure.value)
-		return [];
-
-	return [
-		{
-			body: [
-				"This page uses the attached ballot-language summary, fiscal note, and supporting public-record documents listed in the evidence panel.",
-				`The current measure page links ${measure.value.sources.length} source records for inspection.`,
-			],
-			label: "Sources"
-		},
-		{
-			body: [
-				"Ballot Clarity rewrites ballot language into plain language while keeping the original source set visible and easy to inspect.",
-				"The goal is to explain the documented tradeoffs without telling the user how to vote.",
-			],
-			label: "Processing"
-		},
-		{
-			body: [
-				"Measures can change meaning depending on later implementation rules, legal interpretation, and budget decisions after passage.",
-				"This page cannot replace the official ballot language, fiscal note, or election-office notices."
-			],
-			label: "Limits"
-		},
-	];
-});
-
 usePageSeo({
 	description: measure.value?.summary ?? "Review a plain-language ballot measure explanation with sources.",
 	jsonLd: measure.value
@@ -201,13 +173,10 @@ function saveMeasure(decision: "no" | "review" | "yes") {
 
 		<div v-else class="gap-8 grid xl:grid-cols-[minmax(0,1.35fr)_minmax(22rem,0.85fr)]">
 			<div class="space-y-6">
-				<AppBreadcrumbs :items="measureBreadcrumbs" />
-
 				<header class="surface-panel">
 					<div class="flex flex-wrap gap-2">
-						<TrustBadge label="Current measure detail" tone="warning" />
-						<TrustBadge label="Official text linked" tone="accent" />
-						<TrustBadge label="Plain-language summary" />
+						<VerificationBadge label="Measure explainer" tone="accent" />
+						<VerificationBadge :label="officialSources.length ? 'Official text linked' : 'Attached source set'" :tone="officialSources.length ? 'accent' : 'neutral'" />
 					</div>
 					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold mt-5 uppercase dark:text-app-muted-dark">
 						{{ measure.location }}
@@ -271,8 +240,6 @@ function saveMeasure(decision: "no" | "review" | "yes") {
 						</NuxtLink>
 					</div>
 				</header>
-
-				<FreshnessStrip :freshness="measure.freshness" />
 
 				<section id="at-a-glance" class="surface-panel scroll-mt-28">
 					<div class="flex flex-wrap gap-4 items-start justify-between">
@@ -354,8 +321,6 @@ function saveMeasure(decision: "no" | "review" | "yes") {
 						</InfoCallout>
 					</div>
 				</section>
-
-				<EpistemicSummary :known-items="measure.whatWeKnow" :unknown-items="measure.whatWeDoNotKnow" />
 
 				<ExpandableSection
 					id="baseline"
@@ -601,6 +566,54 @@ function saveMeasure(decision: "no" | "review" | "yes") {
 					<template #meta>
 						<SourceDrawer :sources="measure.sources" :title="`${measure.title} full source list`" />
 					</template>
+					<div class="mt-6 gap-4 grid lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+						<div class="p-4 rounded-[1.35rem] bg-app-bg dark:bg-app-bg-dark/70">
+							<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+								Review timing
+							</p>
+							<div class="mt-3 space-y-3">
+								<p class="text-sm text-app-muted leading-6 dark:text-app-muted-dark">
+									<strong class="text-app-ink dark:text-app-text-dark">Status:</strong> {{ measure.freshness.statusLabel }}
+								</p>
+								<p class="text-sm text-app-muted leading-6 dark:text-app-muted-dark">
+									<strong class="text-app-ink dark:text-app-text-dark">Last verified:</strong> {{ formatDateTime(measure.freshness.contentLastVerifiedAt) }}
+								</p>
+								<p class="text-sm text-app-muted leading-6 dark:text-app-muted-dark">
+									<strong class="text-app-ink dark:text-app-text-dark">Next review:</strong> {{ formatDateTime(measure.freshness.nextReviewAt) }}
+								</p>
+								<p class="text-sm text-app-muted leading-6 dark:text-app-muted-dark">
+									{{ measure.freshness.statusNote }}
+								</p>
+							</div>
+						</div>
+						<div class="p-4 rounded-[1.35rem] bg-app-bg dark:bg-app-bg-dark/70">
+							<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+								Verification scope
+							</p>
+							<div class="mt-3 gap-3 grid md:grid-cols-2">
+								<div>
+									<p class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
+										What we know
+									</p>
+									<ul class="mt-2 space-y-2">
+										<li v-for="item in measure.whatWeKnow" :key="item.id" class="text-sm text-app-muted leading-6 dark:text-app-muted-dark">
+											{{ item.text }}
+										</li>
+									</ul>
+								</div>
+								<div>
+									<p class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
+										Still checking
+									</p>
+									<ul class="mt-2 space-y-2">
+										<li v-for="item in measure.whatWeDoNotKnow" :key="item.id" class="text-sm text-app-muted leading-6 dark:text-app-muted-dark">
+											{{ item.text }}
+										</li>
+									</ul>
+								</div>
+							</div>
+						</div>
+					</div>
 					<div class="mt-6">
 						<SourceList :sources="officialSources.length ? officialSources : measure.sources" title="Official source trail in this guide" />
 					</div>
@@ -611,6 +624,7 @@ function saveMeasure(decision: "no" | "review" | "yes") {
 				<PageSectionNav
 					title="Jump to section"
 					description="Read the overview first, then open only the parts of the measure you need."
+					:breadcrumbs="measureBreadcrumbs"
 					:items="sectionLinks.map(section => ({ href: section.href, label: section.label }))"
 				/>
 
@@ -641,12 +655,9 @@ function saveMeasure(decision: "no" | "review" | "yes") {
 					<InfoCallout class="mt-5" title="Source-first reminder">
 						This explainer is a neutral reading aid. Official ballot language, fiscal notes, and election-office notices remain the primary sources.
 					</InfoCallout>
-					<div class="mt-6">
-						<MethodologySummaryCard
-							:items="measureMethodItems"
-							summary="This page keeps the official measure text visible, separates Ballot Clarity interpretation from source material, and states what remains uncertain."
-						/>
-					</div>
+					<InfoCallout class="mt-6" title="How verification is handled">
+						Use the evidence drawer for section-level records, the source list below for the official trail, and the footer’s data-verification panel for the site-wide explanation of review status and badge meanings.
+					</InfoCallout>
 					<div class="mt-6">
 						<SourceList :sources="measure.sources" compact title="Attached sources" />
 					</div>

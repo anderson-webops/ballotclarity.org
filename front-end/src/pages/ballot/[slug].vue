@@ -276,30 +276,6 @@ const guideSectionItems = computed(() => ([
 		: [])
 ]));
 
-const ballotMethodItems = [
-	{
-		body: [
-			"This ballot guide uses the current election object, attached official-resource files, and contest-level source records linked from each candidate and measure card.",
-			"Official logistics should still be verified in the election overview and jurisdiction pages."
-		],
-		label: "Sources"
-	},
-	{
-		body: [
-			"This page is designed as a reading surface for contests, not as the primary search landing page.",
-			"Candidate and measure summaries keep source drawers visible so users can inspect the records behind each explanation."
-		],
-		label: "Processing"
-	},
-	{
-		body: [
-			"Election logistics can change close to Election Day, so time-sensitive details should be checked against official county notices.",
-			"Late campaign activity and post-publication changes may not yet appear in the ballot guide view."
-		],
-		label: "Limits"
-	}
-];
-
 function clearFilters() {
 	searchQuery.value = "";
 	civicStore.clearIssues();
@@ -314,14 +290,6 @@ function clearFilters() {
 			:location="data.location"
 			:note="data.note"
 		/>
-
-		<section v-if="data" class="app-shell print-hidden">
-			<FreshnessStrip :change-log="data.election.changeLog" :freshness="data.election.freshness" title="Guide freshness and review status" />
-		</section>
-
-		<section v-if="data" class="app-shell print-hidden">
-			<AppBreadcrumbs :items="ballotBreadcrumbs" />
-		</section>
 
 		<section v-if="data" class="print-only app-shell">
 			<div class="print-guide">
@@ -389,6 +357,7 @@ function clearFilters() {
 					<PageSectionNav
 						title="Guide map"
 						description="Start with the overview, then use filters and contest sections only where you need more detail."
+						:breadcrumbs="ballotBreadcrumbs"
 						:items="guideSectionItems"
 					>
 						<template #actions>
@@ -543,11 +512,9 @@ function clearFilters() {
 										</li>
 									</ul>
 								</div>
-								<MethodologySummaryCard
-									:items="ballotMethodItems"
-									summary="This ballot page foregrounds freshness, official links, and contest-level evidence so the voter can verify details without leaving the guide."
-									title="How this ballot guide is built"
-								/>
+								<InfoCallout title="How verification is handled">
+									Use the official links for deadlines and logistics, the contest cards for the reading flow, and the footer’s data-verification panel for the site-wide explanation of freshness and review rules.
+								</InfoCallout>
 							</div>
 						</div>
 					</section>

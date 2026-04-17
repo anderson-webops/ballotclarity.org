@@ -21,6 +21,7 @@ const currentSelection = computed(() => {
 const coverageNote = computed(() => props.measure.whatWeDoNotKnow[0]?.text
 	?? "Implementation details can change after passage because later budgets, legal interpretation, and agency rules still matter.");
 const isQuickView = computed(() => (props.viewMode ?? "quick") === "quick");
+const officialSourceCount = computed(() => props.measure.sources.filter(source => source.authority === "official-government").length);
 
 function saveMeasure(decision: "no" | "review" | "yes") {
 	civicStore.selectMeasureForPlan(props.measure.contestSlug, props.measure.slug, decision);
@@ -30,59 +31,54 @@ function saveMeasure(decision: "no" | "review" | "yes") {
 <template>
 	<article class="surface-panel h-full">
 		<div class="flex flex-wrap gap-3 items-start justify-between">
-			<div>
-				<h3 class="text-2xl text-app-ink font-serif dark:text-app-text-dark">
+			<div class="min-w-0">
+				<h3 class="text-[1.45rem] text-app-ink leading-tight font-serif dark:text-app-text-dark">
 					{{ measure.title }}
 				</h3>
-				<p class="text-sm text-app-muted mt-2 dark:text-app-muted-dark">
+				<p class="text-sm text-app-muted mt-1.5 dark:text-app-muted-dark">
 					{{ measure.location }}
 				</p>
 			</div>
-			<SourceDrawer
-				:sources="measure.sources"
-				:title="`${measure.title} sources`"
-				:button-label="`${measure.sources.length} source${measure.sources.length === 1 ? '' : 's'}`"
-			/>
+			<VerificationBadge :label="officialSourceCount ? 'Official sources linked' : 'Source set attached'" :tone="officialSourceCount ? 'accent' : 'neutral'" />
 		</div>
 
-		<p class="text-sm text-app-muted leading-7 mt-5 dark:text-app-muted-dark">
-			{{ measure.ballotSummary }}
+		<p class="text-sm text-app-muted leading-7 mt-4 line-clamp-2 dark:text-app-muted-dark">
+			{{ measure.plainLanguageExplanation }}
 		</p>
 
-		<div class="mt-5 p-4 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70">
-			<p class="text-xs text-app-muted tracking-[0.22em] font-semibold uppercase dark:text-app-muted-dark">
-				Coverage note
-			</p>
-			<p class="text-sm text-app-muted leading-6 mt-2 dark:text-app-muted-dark">
-				{{ coverageNote }}
-			</p>
-		</div>
+		<ExpandableSection
+			:id="`measure-card-${measure.slug}`"
+			compact
+			nested
+			title="Decision context"
+			:description="measure.ballotSummary"
+			:open="!isQuickView"
+		>
+			<div class="space-y-4">
+				<dl class="gap-3 grid sm:grid-cols-2">
+					<div class="p-3 rounded-2xl bg-white/80 dark:bg-app-panel-dark/70">
+						<dt class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+							What YES means
+						</dt>
+						<dd class="text-sm text-app-muted leading-6 mt-2 dark:text-app-muted-dark">
+							{{ measure.yesMeaning }}
+						</dd>
+					</div>
+					<div class="p-3 rounded-2xl bg-white/80 dark:bg-app-panel-dark/70">
+						<dt class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+							What NO means
+						</dt>
+						<dd class="text-sm text-app-muted leading-6 mt-2 dark:text-app-muted-dark">
+							{{ measure.noMeaning }}
+						</dd>
+					</div>
+				</dl>
 
-		<dl class="mt-6 gap-4 grid sm:grid-cols-2">
-			<div class="p-4 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70">
-				<dt class="text-xs text-app-muted tracking-[0.22em] font-semibold uppercase dark:text-app-muted-dark">
-					What YES means
-				</dt>
-				<dd class="text-sm text-app-muted leading-6 mt-2 dark:text-app-muted-dark">
-					{{ measure.yesMeaning }}
-				</dd>
+				<p class="text-sm text-app-muted leading-6 dark:text-app-muted-dark">
+					{{ isQuickView ? coverageNote : measure.fiscalContextNote }}
+				</p>
 			</div>
-			<div class="p-4 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70">
-				<dt class="text-xs text-app-muted tracking-[0.22em] font-semibold uppercase dark:text-app-muted-dark">
-					What NO means
-				</dt>
-				<dd class="text-sm text-app-muted leading-6 mt-2 dark:text-app-muted-dark">
-					{{ measure.noMeaning }}
-				</dd>
-			</div>
-		</dl>
-
-		<p v-if="!isQuickView" class="text-sm text-app-muted leading-6 mt-5 dark:text-app-muted-dark">
-			{{ measure.fiscalContextNote }}
-		</p>
-		<p v-else class="text-sm text-app-muted leading-6 mt-5 dark:text-app-muted-dark">
-			Quick view keeps the decision effect visible first. Open the detail page for fiscal context, sourced arguments, and implementation limits.
-		</p>
+		</ExpandableSection>
 
 		<div class="mt-6">
 			<p class="text-xs text-app-muted tracking-[0.22em] font-semibold uppercase dark:text-app-muted-dark">
@@ -122,10 +118,16 @@ function saveMeasure(decision: "no" | "review" | "yes") {
 			</div>
 		</div>
 
-		<div class="mt-8">
+		<div class="mt-5 flex flex-wrap gap-2">
 			<NuxtLink :to="`/measure/${measure.slug}`" class="btn-primary">
 				View details
 			</NuxtLink>
+			<MeasureContextDrawer :measure="measure" />
+			<SourceDrawer
+				:sources="measure.sources"
+				:title="`${measure.title} sources`"
+				:button-label="`${measure.sources.length} source${measure.sources.length === 1 ? '' : 's'}`"
+			/>
 		</div>
 	</article>
 </template>

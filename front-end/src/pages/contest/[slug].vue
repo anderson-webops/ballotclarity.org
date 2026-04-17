@@ -58,9 +58,8 @@ usePageSeo({
 			<header class="gap-6 grid xl:grid-cols-[minmax(0,1.2fr)_minmax(22rem,0.8fr)]">
 				<div class="surface-panel">
 					<div class="flex flex-wrap gap-2">
-						<TrustBadge label="Canonical contest page" tone="accent" />
-						<TrustBadge :label="data.contest.jurisdiction" />
-						<TrustBadge :label="`${data.sourceCount} source${data.sourceCount === 1 ? '' : 's'}`" tone="warning" />
+						<VerificationBadge label="Canonical contest page" tone="accent" />
+						<VerificationBadge :label="`${data.sourceCount} source${data.sourceCount === 1 ? '' : 's'}`" />
 					</div>
 					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold mt-6 uppercase dark:text-app-muted-dark">
 						{{ data.election.name }}

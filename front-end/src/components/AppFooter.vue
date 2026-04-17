@@ -18,8 +18,6 @@ const guideLinks = [
 const discoveryLinks = [
 	{ label: "About", to: "/about" },
 	{ label: "Coverage profile", to: "/coverage" },
-	{ label: "Public status", to: "/status" },
-	{ label: "Corrections log", to: "/corrections" },
 	{ label: "Source directory", to: "/sources" },
 	{ label: "Voting FAQ", to: "/help" },
 ];
@@ -43,21 +41,16 @@ function resolveGuideLinkTo(path: string) {
 <template>
 	<footer class="py-10 border-t border-app-line/80 bg-white/80 dark:border-app-line-dark dark:bg-app-panel-dark/55">
 		<div class="app-shell">
-			<div class="gap-10 grid xl:grid-cols-[minmax(0,1.18fr)_minmax(0,0.82fr)] xl:items-start">
+			<div class="gap-8 grid xl:grid-cols-[minmax(0,1.12fr)_minmax(0,0.88fr)] xl:items-start">
 				<div class="max-w-3xl">
-					<div class="flex flex-wrap gap-2">
-						<TrustBadge label="Nonpartisan" tone="accent" />
-						<TrustBadge label="Source-first" />
-						<TrustBadge label="Current coverage" tone="warning" />
-					</div>
-					<p class="text-2xl text-app-ink font-serif mt-4 dark:text-app-text-dark">
+					<p class="text-2xl text-app-ink font-serif mt-1 dark:text-app-text-dark">
 						Ballot Clarity
 					</p>
 					<p class="bc-measure text-base text-app-muted mt-4 dark:text-app-muted-dark">
 						Ballot Clarity is a nonprofit civic-information platform focused on source-first ballot summaries, transparent methodology, and readable public-interest data.
 					</p>
-					<div class="mt-6 gap-4 grid sm:grid-cols-2">
-						<div class="p-5 rounded-[1.5rem] bg-app-bg/70 dark:bg-app-bg-dark/70">
+					<div class="mt-5 gap-4 grid sm:grid-cols-2">
+						<div class="p-4 rounded-[1.35rem] bg-app-bg/70 dark:bg-app-bg-dark/70">
 							<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
 								What this site is for
 							</p>
@@ -66,7 +59,7 @@ function resolveGuideLinkTo(path: string) {
 							</p>
 						</div>
 
-						<div class="p-5 rounded-[1.5rem] bg-app-bg/70 dark:bg-app-bg-dark/70">
+						<div class="p-4 rounded-[1.35rem] bg-app-bg/70 dark:bg-app-bg-dark/70">
 							<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
 								How to use it
 							</p>
@@ -117,7 +110,7 @@ function resolveGuideLinkTo(path: string) {
 						</ul>
 					</div>
 
-					<div class="p-5 border border-app-line/80 rounded-[1.7rem] bg-app-bg/70 dark:border-app-line-dark dark:bg-app-bg-dark/70 md:col-span-2">
+					<div class="p-4 border border-app-line/80 rounded-[1.5rem] bg-app-bg/70 dark:border-app-line-dark dark:bg-app-bg-dark/70 md:col-span-2">
 						<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
 							Contact
 						</p>
@@ -139,10 +132,21 @@ function resolveGuideLinkTo(path: string) {
 				</div>
 			</div>
 
-			<div class="mt-10 pt-6 border-t border-app-line/80 flex flex-col gap-3 dark:border-app-line-dark lg:flex-row lg:items-center lg:justify-between">
-				<p class="text-sm text-app-muted max-w-4xl dark:text-app-muted-dark">
-					Not an official election website. Ballot Clarity aims to provide nonpartisan civic information and cite sources where possible. Content can change, so verify critical election details with the official authorities linked throughout the site.
-				</p>
+			<div class="mt-8 pt-5 border-t border-app-line/80 flex flex-col gap-4 dark:border-app-line-dark lg:flex-row lg:items-center lg:justify-between">
+				<div class="flex flex-col gap-3">
+					<p class="text-sm text-app-muted max-w-4xl dark:text-app-muted-dark">
+						Not an official election website. Ballot Clarity aims to provide nonpartisan civic information and cite sources where possible. Content can change, so verify critical election details with the official authorities linked throughout the site.
+					</p>
+					<div class="flex flex-wrap gap-x-5 gap-y-2 items-center">
+						<DataVerificationDrawer />
+						<NuxtLink to="/status" class="text-sm text-app-ink font-semibold rounded-md inline-flex gap-2 transition items-center dark:text-app-text-dark hover:text-app-accent focus-ring dark:hover:text-white">
+							Public status
+						</NuxtLink>
+						<NuxtLink to="/corrections" class="text-sm text-app-ink font-semibold rounded-md inline-flex gap-2 transition items-center dark:text-app-text-dark hover:text-app-accent focus-ring dark:hover:text-white">
+							Corrections log
+						</NuxtLink>
+					</div>
+				</div>
 				<p class="text-sm text-app-muted whitespace-nowrap dark:text-app-muted-dark">
 					© {{ year }} Ballot Clarity
 				</p>

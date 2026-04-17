@@ -192,6 +192,7 @@ test("built app renders the key ballot guide pages against the built API", async
 	assert.match(homeHtml, /Current ballot preview/);
 	assert.match(homeHtml, /Current production launch target/);
 	assert.match(homeHtml, /Fulton County, Georgia/);
+	assert.match(homeHtml, /Not the right location\? Select a new district\./);
 	assert.match(homeHtml, /Start from the coverage profile/);
 	assert.match(homeHtml, /Live data roadmap/);
 	assert.match(homeHtml, /Use official sources where they are authoritative, then normalize the rest/);
@@ -308,6 +309,7 @@ test("built app renders the key ballot guide pages against the built API", async
 	assert.match(contactHtml, /acknowledge correction requests within 2 business days/);
 	assert.match(contactHtml, /How a request can be resolved/);
 	assert.match(planHtml, /My ballot plan/);
+	assert.match(planHtml, /Not the right location\? Select a new district\./);
 	assert.match(planHtml, /Print this plan/);
 	assert.match(planHtml, /No contests saved yet/);
 	assert.equal(compareEmptyPage.status, 200);

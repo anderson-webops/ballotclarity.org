@@ -71,6 +71,7 @@ const effectiveBallotPlanCount = computed(() => isHydrated.value ? ballotPlanCou
 const effectiveCompareCount = computed(() => isHydrated.value ? compareCount.value : 0);
 const effectiveCompareList = computed(() => isHydrated.value ? compareList.value : []);
 const effectiveSelectedLocation = computed(() => isHydrated.value ? selectedLocation.value : null);
+const locationLookupHref = computed(() => route.path.startsWith("/plan") ? "/plan#change-location" : "/#location-lookup");
 
 watch(() => route.fullPath, () => {
 	isMenuOpen.value = false;
@@ -282,13 +283,15 @@ onBeforeUnmount(() => {
 						</span>
 					</NuxtLink>
 
-					<div
+					<NuxtLink
 						v-if="effectiveSelectedLocation"
-						class="text-xs text-app-muted px-3 py-2 border border-app-line rounded-full bg-white max-w-[12rem] hidden whitespace-nowrap shadow-sm items-center dark:text-app-muted-dark dark:border-app-line-dark dark:bg-app-panel-dark 2xl:inline-flex"
+						:to="locationLookupHref"
+						class="text-xs text-app-muted px-3 py-2 border border-app-line rounded-full bg-white max-w-[12rem] hidden whitespace-nowrap shadow-sm transition items-center dark:text-app-muted-dark hover:text-app-accent dark:border-app-line-dark hover:border-app-accent dark:bg-app-panel-dark 2xl:inline-flex focus-ring dark:hover:text-white"
+						title="Change location"
 					>
 						<span class="i-carbon-location mr-1.5 align-middle shrink-0" />
 						<span class="truncate">{{ effectiveSelectedLocation.displayName }}</span>
-					</div>
+					</NuxtLink>
 
 					<button
 						type="button"
@@ -338,10 +341,15 @@ onBeforeUnmount(() => {
 						</span>
 					</NuxtLink>
 					<div class="text-sm px-4 py-3 border border-app-line rounded-2xl bg-white flex items-center justify-between dark:border-app-line-dark dark:bg-app-panel-dark">
-						<span class="text-app-muted dark:text-app-muted-dark">
-							{{ effectiveSelectedLocation?.displayName || "Ballot context not yet selected" }}
-						</span>
-						<button type="button" class="text-xs font-semibold px-3 py-2 border border-app-line rounded-full dark:border-app-line-dark focus-ring" @click="toggleColorMode">
+						<div class="min-w-0">
+							<p class="text-app-muted truncate dark:text-app-muted-dark">
+								{{ effectiveSelectedLocation?.displayName || "Ballot context not yet selected" }}
+							</p>
+							<NuxtLink :to="locationLookupHref" class="text-xs text-app-accent font-semibold mt-1 inline-flex dark:text-[#9ed4e3] focus-ring">
+								Change location
+							</NuxtLink>
+						</div>
+						<button type="button" class="text-xs font-semibold px-3 py-2 border border-app-line rounded-full shrink-0 dark:border-app-line-dark focus-ring" @click="toggleColorMode">
 							{{ isDark ? "Light mode" : "Dark mode" }}
 						</button>
 					</div>

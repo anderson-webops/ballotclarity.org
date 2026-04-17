@@ -1,4 +1,5 @@
 import process from "node:process";
+import { fetchGoogleCivic } from "./google-civic.js";
 import { resolveProviderCredential } from "./provider-config.js";
 
 type DiagnosticStatus = "fail" | "pass" | "skip";
@@ -106,11 +107,7 @@ async function checkGoogleCivic() {
 		const electionsUrl = new URL("https://www.googleapis.com/civicinfo/v2/elections");
 		electionsUrl.searchParams.set("key", credential.value);
 
-		const electionsResponse = await fetch(electionsUrl, {
-			headers: {
-				Accept: "application/json"
-			}
-		});
+		const electionsResponse = await fetchGoogleCivic(electionsUrl);
 		const { payload, text } = await readJson(electionsResponse);
 
 		if (!electionsResponse.ok) {
@@ -128,11 +125,7 @@ async function checkGoogleCivic() {
 		voterInfoUrl.searchParams.set("address", "5600 Campbellton Fairburn Rd, Union City, GA 30213");
 		voterInfoUrl.searchParams.set("officialOnly", "true");
 		voterInfoUrl.searchParams.set("key", credential.value);
-		const voterInfoResponse = await fetch(voterInfoUrl, {
-			headers: {
-				Accept: "application/json"
-			}
-		});
+		const voterInfoResponse = await fetchGoogleCivic(voterInfoUrl);
 		const voterInfoBody = await voterInfoResponse.text();
 		const voterInfoNote = voterInfoResponse.ok
 			? "Address-level voterinfo probe succeeded."

@@ -76,8 +76,9 @@ For local Google Civic testing:
 
 1. Open the generated `.env`
 2. Paste your `GOOGLE_CIVIC_API_KEY`
-3. Restart the backend
-4. Submit a full street address in the lookup form
+3. If the key is restricted to the machine's IPv4 and your host prefers IPv6 egress, set `GOOGLE_CIVIC_FORCE_IPV4=true`
+4. Restart the backend
+5. Submit a full street address in the lookup form
 
 When the key is configured, Ballot Clarity will call Google Civic server-side for full-address verification and show any official links returned by the provider before continuing into the ballot guide. ZIP-only input remains approximate by design.
 
@@ -85,6 +86,7 @@ For federal provider setup:
 
 - `DATA_API_KEY` is the shared `api.data.gov` credential. Ballot Clarity will use it as a fallback for both Congress.gov and OpenFEC when `CONGRESS_API_KEY` or `OPENFEC_API_KEY` are unset.
 - If you prefer separate credentials later, set `CONGRESS_API_KEY` and `OPENFEC_API_KEY` explicitly and they will take precedence over `DATA_API_KEY`.
+- `GOOGLE_CIVIC_FORCE_IPV4=true` makes Ballot Clarity use an IPv4-only HTTPS transport for Google Civic requests without changing global Node networking behavior.
 
 To verify the currently configured provider keys without printing them:
 
@@ -118,6 +120,7 @@ Server-only variables:
 - `TRUST_PROXY`: set to `true` when Express is behind a reverse proxy so request IP and forwarded headers are trusted
 - `LOG_LEVEL`: structured backend log level, such as `info`, `warn`, or `error`
 - `ADMIN_LOGIN_WINDOW_MS`, `ADMIN_LOGIN_MAX_ATTEMPTS`, `ADMIN_LOGIN_LOCKOUT_MS`: admin login-throttle controls for the backend auth endpoint
+- `GOOGLE_CIVIC_FORCE_IPV4`: when `true`, Google Civic requests prefer IPv4 egress so IPv4-restricted API keys work on hosts that otherwise default to IPv6
 
 One-time bootstrap variables:
 

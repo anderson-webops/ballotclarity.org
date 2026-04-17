@@ -1,4 +1,7 @@
 import type { LocationLookupAction } from "./types/civic.js";
+import { Buffer } from "node:buffer";
+import { lookup as dnsLookup } from "node:dns";
+import { request as httpsRequest } from "node:https";
 import process from "node:process";
 
 interface GoogleCivicAddress {
@@ -63,7 +66,28 @@ export interface GoogleCivicClient {
 	lookupVoterInfo: (address: string) => Promise<OfficialAddressMatch | null>;
 }
 
+interface GoogleCivicClientOptions {
+	apiKey?: string;
+	fetchImpl?: typeof fetch;
+	forceIPv4?: boolean;
+}
+
+interface LookupOptions {
+	all?: boolean;
+	family?: number | "IPv4" | "IPv6";
+	hints?: number;
+}
+
+interface LookupCallback {
+	(error: NodeJS.ErrnoException | null, address: string, family: number): void;
+}
+
+interface DnsLookupFn {
+	(hostname: string, options: LookupOptions, callback: LookupCallback): void;
+}
+
 const lookupBaseUrl = "https://www.googleapis.com/civicinfo/v2/voterinfo";
+const truthyEnvPattern = /^(?:1|true|yes|on)$/i;
 
 function normalizeAddress(address: GoogleCivicAddress | undefined) {
 	if (!address)
@@ -111,24 +135,132 @@ function buildOfficialActions(payload: GoogleCivicVoterInfoResponse) {
 	return actions;
 }
 
+export function shouldForceGoogleCivicIpv4(value = process.env.GOOGLE_CIVIC_FORCE_IPV4) {
+	return truthyEnvPattern.test(value?.trim() ?? "");
+}
+
+export function createGoogleCivicLookup(lookupImpl: DnsLookupFn = dnsLookup as DnsLookupFn) {
+	return (hostname: string, options: LookupOptions, callback: LookupCallback) => {
+		lookupImpl(hostname, {
+			all: false,
+			family: 4,
+			hints: options.hints
+		}, callback);
+	};
+}
+
+async function fetchGoogleCivicWithPreferredIpv4(resource: URL, headers: Record<string, string>) {
+	const response = await new Promise<{
+		headers: Record<string, string | string[] | undefined>;
+		statusCode: number;
+		statusMessage: string;
+		text: string;
+	}>((resolve, reject) => {
+		const request = httpsRequest(resource, {
+			headers,
+			lookup: createGoogleCivicLookup() as never
+		}, (response) => {
+			const chunks: Buffer[] = [];
+
+			response.on("data", (chunk) => {
+				chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+			});
+			response.on("end", () => {
+				resolve({
+					headers: response.headers,
+					statusCode: response.statusCode ?? 500,
+					statusMessage: response.statusMessage ?? "Unknown error",
+					text: Buffer.concat(chunks).toString("utf8")
+				});
+			});
+			response.on("error", reject);
+		});
+
+		request.on("error", reject);
+		request.end();
+	});
+
+	return new Response(response.text, {
+		headers: toResponseHeaders(response.headers),
+		status: response.statusCode,
+		statusText: response.statusMessage
+	});
+}
+
+function toResponseHeaders(headers: Record<string, string | string[] | undefined>) {
+	const responseHeaders = new Headers();
+
+	for (const [name, value] of Object.entries(headers)) {
+		if (Array.isArray(value)) {
+			for (const item of value)
+				responseHeaders.append(name, item);
+
+			continue;
+		}
+
+		if (value !== undefined)
+			responseHeaders.set(name, value);
+	}
+
+	return responseHeaders;
+}
+
+export async function fetchGoogleCivic(
+	resource: URL,
+	{
+		fetchImpl = fetch,
+		forceIPv4 = shouldForceGoogleCivicIpv4(),
+		headers = {
+			Accept: "application/json"
+		}
+	}: {
+		fetchImpl?: typeof fetch;
+		forceIPv4?: boolean;
+		headers?: Record<string, string>;
+	} = {}
+) {
+	if (!forceIPv4 || fetchImpl !== fetch) {
+		return fetchImpl(resource, {
+			headers
+		});
+	}
+
+	return fetchGoogleCivicWithPreferredIpv4(resource, headers);
+}
+
 export function createGoogleCivicClient(
-	fetchImpl: typeof fetch = fetch,
-	apiKey = process.env.GOOGLE_CIVIC_API_KEY?.trim()
+	fetchOrOptions: typeof fetch | GoogleCivicClientOptions = fetch,
+	apiKey = process.env.GOOGLE_CIVIC_API_KEY?.trim(),
+	forceIPv4 = shouldForceGoogleCivicIpv4()
 ): GoogleCivicClient | null {
-	if (!apiKey)
+	const options = typeof fetchOrOptions === "function"
+		? {
+				apiKey,
+				fetchImpl: fetchOrOptions,
+				forceIPv4
+			}
+		: {
+				apiKey: process.env.GOOGLE_CIVIC_API_KEY?.trim(),
+				fetchImpl: fetch,
+				forceIPv4: shouldForceGoogleCivicIpv4(),
+				...fetchOrOptions
+			};
+
+	const resolvedApiKey = options.apiKey?.trim();
+
+	if (!resolvedApiKey)
 		return null;
 
 	return {
 		async lookupVoterInfo(address: string) {
 			const requestUrl = new URL(lookupBaseUrl);
 			requestUrl.searchParams.set("address", address);
-			requestUrl.searchParams.set("key", apiKey);
+			requestUrl.searchParams.set("key", resolvedApiKey);
 			requestUrl.searchParams.set("officialOnly", "true");
 
-			const response = await fetchImpl(requestUrl, {
-				headers: {
-					Accept: "application/json"
-				}
+			const response = await fetchGoogleCivic(requestUrl, {
+				fetchImpl: options.fetchImpl,
+				forceIPv4: options.forceIPv4
 			});
 
 			if (response.status === 400 || response.status === 404) {

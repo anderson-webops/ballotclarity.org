@@ -62,6 +62,7 @@ ADMIN_BOOTSTRAP_ROLE=admin
 # Census geocoding does not require an API key.
 # DATA_API_KEY can be reused for Congress.gov and OpenFEC if you do not want separate keys.
 GOOGLE_CIVIC_API_KEY=
+GOOGLE_CIVIC_FORCE_IPV4=false
 DATA_API_KEY=
 CONGRESS_API_KEY=
 OPENFEC_API_KEY=

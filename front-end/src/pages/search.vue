@@ -21,7 +21,7 @@ async function submitSearch() {
 usePageSeo({
 	description: activeQuery.value
 		? `Search Ballot Clarity for ${activeQuery.value}.`
-		: "Search Ballot Clarity across elections, candidates, measures, and source records.",
+		: "Search Ballot Clarity across contests, elections, candidates, measures, and source records.",
 	jsonLd: activeQuery.value
 		? {
 				"@context": "https://schema.org",
@@ -47,7 +47,7 @@ usePageSeo({
 				Search the public record in Ballot Clarity
 			</h1>
 			<p class="text-base text-app-muted leading-8 mt-5 dark:text-app-muted-dark">
-				Search across jurisdictions, election guides, candidates, measures, and source records. Use the result type and source count to decide where to open first.
+				Search across jurisdictions, election guides, contest pages, candidates, measures, and source records. Use the result type and source count to decide where to open first.
 			</p>
 		</header>
 
@@ -99,14 +99,14 @@ usePageSeo({
 				No results for “{{ activeQuery }}”
 			</h2>
 			<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-				Try a candidate name, office title, ballot measure term, or source title. You can also browse the election overview, source directory, or methodology pages directly.
+				Try a candidate name, office title, ballot measure term, contest title, or source title. You can also browse the coverage profile, source directory, or methodology pages directly.
 			</p>
 			<div class="mt-6 flex flex-wrap gap-3">
+				<NuxtLink to="/coverage" class="btn-secondary">
+					Open coverage profile
+				</NuxtLink>
 				<NuxtLink to="/sources" class="btn-secondary">
 					Browse sources
-				</NuxtLink>
-				<NuxtLink to="/elections/2026-metro-county-general" class="btn-secondary">
-					Open election overview
 				</NuxtLink>
 				<NuxtLink to="/methodology" class="btn-secondary">
 					Read methodology

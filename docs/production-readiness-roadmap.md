@@ -10,6 +10,8 @@ The repo already has:
 - a protected admin bridge where browser requests to `/api/admin/*` terminate at Nuxt
 - persisted admin/editor accounts and operational state in the backend store
 - an optional Postgres-backed admin repository for production deployments
+- a public launch profile centered on Fulton County, Georgia as the first real jurisdiction
+- public coverage, status, corrections, and contest-level canonical pages
 - structured backend request logging, health metadata, and admin login throttling
 - a snapshot-based live-coverage loader plus an operator import CLI
 

@@ -105,8 +105,47 @@ test("GET /api/data-sources returns the live-data roadmap and migration notes", 
 	assert.match(body.migrationWatch[0].title, /April 30, 2025/);
 	assert.match(body.migrationWatch[1].title, /June 30, 2026/);
 	assert.equal(body.roadmap.length, 6);
+	assert.equal(body.launchTarget.displayName, "Fulton County, Georgia");
+	assert.ok(body.categories[0].options[0].links.length >= 1);
 	assert.equal(body.coverageMode, "seed");
 	assert.equal(body.assetMode, "public-mirror");
+});
+
+test("GET /api/coverage returns the public launch profile for Fulton County, Georgia", async () => {
+	const response = await fetch(`${baseUrl}/api/coverage`);
+	const body = await response.json();
+
+	assert.equal(response.status, 200);
+	assert.equal(body.launchTarget.displayName, "Fulton County, Georgia");
+	assert.equal(body.launchTarget.currentElectionDate, "2026-05-19");
+	assert.equal(body.launchTarget.nextElectionDate, "2026-11-03");
+	assert.equal(body.supportedContentTypes.length, 5);
+	assert.equal(body.collections[0].href, "/coverage");
+	assert.equal(body.coverageMode, "seed");
+});
+
+test("GET /api/status returns public source-health and launch notices", async () => {
+	const response = await fetch(`${baseUrl}/api/status`);
+	const body = await response.json();
+
+	assert.equal(response.status, 200);
+	assert.equal(body.overallStatus, "degraded");
+	assert.equal(body.coverageMode, "seed");
+	assert.equal(body.sourceSummary.healthy, 1);
+	assert.equal(body.sourceSummary.incident, 1);
+	assert.ok(body.notes.length >= 2);
+	assert.ok(body.sources.some((item: { label: string }) => item.label === "Fulton County Registration and Elections site"));
+});
+
+test("GET /api/corrections returns the public corrections log", async () => {
+	const response = await fetch(`${baseUrl}/api/corrections`);
+	const body = await response.json();
+	const coverageItem = body.corrections.find((item: { pageUrl?: string }) => item.pageUrl === "/coverage");
+
+	assert.equal(response.status, 200);
+	assert.equal(body.corrections.length, 3);
+	assert.ok(coverageItem);
+	assert.ok(body.corrections.some((item: { outcome: string }) => /launch state explicit/i.test(item.outcome)));
 });
 
 test("GET /api/jurisdictions/:slug returns the official office and voting-method data", async () => {
@@ -119,6 +158,19 @@ test("GET /api/jurisdictions/:slug returns the official office and voting-method
 	assert.ok(body.officialResources.length >= 3);
 	assert.equal(body.officialResources[0].authority, "official-government");
 	assert.match(body.officialResources[0].sourceSystem, /Elections Office/i);
+});
+
+test("GET /api/contests/:slug returns a canonical contest page payload with sources", async () => {
+	const response = await fetch(`${baseUrl}/api/contests/us-house-district-7`);
+	const body = await response.json();
+
+	assert.equal(response.status, 200);
+	assert.equal(body.contest.slug, "us-house-district-7");
+	assert.equal(body.election.slug, "2026-metro-county-general");
+	assert.equal(body.jurisdiction.slug, "metro-county-franklin");
+	assert.ok(body.sourceCount >= 4);
+	assert.ok(body.relatedContests.length >= 1);
+	assert.equal(body.sources[0].authority, "official-government");
 });
 
 test("GET /api/ballot returns 404 for unknown elections", async () => {
@@ -195,6 +247,31 @@ test("GET /api/compare returns a same-contest questionnaire-first comparison pay
 	assert.match(body.note, /do not rank candidates/i);
 });
 
+test("GET /api/search includes contest results when a contest office matches", async () => {
+	const response = await fetch(`${baseUrl}/api/search?q=School Board`);
+	const body = await response.json();
+	const contestGroup = body.groups.find((group: { type: string }) => group.type === "contest");
+
+	assert.equal(response.status, 200);
+	assert.ok(contestGroup);
+	assert.ok(contestGroup.items.some((item: { href: string }) => item.href === "/contest/county-school-board-at-large"));
+});
+
+test("GET /api/sources and /api/sources/:id include contest citations", async () => {
+	const directoryResponse = await fetch(`${baseUrl}/api/sources`);
+	const directoryBody = await directoryResponse.json();
+	const sourceWithContestCitation = directoryBody.sources.find((item: { citedBy: Array<{ type: string }> }) => item.citedBy.some(citation => citation.type === "contest"));
+
+	assert.equal(directoryResponse.status, 200);
+	assert.ok(sourceWithContestCitation);
+
+	const recordResponse = await fetch(`${baseUrl}/api/sources/${sourceWithContestCitation.id}`);
+	const recordBody = await recordResponse.json();
+
+	assert.equal(recordResponse.status, 200);
+	assert.ok(recordBody.source.citedBy.some((citation: { type: string }) => citation.type === "contest"));
+});
+
 test("GET /api/admin/overview rejects unauthenticated access", async () => {
 	const response = await fetch(`${baseUrl}/api/admin/overview`);
 	const body = await response.json();
@@ -235,14 +312,16 @@ test("GET /api/admin/review and /api/admin/sources return protected operational 
 	const sourcesBody = await sourcesResponse.json();
 	const electionItem = reviewBody.items.find((item: { entityType: string; title: string }) => item.entityType === "election");
 	const blockedCandidate = reviewBody.items.find((item: { blocker?: string; entityType: string }) => item.entityType === "candidate" && item.blocker);
-	const officialSource = sourcesBody.sources.find((item: { authority: string; label: string }) => item.authority === "official-government");
+	const officialSourceLabels = sourcesBody.sources
+		.filter((item: { authority: string }) => item.authority === "official-government")
+		.map((item: { label: string }) => item.label);
 	const incidentSource = sourcesBody.sources.find((item: { health: string }) => item.health === "incident");
 
 	assert.equal(reviewResponse.status, 200);
 	assert.equal(sourcesResponse.status, 200);
-	assert.equal(electionItem?.title, "Metro County, Franklin ballot package");
-	assert.match(blockedCandidate?.blocker || "", /finance/i);
-	assert.equal(officialSource?.label, "FEC OpenFEC committee summaries");
+	assert.equal(electionItem?.title, "Fulton County launch coverage profile");
+	assert.match(blockedCandidate?.blocker || "", /crosswalk/i);
+	assert.ok(officialSourceLabels.includes("Fulton County Registration and Elections site"));
 	assert.equal(incidentSource?.health, "incident");
 });
 

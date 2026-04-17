@@ -20,6 +20,10 @@ defineProps<{
 				<p class="text-sm text-app-muted leading-7 mt-3 max-w-3xl dark:text-app-muted-dark">
 					{{ contest.description }}
 				</p>
+				<NuxtLink :to="`/contest/${contest.slug}`" class="text-sm text-app-accent font-semibold mt-4 rounded-lg inline-flex gap-2 items-center focus-ring">
+					<span>Open canonical contest page</span>
+					<span class="i-carbon-arrow-right" />
+				</NuxtLink>
 			</div>
 			<div class="max-w-md">
 				<ContestRoleGuide :contest="contest" />

@@ -17,8 +17,8 @@ const primaryLinks = [
 ];
 
 const secondaryLinks = [
+	{ label: "Coverage", to: "/coverage" },
 	{ label: "Methodology", to: "/methodology" },
-	{ label: "Help", to: "/help" },
 	{ label: "About", to: "/about" }
 ];
 

@@ -5,15 +5,15 @@ import { contactEmail } from "~/constants";
 const api = useApiClient();
 const civicStore = useCivicStore();
 const siteUrl = useSiteUrl();
-const { data: jurisdictionsData } = await useJurisdictions();
 const { data: dataSources } = await useDataSources();
+const { data: coverageData } = await useCoverage();
 
 const { data: electionsData } = await useAsyncData<ElectionsResponse>(
 	"home-elections",
 	() => api<ElectionsResponse>("/elections")
 );
 const featuredElection = computed(() => electionsData.value?.elections[0] ?? null);
-const featuredJurisdiction = computed(() => jurisdictionsData.value?.jurisdictions[0] ?? null);
+const featuredLaunchTarget = computed(() => coverageData.value?.launchTarget ?? null);
 const roadmapPreview = computed(() => dataSources.value?.categories.slice(0, 3) ?? []);
 
 const { data: ballotPreview } = await useAsyncData<BallotResponse | null>(
@@ -112,9 +112,9 @@ const primaryPaths = computed(() => [
 		to: featuredElection.value ? `/ballot/${featuredElection.value.slug}` : "/ballot"
 	},
 	{
-		description: "Review neutral candidate dossiers and ballot-measure explainers with sources one click away.",
-		label: "Understand candidates and measures",
-		to: "/methodology"
+		description: "Review where Ballot Clarity is going live first, what is already production-ready, and what still needs verification.",
+		label: "Check live coverage",
+		to: "/coverage"
 	},
 	{
 		description: "Check how information is sourced, how freshness is handled, and where official records take precedence.",
@@ -123,12 +123,12 @@ const primaryPaths = computed(() => [
 	}
 ]);
 
-const trustFacts = [
+const trustFacts = computed(() => [
 	"Nonpartisan nonprofit product",
+	featuredLaunchTarget.value ? `Launch target: ${featuredLaunchTarget.value.displayName}` : "Launch target selected publicly",
 	"Sources linked on every major reading page",
-	"Current coverage limits stated clearly",
 	"Print-friendly ballot guides supported"
-];
+]);
 </script>
 
 <template>
@@ -150,6 +150,9 @@ const trustFacts = [
 						</h1>
 						<p class="bc-measure text-lg text-app-muted leading-8 mt-6 dark:text-app-muted-dark">
 							Ballot Clarity is designed like a calm public-service start page: one clear task up front, readable ballot guides, visible sources, and plain-language context that stays separate from advocacy.
+						</p>
+						<p v-if="featuredLaunchTarget" class="text-sm text-app-muted leading-7 mt-5 dark:text-app-muted-dark">
+							<strong class="text-app-ink dark:text-app-text-dark">Current production launch target:</strong> {{ featuredLaunchTarget.displayName }}. The public archive remains available while official county and statewide integrations are being verified.
 						</p>
 
 						<div class="mt-8 gap-4 grid md:grid-cols-2 xl:grid-cols-4">
@@ -319,21 +322,21 @@ const trustFacts = [
 
 					<div class="surface-panel">
 						<div class="flex flex-wrap gap-2">
-							<TrustBadge label="Jurisdiction-first navigation" tone="accent" />
+							<TrustBadge label="Launch profile" tone="accent" />
 							<TrustBadge label="Official links visible" />
 						</div>
 						<h2 class="text-3xl text-app-ink font-serif mt-5 dark:text-app-text-dark">
-							Start from a location hub.
+							Start from the coverage profile.
 						</h2>
 						<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-							Stable place-based pages reduce search friction. They give voters a known entry point for official office contacts, voting methods, key dates, archive guides, and the current election overview.
+							The coverage page now explains where Ballot Clarity is going live first, what the current public archive still is, and which official Fulton County and Georgia systems will anchor the first production jurisdiction.
 						</p>
-						<div v-if="featuredJurisdiction" class="mt-6 flex flex-wrap gap-3">
-							<NuxtLink :to="`/locations/${featuredJurisdiction.slug}`" class="btn-primary">
-								Open location hub
+						<div class="mt-6 flex flex-wrap gap-3">
+							<NuxtLink to="/coverage" class="btn-primary">
+								Open coverage profile
 							</NuxtLink>
-							<NuxtLink :to="`/elections/${featuredJurisdiction.nextElectionSlug}`" class="btn-secondary">
-								Open election overview
+							<NuxtLink to="/status" class="btn-secondary">
+								Open public status
 							</NuxtLink>
 							<NuxtLink to="/help" class="btn-secondary">
 								Open help hub

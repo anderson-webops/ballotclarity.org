@@ -97,6 +97,9 @@ usePageSeo({
 							<NuxtLink :to="`/locations/${data.election.jurisdictionSlug}`" class="btn-secondary">
 								Open location hub
 							</NuxtLink>
+							<NuxtLink to="/coverage" class="btn-secondary">
+								Coverage profile
+							</NuxtLink>
 							<NuxtLink to="/data-sources" class="btn-secondary">
 								Data sources roadmap
 							</NuxtLink>
@@ -178,6 +181,10 @@ usePageSeo({
 						<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
 							{{ contest.description }}
 						</p>
+						<NuxtLink :to="`/contest/${contest.slug}`" class="text-sm text-app-accent font-semibold mt-4 rounded-lg inline-flex gap-2 items-center focus-ring">
+							<span>Open canonical contest page</span>
+							<span class="i-carbon-arrow-right" />
+						</NuxtLink>
 						<ul class="text-sm text-app-muted leading-7 mt-4 space-y-2 dark:text-app-muted-dark">
 							<template v-if="contest.type === 'candidate'">
 								<li v-for="candidate in contest.candidates" :key="candidate.slug" class="flex gap-3 items-start">

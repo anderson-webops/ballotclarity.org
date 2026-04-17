@@ -17,6 +17,8 @@
 		"audit": "npm audit --workspaces",
 		"audit-fix": "npm audit fix --workspaces",
 		"build": "npm run -w front-end build && npm run -w back-end build",
+		"db:down": "docker compose down",
+		"db:up": "docker compose up -d postgres",
 		"dev": "npm run -w front-end dev",
 		"server": "npm run -w back-end server",
 		"server:once": "npm run -w back-end server:once",

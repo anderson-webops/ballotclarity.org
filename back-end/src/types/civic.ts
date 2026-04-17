@@ -32,7 +32,7 @@ export interface SourceCitationTarget {
 	id: string;
 	label: string;
 	href: string;
-	type: "candidate" | "election" | "jurisdiction" | "measure";
+	type: "candidate" | "contest" | "election" | "jurisdiction" | "measure";
 }
 
 export interface SourceDirectoryItem extends Source {
@@ -56,6 +56,12 @@ export interface OfficialResource {
 	sourceLabel: string;
 	authority: SourceAuthority;
 	sourceSystem: string;
+	note?: string;
+}
+
+export interface ExternalLink {
+	label: string;
+	url: string;
 	note?: string;
 }
 
@@ -395,6 +401,7 @@ export interface DataSourceOption {
 	summary: string;
 	bestUse: string;
 	notes: string[];
+	links?: ExternalLink[];
 }
 
 export interface DataSourceCategory {
@@ -433,6 +440,131 @@ export interface DataSourcesResponse {
 	architectureStages: DataArchitectureStage[];
 	migrationWatch: DataMigrationWatchItem[];
 	roadmap: DataRoadmapMilestone[];
+	launchTarget?: LaunchTargetProfile;
+}
+
+export type LaunchTargetPhase = "launching" | "planning" | "public-archive";
+
+export interface LaunchTargetProfile {
+	slug: string;
+	name: string;
+	displayName: string;
+	state: string;
+	phase: LaunchTargetPhase;
+	phaseLabel: string;
+	summary: string;
+	currentElectionName: string;
+	currentElectionDate: string;
+	nextElectionName?: string;
+	nextElectionDate?: string;
+	officialResources: OfficialResource[];
+	referenceLinks: ExternalLink[];
+}
+
+export type CoverageCapabilityStatus = "in-build" | "live-now" | "planned";
+
+export interface CoverageCapability {
+	id: string;
+	label: string;
+	status: CoverageCapabilityStatus;
+	summary: string;
+}
+
+export interface CoverageCollection {
+	id: string;
+	label: string;
+	status: "canonical" | "reference";
+	summary: string;
+	href: string;
+}
+
+export interface CoverageLimitation {
+	id: string;
+	title: string;
+	summary: string;
+}
+
+export interface CoverageResponse {
+	updatedAt: string;
+	coverageMode: "seed" | "snapshot";
+	coverageUpdatedAt: string;
+	launchTarget: LaunchTargetProfile;
+	scopeNote: string;
+	currentState: string;
+	supportedContentTypes: CoverageCapability[];
+	limitations: CoverageLimitation[];
+	nextSteps: string[];
+	collections: CoverageCollection[];
+}
+
+export type PublicOperationalStatus = "degraded" | "healthy" | "reviewing";
+
+export interface PublicStatusSourceItem {
+	id: string;
+	label: string;
+	authority: SourceAuthority;
+	health: AdminSourceHealth;
+	lastCheckedAt: string;
+	nextCheckAt: string;
+	note: string;
+}
+
+export interface PublicStatusNotice {
+	id: string;
+	title: string;
+	summary: string;
+}
+
+export interface PublicStatusResponse {
+	updatedAt: string;
+	overallStatus: PublicOperationalStatus;
+	coverageMode: "seed" | "snapshot";
+	coverageUpdatedAt: string;
+	sourceSummary: Record<AdminSourceHealth, number>;
+	nextReviewAt?: string;
+	nextPublishWindow?: string;
+	notes: string[];
+	incidents: PublicStatusNotice[];
+	sources: PublicStatusSourceItem[];
+}
+
+export interface PublicCorrectionItem {
+	id: string;
+	subject: string;
+	entityType: AdminEntityType;
+	entityLabel: string;
+	status: AdminCorrectionStatus;
+	priority: AdminPriority;
+	submittedAt: string;
+	pageUrl?: string;
+	pageLabel?: string;
+	summary: string;
+	outcome: string;
+}
+
+export interface PublicCorrectionsResponse {
+	updatedAt: string;
+	corrections: PublicCorrectionItem[];
+}
+
+export interface ContestLinkSummary {
+	slug: string;
+	title: string;
+	office: string;
+	jurisdiction: Contest["jurisdiction"];
+	type: Contest["type"];
+	href: string;
+}
+
+export interface ContestRecordResponse {
+	contest: Contest;
+	election: ElectionSummary;
+	jurisdiction: JurisdictionSummary;
+	updatedAt: string;
+	note: string;
+	sourceCount: number;
+	sources: Source[];
+	relatedContests: ContestLinkSummary[];
 }
 
 export interface BallotResponse {
@@ -451,7 +583,7 @@ export interface CompareResponse {
 	note: string;
 }
 
-export type SearchResultType = "candidate" | "election" | "jurisdiction" | "measure" | "source";
+export type SearchResultType = "candidate" | "contest" | "election" | "jurisdiction" | "measure" | "source";
 
 export interface SearchResultItem {
 	id: string;

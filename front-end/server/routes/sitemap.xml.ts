@@ -20,11 +20,14 @@ export default defineEventHandler((event) => {
 		"/about",
 		"/accessibility",
 		"/contact",
+		"/corrections",
+		"/coverage",
 		"/data-sources",
 		"/help",
 		"/methodology",
 		"/neutrality",
 		"/privacy",
+		"/status",
 		"/sources",
 		"/terms"
 	];
@@ -37,6 +40,7 @@ export default defineEventHandler((event) => {
 			contest.type === "candidate" ? (contest.candidates ?? []).map(candidate => `/candidate/${candidate.slug}`) : []
 		)
 	);
+	const contestRoutes = unique(demoElection.contests.map(contest => `/contest/${contest.slug}`));
 	const measureRoutes = unique(
 		demoElection.contests.flatMap(contest =>
 			contest.type === "measure" ? (contest.measures ?? []).map(measure => `/measure/${measure.slug}`) : []
@@ -48,6 +52,7 @@ export default defineEventHandler((event) => {
 		...electionRoutes,
 		...jurisdictionRoutes,
 		...candidateRoutes,
+		...contestRoutes,
 		...measureRoutes,
 		...sourceRoutes
 	])

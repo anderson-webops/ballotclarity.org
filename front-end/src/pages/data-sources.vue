@@ -61,6 +61,9 @@ function statusTone(status: "planned-live" | "reference-pattern" | "research-lay
 					<p class="bc-prose text-app-muted mt-5 dark:text-app-muted-dark">
 						Ballot Clarity currently runs on a limited public-record archive. This page shows how the site is designed to move to live civic data without pretending there is a single perfect national source. The rule is simple: official sources where they are authoritative, normalized providers where scale matters, and a separate research layer for archives and analytics.
 					</p>
+					<p v-if="data.launchTarget" class="text-sm text-app-muted leading-7 mt-5 dark:text-app-muted-dark">
+						<strong class="text-app-ink dark:text-app-text-dark">Current launch target:</strong> {{ data.launchTarget.displayName }}. The launch path starts with official county and statewide election systems, then adds normalized provider layers only where scale or cross-jurisdiction consistency demands it.
+					</p>
 					<div class="mt-6 flex flex-wrap gap-4 items-center">
 						<UpdatedAt :value="data.updatedAt" label="Roadmap updated" />
 						<NuxtLink to="/methodology" class="btn-secondary">
@@ -163,6 +166,18 @@ function statusTone(status: "planned-live" | "reference-pattern" | "research-lay
 									{{ note }}
 								</li>
 							</ul>
+							<div v-if="option.links?.length" class="mt-5 flex flex-wrap gap-3">
+								<a
+									v-for="link in option.links"
+									:key="link.url"
+									:href="link.url"
+									target="_blank"
+									rel="noreferrer"
+									class="btn-secondary"
+								>
+									{{ link.label }}
+								</a>
+							</div>
 						</article>
 					</div>
 				</article>
@@ -234,8 +249,8 @@ function statusTone(status: "planned-live" | "reference-pattern" | "research-lay
 							</li>
 						</ol>
 						<div class="mt-6 flex flex-wrap gap-3">
-							<NuxtLink to="/locations/metro-county-franklin" class="btn-secondary">
-								Open location hub
+							<NuxtLink to="/coverage" class="btn-secondary">
+								Open coverage profile
 							</NuxtLink>
 							<NuxtLink to="/contact" class="btn-secondary">
 								Contact the project

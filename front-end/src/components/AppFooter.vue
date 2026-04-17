@@ -12,8 +12,9 @@ const guideLinks = [
 
 const discoveryLinks = [
 	{ label: "About", to: "/about" },
-	{ label: "Metro County hub", to: "/locations/metro-county-franklin" },
-	{ label: "Election overview", to: "/elections/2026-metro-county-general" },
+	{ label: "Coverage profile", to: "/coverage" },
+	{ label: "Public status", to: "/status" },
+	{ label: "Corrections log", to: "/corrections" },
 	{ label: "Source directory", to: "/sources" },
 	{ label: "Voting FAQ", to: "/help" },
 ];

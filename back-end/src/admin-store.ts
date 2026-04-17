@@ -286,7 +286,7 @@ export function defaultContentSeed(): AdminContentItem[] {
 		return {
 			assignedTo: candidate.slug === "sandra-patel" ? "Research queue" : "Editorial review",
 			blocker: candidate.slug === "sandra-patel"
-				? "Waiting on a source-backed campaign-finance crosswalk note."
+				? "Waiting on a source-backed Georgia legislative district crosswalk note."
 				: undefined,
 			entitySlug: candidate.slug,
 			entityType: "candidate" as const,
@@ -335,8 +335,8 @@ export function defaultContentSeed(): AdminContentItem[] {
 			publishedAt: demoElection.updatedAt,
 			sourceCoverage: `${demoElection.contests.length} contest sections with official notices and guide freshness metadata attached.`,
 			status: "in-review",
-			summary: "Cross-checking contest ordering, official resources, and print layout before the next public refresh.",
-			title: `${demoElection.locationName} ballot package`,
+			summary: "Cross-checking the Fulton County launch profile, official office links, and public-status language before the next public refresh.",
+			title: "Fulton County launch coverage profile",
 			updatedAt: demoElection.updatedAt
 		},
 		...candidateItems,

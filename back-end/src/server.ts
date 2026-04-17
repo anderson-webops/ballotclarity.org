@@ -1,5 +1,30 @@
 import type { ErrorRequestHandler } from "express";
-import type { Candidate, Contest, Election, EvidenceBlock, FundingSummary, Jurisdiction, Measure, MeasureArgument, MeasureChangeItem, MeasureFiscalItem, MeasureTimelineItem, OfficialResource, QuestionnaireResponse, SearchResponse, Source, SourceDirectoryItem, SourceRecordResponse, TrustBullet, VoteRecordSummary } from "./types/civic.js";
+import type {
+	Candidate,
+	Contest,
+	ContestLinkSummary,
+	ContestRecordResponse,
+	CoverageResponse,
+	Election,
+	EvidenceBlock,
+	FundingSummary,
+	Jurisdiction,
+	Measure,
+	MeasureArgument,
+	MeasureChangeItem,
+	MeasureFiscalItem,
+	MeasureTimelineItem,
+	OfficialResource,
+	PublicCorrectionsResponse,
+	PublicStatusResponse,
+	QuestionnaireResponse,
+	SearchResponse,
+	Source,
+	SourceDirectoryItem,
+	SourceRecordResponse,
+	TrustBullet,
+	VoteRecordSummary
+} from "./types/civic.js";
 import { Buffer } from "node:buffer";
 import { timingSafeEqual } from "node:crypto";
 import process from "node:process";
@@ -18,6 +43,7 @@ import {
 	getSourceById
 } from "./coverage-data.js";
 import { createCoverageRepository } from "./coverage-repository.js";
+import { buildCoverageResponse, launchTargetProfile } from "./launch-profile.js";
 import { createLogger, createRequestLoggingMiddleware } from "./logger.js";
 import { createSourceAssetStore } from "./source-asset-store.js";
 
@@ -78,7 +104,19 @@ function collectMeasureSources(measure: Measure) {
 	]);
 }
 
-function buildSourceDirectory(candidates: Candidate[] = demoCandidates, measures: Measure[] = demoMeasures, sources: Source[] = demoSources): SourceDirectoryItem[] {
+function collectContestSources(contest: Contest) {
+	if (contest.type === "candidate")
+		return uniqueSources((contest.candidates ?? []).flatMap(candidate => collectCandidateSources(candidate)));
+
+	return uniqueSources((contest.measures ?? []).flatMap(measure => collectMeasureSources(measure)));
+}
+
+function buildSourceDirectory(
+	candidates: Candidate[] = demoCandidates,
+	measures: Measure[] = demoMeasures,
+	contests: Contest[] = demoElection.contests,
+	sources: Source[] = demoSources
+): SourceDirectoryItem[] {
 	const citations = new Map<string, SourceDirectoryItem["citedBy"]>();
 
 	function addCitation(sourceId: string, citation: SourceDirectoryItem["citedBy"][number]) {
@@ -112,6 +150,17 @@ function buildSourceDirectory(candidates: Candidate[] = demoCandidates, measures
 		}
 	}
 
+	for (const contest of contests) {
+		for (const source of collectContestSources(contest)) {
+			addCitation(source.id, {
+				href: `/contest/${contest.slug}`,
+				id: contest.slug,
+				label: contest.office,
+				type: "contest"
+			});
+		}
+	}
+
 	return sources
 		.map(source => ({
 			...source,
@@ -128,6 +177,7 @@ function buildSourceRecord(
 	id: string,
 	candidates: Candidate[] = demoCandidates,
 	measures: Measure[] = demoMeasures,
+	contests: Contest[] = demoElection.contests,
 	sources: Source[] = demoSources
 ): SourceRecordResponse | null {
 	const source = sources.find(item => item.id === id) ?? getSourceById(id);
@@ -135,7 +185,7 @@ function buildSourceRecord(
 	if (!source)
 		return null;
 
-	const directoryItem = buildSourceDirectory(candidates, measures, sources).find(item => item.id === id);
+	const directoryItem = buildSourceDirectory(candidates, measures, contests, sources).find(item => item.id === id);
 
 	if (!directoryItem)
 		return null;
@@ -150,18 +200,19 @@ function buildSearchResponse(
 	rawQuery: string,
 	candidates: Candidate[] = demoCandidates,
 	measures: Measure[] = demoMeasures,
+	contests: Contest[] = demoElection.contests,
 	election: Election = demoElection,
 	jurisdiction: Jurisdiction = demoJurisdiction,
-	sourceDirectory: SourceDirectoryItem[] = buildSourceDirectory(candidates, measures)
+	sourceDirectory: SourceDirectoryItem[] = buildSourceDirectory(candidates, measures, contests)
 ): SearchResponse {
 	const query = rawQuery.trim();
 	const lowerQuery = query.toLowerCase();
 	const suggestions = [
-		"Metro County",
-		"U.S. House District 7",
-		"Charter Amendment A",
-		"Sandra Patel",
-		"Transit bond"
+		"Fulton County",
+		"Georgia primary",
+		"campaign finance",
+		"source directory",
+		"contest page"
 	];
 
 	if (query.length < 2) {
@@ -208,6 +259,28 @@ function buildSearchResponse(
 			title: measure.title,
 			type: "measure" as const,
 			updatedAt: measure.updatedAt
+		}));
+
+	const contestResults = contests
+		.filter(contest => [
+			contest.title,
+			contest.office,
+			contest.description,
+			contest.roleGuide.summary,
+			contest.roleGuide.whyItMatters,
+			contest.type === "candidate"
+				? (contest.candidates ?? []).map(candidate => candidate.name).join(" ")
+				: (contest.measures ?? []).map(measure => measure.title).join(" ")
+		].join(" ").toLowerCase().includes(lowerQuery))
+		.map(contest => ({
+			href: `/contest/${contest.slug}`,
+			id: contest.slug,
+			meta: `${contest.jurisdiction} · ${contest.type === "candidate" ? `${contest.candidates?.length ?? 0} candidate${contest.candidates?.length === 1 ? "" : "s"}` : `${contest.measures?.length ?? 0} measure${contest.measures?.length === 1 ? "" : "s"}`}`,
+			sourceCount: collectContestSources(contest).length,
+			summary: contest.description,
+			title: contest.office,
+			type: "contest" as const,
+			updatedAt: election.updatedAt
 		}));
 
 	const electionResults = [election]
@@ -263,6 +336,7 @@ function buildSearchResponse(
 	const groups = [
 		{ items: jurisdictionResults, label: "Jurisdictions", type: "jurisdiction" as const },
 		{ items: electionResults, label: "Elections", type: "election" as const },
+		{ items: contestResults, label: "Contests", type: "contest" as const },
 		{ items: candidateResults, label: "Candidates", type: "candidate" as const },
 		{ items: measureResults, label: "Measures", type: "measure" as const },
 		{ items: sourceResults, label: "Sources", type: "source" as const }
@@ -588,6 +662,139 @@ export async function createApp(options: CreateAppOptions = {}) {
 		});
 	}
 
+	async function listPublicContests() {
+		const election = await getPublicElection(coverageRepository.data.election.slug);
+		return election?.contests ?? [];
+	}
+
+	async function getPublicContest(slug: string) {
+		const election = await getPublicElection(coverageRepository.data.election.slug);
+
+		if (!election)
+			return null;
+
+		const contest = election.contests.find(item => item.slug === slug);
+
+		if (!contest)
+			return null;
+
+		return {
+			contest,
+			election
+		};
+	}
+
+	function buildContestRecordResponse(contest: Contest, election: Election): ContestRecordResponse {
+		const sources = collectContestSources(contest).map(resolveSource);
+		const relatedContests: ContestLinkSummary[] = election.contests
+			.filter(item => item.slug !== contest.slug)
+			.map(item => ({
+				href: `/contest/${item.slug}`,
+				jurisdiction: item.jurisdiction,
+				office: item.office,
+				slug: item.slug,
+				title: item.title,
+				type: item.type
+			}));
+
+		return {
+			contest,
+			election: {
+				date: election.date,
+				jurisdictionSlug: election.jurisdictionSlug,
+				locationName: election.locationName,
+				name: election.name,
+				slug: election.slug,
+				updatedAt: election.updatedAt
+			},
+			jurisdiction: coverageRepository.data.jurisdictionSummaries[0],
+			note: "Contest pages are the canonical public reading surface for one office or ballot question. Use them for citations and source review, then return to the ballot guide for the full ballot context.",
+			relatedContests,
+			sourceCount: sources.length,
+			sources,
+			updatedAt: election.updatedAt
+		};
+	}
+
+	function buildPublicCorrectionsResponse(corrections: Awaited<ReturnType<typeof adminRepository.listCorrections>>["corrections"]): PublicCorrectionsResponse {
+		const pageLookup = new Map<string, string>();
+
+		for (const candidate of coverageRepository.data.candidates)
+			pageLookup.set(`candidate:${candidate.name}`, `/candidate/${candidate.slug}`);
+
+		for (const measure of coverageRepository.data.measures)
+			pageLookup.set(`measure:${measure.title}`, `/measure/${measure.slug}`);
+
+		pageLookup.set("policy:Privacy Policy", "/privacy");
+		pageLookup.set("policy:Terms of Service", "/terms");
+		pageLookup.set("policy:Methodology", "/methodology");
+		pageLookup.set("policy:Neutrality policy", "/neutrality");
+
+		return {
+			corrections: corrections.map(item => ({
+				entityLabel: item.entityLabel,
+				entityType: item.entityType,
+				id: item.id,
+				outcome: item.nextStep,
+				pageLabel: item.entityLabel,
+				pageUrl: item.pageUrl || pageLookup.get(`${item.entityType}:${item.entityLabel}`),
+				priority: item.priority,
+				status: item.status,
+				subject: item.subject,
+				submittedAt: item.submittedAt,
+				summary: item.summary
+			})),
+			updatedAt: corrections
+				.map(item => item.submittedAt)
+				.sort((left, right) => right.localeCompare(left))[0] ?? coverageRepository.data.updatedAt
+		};
+	}
+
+	function buildPublicStatusResponse(
+		sources: Awaited<ReturnType<typeof adminRepository.listSourceMonitor>>["sources"],
+		overview: Awaited<ReturnType<typeof adminRepository.getOverview>>
+	): PublicStatusResponse {
+		const sourceSummary = {
+			"healthy": sources.filter(source => source.health === "healthy").length,
+			"incident": sources.filter(source => source.health === "incident").length,
+			"review-soon": sources.filter(source => source.health === "review-soon").length,
+			"stale": sources.filter(source => source.health === "stale").length
+		};
+		const overallStatus = sourceSummary.incident
+			? "degraded"
+			: sourceSummary["review-soon"] || sourceSummary.stale
+				? "reviewing"
+				: "healthy";
+		const nextPublishWindow = overview.metrics.find(metric => metric.id === "next-publish")?.value;
+		const notes = [
+			...overview.needsAttention,
+			coverageRepository.mode === "snapshot"
+				? "Public pages are serving an imported coverage snapshot."
+				: "Public pages are still serving the reference archive while Fulton County launch integrations are being connected."
+		];
+
+		return {
+			coverageMode: coverageRepository.mode,
+			coverageUpdatedAt: coverageRepository.data.updatedAt,
+			incidents: sources
+				.filter(source => source.health !== "healthy")
+				.map(source => ({
+					id: source.id,
+					summary: source.note,
+					title: source.label
+				})),
+			nextPublishWindow,
+			nextReviewAt: sources
+				.map(source => source.nextCheckAt)
+				.sort((left, right) => left.localeCompare(right))[0],
+			notes,
+			overallStatus,
+			sourceSummary,
+			sources,
+			updatedAt: new Date().toISOString()
+		};
+	}
+
 	function applyJurisdictionAssets(jurisdiction: Jurisdiction): Jurisdiction {
 		return {
 			...jurisdiction,
@@ -744,7 +951,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 			location: coverageRepository.data.location,
 			note: coverageRepository.mode === "snapshot"
 				? "This lookup is returning the latest imported coverage snapshot for the configured jurisdiction."
-				: "The current launch returns Metro County coverage from the current release while live district integrations are being connected."
+				: "The current public archive is still being used while Fulton County, Georgia district and ballot integrations are being connected."
 		});
 	});
 
@@ -786,8 +993,25 @@ export async function createApp(options: CreateAppOptions = {}) {
 			...coverageRepository.data.dataSources,
 			assetMode: sourceAssetStore.mode,
 			coverageMode: coverageRepository.mode,
+			launchTarget: coverageRepository.data.dataSources.launchTarget || launchTargetProfile,
 			sourceAssetBaseUrl: sourceAssetStore.baseUrl
 		});
+	});
+
+	app.get("/api/coverage", (_request, response) => {
+		const payload: CoverageResponse = buildCoverageResponse(coverageRepository.mode, coverageRepository.data.updatedAt);
+		response.json(payload);
+	});
+
+	app.get("/api/status", async (_request, response) => {
+		response.json(buildPublicStatusResponse(
+			(await adminRepository.listSourceMonitor()).sources,
+			await adminRepository.getOverview()
+		));
+	});
+
+	app.get("/api/corrections", async (_request, response) => {
+		response.json(buildPublicCorrectionsResponse((await adminRepository.listCorrections()).corrections));
 	});
 
 	app.get("/api/search", async (request, response) => {
@@ -795,39 +1019,47 @@ export async function createApp(options: CreateAppOptions = {}) {
 		const election = await getPublicElection(coverageRepository.data.election.slug);
 		const candidates = await listPublicCandidates();
 		const measures = await listPublicMeasures();
-		const sourceDirectory = buildSourceDirectory(candidates, measures, resolvedSourceInventory);
+		const contests = await listPublicContests();
+		const sourceDirectory = buildSourceDirectory(candidates, measures, contests, resolvedSourceInventory);
 
 		if (!election) {
 			response.json({
 				groups: [],
 				query: query.trim(),
 				suggestions: [
-					"Metro County",
-					"U.S. House District 7",
-					"Charter Amendment A",
-					"Sandra Patel",
-					"Transit bond"
+					"Fulton County",
+					"Georgia primary",
+					"campaign finance",
+					"source directory",
+					"contest page"
 				],
 				total: 0
 			});
 			return;
 		}
 
-		response.json(buildSearchResponse(query, candidates, measures, election, coverageRepository.data.jurisdiction, sourceDirectory));
+		response.json(buildSearchResponse(query, candidates, measures, contests, election, coverageRepository.data.jurisdiction, sourceDirectory));
 	});
 
 	app.get("/api/sources", async (_request, response) => {
 		const candidates = await listPublicCandidates();
 		const measures = await listPublicMeasures();
+		const contests = await listPublicContests();
 
 		response.json({
-			sources: buildSourceDirectory(candidates, measures, resolvedSourceInventory),
+			sources: buildSourceDirectory(candidates, measures, contests, resolvedSourceInventory),
 			updatedAt: coverageRepository.data.updatedAt
 		});
 	});
 
 	app.get("/api/sources/:id", async (request, response) => {
-		const record = buildSourceRecord(request.params.id, await listPublicCandidates(), await listPublicMeasures(), resolvedSourceInventory);
+		const record = buildSourceRecord(
+			request.params.id,
+			await listPublicCandidates(),
+			await listPublicMeasures(),
+			await listPublicContests(),
+			resolvedSourceInventory
+		);
 
 		if (!record) {
 			response.status(404).json({
@@ -884,6 +1116,19 @@ export async function createApp(options: CreateAppOptions = {}) {
 				: "Current public coverage uses the current release while live civic-data integrations are being connected. Verify official election logistics with the linked election office.",
 			updatedAt: election.updatedAt
 		});
+	});
+
+	app.get("/api/contests/:slug", async (request, response) => {
+		const result = await getPublicContest(request.params.slug);
+
+		if (!result) {
+			response.status(404).json({
+				message: "Contest not found."
+			});
+			return;
+		}
+
+		response.json(buildContestRecordResponse(result.contest, result.election));
 	});
 
 	app.get("/api/candidates/:slug", async (request, response) => {

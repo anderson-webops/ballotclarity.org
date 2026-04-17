@@ -1,6 +1,6 @@
 # Ballot Clarity
 
-Ballot Clarity is a nonpartisan civic-information platform built as an npm workspace monorepo. The current coverage area is Metro County, Franklin, and the product is structured to feel like a real public-interest ballot guide: source-linked election pages, candidate and measure explainers, searchable records, and an internal editorial workspace for review, corrections, and publish control.
+Ballot Clarity is a nonpartisan civic-information platform built as an npm workspace monorepo. Fulton County, Georgia is the first real production launch jurisdiction, while the existing public ballot and dossier surfaces remain available as a reference archive until live county integrations and verified contest packaging are ready.
 
 ## Workspace layout
 
@@ -11,11 +11,13 @@ Ballot Clarity is a nonpartisan civic-information platform built as an npm works
 - `back-end/src/coverage-data.ts`: seeded Ballot Clarity coverage data that can later be replaced with live providers or database reads
 - `back-end/src/coverage-repository.ts`: runtime coverage loader that falls back to seeds or reads an imported live snapshot file
 - `back-end/src/import-live-coverage.ts`: operator CLI that imports a vetted coverage snapshot from a file or URL
-- `back-end/src/admin-store.ts`: SQLite-backed admin persistence for users, content review, source monitoring, corrections, and activity
+- `back-end/src/admin-store.ts`: SQLite-backed fallback admin persistence for users, content review, source monitoring, corrections, and activity
 - `back-end/src/postgres-admin-store.ts`: Postgres-backed admin persistence for multi-instance production deployments
+- `back-end/src/launch-profile.ts`: Fulton County, Georgia launch profile, official source links, and coverage-state metadata
 - `back-end/admin-schema.sql`: schema for persisted admin and operations data
 - `back-end/admin-schema.postgres.sql`: schema for Postgres-backed admin persistence
 - `back-end/dist/admin-schema.sql` and `back-end/dist/admin-schema.postgres.sql`: runtime copies emitted during `npm run build` so compiled deployments can initialize the configured admin store
+- `docs/fulton-county-ga-launch.md`: chosen official systems, provider stack, and manual provisioning inputs for the first real jurisdiction
 
 ## Install and run
 
@@ -29,6 +31,12 @@ Copy the environment template:
 
 ```bash
 cp .env.example .env
+```
+
+Start local Postgres:
+
+```bash
+npm run db:up
 ```
 
 Bootstrap the first admin user before using `/admin`:
@@ -64,8 +72,8 @@ Server-only variables:
 - `ADMIN_API_BASE`: server-side Nuxt proxy target for admin-only API requests; this should be private to the Nuxt server and never exposed as the browser's direct `/api/admin/*` target
 - `ADMIN_API_KEY`: shared secret between the Nuxt admin proxy and the Express admin endpoints
 - `ADMIN_SESSION_SECRET`: cookie-signing secret for Nuxt admin sessions
-- `ADMIN_STORE_DRIVER`: `sqlite` or `postgres`; when omitted, the backend will auto-select Postgres if `ADMIN_DATABASE_URL` or `DATABASE_URL` is present
-- `ADMIN_DB_PATH`: SQLite database path for persisted admin users and editorial operations data
+- `ADMIN_STORE_DRIVER`: `postgres` for production, or `sqlite` only as a fallback for single-instance local/dev use; when omitted, the backend will auto-select Postgres if `ADMIN_DATABASE_URL` or `DATABASE_URL` is present
+- `ADMIN_DB_PATH`: SQLite database path for fallback persisted admin users and editorial operations data
 - `ADMIN_DATABASE_URL`: Postgres connection string for the admin and editorial operations store
 - `SOURCE_ASSET_BASE_URL`: optional public object-storage or CDN base URL for mirrored source files
 - `LIVE_COVERAGE_FILE`: path to the imported coverage snapshot consumed by the public API
@@ -98,6 +106,7 @@ The public browser should call `/api/admin/*` on the Nuxt origin only. Those req
 ```bash
 npm run dev
 npm run server
+npm run db:up
 npm run bootstrap-admin
 npm run ingest:coverage -- --from-file ./ops/live-coverage.json
 npm run lint
@@ -116,6 +125,9 @@ Canonical public discovery pages:
 - `/`: homepage and address lookup entry
 - `/about`
 - `/help`
+- `/coverage`
+- `/status`
+- `/corrections`
 - `/methodology`
 - `/neutrality`
 - `/data-sources`
@@ -125,6 +137,7 @@ Canonical public discovery pages:
 - `/contact`
 - `/locations/:slug`
 - `/elections/:slug`
+- `/contest/:slug`
 - `/candidate/:slug`
 - `/measure/:slug`
 - `/sources`
@@ -158,7 +171,7 @@ Internal operations routes:
 
 How the admin model works:
 
-- Admin and editor accounts are persisted in SQLite, not hardcoded deployment credentials.
+- Admin and editor accounts are persisted in the configured operational database, not hardcoded deployment credentials.
 - The browser authenticates against Nuxt server routes, which issue a same-origin session cookie.
 - Nuxt proxies protected admin requests to the Express API using `ADMIN_API_KEY`, so the backend key never reaches the browser.
 - Browser traffic for `/api/admin/*` is expected to terminate at Nuxt. The Express admin endpoints are internal API surfaces behind `ADMIN_API_BASE`, not public browser routes.
@@ -173,6 +186,10 @@ Public API endpoints:
 - `GET /api/jurisdictions`
 - `GET /api/jurisdictions/:slug`
 - `GET /api/ballot`
+- `GET /api/coverage`
+- `GET /api/status`
+- `GET /api/corrections`
+- `GET /api/contests/:slug`
 - `GET /api/candidates/:slug`
 - `GET /api/measures/:slug`
 - `GET /api/compare`
@@ -201,17 +218,19 @@ These endpoints live on the Express service, but they are intended to be reached
 ## Architecture choices
 
 - Front-end stack: Nuxt 4, Vite, TypeScript, UnoCSS, Pinia, file-based routing, layouts, composables, and `<script setup>`
-- Back-end stack: Express plus a small SQLite-backed operations layer
-- Back-end persistence: SQLite by default, with an optional Postgres-backed admin store for multi-instance production
+- Back-end stack: Express plus a Postgres-first operations layer with a SQLite fallback
+- Back-end persistence: Postgres for production and multi-instance deployments, with SQLite available only as a fallback for constrained local/dev setups
 - State model: public civic state lives in `front-end/src/stores/civic.ts`, including selected location, election context, compare list, and saved ballot plan
 - Content flow: public pages consume the Express API instead of embedding content directly in page files
 - Search and sourcing: every major reading surface links to the source directory and source detail pages
 - Trust layer: freshness, methodology, corrections, neutrality, and source authority are modeled explicitly in the data layer and rendered in the UI
 - Admin model: persisted users, content status, correction queue, and source-health tracking all live behind a protected internal surface
 - Coverage runtime: the public API serves the seed dataset by default, but can switch to an imported live snapshot file without changing route contracts
+- Launch strategy: Fulton County, Georgia is the first real production jurisdiction, and the public site now exposes explicit coverage, status, corrections, and contest-level canonical pages around that rollout
 - Asset delivery: mirrored source-document URLs can be rewritten to object storage or a CDN via `SOURCE_ASSET_BASE_URL`
 - Observability: the backend emits structured request logs, health metadata, and admin-auth throttle events
 - Production roadmap: see `docs/production-readiness-roadmap.md` for the staged path from seeded coverage to a real operated civic-information service
+- Launch brief: see `docs/fulton-county-ga-launch.md` for the selected official systems and provider stack
 
 ## Production mode
 
@@ -219,7 +238,7 @@ These endpoints live on the Express service, but they are intended to be reached
 - Set `NUXT_PUBLIC_API_BASE` to the public API origin used by the browser.
 - Set `ADMIN_API_BASE` to the server-side admin API origin the Nuxt server can reach privately.
 - Set `ADMIN_API_KEY` and `ADMIN_SESSION_SECRET` in the server environments only.
-- Use `ADMIN_STORE_DRIVER=postgres` together with `ADMIN_DATABASE_URL` for multi-instance or multi-editor production. Otherwise point `ADMIN_DB_PATH` at durable storage outside the repo checkout.
+- Use `ADMIN_STORE_DRIVER=postgres` together with `ADMIN_DATABASE_URL` for production. SQLite should only be used as a fallback for constrained local or temporary environments.
 - Set `SOURCE_ASSET_BASE_URL` when mirrored source documents should resolve to object storage or a CDN instead of files bundled under `front-end/public/source-files/`.
 - Import a vetted snapshot with `npm run ingest:coverage` and set `LIVE_COVERAGE_REQUIRED=true` once production should refuse to start without current snapshot data.
 - Run `npm run bootstrap-admin` once on the server, then remove the bootstrap password from routine shell history and secrets tooling if a different operational process is preferred.
@@ -236,9 +255,9 @@ These endpoints live on the Express service, but they are intended to be reached
 ## Server-side provisioning after merge
 
 1. Provision separate public and admin-capable server environments for the Nuxt front end and Express API.
-2. Set `NUXT_PUBLIC_SITE_URL`, `NUXT_PUBLIC_API_BASE`, `ADMIN_API_BASE`, `ADMIN_API_KEY`, `ADMIN_SESSION_SECRET`, and `ADMIN_DB_PATH`.
+2. Set `NUXT_PUBLIC_SITE_URL`, `NUXT_PUBLIC_API_BASE`, `ADMIN_API_BASE`, `ADMIN_API_KEY`, `ADMIN_SESSION_SECRET`, and either `ADMIN_DATABASE_URL` or `ADMIN_DB_PATH`.
 3. Choose the admin store mode:
-   Set `ADMIN_STORE_DRIVER=postgres` plus `ADMIN_DATABASE_URL` for managed Postgres, or create the directory that will hold the SQLite file referenced by `ADMIN_DB_PATH`, with backup and restore procedures in place.
+   Set `ADMIN_STORE_DRIVER=postgres` plus `ADMIN_DATABASE_URL` for managed Postgres. Use SQLite only if there is a deliberate single-instance fallback reason, and then create the directory that will hold the SQLite file referenced by `ADMIN_DB_PATH`, with backup and restore procedures in place.
 4. Run `npm run bootstrap-admin` once to create the first persisted admin account.
 5. Import the first vetted coverage snapshot with `npm run ingest:coverage`, then enable `LIVE_COVERAGE_REQUIRED=true` when the environment should fail closed without current snapshot data.
 6. Configure `SOURCE_ASSET_BASE_URL` when source files should resolve to object storage or a CDN instead of bundled static files.
@@ -249,6 +268,6 @@ These endpoints live on the Express service, but they are intended to be reached
 ## Notes
 
 - Ballot Clarity is informational only. It does not recommend candidates, measures, or voting choices.
-- The current public coverage is limited to Metro County, Franklin, and should be treated as reference coverage rather than live nationwide election data.
+- Fulton County, Georgia is the current launch jurisdiction. The existing public archive should still be treated as reference coverage until verified Fulton contest packaging and district lookup are live.
 - Time-sensitive election logistics should always be checked against official election-office notices.
 - Light mode is the default, dark mode is supported, and ballot pages are designed to print cleanly.

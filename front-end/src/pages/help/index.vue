@@ -102,13 +102,13 @@ const accordionItems = faqItems.map(item => ({
 		<section class="gap-6 grid lg:grid-cols-3">
 			<div class="surface-panel">
 				<h2 class="text-2xl text-app-ink font-serif dark:text-app-text-dark">
-					Start with the location hub
+					Start with the coverage profile
 				</h2>
 				<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-					The jurisdiction page is the best starting point when you need election-office contacts, voting methods, and the current election guide for Metro County.
+					The coverage profile is the best starting point when you need to know where Ballot Clarity is going live first, which official Fulton County and Georgia systems are being used, and what the current public archive still does not cover.
 				</p>
-				<NuxtLink to="/locations/metro-county-franklin" class="btn-primary mt-6">
-					Open the Metro County hub
+				<NuxtLink to="/coverage" class="btn-primary mt-6">
+					Open the coverage profile
 				</NuxtLink>
 			</div>
 

@@ -7,6 +7,9 @@
 	"license": "ISC",
 	"type": "module",
 	"private": true,
+	"engines": {
+		"node": ">=22 <23"
+	},
 	"main": ".output/server/index.mjs",
 	"scripts": {
 		"prepare": "nuxt prepare",

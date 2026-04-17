@@ -4,6 +4,9 @@
 	"private": true,
 	"description": "Express API for the Ballot Clarity civic-information MVP",
 	"type": "module",
+	"engines": {
+		"node": ">=22 <23"
+	},
 	"main": "dist/server.js",
 	"scripts": {
 		"server": "tsx watch -r dotenv/config src/server.ts",

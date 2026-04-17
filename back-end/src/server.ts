@@ -1,4 +1,5 @@
 import type { ErrorRequestHandler } from "express";
+import type { AddressEnrichmentService } from "./address-enrichment.js";
 import type { CoverageRepository } from "./coverage-repository.js";
 import type {
 	Candidate,
@@ -37,8 +38,11 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import cors from "cors";
 import dotenv from "dotenv";
 import express from "express";
+import { createAddressCacheRepository } from "./address-cache-repository.js";
+import { createAddressEnrichmentService } from "./address-enrichment.js";
 import { createAdminLoginThrottle } from "./admin-login-throttle.js";
 import { createAdminRepository } from "./admin-repository.js";
+import { createCensusGeocoderClient } from "./census-geocoder.js";
 import {
 	demoCandidates,
 	demoElection,
@@ -52,6 +56,7 @@ import { createGoogleCivicClient } from "./google-civic.js";
 import { buildCoverageResponse, launchTargetProfile } from "./launch-profile.js";
 import { buildLocationLookupResponse, classifyLookupInput, validateLookupInput } from "./location-lookup.js";
 import { createLogger, createRequestLoggingMiddleware } from "./logger.js";
+import { createOpenStatesClient } from "./openstates.js";
 import { buildProviderSummary } from "./provider-config.js";
 import { createSourceAssetStore } from "./source-asset-store.js";
 
@@ -62,6 +67,7 @@ dotenv.config({
 interface CreateAppOptions {
 	adminApiKey?: string | null;
 	adminDbPath?: string | null;
+	addressEnrichmentService?: AddressEnrichmentService | null;
 	bootstrapDisplayName?: string | null;
 	bootstrapPassword?: string | null;
 	bootstrapUsername?: string | null;
@@ -427,6 +433,13 @@ export async function createApp(options: CreateAppOptions = {}) {
 	const sourceAssetStore = createSourceAssetStore();
 	const adminLoginThrottle = createAdminLoginThrottle();
 	const googleCivicClient = options.googleCivicClient === undefined ? createGoogleCivicClient() : options.googleCivicClient;
+	const addressEnrichmentService = options.addressEnrichmentService === undefined
+		? createAddressEnrichmentService(
+				createCensusGeocoderClient(),
+				createOpenStatesClient(),
+				await createAddressCacheRepository(process.env.ADMIN_DATABASE_URL || process.env.DATABASE_URL || "")
+			)
+		: options.addressEnrichmentService;
 	const resolvedSourceInventory = resolveSources(coverageRepository.data.sources);
 
 	function maxUpdatedAt(...values: Array<string | undefined>) {
@@ -1122,16 +1135,31 @@ export async function createApp(options: CreateAppOptions = {}) {
 		}
 
 		let officialLookup = null;
+		let addressEnrichment = null;
 
-		if (googleCivicClient && classifyLookupInput(raw) === "address") {
-			try {
-				officialLookup = await googleCivicClient.lookupVoterInfo(raw);
+		if (classifyLookupInput(raw) === "address") {
+			if (addressEnrichmentService) {
+				try {
+					addressEnrichment = await addressEnrichmentService.lookupAddress(raw);
+				}
+				catch (error) {
+					logger.warn("provider.census-openstates.lookup-failed", {
+						message: error instanceof Error ? error.message : "Unknown provider error.",
+						requestId: response.locals.requestId
+					});
+				}
 			}
-			catch (error) {
-				logger.warn("provider.google-civic.lookup-failed", {
-					message: error instanceof Error ? error.message : "Unknown provider error.",
-					requestId: response.locals.requestId
-				});
+
+			if (googleCivicClient) {
+				try {
+					officialLookup = await googleCivicClient.lookupVoterInfo(raw);
+				}
+				catch (error) {
+					logger.warn("provider.google-civic.lookup-failed", {
+						message: error instanceof Error ? error.message : "Unknown provider error.",
+						requestId: response.locals.requestId
+					});
+				}
 			}
 		}
 
@@ -1143,7 +1171,8 @@ export async function createApp(options: CreateAppOptions = {}) {
 			coverageRepository.data.election.slug,
 			coverageRepository.mode,
 			coverage,
-			officialLookup
+			officialLookup,
+			addressEnrichment
 		));
 	});
 

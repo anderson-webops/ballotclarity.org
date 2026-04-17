@@ -355,6 +355,24 @@ export interface LocationSelection {
 	lookupInput?: string;
 }
 
+export interface LocationDistrictMatch {
+	id: string;
+	label: string;
+	districtType: string;
+	districtCode: string;
+	sourceSystem: string;
+}
+
+export interface LocationRepresentativeMatch {
+	id: string;
+	name: string;
+	party?: string;
+	officeTitle: string;
+	districtLabel: string;
+	sourceSystem: string;
+	openstatesUrl?: string;
+}
+
 export type LocationLookupActionKind = "ballot-guide" | "official-verification";
 export type LocationLookupInputKind = "address" | "zip";
 export type LocationLookupResult = "resolved" | "selection-required";
@@ -377,6 +395,10 @@ export interface LocationLookupResponse {
 	location?: LocationSelection;
 	electionSlug?: string;
 	actions?: LocationLookupAction[];
+	normalizedAddress?: string;
+	districtMatches?: LocationDistrictMatch[];
+	representativeMatches?: LocationRepresentativeMatch[];
+	fromCache?: boolean;
 }
 
 export interface ElectionsResponse {

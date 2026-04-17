@@ -140,6 +140,7 @@ after(async () => {
 test("built app renders the key ballot guide pages against the built API", async () => {
 	assert.equal(existsSync(join(repoRoot, "back-end/dist/admin-schema.sql")), true);
 	assert.equal(existsSync(join(repoRoot, "back-end/dist/admin-schema.postgres.sql")), true);
+	assert.equal(existsSync(join(repoRoot, "back-end/dist/live-data-schema.sql")), true);
 
 	const ballotResponse = await fetch(`${apiBaseUrl}/api/ballot?election=2026-fulton-county-general`);
 	const ballot = await ballotResponse.json();

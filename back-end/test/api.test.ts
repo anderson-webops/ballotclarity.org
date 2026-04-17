@@ -48,6 +48,48 @@ before(async () => {
 			mode: "seed",
 			snapshotPath: ":memory:"
 		},
+		addressEnrichmentService: {
+			async lookupAddress() {
+				return {
+					benchmark: "Public_AR_Current",
+					countyFips: "121",
+					districtMatches: [
+						{
+							districtCode: "5",
+							districtType: "congressional",
+							id: "congressional:5",
+							label: "Congressional District 5",
+							sourceSystem: "U.S. Census Geocoder"
+						},
+						{
+							districtCode: "36",
+							districtType: "state-senate",
+							id: "state-senate:36",
+							label: "State Senate District 36",
+							sourceSystem: "U.S. Census Geocoder"
+						}
+					],
+					fromCache: false,
+					latitude: 33.7479,
+					longitude: -84.3902,
+					normalizedAddress: "55 TRINITY AVE SW, ATLANTA, GA, 30303",
+					representativeMatches: [
+						{
+							districtLabel: "Senator Georgia",
+							id: "ocd-person:test-senator",
+							name: "Jon Ossoff",
+							officeTitle: "Senator",
+							openstatesUrl: "https://openstates.org/person/example",
+							party: "Democratic",
+							sourceSystem: "Open States"
+						}
+					],
+					state: "GA",
+					vintage: "Current_Current",
+					zip5: "30303"
+				};
+			}
+		},
 		googleCivicClient: {
 			async lookupVoterInfo() {
 				return {
@@ -182,7 +224,12 @@ test("POST /api/location returns the current Fulton County launch location for f
 	assert.equal(body.location.requiresOfficialConfirmation, false);
 	assert.equal(body.actions[0].kind, "official-verification");
 	assert.match(body.note, /Google Civic accepted the address/i);
-	assert.equal(body.location.lookupInput, undefined);
+	assert.equal(body.location.lookupInput, "55 TRINITY AVE SW, ATLANTA, GA, 30303");
+	assert.equal(body.normalizedAddress, "55 TRINITY AVE SW, ATLANTA, GA, 30303");
+	assert.equal(body.districtMatches[0].label, "Congressional District 5");
+	assert.equal(body.representativeMatches[0].name, "Jon Ossoff");
+	assert.match(body.note, /Census geography matched/i);
+	assert.match(body.note, /Open States returned 1 representative match/i);
 });
 
 test("GET /api/ballot returns the election guide and contests", async () => {

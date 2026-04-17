@@ -13,5 +13,6 @@ back-end/dist
 back-end/data/*.sqlite
 back-end/data/*.sqlite-shm
 back-end/data/*.sqlite-wal
+back-end/data/launch-directory.local.json
 .env
 .idea/

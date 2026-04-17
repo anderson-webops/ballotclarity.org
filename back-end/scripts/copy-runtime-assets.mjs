@@ -10,6 +10,10 @@ const runtimeAssets = [
 	{
 		sourcePath: resolve(projectRoot, "admin-schema.postgres.sql"),
 		targetPath: resolve(projectRoot, "dist", "admin-schema.postgres.sql")
+	},
+	{
+		sourcePath: resolve(projectRoot, "live-data-schema.sql"),
+		targetPath: resolve(projectRoot, "dist", "live-data-schema.sql")
 	}
 ];
 

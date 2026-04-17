@@ -25,6 +25,7 @@
 		"server:once": "npm run -w back-end server:once",
 		"bootstrap-admin": "npm run -w back-end bootstrap-admin --",
 		"coverage:seed-local": "npm run -w back-end export-seed-coverage",
+		"launch-directory:sync": "npm run -w back-end sync:launch-directory",
 		"providers:test": "npm run -w back-end providers:test",
 		"serve": "npm run -w front-end serve",
 		"preview": "npm run -w front-end preview",

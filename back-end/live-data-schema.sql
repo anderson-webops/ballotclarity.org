@@ -127,6 +127,7 @@ CREATE TABLE IF NOT EXISTS district_assignments (
 	address_lookup_id UUID NOT NULL REFERENCES address_lookups(id) ON DELETE CASCADE,
 	district_type TEXT NOT NULL,
 	district_code TEXT NOT NULL,
+	district_label TEXT NOT NULL,
 	source_system TEXT NOT NULL,
 	effective_date DATE,
 	created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()

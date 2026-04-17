@@ -11,6 +11,8 @@ Ballot Clarity is a nonpartisan civic-information platform built as an npm works
 - `back-end/src/coverage-data.ts`: seeded Ballot Clarity coverage data that can later be replaced with live providers or database reads
 - `back-end/src/coverage-repository.ts`: runtime coverage loader that falls back to seeds or reads an imported live snapshot file
 - `back-end/src/import-live-coverage.ts`: operator CLI that imports a vetted coverage snapshot from a file or URL
+- `back-end/src/census-geocoder.ts`, `back-end/src/openstates.ts`, and `back-end/src/address-enrichment.ts`: address-to-district enrichment path using Census geographies plus Open States representative matching
+- `back-end/src/launch-directory.ts` and `back-end/src/sync-launch-directory.ts`: provider-fed launch-directory ingestion scaffold for elections and representative records
 - `back-end/live-data-schema.sql`: draft Postgres schema scaffold for the future live-data read model
 - `back-end/src/admin-store.ts`: SQLite-backed fallback admin persistence for users, content review, source monitoring, corrections, and activity
 - `back-end/src/postgres-admin-store.ts`: Postgres-backed admin persistence for multi-instance production deployments
@@ -80,7 +82,13 @@ For local Google Civic testing:
 4. Restart the backend
 5. Submit a full street address in the lookup form
 
-When the key is configured, Ballot Clarity will call Google Civic server-side for full-address verification and show any official links returned by the provider before continuing into the ballot guide. ZIP-only input remains approximate by design.
+When the key is configured, Ballot Clarity will call Google Civic server-side for full-address verification and show any official links returned by the provider before continuing into the ballot guide. When Open States is also configured, the same lookup flow will attach matched district and representative context. ZIP-only input remains approximate by design.
+
+For cached district enrichment:
+
+- Census geocoding does not require a key and now powers normalized address geography for full-address lookups.
+- If `ADMIN_DATABASE_URL` is configured, Ballot Clarity will cache normalized address geography in Postgres using the `address_lookups` and `district_assignments` tables from `back-end/live-data-schema.sql`.
+- `OPENSTATES_API_KEY` enables representative matching from the geocoded point via `people.geo`.
 
 For federal provider setup:
 
@@ -92,6 +100,12 @@ To verify the currently configured provider keys without printing them:
 
 ```bash
 npm run providers:test
+```
+
+To write a provider-fed launch-directory snapshot for future district and representative route work:
+
+```bash
+npm run launch-directory:sync
 ```
 
 ## Environment configuration
@@ -121,6 +135,7 @@ Server-only variables:
 - `LOG_LEVEL`: structured backend log level, such as `info`, `warn`, or `error`
 - `ADMIN_LOGIN_WINDOW_MS`, `ADMIN_LOGIN_MAX_ATTEMPTS`, `ADMIN_LOGIN_LOCKOUT_MS`: admin login-throttle controls for the backend auth endpoint
 - `GOOGLE_CIVIC_FORCE_IPV4`: when `true`, Google Civic requests prefer IPv4 egress so IPv4-restricted API keys work on hosts that otherwise default to IPv6
+- `CENSUS_GEOCODER_BENCHMARK`, `CENSUS_GEOCODER_VINTAGE`: optional overrides for reproducible Census geocoder lookups
 
 One-time bootstrap variables:
 
@@ -138,6 +153,8 @@ One-time or scheduled ingestion variables:
 - `LIVE_COVERAGE_SOURCE_FILE`: local JSON file path consumed by `npm run ingest:coverage`
 - `LIVE_COVERAGE_SOURCE_URL`: remote JSON URL consumed by `npm run ingest:coverage`
 - `DATA_API_KEY`: shared `api.data.gov` credential used as a fallback for Congress.gov and OpenFEC
+- `LAUNCH_DIRECTORY_FILE`: local JSON file written by `npm run launch-directory:sync`
+- `LAUNCH_PROFILE_LATITUDE`, `LAUNCH_PROFILE_LONGITUDE`: optional probe point used for launch-area Open States geo matching in the launch-directory snapshot
 
 For production, use unique random values for `ADMIN_API_KEY`, `ADMIN_BOOTSTRAP_PASSWORD`, and `ADMIN_SESSION_SECRET`. The front-end and back-end must share the same `ADMIN_API_KEY`. Keep every `ADMIN_*` variable in the server environment only.
 The public browser should call `/api/admin/*` on the Nuxt origin only. Those requests must terminate at the Nuxt server so the session cookie and server-held `ADMIN_API_KEY` stay inside the bridge layer.
@@ -153,6 +170,7 @@ npm run stack:up
 npm run coverage:seed-local
 npm run bootstrap-admin
 npm run ingest:coverage -- --from-file ./ops/live-coverage.json
+npm run launch-directory:sync
 npm run providers:test
 npm run lint
 npm run typecheck
@@ -182,8 +200,13 @@ Canonical public discovery pages:
 - `/contact`
 - `/locations/:slug`
 - `/elections/:slug`
+- `/districts`
+- `/districts/:slug`
+- `/representatives`
 - `/contest/:slug`
 - `/candidate/:slug`
+- `/candidate/:slug/funding`
+- `/candidate/:slug/influence`
 - `/measure/:slug`
 - `/sources`
 - `/sources/:id`

@@ -4,3 +4,4 @@ export const contactEmail = "hello@ballotclarity.org";
 export const currentCoverageLocationName = "Fulton County, Georgia";
 export const currentCoverageLocationSlug = "fulton-county-georgia";
 export const currentCoverageElectionSlug = "2026-fulton-county-general";
+export const currentCoverageTimeZone = "America/New_York";

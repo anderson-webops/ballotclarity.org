@@ -121,6 +121,7 @@ export const useCivicStore = defineStore("civic", {
 		ballotPlan: {} as Record<string, BallotPlanSelection>,
 		ballotViewMode: "quick" as BallotViewMode,
 		compareList: [] as string[],
+		isHydrated: false,
 		selectedElection: null as ElectionSummary | null,
 		selectedIssues: [] as string[],
 		selectedLocation: null as LocationSelection | null,
@@ -156,6 +157,9 @@ export const useCivicStore = defineStore("civic", {
 			this.selectedElection = snapshot.selectedElection;
 			this.selectedIssues = snapshot.selectedIssues;
 			this.selectedLocation = sanitizeLocationSelection(snapshot.selectedLocation);
+		},
+		markHydrated() {
+			this.isHydrated = true;
 		},
 		persist() {
 			if (!import.meta.client)

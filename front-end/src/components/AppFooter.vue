@@ -5,7 +5,8 @@ import { buildCompareRoute } from "~/stores/civic";
 
 const year = new Date().getFullYear();
 const civicStore = useCivicStore();
-const { compareList } = storeToRefs(civicStore);
+const { compareList, isHydrated } = storeToRefs(civicStore);
+const effectiveCompareList = computed(() => isHydrated.value ? compareList.value : []);
 
 const guideLinks = [
 	{ label: "My ballot plan", to: "/plan" },
@@ -34,7 +35,7 @@ const policyLinks = [
 
 function resolveGuideLinkTo(path: string) {
 	return path === "/compare"
-		? buildCompareRoute(compareList.value)
+		? buildCompareRoute(effectiveCompareList.value)
 		: path;
 }
 </script>

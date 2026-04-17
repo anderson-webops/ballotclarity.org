@@ -8,10 +8,11 @@ const props = defineProps<{
 }>();
 
 const civicStore = useCivicStore();
-const { ballotPlan } = storeToRefs(civicStore);
+const { ballotPlan, isHydrated } = storeToRefs(civicStore);
+const effectiveBallotPlan = computed(() => isHydrated.value ? ballotPlan.value : {});
 
 const currentSelection = computed(() => {
-	const selection = ballotPlan.value[props.measure.contestSlug];
+	const selection = effectiveBallotPlan.value[props.measure.contestSlug];
 
 	return selection?.type === "measure" && selection.measureSlug === props.measure.slug
 		? selection.decision

@@ -8,7 +8,7 @@ const civicStore = useCivicStore();
 const route = useRoute();
 const runtimeConfig = useRuntimeConfig();
 const siteUrl = useSiteUrl();
-const { ballotPlan, compareList } = storeToRefs(civicStore);
+const { ballotPlan, compareList, isHydrated } = storeToRefs(civicStore);
 const candidateSlug = computed(() => String(route.params.slug));
 const { formatCompactNumber, formatCurrency, formatDate, formatPercent } = useFormatters();
 const { data: candidate, error, pending } = await useCandidate(candidateSlug);
@@ -87,13 +87,15 @@ usePageSeo({
 	title: candidate.value?.name ?? "Candidate detail",
 });
 
-const isCompared = computed(() => candidate.value ? compareList.value.includes(candidate.value.slug) : false);
-const compareLimitReached = computed(() => compareList.value.length >= 3 && !isCompared.value);
+const effectiveBallotPlan = computed(() => isHydrated.value ? ballotPlan.value : {});
+const effectiveCompareList = computed(() => isHydrated.value ? compareList.value : []);
+const isCompared = computed(() => candidate.value ? effectiveCompareList.value.includes(candidate.value.slug) : false);
+const compareLimitReached = computed(() => effectiveCompareList.value.length >= 3 && !isCompared.value);
 const compareLaunchSlugs = computed(() => {
 	if (!candidate.value || compareLimitReached.value)
 		return [];
 
-	return buildCompareLaunchSlugs(compareList.value, candidate.value.slug);
+	return buildCompareLaunchSlugs(effectiveCompareList.value, candidate.value.slug);
 });
 const compareHref = computed(() => buildCompareRoute(compareLaunchSlugs.value));
 const canOpenCompare = computed(() => compareLaunchSlugs.value.length >= 2);
@@ -101,7 +103,7 @@ const isPlanned = computed(() => {
 	if (!candidate.value)
 		return false;
 
-	const selection = ballotPlan.value[candidate.value.contestSlug];
+	const selection = effectiveBallotPlan.value[candidate.value.contestSlug];
 
 	return selection?.type === "candidate" && selection.candidateSlug === candidate.value.slug;
 });

@@ -15,7 +15,7 @@ const headerDirectionThreshold = 12;
 
 let scrollFramePending = false;
 
-const { ballotPlanCount, compareCount, compareList, selectedLocation } = storeToRefs(civicStore);
+const { ballotPlanCount, compareCount, compareList, isHydrated, selectedLocation } = storeToRefs(civicStore);
 
 const primaryLinks = [
 	{ label: "Ballot guide", to: "/ballot" },
@@ -31,6 +31,10 @@ const secondaryLinks = [
 ];
 
 const isDark = computed(() => colorMode.value === "dark");
+const effectiveBallotPlanCount = computed(() => isHydrated.value ? ballotPlanCount.value : 0);
+const effectiveCompareCount = computed(() => isHydrated.value ? compareCount.value : 0);
+const effectiveCompareList = computed(() => isHydrated.value ? compareList.value : []);
+const effectiveSelectedLocation = computed(() => isHydrated.value ? selectedLocation.value : null);
 
 watch(() => route.fullPath, () => {
 	isMenuOpen.value = false;
@@ -53,7 +57,7 @@ function isActive(path: string) {
 
 function resolvePrimaryLinkTo(path: string) {
 	return path === "/compare"
-		? buildCompareRoute(compareList.value)
+		? buildCompareRoute(effectiveCompareList.value)
 		: path;
 }
 
@@ -133,8 +137,8 @@ onBeforeUnmount(() => {
 								: 'text-app-muted hover:bg-app-bg hover:text-app-ink dark:text-app-muted-dark dark:hover:bg-app-bg-dark/70 dark:hover:text-app-text-dark'"
 						>
 							{{ link.label }}
-							<span v-if="link.to === '/compare' && compareCount" class="text-[11px] text-app-ink font-bold ml-2 px-1.5 rounded-full bg-app-warm inline-flex h-5 min-w-5 items-center justify-center">
-								{{ compareCount }}
+							<span v-if="link.to === '/compare' && effectiveCompareCount" class="text-[11px] text-app-ink font-bold ml-2 px-1.5 rounded-full bg-app-warm inline-flex h-5 min-w-5 items-center justify-center">
+								{{ effectiveCompareCount }}
 							</span>
 						</NuxtLink>
 
@@ -161,17 +165,17 @@ onBeforeUnmount(() => {
 						:class="isActive('/plan') ? 'border-app-accent text-app-accent dark:border-app-accent dark:text-white' : ''"
 					>
 						<span>My plan</span>
-						<span v-if="ballotPlanCount" class="text-[11px] text-app-ink font-bold px-1.5 rounded-full bg-app-warm inline-flex h-5 min-w-5 items-center justify-center">
-							{{ ballotPlanCount }}
+						<span v-if="effectiveBallotPlanCount" class="text-[11px] text-app-ink font-bold px-1.5 rounded-full bg-app-warm inline-flex h-5 min-w-5 items-center justify-center">
+							{{ effectiveBallotPlanCount }}
 						</span>
 					</NuxtLink>
 
 					<div
-						v-if="selectedLocation"
+						v-if="effectiveSelectedLocation"
 						class="text-xs text-app-muted px-3 py-2 border border-app-line rounded-full bg-white max-w-[12rem] hidden whitespace-nowrap shadow-sm items-center dark:text-app-muted-dark dark:border-app-line-dark dark:bg-app-panel-dark 2xl:inline-flex"
 					>
 						<span class="i-carbon-location mr-1.5 align-middle shrink-0" />
-						<span class="truncate">{{ selectedLocation.displayName }}</span>
+						<span class="truncate">{{ effectiveSelectedLocation.displayName }}</span>
 					</div>
 
 					<button
@@ -216,8 +220,8 @@ onBeforeUnmount(() => {
 						: 'bg-white text-app-ink dark:bg-app-panel-dark dark:text-app-text-dark'"
 				>
 					My plan
-					<span v-if="ballotPlanCount" class="text-[11px] text-app-ink font-bold ml-2 px-2 py-0.5 rounded-full bg-app-warm">
-						{{ ballotPlanCount }}
+					<span v-if="effectiveBallotPlanCount" class="text-[11px] text-app-ink font-bold ml-2 px-2 py-0.5 rounded-full bg-app-warm">
+						{{ effectiveBallotPlanCount }}
 					</span>
 				</NuxtLink>
 
@@ -231,8 +235,8 @@ onBeforeUnmount(() => {
 						: 'bg-white text-app-ink dark:bg-app-panel-dark dark:text-app-text-dark'"
 				>
 					{{ link.label }}
-					<span v-if="link.to === '/compare' && compareCount" class="text-[11px] text-app-ink font-bold ml-2 px-2 py-0.5 rounded-full bg-app-warm">
-						{{ compareCount }}
+					<span v-if="link.to === '/compare' && effectiveCompareCount" class="text-[11px] text-app-ink font-bold ml-2 px-2 py-0.5 rounded-full bg-app-warm">
+						{{ effectiveCompareCount }}
 					</span>
 				</NuxtLink>
 
@@ -250,7 +254,7 @@ onBeforeUnmount(() => {
 
 				<div class="text-sm mt-2 px-4 py-3 border border-app-line rounded-2xl bg-white flex items-center justify-between dark:border-app-line-dark dark:bg-app-panel-dark">
 					<span class="text-app-muted dark:text-app-muted-dark">
-						{{ selectedLocation?.displayName || "Ballot context not yet selected" }}
+						{{ effectiveSelectedLocation?.displayName || "Ballot context not yet selected" }}
 					</span>
 					<button type="button" class="text-xs font-semibold px-3 py-2 border border-app-line rounded-full dark:border-app-line-dark focus-ring" @click="toggleColorMode">
 						{{ isDark ? "Light mode" : "Dark mode" }}

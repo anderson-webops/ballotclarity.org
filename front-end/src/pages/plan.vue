@@ -5,11 +5,15 @@ import { currentCoverageElectionSlug } from "~/constants";
 import { buildCompareRoute } from "~/stores/civic";
 
 const civicStore = useCivicStore();
-const { ballotPlan, ballotPlanCount, compareCount, compareList, selectedElection, selectedLocation } = storeToRefs(civicStore);
+const { ballotPlan, ballotPlanCount, compareCount, compareList, isHydrated, selectedElection, selectedLocation } = storeToRefs(civicStore);
 const { formatDate, formatDateTime } = useFormatters();
 
-const electionSlug = computed(() => selectedElection.value?.slug ?? currentCoverageElectionSlug);
-const locationSlug = computed(() => selectedLocation.value?.slug);
+const effectiveBallotPlan = computed(() => isHydrated.value ? ballotPlan.value : {});
+const effectiveBallotPlanCount = computed(() => isHydrated.value ? ballotPlanCount.value : 0);
+const effectiveCompareCount = computed(() => isHydrated.value ? compareCount.value : 0);
+const effectiveCompareList = computed(() => isHydrated.value ? compareList.value : []);
+const electionSlug = computed(() => isHydrated.value ? (selectedElection.value?.slug ?? currentCoverageElectionSlug) : currentCoverageElectionSlug);
+const locationSlug = computed(() => isHydrated.value ? selectedLocation.value?.slug : undefined);
 const { data, error, pending } = await useBallot(electionSlug, locationSlug);
 
 usePageSeo({
@@ -20,7 +24,7 @@ usePageSeo({
 
 const completionStats = computed(() => {
 	const contestCount = data.value?.election.contests.length ?? 0;
-	const savedCount = ballotPlanCount.value;
+	const savedCount = effectiveBallotPlanCount.value;
 
 	return {
 		contestCount,
@@ -43,7 +47,7 @@ const plannedEntries = computed(() => {
 
 	const contestsBySlug = new Map(data.value.election.contests.map(contest => [contest.slug, contest]));
 
-	return Object.values(ballotPlan.value)
+	return Object.values(effectiveBallotPlan.value)
 		.map((selection) => {
 			const contest = contestsBySlug.get(selection.contestSlug);
 
@@ -60,10 +64,10 @@ const unplannedContests = computed(() => {
 	if (!data.value)
 		return [];
 
-	return data.value.election.contests.filter(contest => !ballotPlan.value[contest.slug]);
+	return data.value.election.contests.filter(contest => !effectiveBallotPlan.value[contest.slug]);
 });
 const mostRecentSavedAt = computed(() => plannedEntries.value.at(-1)?.savedAt ?? data.value?.updatedAt ?? "");
-const compareHref = computed(() => buildCompareRoute(compareList.value));
+const compareHref = computed(() => buildCompareRoute(effectiveCompareList.value));
 
 function buildPlannedEntry(contest: Contest, selection: BallotPlanSelection) {
 	const index = data.value?.election.contests.findIndex(item => item.slug === contest.slug) ?? -1;
@@ -144,7 +148,7 @@ function printPlan() {
 				<button type="button" class="btn-secondary" @click="civicStore.clearBallotPlan()">
 					Clear saved choices
 				</button>
-				<NuxtLink v-if="compareCount >= 2" :to="compareHref" class="btn-secondary">
+				<NuxtLink v-if="effectiveCompareCount >= 2" :to="compareHref" class="btn-secondary">
 					Open compare
 				</NuxtLink>
 			</div>

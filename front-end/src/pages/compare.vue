@@ -1,14 +1,16 @@
 <script setup lang="ts">
 import type { Candidate, Source } from "~/types/civic";
+import { storeToRefs } from "pinia";
 import { currentCoverageElectionSlug } from "~/constants";
 import { buildCompareRoute, normalizeCompareSlugs, parseCompareQuerySlugs } from "~/stores/civic";
 
 const civicStore = useCivicStore();
 const route = useRoute();
 const router = useRouter();
+const { compareList, isHydrated } = storeToRefs(civicStore);
 
 const selectedSlugs = computed(() => parseCompareQuerySlugs(route.query.slugs));
-const cachedCompareSlugs = computed(() => normalizeCompareSlugs(civicStore.compareList));
+const cachedCompareSlugs = computed(() => normalizeCompareSlugs(isHydrated.value ? compareList.value : []));
 const hasCanonicalSelection = computed(() => selectedSlugs.value.length > 0);
 const hasSavedCompareSelection = computed(() => !hasCanonicalSelection.value && cachedCompareSlugs.value.length >= 2);
 const resumeCompareHref = computed(() => buildCompareRoute(cachedCompareSlugs.value));

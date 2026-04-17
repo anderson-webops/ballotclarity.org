@@ -7,9 +7,10 @@ const civicStore = useCivicStore();
 const route = useRoute();
 const runtimeConfig = useRuntimeConfig();
 const siteUrl = useSiteUrl();
-const { ballotPlan } = storeToRefs(civicStore);
+const { ballotPlan, isHydrated } = storeToRefs(civicStore);
 const measureSlug = computed(() => String(route.params.slug));
 const { data: measure, error, pending } = await useMeasure(measureSlug);
+const effectiveBallotPlan = computed(() => isHydrated.value ? ballotPlan.value : {});
 const electionOverviewHref = `/elections/${currentCoverageElectionSlug}`;
 const locationHubHref = `/locations/${currentCoverageLocationSlug}`;
 const sectionLinks = [
@@ -116,7 +117,7 @@ const currentDecision = computed(() => {
 	if (!measure.value)
 		return null;
 
-	const selection = ballotPlan.value[measure.value.contestSlug];
+	const selection = effectiveBallotPlan.value[measure.value.contestSlug];
 
 	return selection?.type === "measure" && selection.measureSlug === measure.value.slug
 		? selection.decision

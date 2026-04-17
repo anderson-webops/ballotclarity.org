@@ -6,12 +6,17 @@ import { buildCompareRoute } from "~/stores/civic";
 const civicStore = useCivicStore();
 const route = useRoute();
 const { formatDate, formatDateTime } = useFormatters();
-const { ballotPlan, ballotPlanCount, ballotViewMode, compareList, selectedIssues } = storeToRefs(civicStore);
+const { ballotPlan, ballotPlanCount, ballotViewMode, compareList, isHydrated, selectedIssues } = storeToRefs(civicStore);
 
 const ballotSlug = computed(() => String(route.params.slug));
 const locationSlug = computed(() => typeof route.query.location === "string" ? route.query.location : undefined);
 
 const { data, error, pending } = await useBallot(ballotSlug, locationSlug);
+const effectiveBallotPlan = computed(() => isHydrated.value ? ballotPlan.value : {});
+const effectiveBallotPlanCount = computed(() => isHydrated.value ? ballotPlanCount.value : 0);
+const effectiveBallotViewMode = computed(() => isHydrated.value ? ballotViewMode.value : "quick");
+const effectiveCompareList = computed(() => isHydrated.value ? compareList.value : []);
+const effectiveSelectedIssues = computed(() => isHydrated.value ? selectedIssues.value : []);
 
 watchEffect(() => {
 	if (data.value) {
@@ -69,8 +74,8 @@ const filteredContests = computed<Contest[]>(() => {
 						candidate.topIssues.map(issue => issue.label).join(" "),
 					].join(" ").toLowerCase().includes(query);
 
-					const matchesIssue = !selectedIssues.value.length
-						|| candidate.topIssues.some(issue => selectedIssues.value.includes(issue.slug));
+					const matchesIssue = !effectiveSelectedIssues.value.length
+						|| candidate.topIssues.some(issue => effectiveSelectedIssues.value.includes(issue.slug));
 
 					return matchesQuery && matchesIssue;
 				}) ?? [];
@@ -107,7 +112,7 @@ const filteredContests = computed<Contest[]>(() => {
 const filteredCandidateContests = computed(() => filteredContests.value.filter(contest => contest.type === "candidate"));
 const filteredMeasureContests = computed(() => filteredContests.value.filter(contest => contest.type === "measure"));
 
-const compareHref = computed(() => buildCompareRoute(compareList.value));
+const compareHref = computed(() => buildCompareRoute(effectiveCompareList.value));
 const planHref = computed(() => ({
 	path: "/plan",
 	query: {
@@ -187,7 +192,7 @@ const coverageNotes = computed(() => {
 		`This ballot is personalized to ${personalizationLabel.value}. Use a full street address for the most specific district match.`,
 		`${data.value.election.officialResources.length} official links are attached for election logistics, notices, and office contact details.`,
 		`${ballotCounts.value.sourceLinkedItems} contest items in this guide link to source drawers or evidence panels in the project archive.`,
-		`${ballotPlanCount.value} contest${ballotPlanCount.value === 1 ? "" : "s"} saved to your ballot plan so far.`,
+		`${effectiveBallotPlanCount.value} contest${effectiveBallotPlanCount.value === 1 ? "" : "s"} saved to your ballot plan so far.`,
 		"Time-sensitive deadlines, polling logistics, and late campaign activity should still be verified in official election-office notices."
 	];
 });
@@ -199,7 +204,7 @@ const ballotContentsGroups = computed(() => {
 		href: `#${contest.slug}`,
 		label: contest.office,
 		meta: contest.jurisdiction,
-		saved: Boolean(ballotPlan.value[contest.slug]),
+		saved: Boolean(effectiveBallotPlan.value[contest.slug]),
 		slug: contest.slug,
 		type: contest.type
 	}));
@@ -580,13 +585,13 @@ function clearFilters() {
 										:key="issue.slug"
 										type="button"
 										class="text-xs font-semibold px-3 py-2 border rounded-full transition focus-ring"
-										:class="selectedIssues.includes(issue.slug)
+										:class="effectiveSelectedIssues.includes(issue.slug)
 											? 'border-app-accent bg-app-accent text-white'
 											: 'border-app-line bg-white text-app-muted hover:border-app-accent hover:text-app-accent dark:border-app-line-dark dark:bg-app-panel-dark dark:text-app-muted-dark'"
-										:aria-pressed="selectedIssues.includes(issue.slug)"
+										:aria-pressed="effectiveSelectedIssues.includes(issue.slug)"
 										@click="civicStore.toggleIssue(issue.slug)"
 									>
-										<span v-if="selectedIssues.includes(issue.slug)" class="i-carbon-checkmark mr-1" aria-hidden="true" />
+										<span v-if="effectiveSelectedIssues.includes(issue.slug)" class="i-carbon-checkmark mr-1" aria-hidden="true" />
 										{{ issue.label }}
 									</button>
 								</div>
@@ -606,32 +611,32 @@ function clearFilters() {
 								<button
 									type="button"
 									class="text-xs font-semibold px-3 py-2 border rounded-full transition focus-ring"
-									:class="ballotViewMode === 'quick'
+									:class="effectiveBallotViewMode === 'quick'
 										? 'border-app-accent bg-app-accent text-white'
 										: 'border-app-line bg-white text-app-muted hover:border-app-accent hover:text-app-accent dark:border-app-line-dark dark:bg-app-panel-dark dark:text-app-muted-dark'"
-									:aria-pressed="ballotViewMode === 'quick'"
+									:aria-pressed="effectiveBallotViewMode === 'quick'"
 									@click="civicStore.setBallotViewMode('quick')"
 								>
-									<span v-if="ballotViewMode === 'quick'" class="i-carbon-checkmark mr-1" aria-hidden="true" />
+									<span v-if="effectiveBallotViewMode === 'quick'" class="i-carbon-checkmark mr-1" aria-hidden="true" />
 									Quick view
 								</button>
 								<button
 									type="button"
 									class="text-xs font-semibold px-3 py-2 border rounded-full transition focus-ring"
-									:class="ballotViewMode === 'deep'
+									:class="effectiveBallotViewMode === 'deep'
 										? 'border-app-accent bg-app-accent text-white'
 										: 'border-app-line bg-white text-app-muted hover:border-app-accent hover:text-app-accent dark:border-app-line-dark dark:bg-app-panel-dark dark:text-app-muted-dark'"
-									:aria-pressed="ballotViewMode === 'deep'"
+									:aria-pressed="effectiveBallotViewMode === 'deep'"
 									@click="civicStore.setBallotViewMode('deep')"
 								>
-									<span v-if="ballotViewMode === 'deep'" class="i-carbon-checkmark mr-1" aria-hidden="true" />
+									<span v-if="effectiveBallotViewMode === 'deep'" class="i-carbon-checkmark mr-1" aria-hidden="true" />
 									Deep view
 								</button>
 								<NuxtLink to="/accessibility" class="btn-secondary">
 									Accessibility and print standards
 								</NuxtLink>
 								<NuxtLink :to="planHref" class="btn-secondary">
-									{{ ballotPlanCount ? `Open plan (${ballotPlanCount})` : "Open plan" }}
+									{{ effectiveBallotPlanCount ? `Open plan (${effectiveBallotPlanCount})` : "Open plan" }}
 								</NuxtLink>
 							</div>
 						</div>
@@ -683,7 +688,7 @@ function clearFilters() {
 					v-for="contest in filteredCandidateContests"
 					:key="contest.slug"
 					:contest="contest"
-					:view-mode="ballotViewMode"
+					:view-mode="effectiveBallotViewMode"
 				/>
 			</div>
 
@@ -703,7 +708,7 @@ function clearFilters() {
 					v-for="contest in filteredMeasureContests"
 					:key="contest.slug"
 					:contest="contest"
-					:view-mode="ballotViewMode"
+					:view-mode="effectiveBallotViewMode"
 				/>
 			</div>
 		</section>
@@ -723,13 +728,13 @@ function clearFilters() {
 		</section>
 
 		<section
-			v-if="compareList.length || ballotPlanCount"
+			v-if="effectiveCompareList.length || effectiveBallotPlanCount"
 			class="px-4 bottom-4 left-0 right-0 fixed z-30 print-hidden"
 		>
 			<div class="mx-auto px-5 py-4 border border-app-line rounded-[1.75rem] bg-white flex flex-col gap-3 max-w-4xl w-full shadow-[0_24px_50px_-36px_rgba(16,37,62,0.7)] dark:border-app-line-dark dark:bg-app-panel-dark sm:flex-row sm:items-center sm:justify-between">
 				<div>
 					<p class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
-						{{ ballotPlanCount }} contest{{ ballotPlanCount === 1 ? "" : "s" }} saved · {{ compareList.length }} candidate{{ compareList.length === 1 ? "" : "s" }} in compare
+						{{ effectiveBallotPlanCount }} contest{{ effectiveBallotPlanCount === 1 ? "" : "s" }} saved · {{ effectiveCompareList.length }} candidate{{ effectiveCompareList.length === 1 ? "" : "s" }} in compare
 					</p>
 					<p class="text-xs text-app-muted mt-1 dark:text-app-muted-dark">
 						Save a choice to your plan as you go, or compare 2 to 3 candidates from the same contest before deciding.
@@ -739,7 +744,7 @@ function clearFilters() {
 					<NuxtLink :to="planHref" class="btn-secondary">
 						Open ballot plan
 					</NuxtLink>
-					<NuxtLink :to="compareHref" class="btn-primary" :class="{ 'opacity-60 pointer-events-none': compareList.length < 2 }">
+					<NuxtLink :to="compareHref" class="btn-primary" :class="{ 'opacity-60 pointer-events-none': effectiveCompareList.length < 2 }">
 						Compare selected candidates
 					</NuxtLink>
 					<button type="button" class="btn-secondary" @click="civicStore.clearCompare()">

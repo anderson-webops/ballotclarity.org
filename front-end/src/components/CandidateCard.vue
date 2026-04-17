@@ -9,21 +9,23 @@ const props = defineProps<{
 }>();
 
 const civicStore = useCivicStore();
-const { ballotPlan, compareList } = storeToRefs(civicStore);
+const { ballotPlan, compareList, isHydrated } = storeToRefs(civicStore);
 const { formatCurrency } = useFormatters();
 
-const isCompared = computed(() => compareList.value.includes(props.candidate.slug));
-const compareLimitReached = computed(() => compareList.value.length >= 3 && !isCompared.value);
+const effectiveBallotPlan = computed(() => isHydrated.value ? ballotPlan.value : {});
+const effectiveCompareList = computed(() => isHydrated.value ? compareList.value : []);
+const isCompared = computed(() => effectiveCompareList.value.includes(props.candidate.slug));
+const compareLimitReached = computed(() => effectiveCompareList.value.length >= 3 && !isCompared.value);
 const compareLaunchSlugs = computed(() => {
 	if (compareLimitReached.value)
 		return [];
 
-	return buildCompareLaunchSlugs(compareList.value, props.candidate.slug);
+	return buildCompareLaunchSlugs(effectiveCompareList.value, props.candidate.slug);
 });
 const compareHref = computed(() => buildCompareRoute(compareLaunchSlugs.value));
 const canOpenCompare = computed(() => compareLaunchSlugs.value.length >= 2);
 const isPlanned = computed(() => {
-	const selection = ballotPlan.value[props.candidate.contestSlug];
+	const selection = effectiveBallotPlan.value[props.candidate.contestSlug];
 
 	return selection?.type === "candidate" && selection.candidateSlug === props.candidate.slug;
 });

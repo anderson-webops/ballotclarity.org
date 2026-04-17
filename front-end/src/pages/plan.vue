@@ -141,38 +141,53 @@ function printPlan() {
 
 <template>
 	<section class="app-shell section-gap">
-		<header class="surface-panel">
-			<div class="flex flex-wrap gap-2">
-				<TrustBadge label="Booth-ready workflow" tone="accent" />
-				<TrustBadge label="Print-friendly" />
-				<TrustBadge label="Current ballot plan" tone="warning" />
-			</div>
-			<p class="text-xs text-app-muted tracking-[0.24em] font-semibold mt-5 uppercase dark:text-app-muted-dark">
-				My ballot plan
-			</p>
-			<h1 class="text-5xl text-app-ink leading-tight font-serif mt-3 dark:text-app-text-dark">
-				Save choices, review gaps, and bring a clean plan with you.
-			</h1>
-			<p class="text-base text-app-muted leading-8 mt-6 max-w-3xl dark:text-app-muted-dark">
-				This page turns the ballot guide into a portable reference. Save one choice per contest, mark measures for review, and print the result if you do not want to rely on a phone at the polling place.
-			</p>
-			<div class="mt-8 flex flex-wrap gap-x-4 gap-y-5 items-center">
-				<button type="button" class="btn-primary" @click="printPlan">
-					<span class="i-carbon-printer" />
-					Print this plan
-				</button>
-				<NuxtLink to="/accessibility" class="btn-secondary print-hidden">
-					Accessibility and print standards
-				</NuxtLink>
-				<NuxtLink :to="`/ballot/${electionSlug}`" class="btn-secondary">
-					Return to ballot
-				</NuxtLink>
-				<button type="button" class="btn-secondary" @click="civicStore.clearBallotPlan()">
-					Clear saved choices
-				</button>
-				<NuxtLink v-if="effectiveCompareCount >= 2" :to="compareHref" class="btn-secondary">
-					Open compare
-				</NuxtLink>
+		<header class="surface-panel overflow-hidden">
+			<div class="gap-8 grid xl:gap-12 xl:grid-cols-[minmax(0,1.18fr)_minmax(19rem,0.82fr)] xl:items-end">
+				<div>
+					<div class="flex flex-wrap gap-2">
+						<TrustBadge label="Booth-ready workflow" tone="accent" />
+						<TrustBadge label="Print-friendly" />
+						<TrustBadge label="Current ballot plan" tone="warning" />
+					</div>
+					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold mt-5 uppercase dark:text-app-muted-dark">
+						My ballot plan
+					</p>
+					<h1 class="text-5xl text-app-ink leading-tight font-serif mt-3 max-w-[14ch] dark:text-app-text-dark">
+						Save choices, review gaps, and bring a clean plan with you.
+					</h1>
+					<p class="text-base text-app-muted leading-8 mt-6 max-w-3xl dark:text-app-muted-dark">
+						This page turns the ballot guide into a portable reference. Save one choice per contest, mark measures for review, and print the result if you do not want to rely on a phone at the polling place.
+					</p>
+				</div>
+
+				<div class="xl:pb-1">
+					<div class="p-5 border border-app-line/70 rounded-[1.9rem] bg-app-bg/55 dark:border-app-line-dark dark:bg-app-bg-dark/55">
+						<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+							Quick actions
+						</p>
+						<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
+							Print the plan, go back to the ballot guide, or clear saved choices before you leave.
+						</p>
+						<div class="mt-5 flex flex-col gap-3">
+							<button type="button" class="btn-primary w-full justify-center" @click="printPlan">
+								<span class="i-carbon-printer" />
+								Print this plan
+							</button>
+							<NuxtLink to="/accessibility" class="btn-secondary w-full justify-center print-hidden">
+								Accessibility and print standards
+							</NuxtLink>
+							<NuxtLink :to="`/ballot/${electionSlug}`" class="btn-secondary w-full justify-center">
+								Return to ballot
+							</NuxtLink>
+							<button type="button" class="btn-secondary w-full justify-center" @click="civicStore.clearBallotPlan()">
+								Clear saved choices
+							</button>
+							<NuxtLink v-if="effectiveCompareCount >= 2" :to="compareHref" class="btn-secondary w-full justify-center">
+								Open compare
+							</NuxtLink>
+						</div>
+					</div>
+				</div>
 			</div>
 		</header>
 

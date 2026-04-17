@@ -33,6 +33,17 @@ function summarizeBody(text: string) {
 	return text.replace(/\s+/g, " ").trim().slice(0, 220);
 }
 
+function buildGoogleCivicVoterInfoNote(response: Response, body: string) {
+	if (response.ok)
+		return "Sample voterinfo probe also succeeded.";
+
+	if (response.status === 400 || response.status === 404) {
+		return `Sample voterinfo probe returned ${response.status}; this usually means the sample address/election context is not currently valid, not that the credential was rejected. Detail: ${summarizeBody(body)}`;
+	}
+
+	return `Sample voterinfo probe returned ${response.status}. This does not change the credential-acceptance result from the elections endpoint. Detail: ${summarizeBody(body)}`;
+}
+
 async function checkDataGov() {
 	const credential = resolveProviderCredential("data-gov");
 
@@ -121,18 +132,24 @@ async function checkGoogleCivic() {
 		}
 
 		const electionCount = Array.isArray(payload?.elections) ? payload.elections.length : 0;
-		const voterInfoUrl = new URL("https://www.googleapis.com/civicinfo/v2/voterinfo");
-		voterInfoUrl.searchParams.set("address", "5600 Campbellton Fairburn Rd, Union City, GA 30213");
-		voterInfoUrl.searchParams.set("officialOnly", "true");
-		voterInfoUrl.searchParams.set("key", credential.value);
-		const voterInfoResponse = await fetchGoogleCivic(voterInfoUrl);
-		const voterInfoBody = await voterInfoResponse.text();
-		const voterInfoNote = voterInfoResponse.ok
-			? "Address-level voterinfo probe succeeded."
-			: `Address-level voterinfo probe returned ${voterInfoResponse.status}: ${summarizeBody(voterInfoBody)}`;
+		let voterInfoNote = "Sample voterinfo probe was not attempted.";
+
+		try {
+			const voterInfoUrl = new URL("https://www.googleapis.com/civicinfo/v2/voterinfo");
+			voterInfoUrl.searchParams.set("address", "5600 Campbellton Fairburn Rd, Union City, GA 30213");
+			voterInfoUrl.searchParams.set("officialOnly", "true");
+			voterInfoUrl.searchParams.set("key", credential.value);
+			const voterInfoResponse = await fetchGoogleCivic(voterInfoUrl);
+			const voterInfoBody = await voterInfoResponse.text();
+
+			voterInfoNote = buildGoogleCivicVoterInfoNote(voterInfoResponse, voterInfoBody);
+		}
+		catch (error) {
+			voterInfoNote = `Sample voterinfo probe could not be completed. This does not change the credential-acceptance result from the elections endpoint. Detail: ${error instanceof Error ? error.message : String(error)}`;
+		}
 
 		return {
-			detail: `Elections probe returned ${electionCount} election records. ${voterInfoNote}`,
+			detail: `Credential accepted by the elections endpoint. Elections probe returned ${electionCount} election records. ${voterInfoNote}`,
 			id: "google-civic",
 			label: "Google Civic Information API",
 			source: credential.source,

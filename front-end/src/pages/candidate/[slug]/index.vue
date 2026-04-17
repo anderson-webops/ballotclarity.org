@@ -250,6 +250,12 @@ function saveToPlan() {
 						<NuxtLink v-if="canOpenCompare" :to="compareHref" class="btn-secondary">
 							Open compare
 						</NuxtLink>
+						<NuxtLink :to="`/candidate/${candidate.slug}/funding`" class="btn-secondary">
+							Funding page
+						</NuxtLink>
+						<NuxtLink :to="`/candidate/${candidate.slug}/influence`" class="btn-secondary">
+							Influence page
+						</NuxtLink>
 						<button type="button" class="btn-secondary" :disabled="compareLimitReached" @click="toggleCompare">
 							<span :class="isCompared ? 'i-carbon-checkmark' : 'i-carbon-compare'" />
 							{{ isCompared ? 'Remove from compare' : 'Add to compare' }}
@@ -539,7 +545,12 @@ function saveToPlan() {
 					description="Reported fundraising in this profile is shown with the current filing window and attached source documents. Review original filings for late amendments or newly reported independent spending."
 				>
 					<template #meta>
-						<SourceDrawer :sources="candidate.funding.sources" title="Campaign funding sources" />
+						<div class="flex flex-wrap gap-3 items-center">
+							<SourceDrawer :sources="candidate.funding.sources" title="Campaign funding sources" />
+							<NuxtLink :to="`/candidate/${candidate.slug}/funding`" class="btn-secondary">
+								Open dedicated funding page
+							</NuxtLink>
+						</div>
 					</template>
 					<div class="mt-6 gap-4 grid md:grid-cols-3">
 						<div class="p-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
@@ -593,7 +604,12 @@ function saveToPlan() {
 					title="Public context around funding and policy exposure"
 				>
 					<template #meta>
-						<SourceDrawer :sources="candidate.lobbyingContext.flatMap(block => block.sources)" :title="`${candidate.name} influence context`" />
+						<div class="flex flex-wrap gap-3 items-center">
+							<SourceDrawer :sources="candidate.lobbyingContext.flatMap(block => block.sources)" :title="`${candidate.name} influence context`" />
+							<NuxtLink :to="`/candidate/${candidate.slug}/influence`" class="btn-secondary">
+								Open dedicated influence page
+							</NuxtLink>
+						</div>
 					</template>
 					<InfoCallout class="mt-5" title="Read this section carefully">
 						Influence context is presented to help users inspect relevant sectors, donors, and public disclosures. It should not be read as proof that any donor or organization controlled a candidate action.

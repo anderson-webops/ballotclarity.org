@@ -15,6 +15,13 @@ const compareHref = computed(() => {
 	};
 });
 
+const districtHref = computed(() => {
+	if (!data.value || data.value.contest.type !== "candidate")
+		return null;
+
+	return `/districts/${data.value.contest.slug}`;
+});
+
 const breadcrumbs = computed(() => {
 	if (!data.value) {
 		return [
@@ -74,6 +81,12 @@ usePageSeo({
 						<UpdatedAt :value="data.updatedAt" />
 						<NuxtLink :to="`/ballot/${data.election.slug}`" class="btn-secondary">
 							Open ballot guide
+						</NuxtLink>
+						<NuxtLink v-if="districtHref" :to="districtHref" class="btn-secondary">
+							Open district page
+						</NuxtLink>
+						<NuxtLink v-if="districtHref" to="/representatives" class="btn-secondary">
+							Representative directory
 						</NuxtLink>
 						<NuxtLink :to="`/elections/${data.election.slug}`" class="btn-secondary">
 							Election overview

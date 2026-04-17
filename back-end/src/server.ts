@@ -6,6 +6,8 @@ import type {
 	ContestLinkSummary,
 	ContestRecordResponse,
 	CoverageResponse,
+	DistrictRecordResponse,
+	DistrictsResponse,
 	Election,
 	EvidenceBlock,
 	FundingSummary,
@@ -19,6 +21,8 @@ import type {
 	PublicCorrectionsResponse,
 	PublicStatusResponse,
 	QuestionnaireResponse,
+	RepresentativesResponse,
+	RepresentativeSummary,
 	SearchResponse,
 	Source,
 	SourceDirectoryItem,
@@ -204,6 +208,38 @@ function buildSourceRecord(
 	};
 }
 
+function buildRepresentativeSummary(candidate: Candidate): RepresentativeSummary {
+	return {
+		districtLabel: candidate.officeSought,
+		districtSlug: candidate.contestSlug,
+		fundingSummary: candidate.funding.summary,
+		href: `/candidate/${candidate.slug}`,
+		influenceSummary: candidate.lobbyingContext[0]?.summary ?? "No published influence-context note is attached to this profile yet.",
+		incumbent: candidate.incumbent,
+		name: candidate.name,
+		officeSought: candidate.officeSought,
+		party: candidate.party,
+		slug: candidate.slug,
+		sourceCount: collectCandidateSources(candidate).length,
+		summary: candidate.summary,
+		updatedAt: candidate.updatedAt
+	};
+}
+
+function buildDistrictSummary(contest: Contest, election: Election) {
+	return {
+		candidateCount: contest.candidates?.length ?? 0,
+		href: `/districts/${contest.slug}`,
+		jurisdiction: contest.jurisdiction,
+		office: contest.office,
+		representativeCount: (contest.candidates ?? []).filter(candidate => candidate.incumbent).length,
+		slug: contest.slug,
+		summary: contest.description,
+		title: contest.office,
+		updatedAt: election.updatedAt
+	};
+}
+
 function buildSearchResponse(
 	rawQuery: string,
 	candidates: Candidate[] = demoCandidates,
@@ -211,7 +247,8 @@ function buildSearchResponse(
 	contests: Contest[] = demoElection.contests,
 	election: Election = demoElection,
 	jurisdiction: Jurisdiction = demoJurisdiction,
-	sourceDirectory: SourceDirectoryItem[] = buildSourceDirectory(candidates, measures, contests)
+	sourceDirectory: SourceDirectoryItem[] = buildSourceDirectory(candidates, measures, contests),
+	districts = contests.filter(contest => contest.type === "candidate").map(contest => buildDistrictSummary(contest, election))
 ): SearchResponse {
 	const query = rawQuery.trim();
 	const lowerQuery = query.toLowerCase();
@@ -291,6 +328,22 @@ function buildSearchResponse(
 			updatedAt: election.updatedAt
 		}));
 
+	const districtResults = districts
+		.filter(district => [
+			district.title,
+			district.office,
+			district.summary
+		].join(" ").toLowerCase().includes(lowerQuery))
+		.map(district => ({
+			href: district.href,
+			id: district.slug,
+			meta: `${district.jurisdiction} · ${district.candidateCount} candidate${district.candidateCount === 1 ? "" : "s"}`,
+			summary: district.summary,
+			title: district.title,
+			type: "district" as const,
+			updatedAt: district.updatedAt
+		}));
+
 	const electionResults = [election]
 		.filter(election => [
 			election.name,
@@ -344,6 +397,7 @@ function buildSearchResponse(
 	const groups = [
 		{ items: jurisdictionResults, label: "Jurisdictions", type: "jurisdiction" as const },
 		{ items: electionResults, label: "Elections", type: "election" as const },
+		{ items: districtResults, label: "Districts", type: "district" as const },
 		{ items: contestResults, label: "Contests", type: "contest" as const },
 		{ items: candidateResults, label: "Candidates", type: "candidate" as const },
 		{ items: measureResults, label: "Measures", type: "measure" as const },
@@ -676,6 +730,34 @@ export async function createApp(options: CreateAppOptions = {}) {
 		return election?.contests ?? [];
 	}
 
+	async function listPublicDistricts() {
+		const election = await getPublicElection(coverageRepository.data.election.slug);
+
+		if (!election)
+			return [];
+
+		return election.contests
+			.filter(contest => contest.type === "candidate")
+			.map(contest => buildDistrictSummary(contest, election));
+	}
+
+	async function getPublicDistrict(slug: string) {
+		const election = await getPublicElection(coverageRepository.data.election.slug);
+
+		if (!election)
+			return null;
+
+		const contest = election.contests.find(item => item.slug === slug && item.type === "candidate");
+
+		if (!contest)
+			return null;
+
+		return {
+			contest,
+			election
+		};
+	}
+
 	async function getPublicContest(slug: string) {
 		const election = await getPublicElection(coverageRepository.data.election.slug);
 
@@ -691,6 +773,22 @@ export async function createApp(options: CreateAppOptions = {}) {
 			contest,
 			election
 		};
+	}
+
+	async function listPublicRepresentatives() {
+		const election = await getPublicElection(coverageRepository.data.election.slug);
+
+		if (!election)
+			return [];
+
+		return election.contests
+			.filter(contest => contest.type === "candidate")
+			.flatMap(contest => (contest.candidates ?? [])
+				.filter(candidate => candidate.incumbent)
+				.map(candidate => ({
+					...buildRepresentativeSummary(candidate),
+					districtLabel: contest.office
+				})));
 	}
 
 	function buildContestRecordResponse(contest: Contest, election: Election): ContestRecordResponse {
@@ -722,6 +820,69 @@ export async function createApp(options: CreateAppOptions = {}) {
 			sourceCount: sources.length,
 			sources,
 			updatedAt: election.updatedAt
+		};
+	}
+
+	function buildDistrictRecordResponse(contest: Contest, election: Election): DistrictRecordResponse {
+		const sources = collectContestSources(contest).map(resolveSource);
+		const representatives = (contest.candidates ?? [])
+			.filter(candidate => candidate.incumbent)
+			.map(candidate => ({
+				...buildRepresentativeSummary(candidate),
+				districtLabel: contest.office
+			}));
+		const relatedContests: ContestLinkSummary[] = election.contests
+			.filter(item => item.slug !== contest.slug)
+			.map(item => ({
+				href: `/contest/${item.slug}`,
+				jurisdiction: item.jurisdiction,
+				office: item.office,
+				slug: item.slug,
+				title: item.title,
+				type: item.type
+			}));
+
+		return {
+			candidates: contest.candidates ?? [],
+			district: {
+				...buildDistrictSummary(contest, election),
+				description: contest.description,
+				electionSlug: election.slug,
+				roleGuide: contest.roleGuide
+			},
+			election: {
+				date: election.date,
+				jurisdictionSlug: election.jurisdictionSlug,
+				locationName: election.locationName,
+				name: election.name,
+				slug: election.slug,
+				updatedAt: election.updatedAt
+			},
+			note: "District pages group the current representative, the upcoming contest, and the strongest available source links for one office area. Use them when you want district context without the full ballot stack.",
+			relatedContests,
+			representatives,
+			sources,
+			updatedAt: election.updatedAt
+		};
+	}
+
+	function buildDistrictsResponse(districts: Awaited<ReturnType<typeof listPublicDistricts>>): DistrictsResponse {
+		return {
+			districts,
+			note: "District pages separate office-area context from the full ballot guide so voters can orient around one race at a time.",
+			updatedAt: districts.map(district => district.updatedAt).sort((left, right) => right.localeCompare(left))[0] ?? coverageRepository.data.updatedAt
+		};
+	}
+
+	function buildRepresentativesResponse(
+		representatives: Awaited<ReturnType<typeof listPublicRepresentatives>>,
+		districts: Awaited<ReturnType<typeof listPublicDistricts>>
+	): RepresentativesResponse {
+		return {
+			districts,
+			note: "This directory highlights currently serving officials who also appear on the active ballot coverage, then links back to district, funding, and influence pages for deeper review.",
+			representatives,
+			updatedAt: representatives.map(item => item.updatedAt).sort((left, right) => right.localeCompare(left))[0] ?? coverageRepository.data.updatedAt
 		};
 	}
 
@@ -1100,6 +1261,32 @@ export async function createApp(options: CreateAppOptions = {}) {
 		}
 
 		response.json(record);
+	});
+
+	app.get("/api/districts", async (_request, response) => {
+		response.json(buildDistrictsResponse(await listPublicDistricts()));
+	});
+
+	app.get("/api/districts/:slug", async (request, response) => {
+		const result = await getPublicDistrict(request.params.slug);
+
+		if (!result) {
+			response.status(404).json({
+				message: "District page not found."
+			});
+			return;
+		}
+
+		response.json(buildDistrictRecordResponse(result.contest, result.election));
+	});
+
+	app.get("/api/representatives", async (_request, response) => {
+		const [districts, representatives] = await Promise.all([
+			listPublicDistricts(),
+			listPublicRepresentatives()
+		]);
+
+		response.json(buildRepresentativesResponse(representatives, districts));
 	});
 
 	app.get("/api/jurisdictions/:slug", (request, response) => {

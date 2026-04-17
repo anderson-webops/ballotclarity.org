@@ -94,6 +94,12 @@ usePageSeo({
 							<NuxtLink :to="`/ballot/${data.election.slug}`" class="btn-primary">
 								Open ballot guide
 							</NuxtLink>
+							<NuxtLink to="/districts" class="btn-secondary">
+								District pages
+							</NuxtLink>
+							<NuxtLink to="/representatives" class="btn-secondary">
+								Representatives
+							</NuxtLink>
 							<NuxtLink :to="`/locations/${data.election.jurisdictionSlug}`" class="btn-secondary">
 								Open location hub
 							</NuxtLink>
@@ -183,6 +189,14 @@ usePageSeo({
 						</p>
 						<NuxtLink :to="`/contest/${contest.slug}`" class="text-sm text-app-accent font-semibold mt-4 rounded-lg inline-flex gap-2 items-center focus-ring">
 							<span>Open canonical contest page</span>
+							<span class="i-carbon-arrow-right" />
+						</NuxtLink>
+						<NuxtLink
+							v-if="contest.type === 'candidate'"
+							:to="`/districts/${contest.slug}`"
+							class="text-sm text-app-accent font-semibold mt-3 rounded-lg inline-flex gap-2 items-center focus-ring"
+						>
+							<span>Open district page</span>
 							<span class="i-carbon-arrow-right" />
 						</NuxtLink>
 						<ul class="text-sm text-app-muted leading-7 mt-4 space-y-2 dark:text-app-muted-dark">

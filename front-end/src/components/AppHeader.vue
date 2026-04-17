@@ -40,6 +40,8 @@ const navGroups: HeaderGroup[] = [
 		links: [
 			{ badge: "plan", description: "Saved checklist and print-friendly plan.", label: "My plan", to: "/plan" },
 			{ description: "Contest reading view with filters and official links.", label: "Ballot guide", to: "/ballot" },
+			{ description: "Office-area pages for each active district or contest area.", label: "Districts", to: "/districts" },
+			{ description: "Current representatives linked to district, funding, and influence pages.", label: "Representatives", to: "/representatives" },
 			{ badge: "compare", description: "Side-by-side candidate comparison.", label: "Compare", to: "/compare" },
 			{ description: "Search the current public coverage archive.", label: "Search", to: "/search" }
 		]

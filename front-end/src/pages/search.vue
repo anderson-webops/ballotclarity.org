@@ -21,7 +21,7 @@ async function submitSearch() {
 usePageSeo({
 	description: activeQuery.value
 		? `Search Ballot Clarity for ${activeQuery.value}.`
-		: "Search Ballot Clarity across contests, elections, candidates, measures, and source records.",
+		: "Search Ballot Clarity across districts, contests, elections, candidates, measures, and source records.",
 	jsonLd: activeQuery.value
 		? {
 				"@context": "https://schema.org",
@@ -47,13 +47,13 @@ usePageSeo({
 				Search the public record in Ballot Clarity
 			</h1>
 			<p class="text-base text-app-muted leading-8 mt-5 dark:text-app-muted-dark">
-				Search across jurisdictions, election guides, contest pages, candidates, measures, and source records. Use the result type and source count to decide where to open first.
+				Search across jurisdictions, district pages, election guides, contest pages, candidates, measures, and source records. Use the result type and source count to decide where to open first.
 			</p>
 		</header>
 
 		<form class="surface-panel" @submit.prevent="submitSearch">
 			<label for="site-search" class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
-				Search by name, office, measure, issue, or source title
+				Search by name, district, office, measure, issue, or source title
 			</label>
 			<div class="mt-4 flex flex-col gap-3 sm:flex-row">
 				<div class="flex-1 relative">
@@ -62,7 +62,7 @@ usePageSeo({
 						id="site-search"
 						v-model="searchInput"
 						type="search"
-						placeholder="Example: Sandra Patel, transit bond, public records"
+						placeholder="Example: District 7, Sandra Patel, transit bond, public records"
 						class="text-sm text-app-ink pl-11 pr-4 border border-app-line rounded-full bg-white h-13 w-full shadow-sm dark:text-app-text-dark placeholder:text-app-muted dark:border-app-line-dark dark:bg-app-panel-dark focus-ring dark:placeholder:text-app-muted-dark"
 					>
 				</div>
@@ -99,9 +99,12 @@ usePageSeo({
 				No results for “{{ activeQuery }}”
 			</h2>
 			<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-				Try a candidate name, office title, ballot measure term, contest title, or source title. You can also browse the coverage profile, source directory, or methodology pages directly.
+				Try a candidate name, district title, office title, ballot measure term, contest title, or source title. You can also browse the district hub, coverage profile, or source directory directly.
 			</p>
 			<div class="mt-6 flex flex-wrap gap-3">
+				<NuxtLink to="/districts" class="btn-secondary">
+					Browse districts
+				</NuxtLink>
 				<NuxtLink to="/coverage" class="btn-secondary">
 					Open coverage profile
 				</NuxtLink>

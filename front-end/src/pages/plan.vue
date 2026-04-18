@@ -8,7 +8,7 @@ import { buildPlanUnavailableMessaging } from "~/utils/plan-messaging";
 const civicStore = useCivicStore();
 const { ballotPlan, ballotPlanCount, compareCount, compareList, isHydrated, selectedElection, selectedLocation } = storeToRefs(civicStore);
 const { formatDate, formatDateTime } = useFormatters();
-const { activeLookupContext, allowsGuideEntryPoints } = useGuideEntryGate();
+const { activeLookupContext, activeNationwideResult, allowsGuideEntryPoints } = useGuideEntryGate();
 
 const effectiveBallotPlan = computed(() => isHydrated.value ? ballotPlan.value : {});
 const effectiveBallotPlanCount = computed(() => isHydrated.value ? ballotPlanCount.value : 0);
@@ -20,8 +20,11 @@ const electionSlug = computed(() => showPersistedPlanState.value && !allowsGuide
 	: isHydrated.value ? (selectedElection.value?.slug ?? currentCoverageElectionSlug) : currentCoverageElectionSlug);
 const locationSlug = computed(() => isHydrated.value && allowsGuideEntryPoints.value ? selectedLocation.value?.slug : undefined);
 const { data, error, pending } = await useBallot(electionSlug, locationSlug);
-const lookupElection = computed(() => showPersistedPlanState.value ? (selectedElection.value ?? data.value?.election ?? null) : (data.value?.election ?? null));
-const activeLocationLabel = computed(() => data.value?.location.displayName ?? (isHydrated.value ? selectedLocation.value?.displayName ?? null : null));
+const lookupElection = computed(() => showPersistedPlanState.value
+	? (selectedElection.value ?? activeNationwideResult.value?.election ?? data.value?.election ?? null)
+	: (data.value?.election ?? null));
+const activeLocationLabel = computed(() => data.value?.location.displayName
+	?? (isHydrated.value ? (selectedLocation.value?.displayName ?? activeNationwideResult.value?.location?.displayName ?? null) : null));
 const planUnavailableMessaging = computed(() => buildPlanUnavailableMessaging(activeLookupContext.value));
 
 usePageSeo({

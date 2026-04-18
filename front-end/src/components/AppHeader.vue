@@ -20,7 +20,7 @@ interface HeaderGroup {
 const civicStore = useCivicStore();
 const colorMode = useColorMode();
 const route = useRoute();
-const { allowsGuideEntryPoints } = useGuideEntryGate();
+const { activeNationwideResult, allowsGuideEntryPoints, hasNationwideResultContext } = useGuideEntryGate();
 const isMenuOpen = ref(false);
 const isHeaderVisible = ref(true);
 const lastScrollY = ref(0);
@@ -36,6 +36,7 @@ const { ballotPlanCount, compareCount, compareList, isHydrated, selectedLocation
 
 const navGroups = computed<HeaderGroup[]>(() => {
 	const guideLinks: HeaderLink[] = [
+		{ description: "District matches, representative records, and official tools from your latest nationwide lookup.", label: "Nationwide results", to: "/results" },
 		{ badge: "plan", description: "Saved checklist and print-friendly plan.", label: "My plan", to: "/plan" },
 		{ description: "Contest reading view with filters and official links.", label: "Ballot guide", to: "/ballot" },
 		{ description: "Office-area pages for each active district or contest area.", label: "Districts", to: "/districts" },
@@ -48,7 +49,12 @@ const navGroups = computed<HeaderGroup[]>(() => {
 		{
 			description: "Ballot-reading tools and active voter workflows.",
 			label: "Use the guide",
-			links: guideLinks.filter(link => allowsGuideEntryPoints.value || !["/plan", "/ballot"].includes(link.to))
+			links: guideLinks.filter((link) => {
+				if (link.to === "/results")
+					return hasNationwideResultContext.value;
+
+				return allowsGuideEntryPoints.value || !["/plan", "/ballot"].includes(link.to);
+			})
 		},
 		{
 			description: "How Ballot Clarity works and how to verify it.",
@@ -78,8 +84,21 @@ const showPersistedCivicState = computed(() => isHydrated.value);
 const effectiveBallotPlanCount = computed(() => isHydrated.value ? ballotPlanCount.value : 0);
 const effectiveCompareCount = computed(() => isHydrated.value ? compareCount.value : 0);
 const effectiveCompareList = computed(() => isHydrated.value ? compareList.value : []);
-const effectiveSelectedLocation = computed(() => isHydrated.value ? selectedLocation.value : null);
-const locationLookupHref = computed(() => route.path.startsWith("/plan") ? "/plan#change-location" : "/#location-lookup");
+const effectiveSelectedLocation = computed(() => {
+	if (!isHydrated.value)
+		return null;
+
+	return activeNationwideResult.value?.location ?? selectedLocation.value;
+});
+const locationLookupHref = computed(() => {
+	if (route.path.startsWith("/plan"))
+		return "/plan#change-location";
+
+	if (route.path.startsWith("/results"))
+		return "/results#change-location";
+
+	return hasNationwideResultContext.value ? "/results#change-location" : "/#location-lookup";
+});
 
 watch(() => route.fullPath, () => {
 	isMenuOpen.value = false;

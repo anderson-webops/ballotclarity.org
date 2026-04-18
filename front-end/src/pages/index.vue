@@ -1,12 +1,15 @@
 <script setup lang="ts">
 import type { BallotResponse, ElectionsResponse } from "~/types/civic";
+import { storeToRefs } from "pinia";
 import { defineAsyncComponent } from "vue";
 import { contactEmail, currentCoverageElectionSlug } from "~/constants";
+import { buildHomeExperienceState } from "~/utils/nationwide-results";
 
 const api = useApiClient();
 const civicStore = useCivicStore();
 const siteUrl = useSiteUrl();
-const { allowsGuideEntryPoints, blocksGuideEntryPoints } = useGuideEntryGate();
+const { isHydrated, selectedElection } = storeToRefs(civicStore);
+const { activeNationwideResult, allowsGuideEntryPoints, blocksGuideEntryPoints, hasNationwideResultContext } = useGuideEntryGate();
 const AsyncHomeBallotPreviewSection = defineAsyncComponent(() => import("~/components/home/HomeBallotPreviewSection.vue"));
 const AsyncHomeRoadmapSection = defineAsyncComponent(() => import("~/components/home/HomeRoadmapSection.vue"));
 const AsyncHomeCoverageOverviewSection = defineAsyncComponent(() => import("~/components/home/HomeCoverageOverviewSection.vue"));
@@ -33,10 +36,13 @@ const { data: ballotPreview } = await useAsyncData<BallotResponse | null>(
 		watch: [featuredElection]
 	}
 );
+const homeExperience = computed(() => buildHomeExperienceState(hasNationwideResultContext.value));
 
 watchEffect(() => {
-	if (featuredElection.value)
-		civicStore.setElection(featuredElection.value);
+	if (!isHydrated.value || !featuredElection.value || selectedElection.value || activeNationwideResult.value)
+		return;
+
+	civicStore.setElection(featuredElection.value);
 });
 
 const faqEntries = [
@@ -129,9 +135,11 @@ const primaryPaths = computed<PrimaryPath[]>(() => [
 				to: featuredElection.value ? `/ballot/${featuredElection.value.slug}` : "/ballot"
 			}]
 		: [{
-				description: "Stay with the lookup results above when your area only has nationwide civic coverage. Official tools and coverage notes remain the right next step.",
-				label: "Review lookup results",
-				to: "/#location-lookup"
+				description: hasNationwideResultContext.value
+					? "Return to the active nationwide civic results for your latest lookup. District matches, representative records, and official tools remain the main next step."
+					: "Stay with the lookup results above when your area only has nationwide civic coverage. Official tools and coverage notes remain the right next step.",
+				label: hasNationwideResultContext.value ? "Open nationwide results" : "Review lookup results",
+				to: homeExperience.value.primaryLookupPath
 			}]),
 	{
 		description: "Review where Ballot Clarity is going live first, what is already production-ready, and what still needs verification.",
@@ -172,6 +180,9 @@ const trustFacts = computed(() => [
 						</p>
 						<p v-if="featuredLaunchTarget" class="text-sm text-app-muted leading-7 mt-5 dark:text-app-muted-dark">
 							<strong class="text-app-ink dark:text-app-text-dark">Current production launch target:</strong> {{ featuredLaunchTarget.displayName }}. The public archive remains available while official county and statewide integrations are being verified.
+						</p>
+						<p v-if="activeNationwideResult?.location" class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
+							<strong class="text-app-ink dark:text-app-text-dark">Active nationwide lookup:</strong> {{ activeNationwideResult.location.displayName }}. Ballot Clarity is keeping this civic-results context active across the app even though a published local guide is not available there yet.
 						</p>
 
 						<div class="mt-8 gap-4 grid md:grid-cols-2 xl:grid-cols-4">
@@ -241,11 +252,11 @@ const trustFacts = computed(() => [
 								</NuxtLink>
 							</template>
 							<template v-else>
-								<NuxtLink to="/coverage" class="btn-primary" prefetch-on="interaction">
-									Check live coverage
+								<NuxtLink :to="homeExperience.startHerePrimaryPath" class="btn-primary" prefetch-on="interaction">
+									{{ homeExperience.startHerePrimaryLabel }}
 								</NuxtLink>
-								<NuxtLink to="/help" class="btn-secondary" prefetch-on="interaction">
-									Open help hub
+								<NuxtLink :to="hasNationwideResultContext ? '/coverage' : '/help'" class="btn-secondary" prefetch-on="interaction">
+									{{ hasNationwideResultContext ? "Check live coverage" : "Open help hub" }}
 								</NuxtLink>
 							</template>
 						</div>
@@ -295,6 +306,8 @@ const trustFacts = computed(() => [
 				:allow-guide-entry-points="allowsGuideEntryPoints"
 				:ballot-preview="ballotPreview"
 				:featured-election-slug="featuredElection?.slug ?? null"
+				:nationwide-lookup-result="activeNationwideResult"
+				:show-featured-guide-preview="homeExperience.showFeaturedGuidePreview"
 			/>
 		</DeferredSection>
 

@@ -5,16 +5,22 @@ import { buildCompareRoute } from "~/stores/civic";
 
 const year = new Date().getFullYear();
 const civicStore = useCivicStore();
-const { allowsGuideEntryPoints } = useGuideEntryGate();
+const { allowsGuideEntryPoints, hasNationwideResultContext } = useGuideEntryGate();
 const { compareList, isHydrated } = storeToRefs(civicStore);
 const effectiveCompareList = computed(() => isHydrated.value ? compareList.value : []);
 
 const guideLinks = computed(() => [
+	{ label: "Nationwide civic results", to: "/results" },
 	{ label: "My ballot plan", to: "/plan" },
 	{ label: "Ballot guide", to: "/ballot" },
 	{ label: "Compare candidates", to: "/compare" },
 	{ label: "Search", to: "/search" },
-].filter(link => allowsGuideEntryPoints.value || !["/plan", "/ballot"].includes(link.to)));
+].filter((link) => {
+	if (link.to === "/results")
+		return hasNationwideResultContext.value;
+
+	return allowsGuideEntryPoints.value || !["/plan", "/ballot"].includes(link.to);
+}));
 
 const discoveryLinks = [
 	{ label: "About", to: "/about" },

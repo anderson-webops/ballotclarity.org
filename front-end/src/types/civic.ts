@@ -419,6 +419,22 @@ export interface LocationLookupResponse {
 	fromCache?: boolean;
 }
 
+export interface NationwideLookupResultContext {
+	result: LocationLookupResult;
+	inputKind: LocationLookupInputKind;
+	note: string;
+	guideAvailability?: LocationGuideAvailability;
+	availability: LocationDataAvailabilitySummary | null;
+	location: LocationSelection | null;
+	election: ElectionSummary | null;
+	electionSlug?: string;
+	actions: LocationLookupAction[];
+	normalizedAddress: string;
+	districtMatches: LocationDistrictMatch[];
+	representativeMatches: LocationRepresentativeMatch[];
+	fromCache: boolean;
+}
+
 export interface ElectionsResponse {
 	elections: ElectionSummary[];
 }

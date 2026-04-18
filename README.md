@@ -48,6 +48,35 @@ This starts:
 - local MinIO object storage on `127.0.0.1:9000`
 - local MinIO console on `127.0.0.1:9001`
 
+If you do not want to run Docker locally, use the provider-local path instead:
+
+```bash
+npm run local:setup
+```
+
+That path:
+
+- loads the repo-root `.env`
+- keeps Google Civic, `api.data.gov`, Open States, and LDA wired from your local provider keys
+- forces the admin store to sqlite for local use
+- disables the Postgres-backed address cache for that run
+- serves source files from Nuxt's built-in public mirror instead of MinIO
+- writes the local coverage snapshot and provider-fed launch-directory snapshot
+
+After that, run the API in one terminal:
+
+```bash
+npm run server:local:watch
+```
+
+Then run the Nuxt front-end in another terminal:
+
+```bash
+npm run dev
+```
+
+Use the Docker stack only when you want local Postgres address caching and MinIO parity with the fuller infrastructure path.
+
 Write a local coverage snapshot so the API can run in snapshot mode instead of raw in-memory seed mode:
 
 ```bash
@@ -103,6 +132,12 @@ To verify the currently configured provider keys without printing them:
 npm run providers:test
 ```
 
+For a no-Docker local run that still loads your provider keys from the repo-root `.env`, use:
+
+```bash
+npm run providers:test:local
+```
+
 That command now runs the compiled backend entrypoint and is safe for prod-only installs after `npm run build`. For source-level local debugging before a build, use:
 
 ```bash
@@ -113,6 +148,12 @@ To write a provider-fed launch-directory snapshot for future district and repres
 
 ```bash
 npm run launch-directory:sync
+```
+
+For the no-Docker local provider path, use:
+
+```bash
+npm run launch-directory:sync:local
 ```
 
 That command also runs the compiled backend entrypoint and is safe for prod-only installs after `npm run build`. For source-level local debugging before a build, use:

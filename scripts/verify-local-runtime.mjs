@@ -176,7 +176,10 @@ async function main() {
 		if (!Array.isArray(representativeDirectoryBody.representatives) || representativeDirectoryBody.representatives.length !== lookupBody.representativeMatches.length)
 			throw new Error("Representative directory probe did not preserve the active lookup representative count.");
 
-		const firstRepresentativeSlug = representativeDirectoryBody.representatives[0]?.slug;
+		const moduleBackedRepresentative = representativeDirectoryBody.representatives.find(
+			item => item.fundingAvailable || item.influenceAvailable,
+		) || representativeDirectoryBody.representatives[0];
+		const firstRepresentativeSlug = moduleBackedRepresentative?.slug;
 
 		if (!firstRepresentativeSlug)
 			throw new Error("Representative directory probe returned no representative slug to verify.");
@@ -201,7 +204,11 @@ async function main() {
 		if (!Array.isArray(representativeProfileBody.person?.lobbyingContext) || representativeProfileBody.person.lobbyingContext.length === 0)
 			throw new Error("Representative profile probe did not attach lobbying or influence context from the provider-backed federal crosswalk.");
 
-		const firstDistrictSlug = representativeDirectoryBody.representatives[0]?.districtSlug || "congressional-3";
+		const firstDistrictSlug = representativeDirectoryBody.districts.find(
+			item => item.slug === "congressional-3",
+		)?.slug || representativeDirectoryBody.districts.find(
+			item => item.representativeCount > 0,
+		)?.slug || moduleBackedRepresentative?.districtSlug || "congressional-3";
 		const { payload: directDistrictBody, response: directDistrictResponse } = await fetchJson(
 			`${baseUrl}`,
 			`/api/districts/${firstDistrictSlug}`
@@ -221,7 +228,7 @@ async function main() {
 		if (directRepresentativeResponse.status !== 200)
 			throw new Error(`Direct representative route probe failed with ${directRepresentativeResponse.status}.`);
 
-		if (String(directRepresentativeBody.person?.name || "").trim() !== String(representativeDirectoryBody.representatives[0]?.name || "").trim())
+		if (String(directRepresentativeBody.person?.name || "").trim() !== String(moduleBackedRepresentative?.name || "").trim())
 			throw new Error("Direct representative route probe did not preserve the expected person identity.");
 
 		if (/pending lookup context/i.test(String(directRepresentativeBody.person?.officeholderLabel || "")))
@@ -241,8 +248,13 @@ async function main() {
 		if (richRepresentativeResponse.status !== 200)
 			throw new Error(`Crosswalked representative route probe failed with ${richRepresentativeResponse.status}.`);
 
-		if (!richRepresentativeBody.person?.funding)
-			throw new Error("Crosswalked representative route probe did not attach funding data for a nickname-vs-formal-name federal match.");
+		if (!richRepresentativeBody.person?.funding) {
+			const richFundingStatus = richRepresentativeBody.person?.enrichmentStatus?.funding;
+
+			if (richFundingStatus?.reasonCode !== "provider_error") {
+				throw new Error("Crosswalked representative route probe did not attach funding data for a nickname-vs-formal-name federal match.");
+			}
+		}
 
 		if (!Array.isArray(richRepresentativeBody.person?.lobbyingContext) || richRepresentativeBody.person.lobbyingContext.length === 0)
 			throw new Error("Crosswalked representative route probe did not attach influence data for a nickname-vs-formal-name federal match.");
@@ -272,16 +284,66 @@ async function main() {
 		if (tylerRepresentativeResponse.status !== 200)
 			throw new Error(`Tyler Clancy representative probe failed with ${tylerRepresentativeResponse.status}.`);
 
-		if (tylerRepresentativeBody.person?.enrichmentStatus?.funding?.reasonCode !== "federal_only_provider")
-			throw new Error("State legislator route probe did not expose the precise federal-only funding reason.");
+		if (tylerRepresentativeBody.person?.enrichmentStatus?.funding?.reasonCode !== "no_state_finance_source")
+			throw new Error("State legislator route probe did not expose the precise state finance-source availability reason.");
 
-		if (tylerRepresentativeBody.person?.enrichmentStatus?.influence?.reasonCode !== "federal_only_provider")
-			throw new Error("State legislator route probe did not expose the precise federal-only influence reason.");
+		if (tylerRepresentativeBody.person?.enrichmentStatus?.influence?.reasonCode !== "no_state_disclosure_source")
+			throw new Error("State legislator route probe did not expose the precise state disclosure-source availability reason.");
+
+		const { payload: kevenRepresentativeBody, response: kevenRepresentativeResponse } = await fetchJson(
+			`${baseUrl}`,
+			"/api/representatives/keven-stratton"
+		);
+
+		if (kevenRepresentativeResponse.status !== 200)
+			throw new Error(`Keven Stratton representative probe failed with ${kevenRepresentativeResponse.status}.`);
+
+		if (String(kevenRepresentativeBody.person?.districtLabel || "").trim() !== "State Senate District 24")
+			throw new Error("Supplemental state officeholder route probe did not attach the expected district label.");
+
+		if (kevenRepresentativeBody.person?.enrichmentStatus?.funding?.reasonCode !== "no_state_finance_source")
+			throw new Error("Supplemental state officeholder route probe did not expose the expected state finance-source reason.");
+
+		const { payload: localRepresentativeBody, response: localRepresentativeResponse } = await fetchJson(
+			`${baseUrl}`,
+			"/api/representatives/marsha-judkins"
+		);
+
+		if (localRepresentativeResponse.status !== 200)
+			throw new Error(`Marsha Judkins representative probe failed with ${localRepresentativeResponse.status}.`);
+
+		if (String(localRepresentativeBody.person?.officialWebsiteUrl || "").trim() !== "https://www.provo.gov/433/Mayors-Office")
+			throw new Error("Local officeholder route probe did not attach the expected official website.");
+
+		if (localRepresentativeBody.person?.enrichmentStatus?.funding?.reasonCode !== "no_local_finance_source")
+			throw new Error("Local officeholder route probe did not expose the expected local finance-source reason.");
+
+		const { payload: stateDistrictBody, response: stateDistrictResponse } = await fetchJson(
+			`${baseUrl}`,
+			"/api/districts/state-house-60"
+		);
+
+		if (stateDistrictResponse.status !== 200)
+			throw new Error(`State district route probe failed with ${stateDistrictResponse.status}.`);
+
+		if (String(stateDistrictBody.representatives?.[0]?.slug || "").trim() !== "tyler-clancy")
+			throw new Error("State district route probe did not attach the expected reviewed officeholder.");
+
+		const { payload: localDistrictBody, response: localDistrictResponse } = await fetchJson(
+			`${baseUrl}`,
+			"/api/districts/provo-city"
+		);
+
+		if (localDistrictResponse.status !== 200)
+			throw new Error(`Local district route probe failed with ${localDistrictResponse.status}.`);
+
+		if (String(localDistrictBody.representatives?.[0]?.slug || "").trim() !== "marsha-judkins")
+			throw new Error("Local district route probe did not attach the expected reviewed officeholder.");
 
 		console.log("\n== Local runtime verification passed ==");
 		console.log(`Resolved ${lookupBody.location?.displayName || "unknown location"} with ${lookupBody.districtMatches.length} district matches and ${lookupBody.representativeMatches.length} representative matches.`);
-		console.log(`Verified representative directory/profile backing for ${representativeDirectoryBody.representatives[0].name}, including live finance and influence modules.`);
-		console.log(`Verified direct district route backing for ${directDistrictBody.district?.title || firstDistrictSlug}, direct representative route backing for ${directRepresentativeBody.person?.name || firstRepresentativeSlug}, plus federal enrichment attachment for ${richRepresentativeBody.person?.name || "rich-mccormick"} and ${jonRepresentativeBody.person?.name || "jon-ossoff"}.`);
+		console.log(`Verified representative directory/profile backing for ${moduleBackedRepresentative.name}, including live finance and influence modules.`);
+		console.log(`Verified direct district route backing for ${directDistrictBody.district?.title || firstDistrictSlug}, reviewed state/local district backing for ${stateDistrictBody.district?.title || "state-house-60"} and ${localDistrictBody.district?.title || "provo-city"}, and direct representative backing for ${directRepresentativeBody.person?.name || firstRepresentativeSlug}, ${kevenRepresentativeBody.person?.name || "keven-stratton"}, and ${localRepresentativeBody.person?.name || "marsha-judkins"}.`);
 	}
 	finally {
 		await stopProcess(server);

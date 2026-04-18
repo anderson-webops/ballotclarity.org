@@ -645,6 +645,27 @@ before(async () => {
 										id: "state-senate:24",
 										label: "State Senate District 24",
 										sourceSystem: "U.S. Census Geocoder"
+									},
+									{
+										districtCode: "60",
+										districtType: "state-house",
+										id: "state-house:60",
+										label: "State House District 60",
+										sourceSystem: "U.S. Census Geocoder"
+									},
+									{
+										districtCode: "049",
+										districtType: "county",
+										id: "county:049",
+										label: "Utah County",
+										sourceSystem: "U.S. Census Geocoder"
+									},
+									{
+										districtCode: "provo",
+										districtType: "place",
+										id: "place:provo",
+										label: "Provo city",
+										sourceSystem: "U.S. Census Geocoder"
 									}
 								],
 								id: "zip:84604:provo-utah",
@@ -1161,7 +1182,7 @@ test("POST /api/location returns the current Fulton County launch location for f
 	assert.equal(body.availability.financeInfluence.status, "available");
 	assert.equal(body.availability.fullLocalGuide.status, "available");
 	assert.match(body.note, /Census geography matched/i);
-	assert.match(body.note, /Open States returned 1 representative match/i);
+	assert.match(body.note, /Ballot Clarity attached 1 current official match for this address from Open States/i);
 });
 
 test("POST /api/location returns district lookup results without a published guide for out-of-guide full addresses", async () => {
@@ -1428,6 +1449,10 @@ test("active nationwide lookup cookie backs /api/districts and /api/districts/:s
 	assert.equal(listResponse.status, 200);
 	assert.equal(listBody.mode, "nationwide");
 	assert.ok(listBody.districts.some((item: { slug: string; representativeCount: number }) => item.slug === "congressional-3" && item.representativeCount === 1));
+	assert.ok(listBody.districts.some((item: { slug: string; representativeCount: number }) => item.slug === "state-senate-24" && item.representativeCount === 1));
+	assert.ok(listBody.districts.some((item: { slug: string; representativeCount: number }) => item.slug === "state-house-60" && item.representativeCount === 1));
+	assert.ok(listBody.districts.some((item: { slug: string; representativeCount: number }) => item.slug === "utah-county" && item.representativeCount === 1));
+	assert.ok(listBody.districts.some((item: { slug: string; representativeCount: number }) => item.slug === "provo-city" && item.representativeCount === 1));
 
 	const districtResponse = await fetch(`${baseUrl}/api/districts/congressional-3`, {
 		headers: {
@@ -1444,6 +1469,31 @@ test("active nationwide lookup cookie backs /api/districts and /api/districts/:s
 	assert.equal(districtBody.representatives[0].influenceAvailable, true);
 	assert.ok(districtBody.officialResources.length >= 1);
 	assert.match(districtBody.note, /API-backed nationwide district detail/i);
+});
+
+test("direct state and local district routes attach reviewed officeholder records instead of generic zero-state placeholders", async () => {
+	const [stateDistrictResponse, localDistrictResponse] = await Promise.all([
+		fetch(`${baseUrl}/api/districts/state-house-60`),
+		fetch(`${baseUrl}/api/districts/provo-city`),
+	]);
+	const [stateDistrictBody, localDistrictBody] = await Promise.all([
+		stateDistrictResponse.json(),
+		localDistrictResponse.json(),
+	]);
+
+	assert.equal(stateDistrictResponse.status, 200);
+	assert.equal(stateDistrictBody.district.slug, "state-house-60");
+	assert.equal(stateDistrictBody.districtOriginLabel, "Reviewed state officeholder record");
+	assert.equal(stateDistrictBody.representatives[0]?.slug, "tyler-clancy");
+	assert.match(stateDistrictBody.representativeAvailabilityNote, /reviewed state officeholder record/i);
+	assert.ok(stateDistrictBody.officialResources.length >= 1);
+
+	assert.equal(localDistrictResponse.status, 200);
+	assert.equal(localDistrictBody.district.slug, "provo-city");
+	assert.equal(localDistrictBody.districtOriginLabel, "Reviewed local officeholder record");
+	assert.equal(localDistrictBody.representatives[0]?.slug, "marsha-judkins");
+	assert.match(localDistrictBody.representativeAvailabilityNote, /reviewed local officeholder record/i);
+	assert.ok(localDistrictBody.officialResources.length >= 1);
 });
 
 test("lookup query backs /api/districts/:slug without relying on a saved cookie", async () => {
@@ -1617,10 +1667,43 @@ test("state legislators expose a precise unavailable reason when federal finance
 	assert.equal(body.person.slug, "tyler-clancy");
 	assert.equal(body.person.funding, null);
 	assert.deepEqual(body.person.lobbyingContext, []);
-	assert.equal(body.person.enrichmentStatus?.funding.reasonCode, "federal_only_provider");
-	assert.equal(body.person.enrichmentStatus?.influence.reasonCode, "federal_only_provider");
+	assert.equal(body.person.officeSought, "State House District 60");
+	assert.equal(body.person.districtLabel, "State House District 60");
+	assert.equal(body.person.enrichmentStatus?.funding.reasonCode, "no_state_finance_source");
+	assert.equal(body.person.enrichmentStatus?.influence.reasonCode, "no_state_disclosure_source");
 	assert.equal(body.person.enrichmentStatus?.officeContext.reasonCode, "attached");
-	assert.match(body.person.enrichmentStatus?.funding.summary ?? "", /only for federal officeholders/i);
+	assert.match(body.person.enrichmentStatus?.funding.summary ?? "", /state campaign-finance source configured/i);
+});
+
+test("supplemental state and local officeholder routes resolve as stable public person records with precise unavailable-state reasons", async () => {
+	const [stateResponse, localResponse] = await Promise.all([
+		fetch(`${baseUrl}/api/representatives/keven-stratton`),
+		fetch(`${baseUrl}/api/representatives/marsha-judkins`),
+	]);
+	const [stateBody, localBody] = await Promise.all([
+		stateResponse.json(),
+		localResponse.json(),
+	]);
+
+	assert.equal(stateResponse.status, 200);
+	assert.equal(stateBody.person.slug, "keven-stratton");
+	assert.equal(stateBody.person.provenance.label, "Reviewed Open States officeholder snapshot");
+	assert.equal(stateBody.person.officeSought, "State Senate District 24");
+	assert.equal(stateBody.person.districtLabel, "State Senate District 24");
+	assert.equal(stateBody.person.enrichmentStatus?.funding.reasonCode, "no_state_finance_source");
+	assert.equal(stateBody.person.enrichmentStatus?.influence.reasonCode, "no_state_disclosure_source");
+	assert.equal(stateBody.person.officialWebsiteUrl, undefined);
+	assert.match(stateBody.person.summary, /Utah Senate District 24/i);
+
+	assert.equal(localResponse.status, 200);
+	assert.equal(localBody.person.slug, "marsha-judkins");
+	assert.equal(localBody.person.provenance.label, "Official mayor's office page");
+	assert.equal(localBody.person.officeSought, "Mayor");
+	assert.equal(localBody.person.districtLabel, "Provo city");
+	assert.equal(localBody.person.officialWebsiteUrl, "https://www.provo.gov/433/Mayors-Office");
+	assert.equal(localBody.person.enrichmentStatus?.funding.reasonCode, "no_local_finance_source");
+	assert.equal(localBody.person.enrichmentStatus?.influence.reasonCode, "no_local_disclosure_source");
+	assert.match(localBody.person.summary, /current Provo mayor/i);
 });
 
 test("direct representative routes degrade to a public fallback instead of 500 when the provider route lookup fails", async () => {

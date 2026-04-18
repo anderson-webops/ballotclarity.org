@@ -732,9 +732,17 @@ export interface PersonProfileEnrichmentStatusItem {
 	reasonCode:
 		| "attached"
 		| "federal_only_provider"
+		| "identity_only_provider"
+		| "no_local_disclosure_source"
+		| "no_local_finance_source"
+		| "no_local_legislative_source"
 		| "no_committee_record"
 		| "no_provider_match"
 		| "no_reliable_crosswalk"
+		| "no_state_disclosure_source"
+		| "no_state_finance_source"
+		| "no_state_legislative_source"
+		| "provider_error"
 		| "provider_returned_no_records"
 		| "provider_unconfigured"
 		| "requires_funding_match";

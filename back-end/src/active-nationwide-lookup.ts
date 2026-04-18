@@ -344,6 +344,22 @@ function deriveDistrictScopeFromMatch(match: LocationDistrictMatch): DistrictSco
 	return "label";
 }
 
+function buildDistrictSlugFromMatch(match: LocationDistrictMatch) {
+	const scope = deriveDistrictScopeFromMatch(match);
+	const districtCode = normalizeDistrictCode(match.districtCode || match.label);
+
+	if (scope === "federal-house" && districtCode)
+		return `congressional-${districtCode}`;
+
+	if (scope === "state-senate" && districtCode)
+		return `state-senate-${districtCode}`;
+
+	if (scope === "state-house" && districtCode)
+		return `state-house-${districtCode}`;
+
+	return toLookupSlug(match.label);
+}
+
 function deriveRepresentativeScope(match: LocationRepresentativeMatch, locationState: string | undefined): DistrictScope {
 	const normalizedOfficeTitle = normalizeValue(match.officeTitle);
 	const normalizedDistrictLabel = normalizeValue(match.districtLabel);
@@ -585,7 +601,7 @@ function buildDirectoryBundle(context: ActiveNationwideLookupContext) {
 	const districtKeyToSlug = new Map<string, string>();
 
 	for (const districtMatch of context.districtMatches) {
-		const slug = toLookupSlug(districtMatch.id || districtMatch.label);
+		const slug = buildDistrictSlugFromMatch(districtMatch);
 		const summary = {
 			candidateCount: 0,
 			href: `/districts/${slug}`,
@@ -942,7 +958,7 @@ export function buildNationwideDistrictRecordResponse(context: ActiveNationwideL
 		.map(buildOfficialResource)
 		.filter((item): item is OfficialResource => Boolean(item));
 	const districtMatch = context.districtMatches.find((match) => {
-		return toLookupSlug(match.id || match.label) === district.slug;
+		return buildDistrictSlugFromMatch(match) === district.slug;
 	}) ?? null;
 	const sources: Array<ReturnType<typeof toSource> | null> = [
 		districtMatch

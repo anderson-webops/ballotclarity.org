@@ -136,6 +136,8 @@ interface CreateRepresentativeModuleResolverOptions {
 	openFecClient?: OpenFecClient | null;
 }
 
+type OfficeholderLayer = "federal" | "local" | "state";
+
 interface FederalRepresentativeTarget {
 	cacheKey: string;
 	district?: string;
@@ -300,6 +302,26 @@ function buildEnrichmentStatus(
 	};
 }
 
+function summarizeProviderError(error: unknown) {
+	const message = error instanceof Error ? error.message : String(error);
+	return message.replace(/\s+/g, " ").trim().slice(0, 240);
+}
+
+function buildProviderErrorStatus(
+	sourceSystem: string,
+	summary: string,
+	error: unknown,
+): PersonProfileEnrichmentStatusItem {
+	const errorSummary = summarizeProviderError(error);
+
+	return buildEnrichmentStatus(
+		"unavailable",
+		"provider_error",
+		errorSummary ? `${summary} ${errorSummary}` : summary,
+		sourceSystem,
+	);
+}
+
 function toStateCode(value: string | null | undefined) {
 	const normalized = normalizeValue(value);
 
@@ -415,6 +437,35 @@ function inferFederalRepresentativeTarget(context: ActiveNationwideLookupContext
 	return null;
 }
 
+function inferOfficeholderLayer(
+	context: ActiveNationwideLookupContext,
+	match: LocationRepresentativeMatch,
+	target: FederalRepresentativeTarget | null,
+): OfficeholderLayer {
+	if (target)
+		return "federal";
+
+	const normalizedOffice = normalizeValue(match.officeTitle);
+
+	if (
+		normalizedOffice.includes("mayor")
+		|| normalizedOffice.includes("county")
+		|| normalizedOffice.includes("council")
+		|| normalizedOffice.includes("clerk")
+		|| normalizedOffice.includes("commission")
+	) {
+		return "local";
+	}
+
+	const matchedDistrict = context.districtMatches.find(district => normalizeText(district.label) === normalizeText(match.districtLabel));
+	const normalizedDistrictType = normalizeValue(matchedDistrict?.districtType);
+
+	if (normalizedDistrictType.includes("county") || normalizedDistrictType.includes("place") || normalizedDistrictType.includes("city"))
+		return "local";
+
+	return "state";
+}
+
 function namesReliablyMatch(left: string, right: string) {
 	const leftName = parsePersonName(left);
 	const rightName = parsePersonName(right);
@@ -511,7 +562,9 @@ function buildOpenFecSources(candidate: OpenFecCandidateSearchRecord, committeeT
 async function resolveFundingAttachment(
 	openFecClient: OpenFecClient | null | undefined,
 	target: FederalRepresentativeTarget | null,
+	layer: OfficeholderLayer,
 	currentYear: number,
+	stateName: string,
 ): Promise<{
 	attachment: {
 		candidate: OpenFecCandidateSearchRecord;
@@ -523,6 +576,30 @@ async function resolveFundingAttachment(
 	status: PersonProfileEnrichmentStatusItem;
 }> {
 	if (!target) {
+		if (layer === "state") {
+			return {
+				attachment: null,
+				status: buildEnrichmentStatus(
+					"unavailable",
+					"no_state_finance_source",
+					`Ballot Clarity does not yet have a reviewed state campaign-finance source configured for current ${stateName || "state"} legislative officeholder routes. This route still carries the officeholder identity and district context.`,
+					"State finance pipeline",
+				),
+			};
+		}
+
+		if (layer === "local") {
+			return {
+				attachment: null,
+				status: buildEnrichmentStatus(
+					"unavailable",
+					"no_local_finance_source",
+					"Ballot Clarity does not yet have a reviewed local campaign-finance source configured for this county or city officeholder route. This route still carries the current officeholder identity and provenance.",
+					"Local officeholder pipeline",
+				),
+			};
+		}
+
 		return {
 			attachment: null,
 			status: buildEnrichmentStatus(
@@ -683,12 +760,38 @@ async function resolveInfluenceAttachment(
 	ldaClient: LdaClient | null | undefined,
 	target: FederalRepresentativeTarget | null,
 	committeeName: string | undefined,
+	layer: OfficeholderLayer,
 	currentYear: number,
+	stateName: string,
 ): Promise<{
 	attachment: LdaInfluenceAttachment | null;
 	status: PersonProfileEnrichmentStatusItem;
 }> {
 	if (!target) {
+		if (layer === "state") {
+			return {
+				attachment: null,
+				status: buildEnrichmentStatus(
+					"unavailable",
+					"no_state_disclosure_source",
+					`Ballot Clarity does not yet have a reviewed state lobbying or disclosure source configured for ${stateName || "this"} legislative officeholder route. This page stays person-backed, but influence context is not yet attached.`,
+					"State disclosure pipeline",
+				),
+			};
+		}
+
+		if (layer === "local") {
+			return {
+				attachment: null,
+				status: buildEnrichmentStatus(
+					"unavailable",
+					"no_local_disclosure_source",
+					"Ballot Clarity does not yet have a reviewed local lobbying, ethics, or disclosure source configured for this county or city officeholder route. This page stays person-backed, but influence context is not yet attached.",
+					"Local officeholder pipeline",
+				),
+			};
+		}
+
 		return {
 			attachment: null,
 			status: buildEnrichmentStatus(
@@ -712,35 +815,25 @@ async function resolveInfluenceAttachment(
 		};
 	}
 
-	if (!committeeName) {
-		return {
-			attachment: null,
-			status: buildEnrichmentStatus(
-				"unavailable",
-				"requires_funding_match",
-				"Ballot Clarity could not attach LD-203 contribution disclosures for this officeholder because the current route did not yield a reliable federal campaign committee anchor.",
-				"LDA.gov",
-			),
-		};
-	}
-
 	const yearsToTry = [currentYear, currentYear - 1, currentYear - 2];
 	let reports: LdaContributionReport[] = [];
 	let resolvedYear = 0;
 	let matchMode: "committee" | "honoree" = "committee";
 
 	for (const year of yearsToTry) {
-		const payeeReports = await ldaClient.listContributionReports({
-			contributionPayee: committeeName,
-			filingYear: year,
-		});
-		const payeeMatchedItems = payeeReports.flatMap(report => report.contributionItems.filter(item => matchesCommitteePayee(item.payeeName, committeeName)));
+		if (committeeName) {
+			const payeeReports = await ldaClient.listContributionReports({
+				contributionPayee: committeeName,
+				filingYear: year,
+			});
+			const payeeMatchedItems = payeeReports.flatMap(report => report.contributionItems.filter(item => matchesCommitteePayee(item.payeeName, committeeName)));
 
-		if (payeeMatchedItems.length) {
-			reports = payeeReports;
-			resolvedYear = year;
-			matchMode = "committee";
-			break;
+			if (payeeMatchedItems.length) {
+				reports = payeeReports;
+				resolvedYear = year;
+				matchMode = "committee";
+				break;
+			}
 		}
 
 		const honoreeReports = await ldaClient.listContributionReports({
@@ -755,6 +848,18 @@ async function resolveInfluenceAttachment(
 			matchMode = "honoree";
 			break;
 		}
+	}
+
+	if (!committeeName && !reports.length) {
+		return {
+			attachment: null,
+			status: buildEnrichmentStatus(
+				"unavailable",
+				"requires_funding_match",
+				"Ballot Clarity could not attach LD-203 contribution disclosures for this officeholder because the current route did not yield a reliable federal campaign committee anchor and the direct officeholder-name disclosure search did not return a usable match.",
+				"LDA.gov",
+			),
+		};
 	}
 
 	if (!reports.length || !resolvedYear) {
@@ -995,10 +1100,12 @@ async function resolveCongressAttachment(
 }
 
 function buildStatusNote({
+	layer,
 	hasCongress,
 	hasFunding,
 	hasInfluence,
 }: {
+	layer: OfficeholderLayer;
 	hasCongress: boolean;
 	hasFunding: boolean;
 	hasInfluence: boolean;
@@ -1009,6 +1116,12 @@ function buildStatusNote({
 
 	if (hasCongress)
 		return "This profile reflects the current officeholder record plus attached Congress.gov office context. Verify district-specific questions against your active lookup and the official tools linked here.";
+
+	if (layer === "state")
+		return "This profile reflects a current state officeholder record with reviewed office and district context. State finance, disclosure, and legislative-activity modules still attach only where Ballot Clarity has a reviewed jurisdiction-specific source.";
+
+	if (layer === "local")
+		return "This profile reflects a current county or city officeholder record with reviewed official-source context. Local finance, disclosure, and issue modules still attach only where Ballot Clarity has a reviewed local source.";
 
 	return "This profile reflects the current officeholder record Ballot Clarity could verify for this route. Verify critical details against the attached provider record and official election tools.";
 }
@@ -1023,6 +1136,8 @@ export function createRepresentativeModuleResolver({
 
 	async function resolveAttachment(context: ActiveNationwideLookupContext, match: LocationRepresentativeMatch): Promise<RepresentativeModuleAttachment> {
 		const target = inferFederalRepresentativeTarget(context, match);
+		const officeholderLayer = inferOfficeholderLayer(context, match, target);
+		const contextStateName = context.location?.state || inferContextStateCode(context) || "this jurisdiction";
 		const cacheKey = target?.cacheKey || `nonfederal:${context.location?.state || "unknown"}:${personSlug(match)}`;
 		const cached = attachmentCache.get(cacheKey);
 
@@ -1031,14 +1146,57 @@ export function createRepresentativeModuleResolver({
 
 		const currentYear = now().getUTCFullYear();
 		const pending = (async () => {
-			const congressAttachment = await resolveCongressAttachment(congressClient, target);
-			const fundingResult = await resolveFundingAttachment(openFecClient, target, currentYear);
-			const influenceResult = await resolveInfluenceAttachment(
-				ldaClient,
-				target,
-				fundingResult.attachment?.candidate.principalCommittees[0]?.name,
-				currentYear,
-			);
+			let congressAttachment: CongressAttachment | null = null;
+			let congressErrorStatus: PersonProfileEnrichmentStatusItem | null = null;
+			let fundingResult: Awaited<ReturnType<typeof resolveFundingAttachment>>;
+			let influenceResult: Awaited<ReturnType<typeof resolveInfluenceAttachment>>;
+
+			try {
+				congressAttachment = await resolveCongressAttachment(congressClient, target);
+			}
+			catch (error) {
+				congressErrorStatus = buildProviderErrorStatus(
+					"Congress.gov",
+					"Ballot Clarity could not attach additional Congress.gov office or legislative context for this route because the provider request failed.",
+					error,
+				);
+			}
+
+			try {
+				fundingResult = await resolveFundingAttachment(openFecClient, target, officeholderLayer, currentYear, contextStateName);
+			}
+			catch (error) {
+				fundingResult = {
+					attachment: null,
+					status: buildProviderErrorStatus(
+						"OpenFEC",
+						"Ballot Clarity could not attach campaign-finance records for this route because the OpenFEC request failed.",
+						error,
+					),
+				};
+			}
+
+			try {
+				influenceResult = await resolveInfluenceAttachment(
+					ldaClient,
+					target,
+					fundingResult.attachment?.candidate.principalCommittees[0]?.name,
+					officeholderLayer,
+					currentYear,
+					contextStateName,
+				);
+			}
+			catch (error) {
+				influenceResult = {
+					attachment: null,
+					status: buildProviderErrorStatus(
+						"LDA.gov",
+						"Ballot Clarity could not attach lobbying or disclosure context for this route because the LDA.gov request failed.",
+						error,
+					),
+				};
+			}
+
 			const fundingAttachment = fundingResult.attachment;
 			const influenceAttachment = influenceResult.attachment;
 			const funding = fundingAttachment?.funding ?? null;
@@ -1065,17 +1223,33 @@ export function createRepresentativeModuleResolver({
 			const officeContextStatus = congressAttachment?.officeContextStatus || buildEnrichmentStatus(
 				"available",
 				"attached",
-				"Open States supplied the current office, chamber, party, and district context for this representative route.",
-				"Open States",
+				`${match.sourceSystem || "Ballot Clarity"} supplied the current office, party, and district context for this representative route.`,
+				match.sourceSystem || undefined,
 			);
-			const legislativeContextStatus = congressAttachment?.legislativeContextStatus || buildEnrichmentStatus(
-				"unavailable",
-				target ? "no_provider_match" : "federal_only_provider",
-				target
-					? "Ballot Clarity could not verify an additional Congress.gov member record for this route, so legislative context remains limited to the current officeholder identity record."
-					: "Ballot Clarity currently attaches Congress.gov legislative context only to federal officeholders. This route still carries office context from the provider-backed representative record.",
-				"Congress.gov",
-			);
+			const legislativeContextStatus = congressAttachment?.legislativeContextStatus
+				|| congressErrorStatus
+				|| (officeholderLayer === "state"
+					? buildEnrichmentStatus(
+							"unavailable",
+							"no_state_legislative_source",
+							`The current state officeholder record for this route resolves identity and district context, but Ballot Clarity does not yet have a reviewed state legislative activity or statements feed configured for ${contextStateName}.`,
+							match.sourceSystem || "State officeholder record",
+						)
+					: officeholderLayer === "local"
+						? buildEnrichmentStatus(
+								"unavailable",
+								"no_local_legislative_source",
+								"The current county or city officeholder record for this route resolves identity and office context, but Ballot Clarity does not yet have a reviewed local issue, action, or disclosure feed attached here.",
+								match.sourceSystem || "Local officeholder record",
+							)
+						: buildEnrichmentStatus(
+								"unavailable",
+								target ? "no_provider_match" : "federal_only_provider",
+								target
+									? "Ballot Clarity could not verify an additional Congress.gov member record for this route, so legislative context remains limited to the current officeholder identity record."
+									: "Ballot Clarity currently attaches Congress.gov legislative context only to federal officeholders. This route still carries office context from the provider-backed representative record.",
+								"Congress.gov",
+							));
 
 			return {
 				dataAsOf: mergeDate(
@@ -1103,11 +1277,18 @@ export function createRepresentativeModuleResolver({
 					...(lobbyingContext.length
 						? ["Influence context is attached through LD-203 contribution reports matched to the officeholder's current federal campaign committee."]
 						: []),
+					...(officeholderLayer === "state"
+						? ["State officeholder routes attach reviewed identity and district context even when Ballot Clarity does not yet have a state-specific finance, disclosure, or legislative-activity feed for that jurisdiction."]
+						: []),
+					...(officeholderLayer === "local"
+						? ["County and city officeholder routes attach reviewed official-source identity and office context even when Ballot Clarity does not yet have a local finance, disclosure, or issue feed for that jurisdiction."]
+						: []),
 				],
 				officialWebsiteUrl: congressAttachment?.officialWebsiteUrl,
 				publicStatements,
 				sources,
 				statusNote: buildStatusNote({
+					layer: officeholderLayer,
 					hasCongress: Boolean(congressAttachment),
 					hasFunding: Boolean(funding),
 					hasInfluence: lobbyingContext.length > 0 || publicStatements.length > 0,

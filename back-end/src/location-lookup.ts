@@ -8,6 +8,7 @@ import type {
 	LocationLookupInputKind,
 	LocationLookupResponse,
 	LocationLookupSelectionOption,
+	LocationRepresentativeMatch,
 	LocationSelection,
 	OfficialResource,
 } from "./types/civic.js";
@@ -17,6 +18,9 @@ const zipCodePattern = /^\d{5}(?:-\d{4})?$/;
 const numericFragmentPattern = /^[\d-]+$/;
 const myVoterPagePattern = /my voter page/i;
 const pollingPlacePattern = /polling-place|precinct/i;
+const congressSourcePattern = /congress/i;
+const openStatesSourcePattern = /open states/i;
+const officialSourcePattern = /official/i;
 
 function normalizePlaceName(value: string | undefined) {
 	return (value ?? "")
@@ -207,6 +211,49 @@ function buildUnsupportedNote(
 	return `${locationSentence} ${officialSentence}`.trim();
 }
 
+function uniqueStrings(values: Array<string | undefined>) {
+	return Array.from(new Set(values.map(value => String(value || "").trim()).filter(Boolean)));
+}
+
+function summarizeRepresentativeSources(matches: LocationRepresentativeMatch[] | undefined) {
+	const normalizedSources = matches
+		? uniqueStrings(matches.map((match) => {
+				if (congressSourcePattern.test(match.sourceSystem))
+					return "Congress.gov";
+
+				if (openStatesSourcePattern.test(match.sourceSystem))
+					return "Open States";
+
+				if (officialSourcePattern.test(match.sourceSystem))
+					return "reviewed official local officeholder sources";
+
+				return match.sourceSystem;
+			}))
+		: [];
+
+	if (!normalizedSources.length)
+		return "the current provider layer";
+
+	if (normalizedSources.length === 1)
+		return normalizedSources[0];
+
+	if (normalizedSources.length === 2)
+		return `${normalizedSources[0]} and ${normalizedSources[1]}`;
+
+	return `${normalizedSources.slice(0, -1).join(", ")}, and ${normalizedSources.at(-1)}`;
+}
+
+function describeRepresentativeAttachment(
+	matches: LocationRepresentativeMatch[] | undefined,
+	inputKind: LocationLookupInputKind,
+) {
+	if (!matches?.length)
+		return "";
+
+	const sourceSummary = summarizeRepresentativeSources(matches);
+	return `Ballot Clarity attached ${matches.length} current official match${matches.length === 1 ? "" : "es"} for this ${inputKind} from ${sourceSummary}.`;
+}
+
 function buildGuideUnavailableNote(
 	rawQuery: string,
 	inputKind: LocationLookupInputKind,
@@ -219,9 +266,7 @@ function buildGuideUnavailableNote(
 	const districtSentence = addressEnrichment?.districtMatches?.length
 		? `Census geography matched ${addressEnrichment.districtMatches.map(match => match.label).join(", ")}.`
 		: "";
-	const representativeSentence = addressEnrichment?.representativeMatches?.length
-		? `Open States returned ${addressEnrichment.representativeMatches.length} representative match${addressEnrichment.representativeMatches.length === 1 ? "" : "es"} for this ${inputKind}.`
-		: "";
+	const representativeSentence = describeRepresentativeAttachment(addressEnrichment?.representativeMatches, inputKind);
 	const officialSentence = hasOfficialActions
 		? "Official election tools are included below for the current ballot, voter-status, and polling-place details."
 		: "Use the relevant official election tool for current ballot, voter-status, and polling-place details.";
@@ -246,9 +291,7 @@ function buildPublishedZipGuideNote(
 	const districtSentence = addressEnrichment?.districtMatches?.length
 		? `Census geography matched ${addressEnrichment.districtMatches.map(match => match.label).join(", ")}.`
 		: "";
-	const representativeSentence = addressEnrichment?.representativeMatches?.length
-		? `Open States returned ${addressEnrichment.representativeMatches.length} representative match${addressEnrichment.representativeMatches.length === 1 ? "" : "es"} for this ZIP.`
-		: "";
+	const representativeSentence = describeRepresentativeAttachment(addressEnrichment?.representativeMatches, "zip");
 	const officialSentence = hasOfficialActions
 		? "Official election tools are included below for ballot confirmation, voter-status, and polling-place details."
 		: "Use the relevant official election tool for ballot confirmation, voter-status, and polling-place details.";
@@ -298,6 +341,7 @@ function buildAvailabilitySummary(
 			: inputKind === "zip"
 				? "Nationwide civic results and official election tools are available for this ZIP lookup even though a published local guide is not available for this area yet."
 				: "Nationwide civic results, district context, and official election tools are available for this address even though a published local guide is not available for this area yet.";
+	const representativeSourceSummary = summarizeRepresentativeSources(addressEnrichment?.representativeMatches);
 
 	return {
 		nationwideCivicResults: {
@@ -330,7 +374,7 @@ function buildAvailabilitySummary(
 		},
 		representatives: {
 			detail: hasRepresentatives
-				? `Current representative data is available for this lookup from Open States (${representativeCount} match${representativeCount === 1 ? "" : "es"}).`
+				? `Current representative data is available for this lookup from ${representativeSourceSummary} (${representativeCount} match${representativeCount === 1 ? "" : "es"}).`
 				: selectionRequired
 					? "This ZIP matched more than one possible area. Choose one below to load the correct representative records."
 					: inputKind === "zip"
@@ -491,9 +535,7 @@ export function buildLocationLookupResponse(
 			addressEnrichment?.districtMatches?.length
 				? `Census geography matched ${addressEnrichment.districtMatches.map(match => match.label).join(", ")}.`
 				: "",
-			addressEnrichment?.representativeMatches?.length
-				? `Open States returned ${addressEnrichment.representativeMatches.length} representative match${addressEnrichment.representativeMatches.length === 1 ? "" : "es"} for this address.`
-				: "",
+			describeRepresentativeAttachment(addressEnrichment?.representativeMatches, "address"),
 			addressEnrichment?.fromCache
 				? "District geography came from the local lookup cache."
 				: ""

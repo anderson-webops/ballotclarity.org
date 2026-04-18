@@ -27,6 +27,26 @@ function capabilityLabel(status: "in-build" | "live-now" | "planned") {
 
 	return "Planned";
 }
+
+function routeFamilyTone(status: "guide-dependent" | "limited" | "live-now") {
+	if (status === "live-now")
+		return "accent" as const;
+
+	if (status === "limited")
+		return "warning" as const;
+
+	return "neutral" as const;
+}
+
+function routeFamilyLabel(status: "guide-dependent" | "limited" | "live-now") {
+	if (status === "live-now")
+		return "Live now";
+
+	if (status === "limited")
+		return "Partial depth";
+
+	return "Guide dependent";
+}
 </script>
 
 <template>
@@ -72,6 +92,43 @@ function capabilityLabel(status: "in-build" | "live-now" | "planned") {
 					</NuxtLink>
 				</div>
 			</div>
+			<section class="surface-panel">
+				<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
+					Public route families and active data sources
+				</h2>
+				<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
+					This is the current source-of-truth map for which route families are running nationwide-first, which remain guide-dependent, and which source layers are actually active behind them.
+				</p>
+				<div class="mt-6 gap-5 grid xl:grid-cols-2">
+					<article v-for="family in data.routeFamilies" :key="family.id" class="px-5 py-5 border border-app-line/70 rounded-3xl bg-white/80 dark:border-app-line-dark dark:bg-app-panel-dark/70">
+						<div class="flex flex-wrap gap-2 items-center">
+							<TrustBadge :label="routeFamilyLabel(family.status)" :tone="routeFamilyTone(family.status)" />
+						</div>
+						<h3 class="text-2xl text-app-ink font-serif mt-4 dark:text-app-text-dark">
+							{{ family.label }}
+						</h3>
+						<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
+							{{ family.summary }}
+						</p>
+						<p v-if="family.note" class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
+							{{ family.note }}
+						</p>
+						<div class="mt-5">
+							<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+								Routes
+							</p>
+							<div class="mt-3 flex flex-wrap gap-2">
+								<VerificationBadge v-for="routeName in family.routes" :key="routeName" :label="routeName" />
+							</div>
+						</div>
+						<ul class="readable-list text-sm text-app-muted mt-5 pl-5 dark:text-app-muted-dark">
+							<li v-for="source in family.activeSources" :key="source">
+								{{ source }}
+							</li>
+						</ul>
+					</article>
+				</div>
+			</section>
 		</div>
 
 		<div v-else class="space-y-8">
@@ -203,6 +260,44 @@ function capabilityLabel(status: "in-build" | "live-now" | "planned") {
 						<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
 							{{ capability.summary }}
 						</p>
+					</article>
+				</div>
+			</section>
+
+			<section class="surface-panel">
+				<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
+					Public route families and active data sources
+				</h2>
+				<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
+					These route families separate the nationwide lookup product from guide-dependent pages and show which data-source layers are actively feeding each public surface.
+				</p>
+				<div class="mt-6 gap-5 grid xl:grid-cols-2">
+					<article v-for="family in data.routeFamilies" :key="family.id" class="px-5 py-5 border border-app-line/70 rounded-3xl bg-white/80 dark:border-app-line-dark dark:bg-app-panel-dark/70">
+						<div class="flex flex-wrap gap-2 items-center">
+							<TrustBadge :label="routeFamilyLabel(family.status)" :tone="routeFamilyTone(family.status)" />
+						</div>
+						<h3 class="text-2xl text-app-ink font-serif mt-4 dark:text-app-text-dark">
+							{{ family.label }}
+						</h3>
+						<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
+							{{ family.summary }}
+						</p>
+						<p v-if="family.note" class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
+							{{ family.note }}
+						</p>
+						<div class="mt-5">
+							<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+								Routes
+							</p>
+							<div class="mt-3 flex flex-wrap gap-2">
+								<TrustBadge v-for="routeName in family.routes" :key="routeName" :label="routeName" />
+							</div>
+						</div>
+						<ul class="readable-list text-sm text-app-muted mt-5 pl-5 dark:text-app-muted-dark">
+							<li v-for="source in family.activeSources" :key="source">
+								{{ source }}
+							</li>
+						</ul>
 					</article>
 				</div>
 			</section>

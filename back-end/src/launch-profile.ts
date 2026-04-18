@@ -137,6 +137,56 @@ export function buildCoverageResponse(
 			coverageUpdatedAt,
 			locationGuess,
 			currentState: "No published local coverage snapshot or launch jurisdiction is active in this environment right now.",
+			routeFamilies: [
+				{
+					activeSources: [
+						"U.S. Census Geocoder district matches",
+						"Open States representative matches when provider linkage succeeds",
+						"Official state and county election tools returned by the active lookup"
+					],
+					id: "nationwide-results",
+					label: "Nationwide lookup and results routes",
+					note: "District, representative, and person pages stay useful here even when a published local guide is not active.",
+					routes: ["/results", "/districts", "/districts/<slug>", "/representatives", "/representatives/<slug>"],
+					status: "live-now",
+					summary: "These routes are the main public product in an empty-coverage environment and run from the active nationwide lookup context saved in the browser."
+				},
+				{
+					activeSources: [
+						"Published local coverage snapshot only when one is verified and active"
+					],
+					id: "published-guides",
+					label: "Published local guide routes",
+					note: "These routes stay guide-dependent and should not be promoted as the main success path until a verified local guide snapshot is active.",
+					routes: ["/ballot", "/contest", "/candidate", "/measure", "/plan"],
+					status: "guide-dependent",
+					summary: "Ballot guide, contest, candidate, measure, and plan routes remain optional deeper layers rather than the default nationwide experience."
+				},
+				{
+					activeSources: [
+						"Source-backed local person records where Ballot Clarity has publishable finance or influence data",
+						"Provider-backed nationwide representative fallback records when only lookup context is available"
+					],
+					id: "person-modules",
+					label: "Person, funding, and influence routes",
+					note: "Funding and influence modules remain conditional on reliable person-level linkage and should not be presented as universal nationwide coverage yet.",
+					routes: ["/representatives/<slug>", "/representatives/<slug>/funding", "/representatives/<slug>/influence", "/candidate/<slug>", "/candidate/<slug>/funding", "/candidate/<slug>/influence"],
+					status: "limited",
+					summary: "Person pages are live, but richer finance and influence coverage still depends on the underlying person/entity record rather than existing for every nationwide lookup match."
+				},
+				{
+					activeSources: [
+						"Published coverage profile",
+						"Public source-monitor and status payloads for the current environment",
+						"Public data-source roadmap and methodology pages"
+					],
+					id: "public-reference",
+					label: "Public reference and operations routes",
+					routes: ["/coverage", "/status", "/data-sources", "/corrections", "/help", "/methodology"],
+					status: "live-now",
+					summary: "These pages explain what is live, what is not, and which public data-source layers are currently active."
+				}
+			],
 			limitations: [
 				{
 					id: "no-published-coverage",
@@ -162,6 +212,59 @@ export function buildCoverageResponse(
 		launchTarget,
 		scopeNote: `${launchTarget.displayName} is the current published local coverage target in this environment. Official election tools should remain the final authority for deadlines, precincts, polling places, and ballot confirmation.`,
 		currentState: "A vetted imported coverage snapshot is active for the public API.",
+		routeFamilies: [
+			{
+				activeSources: [
+					"U.S. Census Geocoder district matches",
+					"Open States representative matches where nationwide provider linkage succeeds",
+					"Official state and county election tools returned by the active lookup"
+				],
+				id: "nationwide-results",
+				label: "Nationwide lookup and results routes",
+				note: "These routes should remain useful even outside the current published guide area.",
+				routes: ["/results", "/districts", "/districts/<slug>", "/representatives", "/representatives/<slug>"],
+				status: "live-now",
+				summary: "Nationwide lookup remains the cross-page context layer for district matches, representative records, and official tools."
+			},
+			{
+				activeSources: [
+					`Published local coverage snapshot for ${launchTarget.displayName}`,
+					"Verified local contest, candidate, and measure records",
+					"Official local election links tied to the active published guide"
+				],
+				id: "published-guides",
+				label: "Published local guide routes",
+				note: "Guide routes are deeper reading layers when a verified local snapshot is active.",
+				routes: ["/ballot", "/contest", "/candidate", "/measure", "/plan"],
+				status: "live-now",
+				summary: "Ballot guide, contest, candidate, measure, and plan routes are active here because this environment has a published local coverage snapshot."
+			},
+			{
+				activeSources: [
+					"Source-backed local person records",
+					"Published finance summaries and influence context where Ballot Clarity has reliable linkage",
+					"Provider-backed nationwide fallback records when no local person page exists"
+				],
+				id: "person-modules",
+				label: "Person, funding, and influence routes",
+				note: "Richer funding and influence coverage still depends on the underlying person/entity linkage rather than existing for every official automatically.",
+				routes: ["/representatives/<slug>", "/representatives/<slug>/funding", "/representatives/<slug>/influence", "/candidate/<slug>", "/candidate/<slug>/funding", "/candidate/<slug>/influence"],
+				status: "limited",
+				summary: "Person pages are first-class public routes, but module depth varies by what finance, influence, and officeholder data is actually attached."
+			},
+			{
+				activeSources: [
+					"Published coverage profile",
+					"Public source-monitor payloads for the active launch environment",
+					"Public data-source roadmap and methodology pages"
+				],
+				id: "public-reference",
+				label: "Public reference and operations routes",
+				routes: ["/coverage", "/status", "/data-sources", "/corrections", "/help", "/methodology"],
+				status: "live-now",
+				summary: "These routes explain the active launch profile, public source health, and the broader data-source roadmap."
+			}
+		],
 		supportedContentTypes: [
 			{
 				id: "logistics",

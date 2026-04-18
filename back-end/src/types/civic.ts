@@ -550,6 +550,18 @@ export interface CoverageCollection {
 	href: string;
 }
 
+export type CoverageRouteFamilyStatus = "guide-dependent" | "limited" | "live-now";
+
+export interface CoverageRouteFamily {
+	id: string;
+	label: string;
+	status: CoverageRouteFamilyStatus;
+	summary: string;
+	routes: string[];
+	activeSources: string[];
+	note?: string;
+}
+
 export interface CoverageLimitation {
 	id: string;
 	title: string;
@@ -572,6 +584,7 @@ export interface CoverageResponse {
 	scopeNote: string;
 	currentState: string;
 	supportedContentTypes: CoverageCapability[];
+	routeFamilies: CoverageRouteFamily[];
 	limitations: CoverageLimitation[];
 	nextSteps: string[];
 	collections: CoverageCollection[];

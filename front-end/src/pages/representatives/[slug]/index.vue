@@ -1,16 +1,32 @@
 <script setup lang="ts">
+import { storeToRefs } from "pinia";
+
 import { contactEmail } from "~/constants";
+import { buildActiveLookupSummary } from "~/utils/active-lookup";
+import { buildNationwidePersonProfileResponse } from "~/utils/nationwide-person-profile";
 import { buildPersonLinkageConfidence, hasPersonFunding, hasPersonInfluence } from "~/utils/person-profile";
 
 const route = useRoute();
 const runtimeConfig = useRuntimeConfig();
 const siteUrl = useSiteUrl();
+const civicStore = useCivicStore();
+const { isHydrated, nationwideLookupResult, selectedLocation } = storeToRefs(civicStore);
 const representativeSlug = computed(() => String(route.params.slug));
 const { backToLayerLink, layerBreadcrumbLink, overviewLink } = useRouteLayerNavigation();
 const { formatCurrency, formatDate, formatDateTime } = useFormatters();
 const { data, error, pending } = await useRepresentative(representativeSlug);
 
-const person = computed(() => data.value?.person ?? null);
+const fallbackData = computed(() => isHydrated.value
+	? buildNationwidePersonProfileResponse(nationwideLookupResult.value, representativeSlug.value)
+	: null);
+const profileData = computed(() => data.value ?? fallbackData.value);
+const person = computed(() => profileData.value?.person ?? null);
+const pagePending = computed(() => pending.value || (!data.value && !isHydrated.value));
+const isNationwideFallback = computed(() => !data.value && Boolean(fallbackData.value));
+const activeLookupSummary = computed(() => buildActiveLookupSummary({
+	nationwideLookupResult: isHydrated.value ? nationwideLookupResult.value : null,
+	selectedLocation: isHydrated.value ? selectedLocation.value : null
+}));
 const linkageConfidence = computed(() => person.value ? buildPersonLinkageConfidence(person.value.provenance.status) : null);
 const dataThroughLabel = computed(() => {
 	if (!person.value)
@@ -102,7 +118,7 @@ usePageSeo({
 
 <template>
 	<section class="app-shell section-gap">
-		<div v-if="pending" class="gap-8 grid 2xl:grid-cols-[minmax(0,1.45fr)_minmax(21rem,0.85fr)]">
+		<div v-if="pagePending" class="gap-8 grid 2xl:grid-cols-[minmax(0,1.45fr)_minmax(21rem,0.85fr)]">
 			<div class="space-y-6">
 				<div class="surface-panel animate-pulse">
 					<div class="rounded-full bg-app-line/70 h-6 w-40 dark:bg-app-line-dark" />
@@ -114,7 +130,7 @@ usePageSeo({
 			<div class="surface-panel bg-white/70 h-96 animate-pulse dark:bg-app-panel-dark/70" />
 		</div>
 
-		<div v-else-if="error || !person" class="max-w-3xl">
+		<div v-else-if="(error && !fallbackData) || !person" class="max-w-3xl">
 			<InfoCallout title="Representative profile not available" tone="warning">
 				This representative page could not be loaded. Return to the representative directory or the broader results layer and try again.
 			</InfoCallout>
@@ -128,6 +144,7 @@ usePageSeo({
 						<VerificationBadge label="Representative profile" tone="accent" />
 						<VerificationBadge :label="person.officeholderLabel" />
 						<VerificationBadge :label="person.onCurrentBallot ? person.ballotStatusLabel : 'Not on current ballot'" />
+						<VerificationBadge v-if="isNationwideFallback" label="Nationwide lookup fallback" tone="warning" />
 						<VerificationBadge
 							v-if="linkageConfidence"
 							:label="linkageConfidence.label"
@@ -162,6 +179,10 @@ usePageSeo({
 							<span class="i-carbon-launch" />
 							Open campaign site
 						</a>
+						<a v-if="person.openstatesUrl" :href="person.openstatesUrl" target="_blank" rel="noreferrer" class="btn-secondary inline-flex gap-2 items-center">
+							Provider record
+							<span class="i-carbon-launch" />
+						</a>
 						<NuxtLink v-if="hasFunding" :to="`/representatives/${person.slug}/funding`" class="btn-secondary">
 							Funding page
 						</NuxtLink>
@@ -178,6 +199,10 @@ usePageSeo({
 						<NuxtLink :to="backToLayerLink.to" class="btn-primary">
 							{{ backToLayerLink.label }}
 						</NuxtLink>
+					</div>
+					<div class="mt-5 flex flex-wrap gap-2">
+						<VerificationBadge :label="hasFunding ? 'Funding module available' : 'Funding not yet available'" :tone="hasFunding ? 'accent' : 'warning'" />
+						<VerificationBadge :label="hasInfluence ? 'Influence module available' : 'Influence not yet available'" :tone="hasInfluence ? 'accent' : 'warning'" />
 					</div>
 				</header>
 
@@ -502,9 +527,30 @@ usePageSeo({
 			</div>
 
 			<div class="space-y-6 xl:pt-[4.5rem]">
+				<div class="surface-panel">
+					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+						Active lookup context
+					</p>
+					<h2 class="text-2xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
+						{{ activeLookupSummary.label }}
+					</h2>
+					<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
+						{{ activeLookupSummary.note }}
+					</p>
+					<div class="mt-5 flex flex-wrap gap-3 items-center">
+						<TrustBadge
+							:label="activeLookupSummary.mode === 'nationwide' ? 'Nationwide lookup context' : activeLookupSummary.mode === 'guide' ? 'Published guide context' : 'No saved lookup context'"
+							:tone="activeLookupSummary.mode === 'nationwide' ? 'accent' : activeLookupSummary.mode === 'guide' ? undefined : 'warning'"
+						/>
+						<UpdatedAt v-if="activeLookupSummary.resolvedAt" :value="activeLookupSummary.resolvedAt" label="Lookup updated" />
+					</div>
+				</div>
+
 				<PageSectionNav
 					:breadcrumbs="breadcrumbs"
-					description="Use this page for the person-level civic record tied to a current officeholder when Ballot Clarity has publishable local data."
+					:description="isNationwideFallback
+						? 'Use this page for the active nationwide person record when Ballot Clarity does not yet have a published local person profile for the official.'
+						: 'Use this page for the person-level civic record tied to a current officeholder when Ballot Clarity has publishable local data.'"
 					:items="sectionLinks"
 					title="Representative profile"
 				>

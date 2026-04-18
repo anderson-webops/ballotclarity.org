@@ -1080,7 +1080,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 	): RepresentativesResponse {
 		return {
 			districts,
-			note: "This directory highlights currently serving officials who also appear on the active ballot coverage, then links back to district, funding, and influence pages for deeper review.",
+			note: "This directory highlights currently serving officials Ballot Clarity can attach to either the active nationwide lookup or the published local guide layer, then links back to district, funding, and influence pages where those modules exist.",
 			representatives,
 			updatedAt: representatives.map(item => item.updatedAt).sort((left, right) => right.localeCompare(left))[0] ?? coverageRepository.data.updatedAt
 		};

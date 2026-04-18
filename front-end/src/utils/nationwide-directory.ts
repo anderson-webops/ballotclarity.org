@@ -8,16 +8,7 @@ import type {
 	RepresentativesResponse
 } from "~/types/civic";
 import { buildDistrictMatchKeys, buildRepresentativeMatchKeys } from "./canonical-district";
-
-function toSlug(value: string) {
-	return value
-		.toLowerCase()
-		.trim()
-		.replace(/[\s_]+/g, "-")
-		.replace(/[^a-z0-9-]/g, "-")
-		.replace(/-+/g, "-")
-		.replace(/^-|-$/g, "");
-}
+import { toLookupSlug } from "./nationwide-slug";
 
 function deriveNationwideDistrictJurisdiction(districtType: string): Contest["jurisdiction"] {
 	const normalizedType = districtType.toLowerCase();
@@ -35,7 +26,7 @@ function buildDistrictSummary(
 	match: LocationDistrictMatch,
 	updatedAt: string
 ) {
-	const slug = toSlug(match.id || match.label);
+	const slug = toLookupSlug(match.id || match.label);
 
 	return {
 		candidateCount: 0,
@@ -69,12 +60,12 @@ function buildRepresentativeSummary(
 			note: "Derived from the active nationwide lookup layer rather than a published local ballot guide.",
 			status: "crosswalked"
 		},
-		slug: toSlug(match.id || match.name),
+		slug: toLookupSlug(match.id || match.name),
 		summary: match.sourceSystem ? `Matched from ${match.sourceSystem}` : "Matched from nationwide lookup",
 		districtLabel: match.districtLabel,
-		districtSlug: toSlug(match.districtLabel),
+		districtSlug: toLookupSlug(match.districtLabel),
 		fundingSummary: "Not available from the nationwide lookup layer.",
-		href: match.openstatesUrl ?? "/representatives",
+		href: `/representatives/${toLookupSlug(match.id || match.name)}`,
 		openstatesUrl: match.openstatesUrl,
 		influenceSummary: "Not available from the nationwide lookup layer.",
 		sourceCount: match.openstatesUrl ? 1 : 0,
@@ -116,7 +107,7 @@ export function buildNationwideDirectoryResponses(
 		const districtSlug = buildRepresentativeMatchKeys(representative, locationState)
 			.map(key => districtKeyToSlug.get(key))
 			.find((slug): slug is string => Boolean(slug))
-			?? toSlug(representative.districtLabel);
+			?? toLookupSlug(representative.districtLabel);
 		const districtSummary = districtBySlug.get(districtSlug);
 
 		if (districtSummary)
@@ -128,7 +119,7 @@ export function buildNationwideDirectoryResponses(
 	const districts = Array.from(districtBySlug.values());
 	const representatives = representativeMatches.map((representative) => {
 		const summary = buildRepresentativeSummary(representative, updatedAt, locationLabel);
-		const districtSlug = districtRepresentatives.get(representative.id) ?? toSlug(representative.districtLabel);
+		const districtSlug = districtRepresentatives.get(representative.id) ?? toLookupSlug(representative.districtLabel);
 
 		return {
 			...summary,

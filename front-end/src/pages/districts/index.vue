@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { storeToRefs } from "pinia";
 import { buildActiveLookupSummary } from "~/utils/active-lookup";
+import { buildDistrictRepresentativeAvailabilityNote, buildDistrictRepresentativeCountLabel } from "~/utils/district-availability";
 import { isExternalHref } from "~/utils/link";
 import { buildNationwideDirectoryResponses } from "~/utils/nationwide-directory";
 
@@ -45,6 +46,14 @@ const representativesByDistrict = computed(() => {
 
 function getDistrictRepresentatives(districtSlug: string) {
 	return representativesByDistrict.value.get(districtSlug) ?? [];
+}
+
+function getDistrictRepresentativeCountLabel(district: typeof districts.value[number]) {
+	return buildDistrictRepresentativeCountLabel(district, getDistrictRepresentatives(district.slug).length || district.representativeCount);
+}
+
+function getDistrictRepresentativeAvailabilityNote(district: typeof districts.value[number]) {
+	return buildDistrictRepresentativeAvailabilityNote(district, getDistrictRepresentatives(district.slug).length || district.representativeCount);
 }
 
 const summaryItems = computed(() => {
@@ -146,7 +155,7 @@ const districtIntroCopy = computed(() => directoryUsesNationwide.value
 					</p>
 					<div class="mt-5 flex flex-wrap gap-2">
 						<VerificationBadge :label="`${district.candidateCount} candidate${district.candidateCount === 1 ? '' : 's'}`" />
-						<VerificationBadge :label="`${district.representativeCount} current representative${district.representativeCount === 1 ? '' : 's'}`" tone="accent" />
+						<VerificationBadge :label="getDistrictRepresentativeCountLabel(district)" tone="accent" />
 					</div>
 					<div v-if="getDistrictRepresentatives(district.slug).length" class="mt-5 pt-5 border-t border-app-line/80 dark:border-app-line-dark">
 						<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
@@ -162,6 +171,9 @@ const districtIntroCopy = computed(() => directoryUsesNationwide.value
 							{{ getDistrictRepresentatives(district.slug).length - 1 }} more linked official{{ getDistrictRepresentatives(district.slug).length - 1 === 1 ? '' : 's' }} are attached to this district match.
 						</p>
 					</div>
+					<p v-else-if="directoryUsesNationwide" class="text-sm text-app-muted leading-7 mt-5 pt-5 border-t border-app-line/80 dark:text-app-muted-dark dark:border-app-line-dark">
+						{{ getDistrictRepresentativeAvailabilityNote(district) }}
+					</p>
 					<div class="mt-6 flex flex-wrap gap-3">
 						<NuxtLink :to="district.href" class="btn-primary">
 							Open district page
@@ -183,6 +195,16 @@ const districtIntroCopy = computed(() => directoryUsesNationwide.value
 						>
 							Open representative
 						</NuxtLink>
+						<a
+							v-if="getDistrictRepresentatives(district.slug).length && getDistrictRepresentatives(district.slug)[0]?.openstatesUrl"
+							:href="getDistrictRepresentatives(district.slug)[0]?.openstatesUrl"
+							target="_blank"
+							rel="noreferrer"
+							class="btn-secondary inline-flex gap-2 items-center"
+						>
+							Provider record
+							<span class="i-carbon-launch" />
+						</a>
 					</div>
 				</article>
 			</section>

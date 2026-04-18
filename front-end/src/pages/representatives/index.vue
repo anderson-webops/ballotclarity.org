@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { storeToRefs } from "pinia";
 
+import { buildActiveLookupSummary } from "~/utils/active-lookup";
 import { isExternalHref } from "~/utils/link";
 import { buildNationwideDirectoryResponses } from "~/utils/nationwide-directory";
 
 const { formatDateTime } = useFormatters();
 const civicStore = useCivicStore();
 const { data: guideData, error: guideError, pending: guidePending } = await useRepresentatives();
-const { isHydrated, nationwideLookupResult } = storeToRefs(civicStore);
+const { isHydrated, nationwideLookupResult, selectedLocation } = storeToRefs(civicStore);
 const { hasNationwideResultContext, hasPublishedGuideContext } = useGuideEntryGate();
 const directoryUsesNationwide = computed(() => isHydrated.value && hasNationwideResultContext.value && !hasPublishedGuideContext.value);
 const directoryBundle = computed(() => directoryUsesNationwide.value
@@ -17,11 +18,15 @@ const directoryBundle = computed(() => directoryUsesNationwide.value
 const directoryPending = computed(() => directoryUsesNationwide.value ? false : guidePending.value);
 const directoryError = computed(() => directoryUsesNationwide.value ? null : guideError.value);
 const directoryData = computed(() => isHydrated.value ? directoryBundle.value : null);
+const activeLookupSummary = computed(() => buildActiveLookupSummary({
+	nationwideLookupResult: isHydrated.value ? nationwideLookupResult.value : null,
+	selectedLocation: isHydrated.value ? selectedLocation.value : null
+}));
 const representativeLinkIsExternal = (href: string) => isExternalHref(href);
 const representativeUseCases = computed(() => directoryUsesNationwide.value
 	? [
-			"Open a district page for each officially matched representative area",
-			"Open the active provider-backed record for each matched official",
+			"Open a Ballot Clarity person page for each matched official",
+			"Open the provider-backed record for direct verification",
 			"Move to /districts or /results for broader lookup context"
 		]
 	: [
@@ -74,9 +79,25 @@ usePageSeo({
 			</div>
 
 			<div class="surface-panel">
-				<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
-					Use this page for
+				<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+					Active lookup context
+				</p>
+				<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
+					{{ activeLookupSummary.label }}
 				</h2>
+				<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
+					{{ activeLookupSummary.note }}
+				</p>
+				<div class="mt-5 flex flex-wrap gap-3 items-center">
+					<TrustBadge
+						:label="activeLookupSummary.mode === 'nationwide' ? 'Nationwide lookup context' : activeLookupSummary.mode === 'guide' ? 'Published guide context' : 'No saved lookup context'"
+						:tone="activeLookupSummary.mode === 'nationwide' ? 'accent' : activeLookupSummary.mode === 'guide' ? undefined : 'warning'"
+					/>
+					<UpdatedAt v-if="activeLookupSummary.resolvedAt" :value="activeLookupSummary.resolvedAt" label="Lookup updated" />
+				</div>
+				<h3 class="text-2xl text-app-ink font-serif mt-6 dark:text-app-text-dark">
+					Use this page for
+				</h3>
 				<ul class="readable-list text-sm text-app-muted mt-5 pl-5 dark:text-app-muted-dark">
 					<li v-for="useCase in representativeUseCases" :key="useCase">
 						{{ useCase }}
@@ -131,7 +152,7 @@ usePageSeo({
 							District page
 						</NuxtLink>
 						<NuxtLink v-if="!representativeLinkIsExternal(representative.href)" :to="representative.href" class="btn-secondary">
-							{{ directoryUsesNationwide ? "Open record" : "Profile" }}
+							Profile
 						</NuxtLink>
 						<a
 							v-else
@@ -140,7 +161,17 @@ usePageSeo({
 							rel="noreferrer"
 							class="btn-secondary inline-flex gap-2 items-center"
 						>
-							{{ directoryUsesNationwide ? "Open record" : "Profile" }}
+							Open record
+							<span class="i-carbon-launch" />
+						</a>
+						<a
+							v-if="directoryUsesNationwide && representative.openstatesUrl"
+							:href="representative.openstatesUrl"
+							target="_blank"
+							rel="noreferrer"
+							class="btn-secondary inline-flex gap-2 items-center"
+						>
+							Provider record
 							<span class="i-carbon-launch" />
 						</a>
 						<NuxtLink v-if="!directoryUsesNationwide" :to="`${representative.href}/funding`" class="btn-primary">
@@ -149,6 +180,8 @@ usePageSeo({
 						<NuxtLink v-if="!directoryUsesNationwide" :to="`${representative.href}/influence`" class="btn-secondary">
 							Influence
 						</NuxtLink>
+						<VerificationBadge v-if="directoryUsesNationwide" label="Funding not yet available" tone="warning" />
+						<VerificationBadge v-if="directoryUsesNationwide" label="Influence not yet available" tone="warning" />
 					</div>
 				</article>
 			</section>

@@ -1,8 +1,13 @@
 <script setup lang="ts">
 import type { Source } from "~/types/civic";
+import { storeToRefs } from "pinia";
+
+import { buildNationwidePersonProfileResponse } from "~/utils/nationwide-person-profile";
 import { buildPersonLinkageConfidence, hasPersonInfluence } from "~/utils/person-profile";
 
 const route = useRoute();
+const civicStore = useCivicStore();
+const { isHydrated, nationwideLookupResult } = storeToRefs(civicStore);
 const { layerBreadcrumbLink } = useRouteLayerNavigation();
 const representativeSlug = computed(() => String(route.params.slug));
 const { formatDate, formatDateTime } = useFormatters();
@@ -12,7 +17,12 @@ function uniqueSources(sources: Source[]) {
 	return Array.from(new Map(sources.map(source => [source.id, source])).values());
 }
 
-const person = computed(() => data.value?.person ?? null);
+const fallbackData = computed(() => isHydrated.value
+	? buildNationwidePersonProfileResponse(nationwideLookupResult.value, representativeSlug.value)
+	: null);
+const profileData = computed(() => data.value ?? fallbackData.value);
+const person = computed(() => profileData.value?.person ?? null);
+const pagePending = computed(() => pending.value || (!data.value && !isHydrated.value));
 const linkageConfidence = computed(() => person.value ? buildPersonLinkageConfidence(person.value.provenance.status) : null);
 const influenceAvailable = computed(() => person.value ? hasPersonInfluence(person.value) : false);
 const influenceSources = computed(() => person.value
@@ -48,12 +58,12 @@ usePageSeo({
 
 <template>
 	<section class="app-shell section-gap space-y-8">
-		<div v-if="pending" class="space-y-6">
+		<div v-if="pagePending" class="space-y-6">
 			<div class="surface-panel bg-white/70 h-80 animate-pulse dark:bg-app-panel-dark/70" />
 			<div class="surface-panel bg-white/70 h-64 animate-pulse dark:bg-app-panel-dark/70" />
 		</div>
 
-		<div v-else-if="error || !person" class="max-w-3xl">
+		<div v-else-if="(error && !fallbackData) || !person" class="max-w-3xl">
 			<InfoCallout title="Influence page unavailable" tone="warning">
 				This representative influence page could not be loaded. Return to the representative profile and try again.
 			</InfoCallout>

@@ -6,7 +6,7 @@ import type {
 	LocationLookupSelectionOption,
 	NationwideLookupResultContext
 } from "~/types/civic";
-import { buildLookupFormLocationGuessCopy } from "~/utils/location-guess";
+import { buildLocationGuessUiContent } from "~/utils/location-guess";
 import { normalizeLookupResponseForDisplay, resolveLookupDestination } from "~/utils/nationwide-results";
 
 const props = defineProps<{
@@ -30,7 +30,7 @@ const privacyId = `${inputId}-privacy`;
 const errorId = `${inputId}-error`;
 const actionsId = `${inputId}-actions`;
 const lookupInput = ref<HTMLInputElement | null>(null);
-const locationGuessCopy = computed(() => buildLookupFormLocationGuessCopy(coverageData.value?.locationGuess ?? null));
+const locationGuessUi = computed(() => buildLocationGuessUiContent(coverageData.value?.locationGuess ?? null));
 const inputDescribedBy = computed(() => [descriptionId, usageId, privacyId, lookupResult.value ? actionsId : "", errorMessage.value ? errorId : ""].filter(Boolean).join(" "));
 
 watch(query, () => {
@@ -106,7 +106,7 @@ async function selectLookupOption(option: LocationLookupSelectionOption) {
 			Choose a location with a full street address or 5-digit ZIP code
 		</label>
 		<p :id="descriptionId" class="text-sm text-app-muted mt-2 dark:text-app-muted-dark">
-			{{ locationGuessCopy }}
+			{{ locationGuessUi.lookupForm }}
 		</p>
 		<p :id="usageId" class="text-sm text-app-muted leading-6 mt-3 dark:text-app-muted-dark">
 			Ballot Clarity can already use provider-backed lookup to match many U.S. addresses to nationwide civic results, districts, and representative records. Full published ballot guides are still narrower. A full street address is still the strongest input, while a ZIP can either resolve to one clear matched area or ask you to choose between multiple matched areas.

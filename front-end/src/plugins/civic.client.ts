@@ -1,4 +1,5 @@
 import type { CoverageResponse, LocationLookupResponse } from "~/types/civic";
+import { canGuessLocationOnLoad } from "~/utils/location-guess";
 
 export default defineNuxtPlugin((nuxtApp) => {
 	const civicStore = useCivicStore();
@@ -27,7 +28,7 @@ export default defineNuxtPlugin((nuxtApp) => {
 						return coverage;
 					}))
 			.then((coverage) => {
-				if (!coverage?.locationGuess.canGuessOnLoad)
+				if (!canGuessLocationOnLoad(coverage?.locationGuess ?? null))
 					return null;
 
 				return api<LocationLookupResponse>("/location/guess");

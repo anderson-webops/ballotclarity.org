@@ -3,7 +3,7 @@ import type { BallotResponse, ElectionsResponse } from "~/types/civic";
 import { storeToRefs } from "pinia";
 import { defineAsyncComponent } from "vue";
 import { contactEmail } from "~/constants";
-import { buildHomeLocationGuessCopy } from "~/utils/location-guess";
+import { buildLocationGuessUiContent } from "~/utils/location-guess";
 import { buildHomeExperienceState } from "~/utils/nationwide-results";
 
 const api = useApiClient();
@@ -24,7 +24,7 @@ const { data: electionsData } = await useAsyncData<ElectionsResponse>(
 const featuredElection = computed(() => electionsData.value?.elections[0] ?? null);
 const hasFeaturedGuide = computed(() => Boolean(featuredElection.value));
 const featuredLaunchTarget = computed(() => coverageData.value?.launchTarget ?? null);
-const homeLocationGuessCopy = computed(() => buildHomeLocationGuessCopy(coverageData.value?.locationGuess ?? null));
+const locationGuessUi = computed(() => buildLocationGuessUiContent(coverageData.value?.locationGuess ?? null));
 const roadmapPreview = computed(() => dataSources.value?.categories.slice(0, 3) ?? []);
 const guideBallotPath = computed(() => {
 	const activeGuideElection = selectedElection.value ?? featuredElection.value;
@@ -252,7 +252,7 @@ const trustFacts = computed(() => [
 							Start from a real location, not a default guide.
 						</h2>
 						<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-							{{ homeLocationGuessCopy }}
+							{{ locationGuessUi.home }}
 						</p>
 						<div class="mt-5">
 							<AddressLookupForm compact :election="featuredElection" :framed="false" />

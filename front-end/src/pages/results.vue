@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { LocationLookupResponse, LocationLookupSelectionOption } from "~/types/civic";
 import { storeToRefs } from "pinia";
-import { buildResultsEmptyStateCopy } from "~/utils/location-guess";
+import { buildLocationGuessUiContent } from "~/utils/location-guess";
 import { normalizeLookupResponseForDisplay, resolveLookupDestination } from "~/utils/nationwide-results";
 
 const api = useApiClient();
@@ -11,7 +11,7 @@ const { isHydrated, nationwideLookupResult } = storeToRefs(civicStore);
 const { hasPublishedGuideContext } = useGuideEntryGate();
 
 const activeResult = computed(() => isHydrated.value ? nationwideLookupResult.value : null);
-const resultsEmptyStateCopy = computed(() => buildResultsEmptyStateCopy(coverageData.value?.locationGuess ?? null));
+const locationGuessUi = computed(() => buildLocationGuessUiContent(coverageData.value?.locationGuess ?? null));
 const activeLocationLabel = computed(() => activeResult.value?.location?.displayName ?? activeResult.value?.normalizedAddress ?? "Nationwide civic results");
 const officialToolCount = computed(() => activeResult.value?.actions.filter(action => action.kind === "official-verification").length ?? 0);
 const summaryItems = computed(() => ([
@@ -83,7 +83,7 @@ usePageSeo({
 
 		<div v-else-if="!activeResult" class="max-w-3xl">
 			<InfoCallout title="Nationwide civic results not loaded" tone="warning">
-				{{ resultsEmptyStateCopy }}
+				{{ locationGuessUi.resultsEmpty }}
 			</InfoCallout>
 			<div class="mt-6 flex flex-wrap gap-3">
 				<NuxtLink to="/" class="btn-primary">

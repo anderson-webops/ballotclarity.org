@@ -36,13 +36,14 @@ export interface OpenStatesRepresentativeRecord {
 }
 
 export interface OpenStatesClient {
-	listPeopleByJurisdiction: (jurisdiction: string, options?: { perPage?: number }) => Promise<OpenStatesRepresentativeRecord[]>;
+	listPeopleByJurisdiction: (jurisdiction: string, options?: { maxPages?: number; perPage?: number }) => Promise<OpenStatesRepresentativeRecord[]>;
 	lookupPeopleByCoordinates: (latitude: number, longitude: number) => Promise<LocationRepresentativeMatch[]>;
 }
 
 interface OpenStatesClientOptions {
 	apiKey?: string;
 	fetchImpl?: typeof fetch;
+	timeoutMs?: number;
 }
 
 function mapRepresentative(person: OpenStatesPerson): OpenStatesRepresentativeRecord {
@@ -76,7 +77,8 @@ function toLocationRepresentative(person: OpenStatesRepresentativeRecord): Locat
 
 export function createOpenStatesClient({
 	apiKey = process.env.OPENSTATES_API_KEY?.trim(),
-	fetchImpl = fetch
+	fetchImpl = fetch,
+	timeoutMs = Number(process.env.OPENSTATES_FETCH_TIMEOUT_MS || 15000)
 }: OpenStatesClientOptions = {}): OpenStatesClient | null {
 	const resolvedApiKey = apiKey?.trim();
 
@@ -96,7 +98,8 @@ export function createOpenStatesClient({
 		const response = await fetchImpl(requestUrl, {
 			headers: {
 				Accept: "application/json"
-			}
+			},
+			signal: AbortSignal.timeout(timeoutMs)
 		});
 
 		if (!response.ok) {
@@ -119,15 +122,16 @@ export function createOpenStatesClient({
 		},
 		async listPeopleByJurisdiction(jurisdiction: string, options = {}) {
 			const perPage = Math.min(Math.max(options.perPage ?? 50, 1), 50);
+			const maxPages = Math.min(Math.max(options.maxPages ?? 10, 1), 10);
 			const firstPage = await fetchOpenStates("/people", {
 				jurisdiction,
 				page: "1",
 				per_page: String(perPage)
 			});
 			const people = [...(firstPage.results ?? [])];
-			const maxPage = Math.min(firstPage.pagination?.max_page ?? 1, 10);
+			const lastPage = Math.min(firstPage.pagination?.max_page ?? 1, maxPages);
 
-			for (let page = 2; page <= maxPage; page += 1) {
+			for (let page = 2; page <= lastPage; page += 1) {
 				const payload = await fetchOpenStates("/people", {
 					jurisdiction,
 					page: String(page),

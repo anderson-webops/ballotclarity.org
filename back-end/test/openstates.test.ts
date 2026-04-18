@@ -53,6 +53,6 @@ test("createOpenStatesClient includes the provider response body in lookup error
 
 	await assert.rejects(
 		client.lookupPeopleByCoordinates(33.749, -84.388),
-		/error 400 Bad Request - \{"detail":"invalid per_page, must be in \[1, 50\]"\}/i
+		/Open States lookup failed: 400 Bad Request - \{"detail":"invalid per_page, must be in \[1, 50\]"\}/i
 	);
 });

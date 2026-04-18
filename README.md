@@ -95,6 +95,7 @@ For federal provider setup:
 - `DATA_API_KEY` is the shared `api.data.gov` credential. Ballot Clarity will use it as a fallback for both Congress.gov and OpenFEC when `CONGRESS_API_KEY` or `OPENFEC_API_KEY` are unset.
 - If you prefer separate credentials later, set `CONGRESS_API_KEY` and `OPENFEC_API_KEY` explicitly and they will take precedence over `DATA_API_KEY`.
 - `GOOGLE_CIVIC_FORCE_IPV4=true` makes Ballot Clarity use an IPv4-only HTTPS transport for Google Civic requests without changing global Node networking behavior.
+- `OPENSTATES_FETCH_TIMEOUT_MS` bounds Open States requests so scheduled sync jobs fail or degrade cleanly instead of hanging indefinitely.
 
 To verify the currently configured provider keys without printing them:
 
@@ -102,10 +103,22 @@ To verify the currently configured provider keys without printing them:
 npm run providers:test
 ```
 
+That command now runs the compiled backend entrypoint and is safe for prod-only installs after `npm run build`. For source-level local debugging before a build, use:
+
+```bash
+npm run providers:test:src
+```
+
 To write a provider-fed launch-directory snapshot for future district and representative route work:
 
 ```bash
 npm run launch-directory:sync
+```
+
+That command also runs the compiled backend entrypoint and is safe for prod-only installs after `npm run build`. For source-level local debugging before a build, use:
+
+```bash
+npm run launch-directory:sync:src
 ```
 
 ## Environment configuration
@@ -135,6 +148,7 @@ Server-only variables:
 - `LOG_LEVEL`: structured backend log level, such as `info`, `warn`, or `error`
 - `ADMIN_LOGIN_WINDOW_MS`, `ADMIN_LOGIN_MAX_ATTEMPTS`, `ADMIN_LOGIN_LOCKOUT_MS`: admin login-throttle controls for the backend auth endpoint
 - `GOOGLE_CIVIC_FORCE_IPV4`: when `true`, Google Civic requests prefer IPv4 egress so IPv4-restricted API keys work on hosts that otherwise default to IPv6
+- `OPENSTATES_FETCH_TIMEOUT_MS`: optional Open States request timeout in milliseconds for scheduled provider syncs
 - `CENSUS_GEOCODER_BENCHMARK`, `CENSUS_GEOCODER_VINTAGE`: optional overrides for reproducible Census geocoder lookups
 
 One-time bootstrap variables:

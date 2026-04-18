@@ -19,13 +19,13 @@ test("createGoogleCivicLookup forces IPv4 resolution", () => {
 	const lookup = createGoogleCivicLookup((hostname, options, callback) => {
 		capturedHostname = hostname;
 		capturedOptions = options;
-		callback(null, "203.0.113.10", 4);
+		(callback as (error: NodeJS.ErrnoException | null, address: string, family: number) => void)(null, "203.0.113.10", 4);
 	});
 
-	lookup("www.googleapis.com", { family: 6, hints: 32 }, (error, _address, family) => {
+	lookup("www.googleapis.com", { family: 6, hints: 32 }, ((error: NodeJS.ErrnoException | null, _address: string, family: number) => {
 		assert.equal(error, null);
 		callbackFamily = family;
-	});
+	}) as never);
 
 	assert.equal(capturedHostname, "www.googleapis.com");
 	assert.deepEqual(capturedOptions, {
@@ -34,6 +34,37 @@ test("createGoogleCivicLookup forces IPv4 resolution", () => {
 		hints: 32
 	});
 	assert.equal(callbackFamily, 4);
+});
+
+test("createGoogleCivicLookup preserves all-lookups when the caller requests multiple addresses", () => {
+	let capturedOptions: { all?: boolean; family?: number | string; hints?: number } | null = null;
+	let callbackAddresses: { address: string; family: number }[] = [];
+	const lookup = createGoogleCivicLookup((_hostname, options, callback) => {
+		capturedOptions = options;
+		(callback as (error: NodeJS.ErrnoException | null, addresses: { address: string; family: number }[]) => void)(null, [
+			{
+				address: "203.0.113.10",
+				family: 4
+			}
+		]);
+	});
+
+	lookup("www.googleapis.com", { all: true, family: 6, hints: 16 }, ((error: NodeJS.ErrnoException | null, addresses: { address: string; family: number }[]) => {
+		assert.equal(error, null);
+		callbackAddresses = addresses;
+	}) as never);
+
+	assert.deepEqual(capturedOptions, {
+		all: true,
+		family: 4,
+		hints: 16
+	});
+	assert.deepEqual(callbackAddresses, [
+		{
+			address: "203.0.113.10",
+			family: 4
+		}
+	]);
 });
 
 test("fetchGoogleCivic uses an injected fetch implementation before the IPv4 transport path", async () => {

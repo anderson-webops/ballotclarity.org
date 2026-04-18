@@ -12,6 +12,7 @@ async function main() {
 		const outputPath = writeLaunchDirectorySnapshot(snapshot);
 
 		console.log(`Wrote launch directory snapshot to ${outputPath}.`);
+		process.exit(0);
 	}
 	catch (error) {
 		console.error(error instanceof Error ? error.message : "Unable to sync launch directory snapshot.");

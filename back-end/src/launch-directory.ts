@@ -27,7 +27,7 @@ export interface LaunchDirectoryElectionSummary {
 export interface LaunchDirectoryProviderStatus {
 	detail: string;
 	recordCount: number;
-	status: "configured" | "pending-crosswalk" | "skipped";
+	status: "configured" | "degraded" | "pending-crosswalk" | "skipped";
 	updatedAt: string;
 }
 
@@ -140,6 +140,65 @@ async function fetchUpcomingElections(
 	};
 }
 
+async function fetchOpenStatesLaunchData(
+	openStatesClient: OpenStatesClient | null,
+	launchLatitude: number,
+	launchLongitude: number,
+	updatedAt: string
+) {
+	if (!openStatesClient) {
+		return {
+			geoMatchedRepresentatives: [] as OpenStatesRepresentativeRecord[],
+			stateRepresentatives: [] as OpenStatesRepresentativeRecord[],
+			status: createSkippedStatus("OPENSTATES_API_KEY is not configured for launch-directory sync.")
+		};
+	}
+
+	let stateRepresentatives: OpenStatesRepresentativeRecord[] = [];
+	let geoMatchedRepresentatives: OpenStatesRepresentativeRecord[] = [];
+	const notes: string[] = [];
+	let degraded = false;
+
+	try {
+		stateRepresentatives = await openStatesClient.listPeopleByJurisdiction("Georgia", {
+			maxPages: 1,
+			perPage: 50
+		});
+		notes.push(`Open States returned ${stateRepresentatives.length} Georgia people records from the first launch-directory page.`);
+	}
+	catch (error) {
+		degraded = true;
+		notes.push(`Statewide Open States listing did not complete: ${error instanceof Error ? error.message : String(error)}.`);
+	}
+
+	try {
+		geoMatchedRepresentatives = await openStatesClient.lookupPeopleByCoordinates(launchLatitude, launchLongitude).then(matches => matches.map(match => ({
+			districtLabel: match.districtLabel,
+			id: match.id,
+			name: match.name,
+			officeTitle: match.officeTitle,
+			openstatesUrl: match.openstatesUrl,
+			party: match.party
+		})));
+		notes.push(`Open States returned ${geoMatchedRepresentatives.length} launch-area matches at the configured Fulton/Atlanta probe point.`);
+	}
+	catch (error) {
+		degraded = true;
+		notes.push(`Launch-area Open States geo matching did not complete: ${error instanceof Error ? error.message : String(error)}.`);
+	}
+
+	return {
+		geoMatchedRepresentatives,
+		stateRepresentatives,
+		status: {
+			detail: notes.join(" "),
+			recordCount: stateRepresentatives.length,
+			status: degraded ? "degraded" : "configured",
+			updatedAt
+		} satisfies LaunchDirectoryProviderStatus
+	};
+}
+
 export async function buildLaunchDirectorySnapshot({
 	congressClient = null,
 	fetchImpl = fetch,
@@ -149,29 +208,17 @@ export async function buildLaunchDirectorySnapshot({
 	openStatesClient = null
 }: BuildLaunchDirectorySnapshotOptions = {}): Promise<LaunchDirectorySnapshot> {
 	const updatedAt = new Date().toISOString();
-	const [googleCivic, federalRepresentatives, stateRepresentatives, geoMatchedRepresentatives] = await Promise.all([
+	const [googleCivic, federalRepresentatives, openStates] = await Promise.all([
 		fetchUpcomingElections(googleCivicApiKey, fetchImpl),
 		congressClient
 			? congressClient.listMembersByState("GA")
 			: Promise.resolve([] as CongressMemberRecord[]),
-		openStatesClient
-			? openStatesClient.listPeopleByJurisdiction("Georgia")
-			: Promise.resolve([] as OpenStatesRepresentativeRecord[]),
-		openStatesClient
-			? openStatesClient.lookupPeopleByCoordinates(launchLatitude, launchLongitude).then(matches => matches.map(match => ({
-					districtLabel: match.districtLabel,
-					id: match.id,
-					name: match.name,
-					officeTitle: match.officeTitle,
-					openstatesUrl: match.openstatesUrl,
-					party: match.party
-				})))
-			: Promise.resolve([] as OpenStatesRepresentativeRecord[])
+		fetchOpenStatesLaunchData(openStatesClient, launchLatitude, launchLongitude, updatedAt)
 	]);
 
 	return {
 		federalRepresentatives,
-		geoMatchedRepresentatives,
+		geoMatchedRepresentatives: openStates.geoMatchedRepresentatives,
 		launchTarget: {
 			displayName: launchTargetProfile.displayName,
 			name: launchTargetProfile.name,
@@ -205,16 +252,9 @@ export async function buildLaunchDirectorySnapshot({
 				status: (process.env.OPENFEC_API_KEY?.trim() || process.env.DATA_API_KEY?.trim()) ? "pending-crosswalk" : "skipped",
 				updatedAt
 			},
-			openstates: openStatesClient
-				? {
-						detail: `Open States returned ${stateRepresentatives.length} Georgia people records and ${geoMatchedRepresentatives.length} launch-area matches at the configured Fulton/Atlanta probe point.`,
-						recordCount: stateRepresentatives.length,
-						status: "configured",
-						updatedAt
-					}
-				: createSkippedStatus("OPENSTATES_API_KEY is not configured for launch-directory sync.")
+			openstates: openStates.status
 		},
-		stateRepresentatives,
+		stateRepresentatives: openStates.stateRepresentatives,
 		updatedAt,
 		upcomingElections: googleCivic.items
 	};

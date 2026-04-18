@@ -78,8 +78,14 @@ interface LookupOptions {
 	hints?: number;
 }
 
+interface LookupAddress {
+	address: string;
+	family: number;
+}
+
 interface LookupCallback {
 	(error: NodeJS.ErrnoException | null, address: string, family: number): void;
+	(error: NodeJS.ErrnoException | null, addresses: LookupAddress[]): void;
 }
 
 interface DnsLookupFn {
@@ -142,10 +148,10 @@ export function shouldForceGoogleCivicIpv4(value = process.env.GOOGLE_CIVIC_FORC
 export function createGoogleCivicLookup(lookupImpl: DnsLookupFn = dnsLookup as DnsLookupFn) {
 	return (hostname: string, options: LookupOptions, callback: LookupCallback) => {
 		lookupImpl(hostname, {
-			all: false,
+			all: options.all === true,
 			family: 4,
 			hints: options.hints
-		}, callback);
+		}, callback as never);
 	};
 }
 
@@ -157,8 +163,8 @@ async function fetchGoogleCivicWithPreferredIpv4(resource: URL, headers: Record<
 		text: string;
 	}>((resolve, reject) => {
 		const request = httpsRequest(resource, {
+			family: 4,
 			headers,
-			lookup: createGoogleCivicLookup() as never
 		}, (response) => {
 			const chunks: Buffer[] = [];
 

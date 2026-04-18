@@ -18,7 +18,6 @@ interface HeaderGroup {
 }
 
 const civicStore = useCivicStore();
-const colorMode = useColorMode();
 const route = useRoute();
 const { activeNationwideResult, hasNationwideResultContext, hasPublishedGuideContext } = useGuideEntryGate();
 const isMenuOpen = ref(false);
@@ -98,7 +97,6 @@ const navGroups = computed<HeaderGroup[]>(() => {
 	];
 });
 
-const isDark = computed(() => colorMode.value === "dark");
 const showPersistedCivicState = computed(() => isHydrated.value);
 const effectiveBallotPlanCount = computed(() => isHydrated.value ? ballotPlanCount.value : 0);
 const effectiveCompareCount = computed(() => isHydrated.value ? compareCount.value : 0);
@@ -169,10 +167,6 @@ function toggleDesktopGroup(group: HeaderGroup) {
 
 function closeDesktopGroups() {
 	activeDesktopGroup.value = null;
-}
-
-function toggleColorMode() {
-	colorMode.preference = isDark.value ? "light" : "dark";
 }
 
 function updateHeaderVisibility(nextScrollY: number) {
@@ -346,14 +340,9 @@ onBeforeUnmount(() => {
 						</NuxtLink>
 					</ClientOnly>
 
-					<button
-						type="button"
-						class="text-app-ink border border-app-line rounded-full bg-white inline-flex shrink-0 h-10 w-10 shadow-sm transition items-center justify-center dark:text-app-text-dark hover:text-app-accent dark:border-app-line-dark hover:border-app-accent dark:bg-app-panel-dark focus-ring"
-						:aria-label="isDark ? 'Switch to light mode' : 'Switch to dark mode'"
-						@click="toggleColorMode"
-					>
-						<span :class="isDark ? 'i-carbon-sun' : 'i-carbon-moon'" class="text-lg" />
-					</button>
+					<div class="shrink-0 h-10 w-10">
+						<ThemeToggleButton variant="icon" />
+					</div>
 
 					<button
 						type="button"
@@ -405,9 +394,7 @@ onBeforeUnmount(() => {
 								Change location
 							</NuxtLink>
 						</div>
-						<button type="button" class="text-xs font-semibold px-3 py-2 border border-app-line rounded-full shrink-0 dark:border-app-line-dark focus-ring" @click="toggleColorMode">
-							{{ isDark ? "Light mode" : "Dark mode" }}
-						</button>
+						<ThemeToggleButton variant="text" />
 					</div>
 				</div>
 

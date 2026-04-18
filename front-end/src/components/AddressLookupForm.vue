@@ -28,7 +28,7 @@ const representativeMatches = ref<LocationRepresentativeMatch[]>([]);
 const fromCache = ref(false);
 const resolvedElectionSlug = ref("");
 const resolvedLocation = ref<LocationLookupResponse["location"] | null>(null);
-const supportedAreaLabel = ref("");
+const publishedGuideAreaLabel = ref("");
 const inputId = `address-lookup-${useId()}`;
 const descriptionId = `${inputId}-description`;
 const usageId = `${inputId}-usage`;
@@ -50,7 +50,7 @@ watch(query, () => {
 	districtMatches.value = [];
 	representativeMatches.value = [];
 	fromCache.value = false;
-	supportedAreaLabel.value = "";
+	publishedGuideAreaLabel.value = "";
 
 	if (resolvedLocation.value) {
 		resolvedLocation.value = null;
@@ -93,7 +93,7 @@ async function handleSubmit() {
 	fromCache.value = false;
 	resolvedElectionSlug.value = "";
 	resolvedLocation.value = null;
-	supportedAreaLabel.value = "";
+	publishedGuideAreaLabel.value = "";
 
 	if (!query.value.trim()) {
 		errorMessage.value = "Enter an address or ZIP code to load the ballot guide.";
@@ -116,9 +116,9 @@ async function handleSubmit() {
 		districtMatches.value = response.districtMatches ?? [];
 		representativeMatches.value = response.representativeMatches ?? [];
 		fromCache.value = Boolean(response.fromCache);
-		supportedAreaLabel.value = response.supportedAreaLabel ?? "";
+		publishedGuideAreaLabel.value = response.publishedGuideAreaLabel ?? "";
 
-		if (response.result === "selection-required" || response.result === "unsupported") {
+		if (response.result === "selection-required" || response.result === "guide-unavailable" || response.result === "unsupported") {
 			lookupActions.value = response.actions ?? [];
 			return;
 		}
@@ -160,7 +160,7 @@ async function handleSubmit() {
 			Ballot Clarity does not auto-detect your district from IP. The guide changes only when you choose a location here.
 		</p>
 		<p :id="usageId" class="text-sm text-app-muted leading-6 mt-3 dark:text-app-muted-dark">
-			Current public coverage still returns the reference ballot guide while live Fulton County, Georgia district and ballot integrations are being connected. Why we ask for your address: a full address is the only input that can support exact district and ballot matching. A ZIP code is useful for previewing the right coverage area, but ZIP-only results should be treated as approximate.
+			Ballot Clarity can already use provider-backed lookup to match many U.S. addresses to districts and representative records. Full published ballot guides are still narrower. A full street address is the only input that can support the best district match, while ZIP-only results should still be treated as approximate.
 		</p>
 		<p :id="privacyId" class="text-sm text-app-muted leading-6 mt-3 dark:text-app-muted-dark">
 			Data use: your lookup is sent only to match ballot coverage. The raw lookup is not added to the public content archive or used for advertising, and the app saves only your selected location label and ballot-plan preferences locally in your browser. Read the
@@ -205,16 +205,20 @@ async function handleSubmit() {
 			class="mt-5 p-4 border border-app-line rounded-3xl bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/60"
 		>
 			<p class="text-xs text-app-muted tracking-[0.2em] font-semibold uppercase dark:text-app-muted-dark">
-				{{ lookupResult === "unsupported" ? "Location not yet supported" : "Choose how to continue" }}
+				{{ lookupResult === "unsupported"
+					? "Location not yet resolved"
+					: lookupResult === "guide-unavailable"
+						? "Guide not yet published"
+						: "Choose how to continue" }}
 			</p>
 			<p class="text-sm text-app-muted leading-6 mt-3 dark:text-app-muted-dark">
 				{{ lookupNote }}
 			</p>
 			<p
-				v-if="lookupResult === 'unsupported' && supportedAreaLabel"
+				v-if="lookupResult === 'guide-unavailable' && publishedGuideAreaLabel"
 				class="text-xs text-app-muted leading-6 mt-3 dark:text-app-muted-dark"
 			>
-				Ballot Clarity is currently live only for {{ supportedAreaLabel }}.
+				Published ballot guides currently focus on {{ publishedGuideAreaLabel }}.
 			</p>
 			<p
 				v-if="resolvedLocation"
@@ -319,10 +323,12 @@ async function handleSubmit() {
 			</div>
 			<p class="text-xs text-app-muted leading-6 mt-4 dark:text-app-muted-dark">
 				{{ lookupResult === "unsupported"
-					? "Use the official tools above for this location. Ballot Clarity should not open the Fulton County guide when the entered location is outside current public coverage."
-					: resolvedLocation
-						? "Ballot Clarity still opens the current guide surface after official verification because exact contest packaging is still being connected."
-						: "If you want the most specific district match, replace the ZIP code with a full street address before continuing." }}
+					? "Use the official tools above for this location, or replace the ZIP code with a full street address for a more precise lookup."
+					: lookupResult === "guide-unavailable"
+						? "District lookup succeeded, but Ballot Clarity does not yet publish a full local guide here. Use the district, representative, and official-tool results above."
+						: resolvedLocation
+							? "Ballot Clarity still opens the current guide surface after official verification because exact contest packaging is still being connected."
+							: "If you want the most specific district match, replace the ZIP code with a full street address before continuing." }}
 			</p>
 		</div>
 	</form>

@@ -207,7 +207,8 @@ test("built app renders the key ballot guide pages against the built API", async
 	assert.match(homeHtml, /One task, then a clear reading path/);
 	assert.match(homeHtml, /Primary pathways/);
 	assert.match(homeHtml, /Start with the task you are trying to complete\./);
-	assert.match(homeHtml, /Why we ask for your address/);
+	assert.match(homeHtml, /Choose a location with a full street address or 5-digit ZIP code/);
+	assert.match(homeHtml, /provider-backed lookup to match many U\.S\. addresses to districts and representative records/i);
 	assert.match(homeHtml, /Data use: your lookup is sent only to match ballot coverage/);
 	assert.match(ballotHtml, /Questions to ask before you vote/);
 	assert.match(ballotHtml, /Key dates and official links/);

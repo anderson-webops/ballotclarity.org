@@ -289,7 +289,7 @@ test("POST /api/location returns the supported Fulton coverage guide for ZIPs in
 	assert.match(body.note, /Atlanta, Georgia/i);
 });
 
-test("POST /api/location does not offer the Fulton guide for unsupported ZIPs", async () => {
+test("POST /api/location returns district lookup results without a published guide for out-of-guide ZIPs", async () => {
 	const response = await fetch(`${baseUrl}/api/location`, {
 		body: JSON.stringify({ q: "84604" }),
 		headers: {
@@ -300,12 +300,13 @@ test("POST /api/location does not offer the Fulton guide for unsupported ZIPs", 
 	const body = await response.json();
 
 	assert.equal(response.status, 200);
-	assert.equal(body.result, "unsupported");
+	assert.equal(body.result, "guide-unavailable");
 	assert.equal(body.inputKind, "zip");
 	assert.equal(body.actions.some((item: { kind: string }) => item.kind === "ballot-guide"), false);
 	assert.equal(body.actions.some((item: { title: string }) => /Utah voter registration portal/i.test(item.title)), true);
+	assert.equal(body.publishedGuideAreaLabel, "Fulton County, Georgia");
 	assert.match(body.note, /Provo, Utah/i);
-	assert.match(body.note, /currently live only for Fulton County, Georgia/i);
+	assert.match(body.note, /not published a full ballot guide/i);
 });
 
 test("POST /api/location returns the current Fulton County launch location for full addresses", async () => {
@@ -336,7 +337,7 @@ test("POST /api/location returns the current Fulton County launch location for f
 	assert.match(body.note, /Open States returned 1 representative match/i);
 });
 
-test("POST /api/location returns an explicit out-of-coverage response for unsupported full addresses", async () => {
+test("POST /api/location returns district lookup results without a published guide for out-of-guide full addresses", async () => {
 	const response = await fetch(`${baseUrl}/api/location`, {
 		body: JSON.stringify({ q: "151 S University Ave, Provo, UT 84601" }),
 		headers: {
@@ -347,7 +348,7 @@ test("POST /api/location returns an explicit out-of-coverage response for unsupp
 	const body = await response.json();
 
 	assert.equal(response.status, 200);
-	assert.equal(body.result, "unsupported");
+	assert.equal(body.result, "guide-unavailable");
 	assert.equal(body.inputKind, "address");
 	assert.equal(body.location, undefined);
 	assert.equal(body.electionSlug, undefined);
@@ -355,7 +356,9 @@ test("POST /api/location returns an explicit out-of-coverage response for unsupp
 	assert.equal(body.actions.some((item: { title: string }) => /Utah voter registration portal|Registration and voter status/i.test(item.title)), true);
 	assert.equal(body.normalizedAddress, "151 S UNIVERSITY AVE, PROVO, UT, 84601");
 	assert.equal(body.representativeMatches[0].name, "Mike Kennedy");
-	assert.match(body.note, /currently live only for Fulton County, Georgia/i);
+	assert.equal(body.publishedGuideAreaLabel, "Fulton County, Georgia");
+	assert.match(body.note, /not published a full ballot guide/i);
+	assert.match(body.note, /Census geography matched/i);
 });
 
 test("GET /api/ballot returns the election guide and contests", async () => {

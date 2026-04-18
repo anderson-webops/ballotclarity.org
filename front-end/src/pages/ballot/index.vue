@@ -1,15 +1,24 @@
 <script setup lang="ts">
 import type { ElectionsResponse } from "~/types/civic";
 import { currentCoverageElectionSlug } from "~/constants";
+import { nationwideResultsPath } from "~/utils/nationwide-results";
 
 const api = useApiClient();
+const { allowsGuideEntryPoints, hasNationwideResultContext } = useGuideEntryGate();
 const { data } = await useAsyncData<ElectionsResponse>(
 	"ballot-index-elections",
 	() => api<ElectionsResponse>("/elections")
 );
 const target = data.value?.elections[0]?.slug ?? currentCoverageElectionSlug;
 
-await navigateTo(`/ballot/${target}`, { replace: true });
+await navigateTo(
+	allowsGuideEntryPoints.value
+		? `/ballot/${target}`
+		: hasNationwideResultContext.value
+			? nationwideResultsPath
+			: "/#location-lookup",
+	{ replace: true }
+);
 </script>
 
 <template>

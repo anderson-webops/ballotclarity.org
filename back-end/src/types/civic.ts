@@ -598,6 +598,7 @@ export type LocationDataAvailabilityStatus = LookupAvailabilityStatus;
 export interface LocationDataAvailabilityItem extends LookupAvailability {}
 
 export interface LocationDataAvailabilitySummary {
+	nationwideCivicResults: LocationDataAvailabilityItem;
 	representatives: LocationDataAvailabilityItem;
 	ballotCandidates: LocationDataAvailabilityItem;
 	financeInfluence: LocationDataAvailabilityItem;

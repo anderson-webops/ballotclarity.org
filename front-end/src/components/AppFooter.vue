@@ -5,15 +5,22 @@ import { buildCompareRoute } from "~/stores/civic";
 
 const year = new Date().getFullYear();
 const civicStore = useCivicStore();
+const { allowsGuideEntryPoints, hasNationwideResultContext } = useGuideEntryGate();
 const { compareList, isHydrated } = storeToRefs(civicStore);
 const effectiveCompareList = computed(() => isHydrated.value ? compareList.value : []);
 
-const guideLinks = [
+const guideLinks = computed(() => [
+	{ label: "Nationwide civic results", to: "/results" },
 	{ label: "My ballot plan", to: "/plan" },
 	{ label: "Ballot guide", to: "/ballot" },
 	{ label: "Compare candidates", to: "/compare" },
 	{ label: "Search", to: "/search" },
-];
+].filter((link) => {
+	if (link.to === "/results")
+		return hasNationwideResultContext.value;
+
+	return allowsGuideEntryPoints.value || !["/plan", "/ballot"].includes(link.to);
+}));
 
 const discoveryLinks = [
 	{ label: "About", to: "/about" },
@@ -64,7 +71,9 @@ function resolveGuideLinkTo(path: string) {
 								How to use it
 							</p>
 							<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
-								Start with the ballot guide, open deeper pages only when needed, and verify time-sensitive logistics with the official authorities linked throughout the site.
+								{{ allowsGuideEntryPoints
+									? "Start with the ballot guide, open deeper pages only when needed, and verify time-sensitive logistics with the official authorities linked throughout the site."
+									: "Start with the nationwide civic results from the lookup, open deeper local guide pages only where Ballot Clarity has published coverage, and verify time-sensitive logistics with the official authorities linked throughout the site." }}
 							</p>
 						</div>
 					</div>

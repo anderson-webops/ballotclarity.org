@@ -117,6 +117,7 @@ export function buildLocationAvailabilityItems(availability: LocationDataAvailab
 		return [];
 
 	return [
+		availability.nationwideCivicResults,
 		availability.representatives,
 		availability.ballotCandidates,
 		availability.financeInfluence,

@@ -598,6 +598,7 @@ export type LocationDataAvailabilityStatus = LookupAvailabilityStatus;
 export interface LocationDataAvailabilityItem extends LookupAvailability {}
 
 export interface LocationDataAvailabilitySummary {
+	nationwideCivicResults: LocationDataAvailabilityItem;
 	representatives: LocationDataAvailabilityItem;
 	ballotCandidates: LocationDataAvailabilityItem;
 	financeInfluence: LocationDataAvailabilityItem;
@@ -628,6 +629,22 @@ export interface LocationLookupResponse {
 	districtMatches?: LocationDistrictMatch[];
 	representativeMatches?: LocationRepresentativeMatch[];
 	fromCache?: boolean;
+}
+
+export interface NationwideLookupResultContext {
+	result: LocationLookupResult;
+	inputKind: LocationLookupInputKind;
+	note: string;
+	guideAvailability?: LocationGuideAvailability;
+	availability: LocationDataAvailabilitySummary | null;
+	location: LocationSelection | null;
+	election: ElectionSummary | null;
+	electionSlug?: string;
+	actions: LocationLookupAction[];
+	normalizedAddress: string;
+	districtMatches: LocationDistrictMatch[];
+	representativeMatches: LocationRepresentativeMatch[];
+	fromCache: boolean;
 }
 
 export interface ElectionsResponse {

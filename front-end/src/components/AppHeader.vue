@@ -20,6 +20,7 @@ interface HeaderGroup {
 const civicStore = useCivicStore();
 const colorMode = useColorMode();
 const route = useRoute();
+const { activeNationwideResult, allowsGuideEntryPoints, hasNationwideResultContext } = useGuideEntryGate();
 const isMenuOpen = ref(false);
 const isHeaderVisible = ref(true);
 const lastScrollY = ref(0);
@@ -33,48 +34,71 @@ let scrollFramePending = false;
 
 const { ballotPlanCount, compareCount, compareList, isHydrated, selectedLocation } = storeToRefs(civicStore);
 
-const navGroups: HeaderGroup[] = [
-	{
-		description: "Ballot-reading tools and active voter workflows.",
-		label: "Use the guide",
-		links: [
-			{ badge: "plan", description: "Saved checklist and print-friendly plan.", label: "My plan", to: "/plan" },
-			{ description: "Contest reading view with filters and official links.", label: "Ballot guide", to: "/ballot" },
-			{ description: "Office-area pages for each active district or contest area.", label: "Districts", to: "/districts" },
-			{ description: "Current representatives linked to district, funding, and influence pages.", label: "Representatives", to: "/representatives" },
-			{ badge: "compare", description: "Side-by-side candidate comparison.", label: "Compare", to: "/compare" },
-			{ description: "Search the current public coverage archive.", label: "Search", to: "/search" }
-		]
-	},
-	{
-		description: "How Ballot Clarity works and how to verify it.",
-		label: "Learn and verify",
-		links: [
-			{ description: "Source directory and citation targets.", label: "Sources", to: "/sources" },
-			{ description: "Coverage scope and launch profile.", label: "Coverage", to: "/coverage" },
-			{ description: "How summaries and links are produced.", label: "Methodology", to: "/methodology" },
-			{ description: "Neutrality, sourcing, and editorial rules.", label: "Neutrality", to: "/neutrality" }
-		]
-	},
-	{
-		description: "Help, public standards, and organization context.",
-		label: "Project and help",
-		links: [
-			{ description: "Voting FAQ and how to use the site.", label: "Help", to: "/help" },
-			{ description: "Corrections workflow and public updates.", label: "Corrections", to: "/corrections" },
-			{ description: "Public site status and source review notes.", label: "Status", to: "/status" },
-			{ description: "About the nonprofit and contact options.", label: "About", to: "/about" }
-		]
-	}
-];
+const navGroups = computed<HeaderGroup[]>(() => {
+	const guideLinks: HeaderLink[] = [
+		{ description: "District matches, representative records, and official tools from your latest nationwide lookup.", label: "Nationwide results", to: "/results" },
+		{ badge: "plan", description: "Saved checklist and print-friendly plan.", label: "My plan", to: "/plan" },
+		{ description: "Contest reading view with filters and official links.", label: "Ballot guide", to: "/ballot" },
+		{ description: "Office-area pages for each active district or contest area.", label: "Districts", to: "/districts" },
+		{ description: "Current representatives linked to district, funding, and influence pages.", label: "Representatives", to: "/representatives" },
+		{ badge: "compare", description: "Side-by-side candidate comparison.", label: "Compare", to: "/compare" },
+		{ description: "Search the current public coverage archive.", label: "Search", to: "/search" }
+	];
+
+	return [
+		{
+			description: "Ballot-reading tools and active voter workflows.",
+			label: "Use the guide",
+			links: guideLinks.filter((link) => {
+				if (link.to === "/results")
+					return hasNationwideResultContext.value;
+
+				return allowsGuideEntryPoints.value || !["/plan", "/ballot"].includes(link.to);
+			})
+		},
+		{
+			description: "How Ballot Clarity works and how to verify it.",
+			label: "Learn and verify",
+			links: [
+				{ description: "Source directory and citation targets.", label: "Sources", to: "/sources" },
+				{ description: "Coverage scope and launch profile.", label: "Coverage", to: "/coverage" },
+				{ description: "How summaries and links are produced.", label: "Methodology", to: "/methodology" },
+				{ description: "Neutrality, sourcing, and editorial rules.", label: "Neutrality", to: "/neutrality" }
+			]
+		},
+		{
+			description: "Help, public standards, and organization context.",
+			label: "Project and help",
+			links: [
+				{ description: "Voting FAQ and how to use the site.", label: "Help", to: "/help" },
+				{ description: "Corrections workflow and public updates.", label: "Corrections", to: "/corrections" },
+				{ description: "Public site status and source review notes.", label: "Status", to: "/status" },
+				{ description: "About the nonprofit and contact options.", label: "About", to: "/about" }
+			]
+		}
+	];
+});
 
 const isDark = computed(() => colorMode.value === "dark");
 const showPersistedCivicState = computed(() => isHydrated.value);
 const effectiveBallotPlanCount = computed(() => isHydrated.value ? ballotPlanCount.value : 0);
 const effectiveCompareCount = computed(() => isHydrated.value ? compareCount.value : 0);
 const effectiveCompareList = computed(() => isHydrated.value ? compareList.value : []);
-const effectiveSelectedLocation = computed(() => isHydrated.value ? selectedLocation.value : null);
-const locationLookupHref = computed(() => route.path.startsWith("/plan") ? "/plan#change-location" : "/#location-lookup");
+const effectiveSelectedLocation = computed(() => {
+	if (!isHydrated.value)
+		return null;
+
+	return activeNationwideResult.value?.location ?? selectedLocation.value;
+});
+const locationLookupHref = computed(() => {
+	if (route.path.startsWith("/plan"))
+		return "/plan#change-location";
+
+	if (route.path.startsWith("/results"))
+		return "/results#change-location";
+
+	return hasNationwideResultContext.value ? "/results#change-location" : "/#location-lookup";
+});
 
 watch(() => route.fullPath, () => {
 	isMenuOpen.value = false;
@@ -277,6 +301,7 @@ onBeforeUnmount(() => {
 
 				<div class="shrink-0 gap-2.5 hidden items-center md:flex lg:gap-3">
 					<NuxtLink
+						v-if="allowsGuideEntryPoints"
 						to="/plan"
 						prefetch-on="interaction"
 						class="text-sm text-app-ink font-medium px-3.5 py-2 border border-app-line rounded-full bg-white inline-flex gap-2 min-h-10 shadow-sm transition items-center dark:text-app-text-dark hover:text-app-accent lg:px-4 dark:border-app-line-dark hover:border-app-accent dark:bg-app-panel-dark focus-ring dark:hover:text-white"
@@ -339,6 +364,7 @@ onBeforeUnmount(() => {
 			<nav class="space-y-5" aria-label="Mobile navigation">
 				<div class="space-y-2">
 					<NuxtLink
+						v-if="allowsGuideEntryPoints"
 						to="/plan"
 						prefetch-on="interaction"
 						class="text-sm font-medium px-4 py-3 rounded-2xl flex transition items-center justify-between focus-ring"

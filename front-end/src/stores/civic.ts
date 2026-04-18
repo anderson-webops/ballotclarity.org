@@ -2,9 +2,14 @@ import type {
 	BallotPlanSelection,
 	BallotViewMode,
 	ElectionSummary,
+	LocationLookupResponse,
 	LocationSelection,
+	NationwideLookupResultContext,
 	PlannedMeasureDecision
 } from "~/types/civic";
+import type { LookupContextState } from "~/utils/guide-entry";
+import { defineStore } from "pinia";
+import { buildLookupContextState, buildNationwideLookupResultContext } from "~/utils/nationwide-results";
 
 const civicStorageKey = "ballot-clarity:civic-store";
 
@@ -12,6 +17,8 @@ interface CivicStoreSnapshot {
 	ballotPlan: Record<string, BallotPlanSelection>;
 	ballotViewMode: BallotViewMode;
 	compareList: string[];
+	lookupContext: LookupContextState | null;
+	nationwideLookupResult: NationwideLookupResultContext | null;
 	selectedElection: ElectionSummary | null;
 	selectedIssues: string[];
 	selectedLocation: LocationSelection | null;
@@ -22,6 +29,8 @@ function defaultSnapshot(): CivicStoreSnapshot {
 		ballotPlan: {},
 		ballotViewMode: "quick",
 		compareList: [],
+		lookupContext: null,
+		nationwideLookupResult: null,
 		selectedElection: null,
 		selectedIssues: [],
 		selectedLocation: null
@@ -122,6 +131,8 @@ export const useCivicStore = defineStore("civic", {
 		ballotViewMode: "quick" as BallotViewMode,
 		compareList: [] as string[],
 		isHydrated: false,
+		lookupContext: null as LookupContextState | null,
+		nationwideLookupResult: null as NationwideLookupResultContext | null,
 		selectedElection: null as ElectionSummary | null,
 		selectedIssues: [] as string[],
 		selectedLocation: null as LocationSelection | null,
@@ -155,6 +166,8 @@ export const useCivicStore = defineStore("civic", {
 			this.ballotPlan = snapshot.ballotPlan;
 			this.ballotViewMode = snapshot.ballotViewMode;
 			this.compareList = normalizeCompareSlugs(snapshot.compareList);
+			this.lookupContext = snapshot.lookupContext ?? null;
+			this.nationwideLookupResult = snapshot.nationwideLookupResult ?? null;
 			this.selectedElection = snapshot.selectedElection;
 			this.selectedIssues = snapshot.selectedIssues;
 			this.selectedLocation = sanitizeLocationSelection(snapshot.selectedLocation);
@@ -170,6 +183,8 @@ export const useCivicStore = defineStore("civic", {
 				ballotPlan: this.ballotPlan,
 				ballotViewMode: this.ballotViewMode,
 				compareList: this.compareList,
+				lookupContext: this.lookupContext,
+				nationwideLookupResult: this.nationwideLookupResult,
 				selectedElection: this.selectedElection,
 				selectedIssues: this.selectedIssues,
 				selectedLocation: sanitizeLocationSelection(this.selectedLocation)
@@ -181,6 +196,35 @@ export const useCivicStore = defineStore("civic", {
 		},
 		replaceCompare(slugs: string[]) {
 			this.compareList = normalizeCompareSlugs(slugs);
+			this.persist();
+		},
+		setLookupContext(lookupContext: LookupContextState | null) {
+			this.lookupContext = lookupContext;
+			this.persist();
+		},
+		setLookupResponse(response: LocationLookupResponse, election?: ElectionSummary | null) {
+			this.lookupContext = buildLookupContextState(response);
+			this.nationwideLookupResult = buildNationwideLookupResultContext(response, election);
+			this.selectedLocation = response.guideAvailability === "published"
+				? sanitizeLocationSelection(response.location ?? null)
+				: null;
+
+			if (election)
+				this.selectedElection = election;
+
+			this.persist();
+		},
+		setNationwideLookupResult(nationwideLookupResult: NationwideLookupResultContext | null) {
+			this.nationwideLookupResult = nationwideLookupResult;
+
+			if (nationwideLookupResult) {
+				this.lookupContext = buildLookupContextState(nationwideLookupResult);
+				this.selectedLocation = null;
+
+				if (nationwideLookupResult.election)
+					this.selectedElection = nationwideLookupResult.election;
+			}
+
 			this.persist();
 		},
 		selectCandidateForPlan(contestSlug: string, candidateSlug: string) {
@@ -214,6 +258,15 @@ export const useCivicStore = defineStore("civic", {
 		},
 		setLocation(location: LocationSelection | null) {
 			this.selectedLocation = location;
+
+			if (location) {
+				this.nationwideLookupResult = null;
+				this.lookupContext = {
+					guideAvailability: "published",
+					result: "resolved"
+				};
+			}
+
 			this.persist();
 		},
 		setBallotViewMode(mode: BallotViewMode) {

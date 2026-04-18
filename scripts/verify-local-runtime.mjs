@@ -247,10 +247,41 @@ async function main() {
 		if (!Array.isArray(richRepresentativeBody.person?.lobbyingContext) || richRepresentativeBody.person.lobbyingContext.length === 0)
 			throw new Error("Crosswalked representative route probe did not attach influence data for a nickname-vs-formal-name federal match.");
 
+		const { payload: jonRepresentativeBody, response: jonRepresentativeResponse } = await fetchJson(
+			`${baseUrl}`,
+			"/api/representatives/jon-ossoff"
+		);
+
+		if (jonRepresentativeResponse.status !== 200)
+			throw new Error(`Jon Ossoff representative probe failed with ${jonRepresentativeResponse.status}.`);
+
+		if (!jonRepresentativeBody.person?.funding)
+			throw new Error("Direct senator route probe did not attach OpenFEC funding data for Jon Ossoff.");
+
+		if (!Array.isArray(jonRepresentativeBody.person?.lobbyingContext) || jonRepresentativeBody.person.lobbyingContext.length === 0)
+			throw new Error("Direct senator route probe did not attach LDA influence data for Jon Ossoff.");
+
+		if (jonRepresentativeBody.person?.enrichmentStatus?.legislativeContext?.status !== "available")
+			throw new Error("Direct senator route probe did not attach Congress.gov legislative context for Jon Ossoff.");
+
+		const { payload: tylerRepresentativeBody, response: tylerRepresentativeResponse } = await fetchJson(
+			`${baseUrl}`,
+			"/api/representatives/tyler-clancy"
+		);
+
+		if (tylerRepresentativeResponse.status !== 200)
+			throw new Error(`Tyler Clancy representative probe failed with ${tylerRepresentativeResponse.status}.`);
+
+		if (tylerRepresentativeBody.person?.enrichmentStatus?.funding?.reasonCode !== "federal_only_provider")
+			throw new Error("State legislator route probe did not expose the precise federal-only funding reason.");
+
+		if (tylerRepresentativeBody.person?.enrichmentStatus?.influence?.reasonCode !== "federal_only_provider")
+			throw new Error("State legislator route probe did not expose the precise federal-only influence reason.");
+
 		console.log("\n== Local runtime verification passed ==");
 		console.log(`Resolved ${lookupBody.location?.displayName || "unknown location"} with ${lookupBody.districtMatches.length} district matches and ${lookupBody.representativeMatches.length} representative matches.`);
 		console.log(`Verified representative directory/profile backing for ${representativeDirectoryBody.representatives[0].name}, including live finance and influence modules.`);
-		console.log(`Verified direct district route backing for ${directDistrictBody.district?.title || firstDistrictSlug}, direct representative route backing for ${directRepresentativeBody.person?.name || firstRepresentativeSlug}, and crosswalked direct representative module attachment for ${richRepresentativeBody.person?.name || "rich-mccormick"}.`);
+		console.log(`Verified direct district route backing for ${directDistrictBody.district?.title || firstDistrictSlug}, direct representative route backing for ${directRepresentativeBody.person?.name || firstRepresentativeSlug}, plus federal enrichment attachment for ${richRepresentativeBody.person?.name || "rich-mccormick"} and ${jonRepresentativeBody.person?.name || "jon-ossoff"}.`);
 	}
 	finally {
 		await stopProcess(server);

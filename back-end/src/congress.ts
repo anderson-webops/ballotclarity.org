@@ -10,7 +10,41 @@ export interface CongressMemberRecord {
 	url?: string;
 }
 
+export interface CongressMemberDetail {
+	addressInformation?: {
+		city?: string;
+		district?: string;
+		officeAddress?: string;
+		phoneNumber?: string;
+		zipCode?: number;
+	};
+	bioguideId: string;
+	currentMember: boolean;
+	district?: number;
+	directOrderName: string;
+	firstName?: string;
+	lastName?: string;
+	officialWebsiteUrl?: string;
+	party: string;
+	sponsoredLegislationCount?: number;
+	cosponsoredLegislationCount?: number;
+	state: string;
+	terms: Array<{
+		chamber: string;
+		congress: number;
+		district?: number;
+		memberType?: string;
+		startYear: number;
+		endYear?: number;
+		stateCode?: string;
+		stateName?: string;
+	}>;
+	updatedAt?: string;
+	url?: string;
+}
+
 export interface CongressClient {
+	getMember: (bioguideId: string) => Promise<CongressMemberDetail | null>;
 	listMembersByState: (stateCode: string) => Promise<CongressMemberRecord[]>;
 }
 
@@ -31,6 +65,47 @@ interface CongressMembersResponse {
 	}>;
 }
 
+interface CongressMemberDetailResponse {
+	member?: {
+		addressInformation?: {
+			city?: string;
+			district?: string;
+			officeAddress?: string;
+			phoneNumber?: string;
+			zipCode?: number;
+		};
+		bioguideId?: string;
+		cosponsoredLegislation?: {
+			count?: number;
+		};
+		currentMember?: boolean;
+		district?: number;
+		directOrderName?: string;
+		firstName?: string;
+		lastName?: string;
+		officialWebsiteUrl?: string;
+		partyHistory?: Array<{
+			partyName?: string;
+		}>;
+		sponsoredLegislation?: {
+			count?: number;
+		};
+		state?: string;
+		terms?: Array<{
+			chamber?: string;
+			congress?: number;
+			district?: number;
+			memberType?: string;
+			startYear?: number;
+			endYear?: number;
+			stateCode?: string;
+			stateName?: string;
+		}>;
+		updateDate?: string;
+		url?: string;
+	};
+}
+
 export function createCongressClient({
 	apiKey = process.env.CONGRESS_API_KEY?.trim() || process.env.DATA_API_KEY?.trim(),
 	fetchImpl = fetch
@@ -41,6 +116,62 @@ export function createCongressClient({
 		return null;
 
 	return {
+		async getMember(bioguideId: string) {
+			const requestUrl = new URL(`https://api.congress.gov/v3/member/${bioguideId.toUpperCase()}`);
+			requestUrl.searchParams.set("api_key", resolvedApiKey);
+			requestUrl.searchParams.set("format", "json");
+
+			const response = await fetchImpl(requestUrl, {
+				headers: {
+					Accept: "application/json"
+				}
+			});
+
+			if (response.status === 404)
+				return null;
+
+			if (!response.ok)
+				throw new Error(`Congress member lookup failed: ${response.status} ${response.statusText}`);
+
+			const payload = await response.json() as CongressMemberDetailResponse;
+			const member = payload.member;
+
+			if (!member?.bioguideId || !member?.directOrderName)
+				return null;
+
+			return {
+				addressInformation: member.addressInformation,
+				bioguideId: member.bioguideId.trim(),
+				cosponsoredLegislationCount: typeof member.cosponsoredLegislation?.count === "number"
+					? member.cosponsoredLegislation.count
+					: undefined,
+				currentMember: member.currentMember !== false,
+				district: member.district,
+				directOrderName: member.directOrderName.trim(),
+				firstName: member.firstName?.trim() || undefined,
+				lastName: member.lastName?.trim() || undefined,
+				officialWebsiteUrl: member.officialWebsiteUrl?.trim() || undefined,
+				party: member.partyHistory?.find(item => item.partyName?.trim())?.partyName?.trim() || "Unknown party",
+				sponsoredLegislationCount: typeof member.sponsoredLegislation?.count === "number"
+					? member.sponsoredLegislation.count
+					: undefined,
+				state: member.state?.trim() || "",
+				terms: (member.terms ?? [])
+					.filter(term => typeof term.chamber === "string" && typeof term.congress === "number" && typeof term.startYear === "number")
+					.map(term => ({
+						chamber: term.chamber as string,
+						congress: term.congress as number,
+						district: term.district,
+						endYear: term.endYear,
+						memberType: term.memberType?.trim() || undefined,
+						startYear: term.startYear as number,
+						stateCode: term.stateCode?.trim() || undefined,
+						stateName: term.stateName?.trim() || undefined,
+					})),
+				updatedAt: member.updateDate?.trim() || undefined,
+				url: member.url?.trim() || undefined,
+			};
+		},
 		async listMembersByState(stateCode: string) {
 			const requestUrl = new URL(`https://api.congress.gov/v3/member/${stateCode.toUpperCase()}`);
 			requestUrl.searchParams.set("api_key", resolvedApiKey);

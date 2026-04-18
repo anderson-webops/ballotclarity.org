@@ -46,7 +46,7 @@ const pagePending = computed(() => pending.value || (!data.value && !fallbackDat
 const linkageConfidence = computed(() => person.value ? buildPersonLinkageConfidence(person.value.provenance.status) : null);
 const influenceAvailable = computed(() => person.value ? hasPersonInfluence(person.value) : false);
 const influenceUnavailableSummary = computed(() => person.value
-	? `${person.value.name} resolves as a stable public officeholder record, but Ballot Clarity does not currently have a publishable lobbying or influence context block attached to this person.`
+	? person.value.enrichmentStatus?.influence.summary || `${person.value.name} resolves as a stable public officeholder record, but Ballot Clarity does not currently have a publishable lobbying or influence context block attached to this person.`
 	: "");
 const influenceSources = computed(() => person.value
 	? uniqueSources([
@@ -214,6 +214,7 @@ usePageSeo({
 					<li><strong class="text-app-ink dark:text-app-text-dark">Office:</strong> {{ person.officeSought }}</li>
 					<li><strong class="text-app-ink dark:text-app-text-dark">District:</strong> {{ person.districtLabel }}</li>
 					<li><strong class="text-app-ink dark:text-app-text-dark">Linkage:</strong> {{ linkageConfidence?.label }}</li>
+					<li><strong class="text-app-ink dark:text-app-text-dark">Status:</strong> {{ person.enrichmentStatus?.influence.summary || influenceUnavailableSummary }}</li>
 					<li><strong class="text-app-ink dark:text-app-text-dark">Provenance:</strong> {{ person.provenance.label }}</li>
 					<li><strong class="text-app-ink dark:text-app-text-dark">Updated:</strong> {{ formatDate(person.freshness.dataLastUpdatedAt ?? person.updatedAt) }}</li>
 					<li>{{ person.freshness.statusNote }}</li>

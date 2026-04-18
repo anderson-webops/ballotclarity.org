@@ -42,7 +42,7 @@ const linkageConfidence = computed(() => person.value ? buildPersonLinkageConfid
 const funding = computed(() => person.value?.funding ?? null);
 const fundingAvailable = computed(() => person.value ? hasPersonFunding(person.value) : false);
 const fundingUnavailableSummary = computed(() => person.value
-	? `${person.value.name} resolves as a stable public officeholder record, but Ballot Clarity does not currently have a source-backed finance summary attached to this person.`
+	? person.value.enrichmentStatus?.funding.summary || `${person.value.name} resolves as a stable public officeholder record, but Ballot Clarity does not currently have a source-backed finance summary attached to this person.`
 	: "");
 function buildLookupAwareTarget(path: string) {
 	return buildNationwideRouteTarget(path, buildLookupContextFromNationwideResult(activeNationwideLookupResult.value), route.query);
@@ -193,6 +193,7 @@ usePageSeo({
 					<li><strong class="text-app-ink dark:text-app-text-dark">Office:</strong> {{ person.officeSought }}</li>
 					<li><strong class="text-app-ink dark:text-app-text-dark">District:</strong> {{ person.districtLabel }}</li>
 					<li><strong class="text-app-ink dark:text-app-text-dark">Linkage:</strong> {{ linkageConfidence?.label }}</li>
+					<li><strong class="text-app-ink dark:text-app-text-dark">Status:</strong> {{ person.enrichmentStatus?.funding.summary || fundingUnavailableSummary }}</li>
 					<li><strong class="text-app-ink dark:text-app-text-dark">Provenance:</strong> {{ person.provenance.label }}</li>
 					<li><strong class="text-app-ink dark:text-app-text-dark">Updated:</strong> {{ formatDate(person.freshness.dataLastUpdatedAt ?? person.updatedAt) }}</li>
 					<li>{{ person.freshness.statusNote }}</li>

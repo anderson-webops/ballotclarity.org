@@ -706,6 +706,28 @@ export interface PersonProfileFunding extends FundingSummary {
 	provenanceLabel?: string;
 }
 
+export interface PersonProfileEnrichmentStatusItem {
+	status: "available" | "unavailable";
+	reasonCode:
+		| "attached"
+		| "federal_only_provider"
+		| "no_committee_record"
+		| "no_provider_match"
+		| "no_reliable_crosswalk"
+		| "provider_returned_no_records"
+		| "provider_unconfigured"
+		| "requires_funding_match";
+	sourceSystem?: string;
+	summary: string;
+}
+
+export interface PersonProfileEnrichmentStatus {
+	funding: PersonProfileEnrichmentStatusItem;
+	influence: PersonProfileEnrichmentStatusItem;
+	legislativeContext: PersonProfileEnrichmentStatusItem;
+	officeContext: PersonProfileEnrichmentStatusItem;
+}
+
 export interface PersonProfile {
 	slug: string;
 	name: string;
@@ -734,6 +756,8 @@ export interface PersonProfile {
 	onCurrentBallot: boolean;
 	ballotStatusLabel: string;
 	officeholderLabel: string;
+	enrichmentStatus?: PersonProfileEnrichmentStatus;
+	officialWebsiteUrl?: string;
 	provenance: {
 		source: "guide" | "nationwide" | "lookup";
 		label: string;

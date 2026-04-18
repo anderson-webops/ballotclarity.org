@@ -79,6 +79,10 @@ const campaignLink = computed(() => {
 
 	return person.value.comparison.campaignWebsiteUrl || person.value.comparison.contactChannels[0]?.url || "";
 });
+const fundingStatusSummary = computed(() => person.value?.enrichmentStatus?.funding.summary
+	|| "No source-backed finance summary is attached to this person record yet.");
+const influenceStatusSummary = computed(() => person.value?.enrichmentStatus?.influence.summary
+	|| "No lobbying or public-statement context is attached to this person record yet.");
 const hasFunding = computed(() => person.value ? hasPersonFunding(person.value) : false);
 const hasInfluence = computed(() => person.value ? hasPersonInfluence(person.value) : false);
 const representativeLayoutKey = computed(() => person.value
@@ -113,7 +117,7 @@ const summaryItems = computed(() => {
 			label: "Funding data",
 			note: hasFunding.value
 				? `Source-backed finance summary available. Data through ${dataThroughLabel.value}.`
-				: "No source-backed finance summary is attached to this person record yet.",
+				: fundingStatusSummary.value,
 			value: hasFunding.value && person.value.funding
 				? formatCurrency(person.value.funding.totalRaised)
 				: "Unavailable"
@@ -122,7 +126,7 @@ const summaryItems = computed(() => {
 			label: "Influence context",
 			note: hasInfluence.value
 				? "Lobbying, donor, or disclosure context is attached below."
-				: "No lobbying or public-statement context is attached to this person record yet.",
+				: influenceStatusSummary.value,
 			value: hasInfluence.value ? `${person.value.lobbyingContext.length + person.value.publicStatements.length} notes` : "Unavailable"
 		}
 	];
@@ -225,6 +229,10 @@ usePageSeo({
 							<span class="i-carbon-launch" />
 							Open campaign site
 						</a>
+						<a v-if="person.officialWebsiteUrl" :href="person.officialWebsiteUrl" target="_blank" rel="noreferrer" class="btn-secondary inline-flex gap-2 items-center">
+							Official office site
+							<span class="i-carbon-launch" />
+						</a>
 						<a v-if="person.openstatesUrl" :href="person.openstatesUrl" target="_blank" rel="noreferrer" class="btn-secondary inline-flex gap-2 items-center">
 							Provider record
 							<span class="i-carbon-launch" />
@@ -313,6 +321,8 @@ usePageSeo({
 							<ul class="text-sm text-app-muted leading-7 mt-4 space-y-2 dark:text-app-muted-dark">
 								<li>Direct, crosswalked, and inferred linkage should not be treated as the same confidence level.</li>
 								<li>Finance and influence sections only appear when the underlying person record has publishable data.</li>
+								<li>{{ person.enrichmentStatus?.officeContext.summary || "Office context is attached from the current provider-backed officeholder record." }}</li>
+								<li>{{ person.enrichmentStatus?.legislativeContext.summary || "Additional legislative context is attached only when a stronger official crosswalk is available." }}</li>
 								<li>{{ person.freshness.statusNote }}</li>
 								<li>Use the attached records and official sources before treating this page as complete.</li>
 							</ul>

@@ -1,5 +1,6 @@
 import type { ErrorRequestHandler } from "express";
 import type { AddressEnrichmentService } from "./address-enrichment.js";
+import type { CongressClient } from "./congress.js";
 import type { CoverageRepository } from "./coverage-repository.js";
 import type { OpenStatesRepresentativeRecord } from "./openstates.js";
 import type {
@@ -66,6 +67,7 @@ import { createAddressEnrichmentService } from "./address-enrichment.js";
 import { createAdminLoginThrottle } from "./admin-login-throttle.js";
 import { createAdminRepository } from "./admin-repository.js";
 import { createCensusGeocoderClient } from "./census-geocoder.js";
+import { createCongressClient } from "./congress.js";
 import { createCoverageRepository } from "./coverage-repository.js";
 import { createGoogleCivicClient } from "./google-civic.js";
 import { buildCoverageResponse } from "./launch-profile.js";
@@ -90,6 +92,7 @@ interface CreateAppOptions {
 	bootstrapUsername?: string | null;
 	coverageRepository?: CoverageRepository;
 	contentSeed?: AdminContentItem[];
+	congressClient?: CongressClient | null;
 	correctionSeed?: AdminCorrectionRequest[];
 	activitySeed?: AdminActivityItem[];
 	googleCivicClient?: ReturnType<typeof createGoogleCivicClient>;
@@ -594,7 +597,7 @@ function buildRepresentativeProfileFromOpenStates(record: OpenStatesRepresentati
 	];
 
 	return {
-		note: "Representative profile assembled from a public provider-backed officeholder record and then enriched further when active nationwide lookup context is available.",
+		note: "Representative profile assembled from a public provider-backed officeholder record, with route-backed enrichment attached wherever Ballot Clarity can verify it reliably.",
 		person: {
 			ballotStatusLabel: "Current ballot status requires active lookup confirmation",
 			biography: [
@@ -615,7 +618,7 @@ function buildRepresentativeProfileFromOpenStates(record: OpenStatesRepresentati
 				nextReviewAt: updatedAt,
 				status: "up-to-date",
 				statusLabel: "Provider-backed",
-				statusNote: "This page is route-backed from a current officeholder record. An active lookup still provides stronger user-specific district confirmation and additional official-tool context.",
+				statusNote: "This page is route-backed from a current officeholder record. An active lookup can still add user-specific district confirmation and locality-specific official-tool context.",
 			},
 			funding: null,
 			incumbent: true,
@@ -624,7 +627,7 @@ function buildRepresentativeProfileFromOpenStates(record: OpenStatesRepresentati
 			location: officeContext.location,
 			methodologyNotes: [
 				"This route resolves a stable public person identity from the representative slug before any browser-held lookup context is restored.",
-				"Active nationwide lookup context can still add user-specific district confirmation and locality-specific official tools.",
+				"Active nationwide lookup context can still add user-specific district confirmation and locality-specific official tools, but route-backed enrichment modules also attach directly when Ballot Clarity can verify them reliably.",
 			],
 			name: record.name,
 			officeholderLabel: "Current officeholder",
@@ -1193,9 +1196,11 @@ export async function createApp(options: CreateAppOptions = {}) {
 	const adminLoginThrottle = createAdminLoginThrottle();
 	const googleCivicClient = options.googleCivicClient === undefined ? createGoogleCivicClient() : options.googleCivicClient;
 	const ldaClient = options.ldaClient === undefined ? createLdaClient() : options.ldaClient;
+	const congressClient = options.congressClient === undefined ? createCongressClient() : options.congressClient;
 	const openStatesClient = options.openStatesClient === undefined ? createOpenStatesClient() : options.openStatesClient;
 	const openFecClient = options.openFecClient === undefined ? createOpenFecClient() : options.openFecClient;
 	const representativeModuleResolver = createRepresentativeModuleResolver({
+		congressClient,
 		ldaClient,
 		openFecClient,
 	});
@@ -1639,10 +1644,22 @@ export async function createApp(options: CreateAppOptions = {}) {
 		if (!searchName)
 			return null;
 
-		const representativeRecord = (await openStatesClient.searchPeopleByName(searchName, {
-			current: true,
-			perPage: 10
-		})).find(record => toLookupSlug(record.name) === toLookupSlug(slug));
+		let representativeRecord = null;
+
+		try {
+			representativeRecord = (await openStatesClient.searchPeopleByName(searchName, {
+				current: true,
+				perPage: 10
+			})).find(record => toLookupSlug(record.name) === toLookupSlug(slug)) ?? null;
+		}
+		catch (error) {
+			logger.warn("provider.openstates.representative-route-lookup-failed", {
+				message: error instanceof Error ? error.message : "Unknown provider error.",
+				representativeSlug: slug,
+				searchName,
+			});
+			return buildRouteFallbackPersonProfileResponse(slug);
+		}
 
 		if (!representativeRecord)
 			return null;

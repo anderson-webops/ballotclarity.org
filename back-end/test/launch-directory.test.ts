@@ -5,6 +5,9 @@ import { buildLaunchDirectorySnapshot } from "../src/launch-directory.js";
 test("buildLaunchDirectorySnapshot composes provider-fed launch data without pretending funding crosswalks are complete", async () => {
 	const snapshot = await buildLaunchDirectorySnapshot({
 		congressClient: {
+			async getMember() {
+				return null;
+			},
 			async listMembersByState() {
 				return [
 					{

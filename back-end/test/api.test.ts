@@ -184,6 +184,105 @@ before(async () => {
 				};
 			}
 		},
+		congressClient: {
+			async getMember(bioguideId) {
+				if (bioguideId === "O000174") {
+					return {
+						addressInformation: {
+							city: "Washington",
+							district: "DC",
+							officeAddress: "317 Hart Senate Office Building  Washington, DC 20510",
+							phoneNumber: "(202) 224-3521",
+							zipCode: 20510,
+						},
+						bioguideId,
+						cosponsoredLegislationCount: 780,
+						currentMember: true,
+						directOrderName: "Jon Ossoff",
+						firstName: "Jon",
+						lastName: "Ossoff",
+						officialWebsiteUrl: "https://www.ossoff.senate.gov",
+						party: "Democratic",
+						sponsoredLegislationCount: 216,
+						state: "Georgia",
+						terms: [
+							{
+								chamber: "Senate",
+								congress: 119,
+								memberType: "Senator",
+								startYear: 2025,
+								stateCode: "GA",
+								stateName: "Georgia",
+							},
+						],
+						updatedAt: "2026-03-08T10:32:15Z",
+						url: "https://api.congress.gov/v3/member/O000174?format=json",
+					};
+				}
+
+				if (bioguideId === "M001218") {
+					return {
+						addressInformation: {
+							city: "Washington",
+							district: "DC",
+							officeAddress: "1719 Longworth House Office Building",
+							phoneNumber: "(202) 225-4272",
+							zipCode: 20515,
+						},
+						bioguideId,
+						cosponsoredLegislationCount: 506,
+						currentMember: true,
+						district: 7,
+						directOrderName: "Richard McCormick",
+						firstName: "Richard",
+						lastName: "McCormick",
+						officialWebsiteUrl: "https://mccormick.house.gov",
+						party: "Republican",
+						sponsoredLegislationCount: 50,
+						state: "Georgia",
+						terms: [
+							{
+								chamber: "House of Representatives",
+								congress: 119,
+								district: 7,
+								memberType: "Representative",
+								startYear: 2025,
+								stateCode: "GA",
+								stateName: "Georgia",
+							},
+						],
+						updatedAt: "2025-09-24T07:40:20Z",
+						url: "https://api.congress.gov/v3/member/M001218?format=json",
+					};
+				}
+
+				return null;
+			},
+			async listMembersByState(stateCode) {
+				if (stateCode !== "GA")
+					return [];
+
+				return [
+					{
+						bioguideId: "O000174",
+						name: "Ossoff, Jon",
+						party: "Democratic",
+						state: "Georgia",
+						updatedAt: "2026-03-08T10:32:15Z",
+						url: "https://api.congress.gov/v3/member/O000174?format=json",
+					},
+					{
+						bioguideId: "M001218",
+						district: 7,
+						name: "McCormick, Richard",
+						party: "Republican",
+						state: "Georgia",
+						updatedAt: "2025-09-24T07:40:20Z",
+						url: "https://api.congress.gov/v3/member/M001218?format=json",
+					},
+				];
+			},
+		},
 		openStatesClient: {
 			async listPeopleByJurisdiction() {
 				return [];
@@ -192,6 +291,45 @@ before(async () => {
 				return [];
 			},
 			async searchPeopleByName(name) {
+				if (name === "Quota Limited")
+					throw new Error("Open States lookup failed: 429 Too Many Requests - {\"detail\":\"exceeded limit of 250/day: 252\"}");
+
+				if (name === "Jon Ossoff") {
+					return [
+						{
+							currentRoleClassification: "upper",
+							currentRoleDistrict: "Georgia",
+							currentRoleDivisionId: "ocd-division/country:us/state:ga",
+							districtLabel: "Senator Georgia",
+							id: "ocd-person/4e48da38-17ab-5580-bced-2ea00b9b2843",
+							jurisdictionName: "United States",
+							name: "Jon Ossoff",
+							officeTitle: "Senator",
+							openstatesUrl: "https://openstates.org/person/jon-ossoff-2Nih6ATbzWQaex4isGpjSV/",
+							party: "Democratic",
+							updatedAt: "2026-04-04T08:14:07.724440+00:00",
+						},
+					];
+				}
+
+				if (name === "Tyler Clancy") {
+					return [
+						{
+							currentRoleClassification: "lower",
+							currentRoleDistrict: "60",
+							currentRoleDivisionId: "ocd-division/country:us/state:ut/sldl:60",
+							districtLabel: "Representative 60",
+							id: "ocd-person/739625fa-268f-48d6-9ffa-b80fc19797d5",
+							jurisdictionName: "Utah",
+							name: "Tyler Clancy",
+							officeTitle: "Representative",
+							openstatesUrl: "https://openstates.org/person/tyler-clancy-3W6jbbmt1WAFbxzzxWeza9/",
+							party: "Republican",
+							updatedAt: "2025-07-18T02:37:12.444801+00:00",
+						},
+					];
+				}
+
 				if (name !== "Rich Mccormick" && name !== "Rich McCormick")
 					return [];
 
@@ -214,6 +352,38 @@ before(async () => {
 		},
 		ldaClient: {
 			async listContributionReports({ contributionPayee, filingYear }) {
+				if (contributionPayee === "JON OSSOFF FOR SENATE" && filingYear === 2025) {
+					return [
+						{
+							contributionItems: [
+								{
+									amount: 2000,
+									contributionType: "FECA",
+									contributorName: "United Parcel Service",
+									date: "2025-03-14",
+									honoreeName: "Sen. Jon Ossoff",
+									payeeName: "JON OSSOFF FOR SENATE",
+								},
+								{
+									amount: 1000,
+									contributionType: "FECA",
+									contributorName: "Delta Air Lines",
+									date: "2025-05-02",
+									honoreeName: "Sen. Jon Ossoff",
+									payeeName: "JON OSSOFF FOR US SENATE",
+								},
+							],
+							filingDocumentUrl: "https://lda.senate.gov/filings/public/contribution/mock-jon-ossoff/print/",
+							filingPeriodDisplay: "Mid-Year (Jan 1 - Jun 30)",
+							filingUuid: "mock-jon-ossoff",
+							filingYear: 2025,
+							postedAt: "2025-07-03T12:00:00-04:00",
+							registrantName: "UPS",
+							url: "https://lda.senate.gov/api/v1/contributions/mock-jon-ossoff/",
+						},
+					];
+				}
+
 				if (contributionPayee === "MIKE KENNEDY FOR UTAH" && filingYear === 2025) {
 					return [
 						{
@@ -283,6 +453,30 @@ before(async () => {
 		},
 		openFecClient: {
 			async getCommitteeTotals(committeeId, cycle) {
+				if (committeeId === "C00718866" && cycle === 2026) {
+					return {
+						candidateContribution: 0,
+						cashOnHandBeginningPeriod: 575000,
+						committeeId,
+						committeeName: "JON OSSOFF FOR SENATE",
+						contributions: 1845120.45,
+						coverageEndDate: "2026-03-31",
+						coverageStartDate: "2025-01-01",
+						cycle,
+						disbursements: 993002.12,
+						individualContributions: 1324012.45,
+						individualItemizedContributions: 1189012.45,
+						individualUnitemizedContributions: 135000,
+						lastCashOnHandEndPeriod: 1428118.33,
+						lastReportYear: 2026,
+						otherPoliticalCommitteeContributions: 40200,
+						otherReceipts: 910.55,
+						politicalPartyCommitteeContributions: 480997.45,
+						receipts: 1845120.45,
+						transfersFromOtherAuthorizedCommittee: 0,
+					};
+				}
+
 				if (committeeId === "C00864488" && cycle === 2026) {
 					return {
 						candidateContribution: 0,
@@ -334,6 +528,28 @@ before(async () => {
 				return null;
 			},
 			async searchCandidates({ district, name, office, state }) {
+				if (name === "Jon Ossoff" && office === "S" && state === "GA") {
+					return [
+						{
+							candidateId: "S8GA00180",
+							cycles: [2020, 2022, 2024, 2026],
+							district: "00",
+							incumbentChallengeFull: "Incumbent",
+							name: "OSSOFF, T. JONATHAN",
+							office: "S",
+							principalCommittees: [
+								{
+									committeeId: "C00718866",
+									lastFileDate: "2026-04-15",
+									name: "JON OSSOFF FOR SENATE",
+									party: "Democratic",
+								},
+							],
+							state: "GA",
+						},
+					];
+				}
+
 				if (name === "Mike Kennedy" && office === "H" && state === "UT" && district === "03") {
 					return [
 						{
@@ -1332,6 +1548,49 @@ test("direct representative routes return a stable provider-backed identity reco
 	assert.match(body.person.funding.summary, /FRIENDS OF MCCORMICK/i);
 	assert.ok(body.person.lobbyingContext.length > 0);
 	assert.match(body.person.lobbyingContext[0].summary, /LD-203/i);
+});
+
+test("direct senator routes attach federal funding, influence, and Congress office context when the crosswalk is reliable", async () => {
+	const response = await fetch(`${baseUrl}/api/representatives/jon-ossoff`);
+	const body = await response.json();
+
+	assert.equal(response.status, 200);
+	assert.equal(body.person.slug, "jon-ossoff");
+	assert.equal(body.person.officialWebsiteUrl, "https://www.ossoff.senate.gov");
+	assert.ok(body.person.funding);
+	assert.match(body.person.funding.summary, /JON OSSOFF FOR SENATE/i);
+	assert.ok(body.person.lobbyingContext.length > 0);
+	assert.match(body.person.biography.map((item: { title: string }) => item.title).join(" "), /Congress\.gov office context/i);
+	assert.equal(body.person.enrichmentStatus?.funding.reasonCode, "attached");
+	assert.equal(body.person.enrichmentStatus?.influence.reasonCode, "attached");
+	assert.equal(body.person.enrichmentStatus?.legislativeContext.reasonCode, "attached");
+});
+
+test("state legislators expose a precise unavailable reason when federal finance and influence providers do not apply", async () => {
+	const response = await fetch(`${baseUrl}/api/representatives/tyler-clancy`);
+	const body = await response.json();
+
+	assert.equal(response.status, 200);
+	assert.equal(body.person.slug, "tyler-clancy");
+	assert.equal(body.person.funding, null);
+	assert.deepEqual(body.person.lobbyingContext, []);
+	assert.equal(body.person.enrichmentStatus?.funding.reasonCode, "federal_only_provider");
+	assert.equal(body.person.enrichmentStatus?.influence.reasonCode, "federal_only_provider");
+	assert.equal(body.person.enrichmentStatus?.officeContext.reasonCode, "attached");
+	assert.match(body.person.enrichmentStatus?.funding.summary ?? "", /only for federal officeholders/i);
+});
+
+test("direct representative routes degrade to a public fallback instead of 500 when the provider route lookup fails", async () => {
+	const response = await fetch(`${baseUrl}/api/representatives/quota-limited`);
+	const body = await response.json();
+
+	assert.equal(response.status, 200);
+	assert.equal(body.person.slug, "quota-limited");
+	assert.equal(body.person.funding, null);
+	assert.deepEqual(body.person.lobbyingContext, []);
+	assert.equal(body.person.provenance.status, "inferred");
+	assert.match(body.person.summary, /keeps the person identity stable/i);
+	assert.match(body.person.whatWeKnow[0]?.text ?? "", /identity-stable/i);
 });
 
 test("GET /api/representatives/:slug returns a source-backed representative profile", async () => {

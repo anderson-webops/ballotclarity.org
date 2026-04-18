@@ -2,6 +2,7 @@
 import type { LocationLookupResponse, LocationLookupSelectionOption } from "~/types/civic";
 import { storeToRefs } from "pinia";
 import { buildActiveLookupSummary } from "~/utils/active-lookup";
+import { activeNationwideLookupCookieName, parseActiveNationwideLookupCookie } from "~/utils/active-nationwide-cookie";
 import { buildLocationGuessUiContent } from "~/utils/location-guess";
 import { normalizeLookupResponseForDisplay, resolveLookupDestination } from "~/utils/nationwide-results";
 
@@ -10,8 +11,10 @@ const civicStore = useCivicStore();
 const { data: coverageData } = useCoverage();
 const { isHydrated, nationwideLookupResult } = storeToRefs(civicStore);
 const { hasPublishedGuideContext } = useGuideEntryGate();
+const activeNationwideLookupCookie = useCookie<string | null>(activeNationwideLookupCookieName);
+const serverNationwideLookupResult = computed(() => parseActiveNationwideLookupCookie(activeNationwideLookupCookie.value));
 
-const activeResult = computed(() => isHydrated.value ? nationwideLookupResult.value : null);
+const activeResult = computed(() => isHydrated.value ? nationwideLookupResult.value : serverNationwideLookupResult.value);
 const activeLookupSummary = computed(() => buildActiveLookupSummary({
 	nationwideLookupResult: activeResult.value,
 	selectedLocation: null
@@ -80,7 +83,7 @@ usePageSeo({
 
 <template>
 	<section class="app-shell section-gap space-y-8">
-		<div v-if="!isHydrated" class="space-y-6">
+		<div v-if="!activeResult && !isHydrated" class="space-y-6">
 			<div class="surface-panel bg-white/70 h-56 animate-pulse dark:bg-app-panel-dark/70" />
 			<div class="surface-panel bg-white/70 h-[34rem] animate-pulse dark:bg-app-panel-dark/70" />
 		</div>

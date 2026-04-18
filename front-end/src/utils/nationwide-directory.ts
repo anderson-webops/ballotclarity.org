@@ -129,12 +129,14 @@ export function buildNationwideDirectoryResponses(
 
 	return {
 		districts: {
+			mode: "nationwide",
 			updatedAt,
 			note: "Derived from active nationwide lookup coverage.",
 			districts
 		},
 		representatives: {
 			districts,
+			mode: "nationwide",
 			note: "Derived from active nationwide lookup coverage.",
 			representatives,
 			updatedAt

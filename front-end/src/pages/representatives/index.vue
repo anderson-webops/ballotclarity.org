@@ -1,7 +1,9 @@
 <script setup lang="ts">
+import type { RepresentativesResponse } from "~/types/civic";
 import { storeToRefs } from "pinia";
 
 import { buildActiveLookupSummary } from "~/utils/active-lookup";
+import { activeNationwideLookupCookieName, parseActiveNationwideLookupCookie } from "~/utils/active-nationwide-cookie";
 import { isExternalHref } from "~/utils/link";
 import { buildNationwideDirectoryResponses } from "~/utils/nationwide-directory";
 
@@ -10,16 +12,36 @@ const civicStore = useCivicStore();
 const { data: guideData, error: guideError, pending: guidePending } = await useRepresentatives();
 const { isHydrated, nationwideLookupResult, selectedLocation } = storeToRefs(civicStore);
 const { hasNationwideResultContext, hasPublishedGuideContext } = useGuideEntryGate();
-const directoryUsesNationwide = computed(() => isHydrated.value && hasNationwideResultContext.value && !hasPublishedGuideContext.value);
-const directoryBundle = computed(() => directoryUsesNationwide.value
-	? buildNationwideDirectoryResponses(nationwideLookupResult.value).representatives
-	: guideData.value ?? { districts: [], note: "", representatives: [], updatedAt: "" });
+const activeNationwideLookupCookie = useCookie<string | null>(activeNationwideLookupCookieName);
+const serverNationwideLookupResult = computed(() => parseActiveNationwideLookupCookie(activeNationwideLookupCookie.value));
+const activeNationwideLookupResult = computed(() => isHydrated.value ? nationwideLookupResult.value : serverNationwideLookupResult.value);
+const emptyNationwideRepresentativesResponse: RepresentativesResponse = { districts: [], mode: "nationwide", note: "", representatives: [], updatedAt: "" };
+const emptyGuideRepresentativesResponse: RepresentativesResponse = { districts: [], mode: "guide", note: "", representatives: [], updatedAt: "" };
+const apiUsesNationwide = computed(() => guideData.value?.mode === "nationwide");
+const storeUsesNationwide = computed(() => {
+	if (!activeNationwideLookupResult.value || activeNationwideLookupResult.value.result !== "resolved")
+		return false;
+
+	return isHydrated.value
+		? hasNationwideResultContext.value && !hasPublishedGuideContext.value
+		: activeNationwideLookupResult.value.guideAvailability !== "published";
+});
+const directoryUsesNationwide = computed(() => apiUsesNationwide.value || storeUsesNationwide.value);
+const directoryBundle = computed(() => {
+	if (apiUsesNationwide.value)
+		return guideData.value ?? emptyNationwideRepresentativesResponse;
+
+	if (storeUsesNationwide.value)
+		return buildNationwideDirectoryResponses(activeNationwideLookupResult.value).representatives;
+
+	return guideData.value ?? emptyGuideRepresentativesResponse;
+});
 
 const directoryPending = computed(() => directoryUsesNationwide.value ? false : guidePending.value);
-const directoryError = computed(() => directoryUsesNationwide.value ? null : guideError.value);
-const directoryData = computed(() => isHydrated.value ? directoryBundle.value : null);
+const directoryError = computed(() => directoryUsesNationwide.value && directoryBundle.value ? null : guideError.value);
+const directoryData = computed(() => directoryBundle.value);
 const activeLookupSummary = computed(() => buildActiveLookupSummary({
-	nationwideLookupResult: isHydrated.value ? nationwideLookupResult.value : null,
+	nationwideLookupResult: activeNationwideLookupResult.value,
 	selectedLocation: isHydrated.value ? selectedLocation.value : null
 }));
 const representativeLinkIsExternal = (href: string) => isExternalHref(href);
@@ -111,7 +133,7 @@ usePageSeo({
 			</div>
 		</header>
 
-		<div v-if="!isHydrated || directoryPending" class="gap-6 grid lg:grid-cols-2">
+		<div v-if="directoryPending && !directoryData.representatives.length" class="gap-6 grid lg:grid-cols-2">
 			<div class="surface-panel bg-white/70 h-56 animate-pulse dark:bg-app-panel-dark/70" />
 			<div class="surface-panel bg-white/70 h-56 animate-pulse dark:bg-app-panel-dark/70" />
 		</div>

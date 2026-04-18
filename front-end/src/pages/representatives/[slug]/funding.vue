@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { storeToRefs } from "pinia";
 
+import { activeNationwideLookupCookieName, parseActiveNationwideLookupCookie } from "~/utils/active-nationwide-cookie";
 import { buildNationwidePersonProfileResponse } from "~/utils/nationwide-person-profile";
 import { buildPersonLinkageConfidence, hasPersonFunding } from "~/utils/person-profile";
 
@@ -11,13 +12,14 @@ const { layerBreadcrumbLink } = useRouteLayerNavigation();
 const representativeSlug = computed(() => String(route.params.slug));
 const { formatCompactNumber, formatCurrency, formatDate, formatPercent } = useFormatters();
 const { data, error, pending } = await useRepresentative(representativeSlug);
+const activeNationwideLookupCookie = useCookie<string | null>(activeNationwideLookupCookieName);
+const serverNationwideLookupResult = computed(() => parseActiveNationwideLookupCookie(activeNationwideLookupCookie.value));
+const activeNationwideLookupResult = computed(() => isHydrated.value ? nationwideLookupResult.value : serverNationwideLookupResult.value);
 
-const fallbackData = computed(() => isHydrated.value
-	? buildNationwidePersonProfileResponse(nationwideLookupResult.value, representativeSlug.value)
-	: null);
+const fallbackData = computed(() => buildNationwidePersonProfileResponse(activeNationwideLookupResult.value, representativeSlug.value));
 const profileData = computed(() => data.value ?? fallbackData.value);
 const person = computed(() => profileData.value?.person ?? null);
-const pagePending = computed(() => pending.value || (!data.value && !isHydrated.value));
+const pagePending = computed(() => pending.value || (!data.value && !fallbackData.value));
 const linkageConfidence = computed(() => person.value ? buildPersonLinkageConfidence(person.value.provenance.status) : null);
 const funding = computed(() => person.value?.funding ?? null);
 const fundingAvailable = computed(() => person.value ? hasPersonFunding(person.value) : false);

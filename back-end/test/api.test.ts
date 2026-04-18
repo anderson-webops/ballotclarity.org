@@ -961,6 +961,48 @@ test("GET /api/districts and /api/districts/:slug return district-first ballot s
 	assert.match(districtBody.note, /district pages group/i);
 });
 
+test("active nationwide lookup cookie backs /api/districts and /api/districts/:slug", async () => {
+	const lookupResponse = await fetch(`${baseUrl}/api/location`, {
+		body: JSON.stringify({ q: "84604" }),
+		headers: {
+			"Content-Type": "application/json"
+		},
+		method: "POST"
+	});
+	const lookupBody = await lookupResponse.json();
+	const cookie = lookupResponse.headers.get("set-cookie")?.split(";")[0];
+
+	assert.equal(lookupResponse.status, 200);
+	assert.equal(lookupBody.result, "resolved");
+	assert.equal(lookupBody.guideAvailability, "not-published");
+	assert.ok(cookie);
+
+	const listResponse = await fetch(`${baseUrl}/api/districts`, {
+		headers: {
+			cookie: cookie || ""
+		}
+	});
+	const listBody = await listResponse.json();
+
+	assert.equal(listResponse.status, 200);
+	assert.equal(listBody.mode, "nationwide");
+	assert.ok(listBody.districts.some((item: { slug: string; representativeCount: number }) => item.slug === "congressional-3" && item.representativeCount === 1));
+
+	const districtResponse = await fetch(`${baseUrl}/api/districts/congressional-3`, {
+		headers: {
+			cookie: cookie || ""
+		}
+	});
+	const districtBody = await districtResponse.json();
+
+	assert.equal(districtResponse.status, 200);
+	assert.equal(districtBody.mode, "nationwide");
+	assert.equal(districtBody.district.slug, "congressional-3");
+	assert.equal(districtBody.representatives[0].slug, "ocd-person-test-ut-rep");
+	assert.ok(districtBody.officialResources.length >= 1);
+	assert.match(districtBody.note, /API-backed nationwide district detail/i);
+});
+
 test("GET /api/representatives returns incumbents tied to district pages", async () => {
 	const response = await fetch(`${baseUrl}/api/representatives`);
 	const body = await response.json();
@@ -970,6 +1012,45 @@ test("GET /api/representatives returns incumbents tied to district pages", async
 	assert.ok(body.representatives.some((item: { href: string; slug: string }) => item.slug === "daniel-brooks" && item.href === "/representatives/daniel-brooks"));
 	assert.ok(body.districts.some((item: { href: string }) => item.href === "/districts/state-senate-district-12"));
 	assert.match(body.note, /currently serving officials/i);
+});
+
+test("active nationwide lookup cookie backs /api/representatives and /api/representatives/:slug", async () => {
+	const lookupResponse = await fetch(`${baseUrl}/api/location`, {
+		body: JSON.stringify({ q: "84604" }),
+		headers: {
+			"Content-Type": "application/json"
+		},
+		method: "POST"
+	});
+	const cookie = lookupResponse.headers.get("set-cookie")?.split(";")[0];
+
+	assert.equal(lookupResponse.status, 200);
+	assert.ok(cookie);
+
+	const listResponse = await fetch(`${baseUrl}/api/representatives`, {
+		headers: {
+			cookie: cookie || ""
+		}
+	});
+	const listBody = await listResponse.json();
+
+	assert.equal(listResponse.status, 200);
+	assert.equal(listBody.mode, "nationwide");
+	assert.ok(listBody.representatives.some((item: { slug: string; href: string }) => item.slug === "ocd-person-test-ut-rep" && item.href === "/representatives/ocd-person-test-ut-rep"));
+
+	const representativeResponse = await fetch(`${baseUrl}/api/representatives/ocd-person-test-ut-rep`, {
+		headers: {
+			cookie: cookie || ""
+		}
+	});
+	const representativeBody = await representativeResponse.json();
+
+	assert.equal(representativeResponse.status, 200);
+	assert.equal(representativeBody.person.slug, "ocd-person-test-ut-rep");
+	assert.equal(representativeBody.person.provenance.source, "lookup");
+	assert.equal(representativeBody.person.funding, null);
+	assert.deepEqual(representativeBody.person.lobbyingContext, []);
+	assert.match(representativeBody.note, /active nationwide lookup context/i);
 });
 
 test("GET /api/representatives/:slug returns a source-backed representative profile", async () => {

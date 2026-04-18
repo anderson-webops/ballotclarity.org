@@ -690,6 +690,7 @@ export interface RepresentativeSummary {
 		note: string;
 	} | null;
 	incumbent: boolean;
+	openstatesUrl?: string;
 	summary: string;
 	fundingSummary: string;
 	influenceSummary: string;
@@ -746,6 +747,11 @@ export interface PersonProfileResponse {
 }
 
 export interface DistrictRecordResponse {
+	mode: "guide" | "nationwide";
+	districtOriginLabel: string;
+	districtOriginNote: string;
+	candidateAvailabilityNote: string;
+	representativeAvailabilityNote: string;
 	district: DistrictSummary & {
 		description: string;
 		roleGuide: ContestRoleGuide;
@@ -756,17 +762,20 @@ export interface DistrictRecordResponse {
 	note: string;
 	candidates: Candidate[];
 	representatives: RepresentativeSummary[];
+	officialResources: OfficialResource[];
 	sources: Source[];
 	relatedContests: ContestLinkSummary[];
 }
 
 export interface DistrictsResponse {
+	mode: "guide" | "nationwide";
 	updatedAt: string;
 	note: string;
 	districts: DistrictSummary[];
 }
 
 export interface RepresentativesResponse {
+	mode: "guide" | "nationwide";
 	updatedAt: string;
 	note: string;
 	representatives: RepresentativeSummary[];

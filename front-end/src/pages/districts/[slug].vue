@@ -2,6 +2,7 @@
 import { storeToRefs } from "pinia";
 
 import { buildActiveLookupSummary } from "~/utils/active-lookup";
+import { activeNationwideLookupCookieName, parseActiveNationwideLookupCookie } from "~/utils/active-nationwide-cookie";
 import { buildGuideDistrictPageRecord, buildNationwideDistrictPageRecord } from "~/utils/district-page";
 import { isExternalHref } from "~/utils/link";
 
@@ -12,21 +13,21 @@ const { hasNationwideResultContext, hasPublishedGuideContext } = useGuideEntryGa
 const districtSlug = computed(() => String(route.params.slug));
 const { formatDateTime } = useFormatters();
 const { data: guideData, error: guideError, pending: guidePending } = await useDistrict(districtSlug);
+const activeNationwideLookupCookie = useCookie<string | null>(activeNationwideLookupCookieName);
+const serverNationwideLookupResult = computed(() => parseActiveNationwideLookupCookie(activeNationwideLookupCookie.value));
+const activeNationwideLookupResult = computed(() => isHydrated.value ? nationwideLookupResult.value : serverNationwideLookupResult.value);
 
 const districtPageData = computed(() => {
 	if (guideData.value)
-		return buildGuideDistrictPageRecord(guideData.value);
+		return guideData.value.mode === "guide" ? buildGuideDistrictPageRecord(guideData.value) : guideData.value;
 
-	if (!isHydrated.value)
-		return null;
-
-	return buildNationwideDistrictPageRecord(nationwideLookupResult.value, districtSlug.value);
+	return buildNationwideDistrictPageRecord(activeNationwideLookupResult.value, districtSlug.value);
 });
 const activeLookupSummary = computed(() => buildActiveLookupSummary({
-	nationwideLookupResult: isHydrated.value ? nationwideLookupResult.value : null,
+	nationwideLookupResult: activeNationwideLookupResult.value,
 	selectedLocation: isHydrated.value ? selectedLocation.value : null
 }));
-const pagePending = computed(() => guidePending.value || (!guideData.value && !isHydrated.value));
+const pagePending = computed(() => guidePending.value || (!guideData.value && !districtPageData.value));
 const pageError = computed(() => districtPageData.value ? null : guideError.value);
 
 const breadcrumbs = computed(() => [

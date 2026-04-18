@@ -2,16 +2,18 @@ import type { DistrictRecordResponse, DistrictsResponse } from "~/types/civic";
 
 export function useDistricts() {
 	const api = useApiClient();
+	const emptyDistrictsResponse: DistrictsResponse = {
+		districts: [],
+		mode: "guide",
+		note: "",
+		updatedAt: ""
+	};
 
 	return useAsyncData<DistrictsResponse>(
 		"districts",
 		() => api<DistrictsResponse>("/districts"),
 		{
-			default: () => ({
-				districts: [],
-				note: "",
-				updatedAt: ""
-			})
+			default: () => emptyDistrictsResponse
 		}
 	);
 }

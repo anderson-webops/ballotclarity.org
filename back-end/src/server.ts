@@ -45,6 +45,16 @@ import process from "node:process";
 import { pathToFileURL } from "node:url";
 import cors from "cors";
 import express from "express";
+import {
+	buildActiveNationwideLookupCookie,
+	buildNationwideDistrictRecordResponse,
+	buildNationwideDistrictsResponse,
+	buildNationwidePersonProfileResponse,
+	buildNationwideRepresentativesResponse,
+	clearActiveNationwideLookupCookie,
+	persistActiveNationwideLookupCookie,
+	readActiveNationwideLookupContext,
+} from "./active-nationwide-lookup.js";
 import { createAddressCacheRepository } from "./address-cache-repository.js";
 import { createAddressEnrichmentService } from "./address-enrichment.js";
 import { createAdminLoginThrottle } from "./admin-login-throttle.js";
@@ -1043,6 +1053,9 @@ export async function createApp(options: CreateAppOptions = {}) {
 			}));
 
 		return {
+			candidateAvailabilityNote: contest.candidates?.length
+				? "Candidate field records are attached to this district page from the published local guide."
+				: "No source-backed candidate field is attached to this district page yet.",
 			candidates: contest.candidates ?? [],
 			district: {
 				...buildDistrictSummary(contest, election),
@@ -1050,6 +1063,8 @@ export async function createApp(options: CreateAppOptions = {}) {
 				electionSlug: election.slug,
 				roleGuide: contest.roleGuide
 			},
+			districtOriginLabel: "Published district page",
+			districtOriginNote: "This district page comes from Ballot Clarity's published local guide layer.",
 			election: {
 				date: election.date,
 				jurisdictionSlug: election.jurisdictionSlug,
@@ -1058,8 +1073,13 @@ export async function createApp(options: CreateAppOptions = {}) {
 				slug: election.slug,
 				updatedAt: election.updatedAt
 			},
+			mode: "guide",
 			note: "District pages group the current representative, the upcoming contest, and the strongest available source links for one office area. Use them when you want district context without the full ballot stack.",
+			officialResources: [],
 			relatedContests,
+			representativeAvailabilityNote: representatives.length
+				? `${representatives.length} current officeholder${representatives.length === 1 ? "" : "s"} ${representatives.length === 1 ? "is" : "are"} attached to this published district page.`
+				: "This published district page does not currently have an incumbent officeholder card attached.",
 			representatives,
 			sources,
 			updatedAt: election.updatedAt
@@ -1069,6 +1089,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 	function buildDistrictsResponse(districts: Awaited<ReturnType<typeof listPublicDistricts>>): DistrictsResponse {
 		return {
 			districts,
+			mode: "guide",
 			note: "District pages separate office-area context from the full ballot guide so voters can orient around one race at a time.",
 			updatedAt: districts.map(district => district.updatedAt).sort((left, right) => right.localeCompare(left))[0] ?? coverageRepository.data.updatedAt
 		};
@@ -1080,6 +1101,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 	): RepresentativesResponse {
 		return {
 			districts,
+			mode: "guide",
 			note: "This directory highlights currently serving officials Ballot Clarity can attach to either the active nationwide lookup or the published local guide layer, then links back to district, funding, and influence pages where those modules exist.",
 			representatives,
 			updatedAt: representatives.map(item => item.updatedAt).sort((left, right) => right.localeCompare(left))[0] ?? coverageRepository.data.updatedAt
@@ -1473,7 +1495,15 @@ export async function createApp(options: CreateAppOptions = {}) {
 			return;
 		}
 
-		response.json(await resolveLocationLookup(raw, response.locals.requestId, selectionId || undefined));
+		const lookupResponse = await resolveLocationLookup(raw, response.locals.requestId, selectionId || undefined);
+		const activeLookupCookie = buildActiveNationwideLookupCookie(lookupResponse);
+
+		if (activeLookupCookie)
+			persistActiveNationwideLookupCookie(response, activeLookupCookie);
+		else
+			clearActiveNationwideLookupCookie(response);
+
+		response.json(lookupResponse);
 	});
 
 	app.get("/api/location/guess", async (request, response) => {
@@ -1501,11 +1531,19 @@ export async function createApp(options: CreateAppOptions = {}) {
 			return;
 		}
 
-		response.json({
+		const guessedLookupResponse = {
 			...lookupResponse,
 			detectedFromIp: true,
 			note: `${buildLocationGuessNotePrefix(guess)} ${lookupResponse.note}`.trim()
-		});
+		};
+		const activeLookupCookie = buildActiveNationwideLookupCookie(guessedLookupResponse);
+
+		if (activeLookupCookie)
+			persistActiveNationwideLookupCookie(response, activeLookupCookie);
+		else
+			clearActiveNationwideLookupCookie(response);
+
+		response.json(guessedLookupResponse);
 	});
 
 	app.post("/api/feedback", async (request, response) => {
@@ -1624,10 +1662,28 @@ export async function createApp(options: CreateAppOptions = {}) {
 	});
 
 	app.get("/api/districts", async (_request, response) => {
+		const activeNationwideLookup = readActiveNationwideLookupContext(_request.header("cookie"));
+
+		if (activeNationwideLookup) {
+			response.json(buildNationwideDistrictsResponse(activeNationwideLookup));
+			return;
+		}
+
 		response.json(buildDistrictsResponse(await listPublicDistricts()));
 	});
 
 	app.get("/api/districts/:slug", async (request, response) => {
+		const activeNationwideLookup = readActiveNationwideLookupContext(request.header("cookie"));
+
+		if (activeNationwideLookup) {
+			const nationwideDistrict = buildNationwideDistrictRecordResponse(activeNationwideLookup, request.params.slug);
+
+			if (nationwideDistrict) {
+				response.json(nationwideDistrict);
+				return;
+			}
+		}
+
 		const result = await getPublicDistrict(request.params.slug);
 
 		if (!result) {
@@ -1641,6 +1697,13 @@ export async function createApp(options: CreateAppOptions = {}) {
 	});
 
 	app.get("/api/representatives", async (_request, response) => {
+		const activeNationwideLookup = readActiveNationwideLookupContext(_request.header("cookie"));
+
+		if (activeNationwideLookup) {
+			response.json(buildNationwideRepresentativesResponse(activeNationwideLookup));
+			return;
+		}
+
 		const [districts, representatives] = await Promise.all([
 			listPublicDistricts(),
 			listPublicRepresentatives()
@@ -1650,6 +1713,17 @@ export async function createApp(options: CreateAppOptions = {}) {
 	});
 
 	app.get("/api/representatives/:slug", async (request, response) => {
+		const activeNationwideLookup = readActiveNationwideLookupContext(request.header("cookie"));
+
+		if (activeNationwideLookup) {
+			const representativeFromLookup = buildNationwidePersonProfileResponse(activeNationwideLookup, request.params.slug);
+
+			if (representativeFromLookup) {
+				response.json(representativeFromLookup);
+				return;
+			}
+		}
+
 		const representative = await getPublicRepresentative(request.params.slug);
 
 		if (!representative) {

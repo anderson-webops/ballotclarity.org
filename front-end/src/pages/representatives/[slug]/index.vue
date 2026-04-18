@@ -3,6 +3,7 @@ import { storeToRefs } from "pinia";
 
 import { contactEmail } from "~/constants";
 import { buildActiveLookupSummary } from "~/utils/active-lookup";
+import { activeNationwideLookupCookieName, parseActiveNationwideLookupCookie } from "~/utils/active-nationwide-cookie";
 import { buildNationwidePersonProfileResponse } from "~/utils/nationwide-person-profile";
 import { buildPersonLinkageConfidence, hasPersonFunding, hasPersonInfluence } from "~/utils/person-profile";
 
@@ -15,16 +16,17 @@ const representativeSlug = computed(() => String(route.params.slug));
 const { backToLayerLink, layerBreadcrumbLink, overviewLink } = useRouteLayerNavigation();
 const { formatCurrency, formatDate, formatDateTime } = useFormatters();
 const { data, error, pending } = await useRepresentative(representativeSlug);
+const activeNationwideLookupCookie = useCookie<string | null>(activeNationwideLookupCookieName);
+const serverNationwideLookupResult = computed(() => parseActiveNationwideLookupCookie(activeNationwideLookupCookie.value));
+const activeNationwideLookupResult = computed(() => isHydrated.value ? nationwideLookupResult.value : serverNationwideLookupResult.value);
 
-const fallbackData = computed(() => isHydrated.value
-	? buildNationwidePersonProfileResponse(nationwideLookupResult.value, representativeSlug.value)
-	: null);
+const fallbackData = computed(() => buildNationwidePersonProfileResponse(activeNationwideLookupResult.value, representativeSlug.value));
 const profileData = computed(() => data.value ?? fallbackData.value);
 const person = computed(() => profileData.value?.person ?? null);
-const pagePending = computed(() => pending.value || (!data.value && !isHydrated.value));
+const pagePending = computed(() => pending.value || (!data.value && !fallbackData.value));
 const isNationwideFallback = computed(() => !data.value && Boolean(fallbackData.value));
 const activeLookupSummary = computed(() => buildActiveLookupSummary({
-	nationwideLookupResult: isHydrated.value ? nationwideLookupResult.value : null,
+	nationwideLookupResult: activeNationwideLookupResult.value,
 	selectedLocation: isHydrated.value ? selectedLocation.value : null
 }));
 const linkageConfidence = computed(() => person.value ? buildPersonLinkageConfidence(person.value.provenance.status) : null);

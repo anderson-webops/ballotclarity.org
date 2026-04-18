@@ -2,6 +2,7 @@
 import type { Source } from "~/types/civic";
 import { storeToRefs } from "pinia";
 
+import { activeNationwideLookupCookieName, parseActiveNationwideLookupCookie } from "~/utils/active-nationwide-cookie";
 import { buildNationwidePersonProfileResponse } from "~/utils/nationwide-person-profile";
 import { buildPersonLinkageConfidence, hasPersonInfluence } from "~/utils/person-profile";
 
@@ -12,17 +13,18 @@ const { layerBreadcrumbLink } = useRouteLayerNavigation();
 const representativeSlug = computed(() => String(route.params.slug));
 const { formatDate, formatDateTime } = useFormatters();
 const { data, error, pending } = await useRepresentative(representativeSlug);
+const activeNationwideLookupCookie = useCookie<string | null>(activeNationwideLookupCookieName);
+const serverNationwideLookupResult = computed(() => parseActiveNationwideLookupCookie(activeNationwideLookupCookie.value));
+const activeNationwideLookupResult = computed(() => isHydrated.value ? nationwideLookupResult.value : serverNationwideLookupResult.value);
 
 function uniqueSources(sources: Source[]) {
 	return Array.from(new Map(sources.map(source => [source.id, source])).values());
 }
 
-const fallbackData = computed(() => isHydrated.value
-	? buildNationwidePersonProfileResponse(nationwideLookupResult.value, representativeSlug.value)
-	: null);
+const fallbackData = computed(() => buildNationwidePersonProfileResponse(activeNationwideLookupResult.value, representativeSlug.value));
 const profileData = computed(() => data.value ?? fallbackData.value);
 const person = computed(() => profileData.value?.person ?? null);
-const pagePending = computed(() => pending.value || (!data.value && !isHydrated.value));
+const pagePending = computed(() => pending.value || (!data.value && !fallbackData.value));
 const linkageConfidence = computed(() => person.value ? buildPersonLinkageConfidence(person.value.provenance.status) : null);
 const influenceAvailable = computed(() => person.value ? hasPersonInfluence(person.value) : false);
 const influenceSources = computed(() => person.value

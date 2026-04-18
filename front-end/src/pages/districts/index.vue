@@ -1,6 +1,8 @@
 <script setup lang="ts">
+import type { DistrictsResponse, RepresentativesResponse } from "~/types/civic";
 import { storeToRefs } from "pinia";
 import { buildActiveLookupSummary } from "~/utils/active-lookup";
+import { activeNationwideLookupCookieName, parseActiveNationwideLookupCookie } from "~/utils/active-nationwide-cookie";
 import { buildDistrictRepresentativeAvailabilityNote, buildDistrictRepresentativeCountLabel } from "~/utils/district-availability";
 import { isExternalHref } from "~/utils/link";
 import { buildNationwideDirectoryResponses } from "~/utils/nationwide-directory";
@@ -11,25 +13,46 @@ const { isHydrated, nationwideLookupResult, selectedLocation } = storeToRefs(civ
 const { data: guideDistrictData, error: guideDistrictError, pending: guideDistrictPending } = await useDistricts();
 const { data: guideRepresentativesData } = await useRepresentatives();
 const { hasNationwideResultContext, hasPublishedGuideContext } = useGuideEntryGate();
+const activeNationwideLookupCookie = useCookie<string | null>(activeNationwideLookupCookieName);
+const serverNationwideLookupResult = computed(() => parseActiveNationwideLookupCookie(activeNationwideLookupCookie.value));
+const activeNationwideLookupResult = computed(() => isHydrated.value ? nationwideLookupResult.value : serverNationwideLookupResult.value);
+const emptyNationwideDistrictsResponse: DistrictsResponse = { districts: [], mode: "nationwide", note: "", updatedAt: "" };
+const emptyNationwideRepresentativesResponse: RepresentativesResponse = { districts: [], mode: "nationwide", note: "", representatives: [], updatedAt: "" };
+const emptyGuideDistrictsResponse: DistrictsResponse = { districts: [], mode: "guide", note: "", updatedAt: "" };
+const emptyGuideRepresentativesResponse: RepresentativesResponse = { districts: [], mode: "guide", note: "", representatives: [], updatedAt: "" };
+const apiUsesNationwide = computed(() => guideDistrictData.value?.mode === "nationwide" || guideRepresentativesData.value?.mode === "nationwide");
+const storeUsesNationwide = computed(() => {
+	if (!activeNationwideLookupResult.value || activeNationwideLookupResult.value.result !== "resolved")
+		return false;
 
-const directoryUsesNationwide = computed(() => isHydrated.value && hasNationwideResultContext.value && !hasPublishedGuideContext.value);
-const nationwideDirectory = computed(() => buildNationwideDirectoryResponses(nationwideLookupResult.value));
-const directoryData = computed(() =>
-	isHydrated.value
-		? directoryUsesNationwide.value
-			? nationwideDirectory.value
-			: {
-					districts: guideDistrictData.value ?? { districts: [], note: "", updatedAt: "" },
-					representatives: guideRepresentativesData.value ?? { districts: [], note: "", representatives: [], updatedAt: "" }
-				}
-		: null
-);
+	return isHydrated.value
+		? hasNationwideResultContext.value && !hasPublishedGuideContext.value
+		: activeNationwideLookupResult.value.guideAvailability !== "published";
+});
+const directoryUsesNationwide = computed(() => apiUsesNationwide.value || storeUsesNationwide.value);
+const nationwideDirectory = computed(() => buildNationwideDirectoryResponses(activeNationwideLookupResult.value));
+const directoryData = computed(() => {
+	if (apiUsesNationwide.value) {
+		return {
+			districts: guideDistrictData.value ?? emptyNationwideDistrictsResponse,
+			representatives: guideRepresentativesData.value ?? emptyNationwideRepresentativesResponse
+		};
+	}
+
+	if (storeUsesNationwide.value)
+		return nationwideDirectory.value;
+
+	return {
+		districts: guideDistrictData.value ?? emptyGuideDistrictsResponse,
+		representatives: guideRepresentativesData.value ?? emptyGuideRepresentativesResponse
+	};
+});
 const directoriesPending = computed(() => directoryUsesNationwide.value ? false : guideDistrictPending.value);
-const directoriesError = computed(() => directoryUsesNationwide.value ? null : guideDistrictError.value);
+const directoriesError = computed(() => directoryUsesNationwide.value && directoryData.value ? null : guideDistrictError.value);
 const districts = computed(() => directoryData.value?.districts.districts ?? []);
 const representatives = computed(() => directoryData.value?.representatives.representatives ?? []);
 const activeLookupSummary = computed(() => buildActiveLookupSummary({
-	nationwideLookupResult: isHydrated.value ? nationwideLookupResult.value : null,
+	nationwideLookupResult: activeNationwideLookupResult.value,
 	selectedLocation: isHydrated.value ? selectedLocation.value : null
 }));
 
@@ -125,7 +148,7 @@ const districtIntroCopy = computed(() => directoryUsesNationwide.value
 			</div>
 		</header>
 
-		<div v-if="!isHydrated || directoriesPending" class="gap-6 grid lg:grid-cols-2 xl:grid-cols-3">
+		<div v-if="directoriesPending && !directoryData.districts.districts.length" class="gap-6 grid lg:grid-cols-2 xl:grid-cols-3">
 			<div v-for="index in 3" :key="index" class="surface-panel bg-white/70 h-72 animate-pulse dark:bg-app-panel-dark/70" />
 		</div>
 

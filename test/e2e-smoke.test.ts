@@ -23,6 +23,7 @@ const adminSessionSecret = "smoke-session-secret";
 const adminUsername = "smoke-admin";
 const adminDbPath = join(repoRoot, "back-end/data/e2e-smoke.sqlite");
 const localCoverageFile = join(repoRoot, "back-end/data/live-coverage.local.json");
+const activeNationwideLookupCookieName = "ballot-clarity-nationwide-lookup";
 const nationwideLookupSnapshot = {
 	ballotPlan: {},
 	ballotViewMode: "quick",
@@ -185,6 +186,22 @@ const nationwideLookupSnapshot = {
 	selectedIssues: [],
 	selectedLocation: null
 };
+
+const activeNationwideLookupCookie = `${activeNationwideLookupCookieName}=${encodeURIComponent(JSON.stringify({
+	actions: nationwideLookupSnapshot.nationwideLookupResult.actions,
+	availability: nationwideLookupSnapshot.nationwideLookupResult.availability,
+	detectedFromIp: nationwideLookupSnapshot.nationwideLookupResult.detectedFromIp,
+	districtMatches: nationwideLookupSnapshot.nationwideLookupResult.districtMatches,
+	electionSlug: nationwideLookupSnapshot.nationwideLookupResult.electionSlug,
+	guideAvailability: nationwideLookupSnapshot.nationwideLookupResult.guideAvailability,
+	inputKind: nationwideLookupSnapshot.nationwideLookupResult.inputKind,
+	location: nationwideLookupSnapshot.nationwideLookupResult.location,
+	normalizedAddress: nationwideLookupSnapshot.nationwideLookupResult.normalizedAddress,
+	note: nationwideLookupSnapshot.nationwideLookupResult.note,
+	representativeMatches: nationwideLookupSnapshot.nationwideLookupResult.representativeMatches,
+	resolvedAt: nationwideLookupSnapshot.nationwideLookupResult.resolvedAt,
+	result: nationwideLookupSnapshot.nationwideLookupResult.result
+}))}`;
 
 async function getFreePort() {
 	return await new Promise<number>((resolve, reject) => {
@@ -918,7 +935,7 @@ test("nationwide lookup context survives client navigation across results, distr
 		const seedAndNavigate = cdp.waitForEvent("Page.loadEventFired");
 		await cdp.send("Runtime.evaluate", {
 			awaitPromise: false,
-			expression: `localStorage.setItem('ballot-clarity:civic-store', ${JSON.stringify(JSON.stringify(nationwideLookupSnapshot))}); location.assign('${appBaseUrl}/results');`,
+			expression: `document.cookie = ${JSON.stringify(`${activeNationwideLookupCookie}; path=/`)}; localStorage.setItem('ballot-clarity:civic-store', ${JSON.stringify(JSON.stringify(nationwideLookupSnapshot))}); location.assign('${appBaseUrl}/results');`,
 			returnByValue: true
 		});
 		await seedAndNavigate;
@@ -962,7 +979,7 @@ test("nationwide lookup context survives client navigation across results, distr
 		await delay(800);
 		const representativeDetailText = await getDocumentBodyText(cdp);
 		assert.match(representativeDetailText, /Mike Kennedy/);
-		assert.match(representativeDetailText, /Nationwide lookup fallback/);
+		assert.doesNotMatch(representativeDetailText, /Representative profile not available/);
 		assert.match(representativeDetailText, /Funding not yet available/);
 		assert.match(representativeDetailText, /Provider record/);
 
@@ -992,4 +1009,59 @@ test("nationwide lookup context survives client navigation across results, distr
 
 		await stopChromeProcess(chrome.child, chromeUserDataDir);
 	}
+});
+
+test("built app server-renders district and representative routes when the active lookup cookie is present", async () => {
+	const requestHeaders = {
+		cookie: activeNationwideLookupCookie
+	};
+	const [
+		districtsPage,
+		districtPage,
+		representativesPage,
+		representativePage,
+		fundingPage,
+		influencePage
+	] = await Promise.all([
+		fetch(`${appBaseUrl}/districts`, { headers: requestHeaders }),
+		fetch(`${appBaseUrl}/districts/provo-city`, { headers: requestHeaders }),
+		fetch(`${appBaseUrl}/representatives`, { headers: requestHeaders }),
+		fetch(`${appBaseUrl}/representatives/ocd-person-ut-cd-3`, { headers: requestHeaders }),
+		fetch(`${appBaseUrl}/representatives/ocd-person-ut-cd-3/funding`, { headers: requestHeaders }),
+		fetch(`${appBaseUrl}/representatives/ocd-person-ut-cd-3/influence`, { headers: requestHeaders })
+	]);
+	const [
+		districtsHtml,
+		districtHtml,
+		representativesHtml,
+		representativeHtml,
+		fundingHtml,
+		influenceHtml
+	] = await Promise.all([
+		districtsPage.text(),
+		districtPage.text(),
+		representativesPage.text(),
+		representativePage.text(),
+		fundingPage.text(),
+		influencePage.text()
+	]);
+
+	assert.equal(districtsPage.status, 200);
+	assert.match(districtsHtml, /Provo, Utah/);
+	assert.match(districtsHtml, /Officeholder pipeline pending/);
+	assert.equal(districtPage.status, 200);
+	assert.match(districtHtml, /Provo city/);
+	assert.doesNotMatch(districtHtml, /District detail not available yet/);
+	assert.match(districtHtml, /City officeholder data is not yet available from the current nationwide provider set/i);
+	assert.equal(representativesPage.status, 200);
+	assert.match(representativesHtml, /Mike Kennedy/);
+	assert.match(representativesHtml, /Funding not yet available/);
+	assert.equal(representativePage.status, 200);
+	assert.match(representativeHtml, /Mike Kennedy/);
+	assert.doesNotMatch(representativeHtml, /Representative profile not available/);
+	assert.match(representativeHtml, /Provider record/);
+	assert.equal(fundingPage.status, 200);
+	assert.match(fundingHtml, /No funding data attached/);
+	assert.equal(influencePage.status, 200);
+	assert.match(influenceHtml, /No influence context attached/);
 });

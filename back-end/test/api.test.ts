@@ -49,7 +49,41 @@ before(async () => {
 			snapshotPath: ":memory:"
 		},
 		addressEnrichmentService: {
-			async lookupAddress() {
+			async lookupAddress(address) {
+				if (/utah county|provo|84604/i.test(address)) {
+					return {
+						benchmark: "Public_AR_Current",
+						countyFips: "049",
+						districtMatches: [
+							{
+								districtCode: "3",
+								districtType: "congressional",
+								id: "congressional:3",
+								label: "Congressional District 3",
+								sourceSystem: "U.S. Census Geocoder"
+							}
+						],
+						fromCache: false,
+						latitude: 40.2338,
+						longitude: -111.6585,
+						normalizedAddress: "151 S UNIVERSITY AVE, PROVO, UT, 84601",
+						representativeMatches: [
+							{
+								districtLabel: "Congressional District 3",
+								id: "ocd-person:test-ut-rep",
+								name: "Mike Kennedy",
+								officeTitle: "Representative",
+								openstatesUrl: "https://openstates.org/person/example-ut",
+								party: "Republican",
+								sourceSystem: "Open States"
+							}
+						],
+						state: "UT",
+						vintage: "Current_Current",
+						zip5: "84601"
+					};
+				}
+
 				return {
 					benchmark: "Public_AR_Current",
 					countyFips: "121",
@@ -91,7 +125,24 @@ before(async () => {
 			}
 		},
 		googleCivicClient: {
-			async lookupVoterInfo() {
+			async lookupVoterInfo(address) {
+				if (/utah county|provo|84604/i.test(address)) {
+					return {
+						actions: [
+							{
+								badge: "Official",
+								description: "Open the official voter portal returned for this address.",
+								id: "google-civic:registration",
+								kind: "official-verification",
+								title: "Registration and voter status",
+								url: "https://vote.utah.gov/voter-registration-portal/"
+							}
+						],
+						note: "Google Civic accepted the address as 151 S University Ave, Provo, UT 84601.",
+						verified: true
+					};
+				}
+
 				return {
 					actions: [
 						{
@@ -106,6 +157,39 @@ before(async () => {
 					note: "Google Civic accepted the address as 5600 Campbellton Fairburn Rd, Union City, GA 30213.",
 					verified: true
 				};
+			}
+		},
+		zipLocationService: {
+			async lookupZip(zipCode) {
+				if (zipCode === "84604") {
+					return {
+						countyFips: "049",
+						countyName: "Utah County",
+						latitude: 40.2607,
+						longitude: -111.6549,
+						locality: "Provo",
+						postalCode: "84604",
+						sourceSystem: "Zippopotam.us + U.S. Census Geocoder",
+						stateAbbreviation: "UT",
+						stateName: "Utah"
+					};
+				}
+
+				if (zipCode === "30303") {
+					return {
+						countyFips: "121",
+						countyName: "Fulton County",
+						latitude: 33.7525,
+						longitude: -84.3928,
+						locality: "Atlanta",
+						postalCode: "30303",
+						sourceSystem: "Zippopotam.us + U.S. Census Geocoder",
+						stateAbbreviation: "GA",
+						stateName: "Georgia"
+					};
+				}
+
+				return null;
 			}
 		}
 	})).listen(0, "127.0.0.1");
@@ -184,9 +268,9 @@ test("POST /api/location validates incomplete numeric ZIP fragments", async () =
 	assert.match(body.message, /full 5-digit ZIP code/i);
 });
 
-test("POST /api/location returns ZIP lookup choices instead of pretending to have an exact ballot", async () => {
+test("POST /api/location returns the supported Fulton coverage guide for ZIPs inside current coverage", async () => {
 	const response = await fetch(`${baseUrl}/api/location`, {
-		body: JSON.stringify({ q: "30309" }),
+		body: JSON.stringify({ q: "30303" }),
 		headers: {
 			"Content-Type": "application/json"
 		},
@@ -202,6 +286,26 @@ test("POST /api/location returns ZIP lookup choices instead of pretending to hav
 	assert.equal(body.actions[0].location.slug, "fulton-county-georgia");
 	assert.equal(body.actions[0].location.lookupMode, "zip-preview");
 	assert.equal(body.actions.some((item: { kind: string; title: string }) => item.kind === "official-verification" && /My Voter Page/i.test(item.title)), true);
+	assert.match(body.note, /Atlanta, Georgia/i);
+});
+
+test("POST /api/location does not offer the Fulton guide for unsupported ZIPs", async () => {
+	const response = await fetch(`${baseUrl}/api/location`, {
+		body: JSON.stringify({ q: "84604" }),
+		headers: {
+			"Content-Type": "application/json"
+		},
+		method: "POST"
+	});
+	const body = await response.json();
+
+	assert.equal(response.status, 200);
+	assert.equal(body.result, "unsupported");
+	assert.equal(body.inputKind, "zip");
+	assert.equal(body.actions.some((item: { kind: string }) => item.kind === "ballot-guide"), false);
+	assert.equal(body.actions.some((item: { title: string }) => /Utah voter registration portal/i.test(item.title)), true);
+	assert.match(body.note, /Provo, Utah/i);
+	assert.match(body.note, /currently live only for Fulton County, Georgia/i);
 });
 
 test("POST /api/location returns the current Fulton County launch location for full addresses", async () => {
@@ -230,6 +334,28 @@ test("POST /api/location returns the current Fulton County launch location for f
 	assert.equal(body.representativeMatches[0].name, "Jon Ossoff");
 	assert.match(body.note, /Census geography matched/i);
 	assert.match(body.note, /Open States returned 1 representative match/i);
+});
+
+test("POST /api/location returns an explicit out-of-coverage response for unsupported full addresses", async () => {
+	const response = await fetch(`${baseUrl}/api/location`, {
+		body: JSON.stringify({ q: "151 S University Ave, Provo, UT 84601" }),
+		headers: {
+			"Content-Type": "application/json"
+		},
+		method: "POST"
+	});
+	const body = await response.json();
+
+	assert.equal(response.status, 200);
+	assert.equal(body.result, "unsupported");
+	assert.equal(body.inputKind, "address");
+	assert.equal(body.location, undefined);
+	assert.equal(body.electionSlug, undefined);
+	assert.equal(body.actions.some((item: { kind: string }) => item.kind === "ballot-guide"), false);
+	assert.equal(body.actions.some((item: { title: string }) => /Utah voter registration portal|Registration and voter status/i.test(item.title)), true);
+	assert.equal(body.normalizedAddress, "151 S UNIVERSITY AVE, PROVO, UT, 84601");
+	assert.equal(body.representativeMatches[0].name, "Mike Kennedy");
+	assert.match(body.note, /currently live only for Fulton County, Georgia/i);
 });
 
 test("GET /api/ballot returns the election guide and contests", async () => {

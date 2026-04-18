@@ -21,12 +21,14 @@ const isPending = ref(false);
 const errorMessage = ref("");
 const lookupActions = ref<LocationLookupAction[]>([]);
 const lookupNote = ref("");
+const lookupResult = ref<LocationLookupResponse["result"] | "">("");
 const normalizedAddress = ref("");
 const districtMatches = ref<LocationDistrictMatch[]>([]);
 const representativeMatches = ref<LocationRepresentativeMatch[]>([]);
 const fromCache = ref(false);
 const resolvedElectionSlug = ref("");
 const resolvedLocation = ref<LocationLookupResponse["location"] | null>(null);
+const supportedAreaLabel = ref("");
 const inputId = `address-lookup-${useId()}`;
 const descriptionId = `${inputId}-description`;
 const usageId = `${inputId}-usage`;
@@ -38,15 +40,17 @@ const lookupInput = ref<HTMLInputElement | null>(null);
 const inputDescribedBy = computed(() => [descriptionId, usageId, privacyId, lookupActions.value.length ? actionsId : "", errorMessage.value ? errorId : ""].filter(Boolean).join(" "));
 
 watch(query, () => {
-	if (lookupActions.value.length) {
+	if (lookupActions.value.length || lookupResult.value) {
 		lookupActions.value = [];
 		lookupNote.value = "";
 	}
 
+	lookupResult.value = "";
 	normalizedAddress.value = "";
 	districtMatches.value = [];
 	representativeMatches.value = [];
 	fromCache.value = false;
+	supportedAreaLabel.value = "";
 
 	if (resolvedLocation.value) {
 		resolvedLocation.value = null;
@@ -82,12 +86,14 @@ async function handleSubmit() {
 	errorMessage.value = "";
 	lookupActions.value = [];
 	lookupNote.value = "";
+	lookupResult.value = "";
 	normalizedAddress.value = "";
 	districtMatches.value = [];
 	representativeMatches.value = [];
 	fromCache.value = false;
 	resolvedElectionSlug.value = "";
 	resolvedLocation.value = null;
+	supportedAreaLabel.value = "";
 
 	if (!query.value.trim()) {
 		errorMessage.value = "Enter an address or ZIP code to load the ballot guide.";
@@ -104,13 +110,15 @@ async function handleSubmit() {
 			method: "POST"
 		});
 
+		lookupResult.value = response.result;
 		lookupNote.value = response.note;
 		normalizedAddress.value = response.normalizedAddress ?? "";
 		districtMatches.value = response.districtMatches ?? [];
 		representativeMatches.value = response.representativeMatches ?? [];
 		fromCache.value = Boolean(response.fromCache);
+		supportedAreaLabel.value = response.supportedAreaLabel ?? "";
 
-		if (response.result === "selection-required") {
+		if (response.result === "selection-required" || response.result === "unsupported") {
 			lookupActions.value = response.actions ?? [];
 			return;
 		}
@@ -192,15 +200,21 @@ async function handleSubmit() {
 		</p>
 
 		<div
-			v-if="lookupActions.length"
+			v-if="lookupResult"
 			:id="actionsId"
 			class="mt-5 p-4 border border-app-line rounded-3xl bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/60"
 		>
 			<p class="text-xs text-app-muted tracking-[0.2em] font-semibold uppercase dark:text-app-muted-dark">
-				Choose how to continue
+				{{ lookupResult === "unsupported" ? "Location not yet supported" : "Choose how to continue" }}
 			</p>
 			<p class="text-sm text-app-muted leading-6 mt-3 dark:text-app-muted-dark">
 				{{ lookupNote }}
+			</p>
+			<p
+				v-if="lookupResult === 'unsupported' && supportedAreaLabel"
+				class="text-xs text-app-muted leading-6 mt-3 dark:text-app-muted-dark"
+			>
+				Ballot Clarity is currently live only for {{ supportedAreaLabel }}.
 			</p>
 			<p
 				v-if="resolvedLocation"
@@ -208,7 +222,7 @@ async function handleSubmit() {
 			>
 				The configured official provider returned these links for your address. Review them, then continue into the guide.
 			</p>
-			<div class="mt-4 gap-3 grid">
+			<div v-if="lookupActions.length" class="mt-4 gap-3 grid">
 				<div
 					v-for="action in lookupActions"
 					:key="action.id"
@@ -304,7 +318,11 @@ async function handleSubmit() {
 				</button>
 			</div>
 			<p class="text-xs text-app-muted leading-6 mt-4 dark:text-app-muted-dark">
-				{{ resolvedLocation ? "Ballot Clarity still opens the current guide surface after official verification because exact contest packaging is still being connected." : "If you want the most specific district match, replace the ZIP code with a full street address before continuing." }}
+				{{ lookupResult === "unsupported"
+					? "Use the official tools above for this location. Ballot Clarity should not open the Fulton County guide when the entered location is outside current public coverage."
+					: resolvedLocation
+						? "Ballot Clarity still opens the current guide surface after official verification because exact contest packaging is still being connected."
+						: "If you want the most specific district match, replace the ZIP code with a full street address before continuing." }}
 			</p>
 		</div>
 	</form>

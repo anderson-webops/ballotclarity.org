@@ -10,11 +10,26 @@ import type {
 	LocationSelection,
 	OfficialResource,
 } from "./types/civic.js";
+import { getOfficialToolsForState, getStateNameForAbbreviation } from "./official-election-tools.js";
 
 const zipCodePattern = /^\d{5}(?:-\d{4})?$/;
 const numericFragmentPattern = /^[\d-]+$/;
 const myVoterPagePattern = /my voter page/i;
 const pollingPlacePattern = /polling-place|precinct/i;
+const coverageMatcherBySlug = new Map([
+	["fulton-county-georgia", { countyFips: "121", stateAbbreviation: "GA" }]
+]);
+
+export interface LookupGeoContext {
+	countyFips?: string;
+	countyName?: string;
+	locality?: string;
+	normalizedAddress?: string;
+	postalCode?: string;
+	sourceSystem?: string;
+	stateAbbreviation?: string;
+	stateName?: string;
+}
 
 function buildCoverageSelection(summary: JurisdictionSummary): LocationSelection {
 	return {
@@ -64,6 +79,85 @@ function buildOfficialVerificationAction(resource: OfficialResource | undefined)
 	};
 }
 
+function dedupeActions(actions: Array<LocationLookupAction | undefined>) {
+	const seen = new Set<string>();
+	const unique: LocationLookupAction[] = [];
+
+	for (const action of actions) {
+		if (!action)
+			continue;
+
+		const key = action.url || `${action.kind}:${action.title}:${action.electionSlug || action.id}`;
+
+		if (seen.has(key))
+			continue;
+
+		seen.add(key);
+		unique.push(action);
+	}
+
+	return unique;
+}
+
+function buildOfficialVerificationActions(resources: OfficialResource[]) {
+	return dedupeActions(resources.map(buildOfficialVerificationAction));
+}
+
+function findSupportedCoverageSummaries(jurisdictionSummaries: JurisdictionSummary[], geoContext: LookupGeoContext | null | undefined) {
+	if (!geoContext?.stateAbbreviation)
+		return [];
+
+	return jurisdictionSummaries.filter((summary) => {
+		const matcher = coverageMatcherBySlug.get(summary.slug);
+
+		if (!matcher)
+			return false;
+
+		return geoContext.stateAbbreviation === matcher.stateAbbreviation
+			&& (!matcher.countyFips || geoContext.countyFips === matcher.countyFips);
+	});
+}
+
+function describeDetectedLocation(
+	inputKind: LocationLookupInputKind,
+	rawQuery: string,
+	geoContext: LookupGeoContext | null | undefined
+) {
+	if (inputKind === "zip") {
+		if (geoContext?.locality && (geoContext.stateName || geoContext.stateAbbreviation))
+			return `ZIP code ${geoContext.postalCode || rawQuery} appears to be in ${geoContext.locality}, ${geoContext.stateName || geoContext.stateAbbreviation}.`;
+
+		if (geoContext?.stateName || geoContext?.stateAbbreviation)
+			return `ZIP code ${geoContext.postalCode || rawQuery} appears to be in ${geoContext.stateName || geoContext.stateAbbreviation}.`;
+
+		return `ZIP code ${rawQuery} is outside Ballot Clarity's current supported coverage.`;
+	}
+
+	if (geoContext?.countyName && (geoContext.stateName || geoContext.stateAbbreviation))
+		return `This address appears to be in ${geoContext.countyName}, ${geoContext.stateName || geoContext.stateAbbreviation}.`;
+
+	if (geoContext?.stateName || geoContext?.stateAbbreviation)
+		return `This address appears to be in ${geoContext.stateName || geoContext.stateAbbreviation}.`;
+
+	return "This address is outside Ballot Clarity's current supported coverage.";
+}
+
+function buildUnsupportedNote(
+	rawQuery: string,
+	inputKind: LocationLookupInputKind,
+	geoContext: LookupGeoContext | null | undefined,
+	supportedAreaLabel: string,
+	hasOfficialActions: boolean
+) {
+	const locationSentence = describeDetectedLocation(inputKind, rawQuery, geoContext);
+	const stateName = geoContext?.stateName || getStateNameForAbbreviation(geoContext?.stateAbbreviation);
+	const officialSentence = hasOfficialActions
+		? `Ballot Clarity is currently live only for ${supportedAreaLabel}. Use the official ${stateName ? `${stateName} ` : ""}voter or election tools below for the correct ballot, voter-status, and polling-place information.`
+		: `Ballot Clarity is currently live only for ${supportedAreaLabel}. Enter a full street address for a more precise check, or use the official voter or election tool for this state.`;
+
+	return `${locationSentence} ${officialSentence}`.trim();
+}
+
 export function classifyLookupInput(raw: string): LocationLookupInputKind {
 	if (zipCodePattern.test(raw))
 		return "zip";
@@ -89,27 +183,62 @@ export function buildLocationLookupResponse(
 	electionSlug: string,
 	coverageMode: "seed" | "snapshot",
 	coverage: CoverageResponse,
+	geoContext?: LookupGeoContext | null,
 	officialLookup?: OfficialAddressMatch | null,
 	addressEnrichment?: AddressEnrichmentResult | null
 ): LocationLookupResponse {
 	const inputKind = classifyLookupInput(rawQuery);
+	const supportedAreaLabel = coverage.launchTarget.displayName;
+	const stateOfficialActions = buildOfficialVerificationActions(
+		getOfficialToolsForState(geoContext?.stateAbbreviation)
+	);
+	const supportedCoverageSummaries = findSupportedCoverageSummaries(jurisdictionSummaries, geoContext);
 
 	if (inputKind === "zip") {
+		if (!supportedCoverageSummaries.length) {
+			return {
+				actions: stateOfficialActions,
+				inputKind,
+				note: buildUnsupportedNote(rawQuery, inputKind, geoContext, supportedAreaLabel, Boolean(stateOfficialActions.length)),
+				result: "unsupported",
+				supportedAreaLabel
+			};
+		}
+
 		const officialVerification = buildOfficialVerificationAction(
 			findOfficialVerificationResource(jurisdiction, coverage)
 		);
 		const actions = [
-			...buildCoverageActions(jurisdictionSummaries),
+			...buildCoverageActions(supportedCoverageSummaries),
 			...(officialVerification ? [officialVerification] : [])
 		];
+		const coverageSentence = describeDetectedLocation(inputKind, rawQuery, geoContext);
 
 		return {
 			actions,
 			inputKind,
 			note: coverageMode === "snapshot"
-				? "ZIP-only lookup can preview the currently supported coverage areas, but it cannot choose an exact district-level ballot. Pick a coverage area below or use the official voter tool for exact verification."
-				: "ZIP-only lookup can preview the current public coverage area, but it cannot choose an exact district-level ballot. Pick the current coverage guide below or use the official voter tool for exact verification.",
-			result: "selection-required"
+				? `${coverageSentence} ZIP-only lookup can preview the currently supported coverage area, but it cannot choose an exact district-level ballot. Pick the coverage guide below or use the official voter tool for exact verification.`
+				: `${coverageSentence} ZIP-only lookup can preview the current public coverage area, but it cannot choose an exact district-level ballot. Pick the current coverage guide below or use the official voter tool for exact verification.`,
+			result: "selection-required",
+			supportedAreaLabel
+		};
+	}
+
+	if (!supportedCoverageSummaries.length) {
+		return {
+			actions: dedupeActions([
+				...(officialLookup?.actions ?? []),
+				...stateOfficialActions
+			]),
+			fromCache: addressEnrichment?.fromCache,
+			inputKind,
+			districtMatches: addressEnrichment?.districtMatches,
+			note: buildUnsupportedNote(rawQuery, inputKind, geoContext, supportedAreaLabel, Boolean((officialLookup?.actions?.length ?? 0) || stateOfficialActions.length)),
+			normalizedAddress: addressEnrichment?.normalizedAddress,
+			representativeMatches: addressEnrichment?.representativeMatches,
+			result: "unsupported",
+			supportedAreaLabel
 		};
 	}
 
@@ -141,6 +270,7 @@ export function buildLocationLookupResponse(
 		].filter(Boolean).join(" "),
 		normalizedAddress: addressEnrichment?.normalizedAddress,
 		representativeMatches: addressEnrichment?.representativeMatches,
-		result: "resolved"
+		result: "resolved",
+		supportedAreaLabel
 	};
 }

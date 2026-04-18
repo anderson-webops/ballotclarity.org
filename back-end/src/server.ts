@@ -31,6 +31,7 @@ import type {
 	TrustBullet,
 	VoteRecordSummary
 } from "./types/civic.js";
+import type { ZipLocationService } from "./zip-location.js";
 import { Buffer } from "node:buffer";
 import { timingSafeEqual } from "node:crypto";
 import process from "node:process";
@@ -58,6 +59,7 @@ import { createLogger, createRequestLoggingMiddleware } from "./logger.js";
 import { createOpenStatesClient } from "./openstates.js";
 import { buildProviderSummary } from "./provider-config.js";
 import { createSourceAssetStore } from "./source-asset-store.js";
+import { createZipLocationService } from "./zip-location.js";
 
 interface CreateAppOptions {
 	adminApiKey?: string | null;
@@ -68,6 +70,7 @@ interface CreateAppOptions {
 	bootstrapUsername?: string | null;
 	coverageRepository?: CoverageRepository;
 	googleCivicClient?: ReturnType<typeof createGoogleCivicClient>;
+	zipLocationService?: ZipLocationService | null;
 }
 
 function isAuthorizedAdminRequest(requestKey: string | undefined, configuredKey: string | null) {
@@ -428,6 +431,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 	const sourceAssetStore = createSourceAssetStore();
 	const adminLoginThrottle = createAdminLoginThrottle();
 	const googleCivicClient = options.googleCivicClient === undefined ? createGoogleCivicClient() : options.googleCivicClient;
+	const zipLocationService = options.zipLocationService === undefined ? createZipLocationService() : options.zipLocationService;
 	const addressEnrichmentService = options.addressEnrichmentService === undefined
 		? createAddressEnrichmentService(
 				createCensusGeocoderClient(),
@@ -1131,11 +1135,25 @@ export async function createApp(options: CreateAppOptions = {}) {
 
 		let officialLookup = null;
 		let addressEnrichment = null;
+		let geoContext = null;
 
 		if (classifyLookupInput(raw) === "address") {
 			if (addressEnrichmentService) {
 				try {
 					addressEnrichment = await addressEnrichmentService.lookupAddress(raw);
+
+					if (addressEnrichment) {
+						geoContext = {
+							countyFips: addressEnrichment.countyFips,
+							normalizedAddress: addressEnrichment.normalizedAddress,
+							postalCode: addressEnrichment.zip5,
+							sourceSystem: "U.S. Census Geocoder",
+							stateAbbreviation: addressEnrichment.state
+						};
+					}
+					else {
+						geoContext = null;
+					}
 				}
 				catch (error) {
 					logger.warn("provider.census-openstates.lookup-failed", {
@@ -1157,6 +1175,32 @@ export async function createApp(options: CreateAppOptions = {}) {
 				}
 			}
 		}
+		else if (zipLocationService) {
+			try {
+				const zipMatch = await zipLocationService.lookupZip(raw);
+
+				if (zipMatch) {
+					geoContext = {
+						countyFips: zipMatch.countyFips,
+						countyName: zipMatch.countyName,
+						locality: zipMatch.locality,
+						postalCode: zipMatch.postalCode,
+						sourceSystem: zipMatch.sourceSystem,
+						stateAbbreviation: zipMatch.stateAbbreviation,
+						stateName: zipMatch.stateName
+					};
+				}
+				else {
+					geoContext = null;
+				}
+			}
+			catch (error) {
+				logger.warn("provider.zip-lookup.lookup-failed", {
+					message: error instanceof Error ? error.message : "Unknown provider error.",
+					requestId: response.locals.requestId
+				});
+			}
+		}
 
 		response.json(buildLocationLookupResponse(
 			raw,
@@ -1166,6 +1210,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 			coverageRepository.data.election.slug,
 			coverageRepository.mode,
 			coverage,
+			geoContext,
 			officialLookup,
 			addressEnrichment
 		));

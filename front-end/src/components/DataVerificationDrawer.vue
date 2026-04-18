@@ -1,4 +1,9 @@
 <script setup lang="ts">
+const props = withDefaults(defineProps<{
+	openOnMount?: boolean;
+}>(), {
+	openOnMount: false
+});
 const isOpen = ref(false);
 const headingId = `data-verification-${useId()}`;
 const closeButton = ref<HTMLButtonElement | null>(null);
@@ -91,6 +96,11 @@ watch(isOpen, (value) => {
 		document.removeEventListener("keydown", handleKeydown);
 		nextTick(() => activeElementBeforeOpen.value?.focus());
 	}
+});
+
+onMounted(() => {
+	if (props.openOnMount)
+		isOpen.value = true;
 });
 
 onBeforeUnmount(() => {

@@ -248,6 +248,7 @@ onBeforeUnmount(() => {
 												v-for="link in group.links"
 												:key="link.to"
 												:to="resolveLinkTo(link.to)"
+												prefetch-on="interaction"
 												class="px-3 py-2.5 rounded-[0.95rem] transition hover:bg-app-bg focus-ring dark:hover:bg-app-bg-dark/70"
 												@click="closeDesktopGroups"
 											>
@@ -276,6 +277,7 @@ onBeforeUnmount(() => {
 				<div class="shrink-0 gap-3 hidden items-center md:flex">
 					<NuxtLink
 						to="/plan"
+						prefetch-on="interaction"
 						class="text-sm text-app-ink font-medium px-4 py-2 border border-app-line rounded-full bg-white inline-flex gap-2 min-h-10 shadow-sm transition items-center dark:text-app-text-dark hover:text-app-accent dark:border-app-line-dark hover:border-app-accent dark:bg-app-panel-dark focus-ring dark:hover:text-white"
 						:class="isActive('/plan') ? 'border-app-accent text-app-accent dark:border-app-accent dark:text-white' : ''"
 					>
@@ -288,6 +290,7 @@ onBeforeUnmount(() => {
 					<NuxtLink
 						v-if="effectiveSelectedLocation"
 						:to="locationLookupHref"
+						prefetch-on="interaction"
 						class="text-xs text-app-muted px-3 py-2 border border-app-line rounded-full bg-white max-w-[12rem] hidden whitespace-nowrap shadow-sm transition items-center dark:text-app-muted-dark hover:text-app-accent dark:border-app-line-dark hover:border-app-accent dark:bg-app-panel-dark 2xl:inline-flex focus-ring dark:hover:text-white"
 						title="Change location"
 					>
@@ -332,6 +335,7 @@ onBeforeUnmount(() => {
 				<div class="space-y-2">
 					<NuxtLink
 						to="/plan"
+						prefetch-on="interaction"
 						class="text-sm font-medium px-4 py-3 rounded-2xl flex transition items-center justify-between focus-ring"
 						:class="isActive('/plan')
 							? 'bg-app-ink text-white'
@@ -347,7 +351,7 @@ onBeforeUnmount(() => {
 							<p class="text-app-muted truncate dark:text-app-muted-dark">
 								{{ effectiveSelectedLocation?.displayName || "Ballot context not yet selected" }}
 							</p>
-							<NuxtLink :to="locationLookupHref" class="text-xs text-app-accent font-semibold mt-1 inline-flex dark:text-[#9ed4e3] focus-ring">
+							<NuxtLink :to="locationLookupHref" prefetch-on="interaction" class="text-xs text-app-accent font-semibold mt-1 inline-flex dark:text-[#9ed4e3] focus-ring">
 								Change location
 							</NuxtLink>
 						</div>
@@ -370,6 +374,7 @@ onBeforeUnmount(() => {
 						v-for="link in group.links"
 						:key="link.to"
 						:to="resolveLinkTo(link.to)"
+						prefetch-on="interaction"
 						class="px-4 py-3 rounded-2xl flex gap-3 transition items-start justify-between focus-ring"
 						:class="isActive(link.to)
 							? 'bg-app-ink text-white'

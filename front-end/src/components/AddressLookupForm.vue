@@ -156,7 +156,7 @@ async function handleSubmit() {
 		</p>
 		<p :id="privacyId" class="text-sm text-app-muted leading-6 mt-3 dark:text-app-muted-dark">
 			Data use: your lookup is sent only to match ballot coverage. The raw lookup is not added to the public content archive or used for advertising, and the app saves only your selected location label and ballot-plan preferences locally in your browser. Read the
-			<NuxtLink to="/privacy" class="underline underline-offset-3">
+			<NuxtLink to="/privacy" class="underline underline-offset-3" prefetch-on="interaction">
 				privacy notice
 			</NuxtLink>.
 		</p>

@@ -77,7 +77,7 @@ function resolveGuideLinkTo(path: string) {
 						</p>
 						<ul class="text-sm mt-4 space-y-3">
 							<li v-for="link in guideLinks" :key="link.to">
-								<NuxtLink :to="resolveGuideLinkTo(link.to)" class="text-app-ink rounded-md transition dark:text-app-text-dark hover:text-app-accent focus-ring dark:hover:text-white">
+								<NuxtLink :to="resolveGuideLinkTo(link.to)" prefetch-on="interaction" class="text-app-ink rounded-md transition dark:text-app-text-dark hover:text-app-accent focus-ring dark:hover:text-white">
 									{{ link.label }}
 								</NuxtLink>
 							</li>
@@ -90,7 +90,7 @@ function resolveGuideLinkTo(path: string) {
 						</p>
 						<ul class="text-sm mt-4 space-y-3">
 							<li v-for="link in discoveryLinks" :key="link.to">
-								<NuxtLink :to="link.to" class="text-app-ink rounded-md transition dark:text-app-text-dark hover:text-app-accent focus-ring dark:hover:text-white">
+								<NuxtLink :to="link.to" prefetch-on="interaction" class="text-app-ink rounded-md transition dark:text-app-text-dark hover:text-app-accent focus-ring dark:hover:text-white">
 									{{ link.label }}
 								</NuxtLink>
 							</li>
@@ -103,7 +103,7 @@ function resolveGuideLinkTo(path: string) {
 						</p>
 						<ul class="text-sm mt-4 space-y-3">
 							<li v-for="link in policyLinks" :key="link.to">
-								<NuxtLink :to="link.to" class="text-app-ink rounded-md transition dark:text-app-text-dark hover:text-app-accent focus-ring dark:hover:text-white">
+								<NuxtLink :to="link.to" prefetch-on="interaction" class="text-app-ink rounded-md transition dark:text-app-text-dark hover:text-app-accent focus-ring dark:hover:text-white">
 									{{ link.label }}
 								</NuxtLink>
 							</li>
@@ -123,7 +123,7 @@ function resolveGuideLinkTo(path: string) {
 							<p>
 								Volunteer and research inquiries welcome.
 							</p>
-							<NuxtLink to="/contact" class="text-app-ink font-semibold rounded-md inline-flex gap-2 transition items-center dark:text-app-text-dark hover:text-app-accent focus-ring dark:hover:text-white">
+							<NuxtLink to="/contact" prefetch-on="interaction" class="text-app-ink font-semibold rounded-md inline-flex gap-2 transition items-center dark:text-app-text-dark hover:text-app-accent focus-ring dark:hover:text-white">
 								<span>Open contact page</span>
 								<span class="i-carbon-arrow-right" aria-hidden="true" />
 							</NuxtLink>
@@ -138,11 +138,11 @@ function resolveGuideLinkTo(path: string) {
 						Not an official election website. Ballot Clarity aims to provide nonpartisan civic information and cite sources where possible. Content can change, so verify critical election details with the official authorities linked throughout the site.
 					</p>
 					<div class="flex flex-wrap gap-x-5 gap-y-2 items-center">
-						<DataVerificationDrawer />
-						<NuxtLink to="/status" class="text-sm text-app-ink font-semibold rounded-md inline-flex gap-2 transition items-center dark:text-app-text-dark hover:text-app-accent focus-ring dark:hover:text-white">
+						<DataVerificationLauncher />
+						<NuxtLink to="/status" prefetch-on="interaction" class="text-sm text-app-ink font-semibold rounded-md inline-flex gap-2 transition items-center dark:text-app-text-dark hover:text-app-accent focus-ring dark:hover:text-white">
 							Public status
 						</NuxtLink>
-						<NuxtLink to="/corrections" class="text-sm text-app-ink font-semibold rounded-md inline-flex gap-2 transition items-center dark:text-app-text-dark hover:text-app-accent focus-ring dark:hover:text-white">
+						<NuxtLink to="/corrections" prefetch-on="interaction" class="text-sm text-app-ink font-semibold rounded-md inline-flex gap-2 transition items-center dark:text-app-text-dark hover:text-app-accent focus-ring dark:hover:text-white">
 							Corrections log
 						</NuxtLink>
 					</div>

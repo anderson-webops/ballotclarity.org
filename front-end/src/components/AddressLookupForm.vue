@@ -262,7 +262,10 @@ const availabilityItems = computed(() => {
 			>
 				{{ lookupPresentation.supportingNote }}
 			</p>
-			<div v-if="availabilityItems.length" class="mt-4 gap-3 grid md:grid-cols-2 xl:grid-cols-5">
+			<div
+				v-if="availabilityItems.length"
+				:class="compact ? 'mt-4 grid grid-cols-1 gap-3' : 'mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-5'"
+			>
 				<article
 					v-for="item in availabilityItems"
 					:key="item.label"

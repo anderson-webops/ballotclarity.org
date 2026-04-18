@@ -89,6 +89,7 @@ usePageSeo({
 
 const effectiveBallotPlan = computed(() => isHydrated.value ? ballotPlan.value : {});
 const effectiveCompareList = computed(() => isHydrated.value ? compareList.value : []);
+const showPersistedCandidateState = computed(() => isHydrated.value);
 const isCompared = computed(() => candidate.value ? effectiveCompareList.value.includes(candidate.value.slug) : false);
 const compareLimitReached = computed(() => effectiveCompareList.value.length >= 3 && !isCompared.value);
 const compareLaunchSlugs = computed(() => {
@@ -99,6 +100,7 @@ const compareLaunchSlugs = computed(() => {
 });
 const compareHref = computed(() => buildCompareRoute(compareLaunchSlugs.value));
 const canOpenCompare = computed(() => compareLaunchSlugs.value.length >= 2);
+const canOpenHydratedCompare = computed(() => showPersistedCandidateState.value && canOpenCompare.value);
 const isPlanned = computed(() => {
 	if (!candidate.value)
 		return false;
@@ -107,6 +109,15 @@ const isPlanned = computed(() => {
 
 	return selection?.type === "candidate" && selection.candidateSlug === candidate.value.slug;
 });
+const compareButtonIcon = computed(() => showPersistedCandidateState.value && isCompared.value ? "i-carbon-checkmark" : "i-carbon-compare");
+const compareButtonLabel = computed(() => {
+	if (!showPersistedCandidateState.value)
+		return "Compare candidate";
+
+	return isCompared.value ? "Remove from compare" : "Add to compare";
+});
+const planButtonIcon = computed(() => showPersistedCandidateState.value && isPlanned.value ? "i-carbon-checkmark" : "i-carbon-notebook");
+const planButtonLabel = computed(() => showPersistedCandidateState.value && isPlanned.value ? "Saved to plan" : "Save to my plan");
 const dataThroughLabel = computed(() => {
 	if (!candidate.value)
 		return "";
@@ -247,7 +258,7 @@ function saveToPlan() {
 					</div>
 					<div class="bc-action-cluster mt-6">
 						<SourceDrawer :sources="candidate.sources" :title="`${candidate.name} evidence and sources`" button-label="Evidence & sources" />
-						<NuxtLink v-if="canOpenCompare" :to="compareHref" class="btn-secondary">
+						<NuxtLink v-if="canOpenHydratedCompare" :to="compareHref" class="btn-secondary">
 							Open compare
 						</NuxtLink>
 						<NuxtLink :to="`/candidate/${candidate.slug}/funding`" class="btn-secondary">
@@ -256,13 +267,13 @@ function saveToPlan() {
 						<NuxtLink :to="`/candidate/${candidate.slug}/influence`" class="btn-secondary">
 							Influence page
 						</NuxtLink>
-						<button type="button" class="btn-secondary" :disabled="compareLimitReached" @click="toggleCompare">
-							<span :class="isCompared ? 'i-carbon-checkmark' : 'i-carbon-compare'" />
-							{{ isCompared ? 'Remove from compare' : 'Add to compare' }}
+						<button type="button" class="btn-secondary" :disabled="showPersistedCandidateState ? compareLimitReached : false" @click="toggleCompare">
+							<span :class="compareButtonIcon" />
+							{{ compareButtonLabel }}
 						</button>
 						<button type="button" class="btn-secondary" @click="saveToPlan">
-							<span :class="isPlanned ? 'i-carbon-checkmark' : 'i-carbon-notebook'" />
-							{{ isPlanned ? 'Saved to plan' : 'Save to my plan' }}
+							<span :class="planButtonIcon" />
+							{{ planButtonLabel }}
 						</button>
 						<NuxtLink :to="electionOverviewHref" class="btn-secondary">
 							Election overview

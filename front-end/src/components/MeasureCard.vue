@@ -10,6 +10,7 @@ const props = defineProps<{
 const civicStore = useCivicStore();
 const { ballotPlan, isHydrated } = storeToRefs(civicStore);
 const effectiveBallotPlan = computed(() => isHydrated.value ? ballotPlan.value : {});
+const showPersistedMeasureState = computed(() => isHydrated.value);
 
 const currentSelection = computed(() => {
 	const selection = effectiveBallotPlan.value[props.measure.contestSlug];
@@ -22,6 +23,7 @@ const coverageNote = computed(() => props.measure.whatWeDoNotKnow[0]?.text
 	?? "Implementation details can change after passage because later budgets, legal interpretation, and agency rules still matter.");
 const isQuickView = computed(() => (props.viewMode ?? "quick") === "quick");
 const officialSourceCount = computed(() => props.measure.sources.filter(source => source.authority === "official-government").length);
+const decisionHeading = computed(() => showPersistedMeasureState.value ? "Save your current decision" : "Choose a decision");
 
 function saveMeasure(decision: "no" | "review" | "yes") {
 	civicStore.selectMeasureForPlan(props.measure.contestSlug, props.measure.slug, decision);
@@ -82,7 +84,7 @@ function saveMeasure(decision: "no" | "review" | "yes") {
 
 		<div class="mt-6">
 			<p class="text-xs text-app-muted tracking-[0.22em] font-semibold uppercase dark:text-app-muted-dark">
-				Save your current decision
+				{{ decisionHeading }}
 			</p>
 			<div class="mt-3 flex flex-wrap gap-2">
 				<button

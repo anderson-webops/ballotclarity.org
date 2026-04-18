@@ -342,7 +342,7 @@ test("built app renders the key ballot guide pages against the built API", async
 	assert.match(planHtml, /My ballot plan/);
 	assert.match(planHtml, /Not the right location\? Select a new district\./);
 	assert.match(planHtml, /Print this plan/);
-	assert.match(planHtml, /No contests saved yet/);
+	assert.match(planHtml, /Syncing your saved plan/);
 	assert.equal(compareEmptyPage.status, 200);
 	assert.match(compareEmptyHtml, /No compare candidates selected/);
 	assert.match(compareEmptyHtml, /needs candidate slugs in the URL/i);

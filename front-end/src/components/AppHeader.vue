@@ -69,6 +69,7 @@ const navGroups: HeaderGroup[] = [
 ];
 
 const isDark = computed(() => colorMode.value === "dark");
+const showPersistedCivicState = computed(() => isHydrated.value);
 const effectiveBallotPlanCount = computed(() => isHydrated.value ? ballotPlanCount.value : 0);
 const effectiveCompareCount = computed(() => isHydrated.value ? compareCount.value : 0);
 const effectiveCompareList = computed(() => isHydrated.value ? compareList.value : []);
@@ -282,21 +283,25 @@ onBeforeUnmount(() => {
 						:class="isActive('/plan') ? 'border-app-accent text-app-accent dark:border-app-accent dark:text-white' : ''"
 					>
 						<span>My plan</span>
-						<span v-if="effectiveBallotPlanCount" class="text-[11px] text-app-ink font-bold px-1.5 rounded-full bg-app-warm inline-flex h-5 min-w-5 items-center justify-center">
-							{{ effectiveBallotPlanCount }}
-						</span>
+						<ClientOnly>
+							<span v-if="showPersistedCivicState && effectiveBallotPlanCount" class="text-[11px] text-app-ink font-bold px-1.5 rounded-full bg-app-warm inline-flex h-5 min-w-5 items-center justify-center">
+								{{ effectiveBallotPlanCount }}
+							</span>
+						</ClientOnly>
 					</NuxtLink>
 
-					<NuxtLink
-						v-if="effectiveSelectedLocation"
-						:to="locationLookupHref"
-						prefetch-on="interaction"
-						class="text-xs text-app-muted px-3 py-2 border border-app-line rounded-full bg-white max-w-[12rem] hidden whitespace-nowrap shadow-sm transition items-center dark:text-app-muted-dark hover:text-app-accent dark:border-app-line-dark hover:border-app-accent dark:bg-app-panel-dark 2xl:inline-flex focus-ring dark:hover:text-white"
-						title="Change location"
-					>
-						<span class="i-carbon-location mr-1.5 align-middle shrink-0" />
-						<span class="truncate">{{ effectiveSelectedLocation.displayName }}</span>
-					</NuxtLink>
+					<ClientOnly>
+						<NuxtLink
+							v-if="showPersistedCivicState && effectiveSelectedLocation"
+							:to="locationLookupHref"
+							prefetch-on="interaction"
+							class="text-xs text-app-muted px-3 py-2 border border-app-line rounded-full bg-white max-w-[12rem] hidden whitespace-nowrap shadow-sm transition items-center dark:text-app-muted-dark hover:text-app-accent dark:border-app-line-dark hover:border-app-accent dark:bg-app-panel-dark 2xl:inline-flex focus-ring dark:hover:text-white"
+							title="Change location"
+						>
+							<span class="i-carbon-location mr-1.5 align-middle shrink-0" />
+							<span class="truncate">{{ effectiveSelectedLocation.displayName }}</span>
+						</NuxtLink>
+					</ClientOnly>
 
 					<button
 						type="button"
@@ -342,14 +347,16 @@ onBeforeUnmount(() => {
 							: 'bg-white text-app-ink dark:bg-app-panel-dark dark:text-app-text-dark'"
 					>
 						<span>My plan</span>
-						<span v-if="effectiveBallotPlanCount" class="text-[11px] text-app-ink font-bold ml-2 px-2 py-0.5 rounded-full bg-app-warm">
-							{{ effectiveBallotPlanCount }}
-						</span>
+						<ClientOnly>
+							<span v-if="showPersistedCivicState && effectiveBallotPlanCount" class="text-[11px] text-app-ink font-bold ml-2 px-2 py-0.5 rounded-full bg-app-warm">
+								{{ effectiveBallotPlanCount }}
+							</span>
+						</ClientOnly>
 					</NuxtLink>
 					<div class="text-sm px-4 py-3 border border-app-line rounded-2xl bg-white flex items-center justify-between dark:border-app-line-dark dark:bg-app-panel-dark">
 						<div class="min-w-0">
 							<p class="text-app-muted truncate dark:text-app-muted-dark">
-								{{ effectiveSelectedLocation?.displayName || "Ballot context not yet selected" }}
+								{{ showPersistedCivicState ? (effectiveSelectedLocation?.displayName || "Ballot context not yet selected") : "Ballot context syncs after page load" }}
 							</p>
 							<NuxtLink :to="locationLookupHref" prefetch-on="interaction" class="text-xs text-app-accent font-semibold mt-1 inline-flex dark:text-[#9ed4e3] focus-ring">
 								Change location

@@ -12,10 +12,11 @@ const effectiveBallotPlan = computed(() => isHydrated.value ? ballotPlan.value :
 const effectiveBallotPlanCount = computed(() => isHydrated.value ? ballotPlanCount.value : 0);
 const effectiveCompareCount = computed(() => isHydrated.value ? compareCount.value : 0);
 const effectiveCompareList = computed(() => isHydrated.value ? compareList.value : []);
+const showPersistedPlanState = computed(() => isHydrated.value);
 const electionSlug = computed(() => isHydrated.value ? (selectedElection.value?.slug ?? currentCoverageElectionSlug) : currentCoverageElectionSlug);
 const locationSlug = computed(() => isHydrated.value ? selectedLocation.value?.slug : undefined);
 const { data, error, pending } = await useBallot(electionSlug, locationSlug);
-const lookupElection = computed(() => selectedElection.value ?? data.value?.election ?? null);
+const lookupElection = computed(() => showPersistedPlanState.value ? (selectedElection.value ?? data.value?.election ?? null) : (data.value?.election ?? null));
 const activeLocationLabel = computed(() => data.value?.location.displayName ?? (isHydrated.value ? selectedLocation.value?.displayName ?? null : null));
 
 usePageSeo({
@@ -184,7 +185,7 @@ function printPlan() {
 							<button type="button" class="btn-secondary w-full justify-center" @click="civicStore.clearBallotPlan()">
 								Clear saved choices
 							</button>
-							<NuxtLink v-if="effectiveCompareCount >= 2" :to="compareHref" class="btn-secondary w-full justify-center">
+							<NuxtLink v-if="showPersistedPlanState && effectiveCompareCount >= 2" :to="compareHref" class="btn-secondary w-full justify-center">
 								Open compare
 							</NuxtLink>
 						</div>
@@ -202,7 +203,7 @@ function printPlan() {
 					<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
 						Not the right location? Select a new district.
 					</h2>
-					<p v-if="activeLocationLabel" class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
+					<p v-if="showPersistedPlanState && activeLocationLabel" class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
 						You are currently viewing {{ activeLocationLabel }}.
 					</p>
 					<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
@@ -281,7 +282,13 @@ function printPlan() {
 				</p>
 			</section>
 
-			<section v-if="plannedEntries.length" class="print-plan-list surface-panel">
+			<section v-if="!showPersistedPlanState" class="surface-panel print-hidden">
+				<InfoCallout title="Syncing your saved plan" tone="info">
+					Ballot Clarity is loading the compare list and saved ballot-plan choices stored in this browser before it renders your personal checklist.
+				</InfoCallout>
+			</section>
+
+			<section v-else-if="plannedEntries.length" class="print-plan-list surface-panel">
 				<div class="flex flex-wrap gap-4 items-start justify-between">
 					<div>
 						<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">

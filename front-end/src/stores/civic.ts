@@ -150,6 +150,7 @@ export const useCivicStore = defineStore("civic", {
 			this.persist();
 		},
 		hydrateFromStorage() {
+			this.isHydrated = false;
 			const snapshot = readSnapshot();
 			this.ballotPlan = snapshot.ballotPlan;
 			this.ballotViewMode = snapshot.ballotViewMode;

@@ -14,6 +14,7 @@ const { formatCurrency } = useFormatters();
 
 const effectiveBallotPlan = computed(() => isHydrated.value ? ballotPlan.value : {});
 const effectiveCompareList = computed(() => isHydrated.value ? compareList.value : []);
+const showPersistedCandidateState = computed(() => isHydrated.value);
 const isCompared = computed(() => effectiveCompareList.value.includes(props.candidate.slug));
 const compareLimitReached = computed(() => effectiveCompareList.value.length >= 3 && !isCompared.value);
 const compareLaunchSlugs = computed(() => {
@@ -24,11 +25,21 @@ const compareLaunchSlugs = computed(() => {
 });
 const compareHref = computed(() => buildCompareRoute(compareLaunchSlugs.value));
 const canOpenCompare = computed(() => compareLaunchSlugs.value.length >= 2);
+const canOpenHydratedCompare = computed(() => showPersistedCandidateState.value && canOpenCompare.value);
 const isPlanned = computed(() => {
 	const selection = effectiveBallotPlan.value[props.candidate.contestSlug];
 
 	return selection?.type === "candidate" && selection.candidateSlug === props.candidate.slug;
 });
+const compareButtonIcon = computed(() => showPersistedCandidateState.value && isCompared.value ? "i-carbon-checkmark" : "i-carbon-compare");
+const compareButtonLabel = computed(() => {
+	if (!showPersistedCandidateState.value)
+		return "Compare candidate";
+
+	return isCompared.value ? "Remove from compare" : "Add to compare";
+});
+const planButtonIcon = computed(() => showPersistedCandidateState.value && isPlanned.value ? "i-carbon-checkmark" : "i-carbon-notebook");
+const planButtonLabel = computed(() => showPersistedCandidateState.value && isPlanned.value ? "Saved to plan" : "Save to plan");
 const coverageNote = computed(() => {
 	if (props.candidate.comparison.questionnaireResponses.some(response => response.responseStatus !== "answered"))
 		return "Some direct candidate responses are missing in the current archive. This card falls back to verified ballot status, public records, and published campaign materials.";
@@ -146,16 +157,16 @@ function saveToPlan() {
 				:title="`${candidate.name} sources`"
 				:button-label="`${candidate.sources.length} source${candidate.sources.length === 1 ? '' : 's'}`"
 			/>
-			<NuxtLink v-if="canOpenCompare" :to="compareHref" class="btn-secondary">
+			<NuxtLink v-if="canOpenHydratedCompare" :to="compareHref" class="btn-secondary">
 				Open compare
 			</NuxtLink>
 			<button type="button" class="btn-secondary" @click="saveToPlan">
-				<span :class="isPlanned ? 'i-carbon-checkmark' : 'i-carbon-notebook'" />
-				{{ isPlanned ? 'Saved to plan' : 'Save to my plan' }}
+				<span :class="planButtonIcon" />
+				{{ planButtonLabel }}
 			</button>
-			<button type="button" class="btn-secondary" :disabled="compareLimitReached" @click="toggleCompare">
-				<span :class="isCompared ? 'i-carbon-checkmark' : 'i-carbon-compare'" />
-				{{ isCompared ? 'Remove from compare' : 'Add to compare' }}
+			<button type="button" class="btn-secondary" :disabled="showPersistedCandidateState ? compareLimitReached : false" @click="toggleCompare">
+				<span :class="compareButtonIcon" />
+				{{ compareButtonLabel }}
 			</button>
 		</div>
 	</article>

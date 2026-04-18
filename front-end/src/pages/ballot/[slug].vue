@@ -17,6 +17,7 @@ const effectiveBallotPlanCount = computed(() => isHydrated.value ? ballotPlanCou
 const effectiveBallotViewMode = computed(() => isHydrated.value ? ballotViewMode.value : "quick");
 const effectiveCompareList = computed(() => isHydrated.value ? compareList.value : []);
 const effectiveSelectedIssues = computed(() => isHydrated.value ? selectedIssues.value : []);
+const showPersistedBallotState = computed(() => isHydrated.value);
 
 watchEffect(() => {
 	if (data.value) {
@@ -202,8 +203,10 @@ const guideSummaryItems = computed(() => ([
 	},
 	{
 		label: "Saved to plan",
-		note: "Contests currently saved in your checklist.",
-		value: effectiveBallotPlanCount.value
+		note: showPersistedBallotState.value
+			? "Contests currently saved in your checklist."
+			: "Saved-plan state appears after this browser syncs.",
+		value: showPersistedBallotState.value ? effectiveBallotPlanCount.value : "—"
 	}
 ]));
 const coverageNotes = computed(() => {

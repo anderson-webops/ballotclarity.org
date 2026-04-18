@@ -37,6 +37,9 @@
 - `test/e2e-smoke.test.ts` at the repo root is the smoke path for integrated build/runtime validation. Keep it working
   when changing routing, server startup, or API wiring.
 - When touching API contracts or election-data behavior, update tests in the same change set.
+- After every code change, run a local verification pass against the locally retrieved API-backed data already available
+  in the workspace or `.env`-driven provider flow, and confirm that every affected route, page, and connected system
+  still populates and hooks up to the correct data rather than only passing static/unit checks.
 
 ## Commit & Pull Request Guidelines
 
@@ -56,6 +59,9 @@
 - Do not leave completed work uncommitted. After each coherent, validated change set, create a commit and push it in the same session.
 - Use multiple commits and pushes when that keeps unrelated changes, partial validations, or follow-up fixes clearly separated. Prefer small, logically grouped commits over one mixed commit.
 - Keep both `package-lock.json` and `back-end/package-lock.json` synchronized before every commit or push.
+- Treat local API-backed route verification as part of validation, not as an optional follow-up. If a change affects
+  lookup, routing, route payloads, or rendered civic data, verify the affected pages with the locally available real
+  data before committing.
 - Use lowercase annotated semver tags only. Do not invent ad-hoc labels such as `V1`, `torca-r07`, `pre-lfs-migration-*`, or similar one-off names.
 - This repo follows the stable `v1.x` line. Stay on `v1` for routine work; only cut `v2` for an intentional breaking product, API-contract, or deployment change.
 - Before creating a new tag, check the latest tag in the active semver line and decide whether the new commit is still the same release milestone. If it is, move that existing tag forward to the new validated commit instead of minting a new version number.

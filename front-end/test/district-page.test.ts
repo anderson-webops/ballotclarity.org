@@ -2,6 +2,7 @@ import type { NationwideLookupResultContext } from "../src/types/civic.ts";
 import assert from "node:assert/strict";
 import test from "node:test";
 import { buildDistrictRepresentativeAvailabilityNote } from "../src/utils/district-availability.ts";
+import { buildDistrictCandidateSummaryHref, buildDistrictRepresentativeSummaryHref } from "../src/utils/district-page-links.ts";
 import { buildNationwideDistrictPageRecord } from "../src/utils/district-page.ts";
 
 const nationwideLookupResult = {
@@ -101,4 +102,14 @@ test("nationwide district fallback is honest about missing city officeholder pip
 	assert.equal(districtPage.representatives.length, 0);
 	assert.match(districtPage.representativeAvailabilityNote, /City officeholder data is not yet available/i);
 	assert.match(buildDistrictRepresentativeAvailabilityNote(districtPage.district, 0), /City officeholder data is not yet available/i);
+});
+
+test("district summary cards only link when candidate or representative data exists", () => {
+	assert.equal(buildDistrictCandidateSummaryHref([]), undefined);
+	assert.equal(buildDistrictCandidateSummaryHref([{ slug: "jane-doe" }]), "/candidate/jane-doe");
+	assert.equal(buildDistrictCandidateSummaryHref([{ slug: "jane-doe" }, { slug: "john-smith" }]), "#candidates");
+
+	assert.equal(buildDistrictRepresentativeSummaryHref([]), undefined);
+	assert.equal(buildDistrictRepresentativeSummaryHref([{ href: "/representatives/john-curtis" }]), "/representatives/john-curtis");
+	assert.equal(buildDistrictRepresentativeSummaryHref([{ href: "/representatives/john-curtis" }, { href: "/representatives/mike-lee" }]), "#representatives");
 });

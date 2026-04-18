@@ -4,6 +4,7 @@ import { storeToRefs } from "pinia";
 import { buildActiveLookupSummary } from "~/utils/active-lookup";
 import { activeNationwideLookupCookieName, parseActiveNationwideLookupCookie } from "~/utils/active-nationwide-cookie";
 import { buildGuideDistrictPageRecord, buildNationwideDistrictPageRecord } from "~/utils/district-page";
+import { buildDistrictCandidateSummaryHref, buildDistrictRepresentativeSummaryHref } from "~/utils/district-page-links";
 import { isExternalHref } from "~/utils/link";
 import { buildLookupContextFromNationwideResult, buildNationwideLookupRouteQuery, buildNationwideRouteTarget } from "~/utils/nationwide-route-context";
 
@@ -46,6 +47,13 @@ function buildLookupAwareTarget(path: string) {
 	return buildNationwideRouteTarget(path, buildLookupContextFromNationwideResult(activeNationwideLookupResult.value), route.query);
 }
 
+function buildSummaryHref(path: string | undefined) {
+	if (!path || path.startsWith("#") || isExternalHref(path))
+		return path;
+
+	return buildLookupAwareTarget(path);
+}
+
 const breadcrumbs = computed(() => [
 	{ label: "Home", to: "/" },
 	{ label: "Districts", to: "/districts" },
@@ -73,13 +81,15 @@ const summaryItems = computed(() => {
 			label: "Candidates",
 			note: districtPageData.value.candidateAvailabilityNote,
 			value: districtPageData.value.mode === "guide" ? districtPageData.value.candidates.length : "Unavailable",
-			href: districtPageData.value.mode === "guide" ? `/contest/${districtPageData.value.district.slug}` : undefined
+			href: districtPageData.value.mode === "guide"
+				? buildSummaryHref(buildDistrictCandidateSummaryHref(districtPageData.value.candidates))
+				: undefined
 		},
 		{
 			label: "Current representatives",
 			note: districtPageData.value.representativeAvailabilityNote,
 			value: districtPageData.value.representatives.length,
-			href: "/representatives"
+			href: buildSummaryHref(buildDistrictRepresentativeSummaryHref(districtPageData.value.representatives))
 		},
 		{ label: "Updated", note: "District page freshness.", value: formatDateTime(districtPageData.value.updatedAt) }
 	];

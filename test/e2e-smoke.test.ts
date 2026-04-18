@@ -10,6 +10,10 @@ import { join } from "node:path";
 import process from "node:process";
 import test, { after, before } from "node:test";
 import { setTimeout as delay } from "node:timers/promises";
+import {
+	staleClientBuildStorageKey,
+	staleClientReloadKeyPrefix,
+} from "../front-end/src/utils/deploy-recovery.ts";
 
 const repoRoot = process.cwd();
 
@@ -24,6 +28,8 @@ const adminUsername = "smoke-admin";
 const adminDbPath = join(repoRoot, "back-end/data/e2e-smoke.sqlite");
 const localCoverageFile = join(repoRoot, "back-end/data/live-coverage.local.json");
 const activeNationwideLookupCookieName = "ballot-clarity-nationwide-lookup";
+const deployRecoveryUnloadCountKey = "ballot-clarity:test-unload-count";
+const deployRecoverySeenReloadKey = "ballot-clarity:test-seen-reload-key";
 const nationwideLookupSnapshot = {
 	ballotPlan: {},
 	ballotViewMode: "quick",
@@ -872,6 +878,150 @@ test("built app does not log a hydration mismatch when dark mode is stored befor
 			consoleMessages.some(message => /hydration|mismatch/i.test(message)),
 			false,
 			`Unexpected hydration console output:\n${consoleMessages.join("\n")}`
+		);
+
+		cleanupConsoleListener();
+		cleanupLogListener();
+		await cdp.close();
+		cdp = null;
+	}
+	catch (error) {
+		throw new Error(`${String(error)}\n\nChrome output:\n${chrome.getOutput()}`);
+	}
+	finally {
+		if (cdp)
+			await cdp.close().catch(() => {});
+
+		await stopChromeProcess(chrome.child, chromeUserDataDir);
+	}
+});
+
+test("stale client tabs recover cleanly when the stored build id is older than the served HTML", async (t) => {
+	const chromeExecutable = findChromeExecutable();
+
+	if (!chromeExecutable) {
+		t.skip("Chrome is not available for the deploy recovery regression test.");
+		return;
+	}
+
+	const chromePort = await getFreePort();
+	const chromeUserDataDir = mkdtempSync(join(tmpdir(), "ballot-clarity-chrome-"));
+	const chrome = startChromeProcess(chromeExecutable, [
+		`--remote-debugging-port=${chromePort}`,
+		`--user-data-dir=${chromeUserDataDir}`,
+		"--headless=new",
+		"--disable-background-networking",
+		"--disable-default-apps",
+		"--disable-gpu",
+		"--disable-sync",
+		"--metrics-recording-only",
+		"--no-first-run",
+		"--no-default-browser-check",
+		"about:blank"
+	]);
+
+	let cdp: CdpSession | null = null;
+
+	try {
+		const targets = await waitForJson(`http://127.0.0.1:${chromePort}/json/list`, "Chrome DevTools targets") as Array<{
+			type?: string;
+			webSocketDebuggerUrl?: string;
+		}>;
+		const pageTarget = targets.find(target => target.type === "page" && target.webSocketDebuggerUrl);
+
+		assert.ok(pageTarget?.webSocketDebuggerUrl);
+		cdp = await connectToCdp(pageTarget.webSocketDebuggerUrl as string);
+		await cdp.send("Page.enable");
+		await cdp.send("Runtime.enable");
+		await cdp.send("Log.enable");
+		await cdp.send("Page.addScriptToEvaluateOnNewDocument", {
+			source: `(() => {
+				const originalSetItem = Storage.prototype.setItem;
+				Storage.prototype.setItem = function(key, value) {
+					if (this === window.sessionStorage && typeof key === "string" && key.startsWith(${JSON.stringify(staleClientReloadKeyPrefix)}))
+						originalSetItem.call(this, ${JSON.stringify(deployRecoverySeenReloadKey)}, key);
+
+					return originalSetItem.call(this, key, value);
+				};
+
+				window.addEventListener("beforeunload", () => {
+				try {
+					const count = Number(window.sessionStorage.getItem(${JSON.stringify(deployRecoveryUnloadCountKey)}) || "0") + 1;
+					window.sessionStorage.setItem(${JSON.stringify(deployRecoveryUnloadCountKey)}, String(count));
+				}
+				catch {}
+				});
+			})();`
+		});
+
+		const consoleMessages: string[] = [];
+		const cleanupConsoleListener = cdp.on("Runtime.consoleAPICalled", (params) => {
+			const text = (params.args ?? [])
+				.map((entry: { value?: unknown }) => typeof entry.value === "string" ? entry.value : "")
+				.filter(Boolean)
+				.join(" ");
+
+			consoleMessages.push(`${params.type || "log"} ${text}`.trim());
+		});
+		const cleanupLogListener = cdp.on("Log.entryAdded", (params) => {
+			consoleMessages.push(`${params.entry?.level || "log"} ${params.entry?.text || ""}`.trim());
+		});
+
+		const initialLoad = cdp.waitForEvent("Page.loadEventFired");
+		await cdp.send("Page.navigate", { url: appBaseUrl });
+		await initialLoad;
+		await delay(500);
+
+		consoleMessages.length = 0;
+
+		const reloadComplete = cdp.waitForEvent("Page.loadEventFired");
+		await cdp.send("Runtime.evaluate", {
+			awaitPromise: false,
+			expression: `(() => {
+				window.sessionStorage.setItem(${JSON.stringify(staleClientBuildStorageKey)}, "stale-build-from-prior-release");
+				window.sessionStorage.setItem(${JSON.stringify(deployRecoveryUnloadCountKey)}, "0");
+				window.location.reload();
+			})()`,
+			returnByValue: true
+		});
+		await reloadComplete;
+		await delay(1600);
+
+		const evaluation = await cdp.send("Runtime.evaluate", {
+			awaitPromise: false,
+			expression: `(() => {
+				const currentBuildId = document.documentElement.getAttribute("data-app-build") || "";
+				return {
+					currentBuildId,
+					hasStaleRecoveryAttr: document.documentElement.hasAttribute("data-stale-client-recovery"),
+					recoveryMarker: window.sessionStorage.getItem(${JSON.stringify(deployRecoveryUnloadCountKey)}),
+					reloadMarkerCleared: window.sessionStorage.getItem(${JSON.stringify(staleClientReloadKeyPrefix)} + (currentBuildId || "unknown")),
+					reloadMarkerSeen: window.sessionStorage.getItem(${JSON.stringify(deployRecoverySeenReloadKey)}),
+					storedBuildId: window.sessionStorage.getItem(${JSON.stringify(staleClientBuildStorageKey)}),
+				};
+			})()`,
+			returnByValue: true
+		});
+		const pageState = evaluation.result?.value as {
+			currentBuildId?: string;
+			hasStaleRecoveryAttr?: boolean;
+			recoveryMarker?: null | string;
+			reloadMarkerCleared?: null | string;
+			reloadMarkerSeen?: null | string;
+			storedBuildId?: null | string;
+		};
+		const currentBuildId = pageState.currentBuildId ?? "";
+
+		assert.ok(currentBuildId.length > 0);
+		assert.equal(pageState.storedBuildId, currentBuildId);
+		assert.equal(pageState.hasStaleRecoveryAttr, false);
+		assert.equal(pageState.recoveryMarker, "1");
+		assert.equal(pageState.reloadMarkerCleared, null);
+		assert.equal(pageState.reloadMarkerSeen, `${staleClientReloadKeyPrefix}${currentBuildId}`);
+		assert.equal(
+			consoleMessages.some(message => /hydration|mismatch|failed to fetch dynamically imported module|chunkloaderror/i.test(message)),
+			false,
+			`Unexpected stale-client console output:\n${consoleMessages.join("\n")}`
 		);
 
 		cleanupConsoleListener();

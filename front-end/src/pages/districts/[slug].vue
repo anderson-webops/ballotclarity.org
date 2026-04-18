@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { isExternalHref } from "~/utils/link";
+
 const route = useRoute();
 const { hasNationwideResultContext, hasPublishedGuideContext } = useGuideEntryGate();
 const districtSlug = computed(() => String(route.params.slug));
@@ -134,13 +136,23 @@ usePageSeo({
 								{{ representative.summary }}
 							</p>
 							<div class="mt-5 flex flex-wrap gap-3">
-								<NuxtLink :to="representative.href" class="btn-secondary">
+								<a
+									v-if="isExternalHref(representative.href)"
+									:href="representative.href"
+									target="_blank"
+									rel="noreferrer"
+									class="btn-secondary inline-flex gap-2 items-center"
+								>
+									Open record
+									<span class="i-carbon-launch" />
+								</a>
+								<NuxtLink v-else :to="representative.href" class="btn-secondary">
 									Profile
 								</NuxtLink>
-								<NuxtLink :to="`${representative.href}/funding`" class="btn-secondary">
+								<NuxtLink v-if="!isExternalHref(representative.href)" :to="`${representative.href}/funding`" class="btn-secondary">
 									Funding
 								</NuxtLink>
-								<NuxtLink :to="`${representative.href}/influence`" class="btn-secondary">
+								<NuxtLink v-if="!isExternalHref(representative.href)" :to="`${representative.href}/influence`" class="btn-secondary">
 									Influence
 								</NuxtLink>
 							</div>

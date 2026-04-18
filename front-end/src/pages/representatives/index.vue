@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import { storeToRefs } from "pinia";
 
+import { isExternalHref } from "~/utils/link";
 import { buildNationwideDirectoryResponses } from "~/utils/nationwide-directory";
-
-const externalHrefPattern = /^https?:\/\//;
 
 const { formatDateTime } = useFormatters();
 const civicStore = useCivicStore();
@@ -18,7 +17,7 @@ const directoryBundle = computed(() => directoryUsesNationwide.value
 const directoryPending = computed(() => directoryUsesNationwide.value ? false : guidePending.value);
 const directoryError = computed(() => directoryUsesNationwide.value ? null : guideError.value);
 const directoryData = computed(() => isHydrated.value ? directoryBundle.value : null);
-const representativeLinkIsExternal = (href: string) => externalHrefPattern.test(href);
+const representativeLinkIsExternal = (href: string) => isExternalHref(href);
 const representativeUseCases = computed(() => directoryUsesNationwide.value
 	? [
 			"Open a district page for each officially matched representative area",

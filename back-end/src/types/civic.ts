@@ -616,15 +616,27 @@ export interface LocationLookupAction {
 	url?: string;
 }
 
+export interface LocationLookupSelectionOption {
+	id: string;
+	label: string;
+	description: string;
+	guideAvailability: LocationGuideAvailability;
+	districtMatches?: LocationDistrictMatch[];
+	representativeMatches?: LocationRepresentativeMatch[];
+}
+
 export interface LocationLookupResponse {
 	result: LocationLookupResult;
 	inputKind: LocationLookupInputKind;
 	note: string;
+	lookupQuery?: string;
+	detectedFromIp?: boolean;
 	guideAvailability?: LocationGuideAvailability;
 	availability?: LocationDataAvailabilitySummary;
 	location?: LocationSelection;
 	electionSlug?: string;
 	actions?: LocationLookupAction[];
+	selectionOptions?: LocationLookupSelectionOption[];
 	normalizedAddress?: string;
 	districtMatches?: LocationDistrictMatch[];
 	representativeMatches?: LocationRepresentativeMatch[];
@@ -758,9 +770,9 @@ export interface CoverageLimitation {
 
 export interface CoverageResponse {
 	updatedAt: string;
-	coverageMode: "seed" | "snapshot";
+	coverageMode: "empty" | "snapshot";
 	coverageUpdatedAt: string;
-	launchTarget: LaunchTargetProfile;
+	launchTarget?: LaunchTargetProfile;
 	scopeNote: string;
 	currentState: string;
 	supportedContentTypes: CoverageCapability[];
@@ -790,7 +802,7 @@ export interface PublicStatusNotice {
 export interface PublicStatusResponse {
 	updatedAt: string;
 	overallStatus: PublicOperationalStatus;
-	coverageMode: "seed" | "snapshot";
+	coverageMode: "empty" | "snapshot";
 	coverageUpdatedAt: string;
 	sourceSummary: Record<AdminSourceHealth, number>;
 	nextReviewAt?: string;

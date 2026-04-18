@@ -41,6 +41,17 @@ export interface AdminRepositoryOptions {
 	bootstrapPassword?: string | null;
 	bootstrapRole?: AdminUserRole | null;
 	bootstrapUsername?: string | null;
+	contentSeed?: AdminContentItem[];
+	correctionSeed?: AdminCorrectionRequest[];
+	activitySeed?: AdminActivityItem[];
+	sourceMonitorSeed?: AdminSourceMonitorItem[];
+}
+
+export interface LegacyDemoAdminIds {
+	activityIds: string[];
+	contentIds: string[];
+	correctionIds: string[];
+	sourceMonitorIds: string[];
 }
 
 export interface CorrectionSubmissionInput {
@@ -344,6 +355,30 @@ export function defaultContentSeed(): AdminContentItem[] {
 	];
 }
 
+export function getLegacyDemoAdminIds(): LegacyDemoAdminIds {
+	return {
+		activityIds: demoAdminOverview.recentActivity.map(item => item.id),
+		contentIds: defaultContentSeed().map(item => item.id),
+		correctionIds: demoAdminCorrections.corrections.map(item => item.id),
+		sourceMonitorIds: demoAdminSourceMonitor.sources.map(item => item.id)
+	};
+}
+
+export function shouldPurgeLegacyDemoAdminData(options: AdminRepositoryOptions) {
+	return options.contentSeed === undefined
+		&& options.correctionSeed === undefined
+		&& options.sourceMonitorSeed === undefined
+		&& options.activitySeed === undefined;
+}
+
+function deleteRowsByIds(database: DatabaseSync, table: string, ids: string[]) {
+	if (!ids.length)
+		return;
+
+	const placeholders = ids.map(() => "?").join(", ");
+	database.prepare(`DELETE FROM ${table} WHERE id IN (${placeholders})`).run(...ids);
+}
+
 function ensureDatabasePath(pathname: string) {
 	if (pathname === ":memory:")
 		return pathname;
@@ -368,10 +403,23 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 	const resolvedPath = ensureDatabasePath(options.dbPath || process.env.ADMIN_DB_PATH || defaultDbPath);
 	const database = new DatabaseSync(resolvedPath);
 	const schema = readFileSync(resolveSqliteSchemaPath(), "utf8");
+	const contentSeed = options.contentSeed ?? [];
+	const correctionSeed = options.correctionSeed ?? [];
+	const sourceMonitorSeed = options.sourceMonitorSeed ?? [];
+	const activitySeed = options.activitySeed ?? [];
 
 	database.exec(schema);
 	ensureColumn(database, "admin_content", "public_summary", "TEXT");
 	ensureColumn(database, "admin_content", "ballot_summary", "TEXT");
+
+	if (shouldPurgeLegacyDemoAdminData(options)) {
+		const legacyIds = getLegacyDemoAdminIds();
+
+		deleteRowsByIds(database, "admin_content", legacyIds.contentIds);
+		deleteRowsByIds(database, "admin_corrections", legacyIds.correctionIds);
+		deleteRowsByIds(database, "admin_source_monitors", legacyIds.sourceMonitorIds);
+		deleteRowsByIds(database, "admin_activity", legacyIds.activityIds);
+	}
 
 	const countStatement = (table: string) => database.prepare(`SELECT COUNT(*) AS count FROM ${table}`);
 
@@ -402,7 +450,7 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 			) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		`);
 
-		for (const item of defaultContentSeed()) {
+		for (const item of contentSeed) {
 			insertContent.run(
 				item.id,
 				item.entityType,
@@ -444,7 +492,7 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 		WHERE entity_type = ? AND entity_slug = ?
 	`);
 
-	for (const item of defaultContentSeed()) {
+	for (const item of contentSeed) {
 		backfillContentFields.run(
 			item.publicSummary,
 			item.publicBallotSummary || null,
@@ -474,7 +522,7 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 			) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		`);
 
-		for (const item of demoAdminCorrections.corrections) {
+		for (const item of correctionSeed) {
 			insertCorrection.run(
 				item.id,
 				item.submissionType ?? "correction",
@@ -507,7 +555,7 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 			) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 		`);
 
-		for (const item of demoAdminSourceMonitor.sources) {
+		for (const item of sourceMonitorSeed) {
 			insertSource.run(
 				item.id,
 				item.label,
@@ -532,7 +580,7 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 			) VALUES (?, ?, ?, ?, ?)
 		`);
 
-		for (const item of demoAdminOverview.recentActivity) {
+		for (const item of activitySeed) {
 			insertActivity.run(item.id, item.label, item.type, item.timestamp, item.summary);
 		}
 	}

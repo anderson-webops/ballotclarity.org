@@ -167,7 +167,12 @@ export const useCivicStore = defineStore("civic", {
 			this.ballotViewMode = snapshot.ballotViewMode;
 			this.compareList = normalizeCompareSlugs(snapshot.compareList);
 			this.lookupContext = snapshot.lookupContext ?? null;
-			this.nationwideLookupResult = snapshot.nationwideLookupResult ?? null;
+			this.nationwideLookupResult = snapshot.nationwideLookupResult
+				? {
+						...snapshot.nationwideLookupResult,
+						selectionOptions: snapshot.nationwideLookupResult.selectionOptions ?? []
+					}
+				: null;
 			this.selectedElection = snapshot.selectedElection;
 			this.selectedIssues = snapshot.selectedIssues;
 			this.selectedLocation = sanitizeLocationSelection(snapshot.selectedLocation);
@@ -205,7 +210,7 @@ export const useCivicStore = defineStore("civic", {
 		setLookupResponse(response: LocationLookupResponse, election?: ElectionSummary | null) {
 			this.lookupContext = buildLookupContextState(response);
 			this.nationwideLookupResult = buildNationwideLookupResultContext(response, election);
-			this.selectedLocation = response.guideAvailability === "published"
+			this.selectedLocation = response.guideAvailability === "published" && !response.detectedFromIp
 				? sanitizeLocationSelection(response.location ?? null)
 				: null;
 

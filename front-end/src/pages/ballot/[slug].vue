@@ -349,7 +349,7 @@ function clearFilters() {
 				</div>
 
 				<p class="print-guide-footnote">
-					Current coverage uses a limited public-record archive. Review original records and official notices before relying on any election information.
+					Current coverage is limited to the published source set available for this ballot. Review original records and official notices before relying on any election information.
 				</p>
 			</div>
 		</section>

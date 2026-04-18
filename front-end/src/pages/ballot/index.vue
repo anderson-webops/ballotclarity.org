@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import type { ElectionsResponse } from "~/types/civic";
-import { currentCoverageElectionSlug } from "~/constants";
 import { nationwideResultsPath } from "~/utils/nationwide-results";
 
 const api = useApiClient();
@@ -9,10 +8,10 @@ const { data } = await useAsyncData<ElectionsResponse>(
 	"ballot-index-elections",
 	() => api<ElectionsResponse>("/elections")
 );
-const target = data.value?.elections[0]?.slug ?? currentCoverageElectionSlug;
+const target = data.value?.elections[0]?.slug ?? null;
 
 await navigateTo(
-	allowsGuideEntryPoints.value
+	allowsGuideEntryPoints.value && target
 		? `/ballot/${target}`
 		: hasNationwideResultContext.value
 			? nationwideResultsPath

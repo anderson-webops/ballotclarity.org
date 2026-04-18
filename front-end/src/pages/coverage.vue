@@ -44,6 +44,33 @@ function capabilityLabel(status: "in-build" | "live-now" | "planned") {
 			</InfoCallout>
 		</div>
 
+		<div v-else-if="!data.launchTarget" class="max-w-4xl space-y-6">
+			<InfoCallout title="No published local coverage profile" tone="info">
+				{{ data.currentState }} {{ data.scopeNote }}
+			</InfoCallout>
+			<div class="surface-panel">
+				<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
+					What this means
+				</h2>
+				<ul class="readable-list text-sm text-app-muted mt-5 pl-5 dark:text-app-muted-dark">
+					<li>Ballot Clarity does not currently have a published local guide snapshot loaded in this environment.</li>
+					<li>Nationwide civic lookup results and official election tools should remain the main success path where they are available.</li>
+					<li>Local guide, candidate, measure, and plan flows should stay unavailable until verified local coverage is published.</li>
+				</ul>
+				<div class="mt-6 flex flex-wrap gap-3">
+					<NuxtLink to="/#location-lookup" class="btn-primary">
+						Open location lookup
+					</NuxtLink>
+					<NuxtLink to="/status" class="btn-secondary">
+						Open public status
+					</NuxtLink>
+					<NuxtLink to="/data-sources" class="btn-secondary">
+						Open data sources
+					</NuxtLink>
+				</div>
+			</div>
+		</div>
+
 		<div v-else class="space-y-8">
 			<header class="gap-6 grid xl:grid-cols-[minmax(0,1.2fr)_minmax(24rem,0.8fr)]">
 				<div class="surface-panel">
@@ -87,7 +114,7 @@ function capabilityLabel(status: "in-build" | "live-now" | "planned") {
 					</div>
 					<div class="mt-6 flex flex-wrap gap-3">
 						<UpdatedAt :value="data.updatedAt" label="Coverage profile updated" />
-						<TrustBadge :label="data.coverageMode === 'snapshot' ? 'Imported snapshot active' : 'Reference archive active'" :tone="data.coverageMode === 'snapshot' ? 'accent' : 'warning'" />
+						<TrustBadge :label="data.coverageMode === 'snapshot' ? 'Imported snapshot active' : 'No local snapshot active'" :tone="data.coverageMode === 'snapshot' ? 'accent' : 'warning'" />
 					</div>
 				</div>
 
@@ -120,7 +147,7 @@ function capabilityLabel(status: "in-build" | "live-now" | "planned") {
 						Official launch systems
 					</h2>
 					<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-						These are the first official systems Ballot Clarity should point to and verify against for the Fulton County launch.
+						These are the official systems Ballot Clarity should point to and verify against for the current published local target.
 					</p>
 					<div class="mt-6">
 						<OfficialResourceList :resources="data.launchTarget.officialResources" />
@@ -155,7 +182,7 @@ function capabilityLabel(status: "in-build" | "live-now" | "planned") {
 							Product capabilities
 						</h2>
 						<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
-							This is the honest line between what is already live in the product and what still needs real Fulton County integration work.
+							This is the honest line between what is already live in the product and what still needs verified local integration work.
 						</p>
 					</div>
 					<NuxtLink to="/corrections" class="btn-secondary">

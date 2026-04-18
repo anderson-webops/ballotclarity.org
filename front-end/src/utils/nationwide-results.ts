@@ -39,16 +39,19 @@ export function normalizeLookupResponseForDisplay(
 	return {
 		actions: response.actions ?? [],
 		availability: response.availability ?? null,
+		detectedFromIp: Boolean(response.detectedFromIp),
 		districtMatches: response.districtMatches ?? [],
 		election: election ?? null,
 		electionSlug: response.electionSlug,
 		fromCache: Boolean(response.fromCache),
 		guideAvailability: response.guideAvailability,
 		inputKind: response.inputKind,
+		lookupQuery: response.lookupQuery,
 		location: response.location ?? null,
 		normalizedAddress: response.normalizedAddress ?? "",
 		note: response.note,
 		representativeMatches: response.representativeMatches ?? [],
+		selectionOptions: response.selectionOptions ?? [],
 		result: response.result
 	};
 }
@@ -57,7 +60,7 @@ export function buildNationwideLookupResultContext(
 	response: LocationLookupResponse,
 	election?: ElectionSummary | null
 ) {
-	if (response.result !== "resolved" || hasPublishedGuideResult(response))
+	if (response.result !== "resolved" || (hasPublishedGuideResult(response) && !response.detectedFromIp))
 		return null;
 
 	return normalizeLookupResponseForDisplay(response, election);
@@ -67,7 +70,7 @@ export function deriveCivicLookupStateUpdate(
 	response: LocationLookupResponse,
 	election?: ElectionSummary | null
 ): CivicLookupStateUpdate {
-	const canOpenGuide = hasPublishedGuideResult(response);
+	const canOpenGuide = hasPublishedGuideResult(response) && !response.detectedFromIp;
 
 	return {
 		lookupContext: buildLookupContextState(response),
@@ -82,7 +85,7 @@ export function hasActiveNationwideLookupResult(
 	return Boolean(
 		context
 		&& context.result === "resolved"
-		&& context.guideAvailability !== "published"
+		&& (context.detectedFromIp || context.guideAvailability !== "published")
 	);
 }
 
@@ -92,7 +95,10 @@ export function resolveLookupDestination(response: LocationLookupResponse) {
 		: null;
 }
 
-export function buildHomeExperienceState(hasNationwideLookupResult: boolean): HomeExperienceState {
+export function buildHomeExperienceState(
+	hasNationwideLookupResult: boolean,
+	hasPublishedGuideContext: boolean
+): HomeExperienceState {
 	if (hasNationwideLookupResult) {
 		return {
 			primaryLookupPath: nationwideResultsPath,
@@ -103,11 +109,21 @@ export function buildHomeExperienceState(hasNationwideLookupResult: boolean): Ho
 		};
 	}
 
+	if (hasPublishedGuideContext) {
+		return {
+			primaryLookupPath: "/ballot",
+			showFeaturedGuidePreview: true,
+			showNationwideResults: false,
+			startHerePrimaryLabel: "Open ballot guide",
+			startHerePrimaryPath: "/ballot"
+		};
+	}
+
 	return {
 		primaryLookupPath: "/#location-lookup",
-		showFeaturedGuidePreview: true,
+		showFeaturedGuidePreview: false,
 		showNationwideResults: false,
-		startHerePrimaryLabel: "Check live coverage",
-		startHerePrimaryPath: "/coverage"
+		startHerePrimaryLabel: "Open location lookup",
+		startHerePrimaryPath: "/#location-lookup"
 	};
 }

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type {
 	LocationLookupAction,
+	LocationLookupSelectionOption,
 	NationwideLookupResultContext
 } from "~/types/civic";
 import {
@@ -17,6 +18,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
 	openGuide: [action: LocationLookupAction];
+	selectOption: [option: LocationLookupSelectionOption];
 }>();
 
 const lookupResolution = computed(() => ({
@@ -37,6 +39,9 @@ const lookupProvenanceSummary = computed(() => buildLookupProvenanceSummary({
 	inputKind: props.lookup.inputKind,
 	representativeMatches: props.lookup.representativeMatches
 }));
+const selectionOptions = computed(() => props.lookup.selectionOptions ?? []);
+const hasSelectionOptions = computed(() => selectionOptions.value.length > 0);
+
 const lookupUncertaintyNote = computed(() => {
 	if (props.lookup.result === "unsupported")
 		return "This input did not resolve cleanly enough to show district or representative results. Try a full street address or use the official tools.";
@@ -53,6 +58,10 @@ function openGuideAction(action: LocationLookupAction) {
 
 	emit("openGuide", action);
 }
+
+function selectLookupOption(option: LocationLookupSelectionOption) {
+	emit("selectOption", option);
+}
 </script>
 
 <template>
@@ -64,11 +73,14 @@ function openGuideAction(action: LocationLookupAction) {
 			{{ lookup.note }}
 		</p>
 		<div v-if="lookup.result === 'resolved'" class="mt-4 flex flex-wrap gap-2">
-			<VerificationBadge :label="lookup.inputKind === 'address' ? 'Address lookup' : 'ZIP lookup'" :tone="lookup.inputKind === 'address' ? 'accent' : 'warning'" />
+			<VerificationBadge
+				:label="lookup.detectedFromIp ? 'IP-based location guess' : lookup.inputKind === 'address' ? 'Address lookup' : 'ZIP lookup'"
+				:tone="lookup.detectedFromIp || lookup.inputKind === 'zip' ? 'warning' : 'accent'"
+			/>
 			<VerificationBadge :label="lookupPresentation.availabilityBadgeLabel" tone="accent" />
 			<VerificationBadge
-				:label="lookup.representativeMatches.length ? `${lookup.representativeMatches.length} representative match${lookup.representativeMatches.length === 1 ? '' : 'es'}` : 'No representative match yet'"
-				:tone="lookup.representativeMatches.length ? 'accent' : 'neutral'"
+				:label="hasSelectionOptions ? 'Selection required' : lookup.representativeMatches.length ? `${lookup.representativeMatches.length} representative match${lookup.representativeMatches.length === 1 ? '' : 'es'}` : 'No representative match yet'"
+				:tone="hasSelectionOptions ? 'warning' : lookup.representativeMatches.length ? 'accent' : 'neutral'"
 			/>
 		</div>
 		<p v-if="lookupPresentation.supportingNote" class="text-xs text-app-muted leading-6 mt-3 dark:text-app-muted-dark">
@@ -91,6 +103,50 @@ function openGuideAction(action: LocationLookupAction) {
 			:cards="representativeCards"
 			class="mt-4"
 		/>
+		<div v-if="hasSelectionOptions" class="mt-4 gap-3 grid md:grid-cols-2">
+			<article
+				v-for="option in selectionOptions"
+				:key="option.id"
+				class="p-4 border border-app-line rounded-2xl bg-white dark:border-app-line-dark dark:bg-app-panel-dark"
+			>
+				<div class="flex flex-wrap gap-2 items-center">
+					<p class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
+						{{ option.label }}
+					</p>
+					<VerificationBadge
+						:label="option.guideAvailability === 'published' ? 'Local guide available' : 'Nationwide results'"
+						:tone="option.guideAvailability === 'published' ? 'accent' : 'neutral'"
+					/>
+					<VerificationBadge
+						:label="option.representativeMatches?.length ? `${option.representativeMatches.length} representative match${option.representativeMatches.length === 1 ? '' : 'es'}` : 'Representative data pending'"
+						:tone="option.representativeMatches?.length ? 'accent' : 'neutral'"
+					/>
+				</div>
+				<p class="text-sm text-app-muted leading-6 mt-3 dark:text-app-muted-dark">
+					{{ option.description }}
+				</p>
+				<ul v-if="option.districtMatches?.length" class="mt-3 space-y-2">
+					<li
+						v-for="match in option.districtMatches"
+						:key="`${option.id}-${match.id}`"
+						class="text-sm text-app-muted leading-6 dark:text-app-muted-dark"
+					>
+						<span class="text-app-ink font-semibold dark:text-app-text-dark">{{ match.label }}</span>
+						<span class="text-xs tracking-[0.12em] ml-2 uppercase">{{ match.sourceSystem }}</span>
+					</li>
+				</ul>
+				<div class="mt-4 flex flex-wrap gap-3">
+					<button
+						type="button"
+						class="btn-primary"
+						@click="selectLookupOption(option)"
+					>
+						<span class="i-carbon-arrow-right" />
+						Use this area
+					</button>
+				</div>
+			</article>
+		</div>
 		<AvailabilityStatusPanel
 			v-if="availabilityItems.length"
 			class="mt-4"

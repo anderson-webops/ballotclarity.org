@@ -17,7 +17,7 @@ defineProps<{
 					Use official sources where they are authoritative, then normalize the rest.
 				</h2>
 				<p class="bc-measure text-base text-app-muted leading-8 mt-5 dark:text-app-muted-dark">
-					The next major iteration is operational, not decorative: replacing the current archive with a public, auditable data stack that separates official logistics, normalized ballot data, and federal money and influence pipelines.
+					The next major iteration is operational, not decorative: replacing empty or fixture fallbacks with a public, auditable data stack that separates official logistics, normalized ballot data, and federal money and influence pipelines.
 				</p>
 				<div class="mt-6 flex flex-wrap gap-3">
 					<NuxtLink to="/data-sources" class="btn-primary" prefetch-on="interaction">

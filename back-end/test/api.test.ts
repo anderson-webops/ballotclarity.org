@@ -2,7 +2,16 @@ import type { Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import assert from "node:assert/strict";
 import { once } from "node:events";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import test, { after, before } from "node:test";
+import { defaultContentSeed } from "../src/admin-store.js";
+import {
+	demoAdminCorrections,
+	demoAdminOverview,
+	demoAdminSourceMonitor,
+} from "../src/coverage-data.js";
 import { buildSeedCoverageSnapshot } from "../src/coverage-repository.js";
 import { createApp } from "../src/server.js";
 
@@ -14,6 +23,10 @@ const previousAdminStoreDriver = process.env.ADMIN_STORE_DRIVER;
 const previousAdminDatabaseUrl = process.env.ADMIN_DATABASE_URL;
 const previousDatabaseUrl = process.env.DATABASE_URL;
 const previousSourceAssetBaseUrl = process.env.SOURCE_ASSET_BASE_URL;
+const contentSeed = defaultContentSeed();
+const correctionSeed = demoAdminCorrections.corrections;
+const sourceMonitorSeed = demoAdminSourceMonitor.sources;
+const activitySeed = demoAdminOverview.recentActivity;
 
 before(async () => {
 	process.env.ADMIN_STORE_DRIVER = "sqlite";
@@ -23,7 +36,9 @@ before(async () => {
 
 	server = (await createApp({
 		adminApiKey,
+		activitySeed,
 		adminDbPath: ":memory:",
+		contentSeed,
 		coverageRepository: {
 			data: coverageSnapshot,
 			getCandidateBySlug(slug) {
@@ -34,10 +49,10 @@ before(async () => {
 				return coverageSnapshot.candidates.filter(candidate => requested.has(candidate.slug));
 			},
 			getElectionBySlug(slug) {
-				return coverageSnapshot.election.slug === slug ? coverageSnapshot.election : null;
+				return coverageSnapshot.election?.slug === slug ? coverageSnapshot.election : null;
 			},
 			getJurisdictionBySlug(slug) {
-				return coverageSnapshot.jurisdiction.slug === slug ? coverageSnapshot.jurisdiction : null;
+				return coverageSnapshot.jurisdiction?.slug === slug ? coverageSnapshot.jurisdiction : null;
 			},
 			getMeasureBySlug(slug) {
 				return coverageSnapshot.measures.find(measure => measure.slug === slug) ?? null;
@@ -45,9 +60,10 @@ before(async () => {
 			getSourceById(id) {
 				return coverageSnapshot.sources.find(source => source.id === id) ?? null;
 			},
-			mode: "seed",
+			mode: "snapshot",
 			snapshotPath: ":memory:"
 		},
+		correctionSeed,
 		addressEnrichmentService: {
 			async lookupAddress(address) {
 				if (/utah county|provo|84604/i.test(address)) {
@@ -159,33 +175,172 @@ before(async () => {
 				};
 			}
 		},
+		sourceMonitorSeed,
 		zipLocationService: {
 			async lookupZip(zipCode) {
 				if (zipCode === "84604") {
 					return {
-						countyFips: "049",
-						countyName: "Utah County",
-						latitude: 40.2607,
-						longitude: -111.6549,
-						locality: "Provo",
 						postalCode: "84604",
-						sourceSystem: "Zippopotam.us + U.S. Census Geocoder",
-						stateAbbreviation: "UT",
-						stateName: "Utah"
+						matches: [
+							{
+								countyFips: "049",
+								countyName: "Utah County",
+								districtMatches: [
+									{
+										districtCode: "3",
+										districtType: "congressional",
+										id: "congressional:3",
+										label: "Congressional District 3",
+										sourceSystem: "U.S. Census Geocoder"
+									},
+									{
+										districtCode: "24",
+										districtType: "state-senate",
+										id: "state-senate:24",
+										label: "State Senate District 24",
+										sourceSystem: "U.S. Census Geocoder"
+									}
+								],
+								id: "zip:84604:provo-utah",
+								latitude: 40.2607,
+								locality: "Provo",
+								longitude: -111.6549,
+								postalCode: "84604",
+								representativeMatches: [
+									{
+										districtLabel: "Congressional District 3",
+										id: "ocd-person:test-ut-rep",
+										name: "Mike Kennedy",
+										officeTitle: "Representative",
+										openstatesUrl: "https://openstates.org/person/example-ut",
+										party: "Republican",
+										sourceSystem: "Open States"
+									}
+								],
+								sourceSystem: "Zippopotam.us + U.S. Census Geocoder",
+								stateAbbreviation: "UT",
+								stateName: "Utah"
+							}
+						]
 					};
 				}
 
 				if (zipCode === "30303") {
 					return {
-						countyFips: "121",
-						countyName: "Fulton County",
-						latitude: 33.7525,
-						longitude: -84.3928,
-						locality: "Atlanta",
 						postalCode: "30303",
-						sourceSystem: "Zippopotam.us + U.S. Census Geocoder",
-						stateAbbreviation: "GA",
-						stateName: "Georgia"
+						matches: [
+							{
+								countyFips: "121",
+								countyName: "Fulton County",
+								districtMatches: [
+									{
+										districtCode: "5",
+										districtType: "congressional",
+										id: "congressional:5",
+										label: "Congressional District 5",
+										sourceSystem: "U.S. Census Geocoder"
+									},
+									{
+										districtCode: "36",
+										districtType: "state-senate",
+										id: "state-senate:36",
+										label: "State Senate District 36",
+										sourceSystem: "U.S. Census Geocoder"
+									}
+								],
+								id: "zip:30303:atlanta-georgia",
+								latitude: 33.7525,
+								locality: "Atlanta",
+								longitude: -84.3928,
+								postalCode: "30303",
+								representativeMatches: [
+									{
+										districtLabel: "Senator Georgia",
+										id: "ocd-person:test-senator",
+										name: "Jon Ossoff",
+										officeTitle: "Senator",
+										openstatesUrl: "https://openstates.org/person/example",
+										party: "Democratic",
+										sourceSystem: "Open States"
+									}
+								],
+								sourceSystem: "Zippopotam.us + U.S. Census Geocoder",
+								stateAbbreviation: "GA",
+								stateName: "Georgia"
+							}
+						]
+					};
+				}
+
+				if (zipCode === "84001") {
+					return {
+						postalCode: "84001",
+						matches: [
+							{
+								countyFips: "049",
+								countyName: "Utah County",
+								districtMatches: [
+									{
+										districtCode: "3",
+										districtType: "congressional",
+										id: "congressional:3",
+										label: "Congressional District 3",
+										sourceSystem: "U.S. Census Geocoder"
+									}
+								],
+								id: "zip:84001:provo-utah",
+								latitude: 40.245,
+								locality: "Provo",
+								longitude: -111.64,
+								postalCode: "84001",
+								representativeMatches: [
+									{
+										districtLabel: "Congressional District 3",
+										id: "ocd-person:test-ut-rep",
+										name: "Mike Kennedy",
+										officeTitle: "Representative",
+										openstatesUrl: "https://openstates.org/person/example-ut",
+										party: "Republican",
+										sourceSystem: "Open States"
+									}
+								],
+								sourceSystem: "Zippopotam.us + U.S. Census Geocoder",
+								stateAbbreviation: "UT",
+								stateName: "Utah"
+							},
+							{
+								countyFips: "049",
+								countyName: "Utah County",
+								districtMatches: [
+									{
+										districtCode: "4",
+										districtType: "congressional",
+										id: "congressional:4",
+										label: "Congressional District 4",
+										sourceSystem: "U.S. Census Geocoder"
+									}
+								],
+								id: "zip:84001:orem-utah",
+								latitude: 40.2969,
+								locality: "Orem",
+								longitude: -111.6946,
+								postalCode: "84001",
+								representativeMatches: [
+									{
+										districtLabel: "Congressional District 4",
+										id: "ocd-person:test-ut-rep-4",
+										name: "Burgess Owens",
+										officeTitle: "Representative",
+										openstatesUrl: "https://openstates.org/person/example-ut-4",
+										party: "Republican",
+										sourceSystem: "Open States"
+									}
+								],
+								sourceSystem: "Zippopotam.us + U.S. Census Geocoder",
+								stateAbbreviation: "UT",
+								stateName: "Utah"
+							}
+						]
 					};
 				}
 
@@ -234,10 +389,161 @@ test("GET /health returns readiness and coverage metadata", async () => {
 	assert.equal(body.ok, true);
 	assert.equal(body.ready, true);
 	assert.equal(body.driver, "sqlite");
-	assert.equal(body.coverageMode, "seed");
+	assert.equal(body.coverageMode, "snapshot");
 	assert.equal(body.assetMode, "public-mirror");
 	assert.equal(body.providerSummary.total >= 6, true);
 	assert.match(body.timestamp, /^\d{4}-\d{2}-\d{2}T/);
+});
+
+test("default runtime stays empty instead of auto-seeding coverage and public ops data", async () => {
+	const isolatedServer = (await createApp({
+		adminApiKey,
+		adminDbPath: ":memory:"
+	})).listen(0, "127.0.0.1");
+
+	await once(isolatedServer, "listening");
+	const isolatedAddress = isolatedServer.address() as AddressInfo;
+	const isolatedBaseUrl = `http://127.0.0.1:${isolatedAddress.port}`;
+
+	try {
+		const [electionsResponse, coverageResponse, statusResponse] = await Promise.all([
+			fetch(`${isolatedBaseUrl}/api/elections`),
+			fetch(`${isolatedBaseUrl}/api/coverage`),
+			fetch(`${isolatedBaseUrl}/api/status`)
+		]);
+		const electionsBody = await electionsResponse.json();
+		const coverageBody = await coverageResponse.json();
+		const statusBody = await statusResponse.json();
+
+		assert.equal(electionsResponse.status, 200);
+		assert.deepEqual(electionsBody.elections, []);
+		assert.equal(coverageBody.coverageMode, "empty");
+		assert.equal(coverageBody.launchTarget, undefined);
+		assert.match(coverageBody.currentState, /No published local coverage snapshot/i);
+		assert.equal(statusBody.coverageMode, "empty");
+		assert.equal(statusBody.overallStatus, "reviewing");
+		assert.deepEqual(statusBody.sourceSummary, {
+			"healthy": 0,
+			"incident": 0,
+			"review-soon": 0,
+			"stale": 0
+		});
+		assert.deepEqual(statusBody.incidents, []);
+		assert.deepEqual(statusBody.sources, []);
+		assert.deepEqual(statusBody.notes, [
+			"No published local coverage snapshot is active right now.",
+			"Nationwide civic lookup is available across the public site.",
+			"Local guide publication status remains generic until a verified local snapshot is published."
+		]);
+
+		const ballotResponse = await fetch(`${isolatedBaseUrl}/api/ballot?election=2026-fulton-county-general`);
+		const ballotBody = await ballotResponse.json();
+
+		assert.equal(ballotResponse.status, 404);
+		assert.match(ballotBody.message, /Ballot not found/i);
+	}
+	finally {
+		await new Promise<void>((resolve, reject) => {
+			isolatedServer.close(error => error ? reject(error) : resolve());
+		});
+	}
+});
+
+test("GET /api/status suppresses launch-specific source monitors when coverage mode is empty", async () => {
+	const isolatedServer = (await createApp({
+		adminApiKey,
+		adminDbPath: ":memory:",
+		sourceMonitorSeed
+	})).listen(0, "127.0.0.1");
+
+	await once(isolatedServer, "listening");
+	const isolatedAddress = isolatedServer.address() as AddressInfo;
+	const isolatedBaseUrl = `http://127.0.0.1:${isolatedAddress.port}`;
+
+	try {
+		const response = await fetch(`${isolatedBaseUrl}/api/status`);
+		const body = await response.json();
+
+		assert.equal(response.status, 200);
+		assert.equal(body.coverageMode, "empty");
+		assert.equal(body.overallStatus, "reviewing");
+		assert.deepEqual(body.sourceSummary, {
+			"healthy": 0,
+			"incident": 0,
+			"review-soon": 0,
+			"stale": 0
+		});
+		assert.deepEqual(body.incidents, []);
+		assert.deepEqual(body.sources, []);
+		assert.ok(body.notes.every((note: string) => !/Fulton|Georgia/i.test(note)));
+	}
+	finally {
+		await new Promise<void>((resolve, reject) => {
+			isolatedServer.close(error => error ? reject(error) : resolve());
+		});
+	}
+});
+
+test("default runtime purges legacy demo public-status records from an existing admin store", async () => {
+	const tempDir = mkdtempSync(join(tmpdir(), "ballot-clarity-admin-"));
+	const adminDbPath = join(tempDir, "admin.sqlite");
+	let seededServer: Server | null = null;
+	let cleanedServer: Server | null = null;
+
+	try {
+		seededServer = (await createApp({
+			adminApiKey,
+			activitySeed,
+			adminDbPath,
+			contentSeed,
+			correctionSeed,
+			sourceMonitorSeed
+		})).listen(0, "127.0.0.1");
+		await once(seededServer, "listening");
+
+		await new Promise<void>((resolve, reject) => {
+			seededServer?.close(error => error ? reject(error) : resolve());
+		});
+		seededServer = null;
+
+		cleanedServer = (await createApp({
+			adminApiKey,
+			adminDbPath
+		})).listen(0, "127.0.0.1");
+		await once(cleanedServer, "listening");
+
+		const address = cleanedServer.address() as AddressInfo;
+		const cleanedBaseUrl = `http://127.0.0.1:${address.port}`;
+		const [statusResponse, correctionsResponse] = await Promise.all([
+			fetch(`${cleanedBaseUrl}/api/status`),
+			fetch(`${cleanedBaseUrl}/api/corrections`)
+		]);
+		const statusBody = await statusResponse.json();
+		const correctionsBody = await correctionsResponse.json();
+
+		assert.equal(statusResponse.status, 200);
+		assert.equal(statusBody.coverageMode, "empty");
+		assert.deepEqual(statusBody.sources, []);
+		assert.equal(statusBody.incidents.length, 0);
+		assert.ok(statusBody.notes.every((note: string) => !/Fulton|Georgia legislative crosswalk|Sandra Patel/i.test(note)));
+		assert.equal(correctionsResponse.status, 200);
+		assert.deepEqual(correctionsBody.corrections, []);
+	}
+	finally {
+		if (seededServer) {
+			await new Promise<void>((resolve, reject) => {
+				seededServer?.close(error => error ? reject(error) : resolve());
+			});
+		}
+
+		if (cleanedServer) {
+			await new Promise<void>((resolve, reject) => {
+				cleanedServer?.close(error => error ? reject(error) : resolve());
+			});
+		}
+
+		rmSync(tempDir, { force: true, recursive: true });
+	}
 });
 
 test("POST /api/location validates short lookups", async () => {
@@ -283,16 +589,18 @@ test("POST /api/location returns the supported Fulton coverage guide for ZIPs in
 	assert.equal(body.result, "resolved");
 	assert.equal(body.guideAvailability, "published");
 	assert.equal(body.inputKind, "zip");
-	assert.equal(body.actions[0].kind, "ballot-guide");
-	assert.equal(body.actions[0].location.slug, "fulton-county-georgia");
-	assert.equal(body.actions[0].location.lookupMode, "zip-preview");
+	assert.equal(body.electionSlug, "2026-fulton-county-general");
+	assert.equal(body.location.slug, "fulton-county-georgia");
+	assert.equal(body.location.lookupMode, "zip-preview");
 	assert.equal(body.actions.some((item: { kind: string; title: string }) => item.kind === "official-verification" && /My Voter Page/i.test(item.title)), true);
 	assert.equal(body.availability.nationwideCivicResults.status, "available");
-	assert.equal(body.availability.representatives.status, "unavailable");
+	assert.equal(body.availability.representatives.status, "available");
 	assert.equal(body.availability.ballotCandidates.status, "available");
 	assert.equal(body.availability.financeInfluence.status, "available");
 	assert.equal(body.availability.fullLocalGuide.status, "available");
+	assert.equal(body.representativeMatches[0].name, "Jon Ossoff");
 	assert.match(body.note, /Atlanta, Georgia/i);
+	assert.match(body.note, /single guide area/i);
 });
 
 test("POST /api/location returns district lookup results without a published guide for out-of-guide ZIPs", async () => {
@@ -312,12 +620,62 @@ test("POST /api/location returns district lookup results without a published gui
 	assert.equal(body.actions.some((item: { kind: string }) => item.kind === "ballot-guide"), false);
 	assert.equal(body.actions.some((item: { title: string }) => /Utah voter registration portal/i.test(item.title)), true);
 	assert.equal(body.availability.nationwideCivicResults.status, "available");
-	assert.equal(body.availability.representatives.status, "unavailable");
+	assert.equal(body.availability.representatives.status, "available");
 	assert.equal(body.availability.ballotCandidates.status, "unavailable");
 	assert.equal(body.availability.financeInfluence.status, "unavailable");
 	assert.equal(body.availability.fullLocalGuide.status, "unavailable");
+	assert.equal(body.location.displayName, "Provo, Utah");
+	assert.equal(body.representativeMatches[0].name, "Mike Kennedy");
 	assert.match(body.note, /Provo, Utah/i);
 	assert.match(body.note, /nationwide civic result layers/i);
+});
+
+test("POST /api/location returns a selection panel when a ZIP resolves to multiple civic areas", async () => {
+	const response = await fetch(`${baseUrl}/api/location`, {
+		body: JSON.stringify({ q: "84001" }),
+		headers: {
+			"Content-Type": "application/json"
+		},
+		method: "POST"
+	});
+	const body = await response.json();
+
+	assert.equal(response.status, 200);
+	assert.equal(body.result, "resolved");
+	assert.equal(body.guideAvailability, "not-published");
+	assert.equal(body.inputKind, "zip");
+	assert.equal(body.selectionOptions.length, 2);
+	assert.match(body.note, /matched 2 possible civic areas/i);
+	assert.match(body.availability.representatives.detail, /Choose one below/i);
+	assert.equal(body.representativeMatches, undefined);
+});
+
+test("POST /api/location accepts a ZIP area selection and loads that area's districts and representatives", async () => {
+	const selectionResponse = await fetch(`${baseUrl}/api/location`, {
+		body: JSON.stringify({ q: "84001" }),
+		headers: {
+			"Content-Type": "application/json"
+		},
+		method: "POST"
+	});
+	const selectionBody = await selectionResponse.json();
+	const chosenOption = selectionBody.selectionOptions[1];
+
+	const response = await fetch(`${baseUrl}/api/location`, {
+		body: JSON.stringify({ q: "84001", selectionId: chosenOption.id }),
+		headers: {
+			"Content-Type": "application/json"
+		},
+		method: "POST"
+	});
+	const body = await response.json();
+
+	assert.equal(response.status, 200);
+	assert.equal(body.result, "resolved");
+	assert.equal(body.selectionOptions, undefined);
+	assert.equal(body.location.displayName, "Orem, Utah");
+	assert.equal(body.districtMatches[0].label, "Congressional District 4");
+	assert.equal(body.representativeMatches[0].name, "Burgess Owens");
 });
 
 test("POST /api/location returns the current Fulton County launch location for full addresses", async () => {
@@ -383,6 +741,36 @@ test("POST /api/location returns district lookup results without a published gui
 	assert.match(body.note, /Census geography matched/i);
 });
 
+test("GET /api/location/guess uses deployment geo headers to load an IP-based nationwide result", async () => {
+	const response = await fetch(`${baseUrl}/api/location/guess`, {
+		headers: {
+			"x-vercel-ip-city": "Provo",
+			"x-vercel-ip-country": "US",
+			"x-vercel-ip-country-region": "UT",
+			"x-vercel-ip-postal-code": "84604"
+		}
+	});
+	const body = await response.json();
+
+	assert.equal(response.status, 200);
+	assert.equal(response.headers.get("cache-control"), "no-store");
+	assert.match(response.headers.get("vary") || "", /x-vercel-ip-postal-code/i);
+	assert.equal(body.detectedFromIp, true);
+	assert.equal(body.result, "resolved");
+	assert.equal(body.guideAvailability, "not-published");
+	assert.equal(body.inputKind, "zip");
+	assert.match(body.note, /best-effort location guess from your IP address/i);
+	assert.equal(body.actions.some((item: { title: string }) => /Utah voter registration portal/i.test(item.title)), true);
+});
+
+test("GET /api/location/guess returns 404 when deployment geo headers are unavailable", async () => {
+	const response = await fetch(`${baseUrl}/api/location/guess`);
+	const body = await response.json();
+
+	assert.equal(response.status, 404);
+	assert.match(body.message, /IP-based location guess is not available/i);
+});
+
 test("GET /api/ballot returns the election guide and contests", async () => {
 	const response = await fetch(`${baseUrl}/api/ballot?election=2026-fulton-county-general`);
 	const body = await response.json();
@@ -394,7 +782,7 @@ test("GET /api/ballot returns the election guide and contests", async () => {
 	assert.equal(body.election.contests[0].title, "Federal Race");
 	assert.equal(body.election.contests[0].roleGuide.decisionAreas.length, 3);
 	assert.match(body.election.contests[0].roleGuide.summary, /federal law/i);
-	assert.match(body.note, /current release/i);
+	assert.match(body.note, /latest imported civic-data snapshot/i);
 	assert.match(body.election.name, /Fulton County/i);
 });
 
@@ -422,7 +810,7 @@ test("GET /api/data-sources returns the live-data roadmap and migration notes", 
 	assert.equal(body.roadmap.length, 6);
 	assert.equal(body.launchTarget.displayName, "Fulton County, Georgia");
 	assert.ok(body.categories[0].options[0].links.length >= 1);
-	assert.equal(body.coverageMode, "seed");
+	assert.equal(body.coverageMode, "snapshot");
 	assert.equal(body.assetMode, "public-mirror");
 });
 
@@ -436,7 +824,7 @@ test("GET /api/coverage returns the public launch profile for Fulton County, Geo
 	assert.equal(body.launchTarget.nextElectionDate, "2026-11-03");
 	assert.equal(body.supportedContentTypes.length, 5);
 	assert.equal(body.collections[0].href, "/coverage");
-	assert.equal(body.coverageMode, "seed");
+	assert.equal(body.coverageMode, "snapshot");
 });
 
 test("GET /api/status returns public source-health and launch notices", async () => {
@@ -445,11 +833,34 @@ test("GET /api/status returns public source-health and launch notices", async ()
 
 	assert.equal(response.status, 200);
 	assert.equal(body.overallStatus, "degraded");
-	assert.equal(body.coverageMode, "seed");
+	assert.equal(body.coverageMode, "snapshot");
 	assert.equal(body.sourceSummary.healthy, 1);
 	assert.equal(body.sourceSummary.incident, 1);
 	assert.ok(body.notes.length >= 2);
+	assert.ok(body.notes.some((note: string) => /Public pages are serving an imported coverage snapshot/i.test(note)));
+	assert.ok(body.notes.some((note: string) => /Fulton County elections office|Georgia legislative crosswalk/i.test(note)));
 	assert.ok(body.sources.some((item: { label: string }) => item.label === "Fulton County Registration and Elections site"));
+});
+
+test("GET /api/status stays global after a successful nationwide lookup", async () => {
+	const lookupResponse = await fetch(`${baseUrl}/api/location`, {
+		body: JSON.stringify({ q: "84604" }),
+		headers: {
+			"Content-Type": "application/json"
+		},
+		method: "POST"
+	});
+	const lookupBody = await lookupResponse.json();
+	const statusResponse = await fetch(`${baseUrl}/api/status`);
+	const statusBody = await statusResponse.json();
+
+	assert.equal(lookupResponse.status, 200);
+	assert.equal(lookupBody.result, "resolved");
+	assert.equal(lookupBody.guideAvailability, "not-published");
+	assert.equal(statusResponse.status, 200);
+	assert.equal(statusBody.coverageMode, "snapshot");
+	assert.ok(statusBody.sources.some((item: { label: string }) => item.label === "Fulton County Registration and Elections site"));
+	assert.ok(statusBody.notes.every((note: string) => !/Provo|Utah|84604/i.test(note)));
 });
 
 test("GET /api/corrections returns the public corrections log", async () => {
@@ -681,7 +1092,35 @@ test("GET /api/admin/review and /api/admin/sources return protected operational 
 test("PATCH /api/admin/content updates public content fields and publish gating", async () => {
 	const isolatedServer = (await createApp({
 		adminApiKey,
-		adminDbPath: ":memory:"
+		activitySeed,
+		adminDbPath: ":memory:",
+		contentSeed,
+		coverageRepository: {
+			data: coverageSnapshot,
+			getCandidateBySlug(slug) {
+				return coverageSnapshot.candidates.find(candidate => candidate.slug === slug) ?? null;
+			},
+			getCandidatesBySlugs(slugs) {
+				const requested = new Set(slugs);
+				return coverageSnapshot.candidates.filter(candidate => requested.has(candidate.slug));
+			},
+			getElectionBySlug(slug) {
+				return coverageSnapshot.election?.slug === slug ? coverageSnapshot.election : null;
+			},
+			getJurisdictionBySlug(slug) {
+				return coverageSnapshot.jurisdiction?.slug === slug ? coverageSnapshot.jurisdiction : null;
+			},
+			getMeasureBySlug(slug) {
+				return coverageSnapshot.measures.find(measure => measure.slug === slug) ?? null;
+			},
+			getSourceById(id) {
+				return coverageSnapshot.sources.find(source => source.id === id) ?? null;
+			},
+			mode: "snapshot",
+			snapshotPath: ":memory:"
+		},
+		correctionSeed,
+		sourceMonitorSeed
 	})).listen(0, "127.0.0.1");
 
 	await once(isolatedServer, "listening");

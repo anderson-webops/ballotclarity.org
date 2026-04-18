@@ -30,16 +30,16 @@ const faqItems = [
 	},
 	{
 		answer: [
-			"A full street address is the correct input for exact district and ballot matching. A 5-digit ZIP code can only preview the most likely coverage area and should be treated as approximate until the official voter tools confirm the final ballot.",
-			"The lookup is sent only to match ballot coverage. The current release does not create user accounts or advertising profiles from that lookup.",
+			"Ballot Clarity may start with a best-effort location guess based on the geographic area associated with your IP address, but a full street address is still the correct input for exact district and ballot matching. A 5-digit ZIP code can only preview the most likely coverage area and should be treated as approximate until the official voter tools confirm the final ballot.",
+			"The lookup is used only to match ballot coverage. The current release does not create user accounts or advertising profiles from that lookup.",
 			"The app does save your selected location label, compare list, and ballot-plan choices in your browser so the guide stays usable across refreshes. The privacy page explains that boundary in more detail."
 		],
 		question: "What happens to the address or ZIP code I enter?"
 	},
 	{
 		answer: [
-			"Because the current release uses a limited public-record archive while live civic-data integrations are being connected.",
-			"Coverage notes remain visible so users can understand the current limits of the product and avoid mistaking archived reference coverage for live election-service data."
+			"Because Ballot Clarity does not publish the same level of local coverage in every environment or for every location.",
+			"Coverage notes remain visible so users can understand when the product has a published local guide, when only nationwide civic results are available, and when no local coverage is published yet."
 		],
 		question: "Why are some pages labeled as current coverage?"
 	},
@@ -106,7 +106,7 @@ const accordionItems = faqItems.map(item => ({
 					Start with the coverage profile
 				</h2>
 				<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-					The coverage profile is the best starting point when you need to know where Ballot Clarity is going live first, which official Fulton County and Georgia systems are being used, and what the current public archive still does not cover.
+					The coverage profile is the best starting point when you need to know whether Ballot Clarity has any published local coverage loaded, what is still unavailable, and when the app is correctly keeping official election tools and lookup-first civic results in front.
 				</p>
 				<NuxtLink to="/coverage" class="btn-primary mt-6">
 					Open the coverage profile

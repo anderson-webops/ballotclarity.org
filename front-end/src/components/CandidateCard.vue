@@ -42,10 +42,10 @@ const planButtonIcon = computed(() => showPersistedCandidateState.value && isPla
 const planButtonLabel = computed(() => showPersistedCandidateState.value && isPlanned.value ? "Saved to plan" : "Save to plan");
 const coverageNote = computed(() => {
 	if (props.candidate.comparison.questionnaireResponses.some(response => response.responseStatus !== "answered"))
-		return "Some direct candidate responses are missing in the current archive. This card falls back to verified ballot status, public records, and published campaign materials.";
+		return "Some direct candidate responses are missing from the current published source set. This card falls back to verified ballot status, public records, and published campaign materials.";
 
 	return props.candidate.whatWeDoNotKnow[0]?.text
-		?? "This card is based on the current project archive and may not capture late campaign developments.";
+		?? "This card is based on the current published source set and may not capture late campaign developments.";
 });
 const isQuickView = computed(() => (props.viewMode ?? "quick") === "quick");
 const biographySummary = computed(() => props.candidate.biography[0]?.summary ?? props.candidate.summary);

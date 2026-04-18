@@ -17,15 +17,11 @@ import process from "node:process";
 import { fileURLToPath } from "node:url";
 import { Pool } from "pg";
 import {
-	defaultContentSeed,
+	getLegacyDemoAdminIds,
 	hashPassword,
+	shouldPurgeLegacyDemoAdminData,
 	verifyPassword,
 } from "./admin-store.js";
-import {
-	demoAdminCorrections,
-	demoAdminOverview,
-	demoAdminSourceMonitor,
-} from "./coverage-data.js";
 
 interface CountRow {
 	count: number;
@@ -181,9 +177,29 @@ function rowToActivity(row: ActivityRow): AdminActivityItem {
 
 async function seedPostgresDatabase(pool: Pool, options: AdminRepositoryOptions) {
 	const schema = readFileSync(resolvePostgresSchemaPath(), "utf8");
+	const contentSeed = options.contentSeed ?? [];
+	const correctionSeed = options.correctionSeed ?? [];
+	const sourceMonitorSeed = options.sourceMonitorSeed ?? [];
+	const activitySeed = options.activitySeed ?? [];
 	await pool.query(schema);
 	await pool.query("ALTER TABLE admin_content ADD COLUMN IF NOT EXISTS public_summary TEXT");
 	await pool.query("ALTER TABLE admin_content ADD COLUMN IF NOT EXISTS ballot_summary TEXT");
+
+	if (shouldPurgeLegacyDemoAdminData(options)) {
+		const legacyIds = getLegacyDemoAdminIds();
+
+		if (legacyIds.contentIds.length)
+			await pool.query("DELETE FROM admin_content WHERE id = ANY($1::text[])", [legacyIds.contentIds]);
+
+		if (legacyIds.correctionIds.length)
+			await pool.query("DELETE FROM admin_corrections WHERE id = ANY($1::text[])", [legacyIds.correctionIds]);
+
+		if (legacyIds.sourceMonitorIds.length)
+			await pool.query("DELETE FROM admin_source_monitors WHERE id = ANY($1::text[])", [legacyIds.sourceMonitorIds]);
+
+		if (legacyIds.activityIds.length)
+			await pool.query("DELETE FROM admin_activity WHERE id = ANY($1::text[])", [legacyIds.activityIds]);
+	}
 
 	const usersCount = Number((await pool.query<CountRow>("SELECT COUNT(*)::int AS count FROM admin_users")).rows[0]?.count ?? 0);
 	const contentCount = Number((await pool.query<CountRow>("SELECT COUNT(*)::int AS count FROM admin_content")).rows[0]?.count ?? 0);
@@ -192,7 +208,7 @@ async function seedPostgresDatabase(pool: Pool, options: AdminRepositoryOptions)
 	const activityCount = Number((await pool.query<CountRow>("SELECT COUNT(*)::int AS count FROM admin_activity")).rows[0]?.count ?? 0);
 
 	if (!contentCount) {
-		for (const item of defaultContentSeed()) {
+		for (const item of contentSeed) {
 			await pool.query(`
 				INSERT INTO admin_content (
 					id, entity_type, entity_slug, title, status, priority, assigned_to, blocker, summary,
@@ -218,7 +234,7 @@ async function seedPostgresDatabase(pool: Pool, options: AdminRepositoryOptions)
 		}
 	}
 
-	for (const item of defaultContentSeed()) {
+	for (const item of contentSeed) {
 		await pool.query(`
 			UPDATE admin_content
 			SET public_summary = CASE
@@ -249,7 +265,7 @@ async function seedPostgresDatabase(pool: Pool, options: AdminRepositoryOptions)
 	}
 
 	if (!correctionsCount) {
-		for (const item of demoAdminCorrections.corrections) {
+		for (const item of correctionSeed) {
 			await pool.query(`
 				INSERT INTO admin_corrections (
 					id, submission_type, subject, entity_type, entity_label, status, priority, submitted_at,
@@ -274,7 +290,7 @@ async function seedPostgresDatabase(pool: Pool, options: AdminRepositoryOptions)
 	}
 
 	if (!sourcesCount) {
-		for (const item of demoAdminSourceMonitor.sources) {
+		for (const item of sourceMonitorSeed) {
 			await pool.query(`
 				INSERT INTO admin_source_monitors (
 					id, label, authority, health, last_checked_at, next_check_at, owner, note
@@ -293,7 +309,7 @@ async function seedPostgresDatabase(pool: Pool, options: AdminRepositoryOptions)
 	}
 
 	if (!activityCount) {
-		for (const item of demoAdminOverview.recentActivity) {
+		for (const item of activitySeed) {
 			await pool.query(`
 				INSERT INTO admin_activity (id, label, type, timestamp, summary)
 				VALUES ($1, $2, $3, $4, $5)

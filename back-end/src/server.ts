@@ -1,7 +1,11 @@
-import type { ErrorRequestHandler } from "express";
+import type { ErrorRequestHandler, Request } from "express";
 import type { AddressEnrichmentService } from "./address-enrichment.js";
 import type { CoverageRepository } from "./coverage-repository.js";
 import type {
+	AdminActivityItem,
+	AdminContentItem,
+	AdminCorrectionRequest,
+	AdminSourceMonitorItem,
 	Candidate,
 	Contest,
 	ContestLinkSummary,
@@ -13,6 +17,8 @@ import type {
 	EvidenceBlock,
 	FundingSummary,
 	Jurisdiction,
+	JurisdictionSummary,
+	LocationLookupSelectionOption,
 	Measure,
 	MeasureArgument,
 	MeasureChangeItem,
@@ -31,7 +37,7 @@ import type {
 	TrustBullet,
 	VoteRecordSummary
 } from "./types/civic.js";
-import type { ZipLocationService } from "./zip-location.js";
+import type { ZipLocationMatch, ZipLocationService } from "./zip-location.js";
 import { Buffer } from "node:buffer";
 import { timingSafeEqual } from "node:crypto";
 import process from "node:process";
@@ -43,18 +49,10 @@ import { createAddressEnrichmentService } from "./address-enrichment.js";
 import { createAdminLoginThrottle } from "./admin-login-throttle.js";
 import { createAdminRepository } from "./admin-repository.js";
 import { createCensusGeocoderClient } from "./census-geocoder.js";
-import {
-	demoCandidates,
-	demoElection,
-	demoJurisdiction,
-	demoMeasures,
-	demoSources,
-	getSourceById
-} from "./coverage-data.js";
 import { createCoverageRepository } from "./coverage-repository.js";
 import { createGoogleCivicClient } from "./google-civic.js";
-import { buildCoverageResponse, launchTargetProfile } from "./launch-profile.js";
-import { buildLocationLookupResponse, classifyLookupInput, validateLookupInput } from "./location-lookup.js";
+import { buildCoverageResponse } from "./launch-profile.js";
+import { buildLocationLookupResponse, classifyLookupInput, findSupportedCoverageSummaries, validateLookupInput } from "./location-lookup.js";
 import { createLogger, createRequestLoggingMiddleware } from "./logger.js";
 import { createOpenStatesClient } from "./openstates.js";
 import { buildProviderSummary } from "./provider-config.js";
@@ -69,7 +67,11 @@ interface CreateAppOptions {
 	bootstrapPassword?: string | null;
 	bootstrapUsername?: string | null;
 	coverageRepository?: CoverageRepository;
+	contentSeed?: AdminContentItem[];
+	correctionSeed?: AdminCorrectionRequest[];
+	activitySeed?: AdminActivityItem[];
 	googleCivicClient?: ReturnType<typeof createGoogleCivicClient>;
+	sourceMonitorSeed?: AdminSourceMonitorItem[];
 	zipLocationService?: ZipLocationService | null;
 }
 
@@ -84,6 +86,112 @@ function isAuthorizedAdminRequest(requestKey: string | undefined, configuredKey:
 		return false;
 
 	return timingSafeEqual(left, right);
+}
+
+interface IpLocationGuess {
+	city?: string;
+	country?: string;
+	postalCode?: string;
+	region?: string;
+	rawQuery: string;
+}
+
+function readRequestHeader(request: Request, name: string) {
+	const value = request.header(name)?.trim();
+	return value || undefined;
+}
+
+function buildIpLocationGuess(request: Request): IpLocationGuess | null {
+	const country = readRequestHeader(request, "x-vercel-ip-country");
+	const postalCode = readRequestHeader(request, "x-vercel-ip-postal-code");
+	const city = readRequestHeader(request, "x-vercel-ip-city");
+	const region = readRequestHeader(request, "x-vercel-ip-country-region");
+
+	if (country && country.toUpperCase() !== "US")
+		return null;
+
+	if (postalCode) {
+		return {
+			city,
+			country,
+			postalCode,
+			rawQuery: postalCode,
+			region
+		};
+	}
+
+	if (city && region) {
+		return {
+			city,
+			country,
+			rawQuery: `${city}, ${region}`,
+			region
+		};
+	}
+
+	return null;
+}
+
+function buildIpGuessNotePrefix(guess: IpLocationGuess) {
+	if (guess.postalCode && guess.city && guess.region)
+		return `Ballot Clarity made a best-effort location guess from your IP address and started with ZIP code ${guess.postalCode} near ${guess.city}, ${guess.region}.`;
+
+	if (guess.postalCode)
+		return `Ballot Clarity made a best-effort location guess from your IP address and started with ZIP code ${guess.postalCode}.`;
+
+	if (guess.city && guess.region)
+		return `Ballot Clarity made a best-effort location guess from your IP address and started with ${guess.city}, ${guess.region}.`;
+
+	return "Ballot Clarity made a best-effort location guess from your IP address.";
+}
+
+function summarizeMatchedDistricts(labels: string[]) {
+	if (!labels.length)
+		return "District matches will load after you choose this area.";
+
+	if (labels.length === 1)
+		return `Matched district: ${labels[0]}.`;
+
+	return `Matched districts: ${labels.join(", ")}.`;
+}
+
+function buildZipSelectionOption(
+	match: ZipLocationMatch,
+	jurisdictionSummaries: JurisdictionSummary[]
+): LocationLookupSelectionOption {
+	const geoContext = {
+		countyFips: match.countyFips,
+		countyName: match.countyName,
+		locality: match.locality,
+		postalCode: match.postalCode,
+		sourceSystem: match.sourceSystem,
+		stateAbbreviation: match.stateAbbreviation,
+		stateName: match.stateName
+	};
+	const supportedCoverageSummaries = findSupportedCoverageSummaries(jurisdictionSummaries, geoContext);
+	const representativeCount = match.representativeMatches.length;
+	const displayName = [match.locality, match.stateName || match.stateAbbreviation].filter(Boolean).join(", ")
+		|| match.postalCode;
+	const guideSentence = supportedCoverageSummaries.length
+		? supportedCoverageSummaries.length === 1
+			? "A published local guide is available after you choose this area."
+			: `${supportedCoverageSummaries.length} published local guide areas still match this ZIP area.`
+		: "No published local guide is available for this area yet.";
+
+	return {
+		description: [
+			summarizeMatchedDistricts(match.districtMatches.map(item => item.label)),
+			representativeCount
+				? `${representativeCount} representative match${representativeCount === 1 ? "" : "es"} will load for this area.`
+				: "Representative data is not available for this area yet.",
+			guideSentence
+		].join(" "),
+		districtMatches: match.districtMatches,
+		guideAvailability: supportedCoverageSummaries.length ? "published" : "not-published",
+		id: match.id,
+		label: displayName,
+		representativeMatches: match.representativeMatches
+	};
 }
 
 function uniqueSources(sources: Source[]) {
@@ -128,10 +236,10 @@ function collectContestSources(contest: Contest) {
 }
 
 function buildSourceDirectory(
-	candidates: Candidate[] = demoCandidates,
-	measures: Measure[] = demoMeasures,
-	contests: Contest[] = demoElection.contests,
-	sources: Source[] = demoSources
+	candidates: Candidate[],
+	measures: Measure[],
+	contests: Contest[],
+	sources: Source[]
 ): SourceDirectoryItem[] {
 	const citations = new Map<string, SourceDirectoryItem["citedBy"]>();
 
@@ -191,12 +299,12 @@ function buildSourceDirectory(
 
 function buildSourceRecord(
 	id: string,
-	candidates: Candidate[] = demoCandidates,
-	measures: Measure[] = demoMeasures,
-	contests: Contest[] = demoElection.contests,
-	sources: Source[] = demoSources
+	candidates: Candidate[],
+	measures: Measure[],
+	contests: Contest[],
+	sources: Source[]
 ): SourceRecordResponse | null {
-	const source = sources.find(item => item.id === id) ?? getSourceById(id);
+	const source = sources.find(item => item.id === id);
 
 	if (!source)
 		return null;
@@ -248,19 +356,20 @@ function buildDistrictSummary(contest: Contest, election: Election) {
 
 function buildSearchResponse(
 	rawQuery: string,
-	candidates: Candidate[] = demoCandidates,
-	measures: Measure[] = demoMeasures,
-	contests: Contest[] = demoElection.contests,
-	election: Election = demoElection,
-	jurisdiction: Jurisdiction = demoJurisdiction,
-	sourceDirectory: SourceDirectoryItem[] = buildSourceDirectory(candidates, measures, contests),
-	districts = contests.filter(contest => contest.type === "candidate").map(contest => buildDistrictSummary(contest, election))
+	candidates: Candidate[],
+	measures: Measure[],
+	contests: Contest[],
+	election: Election | null,
+	jurisdiction: Jurisdiction | null,
+	sourceDirectory: SourceDirectoryItem[],
+	districts: ReturnType<typeof buildDistrictSummary>[]
 ): SearchResponse {
 	const query = rawQuery.trim();
 	const lowerQuery = query.toLowerCase();
 	const suggestions = [
-		"Fulton County",
-		"Georgia primary",
+		"official election office",
+		"district page",
+		"representatives",
 		"campaign finance",
 		"source directory",
 		"contest page"
@@ -331,7 +440,7 @@ function buildSearchResponse(
 			summary: contest.description,
 			title: contest.office,
 			type: "contest" as const,
-			updatedAt: election.updatedAt
+			updatedAt: election?.updatedAt ?? ""
 		}));
 
 	const districtResults = districts
@@ -351,6 +460,7 @@ function buildSearchResponse(
 		}));
 
 	const electionResults = [election]
+		.filter((item): item is Election => Boolean(item))
 		.filter(election => [
 			election.name,
 			election.locationName,
@@ -359,7 +469,7 @@ function buildSearchResponse(
 		.map(election => ({
 			href: `/elections/${election.slug}`,
 			id: election.slug,
-			meta: `${jurisdiction.displayName} · ${election.date}`,
+			meta: `${jurisdiction?.displayName ?? election.locationName} · ${election.date}`,
 			summary: election.description,
 			title: election.name,
 			type: "election" as const,
@@ -367,6 +477,7 @@ function buildSearchResponse(
 		}));
 
 	const jurisdictionResults = [jurisdiction]
+		.filter((item): item is Jurisdiction => Boolean(item))
 		.filter(jurisdiction => [
 			jurisdiction.name,
 			jurisdiction.displayName,
@@ -423,21 +534,28 @@ export async function createApp(options: CreateAppOptions = {}) {
 	const adminApiKey = options.adminApiKey ?? process.env.ADMIN_API_KEY ?? null;
 	const coverageRepository = options.coverageRepository ?? await createCoverageRepository();
 	const adminRepository = await createAdminRepository({
+		activitySeed: options.activitySeed,
 		bootstrapDisplayName: options.bootstrapDisplayName,
 		bootstrapPassword: options.bootstrapPassword,
 		bootstrapUsername: options.bootstrapUsername,
+		contentSeed: options.contentSeed,
+		correctionSeed: options.correctionSeed,
 		dbPath: options.adminDbPath,
-		databaseUrl: process.env.ADMIN_DATABASE_URL || process.env.DATABASE_URL || null
+		databaseUrl: process.env.ADMIN_DATABASE_URL || process.env.DATABASE_URL || null,
+		sourceMonitorSeed: options.sourceMonitorSeed
 	});
 	const logger = createLogger("ballot-clarity-api");
 	const sourceAssetStore = createSourceAssetStore();
 	const adminLoginThrottle = createAdminLoginThrottle();
 	const googleCivicClient = options.googleCivicClient === undefined ? createGoogleCivicClient() : options.googleCivicClient;
-	const zipLocationService = options.zipLocationService === undefined ? createZipLocationService() : options.zipLocationService;
+	const openStatesClient = createOpenStatesClient();
+	const zipLocationService = options.zipLocationService === undefined
+		? createZipLocationService({ openStatesClient })
+		: options.zipLocationService;
 	const addressEnrichmentService = options.addressEnrichmentService === undefined
 		? createAddressEnrichmentService(
 				createCensusGeocoderClient(),
-				createOpenStatesClient(),
+				openStatesClient,
 				await createAddressCacheRepository(process.env.ADMIN_DATABASE_URL || process.env.DATABASE_URL || "")
 			)
 		: options.addressEnrichmentService;
@@ -458,6 +576,33 @@ export async function createApp(options: CreateAppOptions = {}) {
 
 	function resolveSources(sources: Source[]) {
 		return sources.map(resolveSource);
+	}
+
+	function getPrimaryElectionSlug() {
+		return coverageRepository.data.election?.slug ?? null;
+	}
+
+	function getJurisdictionSummary(slug: string | null | undefined) {
+		if (!slug)
+			return coverageRepository.data.jurisdictionSummaries[0] ?? null;
+
+		return coverageRepository.data.jurisdictionSummaries.find(item => item.slug === slug)
+			?? coverageRepository.data.jurisdictionSummaries[0]
+			?? null;
+	}
+
+	function buildFallbackJurisdictionSummary(election: Election): JurisdictionSummary {
+		return {
+			description: "Published jurisdiction details are not available for this election in the current snapshot.",
+			displayName: election.locationName,
+			jurisdictionType: "local",
+			name: election.locationName,
+			nextElectionName: election.name,
+			nextElectionSlug: election.slug,
+			slug: election.jurisdictionSlug,
+			state: coverageRepository.data.location?.state ?? "",
+			updatedAt: election.updatedAt
+		};
 	}
 
 	function resolveOfficialResource(resource: OfficialResource): OfficialResource {
@@ -740,12 +885,22 @@ export async function createApp(options: CreateAppOptions = {}) {
 	}
 
 	async function listPublicContests() {
-		const election = await getPublicElection(coverageRepository.data.election.slug);
+		const primaryElectionSlug = getPrimaryElectionSlug();
+
+		if (!primaryElectionSlug)
+			return [];
+
+		const election = await getPublicElection(primaryElectionSlug);
 		return election?.contests ?? [];
 	}
 
 	async function listPublicDistricts() {
-		const election = await getPublicElection(coverageRepository.data.election.slug);
+		const primaryElectionSlug = getPrimaryElectionSlug();
+
+		if (!primaryElectionSlug)
+			return [];
+
+		const election = await getPublicElection(primaryElectionSlug);
 
 		if (!election)
 			return [];
@@ -756,7 +911,12 @@ export async function createApp(options: CreateAppOptions = {}) {
 	}
 
 	async function getPublicDistrict(slug: string) {
-		const election = await getPublicElection(coverageRepository.data.election.slug);
+		const primaryElectionSlug = getPrimaryElectionSlug();
+
+		if (!primaryElectionSlug)
+			return null;
+
+		const election = await getPublicElection(primaryElectionSlug);
 
 		if (!election)
 			return null;
@@ -773,7 +933,12 @@ export async function createApp(options: CreateAppOptions = {}) {
 	}
 
 	async function getPublicContest(slug: string) {
-		const election = await getPublicElection(coverageRepository.data.election.slug);
+		const primaryElectionSlug = getPrimaryElectionSlug();
+
+		if (!primaryElectionSlug)
+			return null;
+
+		const election = await getPublicElection(primaryElectionSlug);
 
 		if (!election)
 			return null;
@@ -790,7 +955,12 @@ export async function createApp(options: CreateAppOptions = {}) {
 	}
 
 	async function listPublicRepresentatives() {
-		const election = await getPublicElection(coverageRepository.data.election.slug);
+		const primaryElectionSlug = getPrimaryElectionSlug();
+
+		if (!primaryElectionSlug)
+			return [];
+
+		const election = await getPublicElection(primaryElectionSlug);
 
 		if (!election)
 			return [];
@@ -807,6 +977,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 
 	function buildContestRecordResponse(contest: Contest, election: Election): ContestRecordResponse {
 		const sources = collectContestSources(contest).map(resolveSource);
+		const jurisdictionSummary = getJurisdictionSummary(election.jurisdictionSlug) ?? buildFallbackJurisdictionSummary(election);
 		const relatedContests: ContestLinkSummary[] = election.contests
 			.filter(item => item.slug !== contest.slug)
 			.map(item => ({
@@ -828,7 +999,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 				slug: election.slug,
 				updatedAt: election.updatedAt
 			},
-			jurisdiction: coverageRepository.data.jurisdictionSummaries[0],
+			jurisdiction: jurisdictionSummary,
 			note: "Contest pages are the canonical public reading surface for one office or ballot question. Use them for citations and source review, then return to the ballot guide for the full ballot context.",
 			relatedContests,
 			sourceCount: sources.length,
@@ -938,23 +1109,44 @@ export async function createApp(options: CreateAppOptions = {}) {
 		sources: Awaited<ReturnType<typeof adminRepository.listSourceMonitor>>["sources"],
 		overview: Awaited<ReturnType<typeof adminRepository.getOverview>>
 	): PublicStatusResponse {
+		if (coverageRepository.mode === "empty") {
+			return {
+				coverageMode: coverageRepository.mode,
+				coverageUpdatedAt: coverageRepository.data.updatedAt,
+				incidents: [],
+				notes: [
+					"No published local coverage snapshot is active right now.",
+					"Nationwide civic lookup is available across the public site.",
+					"Local guide publication status remains generic until a verified local snapshot is published."
+				],
+				overallStatus: "reviewing",
+				sourceSummary: {
+					"healthy": 0,
+					"incident": 0,
+					"review-soon": 0,
+					"stale": 0
+				},
+				sources: [],
+				updatedAt: new Date().toISOString()
+			};
+		}
+
 		const sourceSummary = {
 			"healthy": sources.filter(source => source.health === "healthy").length,
 			"incident": sources.filter(source => source.health === "incident").length,
 			"review-soon": sources.filter(source => source.health === "review-soon").length,
 			"stale": sources.filter(source => source.health === "stale").length
 		};
-		const overallStatus = sourceSummary.incident
-			? "degraded"
-			: sourceSummary["review-soon"] || sourceSummary.stale
-				? "reviewing"
-				: "healthy";
+		let overallStatus: PublicStatusResponse["overallStatus"] = "healthy";
+
+		if (sourceSummary.incident)
+			overallStatus = "degraded";
+		else if (sourceSummary["review-soon"] || sourceSummary.stale)
+			overallStatus = "reviewing";
 		const nextPublishWindow = overview.metrics.find(metric => metric.id === "next-publish")?.value;
 		const notes = [
 			...overview.needsAttention,
-			coverageRepository.mode === "snapshot"
-				? "Public pages are serving an imported coverage snapshot."
-				: "Public pages are still serving the reference archive while Fulton County launch integrations are being connected."
+			"Public pages are serving an imported coverage snapshot."
 		];
 
 		return {
@@ -996,6 +1188,136 @@ export async function createApp(options: CreateAppOptions = {}) {
 				officialResource: method.officialResource ? resolveOfficialResource(method.officialResource) : undefined
 			}))
 		};
+	}
+
+	async function resolveLocationLookup(raw: string, requestId?: string, selectionId?: string) {
+		const coverage = buildCoverageResponse(
+			coverageRepository.mode,
+			coverageRepository.data.updatedAt,
+			coverageRepository.data.dataSources.launchTarget
+		);
+
+		let officialLookup = null;
+		let addressEnrichment = null;
+		let geoContext = null;
+		let selectionOptions: LocationLookupSelectionOption[] | undefined;
+
+		if (classifyLookupInput(raw) === "address") {
+			if (addressEnrichmentService) {
+				try {
+					addressEnrichment = await addressEnrichmentService.lookupAddress(raw);
+
+					if (addressEnrichment) {
+						geoContext = {
+							countyFips: addressEnrichment.countyFips,
+							normalizedAddress: addressEnrichment.normalizedAddress,
+							postalCode: addressEnrichment.zip5,
+							sourceSystem: "U.S. Census Geocoder",
+							stateAbbreviation: addressEnrichment.state
+						};
+					}
+					else {
+						geoContext = null;
+					}
+				}
+				catch (error) {
+					logger.warn("provider.census-openstates.lookup-failed", {
+						message: error instanceof Error ? error.message : "Unknown provider error.",
+						requestId
+					});
+				}
+			}
+
+			if (googleCivicClient) {
+				try {
+					officialLookup = await googleCivicClient.lookupVoterInfo(raw);
+				}
+				catch (error) {
+					logger.warn("provider.google-civic.lookup-failed", {
+						message: error instanceof Error ? error.message : "Unknown provider error.",
+						requestId
+					});
+				}
+			}
+		}
+		else if (zipLocationService) {
+			try {
+				const zipLookup = await zipLocationService.lookupZip(raw);
+
+				if (zipLookup) {
+					const selectedZipMatch = selectionId
+						? zipLookup.matches.find(match => match.id === selectionId) ?? null
+						: zipLookup.matches.length === 1
+							? zipLookup.matches[0]
+							: null;
+
+					if (selectedZipMatch) {
+						addressEnrichment = {
+							benchmark: "ZIP_CENTROID",
+							countyFips: selectedZipMatch.countyFips,
+							districtMatches: selectedZipMatch.districtMatches,
+							fromCache: false,
+							latitude: selectedZipMatch.latitude,
+							longitude: selectedZipMatch.longitude,
+							normalizedAddress: selectedZipMatch.postalCode,
+							representativeMatches: selectedZipMatch.representativeMatches,
+							state: selectedZipMatch.stateAbbreviation,
+							vintage: "ZIP_CENTROID",
+							zip5: selectedZipMatch.postalCode
+						};
+						geoContext = {
+							countyFips: selectedZipMatch.countyFips,
+							countyName: selectedZipMatch.countyName,
+							locality: selectedZipMatch.locality,
+							postalCode: selectedZipMatch.postalCode,
+							sourceSystem: selectedZipMatch.sourceSystem,
+							stateAbbreviation: selectedZipMatch.stateAbbreviation,
+							stateName: selectedZipMatch.stateName
+						};
+					}
+					else if (zipLookup.matches[0]) {
+						const fallbackZipMatch = zipLookup.matches[0];
+
+						geoContext = {
+							countyFips: fallbackZipMatch.countyFips,
+							countyName: fallbackZipMatch.countyName,
+							locality: fallbackZipMatch.locality,
+							postalCode: fallbackZipMatch.postalCode,
+							sourceSystem: fallbackZipMatch.sourceSystem,
+							stateAbbreviation: fallbackZipMatch.stateAbbreviation,
+							stateName: fallbackZipMatch.stateName
+						};
+						selectionOptions = zipLookup.matches.map(match => buildZipSelectionOption(
+							match,
+							coverageRepository.data.jurisdictionSummaries
+						));
+					}
+				}
+				else {
+					geoContext = null;
+				}
+			}
+			catch (error) {
+				logger.warn("provider.zip-lookup.lookup-failed", {
+					message: error instanceof Error ? error.message : "Unknown provider error.",
+					requestId
+				});
+			}
+		}
+
+		return buildLocationLookupResponse(
+			raw,
+			coverageRepository.data.jurisdiction,
+			coverageRepository.data.jurisdictionSummaries,
+			coverageRepository.data.location,
+			coverageRepository.data.election?.slug,
+			coverageRepository.mode,
+			coverage,
+			geoContext,
+			officialLookup,
+			addressEnrichment,
+			selectionOptions
+		);
 	}
 
 	if (process.env.TRUST_PROXY === "true")
@@ -1122,7 +1444,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 
 	app.post("/api/location", async (request, response) => {
 		const raw = typeof request.body?.q === "string" ? request.body.q.trim() : "";
-		const coverage = buildCoverageResponse(coverageRepository.mode, coverageRepository.data.updatedAt);
+		const selectionId = typeof request.body?.selectionId === "string" ? request.body.selectionId.trim() : "";
 
 		response.set("Cache-Control", "no-store");
 
@@ -1135,87 +1457,36 @@ export async function createApp(options: CreateAppOptions = {}) {
 			return;
 		}
 
-		let officialLookup = null;
-		let addressEnrichment = null;
-		let geoContext = null;
+		response.json(await resolveLocationLookup(raw, response.locals.requestId, selectionId || undefined));
+	});
 
-		if (classifyLookupInput(raw) === "address") {
-			if (addressEnrichmentService) {
-				try {
-					addressEnrichment = await addressEnrichmentService.lookupAddress(raw);
+	app.get("/api/location/guess", async (request, response) => {
+		const guess = buildIpLocationGuess(request);
 
-					if (addressEnrichment) {
-						geoContext = {
-							countyFips: addressEnrichment.countyFips,
-							normalizedAddress: addressEnrichment.normalizedAddress,
-							postalCode: addressEnrichment.zip5,
-							sourceSystem: "U.S. Census Geocoder",
-							stateAbbreviation: addressEnrichment.state
-						};
-					}
-					else {
-						geoContext = null;
-					}
-				}
-				catch (error) {
-					logger.warn("provider.census-openstates.lookup-failed", {
-						message: error instanceof Error ? error.message : "Unknown provider error.",
-						requestId: response.locals.requestId
-					});
-				}
-			}
+		response.set("Cache-Control", "no-store");
+		response.set("Vary", "X-Vercel-IP-Postal-Code, X-Vercel-IP-City, X-Vercel-IP-Country-Region, X-Vercel-IP-Country");
 
-			if (googleCivicClient) {
-				try {
-					officialLookup = await googleCivicClient.lookupVoterInfo(raw);
-				}
-				catch (error) {
-					logger.warn("provider.google-civic.lookup-failed", {
-						message: error instanceof Error ? error.message : "Unknown provider error.",
-						requestId: response.locals.requestId
-					});
-				}
-			}
-		}
-		else if (zipLocationService) {
-			try {
-				const zipMatch = await zipLocationService.lookupZip(raw);
-
-				if (zipMatch) {
-					geoContext = {
-						countyFips: zipMatch.countyFips,
-						countyName: zipMatch.countyName,
-						locality: zipMatch.locality,
-						postalCode: zipMatch.postalCode,
-						sourceSystem: zipMatch.sourceSystem,
-						stateAbbreviation: zipMatch.stateAbbreviation,
-						stateName: zipMatch.stateName
-					};
-				}
-				else {
-					geoContext = null;
-				}
-			}
-			catch (error) {
-				logger.warn("provider.zip-lookup.lookup-failed", {
-					message: error instanceof Error ? error.message : "Unknown provider error.",
-					requestId: response.locals.requestId
-				});
-			}
+		if (!guess) {
+			response.status(404).json({
+				message: "IP-based location guess is not available for this request."
+			});
+			return;
 		}
 
-		response.json(buildLocationLookupResponse(
-			raw,
-			coverageRepository.data.jurisdiction,
-			coverageRepository.data.jurisdictionSummaries,
-			coverageRepository.data.location,
-			coverageRepository.data.election.slug,
-			coverageRepository.mode,
-			coverage,
-			geoContext,
-			officialLookup,
-			addressEnrichment
-		));
+		const lookupResponse = await resolveLocationLookup(guess.rawQuery, response.locals.requestId);
+
+		if (lookupResponse.result !== "resolved") {
+			response.status(404).json({
+				message: "IP-based location guess did not resolve to civic results for this request."
+			});
+			return;
+		}
+
+		response.json({
+			...lookupResponse,
+			detectedFromIp: true,
+			note: `${buildIpGuessNotePrefix(guess)} ${lookupResponse.note}`.trim()
+		});
 	});
 
 	app.post("/api/feedback", async (request, response) => {
@@ -1256,13 +1527,16 @@ export async function createApp(options: CreateAppOptions = {}) {
 			...coverageRepository.data.dataSources,
 			assetMode: sourceAssetStore.mode,
 			coverageMode: coverageRepository.mode,
-			launchTarget: coverageRepository.data.dataSources.launchTarget || launchTargetProfile,
 			sourceAssetBaseUrl: sourceAssetStore.baseUrl
 		});
 	});
 
 	app.get("/api/coverage", (_request, response) => {
-		const payload: CoverageResponse = buildCoverageResponse(coverageRepository.mode, coverageRepository.data.updatedAt);
+		const payload: CoverageResponse = buildCoverageResponse(
+			coverageRepository.mode,
+			coverageRepository.data.updatedAt,
+			coverageRepository.data.dataSources.launchTarget
+		);
 		response.json(payload);
 	});
 
@@ -1279,29 +1553,24 @@ export async function createApp(options: CreateAppOptions = {}) {
 
 	app.get("/api/search", async (request, response) => {
 		const query = typeof request.query.q === "string" ? request.query.q : "";
-		const election = await getPublicElection(coverageRepository.data.election.slug);
+		const primaryElectionSlug = getPrimaryElectionSlug();
+		const election = primaryElectionSlug ? await getPublicElection(primaryElectionSlug) : null;
 		const candidates = await listPublicCandidates();
 		const measures = await listPublicMeasures();
 		const contests = await listPublicContests();
 		const sourceDirectory = buildSourceDirectory(candidates, measures, contests, resolvedSourceInventory);
+		const districts = await listPublicDistricts();
 
-		if (!election) {
-			response.json({
-				groups: [],
-				query: query.trim(),
-				suggestions: [
-					"Fulton County",
-					"Georgia primary",
-					"campaign finance",
-					"source directory",
-					"contest page"
-				],
-				total: 0
-			});
-			return;
-		}
-
-		response.json(buildSearchResponse(query, candidates, measures, contests, election, coverageRepository.data.jurisdiction, sourceDirectory));
+		response.json(buildSearchResponse(
+			query,
+			candidates,
+			measures,
+			contests,
+			election,
+			coverageRepository.data.jurisdiction,
+			sourceDirectory,
+			districts
+		));
 	});
 
 	app.get("/api/sources", async (_request, response) => {
@@ -1376,7 +1645,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 	app.get("/api/ballot", async (request, response) => {
 		const electionSlug = typeof request.query.election === "string" ? request.query.election : "";
 		const defaultLocation = coverageRepository.data.location;
-		const locationSlug = typeof request.query.location === "string" ? request.query.location : defaultLocation.slug;
+		const requestedLocationSlug = typeof request.query.location === "string" ? request.query.location : "";
 
 		if (!electionSlug) {
 			response.status(400).json({
@@ -1394,15 +1663,20 @@ export async function createApp(options: CreateAppOptions = {}) {
 			return;
 		}
 
+		if (!defaultLocation) {
+			response.status(404).json({
+				message: "Ballot location context is not available for the requested election."
+			});
+			return;
+		}
+
 		response.json({
 			election,
 			location: {
 				...defaultLocation,
-				slug: locationSlug
+				slug: requestedLocationSlug || defaultLocation.slug
 			},
-			note: coverageRepository.mode === "snapshot"
-				? "Current public coverage is running from the latest imported civic-data snapshot. Verify official election logistics with the linked election office."
-				: "Current public coverage uses the current release while live civic-data integrations are being connected. Verify official election logistics with the linked election office.",
+			note: "Current public coverage is running from the latest imported civic-data snapshot. Verify official election logistics with the linked election office.",
 			updatedAt: election.updatedAt
 		});
 	});

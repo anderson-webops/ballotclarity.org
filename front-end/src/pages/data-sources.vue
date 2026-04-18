@@ -3,7 +3,7 @@ const { formatDateTime } = useFormatters();
 const { data, error, pending } = await useDataSources();
 
 usePageSeo({
-	description: "Ballot Clarity's live data roadmap: official source hierarchy, provider strategy, migration risks, and the backend architecture planned to replace the current archive.",
+	description: "Ballot Clarity's live data roadmap: official source hierarchy, provider strategy, migration risks, and the backend architecture planned to support published local coverage.",
 	path: "/data-sources",
 	title: "Data Sources and Live API Roadmap"
 });
@@ -44,6 +44,20 @@ function statusTone(status: "planned-live" | "reference-pattern" | "research-lay
 			</InfoCallout>
 		</div>
 
+		<div v-else-if="!data.launchTarget && !data.categories.length && !data.roadmap.length" class="max-w-4xl space-y-6">
+			<InfoCallout title="No published data roadmap" tone="info">
+				Ballot Clarity does not currently have a published local data-source roadmap or launch target in this environment. When local coverage is unavailable, the app should say so directly and keep nationwide civic results and official tools as the main user path.
+			</InfoCallout>
+			<div class="flex flex-wrap gap-3">
+				<NuxtLink to="/coverage" class="btn-primary">
+					Open coverage profile
+				</NuxtLink>
+				<NuxtLink to="/#location-lookup" class="btn-secondary">
+					Open location lookup
+				</NuxtLink>
+			</div>
+		</div>
+
 		<div v-else class="space-y-8">
 			<header class="gap-8 grid xl:grid-cols-[minmax(0,1.2fr)_minmax(22rem,0.85fr)]">
 				<div class="surface-panel">
@@ -59,10 +73,10 @@ function statusTone(status: "planned-live" | "reference-pattern" | "research-lay
 						The trust model depends on the data stack, not just the interface.
 					</h1>
 					<p class="bc-prose text-app-muted mt-5 dark:text-app-muted-dark">
-						Ballot Clarity currently runs on a limited public-record archive. This page shows how the site is designed to move to live civic data without pretending there is a single perfect national source. The rule is simple: official sources where they are authoritative, normalized providers where scale matters, and a separate research layer for archives and analytics.
+						This page shows how Ballot Clarity is designed to move toward verified civic-data coverage without pretending there is a single perfect national source. The rule is simple: official sources where they are authoritative, normalized providers where scale matters, and a separate research layer when context needs its own provenance.
 					</p>
 					<p v-if="data.launchTarget" class="text-sm text-app-muted leading-7 mt-5 dark:text-app-muted-dark">
-						<strong class="text-app-ink dark:text-app-text-dark">Current launch target:</strong> {{ data.launchTarget.displayName }}. The launch path starts with official county and statewide election systems, then adds normalized provider layers only where scale or cross-jurisdiction consistency demands it.
+						<strong class="text-app-ink dark:text-app-text-dark">Current published local target:</strong> {{ data.launchTarget.displayName }}. The launch path starts with official local and statewide election systems, then adds normalized provider layers only where scale or cross-jurisdiction consistency demands it.
 					</p>
 					<div class="mt-6 flex flex-wrap gap-4 items-center">
 						<UpdatedAt :value="data.updatedAt" label="Roadmap updated" />
@@ -275,7 +289,7 @@ function statusTone(status: "planned-live" | "reference-pattern" | "research-lay
 					</p>
 				</div>
 				<p class="bc-prose text-app-muted mt-5 dark:text-app-muted-dark">
-					When Ballot Clarity eventually moves beyond the current archive, the interface should keep exposing source authority, source system, and freshness at the field level. That is what lets a voter tell the difference between an official office notice, a provider-normalized ballot package, a candidate-submitted statement, and an archival research source.
+					As Ballot Clarity moves between empty, nationwide-only, and published local coverage states, the interface should keep exposing source authority, source system, and freshness at the field level. That is what lets a voter tell the difference between an official office notice, a provider-normalized ballot package, a candidate-submitted statement, and an archival research source.
 				</p>
 			</section>
 		</div>

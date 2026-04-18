@@ -45,3 +45,24 @@ test("location lookup only exposes guide navigation when published guide coverag
 	assert.equal(buildLookupPresentation(response).canOpenGuide, true);
 	assert.equal(buildLookupPresentation(response).heading, "Local guide and civic results ready");
 });
+
+test("location lookup shows a chooser state when a ZIP still needs one more area selection", () => {
+	const response = {
+		electionSlug: undefined,
+		guideAvailability: "not-published" as const,
+		location: undefined,
+		result: "resolved" as const,
+		selectionOptions: [
+			{ description: "Provo option", guideAvailability: "not-published" as const, id: "one", label: "Provo, Utah" },
+			{ description: "Orem option", guideAvailability: "not-published" as const, id: "two", label: "Orem, Utah" }
+		]
+	};
+
+	assert.deepEqual(buildLookupPresentation(response), {
+		availabilityBadgeLabel: "ZIP area selection needed",
+		canOpenGuide: false,
+		footerNote: "Choose one of the matched ZIP areas here to load the right district, representative, and official-tool layers before moving deeper into the app.",
+		heading: "Choose the matched ZIP area",
+		supportingNote: "This ZIP resolved to multiple civic areas in the current provider data. Ballot Clarity needs one more selection before it can open a single area cleanly."
+	});
+});

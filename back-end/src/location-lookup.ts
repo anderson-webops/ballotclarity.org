@@ -7,18 +7,25 @@ import type {
 	LocationLookupAction,
 	LocationLookupInputKind,
 	LocationLookupResponse,
+	LocationLookupSelectionOption,
 	LocationSelection,
 	OfficialResource,
 } from "./types/civic.js";
-import { getOfficialToolsForState } from "./official-election-tools.js";
+import { getOfficialToolsForState, getStateNameForAbbreviation } from "./official-election-tools.js";
 
 const zipCodePattern = /^\d{5}(?:-\d{4})?$/;
 const numericFragmentPattern = /^[\d-]+$/;
 const myVoterPagePattern = /my voter page/i;
 const pollingPlacePattern = /polling-place|precinct/i;
-const publishedGuideMatcherBySlug = new Map([
-	["fulton-county-georgia", { countyFips: "121", stateAbbreviation: "GA" }]
-]);
+
+function normalizePlaceName(value: string | undefined) {
+	return (value ?? "")
+		.toLowerCase()
+		.replace(/[^a-z0-9]+/g, " ")
+		.replace(/\b(?:county|city|parish|borough|township|town)\b/g, " ")
+		.replace(/\s+/g, " ")
+		.trim();
+}
 
 export interface LookupGeoContext {
 	countyFips?: string;
@@ -42,10 +49,37 @@ function buildCoverageSelection(summary: JurisdictionSummary): LocationSelection
 	};
 }
 
-function findOfficialVerificationResource(jurisdiction: Jurisdiction, coverage: CoverageResponse) {
+function buildZipNationwideSelection(
+	rawQuery: string,
+	geoContext: LookupGeoContext | null | undefined
+): LocationSelection | null {
+	const state = geoContext?.stateName
+		|| getStateNameForAbbreviation(geoContext?.stateAbbreviation)
+		|| geoContext?.stateAbbreviation;
+	const displayName = geoContext?.locality && state
+		? `${geoContext.locality}, ${state}`
+		: state
+			? `${rawQuery}, ${state}`
+			: geoContext?.postalCode || rawQuery;
+
+	if (!displayName)
+		return null;
+
+	return {
+		coverageLabel: "Nationwide civic results available",
+		displayName,
+		lookupInput: geoContext?.postalCode || rawQuery,
+		lookupMode: "zip-preview",
+		requiresOfficialConfirmation: false,
+		slug: displayName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, ""),
+		state: state || ""
+	};
+}
+
+function findOfficialVerificationResource(jurisdiction: Jurisdiction | null, coverage: CoverageResponse) {
 	const candidates = [
-		...jurisdiction.officialResources,
-		...coverage.launchTarget.officialResources
+		...(jurisdiction?.officialResources ?? []),
+		...(coverage.launchTarget?.officialResources ?? [])
 	];
 
 	return candidates.find(resource => myVoterPagePattern.test(resource.label))
@@ -103,18 +137,35 @@ function buildOfficialVerificationActions(resources: OfficialResource[]) {
 	return dedupeActions(resources.map(buildOfficialVerificationAction));
 }
 
-function findSupportedCoverageSummaries(jurisdictionSummaries: JurisdictionSummary[], geoContext: LookupGeoContext | null | undefined) {
+export function findSupportedCoverageSummaries(jurisdictionSummaries: JurisdictionSummary[], geoContext: LookupGeoContext | null | undefined) {
 	if (!geoContext?.stateAbbreviation)
 		return [];
 
-	return jurisdictionSummaries.filter((summary) => {
-		const matcher = publishedGuideMatcherBySlug.get(summary.slug);
+	const geoState = normalizePlaceName(
+		geoContext.stateName
+		|| getStateNameForAbbreviation(geoContext.stateAbbreviation)
+		|| geoContext.stateAbbreviation
+	);
+	const matchingStateSummaries = jurisdictionSummaries.filter((summary) => {
+		const summaryState = normalizePlaceName(summary.state);
+		return Boolean(summaryState && geoState && summaryState === geoState);
+	});
 
-		if (!matcher)
-			return false;
+	return matchingStateSummaries.filter((summary) => {
+		const summaryNames = [
+			normalizePlaceName(summary.name),
+			normalizePlaceName(summary.displayName)
+		].filter(Boolean);
+		const countyName = normalizePlaceName(geoContext.countyName);
+		const locality = normalizePlaceName(geoContext.locality);
 
-		return geoContext.stateAbbreviation === matcher.stateAbbreviation
-			&& (!matcher.countyFips || geoContext.countyFips === matcher.countyFips);
+		if (countyName && summaryNames.some(name => name.includes(countyName) || countyName.includes(name)))
+			return true;
+
+		if (locality && summaryNames.some(name => name.includes(locality) || locality.includes(name)))
+			return true;
+
+		return !countyName && !locality && matchingStateSummaries.length === 1;
 	});
 }
 
@@ -184,19 +235,62 @@ function buildGuideUnavailableNote(
 	].filter(Boolean).join(" ");
 }
 
+function buildPublishedZipGuideNote(
+	rawQuery: string,
+	geoContext: LookupGeoContext | null | undefined,
+	hasOfficialActions: boolean,
+	addressEnrichment?: AddressEnrichmentResult | null
+) {
+	const locationSentence = describeDetectedLocation("zip", rawQuery, geoContext);
+	const guideSentence = "Ballot Clarity matched a single guide area for this ZIP and loaded the nationwide civic result layers available here.";
+	const districtSentence = addressEnrichment?.districtMatches?.length
+		? `Census geography matched ${addressEnrichment.districtMatches.map(match => match.label).join(", ")}.`
+		: "";
+	const representativeSentence = addressEnrichment?.representativeMatches?.length
+		? `Open States returned ${addressEnrichment.representativeMatches.length} representative match${addressEnrichment.representativeMatches.length === 1 ? "" : "es"} for this ZIP.`
+		: "";
+	const officialSentence = hasOfficialActions
+		? "Official election tools are included below for ballot confirmation, voter-status, and polling-place details."
+		: "Use the relevant official election tool for ballot confirmation, voter-status, and polling-place details.";
+
+	return [
+		locationSentence,
+		guideSentence,
+		districtSentence,
+		representativeSentence,
+		officialSentence
+	].filter(Boolean).join(" ");
+}
+
+function buildZipSelectionNote(
+	rawQuery: string,
+	selectionOptions: LocationLookupSelectionOption[],
+	hasOfficialActions: boolean
+) {
+	const officialSentence = hasOfficialActions
+		? "Official election tools stay visible below while you choose the right matched area."
+		: "Choose the right matched area below to continue with district and ballot lookup.";
+
+	return `ZIP code ${rawQuery} matched ${selectionOptions.length} possible civic areas in the current provider data. Choose the correct area below so Ballot Clarity can load the right districts, representatives, and any published guide coverage for this ZIP. ${officialSentence}`;
+}
+
 function buildAvailabilitySummary(
 	inputKind: LocationLookupInputKind,
 	guideAvailability: "published" | "not-published",
-	addressEnrichment?: AddressEnrichmentResult | null
+	addressEnrichment?: AddressEnrichmentResult | null,
+	selectionOptions?: LocationLookupSelectionOption[]
 ) {
 	const representativeCount = addressEnrichment?.representativeMatches?.length ?? 0;
 	const hasRepresentatives = representativeCount > 0;
 	const hasGuide = guideAvailability === "published";
+	const selectionRequired = inputKind === "zip" && Boolean(selectionOptions?.length);
 	const nationwideDetail = hasGuide
 		? "Nationwide civic results, district context, and official election tools are available alongside the published local guide for this lookup."
-		: inputKind === "zip"
-			? "Nationwide civic results and official election tools are available for this ZIP lookup even though a published local guide is not available for this area yet."
-			: "Nationwide civic results, district context, and official election tools are available for this address even though a published local guide is not available for this area yet.";
+		: selectionRequired
+			? "Nationwide civic results are available for this ZIP after you choose one of the matched areas below."
+			: inputKind === "zip"
+				? "Nationwide civic results and official election tools are available for this ZIP lookup even though a published local guide is not available for this area yet."
+				: "Nationwide civic results, district context, and official election tools are available for this address even though a published local guide is not available for this area yet.";
 
 	return {
 		nationwideCivicResults: {
@@ -207,7 +301,7 @@ function buildAvailabilitySummary(
 		ballotCandidates: {
 			detail: hasGuide
 				? inputKind === "zip"
-					? "Ballot Clarity has contest and candidate coverage for this area, but a ZIP-only result is still an approximate guide preview."
+					? "Ballot Clarity has contest and candidate coverage for the matched ZIP area."
 					: "Ballot Clarity has contest and candidate coverage for this area."
 				: "Ballot candidate pages are not published for this area yet.",
 			label: "Ballot candidate data",
@@ -223,7 +317,7 @@ function buildAvailabilitySummary(
 		fullLocalGuide: {
 			detail: hasGuide
 				? inputKind === "zip"
-					? "A published local guide exists here. Use the official tools to confirm the exact ballot before relying on a ZIP preview."
+					? "A published local guide is available for the matched ZIP area."
 					: "A published local ballot guide is available for this lookup."
 				: "A full local contest and measure guide is not published for this area yet.",
 			label: "Full local guide",
@@ -232,9 +326,11 @@ function buildAvailabilitySummary(
 		representatives: {
 			detail: hasRepresentatives
 				? `Current representative data is available for this lookup from Open States (${representativeCount} match${representativeCount === 1 ? "" : "es"}).`
-				: inputKind === "zip"
-					? "ZIP-only lookups do not reliably identify exact current representatives without a full street address."
-					: "Current representative data is not available for this lookup yet.",
+				: selectionRequired
+					? "This ZIP matched more than one possible area. Choose one below to load the correct representative records."
+					: inputKind === "zip"
+						? "Representative data is not available for the matched ZIP area yet."
+						: "Current representative data is not available for this lookup yet.",
 			label: "Representative data",
 			status: hasRepresentatives ? "available" : "unavailable"
 		}
@@ -260,15 +356,16 @@ export function validateLookupInput(raw: string) {
 
 export function buildLocationLookupResponse(
 	rawQuery: string,
-	jurisdiction: Jurisdiction,
+	jurisdiction: Jurisdiction | null,
 	jurisdictionSummaries: JurisdictionSummary[],
-	location: LocationSelection,
-	electionSlug: string,
-	coverageMode: "seed" | "snapshot",
+	location: LocationSelection | null,
+	electionSlug: string | undefined,
+	coverageMode: "empty" | "snapshot",
 	coverage: CoverageResponse,
 	geoContext?: LookupGeoContext | null,
 	officialLookup?: OfficialAddressMatch | null,
-	addressEnrichment?: AddressEnrichmentResult | null
+	addressEnrichment?: AddressEnrichmentResult | null,
+	selectionOptions?: LocationLookupSelectionOption[]
 ): LocationLookupResponse {
 	const inputKind = classifyLookupInput(rawQuery);
 	const stateOfficialActions = buildOfficialVerificationActions(
@@ -281,37 +378,54 @@ export function buildLocationLookupResponse(
 			return {
 				actions: stateOfficialActions,
 				inputKind,
+				lookupQuery: rawQuery,
 				note: buildUnsupportedNote(rawQuery, inputKind, geoContext, Boolean(stateOfficialActions.length)),
 				result: "unsupported"
 			};
 		}
 
-		const officialVerification = supportedCoverageSummaries.length
+		const autoSelectedCoverage = supportedCoverageSummaries.length === 1
+			? supportedCoverageSummaries[0]
+			: null;
+		const hasPublishedGuide = Boolean(autoSelectedCoverage);
+		const officialVerification = hasPublishedGuide
 			? buildOfficialVerificationAction(findOfficialVerificationResource(jurisdiction, coverage))
 			: undefined;
 		const actions = dedupeActions([
-			...(supportedCoverageSummaries.length ? buildCoverageActions(supportedCoverageSummaries) : []),
+			...(supportedCoverageSummaries.length > 1 ? buildCoverageActions(supportedCoverageSummaries) : []),
 			...stateOfficialActions,
 			...(officialVerification ? [officialVerification] : [])
 		]);
-		const guideAvailability = supportedCoverageSummaries.length ? "published" : "not-published";
-		const coverageSentence = describeDetectedLocation(inputKind, rawQuery, geoContext);
+		const guideAvailability = hasPublishedGuide ? "published" : "not-published";
+		const nationwideSelection = selectionOptions?.length
+			? undefined
+			: autoSelectedCoverage
+				? buildCoverageSelection(autoSelectedCoverage)
+				: buildZipNationwideSelection(rawQuery, geoContext) || undefined;
 
 		return {
 			actions,
-			availability: buildAvailabilitySummary(inputKind, guideAvailability),
+			availability: buildAvailabilitySummary(inputKind, guideAvailability, addressEnrichment, selectionOptions),
+			districtMatches: addressEnrichment?.districtMatches,
+			electionSlug: autoSelectedCoverage?.nextElectionSlug,
+			fromCache: addressEnrichment?.fromCache,
 			guideAvailability,
 			inputKind,
-			note: guideAvailability === "published"
-				? coverageMode === "snapshot"
-					? `${coverageSentence} ZIP-only lookup can preview the published guide surfaces for this area, but it cannot choose an exact district-level ballot. Use the official tools below to confirm the final ballot before relying on the guide preview.`
-					: `${coverageSentence} ZIP-only lookup can preview the public guide surfaces for this area, but it cannot choose an exact district-level ballot. Use the official tools below to confirm the final ballot before relying on the guide preview.`
-				: buildGuideUnavailableNote(rawQuery, inputKind, geoContext, Boolean(actions.length)),
+			location: nationwideSelection,
+			lookupQuery: rawQuery,
+			note: selectionOptions?.length
+				? buildZipSelectionNote(rawQuery, selectionOptions, Boolean(actions.length))
+				: guideAvailability === "published"
+					? buildPublishedZipGuideNote(rawQuery, geoContext, Boolean(actions.length), addressEnrichment)
+					: buildGuideUnavailableNote(rawQuery, inputKind, geoContext, Boolean(actions.length), addressEnrichment),
+			normalizedAddress: addressEnrichment?.normalizedAddress || geoContext.postalCode || rawQuery,
+			representativeMatches: addressEnrichment?.representativeMatches,
+			selectionOptions,
 			result: "resolved"
 		};
 	}
 
-	if (!supportedCoverageSummaries.length) {
+	if (!supportedCoverageSummaries.length || !location || !electionSlug) {
 		const officialActions = dedupeActions([
 			...(officialLookup?.actions ?? []),
 			...stateOfficialActions
@@ -325,6 +439,7 @@ export function buildLocationLookupResponse(
 				guideAvailability: "not-published",
 				inputKind,
 				districtMatches: addressEnrichment?.districtMatches,
+				lookupQuery: rawQuery,
 				note: buildGuideUnavailableNote(rawQuery, inputKind, geoContext, Boolean(officialActions.length), addressEnrichment),
 				normalizedAddress: addressEnrichment?.normalizedAddress,
 				representativeMatches: addressEnrichment?.representativeMatches,
@@ -337,6 +452,7 @@ export function buildLocationLookupResponse(
 			fromCache: addressEnrichment?.fromCache,
 			inputKind,
 			districtMatches: addressEnrichment?.districtMatches,
+			lookupQuery: rawQuery,
 			note: buildUnsupportedNote(rawQuery, inputKind, geoContext, Boolean(officialActions.length)),
 			normalizedAddress: addressEnrichment?.normalizedAddress,
 			representativeMatches: addressEnrichment?.representativeMatches,
@@ -352,6 +468,7 @@ export function buildLocationLookupResponse(
 		guideAvailability: "published",
 		inputKind,
 		districtMatches: addressEnrichment?.districtMatches,
+		lookupQuery: rawQuery,
 		location: {
 			...location,
 			lookupMode: officialLookup?.verified ? "address-verified" : "address-submitted",

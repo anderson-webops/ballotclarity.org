@@ -11,6 +11,7 @@ const props = defineProps<{
 
 const featuredBallotHref = computed(() => props.featuredElectionSlug ? `/ballot/${props.featuredElectionSlug}` : "/ballot");
 const showGuideEntryPoints = computed(() => props.allowGuideEntryPoints !== false);
+const showFeaturedGuidePreview = computed(() => props.showFeaturedGuidePreview !== false && Boolean(props.ballotPreview));
 const showNationwideResults = computed(() => props.showFeaturedGuidePreview === false && Boolean(props.nationwideLookupResult));
 const nationwideLocationLabel = computed(() => props.nationwideLookupResult?.location?.displayName ?? props.nationwideLookupResult?.normalizedAddress ?? "Active lookup");
 const officialToolCount = computed(() => props.nationwideLookupResult?.actions.filter(action => action.kind === "official-verification").length ?? 0);
@@ -21,21 +22,21 @@ const officialToolCount = computed(() => props.nationwideLookupResult?.actions.f
 		<div class="gap-6 grid lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
 			<div class="surface-panel">
 				<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-					{{ showNationwideResults ? "Active nationwide civic context" : "Current ballot preview" }}
+					{{ showNationwideResults ? "Active nationwide civic context" : showFeaturedGuidePreview ? "Current ballot preview" : "Nationwide-first start" }}
 				</p>
 				<h2 class="text-4xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
 					{{ showNationwideResults
 						? `${nationwideLocationLabel} is currently using nationwide civic results.`
-						: showGuideEntryPoints
+						: showFeaturedGuidePreview
 							? "See the ballot guide before you open a detail page."
-							: "Published local guides open only in covered areas." }}
+							: "Nationwide lookup should frame the product before any local guide does." }}
 				</h2>
 				<p class="bc-measure text-base text-app-muted leading-8 mt-5 dark:text-app-muted-dark">
 					{{ showNationwideResults
 						? "The homepage is now carrying the active nationwide lookup instead of a seeded local guide preview. Use this context for district matches, representative records, and official election tools until Ballot Clarity publishes a local guide for this area."
-						: showGuideEntryPoints
+						: showFeaturedGuidePreview
 							? "The ballot view works like a contents page for the rest of the product. It groups contests cleanly, keeps official links nearby, and makes saved-plan status visible without forcing the user into a side-by-side comparison too early."
-							: "This preview shows the structure of Ballot Clarity's published local guides. When a lookup resolves nationwide-only coverage, keep the civic-results and official-tool flow first until local guide coverage exists for that area." }}
+							: "Use the lookup, nationwide civic results, district pages, representative pages, and official tools as the product's default reading path. Published local guides should only take over after Ballot Clarity confirms real guide coverage for the active location." }}
 				</p>
 				<ul v-if="showNationwideResults && nationwideLookupResult" class="mt-6 gap-4 grid md:grid-cols-2">
 					<li class="p-4 rounded-[1.35rem] bg-app-bg/70 dark:bg-app-bg-dark/70">
@@ -83,7 +84,7 @@ const officialToolCount = computed(() => props.nationwideLookupResult?.actions.f
 						</p>
 					</li>
 				</ul>
-				<ul v-else-if="ballotPreview" class="mt-6 divide-app-line divide-y dark:divide-app-line-dark">
+				<ul v-else-if="showFeaturedGuidePreview && ballotPreview" class="mt-6 divide-app-line divide-y dark:divide-app-line-dark">
 					<li
 						v-for="contest in ballotPreview.election.contests"
 						:key="contest.slug"
@@ -105,9 +106,9 @@ const officialToolCount = computed(() => props.nationwideLookupResult?.actions.f
 				<p v-else class="text-sm text-app-muted leading-7 mt-6 dark:text-app-muted-dark">
 					{{ showNationwideResults
 						? "The active nationwide lookup is loaded, but the richer summary cards are not available in this render yet. Open the nationwide results page for the full district, representative, and official-tool view."
-						: showGuideEntryPoints
-							? "The current ballot preview is not available in this response yet, but the ballot guide remains the main entry point once a location is selected."
-							: "The current published guide preview is not available in this response yet. Use the lookup results and coverage profile instead of a local-guide flow when the current area only has nationwide civic coverage." }}
+						: showFeaturedGuidePreview
+							? "The current ballot preview is not available in this response yet, but the ballot guide remains the main entry point once a published local guide context is active."
+							: "Ballot Clarity does not need a featured local guide preview to be useful here. Use the lookup, coverage profile, district pages, and source directory instead of defaulting back to a local-guide frame." }}
 				</p>
 				<div class="mt-8 flex flex-wrap gap-3">
 					<NuxtLink
@@ -119,24 +120,27 @@ const officialToolCount = computed(() => props.nationwideLookupResult?.actions.f
 						Open nationwide results
 					</NuxtLink>
 					<NuxtLink
-						v-else-if="showGuideEntryPoints"
+						v-else-if="showFeaturedGuidePreview && showGuideEntryPoints"
 						:to="featuredBallotHref"
 						class="btn-primary"
 						prefetch-on="interaction"
 					>
 						Explore the ballot guide
 					</NuxtLink>
-					<NuxtLink v-else to="/coverage" class="btn-primary" prefetch-on="interaction">
-						Open coverage profile
+					<NuxtLink v-else to="/" class="btn-primary" prefetch-on="interaction">
+						Open location lookup
 					</NuxtLink>
-					<NuxtLink v-if="!showNationwideResults" to="/compare" class="btn-secondary" prefetch-on="interaction">
+					<NuxtLink v-if="showFeaturedGuidePreview && showGuideEntryPoints" to="/compare" class="btn-secondary" prefetch-on="interaction">
 						Open compare
+					</NuxtLink>
+					<NuxtLink v-if="!showNationwideResults && !showFeaturedGuidePreview" to="/districts" class="btn-secondary" prefetch-on="interaction">
+						Open districts
 					</NuxtLink>
 					<NuxtLink v-if="showNationwideResults" to="/coverage" class="btn-secondary" prefetch-on="interaction">
 						Open coverage profile
 					</NuxtLink>
-					<NuxtLink v-if="!showGuideEntryPoints || showNationwideResults" to="/help" class="btn-secondary" prefetch-on="interaction">
-						Open help hub
+					<NuxtLink v-if="!showGuideEntryPoints || showNationwideResults || !showFeaturedGuidePreview" to="/data-sources" class="btn-secondary" prefetch-on="interaction">
+						Open source directory
 					</NuxtLink>
 				</div>
 			</div>
@@ -162,7 +166,7 @@ const officialToolCount = computed(() => props.nationwideLookupResult?.actions.f
 						Start from the coverage profile.
 					</h2>
 					<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-						The coverage page now explains where Ballot Clarity is going live first, what the current public archive still is, and which official Fulton County and Georgia systems will anchor the first production jurisdiction.
+						The coverage page now explains whether Ballot Clarity has a published local coverage target, what is currently available in this environment, and when the app is correctly falling back to lookup-first nationwide civic results instead of old seeded guide content.
 					</p>
 					<div class="mt-6 flex flex-wrap gap-3">
 						<NuxtLink to="/coverage" class="btn-primary" prefetch-on="interaction">

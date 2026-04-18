@@ -48,9 +48,9 @@ const nationwideResponse: LocationLookupResponse = {
 			status: "available"
 		},
 		representatives: {
-			detail: "ZIP-only lookups do not reliably identify exact current representatives without a full street address.",
+			detail: "Current representative data is available for this lookup from Open States (1 match).",
 			label: "Representative data",
-			status: "unavailable"
+			status: "available"
 		}
 	},
 	districtMatches: [
@@ -68,14 +68,62 @@ const nationwideResponse: LocationLookupResponse = {
 		coverageLabel: "Nationwide civic results available",
 		displayName: "Provo, Utah",
 		lookupMode: "zip-preview",
-		requiresOfficialConfirmation: true,
+		requiresOfficialConfirmation: false,
 		slug: "provo-utah",
 		state: "Utah"
 	},
+	lookupQuery: "84604",
 	note: "ZIP code 84604 appears to be in Provo, Utah. Ballot Clarity matched this location and loaded the nationwide civic result layers available here.",
 	normalizedAddress: "84604",
-	representativeMatches: [],
+	representativeMatches: [
+		{
+			districtLabel: "Congressional District 3",
+			id: "ocd-person:test-ut-rep",
+			name: "Mike Kennedy",
+			officeTitle: "Representative",
+			party: "Republican",
+			sourceSystem: "Open States"
+		}
+	],
 	result: "resolved"
+};
+
+const ipGuessedPublishedGuideResponse: LocationLookupResponse = {
+	...nationwideResponse,
+	detectedFromIp: true,
+	electionSlug: "2026-fulton-county-general",
+	guideAvailability: "published",
+	location: {
+		coverageLabel: "Published ballot guide area: Fulton County, Georgia",
+		displayName: "Fulton County, Georgia",
+		lookupMode: "zip-preview",
+		requiresOfficialConfirmation: true,
+		slug: "fulton-county-georgia",
+		state: "Georgia"
+	},
+	note: "Ballot Clarity made a best-effort location guess from your IP address and started with ZIP code 30303 near Atlanta, GA."
+};
+
+const ambiguousZipResponse: LocationLookupResponse = {
+	...nationwideResponse,
+	location: undefined,
+	lookupQuery: "84001",
+	note: "ZIP code 84001 matched 2 possible civic areas in the current provider data. Choose the correct area below so Ballot Clarity can load the right districts, representatives, and any published guide coverage for this ZIP.",
+	representativeMatches: undefined,
+	selectionOptions: [
+		{
+			description: "Matched district: Congressional District 3. 1 representative match will load for this area. No published local guide is available for this area yet.",
+			guideAvailability: "not-published",
+			id: "zip:84001:provo-utah",
+			label: "Provo, Utah"
+		},
+		{
+			description: "Matched district: Congressional District 4. 1 representative match will load for this area. No published local guide is available for this area yet.",
+			guideAvailability: "not-published",
+			id: "zip:84001:orem-utah",
+			label: "Orem, Utah"
+		}
+	]
 };
 
 test("successful nationwide lookup builds a persisted nationwide result context", () => {
@@ -103,16 +151,52 @@ test("non-published-guide lookups keep a persisted app context instead of droppi
 	});
 });
 
+test("ip-guessed guide availability stays in nationwide context until the user confirms a guide location", () => {
+	const update = deriveCivicLookupStateUpdate(ipGuessedPublishedGuideResponse, activeElection);
+
+	assert.equal(update.selectedLocation, null);
+	assert.equal(update.nationwideLookupResult?.detectedFromIp, true);
+	assert.equal(update.nationwideLookupResult?.guideAvailability, "published");
+});
+
+test("ambiguous ZIP lookups keep their selection options in persisted nationwide context", () => {
+	const update = deriveCivicLookupStateUpdate(ambiguousZipResponse, activeElection);
+
+	assert.equal(update.selectedLocation, null);
+	assert.equal(update.nationwideLookupResult?.selectionOptions.length, 2);
+	assert.equal(update.nationwideLookupResult?.lookupQuery, "84001");
+});
+
 test("nationwide lookups route into the nationwide results experience", () => {
 	assert.equal(resolveLookupDestination(nationwideResponse), "/results");
 });
 
 test("homepage entry state stops promoting the featured guide preview when a nationwide context is active", () => {
-	assert.deepEqual(buildHomeExperienceState(true), {
+	assert.deepEqual(buildHomeExperienceState(true, false), {
 		primaryLookupPath: "/results",
 		showFeaturedGuidePreview: false,
 		showNationwideResults: true,
 		startHerePrimaryLabel: "Open nationwide results",
 		startHerePrimaryPath: "/results"
+	});
+});
+
+test("homepage entry state stays lookup-first when no nationwide or published guide context is active", () => {
+	assert.deepEqual(buildHomeExperienceState(false, false), {
+		primaryLookupPath: "/#location-lookup",
+		showFeaturedGuidePreview: false,
+		showNationwideResults: false,
+		startHerePrimaryLabel: "Open location lookup",
+		startHerePrimaryPath: "/#location-lookup"
+	});
+});
+
+test("homepage entry state only promotes the ballot guide when a published guide context is active", () => {
+	assert.deepEqual(buildHomeExperienceState(false, true), {
+		primaryLookupPath: "/ballot",
+		showFeaturedGuidePreview: true,
+		showNationwideResults: false,
+		startHerePrimaryLabel: "Open ballot guide",
+		startHerePrimaryPath: "/ballot"
 	});
 });

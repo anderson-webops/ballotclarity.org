@@ -1,8 +1,12 @@
 <script setup lang="ts">
+import type { LocationLookupResponse, LocationLookupSelectionOption } from "~/types/civic";
 import { storeToRefs } from "pinia";
+import { normalizeLookupResponseForDisplay, resolveLookupDestination } from "~/utils/nationwide-results";
 
+const api = useApiClient();
 const civicStore = useCivicStore();
 const { isHydrated, nationwideLookupResult } = storeToRefs(civicStore);
+const { hasPublishedGuideContext } = useGuideEntryGate();
 
 const activeResult = computed(() => isHydrated.value ? nationwideLookupResult.value : null);
 const activeLocationLabel = computed(() => activeResult.value?.location?.displayName ?? activeResult.value?.normalizedAddress ?? "Nationwide civic results");
@@ -30,6 +34,36 @@ const summaryItems = computed(() => ([
 	}
 ]));
 
+async function selectLookupOption(option: LocationLookupSelectionOption) {
+	if (!activeResult.value?.lookupQuery)
+		return;
+
+	const activeElection = activeResult.value.election ?? null;
+	const response = await api<LocationLookupResponse>("/location", {
+		body: {
+			q: activeResult.value.lookupQuery,
+			selectionId: option.id
+		},
+		method: "POST"
+	});
+
+	civicStore.setLookupResponse(response, activeElection);
+
+	const redirectTarget = resolveLookupDestination(response);
+
+	if (redirectTarget) {
+		await navigateTo(redirectTarget);
+		return;
+	}
+
+	if (response.location && response.electionSlug) {
+		await navigateTo(`/ballot/${response.electionSlug}?location=${response.location.slug}`);
+		return;
+	}
+
+	civicStore.setNationwideLookupResult(normalizeLookupResponseForDisplay(response, activeElection));
+}
+
 usePageSeo({
 	description: "Nationwide civic results from the active lookup, including district matches, representative records, and official election tools.",
 	path: "/results",
@@ -46,10 +80,10 @@ usePageSeo({
 
 		<div v-else-if="!activeResult" class="max-w-3xl">
 			<InfoCallout title="Nationwide civic results not loaded" tone="warning">
-				Ballot Clarity does not have an active nationwide lookup context in this browser yet. Return to the home-page lookup, enter an address or ZIP code, and Ballot Clarity will carry the nationwide civic results here when a published local guide is not available.
+				Ballot Clarity does not have an active nationwide lookup context in this browser yet. The automatic IP-based location guess may have been unavailable for this request, so return to the home-page lookup and enter an address or ZIP code to load civic results here.
 			</InfoCallout>
 			<div class="mt-6 flex flex-wrap gap-3">
-				<NuxtLink to="/#location-lookup" class="btn-primary">
+				<NuxtLink to="/" class="btn-primary">
 					Open lookup
 				</NuxtLink>
 				<NuxtLink to="/coverage" class="btn-secondary">
@@ -85,8 +119,14 @@ usePageSeo({
 						The ballot plan, compare flow, and local ballot-guide pages still open only after Ballot Clarity confirms a published local guide for the active lookup. Until then, keep the nationwide civic results and official tools here as the main cross-page context.
 					</p>
 					<div class="mt-5 flex flex-wrap gap-3">
-						<NuxtLink to="/plan" class="btn-secondary">
+						<NuxtLink v-if="hasPublishedGuideContext" to="/plan" class="btn-secondary">
 							Open ballot plan
+						</NuxtLink>
+						<NuxtLink v-else to="/districts" class="btn-secondary">
+							Open districts
+						</NuxtLink>
+						<NuxtLink v-if="!hasPublishedGuideContext" to="/representatives" class="btn-secondary">
+							Open representatives
 						</NuxtLink>
 						<NuxtLink to="/coverage" class="btn-secondary">
 							Open coverage profile
@@ -103,7 +143,7 @@ usePageSeo({
 				<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
 					Nationwide results
 				</p>
-				<LookupResultsPanel :lookup="activeResult" />
+				<LookupResultsPanel :lookup="activeResult" @select-option="selectLookupOption" />
 			</section>
 
 			<section id="change-location" class="surface-panel">

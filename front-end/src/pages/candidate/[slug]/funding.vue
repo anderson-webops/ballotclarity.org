@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { currentCoverageElectionSlug } from "~/constants";
 import { buildCandidateFinanceCategoryBreakdown } from "~/utils/graphics-schema";
 
 const route = useRoute();
@@ -9,7 +8,7 @@ const { data: candidate, error, pending } = await useCandidate(candidateSlug);
 
 const breadcrumbs = computed(() => [
 	{ label: "Home", to: "/" },
-	{ label: "Ballot guide", to: `/ballot/${currentCoverageElectionSlug}` },
+	{ label: "Ballot guide", to: "/ballot" },
 	{ label: candidate.value?.name ?? "Candidate profile", to: candidate.value ? `/candidate/${candidate.value.slug}` : undefined },
 	{ label: "Funding" }
 ]);

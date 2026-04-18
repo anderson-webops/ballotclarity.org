@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import type { Candidate, Source } from "~/types/civic";
 import { storeToRefs } from "pinia";
-import { currentCoverageElectionSlug } from "~/constants";
 import { buildCompareRoute, normalizeCompareSlugs, parseCompareQuerySlugs } from "~/stores/civic";
 
 const civicStore = useCivicStore();
@@ -49,7 +48,7 @@ const sameContest = computed(() => Boolean(data.value?.sameContest));
 const compareBreadcrumbs = computed(() => allowsGuideEntryPoints.value
 	? [
 			{ label: "Home", to: "/" },
-			{ label: "Ballot guide", to: `/ballot/${currentCoverageElectionSlug}` },
+			{ label: "Ballot guide", to: "/ballot" },
 			{ label: "Compare" }
 		]
 	: [
@@ -169,7 +168,7 @@ usePageSeo({
 				{{ emptyStateBody }}
 			</InfoCallout>
 			<div class="mt-6 flex flex-wrap gap-3">
-				<NuxtLink v-if="allowsGuideEntryPoints" :to="`/ballot/${currentCoverageElectionSlug}`" class="btn-primary">
+				<NuxtLink v-if="allowsGuideEntryPoints" to="/ballot" class="btn-primary">
 					Open ballot guide
 				</NuxtLink>
 				<NuxtLink v-else to="/coverage" class="btn-primary">
@@ -235,7 +234,7 @@ usePageSeo({
 						</p>
 					</div>
 					<div class="flex flex-wrap gap-3">
-						<NuxtLink v-if="allowsGuideEntryPoints" :to="`/ballot/${currentCoverageElectionSlug}`" class="btn-secondary">
+						<NuxtLink v-if="allowsGuideEntryPoints" to="/ballot" class="btn-secondary">
 							Back to ballot
 						</NuxtLink>
 						<NuxtLink v-if="allowsGuideEntryPoints" to="/plan" class="btn-secondary">

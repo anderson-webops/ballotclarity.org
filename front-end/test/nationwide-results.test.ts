@@ -181,7 +181,7 @@ test("ambiguous ZIP lookups keep their selection options in persisted nationwide
 });
 
 test("nationwide lookups route into the nationwide results experience", () => {
-	assert.equal(resolveLookupDestination(nationwideResponse), "/results");
+	assert.equal(resolveLookupDestination(nationwideResponse), "/results?lookup=84604");
 });
 
 test("homepage entry state stops promoting the featured guide preview when a nationwide context is active", () => {

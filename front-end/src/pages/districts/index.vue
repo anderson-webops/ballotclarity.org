@@ -6,21 +6,28 @@ import { activeNationwideLookupCookieName, parseActiveNationwideLookupCookie } f
 import { buildDistrictRepresentativeAvailabilityNote, buildDistrictRepresentativeCountLabel } from "~/utils/district-availability";
 import { isExternalHref } from "~/utils/link";
 import { buildNationwideDirectoryResponses } from "~/utils/nationwide-directory";
+import { buildLookupContextFromNationwideResult, buildNationwideLookupRouteQuery, buildNationwideRouteTarget } from "~/utils/nationwide-route-context";
 
+const route = useRoute();
 const { formatDateTime } = useFormatters();
 const civicStore = useCivicStore();
 const { isHydrated, nationwideLookupResult, selectedLocation } = storeToRefs(civicStore);
-const { data: guideDistrictData, error: guideDistrictError, pending: guideDistrictPending } = await useDistricts();
-const { data: guideRepresentativesData } = await useRepresentatives();
 const { hasNationwideResultContext, hasPublishedGuideContext } = useGuideEntryGate();
 const activeNationwideLookupCookie = useCookie<string | null>(activeNationwideLookupCookieName);
 const serverNationwideLookupResult = computed(() => parseActiveNationwideLookupCookie(activeNationwideLookupCookie.value));
 const activeNationwideLookupResult = computed(() => isHydrated.value ? nationwideLookupResult.value : serverNationwideLookupResult.value);
+const activeLookupQuery = computed(() => buildNationwideLookupRouteQuery(
+	buildLookupContextFromNationwideResult(activeNationwideLookupResult.value),
+	route.query
+));
+const { data: guideDistrictData, error: guideDistrictError, pending: guideDistrictPending } = await useDistricts(activeLookupQuery);
+const { data: guideRepresentativesData } = await useRepresentatives(activeLookupQuery);
 const emptyNationwideDistrictsResponse: DistrictsResponse = { districts: [], mode: "nationwide", note: "", updatedAt: "" };
 const emptyNationwideRepresentativesResponse: RepresentativesResponse = { districts: [], mode: "nationwide", note: "", representatives: [], updatedAt: "" };
 const emptyGuideDistrictsResponse: DistrictsResponse = { districts: [], mode: "guide", note: "", updatedAt: "" };
 const emptyGuideRepresentativesResponse: RepresentativesResponse = { districts: [], mode: "guide", note: "", representatives: [], updatedAt: "" };
 const apiUsesNationwide = computed(() => guideDistrictData.value?.mode === "nationwide" || guideRepresentativesData.value?.mode === "nationwide");
+const showGuideDirectory = computed(() => hasPublishedGuideContext.value);
 const storeUsesNationwide = computed(() => {
 	if (!activeNationwideLookupResult.value || activeNationwideLookupResult.value.result !== "resolved")
 		return false;
@@ -43,16 +50,19 @@ const directoryData = computed(() => {
 		return nationwideDirectory.value;
 
 	return {
-		districts: guideDistrictData.value ?? emptyGuideDistrictsResponse,
-		representatives: guideRepresentativesData.value ?? emptyGuideRepresentativesResponse
+		districts: showGuideDirectory.value ? guideDistrictData.value ?? emptyGuideDistrictsResponse : emptyNationwideDistrictsResponse,
+		representatives: showGuideDirectory.value ? guideRepresentativesData.value ?? emptyGuideRepresentativesResponse : emptyNationwideRepresentativesResponse
 	};
 });
-const directoriesPending = computed(() => directoryUsesNationwide.value ? false : guideDistrictPending.value);
-const directoriesError = computed(() => directoryUsesNationwide.value && directoryData.value ? null : guideDistrictError.value);
+const directoriesPending = computed(() => directoryUsesNationwide.value ? false : showGuideDirectory.value ? guideDistrictPending.value : false);
+const directoriesError = computed(() => showGuideDirectory.value || directoryUsesNationwide.value
+	? directoryUsesNationwide.value && directoryData.value ? null : guideDistrictError.value
+	: null);
 const districts = computed(() => directoryData.value?.districts.districts ?? []);
 const representatives = computed(() => directoryData.value?.representatives.representatives ?? []);
 const activeLookupSummary = computed(() => buildActiveLookupSummary({
 	nationwideLookupResult: activeNationwideLookupResult.value,
+	routeLookupQuery: activeLookupQuery.value?.lookup ?? null,
 	selectedLocation: isHydrated.value ? selectedLocation.value : null
 }));
 
@@ -99,6 +109,11 @@ const districtIntroCopy = computed(() => directoryUsesNationwide.value
 	? "Use district pages to inspect nationwide lookup matches, including linked officials where active lookup provides those links. Candidate fields are shown when local guide coverage exists."
 	: "Use district pages when you want the office area, the current representative, and the current candidate field in one place without leaving the current results layer."
 );
+const requiresLookupPrompt = computed(() => !directoryUsesNationwide.value && !showGuideDirectory.value);
+
+function buildLookupAwareTarget(path: string) {
+	return buildNationwideRouteTarget(path, buildLookupContextFromNationwideResult(activeNationwideLookupResult.value), route.query);
+}
 </script>
 
 <template>
@@ -158,6 +173,20 @@ const districtIntroCopy = computed(() => directoryUsesNationwide.value
 			</InfoCallout>
 		</div>
 
+		<div v-else-if="requiresLookupPrompt" class="max-w-3xl">
+			<InfoCallout title="Active nationwide lookup required" tone="warning">
+				This district hub stays nationwide-first. Start from the lookup or open saved nationwide results so Ballot Clarity can attach the current district matches and linked representatives instead of falling back to unrelated guide data.
+			</InfoCallout>
+			<div class="mt-6 flex flex-wrap gap-3">
+				<NuxtLink to="/" class="btn-primary">
+					Open lookup
+				</NuxtLink>
+				<NuxtLink to="/results" class="btn-secondary">
+					Nationwide results
+				</NuxtLink>
+			</div>
+		</div>
+
 		<div v-else class="space-y-6">
 			<PageSummaryStrip :items="summaryItems" />
 
@@ -198,7 +227,7 @@ const districtIntroCopy = computed(() => directoryUsesNationwide.value
 						{{ getDistrictRepresentativeAvailabilityNote(district) }}
 					</p>
 					<div class="mt-6 flex flex-wrap gap-3">
-						<NuxtLink :to="district.href" class="btn-primary">
+						<NuxtLink :to="buildLookupAwareTarget(district.href)" class="btn-primary">
 							Open district page
 						</NuxtLink>
 						<a
@@ -213,7 +242,7 @@ const districtIntroCopy = computed(() => directoryUsesNationwide.value
 						</a>
 						<NuxtLink
 							v-else-if="getDistrictRepresentatives(district.slug).length"
-							:to="getDistrictRepresentatives(district.slug)[0]?.href ?? '/representatives'"
+							:to="buildLookupAwareTarget(getDistrictRepresentatives(district.slug)[0]?.href ?? '/representatives')"
 							class="btn-secondary"
 						>
 							Open representative

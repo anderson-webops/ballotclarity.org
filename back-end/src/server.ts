@@ -46,11 +46,14 @@ import { pathToFileURL } from "node:url";
 import cors from "cors";
 import express from "express";
 import {
+	buildActiveNationwideLookupContext,
 	buildActiveNationwideLookupCookie,
 	buildNationwideDistrictRecordResponse,
 	buildNationwideDistrictsResponse,
 	buildNationwidePersonProfileResponse,
 	buildNationwideRepresentativesResponse,
+	buildRouteFallbackDistrictRecordResponse,
+	buildRouteFallbackPersonProfileResponse,
 	clearActiveNationwideLookupCookie,
 	persistActiveNationwideLookupCookie,
 	readActiveNationwideLookupContext,
@@ -1354,8 +1357,27 @@ export async function createApp(options: CreateAppOptions = {}) {
 			geoContext,
 			officialLookup,
 			addressEnrichment,
-			selectionOptions
+			selectionOptions,
+			selectionId
 		);
+	}
+
+	async function resolveActiveNationwideLookup(request: express.Request, response: express.Response) {
+		const routeLookup = typeof request.query.lookup === "string" ? request.query.lookup.trim() : "";
+		const routeSelectionId = typeof request.query.selection === "string" ? request.query.selection.trim() : "";
+
+		if (routeLookup) {
+			const lookupResponse = await resolveLocationLookup(routeLookup, response.locals.requestId, routeSelectionId || undefined);
+			const activeLookupContext = buildActiveNationwideLookupContext(lookupResponse);
+			const activeLookupCookie = buildActiveNationwideLookupCookie(lookupResponse);
+
+			if (activeLookupCookie)
+				persistActiveNationwideLookupCookie(response, activeLookupCookie);
+
+			return activeLookupContext;
+		}
+
+		return readActiveNationwideLookupContext(request.header("cookie"));
 	}
 
 	if (process.env.TRUST_PROXY === "true")
@@ -1661,8 +1683,8 @@ export async function createApp(options: CreateAppOptions = {}) {
 		response.json(record);
 	});
 
-	app.get("/api/districts", async (_request, response) => {
-		const activeNationwideLookup = readActiveNationwideLookupContext(_request.header("cookie"));
+	app.get("/api/districts", async (request, response) => {
+		const activeNationwideLookup = await resolveActiveNationwideLookup(request, response);
 
 		if (activeNationwideLookup) {
 			response.json(buildNationwideDistrictsResponse(activeNationwideLookup));
@@ -1673,7 +1695,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 	});
 
 	app.get("/api/districts/:slug", async (request, response) => {
-		const activeNationwideLookup = readActiveNationwideLookupContext(request.header("cookie"));
+		const activeNationwideLookup = await resolveActiveNationwideLookup(request, response);
 
 		if (activeNationwideLookup) {
 			const nationwideDistrict = buildNationwideDistrictRecordResponse(activeNationwideLookup, request.params.slug);
@@ -1687,17 +1709,15 @@ export async function createApp(options: CreateAppOptions = {}) {
 		const result = await getPublicDistrict(request.params.slug);
 
 		if (!result) {
-			response.status(404).json({
-				message: "District page not found."
-			});
+			response.json(buildRouteFallbackDistrictRecordResponse(request.params.slug));
 			return;
 		}
 
 		response.json(buildDistrictRecordResponse(result.contest, result.election));
 	});
 
-	app.get("/api/representatives", async (_request, response) => {
-		const activeNationwideLookup = readActiveNationwideLookupContext(_request.header("cookie"));
+	app.get("/api/representatives", async (request, response) => {
+		const activeNationwideLookup = await resolveActiveNationwideLookup(request, response);
 
 		if (activeNationwideLookup) {
 			response.json(buildNationwideRepresentativesResponse(activeNationwideLookup));
@@ -1713,7 +1733,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 	});
 
 	app.get("/api/representatives/:slug", async (request, response) => {
-		const activeNationwideLookup = readActiveNationwideLookupContext(request.header("cookie"));
+		const activeNationwideLookup = await resolveActiveNationwideLookup(request, response);
 
 		if (activeNationwideLookup) {
 			const representativeFromLookup = buildNationwidePersonProfileResponse(activeNationwideLookup, request.params.slug);
@@ -1727,9 +1747,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 		const representative = await getPublicRepresentative(request.params.slug);
 
 		if (!representative) {
-			response.status(404).json({
-				message: "Representative profile not found."
-			});
+			response.json(buildRouteFallbackPersonProfileResponse(request.params.slug));
 			return;
 		}
 

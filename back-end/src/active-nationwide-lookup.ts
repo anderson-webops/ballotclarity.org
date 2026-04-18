@@ -25,6 +25,7 @@ export interface ActiveNationwideLookupContext {
 	location: LocationSelection | null;
 	normalizedAddress: string;
 	representativeMatches: LocationRepresentativeMatch[];
+	selectionId?: string;
 	resolvedAt: string;
 	result: "resolved";
 }
@@ -37,9 +38,12 @@ const openStatesUrl = "https://openstates.org";
 type DistrictScope = "city" | "county" | "federal-house" | "label" | "state-house" | "state-senate";
 type DistrictDescriptor = Pick<DistrictsResponse["districts"][number], "jurisdiction" | "office" | "title">;
 const numericDistrictCodePattern = /\d+/;
+const congressionalSlugPrefixPattern = /^congressional-/u;
 const representativeStateDistrictPattern = /\b[A-Z]{2}\s*-\s*\d+\b/i;
 const senatorPrefixPattern = /^senator-/u;
 const stateDistrictCodePattern = /\b[A-Z]{2}\s*-\s*(\d+)\b/i;
+const stateHouseSlugPrefixPattern = /^state-house-/u;
+const stateSenateSlugPrefixPattern = /^state-senate-/u;
 const representativePrefixPattern = /^representative-/u;
 
 function normalizeValue(value: string | null | undefined) {
@@ -58,6 +62,47 @@ function toLookupSlug(value: string) {
 		.replace(/[^a-z0-9-]/g, "-")
 		.replace(/-+/g, "-")
 		.replace(/^-|-$/g, "");
+}
+
+function titleCaseToken(value: string) {
+	return value
+		.split("-")
+		.filter(Boolean)
+		.map((segment) => {
+			if (segment.length <= 2)
+				return segment.toUpperCase();
+
+			if (segment.startsWith("mc") && segment.length > 2)
+				return `Mc${segment.charAt(2).toUpperCase()}${segment.slice(3)}`;
+
+			return segment.charAt(0).toUpperCase() + segment.slice(1);
+		})
+		.join(" ");
+}
+
+function inferDistrictTitleFromSlug(slug: string) {
+	const normalizedSlug = toLookupSlug(slug);
+
+	if (normalizedSlug.startsWith("congressional-"))
+		return `Congressional District ${normalizedSlug.replace(congressionalSlugPrefixPattern, "")}`;
+
+	if (normalizedSlug.startsWith("state-senate-"))
+		return `State Senate District ${normalizedSlug.replace(stateSenateSlugPrefixPattern, "")}`;
+
+	if (normalizedSlug.startsWith("state-house-"))
+		return `State House District ${normalizedSlug.replace(stateHouseSlugPrefixPattern, "")}`;
+
+	if (normalizedSlug.endsWith("-county"))
+		return titleCaseToken(normalizedSlug);
+
+	if (normalizedSlug.endsWith("-city"))
+		return titleCaseToken(normalizedSlug);
+
+	return titleCaseToken(normalizedSlug);
+}
+
+function inferRepresentativeNameFromSlug(slug: string) {
+	return titleCaseToken(toLookupSlug(slug));
 }
 
 function parseCookieHeader(cookieHeader: string | undefined) {
@@ -205,6 +250,7 @@ function sanitizeActiveNationwideLookupContext(value: unknown): ActiveNationwide
 		location: sanitizeLocationSelection(value.location),
 		normalizedAddress: typeof value.normalizedAddress === "string" ? value.normalizedAddress : "",
 		representativeMatches,
+		selectionId: typeof value.selectionId === "string" ? value.selectionId : undefined,
 		resolvedAt: typeof value.resolvedAt === "string" && value.resolvedAt
 			? value.resolvedAt
 			: new Date().toISOString(),
@@ -232,6 +278,7 @@ function buildCookiePayload(context: ActiveNationwideLookupContext) {
 		location: context.location,
 		normalizedAddress: context.normalizedAddress,
 		representativeMatches: context.representativeMatches,
+		selectionId: context.selectionId,
 		resolvedAt: context.resolvedAt,
 		result: context.result,
 	};
@@ -642,14 +689,31 @@ function buildRepresentativeSources(context: ActiveNationwideLookupContext, repr
 	return Array.from(new Map(sources.map(source => [source.id, source])).values());
 }
 
-export function buildActiveNationwideLookupCookie(response: LocationLookupResponse) {
+function buildFallbackRouteSource(id: string, title: string, updatedAt: string) {
+	return toSource({
+		authority: "ballot-clarity-archive",
+		date: updatedAt,
+		id,
+		note: "This public route is available, but Ballot Clarity still needs an active nationwide lookup or a published local record to attach richer person and district detail to it.",
+		publisher: "Ballot Clarity route model",
+		sourceSystem: "Ballot Clarity nationwide route layer",
+		title,
+		url: "/coverage",
+	});
+}
+
+export function buildActiveNationwideLookupContext(response: LocationLookupResponse) {
 	if (response.result !== "resolved" || response.guideAvailability !== "not-published")
 		return null;
 
-	const context = sanitizeActiveNationwideLookupContext({
+	return sanitizeActiveNationwideLookupContext({
 		...response,
 		resolvedAt: new Date().toISOString(),
 	});
+}
+
+export function buildActiveNationwideLookupCookie(response: LocationLookupResponse) {
+	const context = buildActiveNationwideLookupContext(response);
 
 	if (!context)
 		return null;
@@ -698,7 +762,7 @@ export function buildNationwideDistrictsResponse(context: ActiveNationwideLookup
 	return {
 		districts: directory.districts,
 		mode: "nationwide",
-		note: "District pages derived from the active nationwide lookup context carried in this browser.",
+		note: "District pages derived from the active nationwide lookup context attached to this request.",
 		updatedAt: directory.updatedAt,
 	};
 }
@@ -709,9 +773,131 @@ export function buildNationwideRepresentativesResponse(context: ActiveNationwide
 	return {
 		districts: directory.districts,
 		mode: "nationwide",
-		note: "Representative directory derived from the active nationwide lookup context carried in this browser.",
+		note: "Representative directory derived from the active nationwide lookup context attached to this request.",
 		representatives: directory.representatives,
 		updatedAt: directory.updatedAt,
+	};
+}
+
+export function buildRouteFallbackDistrictRecordResponse(districtSlug: string): DistrictRecordResponse {
+	const updatedAt = new Date().toISOString();
+	const district = {
+		candidateCount: 0,
+		description: "This district route is available, but Ballot Clarity still needs either an active nationwide lookup or a published local guide to attach exact representatives, official tools, and any candidate field records to it.",
+		electionSlug: "nationwide-lookup",
+		href: `/districts/${districtSlug}`,
+		jurisdiction: deriveNationwideDistrictJurisdiction(districtSlug),
+		office: inferDistrictTitleFromSlug(districtSlug),
+		representativeCount: 0,
+		roleGuide: buildNationwideDistrictRoleGuide({
+			jurisdiction: deriveNationwideDistrictJurisdiction(districtSlug),
+			office: inferDistrictTitleFromSlug(districtSlug),
+			title: inferDistrictTitleFromSlug(districtSlug),
+		}),
+		slug: districtSlug,
+		summary: "Lookup-backed district context will attach here after Ballot Clarity resolves an active nationwide result for this request.",
+		title: inferDistrictTitleFromSlug(districtSlug),
+		updatedAt,
+	};
+
+	return {
+		candidateAvailabilityNote: "Candidate field records remain guide-dependent here. Open a published local guide when Ballot Clarity has one for this district.",
+		candidates: [],
+		district,
+		districtOriginLabel: "Lookup context required",
+		districtOriginNote: "This district route is part of the nationwide results layer, but no active nationwide lookup was attached to this request. Open a lookup first to attach the exact geography, current representatives, and official verification tools for this district.",
+		election: {
+			date: updatedAt,
+			jurisdictionSlug: "",
+			locationName: "Nationwide civic lookup required",
+			name: "Nationwide civic lookup required",
+			slug: "nationwide-lookup",
+			updatedAt,
+		},
+		mode: "nationwide",
+		note: "This district page resolves as a public nationwide route, but richer district detail depends on an active lookup context or a published local guide.",
+		officialResources: [],
+		relatedContests: [],
+		representativeAvailabilityNote: buildDistrictRepresentativeAvailabilityNote(district, 0),
+		representatives: [],
+		sources: [buildFallbackRouteSource(`district:${districtSlug}:fallback`, `${inferDistrictTitleFromSlug(districtSlug)} route availability`, updatedAt)],
+		updatedAt,
+	};
+}
+
+export function buildRouteFallbackPersonProfileResponse(representativeSlug: string): PersonProfileResponse {
+	const updatedAt = new Date().toISOString();
+	const name = inferRepresentativeNameFromSlug(representativeSlug);
+	const sources = [buildFallbackRouteSource(`representative:${representativeSlug}:fallback`, `${name} route availability`, updatedAt)];
+
+	return {
+		note: "This representative route resolves publicly, but Ballot Clarity still needs an active nationwide lookup or a source-backed local record to attach exact office, district, finance, and influence details to it.",
+		person: {
+			ballotStatusLabel: "Current ballot status unavailable without active lookup context",
+			biography: [
+				{
+					id: `route:${representativeSlug}`,
+					sources,
+					summary: "This person route is live, but richer representative detail still depends on the current nationwide lookup context or a published local record.",
+					title: "Route availability",
+				},
+			],
+			comparison: null,
+			contestSlug: "",
+			districtLabel: "Active nationwide lookup required",
+			districtSlug: "",
+			freshness: {
+				contentLastVerifiedAt: updatedAt,
+				dataLastUpdatedAt: updatedAt,
+				nextReviewAt: updatedAt,
+				status: "up-to-date",
+				statusLabel: "Route-backed",
+				statusNote: "This route is available, but Ballot Clarity has not attached a current lookup-backed or source-backed representative record to it yet.",
+			},
+			funding: null,
+			incumbent: true,
+			keyActions: [],
+			lobbyingContext: [],
+			location: "Nationwide civic lookup required",
+			methodologyNotes: [
+				"Representative routes stay public even when Ballot Clarity cannot yet attach a richer person record.",
+				"Open a nationwide lookup result first to attach district matches, representative provenance, and official tools to this person route.",
+			],
+			name,
+			officeholderLabel: "Current officeholder record pending lookup context",
+			officeSought: "Representative details pending active lookup",
+			onCurrentBallot: false,
+			party: "Unknown",
+			provenance: {
+				asOf: updatedAt,
+				label: "Lookup context required",
+				note: "This route is live, but no active nationwide lookup or published local person record was attached to this request.",
+				source: "nationwide",
+				status: "inferred",
+			},
+			publicStatements: [],
+			slug: representativeSlug,
+			sourceCount: sources.length,
+			sources,
+			summary: "This representative page is available, but Ballot Clarity still needs an active nationwide lookup or a source-backed local record to attach office, district, finance, and influence detail.",
+			topIssues: [],
+			updatedAt,
+			whatWeDoNotKnow: [
+				buildTrustBullet(
+					"lookup-required",
+					"An active nationwide lookup or source-backed local record is still required to attach exact district, representative, finance, and influence detail to this route.",
+					sources,
+				),
+			],
+			whatWeKnow: [
+				buildTrustBullet(
+					"route-available",
+					"This public route itself is live and can render an honest unavailable state instead of failing.",
+					sources,
+				),
+			],
+		},
+		updatedAt,
 	};
 }
 

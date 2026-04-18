@@ -6,6 +6,7 @@ import type {
 } from "../types/civic";
 import type { LookupContextState } from "./guide-entry";
 import { hasPublishedGuideResult } from "./location-lookup";
+import { buildLookupDestinationFromResponse } from "./nationwide-route-context";
 
 export const nationwideResultsPath = "/results";
 
@@ -47,6 +48,7 @@ export function normalizeLookupResponseForDisplay(
 		guideAvailability: response.guideAvailability,
 		inputKind: response.inputKind,
 		lookupQuery: response.lookupQuery,
+		selectionId: response.selectionId,
 		location: response.location ?? null,
 		normalizedAddress: response.normalizedAddress ?? "",
 		note: response.note,
@@ -92,7 +94,7 @@ export function hasActiveNationwideLookupResult(
 
 export function resolveLookupDestination(response: LocationLookupResponse) {
 	return hasActiveNationwideLookupResult(buildNationwideLookupResultContext(response))
-		? nationwideResultsPath
+		? buildLookupDestinationFromResponse(response)
 		: null;
 }
 

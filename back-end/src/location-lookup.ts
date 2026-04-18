@@ -365,7 +365,8 @@ export function buildLocationLookupResponse(
 	geoContext?: LookupGeoContext | null,
 	officialLookup?: OfficialAddressMatch | null,
 	addressEnrichment?: AddressEnrichmentResult | null,
-	selectionOptions?: LocationLookupSelectionOption[]
+	selectionOptions?: LocationLookupSelectionOption[],
+	selectionId?: string
 ): LocationLookupResponse {
 	const inputKind = classifyLookupInput(rawQuery);
 	const stateOfficialActions = buildOfficialVerificationActions(
@@ -420,6 +421,7 @@ export function buildLocationLookupResponse(
 					: buildGuideUnavailableNote(rawQuery, inputKind, geoContext, Boolean(actions.length), addressEnrichment),
 			normalizedAddress: addressEnrichment?.normalizedAddress || geoContext.postalCode || rawQuery,
 			representativeMatches: addressEnrichment?.representativeMatches,
+			selectionId,
 			selectionOptions,
 			result: "resolved"
 		};
@@ -443,6 +445,7 @@ export function buildLocationLookupResponse(
 				note: buildGuideUnavailableNote(rawQuery, inputKind, geoContext, Boolean(officialActions.length), addressEnrichment),
 				normalizedAddress: addressEnrichment?.normalizedAddress,
 				representativeMatches: addressEnrichment?.representativeMatches,
+				selectionId,
 				result: "resolved"
 			};
 		}
@@ -456,6 +459,7 @@ export function buildLocationLookupResponse(
 			note: buildUnsupportedNote(rawQuery, inputKind, geoContext, Boolean(officialActions.length)),
 			normalizedAddress: addressEnrichment?.normalizedAddress,
 			representativeMatches: addressEnrichment?.representativeMatches,
+			selectionId,
 			result: "unsupported"
 		};
 	}
@@ -491,6 +495,7 @@ export function buildLocationLookupResponse(
 		].filter(Boolean).join(" "),
 		normalizedAddress: addressEnrichment?.normalizedAddress,
 		representativeMatches: addressEnrichment?.representativeMatches,
+		selectionId,
 		result: "resolved"
 	};
 }

@@ -418,6 +418,7 @@ export interface LocationLookupResponse {
 	inputKind: LocationLookupInputKind;
 	note: string;
 	lookupQuery?: string;
+	selectionId?: string;
 	detectedFromIp?: boolean;
 	guideAvailability?: LocationGuideAvailability;
 	availability?: LocationDataAvailabilitySummary;
@@ -437,6 +438,7 @@ export interface NationwideLookupResultContext {
 	note: string;
 	resolvedAt?: string;
 	lookupQuery?: string;
+	selectionId?: string;
 	detectedFromIp?: boolean;
 	guideAvailability?: LocationGuideAvailability;
 	availability: LocationDataAvailabilitySummary | null;

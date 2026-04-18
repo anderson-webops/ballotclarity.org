@@ -4,6 +4,7 @@ import { storeToRefs } from "pinia";
 
 import { activeNationwideLookupCookieName, parseActiveNationwideLookupCookie } from "~/utils/active-nationwide-cookie";
 import { buildNationwidePersonProfileResponse } from "~/utils/nationwide-person-profile";
+import { buildLookupContextFromNationwideResult, buildNationwideLookupRouteQuery, buildNationwideRouteTarget } from "~/utils/nationwide-route-context";
 import { buildPersonLinkageConfidence, hasPersonInfluence } from "~/utils/person-profile";
 
 const route = useRoute();
@@ -12,17 +13,34 @@ const { isHydrated, nationwideLookupResult } = storeToRefs(civicStore);
 const { layerBreadcrumbLink } = useRouteLayerNavigation();
 const representativeSlug = computed(() => String(route.params.slug));
 const { formatDate, formatDateTime } = useFormatters();
-const { data, error, pending } = await useRepresentative(representativeSlug);
 const activeNationwideLookupCookie = useCookie<string | null>(activeNationwideLookupCookieName);
 const serverNationwideLookupResult = computed(() => parseActiveNationwideLookupCookie(activeNationwideLookupCookie.value));
 const activeNationwideLookupResult = computed(() => isHydrated.value ? nationwideLookupResult.value : serverNationwideLookupResult.value);
+const activeLookupQuery = computed(() => buildNationwideLookupRouteQuery(
+	buildLookupContextFromNationwideResult(activeNationwideLookupResult.value),
+	route.query
+));
+const { data, error, pending } = await useRepresentative(representativeSlug, activeLookupQuery);
 
 function uniqueSources(sources: Source[]) {
 	return Array.from(new Map(sources.map(source => [source.id, source])).values());
 }
 
 const fallbackData = computed(() => buildNationwidePersonProfileResponse(activeNationwideLookupResult.value, representativeSlug.value));
-const profileData = computed(() => data.value ?? fallbackData.value);
+const profileData = computed(() => {
+	if (!data.value)
+		return fallbackData.value;
+
+	if (
+		data.value.person.provenance.source === "nationwide"
+		&& data.value.person.provenance.status === "inferred"
+		&& fallbackData.value
+	) {
+		return fallbackData.value;
+	}
+
+	return data.value;
+});
 const person = computed(() => profileData.value?.person ?? null);
 const pagePending = computed(() => pending.value || (!data.value && !fallbackData.value));
 const linkageConfidence = computed(() => person.value ? buildPersonLinkageConfidence(person.value.provenance.status) : null);
@@ -33,10 +51,13 @@ const influenceSources = computed(() => person.value
 			...person.value.publicStatements.flatMap(item => item.sources)
 		])
 	: []);
+function buildLookupAwareTarget(path: string) {
+	return buildNationwideRouteTarget(path, buildLookupContextFromNationwideResult(activeNationwideLookupResult.value), route.query);
+}
 const breadcrumbs = computed(() => [
 	{ label: "Home", to: "/" },
-	layerBreadcrumbLink.value,
-	{ label: person.value?.name ?? "Representative profile", to: person.value ? `/representatives/${person.value.slug}` : undefined },
+	{ label: layerBreadcrumbLink.value.label, to: buildLookupAwareTarget(layerBreadcrumbLink.value.to) },
+	{ label: person.value?.name ?? "Representative profile", to: person.value ? buildLookupAwareTarget(`/representatives/${person.value.slug}`) : undefined },
 	{ label: "Influence" }
 ]);
 
@@ -92,10 +113,10 @@ usePageSeo({
 					This page isolates the donor, sector, lobbying, and disclosure context attached to the representative profile. It is meant to help scrutiny, not to imply automatic motive or proof of influence.
 				</p>
 				<div class="mt-6 flex flex-wrap gap-3">
-					<NuxtLink :to="`/representatives/${person.slug}`" class="btn-secondary">
+					<NuxtLink :to="buildLookupAwareTarget(`/representatives/${person.slug}`)" class="btn-secondary">
 						Back to profile
 					</NuxtLink>
-					<NuxtLink v-if="person.funding" :to="`/representatives/${person.slug}/funding`" class="btn-secondary">
+					<NuxtLink v-if="person.funding" :to="buildLookupAwareTarget(`/representatives/${person.slug}/funding`)" class="btn-secondary">
 						Open funding page
 					</NuxtLink>
 					<SourceDrawer :sources="influenceSources" :title="`${person.name} influence sources`" button-label="Influence sources" />

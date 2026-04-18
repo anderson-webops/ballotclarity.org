@@ -6,18 +6,25 @@ import { buildActiveLookupSummary } from "~/utils/active-lookup";
 import { activeNationwideLookupCookieName, parseActiveNationwideLookupCookie } from "~/utils/active-nationwide-cookie";
 import { isExternalHref } from "~/utils/link";
 import { buildNationwideDirectoryResponses } from "~/utils/nationwide-directory";
+import { buildLookupContextFromNationwideResult, buildNationwideLookupRouteQuery, buildNationwideRouteTarget } from "~/utils/nationwide-route-context";
 
+const route = useRoute();
 const { formatDateTime } = useFormatters();
 const civicStore = useCivicStore();
-const { data: guideData, error: guideError, pending: guidePending } = await useRepresentatives();
 const { isHydrated, nationwideLookupResult, selectedLocation } = storeToRefs(civicStore);
 const { hasNationwideResultContext, hasPublishedGuideContext } = useGuideEntryGate();
 const activeNationwideLookupCookie = useCookie<string | null>(activeNationwideLookupCookieName);
 const serverNationwideLookupResult = computed(() => parseActiveNationwideLookupCookie(activeNationwideLookupCookie.value));
 const activeNationwideLookupResult = computed(() => isHydrated.value ? nationwideLookupResult.value : serverNationwideLookupResult.value);
+const activeLookupQuery = computed(() => buildNationwideLookupRouteQuery(
+	buildLookupContextFromNationwideResult(activeNationwideLookupResult.value),
+	route.query
+));
+const { data: guideData, error: guideError, pending: guidePending } = await useRepresentatives(activeLookupQuery);
 const emptyNationwideRepresentativesResponse: RepresentativesResponse = { districts: [], mode: "nationwide", note: "", representatives: [], updatedAt: "" };
 const emptyGuideRepresentativesResponse: RepresentativesResponse = { districts: [], mode: "guide", note: "", representatives: [], updatedAt: "" };
 const apiUsesNationwide = computed(() => guideData.value?.mode === "nationwide");
+const showGuideDirectory = computed(() => hasPublishedGuideContext.value);
 const storeUsesNationwide = computed(() => {
 	if (!activeNationwideLookupResult.value || activeNationwideLookupResult.value.result !== "resolved")
 		return false;
@@ -34,14 +41,20 @@ const directoryBundle = computed(() => {
 	if (storeUsesNationwide.value)
 		return buildNationwideDirectoryResponses(activeNationwideLookupResult.value).representatives;
 
-	return guideData.value ?? emptyGuideRepresentativesResponse;
+	if (showGuideDirectory.value)
+		return guideData.value ?? emptyGuideRepresentativesResponse;
+
+	return emptyNationwideRepresentativesResponse;
 });
 
-const directoryPending = computed(() => directoryUsesNationwide.value ? false : guidePending.value);
-const directoryError = computed(() => directoryUsesNationwide.value && directoryBundle.value ? null : guideError.value);
+const directoryPending = computed(() => directoryUsesNationwide.value ? false : showGuideDirectory.value ? guidePending.value : false);
+const directoryError = computed(() => showGuideDirectory.value || directoryUsesNationwide.value
+	? directoryUsesNationwide.value && directoryBundle.value ? null : guideError.value
+	: null);
 const directoryData = computed(() => directoryBundle.value);
 const activeLookupSummary = computed(() => buildActiveLookupSummary({
 	nationwideLookupResult: activeNationwideLookupResult.value,
+	routeLookupQuery: activeLookupQuery.value?.lookup ?? null,
 	selectedLocation: isHydrated.value ? selectedLocation.value : null
 }));
 const representativeLinkIsExternal = (href: string) => isExternalHref(href);
@@ -77,6 +90,11 @@ const noActionCopy = computed(() => directoryUsesNationwide.value
 	? "Open the district layer or provider-backed record for this official. Ballot Clarity funding and influence pages appear only when a source-backed person record exists."
 	: "Open the person profile, funding page, or influence page for this official."
 );
+const requiresLookupPrompt = computed(() => !directoryUsesNationwide.value && !showGuideDirectory.value);
+
+function buildLookupAwareTarget(path: string) {
+	return buildNationwideRouteTarget(path, buildLookupContextFromNationwideResult(activeNationwideLookupResult.value), route.query);
+}
 usePageSeo({
 	description: "Directory of current representatives in your active Ballot Clarity context, with guide-dependent links made clear when no local guide is available.",
 	path: "/representatives",
@@ -126,7 +144,7 @@ usePageSeo({
 					</li>
 				</ul>
 				<div class="mt-6">
-					<NuxtLink to="/districts" class="btn-secondary">
+					<NuxtLink :to="buildLookupAwareTarget('/districts')" class="btn-secondary">
 						Open district hub
 					</NuxtLink>
 				</div>
@@ -142,6 +160,20 @@ usePageSeo({
 			<InfoCallout title="Representative directory unavailable" tone="warning">
 				The representative directory could not be loaded. Open a district or contest page and try again.
 			</InfoCallout>
+		</div>
+
+		<div v-else-if="requiresLookupPrompt" class="max-w-3xl">
+			<InfoCallout title="Active nationwide lookup required" tone="warning">
+				This directory stays nationwide-first. Start from the lookup or open saved nationwide results so Ballot Clarity can attach the current representative matches to this page instead of falling back to unrelated guide data.
+			</InfoCallout>
+			<div class="mt-6 flex flex-wrap gap-3">
+				<NuxtLink to="/" class="btn-primary">
+					Open lookup
+				</NuxtLink>
+				<NuxtLink to="/results" class="btn-secondary">
+					Nationwide results
+				</NuxtLink>
+			</div>
 		</div>
 
 		<div v-else class="space-y-6">
@@ -170,10 +202,10 @@ usePageSeo({
 						<VerificationBadge :label="`${representative.sourceCount} sources`" tone="accent" />
 					</div>
 					<div class="mt-6 flex flex-wrap gap-3">
-						<NuxtLink :to="`/districts/${representative.districtSlug}`" class="btn-secondary">
+						<NuxtLink :to="buildLookupAwareTarget(`/districts/${representative.districtSlug}`)" class="btn-secondary">
 							District page
 						</NuxtLink>
-						<NuxtLink v-if="!representativeLinkIsExternal(representative.href)" :to="representative.href" class="btn-secondary">
+						<NuxtLink v-if="!representativeLinkIsExternal(representative.href)" :to="buildLookupAwareTarget(representative.href)" class="btn-secondary">
 							Profile
 						</NuxtLink>
 						<a
@@ -196,10 +228,10 @@ usePageSeo({
 							Provider record
 							<span class="i-carbon-launch" />
 						</a>
-						<NuxtLink v-if="!directoryUsesNationwide" :to="`${representative.href}/funding`" class="btn-primary">
+						<NuxtLink v-if="!directoryUsesNationwide" :to="buildLookupAwareTarget(`${representative.href}/funding`)" class="btn-primary">
 							Funding
 						</NuxtLink>
-						<NuxtLink v-if="!directoryUsesNationwide" :to="`${representative.href}/influence`" class="btn-secondary">
+						<NuxtLink v-if="!directoryUsesNationwide" :to="buildLookupAwareTarget(`${representative.href}/influence`)" class="btn-secondary">
 							Influence
 						</NuxtLink>
 						<VerificationBadge v-if="directoryUsesNationwide" label="Funding not yet available" tone="warning" />

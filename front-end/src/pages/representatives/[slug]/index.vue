@@ -5,6 +5,7 @@ import { contactEmail } from "~/constants";
 import { buildActiveLookupSummary } from "~/utils/active-lookup";
 import { activeNationwideLookupCookieName, parseActiveNationwideLookupCookie } from "~/utils/active-nationwide-cookie";
 import { buildNationwidePersonProfileResponse } from "~/utils/nationwide-person-profile";
+import { buildLookupContextFromNationwideResult, buildNationwideLookupRouteQuery, buildNationwideRouteTarget } from "~/utils/nationwide-route-context";
 import { buildPersonLinkageConfidence, hasPersonFunding, hasPersonInfluence } from "~/utils/person-profile";
 
 const route = useRoute();
@@ -15,18 +16,36 @@ const { isHydrated, nationwideLookupResult, selectedLocation } = storeToRefs(civ
 const representativeSlug = computed(() => String(route.params.slug));
 const { backToLayerLink, layerBreadcrumbLink, overviewLink } = useRouteLayerNavigation();
 const { formatCurrency, formatDate, formatDateTime } = useFormatters();
-const { data, error, pending } = await useRepresentative(representativeSlug);
 const activeNationwideLookupCookie = useCookie<string | null>(activeNationwideLookupCookieName);
 const serverNationwideLookupResult = computed(() => parseActiveNationwideLookupCookie(activeNationwideLookupCookie.value));
 const activeNationwideLookupResult = computed(() => isHydrated.value ? nationwideLookupResult.value : serverNationwideLookupResult.value);
+const activeLookupQuery = computed(() => buildNationwideLookupRouteQuery(
+	buildLookupContextFromNationwideResult(activeNationwideLookupResult.value),
+	route.query
+));
+const { data, error, pending } = await useRepresentative(representativeSlug, activeLookupQuery);
 
 const fallbackData = computed(() => buildNationwidePersonProfileResponse(activeNationwideLookupResult.value, representativeSlug.value));
-const profileData = computed(() => data.value ?? fallbackData.value);
+const profileData = computed(() => {
+	if (!data.value)
+		return fallbackData.value;
+
+	if (
+		data.value.person.provenance.source === "nationwide"
+		&& data.value.person.provenance.status === "inferred"
+		&& fallbackData.value
+	) {
+		return fallbackData.value;
+	}
+
+	return data.value;
+});
 const person = computed(() => profileData.value?.person ?? null);
 const pagePending = computed(() => pending.value || (!data.value && !fallbackData.value));
-const isNationwideFallback = computed(() => !data.value && Boolean(fallbackData.value));
+const isNationwideFallback = computed(() => Boolean(profileData.value) && profileData.value === fallbackData.value);
 const activeLookupSummary = computed(() => buildActiveLookupSummary({
 	nationwideLookupResult: activeNationwideLookupResult.value,
+	routeLookupQuery: activeLookupQuery.value?.lookup ?? null,
 	selectedLocation: isHydrated.value ? selectedLocation.value : null
 }));
 const linkageConfidence = computed(() => person.value ? buildPersonLinkageConfidence(person.value.provenance.status) : null);
@@ -36,7 +55,24 @@ const dataThroughLabel = computed(() => {
 
 	return formatDate(person.value.freshness.dataLastUpdatedAt ?? person.value.updatedAt);
 });
-const representativeJsonHref = computed(() => person.value ? `${runtimeConfig.public.apiBase}/representatives/${person.value.slug}` : "");
+function buildLookupAwareTarget(path: string) {
+	return buildNationwideRouteTarget(path, buildLookupContextFromNationwideResult(activeNationwideLookupResult.value), route.query);
+}
+const representativeJsonHref = computed(() => {
+	if (!person.value)
+		return "";
+
+	const target = new URL(`${runtimeConfig.public.apiBase}/representatives/${person.value.slug}`);
+	const query = activeLookupQuery.value;
+
+	if (query?.lookup)
+		target.searchParams.set("lookup", query.lookup);
+
+	if (query?.selection)
+		target.searchParams.set("selection", query.selection);
+
+	return target.toString();
+});
 const campaignLink = computed(() => {
 	if (!person.value?.comparison)
 		return "";
@@ -47,7 +83,7 @@ const hasFunding = computed(() => person.value ? hasPersonFunding(person.value) 
 const hasInfluence = computed(() => person.value ? hasPersonInfluence(person.value) : false);
 const breadcrumbs = computed(() => [
 	{ label: "Home", to: "/" },
-	layerBreadcrumbLink.value,
+	{ label: layerBreadcrumbLink.value.label, to: buildLookupAwareTarget(layerBreadcrumbLink.value.to) },
 	{ label: person.value?.name ?? "Representative profile" }
 ]);
 const sectionLinks = computed(() => person.value
@@ -185,20 +221,20 @@ usePageSeo({
 							Provider record
 							<span class="i-carbon-launch" />
 						</a>
-						<NuxtLink v-if="hasFunding" :to="`/representatives/${person.slug}/funding`" class="btn-secondary">
+						<NuxtLink v-if="hasFunding" :to="buildLookupAwareTarget(`/representatives/${person.slug}/funding`)" class="btn-secondary">
 							Funding page
 						</NuxtLink>
-						<NuxtLink v-if="hasInfluence" :to="`/representatives/${person.slug}/influence`" class="btn-secondary">
+						<NuxtLink v-if="hasInfluence" :to="buildLookupAwareTarget(`/representatives/${person.slug}/influence`)" class="btn-secondary">
 							Influence page
 						</NuxtLink>
-						<NuxtLink :to="overviewLink.to" class="btn-secondary">
+						<NuxtLink :to="buildLookupAwareTarget(overviewLink.to)" class="btn-secondary">
 							{{ overviewLink.label }}
 						</NuxtLink>
 						<a v-if="representativeJsonHref" :href="representativeJsonHref" class="btn-secondary" rel="noreferrer" target="_blank">
 							<span class="i-carbon-download" />
 							Download JSON
 						</a>
-						<NuxtLink :to="backToLayerLink.to" class="btn-primary">
+						<NuxtLink :to="buildLookupAwareTarget(backToLayerLink.to)" class="btn-primary">
 							{{ backToLayerLink.label }}
 						</NuxtLink>
 					</div>
@@ -380,7 +416,7 @@ usePageSeo({
 								Finance summary
 							</h2>
 						</div>
-						<NuxtLink v-if="hasFunding" :to="`/representatives/${person.slug}/funding`" class="btn-secondary">
+						<NuxtLink v-if="hasFunding" :to="buildLookupAwareTarget(`/representatives/${person.slug}/funding`)" class="btn-secondary">
 							Open full funding page
 						</NuxtLink>
 					</div>
@@ -435,7 +471,7 @@ usePageSeo({
 								Lobbying and public influence context
 							</h2>
 						</div>
-						<NuxtLink v-if="hasInfluence" :to="`/representatives/${person.slug}/influence`" class="btn-secondary">
+						<NuxtLink v-if="hasInfluence" :to="buildLookupAwareTarget(`/representatives/${person.slug}/influence`)" class="btn-secondary">
 							Open full influence page
 						</NuxtLink>
 					</div>
@@ -558,10 +594,10 @@ usePageSeo({
 				>
 					<template #actions>
 						<div class="flex flex-wrap gap-3">
-							<NuxtLink :to="backToLayerLink.to" class="btn-secondary">
+							<NuxtLink :to="buildLookupAwareTarget(backToLayerLink.to)" class="btn-secondary">
 								{{ backToLayerLink.label }}
 							</NuxtLink>
-							<NuxtLink to="/representatives" class="btn-secondary">
+							<NuxtLink :to="buildLookupAwareTarget('/representatives')" class="btn-secondary">
 								Representative directory
 							</NuxtLink>
 						</div>

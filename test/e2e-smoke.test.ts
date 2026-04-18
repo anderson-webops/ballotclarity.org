@@ -121,6 +121,7 @@ const nationwideLookupSnapshot = {
 		fromCache: false,
 		guideAvailability: "not-published",
 		inputKind: "zip",
+		lookupQuery: "84604",
 		location: {
 			coverageLabel: "Nationwide civic results available",
 			displayName: "Provo, Utah",
@@ -1064,4 +1065,76 @@ test("built app server-renders district and representative routes when the activ
 	assert.match(fundingHtml, /No funding data attached/);
 	assert.equal(influencePage.status, 200);
 	assert.match(influenceHtml, /No influence context attached/);
+});
+
+test("fresh SSR district and representative hubs stay nationwide-safe without browser lookup state", async () => {
+	const [districtsPage, representativesPage] = await Promise.all([
+		fetch(`${appBaseUrl}/districts`),
+		fetch(`${appBaseUrl}/representatives`)
+	]);
+	const [districtsHtml, representativesHtml] = await Promise.all([
+		districtsPage.text(),
+		representativesPage.text()
+	]);
+
+	assert.equal(districtsPage.status, 200);
+	assert.match(districtsHtml, /Active nationwide lookup required/);
+
+	assert.equal(representativesPage.status, 200);
+	assert.match(representativesHtml, /Active nationwide lookup required/);
+});
+
+test("public nationwide district and representative fallback routes resolve instead of failing", async () => {
+	const [
+		districtPage,
+		representativePage,
+		fundingPage,
+		influencePage
+	] = await Promise.all([
+		fetch(`${appBaseUrl}/districts/congressional-7`),
+		fetch(`${appBaseUrl}/representatives/rich-mccormick`),
+		fetch(`${appBaseUrl}/representatives/rich-mccormick/funding`),
+		fetch(`${appBaseUrl}/representatives/rich-mccormick/influence`)
+	]);
+	const [
+		districtHtml,
+		representativeHtml,
+		fundingHtml,
+		influenceHtml
+	] = await Promise.all([
+		districtPage.text(),
+		representativePage.text(),
+		fundingPage.text(),
+		influencePage.text()
+	]);
+
+	assert.equal(districtPage.status, 200);
+	assert.match(districtHtml, /Congressional District 7/);
+	assert.match(districtHtml, /Lookup context required/);
+	assert.doesNotMatch(districtHtml, /District page not found/i);
+
+	assert.equal(representativePage.status, 200);
+	assert.match(representativeHtml, /Rich McCormick/);
+	assert.match(representativeHtml, /route is live/i);
+	assert.doesNotMatch(representativeHtml, /Representative profile not found/i);
+
+	assert.equal(fundingPage.status, 200);
+	assert.match(fundingHtml, /No funding data attached/);
+	assert.doesNotMatch(fundingHtml, /Representative profile not found/i);
+
+	assert.equal(influencePage.status, 200);
+	assert.match(influenceHtml, /No influence context attached/);
+	assert.doesNotMatch(influenceHtml, /Representative profile not found/i);
+});
+
+test("sitemap returns 200 and only advertises valid source-backed public routes", async () => {
+	const response = await fetch(`${appBaseUrl}/sitemap.xml`);
+	const body = await response.text();
+
+	assert.equal(response.status, 200);
+	assert.match(body, /<urlset[^>]*>/);
+	assert.match(body, new RegExp(`<loc>${appBaseUrl}/representatives/daniel-brooks</loc>`));
+	assert.match(body, new RegExp(`<loc>${appBaseUrl}/representatives/daniel-brooks/funding</loc>`));
+	assert.doesNotMatch(body, /rich-mccormick/);
+	assert.doesNotMatch(body, /congressional-7/);
 });

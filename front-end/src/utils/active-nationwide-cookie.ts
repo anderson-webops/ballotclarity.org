@@ -30,6 +30,7 @@ export function parseActiveNationwideLookupCookie(cookieValue: string | null | u
 			normalizedAddress: typeof parsed.normalizedAddress === "string" ? parsed.normalizedAddress : "",
 			note: typeof parsed.note === "string" ? parsed.note : "Nationwide civic lookup context is active in this browser.",
 			representativeMatches: Array.isArray(parsed.representativeMatches) ? parsed.representativeMatches as NationwideLookupResultContext["representativeMatches"] : [],
+			selectionId: typeof parsed.selectionId === "string" ? parsed.selectionId : undefined,
 			resolvedAt: typeof parsed.resolvedAt === "string" ? parsed.resolvedAt : "",
 			result: "resolved",
 			selectionOptions: [],

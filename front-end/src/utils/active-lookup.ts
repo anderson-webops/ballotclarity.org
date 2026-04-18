@@ -9,11 +9,13 @@ export interface ActiveLookupSummary {
 
 interface BuildActiveLookupSummaryInput {
 	nationwideLookupResult?: NationwideLookupResultContext | null;
+	routeLookupQuery?: string | null;
 	selectedLocation?: LocationSelection | null;
 }
 
 export function buildActiveLookupSummary({
 	nationwideLookupResult,
+	routeLookupQuery,
 	selectedLocation
 }: BuildActiveLookupSummaryInput): ActiveLookupSummary {
 	if (nationwideLookupResult?.result === "resolved") {
@@ -32,6 +34,15 @@ export function buildActiveLookupSummary({
 			label: selectedLocation.displayName,
 			mode: "guide",
 			note: "Using the current published-guide location carried in this browser session.",
+			resolvedAt: ""
+		};
+	}
+
+	if (routeLookupQuery) {
+		return {
+			label: routeLookupQuery,
+			mode: "nationwide",
+			note: "Using the nationwide lookup attached to this URL so the server can resolve district and representative pages without relying on browser-only state.",
 			resolvedAt: ""
 		};
 	}

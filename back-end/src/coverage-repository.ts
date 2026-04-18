@@ -11,7 +11,6 @@ import type {
 } from "./types/civic.js";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
-import process from "node:process";
 import {
 	demoCandidates,
 	demoDataSources,
@@ -141,9 +140,10 @@ export function writeCoverageSnapshot(snapshot: CoverageSnapshot, snapshotPath =
 }
 
 export async function createCoverageRepository(): Promise<CoverageRepository> {
-	const configuredSnapshotPath = process.env.LIVE_COVERAGE_FILE?.trim();
+	const environment = (Reflect.get(globalThis, "process") as NodeJS.Process | undefined)?.env;
+	const configuredSnapshotPath = environment?.LIVE_COVERAGE_FILE?.trim();
 	const snapshotPath = configuredSnapshotPath || defaultCoverageFilePath();
-	const requireLiveCoverage = process.env.LIVE_COVERAGE_REQUIRED === "true";
+	const requireLiveCoverage = environment?.LIVE_COVERAGE_REQUIRED === "true";
 	const hasSnapshot = Boolean(configuredSnapshotPath) && existsSync(snapshotPath);
 	const snapshot = hasSnapshot ? readCoverageSnapshot(snapshotPath) : buildEmptyCoverageSnapshot();
 

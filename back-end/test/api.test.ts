@@ -1003,6 +1003,28 @@ test("active nationwide lookup cookie backs /api/districts and /api/districts/:s
 	assert.match(districtBody.note, /API-backed nationwide district detail/i);
 });
 
+test("lookup query backs /api/districts/:slug without relying on a saved cookie", async () => {
+	const response = await fetch(`${baseUrl}/api/districts/congressional-3?lookup=84604`);
+	const body = await response.json();
+
+	assert.equal(response.status, 200);
+	assert.equal(body.mode, "nationwide");
+	assert.equal(body.district.slug, "congressional-3");
+	assert.equal(body.representatives[0].slug, "ocd-person-test-ut-rep");
+	assert.match(body.note, /API-backed nationwide district detail/i);
+});
+
+test("unknown nationwide district slugs return a structured public fallback instead of 404", async () => {
+	const response = await fetch(`${baseUrl}/api/districts/congressional-7`);
+	const body = await response.json();
+
+	assert.equal(response.status, 200);
+	assert.equal(body.mode, "nationwide");
+	assert.equal(body.district.slug, "congressional-7");
+	assert.equal(body.districtOriginLabel, "Lookup context required");
+	assert.match(body.note, /public nationwide route/i);
+});
+
 test("GET /api/representatives returns incumbents tied to district pages", async () => {
 	const response = await fetch(`${baseUrl}/api/representatives`);
 	const body = await response.json();
@@ -1051,6 +1073,26 @@ test("active nationwide lookup cookie backs /api/representatives and /api/repres
 	assert.equal(representativeBody.person.funding, null);
 	assert.deepEqual(representativeBody.person.lobbyingContext, []);
 	assert.match(representativeBody.note, /active nationwide lookup context/i);
+});
+
+test("lookup query backs /api/representatives/:slug without relying on a saved cookie", async () => {
+	const response = await fetch(`${baseUrl}/api/representatives/ocd-person-test-ut-rep?lookup=84604`);
+	const body = await response.json();
+
+	assert.equal(response.status, 200);
+	assert.equal(body.person.slug, "ocd-person-test-ut-rep");
+	assert.equal(body.person.provenance.source, "lookup");
+	assert.match(body.note, /active nationwide lookup context/i);
+});
+
+test("unknown nationwide representative slugs return a structured public fallback instead of 404", async () => {
+	const response = await fetch(`${baseUrl}/api/representatives/rich-mccormick`);
+	const body = await response.json();
+
+	assert.equal(response.status, 200);
+	assert.equal(body.person.slug, "rich-mccormick");
+	assert.equal(body.person.provenance.status, "inferred");
+	assert.match(body.note, /route resolves publicly/i);
 });
 
 test("GET /api/representatives/:slug returns a source-backed representative profile", async () => {

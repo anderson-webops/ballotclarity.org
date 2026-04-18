@@ -1,7 +1,13 @@
 import type { RepresentativesResponse } from "~/types/civic";
 
-export function useRepresentatives() {
+interface NationwideLookupApiQuery {
+	lookup: string;
+	selection?: string;
+}
+
+export function useRepresentatives(activeLookupQuery?: MaybeRefOrGetter<NationwideLookupApiQuery | null | undefined>) {
 	const api = useApiClient();
+	const lookupQuery = computed(() => toValue(activeLookupQuery) ?? null);
 	const emptyRepresentativesResponse: RepresentativesResponse = {
 		districts: [],
 		mode: "guide",
@@ -11,10 +17,13 @@ export function useRepresentatives() {
 	};
 
 	return useAsyncData<RepresentativesResponse>(
-		"representatives",
-		() => api<RepresentativesResponse>("/representatives"),
+		() => `representatives:${lookupQuery.value?.lookup ?? "none"}:${lookupQuery.value?.selection ?? "none"}`,
+		() => api<RepresentativesResponse>("/representatives", {
+			query: lookupQuery.value ?? undefined
+		}),
 		{
-			default: () => emptyRepresentativesResponse
+			default: () => emptyRepresentativesResponse,
+			watch: [lookupQuery]
 		}
 	);
 }

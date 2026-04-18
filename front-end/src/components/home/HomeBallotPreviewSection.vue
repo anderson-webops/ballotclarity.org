@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { BallotResponse, NationwideLookupResultContext } from "~/types/civic";
 import { buildHomeNationwideSummaryHref } from "~/utils/home-links";
+import { interactiveHomeSummaryCardClass } from "~/utils/home-summary-card";
 
 const props = defineProps<{
 	allowGuideEntryPoints?: boolean;
@@ -56,7 +57,7 @@ const representativesHref = computed(() => buildHomeNationwideSummaryHref("/repr
 					<li>
 						<NuxtLink
 							:to="districtMatchesHref"
-							class="p-4 rounded-[1.35rem] bg-app-bg/70 block transition dark:bg-app-bg-dark/70 focus-visible:bg-app-bg hover:bg-app-bg focus-visible:shadow-[0_18px_40px_rgba(15,23,42,0.08)] hover:shadow-[0_18px_40px_rgba(15,23,42,0.08)]"
+							:class="interactiveHomeSummaryCardClass"
 						>
 							<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
 								District matches
@@ -72,7 +73,7 @@ const representativesHref = computed(() => buildHomeNationwideSummaryHref("/repr
 					<li>
 						<NuxtLink
 							:to="representativesHref"
-							class="p-4 rounded-[1.35rem] bg-app-bg/70 block transition dark:bg-app-bg-dark/70 focus-visible:bg-app-bg hover:bg-app-bg focus-visible:shadow-[0_18px_40px_rgba(15,23,42,0.08)] hover:shadow-[0_18px_40px_rgba(15,23,42,0.08)]"
+							:class="interactiveHomeSummaryCardClass"
 						>
 							<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
 								Representatives

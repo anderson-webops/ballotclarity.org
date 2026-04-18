@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { BallotResponse, NationwideLookupResultContext } from "~/types/civic";
+import { buildHomeNationwideSummaryHref } from "~/utils/home-links";
 
 const props = defineProps<{
 	allowGuideEntryPoints?: boolean;
@@ -15,6 +16,8 @@ const showFeaturedGuidePreview = computed(() => props.showFeaturedGuidePreview !
 const showNationwideResults = computed(() => props.showFeaturedGuidePreview === false && Boolean(props.nationwideLookupResult));
 const nationwideLocationLabel = computed(() => props.nationwideLookupResult?.location?.displayName ?? props.nationwideLookupResult?.normalizedAddress ?? "Active lookup");
 const officialToolCount = computed(() => props.nationwideLookupResult?.actions.filter(action => action.kind === "official-verification").length ?? 0);
+const districtMatchesHref = computed(() => buildHomeNationwideSummaryHref("/districts", props.nationwideLookupResult));
+const representativesHref = computed(() => buildHomeNationwideSummaryHref("/representatives", props.nationwideLookupResult));
 </script>
 
 <template>
@@ -50,27 +53,37 @@ const officialToolCount = computed(() => props.nationwideLookupResult?.actions.f
 							Official state and county election links carried into the active lookup context.
 						</p>
 					</li>
-					<li class="p-4 rounded-[1.35rem] bg-app-bg/70 dark:bg-app-bg-dark/70">
-						<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
-							District matches
-						</p>
-						<p class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-							{{ nationwideLookupResult.districtMatches.length }}
-						</p>
-						<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
-							Provider-backed district records attached to the latest address or ZIP lookup.
-						</p>
+					<li>
+						<NuxtLink
+							:to="districtMatchesHref"
+							class="p-4 rounded-[1.35rem] bg-app-bg/70 block transition dark:bg-app-bg-dark/70 focus-visible:bg-app-bg hover:bg-app-bg focus-visible:shadow-[0_18px_40px_rgba(15,23,42,0.08)] hover:shadow-[0_18px_40px_rgba(15,23,42,0.08)]"
+						>
+							<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+								District matches
+							</p>
+							<p class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
+								{{ nationwideLookupResult.districtMatches.length }}
+							</p>
+							<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
+								Provider-backed district records attached to the latest address or ZIP lookup.
+							</p>
+						</NuxtLink>
 					</li>
-					<li class="p-4 rounded-[1.35rem] bg-app-bg/70 dark:bg-app-bg-dark/70">
-						<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
-							Representatives
-						</p>
-						<p class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-							{{ nationwideLookupResult.representativeMatches.length }}
-						</p>
-						<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
-							Current representative records included when the lookup can match them confidently.
-						</p>
+					<li>
+						<NuxtLink
+							:to="representativesHref"
+							class="p-4 rounded-[1.35rem] bg-app-bg/70 block transition dark:bg-app-bg-dark/70 focus-visible:bg-app-bg hover:bg-app-bg focus-visible:shadow-[0_18px_40px_rgba(15,23,42,0.08)] hover:shadow-[0_18px_40px_rgba(15,23,42,0.08)]"
+						>
+							<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+								Representatives
+							</p>
+							<p class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
+								{{ nationwideLookupResult.representativeMatches.length }}
+							</p>
+							<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
+								Current representative records linked below when available.
+							</p>
+						</NuxtLink>
 					</li>
 					<li class="p-4 rounded-[1.35rem] bg-app-bg/70 dark:bg-app-bg-dark/70">
 						<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">

@@ -101,7 +101,7 @@ usePageSeo({
 					<div class="flex flex-wrap gap-2">
 						<TrustBadge label="Nationwide civic results" tone="accent" />
 						<TrustBadge label="Official tools visible" />
-						<TrustBadge label="Guide-only plan path" tone="warning" />
+						<TrustBadge label="Guide-dependent flows remain guide-only" tone="warning" />
 					</div>
 					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold mt-6 uppercase dark:text-app-muted-dark">
 						Active lookup context
@@ -119,7 +119,7 @@ usePageSeo({
 						Current limits
 					</p>
 					<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
-						The ballot plan, compare flow, and local ballot-guide pages still open only after Ballot Clarity confirms a published local guide for the active lookup. Until then, keep the nationwide civic results and official tools here as the main cross-page context.
+						The ballot plan, compare flow, and local ballot-guide pages remain guide-dependent and open only after Ballot Clarity confirms a published local guide for the active lookup. Until then, nationwide civic results and official tools are the main cross-page context.
 					</p>
 					<div class="mt-5 flex flex-wrap gap-3">
 						<NuxtLink v-if="hasPublishedGuideContext" to="/plan" class="btn-secondary">

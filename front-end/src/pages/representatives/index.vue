@@ -16,6 +16,17 @@ const directoryBundle = computed(() => directoryUsesNationwide.value
 const directoryPending = computed(() => directoryUsesNationwide.value ? false : guidePending.value);
 const directoryError = computed(() => directoryUsesNationwide.value ? null : guideError.value);
 const directoryData = computed(() => isHydrated.value ? directoryBundle.value : null);
+const representativeUseCases = computed(() => directoryUsesNationwide.value
+	? [
+			"Open a district page for each officially matched representative area",
+			"Open the active record view from the provider-backed result",
+			"Move to /districts or /results for broader lookup context"
+		]
+	: [
+			"Finding the incumbent tied to a district page",
+			"Opening campaign-finance context directly",
+			"Opening influence and lobbying context directly"
+		]);
 
 const summaryItems = computed(() => {
 	if (!directoryData.value)
@@ -24,13 +35,13 @@ const summaryItems = computed(() => {
 	const isNationwideContext = directoryUsesNationwide.value;
 	return [
 		{ label: "Current representatives", note: isNationwideContext ? "Current officials from the active nationwide lookup." : "Incumbents on the active ballot surfaces.", value: directoryData.value.representatives.length },
-		{ label: "District pages", note: isNationwideContext ? "District matches carried forward with this lookup." : "Office-area hubs with candidate fields.", value: directoryData.value.districts.length, href: "/districts" },
+		{ label: "District pages", note: isNationwideContext ? "District matches carried forward with this nationwide lookup." : "Office-area hubs with candidate fields.", value: directoryData.value.districts.length, href: "/districts" },
 		{ label: "Updated", note: "Directory freshness.", value: formatDateTime(directoryData.value.updatedAt) }
 	];
 });
 
 const introCopy = computed(() => directoryUsesNationwide.value
-	? "This directory pulls out the current officials linked to the active nationwide lookup. Use these entries to jump to district, funding, and influence pages when local coverage exists for that area."
+	? "This directory pulls out the current officials linked to the active nationwide lookup and points to district-level pages. Guide-dependent funding, influence, and local profile details are available only when a published local guide is active."
 	: "This directory pulls out the currently serving officials who also appear on the active ballot coverage, so you can jump straight into their district, funding, and influence pages."
 );
 const noActionCopy = computed(() => directoryUsesNationwide.value
@@ -38,7 +49,7 @@ const noActionCopy = computed(() => directoryUsesNationwide.value
 	: "Open the official profile, funding, or influence page for this official."
 );
 usePageSeo({
-	description: "Directory of current representatives on the active Ballot Clarity ballot coverage, with links to district, funding, and influence pages.",
+	description: "Directory of current representatives in your active Ballot Clarity context, with guide-dependent links made clear when no local guide is available.",
 	path: "/representatives",
 	title: "Representatives"
 });
@@ -65,9 +76,9 @@ usePageSeo({
 					Use this page for
 				</h2>
 				<ul class="readable-list text-sm text-app-muted mt-5 pl-5 dark:text-app-muted-dark">
-					<li>Finding the incumbent tied to a district page</li>
-					<li>Opening campaign-finance context directly</li>
-					<li>Opening influence and lobbying context directly</li>
+					<li v-for="useCase in representativeUseCases" :key="useCase">
+						{{ useCase }}
+					</li>
 				</ul>
 				<div class="mt-6">
 					<NuxtLink to="/districts" class="btn-secondary">

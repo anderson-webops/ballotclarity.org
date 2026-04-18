@@ -212,7 +212,7 @@ const trustFacts = computed(() => [
 							One task, then a clear reading path
 						</h2>
 						<ul class="readable-list text-sm text-app-muted mt-4 dark:text-app-muted-dark">
-							<li>Use the lookup to open a personalized ballot guide.</li>
+							<li>Use the lookup to open nationwide civic results first, then a personalized ballot guide when local coverage is published.</li>
 							<li>Start with contest summaries before opening any dossier or full explainer.</li>
 							<li>Save choices to your ballot plan only after checking the evidence links.</li>
 						</ul>

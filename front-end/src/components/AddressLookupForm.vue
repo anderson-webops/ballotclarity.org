@@ -7,6 +7,7 @@ import type {
 	LocationLookupResponse,
 	LocationRepresentativeMatch
 } from "~/types/civic";
+import { buildLookupPresentation, filterLookupActionsForPresentation, hasPublishedGuideResult } from "~/utils/location-lookup";
 
 const props = defineProps<{
 	compact?: boolean;
@@ -40,7 +41,23 @@ const errorId = `${inputId}-error`;
 const actionsId = `${inputId}-actions`;
 const lookupInput = ref<HTMLInputElement | null>(null);
 
-const inputDescribedBy = computed(() => [descriptionId, usageId, privacyId, lookupActions.value.length ? actionsId : "", errorMessage.value ? errorId : ""].filter(Boolean).join(" "));
+const lookupPresentation = computed(() => lookupResult.value
+	? buildLookupPresentation({
+			electionSlug: resolvedElectionSlug.value || undefined,
+			guideAvailability: guideAvailability.value,
+			location: resolvedLocation.value ?? undefined,
+			result: lookupResult.value
+		})
+	: null);
+const visibleLookupActions = computed(() => lookupResult.value
+	? filterLookupActionsForPresentation(lookupActions.value, {
+			electionSlug: resolvedElectionSlug.value || undefined,
+			guideAvailability: guideAvailability.value,
+			location: resolvedLocation.value ?? undefined,
+			result: lookupResult.value
+		})
+	: []);
+const inputDescribedBy = computed(() => [descriptionId, usageId, privacyId, visibleLookupActions.value.length ? actionsId : "", errorMessage.value ? errorId : ""].filter(Boolean).join(" "));
 
 watch(query, () => {
 	if (lookupActions.value.length || lookupResult.value) {
@@ -64,7 +81,7 @@ watch(query, () => {
 });
 
 async function openLookupAction(action: LocationLookupAction) {
-	if (action.kind !== "ballot-guide" || !action.location || !action.electionSlug)
+	if (action.kind !== "ballot-guide" || !lookupPresentation.value?.canOpenGuide || !action.location || !action.electionSlug)
 		return;
 
 	civicStore.setLocation(action.location);
@@ -76,7 +93,7 @@ async function openLookupAction(action: LocationLookupAction) {
 }
 
 async function continueToResolvedGuide() {
-	if (!resolvedLocation.value || !resolvedElectionSlug.value)
+	if (!lookupPresentation.value?.canOpenGuide || !resolvedLocation.value || !resolvedElectionSlug.value)
 		return;
 
 	civicStore.setLocation(resolvedLocation.value);
@@ -103,7 +120,7 @@ async function handleSubmit() {
 	availability.value = null;
 
 	if (!query.value.trim()) {
-		errorMessage.value = "Enter an address or ZIP code to load the ballot guide.";
+		errorMessage.value = "Enter an address or ZIP code to load civic results.";
 		await nextTick();
 		lookupInput.value?.focus();
 		return;
@@ -116,6 +133,11 @@ async function handleSubmit() {
 			body: { q: query.value },
 			method: "POST"
 		});
+		const canOpenGuide = hasPublishedGuideResult({
+			electionSlug: response.electionSlug,
+			guideAvailability: response.guideAvailability,
+			location: response.location
+		});
 
 		lookupResult.value = response.result;
 		lookupInputKind.value = response.inputKind;
@@ -126,12 +148,17 @@ async function handleSubmit() {
 		fromCache.value = Boolean(response.fromCache);
 		guideAvailability.value = response.guideAvailability;
 		availability.value = response.availability ?? null;
-		resolvedElectionSlug.value = response.electionSlug ?? "";
-		resolvedLocation.value = response.location ?? null;
-		lookupActions.value = response.actions ?? [];
+		resolvedElectionSlug.value = canOpenGuide ? response.electionSlug ?? "" : "";
+		resolvedLocation.value = canOpenGuide ? response.location ?? null : null;
+		lookupActions.value = filterLookupActionsForPresentation(response.actions, {
+			electionSlug: canOpenGuide ? response.electionSlug : undefined,
+			guideAvailability: response.guideAvailability,
+			location: canOpenGuide ? response.location : undefined,
+			result: response.result
+		});
 	}
 	catch (error) {
-		errorMessage.value = error instanceof Error ? error.message : "Unable to load the ballot guide right now.";
+		errorMessage.value = error instanceof Error ? error.message : "Unable to load civic results right now.";
 	}
 	finally {
 		isPending.value = false;
@@ -143,6 +170,7 @@ const availabilityItems = computed(() => {
 		return [];
 
 	return [
+		availability.value.nationwideCivicResults,
 		availability.value.representatives,
 		availability.value.ballotCandidates,
 		availability.value.financeInfluence,
@@ -157,10 +185,10 @@ const availabilityItems = computed(() => {
 			Choose a location with a full street address or 5-digit ZIP code
 		</label>
 		<p :id="descriptionId" class="text-sm text-app-muted mt-2 dark:text-app-muted-dark">
-			Ballot Clarity does not auto-detect your district from IP. The guide changes only when you choose a location here.
+			Ballot Clarity does not auto-detect your district from IP. Civic results change only when you choose a location here.
 		</p>
 		<p :id="usageId" class="text-sm text-app-muted leading-6 mt-3 dark:text-app-muted-dark">
-			Ballot Clarity can already use provider-backed lookup to match many U.S. addresses to districts and representative records. Full published ballot guides are still narrower. A full street address is the only input that can support the best district match, while ZIP-only results should still be treated as approximate.
+			Ballot Clarity can already use provider-backed lookup to match many U.S. addresses to nationwide civic results, districts, and representative records. Full published ballot guides are still narrower. A full street address is the only input that can support the best district match, while ZIP-only results should still be treated as approximate.
 		</p>
 		<p :id="privacyId" class="text-sm text-app-muted leading-6 mt-3 dark:text-app-muted-dark">
 			Data use: your lookup is sent only to match ballot coverage. The raw lookup is not added to the public content archive or used for advertising, and the app saves only your selected location label and ballot-plan preferences locally in your browser. Read the
@@ -205,9 +233,7 @@ const availabilityItems = computed(() => {
 			class="mt-5 p-4 border border-app-line rounded-3xl bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/60"
 		>
 			<p class="text-xs text-app-muted tracking-[0.2em] font-semibold uppercase dark:text-app-muted-dark">
-				{{ lookupResult === "unsupported"
-					? "Location not yet resolved"
-					: "Lookup results ready" }}
+				{{ lookupPresentation?.heading ?? "Lookup results ready" }}
 			</p>
 			<p class="text-sm text-app-muted leading-6 mt-3 dark:text-app-muted-dark">
 				{{ lookupNote }}
@@ -215,8 +241,8 @@ const availabilityItems = computed(() => {
 			<div v-if="lookupResult === 'resolved'" class="mt-4 flex flex-wrap gap-2">
 				<VerificationBadge :label="lookupInputKind === 'address' ? 'Address lookup' : 'ZIP lookup'" :tone="lookupInputKind === 'address' ? 'accent' : 'warning'" />
 				<VerificationBadge
-					:label="guideAvailability === 'published' ? 'Full local guide available' : 'Nationwide lookup only'"
-					:tone="guideAvailability === 'published' ? 'accent' : 'neutral'"
+					:label="lookupPresentation?.availabilityBadgeLabel ?? 'Nationwide civic results available'"
+					tone="accent"
 				/>
 				<VerificationBadge
 					:label="representativeMatches.length ? `${representativeMatches.length} representative match${representativeMatches.length === 1 ? '' : 'es'}` : 'No representative match yet'"
@@ -224,12 +250,12 @@ const availabilityItems = computed(() => {
 				/>
 			</div>
 			<p
-				v-if="resolvedLocation"
+				v-if="lookupPresentation?.supportingNote"
 				class="text-xs text-app-muted leading-6 mt-3 dark:text-app-muted-dark"
 			>
-				This lookup can open a deeper Ballot Clarity guide for the current published coverage while still keeping the nationwide civic results below available for review first.
+				{{ lookupPresentation.supportingNote }}
 			</p>
-			<div v-if="availabilityItems.length" class="mt-4 gap-3 grid md:grid-cols-2 xl:grid-cols-4">
+			<div v-if="availabilityItems.length" class="mt-4 gap-3 grid md:grid-cols-2 xl:grid-cols-5">
 				<article
 					v-for="item in availabilityItems"
 					:key="item.label"
@@ -246,9 +272,9 @@ const availabilityItems = computed(() => {
 					</p>
 				</article>
 			</div>
-			<div v-if="lookupActions.length" class="mt-4 gap-3 grid">
+			<div v-if="visibleLookupActions.length" class="mt-4 gap-3 grid">
 				<div
-					v-for="action in lookupActions"
+					v-for="action in visibleLookupActions"
 					:key="action.id"
 					class="p-4 border border-app-line rounded-2xl bg-white dark:border-app-line-dark dark:bg-app-panel-dark"
 				>
@@ -274,7 +300,7 @@ const availabilityItems = computed(() => {
 							@click="openLookupAction(action)"
 						>
 							<span class="i-carbon-arrow-right" />
-							Open guide
+							Open local guide
 						</button>
 						<a
 							v-else-if="action.url"
@@ -332,7 +358,7 @@ const availabilityItems = computed(() => {
 					</ul>
 				</div>
 			</div>
-			<div v-if="resolvedLocation" class="mt-4 flex flex-wrap gap-3">
+			<div v-if="lookupPresentation?.canOpenGuide && resolvedLocation" class="mt-4 flex flex-wrap gap-3">
 				<button
 					type="button"
 					class="btn-primary"
@@ -343,11 +369,7 @@ const availabilityItems = computed(() => {
 				</button>
 			</div>
 			<p class="text-xs text-app-muted leading-6 mt-4 dark:text-app-muted-dark">
-				{{ lookupResult === "unsupported"
-					? "Use the official tools above for this location, or replace the ZIP code with a full street address for a more precise lookup."
-					: resolvedLocation
-						? "This lookup succeeded nationwide. Use the civic results here first, then open the deeper local guide when you want Ballot Clarity's contest, candidate, and measure pages."
-						: "This lookup succeeded nationwide. Use the district, representative, provenance, and official-tool layers here even when a full local Ballot Clarity guide is not published yet." }}
+				{{ lookupPresentation?.footerNote ?? "Use the official tools above for this location, or replace the ZIP code with a full street address for a more precise lookup." }}
 			</p>
 		</div>
 	</form>

@@ -192,8 +192,18 @@ function buildAvailabilitySummary(
 	const representativeCount = addressEnrichment?.representativeMatches?.length ?? 0;
 	const hasRepresentatives = representativeCount > 0;
 	const hasGuide = guideAvailability === "published";
+	const nationwideDetail = hasGuide
+		? "Nationwide civic results, district context, and official election tools are available alongside the published local guide for this lookup."
+		: inputKind === "zip"
+			? "Nationwide civic results and official election tools are available for this ZIP lookup even though a published local guide is not available for this area yet."
+			: "Nationwide civic results, district context, and official election tools are available for this address even though a published local guide is not available for this area yet.";
 
 	return {
+		nationwideCivicResults: {
+			detail: nationwideDetail,
+			label: "Nationwide civic results",
+			status: "available"
+		},
 		ballotCandidates: {
 			detail: hasGuide
 				? inputKind === "zip"

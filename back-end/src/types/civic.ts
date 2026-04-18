@@ -386,6 +386,7 @@ export interface LocationDataAvailabilityItem {
 }
 
 export interface LocationDataAvailabilitySummary {
+	nationwideCivicResults: LocationDataAvailabilityItem;
 	representatives: LocationDataAvailabilityItem;
 	ballotCandidates: LocationDataAvailabilityItem;
 	financeInfluence: LocationDataAvailabilityItem;

@@ -6,6 +6,7 @@ import { contactEmail, currentCoverageElectionSlug } from "~/constants";
 const api = useApiClient();
 const civicStore = useCivicStore();
 const siteUrl = useSiteUrl();
+const { formatDate } = useFormatters();
 const AsyncHomeBallotPreviewSection = defineAsyncComponent(() => import("~/components/home/HomeBallotPreviewSection.vue"));
 const AsyncHomeRoadmapSection = defineAsyncComponent(() => import("~/components/home/HomeRoadmapSection.vue"));
 const AsyncHomeCoverageOverviewSection = defineAsyncComponent(() => import("~/components/home/HomeCoverageOverviewSection.vue"));
@@ -136,11 +137,75 @@ const primaryPaths = computed<PrimaryPath[]>(() => [
 	}
 ]);
 
-const trustFacts = computed(() => [
-	"Nonpartisan nonprofit product",
-	featuredLaunchTarget.value ? `Launch target: ${featuredLaunchTarget.value.displayName}` : "Launch target selected publicly",
-	"Sources linked on every major reading page",
-	"Print-friendly ballot guides supported"
+const heroFactCards = computed(() => [
+	{
+		label: "Current guide area",
+		note: featuredLaunchTarget.value
+			? `The deepest published guide depth is currently centered on ${featuredLaunchTarget.value.displayName}.`
+			: "A public launch target is selected and documented for the current build.",
+		value: featuredLaunchTarget.value?.displayName ?? "Public launch target"
+	},
+	{
+		label: "Contest sections",
+		note: "Published contest sections in the current flagship guide.",
+		value: ballotPreview.value?.election.contests.length ?? 0
+	},
+	{
+		label: "Source families",
+		note: "Structured source categories documented in the public data roadmap.",
+		value: dataSources.value?.categories.length ?? 0
+	},
+	{
+		label: "Lookup mode",
+		note: "Nationwide district and representative lookup is already part of the product.",
+		value: "Nationwide"
+	}
+]);
+const homepageProvenanceItems = computed(() => [
+	{
+		detail: "The number of public source categories documented in the roadmap and data architecture pages.",
+		label: "Source categories",
+		value: dataSources.value?.categories.length ?? 0
+	},
+	{
+		detail: "Official election-office or statewide links attached to the current launch profile.",
+		label: "Official links",
+		value: featuredLaunchTarget.value?.officialResources.length ?? 0
+	},
+	{
+		detail: "Capabilities currently marked live in the public coverage profile.",
+		label: "Live capabilities",
+		value: coverageData.value?.supportedContentTypes.filter(item => item.status === "live-now").length ?? 0
+	},
+	{
+		detail: "Date of the current published election target.",
+		label: "Current election",
+		value: featuredLaunchTarget.value ? formatDate(featuredLaunchTarget.value.currentElectionDate) : "Selected publicly"
+	}
+]);
+const homepageAvailabilityItems = computed(() => [
+	{
+		detail: "ZIP and address lookup can already return district matches, representative matches, and official election tools.",
+		label: "Nationwide lookup",
+		status: "available" as const
+	},
+	{
+		detail: featuredLaunchTarget.value
+			? `The deepest current local guide remains ${featuredLaunchTarget.value.displayName}.`
+			: "A published local guide area is selected publicly for the current release.",
+		label: "Full local guides",
+		status: "available" as const
+	},
+	{
+		detail: "Candidate, district, contest, representative, and measure surfaces are published where Ballot Clarity has modeled them.",
+		label: "Profile surfaces",
+		status: "available" as const
+	},
+	{
+		detail: "Finance and influence context exists where the record is modeled, but it is still uneven across jurisdictions.",
+		label: "Finance / influence",
+		status: "unavailable" as const
+	}
 ]);
 </script>
 
@@ -164,15 +229,13 @@ const trustFacts = computed(() => [
 						</p>
 
 						<div class="mt-8 gap-4 grid md:grid-cols-2 xl:grid-cols-4">
-							<div
-								v-for="fact in trustFacts"
-								:key="fact"
-								class="px-4 py-4 border border-app-line/80 rounded-[1.5rem] bg-app-bg/70 dark:border-app-line-dark dark:bg-app-bg-dark/70"
-							>
-								<p class="text-sm text-app-ink leading-6 font-medium dark:text-app-text-dark">
-									{{ fact }}
-								</p>
-							</div>
+							<FactStatCard
+								v-for="item in heroFactCards"
+								:key="item.label"
+								:label="item.label"
+								:note="item.note"
+								:value="item.value"
+							/>
 						</div>
 
 						<div class="mt-8 pt-8 border-t border-app-line/80 gap-5 grid dark:border-app-line-dark md:grid-cols-3">
@@ -266,6 +329,27 @@ const trustFacts = computed(() => [
 						</p>
 					</NuxtLink>
 				</div>
+			</div>
+		</section>
+
+		<section class="app-shell section-gap">
+			<div class="gap-6 grid xl:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
+				<SourceProvenanceStrip
+					:badges="[
+						{ label: 'Nonpartisan nonprofit', tone: 'accent' },
+						{ label: 'Sources linked visibly', tone: 'accent' },
+					]"
+					:items="homepageProvenanceItems"
+					note="The homepage should answer what the product can do and why a voter should trust the reading path before opening any deeper page."
+					title="How the public product is verified at a glance"
+					uncertainty="The nationwide lookup layer is broader than the deepest published guide layer. Ballot Clarity shows those layers separately instead of pretending every ZIP has the same local depth."
+				/>
+				<AvailabilityStatusPanel
+					:items="homepageAvailabilityItems"
+					note="Ballot Clarity now behaves as a nationwide civic lookup product first, then adds richer local guide depth where it has been published."
+					title="What is available in the product right now"
+					uncertainty="Availability differs by data type. A nationwide lookup success does not automatically mean a full local contest guide exists for that location yet."
+				/>
 			</div>
 		</section>
 

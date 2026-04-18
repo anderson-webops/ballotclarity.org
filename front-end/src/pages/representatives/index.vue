@@ -12,6 +12,84 @@ const summaryItems = computed(() => {
 		{ label: "Updated", note: "Directory freshness.", value: formatDateTime(data.value.updatedAt) }
 	];
 });
+const representativeStats = computed(() => {
+	if (!data.value)
+		return [];
+
+	return [
+		{
+			label: "Representatives",
+			note: "Current officeholders tied to the active published ballot surfaces.",
+			value: data.value.representatives.length
+		},
+		{
+			label: "District pages",
+			note: "Linked district hubs with office and candidate context.",
+			value: data.value.districts.length
+		},
+		{
+			label: "Average source depth",
+			note: "Average linked source count across the current representative directory entries.",
+			value: data.value.representatives.length
+				? Math.round(data.value.representatives.reduce((total, representative) => total + representative.sourceCount, 0) / data.value.representatives.length)
+				: 0
+		}
+	];
+});
+const representativeProvenanceItems = computed(() => {
+	if (!data.value)
+		return [];
+
+	const totalSources = data.value.representatives.reduce((total, representative) => total + representative.sourceCount, 0);
+
+	return [
+		{
+			detail: "Current directory rows tied to the active district and candidate surfaces.",
+			label: "Directory entries",
+			value: data.value.representatives.length
+		},
+		{
+			detail: "Aggregate source counts attached to the linked representative profiles.",
+			label: "Linked sources",
+			value: totalSources
+		},
+		{
+			detail: "District hubs available from this directory.",
+			label: "District hubs",
+			value: data.value.districts.length
+		},
+		{
+			detail: "Last representative-directory refresh in the current build.",
+			label: "Updated",
+			value: formatDateTime(data.value.updatedAt)
+		}
+	];
+});
+const representativeTimelineItems = computed(() => {
+	if (!data.value)
+		return [];
+
+	return [
+		{
+			date: data.value.updatedAt,
+			id: "directory-refresh",
+			summary: "The current representative directory was refreshed for the active coverage build.",
+			title: "Representative directory refreshed"
+		},
+		{
+			date: data.value.updatedAt,
+			id: "district-links",
+			summary: `${data.value.districts.length} district hubs are linked from the directory for office context and contest depth.`,
+			title: "District crosswalk attached"
+		},
+		{
+			date: data.value.updatedAt,
+			id: "profile-links",
+			summary: "Each current representative row points to funding and influence follow-on surfaces when those pages exist.",
+			title: "Profile follow-ons published"
+		}
+	];
+});
 
 usePageSeo({
 	description: "Directory of current representatives on the active Ballot Clarity ballot coverage, with links to district, funding, and influence pages.",
@@ -36,21 +114,23 @@ usePageSeo({
 				</p>
 			</div>
 
-			<div class="surface-panel">
-				<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
-					Use this page for
-				</h2>
-				<ul class="readable-list text-sm text-app-muted mt-5 pl-5 dark:text-app-muted-dark">
-					<li>Finding the incumbent tied to a district page</li>
-					<li>Opening campaign-finance context directly</li>
-					<li>Opening influence and lobbying context directly</li>
-				</ul>
-				<div class="mt-6">
-					<NuxtLink to="/districts" class="btn-secondary">
-						Open district hub
-					</NuxtLink>
-				</div>
-			</div>
+			<OfficeContextCard
+				title="How the representative layer is organized"
+				office-label="Current officeholders connected to district, funding, and influence surfaces"
+				summary="This page is a person-first directory for the incumbent layer of the current published coverage. It is meant to get a voter from a known officeholder to the right district, funding, or influence surface with minimal scanning."
+				:stats="representativeStats"
+				:responsibilities="[
+					'Find the current officeholder tied to a district page.',
+					'Open campaign-finance context directly when it exists.',
+					'Open influence context directly without scanning the whole ballot first.',
+				]"
+				uncertainty="This directory is coverage-shaped, not nationwide officeholding inventory. It reflects the current modeled Ballot Clarity surfaces."
+				why-it-matters="A voter often starts with a person they already know. This page gives them a direct route from that officeholder to the relevant district and profile context."
+				:badges="[
+					{ label: 'Representative directory', tone: 'accent' },
+					{ label: 'Incumbents only', tone: 'neutral' },
+				]"
+			/>
 		</header>
 
 		<div v-if="pending" class="gap-6 grid lg:grid-cols-2">
@@ -65,6 +145,23 @@ usePageSeo({
 
 		<div v-else class="space-y-6">
 			<PageSummaryStrip :items="summaryItems" />
+			<SourceProvenanceStrip
+				:badges="[
+					{ label: 'Linked profile sources', tone: 'accent' },
+					{ label: 'Directory refresh visible', tone: 'neutral' },
+				]"
+				:items="representativeProvenanceItems"
+				note="The representative directory is a crosswalk surface. Record-level source detail lives on the linked candidate, district, funding, and influence pages."
+				title="How the representative directory is grounded"
+				uncertainty="This page summarizes linked source depth rather than repeating every profile source inline. Open the profile or district page when you need the full evidence trail."
+			/>
+			<TimelineList
+				:items="representativeTimelineItems"
+				badge-label="Directory lifecycle"
+				note="This timeline explains what this surface represents operationally. It is a directory lifecycle, not a full personal career timeline for each officeholder."
+				title="How the representative layer is kept current"
+				uncertainty="Detailed action timelines remain on the linked candidate or representative profile surfaces, not in this directory overview."
+			/>
 
 			<section class="gap-6 grid lg:grid-cols-2">
 				<article

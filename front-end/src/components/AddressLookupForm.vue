@@ -284,44 +284,35 @@ const lookupUncertaintyNote = computed(() => {
 			>
 				This lookup can open a deeper Ballot Clarity guide for the current published coverage while still keeping the nationwide civic results below available for review first.
 			</p>
-			<SourceFreshnessStripGraphic
+			<SourceProvenanceStrip
 				v-if="lookupResult === 'resolved'"
 				:badges="lookupSourceBadges"
-				:signals="lookupSourceSignals"
+				:items="lookupSourceSignals"
 				uncertainty="District and representative results are the first-class nationwide output. Full local guide availability is a separate layer."
 				class="mt-4"
 				title="How this lookup was verified"
 				note="Ballot Clarity keeps the nationwide result first, then layers in local guide depth where it exists."
 			/>
-			<DistrictHierarchyGraphic
+			<DistrictLadder
 				v-if="districtMatches.length"
 				:lookup-input-kind="lookupInputKind"
 				:matches="districtMatches"
 				:normalized-address="normalizedAddress"
 				class="mt-4"
 			/>
-			<WhoRepresentsGrid
+			<RepresentativeGrid
 				v-if="representativeMatches.length"
 				:matches="representativeMatches"
 				class="mt-4"
 			/>
-			<div v-if="availabilityItems.length" class="mt-4 gap-3 grid md:grid-cols-2 xl:grid-cols-4">
-				<article
-					v-for="item in availabilityItems"
-					:key="item.label"
-					class="p-4 border border-app-line rounded-2xl bg-white dark:border-app-line-dark dark:bg-app-panel-dark"
-				>
-					<div class="flex flex-wrap gap-2 items-center">
-						<p class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
-							{{ item.label }}
-						</p>
-						<VerificationBadge :label="item.status" :tone="item.status === 'available' ? 'accent' : 'neutral'" />
-					</div>
-					<p class="text-sm text-app-muted leading-6 mt-3 dark:text-app-muted-dark">
-						{{ item.detail }}
-					</p>
-				</article>
-			</div>
+			<AvailabilityStatusPanel
+				v-if="availabilityItems.length"
+				class="mt-4"
+				:items="availabilityItems"
+				note="These availability labels separate the nationwide lookup layer from deeper Ballot Clarity local guide depth."
+				title="What Ballot Clarity can show for this location right now"
+				:uncertainty="lookupUncertaintyNote"
+			/>
 			<div v-if="lookupActions.length" class="mt-4 gap-3 grid">
 				<div
 					v-for="action in lookupActions"

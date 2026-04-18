@@ -245,6 +245,126 @@ const coverageItems = computed(() => {
 		"Method notes explaining what is included, what is missing, and when the page was last reviewed."
 	];
 });
+const candidateOfficeContextStats = computed(() => {
+	if (!candidate.value)
+		return [];
+
+	return [
+		...atGlanceStats.value,
+		{
+			label: "Source records",
+			note: "Attached records supporting this profile.",
+			value: candidate.value.sources.length
+		}
+	];
+});
+const issueMatrixColumns = computed(() => {
+	if (!candidate.value)
+		return [];
+
+	return [
+		{
+			id: "why-running",
+			label: "Why running",
+			meta: "Candidate-framed rationale",
+			badges: [{ label: candidate.value.comparison.whyRunning.provenance.label, tone: "neutral" as const }],
+			sources: candidate.value.comparison.whyRunning.sources
+		},
+		{
+			id: "priorities",
+			label: "Top priorities",
+			meta: `${candidate.value.comparison.topPriorities.length} stated priorities`,
+			badges: [{ label: `${candidate.value.topIssues.length} issue tags`, tone: "accent" as const }],
+			sources: candidate.value.comparison.topPriorities.flatMap(priority => priority.sources)
+		},
+		{
+			id: "questionnaire",
+			label: "Questionnaire",
+			meta: `${candidate.value.comparison.questionnaireResponses.filter(response => response.responseStatus === "answered").length}/${candidate.value.comparison.questionnaireResponses.length} answered`,
+			badges: [{ label: "Candidate-submitted responses", tone: "neutral" as const }],
+			sources: candidate.value.comparison.questionnaireResponses.flatMap(response => response.sources)
+		},
+		{
+			id: "public-record",
+			label: "Public statements",
+			meta: `${candidate.value.publicStatements.length} attached statement blocks`,
+			badges: [{ label: "Archive-linked", tone: "accent" as const }],
+			sources: candidate.value.publicStatements.flatMap(statement => statement.sources)
+		}
+	];
+});
+const issueMatrixRows = computed(() => {
+	if (!candidate.value)
+		return [];
+
+	const answeredQuestionnaire = candidate.value.comparison.questionnaireResponses.filter(response => response.responseStatus === "answered");
+	const firstPriority = candidate.value.comparison.topPriorities[0];
+	const secondPriority = candidate.value.comparison.topPriorities[1];
+	const latestStatement = candidate.value.publicStatements[0];
+
+	return [
+		{
+			id: "coverage",
+			label: "Issue coverage",
+			note: "How many issue-bearing surfaces are documented in this profile right now.",
+			cells: [
+				{ columnId: "why-running", value: candidate.value.comparison.whyRunning.text ? "Documented" : "Not documented yet" },
+				{ columnId: "priorities", value: `${candidate.value.topIssues.length} issue tag${candidate.value.topIssues.length === 1 ? "" : "s"}` },
+				{ columnId: "questionnaire", value: `${answeredQuestionnaire.length} answered response${answeredQuestionnaire.length === 1 ? "" : "s"}` },
+				{ columnId: "public-record", value: `${candidate.value.publicStatements.length} statement block${candidate.value.publicStatements.length === 1 ? "" : "s"}` }
+			]
+		},
+		{
+			id: "first-signal",
+			label: "First policy signal",
+			note: "The first readable issue clue a voter encounters in each evidence channel.",
+			cells: [
+				{ columnId: "why-running", value: candidate.value.comparison.whyRunning.text ?? "No source-backed statement in this archive." },
+				{ columnId: "priorities", value: firstPriority?.text ?? "No top priority documented yet." },
+				{ columnId: "questionnaire", value: answeredQuestionnaire[0]?.answerText ?? "No answered questionnaire response in this archive." },
+				{ columnId: "public-record", value: latestStatement?.summary ?? "No public statement block attached yet." }
+			]
+		},
+		{
+			id: "second-signal",
+			label: "Second policy signal",
+			note: "A second row so the matrix exposes whether the archive has depth beyond one isolated quote.",
+			cells: [
+				{ columnId: "why-running", value: candidate.value.topIssues[0]?.label ?? "No issue tag attached yet." },
+				{ columnId: "priorities", value: secondPriority?.text ?? "No second priority documented yet." },
+				{ columnId: "questionnaire", value: answeredQuestionnaire[1]?.answerText ?? "No second answered questionnaire response in this archive." },
+				{ columnId: "public-record", value: candidate.value.publicStatements[1]?.summary ?? "No second public statement block attached yet." }
+			]
+		}
+	];
+});
+const actionTimelineItems = computed(() => {
+	if (!candidate.value)
+		return [];
+
+	const ballotStatusItem = {
+		date: candidate.value.comparison.ballotStatus.asOf,
+		detail: candidate.value.comparison.ballotStatus.provenance.detail,
+		id: `${candidate.value.slug}-ballot-status`,
+		sources: candidate.value.comparison.ballotStatus.sources,
+		summary: candidate.value.comparison.ballotStatus.label,
+		title: "Ballot status verified"
+	};
+
+	const orderedActions = [...candidate.value.keyActions].sort((left, right) => new Date(right.date).getTime() - new Date(left.date).getTime());
+
+	return [
+		ballotStatusItem,
+		...orderedActions.map(action => ({
+			date: action.date,
+			detail: action.significance,
+			id: action.id,
+			sources: action.sources,
+			summary: action.summary,
+			title: action.title
+		}))
+	];
+});
 
 function toggleCompare() {
 	if (candidate.value)
@@ -338,9 +458,9 @@ function saveToPlan() {
 						</NuxtLink>
 					</div>
 					<div class="mt-6">
-						<SourceFreshnessStripGraphic
+						<SourceProvenanceStrip
 							:badges="candidateFreshnessBadges"
-							:signals="candidateFreshnessSignals"
+							:items="candidateFreshnessSignals"
 							:sources="candidate.sources"
 							source-button-label="Profile sources"
 							title="How fresh and verified is this profile?"
@@ -363,90 +483,33 @@ function saveToPlan() {
 						<SourceDrawer :sources="candidate.sources" :title="`${candidate.name} ballot context and coverage`" button-label="See page sources" />
 					</div>
 					<div class="mt-6">
-						<PageSummaryStrip :items="atGlanceStats" />
+						<OfficeContextCard
+							title="Identity, office context, and what this profile covers"
+							:office-label="`${candidate.officeSought} · ${candidate.party}`"
+							:summary="candidate.summary"
+							:stats="candidateOfficeContextStats"
+							:responsibilities="coverageItems"
+							:sources="candidate.comparison.ballotStatus.sources"
+							source-button-label="Ballot status sources"
+							:uncertainty="candidate.whatWeDoNotKnow[0]?.text ?? 'This profile is source-backed but still bounded by the current archive.'"
+							why-it-matters="This page separates ballot verification, office context, and archive coverage so a voter can see what is established before opening deeper sections."
+							:badges="[
+								{ label: candidate.incumbent ? 'Incumbent' : 'Challenger or open seat', tone: candidate.incumbent ? 'accent' : 'neutral' },
+								{ label: candidate.comparison.ballotStatus.label, tone: 'neutral' },
+							]"
+						/>
 					</div>
-					<div class="mt-6 gap-4 grid lg:grid-cols-[minmax(0,1.3fr)_minmax(18rem,0.9fr)]">
-						<div class="px-5 py-5 border border-app-line/80 rounded-3xl bg-white/80 dark:border-app-line-dark dark:bg-app-panel-dark/70">
-							<div class="flex flex-wrap gap-3 items-center justify-between">
-								<h3 class="text-xl text-app-ink font-serif dark:text-app-text-dark">
-									Identity and ballot context
-								</h3>
-								<ProvenanceBadge :provenance="candidate.comparison.ballotStatus.provenance" />
-							</div>
-							<dl class="mt-5 gap-4 grid sm:grid-cols-2">
-								<div>
-									<dt class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
-										Office
-									</dt>
-									<dd class="text-sm text-app-ink mt-2 dark:text-app-text-dark">
-										{{ candidate.officeSought }}
-									</dd>
-								</div>
-								<div>
-									<dt class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
-										Status
-									</dt>
-									<dd class="text-sm text-app-ink mt-2 dark:text-app-text-dark">
-										{{ candidate.incumbent ? "Incumbent" : "Challenger or open-seat candidate" }}
-									</dd>
-								</div>
-								<div>
-									<dt class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
-										Ballot status
-									</dt>
-									<dd class="mt-2 flex flex-wrap gap-3 items-center">
-										<span class="text-sm text-app-ink dark:text-app-text-dark">{{ candidate.comparison.ballotStatus.label }}</span>
-										<SourceDrawer :sources="candidate.comparison.ballotStatus.sources" :title="`${candidate.name} ballot status`" button-label="Sources" />
-									</dd>
-								</div>
-								<div>
-									<dt class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
-										Data through
-									</dt>
-									<dd class="text-sm text-app-ink mt-2 dark:text-app-text-dark">
-										{{ dataThroughLabel }}
-									</dd>
-								</div>
-								<div>
-									<dt class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
-										Sources attached
-									</dt>
-									<dd class="text-sm text-app-ink mt-2 dark:text-app-text-dark">
-										{{ candidate.sources.length }} source records in this profile
-									</dd>
-								</div>
-								<div>
-									<dt class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
-										Location
-									</dt>
-									<dd class="text-sm text-app-ink mt-2 dark:text-app-text-dark">
-										{{ candidate.location }}
-									</dd>
-								</div>
-							</dl>
-						</div>
-						<div class="px-5 py-5 border border-app-line/80 rounded-3xl bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
-							<h3 class="text-xl text-app-ink font-serif dark:text-app-text-dark">
-								What this page includes
-							</h3>
-							<ul class="text-sm text-app-muted leading-7 mt-4 space-y-2 dark:text-app-muted-dark">
-								<li v-for="item in coverageItems" :key="item">
-									{{ item }}
-								</li>
-							</ul>
-							<details class="mt-5 px-4 py-3 border border-app-line/80 rounded-2xl dark:border-app-line-dark">
-								<summary class="text-sm text-app-ink font-semibold cursor-pointer dark:text-app-text-dark">
-									Context and terms
-								</summary>
-								<ul class="text-sm text-app-muted leading-7 mt-4 space-y-3 dark:text-app-muted-dark">
-									<li v-for="item in contextTerms" :key="item.term">
-										<span class="text-app-ink font-semibold dark:text-app-text-dark">{{ item.term }}:</span>
-										{{ item.description }}
-									</li>
-								</ul>
-							</details>
-						</div>
-					</div>
+					<details class="mt-6 px-4 py-3 border border-app-line/80 rounded-2xl dark:border-app-line-dark">
+						<summary class="text-sm text-app-ink font-semibold cursor-pointer dark:text-app-text-dark">
+							Context and terms
+						</summary>
+						<ul class="text-sm text-app-muted leading-7 mt-4 space-y-3 dark:text-app-muted-dark">
+							<li v-for="item in contextTerms" :key="item.term">
+								<span class="text-app-ink font-semibold dark:text-app-text-dark">{{ item.term }}:</span>
+								{{ item.description }}
+							</li>
+						</ul>
+					</details>
 				</section>
 
 				<ExpandableSection
@@ -488,7 +551,13 @@ function saveToPlan() {
 						<IssueChip v-for="issue in candidate.topIssues" :key="issue.slug" :label="issue.label" />
 					</div>
 					<div class="mt-6">
-						<CandidateIssuePositionMap :candidate="candidate" />
+						<ComparisonMatrix
+							:columns="issueMatrixColumns"
+							:rows="issueMatrixRows"
+							note="This issue-position matrix compares the different evidence channels inside one candidate profile. It helps you see whether a policy signal appears in only one place or is reinforced across priorities, questionnaires, and public statements."
+							title="How issue positions show up across the current archive"
+							uncertainty="This matrix reflects only what is attached to the current archive. Missing cells are a visibility limit, not proof that the candidate has no position."
+						/>
 					</div>
 					<div class="mt-6 gap-4 grid">
 						<article class="px-5 py-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
@@ -594,7 +663,18 @@ function saveToPlan() {
 						{{ actionCoverageNote }}
 					</InfoCallout>
 					<div class="mt-6">
-						<CandidateExperienceTimelineGraphic :candidate="candidate" />
+						<TimelineList
+							:items="actionTimelineItems"
+							:badge-label="`${candidate.keyActions.length} documented action${candidate.keyActions.length === 1 ? '' : 's'}`"
+							eyebrow="Candidate experience timeline"
+							:note="candidate.incumbent
+								? 'This timeline highlights selected official actions in the current archive. It is not a full legislative ledger.'
+								: 'This timeline highlights source-backed campaign, policy, or local-government actions in the current archive. It is not a full career history.'"
+							title="What this person has done in the public record attached here"
+							:uncertainty="candidate.incumbent
+								? 'Selected official actions are shown for relevance, not as an exhaustive record.'
+								: 'Campaign and public-record actions are limited to what is currently attached to the archive.'"
+						/>
 					</div>
 					<div class="mt-6 space-y-4">
 						<article v-for="action in candidate.keyActions" :key="action.id" class="p-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
@@ -732,7 +812,7 @@ function saveToPlan() {
 						<SourceDrawer :sources="candidate.sources" :title="`${candidate.name} full source list`" />
 					</template>
 					<div class="mt-6">
-						<EvidenceCompletenessGraphic
+						<EvidenceCompletenessPanel
 							:freshness="candidate.freshness"
 							:known="candidate.whatWeKnow"
 							:sources="candidate.sources"

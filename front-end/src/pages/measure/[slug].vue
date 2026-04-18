@@ -157,6 +157,26 @@ const readabilityNotes = [
 	"Current law, proposed changes, implementation timing, and fiscal notes are separated into different blocks instead of one blended summary.",
 	"Argument sections stay clearly attributed so Ballot Clarity does not speak in an advocacy voice."
 ];
+const baselineBeforeItems = computed(() => {
+	if (!measure.value)
+		return [];
+
+	return measure.value.currentPractice.map(item => ({
+		id: item.id,
+		sources: item.sources,
+		text: item.text
+	}));
+});
+const baselineAfterItems = computed(() => {
+	if (!measure.value)
+		return [];
+
+	return measure.value.proposedChanges.map(item => ({
+		id: item.id,
+		sources: item.sources,
+		text: item.text
+	}));
+});
 const reportIssueHref = computed(() => measure.value
 	? `mailto:${contactEmail}?subject=${encodeURIComponent(`Ballot Clarity measure review: ${measure.value.title}`)}`
 	: `mailto:${contactEmail}?subject=${encodeURIComponent("Ballot Clarity measure review")}`);
@@ -286,9 +306,9 @@ function saveMeasure(decision: "no" | "review" | "yes") {
 						</NuxtLink>
 					</div>
 					<div class="mt-6">
-						<SourceFreshnessStripGraphic
+						<SourceProvenanceStrip
 							:badges="measureFreshnessBadges"
-							:signals="measureFreshnessSignals"
+							:items="measureFreshnessSignals"
 							:sources="measure.sources"
 							source-button-label="Measure sources"
 							title="How fresh and source-backed is this explainer?"
@@ -389,37 +409,19 @@ function saveMeasure(decision: "no" | "review" | "yes") {
 					<template #meta>
 						<SourceDrawer :sources="baselineSources.length ? baselineSources : measure.sources" :title="`${measure.title} current-law and proposal sources`" button-label="Baseline sources" />
 					</template>
-					<div class="mt-6 gap-6 grid lg:grid-cols-2">
-						<article class="px-5 py-5 border border-app-line/80 rounded-3xl bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
-							<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
-								Current practice
-							</p>
-							<ul class="mt-4 space-y-3">
-								<li v-for="item in measure.currentPractice" :key="item.id" class="px-4 py-4 rounded-2xl bg-white/80 dark:bg-app-panel-dark/70">
-									<div class="flex flex-wrap gap-3 items-start justify-between">
-										<p class="text-sm text-app-muted leading-7 max-w-2xl dark:text-app-muted-dark">
-											{{ item.text }}
-										</p>
-										<SourceDrawer :sources="item.sources" :title="item.text" button-label="Sources" />
-									</div>
-								</li>
-							</ul>
-						</article>
-						<article class="px-5 py-5 border border-app-line/80 rounded-3xl bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
-							<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
-								Proposed changes
-							</p>
-							<ul class="mt-4 space-y-3">
-								<li v-for="item in measure.proposedChanges" :key="item.id" class="px-4 py-4 rounded-2xl bg-white/80 dark:bg-app-panel-dark/70">
-									<div class="flex flex-wrap gap-3 items-start justify-between">
-										<p class="text-sm text-app-muted leading-7 max-w-2xl dark:text-app-muted-dark">
-											{{ item.text }}
-										</p>
-										<SourceDrawer :sources="item.sources" :title="item.text" button-label="Sources" />
-									</div>
-								</li>
-							</ul>
-						</article>
+					<div class="mt-6">
+						<BeforeAfterDiff
+							:before-items="baselineBeforeItems"
+							before-label="Current practice"
+							:before-summary="measure.currentLawOverview"
+							:after-items="baselineAfterItems"
+							after-label="Proposed changes"
+							after-summary="measure.plainLanguageExplanation"
+							:sources="baselineSources.length ? baselineSources : measure.sources"
+							source-button-label="Baseline sources"
+							title="What changes in the underlying rules"
+							:uncertainty="measure.whatWeDoNotKnow[0]?.text ?? 'Later implementation choices can still change how the legal text is applied in practice.'"
+						/>
 					</div>
 				</ExpandableSection>
 
@@ -627,7 +629,7 @@ function saveMeasure(decision: "no" | "review" | "yes") {
 						<SourceDrawer :sources="measure.sources" :title="`${measure.title} full source list`" />
 					</template>
 					<div class="mt-6">
-						<EvidenceCompletenessGraphic
+						<EvidenceCompletenessPanel
 							:freshness="measure.freshness"
 							:known="measure.whatWeKnow"
 							:sources="measure.sources"

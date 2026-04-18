@@ -5,6 +5,7 @@ import type {
 	LocationSelection,
 	PlannedMeasureDecision
 } from "~/types/civic";
+import type { LookupContextState } from "~/utils/guide-entry";
 
 const civicStorageKey = "ballot-clarity:civic-store";
 
@@ -12,6 +13,7 @@ interface CivicStoreSnapshot {
 	ballotPlan: Record<string, BallotPlanSelection>;
 	ballotViewMode: BallotViewMode;
 	compareList: string[];
+	lookupContext: LookupContextState | null;
 	selectedElection: ElectionSummary | null;
 	selectedIssues: string[];
 	selectedLocation: LocationSelection | null;
@@ -22,6 +24,7 @@ function defaultSnapshot(): CivicStoreSnapshot {
 		ballotPlan: {},
 		ballotViewMode: "quick",
 		compareList: [],
+		lookupContext: null,
 		selectedElection: null,
 		selectedIssues: [],
 		selectedLocation: null
@@ -122,6 +125,7 @@ export const useCivicStore = defineStore("civic", {
 		ballotViewMode: "quick" as BallotViewMode,
 		compareList: [] as string[],
 		isHydrated: false,
+		lookupContext: null as LookupContextState | null,
 		selectedElection: null as ElectionSummary | null,
 		selectedIssues: [] as string[],
 		selectedLocation: null as LocationSelection | null,
@@ -155,6 +159,7 @@ export const useCivicStore = defineStore("civic", {
 			this.ballotPlan = snapshot.ballotPlan;
 			this.ballotViewMode = snapshot.ballotViewMode;
 			this.compareList = normalizeCompareSlugs(snapshot.compareList);
+			this.lookupContext = snapshot.lookupContext ?? null;
 			this.selectedElection = snapshot.selectedElection;
 			this.selectedIssues = snapshot.selectedIssues;
 			this.selectedLocation = sanitizeLocationSelection(snapshot.selectedLocation);
@@ -170,6 +175,7 @@ export const useCivicStore = defineStore("civic", {
 				ballotPlan: this.ballotPlan,
 				ballotViewMode: this.ballotViewMode,
 				compareList: this.compareList,
+				lookupContext: this.lookupContext,
 				selectedElection: this.selectedElection,
 				selectedIssues: this.selectedIssues,
 				selectedLocation: sanitizeLocationSelection(this.selectedLocation)
@@ -181,6 +187,10 @@ export const useCivicStore = defineStore("civic", {
 		},
 		replaceCompare(slugs: string[]) {
 			this.compareList = normalizeCompareSlugs(slugs);
+			this.persist();
+		},
+		setLookupContext(lookupContext: LookupContextState | null) {
+			this.lookupContext = lookupContext;
 			this.persist();
 		},
 		selectCandidateForPlan(contestSlug: string, candidateSlug: string) {
@@ -214,6 +224,14 @@ export const useCivicStore = defineStore("civic", {
 		},
 		setLocation(location: LocationSelection | null) {
 			this.selectedLocation = location;
+
+			if (location) {
+				this.lookupContext = {
+					guideAvailability: "published",
+					result: "resolved"
+				};
+			}
+
 			this.persist();
 		},
 		setBallotViewMode(mode: BallotViewMode) {

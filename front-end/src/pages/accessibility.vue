@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { contactEmail, currentCoverageElectionSlug } from "~/constants";
 
+const { allowsGuideEntryPoints } = useGuideEntryGate();
 const standards = [
 	{
 		description: "Public pages target WCAG 2.2 Level AA, with stricter internal rules for focus visibility, readable ballot copy, and print output.",
@@ -115,12 +116,22 @@ usePageSeo({
 					</li>
 				</ul>
 				<div class="mt-6 flex flex-wrap gap-3">
-					<NuxtLink to="/plan" class="btn-primary">
-						Open my ballot plan
-					</NuxtLink>
-					<NuxtLink :to="`/ballot/${currentCoverageElectionSlug}`" class="btn-secondary">
-						Open ballot guide
-					</NuxtLink>
+					<template v-if="allowsGuideEntryPoints">
+						<NuxtLink to="/plan" class="btn-primary">
+							Open my ballot plan
+						</NuxtLink>
+						<NuxtLink :to="`/ballot/${currentCoverageElectionSlug}`" class="btn-secondary">
+							Open ballot guide
+						</NuxtLink>
+					</template>
+					<template v-else>
+						<NuxtLink to="/coverage" class="btn-primary">
+							Open coverage profile
+						</NuxtLink>
+						<NuxtLink to="/help" class="btn-secondary">
+							Open help hub
+						</NuxtLink>
+					</template>
 				</div>
 			</div>
 		</section>

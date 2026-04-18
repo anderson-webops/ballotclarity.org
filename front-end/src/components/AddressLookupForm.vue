@@ -138,6 +138,13 @@ async function handleSubmit() {
 			guideAvailability: response.guideAvailability,
 			location: response.location
 		});
+		civicStore.setLookupContext({
+			guideAvailability: response.guideAvailability,
+			result: response.result
+		});
+
+		if (!canOpenGuide)
+			civicStore.setLocation(null);
 
 		lookupResult.value = response.result;
 		lookupInputKind.value = response.inputKind;

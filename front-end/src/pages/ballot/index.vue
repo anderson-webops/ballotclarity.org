@@ -3,13 +3,14 @@ import type { ElectionsResponse } from "~/types/civic";
 import { currentCoverageElectionSlug } from "~/constants";
 
 const api = useApiClient();
+const { allowsGuideEntryPoints } = useGuideEntryGate();
 const { data } = await useAsyncData<ElectionsResponse>(
 	"ballot-index-elections",
 	() => api<ElectionsResponse>("/elections")
 );
 const target = data.value?.elections[0]?.slug ?? currentCoverageElectionSlug;
 
-await navigateTo(`/ballot/${target}`, { replace: true });
+await navigateTo(allowsGuideEntryPoints.value ? `/ballot/${target}` : "/#location-lookup", { replace: true });
 </script>
 
 <template>

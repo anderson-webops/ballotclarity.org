@@ -6,6 +6,7 @@ import { contactEmail, currentCoverageElectionSlug } from "~/constants";
 const api = useApiClient();
 const civicStore = useCivicStore();
 const siteUrl = useSiteUrl();
+const { allowsGuideEntryPoints, blocksGuideEntryPoints } = useGuideEntryGate();
 const AsyncHomeBallotPreviewSection = defineAsyncComponent(() => import("~/components/home/HomeBallotPreviewSection.vue"));
 const AsyncHomeRoadmapSection = defineAsyncComponent(() => import("~/components/home/HomeRoadmapSection.vue"));
 const AsyncHomeCoverageOverviewSection = defineAsyncComponent(() => import("~/components/home/HomeCoverageOverviewSection.vue"));
@@ -94,20 +95,24 @@ usePageSeo({
 	title: "Understand Your Ballot"
 });
 
-const quickStartSteps = [
+const quickStartSteps = computed(() => [
 	{
 		step: "1",
 		text: "Enter a full address for the best district match, or use a 5-digit ZIP code to preview the current coverage area."
 	},
 	{
 		step: "2",
-		text: "Scan contests first, then open detail pages only when you need more depth."
+		text: allowsGuideEntryPoints.value
+			? "Scan contests first, then open detail pages only when you need more depth."
+			: "Stay with the nationwide civic results and official tools when Ballot Clarity does not have a published local guide for that area."
 	},
 	{
 		step: "3",
-		text: "Save a plan and print a clean checklist for the voting booth."
+		text: allowsGuideEntryPoints.value
+			? "Save a plan and print a clean checklist for the voting booth."
+			: "Save a ballot plan only after you open a published local guide. Nationwide-only lookups keep the civic-results flow first."
 	}
-];
+]);
 
 interface PrimaryPath {
 	description: string;
@@ -117,11 +122,17 @@ interface PrimaryPath {
 }
 
 const primaryPaths = computed<PrimaryPath[]>(() => [
-	{
-		description: "Open the ballot guide organized as a table of contents, then drill into the contests that matter most.",
-		label: "See your ballot",
-		to: featuredElection.value ? `/ballot/${featuredElection.value.slug}` : "/ballot"
-	},
+	...(allowsGuideEntryPoints.value
+		? [{
+				description: "Open the ballot guide organized as a table of contents, then drill into the contests that matter most.",
+				label: "See your ballot",
+				to: featuredElection.value ? `/ballot/${featuredElection.value.slug}` : "/ballot"
+			}]
+		: [{
+				description: "Stay with the lookup results above when your area only has nationwide civic coverage. Official tools and coverage notes remain the right next step.",
+				label: "Review lookup results",
+				to: "/#location-lookup"
+			}]),
 	{
 		description: "Review where Ballot Clarity is going live first, what is already production-ready, and what still needs verification.",
 		label: "Check live coverage",
@@ -214,19 +225,29 @@ const trustFacts = computed(() => [
 						<ul class="readable-list text-sm text-app-muted mt-4 dark:text-app-muted-dark">
 							<li>Use the lookup to open nationwide civic results first, then a personalized ballot guide when local coverage is published.</li>
 							<li>Start with contest summaries before opening any dossier or full explainer.</li>
-							<li>Save choices to your ballot plan only after checking the evidence links.</li>
+							<li>{{ blocksGuideEntryPoints ? "Open the ballot plan only after Ballot Clarity confirms a published local guide for your current lookup." : "Save choices to your ballot plan only after checking the evidence links." }}</li>
 						</ul>
 						<div class="mt-6 flex flex-wrap gap-3">
-							<NuxtLink
-								v-if="featuredElection"
-								:to="`/ballot/${featuredElection.slug}`"
-								class="btn-primary"
-							>
-								Open ballot guide
-							</NuxtLink>
-							<NuxtLink to="/plan" class="btn-secondary" prefetch-on="interaction">
-								Open ballot plan
-							</NuxtLink>
+							<template v-if="allowsGuideEntryPoints">
+								<NuxtLink
+									v-if="featuredElection"
+									:to="`/ballot/${featuredElection.slug}`"
+									class="btn-primary"
+								>
+									Open ballot guide
+								</NuxtLink>
+								<NuxtLink to="/plan" class="btn-secondary" prefetch-on="interaction">
+									Open ballot plan
+								</NuxtLink>
+							</template>
+							<template v-else>
+								<NuxtLink to="/coverage" class="btn-primary" prefetch-on="interaction">
+									Check live coverage
+								</NuxtLink>
+								<NuxtLink to="/help" class="btn-secondary" prefetch-on="interaction">
+									Open help hub
+								</NuxtLink>
+							</template>
 						</div>
 					</div>
 				</div>
@@ -271,6 +292,7 @@ const trustFacts = computed(() => [
 
 		<DeferredSection placeholder-class="min-h-[38rem]">
 			<AsyncHomeBallotPreviewSection
+				:allow-guide-entry-points="allowsGuideEntryPoints"
 				:ballot-preview="ballotPreview"
 				:featured-election-slug="featuredElection?.slug ?? null"
 			/>

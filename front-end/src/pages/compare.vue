@@ -7,6 +7,7 @@ import { buildCompareRoute, normalizeCompareSlugs, parseCompareQuerySlugs } from
 const civicStore = useCivicStore();
 const route = useRoute();
 const router = useRouter();
+const { allowsGuideEntryPoints, blocksGuideEntryPoints } = useGuideEntryGate();
 const { compareList, isHydrated } = storeToRefs(civicStore);
 
 const selectedSlugs = computed(() => parseCompareQuerySlugs(route.query.slugs));
@@ -45,11 +46,16 @@ watchEffect(() => {
 });
 
 const sameContest = computed(() => Boolean(data.value?.sameContest));
-const compareBreadcrumbs = computed(() => [
-	{ label: "Home", to: "/" },
-	{ label: "Ballot guide", to: `/ballot/${currentCoverageElectionSlug}` },
-	{ label: "Compare" }
-]);
+const compareBreadcrumbs = computed(() => allowsGuideEntryPoints.value
+	? [
+			{ label: "Home", to: "/" },
+			{ label: "Ballot guide", to: `/ballot/${currentCoverageElectionSlug}` },
+			{ label: "Compare" }
+		]
+	: [
+			{ label: "Home", to: "/" },
+			{ label: "Compare" }
+		]);
 const comparisonStats = computed(() => ({
 	candidateCount: sortedCandidates.value.length,
 	categoryCount: questionCategories.value.length,
@@ -81,13 +87,21 @@ const emptyStateTitle = computed(() => {
 	return "No compare candidates selected";
 });
 const emptyStateBody = computed(() => {
-	if (selectedSlugs.value.length === 1)
-		return "This compare link includes only one candidate. Add one or two more candidates from the ballot guide or a candidate profile, then reopen compare with the updated URL.";
+	if (selectedSlugs.value.length === 1) {
+		return allowsGuideEntryPoints.value
+			? "This compare link includes only one candidate. Add one or two more candidates from the ballot guide or a candidate profile, then reopen compare with the updated URL."
+			: "This compare link includes only one candidate. Add one or two more candidates from a candidate profile or a covered local guide, then reopen compare with the updated URL.";
+	}
 
-	if (hasSavedCompareSelection.value)
-		return "This compare link does not include any selected candidates yet. You can reopen the saved compare selection from this browser, or start a fresh compare from the ballot guide.";
+	if (hasSavedCompareSelection.value) {
+		return allowsGuideEntryPoints.value
+			? "This compare link does not include any selected candidates yet. You can reopen the saved compare selection from this browser, or start a fresh compare from the ballot guide."
+			: "This compare link does not include any selected candidates yet. You can reopen the saved compare selection from this browser, or start a fresh compare from a candidate profile.";
+	}
 
-	return "This compare page needs candidate slugs in the URL to render a side-by-side view. Start from the ballot guide or a candidate profile and open compare with two or three selected candidates.";
+	return allowsGuideEntryPoints.value
+		? "This compare page needs candidate slugs in the URL to render a side-by-side view. Start from the ballot guide or a candidate profile and open compare with two or three selected candidates."
+		: "This compare page needs candidate slugs in the URL to render a side-by-side view. Start from a candidate profile or a covered local guide and open compare with two or three selected candidates.";
 });
 
 function uniqueSources(...groups: Source[][]) {
@@ -155,8 +169,11 @@ usePageSeo({
 				{{ emptyStateBody }}
 			</InfoCallout>
 			<div class="mt-6 flex flex-wrap gap-3">
-				<NuxtLink :to="`/ballot/${currentCoverageElectionSlug}`" class="btn-primary">
+				<NuxtLink v-if="allowsGuideEntryPoints" :to="`/ballot/${currentCoverageElectionSlug}`" class="btn-primary">
 					Open ballot guide
+				</NuxtLink>
+				<NuxtLink v-else to="/coverage" class="btn-primary">
+					Open coverage profile
 				</NuxtLink>
 				<NuxtLink v-if="hasSavedCompareSelection" :to="resumeCompareHref" class="btn-secondary">
 					Resume saved compare
@@ -218,11 +235,14 @@ usePageSeo({
 						</p>
 					</div>
 					<div class="flex flex-wrap gap-3">
-						<NuxtLink :to="`/ballot/${currentCoverageElectionSlug}`" class="btn-secondary">
+						<NuxtLink v-if="allowsGuideEntryPoints" :to="`/ballot/${currentCoverageElectionSlug}`" class="btn-secondary">
 							Back to ballot
 						</NuxtLink>
-						<NuxtLink to="/plan" class="btn-secondary">
+						<NuxtLink v-if="allowsGuideEntryPoints" to="/plan" class="btn-secondary">
 							Open ballot plan
+						</NuxtLink>
+						<NuxtLink v-if="blocksGuideEntryPoints" to="/coverage" class="btn-secondary">
+							Open coverage profile
 						</NuxtLink>
 						<button type="button" class="btn-primary" @click="clearCompareSelection">
 							Clear compare list

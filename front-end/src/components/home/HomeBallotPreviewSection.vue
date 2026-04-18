@@ -2,11 +2,13 @@
 import type { BallotResponse } from "~/types/civic";
 
 const props = defineProps<{
+	allowGuideEntryPoints?: boolean;
 	ballotPreview: BallotResponse | null;
 	featuredElectionSlug?: string | null;
 }>();
 
 const featuredBallotHref = computed(() => props.featuredElectionSlug ? `/ballot/${props.featuredElectionSlug}` : "/ballot");
+const showGuideEntryPoints = computed(() => props.allowGuideEntryPoints !== false);
 </script>
 
 <template>
@@ -17,10 +19,12 @@ const featuredBallotHref = computed(() => props.featuredElectionSlug ? `/ballot/
 					Current ballot preview
 				</p>
 				<h2 class="text-4xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-					See the ballot guide before you open a detail page.
+					{{ showGuideEntryPoints ? "See the ballot guide before you open a detail page." : "Published local guides open only in covered areas." }}
 				</h2>
 				<p class="bc-measure text-base text-app-muted leading-8 mt-5 dark:text-app-muted-dark">
-					The ballot view works like a contents page for the rest of the product. It groups contests cleanly, keeps official links nearby, and makes saved-plan status visible without forcing the user into a side-by-side comparison too early.
+					{{ showGuideEntryPoints
+						? "The ballot view works like a contents page for the rest of the product. It groups contests cleanly, keeps official links nearby, and makes saved-plan status visible without forcing the user into a side-by-side comparison too early."
+						: "This preview shows the structure of Ballot Clarity's published local guides. When a lookup resolves nationwide-only coverage, keep the civic-results and official-tool flow first until local guide coverage exists for that area." }}
 				</p>
 				<ul v-if="ballotPreview" class="mt-6 divide-app-line divide-y dark:divide-app-line-dark">
 					<li
@@ -42,18 +46,27 @@ const featuredBallotHref = computed(() => props.featuredElectionSlug ? `/ballot/
 					</li>
 				</ul>
 				<p v-else class="text-sm text-app-muted leading-7 mt-6 dark:text-app-muted-dark">
-					The current ballot preview is not available in this response yet, but the ballot guide remains the main entry point once a location is selected.
+					{{ showGuideEntryPoints
+						? "The current ballot preview is not available in this response yet, but the ballot guide remains the main entry point once a location is selected."
+						: "The current published guide preview is not available in this response yet. Use the lookup results and coverage profile instead of a local-guide flow when the current area only has nationwide civic coverage." }}
 				</p>
 				<div class="mt-8 flex flex-wrap gap-3">
 					<NuxtLink
+						v-if="showGuideEntryPoints"
 						:to="featuredBallotHref"
 						class="btn-primary"
 						prefetch-on="interaction"
 					>
 						Explore the ballot guide
 					</NuxtLink>
+					<NuxtLink v-else to="/coverage" class="btn-primary" prefetch-on="interaction">
+						Open coverage profile
+					</NuxtLink>
 					<NuxtLink to="/compare" class="btn-secondary" prefetch-on="interaction">
 						Open compare
+					</NuxtLink>
+					<NuxtLink v-if="!showGuideEntryPoints" to="/help" class="btn-secondary" prefetch-on="interaction">
+						Open help hub
 					</NuxtLink>
 				</div>
 			</div>

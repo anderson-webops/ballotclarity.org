@@ -3,11 +3,12 @@ import type { BallotPlanSelection, Contest, PlannedMeasureDecision } from "~/typ
 import { storeToRefs } from "pinia";
 import { currentCoverageElectionSlug } from "~/constants";
 import { buildCompareRoute } from "~/stores/civic";
+import { buildPlanUnavailableMessaging } from "~/utils/plan-messaging";
 
 const civicStore = useCivicStore();
 const { ballotPlan, ballotPlanCount, compareCount, compareList, isHydrated, selectedElection, selectedLocation } = storeToRefs(civicStore);
 const { formatDate, formatDateTime } = useFormatters();
-const { activeLookupContext, allowsGuideEntryPoints, blocksGuideEntryPoints } = useGuideEntryGate();
+const { activeLookupContext, allowsGuideEntryPoints } = useGuideEntryGate();
 
 const effectiveBallotPlan = computed(() => isHydrated.value ? ballotPlan.value : {});
 const effectiveBallotPlanCount = computed(() => isHydrated.value ? ballotPlanCount.value : 0);
@@ -21,18 +22,7 @@ const locationSlug = computed(() => isHydrated.value && allowsGuideEntryPoints.v
 const { data, error, pending } = await useBallot(electionSlug, locationSlug);
 const lookupElection = computed(() => showPersistedPlanState.value ? (selectedElection.value ?? data.value?.election ?? null) : (data.value?.election ?? null));
 const activeLocationLabel = computed(() => data.value?.location.displayName ?? (isHydrated.value ? selectedLocation.value?.displayName ?? null : null));
-const planUnavailableTitle = computed(() => blocksGuideEntryPoints.value
-	? "Ballot plan requires a published local guide"
-	: "Ballot plan unavailable");
-const planUnavailableBody = computed(() => {
-	if (activeLookupContext.value?.guideAvailability === "not-published")
-		return "The latest lookup succeeded nationwide, but a published local Ballot Clarity guide is not available for this area yet. The ballot plan stays guide-only for now, so use the nationwide civic results and official tools instead.";
-
-	if (blocksGuideEntryPoints.value)
-		return "The latest lookup did not open a published local guide. The ballot plan stays guide-only for now, so return to the lookup and use the official tools or try a location with published guide coverage.";
-
-	return "The plan page needs a ballot context. Open a published local guide first so Ballot Clarity can load the current election and location.";
-});
+const planUnavailableMessaging = computed(() => buildPlanUnavailableMessaging(activeLookupContext.value));
 
 usePageSeo({
 	description: "Build a booth-ready ballot plan with saved selections, official links, and a print-friendly summary.",
@@ -243,8 +233,8 @@ function printPlan() {
 		</div>
 
 		<div v-else-if="error || !data" class="max-w-3xl">
-			<InfoCallout :title="planUnavailableTitle" :tone="blocksGuideEntryPoints ? 'info' : 'warning'">
-				{{ planUnavailableBody }}
+			<InfoCallout :title="planUnavailableMessaging.title" :tone="planUnavailableMessaging.tone">
+				{{ planUnavailableMessaging.body }}
 			</InfoCallout>
 		</div>
 

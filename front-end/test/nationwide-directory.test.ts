@@ -93,6 +93,9 @@ test("nationwide directory derivation uses district matches and representative m
 	assert.equal(bundle.representatives.representatives[0].influenceSummary, "No person-level influence record is attached to this representative yet.");
 	assert.equal(bundle.representatives.representatives[0].openstatesUrl, "https://openstates.org/ocd-person/ut-cd-3");
 	assert.equal(bundle.representatives.representatives[0].provenance?.status, "crosswalked");
+	assert.equal(bundle.representatives.representatives[0].sources.length, 1);
+	assert.equal(bundle.representatives.representatives[0].sources[0]?.publisher, "Open States");
+	assert.equal(bundle.representatives.representatives[1].sources.length, 0);
 	assert.equal(bundle.representatives.representatives[1].districtSlug, "ut-senate-24");
 	assert.equal(bundle.districts.districts.find(district => district.slug === "ut-cd-03")?.representativeCount, 1);
 	assert.equal(bundle.districts.districts.find(district => district.slug === "ut-senate-24")?.representativeCount, 1);

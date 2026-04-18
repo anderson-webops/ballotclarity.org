@@ -5,7 +5,8 @@ import type {
 	LocationDistrictMatch,
 	LocationRepresentativeMatch,
 	NationwideLookupResultContext,
-	RepresentativesResponse
+	RepresentativesResponse,
+	Source
 } from "~/types/civic";
 import { buildDistrictMatchKeys, buildRepresentativeMatchKeys } from "./canonical-district";
 import { buildNationwideRepresentativeSlug, toLookupSlug } from "./nationwide-slug";
@@ -46,6 +47,22 @@ function buildRepresentativeSummary(
 	updatedAt: string,
 	locationLabel: string
 ) {
+	const sources: Source[] = match.openstatesUrl
+		? [
+				{
+					authority: "nonprofit-provider",
+					date: updatedAt,
+					id: `representative:${buildNationwideRepresentativeSlug(match)}`,
+					note: "Representative record carried into this directory card from the active nationwide lookup.",
+					publisher: "Open States",
+					sourceSystem: match.sourceSystem || "Open States",
+					title: match.name,
+					type: "official record",
+					url: match.openstatesUrl
+				}
+			]
+		: [];
+
 	return {
 		incumbent: true,
 		location: locationLabel,
@@ -70,7 +87,8 @@ function buildRepresentativeSummary(
 		openstatesUrl: match.openstatesUrl,
 		influenceAvailable: false,
 		influenceSummary: "No person-level influence record is attached to this representative yet.",
-		sourceCount: match.openstatesUrl ? 1 : 0,
+		sourceCount: sources.length,
+		sources,
 		updatedAt
 	} satisfies RepresentativesResponse["representatives"][number];
 }

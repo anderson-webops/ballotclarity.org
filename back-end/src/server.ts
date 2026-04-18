@@ -290,6 +290,8 @@ function buildSourceRecord(
 }
 
 function buildRepresentativeSummary(candidate: Candidate): RepresentativeSummary {
+	const sources = collectCandidateSources(candidate);
+
 	return {
 		location: candidate.location,
 		districtLabel: candidate.officeSought,
@@ -312,7 +314,8 @@ function buildRepresentativeSummary(candidate: Candidate): RepresentativeSummary
 			status: "direct",
 			note: "Matched from Ballot Clarity's published local person record for this office."
 		},
-		sourceCount: collectCandidateSources(candidate).length,
+		sourceCount: sources.length,
+		sources,
 		summary: candidate.summary,
 		updatedAt: candidate.updatedAt
 	};

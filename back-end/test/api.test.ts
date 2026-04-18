@@ -1250,6 +1250,7 @@ test("GET /api/representatives returns incumbents tied to district pages", async
 	assert.equal(response.status, 200);
 	assert.ok(body.representatives.some((item: { districtSlug: string; slug: string }) => item.districtSlug === "us-house-district-7" && item.slug === "daniel-brooks"));
 	assert.ok(body.representatives.some((item: { href: string; slug: string }) => item.slug === "daniel-brooks" && item.href === "/representatives/daniel-brooks"));
+	assert.ok(body.representatives.some((item: { slug: string; sourceCount: number; sources: Array<{ id: string }> }) => item.slug === "daniel-brooks" && item.sourceCount >= 1 && item.sources.length >= 1));
 	assert.ok(body.districts.some((item: { href: string }) => item.href === "/districts/state-senate-district-12"));
 	assert.match(body.note, /currently serving officials/i);
 });

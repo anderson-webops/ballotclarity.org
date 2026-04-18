@@ -7,6 +7,7 @@ import { activeNationwideLookupCookieName, parseActiveNationwideLookupCookie } f
 import { isExternalHref } from "~/utils/link";
 import { buildNationwideDirectoryResponses } from "~/utils/nationwide-directory";
 import { buildLookupContextFromNationwideResult, buildNationwideLookupRouteQuery, buildNationwideRouteTarget } from "~/utils/nationwide-route-context";
+import { formatSourceCountLabel } from "~/utils/source-label";
 
 const route = useRoute();
 const { formatDateTime } = useFormatters();
@@ -199,7 +200,18 @@ usePageSeo({
 					</p>
 					<div class="mt-5 flex flex-wrap gap-2">
 						<VerificationBadge :label="representative.districtLabel" />
-						<VerificationBadge :label="`${representative.sourceCount} sources`" tone="accent" />
+						<SourceDrawer
+							v-if="representative.sourceCount > 0 && representative.sources.length"
+							:button-label="formatSourceCountLabel(representative.sourceCount)"
+							:note="directoryUsesNationwide
+								? 'These are the provider-backed and Ballot Clarity-attached records currently visible in this representative directory card.'
+								: 'These are the source-backed records currently visible in this representative directory card.'"
+							:sources="representative.sources"
+							:title="`${representative.name} directory sources`"
+							tone="accent"
+							variant="badge"
+						/>
+						<VerificationBadge v-else :label="formatSourceCountLabel(representative.sourceCount)" tone="accent" />
 					</div>
 					<div class="mt-6 flex flex-wrap gap-3">
 						<NuxtLink :to="buildLookupAwareTarget(`/districts/${representative.districtSlug}`)" class="btn-secondary">

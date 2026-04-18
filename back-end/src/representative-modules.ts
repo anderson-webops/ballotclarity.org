@@ -751,6 +751,13 @@ export function createRepresentativeModuleResolver({
 				return representative;
 
 			const attachment = await resolveAttachment(context, match);
+			const addedSources = uniqueSources([
+				...representative.sources,
+				...attachment.sources,
+				...(attachment.funding?.sources ?? []),
+				...attachment.lobbyingContext.flatMap(block => block.sources),
+				...attachment.publicStatements.flatMap(block => block.sources),
+			]);
 
 			return {
 				...representative,
@@ -758,6 +765,8 @@ export function createRepresentativeModuleResolver({
 				fundingSummary: attachment.fundingSummary,
 				influenceAvailable: attachment.influenceAvailable,
 				influenceSummary: attachment.influenceSummary,
+				sourceCount: addedSources.length,
+				sources: addedSources,
 			};
 		}));
 	}
@@ -786,6 +795,7 @@ export function createRepresentativeModuleResolver({
 					provenance: null,
 					slug: personSlug(match),
 					sourceCount: 0,
+					sources: [],
 					summary: "",
 					updatedAt: context.resolvedAt,
 				}) satisfies RepresentativeSummary),

@@ -720,6 +720,7 @@ export interface RepresentativeSummary {
 	influenceSummary: string;
 	updatedAt: string;
 	sourceCount: number;
+	sources: Source[];
 }
 
 export interface PersonProfileFunding extends FundingSummary {

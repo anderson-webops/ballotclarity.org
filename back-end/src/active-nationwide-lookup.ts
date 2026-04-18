@@ -622,6 +622,20 @@ function buildDirectoryBundle(context: ActiveNationwideLookupContext) {
 	const representatives = context.representativeMatches.map((representative) => {
 		const slug = buildNationwideRepresentativeSlug(representative);
 		const districtSlug = districtRepresentatives.get(representative.id) ?? toLookupSlug(representative.districtLabel);
+		const sources = representative.openstatesUrl
+			? [
+					toSource({
+						authority: "nonprofit-provider",
+						date: updatedAt,
+						id: `representative:${slug}`,
+						note: "Representative record carried into this directory card from the active nationwide lookup.",
+						publisher: "Open States",
+						sourceSystem: representative.sourceSystem || "Open States",
+						title: representative.name,
+						url: representative.openstatesUrl,
+					}),
+				]
+			: [];
 
 		return {
 			ballotStatusLabel: "Published ballot status unavailable in this area",
@@ -646,7 +660,8 @@ function buildDirectoryBundle(context: ActiveNationwideLookupContext) {
 				status: "crosswalked",
 			},
 			slug,
-			sourceCount: representative.openstatesUrl ? 1 : 0,
+			sourceCount: sources.length,
+			sources,
 			summary: representative.sourceSystem ? `Matched from ${representative.sourceSystem}` : "Matched from nationwide lookup",
 			updatedAt,
 		} satisfies RepresentativeSummary;

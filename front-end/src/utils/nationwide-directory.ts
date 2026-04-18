@@ -7,6 +7,7 @@ import type {
 	NationwideLookupResultContext,
 	RepresentativesResponse
 } from "~/types/civic";
+import { buildDistrictMatchKeys, buildRepresentativeMatchKeys } from "./canonical-district";
 
 function toSlug(value: string) {
 	return value
@@ -16,10 +17,6 @@ function toSlug(value: string) {
 		.replace(/[^a-z0-9-]/g, "-")
 		.replace(/-+/g, "-")
 		.replace(/^-|-$/g, "");
-}
-
-function normalizeDistrictLabel(label: string) {
-	return label.trim().toLowerCase();
 }
 
 function deriveNationwideDistrictJurisdiction(districtType: string): Contest["jurisdiction"] {
@@ -85,8 +82,8 @@ function buildRepresentativeSummary(
 	} satisfies RepresentativesResponse["representatives"][number];
 }
 
-function buildNationwideDirectoryUpdatedAt() {
-	return new Date().toISOString();
+function buildNationwideDirectoryUpdatedAt(context: NationwideLookupResultContext | null | undefined) {
+	return context?.resolvedAt || new Date().toISOString();
 }
 
 export interface NationwideDirectoryBundle {
@@ -97,25 +94,29 @@ export interface NationwideDirectoryBundle {
 export function buildNationwideDirectoryResponses(
 	context: NationwideLookupResultContext | null | undefined
 ): NationwideDirectoryBundle {
-	const updatedAt = buildNationwideDirectoryUpdatedAt();
+	const updatedAt = buildNationwideDirectoryUpdatedAt(context);
 	const districtMatches = context?.districtMatches ?? [];
 	const representativeMatches = context?.representativeMatches ?? [];
 	const locationLabel = context?.location?.displayName ?? context?.normalizedAddress ?? "Nationwide lookup";
+	const locationState = context?.location?.state;
 	const districtBySlug = new Map<string, DistrictSummary>();
 	const districtRepresentatives = new Map<string, string>();
-	const normalizedDistrictToSlug = new Map<string, string>();
+	const districtKeyToSlug = new Map<string, string>();
 
 	for (const district of districtMatches) {
 		const districtSummary = buildDistrictSummary(district, updatedAt);
 		if (!districtBySlug.has(districtSummary.slug))
 			districtBySlug.set(districtSummary.slug, districtSummary);
 
-		normalizedDistrictToSlug.set(normalizeDistrictLabel(district.label), districtSummary.slug);
+		for (const key of buildDistrictMatchKeys(district, locationState))
+			districtKeyToSlug.set(key, districtSummary.slug);
 	}
 
 	for (const representative of representativeMatches) {
-		const normalizedDistrictLabel = normalizeDistrictLabel(representative.districtLabel);
-		const districtSlug = normalizedDistrictToSlug.get(normalizedDistrictLabel) ?? toSlug(representative.districtLabel);
+		const districtSlug = buildRepresentativeMatchKeys(representative, locationState)
+			.map(key => districtKeyToSlug.get(key))
+			.find((slug): slug is string => Boolean(slug))
+			?? toSlug(representative.districtLabel);
 		const districtSummary = districtBySlug.get(districtSlug);
 
 		if (districtSummary)

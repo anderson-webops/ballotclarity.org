@@ -435,6 +435,7 @@ export interface NationwideLookupResultContext {
 	result: LocationLookupResult;
 	inputKind: LocationLookupInputKind;
 	note: string;
+	resolvedAt?: string;
 	lookupQuery?: string;
 	detectedFromIp?: boolean;
 	guideAvailability?: LocationGuideAvailability;

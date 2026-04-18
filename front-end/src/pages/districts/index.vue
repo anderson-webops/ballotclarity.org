@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { storeToRefs } from "pinia";
+import { buildActiveLookupSummary } from "~/utils/active-lookup";
 import { isExternalHref } from "~/utils/link";
 import { buildNationwideDirectoryResponses } from "~/utils/nationwide-directory";
 
 const { formatDateTime } = useFormatters();
 const civicStore = useCivicStore();
-const { isHydrated, nationwideLookupResult } = storeToRefs(civicStore);
+const { isHydrated, nationwideLookupResult, selectedLocation } = storeToRefs(civicStore);
 const { data: guideDistrictData, error: guideDistrictError, pending: guideDistrictPending } = await useDistricts();
 const { data: guideRepresentativesData } = await useRepresentatives();
 const { hasNationwideResultContext, hasPublishedGuideContext } = useGuideEntryGate();
@@ -26,8 +27,25 @@ const directoriesPending = computed(() => directoryUsesNationwide.value ? false 
 const directoriesError = computed(() => directoryUsesNationwide.value ? null : guideDistrictError.value);
 const districts = computed(() => directoryData.value?.districts.districts ?? []);
 const representatives = computed(() => directoryData.value?.representatives.representatives ?? []);
+const activeLookupSummary = computed(() => buildActiveLookupSummary({
+	nationwideLookupResult: isHydrated.value ? nationwideLookupResult.value : null,
+	selectedLocation: isHydrated.value ? selectedLocation.value : null
+}));
 
-const representativeByDistrict = computed(() => new Map(representatives.value.map(item => [item.districtSlug, item])));
+const representativesByDistrict = computed(() => {
+	const grouped = new Map<string, typeof representatives.value>();
+
+	for (const representative of representatives.value) {
+		const existingRepresentatives = grouped.get(representative.districtSlug) ?? [];
+		grouped.set(representative.districtSlug, [...existingRepresentatives, representative]);
+	}
+
+	return grouped;
+});
+
+function getDistrictRepresentatives(districtSlug: string) {
+	return representativesByDistrict.value.get(districtSlug) ?? [];
+}
 
 const summaryItems = computed(() => {
 	const isNationwideMode = directoryUsesNationwide.value;
@@ -68,15 +86,33 @@ const districtIntroCopy = computed(() => directoryUsesNationwide.value
 			</div>
 
 			<div class="surface-panel">
-				<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
-					What lives here
+				<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+					Active lookup context
+				</p>
+				<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
+					{{ activeLookupSummary.label }}
 				</h2>
-				<ul class="readable-list text-sm text-app-muted mt-5 pl-5 dark:text-app-muted-dark">
-					<li>District and office context</li>
-					<li>Current incumbent or currently serving official, when one is on the ballot</li>
-					<li>Candidate field for the active election</li>
-					<li>Representative person pages and dedicated funding or influence pages where Ballot Clarity has person-level data</li>
-				</ul>
+				<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
+					{{ activeLookupSummary.note }}
+				</p>
+				<div class="mt-5 flex flex-wrap gap-3 items-center">
+					<TrustBadge
+						:label="activeLookupSummary.mode === 'nationwide' ? 'Nationwide lookup context' : activeLookupSummary.mode === 'guide' ? 'Published guide context' : 'No saved lookup context'"
+						:tone="activeLookupSummary.mode === 'nationwide' ? 'accent' : activeLookupSummary.mode === 'guide' ? undefined : 'warning'"
+					/>
+					<UpdatedAt v-if="activeLookupSummary.resolvedAt" :value="activeLookupSummary.resolvedAt" label="Lookup updated" />
+				</div>
+				<div class="mt-6 pt-6 border-t border-app-line/80 dark:border-app-line-dark">
+					<h3 class="text-2xl text-app-ink font-serif dark:text-app-text-dark">
+						What lives here
+					</h3>
+					<ul class="readable-list text-sm text-app-muted mt-5 pl-5 dark:text-app-muted-dark">
+						<li>District and office context</li>
+						<li>Current incumbent or currently serving official, when one is on the ballot</li>
+						<li>Candidate field for the active election</li>
+						<li>Representative person pages and dedicated funding or influence pages where Ballot Clarity has person-level data</li>
+					</ul>
+				</div>
 			</div>
 		</header>
 
@@ -112,15 +148,18 @@ const districtIntroCopy = computed(() => directoryUsesNationwide.value
 						<VerificationBadge :label="`${district.candidateCount} candidate${district.candidateCount === 1 ? '' : 's'}`" />
 						<VerificationBadge :label="`${district.representativeCount} current representative${district.representativeCount === 1 ? '' : 's'}`" tone="accent" />
 					</div>
-					<div v-if="representativeByDistrict.get(district.slug)" class="mt-5 pt-5 border-t border-app-line/80 dark:border-app-line-dark">
+					<div v-if="getDistrictRepresentatives(district.slug).length" class="mt-5 pt-5 border-t border-app-line/80 dark:border-app-line-dark">
 						<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
-							Current representative
+							{{ getDistrictRepresentatives(district.slug).length === 1 ? 'Current representative' : 'Current representatives' }}
 						</p>
 						<p class="text-lg text-app-ink font-semibold mt-3 dark:text-app-text-dark">
-							{{ representativeByDistrict.get(district.slug)?.name }}
+							{{ getDistrictRepresentatives(district.slug)[0]?.name }}
 						</p>
 						<p class="text-sm text-app-muted mt-2 dark:text-app-muted-dark">
-							{{ representativeByDistrict.get(district.slug)?.party }} · {{ representativeByDistrict.get(district.slug)?.officeSought }}
+							{{ getDistrictRepresentatives(district.slug)[0]?.party }} · {{ getDistrictRepresentatives(district.slug)[0]?.officeSought }}
+						</p>
+						<p v-if="getDistrictRepresentatives(district.slug).length > 1" class="text-sm text-app-muted mt-2 dark:text-app-muted-dark">
+							{{ getDistrictRepresentatives(district.slug).length - 1 }} more linked official{{ getDistrictRepresentatives(district.slug).length - 1 === 1 ? '' : 's' }} are attached to this district match.
 						</p>
 					</div>
 					<div class="mt-6 flex flex-wrap gap-3">
@@ -128,8 +167,8 @@ const districtIntroCopy = computed(() => directoryUsesNationwide.value
 							Open district page
 						</NuxtLink>
 						<a
-							v-if="representativeByDistrict.get(district.slug) && isExternalHref(representativeByDistrict.get(district.slug)?.href ?? '')"
-							:href="representativeByDistrict.get(district.slug)?.href"
+							v-if="getDistrictRepresentatives(district.slug).length && isExternalHref(getDistrictRepresentatives(district.slug)[0]?.href ?? '')"
+							:href="getDistrictRepresentatives(district.slug)[0]?.href"
 							target="_blank"
 							rel="noreferrer"
 							class="btn-secondary inline-flex gap-2 items-center"
@@ -138,8 +177,8 @@ const districtIntroCopy = computed(() => directoryUsesNationwide.value
 							<span class="i-carbon-launch" />
 						</a>
 						<NuxtLink
-							v-else-if="representativeByDistrict.get(district.slug)"
-							:to="representativeByDistrict.get(district.slug)?.href ?? '/representatives'"
+							v-else-if="getDistrictRepresentatives(district.slug).length"
+							:to="getDistrictRepresentatives(district.slug)[0]?.href ?? '/representatives'"
 							class="btn-secondary"
 						>
 							Open representative

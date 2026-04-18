@@ -99,3 +99,42 @@ test("published guide context should keep guide directory behavior external to n
 	assert.equal(buildNationwideDirectoryResponses(publishedGuideLookupResult).representatives.representatives.length, 2);
 	assert.equal(buildNationwideDirectoryResponses(publishedGuideLookupResult).districts.districts.length, 3);
 });
+
+test("nationwide directory canonical matching links mismatched provider labels to the same districts", () => {
+	const bundle = buildNationwideDirectoryResponses({
+		...nationwideLookupResult,
+		representativeMatches: [
+			{
+				districtLabel: "Representative UT-3",
+				id: "ocd-person:ut-cd-3",
+				name: "Mike Kennedy",
+				officeTitle: "Representative",
+				party: "Republican",
+				sourceSystem: "Open States"
+			},
+			{
+				districtLabel: "Senator 24",
+				id: "ocd-person:ut-sen-24",
+				name: "Keven Stratton",
+				officeTitle: "Senator",
+				party: "Republican",
+				sourceSystem: "Open States"
+			},
+			{
+				districtLabel: "Representative 60",
+				id: "ocd-person:ut-house-60",
+				name: "Tyler Clancy",
+				officeTitle: "Representative",
+				party: "Republican",
+				sourceSystem: "Open States"
+			}
+		]
+	});
+
+	assert.equal(bundle.representatives.representatives.find(representative => representative.name === "Mike Kennedy")?.districtSlug, "ut-cd-03");
+	assert.equal(bundle.representatives.representatives.find(representative => representative.name === "Keven Stratton")?.districtSlug, "ut-senate-24");
+	assert.equal(bundle.representatives.representatives.find(representative => representative.name === "Tyler Clancy")?.districtSlug, "ut-house-60");
+	assert.equal(bundle.districts.districts.find(district => district.slug === "ut-cd-03")?.representativeCount, 1);
+	assert.equal(bundle.districts.districts.find(district => district.slug === "ut-senate-24")?.representativeCount, 1);
+	assert.equal(bundle.districts.districts.find(district => district.slug === "ut-house-60")?.representativeCount, 1);
+});

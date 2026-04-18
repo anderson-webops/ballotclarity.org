@@ -51,6 +51,7 @@ export function normalizeLookupResponseForDisplay(
 		normalizedAddress: response.normalizedAddress ?? "",
 		note: response.note,
 		representativeMatches: response.representativeMatches ?? [],
+		resolvedAt: new Date().toISOString(),
 		selectionOptions: response.selectionOptions ?? [],
 		result: response.result
 	};

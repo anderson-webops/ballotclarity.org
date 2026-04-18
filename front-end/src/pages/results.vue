@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { LocationLookupResponse, LocationLookupSelectionOption } from "~/types/civic";
 import { storeToRefs } from "pinia";
+import { buildActiveLookupSummary } from "~/utils/active-lookup";
 import { buildLocationGuessUiContent } from "~/utils/location-guess";
 import { normalizeLookupResponseForDisplay, resolveLookupDestination } from "~/utils/nationwide-results";
 
@@ -11,8 +12,11 @@ const { isHydrated, nationwideLookupResult } = storeToRefs(civicStore);
 const { hasPublishedGuideContext } = useGuideEntryGate();
 
 const activeResult = computed(() => isHydrated.value ? nationwideLookupResult.value : null);
+const activeLookupSummary = computed(() => buildActiveLookupSummary({
+	nationwideLookupResult: activeResult.value,
+	selectedLocation: null
+}));
 const locationGuessUi = computed(() => buildLocationGuessUiContent(coverageData.value?.locationGuess ?? null));
-const activeLocationLabel = computed(() => activeResult.value?.location?.displayName ?? activeResult.value?.normalizedAddress ?? "Nationwide civic results");
 const officialToolCount = computed(() => activeResult.value?.actions.filter(action => action.kind === "official-verification").length ?? 0);
 const summaryItems = computed(() => ([
 	{
@@ -107,11 +111,17 @@ usePageSeo({
 						Active lookup context
 					</p>
 					<h1 class="text-5xl text-app-ink leading-tight font-serif mt-3 dark:text-app-text-dark">
-						{{ activeLocationLabel }}
+						{{ activeLookupSummary.label }}
 					</h1>
 					<p class="text-base text-app-muted leading-8 mt-5 max-w-3xl dark:text-app-muted-dark">
 						This page is the first-class nationwide civic results view for the latest successful lookup. It carries district matches, representative records, availability status, and official election tools across the app even when Ballot Clarity does not yet have a published local guide for this area.
 					</p>
+					<p class="text-sm text-app-muted leading-7 mt-4 max-w-3xl dark:text-app-muted-dark">
+						{{ activeLookupSummary.note }}
+					</p>
+					<div v-if="activeLookupSummary.resolvedAt" class="mt-5">
+						<UpdatedAt :value="activeLookupSummary.resolvedAt" label="Lookup updated" />
+					</div>
 				</div>
 
 				<div class="surface-panel">

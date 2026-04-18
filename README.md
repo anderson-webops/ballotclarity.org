@@ -56,8 +56,9 @@ npm run local:setup
 
 That path:
 
-- loads the repo-root `.env`
+- loads `.env` and `.env.local` from the current checkout, or falls back to the shared repo root when you are running inside a git worktree
 - keeps Google Civic, `api.data.gov`, Open States, and LDA wired from your local provider keys
+- prefers IPv4 for Google Civic in provider-local mode unless you explicitly override `GOOGLE_CIVIC_FORCE_IPV4`
 - forces the admin store to sqlite for local use
 - disables the Postgres-backed address cache for that run
 - serves source files from Nuxt's built-in public mirror instead of MinIO
@@ -72,10 +73,25 @@ npm run server:local:watch
 Then run the Nuxt front-end in another terminal:
 
 ```bash
-npm run dev
+npm run dev:local
 ```
 
 Use the Docker stack only when you want local Postgres address caching and MinIO parity with the fuller infrastructure path.
+
+To verify the real local runtime with your configured provider keys, run:
+
+```bash
+npm run verify:local
+```
+
+That command:
+
+- discovers the current worktree `.env` or the shared repo-root fallback automatically
+- forces the API and front-end base URLs onto localhost for that run
+- writes a fresh local coverage snapshot
+- runs provider credential probes without printing secrets
+- starts the API locally
+- probes `/health` and a real ZIP lookup (`84604`) to confirm districts and representatives populate
 
 Write a local coverage snapshot so the API can run in snapshot mode instead of raw in-memory seed mode:
 
@@ -132,7 +148,7 @@ To verify the currently configured provider keys without printing them:
 npm run providers:test
 ```
 
-For a no-Docker local run that still loads your provider keys from the repo-root `.env`, use:
+For a no-Docker local run that still loads your provider keys from the local/shared `.env`, use:
 
 ```bash
 npm run providers:test:local

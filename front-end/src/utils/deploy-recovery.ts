@@ -6,18 +6,80 @@ const staleChunkPattern = new RegExp([
 	"chunkloaderror",
 	"failed to load module script",
 	"unable to preload css",
-	"css chunk"
+	"css chunk",
+	"vite:preloaderror",
 ].join("|"), "i");
 const nuxtAssetPattern = /\/_nuxt\/[^"' )]+\.(?:js|mjs|css)(?:\?[^"' )]*)?$/i;
-const reloadKeyPrefix = "ballot-clarity:stale-client-reload:";
-const noticeElementId = "ballot-clarity-stale-client-notice";
+export const staleClientBuildStorageKey = "ballot-clarity:client-build-id";
+export const staleClientNoticeId = "ballot-clarity-stale-client-notice";
+export const staleClientReloadKeyPrefix = "ballot-clarity:stale-client-reload:";
+const staleClientReloadMessage = "Ballot Clarity updated. Reloading…";
 
 interface ErrorLike {
+	currentTarget?: unknown;
+	detail?: unknown;
 	filename?: string | null;
+	href?: string | null;
 	message?: string | null;
+	path?: string | null;
+	payload?: unknown;
 	reason?: unknown;
 	sourceURL?: string | null;
+	src?: string | null;
 	stack?: string | null;
+	tagName?: string | null;
+	target?: unknown;
+	type?: string | null;
+	url?: string | null;
+}
+
+interface StorageLike {
+	getItem: (key: string) => null | string;
+	key?: (index: number) => null | string;
+	length?: number;
+	removeItem?: (key: string) => void;
+	setItem: (key: string, value: string) => void;
+}
+
+interface ServiceWorkerRegistrationLike {
+	unregister: () => Promise<boolean>;
+}
+
+interface NavigatorLike {
+	serviceWorker?: {
+		getRegistrations: () => Promise<readonly ServiceWorkerRegistrationLike[]>;
+	};
+}
+
+function toStringValue(value: unknown): string {
+	return typeof value === "string" ? value.trim() : "";
+}
+
+function readAssetUrl(value: unknown): string {
+	if (!value || typeof value !== "object")
+		return "";
+
+	const error = value as ErrorLike;
+	const directUrl = [
+		error.src,
+		error.href,
+		error.filename,
+		error.sourceURL,
+		error.url,
+		error.path,
+	].map(toStringValue).find(Boolean);
+
+	if (directUrl)
+		return directUrl;
+
+	for (const nestedValue of [error.target, error.currentTarget, error.detail, error.payload, error.reason]) {
+		const nestedUrl = readAssetUrl(nestedValue);
+
+		if (nestedUrl)
+			return nestedUrl;
+	}
+
+	return "";
 }
 
 function toMessage(value: unknown): string {
@@ -30,11 +92,17 @@ function toMessage(value: unknown): string {
 	if (value && typeof value === "object") {
 		const maybeError = value as ErrorLike;
 		const parts = [
+			typeof maybeError.type === "string" ? maybeError.type : "",
 			typeof maybeError.message === "string" ? maybeError.message : "",
 			typeof maybeError.stack === "string" ? maybeError.stack : "",
 			typeof maybeError.filename === "string" ? maybeError.filename : "",
 			typeof maybeError.sourceURL === "string" ? maybeError.sourceURL : "",
-			maybeError.reason ? toMessage(maybeError.reason) : ""
+			typeof maybeError.url === "string" ? maybeError.url : "",
+			typeof maybeError.path === "string" ? maybeError.path : "",
+			readAssetUrl(maybeError),
+			maybeError.detail ? toMessage(maybeError.detail) : "",
+			maybeError.payload ? toMessage(maybeError.payload) : "",
+			maybeError.reason ? toMessage(maybeError.reason) : "",
 		];
 
 		return parts.filter(Boolean).join(" ").trim();
@@ -45,6 +113,10 @@ function toMessage(value: unknown): string {
 
 export function isLikelyStaleNuxtChunkError(error: unknown): boolean {
 	const combined = toMessage(error);
+	const assetUrl = readAssetUrl(error);
+
+	if (assetUrl && nuxtAssetPattern.test(assetUrl))
+		return staleChunkPattern.test(combined) || combined.includes("/_nuxt/") || !combined;
 
 	if (!combined)
 		return false;
@@ -70,24 +142,81 @@ export function readServerBuildId(doc: Pick<Document, "documentElement" | "query
 	return normalizeBuildId(metaTag?.content);
 }
 
+export function readStoredClientBuildId(storage: StorageLike = window.sessionStorage): string {
+	try {
+		return normalizeBuildId(storage.getItem(staleClientBuildStorageKey));
+	}
+	catch {
+		return "";
+	}
+}
+
 export function hasBuildMismatch(clientBuildId: string, serverBuildId: string): boolean {
 	return Boolean(clientBuildId && serverBuildId && clientBuildId !== serverBuildId);
 }
 
-function recoveryReloadKey(targetBuildId: string) {
-	return `${reloadKeyPrefix}${targetBuildId || "unknown"}`;
+export function recoveryReloadKey(targetBuildId: string) {
+	return `${staleClientReloadKeyPrefix}${targetBuildId || "unknown"}`;
+}
+
+export function shouldRecoverFromBuildMismatch(
+	clientBuildId: string,
+	serverBuildId: string,
+	storage: Pick<StorageLike, "getItem"> = window.sessionStorage
+): boolean {
+	if (!hasBuildMismatch(clientBuildId, serverBuildId))
+		return false;
+
+	try {
+		return storage.getItem(recoveryReloadKey(serverBuildId)) !== "1";
+	}
+	catch {
+		return true;
+	}
+}
+
+export function persistClientBuildId(clientBuildId: string, storage: StorageLike = window.sessionStorage) {
+	const normalizedClientBuildId = normalizeBuildId(clientBuildId);
+
+	if (!normalizedClientBuildId)
+		return;
+
+	try {
+		storage.setItem(staleClientBuildStorageKey, normalizedClientBuildId);
+
+		if (typeof storage.length !== "number" || typeof storage.key !== "function" || typeof storage.removeItem !== "function")
+			return;
+
+		const staleRecoveryKeys: string[] = [];
+
+		for (let index = 0; index < storage.length; index += 1) {
+			const key = storage.key(index);
+
+			if (key?.startsWith(staleClientReloadKeyPrefix))
+				staleRecoveryKeys.push(key);
+		}
+
+		for (const key of staleRecoveryKeys)
+			storage.removeItem(key);
+	}
+	catch {
+		// Ignore storage failures and keep the runtime usable.
+	}
 }
 
 function ensureReloadNotice(message: string) {
-	const existing = document.getElementById(noticeElementId);
+	const existing = document.getElementById(staleClientNoticeId);
 
 	if (existing) {
 		existing.textContent = message;
 		return;
 	}
 
+	if (!document.body)
+		return;
+
 	const notice = document.createElement("div");
-	notice.id = noticeElementId;
+	notice.id = staleClientNoticeId;
 	notice.setAttribute("role", "status");
 	notice.setAttribute("aria-live", "polite");
 	notice.textContent = message;
@@ -106,7 +235,7 @@ function ensureReloadNotice(message: string) {
 	document.body.append(notice);
 }
 
-export function triggerStaleClientRecovery(targetBuildId: string, message = "Ballot Clarity updated. Reloading…"): boolean {
+export function triggerStaleClientRecovery(targetBuildId: string, message = staleClientReloadMessage): boolean {
 	const reloadKey = recoveryReloadKey(targetBuildId);
 
 	try {
@@ -128,4 +257,23 @@ export function triggerStaleClientRecovery(targetBuildId: string, message = "Bal
 	}, 150);
 
 	return true;
+}
+
+export function buildPreHydrationDeployRecoveryScript() {
+	return `(function(){try{const normalizeBuildId=(value)=>typeof value==="string"?value.trim():"";const readServerBuildId=()=>{const htmlBuildId=document.documentElement.getAttribute("data-app-build");if(htmlBuildId)return normalizeBuildId(htmlBuildId);const metaTag=document.querySelector('meta[name="ballot-clarity-build-id"]');return normalizeBuildId(metaTag&&metaTag.content);};const serverBuildId=readServerBuildId();const clientBuildId=normalizeBuildId(window.sessionStorage.getItem(${JSON.stringify(staleClientBuildStorageKey)}));if(!serverBuildId||!clientBuildId||serverBuildId===clientBuildId)return;const reloadKey=${JSON.stringify(staleClientReloadKeyPrefix)}+(serverBuildId||"unknown");if(window.sessionStorage.getItem(reloadKey)){document.documentElement.setAttribute("data-stale-client-recovery","already-requested");return;}window.sessionStorage.setItem(reloadKey,"1");document.documentElement.setAttribute("data-stale-client-recovery","pending");window.location.reload();}catch{}})();`;
+}
+
+export async function unregisterStaleServiceWorkers(navigatorLike: NavigatorLike = window.navigator): Promise<number> {
+	if (!navigatorLike.serviceWorker?.getRegistrations)
+		return 0;
+
+	try {
+		const registrations = await navigatorLike.serviceWorker.getRegistrations();
+
+		await Promise.all(registrations.map(async registration => await registration.unregister().catch(() => false)));
+		return registrations.length;
+	}
+	catch {
+		return 0;
+	}
 }

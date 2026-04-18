@@ -1,9 +1,10 @@
 import { spawn } from "node:child_process";
 import { existsSync } from "node:fs";
 import process from "node:process";
-import { applyProviderLocalOverrides, loadRootEnv } from "./local-env.mjs";
+import { applyProviderLocalOverrides, findEnvFiles, loadRootEnv } from "./local-env.mjs";
 
 const cwd = process.cwd();
+const envFiles = findEnvFiles(cwd);
 const env = applyProviderLocalOverrides({
 	...process.env,
 	...loadRootEnv(cwd),
@@ -37,6 +38,15 @@ function runStep(label, command, args) {
 }
 
 async function main() {
+	if (envFiles.length) {
+		console.log("Using env files:");
+		for (const envPath of envFiles)
+			console.log(`- ${envPath}`);
+	}
+	else {
+		console.warn("No local .env file was found in this worktree or the shared repo root. Provider-backed local setup may skip credentialed sources.");
+	}
+
 	await runStep("Seed local coverage snapshot", "npm", ["run", "-w", "back-end", "export-seed-coverage:src"]);
 
 	if (!sqlitePath || !existsSync(sqlitePath)) {
@@ -52,7 +62,7 @@ async function main() {
 	console.log("\nLocal provider setup completed.");
 	console.log("Next steps:");
 	console.log("- Run `npm run server:local:watch` for the API.");
-	console.log("- Run `npm run dev` for the Nuxt front-end.");
+	console.log("- Run `npm run dev:local` for the Nuxt front-end.");
 }
 
 main().catch((error) => {

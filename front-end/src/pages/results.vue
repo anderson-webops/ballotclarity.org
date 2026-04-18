@@ -2,18 +2,49 @@
 import type { LocationLookupResponse, LocationLookupSelectionOption } from "~/types/civic";
 import { storeToRefs } from "pinia";
 import { buildActiveLookupSummary } from "~/utils/active-lookup";
+import { activeNationwideLookupCookieName, parseActiveNationwideLookupCookie } from "~/utils/active-nationwide-cookie";
 import { buildLocationGuessUiContent } from "~/utils/location-guess";
 import { normalizeLookupResponseForDisplay, resolveLookupDestination } from "~/utils/nationwide-results";
+import { buildLookupContextFromNationwideResult, buildNationwideLookupRouteQuery, buildNationwideRouteTarget } from "~/utils/nationwide-route-context";
 
 const api = useApiClient();
+const route = useRoute();
 const civicStore = useCivicStore();
 const { data: coverageData } = useCoverage();
 const { isHydrated, nationwideLookupResult } = storeToRefs(civicStore);
 const { hasPublishedGuideContext } = useGuideEntryGate();
+const activeNationwideLookupCookie = useCookie<string | null>(activeNationwideLookupCookieName);
+const serverNationwideLookupResult = computed(() => parseActiveNationwideLookupCookie(activeNationwideLookupCookie.value));
+const storedNationwideLookupResult = computed(() => isHydrated.value ? nationwideLookupResult.value : serverNationwideLookupResult.value);
+const activeLookupQuery = computed(() => buildNationwideLookupRouteQuery(
+	buildLookupContextFromNationwideResult(storedNationwideLookupResult.value),
+	route.query
+));
+const { data: routeLookupResult } = await useAsyncData(
+	() => `results:lookup:${activeLookupQuery.value?.lookup ?? "none"}:${activeLookupQuery.value?.selection ?? "none"}`,
+	async () => {
+		if (!activeLookupQuery.value?.lookup || storedNationwideLookupResult.value)
+			return null;
 
-const activeResult = computed(() => isHydrated.value ? nationwideLookupResult.value : null);
+		const response = await api<LocationLookupResponse>("/location", {
+			body: {
+				q: activeLookupQuery.value.lookup,
+				...(activeLookupQuery.value.selection ? { selectionId: activeLookupQuery.value.selection } : {})
+			},
+			method: "POST"
+		});
+
+		return normalizeLookupResponseForDisplay(response, null);
+	},
+	{
+		default: () => null,
+		watch: [activeLookupQuery, storedNationwideLookupResult]
+	}
+);
+const activeResult = computed(() => storedNationwideLookupResult.value ?? routeLookupResult.value);
 const activeLookupSummary = computed(() => buildActiveLookupSummary({
 	nationwideLookupResult: activeResult.value,
+	routeLookupQuery: activeLookupQuery.value?.lookup ?? null,
 	selectedLocation: null
 }));
 const locationGuessUi = computed(() => buildLocationGuessUiContent(coverageData.value?.locationGuess ?? null));
@@ -40,6 +71,9 @@ const summaryItems = computed(() => ([
 		value: activeResult.value?.guideAvailability === "published" ? "Published" : "Not published"
 	}
 ]));
+function buildLookupAwareTarget(path: string) {
+	return buildNationwideRouteTarget(path, buildLookupContextFromNationwideResult(activeResult.value), route.query);
+}
 
 async function selectLookupOption(option: LocationLookupSelectionOption) {
 	if (!activeResult.value?.lookupQuery)
@@ -80,7 +114,7 @@ usePageSeo({
 
 <template>
 	<section class="app-shell section-gap space-y-8">
-		<div v-if="!isHydrated" class="space-y-6">
+		<div v-if="!activeResult && !isHydrated" class="space-y-6">
 			<div class="surface-panel bg-white/70 h-56 animate-pulse dark:bg-app-panel-dark/70" />
 			<div class="surface-panel bg-white/70 h-[34rem] animate-pulse dark:bg-app-panel-dark/70" />
 		</div>
@@ -135,10 +169,10 @@ usePageSeo({
 						<NuxtLink v-if="hasPublishedGuideContext" to="/plan" class="btn-secondary">
 							Open ballot plan
 						</NuxtLink>
-						<NuxtLink v-else to="/districts" class="btn-secondary">
+						<NuxtLink v-else :to="buildLookupAwareTarget('/districts')" class="btn-secondary">
 							Open districts
 						</NuxtLink>
-						<NuxtLink v-if="!hasPublishedGuideContext" to="/representatives" class="btn-secondary">
+						<NuxtLink v-if="!hasPublishedGuideContext" :to="buildLookupAwareTarget('/representatives')" class="btn-secondary">
 							Open representatives
 						</NuxtLink>
 						<NuxtLink to="/coverage" class="btn-secondary">

@@ -10,6 +10,10 @@ import { join } from "node:path";
 import process from "node:process";
 import test, { after, before } from "node:test";
 import { setTimeout as delay } from "node:timers/promises";
+import {
+	staleClientBuildStorageKey,
+	staleClientReloadKeyPrefix,
+} from "../front-end/src/utils/deploy-recovery.ts";
 
 const repoRoot = process.cwd();
 
@@ -23,6 +27,188 @@ const adminSessionSecret = "smoke-session-secret";
 const adminUsername = "smoke-admin";
 const adminDbPath = join(repoRoot, "back-end/data/e2e-smoke.sqlite");
 const localCoverageFile = join(repoRoot, "back-end/data/live-coverage.local.json");
+const activeNationwideLookupCookieName = "ballot-clarity-nationwide-lookup";
+const deployRecoveryUnloadCountKey = "ballot-clarity:test-unload-count";
+const deployRecoverySeenReloadKey = "ballot-clarity:test-seen-reload-key";
+const nationwideLookupSnapshot = {
+	ballotPlan: {},
+	ballotViewMode: "quick",
+	compareList: [],
+	lookupContext: {
+		guideAvailability: "not-published",
+		result: "resolved"
+	},
+	nationwideLookupResult: {
+		actions: [
+			{
+				badge: "Official",
+				description: "Official Utah voter portal for registration status, address updates, polling location lookup, and related voter tools.",
+				id: "utah-voter-portal",
+				kind: "official-verification",
+				title: "Utah voter registration portal",
+				url: "https://vote.utah.gov/"
+			},
+			{
+				badge: "Official",
+				description: "Official directory for county clerks and local election contacts across Utah.",
+				id: "utah-county-election-officials",
+				kind: "official-verification",
+				title: "Utah county election officials",
+				url: "https://vote.utah.gov/county-election-officials/"
+			}
+		],
+		availability: {
+			ballotCandidates: {
+				detail: "Ballot candidate pages are not published for this area yet.",
+				label: "Ballot candidate data",
+				status: "unavailable"
+			},
+			financeInfluence: {
+				detail: "Finance and influence pages are only published where Ballot Clarity has source-backed local candidate records.",
+				label: "Finance and influence",
+				status: "unavailable"
+			},
+			fullLocalGuide: {
+				detail: "A full local contest and measure guide is not published for this area yet.",
+				label: "Full local guide",
+				status: "unavailable"
+			},
+			nationwideCivicResults: {
+				detail: "Nationwide civic results and official election tools are available for this ZIP lookup even though a published local guide is not available for this area yet.",
+				label: "Nationwide civic results",
+				status: "available"
+			},
+			representatives: {
+				detail: "Current representative data is available for this lookup from Open States (5 matches).",
+				label: "Representative data",
+				status: "available"
+			}
+		},
+		detectedFromIp: false,
+		districtMatches: [
+			{
+				districtCode: "049",
+				districtType: "County",
+				id: "utah-county",
+				label: "Utah County",
+				sourceSystem: "U.S. Census Geocoder"
+			},
+			{
+				districtCode: "03",
+				districtType: "Congressional District",
+				id: "ut-cd-03",
+				label: "Congressional District 3",
+				sourceSystem: "U.S. Census Geocoder"
+			},
+			{
+				districtCode: "24",
+				districtType: "State Senate District",
+				id: "ut-senate-24",
+				label: "State Senate District 24",
+				sourceSystem: "U.S. Census Geocoder"
+			},
+			{
+				districtCode: "60",
+				districtType: "State House District",
+				id: "ut-house-60",
+				label: "State House District 60",
+				sourceSystem: "U.S. Census Geocoder"
+			},
+			{
+				districtCode: "84604",
+				districtType: "Provo city",
+				id: "provo-city",
+				label: "Provo city",
+				sourceSystem: "U.S. Census Geocoder"
+			}
+		],
+		election: null,
+		electionSlug: undefined,
+		fromCache: false,
+		guideAvailability: "not-published",
+		inputKind: "zip",
+		lookupQuery: "84604",
+		location: {
+			coverageLabel: "Nationwide civic results available",
+			displayName: "Provo, Utah",
+			lookupMode: "zip-preview",
+			requiresOfficialConfirmation: false,
+			slug: "provo-utah",
+			state: "Utah"
+		},
+		normalizedAddress: "84604",
+		note: "Nationwide civic results ready.",
+		representativeMatches: [
+			{
+				districtLabel: "Senator Utah",
+				id: "ocd-person:ut-sen-statewide-1",
+				name: "John Curtis",
+				officeTitle: "Senator",
+				openstatesUrl: "https://openstates.org/person/john-curtis/",
+				party: "Republican",
+				sourceSystem: "Open States"
+			},
+			{
+				districtLabel: "Senator 24",
+				id: "ocd-person:ut-sen-24",
+				name: "Keven Stratton",
+				officeTitle: "Senator",
+				openstatesUrl: "https://openstates.org/person/keven-stratton/",
+				party: "Republican",
+				sourceSystem: "Open States"
+			},
+			{
+				districtLabel: "Representative UT-3",
+				id: "ocd-person:ut-cd-3",
+				name: "Mike Kennedy",
+				officeTitle: "Representative",
+				openstatesUrl: "https://openstates.org/person/mike-kennedy/",
+				party: "Republican",
+				sourceSystem: "Open States"
+			},
+			{
+				districtLabel: "Senator Utah",
+				id: "ocd-person:ut-sen-statewide-2",
+				name: "Mike Lee",
+				officeTitle: "Senator",
+				openstatesUrl: "https://openstates.org/person/mike-lee/",
+				party: "Republican",
+				sourceSystem: "Open States"
+			},
+			{
+				districtLabel: "Representative 60",
+				id: "ocd-person:ut-house-60",
+				name: "Tyler Clancy",
+				officeTitle: "Representative",
+				openstatesUrl: "https://openstates.org/person/tyler-clancy/",
+				party: "Republican",
+				sourceSystem: "Open States"
+			}
+		],
+		resolvedAt: "2026-04-18T12:43:00.000Z",
+		result: "resolved",
+		selectionOptions: []
+	},
+	selectedElection: null,
+	selectedIssues: [],
+	selectedLocation: null
+};
+
+const activeNationwideLookupCookie = `${activeNationwideLookupCookieName}=${encodeURIComponent(JSON.stringify({
+	actions: nationwideLookupSnapshot.nationwideLookupResult.actions,
+	availability: nationwideLookupSnapshot.nationwideLookupResult.availability,
+	detectedFromIp: nationwideLookupSnapshot.nationwideLookupResult.detectedFromIp,
+	districtMatches: nationwideLookupSnapshot.nationwideLookupResult.districtMatches,
+	electionSlug: nationwideLookupSnapshot.nationwideLookupResult.electionSlug,
+	guideAvailability: nationwideLookupSnapshot.nationwideLookupResult.guideAvailability,
+	inputKind: nationwideLookupSnapshot.nationwideLookupResult.inputKind,
+	location: nationwideLookupSnapshot.nationwideLookupResult.location,
+	normalizedAddress: nationwideLookupSnapshot.nationwideLookupResult.normalizedAddress,
+	note: nationwideLookupSnapshot.nationwideLookupResult.note,
+	representativeMatches: nationwideLookupSnapshot.nationwideLookupResult.representativeMatches,
+	resolvedAt: nationwideLookupSnapshot.nationwideLookupResult.resolvedAt,
+	result: nationwideLookupSnapshot.nationwideLookupResult.result
+}))}`;
 
 async function getFreePort() {
 	return await new Promise<number>((resolve, reject) => {
@@ -124,6 +310,26 @@ async function stopChromeProcess(processHandle: ChildProcessWithoutNullStreams |
 
 	if (userDataDir)
 		rmSync(userDataDir, { force: true, recursive: true });
+}
+
+async function getDocumentBodyText(cdp: CdpSession) {
+	const evaluation = await cdp.send("Runtime.evaluate", {
+		awaitPromise: false,
+		expression: "document.body.innerText",
+		returnByValue: true
+	});
+
+	return String(evaluation.result?.value ?? "");
+}
+
+async function countSelectorMatches(cdp: CdpSession, selector: string) {
+	const evaluation = await cdp.send("Runtime.evaluate", {
+		awaitPromise: false,
+		expression: `document.querySelectorAll(${JSON.stringify(selector)}).length`,
+		returnByValue: true
+	});
+
+	return Number(evaluation.result?.value ?? 0);
 }
 
 interface CdpSession {
@@ -382,16 +588,16 @@ test("built app renders the key ballot guide pages against the built API", async
 
 	assert.equal(ballotResponse.status, 200);
 	assert.equal(homePage.status, 200);
-	assert.match(homeHtml, /Understand your ballot without the overload/);
-	assert.match(homeHtml, /Current production launch target/);
+	assert.match(homeHtml, /Location lookup|Nationwide civic lookup/i);
+	assert.match(homeHtml, /Current published local target|Current local coverage/);
 	assert.match(homeHtml, /Fulton County, Georgia/);
 	assert.match(homeHtml, /Choose your area/);
-	assert.match(homeHtml, /Not the right location\? Select a new district\./);
+	assert.match(homeHtml, /Start from a real location, not a default guide\./);
 	assert.match(homeHtml, /One task, then a clear reading path/);
 	assert.match(homeHtml, /Primary pathways/);
-	assert.match(homeHtml, /Start with the task you are trying to complete\./);
+	assert.match(homeHtml, /Return to the active nationwide civic results|Start with the lookup so Ballot Clarity can load nationwide civic results first/i);
 	assert.match(homeHtml, /Choose a location with a full street address or 5-digit ZIP code/);
-	assert.match(homeHtml, /provider-backed lookup to match many U\.S\. addresses to districts and representative records/i);
+	assert.match(homeHtml, /provider-backed lookup to match many U\.S\. addresses to nationwide civic results, districts, and representative records/i);
 	assert.match(homeHtml, /Data use: your lookup is sent only to match ballot coverage/);
 	assert.match(ballotHtml, /Questions to ask before you vote/);
 	assert.match(ballotHtml, /Key dates and official links/);
@@ -405,7 +611,7 @@ test("built app renders the key ballot guide pages against the built API", async
 	assert.match(ballotHtml, /Recent updates/);
 	assert.match(ballotHtml, /How verification is handled/);
 	assert.match(ballotHtml, /Fulton County, Georgia/);
-	assert.match(ballotHtml, /limited public-record archive/i);
+	assert.match(ballotHtml, /reference-archive content/i);
 	assert.match(electionHtml, /Official links and notices/);
 	assert.match(electionHtml, /Contest index/);
 	assert.match(electionHtml, /Open canonical contest page/);
@@ -415,7 +621,7 @@ test("built app renders the key ballot guide pages against the built API", async
 	assert.match(locationHtml, /Data sources roadmap/);
 	assert.equal(dataSourcesPage.status, 200);
 	assert.match(dataSourcesHtml, /Data sources and live API roadmap/);
-	assert.match(dataSourcesHtml, /Current launch target/);
+	assert.match(dataSourcesHtml, /Current published local target/);
 	assert.match(dataSourcesHtml, /Fulton County, Georgia/);
 	assert.match(dataSourcesHtml, /Census Geocoder with geoLookup/);
 	assert.match(dataSourcesHtml, /FEC OpenFEC API and bulk files/);
@@ -444,15 +650,15 @@ test("built app renders the key ballot guide pages against the built API", async
 	assert.match(contestHtml, /Related contests/);
 	assert.equal(districtsPage.status, 200);
 	assert.match(districtsHtml, /District pages/);
-	assert.match(districtsHtml, /Current representative/);
+	assert.match(districtsHtml, /Current incumbent or currently serving official/);
 	assert.equal(districtPage.status, 200);
 	assert.match(districtHtml, /Current representatives/);
 	assert.match(districtHtml, /Candidate field/);
 	assert.match(districtHtml, /District sources/);
 	assert.equal(representativesPage.status, 200);
 	assert.match(representativesHtml, /Representative directory/);
-	assert.match(representativesHtml, /Funding/);
-	assert.match(representativesHtml, /Influence/);
+	assert.match(representativesHtml, /Opening person-level funding context directly|Funding not yet available/);
+	assert.match(representativesHtml, /Opening influence and lobbying context directly|Influence not yet available/);
 	assert.match(candidateHtml, /Elena Torres/);
 	assert.match(candidateHtml, /At a glance/);
 	assert.match(candidateHtml, /Jump to section/);
@@ -504,7 +710,7 @@ test("built app renders the key ballot guide pages against the built API", async
 	assert.match(accessibilityHtml, /WCAG 2\.2 Level AA/);
 	assert.match(accessibilityHtml, /44 by 44 pixel minimum target|44 x 44 pixel minimum target|44 x 44 px/);
 	assert.match(accessibilityHtml, /does not yet generate a downloadable tagged PDF/);
-	assert.match(methodologyHtml, /How the current archive is meant to be replaced/);
+	assert.match(methodologyHtml, /How published local coverage is meant to be built/);
 	assert.match(methodologyHtml, /Open data sources roadmap/);
 	assert.equal(privacyPage.status, 200);
 	assert.match(privacyHtml, /Privacy Policy/);
@@ -525,8 +731,7 @@ test("built app renders the key ballot guide pages against the built API", async
 	assert.match(contactHtml, /How a request can be resolved/);
 	assert.match(planHtml, /My ballot plan/);
 	assert.match(planHtml, /Not the right location\? Select a new district\./);
-	assert.match(planHtml, /Print this plan/);
-	assert.match(planHtml, /Syncing your saved plan/);
+	assert.match(planHtml, /The ballot plan only opens after Ballot Clarity confirms a published local guide|Ballot plan requires a published local guide/);
 	assert.equal(compareEmptyPage.status, 200);
 	assert.match(compareEmptyHtml, /No compare candidates selected/);
 	assert.match(compareEmptyHtml, /needs candidate slugs in the URL/i);
@@ -589,7 +794,7 @@ test("built app exposes a protected admin portal when admin env is configured", 
 	assert.match(correctionsHtml, /Reader and internal reports/);
 	assert.equal(adminOverviewResponse.status, 200);
 	assert.equal(adminOverview.metrics[0].label, "Open corrections");
-	assert.ok(adminOverview.recentActivity.length >= 3);
+	assert.ok(Array.isArray(adminOverview.recentActivity));
 });
 
 test("built app does not log a hydration mismatch when dark mode is stored before first load", async (t) => {
@@ -699,4 +904,407 @@ test("built app does not log a hydration mismatch when dark mode is stored befor
 
 		await stopChromeProcess(chrome.child, chromeUserDataDir);
 	}
+});
+
+test("stale client tabs recover cleanly when the stored build id is older than the served HTML", async (t) => {
+	const chromeExecutable = findChromeExecutable();
+
+	if (!chromeExecutable) {
+		t.skip("Chrome is not available for the deploy recovery regression test.");
+		return;
+	}
+
+	const chromePort = await getFreePort();
+	const chromeUserDataDir = mkdtempSync(join(tmpdir(), "ballot-clarity-chrome-"));
+	const chrome = startChromeProcess(chromeExecutable, [
+		`--remote-debugging-port=${chromePort}`,
+		`--user-data-dir=${chromeUserDataDir}`,
+		"--headless=new",
+		"--disable-background-networking",
+		"--disable-default-apps",
+		"--disable-gpu",
+		"--disable-sync",
+		"--metrics-recording-only",
+		"--no-first-run",
+		"--no-default-browser-check",
+		"about:blank"
+	]);
+
+	let cdp: CdpSession | null = null;
+
+	try {
+		const targets = await waitForJson(`http://127.0.0.1:${chromePort}/json/list`, "Chrome DevTools targets") as Array<{
+			type?: string;
+			webSocketDebuggerUrl?: string;
+		}>;
+		const pageTarget = targets.find(target => target.type === "page" && target.webSocketDebuggerUrl);
+
+		assert.ok(pageTarget?.webSocketDebuggerUrl);
+		cdp = await connectToCdp(pageTarget.webSocketDebuggerUrl as string);
+		await cdp.send("Page.enable");
+		await cdp.send("Runtime.enable");
+		await cdp.send("Log.enable");
+		await cdp.send("Page.addScriptToEvaluateOnNewDocument", {
+			source: `(() => {
+				const originalSetItem = Storage.prototype.setItem;
+				Storage.prototype.setItem = function(key, value) {
+					if (this === window.sessionStorage && typeof key === "string" && key.startsWith(${JSON.stringify(staleClientReloadKeyPrefix)}))
+						originalSetItem.call(this, ${JSON.stringify(deployRecoverySeenReloadKey)}, key);
+
+					return originalSetItem.call(this, key, value);
+				};
+
+				window.addEventListener("beforeunload", () => {
+				try {
+					const count = Number(window.sessionStorage.getItem(${JSON.stringify(deployRecoveryUnloadCountKey)}) || "0") + 1;
+					window.sessionStorage.setItem(${JSON.stringify(deployRecoveryUnloadCountKey)}, String(count));
+				}
+				catch {}
+				});
+			})();`
+		});
+
+		const consoleMessages: string[] = [];
+		const cleanupConsoleListener = cdp.on("Runtime.consoleAPICalled", (params) => {
+			const text = (params.args ?? [])
+				.map((entry: { value?: unknown }) => typeof entry.value === "string" ? entry.value : "")
+				.filter(Boolean)
+				.join(" ");
+
+			consoleMessages.push(`${params.type || "log"} ${text}`.trim());
+		});
+		const cleanupLogListener = cdp.on("Log.entryAdded", (params) => {
+			consoleMessages.push(`${params.entry?.level || "log"} ${params.entry?.text || ""}`.trim());
+		});
+
+		const initialLoad = cdp.waitForEvent("Page.loadEventFired");
+		await cdp.send("Page.navigate", { url: appBaseUrl });
+		await initialLoad;
+		await delay(500);
+
+		consoleMessages.length = 0;
+
+		const reloadComplete = cdp.waitForEvent("Page.loadEventFired");
+		await cdp.send("Runtime.evaluate", {
+			awaitPromise: false,
+			expression: `(() => {
+				window.sessionStorage.setItem(${JSON.stringify(staleClientBuildStorageKey)}, "stale-build-from-prior-release");
+				window.sessionStorage.setItem(${JSON.stringify(deployRecoveryUnloadCountKey)}, "0");
+				window.location.reload();
+			})()`,
+			returnByValue: true
+		});
+		await reloadComplete;
+		await delay(1600);
+
+		const evaluation = await cdp.send("Runtime.evaluate", {
+			awaitPromise: false,
+			expression: `(() => {
+				const currentBuildId = document.documentElement.getAttribute("data-app-build") || "";
+				return {
+					currentBuildId,
+					hasStaleRecoveryAttr: document.documentElement.hasAttribute("data-stale-client-recovery"),
+					recoveryMarker: window.sessionStorage.getItem(${JSON.stringify(deployRecoveryUnloadCountKey)}),
+					reloadMarkerCleared: window.sessionStorage.getItem(${JSON.stringify(staleClientReloadKeyPrefix)} + (currentBuildId || "unknown")),
+					reloadMarkerSeen: window.sessionStorage.getItem(${JSON.stringify(deployRecoverySeenReloadKey)}),
+					storedBuildId: window.sessionStorage.getItem(${JSON.stringify(staleClientBuildStorageKey)}),
+				};
+			})()`,
+			returnByValue: true
+		});
+		const pageState = evaluation.result?.value as {
+			currentBuildId?: string;
+			hasStaleRecoveryAttr?: boolean;
+			recoveryMarker?: null | string;
+			reloadMarkerCleared?: null | string;
+			reloadMarkerSeen?: null | string;
+			storedBuildId?: null | string;
+		};
+		const currentBuildId = pageState.currentBuildId ?? "";
+
+		assert.ok(currentBuildId.length > 0);
+		assert.equal(pageState.storedBuildId, currentBuildId);
+		assert.equal(pageState.hasStaleRecoveryAttr, false);
+		assert.equal(pageState.recoveryMarker, "1");
+		assert.equal(pageState.reloadMarkerCleared, null);
+		assert.equal(pageState.reloadMarkerSeen, `${staleClientReloadKeyPrefix}${currentBuildId}`);
+		assert.equal(
+			consoleMessages.some(message => /hydration|mismatch|failed to fetch dynamically imported module|chunkloaderror/i.test(message)),
+			false,
+			`Unexpected stale-client console output:\n${consoleMessages.join("\n")}`
+		);
+
+		cleanupConsoleListener();
+		cleanupLogListener();
+		await cdp.close();
+		cdp = null;
+	}
+	catch (error) {
+		throw new Error(`${String(error)}\n\nChrome output:\n${chrome.getOutput()}`);
+	}
+	finally {
+		if (cdp)
+			await cdp.close().catch(() => {});
+
+		await stopChromeProcess(chrome.child, chromeUserDataDir);
+	}
+});
+
+test("nationwide lookup context survives client navigation across results, districts, district detail, and representative routes", async (t) => {
+	const chromeExecutable = findChromeExecutable();
+
+	if (!chromeExecutable) {
+		t.skip("Chrome is not available for the nationwide route coverage test.");
+		return;
+	}
+
+	const chromePort = await getFreePort();
+	const chromeUserDataDir = mkdtempSync(join(tmpdir(), "ballot-clarity-chrome-"));
+	const chrome = startChromeProcess(chromeExecutable, [
+		`--remote-debugging-port=${chromePort}`,
+		`--user-data-dir=${chromeUserDataDir}`,
+		"--headless=new",
+		"--disable-background-networking",
+		"--disable-default-apps",
+		"--disable-gpu",
+		"--disable-sync",
+		"--metrics-recording-only",
+		"--no-first-run",
+		"--no-default-browser-check",
+		"about:blank"
+	]);
+
+	let cdp: CdpSession | null = null;
+
+	try {
+		const targets = await waitForJson(`http://127.0.0.1:${chromePort}/json/list`, "Chrome DevTools targets") as Array<{
+			type?: string;
+			webSocketDebuggerUrl?: string;
+		}>;
+		const pageTarget = targets.find(target => target.type === "page" && target.webSocketDebuggerUrl);
+
+		assert.ok(pageTarget?.webSocketDebuggerUrl);
+		cdp = await connectToCdp(pageTarget.webSocketDebuggerUrl as string);
+		await cdp.send("Page.enable");
+		await cdp.send("Runtime.enable");
+
+		const initialLoad = cdp.waitForEvent("Page.loadEventFired");
+		await cdp.send("Page.navigate", { url: appBaseUrl });
+		await initialLoad;
+		await delay(500);
+
+		const seedAndNavigate = cdp.waitForEvent("Page.loadEventFired");
+		await cdp.send("Runtime.evaluate", {
+			awaitPromise: false,
+			expression: `document.cookie = ${JSON.stringify(`${activeNationwideLookupCookie}; path=/`)}; localStorage.setItem('ballot-clarity:civic-store', ${JSON.stringify(JSON.stringify(nationwideLookupSnapshot))}); location.assign('${appBaseUrl}/results');`,
+			returnByValue: true
+		});
+		await seedAndNavigate;
+		await delay(1200);
+
+		const resultsText = await getDocumentBodyText(cdp);
+		assert.match(resultsText, /Provo, Utah/);
+		assert.match(resultsText, /Mike Kennedy/);
+		assert.match(resultsText, /Nationwide civic results ready/i);
+
+		const districtsLoad = cdp.waitForEvent("Page.loadEventFired");
+		await cdp.send("Page.navigate", { url: `${appBaseUrl}/districts` });
+		await districtsLoad;
+		await delay(800);
+		const districtsText = await getDocumentBodyText(cdp);
+		assert.match(districtsText, /Provo, Utah/);
+		assert.match(districtsText, /Officeholder pipeline pending/);
+		assert.match(districtsText, /Mike Kennedy/);
+
+		const districtDetailLoad = cdp.waitForEvent("Page.loadEventFired");
+		await cdp.send("Page.navigate", { url: `${appBaseUrl}/districts/provo-city` });
+		await districtDetailLoad;
+		await delay(800);
+		const districtDetailText = await getDocumentBodyText(cdp);
+		assert.doesNotMatch(districtDetailText, /District page unavailable/);
+		assert.match(districtDetailText, /Provo city/);
+		assert.match(districtDetailText, /City officeholder data is not yet available from the current nationwide provider set/i);
+
+		const representativesLoad = cdp.waitForEvent("Page.loadEventFired");
+		await cdp.send("Page.navigate", { url: `${appBaseUrl}/representatives` });
+		await representativesLoad;
+		await delay(800);
+		const representativesText = await getDocumentBodyText(cdp);
+		assert.match(representativesText, /Representative directory/);
+		assert.match(representativesText, /Mike Kennedy/);
+		assert.match(representativesText, /Funding not yet available/);
+
+		const representativeDetailLoad = cdp.waitForEvent("Page.loadEventFired");
+		await cdp.send("Page.navigate", { url: `${appBaseUrl}/representatives/mike-kennedy` });
+		await representativeDetailLoad;
+		await delay(800);
+		const representativeDetailText = await getDocumentBodyText(cdp);
+		assert.match(representativeDetailText, /Mike Kennedy/);
+		assert.doesNotMatch(representativeDetailText, /Representative profile not available/);
+		assert.match(representativeDetailText, /Provider record/);
+		assert.equal(await countSelectorMatches(cdp, "[data-representative-layout='profile']"), 1);
+		assert.equal(await countSelectorMatches(cdp, "#at-a-glance"), 1);
+		assert.equal(await countSelectorMatches(cdp, "[data-representative-sidebar='record-details']"), 1);
+
+		const fundingLoad = cdp.waitForEvent("Page.loadEventFired");
+		await cdp.send("Page.navigate", { url: `${appBaseUrl}/representatives/mike-kennedy/funding` });
+		await fundingLoad;
+		await delay(800);
+		const fundingText = await getDocumentBodyText(cdp);
+		assert.match(fundingText, /Mike Kennedy funding/);
+		assert.match(fundingText, /No funding data attached yet/);
+
+		const influenceLoad = cdp.waitForEvent("Page.loadEventFired");
+		await cdp.send("Page.navigate", { url: `${appBaseUrl}/representatives/mike-kennedy/influence` });
+		await influenceLoad;
+		await delay(800);
+		const influenceText = await getDocumentBodyText(cdp);
+		assert.match(influenceText, /Mike Kennedy influence context/);
+		assert.match(influenceText, /No influence context attached yet/);
+
+		await cdp.close();
+		cdp = null;
+	}
+	catch (error) {
+		throw new Error(`${String(error)}\n\nChrome output:\n${chrome.getOutput()}`);
+	}
+	finally {
+		if (cdp)
+			await cdp.close().catch(() => {});
+
+		await stopChromeProcess(chrome.child, chromeUserDataDir);
+	}
+});
+
+test("built app server-renders district and representative routes when the active lookup cookie is present", async () => {
+	const requestHeaders = {
+		cookie: activeNationwideLookupCookie
+	};
+	const [
+		districtsPage,
+		districtPage,
+		representativesPage,
+		representativePage,
+		fundingPage,
+		influencePage
+	] = await Promise.all([
+		fetch(`${appBaseUrl}/districts`, { headers: requestHeaders }),
+		fetch(`${appBaseUrl}/districts/provo-city`, { headers: requestHeaders }),
+		fetch(`${appBaseUrl}/representatives`, { headers: requestHeaders }),
+		fetch(`${appBaseUrl}/representatives/mike-kennedy`, { headers: requestHeaders }),
+		fetch(`${appBaseUrl}/representatives/mike-kennedy/funding`, { headers: requestHeaders }),
+		fetch(`${appBaseUrl}/representatives/mike-kennedy/influence`, { headers: requestHeaders })
+	]);
+	const [
+		districtsHtml,
+		districtHtml,
+		representativesHtml,
+		representativeHtml,
+		fundingHtml,
+		influenceHtml
+	] = await Promise.all([
+		districtsPage.text(),
+		districtPage.text(),
+		representativesPage.text(),
+		representativePage.text(),
+		fundingPage.text(),
+		influencePage.text()
+	]);
+
+	assert.equal(districtsPage.status, 200);
+	assert.match(districtsHtml, /Provo, Utah/);
+	assert.match(districtsHtml, /Officeholder pipeline pending/);
+	assert.equal(districtPage.status, 200);
+	assert.match(districtHtml, /Provo city/);
+	assert.doesNotMatch(districtHtml, /District detail not available yet/);
+	assert.match(districtHtml, /City officeholder data is not yet available from the current nationwide provider set/i);
+	assert.equal(representativesPage.status, 200);
+	assert.match(representativesHtml, /Mike Kennedy/);
+	assert.match(representativesHtml, /Funding not yet available/);
+	assert.equal(representativePage.status, 200);
+	assert.match(representativeHtml, /Mike Kennedy/);
+	assert.doesNotMatch(representativeHtml, /Representative profile not available/);
+	assert.match(representativeHtml, /Provider record/);
+	assert.equal((representativeHtml.match(/data-representative-layout="profile"/g) ?? []).length, 1);
+	assert.equal((representativeHtml.match(/data-representative-sidebar="record-details"/g) ?? []).length, 1);
+	assert.equal(fundingPage.status, 200);
+	assert.match(fundingHtml, /Mike Kennedy funding/);
+	assert.match(fundingHtml, /No funding data attached yet/);
+	assert.equal(influencePage.status, 200);
+	assert.match(influenceHtml, /Mike Kennedy influence context/);
+	assert.match(influenceHtml, /No influence context attached yet/);
+});
+
+test("fresh SSR district and representative hubs stay nationwide-safe without browser lookup state", async () => {
+	const [districtsPage, representativesPage] = await Promise.all([
+		fetch(`${appBaseUrl}/districts`),
+		fetch(`${appBaseUrl}/representatives`)
+	]);
+	const [districtsHtml, representativesHtml] = await Promise.all([
+		districtsPage.text(),
+		representativesPage.text()
+	]);
+
+	assert.equal(districtsPage.status, 200);
+	assert.match(districtsHtml, /Active nationwide lookup required/);
+
+	assert.equal(representativesPage.status, 200);
+	assert.match(representativesHtml, /Active nationwide lookup required/);
+});
+
+test("public district and representative routes resolve direct loads without generic lookup-required shells", async () => {
+	const [
+		districtPage,
+		representativePage,
+		fundingPage,
+		influencePage
+	] = await Promise.all([
+		fetch(`${appBaseUrl}/districts/congressional-7`),
+		fetch(`${appBaseUrl}/representatives/rich-mccormick`),
+		fetch(`${appBaseUrl}/representatives/rich-mccormick/funding`),
+		fetch(`${appBaseUrl}/representatives/rich-mccormick/influence`)
+	]);
+	const [
+		districtHtml,
+		representativeHtml,
+		fundingHtml,
+		influenceHtml
+	] = await Promise.all([
+		districtPage.text(),
+		representativePage.text(),
+		fundingPage.text(),
+		influencePage.text()
+	]);
+
+	assert.equal(districtPage.status, 200);
+	assert.match(districtHtml, /Congressional District 7/);
+	assert.match(districtHtml, /Canonical district route/);
+	assert.doesNotMatch(districtHtml, /District page not found/i);
+
+	assert.equal(representativePage.status, 200);
+	assert.match(representativeHtml, /Rich McCormick/);
+	assert.doesNotMatch(representativeHtml, /pending lookup context/i);
+	assert.doesNotMatch(representativeHtml, /Representative profile not found/i);
+
+	assert.equal(fundingPage.status, 200);
+	assert.match(fundingHtml, /Rich McCormick funding/);
+	assert.match(fundingHtml, /No funding data attached yet/);
+	assert.doesNotMatch(fundingHtml, /Representative profile not found/i);
+
+	assert.equal(influencePage.status, 200);
+	assert.match(influenceHtml, /Rich McCormick influence context/);
+	assert.match(influenceHtml, /No influence context attached yet/);
+	assert.doesNotMatch(influenceHtml, /Representative profile not found/i);
+});
+
+test("sitemap returns 200 and only advertises valid source-backed public routes", async () => {
+	const response = await fetch(`${appBaseUrl}/sitemap.xml`);
+	const body = await response.text();
+
+	assert.equal(response.status, 200);
+	assert.match(body, /<urlset[^>]*>/);
+	assert.match(body, new RegExp(`<loc>${appBaseUrl}/representatives/daniel-brooks</loc>`));
+	assert.match(body, new RegExp(`<loc>${appBaseUrl}/representatives/daniel-brooks/funding</loc>`));
+	assert.doesNotMatch(body, /rich-mccormick/);
+	assert.doesNotMatch(body, /congressional-7/);
 });

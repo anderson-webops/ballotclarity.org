@@ -1,16 +1,53 @@
 <script setup lang="ts">
+import { storeToRefs } from "pinia";
+
 import { contactEmail } from "~/constants";
+import { buildActiveLookupSummary } from "~/utils/active-lookup";
+import { activeNationwideLookupCookieName, parseActiveNationwideLookupCookie } from "~/utils/active-nationwide-cookie";
+import { buildNationwidePersonProfileResponse } from "~/utils/nationwide-person-profile";
+import { buildLookupContextFromNationwideResult, buildNationwideLookupRouteQuery, buildNationwideRouteTarget } from "~/utils/nationwide-route-context";
 import { buildPersonLinkageConfidence, hasPersonFunding, hasPersonInfluence } from "~/utils/person-profile";
 
 const route = useRoute();
 const runtimeConfig = useRuntimeConfig();
 const siteUrl = useSiteUrl();
+const civicStore = useCivicStore();
+const { isHydrated, nationwideLookupResult, selectedLocation } = storeToRefs(civicStore);
 const representativeSlug = computed(() => String(route.params.slug));
 const { backToLayerLink, layerBreadcrumbLink, overviewLink } = useRouteLayerNavigation();
 const { formatCurrency, formatDate, formatDateTime } = useFormatters();
-const { data, error, pending } = await useRepresentative(representativeSlug);
+const activeNationwideLookupCookie = useCookie<string | null>(activeNationwideLookupCookieName);
+const serverNationwideLookupResult = computed(() => parseActiveNationwideLookupCookie(activeNationwideLookupCookie.value));
+const activeNationwideLookupResult = computed(() => isHydrated.value ? nationwideLookupResult.value : serverNationwideLookupResult.value);
+const activeLookupQuery = computed(() => buildNationwideLookupRouteQuery(
+	buildLookupContextFromNationwideResult(activeNationwideLookupResult.value),
+	route.query
+));
+const { data, error, pending } = await useRepresentative(representativeSlug, activeLookupQuery);
 
-const person = computed(() => data.value?.person ?? null);
+const fallbackData = computed(() => buildNationwidePersonProfileResponse(activeNationwideLookupResult.value, representativeSlug.value));
+const profileData = computed(() => {
+	if (!data.value)
+		return fallbackData.value;
+
+	if (
+		data.value.person.provenance.source === "nationwide"
+		&& data.value.person.provenance.status === "inferred"
+		&& fallbackData.value
+	) {
+		return fallbackData.value;
+	}
+
+	return data.value;
+});
+const person = computed(() => profileData.value?.person ?? null);
+const pagePending = computed(() => pending.value || (!data.value && !fallbackData.value));
+const isNationwideFallback = computed(() => Boolean(profileData.value) && profileData.value === fallbackData.value);
+const activeLookupSummary = computed(() => buildActiveLookupSummary({
+	nationwideLookupResult: activeNationwideLookupResult.value,
+	routeLookupQuery: activeLookupQuery.value?.lookup ?? null,
+	selectedLocation: isHydrated.value ? selectedLocation.value : null
+}));
 const linkageConfidence = computed(() => person.value ? buildPersonLinkageConfidence(person.value.provenance.status) : null);
 const dataThroughLabel = computed(() => {
 	if (!person.value)
@@ -18,7 +55,24 @@ const dataThroughLabel = computed(() => {
 
 	return formatDate(person.value.freshness.dataLastUpdatedAt ?? person.value.updatedAt);
 });
-const representativeJsonHref = computed(() => person.value ? `${runtimeConfig.public.apiBase}/representatives/${person.value.slug}` : "");
+function buildLookupAwareTarget(path: string) {
+	return buildNationwideRouteTarget(path, buildLookupContextFromNationwideResult(activeNationwideLookupResult.value), route.query);
+}
+const representativeJsonHref = computed(() => {
+	if (!person.value)
+		return "";
+
+	const target = new URL(`${runtimeConfig.public.apiBase}/representatives/${person.value.slug}`);
+	const query = activeLookupQuery.value;
+
+	if (query?.lookup)
+		target.searchParams.set("lookup", query.lookup);
+
+	if (query?.selection)
+		target.searchParams.set("selection", query.selection);
+
+	return target.toString();
+});
 const campaignLink = computed(() => {
 	if (!person.value?.comparison)
 		return "";
@@ -27,9 +81,12 @@ const campaignLink = computed(() => {
 });
 const hasFunding = computed(() => person.value ? hasPersonFunding(person.value) : false);
 const hasInfluence = computed(() => person.value ? hasPersonInfluence(person.value) : false);
+const representativeLayoutKey = computed(() => person.value
+	? `${person.value.slug}:${person.value.updatedAt}:${person.value.provenance.asOf}:${hasFunding.value ? "funding" : "no-funding"}:${hasInfluence.value ? "influence" : "no-influence"}`
+	: "representative-profile-empty");
 const breadcrumbs = computed(() => [
 	{ label: "Home", to: "/" },
-	layerBreadcrumbLink.value,
+	{ label: layerBreadcrumbLink.value.label, to: buildLookupAwareTarget(layerBreadcrumbLink.value.to) },
 	{ label: person.value?.name ?? "Representative profile" }
 ]);
 const sectionLinks = computed(() => person.value
@@ -102,7 +159,7 @@ usePageSeo({
 
 <template>
 	<section class="app-shell section-gap">
-		<div v-if="pending" class="gap-8 grid 2xl:grid-cols-[minmax(0,1.45fr)_minmax(21rem,0.85fr)]">
+		<div v-if="pagePending" class="gap-8 grid 2xl:grid-cols-[minmax(0,1.45fr)_minmax(21rem,0.85fr)]">
 			<div class="space-y-6">
 				<div class="surface-panel animate-pulse">
 					<div class="rounded-full bg-app-line/70 h-6 w-40 dark:bg-app-line-dark" />
@@ -114,20 +171,26 @@ usePageSeo({
 			<div class="surface-panel bg-white/70 h-96 animate-pulse dark:bg-app-panel-dark/70" />
 		</div>
 
-		<div v-else-if="error || !person" class="max-w-3xl">
+		<div v-else-if="(error && !fallbackData) || !person" class="max-w-3xl">
 			<InfoCallout title="Representative profile not available" tone="warning">
 				This representative page could not be loaded. Return to the representative directory or the broader results layer and try again.
 			</InfoCallout>
 		</div>
 
-		<div v-else class="gap-8 grid 2xl:grid-cols-[minmax(0,1.45fr)_minmax(21rem,0.85fr)]">
+		<div
+			v-else
+			:key="representativeLayoutKey"
+			data-representative-layout="profile"
+			class="gap-8 grid 2xl:grid-cols-[minmax(0,1.45fr)_minmax(21rem,0.85fr)]"
+		>
 			<div class="space-y-6">
-				<header class="surface-panel">
+				<header data-representative-summary="hero" class="surface-panel">
 					<AppBreadcrumbs :items="breadcrumbs" />
 					<div class="flex flex-wrap gap-2 items-center">
 						<VerificationBadge label="Representative profile" tone="accent" />
 						<VerificationBadge :label="person.officeholderLabel" />
 						<VerificationBadge :label="person.onCurrentBallot ? person.ballotStatusLabel : 'Not on current ballot'" />
+						<VerificationBadge v-if="isNationwideFallback" label="Nationwide lookup fallback" tone="warning" />
 						<VerificationBadge
 							v-if="linkageConfidence"
 							:label="linkageConfidence.label"
@@ -162,20 +225,24 @@ usePageSeo({
 							<span class="i-carbon-launch" />
 							Open campaign site
 						</a>
-						<NuxtLink v-if="hasFunding" :to="`/representatives/${person.slug}/funding`" class="btn-secondary">
+						<a v-if="person.openstatesUrl" :href="person.openstatesUrl" target="_blank" rel="noreferrer" class="btn-secondary inline-flex gap-2 items-center">
+							Provider record
+							<span class="i-carbon-launch" />
+						</a>
+						<NuxtLink v-if="hasFunding" :to="buildLookupAwareTarget(`/representatives/${person.slug}/funding`)" class="btn-secondary">
 							Funding page
 						</NuxtLink>
-						<NuxtLink v-if="hasInfluence" :to="`/representatives/${person.slug}/influence`" class="btn-secondary">
+						<NuxtLink v-if="hasInfluence" :to="buildLookupAwareTarget(`/representatives/${person.slug}/influence`)" class="btn-secondary">
 							Influence page
 						</NuxtLink>
-						<NuxtLink :to="overviewLink.to" class="btn-secondary">
+						<NuxtLink :to="buildLookupAwareTarget(overviewLink.to)" class="btn-secondary">
 							{{ overviewLink.label }}
 						</NuxtLink>
 						<a v-if="representativeJsonHref" :href="representativeJsonHref" class="btn-secondary" rel="noreferrer" target="_blank">
 							<span class="i-carbon-download" />
 							Download JSON
 						</a>
-						<NuxtLink :to="backToLayerLink.to" class="btn-primary">
+						<NuxtLink :to="buildLookupAwareTarget(backToLayerLink.to)" class="btn-primary">
 							{{ backToLayerLink.label }}
 						</NuxtLink>
 					</div>
@@ -353,7 +420,7 @@ usePageSeo({
 								Finance summary
 							</h2>
 						</div>
-						<NuxtLink v-if="hasFunding" :to="`/representatives/${person.slug}/funding`" class="btn-secondary">
+						<NuxtLink v-if="hasFunding" :to="buildLookupAwareTarget(`/representatives/${person.slug}/funding`)" class="btn-secondary">
 							Open full funding page
 						</NuxtLink>
 					</div>
@@ -408,7 +475,7 @@ usePageSeo({
 								Lobbying and public influence context
 							</h2>
 						</div>
-						<NuxtLink v-if="hasInfluence" :to="`/representatives/${person.slug}/influence`" class="btn-secondary">
+						<NuxtLink v-if="hasInfluence" :to="buildLookupAwareTarget(`/representatives/${person.slug}/influence`)" class="btn-secondary">
 							Open full influence page
 						</NuxtLink>
 					</div>
@@ -502,27 +569,48 @@ usePageSeo({
 			</div>
 
 			<div class="space-y-6 xl:pt-[4.5rem]">
+				<div class="surface-panel">
+					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+						Active lookup context
+					</p>
+					<h2 class="text-2xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
+						{{ activeLookupSummary.label }}
+					</h2>
+					<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
+						{{ activeLookupSummary.note }}
+					</p>
+					<div class="mt-5 flex flex-wrap gap-3 items-center">
+						<TrustBadge
+							:label="activeLookupSummary.mode === 'nationwide' ? 'Nationwide lookup context' : activeLookupSummary.mode === 'guide' ? 'Published guide context' : 'No saved lookup context'"
+							:tone="activeLookupSummary.mode === 'nationwide' ? 'accent' : activeLookupSummary.mode === 'guide' ? undefined : 'warning'"
+						/>
+						<UpdatedAt v-if="activeLookupSummary.resolvedAt" :value="activeLookupSummary.resolvedAt" label="Lookup updated" />
+					</div>
+				</div>
+
 				<PageSectionNav
 					:breadcrumbs="breadcrumbs"
-					description="Use this page for the person-level civic record tied to a current officeholder when Ballot Clarity has publishable local data."
+					:description="isNationwideFallback
+						? 'Use this page for the active nationwide person record when Ballot Clarity does not yet have a published local person profile for the official.'
+						: 'Use this page for the person-level civic record tied to a current officeholder when Ballot Clarity has publishable local data.'"
 					:items="sectionLinks"
 					title="Representative profile"
 				>
 					<template #actions>
 						<div class="flex flex-wrap gap-3">
-							<NuxtLink :to="backToLayerLink.to" class="btn-secondary">
+							<NuxtLink :to="buildLookupAwareTarget(backToLayerLink.to)" class="btn-secondary">
 								{{ backToLayerLink.label }}
 							</NuxtLink>
-							<NuxtLink to="/representatives" class="btn-secondary">
+							<NuxtLink :to="buildLookupAwareTarget('/representatives')" class="btn-secondary">
 								Representative directory
 							</NuxtLink>
 						</div>
 					</template>
 				</PageSectionNav>
 
-				<div class="surface-panel">
+				<div class="surface-panel" data-representative-sidebar="record-details">
 					<h2 class="text-2xl text-app-ink font-serif dark:text-app-text-dark">
-						Record posture
+						Record details
 					</h2>
 					<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
 						<strong class="text-app-ink dark:text-app-text-dark">Provenance:</strong> {{ person.provenance.label }}
@@ -533,12 +621,6 @@ usePageSeo({
 					<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
 						<strong class="text-app-ink dark:text-app-text-dark">As of:</strong> {{ formatDateTime(person.provenance.asOf) }}
 					</p>
-				</div>
-
-				<div class="surface-panel">
-					<h2 class="text-2xl text-app-ink font-serif dark:text-app-text-dark">
-						Available modules
-					</h2>
 					<ul class="readable-list text-sm text-app-muted mt-5 pl-5 dark:text-app-muted-dark">
 						<li>{{ hasFunding ? "Funding summary and dedicated funding page are live for this person record." : "Funding module is not attached to this person record yet." }}</li>
 						<li>{{ hasInfluence ? "Influence and public-disclosure context are live for this person record." : "Influence module is not attached to this person record yet." }}</li>

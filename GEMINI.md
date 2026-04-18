@@ -1,5 +1,12 @@
 # Workspace Instructions
 
+## Validation Expectations
+- After every code change, run a local verification pass against the locally retrieved API-backed data already available
+  in the workspace or `.env`-driven provider flow.
+- Do not stop at lint, typecheck, or unit tests when a change affects lookup, routes, rendered civic content, or page
+  wiring. Confirm that each affected route and system actually populates and connects to the correct data in the local
+  runtime.
+
 ## Lockfiles, Commits, Tags, And Releases
 - Do not leave completed work uncommitted. After each coherent, validated change set, create a commit and push it in the same session.
 - Use multiple commits and pushes when that keeps unrelated changes, partial validations, or follow-up fixes clearly separated. Prefer small, logically grouped commits over one mixed commit.

@@ -1,30 +1,66 @@
 <script setup lang="ts">
 import type { Source } from "~/types/civic";
+import { storeToRefs } from "pinia";
+
+import { activeNationwideLookupCookieName, parseActiveNationwideLookupCookie } from "~/utils/active-nationwide-cookie";
+import { buildNationwidePersonProfileResponse } from "~/utils/nationwide-person-profile";
+import { buildLookupContextFromNationwideResult, buildNationwideLookupRouteQuery, buildNationwideRouteTarget } from "~/utils/nationwide-route-context";
 import { buildPersonLinkageConfidence, hasPersonInfluence } from "~/utils/person-profile";
 
 const route = useRoute();
+const civicStore = useCivicStore();
+const { isHydrated, nationwideLookupResult } = storeToRefs(civicStore);
 const { layerBreadcrumbLink } = useRouteLayerNavigation();
 const representativeSlug = computed(() => String(route.params.slug));
 const { formatDate, formatDateTime } = useFormatters();
-const { data, error, pending } = await useRepresentative(representativeSlug);
+const activeNationwideLookupCookie = useCookie<string | null>(activeNationwideLookupCookieName);
+const serverNationwideLookupResult = computed(() => parseActiveNationwideLookupCookie(activeNationwideLookupCookie.value));
+const activeNationwideLookupResult = computed(() => isHydrated.value ? nationwideLookupResult.value : serverNationwideLookupResult.value);
+const activeLookupQuery = computed(() => buildNationwideLookupRouteQuery(
+	buildLookupContextFromNationwideResult(activeNationwideLookupResult.value),
+	route.query
+));
+const { data, error, pending } = await useRepresentative(representativeSlug, activeLookupQuery);
 
 function uniqueSources(sources: Source[]) {
 	return Array.from(new Map(sources.map(source => [source.id, source])).values());
 }
 
-const person = computed(() => data.value?.person ?? null);
+const fallbackData = computed(() => buildNationwidePersonProfileResponse(activeNationwideLookupResult.value, representativeSlug.value));
+const profileData = computed(() => {
+	if (!data.value)
+		return fallbackData.value;
+
+	if (
+		data.value.person.provenance.source === "nationwide"
+		&& data.value.person.provenance.status === "inferred"
+		&& fallbackData.value
+	) {
+		return fallbackData.value;
+	}
+
+	return data.value;
+});
+const person = computed(() => profileData.value?.person ?? null);
+const pagePending = computed(() => pending.value || (!data.value && !fallbackData.value));
 const linkageConfidence = computed(() => person.value ? buildPersonLinkageConfidence(person.value.provenance.status) : null);
 const influenceAvailable = computed(() => person.value ? hasPersonInfluence(person.value) : false);
+const influenceUnavailableSummary = computed(() => person.value
+	? `${person.value.name} resolves as a stable public officeholder record, but Ballot Clarity does not currently have a publishable lobbying or influence context block attached to this person.`
+	: "");
 const influenceSources = computed(() => person.value
 	? uniqueSources([
 			...person.value.lobbyingContext.flatMap(item => item.sources),
 			...person.value.publicStatements.flatMap(item => item.sources)
 		])
 	: []);
+function buildLookupAwareTarget(path: string) {
+	return buildNationwideRouteTarget(path, buildLookupContextFromNationwideResult(activeNationwideLookupResult.value), route.query);
+}
 const breadcrumbs = computed(() => [
 	{ label: "Home", to: "/" },
-	layerBreadcrumbLink.value,
-	{ label: person.value?.name ?? "Representative profile", to: person.value ? `/representatives/${person.value.slug}` : undefined },
+	{ label: layerBreadcrumbLink.value.label, to: buildLookupAwareTarget(layerBreadcrumbLink.value.to) },
+	{ label: person.value?.name ?? "Representative profile", to: person.value ? buildLookupAwareTarget(`/representatives/${person.value.slug}`) : undefined },
 	{ label: "Influence" }
 ]);
 
@@ -32,7 +68,16 @@ const summaryItems = computed(() => {
 	if (!person.value)
 		return [];
 
+	if (!influenceAvailable.value) {
+		return [
+			{ label: "Current office", note: "Office context attached to this representative record.", value: person.value.officeSought },
+			{ label: "Influence status", note: "Lobbying or disclosure attachment for this route.", value: "Unavailable" },
+			{ label: "Updated", note: "Profile freshness.", value: formatDateTime(person.value.updatedAt) }
+		];
+	}
+
 	return [
+		{ label: "Current office", note: "Office context attached to this representative record.", value: person.value.officeSought },
 		{ label: "Influence notes", note: "Context blocks on donors, sectors, and public disclosures.", value: person.value.lobbyingContext.length },
 		{ label: "Public statements", note: "Statements that interact with the influence context.", value: person.value.publicStatements.length },
 		{ label: "Updated", note: "Profile freshness.", value: formatDateTime(person.value.updatedAt) }
@@ -48,20 +93,14 @@ usePageSeo({
 
 <template>
 	<section class="app-shell section-gap space-y-8">
-		<div v-if="pending" class="space-y-6">
+		<div v-if="pagePending" class="space-y-6">
 			<div class="surface-panel bg-white/70 h-80 animate-pulse dark:bg-app-panel-dark/70" />
 			<div class="surface-panel bg-white/70 h-64 animate-pulse dark:bg-app-panel-dark/70" />
 		</div>
 
-		<div v-else-if="error || !person" class="max-w-3xl">
+		<div v-else-if="(error && !fallbackData) || !person" class="max-w-3xl">
 			<InfoCallout title="Influence page unavailable" tone="warning">
 				This representative influence page could not be loaded. Return to the representative profile and try again.
-			</InfoCallout>
-		</div>
-
-		<div v-else-if="!influenceAvailable" class="max-w-3xl">
-			<InfoCallout title="No influence context attached" tone="warning">
-				Ballot Clarity does not currently have a publishable lobbying or influence context block attached to this representative record.
 			</InfoCallout>
 		</div>
 
@@ -77,23 +116,27 @@ usePageSeo({
 					{{ person.name }} influence context
 				</h1>
 				<p class="text-base text-app-muted leading-8 mt-5 dark:text-app-muted-dark">
-					This page isolates the donor, sector, lobbying, and disclosure context attached to the representative profile. It is meant to help scrutiny, not to imply automatic motive or proof of influence.
+					{{
+						influenceAvailable
+							? "This page isolates the donor, sector, lobbying, and disclosure context attached to the representative profile. It is meant to help scrutiny, not to imply automatic motive or proof of influence."
+							: influenceUnavailableSummary
+					}}
 				</p>
 				<div class="mt-6 flex flex-wrap gap-3">
-					<NuxtLink :to="`/representatives/${person.slug}`" class="btn-secondary">
+					<NuxtLink :to="buildLookupAwareTarget(`/representatives/${person.slug}`)" class="btn-secondary">
 						Back to profile
 					</NuxtLink>
-					<NuxtLink v-if="person.funding" :to="`/representatives/${person.slug}/funding`" class="btn-secondary">
+					<NuxtLink :to="buildLookupAwareTarget(`/representatives/${person.slug}/funding`)" class="btn-secondary">
 						Open funding page
 					</NuxtLink>
-					<SourceDrawer :sources="influenceSources" :title="`${person.name} influence sources`" button-label="Influence sources" />
+					<SourceDrawer :sources="influenceSources.length ? influenceSources : person.sources" :title="`${person.name} influence sources`" button-label="Influence sources" />
 				</div>
 				<div class="mt-6">
 					<PageSummaryStrip :items="summaryItems" />
 				</div>
 			</header>
 
-			<section class="gap-6 grid xl:grid-cols-[minmax(0,1fr)_minmax(0,0.95fr)]">
+			<section v-if="influenceAvailable" class="gap-6 grid xl:grid-cols-[minmax(0,1fr)_minmax(0,0.95fr)]">
 				<div class="surface-panel">
 					<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
 						Influence notes
@@ -158,6 +201,23 @@ usePageSeo({
 						</ul>
 					</div>
 				</div>
+			</section>
+
+			<section v-else class="surface-panel max-w-4xl">
+				<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
+					No influence context attached yet
+				</h2>
+				<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
+					Ballot Clarity resolved the person identity and office context for this route, but it does not currently have a publishable lobbying or disclosure context block attached to this representative record.
+				</p>
+				<ul class="readable-list text-sm text-app-muted mt-6 pl-5 dark:text-app-muted-dark">
+					<li><strong class="text-app-ink dark:text-app-text-dark">Office:</strong> {{ person.officeSought }}</li>
+					<li><strong class="text-app-ink dark:text-app-text-dark">District:</strong> {{ person.districtLabel }}</li>
+					<li><strong class="text-app-ink dark:text-app-text-dark">Linkage:</strong> {{ linkageConfidence?.label }}</li>
+					<li><strong class="text-app-ink dark:text-app-text-dark">Provenance:</strong> {{ person.provenance.label }}</li>
+					<li><strong class="text-app-ink dark:text-app-text-dark">Updated:</strong> {{ formatDate(person.freshness.dataLastUpdatedAt ?? person.updatedAt) }}</li>
+					<li>{{ person.freshness.statusNote }}</li>
+				</ul>
 			</section>
 		</div>
 	</section>

@@ -15,10 +15,12 @@ interface OpenStatesPerson {
 	name?: string;
 	party?: string;
 	openstates_url?: string;
+	updated_at?: string;
 	current_role?: {
 		title?: string;
 		district?: string;
 		org_classification?: string;
+		division_id?: string;
 	};
 	jurisdiction?: {
 		name?: string;
@@ -26,6 +28,9 @@ interface OpenStatesPerson {
 }
 
 export interface OpenStatesRepresentativeRecord {
+	currentRoleClassification?: string;
+	currentRoleDistrict?: string;
+	currentRoleDivisionId?: string;
 	id: string;
 	name: string;
 	party?: string;
@@ -33,11 +38,13 @@ export interface OpenStatesRepresentativeRecord {
 	jurisdictionName?: string;
 	officeTitle: string;
 	openstatesUrl?: string;
+	updatedAt?: string;
 }
 
 export interface OpenStatesClient {
 	listPeopleByJurisdiction: (jurisdiction: string, options?: { maxPages?: number; perPage?: number }) => Promise<OpenStatesRepresentativeRecord[]>;
 	lookupPeopleByCoordinates: (latitude: number, longitude: number) => Promise<LocationRepresentativeMatch[]>;
+	searchPeopleByName: (name: string, options?: { current?: boolean; jurisdiction?: string; perPage?: number }) => Promise<OpenStatesRepresentativeRecord[]>;
 }
 
 interface OpenStatesClientOptions {
@@ -53,13 +60,17 @@ function mapRepresentative(person: OpenStatesPerson): OpenStatesRepresentativeRe
 	const jurisdictionName = person.jurisdiction?.name?.trim();
 
 	return {
+		currentRoleClassification: person.current_role?.org_classification?.trim() || undefined,
+		currentRoleDistrict: person.current_role?.district?.trim() || undefined,
+		currentRoleDivisionId: person.current_role?.division_id?.trim() || undefined,
 		districtLabel: jurisdictionName && district === jurisdictionName ? district : `${officeTitle} ${district}`,
 		id: person.id?.trim() || `${officeTitle}:${person.name?.trim() || "unknown"}`,
 		jurisdictionName,
 		name: person.name?.trim() || "Unknown representative",
 		officeTitle,
 		openstatesUrl: person.openstates_url?.trim() || undefined,
-		party: person.party?.trim() || undefined
+		party: person.party?.trim() || undefined,
+		updatedAt: person.updated_at?.trim() || undefined,
 	};
 }
 
@@ -142,6 +153,22 @@ export function createOpenStatesClient({
 			}
 
 			return people.map(mapRepresentative);
+		},
+		async searchPeopleByName(name: string, options = {}) {
+			const trimmedName = name.trim();
+
+			if (!trimmedName)
+				return [];
+
+			const payload = await fetchOpenStates("/people", {
+				...(options.current === false ? {} : { current: "true" }),
+				...(options.jurisdiction ? { jurisdiction: options.jurisdiction } : {}),
+				name: trimmedName,
+				page: "1",
+				per_page: String(Math.min(Math.max(options.perPage ?? 10, 1), 50)),
+			});
+
+			return (payload.results ?? []).map(mapRepresentative);
 		}
 	};
 }

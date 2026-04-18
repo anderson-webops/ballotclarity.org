@@ -36,6 +36,9 @@ test("createAddressEnrichmentService preserves Census geography when Open States
 			},
 			async lookupPeopleByCoordinates() {
 				throw new Error("Open States lookup failed: 400 Bad Request - {\"detail\":\"Failed to parse address\"}");
+			},
+			async searchPeopleByName() {
+				return [];
 			}
 		} satisfies OpenStatesClient,
 		{

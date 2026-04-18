@@ -33,7 +33,7 @@ const nationwideResponse: LocationLookupResponse = {
 			status: "unavailable"
 		},
 		financeInfluence: {
-			detail: "Finance and influence pages are only published where Ballot Clarity has source-backed local candidate records.",
+			detail: "No person-level funding or influence records are attached to this lookup yet. Ballot Clarity only shows those modules when a matched candidate or representative profile has reliable linked data.",
 			label: "Finance and influence",
 			status: "unavailable"
 		},
@@ -181,7 +181,7 @@ test("ambiguous ZIP lookups keep their selection options in persisted nationwide
 });
 
 test("nationwide lookups route into the nationwide results experience", () => {
-	assert.equal(resolveLookupDestination(nationwideResponse), "/results");
+	assert.equal(resolveLookupDestination(nationwideResponse), "/results?lookup=84604");
 });
 
 test("homepage entry state stops promoting the featured guide preview when a nationwide context is active", () => {

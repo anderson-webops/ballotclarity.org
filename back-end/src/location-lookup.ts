@@ -284,6 +284,13 @@ function buildAvailabilitySummary(
 	const hasRepresentatives = representativeCount > 0;
 	const hasGuide = guideAvailability === "published";
 	const selectionRequired = inputKind === "zip" && Boolean(selectionOptions?.length);
+	const financeInfluenceDetail = hasGuide
+		? "Funding and influence pages are available through the published Ballot Clarity candidate pages and any linked person profiles for this area."
+		: selectionRequired
+			? "Choose one of the matched areas below to see whether any person-level funding or influence records are attached to this lookup."
+			: hasRepresentatives
+				? "No person-level funding or influence records are attached to this lookup yet. Ballot Clarity only shows those modules when a matched candidate or representative profile has reliable linked data."
+				: "No person-level funding or influence records are attached to this lookup yet.";
 	const nationwideDetail = hasGuide
 		? "Nationwide civic results, district context, and official election tools are available alongside the published local guide for this lookup."
 		: selectionRequired
@@ -308,9 +315,7 @@ function buildAvailabilitySummary(
 			status: hasGuide ? "available" : "unavailable"
 		},
 		financeInfluence: {
-			detail: hasGuide
-				? "Funding and influence surfaces are available through the published Ballot Clarity candidate pages for this area."
-				: "Finance and influence pages are only published where Ballot Clarity has source-backed local candidate records.",
+			detail: financeInfluenceDetail,
 			label: "Finance and influence",
 			status: hasGuide ? "available" : "unavailable"
 		},
@@ -365,7 +370,8 @@ export function buildLocationLookupResponse(
 	geoContext?: LookupGeoContext | null,
 	officialLookup?: OfficialAddressMatch | null,
 	addressEnrichment?: AddressEnrichmentResult | null,
-	selectionOptions?: LocationLookupSelectionOption[]
+	selectionOptions?: LocationLookupSelectionOption[],
+	selectionId?: string
 ): LocationLookupResponse {
 	const inputKind = classifyLookupInput(rawQuery);
 	const stateOfficialActions = buildOfficialVerificationActions(
@@ -420,6 +426,7 @@ export function buildLocationLookupResponse(
 					: buildGuideUnavailableNote(rawQuery, inputKind, geoContext, Boolean(actions.length), addressEnrichment),
 			normalizedAddress: addressEnrichment?.normalizedAddress || geoContext.postalCode || rawQuery,
 			representativeMatches: addressEnrichment?.representativeMatches,
+			selectionId,
 			selectionOptions,
 			result: "resolved"
 		};
@@ -443,6 +450,7 @@ export function buildLocationLookupResponse(
 				note: buildGuideUnavailableNote(rawQuery, inputKind, geoContext, Boolean(officialActions.length), addressEnrichment),
 				normalizedAddress: addressEnrichment?.normalizedAddress,
 				representativeMatches: addressEnrichment?.representativeMatches,
+				selectionId,
 				result: "resolved"
 			};
 		}
@@ -456,6 +464,7 @@ export function buildLocationLookupResponse(
 			note: buildUnsupportedNote(rawQuery, inputKind, geoContext, Boolean(officialActions.length)),
 			normalizedAddress: addressEnrichment?.normalizedAddress,
 			representativeMatches: addressEnrichment?.representativeMatches,
+			selectionId,
 			result: "unsupported"
 		};
 	}
@@ -491,6 +500,7 @@ export function buildLocationLookupResponse(
 		].filter(Boolean).join(" "),
 		normalizedAddress: addressEnrichment?.normalizedAddress,
 		representativeMatches: addressEnrichment?.representativeMatches,
+		selectionId,
 		result: "resolved"
 	};
 }

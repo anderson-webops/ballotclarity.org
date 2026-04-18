@@ -1,28 +1,73 @@
 <script setup lang="ts">
+import { storeToRefs } from "pinia";
+
+import { activeNationwideLookupCookieName, parseActiveNationwideLookupCookie } from "~/utils/active-nationwide-cookie";
+import { buildNationwidePersonProfileResponse } from "~/utils/nationwide-person-profile";
+import { buildLookupContextFromNationwideResult, buildNationwideLookupRouteQuery, buildNationwideRouteTarget } from "~/utils/nationwide-route-context";
 import { buildPersonLinkageConfidence, hasPersonFunding } from "~/utils/person-profile";
 
 const route = useRoute();
+const civicStore = useCivicStore();
+const { isHydrated, nationwideLookupResult } = storeToRefs(civicStore);
 const { layerBreadcrumbLink } = useRouteLayerNavigation();
 const representativeSlug = computed(() => String(route.params.slug));
 const { formatCompactNumber, formatCurrency, formatDate, formatPercent } = useFormatters();
-const { data, error, pending } = await useRepresentative(representativeSlug);
+const activeNationwideLookupCookie = useCookie<string | null>(activeNationwideLookupCookieName);
+const serverNationwideLookupResult = computed(() => parseActiveNationwideLookupCookie(activeNationwideLookupCookie.value));
+const activeNationwideLookupResult = computed(() => isHydrated.value ? nationwideLookupResult.value : serverNationwideLookupResult.value);
+const activeLookupQuery = computed(() => buildNationwideLookupRouteQuery(
+	buildLookupContextFromNationwideResult(activeNationwideLookupResult.value),
+	route.query
+));
+const { data, error, pending } = await useRepresentative(representativeSlug, activeLookupQuery);
 
-const person = computed(() => data.value?.person ?? null);
+const fallbackData = computed(() => buildNationwidePersonProfileResponse(activeNationwideLookupResult.value, representativeSlug.value));
+const profileData = computed(() => {
+	if (!data.value)
+		return fallbackData.value;
+
+	if (
+		data.value.person.provenance.source === "nationwide"
+		&& data.value.person.provenance.status === "inferred"
+		&& fallbackData.value
+	) {
+		return fallbackData.value;
+	}
+
+	return data.value;
+});
+const person = computed(() => profileData.value?.person ?? null);
+const pagePending = computed(() => pending.value || (!data.value && !fallbackData.value));
 const linkageConfidence = computed(() => person.value ? buildPersonLinkageConfidence(person.value.provenance.status) : null);
 const funding = computed(() => person.value?.funding ?? null);
 const fundingAvailable = computed(() => person.value ? hasPersonFunding(person.value) : false);
+const fundingUnavailableSummary = computed(() => person.value
+	? `${person.value.name} resolves as a stable public officeholder record, but Ballot Clarity does not currently have a source-backed finance summary attached to this person.`
+	: "");
+function buildLookupAwareTarget(path: string) {
+	return buildNationwideRouteTarget(path, buildLookupContextFromNationwideResult(activeNationwideLookupResult.value), route.query);
+}
 const breadcrumbs = computed(() => [
 	{ label: "Home", to: "/" },
-	layerBreadcrumbLink.value,
-	{ label: person.value?.name ?? "Representative profile", to: person.value ? `/representatives/${person.value.slug}` : undefined },
+	{ label: layerBreadcrumbLink.value.label, to: buildLookupAwareTarget(layerBreadcrumbLink.value.to) },
+	{ label: person.value?.name ?? "Representative profile", to: person.value ? buildLookupAwareTarget(`/representatives/${person.value.slug}`) : undefined },
 	{ label: "Funding" }
 ]);
 
 const summaryItems = computed(() => {
-	if (!funding.value)
+	if (!person.value)
 		return [];
 
+	if (!fundingAvailable.value || !funding.value) {
+		return [
+			{ label: "Current office", note: "Office context attached to this representative record.", value: person.value.officeSought },
+			{ label: "Finance status", note: "Person-level campaign-finance attachment for this route.", value: "Unavailable" },
+			{ label: "Updated", note: "Profile freshness.", value: formatDate(person.value.freshness.dataLastUpdatedAt ?? person.value.updatedAt) }
+		];
+	}
+
 	return [
+		{ label: "Current office", note: "Office context attached to this representative record.", value: person.value.officeSought },
 		{ label: "Total raised", note: "Current filing-window total.", value: formatCurrency(funding.value.totalRaised) },
 		{ label: "Cash on hand", note: "Reported funds still available.", value: formatCurrency(funding.value.cashOnHand) },
 		{ label: "Small-donor share", note: "Share attributed to smaller donors in the current summary.", value: formatPercent(funding.value.smallDonorShare) }
@@ -38,20 +83,14 @@ usePageSeo({
 
 <template>
 	<section class="app-shell section-gap space-y-8">
-		<div v-if="pending" class="space-y-6">
+		<div v-if="pagePending" class="space-y-6">
 			<div class="surface-panel bg-white/70 h-80 animate-pulse dark:bg-app-panel-dark/70" />
 			<div class="surface-panel bg-white/70 h-64 animate-pulse dark:bg-app-panel-dark/70" />
 		</div>
 
-		<div v-else-if="error || !person" class="max-w-3xl">
+		<div v-else-if="(error && !fallbackData) || !person" class="max-w-3xl">
 			<InfoCallout title="Funding page unavailable" tone="warning">
 				This representative funding page could not be loaded. Return to the representative profile and try again.
-			</InfoCallout>
-		</div>
-
-		<div v-else-if="!fundingAvailable || !funding" class="max-w-3xl">
-			<InfoCallout title="No funding data attached" tone="warning">
-				Ballot Clarity does not currently have a source-backed finance summary attached to this representative record.
 			</InfoCallout>
 		</div>
 
@@ -67,23 +106,23 @@ usePageSeo({
 					{{ person.name }} funding
 				</h1>
 				<p class="text-base text-app-muted leading-8 mt-5 dark:text-app-muted-dark">
-					{{ funding.summary }}
+					{{ funding?.summary || fundingUnavailableSummary }}
 				</p>
 				<div class="mt-6 flex flex-wrap gap-3">
-					<NuxtLink :to="`/representatives/${person.slug}`" class="btn-secondary">
+					<NuxtLink :to="buildLookupAwareTarget(`/representatives/${person.slug}`)" class="btn-secondary">
 						Back to profile
 					</NuxtLink>
-					<NuxtLink v-if="person.lobbyingContext.length || person.publicStatements.length" :to="`/representatives/${person.slug}/influence`" class="btn-secondary">
+					<NuxtLink :to="buildLookupAwareTarget(`/representatives/${person.slug}/influence`)" class="btn-secondary">
 						Open influence page
 					</NuxtLink>
-					<SourceDrawer :sources="funding.sources" :title="`${person.name} funding sources`" button-label="Funding sources" />
+					<SourceDrawer :sources="funding?.sources ?? person.sources" :title="`${person.name} funding sources`" button-label="Funding sources" />
 				</div>
 				<div class="mt-6">
 					<PageSummaryStrip :items="summaryItems" />
 				</div>
 			</header>
 
-			<section class="gap-6 grid xl:grid-cols-[minmax(0,1fr)_minmax(0,0.95fr)]">
+			<section v-if="fundingAvailable && funding" class="gap-6 grid xl:grid-cols-[minmax(0,1fr)_minmax(0,0.95fr)]">
 				<div class="surface-panel">
 					<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
 						Top funders
@@ -141,6 +180,23 @@ usePageSeo({
 						</div>
 					</div>
 				</div>
+			</section>
+
+			<section v-else class="surface-panel max-w-4xl">
+				<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
+					No funding data attached yet
+				</h2>
+				<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
+					Ballot Clarity resolved the person identity and office context for this route, but it does not currently have a source-backed campaign-finance summary attached to this representative record.
+				</p>
+				<ul class="readable-list text-sm text-app-muted mt-6 pl-5 dark:text-app-muted-dark">
+					<li><strong class="text-app-ink dark:text-app-text-dark">Office:</strong> {{ person.officeSought }}</li>
+					<li><strong class="text-app-ink dark:text-app-text-dark">District:</strong> {{ person.districtLabel }}</li>
+					<li><strong class="text-app-ink dark:text-app-text-dark">Linkage:</strong> {{ linkageConfidence?.label }}</li>
+					<li><strong class="text-app-ink dark:text-app-text-dark">Provenance:</strong> {{ person.provenance.label }}</li>
+					<li><strong class="text-app-ink dark:text-app-text-dark">Updated:</strong> {{ formatDate(person.freshness.dataLastUpdatedAt ?? person.updatedAt) }}</li>
+					<li>{{ person.freshness.statusNote }}</li>
+				</ul>
 			</section>
 		</div>
 	</section>

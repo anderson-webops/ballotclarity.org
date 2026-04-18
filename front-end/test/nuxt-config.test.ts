@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import { appDescription, appName } from "../src/constants/index.ts";
+import { staleClientBuildStorageKey } from "../src/utils/deploy-recovery.ts";
 
 test("nuxt config uses srcDir and expected civic modules", async () => {
 	const { default: config } = await import("../nuxt.config.ts");
@@ -20,6 +21,12 @@ test("nuxt config uses srcDir and expected civic modules", async () => {
 	assert.equal(config.app?.head?.htmlAttrs?.lang, "en");
 	assert.equal(config.app?.head?.htmlAttrs?.["data-app-build"], config.runtimeConfig?.public?.buildId);
 	assert.ok(config.app?.head?.meta?.some(meta => meta.name === "ballot-clarity-build-id" && meta.content === config.runtimeConfig?.public?.buildId));
+	assert.ok(config.app?.head?.script?.some(script =>
+		script.id === "ballot-clarity-deploy-recovery"
+		&& typeof script.innerHTML === "string"
+		&& script.innerHTML.includes(staleClientBuildStorageKey)
+		&& script.innerHTML.includes("window.location.reload()")
+	));
 	assert.ok(config.app?.head?.link?.some(link => link.rel === "manifest" && typeof link.href === "string" && link.href.startsWith("/site.webmanifest")));
 	assert.equal(config.nitro?.routeRules?.["/_nuxt/**"]?.headers?.["cache-control"], "public, max-age=31536000, immutable");
 });

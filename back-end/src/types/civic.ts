@@ -630,6 +630,7 @@ export interface LocationLookupResponse {
 	inputKind: LocationLookupInputKind;
 	note: string;
 	lookupQuery?: string;
+	selectionId?: string;
 	detectedFromIp?: boolean;
 	guideAvailability?: LocationGuideAvailability;
 	availability?: LocationDataAvailabilitySummary;
@@ -762,6 +763,18 @@ export interface CoverageCollection {
 	href: string;
 }
 
+export type CoverageRouteFamilyStatus = "guide-dependent" | "limited" | "live-now";
+
+export interface CoverageRouteFamily {
+	id: string;
+	label: string;
+	status: CoverageRouteFamilyStatus;
+	summary: string;
+	routes: string[];
+	activeSources: string[];
+	note?: string;
+}
+
 export interface CoverageLimitation {
 	id: string;
 	title: string;
@@ -784,6 +797,7 @@ export interface CoverageResponse {
 	scopeNote: string;
 	currentState: string;
 	supportedContentTypes: CoverageCapability[];
+	routeFamilies: CoverageRouteFamily[];
 	limitations: CoverageLimitation[];
 	nextSteps: string[];
 	collections: CoverageCollection[];
@@ -889,8 +903,11 @@ export interface RepresentativeSummary extends RepresentativeCard {
 		note: string;
 	} | null;
 	incumbent: boolean;
+	openstatesUrl?: string;
 	summary: string;
+	fundingAvailable: boolean;
 	fundingSummary: string;
+	influenceAvailable: boolean;
 	influenceSummary: string;
 	updatedAt: string;
 	sourceCount: number;
@@ -945,6 +962,11 @@ export interface PersonProfileResponse {
 }
 
 export interface DistrictRecordResponse {
+	mode: "guide" | "nationwide";
+	districtOriginLabel: string;
+	districtOriginNote: string;
+	candidateAvailabilityNote: string;
+	representativeAvailabilityNote: string;
 	district: DistrictSummary & {
 		description: string;
 		roleGuide: ContestRoleGuide;
@@ -955,17 +977,20 @@ export interface DistrictRecordResponse {
 	note: string;
 	candidates: Candidate[];
 	representatives: RepresentativeSummary[];
+	officialResources: OfficialResource[];
 	sources: Source[];
 	relatedContests: ContestLinkSummary[];
 }
 
 export interface DistrictsResponse {
+	mode: "guide" | "nationwide";
 	updatedAt: string;
 	note: string;
 	districts: DistrictSummary[];
 }
 
 export interface RepresentativesResponse {
+	mode: "guide" | "nationwide";
 	updatedAt: string;
 	note: string;
 	representatives: RepresentativeSummary[];

@@ -1,6 +1,7 @@
 import process from "node:process";
 import { defineNuxtConfig } from "nuxt/config";
 import { appDescription, appName } from "./src/constants/index";
+import { buildPreHydrationDeployRecoveryScript } from "./src/utils/deploy-recovery";
 
 const assetVersion = "20260417";
 const buildId = process.env.NUXT_PUBLIC_BUILD_ID
@@ -50,6 +51,14 @@ export default defineNuxtConfig({
 				{ name: "apple-mobile-web-app-status-bar-style", content: "default" },
 				{ name: "theme-color", media: "(prefers-color-scheme: light)", content: "#F7F4EE" },
 				{ name: "theme-color", media: "(prefers-color-scheme: dark)", content: "#09131F" }
+			],
+			script: [
+				{
+					innerHTML: buildPreHydrationDeployRecoveryScript(),
+					id: "ballot-clarity-deploy-recovery",
+					tagPosition: "head",
+					type: "text/javascript",
+				},
 			]
 		}
 	},

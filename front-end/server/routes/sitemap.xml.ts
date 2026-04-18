@@ -1,4 +1,35 @@
-import { demoElection, demoElectionSummaries, demoJurisdictionSummaries, demoSources } from "../../../back-end/src/coverage-data";
+interface ElectionSummaryResponse {
+	elections?: Array<{ slug: string }>;
+}
+
+interface JurisdictionSummaryResponse {
+	jurisdictions?: Array<{ slug: string }>;
+}
+
+interface SourcesDirectoryResponse {
+	sources?: Array<{ id: string }>;
+}
+
+interface RepresentativeDirectoryResponse {
+	districts?: Array<{ slug: string }>;
+	representatives?: Array<{ slug: string }>;
+}
+
+interface BallotContestRoute {
+	candidates?: Array<{ slug: string }>;
+	measures?: Array<{ slug: string }>;
+	slug: string;
+	type: "candidate" | "measure";
+}
+
+interface BallotRouteResponse {
+	election?: {
+		contests?: BallotContestRoute[];
+		slug: string;
+	};
+}
+
+const trailingSlashesPattern = /\/+$/u;
 
 function xmlEscape(value: string) {
 	return value
@@ -13,9 +44,22 @@ function unique<T>(values: T[]) {
 	return Array.from(new Set(values));
 }
 
-export default defineEventHandler((event) => {
+async function fetchPublicApiJson<T>(apiBase: string, path: string): Promise<T | null> {
+	const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+
+	try {
+		return await $fetch<unknown>(`${apiBase}${normalizedPath}`) as T;
+	}
+	catch {
+		return null;
+	}
+}
+
+export default defineEventHandler(async (event): Promise<string> => {
 	const origin = getRequestURL(event).origin;
-	const staticRoutes = [
+	const runtimeConfig = useRuntimeConfig(event);
+	const apiBase = String(runtimeConfig.public.apiBase || "").replace(trailingSlashesPattern, "");
+	const staticRoutes: string[] = [
 		"/",
 		"/about",
 		"/accessibility",
@@ -28,39 +72,78 @@ export default defineEventHandler((event) => {
 		"/methodology",
 		"/neutrality",
 		"/privacy",
+		"/results",
 		"/representatives",
 		"/status",
 		"/sources",
-		"/terms"
+		"/terms",
 	];
 
-	const electionRoutes = demoElectionSummaries.map(({ slug }) => `/elections/${slug}`);
-	const jurisdictionRoutes = demoJurisdictionSummaries.map(({ slug }) => `/locations/${slug}`);
-	const sourceRoutes = demoSources.map(({ id }) => `/sources/${id}`);
-	const candidateRoutes = unique(
-		demoElection.contests.flatMap(contest =>
-			contest.type === "candidate" ? (contest.candidates ?? []).map(candidate => `/candidate/${candidate.slug}`) : []
-		)
-	);
-	const candidateSubRoutes = unique(
-		demoElection.contests.flatMap(contest =>
-			contest.type === "candidate"
-				? (contest.candidates ?? []).flatMap(candidate => [`/candidate/${candidate.slug}/funding`, `/candidate/${candidate.slug}/influence`])
-				: []
-		)
-	);
-	const contestRoutes = unique(demoElection.contests.map(contest => `/contest/${contest.slug}`));
-	const districtRoutes = unique(
-		demoElection.contests.flatMap(contest => contest.type === "candidate" ? [`/districts/${contest.slug}`] : [])
-	);
-	const measureRoutes = unique(
-		demoElection.contests.flatMap(contest =>
-			contest.type === "measure" ? (contest.measures ?? []).map(measure => `/measure/${measure.slug}`) : []
-		)
-	);
+	if (!apiBase) {
+		setHeader(event, "content-type", "application/xml; charset=utf-8");
+		const fallbackBody: string = staticRoutes
+			.map((route) => {
+				const loc = new URL(route, `${origin}/`).toString();
+				return `<url><loc>${xmlEscape(loc)}</loc></url>`;
+			})
+			.join("");
 
-	const body = unique([
+		return `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${fallbackBody}</urlset>`;
+	}
+
+	const [electionsResponse, jurisdictionsResponse, representativesResponse, sourcesResponse]: [
+		ElectionSummaryResponse | null,
+		JurisdictionSummaryResponse | null,
+		RepresentativeDirectoryResponse | null,
+		SourcesDirectoryResponse | null,
+	] = await Promise.all([
+		fetchPublicApiJson<ElectionSummaryResponse>(apiBase, "/elections"),
+		fetchPublicApiJson<JurisdictionSummaryResponse>(apiBase, "/jurisdictions"),
+		fetchPublicApiJson<RepresentativeDirectoryResponse>(apiBase, "/representatives"),
+		fetchPublicApiJson<SourcesDirectoryResponse>(apiBase, "/sources"),
+	]);
+
+	const electionSummaries: Array<{ slug: string }> = electionsResponse?.elections ?? [];
+	const primaryElectionSlug: string | undefined = electionSummaries[0]?.slug;
+	const ballotResponse: BallotRouteResponse | null = primaryElectionSlug
+		? await fetchPublicApiJson<BallotRouteResponse>(apiBase, `/ballot?election=${encodeURIComponent(primaryElectionSlug)}`)
+		: null;
+	const contests: BallotContestRoute[] = ballotResponse?.election?.contests ?? [];
+	const candidateRoutes: string[] = unique(
+		contests.flatMap(contest => (contest.candidates ?? []).map(candidate => `/candidate/${candidate.slug}`))
+	);
+	const candidateSubRoutes: string[] = unique(
+		contests.flatMap(contest => (contest.candidates ?? []).flatMap(candidate => [
+			`/candidate/${candidate.slug}/funding`,
+			`/candidate/${candidate.slug}/influence`,
+		]))
+	);
+	const contestRoutes: string[] = unique(contests.map(contest => `/contest/${contest.slug}`));
+	const districtRoutes: string[] = unique([
+		...contests
+			.filter(contest => contest.type === "candidate")
+			.map(contest => `/districts/${contest.slug}`),
+		...(representativesResponse?.districts ?? []).map(district => `/districts/${district.slug}`),
+	]);
+	const measureRoutes: string[] = unique(
+		contests.flatMap(contest => (contest.measures ?? []).map(measure => `/measure/${measure.slug}`))
+	);
+	const representativeRoutes: string[] = unique(
+		(representativesResponse?.representatives ?? []).map(representative => `/representatives/${representative.slug}`)
+	);
+	const representativeSubRoutes: string[] = unique(
+		(representativesResponse?.representatives ?? []).flatMap(representative => [
+			`/representatives/${representative.slug}/funding`,
+			`/representatives/${representative.slug}/influence`,
+		])
+	);
+	const electionRoutes: string[] = electionSummaries.map(({ slug }) => `/elections/${slug}`);
+	const jurisdictionRoutes: string[] = (jurisdictionsResponse?.jurisdictions ?? []).map(({ slug }) => `/locations/${slug}`);
+	const sourceRoutes: string[] = (sourcesResponse?.sources ?? []).map(({ id }) => `/sources/${id}`);
+	const ballotGuideRoutes: string[] = primaryElectionSlug ? [`/ballot/${primaryElectionSlug}`] : [];
+	const routeFamilies: string[] = [
 		...staticRoutes,
+		...ballotGuideRoutes,
 		...electionRoutes,
 		...jurisdictionRoutes,
 		...candidateRoutes,
@@ -68,8 +151,12 @@ export default defineEventHandler((event) => {
 		...contestRoutes,
 		...districtRoutes,
 		...measureRoutes,
-		...sourceRoutes
-	])
+		...representativeRoutes,
+		...representativeSubRoutes,
+		...sourceRoutes,
+	];
+
+	const body: string = unique(routeFamilies)
 		.map((route) => {
 			const loc = new URL(route, `${origin}/`).toString();
 			return `<url><loc>${xmlEscape(loc)}</loc></url>`;

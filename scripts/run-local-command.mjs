@@ -1,6 +1,6 @@
 import { spawn } from "node:child_process";
 import process from "node:process";
-import { applyProviderLocalOverrides, loadRootEnv } from "./local-env.mjs";
+import { applyProviderLocalOverrides, findEnvFiles, loadRootEnv } from "./local-env.mjs";
 
 const args = process.argv.slice(2);
 const separatorIndex = args.indexOf("--");
@@ -16,9 +16,13 @@ let env = {
 	...process.env,
 	...loadRootEnv(),
 };
+const envFiles = findEnvFiles();
 
 if (providerLocal)
 	env = applyProviderLocalOverrides(env);
+
+if (!envFiles.length)
+	console.warn("Ballot Clarity could not find a local .env file in this worktree or the shared repo root. Provider-backed local commands may run without configured API credentials.");
 
 const child = spawn(commandArgs[0], commandArgs.slice(1), {
 	cwd: process.cwd(),

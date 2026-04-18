@@ -3,6 +3,7 @@ import type { ComponentPublicInstance } from "vue";
 import { storeToRefs } from "pinia";
 import { appName } from "~/constants";
 import { buildCompareRoute } from "~/stores/civic";
+import { buildLookupContextFromNationwideResult, buildNationwideRouteTarget } from "~/utils/nationwide-route-context";
 
 interface HeaderLink {
 	badge?: "compare" | "plan";
@@ -156,9 +157,13 @@ function linkBadge(link: HeaderLink) {
 }
 
 function resolveLinkTo(path: string) {
-	return path === "/compare"
-		? buildCompareRoute(effectiveCompareList.value)
-		: path;
+	if (path === "/compare")
+		return buildCompareRoute(effectiveCompareList.value);
+
+	if (path === "/results" || path === "/districts" || path === "/representatives")
+		return buildNationwideRouteTarget(path, buildLookupContextFromNationwideResult(activeNationwideResult.value), route.query);
+
+	return path;
 }
 
 function toggleDesktopGroup(group: HeaderGroup) {
@@ -314,7 +319,7 @@ onBeforeUnmount(() => {
 
 				<div class="shrink-0 gap-2.5 hidden items-center md:flex lg:gap-3">
 					<NuxtLink
-						:to="headerPrimaryAction.to"
+						:to="resolveLinkTo(headerPrimaryAction.to)"
 						prefetch-on="interaction"
 						class="text-sm text-app-ink font-medium px-3.5 py-2 border border-app-line rounded-full bg-white inline-flex gap-2 min-h-10 shadow-sm transition items-center dark:text-app-text-dark hover:text-app-accent lg:px-4 dark:border-app-line-dark hover:border-app-accent dark:bg-app-panel-dark focus-ring dark:hover:text-white"
 						:class="isActive(headerPrimaryAction.to) ? 'border-app-accent text-app-accent dark:border-app-accent dark:text-white' : ''"
@@ -371,7 +376,7 @@ onBeforeUnmount(() => {
 			<nav class="space-y-5" aria-label="Mobile navigation">
 				<div class="space-y-2">
 					<NuxtLink
-						:to="headerPrimaryAction.to"
+						:to="resolveLinkTo(headerPrimaryAction.to)"
 						prefetch-on="interaction"
 						class="text-sm font-medium px-4 py-3 rounded-2xl flex transition items-center justify-between focus-ring"
 						:class="isActive(headerPrimaryAction.to)

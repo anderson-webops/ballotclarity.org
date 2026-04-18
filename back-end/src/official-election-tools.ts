@@ -58,3 +58,11 @@ export function getStateNameForAbbreviation(stateAbbreviation?: string) {
 
 	return stateOfficialToolSets.find(item => item.stateAbbreviation === stateAbbreviation.toUpperCase())?.stateName;
 }
+
+export function getStateAbbreviationForName(stateName?: string) {
+	if (!stateName)
+		return undefined;
+
+	const normalizedName = stateName.trim().toLowerCase();
+	return stateOfficialToolSets.find(item => item.stateName.toLowerCase() === normalizedName)?.stateAbbreviation;
+}

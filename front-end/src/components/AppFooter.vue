@@ -41,7 +41,7 @@ function resolveGuideLinkTo(path: string) {
 <template>
 	<footer class="py-10 border-t border-app-line/80 bg-white/80 dark:border-app-line-dark dark:bg-app-panel-dark/55">
 		<div class="app-shell">
-			<div class="gap-8 grid xl:grid-cols-[minmax(0,1.12fr)_minmax(0,0.88fr)] xl:items-start">
+			<div class="gap-6 grid lg:gap-8 xl:grid-cols-[minmax(0,1.12fr)_minmax(0,0.88fr)] xl:items-start">
 				<div class="max-w-3xl">
 					<p class="text-2xl text-app-ink font-serif mt-1 dark:text-app-text-dark">
 						Ballot Clarity
@@ -49,7 +49,7 @@ function resolveGuideLinkTo(path: string) {
 					<p class="bc-measure text-base text-app-muted mt-4 dark:text-app-muted-dark">
 						Ballot Clarity is a nonprofit civic-information platform focused on source-first ballot summaries, transparent methodology, and readable public-interest data.
 					</p>
-					<div class="mt-5 gap-4 grid sm:grid-cols-2">
+					<div class="mt-5 gap-3 grid sm:gap-4 sm:grid-cols-2">
 						<div class="p-4 rounded-[1.35rem] bg-app-bg/70 dark:bg-app-bg-dark/70">
 							<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
 								What this site is for
@@ -70,7 +70,7 @@ function resolveGuideLinkTo(path: string) {
 					</div>
 				</div>
 
-				<div class="gap-6 grid md:grid-cols-2">
+				<div class="gap-6 grid sm:grid-cols-2">
 					<div>
 						<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
 							Use the guide
@@ -110,7 +110,7 @@ function resolveGuideLinkTo(path: string) {
 						</ul>
 					</div>
 
-					<div class="p-4 border border-app-line/80 rounded-[1.5rem] bg-app-bg/70 dark:border-app-line-dark dark:bg-app-bg-dark/70 md:col-span-2">
+					<div class="p-4 border border-app-line/80 rounded-[1.5rem] bg-app-bg/70 dark:border-app-line-dark dark:bg-app-bg-dark/70 sm:col-span-2">
 						<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
 							Contact
 						</p>
@@ -132,7 +132,7 @@ function resolveGuideLinkTo(path: string) {
 				</div>
 			</div>
 
-			<div class="mt-8 pt-5 border-t border-app-line/80 flex flex-col gap-4 dark:border-app-line-dark lg:flex-row lg:items-center lg:justify-between">
+			<div class="mt-7 pt-4 border-t border-app-line/80 flex flex-col gap-3 dark:border-app-line-dark lg:flex-row lg:items-center lg:justify-between">
 				<div class="flex flex-col gap-3">
 					<p class="text-sm text-app-muted max-w-4xl dark:text-app-muted-dark">
 						Not an official election website. Ballot Clarity aims to provide nonpartisan civic information and cite sources where possible. Content can change, so verify critical election details with the official authorities linked throughout the site.

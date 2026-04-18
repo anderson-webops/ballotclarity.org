@@ -157,7 +157,7 @@ function saveMeasure(decision: "no" | "review" | "yes") {
 
 <template>
 	<section class="app-shell section-gap">
-		<div v-if="pending" class="gap-8 grid xl:grid-cols-[minmax(0,1.35fr)_minmax(22rem,0.85fr)]">
+		<div v-if="pending" class="gap-8 grid 2xl:grid-cols-[minmax(0,1.35fr)_minmax(22rem,0.85fr)]">
 			<div class="space-y-6">
 				<div class="surface-panel bg-white/70 h-72 animate-pulse dark:bg-app-panel-dark/70" />
 				<div v-for="index in 4" :key="index" class="surface-panel bg-white/70 h-52 animate-pulse dark:bg-app-panel-dark/70" />
@@ -171,7 +171,7 @@ function saveMeasure(decision: "no" | "review" | "yes") {
 			</InfoCallout>
 		</div>
 
-		<div v-else class="gap-8 grid xl:grid-cols-[minmax(0,1.35fr)_minmax(22rem,0.85fr)]">
+		<div v-else class="gap-8 grid 2xl:grid-cols-[minmax(0,1.35fr)_minmax(22rem,0.85fr)]">
 			<div class="space-y-6">
 				<header class="surface-panel">
 					<div class="flex flex-wrap gap-2">
@@ -194,7 +194,7 @@ function saveMeasure(decision: "no" | "review" | "yes") {
 							{{ measure.sources.length }} source records attached
 						</p>
 					</div>
-					<div class="mt-6 flex flex-wrap gap-4">
+					<div class="bc-action-cluster mt-6">
 						<SourceDrawer :sources="measure.sources" :title="`${measure.title} evidence and sources`" button-label="Evidence & sources" />
 						<div class="flex flex-wrap gap-2">
 							<button

@@ -352,8 +352,8 @@ function clearFilters() {
 		</section>
 
 		<section v-if="data" class="app-shell print-hidden">
-			<div class="gap-6 grid xl:grid-cols-[minmax(17rem,0.62fr)_minmax(0,1.38fr)]">
-				<div class="self-start space-y-4 xl:top-24 xl:sticky">
+			<div class="gap-6 grid 2xl:grid-cols-[minmax(17rem,0.62fr)_minmax(0,1.38fr)]">
+				<div class="self-start space-y-4 2xl:top-24 2xl:sticky">
 					<PageSectionNav
 						title="Guide map"
 						description="Start with the overview, then use filters and contest sections only where you need more detail."
@@ -361,7 +361,7 @@ function clearFilters() {
 						:items="guideSectionItems"
 					>
 						<template #actions>
-							<div class="flex flex-wrap gap-2">
+							<div class="bc-action-cluster">
 								<NuxtLink :to="planHref" class="btn-primary">
 									Open my ballot plan
 								</NuxtLink>
@@ -480,7 +480,7 @@ function clearFilters() {
 						<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
 							Use the ballot guide with the election overview
 						</h2>
-						<div class="mt-6 gap-4 grid md:grid-cols-2 xl:grid-cols-4">
+						<div class="mt-6 gap-4 grid 2xl:grid-cols-4 sm:grid-cols-2">
 							<div v-for="item in data.election.keyDates" :key="item.label" class="p-4 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70">
 								<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
 									{{ item.label }}
@@ -520,7 +520,7 @@ function clearFilters() {
 					</section>
 
 					<section id="guide-controls" class="surface-panel scroll-mt-28">
-						<div class="gap-6 grid xl:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
+						<div class="gap-6 grid 2xl:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
 							<div>
 								<label for="ballot-search" class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
 									Search this ballot

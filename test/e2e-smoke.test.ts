@@ -200,13 +200,13 @@ test("built app renders the key ballot guide pages against the built API", async
 	assert.equal(ballotResponse.status, 200);
 	assert.equal(homePage.status, 200);
 	assert.match(homeHtml, /Understand your ballot without the overload/);
-	assert.match(homeHtml, /Current ballot preview/);
 	assert.match(homeHtml, /Current production launch target/);
 	assert.match(homeHtml, /Fulton County, Georgia/);
+	assert.match(homeHtml, /Choose your area/);
 	assert.match(homeHtml, /Not the right location\? Select a new district\./);
-	assert.match(homeHtml, /Start from the coverage profile/);
-	assert.match(homeHtml, /Live data roadmap/);
-	assert.match(homeHtml, /Use official sources where they are authoritative, then normalize the rest/);
+	assert.match(homeHtml, /One task, then a clear reading path/);
+	assert.match(homeHtml, /Primary pathways/);
+	assert.match(homeHtml, /Start with the task you are trying to complete\./);
 	assert.match(homeHtml, /Why we ask for your address/);
 	assert.match(homeHtml, /Data use: your lookup is sent only to match ballot coverage/);
 	assert.match(ballotHtml, /Questions to ask before you vote/);

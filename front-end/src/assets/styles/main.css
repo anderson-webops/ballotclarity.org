@@ -25,7 +25,7 @@ html {
   background: var(--app-bg);
   color: var(--app-ink);
   scroll-behavior: smooth;
-  scroll-padding-top: 6rem;
+  scroll-padding-top: 5rem;
   text-size-adjust: 100%;
 }
 
@@ -155,10 +155,21 @@ h6 {
   pointer-events: none;
 }
 
+.bc-action-cluster {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.bc-action-cluster > * {
+  min-width: 0;
+}
+
 .summary-strip {
   display: grid;
   gap: 0.9rem;
-  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
 }
 
 .summary-strip__item {
@@ -432,11 +443,92 @@ html.dark .expandable-section__body {
   }
 }
 
+@media (min-width: 1024px) {
+  html {
+    scroll-padding-top: 6rem;
+  }
+}
+
 @media (max-width: 640px) {
   body {
     background:
       radial-gradient(circle at top left, rgba(232, 216, 181, 0.22), transparent 18rem),
       linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(247, 244, 238, 1));
+  }
+}
+
+@media (max-width: 767px) {
+  html {
+    scroll-padding-top: 4.5rem;
+  }
+
+  .app-shell h1 {
+    font-size: clamp(2.35rem, 8.8vw, 3.3rem) !important;
+    line-height: 1.04 !important;
+    text-wrap: balance;
+  }
+
+  .pamphlet-surface::before {
+    opacity: 0.24;
+  }
+
+  .bc-action-cluster > * {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .summary-strip {
+    gap: 0.75rem;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 9.5rem), 1fr));
+  }
+
+  .summary-strip__item {
+    padding: 0.75rem 0.8rem;
+    border-radius: 1.2rem;
+  }
+
+  .summary-strip__label {
+    letter-spacing: 0.14em;
+  }
+
+  .summary-strip__value {
+    font-size: clamp(1.35rem, 6.8vw, 1.8rem);
+  }
+
+  .summary-strip__note {
+    font-size: 0.8rem;
+    line-height: 1.45;
+  }
+
+  .section-nav {
+    top: 4.9rem;
+  }
+
+  .section-nav__crumbs {
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.7rem;
+  }
+
+  .section-nav-list {
+    gap: 0.4rem;
+  }
+
+  .section-nav-link {
+    gap: 0.75rem;
+    padding: 0.65rem 0.8rem;
+    border-radius: 1rem;
+  }
+
+  .section-nav-link__label {
+    font-size: 0.9rem;
+  }
+
+  .section-nav-link__note {
+    font-size: 0.75rem;
+  }
+
+  .expandable-section__summary {
+    gap: 0.75rem;
   }
 }
 

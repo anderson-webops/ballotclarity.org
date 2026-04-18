@@ -145,7 +145,7 @@ const trustFacts = computed(() => [
 </script>
 
 <template>
-	<div class="pb-10 space-y-16 sm:space-y-20">
+	<div class="pb-10 space-y-12 sm:space-y-16">
 		<section class="app-shell">
 			<div class="gap-6 grid xl:grid-cols-[minmax(0,1.18fr)_minmax(21rem,0.82fr)] xl:items-start">
 				<div class="border border-app-line rounded-[2.2rem] bg-white shadow-[0_36px_84px_-58px_rgba(16,37,62,0.62)] overflow-hidden dark:border-app-line-dark dark:bg-app-panel-dark">

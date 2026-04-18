@@ -197,7 +197,7 @@ function saveToPlan() {
 
 <template>
 	<section class="app-shell section-gap">
-		<div v-if="pending" class="gap-8 grid xl:grid-cols-[minmax(0,1.4fr)_minmax(22rem,0.8fr)]">
+		<div v-if="pending" class="gap-8 grid 2xl:grid-cols-[minmax(0,1.4fr)_minmax(22rem,0.8fr)]">
 			<div class="space-y-6">
 				<div class="surface-panel animate-pulse">
 					<div class="rounded-full bg-app-line/70 h-6 w-32 dark:bg-app-line-dark" />
@@ -216,7 +216,7 @@ function saveToPlan() {
 			</InfoCallout>
 		</div>
 
-		<div v-else class="gap-8 grid xl:grid-cols-[minmax(0,1.45fr)_minmax(21rem,0.85fr)]">
+		<div v-else class="gap-8 grid 2xl:grid-cols-[minmax(0,1.45fr)_minmax(21rem,0.85fr)]">
 			<div class="space-y-6">
 				<header class="surface-panel">
 					<div class="flex flex-wrap gap-2 items-center">
@@ -245,7 +245,7 @@ function saveToPlan() {
 							{{ candidate.comparison.ballotStatus.label }}
 						</p>
 					</div>
-					<div class="mt-6 flex flex-wrap gap-4 items-center">
+					<div class="bc-action-cluster mt-6">
 						<SourceDrawer :sources="candidate.sources" :title="`${candidate.name} evidence and sources`" button-label="Evidence & sources" />
 						<NuxtLink v-if="canOpenCompare" :to="compareHref" class="btn-secondary">
 							Open compare

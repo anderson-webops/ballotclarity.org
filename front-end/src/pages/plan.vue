@@ -142,9 +142,9 @@ function printPlan() {
 </script>
 
 <template>
-	<section class="app-shell section-gap space-y-8 lg:space-y-10">
+	<section class="app-shell section-gap space-y-6 lg:space-y-10 sm:space-y-8">
 		<header class="surface-panel overflow-hidden">
-			<div class="gap-8 grid xl:gap-12 xl:grid-cols-[minmax(0,1.18fr)_minmax(19rem,0.82fr)] xl:items-end">
+			<div class="gap-8 grid lg:gap-10 xl:gap-12 xl:grid-cols-[minmax(0,1.18fr)_minmax(19rem,0.82fr)] xl:items-end">
 				<div>
 					<div class="flex flex-wrap gap-2">
 						<TrustBadge label="Booth-ready workflow" tone="accent" />
@@ -154,7 +154,7 @@ function printPlan() {
 					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold mt-5 uppercase dark:text-app-muted-dark">
 						My ballot plan
 					</p>
-					<h1 class="text-5xl text-app-ink leading-tight font-serif mt-3 max-w-[14ch] dark:text-app-text-dark">
+					<h1 class="text-5xl text-app-ink leading-tight font-serif mt-3 max-w-[12ch] dark:text-app-text-dark sm:max-w-[14ch]">
 						Save choices, review gaps, and bring a clean plan with you.
 					</h1>
 					<p class="text-base text-app-muted leading-8 mt-6 max-w-3xl dark:text-app-muted-dark">
@@ -162,7 +162,7 @@ function printPlan() {
 					</p>
 				</div>
 
-				<div class="xl:pb-1">
+				<div class="xl:pb-1 lg:max-w-xl xl:max-w-none">
 					<div class="p-5 border border-app-line/70 rounded-[1.9rem] bg-app-bg/55 dark:border-app-line-dark dark:bg-app-bg-dark/55">
 						<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
 							Quick actions
@@ -194,7 +194,7 @@ function printPlan() {
 		</header>
 
 		<section id="change-location" class="surface-panel print-hidden">
-			<div class="gap-6 grid xl:grid-cols-[minmax(0,0.78fr)_minmax(0,1.22fr)] xl:items-start">
+			<div class="gap-6 grid lg:grid-cols-[minmax(0,0.78fr)_minmax(0,1.22fr)] lg:items-start">
 				<div>
 					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
 						Change location

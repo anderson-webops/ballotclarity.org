@@ -33,9 +33,9 @@ function printBallot() {
 <template>
 	<section class="app-shell">
 		<div class="pamphlet-surface border border-app-line rounded-[2rem] bg-white shadow-[0_30px_80px_-48px_rgba(16,37,62,0.65)] overflow-hidden dark:border-app-line-dark dark:bg-app-panel-dark">
-			<div class="px-6 py-8 gap-8 grid lg:px-10 sm:px-8 lg:grid-cols-[minmax(0,1.4fr)_minmax(19rem,0.8fr)]">
+			<div class="px-6 py-8 gap-8 grid lg:px-10 sm:px-8 xl:grid-cols-[minmax(0,1.4fr)_minmax(18rem,0.8fr)]">
 				<div>
-					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold mt-6 uppercase dark:text-app-muted-dark">
+					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold mt-4 uppercase dark:text-app-muted-dark sm:mt-6">
 						{{ props.location.displayName }}
 					</p>
 					<h1 class="text-4xl text-app-ink leading-tight font-serif mt-3 max-w-4xl sm:text-5xl dark:text-app-text-dark">
@@ -51,7 +51,7 @@ function printBallot() {
 						</span>
 						<UpdatedAt :value="props.election.updatedAt" />
 					</div>
-					<div class="mt-6 gap-4 grid sm:grid-cols-3">
+					<div class="mt-6 gap-4 grid sm:grid-cols-2 xl:grid-cols-3">
 						<div class="px-5 py-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
 							<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
 								Personalized to
@@ -88,7 +88,7 @@ function printBallot() {
 					</div>
 				</div>
 
-				<div class="surface-panel flex flex-col justify-between relative z-10">
+				<div class="surface-panel flex flex-col max-w-2xl justify-between relative z-10 xl:max-w-none">
 					<div>
 						<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
 							Read this ballot like a pamphlet
@@ -106,7 +106,7 @@ function printBallot() {
 							{{ props.note }}
 						</InfoCallout>
 
-						<div class="flex flex-wrap gap-3">
+						<div class="bc-action-cluster">
 							<button type="button" class="btn-primary" @click="printBallot">
 								<span class="i-carbon-printer" />
 								Print this ballot guide

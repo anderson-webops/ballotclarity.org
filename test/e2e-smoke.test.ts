@@ -275,13 +275,13 @@ test("built app renders the key ballot guide pages against the built API", async
 	assert.match(candidateHtml, /Jump to section/);
 	assert.match(candidateHtml, /Funding page/);
 	assert.match(candidateHtml, /Influence page/);
-	assert.match(candidateHtml, /What we know/);
-	assert.match(candidateHtml, /Still checking/);
 	assert.match(candidateHtml, /Issue positions/);
 	assert.match(candidateHtml, /Context and terms/);
 	assert.match(candidateHtml, /Votes(?:\s*&amp;\s*|\s*&\s*|\s*&#38;\s*)actions/);
+	assert.match(candidateHtml, /Constituent context and future analysis/);
 	assert.match(candidateHtml, /Sources and methodology notes/);
 	assert.match(candidateHtml, /Evidence(?:\s*&amp;\s*|\s*&\s*|\s*&#38;\s*)sources/);
+	assert.match(candidateHtml, /Evidence rail/);
 	assert.match(candidateHtml, /Download JSON/);
 	assert.match(candidateHtml, /Report an issue/);
 	assert.match(candidateHtml, /Save to my plan/);
@@ -304,7 +304,7 @@ test("built app renders the key ballot guide pages against the built API", async
 	assert.match(measureHtml, /Report an issue/);
 	assert.match(measureHtml, /Inspect the original records/);
 	assert.match(measureHtml, /How this explainer stays readable/);
-	assert.match(measureHtml, /Still checking/);
+	assert.match(measureHtml, /Evidence rail/);
 	assert.match(measureHtml, /Review later/);
 	assert.match(helpHtml, /Voting help and ballot basics/);
 	assert.match(helpHtml, /What is the difference between an official ballot listing and a voter guide/);

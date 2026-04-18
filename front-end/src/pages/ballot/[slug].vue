@@ -445,6 +445,10 @@ function clearFilters() {
 							<PageSummaryStrip :items="guideSummaryItems" />
 						</div>
 
+						<div class="mt-6">
+							<BallotStructureOverviewGraphic :contests="filteredContests" />
+						</div>
+
 						<div class="mt-6 gap-5 grid lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
 							<div class="p-5 rounded-[1.5rem] bg-app-bg dark:bg-app-bg-dark/70">
 								<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">

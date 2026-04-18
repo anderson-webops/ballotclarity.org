@@ -10,7 +10,7 @@ const runtimeConfig = useRuntimeConfig();
 const siteUrl = useSiteUrl();
 const { ballotPlan, compareList, isHydrated } = storeToRefs(civicStore);
 const candidateSlug = computed(() => String(route.params.slug));
-const { formatCompactNumber, formatCurrency, formatDate, formatDateTime, formatPercent } = useFormatters();
+const { formatCompactNumber, formatCurrency, formatDate, formatPercent } = useFormatters();
 const { data: candidate, error, pending } = await useCandidate(candidateSlug);
 const electionOverviewHref = `/elections/${currentCoverageElectionSlug}`;
 const locationHubHref = `/locations/${currentCoverageLocationSlug}`;
@@ -140,6 +140,57 @@ const issuePositionSources = computed(() => {
 		...candidate.value.comparison.questionnaireResponses.flatMap(response => response.sources),
 		...candidate.value.publicStatements.flatMap(statement => statement.sources)
 	]);
+});
+const candidateFreshnessBadges = computed(() => {
+	if (!candidate.value)
+		return [];
+
+	return [
+		{
+			label: candidate.value.freshness.statusLabel,
+			tone: candidate.value.freshness.status === "up-to-date"
+				? "accent" as const
+				: candidate.value.freshness.status === "updating"
+					? "warning" as const
+					: "neutral" as const
+		},
+		{
+			label: candidate.value.comparison.ballotStatus.provenance.label,
+			title: candidate.value.comparison.ballotStatus.provenance.detail,
+			tone: candidate.value.comparison.ballotStatus.provenance.status === "verified-official"
+				? "accent" as const
+				: candidate.value.comparison.ballotStatus.provenance.status === "unclear"
+					? "warning" as const
+					: "neutral" as const
+		}
+	];
+});
+const candidateFreshnessSignals = computed(() => {
+	if (!candidate.value)
+		return [];
+
+	return [
+		{
+			detail: candidate.value.freshness.statusNote,
+			label: "Data through",
+			value: dataThroughLabel.value
+		},
+		{
+			detail: "Planned next review window for this profile.",
+			label: "Next review",
+			value: formatDate(candidate.value.freshness.nextReviewAt)
+		},
+		{
+			detail: "Total source records attached to this profile page.",
+			label: "Source records",
+			value: candidate.value.sources.length
+		},
+		{
+			detail: "Explicit gaps or unresolved checks called out on this page.",
+			label: "Open questions",
+			value: candidate.value.whatWeDoNotKnow.length
+		}
+	];
 });
 const atGlanceStats = computed(() => {
 	if (!candidate.value)
@@ -286,6 +337,17 @@ function saveToPlan() {
 							Back to ballot
 						</NuxtLink>
 					</div>
+					<div class="mt-6">
+						<SourceFreshnessStripGraphic
+							:badges="candidateFreshnessBadges"
+							:signals="candidateFreshnessSignals"
+							:sources="candidate.sources"
+							source-button-label="Profile sources"
+							title="How fresh and verified is this profile?"
+							:note="candidate.freshness.statusNote"
+							:uncertainty="candidate.whatWeDoNotKnow[0]?.text ?? 'Late campaign developments can still arrive after the current review window.'"
+						/>
+					</div>
 				</header>
 
 				<section id="at-a-glance" class="surface-panel scroll-mt-28">
@@ -425,6 +487,9 @@ function saveToPlan() {
 					<div class="mt-5 flex flex-wrap gap-2">
 						<IssueChip v-for="issue in candidate.topIssues" :key="issue.slug" :label="issue.label" />
 					</div>
+					<div class="mt-6">
+						<CandidateIssuePositionMap :candidate="candidate" />
+					</div>
 					<div class="mt-6 gap-4 grid">
 						<article class="px-5 py-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
 							<div class="flex flex-wrap gap-3 items-start justify-between">
@@ -528,6 +593,9 @@ function saveToPlan() {
 					<InfoCallout class="mt-5" title="How selected actions work">
 						{{ actionCoverageNote }}
 					</InfoCallout>
+					<div class="mt-6">
+						<CandidateExperienceTimelineGraphic :candidate="candidate" />
+					</div>
 					<div class="mt-6 space-y-4">
 						<article v-for="action in candidate.keyActions" :key="action.id" class="p-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
 							<div class="flex flex-wrap gap-3 items-start justify-between">
@@ -663,53 +731,15 @@ function saveToPlan() {
 					<template #meta>
 						<SourceDrawer :sources="candidate.sources" :title="`${candidate.name} full source list`" />
 					</template>
-					<div class="mt-6 gap-4 grid lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
-						<div class="p-4 rounded-[1.35rem] bg-app-bg dark:bg-app-bg-dark/70">
-							<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
-								Review timing
-							</p>
-							<div class="mt-3 space-y-3">
-								<p class="text-sm text-app-muted leading-6 dark:text-app-muted-dark">
-									<strong class="text-app-ink dark:text-app-text-dark">Status:</strong> {{ candidate.freshness.statusLabel }}
-								</p>
-								<p class="text-sm text-app-muted leading-6 dark:text-app-muted-dark">
-									<strong class="text-app-ink dark:text-app-text-dark">Last verified:</strong> {{ formatDateTime(candidate.freshness.contentLastVerifiedAt) }}
-								</p>
-								<p class="text-sm text-app-muted leading-6 dark:text-app-muted-dark">
-									<strong class="text-app-ink dark:text-app-text-dark">Next review:</strong> {{ formatDateTime(candidate.freshness.nextReviewAt) }}
-								</p>
-								<p class="text-sm text-app-muted leading-6 dark:text-app-muted-dark">
-									{{ candidate.freshness.statusNote }}
-								</p>
-							</div>
-						</div>
-						<div class="p-4 rounded-[1.35rem] bg-app-bg dark:bg-app-bg-dark/70">
-							<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
-								Verification scope
-							</p>
-							<div class="mt-3 gap-3 grid md:grid-cols-2">
-								<div>
-									<p class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
-										What we know
-									</p>
-									<ul class="mt-2 space-y-2">
-										<li v-for="item in candidate.whatWeKnow" :key="item.id" class="text-sm text-app-muted leading-6 dark:text-app-muted-dark">
-											{{ item.text }}
-										</li>
-									</ul>
-								</div>
-								<div>
-									<p class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
-										Still checking
-									</p>
-									<ul class="mt-2 space-y-2">
-										<li v-for="item in candidate.whatWeDoNotKnow" :key="item.id" class="text-sm text-app-muted leading-6 dark:text-app-muted-dark">
-											{{ item.text }}
-										</li>
-									</ul>
-								</div>
-							</div>
-						</div>
+					<div class="mt-6">
+						<EvidenceCompletenessGraphic
+							:freshness="candidate.freshness"
+							:known="candidate.whatWeKnow"
+							:sources="candidate.sources"
+							source-button-label="Profile sources"
+							title="How complete is this candidate profile right now?"
+							:unknown="candidate.whatWeDoNotKnow"
+						/>
 					</div>
 					<ul class="text-sm text-app-muted leading-7 mt-6 space-y-3 dark:text-app-muted-dark">
 						<li v-for="note in candidate.methodologyNotes" :key="note" class="px-4 py-3 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70">

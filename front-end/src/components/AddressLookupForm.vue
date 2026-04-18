@@ -149,6 +149,61 @@ const availabilityItems = computed(() => {
 		availability.value.fullLocalGuide
 	];
 });
+
+const lookupSourceBadges = computed(() => {
+	const badges = new Map<string, { label: string; tone?: "accent" | "neutral" | "warning" }>();
+
+	for (const match of districtMatches.value)
+		badges.set(match.sourceSystem, { label: match.sourceSystem, tone: "neutral" });
+
+	for (const match of representativeMatches.value)
+		badges.set(match.sourceSystem, { label: match.sourceSystem, tone: "accent" });
+
+	if (lookupActions.value.some(action => action.kind === "official-verification"))
+		badges.set("Official election tools", { label: "Official election tools", tone: "accent" });
+
+	if (fromCache.value)
+		badges.set("Cached lookup", { label: "Cached lookup", tone: "neutral" });
+
+	return [...badges.values()];
+});
+
+const lookupSourceSignals = computed(() => ([
+	{
+		detail: lookupInputKind.value === "address"
+			? "A full address gives the strongest district match."
+			: "ZIP-only lookup remains approximate inside shared postal areas.",
+		label: "Lookup type",
+		value: lookupInputKind.value === "address" ? "Address matched" : "ZIP matched"
+	},
+	{
+		detail: "These district layers drive the person-centered result first.",
+		label: "Districts found",
+		value: districtMatches.value.length
+	},
+	{
+		detail: "Current officeholder matches come from the provider-backed enrichment layer.",
+		label: "Representatives found",
+		value: representativeMatches.value.length
+	},
+	{
+		detail: guideAvailability.value === "published"
+			? "A deeper Ballot Clarity local guide is available for this result."
+			: "Nationwide district and representative results are available even without a published local guide.",
+		label: "Guide depth",
+		value: guideAvailability.value === "published" ? "Published guide" : "Nationwide lookup"
+	}
+]));
+
+const lookupUncertaintyNote = computed(() => {
+	if (lookupResult.value === "unsupported")
+		return "This input did not resolve cleanly enough to show district or representative results. Try a full street address or use the official tools.";
+
+	if (lookupInputKind.value === "zip")
+		return "ZIP-only results are approximate. Use a full street address when district-specific ballot questions matter.";
+
+	return "District and representative matches are provider-backed, but the election office remains the final authority for precinct and ballot-style questions.";
+});
 </script>
 
 <template>
@@ -229,6 +284,27 @@ const availabilityItems = computed(() => {
 			>
 				This lookup can open a deeper Ballot Clarity guide for the current published coverage while still keeping the nationwide civic results below available for review first.
 			</p>
+			<SourceFreshnessStripGraphic
+				v-if="lookupResult === 'resolved'"
+				:badges="lookupSourceBadges"
+				:signals="lookupSourceSignals"
+				uncertainty="District and representative results are the first-class nationwide output. Full local guide availability is a separate layer."
+				class="mt-4"
+				title="How this lookup was verified"
+				note="Ballot Clarity keeps the nationwide result first, then layers in local guide depth where it exists."
+			/>
+			<DistrictHierarchyGraphic
+				v-if="districtMatches.length"
+				:lookup-input-kind="lookupInputKind"
+				:matches="districtMatches"
+				:normalized-address="normalizedAddress"
+				class="mt-4"
+			/>
+			<WhoRepresentsGrid
+				v-if="representativeMatches.length"
+				:matches="representativeMatches"
+				class="mt-4"
+			/>
 			<div v-if="availabilityItems.length" class="mt-4 gap-3 grid md:grid-cols-2 xl:grid-cols-4">
 				<article
 					v-for="item in availabilityItems"
@@ -289,49 +365,6 @@ const availabilityItems = computed(() => {
 					</div>
 				</div>
 			</div>
-			<div v-if="normalizedAddress || districtMatches.length || representativeMatches.length" class="mt-4 gap-4 grid lg:grid-cols-2">
-				<div v-if="districtMatches.length" class="p-4 border border-app-line rounded-2xl bg-white dark:border-app-line-dark dark:bg-app-panel-dark">
-					<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
-						Matched districts
-					</p>
-					<p v-if="normalizedAddress" class="text-sm text-app-muted leading-6 mt-2 dark:text-app-muted-dark">
-						{{ normalizedAddress }}
-					</p>
-					<ul class="mt-3 space-y-2">
-						<li v-for="match in districtMatches" :key="match.id" class="text-sm text-app-muted leading-6 dark:text-app-muted-dark">
-							<span class="text-app-ink font-semibold dark:text-app-text-dark">{{ match.label }}</span>
-							<span class="text-xs tracking-[0.12em] ml-2 uppercase">{{ match.sourceSystem }}</span>
-						</li>
-					</ul>
-					<p v-if="fromCache" class="text-xs text-app-muted leading-6 mt-3 dark:text-app-muted-dark">
-						Loaded from the local lookup cache.
-					</p>
-				</div>
-				<div v-if="representativeMatches.length" class="p-4 border border-app-line rounded-2xl bg-white dark:border-app-line-dark dark:bg-app-panel-dark">
-					<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
-						Current representatives
-					</p>
-					<ul class="mt-3 space-y-3">
-						<li v-for="match in representativeMatches" :key="match.id" class="text-sm text-app-muted leading-6 dark:text-app-muted-dark">
-							<div class="flex flex-wrap gap-2 items-center">
-								<span class="text-app-ink font-semibold dark:text-app-text-dark">{{ match.name }}</span>
-								<span v-if="match.party" class="text-xs tracking-[0.12em] uppercase">{{ match.party }}</span>
-								<VerificationBadge :label="match.sourceSystem" />
-							</div>
-							<p>{{ match.officeTitle }} · {{ match.districtLabel }}</p>
-							<a
-								v-if="match.openstatesUrl"
-								:href="match.openstatesUrl"
-								target="_blank"
-								rel="noreferrer"
-								class="underline underline-offset-3"
-							>
-								Open States profile
-							</a>
-						</li>
-					</ul>
-				</div>
-			</div>
 			<div v-if="resolvedLocation" class="mt-4 flex flex-wrap gap-3">
 				<button
 					type="button"
@@ -348,6 +381,10 @@ const availabilityItems = computed(() => {
 					: resolvedLocation
 						? "This lookup succeeded nationwide. Use the civic results here first, then open the deeper local guide when you want Ballot Clarity's contest, candidate, and measure pages."
 						: "This lookup succeeded nationwide. Use the district, representative, provenance, and official-tool layers here even when a full local Ballot Clarity guide is not published yet." }}
+			</p>
+			<p v-if="lookupResult" class="text-xs text-app-muted leading-6 mt-2 dark:text-app-muted-dark">
+				<strong class="text-app-ink dark:text-app-text-dark">Uncertainty:</strong>
+				{{ lookupUncertaintyNote }}
 			</p>
 		</div>
 	</form>

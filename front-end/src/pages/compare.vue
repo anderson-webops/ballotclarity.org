@@ -274,6 +274,8 @@ usePageSeo({
 				</div>
 			</section>
 
+			<CandidateComparisonMatrixGraphic :candidates="sortedCandidates" />
+
 			<CompareTable
 				:candidates="sortedCandidates"
 				:question-category="selectedCategory"

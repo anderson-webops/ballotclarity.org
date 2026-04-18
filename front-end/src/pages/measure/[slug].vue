@@ -90,6 +90,52 @@ const argumentSources = computed(() => {
 		...measure.value.opposeArguments.flatMap(item => item.sources)
 	]);
 });
+const measureFreshnessBadges = computed(() => {
+	if (!measure.value)
+		return [];
+
+	return [
+		{
+			label: measure.value.freshness.statusLabel,
+			tone: measure.value.freshness.status === "up-to-date"
+				? "accent" as const
+				: measure.value.freshness.status === "updating"
+					? "warning" as const
+					: "neutral" as const
+		},
+		{
+			label: officialSources.value.length ? "Official text attached" : "Attached source set",
+			tone: officialSources.value.length ? "accent" as const : "neutral" as const
+		}
+	];
+});
+const measureFreshnessSignals = computed(() => {
+	if (!measure.value)
+		return [];
+
+	return [
+		{
+			detail: measure.value.freshness.statusNote,
+			label: "Data through",
+			value: formatDateTime(measure.value.freshness.dataLastUpdatedAt ?? measure.value.updatedAt)
+		},
+		{
+			detail: "Planned next review window for this explainer.",
+			label: "Next review",
+			value: formatDateTime(measure.value.freshness.nextReviewAt)
+		},
+		{
+			detail: "Official records directly attached to the explainer.",
+			label: "Official records",
+			value: officialSources.value.length
+		},
+		{
+			detail: "Explicit open questions or unsettled implementation items.",
+			label: "Open questions",
+			value: measure.value.whatWeDoNotKnow.length
+		}
+	];
+});
 const presentSourceTypes = computed(() => {
 	if (!measure.value)
 		return [];
@@ -239,6 +285,17 @@ function saveMeasure(decision: "no" | "review" | "yes") {
 							Back to ballot
 						</NuxtLink>
 					</div>
+					<div class="mt-6">
+						<SourceFreshnessStripGraphic
+							:badges="measureFreshnessBadges"
+							:signals="measureFreshnessSignals"
+							:sources="measure.sources"
+							source-button-label="Measure sources"
+							title="How fresh and source-backed is this explainer?"
+							:note="measure.freshness.statusNote"
+							:uncertainty="measure.whatWeDoNotKnow[0]?.text ?? 'Later budgets, legal interpretation, or agency rules can still change implementation detail after passage.'"
+						/>
+					</div>
 				</header>
 
 				<section id="at-a-glance" class="surface-panel scroll-mt-28">
@@ -376,6 +433,9 @@ function saveMeasure(decision: "no" | "review" | "yes") {
 					<template #meta>
 						<SourceDrawer :sources="officialSources.length ? officialSources : measure.sources" :title="`${measure.title} yes and no meanings`" button-label="Outcome sources" />
 					</template>
+					<div class="mt-6">
+						<MeasureImpactDiagram :measure="measure" />
+					</div>
 					<div class="mt-6 gap-6 grid md:grid-cols-2">
 						<article class="px-5 py-5 border border-app-line/80 rounded-3xl bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
 							<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
@@ -566,53 +626,15 @@ function saveMeasure(decision: "no" | "review" | "yes") {
 					<template #meta>
 						<SourceDrawer :sources="measure.sources" :title="`${measure.title} full source list`" />
 					</template>
-					<div class="mt-6 gap-4 grid lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
-						<div class="p-4 rounded-[1.35rem] bg-app-bg dark:bg-app-bg-dark/70">
-							<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
-								Review timing
-							</p>
-							<div class="mt-3 space-y-3">
-								<p class="text-sm text-app-muted leading-6 dark:text-app-muted-dark">
-									<strong class="text-app-ink dark:text-app-text-dark">Status:</strong> {{ measure.freshness.statusLabel }}
-								</p>
-								<p class="text-sm text-app-muted leading-6 dark:text-app-muted-dark">
-									<strong class="text-app-ink dark:text-app-text-dark">Last verified:</strong> {{ formatDateTime(measure.freshness.contentLastVerifiedAt) }}
-								</p>
-								<p class="text-sm text-app-muted leading-6 dark:text-app-muted-dark">
-									<strong class="text-app-ink dark:text-app-text-dark">Next review:</strong> {{ formatDateTime(measure.freshness.nextReviewAt) }}
-								</p>
-								<p class="text-sm text-app-muted leading-6 dark:text-app-muted-dark">
-									{{ measure.freshness.statusNote }}
-								</p>
-							</div>
-						</div>
-						<div class="p-4 rounded-[1.35rem] bg-app-bg dark:bg-app-bg-dark/70">
-							<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
-								Verification scope
-							</p>
-							<div class="mt-3 gap-3 grid md:grid-cols-2">
-								<div>
-									<p class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
-										What we know
-									</p>
-									<ul class="mt-2 space-y-2">
-										<li v-for="item in measure.whatWeKnow" :key="item.id" class="text-sm text-app-muted leading-6 dark:text-app-muted-dark">
-											{{ item.text }}
-										</li>
-									</ul>
-								</div>
-								<div>
-									<p class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
-										Still checking
-									</p>
-									<ul class="mt-2 space-y-2">
-										<li v-for="item in measure.whatWeDoNotKnow" :key="item.id" class="text-sm text-app-muted leading-6 dark:text-app-muted-dark">
-											{{ item.text }}
-										</li>
-									</ul>
-								</div>
-							</div>
-						</div>
+					<div class="mt-6">
+						<EvidenceCompletenessGraphic
+							:freshness="measure.freshness"
+							:known="measure.whatWeKnow"
+							:sources="measure.sources"
+							source-button-label="Measure sources"
+							title="How complete is this measure explainer right now?"
+							:unknown="measure.whatWeDoNotKnow"
+						/>
 					</div>
 					<div class="mt-6">
 						<SourceList :sources="officialSources.length ? officialSources : measure.sources" title="Official source trail in this guide" />

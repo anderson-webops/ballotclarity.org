@@ -102,22 +102,69 @@ export const launchTargetProfile: LaunchTargetProfile = {
 	referenceLinks
 };
 
-export function buildCoverageResponse(coverageMode: "seed" | "snapshot", coverageUpdatedAt: string): CoverageResponse {
+export function buildCoverageResponse(
+	coverageMode: "empty" | "snapshot",
+	coverageUpdatedAt: string,
+	launchTarget?: LaunchTargetProfile
+): CoverageResponse {
+	if (!launchTarget || coverageMode === "empty") {
+		return {
+			collections: [
+				{
+					href: "/coverage",
+					id: "coverage",
+					label: "Coverage profile",
+					status: "canonical",
+					summary: "Read the current public note about Ballot Clarity's published local coverage state."
+				},
+				{
+					href: "/status",
+					id: "status",
+					label: "Public status",
+					status: "canonical",
+					summary: "Check whether any public source monitors or imported coverage snapshots are active."
+				},
+				{
+					href: "/data-sources",
+					id: "data-sources",
+					label: "Data sources",
+					status: "canonical",
+					summary: "Review the published data-source roadmap when one is available."
+				}
+			],
+			coverageMode,
+			coverageUpdatedAt,
+			currentState: "No published local coverage snapshot or launch jurisdiction is active in this environment right now.",
+			limitations: [
+				{
+					id: "no-published-coverage",
+					summary: "Ballot Clarity does not currently have a published local guide, launch profile, or imported coverage snapshot loaded here.",
+					title: "No published local coverage is available"
+				}
+			],
+			nextSteps: [
+				"Use nationwide civic lookup results and official election tools when they are available for a location.",
+				"Publish a verified local coverage snapshot before exposing local guide, candidate, measure, or election routes as current coverage."
+			],
+			scopeNote: "Until a verified local coverage snapshot is published, Ballot Clarity should present missing local coverage honestly instead of falling back to fixture or archive content.",
+			supportedContentTypes: [],
+			updatedAt: new Date().toISOString()
+		};
+	}
+
 	return {
-		updatedAt: "2026-04-16T00:00:00.000Z",
+		updatedAt: new Date().toISOString(),
 		coverageMode,
 		coverageUpdatedAt,
-		launchTarget: launchTargetProfile,
-		scopeNote: "The production launch target is Fulton County, Georgia. The current public archive remains available as a reference corpus while live county integrations, district matching, and verified contest packaging are completed.",
-		currentState: coverageMode === "snapshot"
-			? "A vetted imported coverage snapshot is active for the public API, while the Fulton County launch pipeline and editorial verification continue."
-			: "The public site is still serving the reference archive while the Fulton County, Georgia live data stack is being connected and verified.",
+		launchTarget,
+		scopeNote: `${launchTarget.displayName} is the current published local coverage target in this environment. Official election tools should remain the final authority for deadlines, precincts, polling places, and ballot confirmation.`,
+		currentState: "A vetted imported coverage snapshot is active for the public API.",
 		supportedContentTypes: [
 			{
 				id: "logistics",
 				label: "Election logistics and official links",
 				status: "in-build",
-				summary: "County office links, statewide voter tools, election calendar, and polling-flow verification for Fulton County."
+				summary: `Official election-office links, statewide voter tools, and logistics notes for ${launchTarget.displayName}.`
 			},
 			{
 				id: "contest-packages",
@@ -135,44 +182,44 @@ export function buildCoverageResponse(coverageMode: "seed" | "snapshot", coverag
 				id: "district-lookup",
 				label: "Address-to-district matching",
 				status: "planned",
-				summary: "County launch depends on Census-based geocoding plus Georgia district geography before personalized Fulton ballots can be considered live."
+				summary: `Published local coverage depends on defensible geocoding and district geography before personalized ballots for ${launchTarget.displayName} can be considered live.`
 			},
 			{
-				id: "fulton-contest-data",
-				label: "Verified Fulton candidate and measure records",
+				id: "local-contest-data",
+				label: "Verified local candidate and measure records",
 				status: "in-build",
-				summary: "Official filing lists, ballot text, and county or statewide records are being mapped so the launch does not rely on placeholder roster data."
+				summary: "Official filing lists, ballot text, and jurisdiction records should replace placeholder or unpublished local contest data before guide promotion."
 			}
 		],
 		limitations: [
 			{
-				id: "no-fulton-ballot-live",
-				title: "Fulton personalized ballots are not yet live",
-				summary: "The current public archive remains readable, but it should not be mistaken for a certified Fulton County ballot service."
+				id: "no-certified-personalized-ballot",
+				title: "Personalized ballots should remain verification-first",
+				summary: "Published local guides should not be mistaken for an official ballot service. Final ballot confirmation still belongs to official election tools."
 			},
 			{
 				id: "district-crosswalk-pending",
 				title: "District matching still needs official geography crosswalks",
-				summary: "A defensible Fulton launch requires benchmarked geocoding, statewide district layers, and auditable address-to-ballot joins."
+				summary: `A defensible local launch for ${launchTarget.displayName} still requires benchmarked geocoding, district layers, and auditable address-to-ballot joins.`
 			},
 			{
 				id: "local-format-variation",
 				title: "Local candidate and ballot-text ingestion still needs connector hardening",
-				summary: "County and statewide filing formats vary enough that the launch needs parser monitoring, source snapshots, and manual fallback procedures."
+				summary: "Local and statewide filing formats vary enough that the launch needs parser monitoring, source snapshots, and manual fallback procedures."
 			}
 		],
 		nextSteps: [
 			"Stand up the managed Postgres environment and move the admin and editorial store off local SQLite.",
-			"Implement Fulton County logistics connectors first: county office notices, Georgia My Voter Page verification, and statewide election-calendar sync.",
-			"Add district lookup using Census geocoding plus Georgia district geography before enabling live address-to-ballot matching.",
-			"Load verified Fulton contest packages from official filing lists and certified ballot text before promoting the jurisdiction to live voter-facing coverage."
+			`Implement local logistics connectors first for ${launchTarget.displayName}: election office notices, statewide voter-tool verification, and election-calendar sync.`,
+			"Add district lookup using geocoding and official geography before enabling live address-to-ballot matching.",
+			"Load verified local contest packages from official filing lists and certified ballot text before promoting the jurisdiction to live voter-facing coverage."
 		],
 		collections: [
 			{
 				id: "coverage",
 				label: "Coverage and launch profile",
 				status: "canonical",
-				summary: "Public explanation of where Ballot Clarity is going live first, what is already built, and what still needs verification.",
+				summary: "Public explanation of the currently published local coverage target, what is built, and what still needs verification.",
 				href: "/coverage"
 			},
 			{
@@ -191,9 +238,9 @@ export function buildCoverageResponse(coverageMode: "seed" | "snapshot", coverag
 			},
 			{
 				id: "archive",
-				label: "Current public reference archive",
+				label: "Current public guide collection",
 				status: "reference",
-				summary: "The existing public ballot, candidate, measure, and source surfaces remain available as a reference corpus while Fulton County launch data is connected.",
+				summary: "Published guide surfaces remain readable here only where Ballot Clarity has a verified local coverage snapshot.",
 				href: "/ballot"
 			}
 		]

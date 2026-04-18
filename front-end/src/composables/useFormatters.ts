@@ -1,6 +1,5 @@
-import { currentCoverageTimeZone } from "~/constants";
-
 const isoDatePattern = /^\d{4}-\d{2}-\d{2}$/;
+const displayTimeZone = "UTC";
 
 function parseDateInput(value: string) {
 	if (isoDatePattern.test(value)) {
@@ -29,7 +28,7 @@ export function useFormatters() {
 	const dateFormatter = new Intl.DateTimeFormat("en-US", {
 		day: "numeric",
 		month: "long",
-		timeZone: currentCoverageTimeZone,
+		timeZone: displayTimeZone,
 		year: "numeric",
 	});
 
@@ -38,7 +37,7 @@ export function useFormatters() {
 		hour: "numeric",
 		minute: "2-digit",
 		month: "short",
-		timeZone: currentCoverageTimeZone,
+		timeZone: displayTimeZone,
 		year: "numeric",
 	});
 

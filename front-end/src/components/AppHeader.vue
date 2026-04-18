@@ -231,7 +231,7 @@ onBeforeUnmount(() => {
 							</span>
 							<span class="min-w-0">
 								<span class="text-[0.98rem] text-app-ink leading-none font-serif block sm:text-[1.05rem] dark:text-app-text-dark">{{ appName }}</span>
-								<span class="text-[11px] text-app-muted mt-1 hidden dark:text-app-muted-dark 2xl:block">Nonpartisan ballot guide and public-record archive</span>
+								<span class="text-[11px] text-app-muted mt-1 hidden dark:text-app-muted-dark 2xl:block">Nonpartisan ballot guide and civic lookup</span>
 							</span>
 						</span>
 					</NuxtLink>

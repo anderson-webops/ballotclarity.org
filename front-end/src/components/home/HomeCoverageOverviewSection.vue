@@ -35,7 +35,7 @@
 								Future-ready data architecture
 							</p>
 							<p class="text-sm text-app-muted leading-7 mt-2 dark:text-app-muted-dark">
-								The front end already consumes API-driven data, so real civic sources can replace the current archive later without rewriting the page structure.
+								The front end already consumes API-driven data, so published local coverage snapshots can replace empty or lookup-only states later without rewriting the page structure.
 							</p>
 						</div>
 					</li>
@@ -43,7 +43,7 @@
 			</div>
 
 			<InfoCallout title="How we verify data" tone="warning">
-				This site currently runs on a limited public-record archive while live data integrations are being connected.
+				Ballot Clarity should only show published local data when a verified coverage snapshot exists. Otherwise the app should say that local coverage is unavailable and keep official election tools visible.
 				<NuxtLink to="/methodology" class="underline underline-offset-3" prefetch-on="interaction">
 					Read the methodology
 				</NuxtLink>

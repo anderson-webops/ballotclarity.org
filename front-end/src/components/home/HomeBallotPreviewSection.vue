@@ -162,7 +162,7 @@ const officialToolCount = computed(() => props.nationwideLookupResult?.actions.f
 						Start from the coverage profile.
 					</h2>
 					<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-						The coverage page now explains where Ballot Clarity is going live first, what the current public archive still is, and which official Fulton County and Georgia systems will anchor the first production jurisdiction.
+						The coverage page now explains whether Ballot Clarity has a published local coverage target, what is currently available in this environment, and when the app is correctly falling back to lookup-first nationwide civic results instead of old seeded guide content.
 					</p>
 					<div class="mt-6 flex flex-wrap gap-3">
 						<NuxtLink to="/coverage" class="btn-primary" prefetch-on="interaction">

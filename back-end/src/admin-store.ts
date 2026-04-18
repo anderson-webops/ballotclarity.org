@@ -26,9 +26,6 @@ import process from "node:process";
 import { DatabaseSync } from "node:sqlite";
 import { fileURLToPath } from "node:url";
 import {
-	demoAdminCorrections,
-	demoAdminOverview,
-	demoAdminSourceMonitor,
 	demoCandidates,
 	demoElection,
 	demoMeasures
@@ -41,6 +38,10 @@ export interface AdminRepositoryOptions {
 	bootstrapPassword?: string | null;
 	bootstrapRole?: AdminUserRole | null;
 	bootstrapUsername?: string | null;
+	contentSeed?: AdminContentItem[];
+	correctionSeed?: AdminCorrectionRequest[];
+	activitySeed?: AdminActivityItem[];
+	sourceMonitorSeed?: AdminSourceMonitorItem[];
 }
 
 export interface CorrectionSubmissionInput {
@@ -368,6 +369,10 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 	const resolvedPath = ensureDatabasePath(options.dbPath || process.env.ADMIN_DB_PATH || defaultDbPath);
 	const database = new DatabaseSync(resolvedPath);
 	const schema = readFileSync(resolveSqliteSchemaPath(), "utf8");
+	const contentSeed = options.contentSeed ?? [];
+	const correctionSeed = options.correctionSeed ?? [];
+	const sourceMonitorSeed = options.sourceMonitorSeed ?? [];
+	const activitySeed = options.activitySeed ?? [];
 
 	database.exec(schema);
 	ensureColumn(database, "admin_content", "public_summary", "TEXT");
@@ -402,7 +407,7 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 			) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		`);
 
-		for (const item of defaultContentSeed()) {
+		for (const item of contentSeed) {
 			insertContent.run(
 				item.id,
 				item.entityType,
@@ -444,7 +449,7 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 		WHERE entity_type = ? AND entity_slug = ?
 	`);
 
-	for (const item of defaultContentSeed()) {
+	for (const item of contentSeed) {
 		backfillContentFields.run(
 			item.publicSummary,
 			item.publicBallotSummary || null,
@@ -474,7 +479,7 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 			) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		`);
 
-		for (const item of demoAdminCorrections.corrections) {
+		for (const item of correctionSeed) {
 			insertCorrection.run(
 				item.id,
 				item.submissionType ?? "correction",
@@ -507,7 +512,7 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 			) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 		`);
 
-		for (const item of demoAdminSourceMonitor.sources) {
+		for (const item of sourceMonitorSeed) {
 			insertSource.run(
 				item.id,
 				item.label,
@@ -532,7 +537,7 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 			) VALUES (?, ?, ?, ?, ?)
 		`);
 
-		for (const item of demoAdminOverview.recentActivity) {
+		for (const item of activitySeed) {
 			insertActivity.run(item.id, item.label, item.type, item.timestamp, item.summary);
 		}
 	}

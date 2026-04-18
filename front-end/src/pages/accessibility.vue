@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { contactEmail, currentCoverageElectionSlug } from "~/constants";
+import { contactEmail } from "~/constants";
 
 const { allowsGuideEntryPoints } = useGuideEntryGate();
 const standards = [
@@ -34,7 +34,7 @@ const printPractices = [
 ];
 
 const knownLimits = [
-	"The current release uses a clearly labeled public-record archive, so the print views are designed to demonstrate structure and readability rather than provide live election logistics.",
+	"Print views are only as current as the published local coverage or nationwide lookup context available for that page. Official election tools still remain the final authority for live logistics.",
 	"Ballot Clarity does not yet generate a downloadable tagged PDF. The current accessible print path is the browser print view on supported pages.",
 	"We have not implemented multilingual ballot content or alternative reading modes yet, though the design system is being shaped to support them later."
 ];
@@ -120,7 +120,7 @@ usePageSeo({
 						<NuxtLink to="/plan" class="btn-primary">
 							Open my ballot plan
 						</NuxtLink>
-						<NuxtLink :to="`/ballot/${currentCoverageElectionSlug}`" class="btn-secondary">
+						<NuxtLink to="/ballot" class="btn-secondary">
 							Open ballot guide
 						</NuxtLink>
 					</template>

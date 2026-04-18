@@ -3,6 +3,12 @@ import type { AddressInfo } from "node:net";
 import assert from "node:assert/strict";
 import { once } from "node:events";
 import test, { after, before } from "node:test";
+import { defaultContentSeed } from "../src/admin-store.js";
+import {
+	demoAdminCorrections,
+	demoAdminOverview,
+	demoAdminSourceMonitor,
+} from "../src/coverage-data.js";
 import { buildSeedCoverageSnapshot } from "../src/coverage-repository.js";
 import { createApp } from "../src/server.js";
 
@@ -14,6 +20,10 @@ const previousAdminStoreDriver = process.env.ADMIN_STORE_DRIVER;
 const previousAdminDatabaseUrl = process.env.ADMIN_DATABASE_URL;
 const previousDatabaseUrl = process.env.DATABASE_URL;
 const previousSourceAssetBaseUrl = process.env.SOURCE_ASSET_BASE_URL;
+const contentSeed = defaultContentSeed();
+const correctionSeed = demoAdminCorrections.corrections;
+const sourceMonitorSeed = demoAdminSourceMonitor.sources;
+const activitySeed = demoAdminOverview.recentActivity;
 
 before(async () => {
 	process.env.ADMIN_STORE_DRIVER = "sqlite";
@@ -23,7 +33,9 @@ before(async () => {
 
 	server = (await createApp({
 		adminApiKey,
+		activitySeed,
 		adminDbPath: ":memory:",
+		contentSeed,
 		coverageRepository: {
 			data: coverageSnapshot,
 			getCandidateBySlug(slug) {
@@ -34,10 +46,10 @@ before(async () => {
 				return coverageSnapshot.candidates.filter(candidate => requested.has(candidate.slug));
 			},
 			getElectionBySlug(slug) {
-				return coverageSnapshot.election.slug === slug ? coverageSnapshot.election : null;
+				return coverageSnapshot.election?.slug === slug ? coverageSnapshot.election : null;
 			},
 			getJurisdictionBySlug(slug) {
-				return coverageSnapshot.jurisdiction.slug === slug ? coverageSnapshot.jurisdiction : null;
+				return coverageSnapshot.jurisdiction?.slug === slug ? coverageSnapshot.jurisdiction : null;
 			},
 			getMeasureBySlug(slug) {
 				return coverageSnapshot.measures.find(measure => measure.slug === slug) ?? null;
@@ -45,9 +57,10 @@ before(async () => {
 			getSourceById(id) {
 				return coverageSnapshot.sources.find(source => source.id === id) ?? null;
 			},
-			mode: "seed",
+			mode: "snapshot",
 			snapshotPath: ":memory:"
 		},
+		correctionSeed,
 		addressEnrichmentService: {
 			async lookupAddress(address) {
 				if (/utah county|provo|84604/i.test(address)) {
@@ -159,6 +172,7 @@ before(async () => {
 				};
 			}
 		},
+		sourceMonitorSeed,
 		zipLocationService: {
 			async lookupZip(zipCode) {
 				if (zipCode === "84604") {
@@ -234,10 +248,53 @@ test("GET /health returns readiness and coverage metadata", async () => {
 	assert.equal(body.ok, true);
 	assert.equal(body.ready, true);
 	assert.equal(body.driver, "sqlite");
-	assert.equal(body.coverageMode, "seed");
+	assert.equal(body.coverageMode, "snapshot");
 	assert.equal(body.assetMode, "public-mirror");
 	assert.equal(body.providerSummary.total >= 6, true);
 	assert.match(body.timestamp, /^\d{4}-\d{2}-\d{2}T/);
+});
+
+test("default runtime stays empty instead of auto-seeding coverage and public ops data", async () => {
+	const isolatedServer = (await createApp({
+		adminApiKey,
+		adminDbPath: ":memory:"
+	})).listen(0, "127.0.0.1");
+
+	await once(isolatedServer, "listening");
+	const isolatedAddress = isolatedServer.address() as AddressInfo;
+	const isolatedBaseUrl = `http://127.0.0.1:${isolatedAddress.port}`;
+
+	try {
+		const [electionsResponse, coverageResponse, statusResponse] = await Promise.all([
+			fetch(`${isolatedBaseUrl}/api/elections`),
+			fetch(`${isolatedBaseUrl}/api/coverage`),
+			fetch(`${isolatedBaseUrl}/api/status`)
+		]);
+		const electionsBody = await electionsResponse.json();
+		const coverageBody = await coverageResponse.json();
+		const statusBody = await statusResponse.json();
+
+		assert.equal(electionsResponse.status, 200);
+		assert.deepEqual(electionsBody.elections, []);
+		assert.equal(coverageBody.coverageMode, "empty");
+		assert.equal(coverageBody.launchTarget, undefined);
+		assert.match(coverageBody.currentState, /No published local coverage snapshot/i);
+		assert.equal(statusBody.coverageMode, "empty");
+		assert.equal(statusBody.overallStatus, "reviewing");
+		assert.deepEqual(statusBody.sources, []);
+		assert.ok(statusBody.notes.some((note: string) => /No published local coverage snapshot is active/i.test(note)));
+
+		const ballotResponse = await fetch(`${isolatedBaseUrl}/api/ballot?election=2026-fulton-county-general`);
+		const ballotBody = await ballotResponse.json();
+
+		assert.equal(ballotResponse.status, 404);
+		assert.match(ballotBody.message, /Ballot not found/i);
+	}
+	finally {
+		await new Promise<void>((resolve, reject) => {
+			isolatedServer.close(error => error ? reject(error) : resolve());
+		});
+	}
 });
 
 test("POST /api/location validates short lookups", async () => {
@@ -394,7 +451,7 @@ test("GET /api/ballot returns the election guide and contests", async () => {
 	assert.equal(body.election.contests[0].title, "Federal Race");
 	assert.equal(body.election.contests[0].roleGuide.decisionAreas.length, 3);
 	assert.match(body.election.contests[0].roleGuide.summary, /federal law/i);
-	assert.match(body.note, /current release/i);
+	assert.match(body.note, /latest imported civic-data snapshot/i);
 	assert.match(body.election.name, /Fulton County/i);
 });
 
@@ -422,7 +479,7 @@ test("GET /api/data-sources returns the live-data roadmap and migration notes", 
 	assert.equal(body.roadmap.length, 6);
 	assert.equal(body.launchTarget.displayName, "Fulton County, Georgia");
 	assert.ok(body.categories[0].options[0].links.length >= 1);
-	assert.equal(body.coverageMode, "seed");
+	assert.equal(body.coverageMode, "snapshot");
 	assert.equal(body.assetMode, "public-mirror");
 });
 
@@ -436,7 +493,7 @@ test("GET /api/coverage returns the public launch profile for Fulton County, Geo
 	assert.equal(body.launchTarget.nextElectionDate, "2026-11-03");
 	assert.equal(body.supportedContentTypes.length, 5);
 	assert.equal(body.collections[0].href, "/coverage");
-	assert.equal(body.coverageMode, "seed");
+	assert.equal(body.coverageMode, "snapshot");
 });
 
 test("GET /api/status returns public source-health and launch notices", async () => {
@@ -445,7 +502,7 @@ test("GET /api/status returns public source-health and launch notices", async ()
 
 	assert.equal(response.status, 200);
 	assert.equal(body.overallStatus, "degraded");
-	assert.equal(body.coverageMode, "seed");
+	assert.equal(body.coverageMode, "snapshot");
 	assert.equal(body.sourceSummary.healthy, 1);
 	assert.equal(body.sourceSummary.incident, 1);
 	assert.ok(body.notes.length >= 2);
@@ -681,7 +738,35 @@ test("GET /api/admin/review and /api/admin/sources return protected operational 
 test("PATCH /api/admin/content updates public content fields and publish gating", async () => {
 	const isolatedServer = (await createApp({
 		adminApiKey,
-		adminDbPath: ":memory:"
+		activitySeed,
+		adminDbPath: ":memory:",
+		contentSeed,
+		coverageRepository: {
+			data: coverageSnapshot,
+			getCandidateBySlug(slug) {
+				return coverageSnapshot.candidates.find(candidate => candidate.slug === slug) ?? null;
+			},
+			getCandidatesBySlugs(slugs) {
+				const requested = new Set(slugs);
+				return coverageSnapshot.candidates.filter(candidate => requested.has(candidate.slug));
+			},
+			getElectionBySlug(slug) {
+				return coverageSnapshot.election?.slug === slug ? coverageSnapshot.election : null;
+			},
+			getJurisdictionBySlug(slug) {
+				return coverageSnapshot.jurisdiction?.slug === slug ? coverageSnapshot.jurisdiction : null;
+			},
+			getMeasureBySlug(slug) {
+				return coverageSnapshot.measures.find(measure => measure.slug === slug) ?? null;
+			},
+			getSourceById(id) {
+				return coverageSnapshot.sources.find(source => source.id === id) ?? null;
+			},
+			mode: "snapshot",
+			snapshotPath: ":memory:"
+		},
+		correctionSeed,
+		sourceMonitorSeed
 	})).listen(0, "127.0.0.1");
 
 	await once(isolatedServer, "listening");

@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { currentCoverageLocationSlug } from "~/constants";
-
 const { data: dataSources } = await useDataSources();
 
 usePageSeo({
@@ -12,14 +10,14 @@ usePageSeo({
 const items = [
 	{
 		body: [
-			"The current release uses a structured public-record archive and prewritten plain-language summaries to model how a source-first civic-information product can work. In a live version, summaries would be generated from public records, then reviewed against source citations and editorial rules.",
+			"Ballot Clarity is designed so published summaries can be generated from public records, then reviewed against source citations and editorial rules before they appear in a local guide.",
 			"Summaries are designed to describe what is documented, not to predict outcomes or recommend a vote.",
 		],
 		title: "How summaries are generated",
 	},
 	{
 		body: [
-			"Each candidate, measure, and evidence block includes attached source objects. In the current build those sources point to local text files that stand in for public records like filings, hearing notes, and budget documents.",
+			"Each candidate, measure, and evidence block includes attached source objects. When Ballot Clarity publishes local coverage, those sources should point to real public records like filings, hearing notes, and budget documents.",
 			"The interface keeps source counts visible and offers drawers or side panels so users can inspect source context without losing their place.",
 		],
 		title: "How sources are attached",
@@ -192,14 +190,14 @@ const informationTypes = [
 
 		<MethodologyAccordion :items="items" />
 
-		<section v-if="dataSources" class="surface-panel">
+		<section v-if="dataSources && (dataSources.roadmap.length || dataSources.categories.length)" class="surface-panel">
 			<div class="flex flex-wrap gap-4 items-start justify-between">
 				<div>
 					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
 						Live data roadmap
 					</p>
 					<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-						How the current archive is meant to be replaced
+						How published local coverage is meant to be built
 					</h2>
 				</div>
 				<TrustBadge label="Implementation order" tone="accent" />
@@ -221,8 +219,8 @@ const informationTypes = [
 				<NuxtLink to="/data-sources" class="btn-secondary">
 					Open data sources roadmap
 				</NuxtLink>
-				<NuxtLink :to="`/locations/${currentCoverageLocationSlug}`" class="btn-secondary">
-					Open location hub
+				<NuxtLink to="/coverage" class="btn-secondary">
+					Open coverage profile
 				</NuxtLink>
 			</div>
 		</section>
@@ -243,7 +241,7 @@ const informationTypes = [
 
 			<div class="space-y-4">
 				<InfoCallout title="Current build status" tone="warning">
-					This site currently uses a limited archive of public records. The architecture is ready for real civic APIs later, but the current content is intentionally labeled so users can distinguish present coverage from future live integrations.
+					This site may run with empty local coverage, nationwide civic lookup results, or published local guide data depending on the environment. The architecture is designed so those states are labeled clearly instead of falling back to fixture content.
 				</InfoCallout>
 				<InfoCallout title="Neutrality policy">
 					Ballot Clarity is designed to explain what is documented, not to endorse candidates, oppose parties, or tell users how to vote.

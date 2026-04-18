@@ -2,6 +2,10 @@ import type { ErrorRequestHandler } from "express";
 import type { AddressEnrichmentService } from "./address-enrichment.js";
 import type { CoverageRepository } from "./coverage-repository.js";
 import type {
+	AdminActivityItem,
+	AdminContentItem,
+	AdminCorrectionRequest,
+	AdminSourceMonitorItem,
 	Candidate,
 	Contest,
 	ContestLinkSummary,
@@ -13,6 +17,7 @@ import type {
 	EvidenceBlock,
 	FundingSummary,
 	Jurisdiction,
+	JurisdictionSummary,
 	Measure,
 	MeasureArgument,
 	MeasureChangeItem,
@@ -43,17 +48,9 @@ import { createAddressEnrichmentService } from "./address-enrichment.js";
 import { createAdminLoginThrottle } from "./admin-login-throttle.js";
 import { createAdminRepository } from "./admin-repository.js";
 import { createCensusGeocoderClient } from "./census-geocoder.js";
-import {
-	demoCandidates,
-	demoElection,
-	demoJurisdiction,
-	demoMeasures,
-	demoSources,
-	getSourceById
-} from "./coverage-data.js";
 import { createCoverageRepository } from "./coverage-repository.js";
 import { createGoogleCivicClient } from "./google-civic.js";
-import { buildCoverageResponse, launchTargetProfile } from "./launch-profile.js";
+import { buildCoverageResponse } from "./launch-profile.js";
 import { buildLocationLookupResponse, classifyLookupInput, validateLookupInput } from "./location-lookup.js";
 import { createLogger, createRequestLoggingMiddleware } from "./logger.js";
 import { createOpenStatesClient } from "./openstates.js";
@@ -69,7 +66,11 @@ interface CreateAppOptions {
 	bootstrapPassword?: string | null;
 	bootstrapUsername?: string | null;
 	coverageRepository?: CoverageRepository;
+	contentSeed?: AdminContentItem[];
+	correctionSeed?: AdminCorrectionRequest[];
+	activitySeed?: AdminActivityItem[];
 	googleCivicClient?: ReturnType<typeof createGoogleCivicClient>;
+	sourceMonitorSeed?: AdminSourceMonitorItem[];
 	zipLocationService?: ZipLocationService | null;
 }
 
@@ -128,10 +129,10 @@ function collectContestSources(contest: Contest) {
 }
 
 function buildSourceDirectory(
-	candidates: Candidate[] = demoCandidates,
-	measures: Measure[] = demoMeasures,
-	contests: Contest[] = demoElection.contests,
-	sources: Source[] = demoSources
+	candidates: Candidate[],
+	measures: Measure[],
+	contests: Contest[],
+	sources: Source[]
 ): SourceDirectoryItem[] {
 	const citations = new Map<string, SourceDirectoryItem["citedBy"]>();
 
@@ -191,12 +192,12 @@ function buildSourceDirectory(
 
 function buildSourceRecord(
 	id: string,
-	candidates: Candidate[] = demoCandidates,
-	measures: Measure[] = demoMeasures,
-	contests: Contest[] = demoElection.contests,
-	sources: Source[] = demoSources
+	candidates: Candidate[],
+	measures: Measure[],
+	contests: Contest[],
+	sources: Source[]
 ): SourceRecordResponse | null {
-	const source = sources.find(item => item.id === id) ?? getSourceById(id);
+	const source = sources.find(item => item.id === id);
 
 	if (!source)
 		return null;
@@ -246,19 +247,20 @@ function buildDistrictSummary(contest: Contest, election: Election) {
 
 function buildSearchResponse(
 	rawQuery: string,
-	candidates: Candidate[] = demoCandidates,
-	measures: Measure[] = demoMeasures,
-	contests: Contest[] = demoElection.contests,
-	election: Election = demoElection,
-	jurisdiction: Jurisdiction = demoJurisdiction,
-	sourceDirectory: SourceDirectoryItem[] = buildSourceDirectory(candidates, measures, contests),
-	districts = contests.filter(contest => contest.type === "candidate").map(contest => buildDistrictSummary(contest, election))
+	candidates: Candidate[],
+	measures: Measure[],
+	contests: Contest[],
+	election: Election | null,
+	jurisdiction: Jurisdiction | null,
+	sourceDirectory: SourceDirectoryItem[],
+	districts: ReturnType<typeof buildDistrictSummary>[]
 ): SearchResponse {
 	const query = rawQuery.trim();
 	const lowerQuery = query.toLowerCase();
 	const suggestions = [
-		"Fulton County",
-		"Georgia primary",
+		"official election office",
+		"district page",
+		"representatives",
 		"campaign finance",
 		"source directory",
 		"contest page"
@@ -329,7 +331,7 @@ function buildSearchResponse(
 			summary: contest.description,
 			title: contest.office,
 			type: "contest" as const,
-			updatedAt: election.updatedAt
+			updatedAt: election?.updatedAt ?? ""
 		}));
 
 	const districtResults = districts
@@ -349,6 +351,7 @@ function buildSearchResponse(
 		}));
 
 	const electionResults = [election]
+		.filter((item): item is Election => Boolean(item))
 		.filter(election => [
 			election.name,
 			election.locationName,
@@ -357,7 +360,7 @@ function buildSearchResponse(
 		.map(election => ({
 			href: `/elections/${election.slug}`,
 			id: election.slug,
-			meta: `${jurisdiction.displayName} · ${election.date}`,
+			meta: `${jurisdiction?.displayName ?? election.locationName} · ${election.date}`,
 			summary: election.description,
 			title: election.name,
 			type: "election" as const,
@@ -365,6 +368,7 @@ function buildSearchResponse(
 		}));
 
 	const jurisdictionResults = [jurisdiction]
+		.filter((item): item is Jurisdiction => Boolean(item))
 		.filter(jurisdiction => [
 			jurisdiction.name,
 			jurisdiction.displayName,
@@ -421,11 +425,15 @@ export async function createApp(options: CreateAppOptions = {}) {
 	const adminApiKey = options.adminApiKey ?? process.env.ADMIN_API_KEY ?? null;
 	const coverageRepository = options.coverageRepository ?? await createCoverageRepository();
 	const adminRepository = await createAdminRepository({
+		activitySeed: options.activitySeed,
 		bootstrapDisplayName: options.bootstrapDisplayName,
 		bootstrapPassword: options.bootstrapPassword,
 		bootstrapUsername: options.bootstrapUsername,
+		contentSeed: options.contentSeed,
+		correctionSeed: options.correctionSeed,
 		dbPath: options.adminDbPath,
-		databaseUrl: process.env.ADMIN_DATABASE_URL || process.env.DATABASE_URL || null
+		databaseUrl: process.env.ADMIN_DATABASE_URL || process.env.DATABASE_URL || null,
+		sourceMonitorSeed: options.sourceMonitorSeed
 	});
 	const logger = createLogger("ballot-clarity-api");
 	const sourceAssetStore = createSourceAssetStore();
@@ -456,6 +464,33 @@ export async function createApp(options: CreateAppOptions = {}) {
 
 	function resolveSources(sources: Source[]) {
 		return sources.map(resolveSource);
+	}
+
+	function getPrimaryElectionSlug() {
+		return coverageRepository.data.election?.slug ?? null;
+	}
+
+	function getJurisdictionSummary(slug: string | null | undefined) {
+		if (!slug)
+			return coverageRepository.data.jurisdictionSummaries[0] ?? null;
+
+		return coverageRepository.data.jurisdictionSummaries.find(item => item.slug === slug)
+			?? coverageRepository.data.jurisdictionSummaries[0]
+			?? null;
+	}
+
+	function buildFallbackJurisdictionSummary(election: Election): JurisdictionSummary {
+		return {
+			description: "Published jurisdiction details are not available for this election in the current snapshot.",
+			displayName: election.locationName,
+			jurisdictionType: "local",
+			name: election.locationName,
+			nextElectionName: election.name,
+			nextElectionSlug: election.slug,
+			slug: election.jurisdictionSlug,
+			state: coverageRepository.data.location?.state ?? "",
+			updatedAt: election.updatedAt
+		};
 	}
 
 	function resolveOfficialResource(resource: OfficialResource): OfficialResource {
@@ -738,12 +773,22 @@ export async function createApp(options: CreateAppOptions = {}) {
 	}
 
 	async function listPublicContests() {
-		const election = await getPublicElection(coverageRepository.data.election.slug);
+		const primaryElectionSlug = getPrimaryElectionSlug();
+
+		if (!primaryElectionSlug)
+			return [];
+
+		const election = await getPublicElection(primaryElectionSlug);
 		return election?.contests ?? [];
 	}
 
 	async function listPublicDistricts() {
-		const election = await getPublicElection(coverageRepository.data.election.slug);
+		const primaryElectionSlug = getPrimaryElectionSlug();
+
+		if (!primaryElectionSlug)
+			return [];
+
+		const election = await getPublicElection(primaryElectionSlug);
 
 		if (!election)
 			return [];
@@ -754,7 +799,12 @@ export async function createApp(options: CreateAppOptions = {}) {
 	}
 
 	async function getPublicDistrict(slug: string) {
-		const election = await getPublicElection(coverageRepository.data.election.slug);
+		const primaryElectionSlug = getPrimaryElectionSlug();
+
+		if (!primaryElectionSlug)
+			return null;
+
+		const election = await getPublicElection(primaryElectionSlug);
 
 		if (!election)
 			return null;
@@ -771,7 +821,12 @@ export async function createApp(options: CreateAppOptions = {}) {
 	}
 
 	async function getPublicContest(slug: string) {
-		const election = await getPublicElection(coverageRepository.data.election.slug);
+		const primaryElectionSlug = getPrimaryElectionSlug();
+
+		if (!primaryElectionSlug)
+			return null;
+
+		const election = await getPublicElection(primaryElectionSlug);
 
 		if (!election)
 			return null;
@@ -788,7 +843,12 @@ export async function createApp(options: CreateAppOptions = {}) {
 	}
 
 	async function listPublicRepresentatives() {
-		const election = await getPublicElection(coverageRepository.data.election.slug);
+		const primaryElectionSlug = getPrimaryElectionSlug();
+
+		if (!primaryElectionSlug)
+			return [];
+
+		const election = await getPublicElection(primaryElectionSlug);
 
 		if (!election)
 			return [];
@@ -805,6 +865,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 
 	function buildContestRecordResponse(contest: Contest, election: Election): ContestRecordResponse {
 		const sources = collectContestSources(contest).map(resolveSource);
+		const jurisdictionSummary = getJurisdictionSummary(election.jurisdictionSlug) ?? buildFallbackJurisdictionSummary(election);
 		const relatedContests: ContestLinkSummary[] = election.contests
 			.filter(item => item.slug !== contest.slug)
 			.map(item => ({
@@ -826,7 +887,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 				slug: election.slug,
 				updatedAt: election.updatedAt
 			},
-			jurisdiction: coverageRepository.data.jurisdictionSummaries[0],
+			jurisdiction: jurisdictionSummary,
 			note: "Contest pages are the canonical public reading surface for one office or ballot question. Use them for citations and source review, then return to the ballot guide for the full ballot context.",
 			relatedContests,
 			sourceCount: sources.length,
@@ -942,17 +1003,20 @@ export async function createApp(options: CreateAppOptions = {}) {
 			"review-soon": sources.filter(source => source.health === "review-soon").length,
 			"stale": sources.filter(source => source.health === "stale").length
 		};
-		const overallStatus = sourceSummary.incident
-			? "degraded"
-			: sourceSummary["review-soon"] || sourceSummary.stale
-				? "reviewing"
-				: "healthy";
+		let overallStatus: PublicStatusResponse["overallStatus"] = "healthy";
+
+		if (coverageRepository.mode === "empty")
+			overallStatus = "reviewing";
+		else if (sourceSummary.incident)
+			overallStatus = "degraded";
+		else if (sourceSummary["review-soon"] || sourceSummary.stale)
+			overallStatus = "reviewing";
 		const nextPublishWindow = overview.metrics.find(metric => metric.id === "next-publish")?.value;
 		const notes = [
 			...overview.needsAttention,
 			coverageRepository.mode === "snapshot"
 				? "Public pages are serving an imported coverage snapshot."
-				: "Public pages are still serving the reference archive while Fulton County launch integrations are being connected."
+				: "No published local coverage snapshot is active right now."
 		];
 
 		return {
@@ -1120,7 +1184,11 @@ export async function createApp(options: CreateAppOptions = {}) {
 
 	app.post("/api/location", async (request, response) => {
 		const raw = typeof request.body?.q === "string" ? request.body.q.trim() : "";
-		const coverage = buildCoverageResponse(coverageRepository.mode, coverageRepository.data.updatedAt);
+		const coverage = buildCoverageResponse(
+			coverageRepository.mode,
+			coverageRepository.data.updatedAt,
+			coverageRepository.data.dataSources.launchTarget
+		);
 
 		response.set("Cache-Control", "no-store");
 
@@ -1207,7 +1275,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 			coverageRepository.data.jurisdiction,
 			coverageRepository.data.jurisdictionSummaries,
 			coverageRepository.data.location,
-			coverageRepository.data.election.slug,
+			coverageRepository.data.election?.slug,
 			coverageRepository.mode,
 			coverage,
 			geoContext,
@@ -1254,13 +1322,16 @@ export async function createApp(options: CreateAppOptions = {}) {
 			...coverageRepository.data.dataSources,
 			assetMode: sourceAssetStore.mode,
 			coverageMode: coverageRepository.mode,
-			launchTarget: coverageRepository.data.dataSources.launchTarget || launchTargetProfile,
 			sourceAssetBaseUrl: sourceAssetStore.baseUrl
 		});
 	});
 
 	app.get("/api/coverage", (_request, response) => {
-		const payload: CoverageResponse = buildCoverageResponse(coverageRepository.mode, coverageRepository.data.updatedAt);
+		const payload: CoverageResponse = buildCoverageResponse(
+			coverageRepository.mode,
+			coverageRepository.data.updatedAt,
+			coverageRepository.data.dataSources.launchTarget
+		);
 		response.json(payload);
 	});
 
@@ -1277,29 +1348,24 @@ export async function createApp(options: CreateAppOptions = {}) {
 
 	app.get("/api/search", async (request, response) => {
 		const query = typeof request.query.q === "string" ? request.query.q : "";
-		const election = await getPublicElection(coverageRepository.data.election.slug);
+		const primaryElectionSlug = getPrimaryElectionSlug();
+		const election = primaryElectionSlug ? await getPublicElection(primaryElectionSlug) : null;
 		const candidates = await listPublicCandidates();
 		const measures = await listPublicMeasures();
 		const contests = await listPublicContests();
 		const sourceDirectory = buildSourceDirectory(candidates, measures, contests, resolvedSourceInventory);
+		const districts = await listPublicDistricts();
 
-		if (!election) {
-			response.json({
-				groups: [],
-				query: query.trim(),
-				suggestions: [
-					"Fulton County",
-					"Georgia primary",
-					"campaign finance",
-					"source directory",
-					"contest page"
-				],
-				total: 0
-			});
-			return;
-		}
-
-		response.json(buildSearchResponse(query, candidates, measures, contests, election, coverageRepository.data.jurisdiction, sourceDirectory));
+		response.json(buildSearchResponse(
+			query,
+			candidates,
+			measures,
+			contests,
+			election,
+			coverageRepository.data.jurisdiction,
+			sourceDirectory,
+			districts
+		));
 	});
 
 	app.get("/api/sources", async (_request, response) => {
@@ -1374,7 +1440,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 	app.get("/api/ballot", async (request, response) => {
 		const electionSlug = typeof request.query.election === "string" ? request.query.election : "";
 		const defaultLocation = coverageRepository.data.location;
-		const locationSlug = typeof request.query.location === "string" ? request.query.location : defaultLocation.slug;
+		const requestedLocationSlug = typeof request.query.location === "string" ? request.query.location : "";
 
 		if (!electionSlug) {
 			response.status(400).json({
@@ -1392,15 +1458,20 @@ export async function createApp(options: CreateAppOptions = {}) {
 			return;
 		}
 
+		if (!defaultLocation) {
+			response.status(404).json({
+				message: "Ballot location context is not available for the requested election."
+			});
+			return;
+		}
+
 		response.json({
 			election,
 			location: {
 				...defaultLocation,
-				slug: locationSlug
+				slug: requestedLocationSlug || defaultLocation.slug
 			},
-			note: coverageRepository.mode === "snapshot"
-				? "Current public coverage is running from the latest imported civic-data snapshot. Verify official election logistics with the linked election office."
-				: "Current public coverage uses the current release while live civic-data integrations are being connected. Verify official election logistics with the linked election office.",
+			note: "Current public coverage is running from the latest imported civic-data snapshot. Verify official election logistics with the linked election office.",
 			updatedAt: election.updatedAt
 		});
 	});

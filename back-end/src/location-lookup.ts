@@ -10,15 +10,21 @@ import type {
 	LocationSelection,
 	OfficialResource,
 } from "./types/civic.js";
-import { getOfficialToolsForState } from "./official-election-tools.js";
+import { getOfficialToolsForState, getStateNameForAbbreviation } from "./official-election-tools.js";
 
 const zipCodePattern = /^\d{5}(?:-\d{4})?$/;
 const numericFragmentPattern = /^[\d-]+$/;
 const myVoterPagePattern = /my voter page/i;
 const pollingPlacePattern = /polling-place|precinct/i;
-const publishedGuideMatcherBySlug = new Map([
-	["fulton-county-georgia", { countyFips: "121", stateAbbreviation: "GA" }]
-]);
+
+function normalizePlaceName(value: string | undefined) {
+	return (value ?? "")
+		.toLowerCase()
+		.replace(/[^a-z0-9]+/g, " ")
+		.replace(/\b(?:county|city|parish|borough|township|town)\b/g, " ")
+		.replace(/\s+/g, " ")
+		.trim();
+}
 
 export interface LookupGeoContext {
 	countyFips?: string;
@@ -42,10 +48,10 @@ function buildCoverageSelection(summary: JurisdictionSummary): LocationSelection
 	};
 }
 
-function findOfficialVerificationResource(jurisdiction: Jurisdiction, coverage: CoverageResponse) {
+function findOfficialVerificationResource(jurisdiction: Jurisdiction | null, coverage: CoverageResponse) {
 	const candidates = [
-		...jurisdiction.officialResources,
-		...coverage.launchTarget.officialResources
+		...(jurisdiction?.officialResources ?? []),
+		...(coverage.launchTarget?.officialResources ?? [])
 	];
 
 	return candidates.find(resource => myVoterPagePattern.test(resource.label))
@@ -107,14 +113,31 @@ function findSupportedCoverageSummaries(jurisdictionSummaries: JurisdictionSumma
 	if (!geoContext?.stateAbbreviation)
 		return [];
 
-	return jurisdictionSummaries.filter((summary) => {
-		const matcher = publishedGuideMatcherBySlug.get(summary.slug);
+	const geoState = normalizePlaceName(
+		geoContext.stateName
+		|| getStateNameForAbbreviation(geoContext.stateAbbreviation)
+		|| geoContext.stateAbbreviation
+	);
+	const matchingStateSummaries = jurisdictionSummaries.filter((summary) => {
+		const summaryState = normalizePlaceName(summary.state);
+		return Boolean(summaryState && geoState && summaryState === geoState);
+	});
 
-		if (!matcher)
-			return false;
+	return matchingStateSummaries.filter((summary) => {
+		const summaryNames = [
+			normalizePlaceName(summary.name),
+			normalizePlaceName(summary.displayName)
+		].filter(Boolean);
+		const countyName = normalizePlaceName(geoContext.countyName);
+		const locality = normalizePlaceName(geoContext.locality);
 
-		return geoContext.stateAbbreviation === matcher.stateAbbreviation
-			&& (!matcher.countyFips || geoContext.countyFips === matcher.countyFips);
+		if (countyName && summaryNames.some(name => name.includes(countyName) || countyName.includes(name)))
+			return true;
+
+		if (locality && summaryNames.some(name => name.includes(locality) || locality.includes(name)))
+			return true;
+
+		return !countyName && !locality && matchingStateSummaries.length === 1;
 	});
 }
 
@@ -260,11 +283,11 @@ export function validateLookupInput(raw: string) {
 
 export function buildLocationLookupResponse(
 	rawQuery: string,
-	jurisdiction: Jurisdiction,
+	jurisdiction: Jurisdiction | null,
 	jurisdictionSummaries: JurisdictionSummary[],
-	location: LocationSelection,
-	electionSlug: string,
-	coverageMode: "seed" | "snapshot",
+	location: LocationSelection | null,
+	electionSlug: string | undefined,
+	coverageMode: "empty" | "snapshot",
 	coverage: CoverageResponse,
 	geoContext?: LookupGeoContext | null,
 	officialLookup?: OfficialAddressMatch | null,
@@ -286,15 +309,16 @@ export function buildLocationLookupResponse(
 			};
 		}
 
-		const officialVerification = supportedCoverageSummaries.length
+		const hasPublishedGuide = Boolean(supportedCoverageSummaries.length && location && electionSlug);
+		const officialVerification = hasPublishedGuide
 			? buildOfficialVerificationAction(findOfficialVerificationResource(jurisdiction, coverage))
 			: undefined;
 		const actions = dedupeActions([
-			...(supportedCoverageSummaries.length ? buildCoverageActions(supportedCoverageSummaries) : []),
+			...(hasPublishedGuide ? buildCoverageActions(supportedCoverageSummaries) : []),
 			...stateOfficialActions,
 			...(officialVerification ? [officialVerification] : [])
 		]);
-		const guideAvailability = supportedCoverageSummaries.length ? "published" : "not-published";
+		const guideAvailability = hasPublishedGuide ? "published" : "not-published";
 		const coverageSentence = describeDetectedLocation(inputKind, rawQuery, geoContext);
 
 		return {
@@ -311,7 +335,7 @@ export function buildLocationLookupResponse(
 		};
 	}
 
-	if (!supportedCoverageSummaries.length) {
+	if (!supportedCoverageSummaries.length || !location || !electionSlug) {
 		const officialActions = dedupeActions([
 			...(officialLookup?.actions ?? []),
 			...stateOfficialActions

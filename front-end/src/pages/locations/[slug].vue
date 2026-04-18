@@ -68,7 +68,7 @@ usePageSeo({
 
 		<div v-else-if="error || !jurisdiction" class="max-w-3xl">
 			<InfoCallout title="Location hub not available" tone="warning">
-				This location hub could not be loaded. Return to the home page and reopen the Fulton County location hub.
+				This location hub could not be loaded. Return to the home page or coverage profile and try again.
 			</InfoCallout>
 		</div>
 
@@ -105,7 +105,7 @@ usePageSeo({
 
 				<div class="space-y-4">
 					<InfoCallout title="Not an official government site" tone="warning">
-						Use this page to orient yourself, then verify deadlines, polling logistics, and late changes with Fulton County Registration and Elections and Georgia My Voter Page.
+						Use this page to orient yourself, then verify deadlines, polling logistics, and late changes with {{ jurisdiction.officialOffice.name }} and the linked official voter tools.
 					</InfoCallout>
 					<AddressLookupForm compact :election="jurisdiction.upcomingElections[0] ?? null" />
 				</div>

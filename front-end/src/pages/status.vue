@@ -51,7 +51,7 @@ const statusLabel = computed(() => {
 				<div class="surface-panel">
 					<div class="flex flex-wrap gap-2">
 						<TrustBadge :label="statusLabel" :tone="statusTone" />
-						<TrustBadge :label="data.coverageMode === 'snapshot' ? 'Imported snapshot' : 'Reference archive'" />
+						<TrustBadge :label="data.coverageMode === 'snapshot' ? 'Imported snapshot' : 'No local snapshot'" />
 						<TrustBadge label="Public source health" tone="warning" />
 					</div>
 					<h1 class="text-5xl text-app-ink font-serif mt-5 dark:text-app-text-dark">
@@ -165,6 +165,11 @@ const statusLabel = computed(() => {
 								Last checked {{ formatDateTime(source.lastCheckedAt) }} · Next check {{ formatDateTime(source.nextCheckAt) }}
 							</p>
 						</article>
+						<div v-if="!data.sources.length" class="px-5 py-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
+							<p class="text-sm text-app-muted leading-7 dark:text-app-muted-dark">
+								No public source monitors are published for this environment yet.
+							</p>
+						</div>
 					</div>
 				</div>
 			</section>

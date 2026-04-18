@@ -1,19 +1,17 @@
 <script setup lang="ts">
 import type { Source } from "~/types/civic";
 import { storeToRefs } from "pinia";
-import { contactEmail, currentCoverageElectionSlug, currentCoverageLocationName, currentCoverageLocationSlug } from "~/constants";
+import { contactEmail } from "~/constants";
 import { buildCompareLaunchSlugs, buildCompareRoute } from "~/stores/civic";
 
 const civicStore = useCivicStore();
 const route = useRoute();
 const runtimeConfig = useRuntimeConfig();
 const siteUrl = useSiteUrl();
-const { ballotPlan, compareList, isHydrated } = storeToRefs(civicStore);
+const { ballotPlan, compareList, isHydrated, selectedElection, selectedLocation } = storeToRefs(civicStore);
 const candidateSlug = computed(() => String(route.params.slug));
 const { formatCompactNumber, formatCurrency, formatDate, formatDateTime, formatPercent } = useFormatters();
 const { data: candidate, error, pending } = await useCandidate(candidateSlug);
-const electionOverviewHref = `/elections/${currentCoverageElectionSlug}`;
-const locationHubHref = `/locations/${currentCoverageLocationSlug}`;
 const sectionLinks = [
 	{ href: "#at-a-glance", label: "At a glance" },
 	{ href: "#biography", label: "Bio" },
@@ -41,17 +39,6 @@ const contextTerms = [
 		term: "Influence context"
 	}
 ] as const;
-
-watchEffect(() => {
-	if (candidate.value) {
-		civicStore.setLocation({
-			coverageLabel: `Published ballot guide area: ${currentCoverageLocationName}`,
-			displayName: candidate.value.location,
-			slug: currentCoverageLocationSlug,
-			state: "Georgia",
-		});
-	}
-});
 
 function uniqueSources(sources: Source[]) {
 	const seen = new Map<string, Source>();
@@ -90,6 +77,9 @@ usePageSeo({
 const effectiveBallotPlan = computed(() => isHydrated.value ? ballotPlan.value : {});
 const effectiveCompareList = computed(() => isHydrated.value ? compareList.value : []);
 const showPersistedCandidateState = computed(() => isHydrated.value);
+const guideHref = computed(() => showPersistedCandidateState.value && selectedElection.value ? `/ballot/${selectedElection.value.slug}` : "/ballot");
+const electionOverviewHref = computed(() => showPersistedCandidateState.value && selectedElection.value ? `/elections/${selectedElection.value.slug}` : "/coverage");
+const locationHubHref = computed(() => showPersistedCandidateState.value && selectedLocation.value ? `/locations/${selectedLocation.value.slug}` : "/coverage");
 const isCompared = computed(() => candidate.value ? effectiveCompareList.value.includes(candidate.value.slug) : false);
 const compareLimitReached = computed(() => effectiveCompareList.value.length >= 3 && !isCompared.value);
 const compareLaunchSlugs = computed(() => {
@@ -127,7 +117,7 @@ const dataThroughLabel = computed(() => {
 const candidateJsonHref = computed(() => candidate.value ? `${runtimeConfig.public.apiBase}/candidates/${candidate.value.slug}` : "");
 const candidateBreadcrumbs = computed(() => [
 	{ label: "Home", to: "/" },
-	{ label: "Ballot guide", to: `/ballot/${currentCoverageElectionSlug}` },
+	{ label: "Ballot guide", to: guideHref.value },
 	{ label: candidate.value?.name ?? "Candidate profile" }
 ]);
 const issuePositionSources = computed(() => {
@@ -282,7 +272,7 @@ function saveToPlan() {
 							<span class="i-carbon-download" />
 							Download JSON
 						</a>
-						<NuxtLink :to="`/ballot/${currentCoverageElectionSlug}`" class="btn-primary">
+						<NuxtLink :to="guideHref" class="btn-primary">
 							Back to ballot
 						</NuxtLink>
 					</div>
@@ -658,7 +648,7 @@ function saveToPlan() {
 					id="sources"
 					eyebrow="Sources & methods"
 					title="Sources and methodology notes"
-					description="Use this section to inspect how the profile was assembled, where the archive evidence came from, and what records remain outside the current archive."
+					description="Use this section to inspect how the profile was assembled, where the attached evidence came from, and what records remain outside the current published source set."
 				>
 					<template #meta>
 						<SourceDrawer :sources="candidate.sources" :title="`${candidate.name} full source list`" />

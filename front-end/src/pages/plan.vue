@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import type { BallotPlanSelection, Contest, PlannedMeasureDecision } from "~/types/civic";
 import { storeToRefs } from "pinia";
-import { currentCoverageElectionSlug } from "~/constants";
 import { buildCompareRoute } from "~/stores/civic";
 import { buildPlanUnavailableMessaging } from "~/utils/plan-messaging";
 
 const civicStore = useCivicStore();
+const route = useRoute();
 const { ballotPlan, ballotPlanCount, compareCount, compareList, isHydrated, selectedElection, selectedLocation } = storeToRefs(civicStore);
 const { formatDate, formatDateTime } = useFormatters();
 const { activeLookupContext, activeNationwideResult, allowsGuideEntryPoints } = useGuideEntryGate();
@@ -15,9 +15,13 @@ const effectiveBallotPlanCount = computed(() => isHydrated.value ? ballotPlanCou
 const effectiveCompareCount = computed(() => isHydrated.value ? compareCount.value : 0);
 const effectiveCompareList = computed(() => isHydrated.value ? compareList.value : []);
 const showPersistedPlanState = computed(() => isHydrated.value);
-const electionSlug = computed(() => showPersistedPlanState.value && !allowsGuideEntryPoints.value
-	? undefined
-	: isHydrated.value ? (selectedElection.value?.slug ?? currentCoverageElectionSlug) : currentCoverageElectionSlug);
+const requestedElectionSlug = computed(() => typeof route.query.election === "string" ? route.query.election : undefined);
+const electionSlug = computed(() => {
+	if (showPersistedPlanState.value && !allowsGuideEntryPoints.value)
+		return undefined;
+
+	return selectedElection.value?.slug ?? requestedElectionSlug.value;
+});
 const locationSlug = computed(() => isHydrated.value && allowsGuideEntryPoints.value ? selectedLocation.value?.slug : undefined);
 const { data, error, pending } = await useBallot(electionSlug, locationSlug);
 const lookupElection = computed(() => showPersistedPlanState.value

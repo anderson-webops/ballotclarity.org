@@ -1,19 +1,20 @@
 <script setup lang="ts">
 import type { Source, SourceType } from "~/types/civic";
 import { storeToRefs } from "pinia";
-import { contactEmail, currentCoverageElectionSlug, currentCoverageLocationSlug } from "~/constants";
+import { contactEmail } from "~/constants";
 
 const civicStore = useCivicStore();
 const route = useRoute();
 const runtimeConfig = useRuntimeConfig();
 const siteUrl = useSiteUrl();
-const { ballotPlan, isHydrated } = storeToRefs(civicStore);
+const { ballotPlan, isHydrated, selectedElection, selectedLocation } = storeToRefs(civicStore);
 const { formatDateTime } = useFormatters();
 const measureSlug = computed(() => String(route.params.slug));
 const { data: measure, error, pending } = await useMeasure(measureSlug);
 const effectiveBallotPlan = computed(() => isHydrated.value ? ballotPlan.value : {});
-const electionOverviewHref = `/elections/${currentCoverageElectionSlug}`;
-const locationHubHref = `/locations/${currentCoverageLocationSlug}`;
+const guideHref = computed(() => isHydrated.value && selectedElection.value ? `/ballot/${selectedElection.value.slug}` : "/ballot");
+const electionOverviewHref = computed(() => isHydrated.value && selectedElection.value ? `/elections/${selectedElection.value.slug}` : "/coverage");
+const locationHubHref = computed(() => isHydrated.value && selectedLocation.value ? `/locations/${selectedLocation.value.slug}` : "/coverage");
 const sectionLinks = [
 	{ href: "#at-a-glance", label: "At a glance" },
 	{ href: "#baseline", label: "Current law" },
@@ -47,7 +48,7 @@ function uniqueSources(sources: Source[]) {
 const measureJsonHref = computed(() => measure.value ? `${runtimeConfig.public.apiBase}/measures/${measure.value.slug}` : "");
 const measureBreadcrumbs = computed(() => [
 	{ label: "Home", to: "/" },
-	{ label: "Ballot guide", to: `/ballot/${currentCoverageElectionSlug}` },
+	{ label: "Ballot guide", to: guideHref.value },
 	{ label: measure.value?.title ?? "Measure explainer" }
 ]);
 const officialSources = computed(() => {
@@ -235,7 +236,7 @@ function saveMeasure(decision: "no" | "review" | "yes") {
 						<NuxtLink :to="electionOverviewHref" class="btn-secondary">
 							Election overview
 						</NuxtLink>
-						<NuxtLink :to="`/ballot/${currentCoverageElectionSlug}`" class="btn-primary">
+						<NuxtLink :to="guideHref" class="btn-primary">
 							Back to ballot
 						</NuxtLink>
 					</div>

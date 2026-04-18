@@ -7,6 +7,10 @@ interface PageSectionNavItem {
 }
 
 defineProps<{
+	breadcrumbs?: Array<{
+		label: string;
+		to?: string;
+	}>;
 	description?: string;
 	items: PageSectionNavItem[];
 	title: string;
@@ -15,6 +19,9 @@ defineProps<{
 
 <template>
 	<nav class="section-nav surface-panel" aria-label="Page sections">
+		<div v-if="breadcrumbs?.length" class="section-nav__crumbs">
+			<AppBreadcrumbs :items="breadcrumbs" compact />
+		</div>
 		<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
 			{{ title }}
 		</p>

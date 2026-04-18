@@ -60,6 +60,7 @@ Already present and still required:
 - `ADMIN_SESSION_SECRET`
 - `SOURCE_ASSET_BASE_URL`
 - `LIVE_COVERAGE_FILE`
+- `LAUNCH_DIRECTORY_FILE`
 
 ## Exact schema additions
 
@@ -177,5 +178,17 @@ Build them as isolated adapters, not one monolithic civic-data client:
 
 1. Keep ZIP lookup as approximate selection flow.
 2. Add address-to-district caching table and service.
-3. Add provider env wiring and secret loading for Google Civic and api.data.gov keys.
+3. Add provider env wiring and secret loading for Google Civic, Open States, and api.data.gov keys.
 4. Build one real Fulton County address lookup path end to end before expanding jurisdiction count.
+
+## What is now implemented in-repo
+
+- Full-address lookup can now enrich the response with Census geographies and Open States representative matches.
+- When Postgres is configured, normalized address geography is cached in `address_lookups` and `district_assignments`.
+- A launch-directory sync scaffold now exists to ingest Google Civic elections plus Congress and Open States representative records into a local JSON artifact.
+
+## What still has to happen after this
+
+- Move the public district and representative pages from seeded derivation onto the ingested launch-directory and later database-backed read model.
+- Add deliberate candidate-to-committee and candidate-to-lobbying crosswalks before OpenFEC or LDA drive public funding or influence pages.
+- Put scheduled sync around the launch-directory artifact and then replace the JSON artifact with first-class Postgres tables once the mapping stabilizes.

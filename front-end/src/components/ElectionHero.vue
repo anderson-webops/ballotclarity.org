@@ -35,11 +35,6 @@ function printBallot() {
 		<div class="pamphlet-surface border border-app-line rounded-[2rem] bg-white shadow-[0_30px_80px_-48px_rgba(16,37,62,0.65)] overflow-hidden dark:border-app-line-dark dark:bg-app-panel-dark">
 			<div class="px-6 py-8 gap-8 grid lg:px-10 sm:px-8 lg:grid-cols-[minmax(0,1.4fr)_minmax(19rem,0.8fr)]">
 				<div>
-					<div class="flex flex-wrap gap-2 items-center">
-						<TrustBadge label="Current coverage" tone="warning" />
-						<TrustBadge label="Nonpartisan" tone="accent" />
-						<TrustBadge label="Sources attached" />
-					</div>
 					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold mt-6 uppercase dark:text-app-muted-dark">
 						{{ props.location.displayName }}
 					</p>
@@ -116,8 +111,8 @@ function printBallot() {
 								<span class="i-carbon-printer" />
 								Print this ballot guide
 							</button>
-							<NuxtLink to="/methodology" class="btn-secondary">
-								Review methodology
+							<NuxtLink to="/coverage" class="btn-secondary">
+								Check coverage
 							</NuxtLink>
 						</div>
 					</div>

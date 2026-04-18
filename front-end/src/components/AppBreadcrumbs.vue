@@ -1,14 +1,17 @@
 <script setup lang="ts">
-defineProps<{
+withDefaults(defineProps<{
+	compact?: boolean;
 	items: Array<{
 		label: string;
 		to?: string;
 	}>;
-}>();
+}>(), {
+	compact: false
+});
 </script>
 
 <template>
-	<nav aria-label="Breadcrumb" class="mb-6">
+	<nav aria-label="Breadcrumb" :class="compact ? '' : 'mb-6'">
 		<ol class="text-sm text-app-muted flex flex-wrap gap-x-2 gap-y-1 items-center dark:text-app-muted-dark">
 			<li
 				v-for="(item, index) in items"

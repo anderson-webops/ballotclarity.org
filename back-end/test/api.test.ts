@@ -48,6 +48,48 @@ before(async () => {
 			mode: "seed",
 			snapshotPath: ":memory:"
 		},
+		addressEnrichmentService: {
+			async lookupAddress() {
+				return {
+					benchmark: "Public_AR_Current",
+					countyFips: "121",
+					districtMatches: [
+						{
+							districtCode: "5",
+							districtType: "congressional",
+							id: "congressional:5",
+							label: "Congressional District 5",
+							sourceSystem: "U.S. Census Geocoder"
+						},
+						{
+							districtCode: "36",
+							districtType: "state-senate",
+							id: "state-senate:36",
+							label: "State Senate District 36",
+							sourceSystem: "U.S. Census Geocoder"
+						}
+					],
+					fromCache: false,
+					latitude: 33.7479,
+					longitude: -84.3902,
+					normalizedAddress: "55 TRINITY AVE SW, ATLANTA, GA, 30303",
+					representativeMatches: [
+						{
+							districtLabel: "Senator Georgia",
+							id: "ocd-person:test-senator",
+							name: "Jon Ossoff",
+							officeTitle: "Senator",
+							openstatesUrl: "https://openstates.org/person/example",
+							party: "Democratic",
+							sourceSystem: "Open States"
+						}
+					],
+					state: "GA",
+					vintage: "Current_Current",
+					zip5: "30303"
+				};
+			}
+		},
 		googleCivicClient: {
 			async lookupVoterInfo() {
 				return {
@@ -182,7 +224,12 @@ test("POST /api/location returns the current Fulton County launch location for f
 	assert.equal(body.location.requiresOfficialConfirmation, false);
 	assert.equal(body.actions[0].kind, "official-verification");
 	assert.match(body.note, /Google Civic accepted the address/i);
-	assert.equal(body.location.lookupInput, undefined);
+	assert.equal(body.location.lookupInput, "55 TRINITY AVE SW, ATLANTA, GA, 30303");
+	assert.equal(body.normalizedAddress, "55 TRINITY AVE SW, ATLANTA, GA, 30303");
+	assert.equal(body.districtMatches[0].label, "Congressional District 5");
+	assert.equal(body.representativeMatches[0].name, "Jon Ossoff");
+	assert.match(body.note, /Census geography matched/i);
+	assert.match(body.note, /Open States returned 1 representative match/i);
 });
 
 test("GET /api/ballot returns the election guide and contests", async () => {
@@ -290,6 +337,34 @@ test("GET /api/contests/:slug returns a canonical contest page payload with sour
 	assert.equal(body.sources[0].authority, "official-government");
 });
 
+test("GET /api/districts and /api/districts/:slug return district-first ballot surfaces", async () => {
+	const listResponse = await fetch(`${baseUrl}/api/districts`);
+	const listBody = await listResponse.json();
+
+	assert.equal(listResponse.status, 200);
+	assert.ok(listBody.districts.some((item: { slug: string }) => item.slug === "us-house-district-7"));
+
+	const districtResponse = await fetch(`${baseUrl}/api/districts/us-house-district-7`);
+	const districtBody = await districtResponse.json();
+
+	assert.equal(districtResponse.status, 200);
+	assert.equal(districtBody.district.slug, "us-house-district-7");
+	assert.equal(districtBody.representatives[0].slug, "daniel-brooks");
+	assert.equal(districtBody.candidates.length, 2);
+	assert.ok(districtBody.sources.length >= 4);
+	assert.match(districtBody.note, /district pages group/i);
+});
+
+test("GET /api/representatives returns incumbents tied to district pages", async () => {
+	const response = await fetch(`${baseUrl}/api/representatives`);
+	const body = await response.json();
+
+	assert.equal(response.status, 200);
+	assert.ok(body.representatives.some((item: { districtSlug: string; slug: string }) => item.districtSlug === "us-house-district-7" && item.slug === "daniel-brooks"));
+	assert.ok(body.districts.some((item: { href: string }) => item.href === "/districts/state-senate-district-12"));
+	assert.match(body.note, /currently serving officials/i);
+});
+
 test("GET /api/ballot returns 404 for unknown elections", async () => {
 	const response = await fetch(`${baseUrl}/api/ballot?election=not-real`);
 	const body = await response.json();
@@ -372,6 +447,16 @@ test("GET /api/search includes contest results when a contest office matches", a
 	assert.equal(response.status, 200);
 	assert.ok(contestGroup);
 	assert.ok(contestGroup.items.some((item: { href: string }) => item.href === "/contest/county-school-board-at-large"));
+});
+
+test("GET /api/search includes district results when a district office matches", async () => {
+	const response = await fetch(`${baseUrl}/api/search?q=District 7`);
+	const body = await response.json();
+	const districtGroup = body.groups.find((group: { type: string }) => group.type === "district");
+
+	assert.equal(response.status, 200);
+	assert.ok(districtGroup);
+	assert.ok(districtGroup.items.some((item: { href: string }) => item.href === "/districts/us-house-district-7"));
 });
 
 test("GET /api/sources and /api/sources/:id include contest citations", async () => {

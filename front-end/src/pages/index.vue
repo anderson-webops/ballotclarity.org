@@ -137,12 +137,7 @@ const trustFacts = computed(() => [
 			<div class="gap-6 grid xl:grid-cols-[minmax(0,1.18fr)_minmax(21rem,0.82fr)] xl:items-start">
 				<div class="border border-app-line rounded-[2.2rem] bg-white shadow-[0_36px_84px_-58px_rgba(16,37,62,0.62)] overflow-hidden dark:border-app-line-dark dark:bg-app-panel-dark">
 					<div class="px-6 py-8 lg:px-10 sm:px-8 sm:py-10">
-						<div class="flex flex-wrap gap-2">
-							<TrustBadge label="Nonpartisan" tone="accent" />
-							<TrustBadge label="Source-first" />
-							<TrustBadge label="Current coverage" tone="warning" />
-						</div>
-						<p class="text-xs text-app-muted tracking-[0.26em] font-semibold mt-8 uppercase dark:text-app-muted-dark">
+						<p class="text-xs text-app-muted tracking-[0.26em] font-semibold uppercase dark:text-app-muted-dark">
 							Public-interest ballot guide
 						</p>
 						<h1 class="text-5xl text-app-ink leading-tight font-serif mt-4 max-w-4xl sm:text-6xl dark:text-app-text-dark">
@@ -322,11 +317,7 @@ const trustFacts = computed(() => [
 					</div>
 
 					<div class="surface-panel">
-						<div class="flex flex-wrap gap-2">
-							<TrustBadge label="Launch profile" tone="accent" />
-							<TrustBadge label="Official links visible" />
-						</div>
-						<h2 class="text-3xl text-app-ink font-serif mt-5 dark:text-app-text-dark">
+						<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
 							Start from the coverage profile.
 						</h2>
 						<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
@@ -372,10 +363,7 @@ const trustFacts = computed(() => [
 
 				<div class="divide-app-line divide-y dark:divide-app-line-dark">
 					<article v-for="item in roadmapPreview" :key="item.slug" class="py-5">
-						<div class="flex flex-wrap gap-2 items-center">
-							<TrustBadge label="Planned live stack" tone="accent" />
-						</div>
-						<h3 class="text-2xl text-app-ink font-serif mt-4 dark:text-app-text-dark">
+						<h3 class="text-2xl text-app-ink font-serif dark:text-app-text-dark">
 							{{ item.title }}
 						</h3>
 						<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
@@ -435,8 +423,12 @@ const trustFacts = computed(() => [
 					</ul>
 				</div>
 
-				<InfoCallout title="Important note" tone="warning">
-					This site currently runs on a limited public-record archive while live data integrations are being connected. It is built to be trustworthy about its limits: coverage notes stay prominent, sources stay visible, and every summary reminds users to review original records.
+				<InfoCallout title="How we verify data" tone="warning">
+					This site currently runs on a limited public-record archive while live data integrations are being connected.
+					<NuxtLink to="/methodology" class="underline underline-offset-3">
+						Read the methodology
+					</NuxtLink>
+					or open the footer’s data-verification panel for the current badge, freshness, and source rules.
 				</InfoCallout>
 			</div>
 		</section>

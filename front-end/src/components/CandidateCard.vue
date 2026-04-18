@@ -37,6 +37,7 @@ const coverageNote = computed(() => {
 		?? "This card is based on the current project archive and may not capture late campaign developments.";
 });
 const isQuickView = computed(() => (props.viewMode ?? "quick") === "quick");
+const biographySummary = computed(() => props.candidate.biography[0]?.summary ?? props.candidate.summary);
 
 function toggleCompare() {
 	civicStore.toggleCompare(props.candidate.slug);
@@ -49,87 +50,102 @@ function saveToPlan() {
 
 <template>
 	<article class="surface-panel flex flex-col h-full justify-between">
-		<div>
+		<div class="space-y-4">
 			<div class="flex flex-wrap gap-3 items-start justify-between">
-				<div>
+				<div class="min-w-0">
 					<div class="flex flex-wrap gap-2 items-center">
-						<h3 class="text-2xl text-app-ink font-serif dark:text-app-text-dark">
+						<h3 class="text-[1.45rem] text-app-ink leading-tight font-serif dark:text-app-text-dark">
 							{{ candidate.name }}
 						</h3>
 						<IncumbentBadge v-if="candidate.incumbent" />
 					</div>
-					<p class="text-sm text-app-muted mt-2 dark:text-app-muted-dark">
+					<p class="text-sm text-app-muted mt-1.5 dark:text-app-muted-dark">
 						{{ candidate.party }} · {{ candidate.officeSought }}
 					</p>
 				</div>
-				<SourceDrawer
-					:sources="candidate.sources"
-					:title="`${candidate.name} sources`"
-					:button-label="`${candidate.sources.length} source${candidate.sources.length === 1 ? '' : 's'}`"
-				/>
+				<VerificationBadge :label="candidate.comparison.ballotStatus.provenance.label" :title="candidate.comparison.ballotStatus.provenance.detail" :tone="candidate.comparison.ballotStatus.provenance.status === 'verified-official' ? 'accent' : candidate.comparison.ballotStatus.provenance.status === 'unclear' ? 'warning' : 'neutral'" />
 			</div>
 
-			<p class="text-sm text-app-muted leading-7 mt-5 dark:text-app-muted-dark">
-				{{ candidate.ballotSummary }}
-			</p>
+			<ExpandableSection
+				:id="`candidate-card-${candidate.slug}`"
+				compact
+				nested
+				title="More context"
+				:description="candidate.ballotSummary"
+				:open="!isQuickView"
+			>
+				<div class="space-y-4">
+					<div>
+						<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+							Candidate bio
+						</p>
+						<p class="text-sm text-app-muted leading-7 mt-2 dark:text-app-muted-dark">
+							{{ biographySummary }}
+						</p>
+					</div>
 
-			<div class="mt-5 flex flex-wrap gap-2">
-				<IssueChip v-for="issue in candidate.topIssues" :key="issue.slug" :label="issue.label" />
-			</div>
+					<div v-if="candidate.topIssues.length">
+						<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+							Top issues
+						</p>
+						<div class="mt-3 flex flex-wrap gap-2">
+							<IssueChip v-for="issue in candidate.topIssues" :key="issue.slug" :label="issue.label" />
+						</div>
+					</div>
 
-			<div class="mt-5 p-4 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70">
-				<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
-					Coverage note
-				</p>
-				<p class="text-sm text-app-muted leading-6 mt-2 dark:text-app-muted-dark">
-					{{ coverageNote }}
-				</p>
-			</div>
-
-			<div v-if="!isQuickView" class="mt-6 space-y-4">
-				<div>
-					<p class="text-xs text-app-muted tracking-[0.22em] font-semibold uppercase dark:text-app-muted-dark">
-						Key actions
-					</p>
-					<ul class="mt-3 space-y-3">
-						<li v-for="action in candidate.keyActions.slice(0, 2)" :key="action.id" class="text-sm text-app-muted leading-6 p-4 rounded-2xl bg-app-bg dark:text-app-muted-dark dark:bg-app-bg-dark/70">
-							<p class="text-app-ink font-semibold dark:text-app-text-dark">
-								{{ action.title }}
+					<div v-if="!isQuickView" class="space-y-4">
+						<div v-if="candidate.keyActions.length">
+							<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+								Selected actions
 							</p>
-							<p class="mt-1">
-								{{ action.summary }}
+							<ul class="mt-3 space-y-2">
+								<li v-for="action in candidate.keyActions.slice(0, 2)" :key="action.id" class="text-sm text-app-muted leading-6 p-3 rounded-2xl bg-white/80 dark:text-app-muted-dark dark:bg-app-panel-dark/70">
+									<p class="text-app-ink font-semibold dark:text-app-text-dark">
+										{{ action.title }}
+									</p>
+									<p class="mt-1">
+										{{ action.summary }}
+									</p>
+								</li>
+							</ul>
+						</div>
+
+						<div>
+							<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+								Funding snapshot
 							</p>
-						</li>
-					</ul>
-				</div>
+							<p class="text-sm text-app-muted leading-6 mt-2 dark:text-app-muted-dark">
+								{{ candidate.funding.summary }}
+							</p>
+							<p class="text-sm text-app-ink font-medium mt-2 dark:text-app-text-dark">
+								{{ formatCurrency(candidate.funding.totalRaised) }} raised
+							</p>
+						</div>
+					</div>
 
-				<div>
-					<p class="text-xs text-app-muted tracking-[0.22em] font-semibold uppercase dark:text-app-muted-dark">
-						Funding summary
-					</p>
-					<p class="text-sm text-app-muted leading-6 mt-3 dark:text-app-muted-dark">
-						{{ candidate.funding.summary }}
-					</p>
-					<p class="text-sm text-app-ink font-medium mt-2 dark:text-app-text-dark">
-						{{ formatCurrency(candidate.funding.totalRaised) }} raised
-					</p>
-				</div>
-			</div>
+					<div class="p-3 rounded-2xl bg-white/80 dark:bg-app-panel-dark/70">
+						<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+							Coverage note
+						</p>
+						<p class="text-sm text-app-muted leading-6 mt-2 dark:text-app-muted-dark">
+							{{ coverageNote }}
+						</p>
+					</div>
 
-			<div v-else class="mt-6 p-4 border border-app-line/80 rounded-2xl bg-white/70 dark:border-app-line-dark dark:bg-app-panel-dark/70">
-				<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
-					Quick view
-				</p>
-				<p class="text-sm text-app-muted leading-6 mt-2 dark:text-app-muted-dark">
-					Start with the summary and issues. Open the detail page when you want the full action history, funding context, or evidence trail.
-				</p>
-			</div>
+					<SourceList :sources="candidate.sources" compact title="Attached sources" />
+				</div>
+			</ExpandableSection>
 		</div>
 
-		<div class="mt-8 flex flex-wrap gap-3">
+		<div class="mt-5 flex flex-wrap gap-2">
 			<NuxtLink :to="`/candidate/${candidate.slug}`" class="btn-primary">
 				View details
 			</NuxtLink>
+			<SourceDrawer
+				:sources="candidate.sources"
+				:title="`${candidate.name} sources`"
+				:button-label="`${candidate.sources.length} source${candidate.sources.length === 1 ? '' : 's'}`"
+			/>
 			<NuxtLink v-if="canOpenCompare" :to="compareHref" class="btn-secondary">
 				Open compare
 			</NuxtLink>

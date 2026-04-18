@@ -15,6 +15,13 @@ const compareHref = computed(() => {
 	};
 });
 
+const districtHref = computed(() => {
+	if (!data.value || data.value.contest.type !== "candidate")
+		return null;
+
+	return `/districts/${data.value.contest.slug}`;
+});
+
 const breadcrumbs = computed(() => {
 	if (!data.value) {
 		return [
@@ -58,9 +65,8 @@ usePageSeo({
 			<header class="gap-6 grid xl:grid-cols-[minmax(0,1.2fr)_minmax(22rem,0.8fr)]">
 				<div class="surface-panel">
 					<div class="flex flex-wrap gap-2">
-						<TrustBadge label="Canonical contest page" tone="accent" />
-						<TrustBadge :label="data.contest.jurisdiction" />
-						<TrustBadge :label="`${data.sourceCount} source${data.sourceCount === 1 ? '' : 's'}`" tone="warning" />
+						<VerificationBadge label="Canonical contest page" tone="accent" />
+						<VerificationBadge :label="`${data.sourceCount} source${data.sourceCount === 1 ? '' : 's'}`" />
 					</div>
 					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold mt-6 uppercase dark:text-app-muted-dark">
 						{{ data.election.name }}
@@ -75,6 +81,12 @@ usePageSeo({
 						<UpdatedAt :value="data.updatedAt" />
 						<NuxtLink :to="`/ballot/${data.election.slug}`" class="btn-secondary">
 							Open ballot guide
+						</NuxtLink>
+						<NuxtLink v-if="districtHref" :to="districtHref" class="btn-secondary">
+							Open district page
+						</NuxtLink>
+						<NuxtLink v-if="districtHref" to="/representatives" class="btn-secondary">
+							Representative directory
 						</NuxtLink>
 						<NuxtLink :to="`/elections/${data.election.slug}`" class="btn-secondary">
 							Election overview

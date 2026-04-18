@@ -10,7 +10,7 @@ const runtimeConfig = useRuntimeConfig();
 const siteUrl = useSiteUrl();
 const { ballotPlan, compareList, isHydrated } = storeToRefs(civicStore);
 const candidateSlug = computed(() => String(route.params.slug));
-const { formatCompactNumber, formatCurrency, formatDate, formatPercent } = useFormatters();
+const { formatCompactNumber, formatCurrency, formatDate, formatDateTime, formatPercent } = useFormatters();
 const { data: candidate, error, pending } = await useCandidate(candidateSlug);
 const electionOverviewHref = `/elections/${currentCoverageElectionSlug}`;
 const locationHubHref = `/locations/${currentCoverageLocationSlug}`;
@@ -172,32 +172,6 @@ const actionCoverageNote = computed(() => {
 const reportIssueHref = computed(() => candidate.value
 	? `mailto:${contactEmail}?subject=${encodeURIComponent(`Ballot Clarity candidate review: ${candidate.value.name}`)}`
 	: `mailto:${contactEmail}?subject=${encodeURIComponent("Ballot Clarity candidate review")}`);
-
-const candidateMethodItems = computed(() => {
-	if (!candidate.value)
-		return [];
-
-	return [
-		{
-			body: [
-				"This page uses the attached campaign filings, questionnaires, and public records listed in the evidence panel.",
-				`The current profile links ${candidate.value.sources.length} source records for direct inspection.`,
-			],
-			label: "Sources"
-		},
-		{
-			body: [
-				"Ballot Clarity summarizes documented actions in plain language and keeps the evidence set one click away from each major section.",
-				"Candidate summaries are written to describe what is documented, not to predict outcomes or recommend a vote.",
-			],
-			label: "Processing"
-		},
-		{
-			body: candidate.value.methodologyNotes,
-			label: "Limits"
-		},
-	];
-});
 const coverageItems = computed(() => {
 	if (!candidate.value)
 		return [];
@@ -244,12 +218,10 @@ function saveToPlan() {
 
 		<div v-else class="gap-8 grid xl:grid-cols-[minmax(0,1.45fr)_minmax(21rem,0.85fr)]">
 			<div class="space-y-6">
-				<AppBreadcrumbs :items="candidateBreadcrumbs" />
-
 				<header class="surface-panel">
 					<div class="flex flex-wrap gap-2 items-center">
-						<TrustBadge label="Current candidate profile" tone="warning" />
-						<TrustBadge label="Source-backed" tone="accent" />
+						<VerificationBadge label="Candidate profile" tone="accent" />
+						<ProvenanceBadge :provenance="candidate.comparison.ballotStatus.provenance" />
 					</div>
 					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold mt-5 uppercase dark:text-app-muted-dark">
 						{{ candidate.location }}
@@ -272,12 +244,17 @@ function saveToPlan() {
 						<p class="text-sm text-app-muted dark:text-app-muted-dark">
 							{{ candidate.comparison.ballotStatus.label }}
 						</p>
-						<ProvenanceBadge :provenance="candidate.comparison.ballotStatus.provenance" />
 					</div>
 					<div class="mt-6 flex flex-wrap gap-4 items-center">
 						<SourceDrawer :sources="candidate.sources" :title="`${candidate.name} evidence and sources`" button-label="Evidence & sources" />
 						<NuxtLink v-if="canOpenCompare" :to="compareHref" class="btn-secondary">
 							Open compare
+						</NuxtLink>
+						<NuxtLink :to="`/candidate/${candidate.slug}/funding`" class="btn-secondary">
+							Funding page
+						</NuxtLink>
+						<NuxtLink :to="`/candidate/${candidate.slug}/influence`" class="btn-secondary">
+							Influence page
 						</NuxtLink>
 						<button type="button" class="btn-secondary" :disabled="compareLimitReached" @click="toggleCompare">
 							<span :class="isCompared ? 'i-carbon-checkmark' : 'i-carbon-compare'" />
@@ -299,12 +276,6 @@ function saveToPlan() {
 						</NuxtLink>
 					</div>
 				</header>
-
-				<FreshnessStrip :freshness="candidate.freshness" />
-
-				<InfoCallout title="Before you rely on this profile">
-					Information may be incomplete. Review attached source files and original public records where possible, especially for late campaign activity, independent spending, and unpublished negotiations.
-				</InfoCallout>
 
 				<section id="at-a-glance" class="surface-panel scroll-mt-28">
 					<div class="flex flex-wrap gap-4 items-start justify-between">
@@ -404,8 +375,6 @@ function saveToPlan() {
 						</div>
 					</div>
 				</section>
-
-				<EpistemicSummary :known-items="candidate.whatWeKnow" :unknown-items="candidate.whatWeDoNotKnow" />
 
 				<ExpandableSection
 					id="biography"
@@ -576,7 +545,12 @@ function saveToPlan() {
 					description="Reported fundraising in this profile is shown with the current filing window and attached source documents. Review original filings for late amendments or newly reported independent spending."
 				>
 					<template #meta>
-						<SourceDrawer :sources="candidate.funding.sources" title="Campaign funding sources" />
+						<div class="flex flex-wrap gap-3 items-center">
+							<SourceDrawer :sources="candidate.funding.sources" title="Campaign funding sources" />
+							<NuxtLink :to="`/candidate/${candidate.slug}/funding`" class="btn-secondary">
+								Open dedicated funding page
+							</NuxtLink>
+						</div>
 					</template>
 					<div class="mt-6 gap-4 grid md:grid-cols-3">
 						<div class="p-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
@@ -630,7 +604,12 @@ function saveToPlan() {
 					title="Public context around funding and policy exposure"
 				>
 					<template #meta>
-						<SourceDrawer :sources="candidate.lobbyingContext.flatMap(block => block.sources)" :title="`${candidate.name} influence context`" />
+						<div class="flex flex-wrap gap-3 items-center">
+							<SourceDrawer :sources="candidate.lobbyingContext.flatMap(block => block.sources)" :title="`${candidate.name} influence context`" />
+							<NuxtLink :to="`/candidate/${candidate.slug}/influence`" class="btn-secondary">
+								Open dedicated influence page
+							</NuxtLink>
+						</div>
 					</template>
 					<InfoCallout class="mt-5" title="Read this section carefully">
 						Influence context is presented to help users inspect relevant sectors, donors, and public disclosures. It should not be read as proof that any donor or organization controlled a candidate action.
@@ -673,6 +652,54 @@ function saveToPlan() {
 					<template #meta>
 						<SourceDrawer :sources="candidate.sources" :title="`${candidate.name} full source list`" />
 					</template>
+					<div class="mt-6 gap-4 grid lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+						<div class="p-4 rounded-[1.35rem] bg-app-bg dark:bg-app-bg-dark/70">
+							<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+								Review timing
+							</p>
+							<div class="mt-3 space-y-3">
+								<p class="text-sm text-app-muted leading-6 dark:text-app-muted-dark">
+									<strong class="text-app-ink dark:text-app-text-dark">Status:</strong> {{ candidate.freshness.statusLabel }}
+								</p>
+								<p class="text-sm text-app-muted leading-6 dark:text-app-muted-dark">
+									<strong class="text-app-ink dark:text-app-text-dark">Last verified:</strong> {{ formatDateTime(candidate.freshness.contentLastVerifiedAt) }}
+								</p>
+								<p class="text-sm text-app-muted leading-6 dark:text-app-muted-dark">
+									<strong class="text-app-ink dark:text-app-text-dark">Next review:</strong> {{ formatDateTime(candidate.freshness.nextReviewAt) }}
+								</p>
+								<p class="text-sm text-app-muted leading-6 dark:text-app-muted-dark">
+									{{ candidate.freshness.statusNote }}
+								</p>
+							</div>
+						</div>
+						<div class="p-4 rounded-[1.35rem] bg-app-bg dark:bg-app-bg-dark/70">
+							<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+								Verification scope
+							</p>
+							<div class="mt-3 gap-3 grid md:grid-cols-2">
+								<div>
+									<p class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
+										What we know
+									</p>
+									<ul class="mt-2 space-y-2">
+										<li v-for="item in candidate.whatWeKnow" :key="item.id" class="text-sm text-app-muted leading-6 dark:text-app-muted-dark">
+											{{ item.text }}
+										</li>
+									</ul>
+								</div>
+								<div>
+									<p class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
+										Still checking
+									</p>
+									<ul class="mt-2 space-y-2">
+										<li v-for="item in candidate.whatWeDoNotKnow" :key="item.id" class="text-sm text-app-muted leading-6 dark:text-app-muted-dark">
+											{{ item.text }}
+										</li>
+									</ul>
+								</div>
+							</div>
+						</div>
+					</div>
 					<ul class="text-sm text-app-muted leading-7 mt-6 space-y-3 dark:text-app-muted-dark">
 						<li v-for="note in candidate.methodologyNotes" :key="note" class="px-4 py-3 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70">
 							{{ note }}
@@ -685,6 +712,7 @@ function saveToPlan() {
 				<PageSectionNav
 					title="Jump to section"
 					description="Use the summary first, then open only the sections you need."
+					:breadcrumbs="candidateBreadcrumbs"
 					:items="sectionLinks.map(section => ({ href: section.href, label: section.label }))"
 				/>
 
@@ -720,12 +748,9 @@ function saveToPlan() {
 					<InfoCallout class="mt-5" title="Neutrality note">
 						This profile is informational only. It does not rank candidates, predict outcomes, or replace official filings and election-office records.
 					</InfoCallout>
-					<div class="mt-6">
-						<MethodologySummaryCard
-							:items="candidateMethodItems"
-							summary="This page pairs plain-language summaries with source-linked evidence, explicit review timing, and stated limits."
-						/>
-					</div>
+					<InfoCallout class="mt-6" title="How verification is handled">
+						Use the source drawer for record-level evidence, the source list below for the full archive, and the footer’s data-verification panel for the site-wide explanation of badges, freshness, and review rules.
+					</InfoCallout>
 					<div class="mt-6">
 						<SourceList :sources="candidate.sources" compact title="Attached sources" />
 					</div>

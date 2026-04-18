@@ -23,10 +23,12 @@ export default defineEventHandler((event) => {
 		"/corrections",
 		"/coverage",
 		"/data-sources",
+		"/districts",
 		"/help",
 		"/methodology",
 		"/neutrality",
 		"/privacy",
+		"/representatives",
 		"/status",
 		"/sources",
 		"/terms"
@@ -40,7 +42,17 @@ export default defineEventHandler((event) => {
 			contest.type === "candidate" ? (contest.candidates ?? []).map(candidate => `/candidate/${candidate.slug}`) : []
 		)
 	);
+	const candidateSubRoutes = unique(
+		demoElection.contests.flatMap(contest =>
+			contest.type === "candidate"
+				? (contest.candidates ?? []).flatMap(candidate => [`/candidate/${candidate.slug}/funding`, `/candidate/${candidate.slug}/influence`])
+				: []
+		)
+	);
 	const contestRoutes = unique(demoElection.contests.map(contest => `/contest/${contest.slug}`));
+	const districtRoutes = unique(
+		demoElection.contests.flatMap(contest => contest.type === "candidate" ? [`/districts/${contest.slug}`] : [])
+	);
 	const measureRoutes = unique(
 		demoElection.contests.flatMap(contest =>
 			contest.type === "measure" ? (contest.measures ?? []).map(measure => `/measure/${measure.slug}`) : []
@@ -52,7 +64,9 @@ export default defineEventHandler((event) => {
 		...electionRoutes,
 		...jurisdictionRoutes,
 		...candidateRoutes,
+		...candidateSubRoutes,
 		...contestRoutes,
+		...districtRoutes,
 		...measureRoutes,
 		...sourceRoutes
 	])

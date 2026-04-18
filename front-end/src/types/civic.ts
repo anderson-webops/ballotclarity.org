@@ -355,6 +355,24 @@ export interface LocationSelection {
 	lookupInput?: string;
 }
 
+export interface LocationDistrictMatch {
+	id: string;
+	label: string;
+	districtType: string;
+	districtCode: string;
+	sourceSystem: string;
+}
+
+export interface LocationRepresentativeMatch {
+	id: string;
+	name: string;
+	party?: string;
+	officeTitle: string;
+	districtLabel: string;
+	sourceSystem: string;
+	openstatesUrl?: string;
+}
+
 export type LocationLookupActionKind = "ballot-guide" | "official-verification";
 export type LocationLookupInputKind = "address" | "zip";
 export type LocationLookupResult = "resolved" | "selection-required";
@@ -377,6 +395,10 @@ export interface LocationLookupResponse {
 	location?: LocationSelection;
 	electionSlug?: string;
 	actions?: LocationLookupAction[];
+	normalizedAddress?: string;
+	districtMatches?: LocationDistrictMatch[];
+	representativeMatches?: LocationRepresentativeMatch[];
+	fromCache?: boolean;
 }
 
 export interface ElectionsResponse {
@@ -587,6 +609,62 @@ export interface ContestRecordResponse {
 	relatedContests: ContestLinkSummary[];
 }
 
+export interface DistrictSummary {
+	slug: string;
+	title: string;
+	office: string;
+	jurisdiction: Contest["jurisdiction"];
+	summary: string;
+	representativeCount: number;
+	candidateCount: number;
+	href: string;
+	updatedAt: string;
+}
+
+export interface RepresentativeSummary {
+	slug: string;
+	name: string;
+	party: string;
+	officeSought: string;
+	districtSlug: string;
+	districtLabel: string;
+	href: string;
+	incumbent: boolean;
+	summary: string;
+	fundingSummary: string;
+	influenceSummary: string;
+	updatedAt: string;
+	sourceCount: number;
+}
+
+export interface DistrictRecordResponse {
+	district: DistrictSummary & {
+		description: string;
+		roleGuide: ContestRoleGuide;
+		electionSlug: string;
+	};
+	election: ElectionSummary;
+	updatedAt: string;
+	note: string;
+	candidates: Candidate[];
+	representatives: RepresentativeSummary[];
+	sources: Source[];
+	relatedContests: ContestLinkSummary[];
+}
+
+export interface DistrictsResponse {
+	updatedAt: string;
+	note: string;
+	districts: DistrictSummary[];
+}
+
+export interface RepresentativesResponse {
+	updatedAt: string;
+	note: string;
+	representatives: RepresentativeSummary[];
+	districts: DistrictSummary[];
+}
+
 export interface BallotResponse {
 	location: LocationSelection;
 	election: Election;
@@ -603,7 +681,7 @@ export interface CompareResponse {
 	note: string;
 }
 
-export type SearchResultType = "candidate" | "contest" | "election" | "jurisdiction" | "measure" | "source";
+export type SearchResultType = "candidate" | "contest" | "district" | "election" | "jurisdiction" | "measure" | "source";
 
 export interface SearchResultItem {
 	id: string;

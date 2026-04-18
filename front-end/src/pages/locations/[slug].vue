@@ -94,6 +94,12 @@ usePageSeo({
 						<NuxtLink :to="`/elections/${jurisdiction.nextElectionSlug}`" class="btn-primary">
 							Open current election overview
 						</NuxtLink>
+						<NuxtLink to="/districts" class="btn-secondary">
+							District pages
+						</NuxtLink>
+						<NuxtLink to="/representatives" class="btn-secondary">
+							Representatives
+						</NuxtLink>
 					</div>
 				</div>
 

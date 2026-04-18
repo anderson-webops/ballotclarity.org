@@ -1,5 +1,11 @@
 <script setup lang="ts">
-import type { ElectionSummary, LocationLookupAction, LocationLookupResponse } from "~/types/civic";
+import type {
+	ElectionSummary,
+	LocationDistrictMatch,
+	LocationLookupAction,
+	LocationLookupResponse,
+	LocationRepresentativeMatch
+} from "~/types/civic";
 
 const props = defineProps<{
 	compact?: boolean;
@@ -15,6 +21,10 @@ const isPending = ref(false);
 const errorMessage = ref("");
 const lookupActions = ref<LocationLookupAction[]>([]);
 const lookupNote = ref("");
+const normalizedAddress = ref("");
+const districtMatches = ref<LocationDistrictMatch[]>([]);
+const representativeMatches = ref<LocationRepresentativeMatch[]>([]);
+const fromCache = ref(false);
 const resolvedElectionSlug = ref("");
 const resolvedLocation = ref<LocationLookupResponse["location"] | null>(null);
 const inputId = `address-lookup-${useId()}`;
@@ -32,6 +42,11 @@ watch(query, () => {
 		lookupActions.value = [];
 		lookupNote.value = "";
 	}
+
+	normalizedAddress.value = "";
+	districtMatches.value = [];
+	representativeMatches.value = [];
+	fromCache.value = false;
 
 	if (resolvedLocation.value) {
 		resolvedLocation.value = null;
@@ -67,6 +82,10 @@ async function handleSubmit() {
 	errorMessage.value = "";
 	lookupActions.value = [];
 	lookupNote.value = "";
+	normalizedAddress.value = "";
+	districtMatches.value = [];
+	representativeMatches.value = [];
+	fromCache.value = false;
 	resolvedElectionSlug.value = "";
 	resolvedLocation.value = null;
 
@@ -86,6 +105,10 @@ async function handleSubmit() {
 		});
 
 		lookupNote.value = response.note;
+		normalizedAddress.value = response.normalizedAddress ?? "";
+		districtMatches.value = response.districtMatches ?? [];
+		representativeMatches.value = response.representativeMatches ?? [];
+		fromCache.value = Boolean(response.fromCache);
 
 		if (response.result === "selection-required") {
 			lookupActions.value = response.actions ?? [];
@@ -226,6 +249,48 @@ async function handleSubmit() {
 							Open official tool
 						</a>
 					</div>
+				</div>
+			</div>
+			<div v-if="normalizedAddress || districtMatches.length || representativeMatches.length" class="mt-4 gap-4 grid lg:grid-cols-2">
+				<div v-if="districtMatches.length" class="p-4 border border-app-line rounded-2xl bg-white dark:border-app-line-dark dark:bg-app-panel-dark">
+					<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+						Matched districts
+					</p>
+					<p v-if="normalizedAddress" class="text-sm text-app-muted leading-6 mt-2 dark:text-app-muted-dark">
+						{{ normalizedAddress }}
+					</p>
+					<ul class="mt-3 space-y-2">
+						<li v-for="match in districtMatches" :key="match.id" class="text-sm text-app-muted leading-6 dark:text-app-muted-dark">
+							<span class="text-app-ink font-semibold dark:text-app-text-dark">{{ match.label }}</span>
+							<span class="text-xs tracking-[0.12em] ml-2 uppercase">{{ match.sourceSystem }}</span>
+						</li>
+					</ul>
+					<p v-if="fromCache" class="text-xs text-app-muted leading-6 mt-3 dark:text-app-muted-dark">
+						Loaded from the local lookup cache.
+					</p>
+				</div>
+				<div v-if="representativeMatches.length" class="p-4 border border-app-line rounded-2xl bg-white dark:border-app-line-dark dark:bg-app-panel-dark">
+					<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+						Representative matches
+					</p>
+					<ul class="mt-3 space-y-3">
+						<li v-for="match in representativeMatches" :key="match.id" class="text-sm text-app-muted leading-6 dark:text-app-muted-dark">
+							<div class="flex flex-wrap gap-2 items-center">
+								<span class="text-app-ink font-semibold dark:text-app-text-dark">{{ match.name }}</span>
+								<span v-if="match.party" class="text-xs tracking-[0.12em] uppercase">{{ match.party }}</span>
+							</div>
+							<p>{{ match.officeTitle }} · {{ match.districtLabel }}</p>
+							<a
+								v-if="match.openstatesUrl"
+								:href="match.openstatesUrl"
+								target="_blank"
+								rel="noreferrer"
+								class="underline underline-offset-3"
+							>
+								Open States profile
+							</a>
+						</li>
+					</ul>
 				</div>
 			</div>
 			<div v-if="resolvedLocation" class="mt-4 flex flex-wrap gap-3">

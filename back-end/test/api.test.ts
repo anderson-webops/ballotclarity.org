@@ -280,13 +280,17 @@ test("POST /api/location returns the supported Fulton coverage guide for ZIPs in
 
 	assert.equal(response.status, 200);
 	assert.equal(response.headers.get("cache-control"), "no-store");
-	assert.equal(body.result, "selection-required");
+	assert.equal(body.result, "resolved");
 	assert.equal(body.guideAvailability, "published");
 	assert.equal(body.inputKind, "zip");
 	assert.equal(body.actions[0].kind, "ballot-guide");
 	assert.equal(body.actions[0].location.slug, "fulton-county-georgia");
 	assert.equal(body.actions[0].location.lookupMode, "zip-preview");
 	assert.equal(body.actions.some((item: { kind: string; title: string }) => item.kind === "official-verification" && /My Voter Page/i.test(item.title)), true);
+	assert.equal(body.availability.representatives.status, "unavailable");
+	assert.equal(body.availability.ballotCandidates.status, "available");
+	assert.equal(body.availability.financeInfluence.status, "available");
+	assert.equal(body.availability.fullLocalGuide.status, "available");
 	assert.match(body.note, /Atlanta, Georgia/i);
 });
 
@@ -301,13 +305,17 @@ test("POST /api/location returns district lookup results without a published gui
 	const body = await response.json();
 
 	assert.equal(response.status, 200);
-	assert.equal(body.result, "guide-unavailable");
+	assert.equal(body.result, "resolved");
 	assert.equal(body.guideAvailability, "not-published");
 	assert.equal(body.inputKind, "zip");
 	assert.equal(body.actions.some((item: { kind: string }) => item.kind === "ballot-guide"), false);
 	assert.equal(body.actions.some((item: { title: string }) => /Utah voter registration portal/i.test(item.title)), true);
+	assert.equal(body.availability.representatives.status, "unavailable");
+	assert.equal(body.availability.ballotCandidates.status, "unavailable");
+	assert.equal(body.availability.financeInfluence.status, "unavailable");
+	assert.equal(body.availability.fullLocalGuide.status, "unavailable");
 	assert.match(body.note, /Provo, Utah/i);
-	assert.match(body.note, /not published a full local ballot guide/i);
+	assert.match(body.note, /nationwide civic result layers/i);
 });
 
 test("POST /api/location returns the current Fulton County launch location for full addresses", async () => {
@@ -335,6 +343,10 @@ test("POST /api/location returns the current Fulton County launch location for f
 	assert.equal(body.normalizedAddress, "55 TRINITY AVE SW, ATLANTA, GA, 30303");
 	assert.equal(body.districtMatches[0].label, "Congressional District 5");
 	assert.equal(body.representativeMatches[0].name, "Jon Ossoff");
+	assert.equal(body.availability.representatives.status, "available");
+	assert.equal(body.availability.ballotCandidates.status, "available");
+	assert.equal(body.availability.financeInfluence.status, "available");
+	assert.equal(body.availability.fullLocalGuide.status, "available");
 	assert.match(body.note, /Census geography matched/i);
 	assert.match(body.note, /Open States returned 1 representative match/i);
 });
@@ -350,7 +362,7 @@ test("POST /api/location returns district lookup results without a published gui
 	const body = await response.json();
 
 	assert.equal(response.status, 200);
-	assert.equal(body.result, "guide-unavailable");
+	assert.equal(body.result, "resolved");
 	assert.equal(body.guideAvailability, "not-published");
 	assert.equal(body.inputKind, "address");
 	assert.equal(body.location, undefined);
@@ -359,7 +371,11 @@ test("POST /api/location returns district lookup results without a published gui
 	assert.equal(body.actions.some((item: { title: string }) => /Utah voter registration portal|Registration and voter status/i.test(item.title)), true);
 	assert.equal(body.normalizedAddress, "151 S UNIVERSITY AVE, PROVO, UT, 84601");
 	assert.equal(body.representativeMatches[0].name, "Mike Kennedy");
-	assert.match(body.note, /not published a full local ballot guide/i);
+	assert.equal(body.availability.representatives.status, "available");
+	assert.equal(body.availability.ballotCandidates.status, "unavailable");
+	assert.equal(body.availability.financeInfluence.status, "unavailable");
+	assert.equal(body.availability.fullLocalGuide.status, "unavailable");
+	assert.match(body.note, /nationwide civic result layers/i);
 	assert.match(body.note, /Census geography matched/i);
 });
 

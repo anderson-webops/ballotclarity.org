@@ -164,7 +164,7 @@ function buildGuideUnavailableNote(
 	addressEnrichment?: AddressEnrichmentResult | null
 ) {
 	const locationSentence = describeDetectedLocation(inputKind, rawQuery, geoContext);
-	const publishedGuideSentence = `Ballot Clarity matched this ${inputKind === "zip" ? "location" : "address"} and loaded location context, but it has not published a full local ballot guide for this area yet.`;
+	const publishedGuideSentence = `Ballot Clarity matched this ${inputKind === "zip" ? "location" : "address"} and loaded the nationwide civic result layers available here.`;
 	const districtSentence = addressEnrichment?.districtMatches?.length
 		? `Census geography matched ${addressEnrichment.districtMatches.map(match => match.label).join(", ")}.`
 		: "";
@@ -172,7 +172,7 @@ function buildGuideUnavailableNote(
 		? `Open States returned ${addressEnrichment.representativeMatches.length} representative match${addressEnrichment.representativeMatches.length === 1 ? "" : "es"} for this ${inputKind}.`
 		: "";
 	const officialSentence = hasOfficialActions
-		? "Use the official election tools below for the current ballot, voter-status, and polling-place details."
+		? "Official election tools are included below for the current ballot, voter-status, and polling-place details."
 		: "Use the relevant official election tool for current ballot, voter-status, and polling-place details.";
 
 	return [
@@ -182,6 +182,53 @@ function buildGuideUnavailableNote(
 		representativeSentence,
 		officialSentence
 	].filter(Boolean).join(" ");
+}
+
+function buildAvailabilitySummary(
+	inputKind: LocationLookupInputKind,
+	guideAvailability: "published" | "not-published",
+	addressEnrichment?: AddressEnrichmentResult | null
+) {
+	const representativeCount = addressEnrichment?.representativeMatches?.length ?? 0;
+	const hasRepresentatives = representativeCount > 0;
+	const hasGuide = guideAvailability === "published";
+
+	return {
+		ballotCandidates: {
+			detail: hasGuide
+				? inputKind === "zip"
+					? "Ballot Clarity has contest and candidate coverage for this area, but a ZIP-only result is still an approximate guide preview."
+					: "Ballot Clarity has contest and candidate coverage for this area."
+				: "Ballot candidate pages are not published for this area yet.",
+			label: "Ballot candidate data",
+			status: hasGuide ? "available" : "unavailable"
+		},
+		financeInfluence: {
+			detail: hasGuide
+				? "Funding and influence surfaces are available through the published Ballot Clarity candidate pages for this area."
+				: "Finance and influence pages are only published where Ballot Clarity has source-backed local candidate records.",
+			label: "Finance and influence",
+			status: hasGuide ? "available" : "unavailable"
+		},
+		fullLocalGuide: {
+			detail: hasGuide
+				? inputKind === "zip"
+					? "A published local guide exists here. Use the official tools to confirm the exact ballot before relying on a ZIP preview."
+					: "A published local ballot guide is available for this lookup."
+				: "A full local contest and measure guide is not published for this area yet.",
+			label: "Full local guide",
+			status: hasGuide ? "available" : "unavailable"
+		},
+		representatives: {
+			detail: hasRepresentatives
+				? `Current representative data is available for this lookup from Open States (${representativeCount} match${representativeCount === 1 ? "" : "es"}).`
+				: inputKind === "zip"
+					? "ZIP-only lookups do not reliably identify exact current representatives without a full street address."
+					: "Current representative data is not available for this lookup yet.",
+			label: "Representative data",
+			status: hasRepresentatives ? "available" : "unavailable"
+		}
+	} satisfies NonNullable<LocationLookupResponse["availability"]>;
 }
 
 export function classifyLookupInput(raw: string): LocationLookupInputKind {
@@ -220,17 +267,7 @@ export function buildLocationLookupResponse(
 	const supportedCoverageSummaries = findSupportedCoverageSummaries(jurisdictionSummaries, geoContext);
 
 	if (inputKind === "zip") {
-		if (!supportedCoverageSummaries.length) {
-			if (geoContext) {
-				return {
-					actions: stateOfficialActions,
-					guideAvailability: "not-published",
-					inputKind,
-					note: buildGuideUnavailableNote(rawQuery, inputKind, geoContext, Boolean(stateOfficialActions.length)),
-					result: "guide-unavailable"
-				};
-			}
-
+		if (!geoContext) {
 			return {
 				actions: stateOfficialActions,
 				inputKind,
@@ -239,23 +276,28 @@ export function buildLocationLookupResponse(
 			};
 		}
 
-		const officialVerification = buildOfficialVerificationAction(
-			findOfficialVerificationResource(jurisdiction, coverage)
-		);
-		const actions = [
-			...buildCoverageActions(supportedCoverageSummaries),
+		const officialVerification = supportedCoverageSummaries.length
+			? buildOfficialVerificationAction(findOfficialVerificationResource(jurisdiction, coverage))
+			: undefined;
+		const actions = dedupeActions([
+			...(supportedCoverageSummaries.length ? buildCoverageActions(supportedCoverageSummaries) : []),
+			...stateOfficialActions,
 			...(officialVerification ? [officialVerification] : [])
-		];
+		]);
+		const guideAvailability = supportedCoverageSummaries.length ? "published" : "not-published";
 		const coverageSentence = describeDetectedLocation(inputKind, rawQuery, geoContext);
 
 		return {
 			actions,
-			guideAvailability: "published",
+			availability: buildAvailabilitySummary(inputKind, guideAvailability),
+			guideAvailability,
 			inputKind,
-			note: coverageMode === "snapshot"
-				? `${coverageSentence} ZIP-only lookup can preview the currently supported coverage area, but it cannot choose an exact district-level ballot. Pick the coverage guide below or use the official voter tool for exact verification.`
-				: `${coverageSentence} ZIP-only lookup can preview the current public coverage area, but it cannot choose an exact district-level ballot. Pick the current coverage guide below or use the official voter tool for exact verification.`,
-			result: "selection-required"
+			note: guideAvailability === "published"
+				? coverageMode === "snapshot"
+					? `${coverageSentence} ZIP-only lookup can preview the published guide surfaces for this area, but it cannot choose an exact district-level ballot. Use the official tools below to confirm the final ballot before relying on the guide preview.`
+					: `${coverageSentence} ZIP-only lookup can preview the public guide surfaces for this area, but it cannot choose an exact district-level ballot. Use the official tools below to confirm the final ballot before relying on the guide preview.`
+				: buildGuideUnavailableNote(rawQuery, inputKind, geoContext, Boolean(actions.length)),
+			result: "resolved"
 		};
 	}
 
@@ -265,9 +307,10 @@ export function buildLocationLookupResponse(
 			...stateOfficialActions
 		]);
 
-		if (geoContext || addressEnrichment?.normalizedAddress || addressEnrichment?.districtMatches?.length || addressEnrichment?.representativeMatches?.length) {
+		if (geoContext || officialLookup || addressEnrichment?.normalizedAddress || addressEnrichment?.districtMatches?.length || addressEnrichment?.representativeMatches?.length) {
 			return {
 				actions: officialActions,
+				availability: buildAvailabilitySummary(inputKind, "not-published", addressEnrichment),
 				fromCache: addressEnrichment?.fromCache,
 				guideAvailability: "not-published",
 				inputKind,
@@ -275,7 +318,7 @@ export function buildLocationLookupResponse(
 				note: buildGuideUnavailableNote(rawQuery, inputKind, geoContext, Boolean(officialActions.length), addressEnrichment),
 				normalizedAddress: addressEnrichment?.normalizedAddress,
 				representativeMatches: addressEnrichment?.representativeMatches,
-				result: "guide-unavailable"
+				result: "resolved"
 			};
 		}
 
@@ -293,6 +336,7 @@ export function buildLocationLookupResponse(
 
 	return {
 		actions: officialLookup?.actions?.length ? officialLookup.actions : undefined,
+		availability: buildAvailabilitySummary(inputKind, "published", addressEnrichment),
 		electionSlug,
 		fromCache: addressEnrichment?.fromCache,
 		guideAvailability: "published",

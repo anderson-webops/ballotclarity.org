@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type {
 	ElectionSummary,
+	LocationDataAvailabilitySummary,
 	LocationDistrictMatch,
 	LocationLookupAction,
 	LocationLookupResponse,
@@ -22,6 +23,7 @@ const errorMessage = ref("");
 const lookupActions = ref<LocationLookupAction[]>([]);
 const lookupNote = ref("");
 const lookupResult = ref<LocationLookupResponse["result"] | "">("");
+const lookupInputKind = ref<LocationLookupResponse["inputKind"] | "">("");
 const normalizedAddress = ref("");
 const districtMatches = ref<LocationDistrictMatch[]>([]);
 const representativeMatches = ref<LocationRepresentativeMatch[]>([]);
@@ -29,6 +31,7 @@ const fromCache = ref(false);
 const resolvedElectionSlug = ref("");
 const resolvedLocation = ref<LocationLookupResponse["location"] | null>(null);
 const guideAvailability = ref<LocationLookupResponse["guideAvailability"]>();
+const availability = ref<LocationDataAvailabilitySummary | null>(null);
 const inputId = `address-lookup-${useId()}`;
 const descriptionId = `${inputId}-description`;
 const usageId = `${inputId}-usage`;
@@ -46,11 +49,13 @@ watch(query, () => {
 	}
 
 	lookupResult.value = "";
+	lookupInputKind.value = "";
 	normalizedAddress.value = "";
 	districtMatches.value = [];
 	representativeMatches.value = [];
 	fromCache.value = false;
 	guideAvailability.value = undefined;
+	availability.value = null;
 
 	if (resolvedLocation.value) {
 		resolvedLocation.value = null;
@@ -87,6 +92,7 @@ async function handleSubmit() {
 	lookupActions.value = [];
 	lookupNote.value = "";
 	lookupResult.value = "";
+	lookupInputKind.value = "";
 	normalizedAddress.value = "";
 	districtMatches.value = [];
 	representativeMatches.value = [];
@@ -94,6 +100,7 @@ async function handleSubmit() {
 	resolvedElectionSlug.value = "";
 	resolvedLocation.value = null;
 	guideAvailability.value = undefined;
+	availability.value = null;
 
 	if (!query.value.trim()) {
 		errorMessage.value = "Enter an address or ZIP code to load the ballot guide.";
@@ -111,36 +118,17 @@ async function handleSubmit() {
 		});
 
 		lookupResult.value = response.result;
+		lookupInputKind.value = response.inputKind;
 		lookupNote.value = response.note;
 		normalizedAddress.value = response.normalizedAddress ?? "";
 		districtMatches.value = response.districtMatches ?? [];
 		representativeMatches.value = response.representativeMatches ?? [];
 		fromCache.value = Boolean(response.fromCache);
 		guideAvailability.value = response.guideAvailability;
-
-		if (response.result === "selection-required" || response.result === "guide-unavailable" || response.result === "unsupported") {
-			lookupActions.value = response.actions ?? [];
-			return;
-		}
-
-		if (!response.location || !response.electionSlug) {
-			errorMessage.value = "Unable to load the ballot guide right now.";
-			return;
-		}
-
-		if (response.actions?.length) {
-			lookupActions.value = response.actions;
-			resolvedElectionSlug.value = response.electionSlug;
-			resolvedLocation.value = response.location;
-			return;
-		}
-
-		civicStore.setLocation(response.location);
-
-		if (props.election)
-			civicStore.setElection(props.election);
-
-		await navigateTo(`/ballot/${props.election?.slug ?? response.electionSlug}?location=${response.location.slug}`);
+		availability.value = response.availability ?? null;
+		resolvedElectionSlug.value = response.electionSlug ?? "";
+		resolvedLocation.value = response.location ?? null;
+		lookupActions.value = response.actions ?? [];
 	}
 	catch (error) {
 		errorMessage.value = error instanceof Error ? error.message : "Unable to load the ballot guide right now.";
@@ -149,6 +137,18 @@ async function handleSubmit() {
 		isPending.value = false;
 	}
 }
+
+const availabilityItems = computed(() => {
+	if (!availability.value)
+		return [];
+
+	return [
+		availability.value.representatives,
+		availability.value.ballotCandidates,
+		availability.value.financeInfluence,
+		availability.value.fullLocalGuide
+	];
+});
 </script>
 
 <template>
@@ -186,7 +186,7 @@ async function handleSubmit() {
 			</div>
 			<button type="submit" class="btn-primary min-w-40" :disabled="isPending">
 				<span :class="isPending ? 'i-carbon-circle-dash animate-spin' : 'i-carbon-arrow-right'" />
-				{{ isPending ? 'Loading ballot' : 'Open ballot guide' }}
+				{{ isPending ? 'Loading results' : 'See civic results' }}
 			</button>
 		</div>
 
@@ -207,25 +207,45 @@ async function handleSubmit() {
 			<p class="text-xs text-app-muted tracking-[0.2em] font-semibold uppercase dark:text-app-muted-dark">
 				{{ lookupResult === "unsupported"
 					? "Location not yet resolved"
-					: lookupResult === "guide-unavailable"
-						? "Location matched"
-						: "Choose how to continue" }}
+					: "Lookup results ready" }}
 			</p>
 			<p class="text-sm text-app-muted leading-6 mt-3 dark:text-app-muted-dark">
 				{{ lookupNote }}
 			</p>
-			<p
-				v-if="lookupResult === 'guide-unavailable' && guideAvailability === 'not-published'"
-				class="text-xs text-app-muted leading-6 mt-3 dark:text-app-muted-dark"
-			>
-				District and representative context are available below even though a full local ballot guide is not yet published here.
-			</p>
+			<div v-if="lookupResult === 'resolved'" class="mt-4 flex flex-wrap gap-2">
+				<VerificationBadge :label="lookupInputKind === 'address' ? 'Address lookup' : 'ZIP lookup'" :tone="lookupInputKind === 'address' ? 'accent' : 'warning'" />
+				<VerificationBadge
+					:label="guideAvailability === 'published' ? 'Full local guide available' : 'Nationwide lookup only'"
+					:tone="guideAvailability === 'published' ? 'accent' : 'neutral'"
+				/>
+				<VerificationBadge
+					:label="representativeMatches.length ? `${representativeMatches.length} representative match${representativeMatches.length === 1 ? '' : 'es'}` : 'No representative match yet'"
+					:tone="representativeMatches.length ? 'accent' : 'neutral'"
+				/>
+			</div>
 			<p
 				v-if="resolvedLocation"
 				class="text-xs text-app-muted leading-6 mt-3 dark:text-app-muted-dark"
 			>
-				The configured official provider returned these links for your address. Review them, then continue into the guide.
+				This lookup can open a deeper Ballot Clarity guide for the current published coverage while still keeping the nationwide civic results below available for review first.
 			</p>
+			<div v-if="availabilityItems.length" class="mt-4 gap-3 grid md:grid-cols-2 xl:grid-cols-4">
+				<article
+					v-for="item in availabilityItems"
+					:key="item.label"
+					class="p-4 border border-app-line rounded-2xl bg-white dark:border-app-line-dark dark:bg-app-panel-dark"
+				>
+					<div class="flex flex-wrap gap-2 items-center">
+						<p class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
+							{{ item.label }}
+						</p>
+						<VerificationBadge :label="item.status" :tone="item.status === 'available' ? 'accent' : 'neutral'" />
+					</div>
+					<p class="text-sm text-app-muted leading-6 mt-3 dark:text-app-muted-dark">
+						{{ item.detail }}
+					</p>
+				</article>
+			</div>
 			<div v-if="lookupActions.length" class="mt-4 gap-3 grid">
 				<div
 					v-for="action in lookupActions"
@@ -289,13 +309,14 @@ async function handleSubmit() {
 				</div>
 				<div v-if="representativeMatches.length" class="p-4 border border-app-line rounded-2xl bg-white dark:border-app-line-dark dark:bg-app-panel-dark">
 					<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
-						Representative matches
+						Current representatives
 					</p>
 					<ul class="mt-3 space-y-3">
 						<li v-for="match in representativeMatches" :key="match.id" class="text-sm text-app-muted leading-6 dark:text-app-muted-dark">
 							<div class="flex flex-wrap gap-2 items-center">
 								<span class="text-app-ink font-semibold dark:text-app-text-dark">{{ match.name }}</span>
 								<span v-if="match.party" class="text-xs tracking-[0.12em] uppercase">{{ match.party }}</span>
+								<VerificationBadge :label="match.sourceSystem" />
 							</div>
 							<p>{{ match.officeTitle }} · {{ match.districtLabel }}</p>
 							<a
@@ -318,17 +339,15 @@ async function handleSubmit() {
 					@click="continueToResolvedGuide"
 				>
 					<span class="i-carbon-arrow-right" />
-					Continue to ballot guide
+					Open full local guide
 				</button>
 			</div>
 			<p class="text-xs text-app-muted leading-6 mt-4 dark:text-app-muted-dark">
 				{{ lookupResult === "unsupported"
 					? "Use the official tools above for this location, or replace the ZIP code with a full street address for a more precise lookup."
-					: lookupResult === "guide-unavailable"
-						? "Ballot Clarity matched this location and loaded district and representative context where available. Use the official tools above for the current ballot, voter-status, and polling-place details."
-						: resolvedLocation
-							? "Ballot Clarity still opens the current guide surface after official verification because exact contest packaging is still being connected."
-							: "If you want the most specific district match, replace the ZIP code with a full street address before continuing." }}
+					: resolvedLocation
+						? "This lookup succeeded nationwide. Use the civic results here first, then open the deeper local guide when you want Ballot Clarity's contest, candidate, and measure pages."
+						: "This lookup succeeded nationwide. Use the district, representative, provenance, and official-tool layers here even when a full local Ballot Clarity guide is not published yet." }}
 			</p>
 		</div>
 	</form>

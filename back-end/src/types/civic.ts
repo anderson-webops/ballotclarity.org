@@ -375,8 +375,22 @@ export interface LocationRepresentativeMatch {
 
 export type LocationLookupActionKind = "ballot-guide" | "official-verification";
 export type LocationLookupInputKind = "address" | "zip";
-export type LocationLookupResult = "guide-unavailable" | "resolved" | "selection-required" | "unsupported";
+export type LocationLookupResult = "resolved" | "unsupported";
 export type LocationGuideAvailability = "published" | "not-published";
+export type LocationDataAvailabilityStatus = "available" | "unavailable";
+
+export interface LocationDataAvailabilityItem {
+	label: string;
+	status: LocationDataAvailabilityStatus;
+	detail: string;
+}
+
+export interface LocationDataAvailabilitySummary {
+	representatives: LocationDataAvailabilityItem;
+	ballotCandidates: LocationDataAvailabilityItem;
+	financeInfluence: LocationDataAvailabilityItem;
+	fullLocalGuide: LocationDataAvailabilityItem;
+}
 
 export interface LocationLookupAction {
 	id: string;
@@ -394,6 +408,7 @@ export interface LocationLookupResponse {
 	inputKind: LocationLookupInputKind;
 	note: string;
 	guideAvailability?: LocationGuideAvailability;
+	availability?: LocationDataAvailabilitySummary;
 	location?: LocationSelection;
 	electionSlug?: string;
 	actions?: LocationLookupAction[];

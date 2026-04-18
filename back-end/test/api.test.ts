@@ -281,6 +281,7 @@ test("POST /api/location returns the supported Fulton coverage guide for ZIPs in
 	assert.equal(response.status, 200);
 	assert.equal(response.headers.get("cache-control"), "no-store");
 	assert.equal(body.result, "selection-required");
+	assert.equal(body.guideAvailability, "published");
 	assert.equal(body.inputKind, "zip");
 	assert.equal(body.actions[0].kind, "ballot-guide");
 	assert.equal(body.actions[0].location.slug, "fulton-county-georgia");
@@ -301,12 +302,12 @@ test("POST /api/location returns district lookup results without a published gui
 
 	assert.equal(response.status, 200);
 	assert.equal(body.result, "guide-unavailable");
+	assert.equal(body.guideAvailability, "not-published");
 	assert.equal(body.inputKind, "zip");
 	assert.equal(body.actions.some((item: { kind: string }) => item.kind === "ballot-guide"), false);
 	assert.equal(body.actions.some((item: { title: string }) => /Utah voter registration portal/i.test(item.title)), true);
-	assert.equal(body.publishedGuideAreaLabel, "Fulton County, Georgia");
 	assert.match(body.note, /Provo, Utah/i);
-	assert.match(body.note, /not published a full ballot guide/i);
+	assert.match(body.note, /not published a full local ballot guide/i);
 });
 
 test("POST /api/location returns the current Fulton County launch location for full addresses", async () => {
@@ -322,6 +323,7 @@ test("POST /api/location returns the current Fulton County launch location for f
 	assert.equal(response.status, 200);
 	assert.equal(response.headers.get("cache-control"), "no-store");
 	assert.equal(body.result, "resolved");
+	assert.equal(body.guideAvailability, "published");
 	assert.equal(body.inputKind, "address");
 	assert.equal(body.electionSlug, "2026-fulton-county-general");
 	assert.equal(body.location.slug, "fulton-county-georgia");
@@ -349,6 +351,7 @@ test("POST /api/location returns district lookup results without a published gui
 
 	assert.equal(response.status, 200);
 	assert.equal(body.result, "guide-unavailable");
+	assert.equal(body.guideAvailability, "not-published");
 	assert.equal(body.inputKind, "address");
 	assert.equal(body.location, undefined);
 	assert.equal(body.electionSlug, undefined);
@@ -356,8 +359,7 @@ test("POST /api/location returns district lookup results without a published gui
 	assert.equal(body.actions.some((item: { title: string }) => /Utah voter registration portal|Registration and voter status/i.test(item.title)), true);
 	assert.equal(body.normalizedAddress, "151 S UNIVERSITY AVE, PROVO, UT, 84601");
 	assert.equal(body.representativeMatches[0].name, "Mike Kennedy");
-	assert.equal(body.publishedGuideAreaLabel, "Fulton County, Georgia");
-	assert.match(body.note, /not published a full ballot guide/i);
+	assert.match(body.note, /not published a full local ballot guide/i);
 	assert.match(body.note, /Census geography matched/i);
 });
 

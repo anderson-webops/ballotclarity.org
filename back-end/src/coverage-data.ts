@@ -226,7 +226,7 @@ const stateQuestionnaire = source("state-questionnaire", "State Senate District 
 });
 
 export const demoLocation: LocationSelection = {
-	coverageLabel: "Current launch jurisdiction: Fulton County, Georgia",
+	coverageLabel: "Published ballot guide area: Fulton County, Georgia",
 	displayName: "Fulton County, Georgia",
 	lookupMode: "coverage-selection",
 	requiresOfficialConfirmation: true,

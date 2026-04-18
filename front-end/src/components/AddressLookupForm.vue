@@ -28,7 +28,7 @@ const representativeMatches = ref<LocationRepresentativeMatch[]>([]);
 const fromCache = ref(false);
 const resolvedElectionSlug = ref("");
 const resolvedLocation = ref<LocationLookupResponse["location"] | null>(null);
-const publishedGuideAreaLabel = ref("");
+const guideAvailability = ref<LocationLookupResponse["guideAvailability"]>();
 const inputId = `address-lookup-${useId()}`;
 const descriptionId = `${inputId}-description`;
 const usageId = `${inputId}-usage`;
@@ -50,7 +50,7 @@ watch(query, () => {
 	districtMatches.value = [];
 	representativeMatches.value = [];
 	fromCache.value = false;
-	publishedGuideAreaLabel.value = "";
+	guideAvailability.value = undefined;
 
 	if (resolvedLocation.value) {
 		resolvedLocation.value = null;
@@ -93,7 +93,7 @@ async function handleSubmit() {
 	fromCache.value = false;
 	resolvedElectionSlug.value = "";
 	resolvedLocation.value = null;
-	publishedGuideAreaLabel.value = "";
+	guideAvailability.value = undefined;
 
 	if (!query.value.trim()) {
 		errorMessage.value = "Enter an address or ZIP code to load the ballot guide.";
@@ -116,7 +116,7 @@ async function handleSubmit() {
 		districtMatches.value = response.districtMatches ?? [];
 		representativeMatches.value = response.representativeMatches ?? [];
 		fromCache.value = Boolean(response.fromCache);
-		publishedGuideAreaLabel.value = response.publishedGuideAreaLabel ?? "";
+		guideAvailability.value = response.guideAvailability;
 
 		if (response.result === "selection-required" || response.result === "guide-unavailable" || response.result === "unsupported") {
 			lookupActions.value = response.actions ?? [];
@@ -208,17 +208,17 @@ async function handleSubmit() {
 				{{ lookupResult === "unsupported"
 					? "Location not yet resolved"
 					: lookupResult === "guide-unavailable"
-						? "Guide not yet published"
+						? "Location matched"
 						: "Choose how to continue" }}
 			</p>
 			<p class="text-sm text-app-muted leading-6 mt-3 dark:text-app-muted-dark">
 				{{ lookupNote }}
 			</p>
 			<p
-				v-if="lookupResult === 'guide-unavailable' && publishedGuideAreaLabel"
+				v-if="lookupResult === 'guide-unavailable' && guideAvailability === 'not-published'"
 				class="text-xs text-app-muted leading-6 mt-3 dark:text-app-muted-dark"
 			>
-				Published ballot guides currently focus on {{ publishedGuideAreaLabel }}.
+				District and representative context are available below even though a full local ballot guide is not yet published here.
 			</p>
 			<p
 				v-if="resolvedLocation"
@@ -325,7 +325,7 @@ async function handleSubmit() {
 				{{ lookupResult === "unsupported"
 					? "Use the official tools above for this location, or replace the ZIP code with a full street address for a more precise lookup."
 					: lookupResult === "guide-unavailable"
-						? "District lookup succeeded, but Ballot Clarity does not yet publish a full local guide here. Use the district, representative, and official-tool results above."
+						? "Ballot Clarity matched this location and loaded district and representative context where available. Use the official tools above for the current ballot, voter-status, and polling-place details."
 						: resolvedLocation
 							? "Ballot Clarity still opens the current guide surface after official verification because exact contest packaging is still being connected."
 							: "If you want the most specific district match, replace the ZIP code with a full street address before continuing." }}

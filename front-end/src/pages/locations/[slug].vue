@@ -14,7 +14,7 @@ const earlyVotingDate = computed(() => nextElectionData.value?.election.keyDates
 watchEffect(() => {
 	if (jurisdiction.value) {
 		civicStore.setLocation({
-			coverageLabel: `Current launch jurisdiction: ${jurisdiction.value.displayName}`,
+			coverageLabel: `Published ballot guide area: ${jurisdiction.value.displayName}`,
 			displayName: jurisdiction.value.displayName,
 			slug: jurisdiction.value.slug,
 			state: jurisdiction.value.state

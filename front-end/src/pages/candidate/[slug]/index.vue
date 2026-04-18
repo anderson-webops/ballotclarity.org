@@ -45,7 +45,7 @@ const contextTerms = [
 watchEffect(() => {
 	if (candidate.value) {
 		civicStore.setLocation({
-			coverageLabel: `Current launch jurisdiction: ${currentCoverageLocationName}`,
+			coverageLabel: `Published ballot guide area: ${currentCoverageLocationName}`,
 			displayName: candidate.value.location,
 			slug: currentCoverageLocationSlug,
 			state: "Georgia",

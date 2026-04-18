@@ -376,6 +376,7 @@ export interface LocationRepresentativeMatch {
 export type LocationLookupActionKind = "ballot-guide" | "official-verification";
 export type LocationLookupInputKind = "address" | "zip";
 export type LocationLookupResult = "guide-unavailable" | "resolved" | "selection-required" | "unsupported";
+export type LocationGuideAvailability = "published" | "not-published";
 
 export interface LocationLookupAction {
 	id: string;
@@ -392,7 +393,7 @@ export interface LocationLookupResponse {
 	result: LocationLookupResult;
 	inputKind: LocationLookupInputKind;
 	note: string;
-	publishedGuideAreaLabel?: string;
+	guideAvailability?: LocationGuideAvailability;
 	location?: LocationSelection;
 	electionSlug?: string;
 	actions?: LocationLookupAction[];

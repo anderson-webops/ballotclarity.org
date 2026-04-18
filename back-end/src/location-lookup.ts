@@ -160,12 +160,11 @@ function buildGuideUnavailableNote(
 	rawQuery: string,
 	inputKind: LocationLookupInputKind,
 	geoContext: LookupGeoContext | null | undefined,
-	publishedGuideAreaLabel: string,
 	hasOfficialActions: boolean,
 	addressEnrichment?: AddressEnrichmentResult | null
 ) {
 	const locationSentence = describeDetectedLocation(inputKind, rawQuery, geoContext);
-	const publishedGuideSentence = `Ballot Clarity matched this ${inputKind === "zip" ? "location" : "address"} but has not published a full ballot guide for this area yet. Published ballot guides currently focus on ${publishedGuideAreaLabel}.`;
+	const publishedGuideSentence = `Ballot Clarity matched this ${inputKind === "zip" ? "location" : "address"} and loaded location context, but it has not published a full local ballot guide for this area yet.`;
 	const districtSentence = addressEnrichment?.districtMatches?.length
 		? `Census geography matched ${addressEnrichment.districtMatches.map(match => match.label).join(", ")}.`
 		: "";
@@ -215,7 +214,6 @@ export function buildLocationLookupResponse(
 	addressEnrichment?: AddressEnrichmentResult | null
 ): LocationLookupResponse {
 	const inputKind = classifyLookupInput(rawQuery);
-	const publishedGuideAreaLabel = coverage.launchTarget.displayName;
 	const stateOfficialActions = buildOfficialVerificationActions(
 		getOfficialToolsForState(geoContext?.stateAbbreviation)
 	);
@@ -226,9 +224,9 @@ export function buildLocationLookupResponse(
 			if (geoContext) {
 				return {
 					actions: stateOfficialActions,
+					guideAvailability: "not-published",
 					inputKind,
-					note: buildGuideUnavailableNote(rawQuery, inputKind, geoContext, publishedGuideAreaLabel, Boolean(stateOfficialActions.length)),
-					publishedGuideAreaLabel,
+					note: buildGuideUnavailableNote(rawQuery, inputKind, geoContext, Boolean(stateOfficialActions.length)),
 					result: "guide-unavailable"
 				};
 			}
@@ -252,11 +250,11 @@ export function buildLocationLookupResponse(
 
 		return {
 			actions,
+			guideAvailability: "published",
 			inputKind,
 			note: coverageMode === "snapshot"
 				? `${coverageSentence} ZIP-only lookup can preview the currently supported coverage area, but it cannot choose an exact district-level ballot. Pick the coverage guide below or use the official voter tool for exact verification.`
 				: `${coverageSentence} ZIP-only lookup can preview the current public coverage area, but it cannot choose an exact district-level ballot. Pick the current coverage guide below or use the official voter tool for exact verification.`,
-			publishedGuideAreaLabel,
 			result: "selection-required"
 		};
 	}
@@ -271,11 +269,11 @@ export function buildLocationLookupResponse(
 			return {
 				actions: officialActions,
 				fromCache: addressEnrichment?.fromCache,
+				guideAvailability: "not-published",
 				inputKind,
 				districtMatches: addressEnrichment?.districtMatches,
-				note: buildGuideUnavailableNote(rawQuery, inputKind, geoContext, publishedGuideAreaLabel, Boolean(officialActions.length), addressEnrichment),
+				note: buildGuideUnavailableNote(rawQuery, inputKind, geoContext, Boolean(officialActions.length), addressEnrichment),
 				normalizedAddress: addressEnrichment?.normalizedAddress,
-				publishedGuideAreaLabel,
 				representativeMatches: addressEnrichment?.representativeMatches,
 				result: "guide-unavailable"
 			};
@@ -297,6 +295,7 @@ export function buildLocationLookupResponse(
 		actions: officialLookup?.actions?.length ? officialLookup.actions : undefined,
 		electionSlug,
 		fromCache: addressEnrichment?.fromCache,
+		guideAvailability: "published",
 		inputKind,
 		districtMatches: addressEnrichment?.districtMatches,
 		location: {
@@ -320,7 +319,6 @@ export function buildLocationLookupResponse(
 				: ""
 		].filter(Boolean).join(" "),
 		normalizedAddress: addressEnrichment?.normalizedAddress,
-		publishedGuideAreaLabel,
 		representativeMatches: addressEnrichment?.representativeMatches,
 		result: "resolved"
 	};

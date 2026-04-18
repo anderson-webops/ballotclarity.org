@@ -144,7 +144,7 @@ export function buildNationwidePersonProfileResponse(
 	const whatWeDoNotKnow: TrustBullet[] = [
 		buildTrustBullet(
 			"guide-status",
-			"Ballot Clarity has not attached source-backed contest-field, comparison, funding, or influence records to this person yet. Those modules appear only when a reliable person-level linkage exists.",
+			"Candidate-field and ballot-comparison records are not attached to this person page. Finance and influence modules appear only when Ballot Clarity can verify a reliable person-level linkage for them.",
 			sources
 		),
 		buildTrustBullet(

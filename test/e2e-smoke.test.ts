@@ -322,6 +322,16 @@ async function getDocumentBodyText(cdp: CdpSession) {
 	return String(evaluation.result?.value ?? "");
 }
 
+async function countSelectorMatches(cdp: CdpSession, selector: string) {
+	const evaluation = await cdp.send("Runtime.evaluate", {
+		awaitPromise: false,
+		expression: `document.querySelectorAll(${JSON.stringify(selector)}).length`,
+		returnByValue: true
+	});
+
+	return Number(evaluation.result?.value ?? 0);
+}
+
 interface CdpSession {
 	close: () => Promise<void>;
 	on: (method: string, handler: (params: any) => void) => () => void;
@@ -1131,8 +1141,10 @@ test("nationwide lookup context survives client navigation across results, distr
 		const representativeDetailText = await getDocumentBodyText(cdp);
 		assert.match(representativeDetailText, /Mike Kennedy/);
 		assert.doesNotMatch(representativeDetailText, /Representative profile not available/);
-		assert.match(representativeDetailText, /Funding not yet available/);
 		assert.match(representativeDetailText, /Provider record/);
+		assert.equal(await countSelectorMatches(cdp, "[data-representative-layout='profile']"), 1);
+		assert.equal(await countSelectorMatches(cdp, "#at-a-glance"), 1);
+		assert.equal(await countSelectorMatches(cdp, "[data-representative-sidebar='record-details']"), 1);
 
 		const fundingLoad = cdp.waitForEvent("Page.loadEventFired");
 		await cdp.send("Page.navigate", { url: `${appBaseUrl}/representatives/ocd-person-ut-cd-3/funding` });
@@ -1211,6 +1223,8 @@ test("built app server-renders district and representative routes when the activ
 	assert.match(representativeHtml, /Mike Kennedy/);
 	assert.doesNotMatch(representativeHtml, /Representative profile not available/);
 	assert.match(representativeHtml, /Provider record/);
+	assert.equal((representativeHtml.match(/data-representative-layout="profile"/g) ?? []).length, 1);
+	assert.equal((representativeHtml.match(/data-representative-sidebar="record-details"/g) ?? []).length, 1);
 	assert.equal(fundingPage.status, 200);
 	assert.match(fundingHtml, /No funding data attached/);
 	assert.equal(influencePage.status, 200);

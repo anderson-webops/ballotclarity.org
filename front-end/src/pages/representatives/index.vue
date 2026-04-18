@@ -61,8 +61,8 @@ const representativeLinkIsExternal = (href: string) => isExternalHref(href);
 const representativeUseCases = computed(() => directoryUsesNationwide.value
 	? [
 			"Open a Ballot Clarity person page for each matched official",
-			"Open the provider-backed record for direct verification",
-			"Move to /districts or /results for broader lookup context"
+			"Open funding and influence pages where a reliable person-level crosswalk is attached",
+			"Open the provider-backed record for direct verification"
 		]
 	: [
 			"Finding the current officeholder tied to a district page",
@@ -83,11 +83,11 @@ const summaryItems = computed(() => {
 });
 
 const introCopy = computed(() => directoryUsesNationwide.value
-	? "This directory pulls out the current officials linked to the active nationwide lookup and points to district-level pages or provider-backed records. Ballot Clarity person pages, funding pages, and influence pages appear only where the underlying local person record exists."
+	? "This directory pulls out the current officials linked to the active nationwide lookup and points to district-level pages, provider-backed records, and person-level funding or influence pages where Ballot Clarity has a reliable crosswalk."
 	: "This directory pulls out the current officeholders Ballot Clarity can tie to published person records, so you can jump straight into their district, funding, and influence pages."
 );
 const noActionCopy = computed(() => directoryUsesNationwide.value
-	? "Open the district layer or provider-backed record for this official. Ballot Clarity funding and influence pages appear only when a source-backed person record exists."
+	? "Open the district layer, provider-backed record, or any live person-level modules for this official."
 	: "Open the person profile, funding page, or influence page for this official."
 );
 const requiresLookupPrompt = computed(() => !directoryUsesNationwide.value && !showGuideDirectory.value);
@@ -228,14 +228,30 @@ usePageSeo({
 							Provider record
 							<span class="i-carbon-launch" />
 						</a>
-						<NuxtLink v-if="!directoryUsesNationwide" :to="buildLookupAwareTarget(`${representative.href}/funding`)" class="btn-primary">
+						<NuxtLink
+							v-if="!representativeLinkIsExternal(representative.href) && representative.fundingAvailable"
+							:to="buildLookupAwareTarget(`${representative.href}/funding`)"
+							class="btn-primary"
+						>
 							Funding
 						</NuxtLink>
-						<NuxtLink v-if="!directoryUsesNationwide" :to="buildLookupAwareTarget(`${representative.href}/influence`)" class="btn-secondary">
+						<NuxtLink
+							v-if="!representativeLinkIsExternal(representative.href) && representative.influenceAvailable"
+							:to="buildLookupAwareTarget(`${representative.href}/influence`)"
+							class="btn-secondary"
+						>
 							Influence
 						</NuxtLink>
-						<VerificationBadge v-if="directoryUsesNationwide" label="Funding not yet available" tone="warning" />
-						<VerificationBadge v-if="directoryUsesNationwide" label="Influence not yet available" tone="warning" />
+						<VerificationBadge v-if="!representative.fundingAvailable" label="Funding not yet available" tone="warning" />
+						<VerificationBadge v-if="!representative.influenceAvailable" label="Influence not yet available" tone="warning" />
+					</div>
+					<div class="mt-4 space-y-2">
+						<p class="text-sm text-app-muted leading-6 dark:text-app-muted-dark">
+							<strong class="text-app-ink dark:text-app-text-dark">Funding:</strong> {{ representative.fundingSummary }}
+						</p>
+						<p class="text-sm text-app-muted leading-6 dark:text-app-muted-dark">
+							<strong class="text-app-ink dark:text-app-text-dark">Influence:</strong> {{ representative.influenceSummary }}
+						</p>
 					</div>
 				</article>
 			</section>

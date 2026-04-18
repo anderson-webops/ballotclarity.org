@@ -215,14 +215,30 @@ usePageSeo({
 									Provider record
 									<span class="i-carbon-launch" />
 								</a>
-								<NuxtLink v-if="!isExternalHref(representative.href) && districtPageData.mode === 'guide'" :to="buildLookupAwareTarget(`${representative.href}/funding`)" class="btn-secondary">
+								<NuxtLink
+									v-if="!isExternalHref(representative.href) && representative.fundingAvailable"
+									:to="buildLookupAwareTarget(`${representative.href}/funding`)"
+									class="btn-secondary"
+								>
 									Funding
 								</NuxtLink>
-								<NuxtLink v-if="!isExternalHref(representative.href) && districtPageData.mode === 'guide'" :to="buildLookupAwareTarget(`${representative.href}/influence`)" class="btn-secondary">
+								<NuxtLink
+									v-if="!isExternalHref(representative.href) && representative.influenceAvailable"
+									:to="buildLookupAwareTarget(`${representative.href}/influence`)"
+									class="btn-secondary"
+								>
 									Influence
 								</NuxtLink>
-								<VerificationBadge v-if="districtPageData.mode === 'nationwide'" label="Funding not yet available" tone="warning" />
-								<VerificationBadge v-if="districtPageData.mode === 'nationwide'" label="Influence not yet available" tone="warning" />
+								<VerificationBadge v-if="!representative.fundingAvailable" label="Funding not yet available" tone="warning" />
+								<VerificationBadge v-if="!representative.influenceAvailable" label="Influence not yet available" tone="warning" />
+							</div>
+							<div class="mt-4 space-y-2">
+								<p class="text-sm text-app-muted leading-6 dark:text-app-muted-dark">
+									<strong class="text-app-ink dark:text-app-text-dark">Funding:</strong> {{ representative.fundingSummary }}
+								</p>
+								<p class="text-sm text-app-muted leading-6 dark:text-app-muted-dark">
+									<strong class="text-app-ink dark:text-app-text-dark">Influence:</strong> {{ representative.influenceSummary }}
+								</p>
 							</div>
 						</article>
 					</div>

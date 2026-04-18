@@ -66,11 +66,14 @@ import { createCensusGeocoderClient } from "./census-geocoder.js";
 import { createCoverageRepository } from "./coverage-repository.js";
 import { createGoogleCivicClient } from "./google-civic.js";
 import { buildCoverageResponse } from "./launch-profile.js";
+import { createLdaClient } from "./lda.js";
 import { buildLocationGuessNotePrefix, createLocationGuessService } from "./location-guess.js";
 import { buildLocationLookupResponse, classifyLookupInput, findSupportedCoverageSummaries, validateLookupInput } from "./location-lookup.js";
 import { createLogger, createRequestLoggingMiddleware } from "./logger.js";
+import { createOpenFecClient } from "./openfec.js";
 import { createOpenStatesClient } from "./openstates.js";
 import { buildProviderSummary } from "./provider-config.js";
+import { createRepresentativeModuleResolver } from "./representative-modules.js";
 import { createSourceAssetStore } from "./source-asset-store.js";
 import { createZipLocationService } from "./zip-location.js";
 
@@ -86,7 +89,9 @@ interface CreateAppOptions {
 	correctionSeed?: AdminCorrectionRequest[];
 	activitySeed?: AdminActivityItem[];
 	googleCivicClient?: ReturnType<typeof createGoogleCivicClient>;
+	ldaClient?: ReturnType<typeof createLdaClient>;
 	locationGuessOptions?: Parameters<typeof createLocationGuessService>[0];
+	openFecClient?: ReturnType<typeof createOpenFecClient>;
 	sourceMonitorSeed?: AdminSourceMonitorItem[];
 	zipLocationService?: ZipLocationService | null;
 }
@@ -284,9 +289,11 @@ function buildRepresentativeSummary(candidate: Candidate): RepresentativeSummary
 		location: candidate.location,
 		districtLabel: candidate.officeSought,
 		districtSlug: candidate.contestSlug,
+		fundingAvailable: Boolean(candidate.funding),
 		fundingSummary: candidate.funding.summary,
 		href: `/representatives/${candidate.slug}`,
 		officeholderLabel: candidate.incumbent ? "Current officeholder" : "Incumbent contender",
+		influenceAvailable: candidate.lobbyingContext.length > 0 || candidate.publicStatements.length > 0,
 		influenceSummary: candidate.lobbyingContext[0]?.summary ?? "No published influence-context note is attached to this profile yet.",
 		incumbent: candidate.incumbent,
 		onCurrentBallot: true,
@@ -567,7 +574,13 @@ export async function createApp(options: CreateAppOptions = {}) {
 	const locationGuessService = createLocationGuessService(options.locationGuessOptions);
 	const adminLoginThrottle = createAdminLoginThrottle();
 	const googleCivicClient = options.googleCivicClient === undefined ? createGoogleCivicClient() : options.googleCivicClient;
+	const ldaClient = options.ldaClient === undefined ? createLdaClient() : options.ldaClient;
 	const openStatesClient = createOpenStatesClient();
+	const openFecClient = options.openFecClient === undefined ? createOpenFecClient() : options.openFecClient;
+	const representativeModuleResolver = createRepresentativeModuleResolver({
+		ldaClient,
+		openFecClient,
+	});
 	const zipLocationService = options.zipLocationService === undefined
 		? createZipLocationService({ openStatesClient })
 		: options.zipLocationService;
@@ -1346,7 +1359,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 			}
 		}
 
-		return buildLocationLookupResponse(
+		const lookupResponse = buildLocationLookupResponse(
 			raw,
 			coverageRepository.data.jurisdiction,
 			coverageRepository.data.jurisdictionSummaries,
@@ -1360,6 +1373,24 @@ export async function createApp(options: CreateAppOptions = {}) {
 			selectionOptions,
 			selectionId
 		);
+
+		const activeLookupContext = buildActiveNationwideLookupContext(lookupResponse);
+
+		if (lookupResponse.result === "resolved" && lookupResponse.availability && activeLookupContext) {
+			const financeInfluenceAvailability = await representativeModuleResolver.enrichLocationFinanceInfluenceAvailability(
+				activeLookupContext,
+				lookupResponse.availability.financeInfluence.detail,
+				lookupResponse.availability.financeInfluence.status
+			);
+
+			lookupResponse.availability.financeInfluence = {
+				...lookupResponse.availability.financeInfluence,
+				detail: financeInfluenceAvailability.detail,
+				status: financeInfluenceAvailability.status,
+			};
+		}
+
+		return lookupResponse;
 	}
 
 	async function resolveActiveNationwideLookup(request: express.Request, response: express.Response) {
@@ -1701,7 +1732,13 @@ export async function createApp(options: CreateAppOptions = {}) {
 			const nationwideDistrict = buildNationwideDistrictRecordResponse(activeNationwideLookup, request.params.slug);
 
 			if (nationwideDistrict) {
-				response.json(nationwideDistrict);
+				response.json({
+					...nationwideDistrict,
+					representatives: await representativeModuleResolver.enrichNationwideDistrictRepresentatives(
+						activeNationwideLookup,
+						nationwideDistrict.representatives
+					),
+				});
 				return;
 			}
 		}
@@ -1720,7 +1757,14 @@ export async function createApp(options: CreateAppOptions = {}) {
 		const activeNationwideLookup = await resolveActiveNationwideLookup(request, response);
 
 		if (activeNationwideLookup) {
-			response.json(buildNationwideRepresentativesResponse(activeNationwideLookup));
+			const nationwideRepresentatives = buildNationwideRepresentativesResponse(activeNationwideLookup);
+			response.json({
+				...nationwideRepresentatives,
+				representatives: await representativeModuleResolver.enrichNationwideRepresentativeDirectory(
+					activeNationwideLookup,
+					nationwideRepresentatives.representatives
+				),
+			});
 			return;
 		}
 
@@ -1739,7 +1783,10 @@ export async function createApp(options: CreateAppOptions = {}) {
 			const representativeFromLookup = buildNationwidePersonProfileResponse(activeNationwideLookup, request.params.slug);
 
 			if (representativeFromLookup) {
-				response.json(representativeFromLookup);
+				response.json(await representativeModuleResolver.enrichNationwidePersonProfile(
+					activeNationwideLookup,
+					representativeFromLookup
+				));
 				return;
 			}
 		}

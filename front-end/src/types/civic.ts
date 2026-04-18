@@ -714,7 +714,9 @@ export interface RepresentativeSummary {
 	openstatesUrl?: string;
 	incumbent: boolean;
 	summary: string;
+	fundingAvailable: boolean;
 	fundingSummary: string;
+	influenceAvailable: boolean;
 	influenceSummary: string;
 	updatedAt: string;
 	sourceCount: number;

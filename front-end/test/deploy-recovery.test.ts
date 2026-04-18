@@ -10,6 +10,8 @@ import {
 	recoveryReloadKey,
 	shouldRecoverFromBuildMismatch,
 	staleClientBuildStorageKey,
+	staleClientNoticeId,
+	triggerStaleClientRecovery,
 	unregisterStaleServiceWorkers,
 } from "../src/utils/deploy-recovery.ts";
 
@@ -101,6 +103,70 @@ test("deploy recovery pre-hydration script checks the stored client build id bef
 	assert.match(script, /data-app-build/);
 	assert.match(script, /window\.location\.reload\(\)/);
 	assert.match(script, new RegExp(staleClientBuildStorageKey));
+});
+
+test("deploy recovery shows a reload notice and only schedules one runtime reload per target build", () => {
+	const storage = createStorage();
+	let reloadCalls = 0;
+	let timerCalls = 0;
+	const appendedNodes: Array<{ id?: string; textContent?: string }> = [];
+	const fakeDocument = {
+		body: {
+			append(node: { id?: string; textContent?: string }) {
+				appendedNodes.push(node);
+			},
+		},
+		createElement() {
+			return {
+				setAttribute() {
+					// Ignore DOM attribute writes in the test harness.
+				},
+				style: {},
+				textContent: "",
+			};
+		},
+		getElementById(id: string) {
+			return appendedNodes.find(node => node.id === id) ?? null;
+		},
+	} as unknown as Document;
+	const fakeWindow = {
+		location: {
+			reload() {
+				reloadCalls += 1;
+			},
+		},
+		sessionStorage: storage,
+		setTimeout(callback: () => void) {
+			timerCalls += 1;
+			callback();
+			return 1;
+		},
+	} as unknown as Window;
+	const previousDocument = globalThis.document;
+	const previousWindow = globalThis.window;
+
+	try {
+		Object.assign(globalThis, {
+			document: fakeDocument,
+			window: fakeWindow,
+		});
+
+		assert.equal(triggerStaleClientRecovery("build-new"), true);
+		assert.equal(storage.getItem(recoveryReloadKey("build-new")), "1");
+		assert.equal(reloadCalls, 1);
+		assert.equal(timerCalls, 1);
+		assert.equal(appendedNodes[0]?.id, staleClientNoticeId);
+		assert.match(appendedNodes[0]?.textContent ?? "", /Ballot Clarity updated/i);
+
+		assert.equal(triggerStaleClientRecovery("build-new"), false);
+		assert.equal(reloadCalls, 1);
+	}
+	finally {
+		Object.assign(globalThis, {
+			document: previousDocument,
+			window: previousWindow,
+		});
+	}
 });
 
 test("deploy recovery can unregister stale service workers when present", async () => {

@@ -162,6 +162,9 @@ async function main() {
 		if (/source-backed local candidate records/i.test(String(lookupBody.availability?.financeInfluence?.detail || "")))
 			throw new Error("Lookup probe still exposed stale candidate-only finance/influence copy.");
 
+		if (lookupBody.availability?.financeInfluence?.status !== "available")
+			throw new Error("Lookup probe did not expose finance/influence availability even though a matched representative module crosswalk should exist.");
+
 		const { payload: representativeDirectoryBody, response: representativeDirectoryResponse } = await fetchJson(
 			`${baseUrl}`,
 			"/api/representatives?lookup=84604"
@@ -178,6 +181,9 @@ async function main() {
 		if (!firstRepresentativeSlug)
 			throw new Error("Representative directory probe returned no representative slug to verify.");
 
+		if (!representativeDirectoryBody.representatives.some(item => item.fundingAvailable || item.influenceAvailable))
+			throw new Error("Representative directory probe did not surface any live funding or influence module availability.");
+
 		const { payload: representativeProfileBody, response: representativeProfileResponse } = await fetchJson(
 			`${baseUrl}`,
 			`/api/representatives/${firstRepresentativeSlug}?lookup=84604`
@@ -189,9 +195,15 @@ async function main() {
 		if (/published local guide attached to this person record/i.test(String(representativeProfileBody.person?.whatWeDoNotKnow?.[0]?.text || "")))
 			throw new Error("Representative profile probe still exposed stale guide-only finance/influence fallback copy.");
 
+		if (!representativeProfileBody.person?.funding)
+			throw new Error("Representative profile probe did not attach a finance summary from the provider-backed federal crosswalk.");
+
+		if (!Array.isArray(representativeProfileBody.person?.lobbyingContext) || representativeProfileBody.person.lobbyingContext.length === 0)
+			throw new Error("Representative profile probe did not attach lobbying or influence context from the provider-backed federal crosswalk.");
+
 		console.log("\n== Local runtime verification passed ==");
 		console.log(`Resolved ${lookupBody.location?.displayName || "unknown location"} with ${lookupBody.districtMatches.length} district matches and ${lookupBody.representativeMatches.length} representative matches.`);
-		console.log(`Verified representative directory/profile backing for ${representativeDirectoryBody.representatives[0].name}.`);
+		console.log(`Verified representative directory/profile backing for ${representativeDirectoryBody.representatives[0].name}, including live finance and influence modules.`);
 	}
 	finally {
 		await stopProcess(server);

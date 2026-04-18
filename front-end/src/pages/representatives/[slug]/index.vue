@@ -81,6 +81,9 @@ const campaignLink = computed(() => {
 });
 const hasFunding = computed(() => person.value ? hasPersonFunding(person.value) : false);
 const hasInfluence = computed(() => person.value ? hasPersonInfluence(person.value) : false);
+const representativeLayoutKey = computed(() => person.value
+	? `${person.value.slug}:${person.value.updatedAt}:${person.value.provenance.asOf}:${hasFunding.value ? "funding" : "no-funding"}:${hasInfluence.value ? "influence" : "no-influence"}`
+	: "representative-profile-empty");
 const breadcrumbs = computed(() => [
 	{ label: "Home", to: "/" },
 	{ label: layerBreadcrumbLink.value.label, to: buildLookupAwareTarget(layerBreadcrumbLink.value.to) },
@@ -174,9 +177,14 @@ usePageSeo({
 			</InfoCallout>
 		</div>
 
-		<div v-else class="gap-8 grid 2xl:grid-cols-[minmax(0,1.45fr)_minmax(21rem,0.85fr)]">
+		<div
+			v-else
+			:key="representativeLayoutKey"
+			data-representative-layout="profile"
+			class="gap-8 grid 2xl:grid-cols-[minmax(0,1.45fr)_minmax(21rem,0.85fr)]"
+		>
 			<div class="space-y-6">
-				<header class="surface-panel">
+				<header data-representative-summary="hero" class="surface-panel">
 					<AppBreadcrumbs :items="breadcrumbs" />
 					<div class="flex flex-wrap gap-2 items-center">
 						<VerificationBadge label="Representative profile" tone="accent" />
@@ -237,10 +245,6 @@ usePageSeo({
 						<NuxtLink :to="buildLookupAwareTarget(backToLayerLink.to)" class="btn-primary">
 							{{ backToLayerLink.label }}
 						</NuxtLink>
-					</div>
-					<div class="mt-5 flex flex-wrap gap-2">
-						<VerificationBadge :label="hasFunding ? 'Funding module available' : 'Funding not yet available'" :tone="hasFunding ? 'accent' : 'warning'" />
-						<VerificationBadge :label="hasInfluence ? 'Influence module available' : 'Influence not yet available'" :tone="hasInfluence ? 'accent' : 'warning'" />
 					</div>
 				</header>
 
@@ -604,9 +608,9 @@ usePageSeo({
 					</template>
 				</PageSectionNav>
 
-				<div class="surface-panel">
+				<div class="surface-panel" data-representative-sidebar="record-details">
 					<h2 class="text-2xl text-app-ink font-serif dark:text-app-text-dark">
-						Record posture
+						Record details
 					</h2>
 					<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
 						<strong class="text-app-ink dark:text-app-text-dark">Provenance:</strong> {{ person.provenance.label }}
@@ -617,12 +621,6 @@ usePageSeo({
 					<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
 						<strong class="text-app-ink dark:text-app-text-dark">As of:</strong> {{ formatDateTime(person.provenance.asOf) }}
 					</p>
-				</div>
-
-				<div class="surface-panel">
-					<h2 class="text-2xl text-app-ink font-serif dark:text-app-text-dark">
-						Available modules
-					</h2>
 					<ul class="readable-list text-sm text-app-muted mt-5 pl-5 dark:text-app-muted-dark">
 						<li>{{ hasFunding ? "Funding summary and dedicated funding page are live for this person record." : "Funding module is not attached to this person record yet." }}</li>
 						<li>{{ hasInfluence ? "Influence and public-disclosure context are live for this person record." : "Influence module is not attached to this person record yet." }}</li>

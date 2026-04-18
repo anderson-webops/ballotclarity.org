@@ -616,9 +616,11 @@ function buildDirectoryBundle(context: ActiveNationwideLookupContext) {
 			ballotStatusLabel: "Published ballot status unavailable in this area",
 			districtLabel: representative.districtLabel,
 			districtSlug,
+			fundingAvailable: false,
 			fundingSummary: "No person-level funding record is attached to this representative yet.",
 			href: `/representatives/${slug}`,
 			incumbent: true,
+			influenceAvailable: false,
 			influenceSummary: "No person-level influence record is attached to this representative yet.",
 			location: locationLabel,
 			name: representative.name,
@@ -1055,7 +1057,7 @@ export function buildNationwidePersonProfileResponse(context: ActiveNationwideLo
 			whatWeDoNotKnow: [
 				buildTrustBullet(
 					"guide-status",
-					"Ballot Clarity has not attached source-backed contest-field, comparison, funding, or influence records to this person yet. Those modules appear only when a reliable person-level linkage exists.",
+					"Candidate-field and ballot-comparison records are not attached to this person page. Finance and influence modules appear only when Ballot Clarity can verify a reliable person-level linkage for them.",
 					sources,
 				),
 				buildTrustBullet(

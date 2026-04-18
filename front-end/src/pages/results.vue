@@ -3,6 +3,7 @@ import { storeToRefs } from "pinia";
 
 const civicStore = useCivicStore();
 const { isHydrated, nationwideLookupResult } = storeToRefs(civicStore);
+const { hasPublishedGuideContext } = useGuideEntryGate();
 
 const activeResult = computed(() => isHydrated.value ? nationwideLookupResult.value : null);
 const activeLocationLabel = computed(() => activeResult.value?.location?.displayName ?? activeResult.value?.normalizedAddress ?? "Nationwide civic results");
@@ -49,7 +50,7 @@ usePageSeo({
 				Ballot Clarity does not have an active nationwide lookup context in this browser yet. Return to the home-page lookup, enter an address or ZIP code, and Ballot Clarity will carry the nationwide civic results here when a published local guide is not available.
 			</InfoCallout>
 			<div class="mt-6 flex flex-wrap gap-3">
-				<NuxtLink to="/#location-lookup" class="btn-primary">
+				<NuxtLink to="/" class="btn-primary">
 					Open lookup
 				</NuxtLink>
 				<NuxtLink to="/coverage" class="btn-secondary">
@@ -85,8 +86,14 @@ usePageSeo({
 						The ballot plan, compare flow, and local ballot-guide pages still open only after Ballot Clarity confirms a published local guide for the active lookup. Until then, keep the nationwide civic results and official tools here as the main cross-page context.
 					</p>
 					<div class="mt-5 flex flex-wrap gap-3">
-						<NuxtLink to="/plan" class="btn-secondary">
+						<NuxtLink v-if="hasPublishedGuideContext" to="/plan" class="btn-secondary">
 							Open ballot plan
+						</NuxtLink>
+						<NuxtLink v-else to="/districts" class="btn-secondary">
+							Open districts
+						</NuxtLink>
+						<NuxtLink v-if="!hasPublishedGuideContext" to="/representatives" class="btn-secondary">
+							Open representatives
 						</NuxtLink>
 						<NuxtLink to="/coverage" class="btn-secondary">
 							Open coverage profile

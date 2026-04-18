@@ -108,11 +108,31 @@ test("nationwide lookups route into the nationwide results experience", () => {
 });
 
 test("homepage entry state stops promoting the featured guide preview when a nationwide context is active", () => {
-	assert.deepEqual(buildHomeExperienceState(true), {
+	assert.deepEqual(buildHomeExperienceState(true, false), {
 		primaryLookupPath: "/results",
 		showFeaturedGuidePreview: false,
 		showNationwideResults: true,
 		startHerePrimaryLabel: "Open nationwide results",
 		startHerePrimaryPath: "/results"
+	});
+});
+
+test("homepage entry state stays lookup-first when no nationwide or published guide context is active", () => {
+	assert.deepEqual(buildHomeExperienceState(false, false), {
+		primaryLookupPath: "/#location-lookup",
+		showFeaturedGuidePreview: false,
+		showNationwideResults: false,
+		startHerePrimaryLabel: "Open location lookup",
+		startHerePrimaryPath: "/#location-lookup"
+	});
+});
+
+test("homepage entry state only promotes the ballot guide when a published guide context is active", () => {
+	assert.deepEqual(buildHomeExperienceState(false, true), {
+		primaryLookupPath: "/ballot",
+		showFeaturedGuidePreview: true,
+		showNationwideResults: false,
+		startHerePrimaryLabel: "Open ballot guide",
+		startHerePrimaryPath: "/ballot"
 	});
 });

@@ -5,22 +5,32 @@ import { buildCompareRoute } from "~/stores/civic";
 
 const year = new Date().getFullYear();
 const civicStore = useCivicStore();
-const { allowsGuideEntryPoints, hasNationwideResultContext } = useGuideEntryGate();
+const { hasNationwideResultContext, hasPublishedGuideContext } = useGuideEntryGate();
 const { compareList, isHydrated } = storeToRefs(civicStore);
 const effectiveCompareList = computed(() => isHydrated.value ? compareList.value : []);
+const primarySectionLabel = computed(() => hasPublishedGuideContext.value
+	? "Use the guide"
+	: hasNationwideResultContext.value
+		? "Explore active results"
+		: "Start with lookup");
 
-const guideLinks = computed(() => [
-	{ label: "Nationwide civic results", to: "/results" },
-	{ label: "My ballot plan", to: "/plan" },
-	{ label: "Ballot guide", to: "/ballot" },
-	{ label: "Compare candidates", to: "/compare" },
-	{ label: "Search", to: "/search" },
-].filter((link) => {
-	if (link.to === "/results")
-		return hasNationwideResultContext.value;
-
-	return allowsGuideEntryPoints.value || !["/plan", "/ballot"].includes(link.to);
-}));
+const guideLinks = computed(() => hasPublishedGuideContext.value
+	? [
+			{ label: "My ballot plan", to: "/plan" },
+			{ label: "Ballot guide", to: "/ballot" },
+			{ label: "Compare candidates", to: "/compare" },
+			{ label: "District pages", to: "/districts" },
+			{ label: "Representatives", to: "/representatives" },
+			{ label: "Search", to: "/search" },
+		]
+	: [
+			...(hasNationwideResultContext.value
+				? [{ label: "Nationwide civic results", to: "/results" }]
+				: [{ label: "Location lookup", to: "/" }]),
+			{ label: "District pages", to: "/districts" },
+			{ label: "Representatives", to: "/representatives" },
+			{ label: "Search", to: "/search" },
+		]);
 
 const discoveryLinks = [
 	{ label: "About", to: "/about" },
@@ -54,7 +64,7 @@ function resolveGuideLinkTo(path: string) {
 						Ballot Clarity
 					</p>
 					<p class="bc-measure text-base text-app-muted mt-4 dark:text-app-muted-dark">
-						Ballot Clarity is a nonprofit civic-information platform focused on source-first ballot summaries, transparent methodology, and readable public-interest data.
+						Ballot Clarity is a nonprofit civic-information platform focused on nationwide civic lookup, source-first ballot summaries, transparent methodology, and readable public-interest data.
 					</p>
 					<div class="mt-5 gap-3 grid sm:gap-4 sm:grid-cols-2">
 						<div class="p-4 rounded-[1.35rem] bg-app-bg/70 dark:bg-app-bg-dark/70">
@@ -62,7 +72,7 @@ function resolveGuideLinkTo(path: string) {
 								What this site is for
 							</p>
 							<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
-								Readable ballot guides, candidate dossiers, measure explainers, and source access that help voters inspect the public record without overload.
+								Nationwide civic results, district pages, representative records, local ballot guides where published, and source access that help voters inspect the public record without overload.
 							</p>
 						</div>
 
@@ -71,9 +81,11 @@ function resolveGuideLinkTo(path: string) {
 								How to use it
 							</p>
 							<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
-								{{ allowsGuideEntryPoints
+								{{ hasPublishedGuideContext
 									? "Start with the ballot guide, open deeper pages only when needed, and verify time-sensitive logistics with the official authorities linked throughout the site."
-									: "Start with the nationwide civic results from the lookup, open deeper local guide pages only where Ballot Clarity has published coverage, and verify time-sensitive logistics with the official authorities linked throughout the site." }}
+									: hasNationwideResultContext
+										? "Keep the active nationwide civic results as the main app context, then move through districts, representatives, and official tools without falling back to an unrelated local guide."
+										: "Start with the lookup, then use nationwide civic results, districts, representatives, and official tools before treating any published local guide as the primary frame." }}
 							</p>
 						</div>
 					</div>
@@ -82,7 +94,7 @@ function resolveGuideLinkTo(path: string) {
 				<div class="gap-6 grid sm:grid-cols-2">
 					<div>
 						<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-							Use the guide
+							{{ primarySectionLabel }}
 						</p>
 						<ul class="text-sm mt-4 space-y-3">
 							<li v-for="link in guideLinks" :key="link.to">

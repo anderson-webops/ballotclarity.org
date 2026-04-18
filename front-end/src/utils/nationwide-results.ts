@@ -92,7 +92,10 @@ export function resolveLookupDestination(response: LocationLookupResponse) {
 		: null;
 }
 
-export function buildHomeExperienceState(hasNationwideLookupResult: boolean): HomeExperienceState {
+export function buildHomeExperienceState(
+	hasNationwideLookupResult: boolean,
+	hasPublishedGuideContext: boolean
+): HomeExperienceState {
 	if (hasNationwideLookupResult) {
 		return {
 			primaryLookupPath: nationwideResultsPath,
@@ -103,11 +106,21 @@ export function buildHomeExperienceState(hasNationwideLookupResult: boolean): Ho
 		};
 	}
 
+	if (hasPublishedGuideContext) {
+		return {
+			primaryLookupPath: "/ballot",
+			showFeaturedGuidePreview: true,
+			showNationwideResults: false,
+			startHerePrimaryLabel: "Open ballot guide",
+			startHerePrimaryPath: "/ballot"
+		};
+	}
+
 	return {
 		primaryLookupPath: "/#location-lookup",
-		showFeaturedGuidePreview: true,
+		showFeaturedGuidePreview: false,
 		showNationwideResults: false,
-		startHerePrimaryLabel: "Check live coverage",
-		startHerePrimaryPath: "/coverage"
+		startHerePrimaryLabel: "Open location lookup",
+		startHerePrimaryPath: "/#location-lookup"
 	};
 }

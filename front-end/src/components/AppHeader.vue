@@ -20,7 +20,7 @@ interface HeaderGroup {
 const civicStore = useCivicStore();
 const colorMode = useColorMode();
 const route = useRoute();
-const { activeNationwideResult, allowsGuideEntryPoints, hasNationwideResultContext } = useGuideEntryGate();
+const { activeNationwideResult, hasNationwideResultContext, hasPublishedGuideContext } = useGuideEntryGate();
 const isMenuOpen = ref(false);
 const isHeaderVisible = ref(true);
 const lastScrollY = ref(0);
@@ -33,28 +33,46 @@ const headerDirectionThreshold = 12;
 let scrollFramePending = false;
 
 const { ballotPlanCount, compareCount, compareList, isHydrated, selectedLocation } = storeToRefs(civicStore);
+const primaryNavLabel = computed(() => hasPublishedGuideContext.value
+	? "Use the guide"
+	: hasNationwideResultContext.value
+		? "Explore active results"
+		: "Start with lookup");
+const primaryNavDescription = computed(() => hasPublishedGuideContext.value
+	? "Published-guide tools and active voter workflows."
+	: hasNationwideResultContext.value
+		? "Nationwide civic results, districts, representatives, and official-tool paths from the latest lookup."
+		: "Lookup-first navigation and nationwide civic reading paths.");
+const headerPrimaryAction = computed(() => hasPublishedGuideContext.value
+	? { badge: "plan" as const, label: "My plan", to: "/plan" }
+	: hasNationwideResultContext.value
+		? { label: "Nationwide results", to: "/results" }
+		: { label: "Location lookup", to: "/" });
 
 const navGroups = computed<HeaderGroup[]>(() => {
-	const guideLinks: HeaderLink[] = [
-		{ description: "District matches, representative records, and official tools from your latest nationwide lookup.", label: "Nationwide results", to: "/results" },
-		{ badge: "plan", description: "Saved checklist and print-friendly plan.", label: "My plan", to: "/plan" },
-		{ description: "Contest reading view with filters and official links.", label: "Ballot guide", to: "/ballot" },
-		{ description: "Office-area pages for each active district or contest area.", label: "Districts", to: "/districts" },
-		{ description: "Current representatives linked to district, funding, and influence pages.", label: "Representatives", to: "/representatives" },
-		{ badge: "compare", description: "Side-by-side candidate comparison.", label: "Compare", to: "/compare" },
-		{ description: "Search the current public coverage archive.", label: "Search", to: "/search" }
-	];
+	const guideLinks: HeaderLink[] = hasPublishedGuideContext.value
+		? [
+				{ badge: "plan", description: "Saved checklist and print-friendly plan for the active published guide.", label: "My plan", to: "/plan" },
+				{ description: "Contest reading view with filters and official links.", label: "Ballot guide", to: "/ballot" },
+				{ description: "Office-area pages for each active district or contest area.", label: "Districts", to: "/districts" },
+				{ description: "Current representatives linked to district, funding, and influence pages.", label: "Representatives", to: "/representatives" },
+				{ badge: "compare", description: "Side-by-side candidate comparison.", label: "Compare", to: "/compare" },
+				{ description: "Search the current public coverage archive.", label: "Search", to: "/search" }
+			]
+		: [
+				...(hasNationwideResultContext.value
+					? [{ description: "Return to the active nationwide civic results from your latest lookup.", label: "Nationwide results", to: "/results" }]
+					: [{ description: "Open the lookup on the homepage to load nationwide civic results for a real location.", label: "Location lookup", to: "/" }]),
+				{ description: "Office-area pages for each active district or contest area.", label: "Districts", to: "/districts" },
+				{ description: "Current representatives linked to district, funding, and influence pages.", label: "Representatives", to: "/representatives" },
+				{ description: "Search the current public coverage archive.", label: "Search", to: "/search" }
+			];
 
 	return [
 		{
-			description: "Ballot-reading tools and active voter workflows.",
-			label: "Use the guide",
-			links: guideLinks.filter((link) => {
-				if (link.to === "/results")
-					return hasNationwideResultContext.value;
-
-				return allowsGuideEntryPoints.value || !["/plan", "/ballot"].includes(link.to);
-			})
+			description: primaryNavDescription.value,
+			label: primaryNavLabel.value,
+			links: guideLinks
 		},
 		{
 			description: "How Ballot Clarity works and how to verify it.",
@@ -62,6 +80,7 @@ const navGroups = computed<HeaderGroup[]>(() => {
 			links: [
 				{ description: "Source directory and citation targets.", label: "Sources", to: "/sources" },
 				{ description: "Coverage scope and launch profile.", label: "Coverage", to: "/coverage" },
+				{ description: "Official-source roadmap and provider hierarchy.", label: "Data sources", to: "/data-sources" },
 				{ description: "How summaries and links are produced.", label: "Methodology", to: "/methodology" },
 				{ description: "Neutrality, sourcing, and editorial rules.", label: "Neutrality", to: "/neutrality" }
 			]
@@ -301,15 +320,14 @@ onBeforeUnmount(() => {
 
 				<div class="shrink-0 gap-2.5 hidden items-center md:flex lg:gap-3">
 					<NuxtLink
-						v-if="allowsGuideEntryPoints"
-						to="/plan"
+						:to="headerPrimaryAction.to"
 						prefetch-on="interaction"
 						class="text-sm text-app-ink font-medium px-3.5 py-2 border border-app-line rounded-full bg-white inline-flex gap-2 min-h-10 shadow-sm transition items-center dark:text-app-text-dark hover:text-app-accent lg:px-4 dark:border-app-line-dark hover:border-app-accent dark:bg-app-panel-dark focus-ring dark:hover:text-white"
-						:class="isActive('/plan') ? 'border-app-accent text-app-accent dark:border-app-accent dark:text-white' : ''"
+						:class="isActive(headerPrimaryAction.to) ? 'border-app-accent text-app-accent dark:border-app-accent dark:text-white' : ''"
 					>
-						<span>My plan</span>
+						<span>{{ headerPrimaryAction.label }}</span>
 						<ClientOnly>
-							<span v-if="showPersistedCivicState && effectiveBallotPlanCount" class="text-[11px] text-app-ink font-bold px-1.5 rounded-full bg-app-warm inline-flex h-5 min-w-5 items-center justify-center">
+							<span v-if="headerPrimaryAction.badge === 'plan' && showPersistedCivicState && effectiveBallotPlanCount" class="text-[11px] text-app-ink font-bold px-1.5 rounded-full bg-app-warm inline-flex h-5 min-w-5 items-center justify-center">
 								{{ effectiveBallotPlanCount }}
 							</span>
 						</ClientOnly>
@@ -364,17 +382,16 @@ onBeforeUnmount(() => {
 			<nav class="space-y-5" aria-label="Mobile navigation">
 				<div class="space-y-2">
 					<NuxtLink
-						v-if="allowsGuideEntryPoints"
-						to="/plan"
+						:to="headerPrimaryAction.to"
 						prefetch-on="interaction"
 						class="text-sm font-medium px-4 py-3 rounded-2xl flex transition items-center justify-between focus-ring"
-						:class="isActive('/plan')
+						:class="isActive(headerPrimaryAction.to)
 							? 'bg-app-ink text-white'
 							: 'bg-white text-app-ink dark:bg-app-panel-dark dark:text-app-text-dark'"
 					>
-						<span>My plan</span>
+						<span>{{ headerPrimaryAction.label }}</span>
 						<ClientOnly>
-							<span v-if="showPersistedCivicState && effectiveBallotPlanCount" class="text-[11px] text-app-ink font-bold ml-2 px-2 py-0.5 rounded-full bg-app-warm">
+							<span v-if="headerPrimaryAction.badge === 'plan' && showPersistedCivicState && effectiveBallotPlanCount" class="text-[11px] text-app-ink font-bold ml-2 px-2 py-0.5 rounded-full bg-app-warm">
 								{{ effectiveBallotPlanCount }}
 							</span>
 						</ClientOnly>
@@ -382,7 +399,7 @@ onBeforeUnmount(() => {
 					<div class="text-sm px-4 py-3 border border-app-line rounded-2xl bg-white flex items-center justify-between dark:border-app-line-dark dark:bg-app-panel-dark">
 						<div class="min-w-0">
 							<p class="text-app-muted truncate dark:text-app-muted-dark">
-								{{ showPersistedCivicState ? (effectiveSelectedLocation?.displayName || "Ballot context not yet selected") : "Ballot context syncs after page load" }}
+								{{ showPersistedCivicState ? (effectiveSelectedLocation?.displayName || "No active lookup context yet") : "Lookup context syncs after page load" }}
 							</p>
 							<NuxtLink :to="locationLookupHref" prefetch-on="interaction" class="text-xs text-app-accent font-semibold mt-1 inline-flex dark:text-[#9ed4e3] focus-ring">
 								Change location

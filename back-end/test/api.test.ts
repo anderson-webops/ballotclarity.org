@@ -422,14 +422,60 @@ test("default runtime stays empty instead of auto-seeding coverage and public op
 		assert.match(coverageBody.currentState, /No published local coverage snapshot/i);
 		assert.equal(statusBody.coverageMode, "empty");
 		assert.equal(statusBody.overallStatus, "reviewing");
+		assert.deepEqual(statusBody.sourceSummary, {
+			"healthy": 0,
+			"incident": 0,
+			"review-soon": 0,
+			"stale": 0
+		});
+		assert.deepEqual(statusBody.incidents, []);
 		assert.deepEqual(statusBody.sources, []);
-		assert.ok(statusBody.notes.some((note: string) => /No published local coverage snapshot is active/i.test(note)));
+		assert.deepEqual(statusBody.notes, [
+			"No published local coverage snapshot is active right now.",
+			"Nationwide civic lookup is available across the public site.",
+			"Local guide publication status remains generic until a verified local snapshot is published."
+		]);
 
 		const ballotResponse = await fetch(`${isolatedBaseUrl}/api/ballot?election=2026-fulton-county-general`);
 		const ballotBody = await ballotResponse.json();
 
 		assert.equal(ballotResponse.status, 404);
 		assert.match(ballotBody.message, /Ballot not found/i);
+	}
+	finally {
+		await new Promise<void>((resolve, reject) => {
+			isolatedServer.close(error => error ? reject(error) : resolve());
+		});
+	}
+});
+
+test("GET /api/status suppresses launch-specific source monitors when coverage mode is empty", async () => {
+	const isolatedServer = (await createApp({
+		adminApiKey,
+		adminDbPath: ":memory:",
+		sourceMonitorSeed
+	})).listen(0, "127.0.0.1");
+
+	await once(isolatedServer, "listening");
+	const isolatedAddress = isolatedServer.address() as AddressInfo;
+	const isolatedBaseUrl = `http://127.0.0.1:${isolatedAddress.port}`;
+
+	try {
+		const response = await fetch(`${isolatedBaseUrl}/api/status`);
+		const body = await response.json();
+
+		assert.equal(response.status, 200);
+		assert.equal(body.coverageMode, "empty");
+		assert.equal(body.overallStatus, "reviewing");
+		assert.deepEqual(body.sourceSummary, {
+			"healthy": 0,
+			"incident": 0,
+			"review-soon": 0,
+			"stale": 0
+		});
+		assert.deepEqual(body.incidents, []);
+		assert.deepEqual(body.sources, []);
+		assert.ok(body.notes.every((note: string) => !/Fulton|Georgia/i.test(note)));
 	}
 	finally {
 		await new Promise<void>((resolve, reject) => {
@@ -791,7 +837,30 @@ test("GET /api/status returns public source-health and launch notices", async ()
 	assert.equal(body.sourceSummary.healthy, 1);
 	assert.equal(body.sourceSummary.incident, 1);
 	assert.ok(body.notes.length >= 2);
+	assert.ok(body.notes.some((note: string) => /Public pages are serving an imported coverage snapshot/i.test(note)));
+	assert.ok(body.notes.some((note: string) => /Fulton County elections office|Georgia legislative crosswalk/i.test(note)));
 	assert.ok(body.sources.some((item: { label: string }) => item.label === "Fulton County Registration and Elections site"));
+});
+
+test("GET /api/status stays global after a successful nationwide lookup", async () => {
+	const lookupResponse = await fetch(`${baseUrl}/api/location`, {
+		body: JSON.stringify({ q: "84604" }),
+		headers: {
+			"Content-Type": "application/json"
+		},
+		method: "POST"
+	});
+	const lookupBody = await lookupResponse.json();
+	const statusResponse = await fetch(`${baseUrl}/api/status`);
+	const statusBody = await statusResponse.json();
+
+	assert.equal(lookupResponse.status, 200);
+	assert.equal(lookupBody.result, "resolved");
+	assert.equal(lookupBody.guideAvailability, "not-published");
+	assert.equal(statusResponse.status, 200);
+	assert.equal(statusBody.coverageMode, "snapshot");
+	assert.ok(statusBody.sources.some((item: { label: string }) => item.label === "Fulton County Registration and Elections site"));
+	assert.ok(statusBody.notes.every((note: string) => !/Provo|Utah|84604/i.test(note)));
 });
 
 test("GET /api/corrections returns the public corrections log", async () => {

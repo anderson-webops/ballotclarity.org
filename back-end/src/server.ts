@@ -1107,6 +1107,28 @@ export async function createApp(options: CreateAppOptions = {}) {
 		sources: Awaited<ReturnType<typeof adminRepository.listSourceMonitor>>["sources"],
 		overview: Awaited<ReturnType<typeof adminRepository.getOverview>>
 	): PublicStatusResponse {
+		if (coverageRepository.mode === "empty") {
+			return {
+				coverageMode: coverageRepository.mode,
+				coverageUpdatedAt: coverageRepository.data.updatedAt,
+				incidents: [],
+				notes: [
+					"No published local coverage snapshot is active right now.",
+					"Nationwide civic lookup is available across the public site.",
+					"Local guide publication status remains generic until a verified local snapshot is published."
+				],
+				overallStatus: "reviewing",
+				sourceSummary: {
+					"healthy": 0,
+					"incident": 0,
+					"review-soon": 0,
+					"stale": 0
+				},
+				sources: [],
+				updatedAt: new Date().toISOString()
+			};
+		}
+
 		const sourceSummary = {
 			"healthy": sources.filter(source => source.health === "healthy").length,
 			"incident": sources.filter(source => source.health === "incident").length,
@@ -1115,18 +1137,14 @@ export async function createApp(options: CreateAppOptions = {}) {
 		};
 		let overallStatus: PublicStatusResponse["overallStatus"] = "healthy";
 
-		if (coverageRepository.mode === "empty")
-			overallStatus = "reviewing";
-		else if (sourceSummary.incident)
+		if (sourceSummary.incident)
 			overallStatus = "degraded";
 		else if (sourceSummary["review-soon"] || sourceSummary.stale)
 			overallStatus = "reviewing";
 		const nextPublishWindow = overview.metrics.find(metric => metric.id === "next-publish")?.value;
 		const notes = [
 			...overview.needsAttention,
-			coverageRepository.mode === "snapshot"
-				? "Public pages are serving an imported coverage snapshot."
-				: "No published local coverage snapshot is active right now."
+			"Public pages are serving an imported coverage snapshot."
 		];
 
 		return {

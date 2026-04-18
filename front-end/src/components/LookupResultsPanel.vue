@@ -5,6 +5,7 @@ import type {
 	NationwideLookupResultContext
 } from "~/types/civic";
 import { buildLookupPresentation, filterLookupActionsForPresentation } from "~/utils/location-lookup";
+import { buildNationwideDistrictHref, buildNationwideRepresentativeHref } from "~/utils/lookup-links";
 
 const props = defineProps<{
 	compact?: boolean;
@@ -54,6 +55,14 @@ function openGuideAction(action: LocationLookupAction) {
 
 function selectLookupOption(option: LocationLookupSelectionOption) {
 	emit("selectOption", option);
+}
+
+function buildDistrictHref(match: NationwideLookupResultContext["districtMatches"][number]) {
+	return buildNationwideDistrictHref(match, props.lookup);
+}
+
+function buildRepresentativeHref(match: NationwideLookupResultContext["representativeMatches"][number]) {
+	return buildNationwideRepresentativeHref(match, props.lookup);
 }
 </script>
 
@@ -196,7 +205,12 @@ function selectLookupOption(option: LocationLookupSelectionOption) {
 				</p>
 				<ul class="mt-3 space-y-2">
 					<li v-for="match in lookup.districtMatches" :key="match.id" class="text-sm text-app-muted leading-6 dark:text-app-muted-dark">
-						<span class="text-app-ink font-semibold dark:text-app-text-dark">{{ match.label }}</span>
+						<NuxtLink
+							:to="buildDistrictHref(match)"
+							class="text-app-ink font-semibold underline decoration-transparent underline-offset-3 transition dark:text-app-text-dark focus-visible:text-app-accent hover:text-app-accent focus-visible:decoration-current hover:decoration-current"
+						>
+							{{ match.label }}
+						</NuxtLink>
 						<span class="text-xs tracking-[0.12em] ml-2 uppercase">{{ match.sourceSystem }}</span>
 					</li>
 				</ul>
@@ -211,7 +225,12 @@ function selectLookupOption(option: LocationLookupSelectionOption) {
 				<ul class="mt-3 space-y-3">
 					<li v-for="match in lookup.representativeMatches" :key="match.id" class="text-sm text-app-muted leading-6 dark:text-app-muted-dark">
 						<div class="flex flex-wrap gap-2 items-center">
-							<span class="text-app-ink font-semibold dark:text-app-text-dark">{{ match.name }}</span>
+							<NuxtLink
+								:to="buildRepresentativeHref(match)"
+								class="text-app-ink font-semibold underline decoration-transparent underline-offset-3 transition dark:text-app-text-dark focus-visible:text-app-accent hover:text-app-accent focus-visible:decoration-current hover:decoration-current"
+							>
+								{{ match.name }}
+							</NuxtLink>
 							<span v-if="match.party" class="text-xs tracking-[0.12em] uppercase">{{ match.party }}</span>
 							<VerificationBadge :label="match.sourceSystem" />
 						</div>

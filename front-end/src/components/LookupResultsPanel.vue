@@ -16,6 +16,12 @@ const emit = defineEmits<{
 	selectOption: [option: LocationLookupSelectionOption];
 }>();
 
+const externalHrefPattern = /^https?:\/\//;
+
+function isExternalHref(href: string) {
+	return externalHrefPattern.test(href);
+}
+
 const lookupResolution = computed(() => ({
 	electionSlug: props.lookup.electionSlug,
 	guideAvailability: props.lookup.guideAvailability,
@@ -215,9 +221,10 @@ function selectLookupOption(option: LocationLookupSelectionOption) {
 							:href="match.openstatesUrl"
 							target="_blank"
 							rel="noreferrer"
-							class="text-app-accent underline underline-offset-3"
+							class="text-app-accent underline underline-offset-3 inline-flex gap-2 items-center"
 						>
 							Open record
+							<span v-if="isExternalHref(match.openstatesUrl)" class="i-carbon-launch" />
 						</a>
 					</li>
 				</ul>

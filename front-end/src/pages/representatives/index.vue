@@ -3,6 +3,8 @@ import { storeToRefs } from "pinia";
 
 import { buildNationwideDirectoryResponses } from "~/utils/nationwide-directory";
 
+const externalHrefPattern = /^https?:\/\//;
+
 const { formatDateTime } = useFormatters();
 const civicStore = useCivicStore();
 const { data: guideData, error: guideError, pending: guidePending } = await useRepresentatives();
@@ -16,6 +18,7 @@ const directoryBundle = computed(() => directoryUsesNationwide.value
 const directoryPending = computed(() => directoryUsesNationwide.value ? false : guidePending.value);
 const directoryError = computed(() => directoryUsesNationwide.value ? null : guideError.value);
 const directoryData = computed(() => isHydrated.value ? directoryBundle.value : null);
+const representativeLinkIsExternal = (href: string) => externalHrefPattern.test(href);
 const representativeUseCases = computed(() => directoryUsesNationwide.value
 	? [
 			"Open a district page for each officially matched representative area",
@@ -128,9 +131,19 @@ usePageSeo({
 						<NuxtLink :to="`/districts/${representative.districtSlug}`" class="btn-secondary">
 							District page
 						</NuxtLink>
-						<NuxtLink :to="representative.href" class="btn-secondary">
+						<NuxtLink v-if="!representativeLinkIsExternal(representative.href)" :to="representative.href" class="btn-secondary">
 							{{ directoryUsesNationwide ? "Open record" : "Profile" }}
 						</NuxtLink>
+						<a
+							v-else
+							:href="representative.href"
+							target="_blank"
+							rel="noreferrer"
+							class="btn-secondary inline-flex gap-2 items-center"
+						>
+							{{ directoryUsesNationwide ? "Open record" : "Profile" }}
+							<span class="i-carbon-launch" />
+						</a>
 						<NuxtLink v-if="!directoryUsesNationwide" :to="`${representative.href}/funding`" class="btn-primary">
 							Funding
 						</NuxtLink>

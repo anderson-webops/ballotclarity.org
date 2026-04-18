@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 import { appDescription, appName } from "../src/constants/index.ts";
 import { staleClientBuildStorageKey } from "../src/utils/deploy-recovery.ts";
+import { displayTimeZoneCookieName } from "../src/utils/display-time-zone.ts";
 
 test("nuxt config uses srcDir and expected civic modules", async () => {
 	const { default: config } = await import("../nuxt.config.ts");
@@ -21,6 +22,12 @@ test("nuxt config uses srcDir and expected civic modules", async () => {
 	assert.equal(config.app?.head?.htmlAttrs?.lang, "en");
 	assert.equal(config.app?.head?.htmlAttrs?.["data-app-build"], config.runtimeConfig?.public?.buildId);
 	assert.ok(config.app?.head?.meta?.some(meta => meta.name === "ballot-clarity-build-id" && meta.content === config.runtimeConfig?.public?.buildId));
+	assert.ok(config.app?.head?.script?.some(script =>
+		script.id === "ballot-clarity-display-time-zone"
+		&& typeof script.innerHTML === "string"
+		&& script.innerHTML.includes(displayTimeZoneCookieName)
+		&& script.innerHTML.includes("Intl.DateTimeFormat().resolvedOptions().timeZone")
+	));
 	assert.ok(config.app?.head?.script?.some(script =>
 		script.id === "ballot-clarity-deploy-recovery"
 		&& typeof script.innerHTML === "string"

@@ -27,6 +27,7 @@ const adminSessionSecret = "smoke-session-secret";
 const adminUsername = "smoke-admin";
 const adminDbPath = join(repoRoot, "back-end/data/e2e-smoke.sqlite");
 const localCoverageFile = join(repoRoot, "back-end/data/live-coverage.local.json");
+const displayTimeZoneCookieName = "ballot-clarity-display-time-zone";
 const activeNationwideLookupCookieName = "ballot-clarity-nationwide-lookup";
 const deployRecoveryUnloadCountKey = "ballot-clarity:test-unload-count";
 const deployRecoverySeenReloadKey = "ballot-clarity:test-seen-reload-key";
@@ -209,6 +210,7 @@ const activeNationwideLookupCookie = `${activeNationwideLookupCookieName}=${enco
 	resolvedAt: nationwideLookupSnapshot.nationwideLookupResult.resolvedAt,
 	result: nationwideLookupSnapshot.nationwideLookupResult.result
 }))}`;
+const easternDisplayTimeZoneCookie = `${displayTimeZoneCookieName}=America%2FNew_York`;
 
 async function getFreePort() {
 	return await new Promise<number>((resolve, reject) => {
@@ -1178,7 +1180,7 @@ test("nationwide lookup context survives client navigation across results, distr
 
 test("built app server-renders district and representative routes when the active lookup cookie is present", async () => {
 	const requestHeaders = {
-		cookie: activeNationwideLookupCookie
+		cookie: `${activeNationwideLookupCookie}; ${easternDisplayTimeZoneCookie}`
 	};
 	const [
 		districtsPage,
@@ -1213,6 +1215,7 @@ test("built app server-renders district and representative routes when the activ
 
 	assert.equal(districtsPage.status, 200);
 	assert.match(districtsHtml, /Provo, Utah/);
+	assert.match(districtsHtml, /Apr 18, 2026, 8:43 AM/);
 	assert.match(districtsHtml, /Officeholder pipeline pending/);
 	assert.equal(districtPage.status, 200);
 	assert.match(districtHtml, /Provo city/);
@@ -1220,6 +1223,7 @@ test("built app server-renders district and representative routes when the activ
 	assert.match(districtHtml, /City officeholder data is not yet available from the current nationwide provider set/i);
 	assert.equal(representativesPage.status, 200);
 	assert.match(representativesHtml, /Mike Kennedy/);
+	assert.match(representativesHtml, /Apr 18, 2026, 8:43 AM/);
 	assert.match(representativesHtml, /Funding not yet available/);
 	assert.equal(representativePage.status, 200);
 	assert.match(representativeHtml, /Mike Kennedy/);

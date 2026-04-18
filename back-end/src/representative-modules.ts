@@ -29,9 +29,38 @@ const districtNumberPattern = /\b(\d+)\b/;
 const incumbentPattern = /incumbent/i;
 const normalizedAddressStateCodePattern = /,\s*([A-Z]{2})\s*,\s*\d{5}(?:-\d{4})?\s*$/i;
 const officeholderHonorificPattern = /\b(?:the|hon|honorable|rep|representative|cong|congressman|congresswoman|sen|senator|mr|mrs|ms|dr)\b/gi;
+const personNameSuffixPattern = /\b(?:jr|sr|ii|iii|iv|v|md|phd|dds|esq)\b/gi;
 const representativeOfficePattern = /representative/i;
 const senatorLabelPrefixPattern = /^senator\s+/;
 const senatorOfficePattern = /senator/i;
+
+const canonicalFirstNameAliases = new Map<string, string>([
+	["andy", "andrew"],
+	["bill", "william"],
+	["billy", "william"],
+	["bob", "robert"],
+	["bobby", "robert"],
+	["dan", "daniel"],
+	["danny", "daniel"],
+	["dave", "david"],
+	["jon", "jonathan"],
+	["joe", "joseph"],
+	["jim", "james"],
+	["jimmy", "james"],
+	["kate", "katherine"],
+	["katie", "katherine"],
+	["liz", "elizabeth"],
+	["matt", "matthew"],
+	["mike", "michael"],
+	["nick", "nicholas"],
+	["pat", "patrick"],
+	["rich", "richard"],
+	["rob", "robert"],
+	["sam", "samuel"],
+	["steve", "steven"],
+	["tom", "thomas"],
+	["will", "william"],
+]);
 
 const stateNameToCode = new Map<string, string>([
 	["alabama", "AL"],
@@ -157,9 +186,65 @@ function normalizeText(value: string | null | undefined) {
 	return String(value ?? "")
 		.toLowerCase()
 		.replace(officeholderHonorificPattern, " ")
+		.replace(personNameSuffixPattern, " ")
 		.replace(/[^a-z0-9]+/g, " ")
 		.trim()
 		.replace(/\s+/g, " ");
+}
+
+function canonicalizeFirstName(value: string | null | undefined) {
+	const normalized = normalizeText(value);
+	return canonicalFirstNameAliases.get(normalized) || normalized;
+}
+
+function normalizePersonNameSegment(value: string | null | undefined) {
+	return normalizeText(value)
+		.split(" ")
+		.filter(Boolean);
+}
+
+function parsePersonName(value: string | null | undefined) {
+	const raw = String(value ?? "")
+		.toLowerCase()
+		.replace(/\./g, " ")
+		.trim();
+
+	if (!raw) {
+		return {
+			canonicalGivenName: "",
+			surname: "",
+			tokens: [] as string[],
+		};
+	}
+
+	if (raw.includes(",")) {
+		const [surnamePart, givenPart] = raw.split(",", 2);
+		const surnameTokens = normalizePersonNameSegment(surnamePart);
+		const givenTokens = normalizePersonNameSegment(givenPart);
+
+		return {
+			canonicalGivenName: canonicalizeFirstName(givenTokens[0]),
+			surname: surnameTokens.join(" "),
+			tokens: [...surnameTokens, ...givenTokens],
+		};
+	}
+
+	const tokens = normalizePersonNameSegment(raw);
+	const surname = tokens.slice(-1).join(" ");
+	const givenTokens = tokens.slice(0, -1);
+
+	return {
+		canonicalGivenName: canonicalizeFirstName(givenTokens[0]),
+		surname,
+		tokens,
+	};
+}
+
+function surnamesReliablyMatch(left: string, right: string) {
+	if (!left || !right)
+		return false;
+
+	return left === right || left.endsWith(` ${right}`) || right.endsWith(` ${left}`);
 }
 
 function formatCurrency(amount: number) {
@@ -275,13 +360,19 @@ function inferFederalRepresentativeTarget(context: ActiveNationwideLookupContext
 }
 
 function namesReliablyMatch(left: string, right: string) {
-	const leftTokens = new Set(normalizeText(left).split(" ").filter(Boolean));
-	const rightTokens = new Set(normalizeText(right).split(" ").filter(Boolean));
+	const leftName = parsePersonName(left);
+	const rightName = parsePersonName(right);
 
-	if (!leftTokens.size || !rightTokens.size || leftTokens.size !== rightTokens.size)
+	if (!leftName.tokens.length || !rightName.tokens.length)
 		return false;
 
-	return [...leftTokens].every(token => rightTokens.has(token));
+	if (!surnamesReliablyMatch(leftName.surname, rightName.surname))
+		return false;
+
+	if (!leftName.canonicalGivenName || !rightName.canonicalGivenName)
+		return false;
+
+	return leftName.canonicalGivenName === rightName.canonicalGivenName;
 }
 
 function rankCandidateMatch(candidate: OpenFecCandidateSearchRecord, target: FederalRepresentativeTarget) {

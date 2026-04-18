@@ -214,90 +214,171 @@ before(async () => {
 		},
 		ldaClient: {
 			async listContributionReports({ contributionPayee, filingYear }) {
-				if (contributionPayee !== "MIKE KENNEDY FOR UTAH" || filingYear !== 2025)
-					return [];
+				if (contributionPayee === "MIKE KENNEDY FOR UTAH" && filingYear === 2025) {
+					return [
+						{
+							contributionItems: [
+								{
+									amount: 2500,
+									contributionType: "FECA",
+									contributorName: "SELF",
+									date: "2025-01-15",
+									honoreeName: "Rep. Mike Kennedy",
+									payeeName: "MIKE KENNEDY FOR UTAH"
+								},
+								{
+									amount: 1750,
+									contributionType: "FECA",
+									contributorName: "SELF",
+									date: "2025-02-02",
+									honoreeName: "Rep. Mike Kennedy",
+									payeeName: "MIKE KENNEDY FOR UTAH"
+								}
+							],
+							filingDocumentUrl: "https://lda.senate.gov/filings/public/contribution/mock-mike-kennedy/print/",
+							filingPeriodDisplay: "Mid-Year (Jan 1 - Jun 30)",
+							filingUuid: "mock-mike-kennedy",
+							filingYear: 2025,
+							postedAt: "2025-07-04T12:11:12-04:00",
+							registrantName: "Marshall Brachman",
+							url: "https://lda.senate.gov/api/v1/contributions/mock-mike-kennedy/"
+						}
+					];
+				}
 
-				return [
-					{
-						contributionItems: [
-							{
-								amount: 2500,
-								contributionType: "FECA",
-								contributorName: "SELF",
-								date: "2025-01-15",
-								honoreeName: "Rep. Mike Kennedy",
-								payeeName: "MIKE KENNEDY FOR UTAH"
-							},
-							{
-								amount: 1750,
-								contributionType: "FECA",
-								contributorName: "SELF",
-								date: "2025-02-02",
-								honoreeName: "Rep. Mike Kennedy",
-								payeeName: "MIKE KENNEDY FOR UTAH"
-							}
-						],
-						filingDocumentUrl: "https://lda.senate.gov/filings/public/contribution/mock-mike-kennedy/print/",
-						filingPeriodDisplay: "Mid-Year (Jan 1 - Jun 30)",
-						filingUuid: "mock-mike-kennedy",
-						filingYear: 2025,
-						postedAt: "2025-07-04T12:11:12-04:00",
-						registrantName: "Marshall Brachman",
-						url: "https://lda.senate.gov/api/v1/contributions/mock-mike-kennedy/"
-					}
-				];
+				if (contributionPayee === "FRIENDS OF MCCORMICK" && filingYear === 2025) {
+					return [
+						{
+							contributionItems: [
+								{
+									amount: 2500,
+									contributionType: "FECA",
+									contributorName: "AMERICAN ACADEMY OF DERMATOLOGY ASSOCIATION",
+									date: "2025-04-03",
+									honoreeName: "Rep. Rich McCormick",
+									payeeName: "FRIENDS OF MCCORMICK"
+								},
+								{
+									amount: 1500,
+									contributionType: "FECA",
+									contributorName: "AMERICAN MARITIME OFFICERS",
+									date: "2025-06-11",
+									honoreeName: "Rep. Rich McCormick",
+									payeeName: "FRIENDS OF MCCORMICK"
+								}
+							],
+							filingDocumentUrl: "https://lda.senate.gov/filings/public/contribution/mock-rich-mccormick/print/",
+							filingPeriodDisplay: "Mid-Year (Jan 1 - Jun 30)",
+							filingUuid: "mock-rich-mccormick",
+							filingYear: 2025,
+							postedAt: "2025-07-09T10:15:00-04:00",
+							registrantName: "American Academy of Dermatology Association",
+							url: "https://lda.senate.gov/api/v1/contributions/mock-rich-mccormick/"
+						}
+					];
+				}
+
+				return [];
 			}
 		},
 		openFecClient: {
 			async getCommitteeTotals(committeeId, cycle) {
-				if (committeeId !== "C00864488" || cycle !== 2026)
-					return null;
+				if (committeeId === "C00864488" && cycle === 2026) {
+					return {
+						candidateContribution: 0,
+						cashOnHandBeginningPeriod: 210000,
+						committeeId,
+						committeeName: "MIKE KENNEDY FOR UTAH",
+						contributions: 802218.94,
+						coverageEndDate: "2026-04-05",
+						coverageStartDate: "2025-01-01",
+						cycle,
+						disbursements: 556573.87,
+						individualContributions: 481158.78,
+						individualItemizedContributions: 381158.78,
+						individualUnitemizedContributions: 100000,
+						lastCashOnHandEndPeriod: 370846.88,
+						lastReportYear: 2026,
+						otherPoliticalCommitteeContributions: 372000,
+						otherReceipts: 4918.94,
+						politicalPartyCommitteeContributions: 25000,
+						receipts: 802218.94,
+						transfersFromOtherAuthorizedCommittee: 0
+					};
+				}
 
-				return {
-					candidateContribution: 0,
-					cashOnHandBeginningPeriod: 210000,
-					committeeId,
-					committeeName: "MIKE KENNEDY FOR UTAH",
-					contributions: 802218.94,
-					coverageEndDate: "2026-04-05",
-					coverageStartDate: "2025-01-01",
-					cycle,
-					disbursements: 556573.87,
-					individualContributions: 481158.78,
-					individualItemizedContributions: 381158.78,
-					individualUnitemizedContributions: 100000,
-					lastCashOnHandEndPeriod: 370846.88,
-					lastReportYear: 2026,
-					otherPoliticalCommitteeContributions: 372000,
-					otherReceipts: 4918.94,
-					politicalPartyCommitteeContributions: 25000,
-					receipts: 802218.94,
-					transfersFromOtherAuthorizedCommittee: 0
-				};
+				if (committeeId === "C00706747" && cycle === 2026) {
+					return {
+						candidateContribution: 0,
+						cashOnHandBeginningPeriod: 412345.12,
+						committeeId,
+						committeeName: "FRIENDS OF MCCORMICK",
+						contributions: 954321.01,
+						coverageEndDate: "2026-04-15",
+						coverageStartDate: "2025-01-01",
+						cycle,
+						disbursements: 534221.44,
+						individualContributions: 612000.55,
+						individualItemizedContributions: 522000.55,
+						individualUnitemizedContributions: 90000,
+						lastCashOnHandEndPeriod: 820144.69,
+						lastReportYear: 2026,
+						otherPoliticalCommitteeContributions: 240000,
+						otherReceipts: 1020.46,
+						politicalPartyCommitteeContributions: 101300,
+						receipts: 954321.01,
+						transfersFromOtherAuthorizedCommittee: 0
+					};
+				}
+
+				return null;
 			},
 			async searchCandidates({ district, name, office, state }) {
-				if (name !== "Mike Kennedy" || office !== "H" || state !== "UT" || district !== "03")
-					return [];
+				if (name === "Mike Kennedy" && office === "H" && state === "UT" && district === "03") {
+					return [
+						{
+							candidateId: "H4UT03260",
+							cycles: [2024, 2026],
+							district: "03",
+							incumbentChallengeFull: "Incumbent",
+							name: "KENNEDY, MIKE",
+							office: "H",
+							principalCommittees: [
+								{
+									committeeId: "C00864488",
+									lastFileDate: "2026-04-15",
+									name: "MIKE KENNEDY FOR UTAH",
+									party: "Republican"
+								}
+							],
+							state: "UT"
+						}
+					];
+				}
 
-				return [
-					{
-						candidateId: "H4UT03260",
-						cycles: [2024, 2026],
-						district: "03",
-						incumbentChallengeFull: "Incumbent",
-						name: "KENNEDY, MIKE",
-						office: "H",
-						principalCommittees: [
-							{
-								committeeId: "C00864488",
-								lastFileDate: "2026-04-15",
-								name: "MIKE KENNEDY FOR UTAH",
-								party: "Republican"
-							}
-						],
-						state: "UT"
-					}
-				];
+				if (name === "Rich McCormick" && office === "H" && state === "GA" && district === "07") {
+					return [
+						{
+							candidateId: "H0GA07273",
+							cycles: [2020, 2022, 2024, 2026],
+							district: "07",
+							incumbentChallengeFull: "Incumbent",
+							name: "MCCORMICK, RICHARD DEAN DR.",
+							office: "H",
+							principalCommittees: [
+								{
+									committeeId: "C00706747",
+									lastFileDate: "2026-04-15",
+									name: "FRIENDS OF MCCORMICK",
+									party: "Republican"
+								}
+							],
+							state: "GA"
+						}
+					];
+				}
+
+				return [];
 			}
 		},
 		sourceMonitorSeed,
@@ -1246,6 +1327,10 @@ test("direct representative routes return a stable provider-backed identity reco
 	assert.match(body.person.officeSought, /U\.S\. House, District 7/i);
 	assert.match(body.person.provenance.label, /Open States current officeholder record/i);
 	assert.doesNotMatch(body.person.officeholderLabel, /pending lookup context/i);
+	assert.ok(body.person.funding);
+	assert.match(body.person.funding.summary, /FRIENDS OF MCCORMICK/i);
+	assert.ok(body.person.lobbyingContext.length > 0);
+	assert.match(body.person.lobbyingContext[0].summary, /LD-203/i);
 });
 
 test("GET /api/representatives/:slug returns a source-backed representative profile", async () => {

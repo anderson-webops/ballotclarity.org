@@ -233,10 +233,24 @@ async function main() {
 		if (!Array.isArray(directRepresentativeBody.person?.lobbyingContext) || directRepresentativeBody.person.lobbyingContext.length === 0)
 			throw new Error("Direct representative route probe did not preserve influence data on the public route-backed person record.");
 
+		const { payload: richRepresentativeBody, response: richRepresentativeResponse } = await fetchJson(
+			`${baseUrl}`,
+			"/api/representatives/rich-mccormick"
+		);
+
+		if (richRepresentativeResponse.status !== 200)
+			throw new Error(`Crosswalked representative route probe failed with ${richRepresentativeResponse.status}.`);
+
+		if (!richRepresentativeBody.person?.funding)
+			throw new Error("Crosswalked representative route probe did not attach funding data for a nickname-vs-formal-name federal match.");
+
+		if (!Array.isArray(richRepresentativeBody.person?.lobbyingContext) || richRepresentativeBody.person.lobbyingContext.length === 0)
+			throw new Error("Crosswalked representative route probe did not attach influence data for a nickname-vs-formal-name federal match.");
+
 		console.log("\n== Local runtime verification passed ==");
 		console.log(`Resolved ${lookupBody.location?.displayName || "unknown location"} with ${lookupBody.districtMatches.length} district matches and ${lookupBody.representativeMatches.length} representative matches.`);
 		console.log(`Verified representative directory/profile backing for ${representativeDirectoryBody.representatives[0].name}, including live finance and influence modules.`);
-		console.log(`Verified direct district route backing for ${directDistrictBody.district?.title || firstDistrictSlug} and direct representative route backing for ${directRepresentativeBody.person?.name || firstRepresentativeSlug}.`);
+		console.log(`Verified direct district route backing for ${directDistrictBody.district?.title || firstDistrictSlug}, direct representative route backing for ${directRepresentativeBody.person?.name || firstRepresentativeSlug}, and crosswalked direct representative module attachment for ${richRepresentativeBody.person?.name || "rich-mccormick"}.`);
 	}
 	finally {
 		await stopProcess(server);

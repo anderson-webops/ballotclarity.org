@@ -1,5 +1,11 @@
 <script setup lang="ts">
-import type { ElectionSummary, LocationLookupAction, LocationLookupResponse, NationwideLookupResultContext } from "~/types/civic";
+import type {
+	ElectionSummary,
+	LocationLookupAction,
+	LocationLookupResponse,
+	LocationLookupSelectionOption,
+	NationwideLookupResultContext
+} from "~/types/civic";
 import { normalizeLookupResponseForDisplay, resolveLookupDestination } from "~/utils/nationwide-results";
 
 const props = defineProps<{
@@ -43,11 +49,11 @@ async function openLookupAction(action: LocationLookupAction) {
 	await navigateTo(`/ballot/${action.electionSlug}?location=${action.location.slug}`);
 }
 
-async function handleSubmit() {
+async function applyLookup(queryValue: string, selectionId?: string) {
 	errorMessage.value = "";
 	lookupResult.value = null;
 
-	if (!query.value.trim()) {
+	if (!queryValue.trim()) {
 		errorMessage.value = "Enter an address or ZIP code to load civic results.";
 		await nextTick();
 		lookupInput.value?.focus();
@@ -58,7 +64,10 @@ async function handleSubmit() {
 
 	try {
 		const response = await api<LocationLookupResponse>("/location", {
-			body: { q: query.value },
+			body: {
+				q: queryValue,
+				...(selectionId ? { selectionId } : {})
+			},
 			method: "POST"
 		});
 		civicStore.setLookupResponse(response, props.election ?? null);
@@ -68,6 +77,8 @@ async function handleSubmit() {
 
 		if (redirectTarget)
 			await navigateTo(redirectTarget);
+		else if (selectionId && response.location && response.electionSlug)
+			await navigateTo(`/ballot/${response.electionSlug}?location=${response.location.slug}`);
 	}
 	catch (error) {
 		errorMessage.value = error instanceof Error ? error.message : "Unable to load civic results right now.";
@@ -75,6 +86,14 @@ async function handleSubmit() {
 	finally {
 		isPending.value = false;
 	}
+}
+
+async function handleSubmit() {
+	await applyLookup(query.value);
+}
+
+async function selectLookupOption(option: LocationLookupSelectionOption) {
+	await applyLookup(lookupResult.value?.lookupQuery || query.value, option.id);
 }
 </script>
 
@@ -87,7 +106,7 @@ async function handleSubmit() {
 			Ballot Clarity can make a best-effort location guess from your IP address on load, but you can replace that guess here at any time with a full address or ZIP code.
 		</p>
 		<p :id="usageId" class="text-sm text-app-muted leading-6 mt-3 dark:text-app-muted-dark">
-			Ballot Clarity can already use provider-backed lookup to match many U.S. addresses to nationwide civic results, districts, and representative records. Full published ballot guides are still narrower. A full street address is the only input that can support the best district match, while ZIP-only results should still be treated as approximate.
+			Ballot Clarity can already use provider-backed lookup to match many U.S. addresses to nationwide civic results, districts, and representative records. Full published ballot guides are still narrower. A full street address is still the strongest input, while a ZIP can either resolve to one clear matched area or ask you to choose between multiple matched areas.
 		</p>
 		<p :id="privacyId" class="text-sm text-app-muted leading-6 mt-3 dark:text-app-muted-dark">
 			Data use: your lookup is sent only to match ballot coverage. The raw lookup is not added to the public content archive or used for advertising, and the app saves only your selected location label and ballot-plan preferences locally in your browser. Read the
@@ -132,6 +151,7 @@ async function handleSubmit() {
 			:compact="compact"
 			:lookup="lookupResult"
 			@open-guide="openLookupAction"
+			@select-option="selectLookupOption"
 		/>
 	</form>
 </template>

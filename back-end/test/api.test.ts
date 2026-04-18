@@ -177,29 +177,167 @@ before(async () => {
 			async lookupZip(zipCode) {
 				if (zipCode === "84604") {
 					return {
-						countyFips: "049",
-						countyName: "Utah County",
-						latitude: 40.2607,
-						longitude: -111.6549,
-						locality: "Provo",
 						postalCode: "84604",
-						sourceSystem: "Zippopotam.us + U.S. Census Geocoder",
-						stateAbbreviation: "UT",
-						stateName: "Utah"
+						matches: [
+							{
+								countyFips: "049",
+								countyName: "Utah County",
+								districtMatches: [
+									{
+										districtCode: "3",
+										districtType: "congressional",
+										id: "congressional:3",
+										label: "Congressional District 3",
+										sourceSystem: "U.S. Census Geocoder"
+									},
+									{
+										districtCode: "24",
+										districtType: "state-senate",
+										id: "state-senate:24",
+										label: "State Senate District 24",
+										sourceSystem: "U.S. Census Geocoder"
+									}
+								],
+								id: "zip:84604:provo-utah",
+								latitude: 40.2607,
+								locality: "Provo",
+								longitude: -111.6549,
+								postalCode: "84604",
+								representativeMatches: [
+									{
+										districtLabel: "Congressional District 3",
+										id: "ocd-person:test-ut-rep",
+										name: "Mike Kennedy",
+										officeTitle: "Representative",
+										openstatesUrl: "https://openstates.org/person/example-ut",
+										party: "Republican",
+										sourceSystem: "Open States"
+									}
+								],
+								sourceSystem: "Zippopotam.us + U.S. Census Geocoder",
+								stateAbbreviation: "UT",
+								stateName: "Utah"
+							}
+						]
 					};
 				}
 
 				if (zipCode === "30303") {
 					return {
-						countyFips: "121",
-						countyName: "Fulton County",
-						latitude: 33.7525,
-						longitude: -84.3928,
-						locality: "Atlanta",
 						postalCode: "30303",
-						sourceSystem: "Zippopotam.us + U.S. Census Geocoder",
-						stateAbbreviation: "GA",
-						stateName: "Georgia"
+						matches: [
+							{
+								countyFips: "121",
+								countyName: "Fulton County",
+								districtMatches: [
+									{
+										districtCode: "5",
+										districtType: "congressional",
+										id: "congressional:5",
+										label: "Congressional District 5",
+										sourceSystem: "U.S. Census Geocoder"
+									},
+									{
+										districtCode: "36",
+										districtType: "state-senate",
+										id: "state-senate:36",
+										label: "State Senate District 36",
+										sourceSystem: "U.S. Census Geocoder"
+									}
+								],
+								id: "zip:30303:atlanta-georgia",
+								latitude: 33.7525,
+								locality: "Atlanta",
+								longitude: -84.3928,
+								postalCode: "30303",
+								representativeMatches: [
+									{
+										districtLabel: "Senator Georgia",
+										id: "ocd-person:test-senator",
+										name: "Jon Ossoff",
+										officeTitle: "Senator",
+										openstatesUrl: "https://openstates.org/person/example",
+										party: "Democratic",
+										sourceSystem: "Open States"
+									}
+								],
+								sourceSystem: "Zippopotam.us + U.S. Census Geocoder",
+								stateAbbreviation: "GA",
+								stateName: "Georgia"
+							}
+						]
+					};
+				}
+
+				if (zipCode === "84001") {
+					return {
+						postalCode: "84001",
+						matches: [
+							{
+								countyFips: "049",
+								countyName: "Utah County",
+								districtMatches: [
+									{
+										districtCode: "3",
+										districtType: "congressional",
+										id: "congressional:3",
+										label: "Congressional District 3",
+										sourceSystem: "U.S. Census Geocoder"
+									}
+								],
+								id: "zip:84001:provo-utah",
+								latitude: 40.245,
+								locality: "Provo",
+								longitude: -111.64,
+								postalCode: "84001",
+								representativeMatches: [
+									{
+										districtLabel: "Congressional District 3",
+										id: "ocd-person:test-ut-rep",
+										name: "Mike Kennedy",
+										officeTitle: "Representative",
+										openstatesUrl: "https://openstates.org/person/example-ut",
+										party: "Republican",
+										sourceSystem: "Open States"
+									}
+								],
+								sourceSystem: "Zippopotam.us + U.S. Census Geocoder",
+								stateAbbreviation: "UT",
+								stateName: "Utah"
+							},
+							{
+								countyFips: "049",
+								countyName: "Utah County",
+								districtMatches: [
+									{
+										districtCode: "4",
+										districtType: "congressional",
+										id: "congressional:4",
+										label: "Congressional District 4",
+										sourceSystem: "U.S. Census Geocoder"
+									}
+								],
+								id: "zip:84001:orem-utah",
+								latitude: 40.2969,
+								locality: "Orem",
+								longitude: -111.6946,
+								postalCode: "84001",
+								representativeMatches: [
+									{
+										districtLabel: "Congressional District 4",
+										id: "ocd-person:test-ut-rep-4",
+										name: "Burgess Owens",
+										officeTitle: "Representative",
+										openstatesUrl: "https://openstates.org/person/example-ut-4",
+										party: "Republican",
+										sourceSystem: "Open States"
+									}
+								],
+								sourceSystem: "Zippopotam.us + U.S. Census Geocoder",
+								stateAbbreviation: "UT",
+								stateName: "Utah"
+							}
+						]
 					};
 				}
 
@@ -340,16 +478,18 @@ test("POST /api/location returns the supported Fulton coverage guide for ZIPs in
 	assert.equal(body.result, "resolved");
 	assert.equal(body.guideAvailability, "published");
 	assert.equal(body.inputKind, "zip");
-	assert.equal(body.actions[0].kind, "ballot-guide");
-	assert.equal(body.actions[0].location.slug, "fulton-county-georgia");
-	assert.equal(body.actions[0].location.lookupMode, "zip-preview");
+	assert.equal(body.electionSlug, "2026-fulton-county-general");
+	assert.equal(body.location.slug, "fulton-county-georgia");
+	assert.equal(body.location.lookupMode, "zip-preview");
 	assert.equal(body.actions.some((item: { kind: string; title: string }) => item.kind === "official-verification" && /My Voter Page/i.test(item.title)), true);
 	assert.equal(body.availability.nationwideCivicResults.status, "available");
-	assert.equal(body.availability.representatives.status, "unavailable");
+	assert.equal(body.availability.representatives.status, "available");
 	assert.equal(body.availability.ballotCandidates.status, "available");
 	assert.equal(body.availability.financeInfluence.status, "available");
 	assert.equal(body.availability.fullLocalGuide.status, "available");
+	assert.equal(body.representativeMatches[0].name, "Jon Ossoff");
 	assert.match(body.note, /Atlanta, Georgia/i);
+	assert.match(body.note, /single guide area/i);
 });
 
 test("POST /api/location returns district lookup results without a published guide for out-of-guide ZIPs", async () => {
@@ -369,12 +509,62 @@ test("POST /api/location returns district lookup results without a published gui
 	assert.equal(body.actions.some((item: { kind: string }) => item.kind === "ballot-guide"), false);
 	assert.equal(body.actions.some((item: { title: string }) => /Utah voter registration portal/i.test(item.title)), true);
 	assert.equal(body.availability.nationwideCivicResults.status, "available");
-	assert.equal(body.availability.representatives.status, "unavailable");
+	assert.equal(body.availability.representatives.status, "available");
 	assert.equal(body.availability.ballotCandidates.status, "unavailable");
 	assert.equal(body.availability.financeInfluence.status, "unavailable");
 	assert.equal(body.availability.fullLocalGuide.status, "unavailable");
+	assert.equal(body.location.displayName, "Provo, Utah");
+	assert.equal(body.representativeMatches[0].name, "Mike Kennedy");
 	assert.match(body.note, /Provo, Utah/i);
 	assert.match(body.note, /nationwide civic result layers/i);
+});
+
+test("POST /api/location returns a selection panel when a ZIP resolves to multiple civic areas", async () => {
+	const response = await fetch(`${baseUrl}/api/location`, {
+		body: JSON.stringify({ q: "84001" }),
+		headers: {
+			"Content-Type": "application/json"
+		},
+		method: "POST"
+	});
+	const body = await response.json();
+
+	assert.equal(response.status, 200);
+	assert.equal(body.result, "resolved");
+	assert.equal(body.guideAvailability, "not-published");
+	assert.equal(body.inputKind, "zip");
+	assert.equal(body.selectionOptions.length, 2);
+	assert.match(body.note, /matched 2 possible civic areas/i);
+	assert.match(body.availability.representatives.detail, /Choose one below/i);
+	assert.equal(body.representativeMatches, undefined);
+});
+
+test("POST /api/location accepts a ZIP area selection and loads that area's districts and representatives", async () => {
+	const selectionResponse = await fetch(`${baseUrl}/api/location`, {
+		body: JSON.stringify({ q: "84001" }),
+		headers: {
+			"Content-Type": "application/json"
+		},
+		method: "POST"
+	});
+	const selectionBody = await selectionResponse.json();
+	const chosenOption = selectionBody.selectionOptions[1];
+
+	const response = await fetch(`${baseUrl}/api/location`, {
+		body: JSON.stringify({ q: "84001", selectionId: chosenOption.id }),
+		headers: {
+			"Content-Type": "application/json"
+		},
+		method: "POST"
+	});
+	const body = await response.json();
+
+	assert.equal(response.status, 200);
+	assert.equal(body.result, "resolved");
+	assert.equal(body.selectionOptions, undefined);
+	assert.equal(body.location.displayName, "Orem, Utah");
+	assert.equal(body.districtMatches[0].label, "Congressional District 4");
+	assert.equal(body.representativeMatches[0].name, "Burgess Owens");
 });
 
 test("POST /api/location returns the current Fulton County launch location for full addresses", async () => {

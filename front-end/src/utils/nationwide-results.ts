@@ -46,10 +46,12 @@ export function normalizeLookupResponseForDisplay(
 		fromCache: Boolean(response.fromCache),
 		guideAvailability: response.guideAvailability,
 		inputKind: response.inputKind,
+		lookupQuery: response.lookupQuery,
 		location: response.location ?? null,
 		normalizedAddress: response.normalizedAddress ?? "",
 		note: response.note,
 		representativeMatches: response.representativeMatches ?? [],
+		selectionOptions: response.selectionOptions ?? [],
 		result: response.result
 	};
 }

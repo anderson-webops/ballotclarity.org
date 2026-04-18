@@ -18,6 +18,7 @@ import type {
 	FundingSummary,
 	Jurisdiction,
 	JurisdictionSummary,
+	LocationLookupSelectionOption,
 	Measure,
 	MeasureArgument,
 	MeasureChangeItem,
@@ -36,7 +37,7 @@ import type {
 	TrustBullet,
 	VoteRecordSummary
 } from "./types/civic.js";
-import type { ZipLocationService } from "./zip-location.js";
+import type { ZipLocationMatch, ZipLocationService } from "./zip-location.js";
 import { Buffer } from "node:buffer";
 import { timingSafeEqual } from "node:crypto";
 import process from "node:process";
@@ -51,7 +52,7 @@ import { createCensusGeocoderClient } from "./census-geocoder.js";
 import { createCoverageRepository } from "./coverage-repository.js";
 import { createGoogleCivicClient } from "./google-civic.js";
 import { buildCoverageResponse } from "./launch-profile.js";
-import { buildLocationLookupResponse, classifyLookupInput, validateLookupInput } from "./location-lookup.js";
+import { buildLocationLookupResponse, classifyLookupInput, findSupportedCoverageSummaries, validateLookupInput } from "./location-lookup.js";
 import { createLogger, createRequestLoggingMiddleware } from "./logger.js";
 import { createOpenStatesClient } from "./openstates.js";
 import { buildProviderSummary } from "./provider-config.js";
@@ -142,6 +143,55 @@ function buildIpGuessNotePrefix(guess: IpLocationGuess) {
 		return `Ballot Clarity made a best-effort location guess from your IP address and started with ${guess.city}, ${guess.region}.`;
 
 	return "Ballot Clarity made a best-effort location guess from your IP address.";
+}
+
+function summarizeMatchedDistricts(labels: string[]) {
+	if (!labels.length)
+		return "District matches will load after you choose this area.";
+
+	if (labels.length === 1)
+		return `Matched district: ${labels[0]}.`;
+
+	return `Matched districts: ${labels.join(", ")}.`;
+}
+
+function buildZipSelectionOption(
+	match: ZipLocationMatch,
+	jurisdictionSummaries: JurisdictionSummary[]
+): LocationLookupSelectionOption {
+	const geoContext = {
+		countyFips: match.countyFips,
+		countyName: match.countyName,
+		locality: match.locality,
+		postalCode: match.postalCode,
+		sourceSystem: match.sourceSystem,
+		stateAbbreviation: match.stateAbbreviation,
+		stateName: match.stateName
+	};
+	const supportedCoverageSummaries = findSupportedCoverageSummaries(jurisdictionSummaries, geoContext);
+	const representativeCount = match.representativeMatches.length;
+	const displayName = [match.locality, match.stateName || match.stateAbbreviation].filter(Boolean).join(", ")
+		|| match.postalCode;
+	const guideSentence = supportedCoverageSummaries.length
+		? supportedCoverageSummaries.length === 1
+			? "A published local guide is available after you choose this area."
+			: `${supportedCoverageSummaries.length} published local guide areas still match this ZIP area.`
+		: "No published local guide is available for this area yet.";
+
+	return {
+		description: [
+			summarizeMatchedDistricts(match.districtMatches.map(item => item.label)),
+			representativeCount
+				? `${representativeCount} representative match${representativeCount === 1 ? "" : "es"} will load for this area.`
+				: "Representative data is not available for this area yet.",
+			guideSentence
+		].join(" "),
+		districtMatches: match.districtMatches,
+		guideAvailability: supportedCoverageSummaries.length ? "published" : "not-published",
+		id: match.id,
+		label: displayName,
+		representativeMatches: match.representativeMatches
+	};
 }
 
 function uniqueSources(sources: Source[]) {
@@ -496,11 +546,14 @@ export async function createApp(options: CreateAppOptions = {}) {
 	const sourceAssetStore = createSourceAssetStore();
 	const adminLoginThrottle = createAdminLoginThrottle();
 	const googleCivicClient = options.googleCivicClient === undefined ? createGoogleCivicClient() : options.googleCivicClient;
-	const zipLocationService = options.zipLocationService === undefined ? createZipLocationService() : options.zipLocationService;
+	const openStatesClient = createOpenStatesClient();
+	const zipLocationService = options.zipLocationService === undefined
+		? createZipLocationService({ openStatesClient })
+		: options.zipLocationService;
 	const addressEnrichmentService = options.addressEnrichmentService === undefined
 		? createAddressEnrichmentService(
 				createCensusGeocoderClient(),
-				createOpenStatesClient(),
+				openStatesClient,
 				await createAddressCacheRepository(process.env.ADMIN_DATABASE_URL || process.env.DATABASE_URL || "")
 			)
 		: options.addressEnrichmentService;
@@ -1117,7 +1170,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 		};
 	}
 
-	async function resolveLocationLookup(raw: string, requestId?: string) {
+	async function resolveLocationLookup(raw: string, requestId?: string, selectionId?: string) {
 		const coverage = buildCoverageResponse(
 			coverageRepository.mode,
 			coverageRepository.data.updatedAt,
@@ -1127,6 +1180,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 		let officialLookup = null;
 		let addressEnrichment = null;
 		let geoContext = null;
+		let selectionOptions: LocationLookupSelectionOption[] | undefined;
 
 		if (classifyLookupInput(raw) === "address") {
 			if (addressEnrichmentService) {
@@ -1168,18 +1222,56 @@ export async function createApp(options: CreateAppOptions = {}) {
 		}
 		else if (zipLocationService) {
 			try {
-				const zipMatch = await zipLocationService.lookupZip(raw);
+				const zipLookup = await zipLocationService.lookupZip(raw);
 
-				if (zipMatch) {
-					geoContext = {
-						countyFips: zipMatch.countyFips,
-						countyName: zipMatch.countyName,
-						locality: zipMatch.locality,
-						postalCode: zipMatch.postalCode,
-						sourceSystem: zipMatch.sourceSystem,
-						stateAbbreviation: zipMatch.stateAbbreviation,
-						stateName: zipMatch.stateName
-					};
+				if (zipLookup) {
+					const selectedZipMatch = selectionId
+						? zipLookup.matches.find(match => match.id === selectionId) ?? null
+						: zipLookup.matches.length === 1
+							? zipLookup.matches[0]
+							: null;
+
+					if (selectedZipMatch) {
+						addressEnrichment = {
+							benchmark: "ZIP_CENTROID",
+							countyFips: selectedZipMatch.countyFips,
+							districtMatches: selectedZipMatch.districtMatches,
+							fromCache: false,
+							latitude: selectedZipMatch.latitude,
+							longitude: selectedZipMatch.longitude,
+							normalizedAddress: selectedZipMatch.postalCode,
+							representativeMatches: selectedZipMatch.representativeMatches,
+							state: selectedZipMatch.stateAbbreviation,
+							vintage: "ZIP_CENTROID",
+							zip5: selectedZipMatch.postalCode
+						};
+						geoContext = {
+							countyFips: selectedZipMatch.countyFips,
+							countyName: selectedZipMatch.countyName,
+							locality: selectedZipMatch.locality,
+							postalCode: selectedZipMatch.postalCode,
+							sourceSystem: selectedZipMatch.sourceSystem,
+							stateAbbreviation: selectedZipMatch.stateAbbreviation,
+							stateName: selectedZipMatch.stateName
+						};
+					}
+					else if (zipLookup.matches[0]) {
+						const fallbackZipMatch = zipLookup.matches[0];
+
+						geoContext = {
+							countyFips: fallbackZipMatch.countyFips,
+							countyName: fallbackZipMatch.countyName,
+							locality: fallbackZipMatch.locality,
+							postalCode: fallbackZipMatch.postalCode,
+							sourceSystem: fallbackZipMatch.sourceSystem,
+							stateAbbreviation: fallbackZipMatch.stateAbbreviation,
+							stateName: fallbackZipMatch.stateName
+						};
+						selectionOptions = zipLookup.matches.map(match => buildZipSelectionOption(
+							match,
+							coverageRepository.data.jurisdictionSummaries
+						));
+					}
 				}
 				else {
 					geoContext = null;
@@ -1203,7 +1295,8 @@ export async function createApp(options: CreateAppOptions = {}) {
 			coverage,
 			geoContext,
 			officialLookup,
-			addressEnrichment
+			addressEnrichment,
+			selectionOptions
 		);
 	}
 
@@ -1331,6 +1424,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 
 	app.post("/api/location", async (request, response) => {
 		const raw = typeof request.body?.q === "string" ? request.body.q.trim() : "";
+		const selectionId = typeof request.body?.selectionId === "string" ? request.body.selectionId.trim() : "";
 
 		response.set("Cache-Control", "no-store");
 
@@ -1343,7 +1437,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 			return;
 		}
 
-		response.json(await resolveLocationLookup(raw, response.locals.requestId));
+		response.json(await resolveLocationLookup(raw, response.locals.requestId, selectionId || undefined));
 	});
 
 	app.get("/api/location/guess", async (request, response) => {

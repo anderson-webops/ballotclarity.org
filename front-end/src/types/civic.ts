@@ -404,16 +404,27 @@ export interface LocationLookupAction {
 	url?: string;
 }
 
+export interface LocationLookupSelectionOption {
+	id: string;
+	label: string;
+	description: string;
+	guideAvailability: LocationGuideAvailability;
+	districtMatches?: LocationDistrictMatch[];
+	representativeMatches?: LocationRepresentativeMatch[];
+}
+
 export interface LocationLookupResponse {
 	result: LocationLookupResult;
 	inputKind: LocationLookupInputKind;
 	note: string;
+	lookupQuery?: string;
 	detectedFromIp?: boolean;
 	guideAvailability?: LocationGuideAvailability;
 	availability?: LocationDataAvailabilitySummary;
 	location?: LocationSelection;
 	electionSlug?: string;
 	actions?: LocationLookupAction[];
+	selectionOptions?: LocationLookupSelectionOption[];
 	normalizedAddress?: string;
 	districtMatches?: LocationDistrictMatch[];
 	representativeMatches?: LocationRepresentativeMatch[];
@@ -424,6 +435,7 @@ export interface NationwideLookupResultContext {
 	result: LocationLookupResult;
 	inputKind: LocationLookupInputKind;
 	note: string;
+	lookupQuery?: string;
 	detectedFromIp?: boolean;
 	guideAvailability?: LocationGuideAvailability;
 	availability: LocationDataAvailabilitySummary | null;
@@ -431,6 +443,7 @@ export interface NationwideLookupResultContext {
 	election: ElectionSummary | null;
 	electionSlug?: string;
 	actions: LocationLookupAction[];
+	selectionOptions: LocationLookupSelectionOption[];
 	normalizedAddress: string;
 	districtMatches: LocationDistrictMatch[];
 	representativeMatches: LocationRepresentativeMatch[];

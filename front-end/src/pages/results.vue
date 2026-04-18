@@ -1,6 +1,9 @@
 <script setup lang="ts">
+import type { LocationLookupResponse, LocationLookupSelectionOption } from "~/types/civic";
 import { storeToRefs } from "pinia";
+import { normalizeLookupResponseForDisplay, resolveLookupDestination } from "~/utils/nationwide-results";
 
+const api = useApiClient();
 const civicStore = useCivicStore();
 const { isHydrated, nationwideLookupResult } = storeToRefs(civicStore);
 const { hasPublishedGuideContext } = useGuideEntryGate();
@@ -30,6 +33,36 @@ const summaryItems = computed(() => ([
 		value: activeResult.value?.guideAvailability === "published" ? "Published" : "Not published"
 	}
 ]));
+
+async function selectLookupOption(option: LocationLookupSelectionOption) {
+	if (!activeResult.value?.lookupQuery)
+		return;
+
+	const activeElection = activeResult.value.election ?? null;
+	const response = await api<LocationLookupResponse>("/location", {
+		body: {
+			q: activeResult.value.lookupQuery,
+			selectionId: option.id
+		},
+		method: "POST"
+	});
+
+	civicStore.setLookupResponse(response, activeElection);
+
+	const redirectTarget = resolveLookupDestination(response);
+
+	if (redirectTarget) {
+		await navigateTo(redirectTarget);
+		return;
+	}
+
+	if (response.location && response.electionSlug) {
+		await navigateTo(`/ballot/${response.electionSlug}?location=${response.location.slug}`);
+		return;
+	}
+
+	civicStore.setNationwideLookupResult(normalizeLookupResponseForDisplay(response, activeElection));
+}
 
 usePageSeo({
 	description: "Nationwide civic results from the active lookup, including district matches, representative records, and official election tools.",
@@ -110,7 +143,7 @@ usePageSeo({
 				<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
 					Nationwide results
 				</p>
-				<LookupResultsPanel :lookup="activeResult" />
+				<LookupResultsPanel :lookup="activeResult" @select-option="selectLookupOption" />
 			</section>
 
 			<section id="change-location" class="surface-panel">

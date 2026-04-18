@@ -113,7 +113,7 @@ function inferDistrictCode(layerName: string, geography: CensusGeographyItem) {
 	}
 }
 
-function buildDistrictMatches(geographies: Record<string, CensusGeographyItem[] | undefined> | undefined) {
+export function buildDistrictMatches(geographies: Record<string, CensusGeographyItem[] | undefined> | undefined) {
 	if (!geographies)
 		return [];
 

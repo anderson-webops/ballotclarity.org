@@ -1,6 +1,6 @@
 import type { LocationLookupAction, LocationLookupResponse } from "../types/civic";
 
-type LookupResolution = Pick<LocationLookupResponse, "result" | "guideAvailability" | "location" | "electionSlug">;
+type LookupResolution = Pick<LocationLookupResponse, "result" | "guideAvailability" | "location" | "electionSlug" | "selectionOptions">;
 
 export interface LookupPresentation {
 	availabilityBadgeLabel: string;
@@ -27,6 +27,7 @@ export function filterLookupActionsForPresentation(
 
 export function buildLookupPresentation(response: LookupResolution): LookupPresentation {
 	const canOpenGuide = hasPublishedGuideResult(response);
+	const requiresSelection = Boolean(response.selectionOptions?.length);
 
 	if (response.result === "unsupported") {
 		return {
@@ -35,6 +36,16 @@ export function buildLookupPresentation(response: LookupResolution): LookupPrese
 			footerNote: "Use the official tools above for this location, or replace the ZIP code with a full street address for a more precise lookup.",
 			heading: "Location not yet resolved",
 			supportingNote: ""
+		};
+	}
+
+	if (requiresSelection) {
+		return {
+			availabilityBadgeLabel: "ZIP area selection needed",
+			canOpenGuide: false,
+			footerNote: "Choose one of the matched ZIP areas here to load the right district, representative, and official-tool layers before moving deeper into the app.",
+			heading: "Choose the matched ZIP area",
+			supportingNote: "This ZIP resolved to multiple civic areas in the current provider data. Ballot Clarity needs one more selection before it can open a single area cleanly."
 		};
 	}
 

@@ -636,6 +636,8 @@ test("POST /api/location returns district lookup results without a published gui
 	assert.equal(body.availability.representatives.status, "available");
 	assert.equal(body.availability.ballotCandidates.status, "unavailable");
 	assert.equal(body.availability.financeInfluence.status, "unavailable");
+	assert.match(body.availability.financeInfluence.detail, /matched candidate or representative profile has reliable linked data/i);
+	assert.doesNotMatch(body.availability.financeInfluence.detail, /source-backed local candidate records/i);
 	assert.equal(body.availability.fullLocalGuide.status, "unavailable");
 	assert.equal(body.location.displayName, "Provo, Utah");
 	assert.equal(body.representativeMatches[0].name, "Mike Kennedy");
@@ -749,6 +751,8 @@ test("POST /api/location returns district lookup results without a published gui
 	assert.equal(body.availability.representatives.status, "available");
 	assert.equal(body.availability.ballotCandidates.status, "unavailable");
 	assert.equal(body.availability.financeInfluence.status, "unavailable");
+	assert.match(body.availability.financeInfluence.detail, /matched candidate or representative profile has reliable linked data/i);
+	assert.doesNotMatch(body.availability.financeInfluence.detail, /source-backed local candidate records/i);
 	assert.equal(body.availability.fullLocalGuide.status, "unavailable");
 	assert.match(body.note, /nationwide civic result layers/i);
 	assert.match(body.note, /Census geography matched/i);

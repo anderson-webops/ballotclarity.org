@@ -67,6 +67,6 @@ test("nationwide representative fallback builds a first-class person page model"
 	assert.equal(response.person.onCurrentBallot, false);
 	assert.equal(response.person.officeholderLabel, "Current officeholder");
 	assert.match(response.note, /active nationwide lookup context/i);
-	assert.match(response.person.whatWeDoNotKnow[0]?.text ?? "", /published local guide/i);
+	assert.match(response.person.whatWeDoNotKnow[0]?.text ?? "", /reliable person-level linkage/i);
 	assert.ok(response.person.sources.length >= 2);
 });

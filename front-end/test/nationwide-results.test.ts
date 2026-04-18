@@ -33,7 +33,7 @@ const nationwideResponse: LocationLookupResponse = {
 			status: "unavailable"
 		},
 		financeInfluence: {
-			detail: "Finance and influence pages are only published where Ballot Clarity has source-backed local candidate records.",
+			detail: "No person-level funding or influence records are attached to this lookup yet. Ballot Clarity only shows those modules when a matched candidate or representative profile has reliable linked data.",
 			label: "Finance and influence",
 			status: "unavailable"
 		},

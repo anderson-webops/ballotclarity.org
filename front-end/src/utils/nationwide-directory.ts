@@ -64,10 +64,10 @@ function buildRepresentativeSummary(
 		summary: match.sourceSystem ? `Matched from ${match.sourceSystem}` : "Matched from nationwide lookup",
 		districtLabel: match.districtLabel,
 		districtSlug: toLookupSlug(match.districtLabel),
-		fundingSummary: "Not available from the nationwide lookup layer.",
+		fundingSummary: "No person-level funding record is attached to this representative yet.",
 		href: `/representatives/${toLookupSlug(match.id || match.name)}`,
 		openstatesUrl: match.openstatesUrl,
-		influenceSummary: "Not available from the nationwide lookup layer.",
+		influenceSummary: "No person-level influence record is attached to this representative yet.",
 		sourceCount: match.openstatesUrl ? 1 : 0,
 		updatedAt
 	} satisfies RepresentativesResponse["representatives"][number];

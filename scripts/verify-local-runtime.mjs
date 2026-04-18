@@ -89,6 +89,16 @@ async function stopProcess(child) {
 	await once(child, "exit");
 }
 
+async function fetchJson(baseUrl, path, options = {}) {
+	const response = await fetch(`${baseUrl}${path}`, options);
+	const payload = await response.json();
+
+	return {
+		payload,
+		response,
+	};
+}
+
 async function main() {
 	const cwd = process.cwd();
 	const envFiles = findEnvFiles(cwd);
@@ -129,14 +139,13 @@ async function main() {
 		if (!health?.ok)
 			throw new Error("Health response did not report ok=true.");
 
-		const lookupResponse = await fetch(`${baseUrl}/api/location`, {
+		const { payload: lookupBody, response: lookupResponse } = await fetchJson(`${baseUrl}`, "/api/location", {
 			body: JSON.stringify({ q: "84604" }),
 			headers: {
 				"Content-Type": "application/json",
 			},
 			method: "POST",
 		});
-		const lookupBody = await lookupResponse.json();
 
 		if (lookupResponse.status !== 200)
 			throw new Error(`Lookup probe failed with ${lookupResponse.status}.`);
@@ -150,8 +159,39 @@ async function main() {
 		if (!Array.isArray(lookupBody.representativeMatches) || lookupBody.representativeMatches.length === 0)
 			throw new Error("Lookup probe returned no representative matches for ZIP 84604.");
 
+		if (/source-backed local candidate records/i.test(String(lookupBody.availability?.financeInfluence?.detail || "")))
+			throw new Error("Lookup probe still exposed stale candidate-only finance/influence copy.");
+
+		const { payload: representativeDirectoryBody, response: representativeDirectoryResponse } = await fetchJson(
+			`${baseUrl}`,
+			"/api/representatives?lookup=84604"
+		);
+
+		if (representativeDirectoryResponse.status !== 200)
+			throw new Error(`Representative directory probe failed with ${representativeDirectoryResponse.status}.`);
+
+		if (!Array.isArray(representativeDirectoryBody.representatives) || representativeDirectoryBody.representatives.length !== lookupBody.representativeMatches.length)
+			throw new Error("Representative directory probe did not preserve the active lookup representative count.");
+
+		const firstRepresentativeSlug = representativeDirectoryBody.representatives[0]?.slug;
+
+		if (!firstRepresentativeSlug)
+			throw new Error("Representative directory probe returned no representative slug to verify.");
+
+		const { payload: representativeProfileBody, response: representativeProfileResponse } = await fetchJson(
+			`${baseUrl}`,
+			`/api/representatives/${firstRepresentativeSlug}?lookup=84604`
+		);
+
+		if (representativeProfileResponse.status !== 200)
+			throw new Error(`Representative profile probe failed with ${representativeProfileResponse.status}.`);
+
+		if (/published local guide attached to this person record/i.test(String(representativeProfileBody.person?.whatWeDoNotKnow?.[0]?.text || "")))
+			throw new Error("Representative profile probe still exposed stale guide-only finance/influence fallback copy.");
+
 		console.log("\n== Local runtime verification passed ==");
 		console.log(`Resolved ${lookupBody.location?.displayName || "unknown location"} with ${lookupBody.districtMatches.length} district matches and ${lookupBody.representativeMatches.length} representative matches.`);
+		console.log(`Verified representative directory/profile backing for ${representativeDirectoryBody.representatives[0].name}.`);
 	}
 	finally {
 		await stopProcess(server);

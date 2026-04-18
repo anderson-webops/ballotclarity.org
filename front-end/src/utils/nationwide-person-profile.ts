@@ -144,7 +144,7 @@ export function buildNationwidePersonProfileResponse(
 	const whatWeDoNotKnow: TrustBullet[] = [
 		buildTrustBullet(
 			"guide-status",
-			"Ballot Clarity does not currently have a published local guide attached to this person record, so contest field, candidate comparison, funding, and influence modules may be absent.",
+			"Ballot Clarity has not attached source-backed contest-field, comparison, funding, or influence records to this person yet. Those modules appear only when a reliable person-level linkage exists.",
 			sources
 		),
 		buildTrustBullet(

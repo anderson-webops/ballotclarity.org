@@ -967,9 +967,22 @@ test("GET /api/representatives returns incumbents tied to district pages", async
 
 	assert.equal(response.status, 200);
 	assert.ok(body.representatives.some((item: { districtSlug: string; slug: string }) => item.districtSlug === "us-house-district-7" && item.slug === "daniel-brooks"));
-	assert.ok(body.representatives.some((item: { href: string; slug: string }) => item.slug === "daniel-brooks" && item.href === "/candidate/daniel-brooks"));
+	assert.ok(body.representatives.some((item: { href: string; slug: string }) => item.slug === "daniel-brooks" && item.href === "/representatives/daniel-brooks"));
 	assert.ok(body.districts.some((item: { href: string }) => item.href === "/districts/state-senate-district-12"));
 	assert.match(body.note, /currently serving officials/i);
+});
+
+test("GET /api/representatives/:slug returns a source-backed representative profile", async () => {
+	const response = await fetch(`${baseUrl}/api/representatives/daniel-brooks`);
+	const body = await response.json();
+
+	assert.equal(response.status, 200);
+	assert.equal(body.person.slug, "daniel-brooks");
+	assert.equal(body.person.officeholderLabel, "Current officeholder");
+	assert.equal(body.person.provenance.status, "direct");
+	assert.equal(body.person.funding.provenanceLabel, "Source-backed published filing summary");
+	assert.ok(body.person.lobbyingContext.length >= 1);
+	assert.ok(body.person.sources.length >= body.person.funding.sources.length);
 });
 
 test("GET /api/ballot returns 404 for unknown elections", async () => {

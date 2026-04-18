@@ -38,13 +38,6 @@ const items = [
 	},
 	{
 		body: [
-			"A future alignment module could compare district concerns with public records and stated positions. It would need transparent methodology, clear weighting rules, and strong explanations of uncertainty.",
-			"That feature is not live in the current build. It is labeled as experimental wherever it appears so users do not mistake it for a finished recommendation system.",
-		],
-		title: "Future constituent alignment",
-	},
-	{
-		body: [
 			"Ballot Clarity separates information into distinct source channels: official text, official record data, candidate-supplied material, Ballot Clarity plain-language summaries, and other nonpartisan supporting records.",
 			"Those labels are meant to help users understand which parts of a page are official wording, which parts are direct submissions, and which parts are explanatory context."
 		],

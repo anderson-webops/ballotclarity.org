@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { storeToRefs } from "pinia";
+import { isExternalHref } from "~/utils/link";
 import { buildNationwideDirectoryResponses } from "~/utils/nationwide-directory";
 
 const { formatDateTime } = useFormatters();
@@ -74,7 +75,7 @@ const districtIntroCopy = computed(() => directoryUsesNationwide.value
 					<li>District and office context</li>
 					<li>Current incumbent or currently serving official, when one is on the ballot</li>
 					<li>Candidate field for the active election</li>
-					<li>Links to dedicated funding and influence pages</li>
+					<li>Representative person pages and dedicated funding or influence pages where Ballot Clarity has person-level data</li>
 				</ul>
 			</div>
 		</header>
@@ -126,7 +127,21 @@ const districtIntroCopy = computed(() => directoryUsesNationwide.value
 						<NuxtLink :to="district.href" class="btn-primary">
 							Open district page
 						</NuxtLink>
-						<NuxtLink v-if="representativeByDistrict.get(district.slug)" :to="representativeByDistrict.get(district.slug)?.href ?? '/representatives'" class="btn-secondary">
+						<a
+							v-if="representativeByDistrict.get(district.slug) && isExternalHref(representativeByDistrict.get(district.slug)?.href ?? '')"
+							:href="representativeByDistrict.get(district.slug)?.href"
+							target="_blank"
+							rel="noreferrer"
+							class="btn-secondary inline-flex gap-2 items-center"
+						>
+							Open record
+							<span class="i-carbon-launch" />
+						</a>
+						<NuxtLink
+							v-else-if="representativeByDistrict.get(district.slug)"
+							:to="representativeByDistrict.get(district.slug)?.href ?? '/representatives'"
+							class="btn-secondary"
+						>
 							Open representative
 						</NuxtLink>
 					</div>

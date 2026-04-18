@@ -272,7 +272,7 @@ function buildRepresentativeSummary(candidate: Candidate): RepresentativeSummary
 		districtLabel: candidate.officeSought,
 		districtSlug: candidate.contestSlug,
 		fundingSummary: candidate.funding.summary,
-		href: `/candidate/${candidate.slug}`,
+		href: `/representatives/${candidate.slug}`,
 		officeholderLabel: candidate.incumbent ? "Current officeholder" : "Incumbent contender",
 		influenceSummary: candidate.lobbyingContext[0]?.summary ?? "No published influence-context note is attached to this profile yet.",
 		incumbent: candidate.incumbent,
@@ -283,9 +283,9 @@ function buildRepresentativeSummary(candidate: Candidate): RepresentativeSummary
 		slug: candidate.slug,
 		ballotStatusLabel: candidate.comparison.ballotStatus.label,
 		provenance: {
-			label: "Published guide coverage",
+			label: "Source-backed local person record",
 			status: "direct",
-			note: "Matched from the active published guide context for this district."
+			note: "Matched from Ballot Clarity's published local person record for this office."
 		},
 		sourceCount: collectCandidateSources(candidate).length,
 		summary: candidate.summary,
@@ -293,16 +293,17 @@ function buildRepresentativeSummary(candidate: Candidate): RepresentativeSummary
 	};
 }
 
-function _buildPersonProfileFromCandidate(candidate: Candidate): PersonProfileResponse {
+function buildPersonProfileFromCandidate(candidate: Candidate): PersonProfileResponse {
+	const sources = collectCandidateSources(candidate);
 	const funding: PersonProfileResponse["person"]["funding"] = candidate.funding
 		? {
 				...candidate.funding,
-				provenanceLabel: "Published guide filing summary"
+				provenanceLabel: "Source-backed published filing summary"
 			}
 		: null;
 
 	return {
-		note: "Representative profile assembled from active guide layer candidate data.",
+		note: "Representative profile assembled from Ballot Clarity's published local person record for this office.",
 		person: {
 			ballotStatusLabel: candidate.comparison.ballotStatus.label,
 			contestSlug: candidate.contestSlug,
@@ -321,8 +322,8 @@ function _buildPersonProfileFromCandidate(candidate: Candidate): PersonProfileRe
 			party: candidate.party,
 			provenance: {
 				asOf: candidate.updatedAt,
-				label: "Published local guide",
-				note: "Derived from the active published election layer.",
+				label: "Source-backed local person record",
+				note: "Derived from Ballot Clarity's published local person record for this office.",
 				source: "guide",
 				status: "direct"
 			},
@@ -334,9 +335,9 @@ function _buildPersonProfileFromCandidate(candidate: Candidate): PersonProfileRe
 			incumbent: candidate.incumbent,
 			location: candidate.location,
 			slug: candidate.slug,
-			sources: candidate.sources,
+			sources,
 			summary: candidate.summary,
-			sourceCount: candidate.sources.length,
+			sourceCount: sources.length,
 			updatedAt: candidate.updatedAt,
 			freshness: candidate.freshness
 		},
@@ -978,6 +979,15 @@ export async function createApp(options: CreateAppOptions = {}) {
 					...buildRepresentativeSummary(candidate),
 					districtLabel: contest.office
 				})));
+	}
+
+	async function getPublicRepresentative(slug: string) {
+		const candidate = await getPublicCandidate(slug);
+
+		if (!candidate || !candidate.incumbent)
+			return null;
+
+		return buildPersonProfileFromCandidate(candidate);
 	}
 
 	function buildContestRecordResponse(contest: Contest, election: Election): ContestRecordResponse {
@@ -1637,6 +1647,19 @@ export async function createApp(options: CreateAppOptions = {}) {
 		]);
 
 		response.json(buildRepresentativesResponse(representatives, districts));
+	});
+
+	app.get("/api/representatives/:slug", async (request, response) => {
+		const representative = await getPublicRepresentative(request.params.slug);
+
+		if (!representative) {
+			response.status(404).json({
+				message: "Representative profile not found."
+			});
+			return;
+		}
+
+		response.json(representative);
 	});
 
 	app.get("/api/jurisdictions/:slug", (request, response) => {

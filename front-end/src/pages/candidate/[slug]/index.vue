@@ -629,20 +629,6 @@ function saveToPlan() {
 				</ExpandableSection>
 
 				<ExpandableSection
-					eyebrow="Future analysis"
-					title="Constituent context and future analysis"
-				>
-					<InfoCallout class="mt-5" title="Planned analysis area" tone="warning">
-						{{ candidate.alignmentModule.summary }}
-					</InfoCallout>
-					<ul class="text-sm text-app-muted leading-7 mt-5 space-y-3 dark:text-app-muted-dark">
-						<li v-for="consideration in candidate.alignmentModule.considerations" :key="consideration" class="px-4 py-3 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70">
-							{{ consideration }}
-						</li>
-					</ul>
-				</ExpandableSection>
-
-				<ExpandableSection
 					id="sources"
 					eyebrow="Sources & methods"
 					title="Sources and methodology notes"

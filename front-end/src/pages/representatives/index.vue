@@ -21,12 +21,12 @@ const representativeLinkIsExternal = (href: string) => isExternalHref(href);
 const representativeUseCases = computed(() => directoryUsesNationwide.value
 	? [
 			"Open a district page for each officially matched representative area",
-			"Open the active record view from the provider-backed result",
+			"Open the active provider-backed record for each matched official",
 			"Move to /districts or /results for broader lookup context"
 		]
 	: [
-			"Finding the incumbent tied to a district page",
-			"Opening campaign-finance context directly",
+			"Finding the current officeholder tied to a district page",
+			"Opening person-level funding context directly",
 			"Opening influence and lobbying context directly"
 		]);
 
@@ -36,19 +36,19 @@ const summaryItems = computed(() => {
 
 	const isNationwideContext = directoryUsesNationwide.value;
 	return [
-		{ label: "Current representatives", note: isNationwideContext ? "Current officials from the active nationwide lookup." : "Incumbents on the active ballot surfaces.", value: directoryData.value.representatives.length },
-		{ label: "District pages", note: isNationwideContext ? "District matches carried forward with this nationwide lookup." : "Office-area hubs with candidate fields.", value: directoryData.value.districts.length, href: "/districts" },
+		{ label: "Current representatives", note: isNationwideContext ? "Current officials from the active nationwide lookup." : "Current officeholders with person pages where Ballot Clarity has source-backed records.", value: directoryData.value.representatives.length },
+		{ label: "District pages", note: isNationwideContext ? "District matches carried forward with this nationwide lookup." : "Office-area hubs with candidate and representative context.", value: directoryData.value.districts.length, href: "/districts" },
 		{ label: "Updated", note: "Directory freshness.", value: formatDateTime(directoryData.value.updatedAt) }
 	];
 });
 
 const introCopy = computed(() => directoryUsesNationwide.value
-	? "This directory pulls out the current officials linked to the active nationwide lookup and points to district-level pages. Guide-dependent funding, influence, and local profile details are available only when a published local guide is active."
-	: "This directory pulls out the currently serving officials who also appear on the active ballot coverage, so you can jump straight into their district, funding, and influence pages."
+	? "This directory pulls out the current officials linked to the active nationwide lookup and points to district-level pages or provider-backed records. Ballot Clarity person pages, funding pages, and influence pages appear only where the underlying local person record exists."
+	: "This directory pulls out the current officeholders Ballot Clarity can tie to published person records, so you can jump straight into their district, funding, and influence pages."
 );
 const noActionCopy = computed(() => directoryUsesNationwide.value
-	? "Open the district layer for this official’s related pages where available. Funding and influence pages are guide-dependent."
-	: "Open the official profile, funding, or influence page for this official."
+	? "Open the district layer or provider-backed record for this official. Ballot Clarity funding and influence pages appear only when a source-backed person record exists."
+	: "Open the person profile, funding page, or influence page for this official."
 );
 usePageSeo({
 	description: "Directory of current representatives in your active Ballot Clarity context, with guide-dependent links made clear when no local guide is available.",

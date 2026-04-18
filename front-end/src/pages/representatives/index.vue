@@ -1,18 +1,42 @@
 <script setup lang="ts">
+import { storeToRefs } from "pinia";
+
+import { buildNationwideDirectoryResponses } from "~/utils/nationwide-directory";
+
 const { formatDateTime } = useFormatters();
-const { data, error, pending } = await useRepresentatives();
+const civicStore = useCivicStore();
+const { data: guideData, error: guideError, pending: guidePending } = await useRepresentatives();
+const { isHydrated, nationwideLookupResult } = storeToRefs(civicStore);
+const { hasNationwideResultContext, hasPublishedGuideContext } = useGuideEntryGate();
+const directoryUsesNationwide = computed(() => isHydrated.value && hasNationwideResultContext.value && !hasPublishedGuideContext.value);
+const directoryBundle = computed(() => directoryUsesNationwide.value
+	? buildNationwideDirectoryResponses(nationwideLookupResult.value).representatives
+	: guideData.value ?? { districts: [], note: "", representatives: [], updatedAt: "" });
+
+const directoryPending = computed(() => directoryUsesNationwide.value ? false : guidePending.value);
+const directoryError = computed(() => directoryUsesNationwide.value ? null : guideError.value);
+const directoryData = computed(() => isHydrated.value ? directoryBundle.value : null);
 
 const summaryItems = computed(() => {
-	if (!data.value)
+	if (!directoryData.value)
 		return [];
 
+	const isNationwideContext = directoryUsesNationwide.value;
 	return [
-		{ label: "Current representatives", note: "Incumbents on the active ballot surfaces.", value: data.value.representatives.length },
-		{ label: "District pages", note: "Office-area hubs with candidate fields.", value: data.value.districts.length, href: "/districts" },
-		{ label: "Updated", note: "Directory freshness.", value: formatDateTime(data.value.updatedAt) }
+		{ label: "Current representatives", note: isNationwideContext ? "Current officials from the active nationwide lookup." : "Incumbents on the active ballot surfaces.", value: directoryData.value.representatives.length },
+		{ label: "District pages", note: isNationwideContext ? "District matches carried forward with this lookup." : "Office-area hubs with candidate fields.", value: directoryData.value.districts.length, href: "/districts" },
+		{ label: "Updated", note: "Directory freshness.", value: formatDateTime(directoryData.value.updatedAt) }
 	];
 });
 
+const introCopy = computed(() => directoryUsesNationwide.value
+	? "This directory pulls out the current officials linked to the active nationwide lookup. Use these entries to jump to district, funding, and influence pages when local coverage exists for that area."
+	: "This directory pulls out the currently serving officials who also appear on the active ballot coverage, so you can jump straight into their district, funding, and influence pages."
+);
+const noActionCopy = computed(() => directoryUsesNationwide.value
+	? "Open the district layer for this official’s related pages where available. Funding and influence pages are guide-dependent."
+	: "Open the official profile, funding, or influence page for this official."
+);
 usePageSeo({
 	description: "Directory of current representatives on the active Ballot Clarity ballot coverage, with links to district, funding, and influence pages.",
 	path: "/representatives",
@@ -32,7 +56,7 @@ usePageSeo({
 					Representatives
 				</h1>
 				<p class="text-base text-app-muted leading-8 mt-5 dark:text-app-muted-dark">
-					This directory pulls out the currently serving officials who also appear on the active ballot coverage, so you can jump straight into their district, funding, and influence pages.
+					{{ introCopy }}
 				</p>
 			</div>
 
@@ -53,11 +77,12 @@ usePageSeo({
 			</div>
 		</header>
 
-		<div v-if="pending" class="gap-6 grid lg:grid-cols-2">
-			<div v-for="index in 3" :key="index" class="surface-panel bg-white/70 h-72 animate-pulse dark:bg-app-panel-dark/70" />
+		<div v-if="!isHydrated || directoryPending" class="gap-6 grid lg:grid-cols-2">
+			<div class="surface-panel bg-white/70 h-56 animate-pulse dark:bg-app-panel-dark/70" />
+			<div class="surface-panel bg-white/70 h-56 animate-pulse dark:bg-app-panel-dark/70" />
 		</div>
 
-		<div v-else-if="error || !data" class="max-w-3xl">
+		<div v-else-if="directoryError || !directoryData" class="max-w-3xl">
 			<InfoCallout title="Representative directory unavailable" tone="warning">
 				The representative directory could not be loaded. Open a district or contest page and try again.
 			</InfoCallout>
@@ -68,7 +93,7 @@ usePageSeo({
 
 			<section class="gap-6 grid lg:grid-cols-2">
 				<article
-					v-for="representative in data.representatives"
+					v-for="representative in directoryData.representatives"
 					:key="representative.slug"
 					class="surface-panel"
 				>
@@ -82,7 +107,7 @@ usePageSeo({
 						{{ representative.party }} · {{ representative.officeSought }}
 					</p>
 					<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-						{{ representative.summary }}
+						{{ representative.summary }} {{ noActionCopy }}
 					</p>
 					<div class="mt-5 flex flex-wrap gap-2">
 						<VerificationBadge :label="representative.districtLabel" />
@@ -93,12 +118,12 @@ usePageSeo({
 							District page
 						</NuxtLink>
 						<NuxtLink :to="representative.href" class="btn-secondary">
-							Profile
+							{{ directoryUsesNationwide ? "Open record" : "Profile" }}
 						</NuxtLink>
-						<NuxtLink :to="`${representative.href}/funding`" class="btn-primary">
+						<NuxtLink v-if="!directoryUsesNationwide" :to="`${representative.href}/funding`" class="btn-primary">
 							Funding
 						</NuxtLink>
-						<NuxtLink :to="`${representative.href}/influence`" class="btn-secondary">
+						<NuxtLink v-if="!directoryUsesNationwide" :to="`${representative.href}/influence`" class="btn-secondary">
 							Influence
 						</NuxtLink>
 					</div>

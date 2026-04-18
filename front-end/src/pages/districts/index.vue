@@ -1,10 +1,42 @@
 <script setup lang="ts">
-const { formatDateTime } = useFormatters();
-const { data, error, pending } = await useDistricts();
-const { data: representativesData } = await useRepresentatives();
+import { storeToRefs } from "pinia";
+import { buildNationwideDirectoryResponses } from "~/utils/nationwide-directory";
 
-const representativeByDistrict = computed(() => {
-	return new Map((representativesData.value?.representatives ?? []).map(item => [item.districtSlug, item]));
+const { formatDateTime } = useFormatters();
+const civicStore = useCivicStore();
+const { isHydrated, nationwideLookupResult } = storeToRefs(civicStore);
+const { data: guideDistrictData, error: guideDistrictError, pending: guideDistrictPending } = await useDistricts();
+const { data: guideRepresentativesData } = await useRepresentatives();
+const { hasNationwideResultContext, hasPublishedGuideContext } = useGuideEntryGate();
+
+const directoryUsesNationwide = computed(() => isHydrated.value && hasNationwideResultContext.value && !hasPublishedGuideContext.value);
+const nationwideDirectory = computed(() => buildNationwideDirectoryResponses(nationwideLookupResult.value));
+const directoryData = computed(() =>
+	isHydrated.value
+		? directoryUsesNationwide.value
+			? nationwideDirectory.value
+			: {
+					districts: guideDistrictData.value ?? { districts: [], note: "", updatedAt: "" },
+					representatives: guideRepresentativesData.value ?? { districts: [], note: "", representatives: [], updatedAt: "" }
+				}
+		: null
+);
+const directoriesPending = computed(() => directoryUsesNationwide.value ? false : guideDistrictPending.value);
+const directoriesError = computed(() => directoryUsesNationwide.value ? null : guideDistrictError.value);
+const districts = computed(() => directoryData.value?.districts.districts ?? []);
+const representatives = computed(() => directoryData.value?.representatives.representatives ?? []);
+
+const representativeByDistrict = computed(() => new Map(representatives.value.map(item => [item.districtSlug, item])));
+
+const summaryItems = computed(() => {
+	const isNationwideMode = directoryUsesNationwide.value;
+	const updatedAt = directoryData.value?.districts.updatedAt ?? "";
+
+	return [
+		{ label: "District pages", note: isNationwideMode ? "District matches from the active nationwide lookup." : "Candidate-contest areas in the active election.", value: districts.value.length },
+		{ label: "Representative directory", note: isNationwideMode ? "Officials linked to the active nationwide lookup." : "Currently serving officials on the active ballot.", value: representatives.value.length, href: "/representatives" },
+		{ label: "Updated", note: "Latest district data refresh.", value: formatDateTime(updatedAt) }
+	];
 });
 
 usePageSeo({
@@ -12,6 +44,10 @@ usePageSeo({
 	path: "/districts",
 	title: "District hub"
 });
+const districtIntroCopy = computed(() => directoryUsesNationwide.value
+	? "Use district pages to inspect nationwide lookup matches, including linked officials where active lookup provides those links. Candidate fields are shown when local guide coverage exists."
+	: "Use district pages when you want the office area, the current representative, and the current candidate field in one place without leaving the current results layer."
+);
 </script>
 
 <template>
@@ -26,7 +62,7 @@ usePageSeo({
 					District pages
 				</h1>
 				<p class="text-base text-app-muted leading-8 mt-5 dark:text-app-muted-dark">
-					Use district pages when you want the office area, the current representative, and the current candidate field in one place without leaving the current results layer.
+					{{ districtIntroCopy }}
 				</p>
 			</div>
 
@@ -43,28 +79,22 @@ usePageSeo({
 			</div>
 		</header>
 
-		<div v-if="pending" class="gap-6 grid lg:grid-cols-2 xl:grid-cols-3">
+		<div v-if="!isHydrated || directoriesPending" class="gap-6 grid lg:grid-cols-2 xl:grid-cols-3">
 			<div v-for="index in 3" :key="index" class="surface-panel bg-white/70 h-72 animate-pulse dark:bg-app-panel-dark/70" />
 		</div>
 
-		<div v-else-if="error || !data" class="max-w-3xl">
+		<div v-else-if="directoriesError || !directoryData" class="max-w-3xl">
 			<InfoCallout title="District pages unavailable" tone="warning">
 				The district hub could not be loaded. Open nationwide results or the coverage profile and try again.
 			</InfoCallout>
 		</div>
 
 		<div v-else class="space-y-6">
-			<PageSummaryStrip
-				:items="[
-					{ label: 'District pages', note: 'Candidate-contest areas in the active election.', value: data.districts.length },
-					{ label: 'Representative directory', note: 'Currently serving officials on the active ballot.', value: representativesData?.representatives.length ?? 0, href: '/representatives' },
-					{ label: 'Updated', note: 'Latest district data refresh.', value: formatDateTime(data.updatedAt) },
-				]"
-			/>
+			<PageSummaryStrip :items="summaryItems" />
 
 			<section class="gap-6 grid lg:grid-cols-2 xl:grid-cols-3">
 				<article
-					v-for="district in data.districts"
+					v-for="district in districts"
 					:key="district.slug"
 					class="surface-panel flex flex-col"
 				>

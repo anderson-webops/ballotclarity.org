@@ -10,7 +10,7 @@ const representativeByDistrict = computed(() => {
 usePageSeo({
 	description: "Browse district-by-district Ballot Clarity pages for office context, current representatives, and the upcoming contest field.",
 	path: "/districts",
-	title: "District guide hub"
+	title: "District hub"
 });
 </script>
 
@@ -19,14 +19,14 @@ usePageSeo({
 		<header class="gap-6 grid xl:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
 			<div class="surface-panel">
 				<div class="flex flex-wrap gap-2">
-					<VerificationBadge label="District guide hub" tone="accent" />
+					<VerificationBadge label="District hub" tone="accent" />
 					<VerificationBadge label="Contest-by-contest" />
 				</div>
 				<h1 class="text-5xl text-app-ink font-serif mt-5 dark:text-app-text-dark">
 					District pages
 				</h1>
 				<p class="text-base text-app-muted leading-8 mt-5 dark:text-app-muted-dark">
-					Use district pages when you want the office area, the current representative, and the current candidate field in one place without scanning the full ballot guide first.
+					Use district pages when you want the office area, the current representative, and the current candidate field in one place without leaving the current results layer.
 				</p>
 			</div>
 
@@ -49,7 +49,7 @@ usePageSeo({
 
 		<div v-else-if="error || !data" class="max-w-3xl">
 			<InfoCallout title="District pages unavailable" tone="warning">
-				The district guide hub could not be loaded. Open the ballot guide or election overview and try again.
+				The district hub could not be loaded. Open nationwide results or the coverage profile and try again.
 			</InfoCallout>
 		</div>
 

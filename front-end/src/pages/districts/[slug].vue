@@ -1,5 +1,6 @@
 <script setup lang="ts">
 const route = useRoute();
+const { hasNationwideResultContext, hasPublishedGuideContext } = useGuideEntryGate();
 const districtSlug = computed(() => String(route.params.slug));
 const { formatDateTime } = useFormatters();
 const { data, error, pending } = await useDistrict(districtSlug);
@@ -30,6 +31,27 @@ const summaryItems = computed(() => {
 	];
 });
 
+const districtContextLink = computed(() => {
+	if (hasNationwideResultContext.value) {
+		return {
+			label: "Open nationwide results",
+			to: "/results"
+		};
+	}
+
+	if (hasPublishedGuideContext.value && data.value) {
+		return {
+			label: "Open current election coverage",
+			to: `/elections/${data.value.election.slug}`
+		};
+	}
+
+	return {
+		label: "Open coverage profile",
+		to: "/coverage"
+	};
+});
+
 usePageSeo({
 	description: data.value?.district.summary ?? "District page with office context, current representative, candidate field, and source links.",
 	path: `/districts/${districtSlug.value}`,
@@ -49,7 +71,7 @@ usePageSeo({
 
 		<div v-else-if="error || !data" class="max-w-3xl">
 			<InfoCallout title="District page unavailable" tone="warning">
-				This district page could not be loaded. Return to the district hub or ballot guide and try again.
+				This district page could not be loaded. Return to the district hub or the broader results layer and try again.
 			</InfoCallout>
 		</div>
 
@@ -71,8 +93,8 @@ usePageSeo({
 						<NuxtLink :to="`/contest/${data.district.slug}`" class="btn-primary">
 							Open contest page
 						</NuxtLink>
-						<NuxtLink :to="`/ballot/${data.election.slug}`" class="btn-secondary">
-							Open ballot guide
+						<NuxtLink :to="districtContextLink.to" class="btn-secondary">
+							{{ districtContextLink.label }}
 						</NuxtLink>
 						<NuxtLink to="/representatives" class="btn-secondary">
 							Representative directory
@@ -174,8 +196,8 @@ usePageSeo({
 				>
 					<template #actions>
 						<div class="flex flex-wrap gap-3">
-							<NuxtLink :to="`/elections/${data.election.slug}`" class="btn-secondary">
-								Election overview
+							<NuxtLink :to="districtContextLink.to" class="btn-secondary">
+								{{ districtContextLink.label }}
 							</NuxtLink>
 							<NuxtLink to="/districts" class="btn-secondary">
 								All districts

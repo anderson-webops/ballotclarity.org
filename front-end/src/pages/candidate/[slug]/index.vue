@@ -8,7 +8,8 @@ const civicStore = useCivicStore();
 const route = useRoute();
 const runtimeConfig = useRuntimeConfig();
 const siteUrl = useSiteUrl();
-const { ballotPlan, compareList, isHydrated, selectedElection, selectedLocation } = storeToRefs(civicStore);
+const { backToLayerLink, layerBreadcrumbLink, locationHubLink, overviewLink } = useRouteLayerNavigation();
+const { ballotPlan, compareList, isHydrated } = storeToRefs(civicStore);
 const candidateSlug = computed(() => String(route.params.slug));
 const { formatCompactNumber, formatCurrency, formatDate, formatDateTime, formatPercent } = useFormatters();
 const { data: candidate, error, pending } = await useCandidate(candidateSlug);
@@ -77,9 +78,6 @@ usePageSeo({
 const effectiveBallotPlan = computed(() => isHydrated.value ? ballotPlan.value : {});
 const effectiveCompareList = computed(() => isHydrated.value ? compareList.value : []);
 const showPersistedCandidateState = computed(() => isHydrated.value);
-const guideHref = computed(() => showPersistedCandidateState.value && selectedElection.value ? `/ballot/${selectedElection.value.slug}` : "/ballot");
-const electionOverviewHref = computed(() => showPersistedCandidateState.value && selectedElection.value ? `/elections/${selectedElection.value.slug}` : "/coverage");
-const locationHubHref = computed(() => showPersistedCandidateState.value && selectedLocation.value ? `/locations/${selectedLocation.value.slug}` : "/coverage");
 const isCompared = computed(() => candidate.value ? effectiveCompareList.value.includes(candidate.value.slug) : false);
 const compareLimitReached = computed(() => effectiveCompareList.value.length >= 3 && !isCompared.value);
 const compareLaunchSlugs = computed(() => {
@@ -117,7 +115,7 @@ const dataThroughLabel = computed(() => {
 const candidateJsonHref = computed(() => candidate.value ? `${runtimeConfig.public.apiBase}/candidates/${candidate.value.slug}` : "");
 const candidateBreadcrumbs = computed(() => [
 	{ label: "Home", to: "/" },
-	{ label: "Ballot guide", to: guideHref.value },
+	layerBreadcrumbLink.value,
 	{ label: candidate.value?.name ?? "Candidate profile" }
 ]);
 const issuePositionSources = computed(() => {
@@ -213,7 +211,7 @@ function saveToPlan() {
 
 		<div v-else-if="error || !candidate" class="max-w-3xl">
 			<InfoCallout title="Candidate profile not available" tone="warning">
-				This candidate page could not be loaded. Return to the ballot overview to choose another profile.
+				This candidate page could not be loaded. Return to the current results context and choose another profile.
 			</InfoCallout>
 		</div>
 
@@ -265,15 +263,15 @@ function saveToPlan() {
 							<span :class="planButtonIcon" />
 							{{ planButtonLabel }}
 						</button>
-						<NuxtLink :to="electionOverviewHref" class="btn-secondary">
-							Election overview
+						<NuxtLink :to="overviewLink.to" class="btn-secondary">
+							{{ overviewLink.label }}
 						</NuxtLink>
 						<a v-if="candidateJsonHref" :href="candidateJsonHref" class="btn-secondary" rel="noreferrer" target="_blank">
 							<span class="i-carbon-download" />
 							Download JSON
 						</a>
-						<NuxtLink :to="guideHref" class="btn-primary">
-							Back to ballot
+						<NuxtLink :to="backToLayerLink.to" class="btn-primary">
+							{{ backToLayerLink.label }}
 						</NuxtLink>
 					</div>
 				</header>
@@ -739,11 +737,11 @@ function saveToPlan() {
 						<a :href="reportIssueHref" class="btn-secondary text-xs px-4 py-2">
 							Report an issue
 						</a>
-						<NuxtLink :to="locationHubHref" class="btn-secondary text-xs px-4 py-2">
-							Location hub
+						<NuxtLink :to="locationHubLink.to" class="btn-secondary text-xs px-4 py-2">
+							{{ locationHubLink.label }}
 						</NuxtLink>
-						<NuxtLink :to="electionOverviewHref" class="btn-secondary text-xs px-4 py-2">
-							Election overview
+						<NuxtLink :to="overviewLink.to" class="btn-secondary text-xs px-4 py-2">
+							{{ overviewLink.label }}
 						</NuxtLink>
 					</div>
 					<InfoCallout class="mt-5" title="Neutrality note">

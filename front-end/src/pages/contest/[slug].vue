@@ -1,5 +1,6 @@
 <script setup lang="ts">
 const route = useRoute();
+const { openLayerLink, overviewLink } = useRouteLayerNavigation();
 const contestSlug = computed(() => String(route.params.slug));
 const { data, error, pending } = await useContest(contestSlug);
 
@@ -32,7 +33,7 @@ const breadcrumbs = computed(() => {
 
 	return [
 		{ label: "Home", to: "/" },
-		{ label: data.value.election.name, to: `/elections/${data.value.election.slug}` },
+		overviewLink.value,
 		{ label: data.value.contest.office }
 	];
 });
@@ -55,7 +56,7 @@ usePageSeo({
 
 		<div v-else-if="error || !data" class="max-w-3xl">
 			<InfoCallout title="Contest page unavailable" tone="warning">
-				This contest page could not be loaded. Return to the election overview or ballot guide and try again.
+				This contest page could not be loaded. Return to the current results context and try again.
 			</InfoCallout>
 		</div>
 
@@ -79,8 +80,8 @@ usePageSeo({
 					</p>
 					<div class="mt-6 flex flex-wrap gap-3">
 						<UpdatedAt :value="data.updatedAt" />
-						<NuxtLink :to="`/ballot/${data.election.slug}`" class="btn-secondary">
-							Open ballot guide
+						<NuxtLink :to="openLayerLink.to" class="btn-secondary">
+							{{ openLayerLink.label }}
 						</NuxtLink>
 						<NuxtLink v-if="districtHref" :to="districtHref" class="btn-secondary">
 							Open district page
@@ -88,8 +89,8 @@ usePageSeo({
 						<NuxtLink v-if="districtHref" to="/representatives" class="btn-secondary">
 							Representative directory
 						</NuxtLink>
-						<NuxtLink :to="`/elections/${data.election.slug}`" class="btn-secondary">
-							Election overview
+						<NuxtLink :to="overviewLink.to" class="btn-secondary">
+							{{ overviewLink.label }}
 						</NuxtLink>
 						<NuxtLink v-if="compareHref" :to="compareHref" class="btn-secondary">
 							Compare this race

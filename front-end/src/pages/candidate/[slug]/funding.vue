@@ -1,12 +1,13 @@
 <script setup lang="ts">
 const route = useRoute();
+const { layerBreadcrumbLink } = useRouteLayerNavigation();
 const candidateSlug = computed(() => String(route.params.slug));
 const { formatCompactNumber, formatCurrency, formatPercent } = useFormatters();
 const { data: candidate, error, pending } = await useCandidate(candidateSlug);
 
 const breadcrumbs = computed(() => [
 	{ label: "Home", to: "/" },
-	{ label: "Ballot guide", to: "/ballot" },
+	layerBreadcrumbLink.value,
 	{ label: candidate.value?.name ?? "Candidate profile", to: candidate.value ? `/candidate/${candidate.value.slug}` : undefined },
 	{ label: "Funding" }
 ]);

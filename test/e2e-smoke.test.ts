@@ -3,8 +3,9 @@ import assert from "node:assert/strict";
 import { Buffer } from "node:buffer";
 import { spawn } from "node:child_process";
 import { once } from "node:events";
-import { existsSync } from "node:fs";
+import { existsSync, mkdtempSync, rmSync } from "node:fs";
 import { createServer } from "node:net";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import process from "node:process";
 import test, { after, before } from "node:test";
@@ -58,6 +59,188 @@ function startProcess(command: string, args: string[], env: NodeJS.ProcessEnv) {
 	return {
 		child,
 		getOutput: () => output.join("")
+	};
+}
+
+function findChromeExecutable() {
+	const candidates = [
+		process.env.CHROME_PATH,
+		process.env.GOOGLE_CHROME_BIN,
+		"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+		"/Applications/Chromium.app/Contents/MacOS/Chromium",
+		"/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge"
+	].filter((candidate): candidate is string => Boolean(candidate));
+
+	for (const candidate of candidates) {
+		if (existsSync(candidate))
+			return candidate;
+	}
+
+	return null;
+}
+
+async function waitForJson(url: string, label: string) {
+	for (let attempt = 0; attempt < 60; attempt += 1) {
+		try {
+			const response = await fetch(url);
+
+			if (response.ok)
+				return await response.json();
+		}
+		catch {
+			// Keep polling until the process is ready.
+		}
+
+		await delay(500);
+	}
+
+	throw new Error(`Timed out waiting for ${label} at ${url}`);
+}
+
+function startChromeProcess(command: string, args: string[]) {
+	const child = spawn(command, args, {
+		cwd: repoRoot,
+		env: process.env,
+		stdio: ["ignore", "pipe", "pipe"]
+	});
+
+	const output: string[] = [];
+	const collect = (chunk: Buffer) => output.push(chunk.toString());
+
+	child.stdout.on("data", collect);
+	child.stderr.on("data", collect);
+
+	return {
+		child,
+		getOutput: () => output.join("")
+	};
+}
+
+async function stopChromeProcess(processHandle: ChildProcessWithoutNullStreams | null, userDataDir?: string) {
+	if (processHandle && processHandle.exitCode === null) {
+		processHandle.kill("SIGTERM");
+		await once(processHandle, "exit");
+	}
+
+	if (userDataDir)
+		rmSync(userDataDir, { force: true, recursive: true });
+}
+
+interface CdpSession {
+	close: () => Promise<void>;
+	on: (method: string, handler: (params: any) => void) => () => void;
+	send: (method: string, params?: Record<string, unknown>) => Promise<any>;
+	waitForEvent: (method: string, predicate?: (params: any) => boolean, timeoutMs?: number) => Promise<any>;
+}
+
+async function connectToCdp(webSocketUrl: string): Promise<CdpSession> {
+	const socket = new WebSocket(webSocketUrl);
+	const pending = new Map<number, { reject: (error: Error) => void; resolve: (value: any) => void }>();
+	const listeners = new Map<string, Set<(params: any) => void>>();
+	let nextId = 0;
+
+	await new Promise<void>((resolve, reject) => {
+		const handleOpen = () => {
+			socket.removeEventListener("error", handleError);
+			resolve();
+		};
+		const handleError = () => {
+			socket.removeEventListener("open", handleOpen);
+			reject(new Error(`Unable to open Chrome DevTools socket at ${webSocketUrl}`));
+		};
+
+		socket.addEventListener("open", handleOpen, { once: true });
+		socket.addEventListener("error", handleError, { once: true });
+	});
+
+	socket.addEventListener("message", (event) => {
+		const rawMessage = typeof event.data === "string"
+			? event.data
+			: Buffer.from(event.data as ArrayBuffer).toString("utf8");
+		const message = JSON.parse(rawMessage) as {
+			error?: { message?: string };
+			id?: number;
+			method?: string;
+			params?: any;
+			result?: any;
+		};
+
+		if (typeof message.id === "number") {
+			const request = pending.get(message.id);
+
+			if (!request)
+				return;
+
+			pending.delete(message.id);
+
+			if (message.error)
+				request.reject(new Error(message.error.message || `Chrome DevTools call ${message.id} failed.`));
+			else
+				request.resolve(message.result);
+
+			return;
+		}
+
+		if (!message.method)
+			return;
+
+		for (const listener of listeners.get(message.method) ?? [])
+			listener(message.params);
+	});
+
+	function on(method: string, handler: (params: any) => void) {
+		const methodListeners = listeners.get(method) ?? new Set<(params: any) => void>();
+		methodListeners.add(handler);
+		listeners.set(method, methodListeners);
+
+		return () => methodListeners.delete(handler);
+	}
+
+	function send(method: string, params: Record<string, unknown> = {}) {
+		return new Promise<any>((resolve, reject) => {
+			const id = nextId += 1;
+
+			pending.set(id, { reject, resolve });
+			socket.send(JSON.stringify({
+				id,
+				method,
+				params
+			}));
+		});
+	}
+
+	function waitForEvent(method: string, predicate: (params: any) => boolean = () => true, timeoutMs = 10000) {
+		return new Promise<any>((resolve, reject) => {
+			const cleanup = on(method, (params) => {
+				if (!predicate(params))
+					return;
+
+				clearTimeout(timeoutId);
+				cleanup();
+				resolve(params);
+			});
+			const timeoutId = setTimeout(() => {
+				cleanup();
+				reject(new Error(`Timed out waiting for Chrome DevTools event ${method}.`));
+			}, timeoutMs);
+		});
+	}
+
+	async function close() {
+		if (socket.readyState === WebSocket.CLOSED)
+			return;
+
+		await new Promise<void>((resolve) => {
+			socket.addEventListener("close", () => resolve(), { once: true });
+			socket.close();
+		});
+	}
+
+	return {
+		close,
+		on,
+		send,
+		waitForEvent
 	};
 }
 
@@ -407,4 +590,113 @@ test("built app exposes a protected admin portal when admin env is configured", 
 	assert.equal(adminOverviewResponse.status, 200);
 	assert.equal(adminOverview.metrics[0].label, "Open corrections");
 	assert.ok(adminOverview.recentActivity.length >= 3);
+});
+
+test("built app does not log a hydration mismatch when dark mode is stored before first load", async (t) => {
+	const chromeExecutable = findChromeExecutable();
+
+	if (!chromeExecutable) {
+		t.skip("Chrome is not available for the hydration regression test.");
+		return;
+	}
+
+	const chromePort = await getFreePort();
+	const chromeUserDataDir = mkdtempSync(join(tmpdir(), "ballot-clarity-chrome-"));
+	const chrome = startChromeProcess(chromeExecutable, [
+		`--remote-debugging-port=${chromePort}`,
+		`--user-data-dir=${chromeUserDataDir}`,
+		"--headless=new",
+		"--disable-background-networking",
+		"--disable-default-apps",
+		"--disable-gpu",
+		"--disable-sync",
+		"--metrics-recording-only",
+		"--no-first-run",
+		"--no-default-browser-check",
+		"about:blank"
+	]);
+
+	let cdp: CdpSession | null = null;
+
+	try {
+		const versionInfo = await waitForJson(`http://127.0.0.1:${chromePort}/json/version`, "Chrome DevTools version");
+		const targets = await waitForJson(`http://127.0.0.1:${chromePort}/json/list`, "Chrome DevTools targets") as Array<{
+			type?: string;
+			webSocketDebuggerUrl?: string;
+		}>;
+		const pageTarget = targets.find(target => target.type === "page" && target.webSocketDebuggerUrl);
+
+		assert.equal(typeof versionInfo.Browser, "string");
+		assert.ok(pageTarget?.webSocketDebuggerUrl);
+
+		cdp = await connectToCdp(pageTarget.webSocketDebuggerUrl as string);
+
+		const consoleMessages: string[] = [];
+		const cleanupConsoleListener = cdp.on("Runtime.consoleAPICalled", (params) => {
+			const text = (params.args ?? [])
+				.map((entry: { value?: unknown }) => typeof entry.value === "string" ? entry.value : "")
+				.filter(Boolean)
+				.join(" ");
+
+			consoleMessages.push(`${params.type || "log"} ${text}`.trim());
+		});
+		const cleanupLogListener = cdp.on("Log.entryAdded", (params) => {
+			consoleMessages.push(`${params.entry?.level || "log"} ${params.entry?.text || ""}`.trim());
+		});
+
+		await cdp.send("Page.enable");
+		await cdp.send("Runtime.enable");
+		await cdp.send("Log.enable");
+
+		const initialLoad = cdp.waitForEvent("Page.loadEventFired");
+		await cdp.send("Page.navigate", { url: appBaseUrl });
+		await initialLoad;
+		await delay(500);
+
+		consoleMessages.length = 0;
+
+		const reloadComplete = cdp.waitForEvent("Page.loadEventFired");
+		await cdp.send("Runtime.evaluate", {
+			awaitPromise: false,
+			expression: `localStorage.setItem('nuxt-color-mode', 'dark'); location.reload();`,
+			returnByValue: true
+		});
+		await reloadComplete;
+		await delay(1200);
+
+		const evaluation = await cdp.send("Runtime.evaluate", {
+			awaitPromise: false,
+			expression: `(() => ({
+				colorModeClass: document.documentElement.className,
+				themeToggleLabel: document.querySelector('[aria-label^="Switch to "]')?.getAttribute('aria-label') ?? null
+			}))()`,
+			returnByValue: true
+		});
+		const pageState = evaluation.result?.value as {
+			colorModeClass?: string;
+			themeToggleLabel?: null | string;
+		};
+
+		assert.match(pageState.colorModeClass ?? "", /\bdark\b/);
+		assert.equal(pageState.themeToggleLabel, "Switch to light mode");
+		assert.equal(
+			consoleMessages.some(message => /hydration|mismatch/i.test(message)),
+			false,
+			`Unexpected hydration console output:\n${consoleMessages.join("\n")}`
+		);
+
+		cleanupConsoleListener();
+		cleanupLogListener();
+		await cdp.close();
+		cdp = null;
+	}
+	catch (error) {
+		throw new Error(`${String(error)}\n\nChrome output:\n${chrome.getOutput()}`);
+	}
+	finally {
+		if (cdp)
+			await cdp.close().catch(() => {});
+
+		await stopChromeProcess(chrome.child, chromeUserDataDir);
+	}
 });

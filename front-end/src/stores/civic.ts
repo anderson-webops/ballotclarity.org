@@ -9,7 +9,7 @@ import type {
 } from "~/types/civic";
 import type { LookupContextState } from "~/utils/guide-entry";
 import { defineStore } from "pinia";
-import { buildLookupContextState, buildNationwideLookupResultContext } from "~/utils/nationwide-results";
+import { buildLookupContextState, deriveCivicLookupStateUpdate } from "~/utils/nationwide-results";
 
 const civicStorageKey = "ballot-clarity:civic-store";
 
@@ -208,11 +208,11 @@ export const useCivicStore = defineStore("civic", {
 			this.persist();
 		},
 		setLookupResponse(response: LocationLookupResponse, election?: ElectionSummary | null) {
-			this.lookupContext = buildLookupContextState(response);
-			this.nationwideLookupResult = buildNationwideLookupResultContext(response, election);
-			this.selectedLocation = response.guideAvailability === "published" && !response.detectedFromIp
-				? sanitizeLocationSelection(response.location ?? null)
-				: null;
+			const update = deriveCivicLookupStateUpdate(response, election);
+
+			this.lookupContext = update.lookupContext;
+			this.nationwideLookupResult = update.nationwideLookupResult;
+			this.selectedLocation = sanitizeLocationSelection(update.selectedLocation);
 
 			if (election)
 				this.selectedElection = election;

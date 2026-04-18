@@ -647,6 +647,7 @@ export interface NationwideLookupResultContext {
 	result: LocationLookupResult;
 	inputKind: LocationLookupInputKind;
 	note: string;
+	resolvedAt?: string;
 	lookupQuery?: string;
 	detectedFromIp?: boolean;
 	guideAvailability?: LocationGuideAvailability;
@@ -787,10 +788,18 @@ export interface CoverageLimitation {
 	summary: string;
 }
 
+export type LocationGuessMode = "browser_geolocation" | "disabled" | "geoip_provider" | "proxy_headers";
+
+export interface LocationGuessCapability {
+	mode: LocationGuessMode;
+	canGuessOnLoad: boolean;
+}
+
 export interface CoverageResponse {
 	updatedAt: string;
 	coverageMode: "empty" | "snapshot";
 	coverageUpdatedAt: string;
+	locationGuess: LocationGuessCapability;
 	launchTarget?: LaunchTargetProfile;
 	scopeNote: string;
 	currentState: string;
@@ -885,17 +894,75 @@ export interface DistrictSummary {
 export interface RepresentativeSummary extends RepresentativeCard {
 	slug: string;
 	name: string;
+	location: string;
 	party: string;
+	officeholderLabel: string;
 	officeSought: string;
 	districtSlug: string;
 	districtLabel: string;
+	onCurrentBallot: boolean;
+	ballotStatusLabel: string;
+	provenance: {
+		label: string;
+		status: "direct" | "crosswalked" | "inferred";
+		note: string;
+	} | null;
 	href: string;
+	openstatesUrl?: string;
 	incumbent: boolean;
 	summary: string;
 	fundingSummary: string;
 	influenceSummary: string;
 	updatedAt: string;
 	sourceCount: number;
+}
+
+export interface PersonProfileFunding extends FundingSummary {
+	provenanceLabel?: string;
+}
+
+export interface PersonProfile {
+	slug: string;
+	name: string;
+	location: string;
+	officeSought: string;
+	contestSlug: string;
+	party: string;
+	incumbent: boolean;
+	districtLabel: string;
+	districtSlug: string;
+	summary: string;
+	sourceCount: number;
+	sources: Source[];
+	updatedAt: string;
+	freshness: FreshnessMeta;
+	funding: PersonProfileFunding | null;
+	lobbyingContext: EvidenceBlock[];
+	publicStatements: EvidenceBlock[];
+	biography: EvidenceBlock[];
+	topIssues: IssueTag[];
+	keyActions: VoteRecordSummary[];
+	whatWeKnow: TrustBullet[];
+	whatWeDoNotKnow: TrustBullet[];
+	methodologyNotes: string[];
+	comparison: CandidateComparisonProfile | null;
+	onCurrentBallot: boolean;
+	ballotStatusLabel: string;
+	officeholderLabel: string;
+	provenance: {
+		source: "guide" | "nationwide" | "lookup";
+		label: string;
+		status: "direct" | "crosswalked" | "inferred";
+		note: string;
+		asOf: string;
+	};
+	openstatesUrl?: string;
+}
+
+export interface PersonProfileResponse {
+	person: PersonProfile;
+	updatedAt: string;
+	note: string;
 }
 
 export interface DistrictRecordResponse {

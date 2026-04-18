@@ -64,6 +64,15 @@ before(async () => {
 			snapshotPath: ":memory:"
 		},
 		correctionSeed,
+		locationGuessOptions: {
+			mode: "proxy_headers",
+			proxyHeaders: {
+				cityHeaders: ["x-geo-city"],
+				countryHeaders: ["x-geo-country"],
+				postalCodeHeaders: ["x-geo-postal-code"],
+				regionHeaders: ["x-geo-region"]
+			}
+		},
 		addressEnrichmentService: {
 			async lookupAddress(address) {
 				if (/utah county|provo|84604/i.test(address)) {
@@ -419,6 +428,10 @@ test("default runtime stays empty instead of auto-seeding coverage and public op
 		assert.deepEqual(electionsBody.elections, []);
 		assert.equal(coverageBody.coverageMode, "empty");
 		assert.equal(coverageBody.launchTarget, undefined);
+		assert.deepEqual(coverageBody.locationGuess, {
+			canGuessOnLoad: false,
+			mode: "disabled"
+		});
 		assert.match(coverageBody.currentState, /No published local coverage snapshot/i);
 		assert.equal(statusBody.coverageMode, "empty");
 		assert.equal(statusBody.overallStatus, "reviewing");
@@ -741,20 +754,20 @@ test("POST /api/location returns district lookup results without a published gui
 	assert.match(body.note, /Census geography matched/i);
 });
 
-test("GET /api/location/guess uses deployment geo headers to load an IP-based nationwide result", async () => {
+test("GET /api/location/guess uses configured proxy geo headers to load an IP-based nationwide result", async () => {
 	const response = await fetch(`${baseUrl}/api/location/guess`, {
 		headers: {
-			"x-vercel-ip-city": "Provo",
-			"x-vercel-ip-country": "US",
-			"x-vercel-ip-country-region": "UT",
-			"x-vercel-ip-postal-code": "84604"
+			"x-geo-city": "Provo",
+			"x-geo-country": "US",
+			"x-geo-postal-code": "84604",
+			"x-geo-region": "UT"
 		}
 	});
 	const body = await response.json();
 
 	assert.equal(response.status, 200);
 	assert.equal(response.headers.get("cache-control"), "no-store");
-	assert.match(response.headers.get("vary") || "", /x-vercel-ip-postal-code/i);
+	assert.match(response.headers.get("vary") || "", /x-geo-postal-code/i);
 	assert.equal(body.detectedFromIp, true);
 	assert.equal(body.result, "resolved");
 	assert.equal(body.guideAvailability, "not-published");
@@ -763,12 +776,39 @@ test("GET /api/location/guess uses deployment geo headers to load an IP-based na
 	assert.equal(body.actions.some((item: { title: string }) => /Utah voter registration portal/i.test(item.title)), true);
 });
 
-test("GET /api/location/guess returns 404 when deployment geo headers are unavailable", async () => {
+test("GET /api/location/guess returns 404 when configured proxy geo headers are unavailable", async () => {
 	const response = await fetch(`${baseUrl}/api/location/guess`);
 	const body = await response.json();
 
 	assert.equal(response.status, 404);
-	assert.match(body.message, /IP-based location guess is not available/i);
+	assert.match(body.message, /Automatic location guessing is not available/i);
+});
+
+test("GET /api/location/guess returns 404 when automatic location guessing is disabled", async () => {
+	const isolatedServer = (await createApp({
+		adminApiKey,
+		adminDbPath: ":memory:",
+		locationGuessOptions: {
+			mode: "disabled"
+		}
+	})).listen(0, "127.0.0.1");
+
+	await once(isolatedServer, "listening");
+	const isolatedAddress = isolatedServer.address() as AddressInfo;
+	const isolatedBaseUrl = `http://127.0.0.1:${isolatedAddress.port}`;
+
+	try {
+		const response = await fetch(`${isolatedBaseUrl}/api/location/guess`);
+		const body = await response.json();
+
+		assert.equal(response.status, 404);
+		assert.match(body.message, /not configured for this host/i);
+	}
+	finally {
+		await new Promise<void>((resolve, reject) => {
+			isolatedServer.close(error => error ? reject(error) : resolve());
+		});
+	}
 });
 
 test("GET /api/ballot returns the election guide and contests", async () => {
@@ -822,6 +862,10 @@ test("GET /api/coverage returns the public launch profile for Fulton County, Geo
 	assert.equal(body.launchTarget.displayName, "Fulton County, Georgia");
 	assert.equal(body.launchTarget.currentElectionDate, "2026-05-19");
 	assert.equal(body.launchTarget.nextElectionDate, "2026-11-03");
+	assert.deepEqual(body.locationGuess, {
+		canGuessOnLoad: true,
+		mode: "proxy_headers"
+	});
 	assert.equal(body.supportedContentTypes.length, 5);
 	assert.equal(body.collections[0].href, "/coverage");
 	assert.equal(body.coverageMode, "snapshot");
@@ -923,8 +967,22 @@ test("GET /api/representatives returns incumbents tied to district pages", async
 
 	assert.equal(response.status, 200);
 	assert.ok(body.representatives.some((item: { districtSlug: string; slug: string }) => item.districtSlug === "us-house-district-7" && item.slug === "daniel-brooks"));
+	assert.ok(body.representatives.some((item: { href: string; slug: string }) => item.slug === "daniel-brooks" && item.href === "/representatives/daniel-brooks"));
 	assert.ok(body.districts.some((item: { href: string }) => item.href === "/districts/state-senate-district-12"));
 	assert.match(body.note, /currently serving officials/i);
+});
+
+test("GET /api/representatives/:slug returns a source-backed representative profile", async () => {
+	const response = await fetch(`${baseUrl}/api/representatives/daniel-brooks`);
+	const body = await response.json();
+
+	assert.equal(response.status, 200);
+	assert.equal(body.person.slug, "daniel-brooks");
+	assert.equal(body.person.officeholderLabel, "Current officeholder");
+	assert.equal(body.person.provenance.status, "direct");
+	assert.equal(body.person.funding.provenanceLabel, "Source-backed published filing summary");
+	assert.ok(body.person.lobbyingContext.length >= 1);
+	assert.ok(body.person.sources.length >= body.person.funding.sources.length);
 });
 
 test("GET /api/ballot returns 404 for unknown elections", async () => {

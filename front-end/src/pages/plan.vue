@@ -2,6 +2,7 @@
 import type { BallotPlanSelection, Contest, PlannedMeasureDecision } from "~/types/civic";
 import { storeToRefs } from "pinia";
 import { buildCompareRoute } from "~/stores/civic";
+import { buildLocationGuessUiContent } from "~/utils/location-guess";
 import { buildPlanUnavailableMessaging } from "~/utils/plan-messaging";
 
 const civicStore = useCivicStore();
@@ -9,6 +10,7 @@ const route = useRoute();
 const { ballotPlan, ballotPlanCount, compareCount, compareList, isHydrated, selectedElection, selectedLocation } = storeToRefs(civicStore);
 const { formatDate, formatDateTime } = useFormatters();
 const { activeLookupContext, activeNationwideResult, allowsGuideEntryPoints } = useGuideEntryGate();
+const { data: coverageData } = useCoverage();
 
 const effectiveBallotPlan = computed(() => isHydrated.value ? ballotPlan.value : {});
 const effectiveBallotPlanCount = computed(() => isHydrated.value ? ballotPlanCount.value : 0);
@@ -27,6 +29,7 @@ const { data, error, pending } = await useBallot(electionSlug, locationSlug);
 const lookupElection = computed(() => showPersistedPlanState.value
 	? (selectedElection.value ?? activeNationwideResult.value?.election ?? data.value?.election ?? null)
 	: (data.value?.election ?? null));
+const locationGuessUi = computed(() => buildLocationGuessUiContent(coverageData.value?.locationGuess ?? null));
 const activeLocationLabel = computed(() => data.value?.location.displayName
 	?? (isHydrated.value ? (selectedLocation.value?.displayName ?? activeNationwideResult.value?.location?.displayName ?? null) : null));
 const planUnavailableMessaging = computed(() => buildPlanUnavailableMessaging(activeLookupContext.value));
@@ -227,7 +230,7 @@ function printPlan() {
 						You are currently viewing {{ activeLocationLabel }}.
 					</p>
 					<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-						Ballot Clarity may start with a best-effort IP-based location guess, but the ballot plan still needs a published local guide confirmed from a ZIP code or full street address.
+						{{ locationGuessUi.plan }}
 					</p>
 				</div>
 				<AddressLookupForm compact :election="lookupElection" :framed="false" />

@@ -3,6 +3,7 @@ import type { BallotResponse, ElectionsResponse } from "~/types/civic";
 import { storeToRefs } from "pinia";
 import { defineAsyncComponent } from "vue";
 import { contactEmail } from "~/constants";
+import { buildLocationGuessUiContent } from "~/utils/location-guess";
 import { buildHomeExperienceState } from "~/utils/nationwide-results";
 
 const api = useApiClient();
@@ -24,6 +25,7 @@ const { data: electionsData } = await useAsyncData<ElectionsResponse>(
 const featuredElection = computed(() => electionsData.value?.elections[0] ?? null);
 const hasFeaturedGuide = computed(() => Boolean(featuredElection.value));
 const featuredLaunchTarget = computed(() => coverageData.value?.launchTarget ?? null);
+const locationGuessUi = computed(() => buildLocationGuessUiContent(coverageData.value?.locationGuess ?? null));
 const roadmapPreview = computed(() => dataSources.value?.categories.slice(0, 3) ?? []);
 const guideBallotPath = computed(() => {
 	const activeGuideElection = selectedElection.value ?? featuredElection.value;
@@ -323,7 +325,7 @@ const homepageAvailabilityItems = computed(() => [
 							Start from a real location, not a default guide.
 						</h2>
 						<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-							Ballot Clarity makes a best-effort location guess from your IP address on load. Enter a ZIP code to replace it with a broader nationwide preview, or use a full street address for the strongest district match.
+							{{ locationGuessUi.home }}
 						</p>
 						<div class="mt-5">
 							<AddressLookupForm compact :election="featuredElection" :framed="false" />

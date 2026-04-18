@@ -2575,7 +2575,8 @@ const adminCorrections: AdminCorrectionRequest[] = [
 		status: "new",
 		priority: "low",
 		submittedAt: "2026-04-08T19:20:00.000Z",
-		reportedBy: "hello@ballotclarity.org",
+		// reportedBy: "hello@ballotclarity.org",
+		reportedBy: "ballotclarity@jacobdanderson.net",
 		summary: "A policy review note asks for clearer wording around local-only plan persistence and how to clear it.",
 		nextStep: "Decide whether to add a dedicated settings control before updating the policy copy.",
 		sourceCount: 1

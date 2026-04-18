@@ -104,6 +104,11 @@ const ipGuessedPublishedGuideResponse: LocationLookupResponse = {
 	note: "Ballot Clarity made a best-effort location guess from your IP address and started with ZIP code 30303 near Atlanta, GA."
 };
 
+const manualPublishedGuideResponse: LocationLookupResponse = {
+	...ipGuessedPublishedGuideResponse,
+	detectedFromIp: false
+};
+
 const ambiguousZipResponse: LocationLookupResponse = {
 	...nationwideResponse,
 	location: undefined,
@@ -157,6 +162,14 @@ test("ip-guessed guide availability stays in nationwide context until the user c
 	assert.equal(update.selectedLocation, null);
 	assert.equal(update.nationwideLookupResult?.detectedFromIp, true);
 	assert.equal(update.nationwideLookupResult?.guideAvailability, "published");
+});
+
+test("manual address or ZIP lookup overrides guessed context by activating the published guide location", () => {
+	const update = deriveCivicLookupStateUpdate(manualPublishedGuideResponse, activeElection);
+
+	assert.equal(update.nationwideLookupResult, null);
+	assert.equal(update.selectedLocation?.displayName, "Fulton County, Georgia");
+	assert.equal(update.selectedLocation?.slug, "fulton-county-georgia");
 });
 
 test("ambiguous ZIP lookups keep their selection options in persisted nationwide context", () => {

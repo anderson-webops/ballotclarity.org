@@ -6,7 +6,8 @@ import { buildCompareRoute, normalizeCompareSlugs, parseCompareQuerySlugs } from
 const civicStore = useCivicStore();
 const route = useRoute();
 const router = useRouter();
-const { allowsGuideEntryPoints, blocksGuideEntryPoints } = useGuideEntryGate();
+const { backToLayerLink, layerBreadcrumbLink, openLayerLink } = useRouteLayerNavigation();
+const { allowsGuideEntryPoints, hasNationwideResultContext } = useGuideEntryGate();
 const { compareList, isHydrated } = storeToRefs(civicStore);
 
 const selectedSlugs = computed(() => parseCompareQuerySlugs(route.query.slugs));
@@ -45,16 +46,11 @@ watchEffect(() => {
 });
 
 const sameContest = computed(() => Boolean(data.value?.sameContest));
-const compareBreadcrumbs = computed(() => allowsGuideEntryPoints.value
-	? [
-			{ label: "Home", to: "/" },
-			{ label: "Ballot guide", to: "/ballot" },
-			{ label: "Compare" }
-		]
-	: [
-			{ label: "Home", to: "/" },
-			{ label: "Compare" }
-		]);
+const compareBreadcrumbs = computed(() => [
+	{ label: "Home", to: "/" },
+	layerBreadcrumbLink.value,
+	{ label: "Compare" }
+]);
 const comparisonStats = computed(() => ({
 	candidateCount: sortedCandidates.value.length,
 	categoryCount: questionCategories.value.length,
@@ -89,18 +85,24 @@ const emptyStateBody = computed(() => {
 	if (selectedSlugs.value.length === 1) {
 		return allowsGuideEntryPoints.value
 			? "This compare link includes only one candidate. Add one or two more candidates from the ballot guide or a candidate profile, then reopen compare with the updated URL."
-			: "This compare link includes only one candidate. Add one or two more candidates from a candidate profile or a covered local guide, then reopen compare with the updated URL.";
+			: hasNationwideResultContext.value
+				? "This compare link includes only one candidate. Add one or two more candidates from a candidate profile or the nationwide results layer, then reopen compare with the updated URL."
+				: "This compare link includes only one candidate. Add one or two more candidates from a candidate profile, then reopen compare with the updated URL.";
 	}
 
 	if (hasSavedCompareSelection.value) {
 		return allowsGuideEntryPoints.value
 			? "This compare link does not include any selected candidates yet. You can reopen the saved compare selection from this browser, or start a fresh compare from the ballot guide."
-			: "This compare link does not include any selected candidates yet. You can reopen the saved compare selection from this browser, or start a fresh compare from a candidate profile.";
+			: hasNationwideResultContext.value
+				? "This compare link does not include any selected candidates yet. You can reopen the saved compare selection from this browser, or start a fresh compare from the nationwide results layer or a candidate profile."
+				: "This compare link does not include any selected candidates yet. You can reopen the saved compare selection from this browser, or start a fresh compare from a candidate profile.";
 	}
 
 	return allowsGuideEntryPoints.value
 		? "This compare page needs candidate slugs in the URL to render a side-by-side view. Start from the ballot guide or a candidate profile and open compare with two or three selected candidates."
-		: "This compare page needs candidate slugs in the URL to render a side-by-side view. Start from a candidate profile or a covered local guide and open compare with two or three selected candidates.";
+		: hasNationwideResultContext.value
+			? "This compare page needs candidate slugs in the URL to render a side-by-side view. Start from the nationwide results layer or a candidate profile and open compare with two or three selected candidates."
+			: "This compare page needs candidate slugs in the URL to render a side-by-side view. Start from a candidate profile and open compare with two or three selected candidates.";
 });
 
 function uniqueSources(...groups: Source[][]) {
@@ -154,10 +156,10 @@ usePageSeo({
 		<section class="surface-panel">
 			<PageSummaryStrip :items="compareSummaryItems" />
 			<p class="text-sm text-app-muted leading-7 mt-5 max-w-4xl dark:text-app-muted-dark">
-				Columns are candidates and rows are shared attributes. Use the differences-only toggle to cut visual noise, then return to the ballot guide or profile page when you want deeper funding or action context.
+				Columns are candidates and rows are shared attributes. Use the differences-only toggle to cut visual noise, then return to the broader results layer or a profile page when you want deeper funding or action context.
 			</p>
 			<InfoCallout class="mt-5" title="Comparison policy">
-				Ballot Clarity does not endorse or rank candidates. The default comparison focuses on ballot status, candidate-verbatim statements, and standardized question responses with visible sources, clear provenance, and missing-data labels. Use compare to eliminate, then save a choice only after checking the deeper ballot guide or profile page.
+				Ballot Clarity does not endorse or rank candidates. The default comparison focuses on ballot status, candidate-verbatim statements, and standardized question responses with visible sources, clear provenance, and missing-data labels. Use compare to eliminate, then save a choice only after checking the deeper profile pages or the surrounding results context.
 			</InfoCallout>
 		</section>
 
@@ -168,11 +170,8 @@ usePageSeo({
 				{{ emptyStateBody }}
 			</InfoCallout>
 			<div class="mt-6 flex flex-wrap gap-3">
-				<NuxtLink v-if="allowsGuideEntryPoints" to="/ballot" class="btn-primary">
-					Open ballot guide
-				</NuxtLink>
-				<NuxtLink v-else to="/coverage" class="btn-primary">
-					Open coverage profile
+				<NuxtLink :to="openLayerLink.to" class="btn-primary">
+					{{ openLayerLink.label }}
 				</NuxtLink>
 				<NuxtLink v-if="hasSavedCompareSelection" :to="resumeCompareHref" class="btn-secondary">
 					Resume saved compare
@@ -234,14 +233,11 @@ usePageSeo({
 						</p>
 					</div>
 					<div class="flex flex-wrap gap-3">
-						<NuxtLink v-if="allowsGuideEntryPoints" to="/ballot" class="btn-secondary">
-							Back to ballot
+						<NuxtLink :to="backToLayerLink.to" class="btn-secondary">
+							{{ backToLayerLink.label }}
 						</NuxtLink>
 						<NuxtLink v-if="allowsGuideEntryPoints" to="/plan" class="btn-secondary">
 							Open ballot plan
-						</NuxtLink>
-						<NuxtLink v-if="blocksGuideEntryPoints" to="/coverage" class="btn-secondary">
-							Open coverage profile
 						</NuxtLink>
 						<button type="button" class="btn-primary" @click="clearCompareSelection">
 							Clear compare list

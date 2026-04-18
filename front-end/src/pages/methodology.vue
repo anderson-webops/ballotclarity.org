@@ -38,13 +38,6 @@ const items = [
 	},
 	{
 		body: [
-			"A future alignment module could compare district concerns with public records and stated positions. It would need transparent methodology, clear weighting rules, and strong explanations of uncertainty.",
-			"That feature is not live in the current build. It is labeled as experimental wherever it appears so users do not mistake it for a finished recommendation system.",
-		],
-		title: "Future constituent alignment",
-	},
-	{
-		body: [
 			"Ballot Clarity separates information into distinct source channels: official text, official record data, candidate-supplied material, Ballot Clarity plain-language summaries, and other nonpartisan supporting records.",
 			"Those labels are meant to help users understand which parts of a page are official wording, which parts are direct submissions, and which parts are explanatory context."
 		],
@@ -73,8 +66,8 @@ const items = [
 	},
 	{
 		body: [
-			"Address lookup is used to estimate districts and ballot style. The app may also start with a best-effort IP-based location guess, while ZIP-only lookup can preview the likely coverage area without standing in for exact district-level ballot matching.",
-			"The current build sends lookup input with a POST request, can use deployment geolocation headers for a coarse default guess, avoids persisting the raw lookup text in browser storage, and keeps the data-use explanation near the lookup form rather than burying it in legal copy."
+			"Address lookup is used to estimate districts and ballot style. Some hosts may also be configured for a best-effort IP-based location guess, while ZIP-only lookup can preview the likely coverage area without standing in for exact district-level ballot matching.",
+			"The current build sends lookup input with a POST request, can use configured deployment geolocation signals for a coarse default guess when that feature is enabled, avoids persisting the raw lookup text in browser storage, and keeps the data-use explanation near the lookup form rather than burying it in legal copy."
 		],
 		title: "Privacy and personalization",
 	},

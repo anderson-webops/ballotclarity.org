@@ -53,13 +53,16 @@ function capabilityLabel(status: "in-build" | "live-now" | "planned") {
 					What this means
 				</h2>
 				<ul class="readable-list text-sm text-app-muted mt-5 pl-5 dark:text-app-muted-dark">
-					<li>Ballot Clarity does not currently have a published local guide snapshot loaded in this environment.</li>
-					<li>Nationwide civic lookup results and official election tools should remain the main success path where they are available.</li>
-					<li>Local guide, candidate, measure, and plan flows should stay unavailable until verified local coverage is published.</li>
+					<li>No published local guide snapshot is active in this environment.</li>
+					<li>Nationwide civic lookup is still available and remains the main success path: district matches, representative records, and official election tools are shown here when providers can resolve them.</li>
+					<li>Guide-dependent features (local guide, candidate detail flows, measure pages, and plan) stay unavailable until a published local guide snapshot is active for the location.</li>
 				</ul>
 				<div class="mt-6 flex flex-wrap gap-3">
 					<NuxtLink to="/#location-lookup" class="btn-primary">
 						Open location lookup
+					</NuxtLink>
+					<NuxtLink to="/results" class="btn-secondary">
+						Open nationwide results
 					</NuxtLink>
 					<NuxtLink to="/status" class="btn-secondary">
 						Open public status

@@ -1,15 +1,22 @@
 <script setup lang="ts">
 import type { LocationLookupResponse, LocationLookupSelectionOption } from "~/types/civic";
 import { storeToRefs } from "pinia";
+import { buildActiveLookupSummary } from "~/utils/active-lookup";
+import { buildLocationGuessUiContent } from "~/utils/location-guess";
 import { normalizeLookupResponseForDisplay, resolveLookupDestination } from "~/utils/nationwide-results";
 
 const api = useApiClient();
 const civicStore = useCivicStore();
+const { data: coverageData } = useCoverage();
 const { isHydrated, nationwideLookupResult } = storeToRefs(civicStore);
 const { hasPublishedGuideContext } = useGuideEntryGate();
 
 const activeResult = computed(() => isHydrated.value ? nationwideLookupResult.value : null);
-const activeLocationLabel = computed(() => activeResult.value?.location?.displayName ?? activeResult.value?.normalizedAddress ?? "Nationwide civic results");
+const activeLookupSummary = computed(() => buildActiveLookupSummary({
+	nationwideLookupResult: activeResult.value,
+	selectedLocation: null
+}));
+const locationGuessUi = computed(() => buildLocationGuessUiContent(coverageData.value?.locationGuess ?? null));
 const officialToolCount = computed(() => activeResult.value?.actions.filter(action => action.kind === "official-verification").length ?? 0);
 const summaryItems = computed(() => ([
 	{
@@ -80,7 +87,7 @@ usePageSeo({
 
 		<div v-else-if="!activeResult" class="max-w-3xl">
 			<InfoCallout title="Nationwide civic results not loaded" tone="warning">
-				Ballot Clarity does not have an active nationwide lookup context in this browser yet. The automatic IP-based location guess may have been unavailable for this request, so return to the home-page lookup and enter an address or ZIP code to load civic results here.
+				{{ locationGuessUi.resultsEmpty }}
 			</InfoCallout>
 			<div class="mt-6 flex flex-wrap gap-3">
 				<NuxtLink to="/" class="btn-primary">
@@ -98,17 +105,23 @@ usePageSeo({
 					<div class="flex flex-wrap gap-2">
 						<TrustBadge label="Nationwide civic results" tone="accent" />
 						<TrustBadge label="Official tools visible" />
-						<TrustBadge label="Guide-only plan path" tone="warning" />
+						<TrustBadge label="Guide-dependent flows remain guide-only" tone="warning" />
 					</div>
 					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold mt-6 uppercase dark:text-app-muted-dark">
 						Active lookup context
 					</p>
 					<h1 class="text-5xl text-app-ink leading-tight font-serif mt-3 dark:text-app-text-dark">
-						{{ activeLocationLabel }}
+						{{ activeLookupSummary.label }}
 					</h1>
 					<p class="text-base text-app-muted leading-8 mt-5 max-w-3xl dark:text-app-muted-dark">
 						This page is the first-class nationwide civic results view for the latest successful lookup. It carries district matches, representative records, availability status, and official election tools across the app even when Ballot Clarity does not yet have a published local guide for this area.
 					</p>
+					<p class="text-sm text-app-muted leading-7 mt-4 max-w-3xl dark:text-app-muted-dark">
+						{{ activeLookupSummary.note }}
+					</p>
+					<div v-if="activeLookupSummary.resolvedAt" class="mt-5">
+						<UpdatedAt :value="activeLookupSummary.resolvedAt" label="Lookup updated" />
+					</div>
 				</div>
 
 				<div class="surface-panel">
@@ -116,7 +129,7 @@ usePageSeo({
 						Current limits
 					</p>
 					<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
-						The ballot plan, compare flow, and local ballot-guide pages still open only after Ballot Clarity confirms a published local guide for the active lookup. Until then, keep the nationwide civic results and official tools here as the main cross-page context.
+						The ballot plan, compare flow, and local ballot-guide pages remain guide-dependent and open only after Ballot Clarity confirms a published local guide for the active lookup. Until then, nationwide civic results and official tools are the main cross-page context.
 					</p>
 					<div class="mt-5 flex flex-wrap gap-3">
 						<NuxtLink v-if="hasPublishedGuideContext" to="/plan" class="btn-secondary">

@@ -1,71 +1,119 @@
 <script setup lang="ts">
 import type { OfficeContext } from "~/types/civic";
+import { storeToRefs } from "pinia";
+
 import { buildRepresentativesDirectoryProvenanceSummary, buildRepresentativesDirectoryTimeline } from "~/utils/graphics-schema";
+import { isExternalHref } from "~/utils/link";
+import { buildNationwideDirectoryResponses } from "~/utils/nationwide-directory";
 
 const { formatDateTime } = useFormatters();
-const { data, error, pending } = await useRepresentatives();
+const civicStore = useCivicStore();
+const { data: guideData, error: guideError, pending: guidePending } = await useRepresentatives();
+const { isHydrated, nationwideLookupResult } = storeToRefs(civicStore);
+const { hasNationwideResultContext, hasPublishedGuideContext } = useGuideEntryGate();
+const directoryUsesNationwide = computed(() => isHydrated.value && hasNationwideResultContext.value && !hasPublishedGuideContext.value);
+const directoryBundle = computed(() => directoryUsesNationwide.value
+	? buildNationwideDirectoryResponses(nationwideLookupResult.value).representatives
+	: guideData.value ?? { districts: [], note: "", representatives: [], updatedAt: "" });
+
+const directoryPending = computed(() => directoryUsesNationwide.value ? false : guidePending.value);
+const directoryError = computed(() => directoryUsesNationwide.value ? null : guideError.value);
+const directoryData = computed(() => isHydrated.value ? directoryBundle.value : null);
+const representativeLinkIsExternal = (href: string) => isExternalHref(href);
 
 const summaryItems = computed(() => {
-	if (!data.value)
+	if (!directoryData.value)
 		return [];
 
+	const isNationwideContext = directoryUsesNationwide.value;
 	return [
-		{ label: "Current representatives", note: "Incumbents on the active ballot surfaces.", value: data.value.representatives.length },
-		{ label: "District pages", note: "Office-area hubs with candidate fields.", value: data.value.districts.length, href: "/districts" },
-		{ label: "Updated", note: "Directory freshness.", value: formatDateTime(data.value.updatedAt) }
+		{ label: "Current representatives", note: isNationwideContext ? "Current officials from the active nationwide lookup." : "Current officeholders with person pages where Ballot Clarity has source-backed records.", value: directoryData.value.representatives.length },
+		{ label: "District pages", note: isNationwideContext ? "District matches carried forward with this nationwide lookup." : "Office-area hubs with candidate and representative context.", value: directoryData.value.districts.length, href: "/districts" },
+		{ label: "Updated", note: "Directory freshness.", value: formatDateTime(directoryData.value.updatedAt) }
 	];
 });
 const representativeStats = computed(() => {
-	if (!data.value)
+	if (!directoryData.value)
 		return [];
 
+	const currentDirectory = directoryData.value;
 	return [
 		{
-			detail: "Current officeholders tied to the active published ballot surfaces.",
+			detail: directoryUsesNationwide.value
+				? "Current officeholders pulled from the active nationwide lookup context."
+				: "Current officeholders tied to the active published ballot surfaces.",
 			label: "Representatives",
-			value: data.value.representatives.length
+			value: currentDirectory.representatives.length
 		},
 		{
-			detail: "Linked district hubs with office and candidate context.",
+			detail: directoryUsesNationwide.value
+				? "Matched district hubs carried forward with the active nationwide lookup."
+				: "Linked district hubs with office and candidate context.",
 			label: "District pages",
-			value: data.value.districts.length
+			value: currentDirectory.districts.length
 		},
 		{
-			detail: "Average linked source count across the current representative directory entries.",
+			detail: directoryUsesNationwide.value
+				? "Average linked record depth across the current nationwide representative matches."
+				: "Average linked source count across the current representative directory entries.",
 			label: "Average source depth",
-			value: data.value.representatives.length
-				? Math.round(data.value.representatives.reduce((total, representative) => total + representative.sourceCount, 0) / data.value.representatives.length)
+			value: currentDirectory.representatives.length
+				? Math.round(currentDirectory.representatives.reduce((total, representative) => total + representative.sourceCount, 0) / currentDirectory.representatives.length)
 				: 0
 		}
 	];
 });
 const representativeOfficeContext = computed<OfficeContext | null>(() => {
-	if (!data.value)
+	if (!directoryData.value)
 		return null;
+
+	const isNationwideContext = directoryUsesNationwide.value;
 
 	return {
 		badges: [
 			{ label: "Representative directory", tone: "accent" },
-			{ label: "Incumbents only", tone: "neutral" }
+			{ label: isNationwideContext ? "Nationwide lookup active" : "Published guide context", tone: "neutral" }
 		],
-		officeLabel: "Current officeholders connected to district, funding, and influence surfaces",
-		responsibilities: [
-			"Find the current officeholder tied to a district page.",
-			"Open campaign-finance context directly when it exists.",
-			"Open influence context directly without scanning the whole ballot first."
-		],
+		officeLabel: isNationwideContext
+			? "Current officeholders attached to the active nationwide lookup context"
+			: "Current officeholders connected to district, funding, and influence surfaces",
+		responsibilities: isNationwideContext
+			? [
+					"Open a district page for each officially matched representative area.",
+					"Open the active provider-backed record for each matched official when Ballot Clarity does not have a local person page.",
+					"Use district and results pages as the main continuation path when a published local guide is unavailable."
+				]
+			: [
+					"Find the current officeholder tied to a district page.",
+					"Open person-level funding context directly when it exists.",
+					"Open influence and lobbying context directly without scanning the whole ballot first."
+				],
 		stats: representativeStats.value,
-		summary: "This page is a person-first directory for the incumbent layer of the current published coverage. It is meant to get a voter from a known officeholder to the right district, funding, or influence surface with minimal scanning.",
+		summary: isNationwideContext
+			? "This page turns the active nationwide lookup into a person-first directory. It emphasizes matched officeholders, district crosswalks, and provider-backed records before Ballot Clarity’s deeper local person pages exist."
+			: "This page is a person-first directory for the incumbent layer of the current published coverage. It is meant to get a voter from a known officeholder to the right district, funding, or influence surface with minimal scanning.",
 		title: "How the representative layer is organized",
-		uncertainty: "This directory is coverage-shaped, not nationwide officeholding inventory. It reflects the current modeled Ballot Clarity surfaces.",
-		whyItMatters: "A voter often starts with a person they already know. This page gives them a direct route from that officeholder to the relevant district and profile context."
+		uncertainty: isNationwideContext
+			? "This directory reflects the current provider-backed nationwide lookup, not a complete national officeholder inventory or a complete Ballot Clarity person-page set."
+			: "This directory is coverage-shaped, not nationwide officeholding inventory. It reflects the current modeled Ballot Clarity surfaces.",
+		whyItMatters: isNationwideContext
+			? "A voter often starts with a person they already know. This page gives them a direct route from the active lookup to matched officeholders and district context even when a full local guide is not published."
+			: "A voter often starts with a person they already know. This page gives them a direct route from that officeholder to the relevant district and profile context."
 	};
 });
-const representativeProvenanceSummary = computed(() => data.value ? buildRepresentativesDirectoryProvenanceSummary(data.value, formatDateTime) : null);
-const representativeTimelineItems = computed(() => data.value ? buildRepresentativesDirectoryTimeline(data.value) : []);
+const representativeProvenanceSummary = computed(() => directoryData.value ? buildRepresentativesDirectoryProvenanceSummary(directoryData.value, formatDateTime) : null);
+const representativeTimelineItems = computed(() => directoryData.value ? buildRepresentativesDirectoryTimeline(directoryData.value) : []);
 
+const introCopy = computed(() => directoryUsesNationwide.value
+	? "This directory pulls out the current officials linked to the active nationwide lookup and points to district-level pages or provider-backed records. Ballot Clarity person pages, funding pages, and influence pages appear only where the underlying local person record exists."
+	: "This directory pulls out the current officeholders Ballot Clarity can tie to published person records, so you can jump straight into their district, funding, and influence pages."
+);
+const noActionCopy = computed(() => directoryUsesNationwide.value
+	? "Open the district layer or provider-backed record for this official. Ballot Clarity funding and influence pages appear only when a source-backed person record exists."
+	: "Open the person profile, funding page, or influence page for this official."
+);
 usePageSeo({
-	description: "Directory of current representatives on the active Ballot Clarity ballot coverage, with links to district, funding, and influence pages.",
+	description: "Directory of current representatives in your active Ballot Clarity context, with guide-dependent links made clear when no local guide is available.",
 	path: "/representatives",
 	title: "Representatives"
 });
@@ -83,7 +131,7 @@ usePageSeo({
 					Representatives
 				</h1>
 				<p class="text-base text-app-muted leading-8 mt-5 dark:text-app-muted-dark">
-					This directory pulls out the currently serving officials who also appear on the active ballot coverage, so you can jump straight into their district, funding, and influence pages.
+					{{ introCopy }}
 				</p>
 			</div>
 
@@ -93,11 +141,12 @@ usePageSeo({
 			/>
 		</header>
 
-		<div v-if="pending" class="gap-6 grid lg:grid-cols-2">
-			<div v-for="index in 3" :key="index" class="surface-panel bg-white/70 h-72 animate-pulse dark:bg-app-panel-dark/70" />
+		<div v-if="!isHydrated || directoryPending" class="gap-6 grid lg:grid-cols-2">
+			<div class="surface-panel bg-white/70 h-56 animate-pulse dark:bg-app-panel-dark/70" />
+			<div class="surface-panel bg-white/70 h-56 animate-pulse dark:bg-app-panel-dark/70" />
 		</div>
 
-		<div v-else-if="error || !data" class="max-w-3xl">
+		<div v-else-if="directoryError || !directoryData" class="max-w-3xl">
 			<InfoCallout title="Representative directory unavailable" tone="warning">
 				The representative directory could not be loaded. Open a district or contest page and try again.
 			</InfoCallout>
@@ -119,7 +168,7 @@ usePageSeo({
 
 			<section class="gap-6 grid lg:grid-cols-2">
 				<article
-					v-for="representative in data.representatives"
+					v-for="representative in directoryData.representatives"
 					:key="representative.slug"
 					class="surface-panel"
 				>
@@ -133,7 +182,7 @@ usePageSeo({
 						{{ representative.party }} · {{ representative.officeSought }}
 					</p>
 					<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-						{{ representative.summary }}
+						{{ representative.summary }} {{ noActionCopy }}
 					</p>
 					<div class="mt-5 flex flex-wrap gap-2">
 						<VerificationBadge :label="representative.districtLabel" />
@@ -143,13 +192,23 @@ usePageSeo({
 						<NuxtLink :to="`/districts/${representative.districtSlug}`" class="btn-secondary">
 							District page
 						</NuxtLink>
-						<NuxtLink :to="representative.href" class="btn-secondary">
-							Profile
+						<NuxtLink v-if="!representativeLinkIsExternal(representative.href)" :to="representative.href" class="btn-secondary">
+							{{ directoryUsesNationwide ? "Open record" : "Profile" }}
 						</NuxtLink>
-						<NuxtLink :to="`${representative.href}/funding`" class="btn-primary">
+						<a
+							v-else
+							:href="representative.href"
+							target="_blank"
+							rel="noreferrer"
+							class="btn-secondary inline-flex gap-2 items-center"
+						>
+							{{ directoryUsesNationwide ? "Open record" : "Profile" }}
+							<span class="i-carbon-launch" />
+						</a>
+						<NuxtLink v-if="!directoryUsesNationwide" :to="`${representative.href}/funding`" class="btn-primary">
 							Funding
 						</NuxtLink>
-						<NuxtLink :to="`${representative.href}/influence`" class="btn-secondary">
+						<NuxtLink v-if="!directoryUsesNationwide" :to="`${representative.href}/influence`" class="btn-secondary">
 							Influence
 						</NuxtLink>
 					</div>

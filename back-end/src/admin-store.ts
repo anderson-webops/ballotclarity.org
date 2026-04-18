@@ -26,6 +26,9 @@ import process from "node:process";
 import { DatabaseSync } from "node:sqlite";
 import { fileURLToPath } from "node:url";
 import {
+	demoAdminCorrections,
+	demoAdminOverview,
+	demoAdminSourceMonitor,
 	demoCandidates,
 	demoElection,
 	demoMeasures
@@ -42,6 +45,13 @@ export interface AdminRepositoryOptions {
 	correctionSeed?: AdminCorrectionRequest[];
 	activitySeed?: AdminActivityItem[];
 	sourceMonitorSeed?: AdminSourceMonitorItem[];
+}
+
+export interface LegacyDemoAdminIds {
+	activityIds: string[];
+	contentIds: string[];
+	correctionIds: string[];
+	sourceMonitorIds: string[];
 }
 
 export interface CorrectionSubmissionInput {
@@ -345,6 +355,30 @@ export function defaultContentSeed(): AdminContentItem[] {
 	];
 }
 
+export function getLegacyDemoAdminIds(): LegacyDemoAdminIds {
+	return {
+		activityIds: demoAdminOverview.recentActivity.map(item => item.id),
+		contentIds: defaultContentSeed().map(item => item.id),
+		correctionIds: demoAdminCorrections.corrections.map(item => item.id),
+		sourceMonitorIds: demoAdminSourceMonitor.sources.map(item => item.id)
+	};
+}
+
+export function shouldPurgeLegacyDemoAdminData(options: AdminRepositoryOptions) {
+	return options.contentSeed === undefined
+		&& options.correctionSeed === undefined
+		&& options.sourceMonitorSeed === undefined
+		&& options.activitySeed === undefined;
+}
+
+function deleteRowsByIds(database: DatabaseSync, table: string, ids: string[]) {
+	if (!ids.length)
+		return;
+
+	const placeholders = ids.map(() => "?").join(", ");
+	database.prepare(`DELETE FROM ${table} WHERE id IN (${placeholders})`).run(...ids);
+}
+
 function ensureDatabasePath(pathname: string) {
 	if (pathname === ":memory:")
 		return pathname;
@@ -377,6 +411,15 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 	database.exec(schema);
 	ensureColumn(database, "admin_content", "public_summary", "TEXT");
 	ensureColumn(database, "admin_content", "ballot_summary", "TEXT");
+
+	if (shouldPurgeLegacyDemoAdminData(options)) {
+		const legacyIds = getLegacyDemoAdminIds();
+
+		deleteRowsByIds(database, "admin_content", legacyIds.contentIds);
+		deleteRowsByIds(database, "admin_corrections", legacyIds.correctionIds);
+		deleteRowsByIds(database, "admin_source_monitors", legacyIds.sourceMonitorIds);
+		deleteRowsByIds(database, "admin_activity", legacyIds.activityIds);
+	}
 
 	const countStatement = (table: string) => database.prepare(`SELECT COUNT(*) AS count FROM ${table}`);
 

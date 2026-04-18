@@ -2,6 +2,9 @@ import type { Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import assert from "node:assert/strict";
 import { once } from "node:events";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import test, { after, before } from "node:test";
 import { defaultContentSeed } from "../src/admin-store.js";
 import {
@@ -432,6 +435,68 @@ test("default runtime stays empty instead of auto-seeding coverage and public op
 		await new Promise<void>((resolve, reject) => {
 			isolatedServer.close(error => error ? reject(error) : resolve());
 		});
+	}
+});
+
+test("default runtime purges legacy demo public-status records from an existing admin store", async () => {
+	const tempDir = mkdtempSync(join(tmpdir(), "ballot-clarity-admin-"));
+	const adminDbPath = join(tempDir, "admin.sqlite");
+	let seededServer: Server | null = null;
+	let cleanedServer: Server | null = null;
+
+	try {
+		seededServer = (await createApp({
+			adminApiKey,
+			activitySeed,
+			adminDbPath,
+			contentSeed,
+			correctionSeed,
+			sourceMonitorSeed
+		})).listen(0, "127.0.0.1");
+		await once(seededServer, "listening");
+
+		await new Promise<void>((resolve, reject) => {
+			seededServer?.close(error => error ? reject(error) : resolve());
+		});
+		seededServer = null;
+
+		cleanedServer = (await createApp({
+			adminApiKey,
+			adminDbPath
+		})).listen(0, "127.0.0.1");
+		await once(cleanedServer, "listening");
+
+		const address = cleanedServer.address() as AddressInfo;
+		const cleanedBaseUrl = `http://127.0.0.1:${address.port}`;
+		const [statusResponse, correctionsResponse] = await Promise.all([
+			fetch(`${cleanedBaseUrl}/api/status`),
+			fetch(`${cleanedBaseUrl}/api/corrections`)
+		]);
+		const statusBody = await statusResponse.json();
+		const correctionsBody = await correctionsResponse.json();
+
+		assert.equal(statusResponse.status, 200);
+		assert.equal(statusBody.coverageMode, "empty");
+		assert.deepEqual(statusBody.sources, []);
+		assert.equal(statusBody.incidents.length, 0);
+		assert.ok(statusBody.notes.every((note: string) => !/Fulton|Georgia legislative crosswalk|Sandra Patel/i.test(note)));
+		assert.equal(correctionsResponse.status, 200);
+		assert.deepEqual(correctionsBody.corrections, []);
+	}
+	finally {
+		if (seededServer) {
+			await new Promise<void>((resolve, reject) => {
+				seededServer?.close(error => error ? reject(error) : resolve());
+			});
+		}
+
+		if (cleanedServer) {
+			await new Promise<void>((resolve, reject) => {
+				cleanedServer?.close(error => error ? reject(error) : resolve());
+			});
+		}
+
+		rmSync(tempDir, { force: true, recursive: true });
 	}
 });
 

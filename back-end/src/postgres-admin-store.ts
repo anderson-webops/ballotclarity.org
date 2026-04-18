@@ -17,7 +17,9 @@ import process from "node:process";
 import { fileURLToPath } from "node:url";
 import { Pool } from "pg";
 import {
+	getLegacyDemoAdminIds,
 	hashPassword,
+	shouldPurgeLegacyDemoAdminData,
 	verifyPassword,
 } from "./admin-store.js";
 
@@ -182,6 +184,22 @@ async function seedPostgresDatabase(pool: Pool, options: AdminRepositoryOptions)
 	await pool.query(schema);
 	await pool.query("ALTER TABLE admin_content ADD COLUMN IF NOT EXISTS public_summary TEXT");
 	await pool.query("ALTER TABLE admin_content ADD COLUMN IF NOT EXISTS ballot_summary TEXT");
+
+	if (shouldPurgeLegacyDemoAdminData(options)) {
+		const legacyIds = getLegacyDemoAdminIds();
+
+		if (legacyIds.contentIds.length)
+			await pool.query("DELETE FROM admin_content WHERE id = ANY($1::text[])", [legacyIds.contentIds]);
+
+		if (legacyIds.correctionIds.length)
+			await pool.query("DELETE FROM admin_corrections WHERE id = ANY($1::text[])", [legacyIds.correctionIds]);
+
+		if (legacyIds.sourceMonitorIds.length)
+			await pool.query("DELETE FROM admin_source_monitors WHERE id = ANY($1::text[])", [legacyIds.sourceMonitorIds]);
+
+		if (legacyIds.activityIds.length)
+			await pool.query("DELETE FROM admin_activity WHERE id = ANY($1::text[])", [legacyIds.activityIds]);
+	}
 
 	const usersCount = Number((await pool.query<CountRow>("SELECT COUNT(*)::int AS count FROM admin_users")).rows[0]?.count ?? 0);
 	const contentCount = Number((await pool.query<CountRow>("SELECT COUNT(*)::int AS count FROM admin_content")).rows[0]?.count ?? 0);

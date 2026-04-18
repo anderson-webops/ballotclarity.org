@@ -556,10 +556,18 @@ export interface CoverageLimitation {
 	summary: string;
 }
 
+export type LocationGuessMode = "browser_geolocation" | "disabled" | "geoip_provider" | "proxy_headers";
+
+export interface LocationGuessCapability {
+	mode: LocationGuessMode;
+	canGuessOnLoad: boolean;
+}
+
 export interface CoverageResponse {
 	updatedAt: string;
 	coverageMode: "empty" | "snapshot";
 	coverageUpdatedAt: string;
+	locationGuess: LocationGuessCapability;
 	launchTarget?: LaunchTargetProfile;
 	scopeNote: string;
 	currentState: string;

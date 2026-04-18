@@ -73,8 +73,8 @@ const items = [
 	},
 	{
 		body: [
-			"Address lookup is used to estimate districts and ballot style. The app may also start with a best-effort IP-based location guess, while ZIP-only lookup can preview the likely coverage area without standing in for exact district-level ballot matching.",
-			"The current build sends lookup input with a POST request, can use deployment geolocation headers for a coarse default guess, avoids persisting the raw lookup text in browser storage, and keeps the data-use explanation near the lookup form rather than burying it in legal copy."
+			"Address lookup is used to estimate districts and ballot style. Some hosts may also be configured for a best-effort IP-based location guess, while ZIP-only lookup can preview the likely coverage area without standing in for exact district-level ballot matching.",
+			"The current build sends lookup input with a POST request, can use configured deployment geolocation signals for a coarse default guess when that feature is enabled, avoids persisting the raw lookup text in browser storage, and keeps the data-use explanation near the lookup form rather than burying it in legal copy."
 		],
 		title: "Privacy and personalization",
 	},

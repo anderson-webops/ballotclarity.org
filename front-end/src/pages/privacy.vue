@@ -6,7 +6,7 @@ const siteUrl = useSiteUrl();
 
 const summaryCards = [
 	{
-		body: "Ballot lookup input and a best-effort IP-based location guess are used only to match ballot coverage and jurisdiction in the current release.",
+		body: "Ballot lookup input, and any optional approximate location guess configured on a host, are used only to match ballot coverage and jurisdiction in the current release.",
 		title: "Lookup use is narrow"
 	},
 	{
@@ -23,7 +23,7 @@ const collectionSections = [
 	{
 		body: [
 			"When you use the ballot lookup, the address or ZIP code is sent with a POST request so the service can determine a location and ballot guide.",
-			"The app may also use coarse geolocation derived from your IP address at request time to make a best-effort default location guess before you enter anything manually.",
+			"Some hosts may also use coarse geolocation derived from request metadata to make a best-effort default location guess before you enter anything manually.",
 			"The application is designed not to publish the raw lookup text in the public archive and not to persist it in browser storage used for saved ballot preferences."
 		],
 		title: "Address or ZIP lookup input"
@@ -140,7 +140,7 @@ usePageSeo({
 				Privacy Policy
 			</h1>
 			<p class="text-base text-app-muted leading-8 mt-5 max-w-3xl dark:text-app-muted-dark">
-				This policy describes how {{ appName }} currently handles address lookup input, best-effort IP-based location guessing, browser-stored guide preferences, operational metadata, and direct contact messages. It is written for the current release at {{ siteUrl }}, not for a future product that collects more data than the site collects today.
+				This policy describes how {{ appName }} currently handles address lookup input, any optional approximate location-guessing configured on a host, browser-stored guide preferences, operational metadata, and direct contact messages. It is written for the current release at {{ siteUrl }}, not for a future product that collects more data than the site collects today.
 			</p>
 			<div class="mt-5">
 				<UpdatedAt label="Effective" :value="effectiveAt" />
@@ -148,7 +148,7 @@ usePageSeo({
 		</header>
 
 		<InfoCallout title="Plain-language summary">
-			The current release uses address or ZIP input, plus a best-effort IP-based location guess, only to match ballot coverage. It does not create public user accounts, does not run targeted advertising, and is not designed to sell or share personal data. The app does save selected location labels and ballot-plan preferences locally in your browser so the guide remains usable across refreshes.
+			The current release uses address or ZIP input, plus any optional approximate location guess configured on a host, only to match ballot coverage. It does not create public user accounts, does not run targeted advertising, and is not designed to sell or share personal data. The app does save selected location labels and ballot-plan preferences locally in your browser so the guide remains usable across refreshes.
 		</InfoCallout>
 
 		<section class="gap-6 grid lg:grid-cols-3">

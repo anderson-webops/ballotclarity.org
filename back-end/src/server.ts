@@ -1,4 +1,4 @@
-import type { ErrorRequestHandler, Request } from "express";
+import type { ErrorRequestHandler } from "express";
 import type { AddressEnrichmentService } from "./address-enrichment.js";
 import type { CoverageRepository } from "./coverage-repository.js";
 import type {
@@ -52,6 +52,7 @@ import { createCensusGeocoderClient } from "./census-geocoder.js";
 import { createCoverageRepository } from "./coverage-repository.js";
 import { createGoogleCivicClient } from "./google-civic.js";
 import { buildCoverageResponse } from "./launch-profile.js";
+import { buildLocationGuessNotePrefix, createLocationGuessService } from "./location-guess.js";
 import { buildLocationLookupResponse, classifyLookupInput, findSupportedCoverageSummaries, validateLookupInput } from "./location-lookup.js";
 import { createLogger, createRequestLoggingMiddleware } from "./logger.js";
 import { createOpenStatesClient } from "./openstates.js";
@@ -71,6 +72,7 @@ interface CreateAppOptions {
 	correctionSeed?: AdminCorrectionRequest[];
 	activitySeed?: AdminActivityItem[];
 	googleCivicClient?: ReturnType<typeof createGoogleCivicClient>;
+	locationGuessOptions?: Parameters<typeof createLocationGuessService>[0];
 	sourceMonitorSeed?: AdminSourceMonitorItem[];
 	zipLocationService?: ZipLocationService | null;
 }
@@ -86,63 +88,6 @@ function isAuthorizedAdminRequest(requestKey: string | undefined, configuredKey:
 		return false;
 
 	return timingSafeEqual(left, right);
-}
-
-interface IpLocationGuess {
-	city?: string;
-	country?: string;
-	postalCode?: string;
-	region?: string;
-	rawQuery: string;
-}
-
-function readRequestHeader(request: Request, name: string) {
-	const value = request.header(name)?.trim();
-	return value || undefined;
-}
-
-function buildIpLocationGuess(request: Request): IpLocationGuess | null {
-	const country = readRequestHeader(request, "x-vercel-ip-country");
-	const postalCode = readRequestHeader(request, "x-vercel-ip-postal-code");
-	const city = readRequestHeader(request, "x-vercel-ip-city");
-	const region = readRequestHeader(request, "x-vercel-ip-country-region");
-
-	if (country && country.toUpperCase() !== "US")
-		return null;
-
-	if (postalCode) {
-		return {
-			city,
-			country,
-			postalCode,
-			rawQuery: postalCode,
-			region
-		};
-	}
-
-	if (city && region) {
-		return {
-			city,
-			country,
-			rawQuery: `${city}, ${region}`,
-			region
-		};
-	}
-
-	return null;
-}
-
-function buildIpGuessNotePrefix(guess: IpLocationGuess) {
-	if (guess.postalCode && guess.city && guess.region)
-		return `Ballot Clarity made a best-effort location guess from your IP address and started with ZIP code ${guess.postalCode} near ${guess.city}, ${guess.region}.`;
-
-	if (guess.postalCode)
-		return `Ballot Clarity made a best-effort location guess from your IP address and started with ZIP code ${guess.postalCode}.`;
-
-	if (guess.city && guess.region)
-		return `Ballot Clarity made a best-effort location guess from your IP address and started with ${guess.city}, ${guess.region}.`;
-
-	return "Ballot Clarity made a best-effort location guess from your IP address.";
 }
 
 function summarizeMatchedDistricts(labels: string[]) {
@@ -544,6 +489,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 	});
 	const logger = createLogger("ballot-clarity-api");
 	const sourceAssetStore = createSourceAssetStore();
+	const locationGuessService = createLocationGuessService(options.locationGuessOptions);
 	const adminLoginThrottle = createAdminLoginThrottle();
 	const googleCivicClient = options.googleCivicClient === undefined ? createGoogleCivicClient() : options.googleCivicClient;
 	const openStatesClient = createOpenStatesClient();
@@ -1192,6 +1138,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 		const coverage = buildCoverageResponse(
 			coverageRepository.mode,
 			coverageRepository.data.updatedAt,
+			locationGuessService.publicConfig,
 			coverageRepository.data.dataSources.launchTarget
 		);
 
@@ -1459,14 +1406,17 @@ export async function createApp(options: CreateAppOptions = {}) {
 	});
 
 	app.get("/api/location/guess", async (request, response) => {
-		const guess = buildIpLocationGuess(request);
+		const guess = locationGuessService.buildGuess(request);
 
 		response.set("Cache-Control", "no-store");
-		response.set("Vary", "X-Vercel-IP-Postal-Code, X-Vercel-IP-City, X-Vercel-IP-Country-Region, X-Vercel-IP-Country");
+		if (locationGuessService.varyHeaders.length)
+			response.set("Vary", locationGuessService.varyHeaders.join(", "));
 
 		if (!guess) {
 			response.status(404).json({
-				message: "IP-based location guess is not available for this request."
+				message: locationGuessService.publicConfig.canGuessOnLoad
+					? "Automatic location guessing is not available for this request."
+					: "Automatic location guessing is not configured for this host."
 			});
 			return;
 		}
@@ -1483,7 +1433,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 		response.json({
 			...lookupResponse,
 			detectedFromIp: true,
-			note: `${buildIpGuessNotePrefix(guess)} ${lookupResponse.note}`.trim()
+			note: `${buildLocationGuessNotePrefix(guess)} ${lookupResponse.note}`.trim()
 		});
 	});
 
@@ -1533,6 +1483,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 		const payload: CoverageResponse = buildCoverageResponse(
 			coverageRepository.mode,
 			coverageRepository.data.updatedAt,
+			locationGuessService.publicConfig,
 			coverageRepository.data.dataSources.launchTarget
 		);
 		response.json(payload);

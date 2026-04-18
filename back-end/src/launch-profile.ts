@@ -1,4 +1,4 @@
-import type { CoverageResponse, ExternalLink, LaunchTargetProfile, OfficialResource } from "./types/civic.js";
+import type { CoverageResponse, ExternalLink, LaunchTargetProfile, LocationGuessCapability, OfficialResource } from "./types/civic.js";
 
 const officialResources: OfficialResource[] = [
 	{
@@ -105,6 +105,7 @@ export const launchTargetProfile: LaunchTargetProfile = {
 export function buildCoverageResponse(
 	coverageMode: "empty" | "snapshot",
 	coverageUpdatedAt: string,
+	locationGuess: LocationGuessCapability,
 	launchTarget?: LaunchTargetProfile
 ): CoverageResponse {
 	if (!launchTarget || coverageMode === "empty") {
@@ -134,6 +135,7 @@ export function buildCoverageResponse(
 			],
 			coverageMode,
 			coverageUpdatedAt,
+			locationGuess,
 			currentState: "No published local coverage snapshot or launch jurisdiction is active in this environment right now.",
 			limitations: [
 				{
@@ -156,6 +158,7 @@ export function buildCoverageResponse(
 		updatedAt: new Date().toISOString(),
 		coverageMode,
 		coverageUpdatedAt,
+		locationGuess,
 		launchTarget,
 		scopeNote: `${launchTarget.displayName} is the current published local coverage target in this environment. Official election tools should remain the final authority for deadlines, precincts, polling places, and ballot confirmation.`,
 		currentState: "A vetted imported coverage snapshot is active for the public API.",

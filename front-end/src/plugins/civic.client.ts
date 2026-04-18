@@ -1,8 +1,9 @@
-import type { LocationLookupResponse } from "~/types/civic";
+import type { CoverageResponse, LocationLookupResponse } from "~/types/civic";
 
 export default defineNuxtPlugin((nuxtApp) => {
 	const civicStore = useCivicStore();
 	const api = useApiClient();
+	const coverageState = useNuxtData<CoverageResponse | null>("coverage-profile");
 
 	civicStore.hydrateFromStorage();
 
@@ -18,9 +19,21 @@ export default defineNuxtPlugin((nuxtApp) => {
 		if (hasManualLookupContext)
 			return;
 
-		void api<LocationLookupResponse>("/location/guess")
+		void (coverageState.data.value
+			? Promise.resolve(coverageState.data.value)
+			: api<CoverageResponse>("/coverage")
+					.then((coverage) => {
+						coverageState.data.value = coverage;
+						return coverage;
+					}))
+			.then((coverage) => {
+				if (!coverage?.locationGuess.canGuessOnLoad)
+					return null;
+
+				return api<LocationLookupResponse>("/location/guess");
+			})
 			.then((response) => {
-				if (response.result !== "resolved")
+				if (!response || response.result !== "resolved")
 					return;
 
 				civicStore.setLookupResponse(response, null);

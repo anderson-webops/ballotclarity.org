@@ -30,7 +30,7 @@ const faqItems = [
 	},
 	{
 		answer: [
-			"Ballot Clarity may start with a best-effort location guess based on the geographic area associated with your IP address, but a full street address is still the correct input for exact district and ballot matching. A 5-digit ZIP code can only preview the most likely coverage area and should be treated as approximate until the official voter tools confirm the final ballot.",
+			"On hosts where Ballot Clarity is configured for a best-effort IP-based location guess, that opening guess is still only approximate. A full street address remains the correct input for exact district and ballot matching, and a 5-digit ZIP code should be treated as approximate until the official voter tools confirm the final ballot.",
 			"The lookup is used only to match ballot coverage. The current release does not create user accounts or advertising profiles from that lookup.",
 			"The app does save your selected location label, compare list, and ballot-plan choices in your browser so the guide stays usable across refreshes. The privacy page explains that boundary in more detail."
 		],

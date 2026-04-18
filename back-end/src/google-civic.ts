@@ -41,6 +41,10 @@ interface GoogleCivicLocation {
 
 interface GoogleCivicErrorResponse {
 	error?: {
+		errors?: Array<{
+			message?: string;
+			reason?: string;
+		}>;
 		message?: string;
 	};
 }
@@ -94,6 +98,24 @@ interface DnsLookupFn {
 
 const lookupBaseUrl = "https://www.googleapis.com/civicinfo/v2/voterinfo";
 const truthyEnvPattern = /^(?:1|true|yes|on)$/i;
+const electionUnknownPattern = /election unknown/i;
+const addressParsePattern = /address.*parse|unparseable/i;
+
+function normalizeGoogleCivicError(errorPayload: GoogleCivicErrorResponse | null | undefined) {
+	const reason = errorPayload?.error?.errors?.[0]?.reason?.trim();
+	const message = errorPayload?.error?.message?.trim();
+
+	if (reason === "invalid" && electionUnknownPattern.test(message || "")) {
+		return "Google Civic did not return election-specific voter information for this address in the current election context. Ballot Clarity will fall back to stored district geography and other official links where available.";
+	}
+
+	if (reason === "badRequest" || addressParsePattern.test(message || "")) {
+		return "Google Civic could not parse the submitted address. Use a full street address with city, state, and ZIP code.";
+	}
+
+	return message
+		|| "The configured Google Civic provider did not return a verified address match for this lookup, so Ballot Clarity is falling back to the current public guide.";
+}
 
 function normalizeAddress(address: GoogleCivicAddress | undefined) {
 	if (!address)
@@ -263,6 +285,7 @@ export function createGoogleCivicClient(
 			requestUrl.searchParams.set("address", address);
 			requestUrl.searchParams.set("key", resolvedApiKey);
 			requestUrl.searchParams.set("officialOnly", "true");
+			requestUrl.searchParams.set("returnAllAvailableData", "true");
 
 			const response = await fetchGoogleCivic(requestUrl, {
 				fetchImpl: options.fetchImpl,
@@ -274,8 +297,7 @@ export function createGoogleCivicClient(
 
 				return {
 					actions: [],
-					note: errorPayload.error?.message?.trim()
-						|| "The configured Google Civic provider did not return a verified address match for this lookup, so Ballot Clarity is falling back to the current public guide.",
+					note: normalizeGoogleCivicError(errorPayload),
 					verified: false
 				};
 			}
@@ -296,6 +318,7 @@ export function createGoogleCivicClient(
 				note: [
 					normalizedAddress ? `Google Civic accepted the address as ${normalizedAddress}.` : "Google Civic accepted the submitted address.",
 					payload.election?.name ? `The current official election record is ${payload.election.name}${payload.election.electionDay ? ` on ${payload.election.electionDay}` : ""}.` : "",
+					!payload.election?.name ? "Google Civic did not return an election-specific record for this address, but it did accept the address format." : "",
 					pollingLocation ? `The provider returned a polling location at ${pollingLocation}.` : "",
 					earlyVoteCount ? `${earlyVoteCount} early-vote site${earlyVoteCount === 1 ? "" : "s"} returned.` : "",
 					dropOffCount ? `${dropOffCount} ballot drop-off location${dropOffCount === 1 ? "" : "s"} returned.` : "",

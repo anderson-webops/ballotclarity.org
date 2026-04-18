@@ -38,6 +38,18 @@ async function resolveRepresentativeMatches(
 	return sortRepresentatives(await openStatesClient.lookupPeopleByCoordinates(lookup.latitude, lookup.longitude));
 }
 
+async function resolveRepresentativeMatchesSafely(
+	openStatesClient: OpenStatesClient | null,
+	lookup: CensusAddressLookupResult
+) {
+	try {
+		return await resolveRepresentativeMatches(openStatesClient, lookup);
+	}
+	catch {
+		return [];
+	}
+}
+
 export function createAddressEnrichmentService(
 	censusGeocoderClient: CensusGeocoderClient,
 	openStatesClient: OpenStatesClient | null,
@@ -45,13 +57,18 @@ export function createAddressEnrichmentService(
 ): AddressEnrichmentService {
 	return {
 		async lookupAddress(address: string) {
-			const cached = await addressCacheRepository.getByInput(address);
+			let cached = null;
+
+			try {
+				cached = await addressCacheRepository.getByInput(address);
+			}
+			catch {}
 
 			if (cached) {
 				return {
 					...cached,
 					fromCache: true,
-					representativeMatches: await resolveRepresentativeMatches(openStatesClient, cached)
+					representativeMatches: await resolveRepresentativeMatchesSafely(openStatesClient, cached)
 				};
 			}
 
@@ -60,12 +77,15 @@ export function createAddressEnrichmentService(
 			if (!lookup)
 				return null;
 
-			await addressCacheRepository.save(address, lookup);
+			try {
+				await addressCacheRepository.save(address, lookup);
+			}
+			catch {}
 
 			return {
 				...lookup,
 				fromCache: false,
-				representativeMatches: await resolveRepresentativeMatches(openStatesClient, lookup)
+				representativeMatches: await resolveRepresentativeMatchesSafely(openStatesClient, lookup)
 			};
 		}
 	};

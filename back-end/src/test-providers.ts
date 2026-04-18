@@ -138,6 +138,7 @@ async function checkGoogleCivic() {
 			const voterInfoUrl = new URL("https://www.googleapis.com/civicinfo/v2/voterinfo");
 			voterInfoUrl.searchParams.set("address", "5600 Campbellton Fairburn Rd, Union City, GA 30213");
 			voterInfoUrl.searchParams.set("officialOnly", "true");
+			voterInfoUrl.searchParams.set("returnAllAvailableData", "true");
 			voterInfoUrl.searchParams.set("key", credential.value);
 			const voterInfoResponse = await fetchGoogleCivic(voterInfoUrl);
 			const voterInfoBody = await voterInfoResponse.text();

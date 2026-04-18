@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { createGoogleCivicLookup, fetchGoogleCivic, shouldForceGoogleCivicIpv4 } from "../src/google-civic.js";
+import { createGoogleCivicClient, createGoogleCivicLookup, fetchGoogleCivic, shouldForceGoogleCivicIpv4 } from "../src/google-civic.js";
 
 test("shouldForceGoogleCivicIpv4 parses supported truthy flags", () => {
 	assert.equal(shouldForceGoogleCivicIpv4("true"), true);
@@ -93,4 +93,72 @@ test("fetchGoogleCivic uses an injected fetch implementation before the IPv4 tra
 
 	assert.equal(called, true);
 	assert.equal(response, expectedResponse);
+});
+
+test("createGoogleCivicClient requests partial voterinfo data before treating the lookup as failed", async () => {
+	const requestedUrls: URL[] = [];
+	const client = createGoogleCivicClient({
+		apiKey: "test-google-civic-key",
+		fetchImpl: (async (resource) => {
+			const requestUrl = resource as URL;
+
+			requestedUrls.push(requestUrl);
+
+			return new Response(JSON.stringify({
+				kind: "civicinfo#voterInfoResponse",
+				normalizedInput: {
+					city: "Atlanta",
+					line1: "55 Trinity Avenue Southwest",
+					state: "GA",
+					zip: "30303"
+				}
+			}), {
+				headers: {
+					"Content-Type": "application/json"
+				},
+				status: 200
+			});
+		}) as typeof fetch
+	});
+
+	assert.ok(client);
+
+	const result = await client.lookupVoterInfo("55 Trinity Ave SW, Atlanta, GA 30303");
+
+	assert.ok(result);
+	assert.equal(requestedUrls.length, 1);
+	assert.equal(requestedUrls[0].searchParams.get("returnAllAvailableData"), "true");
+	assert.equal(result.verified, true);
+	assert.match(result.note, /did not return an election-specific record/i);
+});
+
+test("createGoogleCivicClient converts election-unknown responses into a fallback note", async () => {
+	const client = createGoogleCivicClient({
+		apiKey: "test-google-civic-key",
+		fetchImpl: (async () => {
+			return new Response(JSON.stringify({
+				error: {
+					errors: [
+						{
+							reason: "invalid"
+						}
+					],
+					message: "Election unknown"
+				}
+			}), {
+				headers: {
+					"Content-Type": "application/json"
+				},
+				status: 400
+			});
+		}) as typeof fetch
+	});
+
+	assert.ok(client);
+
+	const result = await client.lookupVoterInfo("55 Trinity Ave SW, Atlanta, GA 30303");
+
+	assert.ok(result);
+	assert.equal(result.verified, false);
+	assert.match(result.note, /did not return election-specific voter information/i);
 });

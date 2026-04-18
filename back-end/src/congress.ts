@@ -45,6 +45,7 @@ export interface CongressMemberDetail {
 
 export interface CongressClient {
 	getMember: (bioguideId: string) => Promise<CongressMemberDetail | null>;
+	listMembers: () => Promise<CongressMemberRecord[]>;
 	listMembersByState: (stateCode: string) => Promise<CongressMemberRecord[]>;
 }
 
@@ -116,6 +117,49 @@ export function createCongressClient({
 		return null;
 
 	return {
+		async listMembers() {
+			const members: CongressMemberRecord[] = [];
+			const seen = new Set<string>();
+			const limit = 250;
+
+			for (let offset = 0; offset <= 2000; offset += limit) {
+				const requestUrl = new URL("https://api.congress.gov/v3/member");
+				requestUrl.searchParams.set("api_key", resolvedApiKey);
+				requestUrl.searchParams.set("format", "json");
+				requestUrl.searchParams.set("limit", String(limit));
+				requestUrl.searchParams.set("offset", String(offset));
+
+				const response = await fetchImpl(requestUrl, {
+					headers: {
+						Accept: "application/json"
+					}
+				});
+
+				if (!response.ok)
+					throw new Error(`Congress member lookup failed: ${response.status} ${response.statusText}`);
+
+				const payload = await response.json() as CongressMembersResponse;
+				const pageMembers = (payload.members ?? []).map(member => ({
+					bioguideId: member.bioguideId?.trim() || "unknown-member",
+					district: member.district,
+					name: member.name?.trim() || "Unknown member",
+					party: member.partyName?.trim() || "Unknown party",
+					state: member.state?.trim() || "",
+					updatedAt: member.updateDate?.trim() || undefined,
+					url: member.url?.trim() || undefined
+				})).filter(member => member.bioguideId && !seen.has(member.bioguideId));
+
+				for (const member of pageMembers) {
+					seen.add(member.bioguideId);
+					members.push(member);
+				}
+
+				if (pageMembers.length < limit)
+					break;
+			}
+
+			return members;
+		},
 		async getMember(bioguideId: string) {
 			const requestUrl = new URL(`https://api.congress.gov/v3/member/${bioguideId.toUpperCase()}`);
 			requestUrl.searchParams.set("api_key", resolvedApiKey);

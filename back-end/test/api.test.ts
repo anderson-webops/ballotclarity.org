@@ -258,6 +258,27 @@ before(async () => {
 
 				return null;
 			},
+			async listMembers() {
+				return [
+					{
+						bioguideId: "O000174",
+						name: "Ossoff, Jon",
+						party: "Democratic",
+						state: "GA",
+						updatedAt: "2026-03-08T10:32:15Z",
+						url: "https://api.congress.gov/v3/member/O000174?format=json",
+					},
+					{
+						bioguideId: "M001218",
+						district: 7,
+						name: "McCormick, Richard",
+						party: "Republican",
+						state: "GA",
+						updatedAt: "2025-09-24T07:40:20Z",
+						url: "https://api.congress.gov/v3/member/M001218?format=json",
+					},
+				];
+			},
 			async listMembersByState(stateCode) {
 				if (stateCode !== "GA")
 					return [];
@@ -292,6 +313,9 @@ before(async () => {
 			},
 			async searchPeopleByName(name) {
 				if (name === "Quota Limited")
+					throw new Error("Open States lookup failed: 429 Too Many Requests - {\"detail\":\"exceeded limit of 250/day: 252\"}");
+
+				if (name === "Richard McCormick" || name === "Rich Mccormick" || name === "Rich McCormick")
 					throw new Error("Open States lookup failed: 429 Too Many Requests - {\"detail\":\"exceeded limit of 250/day: 252\"}");
 
 				if (name === "Jon Ossoff") {
@@ -572,7 +596,7 @@ before(async () => {
 					];
 				}
 
-				if (name === "Rich McCormick" && office === "H" && state === "GA" && district === "07") {
+				if ((name === "Rich McCormick" || name === "Richard McCormick") && office === "H" && state === "GA" && district === "07") {
 					return [
 						{
 							candidateId: "H0GA07273",
@@ -1541,13 +1565,32 @@ test("direct representative routes return a stable provider-backed identity reco
 	assert.equal(response.status, 200);
 	assert.equal(body.person.slug, "rich-mccormick");
 	assert.equal(body.person.provenance.status, "crosswalked");
+	assert.equal(body.person.provenance.label, "Congress.gov current officeholder record");
 	assert.match(body.person.officeSought, /U\.S\. House, District 7/i);
-	assert.match(body.person.provenance.label, /Open States current officeholder record/i);
+	assert.match(body.person.districtLabel, /Congressional District 7/i);
 	assert.doesNotMatch(body.person.officeholderLabel, /pending lookup context/i);
 	assert.ok(body.person.funding);
 	assert.match(body.person.funding.summary, /FRIENDS OF MCCORMICK/i);
 	assert.ok(body.person.lobbyingContext.length > 0);
 	assert.match(body.person.lobbyingContext[0].summary, /LD-203/i);
+	assert.equal(body.person.enrichmentStatus?.funding.reasonCode, "attached");
+	assert.equal(body.person.enrichmentStatus?.influence.reasonCode, "attached");
+});
+
+test("direct representative routes can resolve from federal providers even when Open States name lookup does not return a route match", async () => {
+	const response = await fetch(`${baseUrl}/api/representatives/richard-mccormick`);
+	const body = await response.json();
+
+	assert.equal(response.status, 200);
+	assert.equal(body.person.slug, "richard-mccormick");
+	assert.equal(body.person.provenance.label, "Congress.gov current officeholder record");
+	assert.equal(body.person.provenance.status, "crosswalked");
+	assert.match(body.person.officeSought, /U\.S\. House, District 7/i);
+	assert.match(body.person.districtLabel, /Congressional District 7/i);
+	assert.ok(body.person.funding);
+	assert.ok(body.person.lobbyingContext.length > 0);
+	assert.equal(body.person.enrichmentStatus?.funding.reasonCode, "attached");
+	assert.equal(body.person.enrichmentStatus?.influence.reasonCode, "attached");
 });
 
 test("direct senator routes attach federal funding, influence, and Congress office context when the crosswalk is reliable", async () => {

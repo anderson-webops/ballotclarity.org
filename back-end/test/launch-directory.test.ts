@@ -8,6 +8,19 @@ test("buildLaunchDirectorySnapshot composes provider-fed launch data without pre
 			async getMember() {
 				return null;
 			},
+			async listMembers() {
+				return [
+					{
+						bioguideId: "W000790",
+						district: undefined,
+						name: "Warnock, Raphael G.",
+						party: "Democratic",
+						state: "Georgia",
+						updatedAt: "2026-04-17T00:00:00Z",
+						url: "https://api.congress.gov/v3/member/W000790?format=json"
+					}
+				];
+			},
 			async listMembersByState() {
 				return [
 					{

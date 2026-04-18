@@ -329,7 +329,12 @@ function personSlug(match: LocationRepresentativeMatch) {
 }
 
 function findRepresentativeMatch(context: ActiveNationwideLookupContext, representativeSlug: string) {
-	return context.representativeMatches.find(match => personSlug(match) === representativeSlug) ?? null;
+	const normalizedRepresentativeSlug = normalizeValue(representativeSlug);
+
+	return context.representativeMatches.find((match) => {
+		return normalizeValue(match.id) === normalizedRepresentativeSlug
+			|| personSlug(match) === representativeSlug;
+	}) ?? null;
 }
 
 function inferContextStateCode(context: ActiveNationwideLookupContext) {

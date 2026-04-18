@@ -1,6 +1,6 @@
 import type { ErrorRequestHandler } from "express";
 import type { AddressEnrichmentService } from "./address-enrichment.js";
-import type { CongressClient } from "./congress.js";
+import type { CongressClient, CongressMemberDetail, CongressMemberRecord } from "./congress.js";
 import type { CoverageRepository } from "./coverage-repository.js";
 import type { OpenStatesRepresentativeRecord } from "./openstates.js";
 import type {
@@ -334,6 +334,7 @@ const representativeOfficePattern = /representative/i;
 const representativeRoutePattern = /^representative-(\d+)$/i;
 const representativeStateRoutePattern = /^representative-([a-z]{2})-(\d+)$/i;
 const routeDivisionStatePattern = /\/state:([a-z]{2})(?:\/|$)/i;
+const senateChamberPattern = /senate/i;
 const senatorOfficePattern = /senator/i;
 const senatorRoutePattern = /^senator-(\d+)$/i;
 const senatorStatewideCodeRoutePattern = /^([a-z]{2})-sen-statewide$/i;
@@ -341,6 +342,36 @@ const senatorStatewideNameRoutePattern = /^senator-([a-z0-9-]+)$/i;
 const stateAbbreviationRouteTokenPattern = /^[a-z]{2}$/i;
 const stateHouseRoutePattern = /^state-house-(\d+)$/i;
 const stateSenateRoutePattern = /^state-senate-(\d+)$/i;
+const directRouteOfficeholderHonorificPattern = /\b(?:the|hon|honorable|rep|representative|cong|congressman|congresswoman|sen|senator|mr|mrs|ms|dr)\b/gi;
+const directRoutePersonNameSuffixPattern = /\b(?:jr|sr|ii|iii|iv|v|md|phd|dds|esq)\b/gi;
+
+const directRouteCanonicalFirstNameAliases = new Map<string, string>([
+	["andy", "andrew"],
+	["bill", "william"],
+	["billy", "william"],
+	["bob", "robert"],
+	["bobby", "robert"],
+	["dan", "daniel"],
+	["danny", "daniel"],
+	["dave", "david"],
+	["jim", "james"],
+	["jimmy", "james"],
+	["joe", "joseph"],
+	["jon", "jonathan"],
+	["kate", "katherine"],
+	["katie", "katherine"],
+	["liz", "elizabeth"],
+	["matt", "matthew"],
+	["mike", "michael"],
+	["nick", "nicholas"],
+	["pat", "patrick"],
+	["rich", "richard"],
+	["rob", "robert"],
+	["sam", "samuel"],
+	["steve", "steven"],
+	["tom", "thomas"],
+	["will", "william"],
+]);
 
 function toLookupSlug(value: string | null | undefined) {
 	return String(value ?? "")
@@ -402,6 +433,97 @@ function buildSearchNameFromRepresentativeSlug(slug: string) {
 		return "";
 
 	return titleCaseToken(normalizedSlug);
+}
+
+function normalizeDirectRoutePersonText(value: string | null | undefined) {
+	return String(value ?? "")
+		.toLowerCase()
+		.replace(directRouteOfficeholderHonorificPattern, " ")
+		.replace(directRoutePersonNameSuffixPattern, " ")
+		.replace(/\./g, " ")
+		.replace(/[^a-z0-9]+/g, " ")
+		.trim()
+		.replace(/\s+/g, " ");
+}
+
+function canonicalizeDirectRouteFirstName(value: string | null | undefined) {
+	const normalized = normalizeDirectRoutePersonText(value);
+	return directRouteCanonicalFirstNameAliases.get(normalized) || normalized;
+}
+
+function normalizeDirectRouteNameParts(value: string | null | undefined) {
+	return normalizeDirectRoutePersonText(value)
+		.split(" ")
+		.filter(Boolean);
+}
+
+function pickCanonicalDirectRouteGivenName(tokens: string[]) {
+	for (const token of tokens) {
+		if (token.length > 1)
+			return canonicalizeDirectRouteFirstName(token);
+	}
+
+	return canonicalizeDirectRouteFirstName(tokens[0]);
+}
+
+function parseDirectRoutePersonName(value: string | null | undefined) {
+	const raw = String(value ?? "")
+		.toLowerCase()
+		.replace(/\./g, " ")
+		.trim();
+
+	if (!raw) {
+		return {
+			canonicalGivenName: "",
+			surname: "",
+			tokens: [] as string[],
+		};
+	}
+
+	if (raw.includes(",")) {
+		const [surnamePart, givenPart] = raw.split(",", 2);
+		const surnameTokens = normalizeDirectRouteNameParts(surnamePart);
+		const givenTokens = normalizeDirectRouteNameParts(givenPart);
+
+		return {
+			canonicalGivenName: pickCanonicalDirectRouteGivenName(givenTokens),
+			surname: surnameTokens.join(" "),
+			tokens: [...surnameTokens, ...givenTokens],
+		};
+	}
+
+	const tokens = normalizeDirectRouteNameParts(raw);
+	const surname = tokens.slice(-1).join(" ");
+	const givenTokens = tokens.slice(0, -1);
+
+	return {
+		canonicalGivenName: pickCanonicalDirectRouteGivenName(givenTokens),
+		surname,
+		tokens,
+	};
+}
+
+function directRouteSurnamesReliablyMatch(left: string, right: string) {
+	if (!left || !right)
+		return false;
+
+	return left === right || left.endsWith(` ${right}`) || right.endsWith(` ${left}`);
+}
+
+function directRouteNamesReliablyMatch(left: string | null | undefined, right: string | null | undefined) {
+	const leftName = parseDirectRoutePersonName(left);
+	const rightName = parseDirectRoutePersonName(right);
+
+	if (!leftName.tokens.length || !rightName.tokens.length)
+		return false;
+
+	if (!directRouteSurnamesReliablyMatch(leftName.surname, rightName.surname))
+		return false;
+
+	if (!leftName.canonicalGivenName || !rightName.canonicalGivenName)
+		return false;
+
+	return leftName.canonicalGivenName === rightName.canonicalGivenName;
 }
 
 function buildRouteSource({
@@ -663,6 +785,193 @@ function buildRepresentativeProfileFromOpenStates(record: OpenStatesRepresentati
 					note: "The Open States person record anchors the identity, office, and public provider link on this page.",
 					sources,
 					text: `Ballot Clarity attached ${record.name} as a current officeholder from the Open States provider record for this route.`,
+				},
+			],
+		},
+		updatedAt,
+	};
+}
+
+function rankDirectFederalMemberMatch(member: CongressMemberRecord, searchName: string) {
+	let score = 0;
+
+	if (directRouteNamesReliablyMatch(member.name, searchName))
+		score += 100;
+
+	if (member.district === undefined)
+		score += 10;
+
+	return score;
+}
+
+function buildRepresentativeOfficeContextFromCongressMember(member: CongressMemberDetail) {
+	const latestTerm = [...member.terms].sort((left, right) => right.congress - left.congress)[0];
+	const stateCode = latestTerm?.stateCode || getStateAbbreviationForName(member.state) || member.state.slice(0, 2).toUpperCase();
+	const stateName = latestTerm?.stateName || getStateNameForAbbreviation(stateCode) || member.state || stateCode || "Unknown jurisdiction";
+	const chamber = latestTerm?.chamber || "";
+
+	if (senateChamberPattern.test(chamber) || latestTerm?.memberType === "Senator" || member.district === undefined) {
+		return {
+			districtLabel: stateName,
+			districtSlug: `${stateCode.toLowerCase()}-sen-statewide`,
+			location: stateName,
+			officeSought: "U.S. Senate",
+			stateCode,
+			stateName,
+		};
+	}
+
+	const districtNumber = String(Number.parseInt(String(latestTerm?.district ?? member.district ?? ""), 10));
+
+	return {
+		districtLabel: `Congressional District ${districtNumber}`,
+		districtSlug: `congressional-${districtNumber}`,
+		location: stateName,
+		officeSought: `U.S. House, District ${districtNumber}`,
+		stateCode,
+		stateName,
+	};
+}
+
+function buildRepresentativeLookupContextFromCongressMember(
+	member: CongressMemberDetail,
+	representativeSlug: string,
+	updatedAt: string,
+) {
+	const officeContext = buildRepresentativeOfficeContextFromCongressMember(member);
+	const officialResources = getOfficialToolsForState(officeContext.stateCode);
+	const officeTitle = officeContext.officeSought === "U.S. Senate" ? "Senator" : "Representative";
+
+	return {
+		actions: officialResources.map((resource, index) => ({
+			badge: resource.sourceLabel,
+			description: resource.note || "",
+			id: `official:${officeContext.stateCode || "unknown"}:${index}`,
+			kind: "official-verification" as const,
+			title: resource.label,
+			url: resource.url,
+		})),
+		detectedFromIp: false,
+		districtMatches: [
+			{
+				districtCode: officeContext.districtLabel.match(districtNumberPattern)?.[1] || officeContext.stateCode,
+				districtType: officeContext.officeSought,
+				id: officeContext.districtSlug,
+				label: officeContext.districtLabel,
+				sourceSystem: "Congress.gov",
+			},
+		],
+		guideAvailability: "not-published" as const,
+		inputKind: "address" as const,
+		location: {
+			coverageLabel: "Nationwide civic results available",
+			displayName: officeContext.stateName,
+			slug: toLookupSlug(officeContext.stateName),
+			state: officeContext.stateName,
+		},
+		normalizedAddress: officeContext.stateCode || officeContext.stateName,
+		representativeMatches: [
+			{
+				districtLabel: officeContext.districtLabel,
+				id: representativeSlug,
+				name: member.directOrderName,
+				officeTitle,
+				party: member.party,
+				sourceSystem: "Congress.gov",
+			},
+		],
+		resolvedAt: updatedAt,
+		result: "resolved" as const,
+	};
+}
+
+function buildRepresentativeProfileFromCongressMember(
+	member: CongressMemberDetail,
+	representativeSlug: string,
+): PersonProfileResponse {
+	const updatedAt = member.updatedAt || new Date().toISOString();
+	const officeContext = buildRepresentativeOfficeContextFromCongressMember(member);
+	const officialResources = getOfficialToolsForState(officeContext.stateCode);
+	const sources = [
+		buildRouteSource({
+			authority: "official-government",
+			date: updatedAt,
+			id: `congress:member:${member.bioguideId}`,
+			note: "Current officeholder identity attached from the Congress.gov member record matched to this public representative route.",
+			publisher: "Congress.gov",
+			sourceSystem: "Congress.gov member detail",
+			title: `${member.directOrderName} member record`,
+			url: member.url || "https://api.congress.gov/",
+		}),
+		...buildOfficialToolSources(officialResources, updatedAt),
+	];
+
+	return {
+		note: "Representative profile assembled from current federal officeholder records, with route-backed enrichment attached wherever Ballot Clarity can verify it reliably.",
+		person: {
+			ballotStatusLabel: "Current ballot status requires active lookup confirmation",
+			biography: [
+				{
+					id: `provider:${representativeSlug}`,
+					sources,
+					summary: `${member.directOrderName} is attached here from a current Congress.gov officeholder record. This route can render a stable public identity even before Ballot Clarity has a user-specific lookup context for district confirmation.`,
+					title: "Provider-backed officeholder record",
+				},
+			],
+			comparison: null,
+			contestSlug: officeContext.districtSlug,
+			districtLabel: officeContext.districtLabel,
+			districtSlug: officeContext.districtSlug,
+			freshness: {
+				contentLastVerifiedAt: updatedAt,
+				dataLastUpdatedAt: updatedAt,
+				nextReviewAt: updatedAt,
+				status: "up-to-date",
+				statusLabel: "Provider-backed",
+				statusNote: "This page is route-backed from a current federal officeholder record. An active lookup can still add user-specific district confirmation and locality-specific official-tool context.",
+			},
+			funding: null,
+			incumbent: true,
+			keyActions: [],
+			lobbyingContext: [],
+			location: officeContext.location,
+			methodologyNotes: [
+				"This route resolves a stable public person identity from the representative slug before any browser-held lookup context is restored.",
+				"When Open States route lookup is unavailable, Ballot Clarity can still build a federal officeholder base record from Congress.gov and then attach finance and lobbying modules through the federal provider crosswalk.",
+			],
+			name: member.directOrderName,
+			officeholderLabel: "Current officeholder",
+			officeSought: officeContext.officeSought,
+			onCurrentBallot: false,
+			party: member.party || "Unknown",
+			provenance: {
+				asOf: updatedAt,
+				label: "Congress.gov current officeholder record",
+				note: "Matched from the representative route slug to a current federal officeholder record.",
+				source: "nationwide",
+				status: "crosswalked",
+			},
+			publicStatements: [],
+			slug: representativeSlug,
+			sourceCount: sources.length,
+			sources,
+			summary: `${member.directOrderName} is the current ${member.party ? `${member.party} ` : ""}${officeContext.officeSought} record Ballot Clarity can attach from the federal public provider layer without requiring browser lookup state.`,
+			topIssues: [],
+			updatedAt,
+			whatWeDoNotKnow: [
+				{
+					id: "lookup-confirmation",
+					note: "A user-specific address or ZIP lookup is still required for exact district confirmation in Ballot Clarity's active nationwide context.",
+					sources,
+					text: "This route resolves the public officeholder identity, but a current lookup is still needed to confirm that this officeholder matches your exact district and locality.",
+				},
+			],
+			whatWeKnow: [
+				{
+					id: "provider-identity",
+					note: "The Congress.gov current member record anchors the identity, office, and official links on this page.",
+					sources,
+					text: `Ballot Clarity attached ${member.directOrderName} as a current officeholder from the federal provider layer for this route.`,
 				},
 			],
 		},
@@ -1609,6 +1918,55 @@ export async function createApp(options: CreateAppOptions = {}) {
 		};
 	}
 
+	const publicFederalRepresentativeCache = new Map<string, Promise<PersonProfileResponse | null>>();
+
+	async function getPublicFederalRepresentative(slug: string) {
+		const normalizedSlug = toLookupSlug(slug);
+
+		if (!normalizedSlug || !congressClient)
+			return null;
+
+		const cached = publicFederalRepresentativeCache.get(normalizedSlug);
+
+		if (cached)
+			return await cached;
+
+		const pending = (async () => {
+			const searchName = buildSearchNameFromRepresentativeSlug(normalizedSlug);
+
+			if (!searchName)
+				return null;
+
+			const members = await congressClient.listMembers();
+			const rankedMembers = [...members]
+				.map(item => ({
+					item,
+					score: rankDirectFederalMemberMatch(item, searchName),
+				}))
+				.filter(item => item.score >= 100)
+				.sort((left, right) => right.score - left.score);
+			const member = rankedMembers[0]?.item;
+
+			if (!member)
+				return null;
+
+			const detail = await congressClient.getMember(member.bioguideId);
+
+			if (!detail?.currentMember)
+				return null;
+
+			const baseProfile = buildRepresentativeProfileFromCongressMember(detail, normalizedSlug);
+			const lookupContext = buildRepresentativeLookupContextFromCongressMember(detail, baseProfile.person.slug, baseProfile.updatedAt);
+			return await representativeModuleResolver.enrichNationwidePersonProfile(lookupContext, baseProfile);
+		})().catch((error) => {
+			publicFederalRepresentativeCache.delete(normalizedSlug);
+			throw error;
+		});
+
+		publicFederalRepresentativeCache.set(normalizedSlug, pending);
+		return await pending;
+	}
+
 	async function listPublicRepresentatives() {
 		const primaryElectionSlug = getPrimaryElectionSlug();
 
@@ -1636,9 +1994,6 @@ export async function createApp(options: CreateAppOptions = {}) {
 		if (candidate?.incumbent)
 			return buildPersonProfileFromCandidate(candidate);
 
-		if (!openStatesClient)
-			return null;
-
 		const searchName = buildSearchNameFromRepresentativeSlug(slug);
 
 		if (!searchName)
@@ -1646,28 +2001,43 @@ export async function createApp(options: CreateAppOptions = {}) {
 
 		let representativeRecord = null;
 
+		if (openStatesClient) {
+			try {
+				representativeRecord = (await openStatesClient.searchPeopleByName(searchName, {
+					current: true,
+					perPage: 10
+				})).find(record => toLookupSlug(record.name) === toLookupSlug(slug)) ?? null;
+			}
+			catch (error) {
+				logger.warn("provider.openstates.representative-route-lookup-failed", {
+					message: error instanceof Error ? error.message : "Unknown provider error.",
+					representativeSlug: slug,
+					searchName,
+				});
+			}
+		}
+
+		if (representativeRecord) {
+			const baseProfile = buildRepresentativeProfileFromOpenStates(representativeRecord);
+			const lookupContext = buildRepresentativeLookupContext(representativeRecord, baseProfile.person.slug, baseProfile.updatedAt);
+			return await representativeModuleResolver.enrichNationwidePersonProfile(lookupContext, baseProfile);
+		}
+
 		try {
-			representativeRecord = (await openStatesClient.searchPeopleByName(searchName, {
-				current: true,
-				perPage: 10
-			})).find(record => toLookupSlug(record.name) === toLookupSlug(slug)) ?? null;
+			const federalRepresentative = await getPublicFederalRepresentative(slug);
+
+			if (federalRepresentative)
+				return federalRepresentative;
 		}
 		catch (error) {
-			logger.warn("provider.openstates.representative-route-lookup-failed", {
+			logger.warn("provider.federal.representative-route-lookup-failed", {
 				message: error instanceof Error ? error.message : "Unknown provider error.",
 				representativeSlug: slug,
 				searchName,
 			});
-			return buildRouteFallbackPersonProfileResponse(slug);
 		}
 
-		if (!representativeRecord)
-			return null;
-
-		const baseProfile = buildRepresentativeProfileFromOpenStates(representativeRecord);
-		const lookupContext = buildRepresentativeLookupContext(representativeRecord, baseProfile.person.slug, baseProfile.updatedAt);
-
-		return await representativeModuleResolver.enrichNationwidePersonProfile(lookupContext, baseProfile);
+		return null;
 	}
 
 	function buildContestRecordResponse(contest: Contest, election: Election): ContestRecordResponse {

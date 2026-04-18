@@ -1,4 +1,10 @@
 <script setup lang="ts">
+import {
+	buildContestComparisonMatrix,
+	buildContestOfficeContext,
+	buildContestSourceDensityByEntity
+} from "~/utils/graphics-schema";
+
 const route = useRoute();
 const contestSlug = computed(() => String(route.params.slug));
 const { data, error, pending } = await useContest(contestSlug);
@@ -36,173 +42,11 @@ const breadcrumbs = computed(() => {
 		{ label: data.value.contest.office }
 	];
 });
-const contestContextStats = computed(() => {
-	if (!data.value)
-		return [];
-
-	return [
-		{
-			label: "Source records",
-			note: "Attached across the full contest surface.",
-			value: data.value.sourceCount
-		},
-		{
-			label: data.value.contest.type === "candidate" ? "Candidates" : "Measures",
-			note: data.value.contest.type === "candidate"
-				? "People currently included in this contest surface."
-				: "Measure explainers included in this contest surface.",
-			value: data.value.contest.type === "candidate"
-				? data.value.contest.candidates?.length ?? 0
-				: data.value.contest.measures?.length ?? 0
-		},
-		{
-			label: "Related contests",
-			note: "Linked follow-on surfaces in the same public guide.",
-			value: data.value.relatedContests.length
-		}
-	];
-});
-const contestMatrixColumns = computed(() => {
-	if (!data.value)
-		return [];
-
-	if (data.value.contest.type === "candidate") {
-		return (data.value.contest.candidates ?? []).map(candidate => ({
-			id: candidate.slug,
-			label: candidate.comparison.displayName,
-			meta: `${candidate.officeSought} · ${candidate.party}`,
-			badges: [
-				{ label: candidate.incumbent ? "Incumbent" : "Not incumbent", tone: candidate.incumbent ? "accent" as const : "neutral" as const },
-				{ label: candidate.comparison.ballotStatus.label, tone: "neutral" as const }
-			],
-			sources: candidate.sources
-		}));
-	}
-
-	return (data.value.contest.measures ?? []).map(measure => ({
-		id: measure.slug,
-		label: measure.title,
-		meta: measure.location,
-		badges: [
-			{ label: measure.freshness.statusLabel, tone: measure.freshness.status === "up-to-date" ? "accent" as const : "neutral" as const }
-		],
-		sources: measure.sources
-	}));
-});
-const contestMatrixRows = computed(() => {
-	if (!data.value)
-		return [];
-
-	if (data.value.contest.type === "candidate") {
-		return [
-			{
-				id: "ballot-status",
-				label: "Ballot status",
-				note: "Verified ballot inclusion and provenance.",
-				cells: (data.value.contest.candidates ?? []).map(candidate => ({
-					columnId: candidate.slug,
-					sources: candidate.comparison.ballotStatus.sources,
-					value: candidate.comparison.ballotStatus.label
-				}))
-			},
-			{
-				id: "priorities",
-				label: "Top priorities",
-				note: "First readable issue signal in the current archive.",
-				cells: (data.value.contest.candidates ?? []).map(candidate => ({
-					columnId: candidate.slug,
-					sources: candidate.comparison.topPriorities.flatMap(priority => priority.sources),
-					value: candidate.comparison.topPriorities[0]?.text ?? "No top priority documented yet."
-				}))
-			},
-			{
-				id: "questionnaire",
-				label: "Questionnaire coverage",
-				note: "Answered prompts in the current archive.",
-				cells: (data.value.contest.candidates ?? []).map(candidate => ({
-					columnId: candidate.slug,
-					sources: candidate.comparison.questionnaireResponses.flatMap(response => response.sources),
-					value: `${candidate.comparison.questionnaireResponses.filter(response => response.responseStatus === "answered").length}/${candidate.comparison.questionnaireResponses.length} answered`
-				}))
-			},
-			{
-				id: "actions",
-				label: "Documented actions",
-				note: "Source-backed actions attached to the current profile.",
-				cells: (data.value.contest.candidates ?? []).map(candidate => ({
-					columnId: candidate.slug,
-					sources: candidate.keyActions.flatMap(action => action.sources),
-					value: `${candidate.keyActions.length} documented action${candidate.keyActions.length === 1 ? "" : "s"}`
-				}))
-			}
-		];
-	}
-
-	return [
-		{
-			id: "ballot-summary",
-			label: "Official ballot summary",
-			note: "What the voter sees in the official measure description.",
-			cells: (data.value.contest.measures ?? []).map(measure => ({
-				columnId: measure.slug,
-				sources: measure.sources,
-				value: measure.ballotSummary
-			}))
-		},
-		{
-			id: "plain-language",
-			label: "Plain-language explanation",
-			note: "Ballot Clarity explanation layer.",
-			cells: (data.value.contest.measures ?? []).map(measure => ({
-				columnId: measure.slug,
-				sources: measure.sources,
-				value: measure.plainLanguageExplanation
-			}))
-		},
-		{
-			id: "yes-path",
-			label: "If YES",
-			note: "Headline effect if the measure passes.",
-			cells: (data.value.contest.measures ?? []).map(measure => ({
-				columnId: measure.slug,
-				sources: measure.sources,
-				value: measure.yesMeaning
-			}))
-		},
-		{
-			id: "no-path",
-			label: "If NO",
-			note: "Headline effect if the measure fails.",
-			cells: (data.value.contest.measures ?? []).map(measure => ({
-				columnId: measure.slug,
-				sources: measure.sources,
-				value: measure.noMeaning
-			}))
-		}
-	];
-});
-const sourceDensityEntities = computed(() => {
-	if (!data.value)
-		return [];
-
-	if (data.value.contest.type === "candidate") {
-		return (data.value.contest.candidates ?? []).map(candidate => ({
-			count: candidate.sources.length,
-			detail: `${candidate.keyActions.length} action item${candidate.keyActions.length === 1 ? "" : "s"} and ${candidate.publicStatements.length} public statement block${candidate.publicStatements.length === 1 ? "" : "s"} are attached to this profile.`,
-			id: candidate.slug,
-			label: candidate.name,
-			sources: candidate.sources
-		}));
-	}
-
-	return (data.value.contest.measures ?? []).map(measure => ({
-		count: measure.sources.length,
-		detail: `${measure.implementationTimeline.length} implementation item${measure.implementationTimeline.length === 1 ? "" : "s"} and ${measure.fiscalSummary.length} fiscal item${measure.fiscalSummary.length === 1 ? "" : "s"} are attached to this explainer.`,
-		id: measure.slug,
-		label: measure.title,
-		sources: measure.sources
-	}));
-});
+const contestOfficeContext = computed(() => data.value
+	? buildContestOfficeContext(data.value.contest, data.value.sourceCount, data.value.relatedContests.length)
+	: null);
+const contestComparisonMatrix = computed(() => data.value ? buildContestComparisonMatrix(data.value.contest) : null);
+const sourceDensityEntities = computed(() => data.value ? buildContestSourceDensityByEntity(data.value.contest) : []);
 
 usePageSeo({
 	description: data.value?.contest.description ?? "Canonical contest page with contest context, source-backed records, and links back to the election overview.",
@@ -269,34 +113,15 @@ usePageSeo({
 						{{ data.note }}
 					</InfoCallout>
 					<OfficeContextCard
-						title="What this office or question controls"
-						:office-label="data.contest.office"
-						:summary="data.contest.roleGuide.summary"
-						:stats="contestContextStats"
-						:responsibilities="data.contest.roleGuide.decisionAreas"
-						:sources="data.sources"
-						source-button-label="Contest sources"
-						uncertainty="This role guide explains the office or measure context, but users should still inspect the specific candidate or measure records before deciding."
-						:why-it-matters="data.contest.roleGuide.whyItMatters"
-						:badges="[
-							{ label: data.contest.type === 'candidate' ? 'Candidate contest' : 'Measure contest', tone: 'accent' },
-							{ label: data.contest.jurisdiction, tone: 'neutral' },
-						]"
+						v-if="contestOfficeContext"
+						:context="contestOfficeContext"
 					/>
 				</div>
 			</header>
 
 			<ComparisonMatrix
-				:columns="contestMatrixColumns"
-				:rows="contestMatrixRows"
-				:eyebrow="data.contest.type === 'candidate' ? 'Contest comparison matrix' : 'Measure comparison matrix'"
-				:note="data.contest.type === 'candidate'
-					? 'Use this matrix to compare the candidates in the same race before opening each full profile.'
-					: 'Use this matrix to compare the published measure surfaces in the same contest before opening each full explainer.'"
-				:title="data.contest.type === 'candidate'
-					? 'Where this contest differs at a glance'
-					: 'How these measures differ before a full read'"
-				uncertainty="The matrix only reflects the source-backed fields attached to the current contest surface. Open the linked pages when you need the full evidence trail."
+				v-if="contestComparisonMatrix"
+				:matrix="contestComparisonMatrix"
 			/>
 
 			<section v-if="data.contest.type === 'candidate'" class="gap-6 grid xl:grid-cols-2">

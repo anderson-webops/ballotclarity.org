@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { currentCoverageElectionSlug } from "~/constants";
+import { buildCandidateFinanceCategoryBreakdown } from "~/utils/graphics-schema";
 
 const route = useRoute();
 const candidateSlug = computed(() => String(route.params.slug));
-const { formatCompactNumber, formatCurrency, formatPercent } = useFormatters();
+const { formatCompactNumber, formatCurrency, formatDateTime, formatPercent } = useFormatters();
 const { data: candidate, error, pending } = await useCandidate(candidateSlug);
 
 const breadcrumbs = computed(() => [
@@ -23,6 +24,7 @@ const summaryItems = computed(() => {
 		{ label: "Small-donor share", note: "Share attributed to smaller donors in the current summary.", value: formatPercent(candidate.value.funding.smallDonorShare) }
 	];
 });
+const financeBreakdown = computed(() => candidate.value ? buildCandidateFinanceCategoryBreakdown(candidate.value, formatDateTime) : null);
 
 usePageSeo({
 	description: candidate.value?.funding.summary ?? "Candidate funding page with campaign-finance summary, top funders, and source links.",
@@ -69,6 +71,9 @@ usePageSeo({
 				<div class="mt-6">
 					<PageSummaryStrip :items="summaryItems" />
 				</div>
+				<InfoCallout v-if="financeBreakdown" class="mt-6" title="Finance coverage and confidence">
+					{{ financeBreakdown.disclaimer }} Coverage: {{ financeBreakdown.coverageNote }} Linkage: {{ financeBreakdown.linkageType }}. Confidence: {{ financeBreakdown.confidence }}.
+				</InfoCallout>
 			</header>
 
 			<section class="gap-6 grid xl:grid-cols-[minmax(0,1fr)_minmax(0,0.95fr)]">

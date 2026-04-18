@@ -1,40 +1,9 @@
 <script setup lang="ts">
-import type { Source } from "~/types/civic";
+import type { OfficeContext } from "~/types/civic";
 
-interface OfficeContextBadge {
-	label: string;
-	tone?: "accent" | "neutral" | "warning";
-}
-
-interface OfficeContextStat {
-	label: string;
-	note: string;
-	value: number | string;
-}
-
-const props = withDefaults(defineProps<{
-	badges?: OfficeContextBadge[];
-	eyebrow?: string;
-	officeLabel?: string;
-	responsibilities?: string[];
-	sourceButtonLabel?: string;
-	sources?: Source[];
-	stats?: OfficeContextStat[];
-	summary: string;
-	title: string;
-	uncertainty?: string;
-	whyItMatters?: string;
-}>(), {
-	badges: () => [],
-	eyebrow: "Office context",
-	officeLabel: "",
-	responsibilities: () => [],
-	sourceButtonLabel: "Sources",
-	sources: () => [],
-	stats: () => [],
-	uncertainty: "",
-	whyItMatters: ""
-});
+const props = defineProps<{
+	context: OfficeContext;
+}>();
 </script>
 
 <template>
@@ -42,40 +11,40 @@ const props = withDefaults(defineProps<{
 		<div class="flex flex-wrap gap-4 items-start justify-between">
 			<div class="max-w-4xl">
 				<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
-					{{ props.eyebrow }}
+					{{ props.context.eyebrow || "Office context" }}
 				</p>
 				<h3 class="text-2xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-					{{ props.title }}
+					{{ props.context.title }}
 				</h3>
-				<p v-if="props.officeLabel" class="text-sm text-app-muted mt-3 dark:text-app-muted-dark">
-					{{ props.officeLabel }}
+				<p v-if="props.context.officeLabel" class="text-sm text-app-muted mt-3 dark:text-app-muted-dark">
+					{{ props.context.officeLabel }}
 				</p>
 				<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
-					{{ props.summary }}
+					{{ props.context.summary }}
 				</p>
 			</div>
 			<div class="flex flex-wrap gap-2 items-center justify-end">
 				<VerificationBadge
-					v-for="badge in props.badges"
+					v-for="badge in props.context.badges ?? []"
 					:key="badge.label"
 					:label="badge.label"
 					:tone="badge.tone"
 				/>
 				<SourceDrawer
-					v-if="props.sources.length"
-					:sources="props.sources"
-					:title="props.title"
-					:button-label="props.sourceButtonLabel"
+					v-if="props.context.sources?.length"
+					:sources="props.context.sources"
+					:title="props.context.title"
+					:button-label="props.context.sourceButtonLabel || 'Sources'"
 				/>
 			</div>
 		</div>
 
-		<div v-if="props.stats.length" class="mt-5 gap-3 grid md:grid-cols-2 xl:grid-cols-4">
+		<div v-if="props.context.stats?.length" class="mt-5 gap-3 grid md:grid-cols-2 xl:grid-cols-4">
 			<FactStatCard
-				v-for="item in props.stats"
+				v-for="item in props.context.stats"
 				:key="item.label"
 				:label="item.label"
-				:note="item.note"
+				:note="item.detail"
 				:value="item.value"
 			/>
 		</div>
@@ -86,7 +55,7 @@ const props = withDefaults(defineProps<{
 					Why this office matters
 				</p>
 				<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
-					{{ props.whyItMatters || props.summary }}
+					{{ props.context.whyItMatters || props.context.summary }}
 				</p>
 			</div>
 			<div class="px-4 py-4 border border-app-line/70 rounded-[1rem] bg-white/85 dark:border-app-line-dark dark:bg-app-panel-dark/80">
@@ -95,7 +64,7 @@ const props = withDefaults(defineProps<{
 				</p>
 				<ul class="mt-3 space-y-3">
 					<li
-						v-for="item in props.responsibilities"
+						v-for="item in props.context.responsibilities"
 						:key="item"
 						class="text-sm text-app-muted leading-6 px-3 py-3 rounded-[0.9rem] bg-app-bg dark:text-app-muted-dark dark:bg-app-bg-dark/80"
 					>
@@ -105,9 +74,9 @@ const props = withDefaults(defineProps<{
 			</div>
 		</div>
 
-		<p v-if="props.uncertainty" class="text-xs text-app-muted leading-6 mt-4 dark:text-app-muted-dark">
+		<p v-if="props.context.uncertainty" class="text-xs text-app-muted leading-6 mt-4 dark:text-app-muted-dark">
 			<strong class="text-app-ink dark:text-app-text-dark">Uncertainty:</strong>
-			{{ props.uncertainty }}
+			{{ props.context.uncertainty }}
 		</p>
 	</section>
 </template>

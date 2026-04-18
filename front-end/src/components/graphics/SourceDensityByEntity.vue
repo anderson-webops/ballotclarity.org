@@ -1,13 +1,5 @@
 <script setup lang="ts">
-import type { Source } from "~/types/civic";
-
-interface SourceDensityEntity {
-	count: number;
-	detail: string;
-	id: string;
-	label: string;
-	sources?: Source[];
-}
+import type { SourceDensityEntity } from "~/types/civic";
 
 const props = withDefaults(defineProps<{
 	entities: SourceDensityEntity[];
@@ -71,6 +63,10 @@ const maxCount = computed(() => {
 				</div>
 				<p class="text-sm text-app-muted leading-6 mt-3 dark:text-app-muted-dark">
 					{{ entity.detail }}
+				</p>
+				<p v-if="entity.uncertainty" class="text-xs text-app-muted leading-6 mt-3 dark:text-app-muted-dark">
+					<strong class="text-app-ink dark:text-app-text-dark">Uncertainty:</strong>
+					{{ entity.uncertainty }}
 				</p>
 			</article>
 		</div>

@@ -1,34 +1,9 @@
 <script setup lang="ts">
-import type { Source } from "~/types/civic";
+import type { BeforeAfterData } from "~/types/civic";
 
-interface BeforeAfterItem {
-	id: string;
-	sources?: Source[];
-	text: string;
-}
-
-const props = withDefaults(defineProps<{
-	afterItems: BeforeAfterItem[];
-	afterLabel?: string;
-	afterSummary?: string;
-	beforeItems: BeforeAfterItem[];
-	beforeLabel?: string;
-	beforeSummary?: string;
-	eyebrow?: string;
-	sourceButtonLabel?: string;
-	sources?: Source[];
-	title: string;
-	uncertainty?: string;
-}>(), {
-	afterLabel: "After",
-	afterSummary: "",
-	beforeLabel: "Before",
-	beforeSummary: "",
-	eyebrow: "Before / after",
-	sourceButtonLabel: "Sources",
-	sources: () => [],
-	uncertainty: ""
-});
+const props = defineProps<{
+	data: BeforeAfterData;
+}>();
 </script>
 
 <template>
@@ -36,31 +11,31 @@ const props = withDefaults(defineProps<{
 		<div class="flex flex-wrap gap-4 items-start justify-between">
 			<div class="max-w-4xl">
 				<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
-					{{ props.eyebrow }}
+					{{ props.data.eyebrow || "Before / after" }}
 				</p>
 				<h3 class="text-2xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-					{{ props.title }}
+					{{ props.data.title }}
 				</h3>
 			</div>
 			<SourceDrawer
-				v-if="props.sources.length"
-				:sources="props.sources"
-				:title="props.title"
-				:button-label="props.sourceButtonLabel"
+				v-if="props.data.sources?.length"
+				:sources="props.data.sources"
+				:title="props.data.title"
+				:button-label="props.data.sourceButtonLabel || 'Sources'"
 			/>
 		</div>
 
 		<div class="mt-5 gap-4 grid lg:grid-cols-2">
 			<article class="px-4 py-4 border border-app-line/70 rounded-[1rem] bg-white/85 dark:border-app-line-dark dark:bg-app-panel-dark/80">
 				<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
-					{{ props.beforeLabel }}
+					{{ props.data.beforeLabel || "Before" }}
 				</p>
-				<p v-if="props.beforeSummary" class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
-					{{ props.beforeSummary }}
+				<p v-if="props.data.beforeSummary" class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
+					{{ props.data.beforeSummary }}
 				</p>
 				<ul class="mt-4 space-y-3">
 					<li
-						v-for="item in props.beforeItems"
+						v-for="item in props.data.beforeItems"
 						:key="item.id"
 						class="px-3 py-3 rounded-[0.9rem] bg-app-bg dark:bg-app-bg-dark/80"
 					>
@@ -80,14 +55,14 @@ const props = withDefaults(defineProps<{
 
 			<article class="px-4 py-4 border border-app-line/70 rounded-[1rem] bg-white/85 dark:border-app-line-dark dark:bg-app-panel-dark/80">
 				<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
-					{{ props.afterLabel }}
+					{{ props.data.afterLabel || "After" }}
 				</p>
-				<p v-if="props.afterSummary" class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
-					{{ props.afterSummary }}
+				<p v-if="props.data.afterSummary" class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
+					{{ props.data.afterSummary }}
 				</p>
 				<ul class="mt-4 space-y-3">
 					<li
-						v-for="item in props.afterItems"
+						v-for="item in props.data.afterItems"
 						:key="item.id"
 						class="px-3 py-3 rounded-[0.9rem] bg-app-bg dark:bg-app-bg-dark/80"
 					>
@@ -106,9 +81,9 @@ const props = withDefaults(defineProps<{
 			</article>
 		</div>
 
-		<p v-if="props.uncertainty" class="text-xs text-app-muted leading-6 mt-4 dark:text-app-muted-dark">
+		<p v-if="props.data.uncertainty" class="text-xs text-app-muted leading-6 mt-4 dark:text-app-muted-dark">
 			<strong class="text-app-ink dark:text-app-text-dark">Uncertainty:</strong>
-			{{ props.uncertainty }}
+			{{ props.data.uncertainty }}
 		</p>
 	</section>
 </template>

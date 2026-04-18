@@ -1,25 +1,16 @@
 <script setup lang="ts">
-import type { FreshnessMeta, Source, TrustBullet } from "~/types/civic";
+import type { EvidenceCompleteness } from "~/types/civic";
 
-const props = withDefaults(defineProps<{
-	freshness: FreshnessMeta;
-	known: TrustBullet[];
-	sourceButtonLabel?: string;
-	sources?: Source[];
-	title?: string;
-	unknown: TrustBullet[];
-}>(), {
-	sourceButtonLabel: "Sources",
-	sources: () => [],
-	title: "How complete is this page?"
-});
+const props = defineProps<{
+	evidence: EvidenceCompleteness;
+}>();
 
-const totalItems = computed(() => props.known.length + props.unknown.length);
+const totalItems = computed(() => props.evidence.known.length + props.evidence.unknown.length);
 const knownShare = computed(() => {
 	if (!totalItems.value)
 		return 50;
 
-	return Math.round((props.known.length / totalItems.value) * 100);
+	return Math.round((props.evidence.known.length / totalItems.value) * 100);
 });
 </script>
 
@@ -31,23 +22,23 @@ const knownShare = computed(() => {
 					Evidence completeness
 				</p>
 				<h3 class="text-2xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-					{{ props.title }}
+					{{ props.evidence.title || "How complete is this page?" }}
 				</h3>
 				<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
-					This is not a confidence score. It is a reading aid that shows what the current archive documents directly and what still remains open.
+					{{ props.evidence.note || "This is not a confidence score. It is a reading aid that shows what the current archive documents directly and what still remains open." }}
 				</p>
 			</div>
 			<div class="flex flex-wrap gap-2 items-center">
-				<VerificationBadge :label="props.freshness.statusLabel" :tone="props.freshness.status === 'up-to-date' ? 'accent' : props.freshness.status === 'updating' ? 'warning' : 'neutral'" />
-				<SourceDrawer v-if="props.sources.length" :sources="props.sources" :title="props.title" :button-label="props.sourceButtonLabel" />
+				<VerificationBadge :label="props.evidence.freshness.statusLabel" :tone="props.evidence.freshness.status === 'up-to-date' ? 'accent' : props.evidence.freshness.status === 'updating' ? 'warning' : 'neutral'" />
+				<SourceDrawer v-if="props.evidence.sources?.length" :sources="props.evidence.sources" :title="props.evidence.title || 'Evidence completeness'" button-label="Sources" />
 			</div>
 		</div>
 
 		<div class="mt-5 gap-4 grid lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
 			<div class="px-4 py-4 border border-app-line/70 rounded-[1rem] bg-white/85 dark:border-app-line-dark dark:bg-app-panel-dark/80">
 				<div class="flex flex-wrap gap-3 items-end justify-between">
-					<FactStatCard label="Documented now" note="Items the current archive documents directly." :value="props.known.length" />
-					<FactStatCard label="Still checking" note="Items that remain open or only partially documented." :value="props.unknown.length" />
+					<FactStatCard label="Documented now" note="Items the current archive documents directly." :value="props.evidence.known.length" />
+					<FactStatCard label="Still checking" note="Items that remain open or only partially documented." :value="props.evidence.unknown.length" />
 				</div>
 
 				<div class="mt-5">
@@ -61,7 +52,11 @@ const knownShare = computed(() => {
 
 				<p class="text-xs text-app-muted leading-6 mt-4 dark:text-app-muted-dark">
 					<strong class="text-app-ink dark:text-app-text-dark">Freshness note:</strong>
-					{{ props.freshness.statusNote }}
+					{{ props.evidence.freshness.statusNote }}
+				</p>
+				<p v-if="props.evidence.uncertainty" class="text-xs text-app-muted leading-6 mt-3 dark:text-app-muted-dark">
+					<strong class="text-app-ink dark:text-app-text-dark">Uncertainty:</strong>
+					{{ props.evidence.uncertainty }}
 				</p>
 			</div>
 
@@ -72,7 +67,7 @@ const knownShare = computed(() => {
 					</p>
 					<ul class="mt-4 space-y-3">
 						<li
-							v-for="item in props.known"
+							v-for="item in props.evidence.known"
 							:key="item.id"
 							class="px-3 py-3 rounded-[0.9rem] bg-app-bg dark:bg-app-bg-dark/80"
 						>
@@ -92,7 +87,7 @@ const knownShare = computed(() => {
 					</p>
 					<ul class="mt-4 space-y-3">
 						<li
-							v-for="item in props.unknown"
+							v-for="item in props.evidence.unknown"
 							:key="item.id"
 							class="px-3 py-3 rounded-[0.9rem] bg-app-bg dark:bg-app-bg-dark/80"
 						>

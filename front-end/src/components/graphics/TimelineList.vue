@@ -1,19 +1,10 @@
 <script setup lang="ts">
-import type { Source } from "~/types/civic";
-
-interface TimelineItem {
-	date: string;
-	detail?: string;
-	id: string;
-	sources?: Source[];
-	summary: string;
-	title: string;
-}
+import type { TimelineEvent } from "~/types/civic";
 
 const props = withDefaults(defineProps<{
 	badgeLabel?: string;
 	eyebrow?: string;
-	items: TimelineItem[];
+	items: TimelineEvent[];
 	note?: string;
 	title: string;
 	uncertainty?: string;
@@ -83,6 +74,10 @@ const { formatDate } = useFormatters();
 					</p>
 					<p v-if="item.detail" class="text-sm text-app-ink font-medium mt-3 dark:text-app-text-dark">
 						{{ item.detail }}
+					</p>
+					<p v-if="item.uncertainty" class="text-xs text-app-muted leading-6 mt-3 dark:text-app-muted-dark">
+						<strong class="text-app-ink dark:text-app-text-dark">Uncertainty:</strong>
+						{{ item.uncertainty }}
 					</p>
 				</div>
 			</li>

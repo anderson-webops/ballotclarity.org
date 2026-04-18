@@ -161,28 +161,38 @@ const heroFactCards = computed(() => [
 		value: "Nationwide"
 	}
 ]);
-const homepageProvenanceItems = computed(() => [
-	{
-		detail: "The number of public source categories documented in the roadmap and data architecture pages.",
-		label: "Source categories",
-		value: dataSources.value?.categories.length ?? 0
-	},
-	{
-		detail: "Official election-office or statewide links attached to the current launch profile.",
-		label: "Official links",
-		value: featuredLaunchTarget.value?.officialResources.length ?? 0
-	},
-	{
-		detail: "Capabilities currently marked live in the public coverage profile.",
-		label: "Live capabilities",
-		value: coverageData.value?.supportedContentTypes.filter(item => item.status === "live-now").length ?? 0
-	},
-	{
-		detail: "Date of the current published election target.",
-		label: "Current election",
-		value: featuredLaunchTarget.value ? formatDate(featuredLaunchTarget.value.currentElectionDate) : "Selected publicly"
-	}
-]);
+const homepageProvenanceSummary = computed(() => ({
+	badges: [
+		{ label: "Nonpartisan nonprofit", tone: "accent" as const },
+		{ label: "Sources linked visibly", tone: "accent" as const }
+	],
+	items: [
+		{
+			detail: "The number of public source categories documented in the roadmap and data architecture pages.",
+			label: "Source categories",
+			value: dataSources.value?.categories.length ?? 0
+		},
+		{
+			detail: "Official election-office or statewide links attached to the current launch profile.",
+			label: "Official links",
+			value: featuredLaunchTarget.value?.officialResources.length ?? 0
+		},
+		{
+			detail: "Capabilities currently marked live in the public coverage profile.",
+			label: "Live capabilities",
+			value: coverageData.value?.supportedContentTypes.filter(item => item.status === "live-now").length ?? 0
+		},
+		{
+			detail: "Date of the current published election target.",
+			label: "Current election",
+			value: featuredLaunchTarget.value ? formatDate(featuredLaunchTarget.value.currentElectionDate) : "Selected publicly"
+		}
+	],
+	note: "The homepage should answer what the product can do and why a voter should trust the reading path before opening any deeper page.",
+	sources: [],
+	title: "How the public product is verified at a glance",
+	uncertainty: "The nationwide lookup layer is broader than the deepest published guide layer. Ballot Clarity shows those layers separately instead of pretending every ZIP has the same local depth."
+}));
 const homepageAvailabilityItems = computed(() => [
 	{
 		detail: "ZIP and address lookup can already return district matches, representative matches, and official election tools.",
@@ -204,7 +214,7 @@ const homepageAvailabilityItems = computed(() => [
 	{
 		detail: "Finance and influence context exists where the record is modeled, but it is still uneven across jurisdictions.",
 		label: "Finance / influence",
-		status: "unavailable" as const
+		status: "partial" as const
 	}
 ]);
 </script>
@@ -335,14 +345,7 @@ const homepageAvailabilityItems = computed(() => [
 		<section class="app-shell section-gap">
 			<div class="gap-6 grid xl:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
 				<SourceProvenanceStrip
-					:badges="[
-						{ label: 'Nonpartisan nonprofit', tone: 'accent' },
-						{ label: 'Sources linked visibly', tone: 'accent' },
-					]"
-					:items="homepageProvenanceItems"
-					note="The homepage should answer what the product can do and why a voter should trust the reading path before opening any deeper page."
-					title="How the public product is verified at a glance"
-					uncertainty="The nationwide lookup layer is broader than the deepest published guide layer. Ballot Clarity shows those layers separately instead of pretending every ZIP has the same local depth."
+					:summary="homepageProvenanceSummary"
 				/>
 				<AvailabilityStatusPanel
 					:items="homepageAvailabilityItems"

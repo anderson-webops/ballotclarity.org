@@ -193,6 +193,222 @@ export interface TrustBullet {
 	sources: Source[];
 }
 
+export type GraphicsTone = "accent" | "neutral" | "warning";
+export type DataConfidence = "high" | "low" | "medium";
+export type DataLinkageType = "crosswalked" | "direct" | "inferred";
+
+export interface FactStat {
+	label: string;
+	value: number | string;
+	detail: string;
+}
+
+export interface GraphicsBadge {
+	label: string;
+	title?: string;
+	tone?: GraphicsTone;
+}
+
+export interface ProvenanceSummary {
+	title: string;
+	eyebrow?: string;
+	note?: string;
+	badges?: GraphicsBadge[];
+	items: FactStat[];
+	uncertainty?: string;
+	sources: Source[];
+}
+
+export interface OfficeContext {
+	title: string;
+	summary: string;
+	eyebrow?: string;
+	officeLabel?: string;
+	whyItMatters?: string;
+	responsibilities: string[];
+	badges?: GraphicsBadge[];
+	stats?: FactStat[];
+	sources?: Source[];
+	sourceButtonLabel?: string;
+	uncertainty?: string;
+}
+
+export type LookupAvailabilityStatus = "available" | "partial" | "unavailable";
+
+export interface LookupAvailability {
+	label: string;
+	status: LookupAvailabilityStatus;
+	detail: string;
+	sources?: Source[];
+	confidence?: DataConfidence;
+	note?: string;
+}
+
+export interface RepresentativeCard {
+	id: string;
+	name: string;
+	officeTitle: string;
+	districtLabel: string;
+	party?: string;
+	summary?: string;
+	href?: string;
+	sourceLabel?: string;
+	sourceSystem?: string;
+	openstatesUrl?: string;
+	updatedAt?: string;
+	badges?: GraphicsBadge[];
+	sources?: Source[];
+	confidence?: DataConfidence;
+	linkageType?: DataLinkageType;
+	uncertainty?: string;
+}
+
+export interface TimelineEvent {
+	id: string;
+	date: string;
+	title: string;
+	summary: string;
+	detail?: string;
+	sources?: Source[];
+	confidence?: DataConfidence;
+	uncertainty?: string;
+}
+
+export interface ComparisonMatrixColumn {
+	id: string;
+	label: string;
+	meta?: string;
+	badges?: GraphicsBadge[];
+	sources?: Source[];
+}
+
+export interface ComparisonMatrixCell {
+	columnId: string;
+	value: string;
+	note?: string;
+	sources?: Source[];
+}
+
+export interface ComparisonMatrixRow {
+	id: string;
+	label: string;
+	note?: string;
+	cells: ComparisonMatrixCell[];
+}
+
+export interface ComparisonMatrixData {
+	title: string;
+	eyebrow?: string;
+	note?: string;
+	columns: ComparisonMatrixColumn[];
+	rows: ComparisonMatrixRow[];
+	uncertainty?: string;
+}
+
+export interface EvidenceCompleteness {
+	title?: string;
+	note?: string;
+	freshness: FreshnessMeta;
+	known: TrustBullet[];
+	unknown: TrustBullet[];
+	sources?: Source[];
+	uncertainty?: string;
+}
+
+export interface BeforeAfterItem {
+	id: string;
+	text: string;
+	sources?: Source[];
+}
+
+export interface BeforeAfterData {
+	title: string;
+	eyebrow?: string;
+	beforeLabel?: string;
+	beforeSummary?: string;
+	beforeItems: BeforeAfterItem[];
+	afterLabel?: string;
+	afterSummary?: string;
+	afterItems: BeforeAfterItem[];
+	sources?: Source[];
+	sourceButtonLabel?: string;
+	uncertainty?: string;
+}
+
+export interface MeasureImpactPathItem {
+	id: string;
+	text: string;
+	sources?: Source[];
+}
+
+export interface MeasureImpactFiscalItem {
+	id: string;
+	label: string;
+	value: string;
+	detail: string;
+	sources?: Source[];
+}
+
+export interface MeasureImpactPath {
+	label: string;
+	title: string;
+	summary: string;
+	items: MeasureImpactPathItem[];
+	sources?: Source[];
+}
+
+export interface MeasureImpact {
+	title: string;
+	note: string;
+	currentPath: MeasureImpactPath;
+	yesPath: MeasureImpactPath;
+	noPath: MeasureImpactPath;
+	implementationSummary: string;
+	implementationTimeline: TimelineEvent[];
+	fiscalSummary: string;
+	fiscalItems: MeasureImpactFiscalItem[];
+	uncertainty?: string;
+}
+
+export interface FinanceCategoryAmount {
+	label: string;
+	amount: number;
+	note?: string;
+}
+
+export interface FinanceCategoryBreakdown {
+	cycleLabel: string;
+	totalAmount: number;
+	categories: FinanceCategoryAmount[];
+	sourceLabel: string;
+	coverageNote: string;
+	confidence: DataConfidence;
+	linkageType: DataLinkageType;
+	disclaimer: string;
+	sources?: Source[];
+}
+
+export interface InfluenceDisclosureSummary {
+	lobbyingOrganizations: string[];
+	issueAreas: string[];
+	sourceCount: number;
+	sourceLabel: string;
+	coverageNote: string;
+	confidence: DataConfidence;
+	linkageType: DataLinkageType;
+	disclaimer: string;
+	sources?: Source[];
+}
+
+export interface SourceDensityEntity {
+	id: string;
+	label: string;
+	count: number;
+	detail: string;
+	sources?: Source[];
+	uncertainty?: string;
+}
+
 export type ComparisonProvenanceStatus
 	= | "candidate-quoted"
 		| "candidate-submitted"
@@ -363,7 +579,7 @@ export interface LocationDistrictMatch {
 	sourceSystem: string;
 }
 
-export interface LocationRepresentativeMatch {
+export interface LocationRepresentativeMatch extends RepresentativeCard {
 	id: string;
 	name: string;
 	party?: string;
@@ -377,13 +593,9 @@ export type LocationLookupActionKind = "ballot-guide" | "official-verification";
 export type LocationLookupInputKind = "address" | "zip";
 export type LocationLookupResult = "resolved" | "unsupported";
 export type LocationGuideAvailability = "published" | "not-published";
-export type LocationDataAvailabilityStatus = "available" | "unavailable";
+export type LocationDataAvailabilityStatus = LookupAvailabilityStatus;
 
-export interface LocationDataAvailabilityItem {
-	label: string;
-	status: LocationDataAvailabilityStatus;
-	detail: string;
-}
+export interface LocationDataAvailabilityItem extends LookupAvailability {}
 
 export interface LocationDataAvailabilitySummary {
 	representatives: LocationDataAvailabilityItem;
@@ -638,7 +850,7 @@ export interface DistrictSummary {
 	updatedAt: string;
 }
 
-export interface RepresentativeSummary {
+export interface RepresentativeSummary extends RepresentativeCard {
 	slug: string;
 	name: string;
 	party: string;

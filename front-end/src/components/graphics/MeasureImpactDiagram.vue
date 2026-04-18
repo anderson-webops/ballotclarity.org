@@ -1,21 +1,9 @@
 <script setup lang="ts">
-import type { Measure } from "~/types/civic";
+import type { MeasureImpact } from "~/types/civic";
 
 const props = defineProps<{
-	measure: Measure;
+	impact: MeasureImpact;
 }>();
-
-function uniqueSources(items: Array<{ sources: Measure["sources"] }>) {
-	return Array.from(new Map(items.flatMap(item => item.sources).map(source => [source.id, source])).values());
-}
-
-const currentSources = computed(() => uniqueSources(props.measure.currentPractice));
-const changeSources = computed(() => uniqueSources(props.measure.proposedChanges));
-const impactSources = computed(() => uniqueSources([
-	...props.measure.potentialImpacts,
-	...props.measure.argumentsAndConsiderations
-]));
-const fiscalSources = computed(() => uniqueSources(props.measure.fiscalSummary));
 </script>
 
 <template>
@@ -26,10 +14,10 @@ const fiscalSources = computed(() => uniqueSources(props.measure.fiscalSummary))
 					Measure impact diagram
 				</p>
 				<h3 class="text-2xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-					What changes if this passes, and what stays if it fails?
+					{{ props.impact.title }}
 				</h3>
 				<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
-					This diagram separates current rules from the YES and NO paths so you can compare practical effects without reading advocacy copy.
+					{{ props.impact.note }}
 				</p>
 			</div>
 			<VerificationBadge label="Source-backed pathways" tone="accent" />
@@ -39,15 +27,18 @@ const fiscalSources = computed(() => uniqueSources(props.measure.fiscalSummary))
 			<article class="px-4 py-4 border border-app-line/70 rounded-[1rem] bg-white/85 dark:border-app-line-dark dark:bg-app-panel-dark/80">
 				<div class="flex flex-wrap gap-3 items-center justify-between">
 					<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
-						Today
+						{{ props.impact.currentPath.label }}
 					</p>
-					<SourceDrawer :sources="currentSources" :title="`${measure.title} current practice`" button-label="Sources" />
+					<SourceDrawer v-if="props.impact.currentPath.sources?.length" :sources="props.impact.currentPath.sources" :title="props.impact.currentPath.title" button-label="Sources" />
 				</div>
 				<h4 class="text-xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-					Current practice
+					{{ props.impact.currentPath.title }}
 				</h4>
+				<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
+					{{ props.impact.currentPath.summary }}
+				</p>
 				<ul class="mt-4 space-y-3">
-					<li v-for="item in measure.currentPractice.slice(0, 3)" :key="item.id" class="text-sm text-app-muted leading-6 px-3 py-3 rounded-[0.9rem] bg-app-bg dark:text-app-muted-dark dark:bg-app-bg-dark/80">
+					<li v-for="item in props.impact.currentPath.items" :key="item.id" class="text-sm text-app-muted leading-6 px-3 py-3 rounded-[0.9rem] bg-app-bg dark:text-app-muted-dark dark:bg-app-bg-dark/80">
 						{{ item.text }}
 					</li>
 				</ul>
@@ -56,19 +47,19 @@ const fiscalSources = computed(() => uniqueSources(props.measure.fiscalSummary))
 			<article class="px-4 py-4 border border-app-line/70 rounded-[1rem] bg-white/85 dark:border-app-line-dark dark:bg-app-panel-dark/80">
 				<div class="flex flex-wrap gap-3 items-center justify-between">
 					<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
-						If YES
+						{{ props.impact.yesPath.label }}
 					</p>
-					<SourceDrawer :sources="changeSources" :title="`${measure.title} YES pathway`" button-label="Sources" />
+					<SourceDrawer v-if="props.impact.yesPath.sources?.length" :sources="props.impact.yesPath.sources" :title="props.impact.yesPath.title" button-label="Sources" />
 				</div>
 				<h4 class="text-xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-					Change takes effect
+					{{ props.impact.yesPath.title }}
 				</h4>
 				<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
-					{{ measure.yesMeaning }}
+					{{ props.impact.yesPath.summary }}
 				</p>
 				<ul class="mt-4 space-y-3">
-					<li v-for="item in measure.yesHighlights" :key="item" class="text-sm text-app-muted leading-6 px-3 py-3 rounded-[0.9rem] bg-app-bg dark:text-app-muted-dark dark:bg-app-bg-dark/80">
-						{{ item }}
+					<li v-for="item in props.impact.yesPath.items" :key="item.id" class="text-sm text-app-muted leading-6 px-3 py-3 rounded-[0.9rem] bg-app-bg dark:text-app-muted-dark dark:bg-app-bg-dark/80">
+						{{ item.text }}
 					</li>
 				</ul>
 			</article>
@@ -76,19 +67,19 @@ const fiscalSources = computed(() => uniqueSources(props.measure.fiscalSummary))
 			<article class="px-4 py-4 border border-app-line/70 rounded-[1rem] bg-white/85 dark:border-app-line-dark dark:bg-app-panel-dark/80">
 				<div class="flex flex-wrap gap-3 items-center justify-between">
 					<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
-						If NO
+						{{ props.impact.noPath.label }}
 					</p>
-					<SourceDrawer :sources="currentSources" :title="`${measure.title} NO pathway`" button-label="Sources" />
+					<SourceDrawer v-if="props.impact.noPath.sources?.length" :sources="props.impact.noPath.sources" :title="props.impact.noPath.title" button-label="Sources" />
 				</div>
 				<h4 class="text-xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-					Status quo remains
+					{{ props.impact.noPath.title }}
 				</h4>
 				<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
-					{{ measure.noMeaning }}
+					{{ props.impact.noPath.summary }}
 				</p>
 				<ul class="mt-4 space-y-3">
-					<li v-for="item in measure.noHighlights" :key="item" class="text-sm text-app-muted leading-6 px-3 py-3 rounded-[0.9rem] bg-app-bg dark:text-app-muted-dark dark:bg-app-bg-dark/80">
-						{{ item }}
+					<li v-for="item in props.impact.noPath.items" :key="item.id" class="text-sm text-app-muted leading-6 px-3 py-3 rounded-[0.9rem] bg-app-bg dark:text-app-muted-dark dark:bg-app-bg-dark/80">
+						{{ item.text }}
 					</li>
 				</ul>
 			</article>
@@ -100,14 +91,14 @@ const fiscalSources = computed(() => uniqueSources(props.measure.fiscalSummary))
 					<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
 						Implementation and timing
 					</p>
-					<SourceDrawer :sources="measure.implementationTimeline.flatMap(item => item.sources)" :title="`${measure.title} implementation timing`" button-label="Sources" />
+					<SourceDrawer v-if="props.impact.implementationTimeline.flatMap(item => item.sources ?? []).length" :sources="props.impact.implementationTimeline.flatMap(item => item.sources ?? [])" :title="`${props.impact.title} implementation timing`" button-label="Sources" />
 				</div>
 				<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
-					{{ measure.implementationOverview }}
+					{{ props.impact.implementationSummary }}
 				</p>
 				<ul class="mt-4 space-y-3">
-					<li v-for="item in measure.implementationTimeline.slice(0, 3)" :key="item.id" class="text-sm text-app-muted leading-6 px-3 py-3 rounded-[0.9rem] bg-app-bg dark:text-app-muted-dark dark:bg-app-bg-dark/80">
-						<strong class="text-app-ink dark:text-app-text-dark">{{ item.timing }}:</strong>
+					<li v-for="item in props.impact.implementationTimeline" :key="item.id" class="text-sm text-app-muted leading-6 px-3 py-3 rounded-[0.9rem] bg-app-bg dark:text-app-muted-dark dark:bg-app-bg-dark/80">
+						<strong class="text-app-ink dark:text-app-text-dark">{{ item.date }}:</strong>
 						{{ item.summary }}
 					</li>
 				</ul>
@@ -118,26 +109,23 @@ const fiscalSources = computed(() => uniqueSources(props.measure.fiscalSummary))
 					<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
 						Fiscal and practical effects
 					</p>
-					<div class="flex flex-wrap gap-2 items-center">
-						<SourceDrawer :sources="fiscalSources" :title="`${measure.title} fiscal sources`" button-label="Fiscal sources" />
-						<SourceDrawer :sources="impactSources" :title="`${measure.title} impact sources`" button-label="Impact sources" />
-					</div>
+					<SourceDrawer v-if="props.impact.fiscalItems.flatMap(item => item.sources ?? []).length" :sources="props.impact.fiscalItems.flatMap(item => item.sources ?? [])" :title="`${props.impact.title} fiscal sources`" button-label="Sources" />
 				</div>
 				<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
-					{{ measure.fiscalContextNote }}
+					{{ props.impact.fiscalSummary }}
 				</p>
 				<ul class="mt-4 space-y-3">
-					<li v-for="item in measure.fiscalSummary.slice(0, 3)" :key="item.id" class="text-sm text-app-muted leading-6 px-3 py-3 rounded-[0.9rem] bg-app-bg dark:text-app-muted-dark dark:bg-app-bg-dark/80">
+					<li v-for="item in props.impact.fiscalItems" :key="item.id" class="text-sm text-app-muted leading-6 px-3 py-3 rounded-[0.9rem] bg-app-bg dark:text-app-muted-dark dark:bg-app-bg-dark/80">
 						<strong class="text-app-ink dark:text-app-text-dark">{{ item.label }}:</strong>
-						{{ item.value }} · {{ item.scope }}
+						{{ item.value }} · {{ item.detail }}
 					</li>
 				</ul>
 			</article>
 		</div>
 
-		<p class="text-xs text-app-muted leading-6 mt-4 dark:text-app-muted-dark">
+		<p v-if="props.impact.uncertainty" class="text-xs text-app-muted leading-6 mt-4 dark:text-app-muted-dark">
 			<strong class="text-app-ink dark:text-app-text-dark">Uncertainty:</strong>
-			{{ measure.whatWeDoNotKnow[0]?.text ?? "Later budgets, legal interpretation, or agency rulemaking can still change the real-world effect after passage." }}
+			{{ props.impact.uncertainty }}
 		</p>
 	</section>
 </template>

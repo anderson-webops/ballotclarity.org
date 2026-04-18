@@ -3,6 +3,15 @@ import type { Source } from "~/types/civic";
 import { storeToRefs } from "pinia";
 import { contactEmail, currentCoverageElectionSlug, currentCoverageLocationName, currentCoverageLocationSlug } from "~/constants";
 import { buildCompareLaunchSlugs, buildCompareRoute } from "~/stores/civic";
+import {
+	buildCandidateComparisonMatrix,
+	buildCandidateEvidenceCompleteness,
+	buildCandidateFinanceCategoryBreakdown,
+	buildCandidateInfluenceDisclosureSummary,
+	buildCandidateOfficeContext,
+	buildCandidateProvenanceSummary,
+	buildCandidateTimeline
+} from "~/utils/graphics-schema";
 
 const civicStore = useCivicStore();
 const route = useRoute();
@@ -141,88 +150,6 @@ const issuePositionSources = computed(() => {
 		...candidate.value.publicStatements.flatMap(statement => statement.sources)
 	]);
 });
-const candidateFreshnessBadges = computed(() => {
-	if (!candidate.value)
-		return [];
-
-	return [
-		{
-			label: candidate.value.freshness.statusLabel,
-			tone: candidate.value.freshness.status === "up-to-date"
-				? "accent" as const
-				: candidate.value.freshness.status === "updating"
-					? "warning" as const
-					: "neutral" as const
-		},
-		{
-			label: candidate.value.comparison.ballotStatus.provenance.label,
-			title: candidate.value.comparison.ballotStatus.provenance.detail,
-			tone: candidate.value.comparison.ballotStatus.provenance.status === "verified-official"
-				? "accent" as const
-				: candidate.value.comparison.ballotStatus.provenance.status === "unclear"
-					? "warning" as const
-					: "neutral" as const
-		}
-	];
-});
-const candidateFreshnessSignals = computed(() => {
-	if (!candidate.value)
-		return [];
-
-	return [
-		{
-			detail: candidate.value.freshness.statusNote,
-			label: "Data through",
-			value: dataThroughLabel.value
-		},
-		{
-			detail: "Planned next review window for this profile.",
-			label: "Next review",
-			value: formatDate(candidate.value.freshness.nextReviewAt)
-		},
-		{
-			detail: "Total source records attached to this profile page.",
-			label: "Source records",
-			value: candidate.value.sources.length
-		},
-		{
-			detail: "Explicit gaps or unresolved checks called out on this page.",
-			label: "Open questions",
-			value: candidate.value.whatWeDoNotKnow.length
-		}
-	];
-});
-const atGlanceStats = computed(() => {
-	if (!candidate.value)
-		return [];
-
-	const activityLabel = candidate.value.incumbent ? "Documented votes and actions" : "Documented campaign actions";
-	const activityNote = candidate.value.incumbent
-		? "Selected official actions in the current project archive. This page is not a full legislative ledger."
-		: "Published policy releases, local-government actions, and other source-backed items included in the current project archive.";
-	const influenceSectors = [...new Set(candidate.value.funding.topFunders.map(funder => funder.category))].slice(0, 2);
-	const influenceNote = influenceSectors.length
-		? `Context draws on ${influenceSectors.join(" and ")}. This is context only, not proof of influence.`
-		: "Influence notes are shown as context only, not proof of influence.";
-
-	return [
-		{
-			label: activityLabel,
-			note: activityNote,
-			value: formatCompactNumber(candidate.value.keyActions.length)
-		},
-		{
-			label: "Money in",
-			note: `Reported fundraising in the current filing window. Data through ${dataThroughLabel.value}.`,
-			value: formatCurrency(candidate.value.funding.totalRaised)
-		},
-		{
-			label: "Influence context",
-			note: influenceNote,
-			value: `${candidate.value.lobbyingContext.length} note${candidate.value.lobbyingContext.length === 1 ? "" : "s"}`
-		}
-	];
-});
 const actionCoverageNote = computed(() => {
 	if (!candidate.value)
 		return "";
@@ -234,137 +161,15 @@ const actionCoverageNote = computed(() => {
 const reportIssueHref = computed(() => candidate.value
 	? `mailto:${contactEmail}?subject=${encodeURIComponent(`Ballot Clarity candidate review: ${candidate.value.name}`)}`
 	: `mailto:${contactEmail}?subject=${encodeURIComponent("Ballot Clarity candidate review")}`);
-const coverageItems = computed(() => {
-	if (!candidate.value)
-		return [];
-
-	return [
-		"Published campaign materials and questionnaires included in the project archive.",
-		"Source-backed actions selected for relevance to this office and district context.",
-		"Funding summaries tied to the attached campaign-finance records.",
-		"Method notes explaining what is included, what is missing, and when the page was last reviewed."
-	];
-});
-const candidateOfficeContextStats = computed(() => {
-	if (!candidate.value)
-		return [];
-
-	return [
-		...atGlanceStats.value,
-		{
-			label: "Source records",
-			note: "Attached records supporting this profile.",
-			value: candidate.value.sources.length
-		}
-	];
-});
-const issueMatrixColumns = computed(() => {
-	if (!candidate.value)
-		return [];
-
-	return [
-		{
-			id: "why-running",
-			label: "Why running",
-			meta: "Candidate-framed rationale",
-			badges: [{ label: candidate.value.comparison.whyRunning.provenance.label, tone: "neutral" as const }],
-			sources: candidate.value.comparison.whyRunning.sources
-		},
-		{
-			id: "priorities",
-			label: "Top priorities",
-			meta: `${candidate.value.comparison.topPriorities.length} stated priorities`,
-			badges: [{ label: `${candidate.value.topIssues.length} issue tags`, tone: "accent" as const }],
-			sources: candidate.value.comparison.topPriorities.flatMap(priority => priority.sources)
-		},
-		{
-			id: "questionnaire",
-			label: "Questionnaire",
-			meta: `${candidate.value.comparison.questionnaireResponses.filter(response => response.responseStatus === "answered").length}/${candidate.value.comparison.questionnaireResponses.length} answered`,
-			badges: [{ label: "Candidate-submitted responses", tone: "neutral" as const }],
-			sources: candidate.value.comparison.questionnaireResponses.flatMap(response => response.sources)
-		},
-		{
-			id: "public-record",
-			label: "Public statements",
-			meta: `${candidate.value.publicStatements.length} attached statement blocks`,
-			badges: [{ label: "Archive-linked", tone: "accent" as const }],
-			sources: candidate.value.publicStatements.flatMap(statement => statement.sources)
-		}
-	];
-});
-const issueMatrixRows = computed(() => {
-	if (!candidate.value)
-		return [];
-
-	const answeredQuestionnaire = candidate.value.comparison.questionnaireResponses.filter(response => response.responseStatus === "answered");
-	const firstPriority = candidate.value.comparison.topPriorities[0];
-	const secondPriority = candidate.value.comparison.topPriorities[1];
-	const latestStatement = candidate.value.publicStatements[0];
-
-	return [
-		{
-			id: "coverage",
-			label: "Issue coverage",
-			note: "How many issue-bearing surfaces are documented in this profile right now.",
-			cells: [
-				{ columnId: "why-running", value: candidate.value.comparison.whyRunning.text ? "Documented" : "Not documented yet" },
-				{ columnId: "priorities", value: `${candidate.value.topIssues.length} issue tag${candidate.value.topIssues.length === 1 ? "" : "s"}` },
-				{ columnId: "questionnaire", value: `${answeredQuestionnaire.length} answered response${answeredQuestionnaire.length === 1 ? "" : "s"}` },
-				{ columnId: "public-record", value: `${candidate.value.publicStatements.length} statement block${candidate.value.publicStatements.length === 1 ? "" : "s"}` }
-			]
-		},
-		{
-			id: "first-signal",
-			label: "First policy signal",
-			note: "The first readable issue clue a voter encounters in each evidence channel.",
-			cells: [
-				{ columnId: "why-running", value: candidate.value.comparison.whyRunning.text ?? "No source-backed statement in this archive." },
-				{ columnId: "priorities", value: firstPriority?.text ?? "No top priority documented yet." },
-				{ columnId: "questionnaire", value: answeredQuestionnaire[0]?.answerText ?? "No answered questionnaire response in this archive." },
-				{ columnId: "public-record", value: latestStatement?.summary ?? "No public statement block attached yet." }
-			]
-		},
-		{
-			id: "second-signal",
-			label: "Second policy signal",
-			note: "A second row so the matrix exposes whether the archive has depth beyond one isolated quote.",
-			cells: [
-				{ columnId: "why-running", value: candidate.value.topIssues[0]?.label ?? "No issue tag attached yet." },
-				{ columnId: "priorities", value: secondPriority?.text ?? "No second priority documented yet." },
-				{ columnId: "questionnaire", value: answeredQuestionnaire[1]?.answerText ?? "No second answered questionnaire response in this archive." },
-				{ columnId: "public-record", value: candidate.value.publicStatements[1]?.summary ?? "No second public statement block attached yet." }
-			]
-		}
-	];
-});
-const actionTimelineItems = computed(() => {
-	if (!candidate.value)
-		return [];
-
-	const ballotStatusItem = {
-		date: candidate.value.comparison.ballotStatus.asOf,
-		detail: candidate.value.comparison.ballotStatus.provenance.detail,
-		id: `${candidate.value.slug}-ballot-status`,
-		sources: candidate.value.comparison.ballotStatus.sources,
-		summary: candidate.value.comparison.ballotStatus.label,
-		title: "Ballot status verified"
-	};
-
-	const orderedActions = [...candidate.value.keyActions].sort((left, right) => new Date(right.date).getTime() - new Date(left.date).getTime());
-
-	return [
-		ballotStatusItem,
-		...orderedActions.map(action => ({
-			date: action.date,
-			detail: action.significance,
-			id: action.id,
-			sources: action.sources,
-			summary: action.summary,
-			title: action.title
-		}))
-	];
-});
+const candidateProvenanceSummary = computed(() => candidate.value ? buildCandidateProvenanceSummary(candidate.value, formatDate) : null);
+const candidateOfficeContext = computed(() => candidate.value
+	? buildCandidateOfficeContext(candidate.value, formatCurrency, formatCompactNumber, dataThroughLabel.value)
+	: null);
+const candidateComparisonMatrix = computed(() => candidate.value ? buildCandidateComparisonMatrix(candidate.value) : null);
+const candidateTimeline = computed(() => candidate.value ? buildCandidateTimeline(candidate.value) : []);
+const candidateEvidenceCompleteness = computed(() => candidate.value ? buildCandidateEvidenceCompleteness(candidate.value) : null);
+const financeBreakdown = computed(() => candidate.value ? buildCandidateFinanceCategoryBreakdown(candidate.value, formatDate) : null);
+const influenceDisclosure = computed(() => candidate.value ? buildCandidateInfluenceDisclosureSummary(candidate.value) : null);
 
 function toggleCompare() {
 	if (candidate.value)
@@ -459,13 +264,8 @@ function saveToPlan() {
 					</div>
 					<div class="mt-6">
 						<SourceProvenanceStrip
-							:badges="candidateFreshnessBadges"
-							:items="candidateFreshnessSignals"
-							:sources="candidate.sources"
-							source-button-label="Profile sources"
-							title="How fresh and verified is this profile?"
-							:note="candidate.freshness.statusNote"
-							:uncertainty="candidate.whatWeDoNotKnow[0]?.text ?? 'Late campaign developments can still arrive after the current review window.'"
+							v-if="candidateProvenanceSummary"
+							:summary="candidateProvenanceSummary"
 						/>
 					</div>
 				</header>
@@ -484,19 +284,8 @@ function saveToPlan() {
 					</div>
 					<div class="mt-6">
 						<OfficeContextCard
-							title="Identity, office context, and what this profile covers"
-							:office-label="`${candidate.officeSought} · ${candidate.party}`"
-							:summary="candidate.summary"
-							:stats="candidateOfficeContextStats"
-							:responsibilities="coverageItems"
-							:sources="candidate.comparison.ballotStatus.sources"
-							source-button-label="Ballot status sources"
-							:uncertainty="candidate.whatWeDoNotKnow[0]?.text ?? 'This profile is source-backed but still bounded by the current archive.'"
-							why-it-matters="This page separates ballot verification, office context, and archive coverage so a voter can see what is established before opening deeper sections."
-							:badges="[
-								{ label: candidate.incumbent ? 'Incumbent' : 'Challenger or open seat', tone: candidate.incumbent ? 'accent' : 'neutral' },
-								{ label: candidate.comparison.ballotStatus.label, tone: 'neutral' },
-							]"
+							v-if="candidateOfficeContext"
+							:context="candidateOfficeContext"
 						/>
 					</div>
 					<details class="mt-6 px-4 py-3 border border-app-line/80 rounded-2xl dark:border-app-line-dark">
@@ -552,11 +341,8 @@ function saveToPlan() {
 					</div>
 					<div class="mt-6">
 						<ComparisonMatrix
-							:columns="issueMatrixColumns"
-							:rows="issueMatrixRows"
-							note="This issue-position matrix compares the different evidence channels inside one candidate profile. It helps you see whether a policy signal appears in only one place or is reinforced across priorities, questionnaires, and public statements."
-							title="How issue positions show up across the current archive"
-							uncertainty="This matrix reflects only what is attached to the current archive. Missing cells are a visibility limit, not proof that the candidate has no position."
+							v-if="candidateComparisonMatrix"
+							:matrix="candidateComparisonMatrix"
 						/>
 					</div>
 					<div class="mt-6 gap-4 grid">
@@ -664,7 +450,7 @@ function saveToPlan() {
 					</InfoCallout>
 					<div class="mt-6">
 						<TimelineList
-							:items="actionTimelineItems"
+							:items="candidateTimeline"
 							:badge-label="`${candidate.keyActions.length} documented action${candidate.keyActions.length === 1 ? '' : 's'}`"
 							eyebrow="Candidate experience timeline"
 							:note="candidate.incumbent
@@ -737,6 +523,9 @@ function saveToPlan() {
 							</p>
 						</div>
 					</div>
+					<InfoCallout v-if="financeBreakdown" class="mt-6" title="Finance context and confidence">
+						{{ financeBreakdown.disclaimer }} Coverage: {{ financeBreakdown.coverageNote }} Linkage: {{ financeBreakdown.linkageType }}. Confidence: {{ financeBreakdown.confidence }}.
+					</InfoCallout>
 					<p class="text-sm text-app-muted leading-7 mt-6 dark:text-app-muted-dark">
 						{{ candidate.funding.summary }}
 					</p>
@@ -772,6 +561,9 @@ function saveToPlan() {
 					</template>
 					<InfoCallout class="mt-5" title="Read this section carefully">
 						Influence context is presented to help users inspect relevant sectors, donors, and public disclosures. It should not be read as proof that any donor or organization controlled a candidate action.
+					</InfoCallout>
+					<InfoCallout v-if="influenceDisclosure" class="mt-4" title="Influence linkage and confidence">
+						{{ influenceDisclosure.disclaimer }} Coverage: {{ influenceDisclosure.coverageNote }} Linkage: {{ influenceDisclosure.linkageType }}. Confidence: {{ influenceDisclosure.confidence }}.
 					</InfoCallout>
 					<div class="mt-6 space-y-4">
 						<article v-for="block in candidate.lobbyingContext" :key="block.id" class="p-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
@@ -813,12 +605,8 @@ function saveToPlan() {
 					</template>
 					<div class="mt-6">
 						<EvidenceCompletenessPanel
-							:freshness="candidate.freshness"
-							:known="candidate.whatWeKnow"
-							:sources="candidate.sources"
-							source-button-label="Profile sources"
-							title="How complete is this candidate profile right now?"
-							:unknown="candidate.whatWeDoNotKnow"
+							v-if="candidateEvidenceCompleteness"
+							:evidence="candidateEvidenceCompleteness"
 						/>
 					</div>
 					<ul class="text-sm text-app-muted leading-7 mt-6 space-y-3 dark:text-app-muted-dark">

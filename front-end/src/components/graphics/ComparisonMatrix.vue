@@ -1,63 +1,27 @@
 <script setup lang="ts">
-import type { Source } from "~/types/civic";
+import type { ComparisonMatrixCell, ComparisonMatrixData, ComparisonMatrixRow } from "~/types/civic";
 
-interface ComparisonMatrixBadge {
-	label: string;
-	tone?: "accent" | "neutral" | "warning";
-}
+const props = defineProps<{
+	matrix: ComparisonMatrixData;
+}>();
 
-interface ComparisonMatrixColumn {
-	badges?: ComparisonMatrixBadge[];
-	id: string;
-	label: string;
-	meta?: string;
-	sources?: Source[];
-}
-
-interface ComparisonMatrixCell {
-	columnId: string;
-	note?: string;
-	sources?: Source[];
-	value: string;
-}
-
-interface ComparisonMatrixRow {
-	cells: ComparisonMatrixCell[];
-	id: string;
-	label: string;
-	note?: string;
-}
-
-const props = withDefaults(defineProps<{
-	columns: ComparisonMatrixColumn[];
-	eyebrow?: string;
-	note?: string;
-	rows: ComparisonMatrixRow[];
-	title: string;
-	uncertainty?: string;
-}>(), {
-	eyebrow: "Comparison matrix",
-	note: "",
-	uncertainty: ""
-});
-
-function cellFor(row: ComparisonMatrixRow, columnId: string) {
+function cellFor(row: ComparisonMatrixRow, columnId: string): ComparisonMatrixCell | undefined {
 	return row.cells.find(cell => cell.columnId === columnId);
 }
 </script>
 
 <template>
-	<section v-if="props.columns.length && props.rows.length" class="surface-panel">
+	<section v-if="props.matrix.columns.length && props.matrix.rows.length" class="surface-panel">
 		<div class="flex flex-wrap gap-4 items-start justify-between">
 			<div class="max-w-4xl">
 				<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
-					{{ props.eyebrow }}
+					{{ props.matrix.eyebrow || "Comparison matrix" }}
 				</p>
 				<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-					{{ props.title }}
+					{{ props.matrix.title }}
 				</h2>
-				<p v-if="props.note" class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
-					{{ props.note }}
+				<p v-if="props.matrix.note" class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
+					{{ props.matrix.note }}
 				</p>
 			</div>
 			<VerificationBadge label="Source-backed matrix" tone="accent" />
@@ -66,11 +30,11 @@ function cellFor(row: ComparisonMatrixRow, columnId: string) {
 		<div class="mt-6 border border-app-line rounded-[1.5rem] hidden overflow-x-auto dark:border-app-line-dark lg:block">
 			<div
 				class="grid min-w-[56rem]"
-				:style="{ gridTemplateColumns: `minmax(14rem, 18rem) repeat(${props.columns.length}, minmax(12rem, 1fr))` }"
+				:style="{ gridTemplateColumns: `minmax(14rem, 18rem) repeat(${props.matrix.columns.length}, minmax(12rem, 1fr))` }"
 			>
 				<div class="p-4 border-b border-app-line bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/80" />
 				<div
-					v-for="column in props.columns"
+					v-for="column in props.matrix.columns"
 					:key="column.id"
 					class="p-4 border-b border-l border-app-line bg-white dark:border-app-line-dark dark:bg-app-panel-dark"
 				>
@@ -96,7 +60,7 @@ function cellFor(row: ComparisonMatrixRow, columnId: string) {
 					</div>
 				</div>
 
-				<template v-for="row in props.rows" :key="row.id">
+				<template v-for="row in props.matrix.rows" :key="row.id">
 					<div class="p-4 border-b border-app-line bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/80">
 						<p class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
 							{{ row.label }}
@@ -106,7 +70,7 @@ function cellFor(row: ComparisonMatrixRow, columnId: string) {
 						</p>
 					</div>
 					<div
-						v-for="column in props.columns"
+						v-for="column in props.matrix.columns"
 						:key="`${row.id}-${column.id}`"
 						class="p-4 border-b border-l border-app-line bg-white dark:border-app-line-dark dark:bg-app-panel-dark"
 					>
@@ -130,7 +94,7 @@ function cellFor(row: ComparisonMatrixRow, columnId: string) {
 
 		<div class="mt-6 space-y-4 lg:hidden">
 			<article
-				v-for="column in props.columns"
+				v-for="column in props.matrix.columns"
 				:key="column.id"
 				class="p-4 border border-app-line/80 rounded-[1.3rem] bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70"
 			>
@@ -160,7 +124,7 @@ function cellFor(row: ComparisonMatrixRow, columnId: string) {
 				</div>
 				<dl class="mt-4 space-y-3">
 					<div
-						v-for="row in props.rows"
+						v-for="row in props.matrix.rows"
 						:key="`${column.id}-${row.id}`"
 						class="px-4 py-3 border border-app-line/70 rounded-[1rem] bg-white/85 dark:border-app-line-dark dark:bg-app-panel-dark/80"
 					>
@@ -178,9 +142,9 @@ function cellFor(row: ComparisonMatrixRow, columnId: string) {
 			</article>
 		</div>
 
-		<p v-if="props.uncertainty" class="text-xs text-app-muted leading-6 mt-4 dark:text-app-muted-dark">
+		<p v-if="props.matrix.uncertainty" class="text-xs text-app-muted leading-6 mt-4 dark:text-app-muted-dark">
 			<strong class="text-app-ink dark:text-app-text-dark">Uncertainty:</strong>
-			{{ props.uncertainty }}
+			{{ props.matrix.uncertainty }}
 		</p>
 	</section>
 </template>

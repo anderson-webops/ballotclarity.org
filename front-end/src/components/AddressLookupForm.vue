@@ -7,6 +7,7 @@ import type {
 	LocationLookupResponse,
 	LocationRepresentativeMatch
 } from "~/types/civic";
+import { buildLocationAvailabilityItems, buildLookupProvenanceSummary, buildRepresentativeCards } from "~/utils/graphics-schema";
 
 const props = defineProps<{
 	compact?: boolean;
@@ -138,62 +139,16 @@ async function handleSubmit() {
 	}
 }
 
-const availabilityItems = computed(() => {
-	if (!availability.value)
-		return [];
-
-	return [
-		availability.value.representatives,
-		availability.value.ballotCandidates,
-		availability.value.financeInfluence,
-		availability.value.fullLocalGuide
-	];
-});
-
-const lookupSourceBadges = computed(() => {
-	const badges = new Map<string, { label: string; tone?: "accent" | "neutral" | "warning" }>();
-
-	for (const match of districtMatches.value)
-		badges.set(match.sourceSystem, { label: match.sourceSystem, tone: "neutral" });
-
-	for (const match of representativeMatches.value)
-		badges.set(match.sourceSystem, { label: match.sourceSystem, tone: "accent" });
-
-	if (lookupActions.value.some(action => action.kind === "official-verification"))
-		badges.set("Official election tools", { label: "Official election tools", tone: "accent" });
-
-	if (fromCache.value)
-		badges.set("Cached lookup", { label: "Cached lookup", tone: "neutral" });
-
-	return [...badges.values()];
-});
-
-const lookupSourceSignals = computed(() => ([
-	{
-		detail: lookupInputKind.value === "address"
-			? "A full address gives the strongest district match."
-			: "ZIP-only lookup remains approximate inside shared postal areas.",
-		label: "Lookup type",
-		value: lookupInputKind.value === "address" ? "Address matched" : "ZIP matched"
-	},
-	{
-		detail: "These district layers drive the person-centered result first.",
-		label: "Districts found",
-		value: districtMatches.value.length
-	},
-	{
-		detail: "Current officeholder matches come from the provider-backed enrichment layer.",
-		label: "Representatives found",
-		value: representativeMatches.value.length
-	},
-	{
-		detail: guideAvailability.value === "published"
-			? "A deeper Ballot Clarity local guide is available for this result."
-			: "Nationwide district and representative results are available even without a published local guide.",
-		label: "Guide depth",
-		value: guideAvailability.value === "published" ? "Published guide" : "Nationwide lookup"
-	}
-]));
+const availabilityItems = computed(() => buildLocationAvailabilityItems(availability.value));
+const representativeCards = computed(() => buildRepresentativeCards(representativeMatches.value));
+const lookupProvenanceSummary = computed(() => buildLookupProvenanceSummary({
+	districtMatches: districtMatches.value,
+	fromCache: fromCache.value,
+	guideAvailability: guideAvailability.value,
+	hasOfficialTools: lookupActions.value.some(action => action.kind === "official-verification"),
+	inputKind: lookupInputKind.value,
+	representativeMatches: representativeMatches.value
+}));
 
 const lookupUncertaintyNote = computed(() => {
 	if (lookupResult.value === "unsupported")
@@ -286,12 +241,8 @@ const lookupUncertaintyNote = computed(() => {
 			</p>
 			<SourceProvenanceStrip
 				v-if="lookupResult === 'resolved'"
-				:badges="lookupSourceBadges"
-				:items="lookupSourceSignals"
-				uncertainty="District and representative results are the first-class nationwide output. Full local guide availability is a separate layer."
+				:summary="lookupProvenanceSummary"
 				class="mt-4"
-				title="How this lookup was verified"
-				note="Ballot Clarity keeps the nationwide result first, then layers in local guide depth where it exists."
 			/>
 			<DistrictLadder
 				v-if="districtMatches.length"
@@ -301,8 +252,8 @@ const lookupUncertaintyNote = computed(() => {
 				class="mt-4"
 			/>
 			<RepresentativeGrid
-				v-if="representativeMatches.length"
-				:matches="representativeMatches"
+				v-if="representativeCards.length"
+				:cards="representativeCards"
 				class="mt-4"
 			/>
 			<AvailabilityStatusPanel

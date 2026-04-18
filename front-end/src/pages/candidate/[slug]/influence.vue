@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { currentCoverageElectionSlug } from "~/constants";
+import { buildCandidateInfluenceDisclosureSummary } from "~/utils/graphics-schema";
 
 const route = useRoute();
 const candidateSlug = computed(() => String(route.params.slug));
@@ -27,6 +28,7 @@ const summaryItems = computed(() => {
 		{ label: "Updated", note: "Profile freshness.", value: formatDateTime(candidate.value.updatedAt) }
 	];
 });
+const influenceDisclosure = computed(() => candidate.value ? buildCandidateInfluenceDisclosureSummary(candidate.value) : null);
 
 usePageSeo({
 	description: candidate.value?.lobbyingContext[0]?.summary ?? "Candidate influence page with lobbying context, public statements, and source links.",
@@ -73,6 +75,9 @@ usePageSeo({
 				<div class="mt-6">
 					<PageSummaryStrip :items="summaryItems" />
 				</div>
+				<InfoCallout v-if="influenceDisclosure" class="mt-6" title="Influence coverage and confidence">
+					{{ influenceDisclosure.disclaimer }} Coverage: {{ influenceDisclosure.coverageNote }} Linkage: {{ influenceDisclosure.linkageType }}. Confidence: {{ influenceDisclosure.confidence }}.
+				</InfoCallout>
 			</header>
 
 			<section class="gap-6 grid xl:grid-cols-[minmax(0,1fr)_minmax(0,0.95fr)]">

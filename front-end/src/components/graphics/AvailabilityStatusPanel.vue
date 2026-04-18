@@ -1,28 +1,15 @@
 <script setup lang="ts">
-import type { Source } from "~/types/civic";
-
-type AvailabilityStatus = "available" | "unavailable";
-
-interface AvailabilityStatusItem {
-	label: string;
-	status: AvailabilityStatus;
-	detail: string;
-	sources?: Source[];
-}
+import type { LookupAvailability } from "~/types/civic";
 
 const props = withDefaults(defineProps<{
 	eyebrow?: string;
-	items: AvailabilityStatusItem[];
+	items: LookupAvailability[];
 	note?: string;
-	sourceButtonLabel?: string;
-	sources?: Source[];
 	title: string;
 	uncertainty?: string;
 }>(), {
 	eyebrow: "Data availability",
 	note: "",
-	sourceButtonLabel: "Sources",
-	sources: () => [],
 	uncertainty: ""
 });
 </script>
@@ -41,12 +28,6 @@ const props = withDefaults(defineProps<{
 					{{ props.note }}
 				</p>
 			</div>
-			<SourceDrawer
-				v-if="props.sources.length"
-				:sources="props.sources"
-				:title="props.title"
-				:button-label="props.sourceButtonLabel"
-			/>
 		</div>
 
 		<div class="mt-5 gap-3 grid md:grid-cols-2 xl:grid-cols-4">
@@ -60,7 +41,7 @@ const props = withDefaults(defineProps<{
 						{{ item.label }}
 					</p>
 					<div class="flex flex-wrap gap-2 items-center">
-						<VerificationBadge :label="item.status" :tone="item.status === 'available' ? 'accent' : 'neutral'" />
+						<VerificationBadge :label="item.status" :tone="item.status === 'available' ? 'accent' : item.status === 'partial' ? 'warning' : 'neutral'" />
 						<SourceDrawer
 							v-if="item.sources?.length"
 							:sources="item.sources"
@@ -71,6 +52,14 @@ const props = withDefaults(defineProps<{
 				</div>
 				<p class="text-sm text-app-muted leading-6 mt-3 dark:text-app-muted-dark">
 					{{ item.detail }}
+				</p>
+				<p v-if="item.confidence || item.note" class="text-xs text-app-muted leading-6 mt-2 dark:text-app-muted-dark">
+					<span v-if="item.confidence">
+						<strong class="text-app-ink dark:text-app-text-dark">Confidence:</strong>
+						{{ item.confidence }}
+					</span>
+					<span v-if="item.confidence && item.note"> · </span>
+					<span v-if="item.note">{{ item.note }}</span>
 				</p>
 			</article>
 		</div>

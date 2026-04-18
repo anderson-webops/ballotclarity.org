@@ -2,6 +2,12 @@
 import type { Source, SourceType } from "~/types/civic";
 import { storeToRefs } from "pinia";
 import { contactEmail, currentCoverageElectionSlug, currentCoverageLocationSlug } from "~/constants";
+import {
+	buildMeasureBeforeAfterData,
+	buildMeasureEvidenceCompleteness,
+	buildMeasureImpact,
+	buildMeasureProvenanceSummary
+} from "~/utils/graphics-schema";
 
 const civicStore = useCivicStore();
 const route = useRoute();
@@ -90,52 +96,6 @@ const argumentSources = computed(() => {
 		...measure.value.opposeArguments.flatMap(item => item.sources)
 	]);
 });
-const measureFreshnessBadges = computed(() => {
-	if (!measure.value)
-		return [];
-
-	return [
-		{
-			label: measure.value.freshness.statusLabel,
-			tone: measure.value.freshness.status === "up-to-date"
-				? "accent" as const
-				: measure.value.freshness.status === "updating"
-					? "warning" as const
-					: "neutral" as const
-		},
-		{
-			label: officialSources.value.length ? "Official text attached" : "Attached source set",
-			tone: officialSources.value.length ? "accent" as const : "neutral" as const
-		}
-	];
-});
-const measureFreshnessSignals = computed(() => {
-	if (!measure.value)
-		return [];
-
-	return [
-		{
-			detail: measure.value.freshness.statusNote,
-			label: "Data through",
-			value: formatDateTime(measure.value.freshness.dataLastUpdatedAt ?? measure.value.updatedAt)
-		},
-		{
-			detail: "Planned next review window for this explainer.",
-			label: "Next review",
-			value: formatDateTime(measure.value.freshness.nextReviewAt)
-		},
-		{
-			detail: "Official records directly attached to the explainer.",
-			label: "Official records",
-			value: officialSources.value.length
-		},
-		{
-			detail: "Explicit open questions or unsettled implementation items.",
-			label: "Open questions",
-			value: measure.value.whatWeDoNotKnow.length
-		}
-	];
-});
 const presentSourceTypes = computed(() => {
 	if (!measure.value)
 		return [];
@@ -157,26 +117,10 @@ const readabilityNotes = [
 	"Current law, proposed changes, implementation timing, and fiscal notes are separated into different blocks instead of one blended summary.",
 	"Argument sections stay clearly attributed so Ballot Clarity does not speak in an advocacy voice."
 ];
-const baselineBeforeItems = computed(() => {
-	if (!measure.value)
-		return [];
-
-	return measure.value.currentPractice.map(item => ({
-		id: item.id,
-		sources: item.sources,
-		text: item.text
-	}));
-});
-const baselineAfterItems = computed(() => {
-	if (!measure.value)
-		return [];
-
-	return measure.value.proposedChanges.map(item => ({
-		id: item.id,
-		sources: item.sources,
-		text: item.text
-	}));
-});
+const measureProvenanceSummary = computed(() => measure.value ? buildMeasureProvenanceSummary(measure.value, formatDateTime) : null);
+const measureBeforeAfterData = computed(() => measure.value ? buildMeasureBeforeAfterData(measure.value) : null);
+const measureImpactData = computed(() => measure.value ? buildMeasureImpact(measure.value) : null);
+const measureEvidenceCompleteness = computed(() => measure.value ? buildMeasureEvidenceCompleteness(measure.value) : null);
 const reportIssueHref = computed(() => measure.value
 	? `mailto:${contactEmail}?subject=${encodeURIComponent(`Ballot Clarity measure review: ${measure.value.title}`)}`
 	: `mailto:${contactEmail}?subject=${encodeURIComponent("Ballot Clarity measure review")}`);
@@ -307,13 +251,8 @@ function saveMeasure(decision: "no" | "review" | "yes") {
 					</div>
 					<div class="mt-6">
 						<SourceProvenanceStrip
-							:badges="measureFreshnessBadges"
-							:items="measureFreshnessSignals"
-							:sources="measure.sources"
-							source-button-label="Measure sources"
-							title="How fresh and source-backed is this explainer?"
-							:note="measure.freshness.statusNote"
-							:uncertainty="measure.whatWeDoNotKnow[0]?.text ?? 'Later budgets, legal interpretation, or agency rules can still change implementation detail after passage.'"
+							v-if="measureProvenanceSummary"
+							:summary="measureProvenanceSummary"
 						/>
 					</div>
 				</header>
@@ -411,16 +350,8 @@ function saveMeasure(decision: "no" | "review" | "yes") {
 					</template>
 					<div class="mt-6">
 						<BeforeAfterDiff
-							:before-items="baselineBeforeItems"
-							before-label="Current practice"
-							:before-summary="measure.currentLawOverview"
-							:after-items="baselineAfterItems"
-							after-label="Proposed changes"
-							after-summary="measure.plainLanguageExplanation"
-							:sources="baselineSources.length ? baselineSources : measure.sources"
-							source-button-label="Baseline sources"
-							title="What changes in the underlying rules"
-							:uncertainty="measure.whatWeDoNotKnow[0]?.text ?? 'Later implementation choices can still change how the legal text is applied in practice.'"
+							v-if="measureBeforeAfterData"
+							:data="measureBeforeAfterData"
 						/>
 					</div>
 				</ExpandableSection>
@@ -436,7 +367,7 @@ function saveMeasure(decision: "no" | "review" | "yes") {
 						<SourceDrawer :sources="officialSources.length ? officialSources : measure.sources" :title="`${measure.title} yes and no meanings`" button-label="Outcome sources" />
 					</template>
 					<div class="mt-6">
-						<MeasureImpactDiagram :measure="measure" />
+						<MeasureImpactDiagram v-if="measureImpactData" :impact="measureImpactData" />
 					</div>
 					<div class="mt-6 gap-6 grid md:grid-cols-2">
 						<article class="px-5 py-5 border border-app-line/80 rounded-3xl bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
@@ -630,12 +561,8 @@ function saveMeasure(decision: "no" | "review" | "yes") {
 					</template>
 					<div class="mt-6">
 						<EvidenceCompletenessPanel
-							:freshness="measure.freshness"
-							:known="measure.whatWeKnow"
-							:sources="measure.sources"
-							source-button-label="Measure sources"
-							title="How complete is this measure explainer right now?"
-							:unknown="measure.whatWeDoNotKnow"
+							v-if="measureEvidenceCompleteness"
+							:evidence="measureEvidenceCompleteness"
 						/>
 					</div>
 					<div class="mt-6">

@@ -12,11 +12,16 @@ test("nuxt config uses srcDir and expected civic modules", async () => {
 		["@nuxt/eslint", "@nuxtjs/color-mode", "@pinia/nuxt", "@unocss/nuxt", "@vueuse/nuxt"].sort()
 	);
 	assert.equal(config.runtimeConfig?.public?.apiBase, "http://127.0.0.1:3001/api");
+	assert.ok(typeof config.runtimeConfig?.public?.buildId === "string" && config.runtimeConfig.public.buildId.length > 0);
 	assert.equal(config.runtimeConfig?.public?.siteUrl, "https://ballotclarity.jacobdanderson.net");
 	assert.equal(config.colorMode?.preference, "light");
 	assert.equal(config.experimental?.typedPages, true);
 	assert.deepEqual(config.vite?.build?.modulePreload, { polyfill: false });
+	assert.equal(config.app?.head?.htmlAttrs?.lang, "en");
+	assert.equal(config.app?.head?.htmlAttrs?.["data-app-build"], config.runtimeConfig?.public?.buildId);
+	assert.ok(config.app?.head?.meta?.some(meta => meta.name === "ballot-clarity-build-id" && meta.content === config.runtimeConfig?.public?.buildId));
 	assert.ok(config.app?.head?.link?.some(link => link.rel === "manifest" && typeof link.href === "string" && link.href.startsWith("/site.webmanifest")));
+	assert.equal(config.nitro?.routeRules?.["/_nuxt/**"]?.headers?.["cache-control"], "public, max-age=31536000, immutable");
 });
 
 test("web manifest preserves Ballot Clarity branding", () => {

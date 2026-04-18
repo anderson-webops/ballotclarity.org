@@ -127,6 +127,7 @@ Public runtime variables:
 
 - `NUXT_PUBLIC_SITE_URL`: canonical public origin used for metadata, schema, and canonical URLs
 - `NUXT_PUBLIC_API_BASE`: public API base used by the front-end for ballot, search, sources, and content reads
+- `NUXT_PUBLIC_BUILD_ID`: optional deploy or release identifier exposed to the client so stale tabs can detect a newer server build and force a safe refresh instead of failing on missing hashed chunks
 
 Local infrastructure variables:
 
@@ -172,6 +173,22 @@ One-time or scheduled ingestion variables:
 
 For production, use unique random values for `ADMIN_API_KEY`, `ADMIN_BOOTSTRAP_PASSWORD`, and `ADMIN_SESSION_SECRET`. The front-end and back-end must share the same `ADMIN_API_KEY`. Keep every `ADMIN_*` variable in the server environment only.
 The public browser should call `/api/admin/*` on the Nuxt origin only. Those requests must terminate at the Nuxt server so the session cookie and server-held `ADMIN_API_KEY` stay inside the bridge layer.
+
+## Deploy-time stale-client recovery
+
+Ballot Clarity now protects users who keep a tab open across deploys:
+
+- SSR HTML exposes a public build id in the document shell.
+- The client compares its own build id to the server-rendered build id during startup.
+- If a stale client tries to hydrate a newer deploy, the app forces one safe reload instead of continuing into chunk 404s and hydration drift.
+- Dynamic import and route-chunk failures that look like stale `_nuxt` asset misses also trigger the same one-time reload path.
+
+Caching expectations:
+
+- HTML responses should be revalidated aggressively and now send `Cache-Control: public, max-age=0, must-revalidate`.
+- Hashed `_nuxt` assets remain immutable and now send `Cache-Control: public, max-age=31536000, immutable`.
+
+If you want zero-disruption deploys beyond that, keep the previous `_nuxt` asset set available briefly after each release or switch traffic only after both the previous and new asset sets are accessible. That part is deployment infrastructure, not an app-shell setting.
 
 ## Useful npm commands
 

@@ -15,9 +15,6 @@ const siteSchema = {
 };
 
 useHead(() => ({
-	htmlAttrs: {
-		lang: "en"
-	},
 	meta: shouldNoindex.value
 		? [
 				{

@@ -3,6 +3,13 @@ import { defineNuxtConfig } from "nuxt/config";
 import { appDescription, appName } from "./src/constants/index";
 
 const assetVersion = "20260417";
+const buildId = process.env.NUXT_PUBLIC_BUILD_ID
+	|| process.env.RELEASE_VERSION
+	|| process.env.SOURCE_VERSION
+	|| process.env.VERCEL_GIT_COMMIT_SHA
+	|| process.env.GITHUB_SHA
+	|| process.env.COMMIT_SHA
+	|| `local-${Date.now().toString(36)}`;
 
 export default defineNuxtConfig({
 	modules: [
@@ -21,6 +28,10 @@ export default defineNuxtConfig({
 
 	app: {
 		head: {
+			htmlAttrs: {
+				"lang": "en",
+				"data-app-build": buildId
+			},
 			viewport: "width=device-width,initial-scale=1",
 			link: [
 				{ rel: "shortcut icon", href: `/favicon.ico?v=${assetVersion}` },
@@ -34,6 +45,7 @@ export default defineNuxtConfig({
 			meta: [
 				{ name: "viewport", content: "width=device-width, initial-scale=1" },
 				{ name: "description", content: appDescription },
+				{ name: "ballot-clarity-build-id", content: buildId },
 				{ name: "application-name", content: appName },
 				{ name: "apple-mobile-web-app-status-bar-style", content: "default" },
 				{ name: "theme-color", media: "(prefers-color-scheme: light)", content: "#F7F4EE" },
@@ -56,6 +68,7 @@ export default defineNuxtConfig({
 		adminSessionSecret: process.env.ADMIN_SESSION_SECRET || "",
 		public: {
 			apiBase: process.env.NUXT_PUBLIC_API_BASE || "http://127.0.0.1:3001/api",
+			buildId,
 			siteUrl: process.env.NUXT_PUBLIC_SITE_URL || "https://ballotclarity.jacobdanderson.net"
 		}
 	},
@@ -79,6 +92,11 @@ export default defineNuxtConfig({
 			}
 		},
 		routeRules: {
+			"/_nuxt/**": {
+				headers: {
+					"cache-control": "public, max-age=31536000, immutable"
+				}
+			},
 			"/admin": {
 				headers: {
 					"X-Robots-Tag": "noindex, nofollow"

@@ -39,6 +39,7 @@ export function normalizeLookupResponseForDisplay(
 	return {
 		actions: response.actions ?? [],
 		availability: response.availability ?? null,
+		detectedFromIp: Boolean(response.detectedFromIp),
 		districtMatches: response.districtMatches ?? [],
 		election: election ?? null,
 		electionSlug: response.electionSlug,
@@ -57,7 +58,7 @@ export function buildNationwideLookupResultContext(
 	response: LocationLookupResponse,
 	election?: ElectionSummary | null
 ) {
-	if (response.result !== "resolved" || hasPublishedGuideResult(response))
+	if (response.result !== "resolved" || (hasPublishedGuideResult(response) && !response.detectedFromIp))
 		return null;
 
 	return normalizeLookupResponseForDisplay(response, election);
@@ -67,7 +68,7 @@ export function deriveCivicLookupStateUpdate(
 	response: LocationLookupResponse,
 	election?: ElectionSummary | null
 ): CivicLookupStateUpdate {
-	const canOpenGuide = hasPublishedGuideResult(response);
+	const canOpenGuide = hasPublishedGuideResult(response) && !response.detectedFromIp;
 
 	return {
 		lookupContext: buildLookupContextState(response),
@@ -82,7 +83,7 @@ export function hasActiveNationwideLookupResult(
 	return Boolean(
 		context
 		&& context.result === "resolved"
-		&& context.guideAvailability !== "published"
+		&& (context.detectedFromIp || context.guideAvailability !== "published")
 	);
 }
 

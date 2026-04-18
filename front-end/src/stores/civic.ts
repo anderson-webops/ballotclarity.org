@@ -205,7 +205,7 @@ export const useCivicStore = defineStore("civic", {
 		setLookupResponse(response: LocationLookupResponse, election?: ElectionSummary | null) {
 			this.lookupContext = buildLookupContextState(response);
 			this.nationwideLookupResult = buildNationwideLookupResultContext(response, election);
-			this.selectedLocation = response.guideAvailability === "published"
+			this.selectedLocation = response.guideAvailability === "published" && !response.detectedFromIp
 				? sanitizeLocationSelection(response.location ?? null)
 				: null;
 

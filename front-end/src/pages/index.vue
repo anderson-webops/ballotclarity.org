@@ -250,7 +250,7 @@ const trustFacts = computed(() => [
 							Start from a real location, not a default guide.
 						</h2>
 						<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-							Enter a ZIP code to preview nationwide civic coverage, or use a full street address for the strongest district match. Ballot Clarity does not auto-select from your IP address.
+							Ballot Clarity makes a best-effort location guess from your IP address on load. Enter a ZIP code to replace it with a broader nationwide preview, or use a full street address for the strongest district match.
 						</p>
 						<div class="mt-5">
 							<AddressLookupForm compact :election="featuredElection" :framed="false" />

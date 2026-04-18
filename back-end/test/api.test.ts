@@ -440,6 +440,36 @@ test("POST /api/location returns district lookup results without a published gui
 	assert.match(body.note, /Census geography matched/i);
 });
 
+test("GET /api/location/guess uses deployment geo headers to load an IP-based nationwide result", async () => {
+	const response = await fetch(`${baseUrl}/api/location/guess`, {
+		headers: {
+			"x-vercel-ip-city": "Provo",
+			"x-vercel-ip-country": "US",
+			"x-vercel-ip-country-region": "UT",
+			"x-vercel-ip-postal-code": "84604"
+		}
+	});
+	const body = await response.json();
+
+	assert.equal(response.status, 200);
+	assert.equal(response.headers.get("cache-control"), "no-store");
+	assert.match(response.headers.get("vary") || "", /x-vercel-ip-postal-code/i);
+	assert.equal(body.detectedFromIp, true);
+	assert.equal(body.result, "resolved");
+	assert.equal(body.guideAvailability, "not-published");
+	assert.equal(body.inputKind, "zip");
+	assert.match(body.note, /best-effort location guess from your IP address/i);
+	assert.equal(body.actions.some((item: { title: string }) => /Utah voter registration portal/i.test(item.title)), true);
+});
+
+test("GET /api/location/guess returns 404 when deployment geo headers are unavailable", async () => {
+	const response = await fetch(`${baseUrl}/api/location/guess`);
+	const body = await response.json();
+
+	assert.equal(response.status, 404);
+	assert.match(body.message, /IP-based location guess is not available/i);
+});
+
 test("GET /api/ballot returns the election guide and contests", async () => {
 	const response = await fetch(`${baseUrl}/api/ballot?election=2026-fulton-county-general`);
 	const body = await response.json();

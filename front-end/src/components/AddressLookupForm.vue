@@ -84,7 +84,7 @@ async function handleSubmit() {
 			Choose a location with a full street address or 5-digit ZIP code
 		</label>
 		<p :id="descriptionId" class="text-sm text-app-muted mt-2 dark:text-app-muted-dark">
-			Ballot Clarity does not auto-detect your district from IP. Civic results change only when you choose a location here.
+			Ballot Clarity can make a best-effort location guess from your IP address on load, but you can replace that guess here at any time with a full address or ZIP code.
 		</p>
 		<p :id="usageId" class="text-sm text-app-muted leading-6 mt-3 dark:text-app-muted-dark">
 			Ballot Clarity can already use provider-backed lookup to match many U.S. addresses to nationwide civic results, districts, and representative records. Full published ballot guides are still narrower. A full street address is the only input that can support the best district match, while ZIP-only results should still be treated as approximate.

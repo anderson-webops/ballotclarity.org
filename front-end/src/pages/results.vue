@@ -47,7 +47,7 @@ usePageSeo({
 
 		<div v-else-if="!activeResult" class="max-w-3xl">
 			<InfoCallout title="Nationwide civic results not loaded" tone="warning">
-				Ballot Clarity does not have an active nationwide lookup context in this browser yet. Return to the home-page lookup, enter an address or ZIP code, and Ballot Clarity will carry the nationwide civic results here when a published local guide is not available.
+				Ballot Clarity does not have an active nationwide lookup context in this browser yet. The automatic IP-based location guess may have been unavailable for this request, so return to the home-page lookup and enter an address or ZIP code to load civic results here.
 			</InfoCallout>
 			<div class="mt-6 flex flex-wrap gap-3">
 				<NuxtLink to="/" class="btn-primary">

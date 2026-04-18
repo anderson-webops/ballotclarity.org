@@ -78,6 +78,22 @@ const nationwideResponse: LocationLookupResponse = {
 	result: "resolved"
 };
 
+const ipGuessedPublishedGuideResponse: LocationLookupResponse = {
+	...nationwideResponse,
+	detectedFromIp: true,
+	electionSlug: "2026-fulton-county-general",
+	guideAvailability: "published",
+	location: {
+		coverageLabel: "Published ballot guide area: Fulton County, Georgia",
+		displayName: "Fulton County, Georgia",
+		lookupMode: "zip-preview",
+		requiresOfficialConfirmation: true,
+		slug: "fulton-county-georgia",
+		state: "Georgia"
+	},
+	note: "Ballot Clarity made a best-effort location guess from your IP address and started with ZIP code 30303 near Atlanta, GA."
+};
+
 test("successful nationwide lookup builds a persisted nationwide result context", () => {
 	const update = deriveCivicLookupStateUpdate(nationwideResponse, activeElection);
 
@@ -101,6 +117,14 @@ test("non-published-guide lookups keep a persisted app context instead of droppi
 		guideAvailability: "not-published",
 		result: "resolved"
 	});
+});
+
+test("ip-guessed guide availability stays in nationwide context until the user confirms a guide location", () => {
+	const update = deriveCivicLookupStateUpdate(ipGuessedPublishedGuideResponse, activeElection);
+
+	assert.equal(update.selectedLocation, null);
+	assert.equal(update.nationwideLookupResult?.detectedFromIp, true);
+	assert.equal(update.nationwideLookupResult?.guideAvailability, "published");
 });
 
 test("nationwide lookups route into the nationwide results experience", () => {

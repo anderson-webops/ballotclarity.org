@@ -1,4 +1,4 @@
-import type { ErrorRequestHandler } from "express";
+import type { ErrorRequestHandler, Request } from "express";
 import type { AddressEnrichmentService } from "./address-enrichment.js";
 import type { CoverageRepository } from "./coverage-repository.js";
 import type {
@@ -85,6 +85,63 @@ function isAuthorizedAdminRequest(requestKey: string | undefined, configuredKey:
 		return false;
 
 	return timingSafeEqual(left, right);
+}
+
+interface IpLocationGuess {
+	city?: string;
+	country?: string;
+	postalCode?: string;
+	region?: string;
+	rawQuery: string;
+}
+
+function readRequestHeader(request: Request, name: string) {
+	const value = request.header(name)?.trim();
+	return value || undefined;
+}
+
+function buildIpLocationGuess(request: Request): IpLocationGuess | null {
+	const country = readRequestHeader(request, "x-vercel-ip-country");
+	const postalCode = readRequestHeader(request, "x-vercel-ip-postal-code");
+	const city = readRequestHeader(request, "x-vercel-ip-city");
+	const region = readRequestHeader(request, "x-vercel-ip-country-region");
+
+	if (country && country.toUpperCase() !== "US")
+		return null;
+
+	if (postalCode) {
+		return {
+			city,
+			country,
+			postalCode,
+			rawQuery: postalCode,
+			region
+		};
+	}
+
+	if (city && region) {
+		return {
+			city,
+			country,
+			rawQuery: `${city}, ${region}`,
+			region
+		};
+	}
+
+	return null;
+}
+
+function buildIpGuessNotePrefix(guess: IpLocationGuess) {
+	if (guess.postalCode && guess.city && guess.region)
+		return `Ballot Clarity made a best-effort location guess from your IP address and started with ZIP code ${guess.postalCode} near ${guess.city}, ${guess.region}.`;
+
+	if (guess.postalCode)
+		return `Ballot Clarity made a best-effort location guess from your IP address and started with ZIP code ${guess.postalCode}.`;
+
+	if (guess.city && guess.region)
+		return `Ballot Clarity made a best-effort location guess from your IP address and started with ${guess.city}, ${guess.region}.`;
+
+	return "Ballot Clarity made a best-effort location guess from your IP address.";
 }
 
 function uniqueSources(sources: Source[]) {
@@ -1060,6 +1117,96 @@ export async function createApp(options: CreateAppOptions = {}) {
 		};
 	}
 
+	async function resolveLocationLookup(raw: string, requestId?: string) {
+		const coverage = buildCoverageResponse(
+			coverageRepository.mode,
+			coverageRepository.data.updatedAt,
+			coverageRepository.data.dataSources.launchTarget
+		);
+
+		let officialLookup = null;
+		let addressEnrichment = null;
+		let geoContext = null;
+
+		if (classifyLookupInput(raw) === "address") {
+			if (addressEnrichmentService) {
+				try {
+					addressEnrichment = await addressEnrichmentService.lookupAddress(raw);
+
+					if (addressEnrichment) {
+						geoContext = {
+							countyFips: addressEnrichment.countyFips,
+							normalizedAddress: addressEnrichment.normalizedAddress,
+							postalCode: addressEnrichment.zip5,
+							sourceSystem: "U.S. Census Geocoder",
+							stateAbbreviation: addressEnrichment.state
+						};
+					}
+					else {
+						geoContext = null;
+					}
+				}
+				catch (error) {
+					logger.warn("provider.census-openstates.lookup-failed", {
+						message: error instanceof Error ? error.message : "Unknown provider error.",
+						requestId
+					});
+				}
+			}
+
+			if (googleCivicClient) {
+				try {
+					officialLookup = await googleCivicClient.lookupVoterInfo(raw);
+				}
+				catch (error) {
+					logger.warn("provider.google-civic.lookup-failed", {
+						message: error instanceof Error ? error.message : "Unknown provider error.",
+						requestId
+					});
+				}
+			}
+		}
+		else if (zipLocationService) {
+			try {
+				const zipMatch = await zipLocationService.lookupZip(raw);
+
+				if (zipMatch) {
+					geoContext = {
+						countyFips: zipMatch.countyFips,
+						countyName: zipMatch.countyName,
+						locality: zipMatch.locality,
+						postalCode: zipMatch.postalCode,
+						sourceSystem: zipMatch.sourceSystem,
+						stateAbbreviation: zipMatch.stateAbbreviation,
+						stateName: zipMatch.stateName
+					};
+				}
+				else {
+					geoContext = null;
+				}
+			}
+			catch (error) {
+				logger.warn("provider.zip-lookup.lookup-failed", {
+					message: error instanceof Error ? error.message : "Unknown provider error.",
+					requestId
+				});
+			}
+		}
+
+		return buildLocationLookupResponse(
+			raw,
+			coverageRepository.data.jurisdiction,
+			coverageRepository.data.jurisdictionSummaries,
+			coverageRepository.data.location,
+			coverageRepository.data.election?.slug,
+			coverageRepository.mode,
+			coverage,
+			geoContext,
+			officialLookup,
+			addressEnrichment
+		);
+	}
+
 	if (process.env.TRUST_PROXY === "true")
 		app.set("trust proxy", true);
 
@@ -1184,11 +1331,6 @@ export async function createApp(options: CreateAppOptions = {}) {
 
 	app.post("/api/location", async (request, response) => {
 		const raw = typeof request.body?.q === "string" ? request.body.q.trim() : "";
-		const coverage = buildCoverageResponse(
-			coverageRepository.mode,
-			coverageRepository.data.updatedAt,
-			coverageRepository.data.dataSources.launchTarget
-		);
 
 		response.set("Cache-Control", "no-store");
 
@@ -1201,87 +1343,36 @@ export async function createApp(options: CreateAppOptions = {}) {
 			return;
 		}
 
-		let officialLookup = null;
-		let addressEnrichment = null;
-		let geoContext = null;
+		response.json(await resolveLocationLookup(raw, response.locals.requestId));
+	});
 
-		if (classifyLookupInput(raw) === "address") {
-			if (addressEnrichmentService) {
-				try {
-					addressEnrichment = await addressEnrichmentService.lookupAddress(raw);
+	app.get("/api/location/guess", async (request, response) => {
+		const guess = buildIpLocationGuess(request);
 
-					if (addressEnrichment) {
-						geoContext = {
-							countyFips: addressEnrichment.countyFips,
-							normalizedAddress: addressEnrichment.normalizedAddress,
-							postalCode: addressEnrichment.zip5,
-							sourceSystem: "U.S. Census Geocoder",
-							stateAbbreviation: addressEnrichment.state
-						};
-					}
-					else {
-						geoContext = null;
-					}
-				}
-				catch (error) {
-					logger.warn("provider.census-openstates.lookup-failed", {
-						message: error instanceof Error ? error.message : "Unknown provider error.",
-						requestId: response.locals.requestId
-					});
-				}
-			}
+		response.set("Cache-Control", "no-store");
+		response.set("Vary", "X-Vercel-IP-Postal-Code, X-Vercel-IP-City, X-Vercel-IP-Country-Region, X-Vercel-IP-Country");
 
-			if (googleCivicClient) {
-				try {
-					officialLookup = await googleCivicClient.lookupVoterInfo(raw);
-				}
-				catch (error) {
-					logger.warn("provider.google-civic.lookup-failed", {
-						message: error instanceof Error ? error.message : "Unknown provider error.",
-						requestId: response.locals.requestId
-					});
-				}
-			}
-		}
-		else if (zipLocationService) {
-			try {
-				const zipMatch = await zipLocationService.lookupZip(raw);
-
-				if (zipMatch) {
-					geoContext = {
-						countyFips: zipMatch.countyFips,
-						countyName: zipMatch.countyName,
-						locality: zipMatch.locality,
-						postalCode: zipMatch.postalCode,
-						sourceSystem: zipMatch.sourceSystem,
-						stateAbbreviation: zipMatch.stateAbbreviation,
-						stateName: zipMatch.stateName
-					};
-				}
-				else {
-					geoContext = null;
-				}
-			}
-			catch (error) {
-				logger.warn("provider.zip-lookup.lookup-failed", {
-					message: error instanceof Error ? error.message : "Unknown provider error.",
-					requestId: response.locals.requestId
-				});
-			}
+		if (!guess) {
+			response.status(404).json({
+				message: "IP-based location guess is not available for this request."
+			});
+			return;
 		}
 
-		response.json(buildLocationLookupResponse(
-			raw,
-			coverageRepository.data.jurisdiction,
-			coverageRepository.data.jurisdictionSummaries,
-			coverageRepository.data.location,
-			coverageRepository.data.election?.slug,
-			coverageRepository.mode,
-			coverage,
-			geoContext,
-			officialLookup,
-			addressEnrichment
-		));
+		const lookupResponse = await resolveLocationLookup(guess.rawQuery, response.locals.requestId);
+
+		if (lookupResponse.result !== "resolved") {
+			response.status(404).json({
+				message: "IP-based location guess did not resolve to civic results for this request."
+			});
+			return;
+		}
+
+		response.json({
+			...lookupResponse,
+			detectedFromIp: true,
+			note: `${buildIpGuessNotePrefix(guess)} ${lookupResponse.note}`.trim()
+		});
 	});
 
 	app.post("/api/feedback", async (request, response) => {

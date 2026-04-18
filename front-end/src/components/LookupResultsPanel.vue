@@ -52,7 +52,10 @@ function openGuideAction(action: LocationLookupAction) {
 			{{ lookup.note }}
 		</p>
 		<div v-if="lookup.result === 'resolved'" class="mt-4 flex flex-wrap gap-2">
-			<VerificationBadge :label="lookup.inputKind === 'address' ? 'Address lookup' : 'ZIP lookup'" :tone="lookup.inputKind === 'address' ? 'accent' : 'warning'" />
+			<VerificationBadge
+				:label="lookup.detectedFromIp ? 'IP-based location guess' : lookup.inputKind === 'address' ? 'Address lookup' : 'ZIP lookup'"
+				:tone="lookup.detectedFromIp || lookup.inputKind === 'zip' ? 'warning' : 'accent'"
+			/>
 			<VerificationBadge :label="lookupPresentation.availabilityBadgeLabel" tone="accent" />
 			<VerificationBadge
 				:label="lookup.representativeMatches.length ? `${lookup.representativeMatches.length} representative match${lookup.representativeMatches.length === 1 ? '' : 'es'}` : 'No representative match yet'"

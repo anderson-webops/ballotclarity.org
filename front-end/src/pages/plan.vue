@@ -227,7 +227,7 @@ function printPlan() {
 						You are currently viewing {{ activeLocationLabel }}.
 					</p>
 					<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-						Enter a ZIP code to choose from the available coverage area, or use a full street address for the closest district match. Ballot Clarity does not auto-select a district from your IP address.
+						Ballot Clarity may start with a best-effort IP-based location guess, but the ballot plan still needs a published local guide confirmed from a ZIP code or full street address.
 					</p>
 				</div>
 				<AddressLookupForm compact :election="lookupElection" :framed="false" />

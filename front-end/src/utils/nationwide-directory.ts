@@ -55,19 +55,30 @@ function buildDistrictSummary(
 
 function buildRepresentativeSummary(
 	match: LocationRepresentativeMatch,
-	updatedAt: string
+	updatedAt: string,
+	locationLabel: string
 ) {
 	return {
 		incumbent: true,
+		location: locationLabel,
 		name: match.name,
+		officeholderLabel: "Current officeholder",
 		officeSought: match.officeTitle,
+		onCurrentBallot: false,
+		ballotStatusLabel: "Published ballot status unavailable in this area",
 		party: match.party ?? "Unknown",
+		provenance: {
+			label: match.sourceSystem ? `${match.sourceSystem} representative match` : "Nationwide lookup representative match",
+			note: "Derived from the active nationwide lookup layer rather than a published local ballot guide.",
+			status: "crosswalked"
+		},
 		slug: toSlug(match.id || match.name),
 		summary: match.sourceSystem ? `Matched from ${match.sourceSystem}` : "Matched from nationwide lookup",
 		districtLabel: match.districtLabel,
 		districtSlug: toSlug(match.districtLabel),
 		fundingSummary: "Not available from the nationwide lookup layer.",
 		href: match.openstatesUrl ?? "/representatives",
+		openstatesUrl: match.openstatesUrl,
 		influenceSummary: "Not available from the nationwide lookup layer.",
 		sourceCount: match.openstatesUrl ? 1 : 0,
 		updatedAt
@@ -89,6 +100,7 @@ export function buildNationwideDirectoryResponses(
 	const updatedAt = buildNationwideDirectoryUpdatedAt();
 	const districtMatches = context?.districtMatches ?? [];
 	const representativeMatches = context?.representativeMatches ?? [];
+	const locationLabel = context?.location?.displayName ?? context?.normalizedAddress ?? "Nationwide lookup";
 	const districtBySlug = new Map<string, DistrictSummary>();
 	const districtRepresentatives = new Map<string, string>();
 	const normalizedDistrictToSlug = new Map<string, string>();
@@ -114,7 +126,7 @@ export function buildNationwideDirectoryResponses(
 
 	const districts = Array.from(districtBySlug.values());
 	const representatives = representativeMatches.map((representative) => {
-		const summary = buildRepresentativeSummary(representative, updatedAt);
+		const summary = buildRepresentativeSummary(representative, updatedAt, locationLabel);
 		const districtSlug = districtRepresentatives.get(representative.id) ?? toSlug(representative.districtLabel);
 
 		return {

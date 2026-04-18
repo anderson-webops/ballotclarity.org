@@ -25,6 +25,7 @@ import type {
 	MeasureFiscalItem,
 	MeasureTimelineItem,
 	OfficialResource,
+	PersonProfileResponse,
 	PublicCorrectionsResponse,
 	PublicStatusResponse,
 	QuestionnaireResponse,
@@ -267,18 +268,78 @@ function buildSourceRecord(
 
 function buildRepresentativeSummary(candidate: Candidate): RepresentativeSummary {
 	return {
+		location: candidate.location,
 		districtLabel: candidate.officeSought,
 		districtSlug: candidate.contestSlug,
 		fundingSummary: candidate.funding.summary,
 		href: `/candidate/${candidate.slug}`,
+		officeholderLabel: candidate.incumbent ? "Current officeholder" : "Incumbent contender",
 		influenceSummary: candidate.lobbyingContext[0]?.summary ?? "No published influence-context note is attached to this profile yet.",
 		incumbent: candidate.incumbent,
+		onCurrentBallot: true,
 		name: candidate.name,
 		officeSought: candidate.officeSought,
 		party: candidate.party,
 		slug: candidate.slug,
+		ballotStatusLabel: candidate.comparison.ballotStatus.label,
+		provenance: {
+			label: "Published guide coverage",
+			status: "direct",
+			note: "Matched from the active published guide context for this district."
+		},
 		sourceCount: collectCandidateSources(candidate).length,
 		summary: candidate.summary,
+		updatedAt: candidate.updatedAt
+	};
+}
+
+function _buildPersonProfileFromCandidate(candidate: Candidate): PersonProfileResponse {
+	const funding: PersonProfileResponse["person"]["funding"] = candidate.funding
+		? {
+				...candidate.funding,
+				provenanceLabel: "Published guide filing summary"
+			}
+		: null;
+
+	return {
+		note: "Representative profile assembled from active guide layer candidate data.",
+		person: {
+			ballotStatusLabel: candidate.comparison.ballotStatus.label,
+			contestSlug: candidate.contestSlug,
+			comparison: candidate.comparison,
+			districtLabel: candidate.officeSought,
+			districtSlug: candidate.contestSlug,
+			funding,
+			keyActions: candidate.keyActions,
+			lobbyingContext: candidate.lobbyingContext,
+			methodologyNotes: candidate.methodologyNotes,
+			name: candidate.name,
+			officeSought: candidate.officeSought,
+			officeholderLabel: candidate.incumbent ? "Current officeholder" : "Candidate",
+			onCurrentBallot: true,
+			openstatesUrl: undefined,
+			party: candidate.party,
+			provenance: {
+				asOf: candidate.updatedAt,
+				label: "Published local guide",
+				note: "Derived from the active published election layer.",
+				source: "guide",
+				status: "direct"
+			},
+			publicStatements: candidate.publicStatements,
+			whatWeKnow: candidate.whatWeKnow,
+			whatWeDoNotKnow: candidate.whatWeDoNotKnow,
+			topIssues: candidate.topIssues,
+			biography: candidate.biography,
+			incumbent: candidate.incumbent,
+			location: candidate.location,
+			slug: candidate.slug,
+			sources: candidate.sources,
+			summary: candidate.summary,
+			sourceCount: candidate.sources.length,
+			updatedAt: candidate.updatedAt,
+			freshness: candidate.freshness
+		},
 		updatedAt: candidate.updatedAt
 	};
 }

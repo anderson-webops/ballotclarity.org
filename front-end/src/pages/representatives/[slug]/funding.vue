@@ -41,6 +41,9 @@ const pagePending = computed(() => pending.value || (!data.value && !fallbackDat
 const linkageConfidence = computed(() => person.value ? buildPersonLinkageConfidence(person.value.provenance.status) : null);
 const funding = computed(() => person.value?.funding ?? null);
 const fundingAvailable = computed(() => person.value ? hasPersonFunding(person.value) : false);
+const fundingUnavailableSummary = computed(() => person.value
+	? `${person.value.name} resolves as a stable public officeholder record, but Ballot Clarity does not currently have a source-backed finance summary attached to this person.`
+	: "");
 function buildLookupAwareTarget(path: string) {
 	return buildNationwideRouteTarget(path, buildLookupContextFromNationwideResult(activeNationwideLookupResult.value), route.query);
 }
@@ -52,10 +55,19 @@ const breadcrumbs = computed(() => [
 ]);
 
 const summaryItems = computed(() => {
-	if (!funding.value)
+	if (!person.value)
 		return [];
 
+	if (!fundingAvailable.value || !funding.value) {
+		return [
+			{ label: "Current office", note: "Office context attached to this representative record.", value: person.value.officeSought },
+			{ label: "Finance status", note: "Person-level campaign-finance attachment for this route.", value: "Unavailable" },
+			{ label: "Updated", note: "Profile freshness.", value: formatDate(person.value.freshness.dataLastUpdatedAt ?? person.value.updatedAt) }
+		];
+	}
+
 	return [
+		{ label: "Current office", note: "Office context attached to this representative record.", value: person.value.officeSought },
 		{ label: "Total raised", note: "Current filing-window total.", value: formatCurrency(funding.value.totalRaised) },
 		{ label: "Cash on hand", note: "Reported funds still available.", value: formatCurrency(funding.value.cashOnHand) },
 		{ label: "Small-donor share", note: "Share attributed to smaller donors in the current summary.", value: formatPercent(funding.value.smallDonorShare) }
@@ -82,12 +94,6 @@ usePageSeo({
 			</InfoCallout>
 		</div>
 
-		<div v-else-if="!fundingAvailable || !funding" class="max-w-3xl">
-			<InfoCallout title="No funding data attached" tone="warning">
-				Ballot Clarity does not currently have a source-backed finance summary attached to this representative record.
-			</InfoCallout>
-		</div>
-
 		<div v-else class="space-y-8">
 			<header class="surface-panel">
 				<AppBreadcrumbs :items="breadcrumbs" />
@@ -100,23 +106,23 @@ usePageSeo({
 					{{ person.name }} funding
 				</h1>
 				<p class="text-base text-app-muted leading-8 mt-5 dark:text-app-muted-dark">
-					{{ funding.summary }}
+					{{ funding?.summary || fundingUnavailableSummary }}
 				</p>
 				<div class="mt-6 flex flex-wrap gap-3">
 					<NuxtLink :to="buildLookupAwareTarget(`/representatives/${person.slug}`)" class="btn-secondary">
 						Back to profile
 					</NuxtLink>
-					<NuxtLink v-if="person.lobbyingContext.length || person.publicStatements.length" :to="buildLookupAwareTarget(`/representatives/${person.slug}/influence`)" class="btn-secondary">
+					<NuxtLink :to="buildLookupAwareTarget(`/representatives/${person.slug}/influence`)" class="btn-secondary">
 						Open influence page
 					</NuxtLink>
-					<SourceDrawer :sources="funding.sources" :title="`${person.name} funding sources`" button-label="Funding sources" />
+					<SourceDrawer :sources="funding?.sources ?? person.sources" :title="`${person.name} funding sources`" button-label="Funding sources" />
 				</div>
 				<div class="mt-6">
 					<PageSummaryStrip :items="summaryItems" />
 				</div>
 			</header>
 
-			<section class="gap-6 grid xl:grid-cols-[minmax(0,1fr)_minmax(0,0.95fr)]">
+			<section v-if="fundingAvailable && funding" class="gap-6 grid xl:grid-cols-[minmax(0,1fr)_minmax(0,0.95fr)]">
 				<div class="surface-panel">
 					<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
 						Top funders
@@ -174,6 +180,23 @@ usePageSeo({
 						</div>
 					</div>
 				</div>
+			</section>
+
+			<section v-else class="surface-panel max-w-4xl">
+				<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
+					No funding data attached yet
+				</h2>
+				<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
+					Ballot Clarity resolved the person identity and office context for this route, but it does not currently have a source-backed campaign-finance summary attached to this representative record.
+				</p>
+				<ul class="readable-list text-sm text-app-muted mt-6 pl-5 dark:text-app-muted-dark">
+					<li><strong class="text-app-ink dark:text-app-text-dark">Office:</strong> {{ person.officeSought }}</li>
+					<li><strong class="text-app-ink dark:text-app-text-dark">District:</strong> {{ person.districtLabel }}</li>
+					<li><strong class="text-app-ink dark:text-app-text-dark">Linkage:</strong> {{ linkageConfidence?.label }}</li>
+					<li><strong class="text-app-ink dark:text-app-text-dark">Provenance:</strong> {{ person.provenance.label }}</li>
+					<li><strong class="text-app-ink dark:text-app-text-dark">Updated:</strong> {{ formatDate(person.freshness.dataLastUpdatedAt ?? person.updatedAt) }}</li>
+					<li>{{ person.freshness.statusNote }}</li>
+				</ul>
 			</section>
 		</div>
 	</section>

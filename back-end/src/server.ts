@@ -1,6 +1,7 @@
 import type { ErrorRequestHandler } from "express";
 import type { AddressEnrichmentService } from "./address-enrichment.js";
 import type { CoverageRepository } from "./coverage-repository.js";
+import type { OpenStatesRepresentativeRecord } from "./openstates.js";
 import type {
 	AdminActivityItem,
 	AdminContentItem,
@@ -49,8 +50,10 @@ import {
 	buildActiveNationwideLookupContext,
 	buildActiveNationwideLookupCookie,
 	buildNationwideDistrictRecordResponse,
+	buildNationwideDistrictRoleGuide,
 	buildNationwideDistrictsResponse,
 	buildNationwidePersonProfileResponse,
+	buildNationwideRepresentativeSlug,
 	buildNationwideRepresentativesResponse,
 	buildRouteFallbackDistrictRecordResponse,
 	buildRouteFallbackPersonProfileResponse,
@@ -70,6 +73,7 @@ import { createLdaClient } from "./lda.js";
 import { buildLocationGuessNotePrefix, createLocationGuessService } from "./location-guess.js";
 import { buildLocationLookupResponse, classifyLookupInput, findSupportedCoverageSummaries, validateLookupInput } from "./location-lookup.js";
 import { createLogger, createRequestLoggingMiddleware } from "./logger.js";
+import { getOfficialToolsForState, getStateAbbreviationForName, getStateNameForAbbreviation } from "./official-election-tools.js";
 import { createOpenFecClient } from "./openfec.js";
 import { createOpenStatesClient } from "./openstates.js";
 import { buildProviderSummary } from "./provider-config.js";
@@ -92,6 +96,7 @@ interface CreateAppOptions {
 	ldaClient?: ReturnType<typeof createLdaClient>;
 	locationGuessOptions?: Parameters<typeof createLocationGuessService>[0];
 	openFecClient?: ReturnType<typeof createOpenFecClient>;
+	openStatesClient?: ReturnType<typeof createOpenStatesClient>;
 	sourceMonitorSeed?: AdminSourceMonitorItem[];
 	zipLocationService?: ZipLocationService | null;
 }
@@ -310,6 +315,616 @@ function buildRepresentativeSummary(candidate: Candidate): RepresentativeSummary
 		sourceCount: collectCandidateSources(candidate).length,
 		summary: candidate.summary,
 		updatedAt: candidate.updatedAt
+	};
+}
+
+const cityRoutePattern = /^([a-z0-9-]+)-city$/i;
+const congressionalDistrictCodePattern = /^([A-Z]{2})-(\d+)$/i;
+const congressionalRoutePattern = /^congressional-(\d+)$/i;
+const countyRoutePattern = /^([a-z0-9-]+)-county$/i;
+const districtNumberPattern = /\b(\d+)\b/;
+const ocdPersonRoutePattern = /^ocd-person-/i;
+const representativeOfficePattern = /representative/i;
+const representativeRoutePattern = /^representative-(\d+)$/i;
+const representativeStateRoutePattern = /^representative-([a-z]{2})-(\d+)$/i;
+const routeDivisionStatePattern = /\/state:([a-z]{2})(?:\/|$)/i;
+const senatorOfficePattern = /senator/i;
+const senatorRoutePattern = /^senator-(\d+)$/i;
+const senatorStatewideCodeRoutePattern = /^([a-z]{2})-sen-statewide$/i;
+const senatorStatewideNameRoutePattern = /^senator-([a-z0-9-]+)$/i;
+const stateAbbreviationRouteTokenPattern = /^[a-z]{2}$/i;
+const stateHouseRoutePattern = /^state-house-(\d+)$/i;
+const stateSenateRoutePattern = /^state-senate-(\d+)$/i;
+
+function toLookupSlug(value: string | null | undefined) {
+	return String(value ?? "")
+		.toLowerCase()
+		.trim()
+		.replace(/[\s_]+/g, "-")
+		.replace(/[^a-z0-9-]/g, "-")
+		.replace(/-+/g, "-")
+		.replace(/^-|-$/g, "");
+}
+
+function titleCaseToken(value: string) {
+	return value
+		.split("-")
+		.filter(Boolean)
+		.map((segment) => {
+			if (segment.length <= 2)
+				return segment.toUpperCase();
+
+			if (segment.startsWith("mc") && segment.length > 2)
+				return `Mc${segment.charAt(2).toUpperCase()}${segment.slice(3)}`;
+
+			return segment.charAt(0).toUpperCase() + segment.slice(1);
+		})
+		.join(" ");
+}
+
+function buildStateIdentityFromRouteToken(token: string) {
+	const normalizedToken = toLookupSlug(token);
+
+	if (!normalizedToken)
+		return null;
+
+	if (stateAbbreviationRouteTokenPattern.test(normalizedToken)) {
+		const stateCode = normalizedToken.toUpperCase();
+		const stateName = getStateNameForAbbreviation(stateCode) || titleCaseToken(normalizedToken);
+
+		return {
+			officialResources: getOfficialToolsForState(stateCode),
+			stateCode,
+			stateName,
+		};
+	}
+
+	const stateName = titleCaseToken(normalizedToken);
+	const stateCode = getStateAbbreviationForName(stateName);
+
+	return {
+		officialResources: getOfficialToolsForState(stateCode),
+		stateCode,
+		stateName,
+	};
+}
+
+function buildSearchNameFromRepresentativeSlug(slug: string) {
+	const normalizedSlug = toLookupSlug(slug);
+
+	if (!normalizedSlug || ocdPersonRoutePattern.test(normalizedSlug))
+		return "";
+
+	return titleCaseToken(normalizedSlug);
+}
+
+function buildRouteSource({
+	authority,
+	date,
+	id,
+	note,
+	publisher,
+	sourceSystem,
+	title,
+	url,
+}: {
+	authority: Source["authority"];
+	date: string;
+	id: string;
+	note: string;
+	publisher: string;
+	sourceSystem: string;
+	title: string;
+	url: string;
+}) {
+	return {
+		authority,
+		date,
+		id,
+		note,
+		publisher,
+		sourceSystem,
+		title,
+		type: "official record",
+		url,
+	} satisfies Source;
+}
+
+function buildOfficialToolSources(resources: OfficialResource[], updatedAt: string) {
+	return resources.map(resource => buildRouteSource({
+		authority: resource.authority,
+		date: updatedAt,
+		id: `official:${toLookupSlug(resource.label)}`,
+		note: resource.note || "",
+		publisher: resource.sourceLabel,
+		sourceSystem: resource.sourceSystem,
+		title: resource.label,
+		url: resource.url,
+	}));
+}
+
+function inferRepresentativeStateCode(record: OpenStatesRepresentativeRecord) {
+	const divisionStateMatch = record.currentRoleDivisionId?.match(routeDivisionStatePattern);
+
+	if (divisionStateMatch?.[1])
+		return divisionStateMatch[1].toUpperCase();
+
+	const districtStateMatch = record.currentRoleDistrict?.match(congressionalDistrictCodePattern);
+	return districtStateMatch?.[1]?.toUpperCase() || "";
+}
+
+function buildRepresentativeOfficeContext(record: OpenStatesRepresentativeRecord) {
+	const officeTitle = record.officeTitle || "Representative";
+	const stateCode = inferRepresentativeStateCode(record);
+	const stateName = getStateNameForAbbreviation(stateCode) || record.jurisdictionName || stateCode || "Unknown jurisdiction";
+	const districtCodeMatch = record.currentRoleDistrict?.match(congressionalDistrictCodePattern);
+	const numericDistrictMatch = record.currentRoleDistrict?.match(districtNumberPattern);
+	const isSenator = senatorOfficePattern.test(officeTitle);
+	const isRepresentative = representativeOfficePattern.test(officeTitle);
+
+	if (isRepresentative && districtCodeMatch?.[2]) {
+		const districtNumber = String(Number.parseInt(districtCodeMatch[2], 10));
+
+		return {
+			districtLabel: `Congressional District ${districtNumber}`,
+			districtSlug: `congressional-${districtNumber}`,
+			location: stateName,
+			officeSought: `U.S. House, District ${districtNumber}`,
+			stateCode,
+			stateName,
+		};
+	}
+
+	if (isSenator && stateCode) {
+		return {
+			districtLabel: stateName,
+			districtSlug: `${stateCode.toLowerCase()}-sen-statewide`,
+			location: stateName,
+			officeSought: "U.S. Senate",
+			stateCode,
+			stateName,
+		};
+	}
+
+	if (isSenator && numericDistrictMatch?.[1]) {
+		const districtNumber = String(Number.parseInt(numericDistrictMatch[1], 10));
+
+		return {
+			districtLabel: `State Senate District ${districtNumber}`,
+			districtSlug: `state-senate-${districtNumber}`,
+			location: stateName,
+			officeSought: `State Senate District ${districtNumber}`,
+			stateCode,
+			stateName,
+		};
+	}
+
+	if (isRepresentative && numericDistrictMatch?.[1]) {
+		const districtNumber = String(Number.parseInt(numericDistrictMatch[1], 10));
+
+		return {
+			districtLabel: `State House District ${districtNumber}`,
+			districtSlug: `state-house-${districtNumber}`,
+			location: stateName,
+			officeSought: `State House District ${districtNumber}`,
+			stateCode,
+			stateName,
+		};
+	}
+
+	return {
+		districtLabel: record.districtLabel,
+		districtSlug: toLookupSlug(record.districtLabel),
+		location: stateName,
+		officeSought: officeTitle,
+		stateCode,
+		stateName,
+	};
+}
+
+function buildRepresentativeLookupContext(record: OpenStatesRepresentativeRecord, representativeSlug: string, updatedAt: string) {
+	const officeContext = buildRepresentativeOfficeContext(record);
+	const officialResources = getOfficialToolsForState(officeContext.stateCode);
+
+	return {
+		actions: officialResources.map((resource, index) => ({
+			badge: resource.sourceLabel,
+			description: resource.note || "",
+			id: `official:${officeContext.stateCode || "unknown"}:${index}`,
+			kind: "official-verification" as const,
+			title: resource.label,
+			url: resource.url,
+		})),
+		detectedFromIp: false,
+		districtMatches: officeContext.districtLabel
+			? [
+					{
+						districtCode: officeContext.districtLabel.match(districtNumberPattern)?.[1] || officeContext.districtLabel,
+						districtType: officeContext.officeSought,
+						id: officeContext.districtSlug,
+						label: officeContext.districtLabel,
+						sourceSystem: "Open States",
+					},
+				]
+			: [],
+		guideAvailability: "not-published" as const,
+		inputKind: "address" as const,
+		location: {
+			coverageLabel: "Nationwide civic results available",
+			displayName: officeContext.stateName,
+			slug: toLookupSlug(officeContext.stateName),
+			state: officeContext.stateName,
+		},
+		normalizedAddress: officeContext.stateCode || officeContext.stateName,
+		representativeMatches: [
+			{
+				districtLabel: officeContext.districtLabel,
+				id: representativeSlug,
+				name: record.name,
+				officeTitle: record.officeTitle,
+				openstatesUrl: record.openstatesUrl,
+				party: record.party,
+				sourceSystem: "Open States",
+			},
+		],
+		resolvedAt: updatedAt,
+		result: "resolved" as const,
+	};
+}
+
+function buildRepresentativeProfileFromOpenStates(record: OpenStatesRepresentativeRecord): PersonProfileResponse {
+	const updatedAt = record.updatedAt || new Date().toISOString();
+	const officeContext = buildRepresentativeOfficeContext(record);
+	const officialResources = getOfficialToolsForState(officeContext.stateCode);
+	const sources = [
+		buildRouteSource({
+			authority: record.openstatesUrl ? "nonprofit-provider" : "open-data",
+			date: updatedAt,
+			id: `representative:${toLookupSlug(record.name)}`,
+			note: "Current officeholder identity attached from the Open States person record matched to this public representative route.",
+			publisher: "Open States",
+			sourceSystem: "Open States",
+			title: `${record.name} current officeholder record`,
+			url: record.openstatesUrl || "https://openstates.org",
+		}),
+		...buildOfficialToolSources(officialResources, updatedAt),
+	];
+
+	return {
+		note: "Representative profile assembled from a public provider-backed officeholder record and then enriched further when active nationwide lookup context is available.",
+		person: {
+			ballotStatusLabel: "Current ballot status requires active lookup confirmation",
+			biography: [
+				{
+					id: `provider:${toLookupSlug(record.name)}`,
+					sources,
+					summary: `${record.name} is attached here from a current Open States officeholder record. This route can render a stable public identity even before Ballot Clarity has a user-specific lookup context for district confirmation.`,
+					title: "Provider-backed officeholder record",
+				},
+			],
+			comparison: null,
+			contestSlug: officeContext.districtSlug,
+			districtLabel: officeContext.districtLabel,
+			districtSlug: officeContext.districtSlug,
+			freshness: {
+				contentLastVerifiedAt: updatedAt,
+				dataLastUpdatedAt: updatedAt,
+				nextReviewAt: updatedAt,
+				status: "up-to-date",
+				statusLabel: "Provider-backed",
+				statusNote: "This page is route-backed from a current officeholder record. An active lookup still provides stronger user-specific district confirmation and additional official-tool context.",
+			},
+			funding: null,
+			incumbent: true,
+			keyActions: [],
+			lobbyingContext: [],
+			location: officeContext.location,
+			methodologyNotes: [
+				"This route resolves a stable public person identity from the representative slug before any browser-held lookup context is restored.",
+				"Active nationwide lookup context can still add user-specific district confirmation and locality-specific official tools.",
+			],
+			name: record.name,
+			officeholderLabel: "Current officeholder",
+			officeSought: officeContext.officeSought,
+			onCurrentBallot: false,
+			openstatesUrl: record.openstatesUrl,
+			party: record.party || "Unknown",
+			provenance: {
+				asOf: updatedAt,
+				label: "Open States current officeholder record",
+				note: "Matched from the representative route slug to the current provider-backed person record.",
+				source: "nationwide",
+				status: "crosswalked",
+			},
+			publicStatements: [],
+			slug: buildNationwideRepresentativeSlug({ id: record.id, name: record.name }),
+			sourceCount: sources.length,
+			sources,
+			summary: `${record.name} is the current ${record.party ? `${record.party} ` : ""}${officeContext.officeSought} record Ballot Clarity can attach from the public provider layer without requiring browser lookup state.`,
+			topIssues: [],
+			updatedAt,
+			whatWeDoNotKnow: [
+				{
+					id: "lookup-confirmation",
+					note: "A user-specific address or ZIP lookup is still required for exact district confirmation in Ballot Clarity's active nationwide context.",
+					sources,
+					text: "This route resolves the public officeholder identity, but a current lookup is still needed to confirm that this officeholder matches your exact district and locality.",
+				},
+			],
+			whatWeKnow: [
+				{
+					id: "provider-identity",
+					note: "The Open States person record anchors the identity, office, and public provider link on this page.",
+					sources,
+					text: `Ballot Clarity attached ${record.name} as a current officeholder from the Open States provider record for this route.`,
+				},
+			],
+		},
+		updatedAt,
+	};
+}
+
+interface PublicDistrictRouteIdentity {
+	jurisdiction: Contest["jurisdiction"];
+	locationName: string;
+	office: string;
+	officialResources: OfficialResource[];
+	originLabel: string;
+	originNote: string;
+	representativeAvailabilityNote: string;
+	slug: string;
+	summary: string;
+	title: string;
+}
+
+function buildPublicDistrictRouteIdentity(slug: string): PublicDistrictRouteIdentity | null {
+	const normalizedSlug = toLookupSlug(slug);
+	const updatedSlug = normalizedSlug;
+	const congressionalMatch = normalizedSlug.match(congressionalRoutePattern);
+	const representativeStateMatch = normalizedSlug.match(representativeStateRoutePattern);
+	const representativeMatch = normalizedSlug.match(representativeRoutePattern);
+	const senatorStatewideCodeMatch = normalizedSlug.match(senatorStatewideCodeRoutePattern);
+	const senatorStatewideNameMatch = normalizedSlug.match(senatorStatewideNameRoutePattern);
+	const senatorMatch = normalizedSlug.match(senatorRoutePattern);
+	const stateSenateMatch = normalizedSlug.match(stateSenateRoutePattern);
+	const stateHouseMatch = normalizedSlug.match(stateHouseRoutePattern);
+	const countyMatch = normalizedSlug.match(countyRoutePattern);
+	const cityMatch = normalizedSlug.match(cityRoutePattern);
+
+	if (representativeStateMatch?.[1] && representativeStateMatch?.[2]) {
+		const stateIdentity = buildStateIdentityFromRouteToken(representativeStateMatch[1]);
+		const districtNumber = String(Number.parseInt(representativeStateMatch[2], 10));
+
+		return {
+			jurisdiction: "Federal",
+			locationName: stateIdentity?.stateName || "State-specific district confirmation pending",
+			office: `Congressional District ${districtNumber}`,
+			officialResources: stateIdentity?.officialResources ?? [],
+			originLabel: "Provider-qualified district route",
+			originNote: "This district route carries a state-qualified congressional district slug, so Ballot Clarity can resolve the district identity and attach any configured state-level official election tools without requiring browser lookup state.",
+			representativeAvailabilityNote: "This public district route identifies the correct congressional district and state context from the slug itself. Active lookup context can still add user-specific district confirmation and stronger officeholder linkage.",
+			slug: updatedSlug,
+			summary: "This public district route identifies a state-qualified congressional district even before active nationwide lookup context is restored in the browser.",
+			title: `${stateIdentity?.stateName || representativeStateMatch[1].toUpperCase()} Congressional District ${districtNumber}`,
+		};
+	}
+
+	if (congressionalMatch?.[1]) {
+		const districtNumber = String(Number.parseInt(congressionalMatch[1], 10));
+
+		return {
+			jurisdiction: "Federal",
+			locationName: "State-specific district confirmation pending",
+			office: `Congressional District ${districtNumber}`,
+			officialResources: [],
+			originLabel: "Canonical district route",
+			originNote: "This district route identifies a congressional district number, but a state-qualified slug or active lookup is still required before Ballot Clarity can attach the exact officeholder and state election tools for it.",
+			representativeAvailabilityNote: "Ballot Clarity can identify this district route, but the current officeholder cannot be confirmed from the district number alone without a state-qualified route or active lookup context.",
+			slug: updatedSlug,
+			summary: "This public district route is stable and identifies a congressional district number even without an attached browser lookup context.",
+			title: `Congressional District ${districtNumber}`,
+		};
+	}
+
+	if (senatorStatewideCodeMatch?.[1]) {
+		const stateIdentity = buildStateIdentityFromRouteToken(senatorStatewideCodeMatch[1]);
+
+		return {
+			jurisdiction: "Federal",
+			locationName: stateIdentity?.stateName || senatorStatewideCodeMatch[1].toUpperCase(),
+			office: "U.S. Senate",
+			officialResources: stateIdentity?.officialResources ?? [],
+			originLabel: "Provider-qualified district route",
+			originNote: "This district route identifies a statewide U.S. Senate office area from the slug itself, so Ballot Clarity can render a stable public district identity without waiting for browser-held lookup state.",
+			representativeAvailabilityNote: "This public district route identifies the statewide Senate office area for the state in the slug. Active lookup context can still confirm locality-specific election tools and stronger officeholder linkage for the current user.",
+			slug: updatedSlug,
+			summary: "This public district route identifies a statewide U.S. Senate office area even without an attached active nationwide lookup context.",
+			title: `${stateIdentity?.stateName || senatorStatewideCodeMatch[1].toUpperCase()} statewide Senate seat`,
+		};
+	}
+
+	if (senatorStatewideNameMatch?.[1]) {
+		const stateIdentity = buildStateIdentityFromRouteToken(senatorStatewideNameMatch[1]);
+
+		return {
+			jurisdiction: "Federal",
+			locationName: stateIdentity?.stateName || titleCaseToken(senatorStatewideNameMatch[1]),
+			office: "U.S. Senate",
+			officialResources: stateIdentity?.officialResources ?? [],
+			originLabel: "Provider-qualified district route",
+			originNote: "This district route identifies a statewide U.S. Senate office area from the state name in the slug, so Ballot Clarity can render a stable public district identity without requiring browser lookup state.",
+			representativeAvailabilityNote: "This public district route identifies the statewide Senate office area for the state in the slug. Active lookup context can still confirm the user's exact district stack and add any stronger locality-specific enrichment.",
+			slug: updatedSlug,
+			summary: "This public district route identifies a statewide U.S. Senate office area even without an attached active nationwide lookup context.",
+			title: `${stateIdentity?.stateName || titleCaseToken(senatorStatewideNameMatch[1])} statewide Senate seat`,
+		};
+	}
+
+	if (senatorMatch?.[1]) {
+		const districtNumber = String(Number.parseInt(senatorMatch[1], 10));
+
+		return {
+			jurisdiction: "State",
+			locationName: "State-specific district confirmation pending",
+			office: `State Senate District ${districtNumber}`,
+			officialResources: [],
+			originLabel: "Canonical district route",
+			originNote: "This district route identifies a state senate district number from a provider-style route slug, even when the state-qualified officeholder and official-tool attachments still require an active lookup or more specific route context.",
+			representativeAvailabilityNote: "Ballot Clarity can identify this state senate district route from the slug itself, but the exact state-specific officeholder still requires an active lookup or a more specific route context.",
+			slug: updatedSlug,
+			summary: "This public district route resolves a state senate district identity even when user-specific lookup context is not yet available on the server.",
+			title: `State Senate District ${districtNumber}`,
+		};
+	}
+
+	if (stateSenateMatch?.[1]) {
+		const districtNumber = String(Number.parseInt(stateSenateMatch[1], 10));
+
+		return {
+			jurisdiction: "State",
+			locationName: "State-specific district confirmation pending",
+			office: `State Senate District ${districtNumber}`,
+			officialResources: [],
+			originLabel: "Canonical district route",
+			originNote: "This district route identifies a state senate district number, but the state-specific officeholder and election-tool attachments still require an active lookup or a state-qualified route slug.",
+			representativeAvailabilityNote: "Ballot Clarity can identify this state senate district route, but the current officeholder cannot be confirmed from the district number alone without a state-qualified route or active lookup context.",
+			slug: updatedSlug,
+			summary: "This public district route resolves the district identity even when the user-specific lookup context is not available on the server.",
+			title: `State Senate District ${districtNumber}`,
+		};
+	}
+
+	if (representativeMatch?.[1]) {
+		const districtNumber = String(Number.parseInt(representativeMatch[1], 10));
+
+		return {
+			jurisdiction: "State",
+			locationName: "State-specific district confirmation pending",
+			office: `State House District ${districtNumber}`,
+			officialResources: [],
+			originLabel: "Canonical district route",
+			originNote: "This district route identifies a state house district number from a provider-style route slug, even when the state-qualified officeholder and official-tool attachments still require an active lookup or more specific route context.",
+			representativeAvailabilityNote: "Ballot Clarity can identify this state house district route from the slug itself, but the exact state-specific officeholder still requires an active lookup or a more specific route context.",
+			slug: updatedSlug,
+			summary: "This public district route resolves a state house district identity even when user-specific lookup context is not yet available on the server.",
+			title: `State House District ${districtNumber}`,
+		};
+	}
+
+	if (stateHouseMatch?.[1]) {
+		const districtNumber = String(Number.parseInt(stateHouseMatch[1], 10));
+
+		return {
+			jurisdiction: "State",
+			locationName: "State-specific district confirmation pending",
+			office: `State House District ${districtNumber}`,
+			officialResources: [],
+			originLabel: "Canonical district route",
+			originNote: "This district route identifies a state house district number, but the state-specific officeholder and election-tool attachments still require an active lookup or a state-qualified route slug.",
+			representativeAvailabilityNote: "Ballot Clarity can identify this state house district route, but the current officeholder cannot be confirmed from the district number alone without a state-qualified route or active lookup context.",
+			slug: updatedSlug,
+			summary: "This public district route resolves the district identity even when the user-specific lookup context is not available on the server.",
+			title: `State House District ${districtNumber}`,
+		};
+	}
+
+	if (countyMatch?.[1]) {
+		const title = titleCaseToken(normalizedSlug);
+
+		return {
+			jurisdiction: "Local",
+			locationName: title,
+			office: title,
+			officialResources: [],
+			originLabel: "Canonical district route",
+			originNote: "This local government route identifies the county geography itself, even when Ballot Clarity does not yet have a county officeholder pipeline attached for it.",
+			representativeAvailabilityNote: "No county officeholder data is connected for this area yet. This does not mean the county has no officials, only that Ballot Clarity does not yet have a county officeholder source attached here.",
+			slug: updatedSlug,
+			summary: "This county route stays public so users can orient around the government area even when Ballot Clarity does not yet have a county officeholder pipeline for it.",
+			title,
+		};
+	}
+
+	if (cityMatch?.[1]) {
+		const title = titleCaseToken(normalizedSlug);
+
+		return {
+			jurisdiction: "Local",
+			locationName: title,
+			office: title,
+			officialResources: [],
+			originLabel: "Canonical district route",
+			originNote: "This local government route identifies the city geography itself, even when Ballot Clarity does not yet have a city officeholder pipeline attached for it.",
+			representativeAvailabilityNote: "City officeholder data is not yet available from the current nationwide provider set. This does not mean the city has no officials, only that Ballot Clarity cannot yet attach them here.",
+			slug: updatedSlug,
+			summary: "This city route stays public so users can orient around the government area even when Ballot Clarity does not yet have a city officeholder pipeline for it.",
+			title,
+		};
+	}
+
+	return null;
+}
+
+function buildPublicDistrictRecordFromSlug(slug: string): DistrictRecordResponse | null {
+	const districtIdentity = buildPublicDistrictRouteIdentity(slug);
+
+	if (!districtIdentity)
+		return null;
+
+	const updatedAt = new Date().toISOString();
+	const sources = [
+		buildRouteSource({
+			authority: "open-data",
+			date: updatedAt,
+			id: `district:${districtIdentity.slug}:identity`,
+			note: "This public district route resolves a stable district identity from the slug itself even when no active browser lookup context is attached to the request.",
+			publisher: "Ballot Clarity nationwide route layer",
+			sourceSystem: "Ballot Clarity nationwide route layer",
+			title: `${districtIdentity.title} route identity`,
+			url: "/coverage",
+		}),
+		...buildOfficialToolSources(districtIdentity.officialResources, updatedAt),
+	];
+
+	return {
+		candidateAvailabilityNote: "Candidate field records and local ballot-guide layers remain guide-dependent here. This district route can still show canonical district identity, provenance, and official tools where Ballot Clarity can infer them.",
+		candidates: [],
+		district: {
+			candidateCount: 0,
+			description: districtIdentity.summary,
+			electionSlug: "nationwide-lookup",
+			href: `/districts/${districtIdentity.slug}`,
+			jurisdiction: districtIdentity.jurisdiction,
+			office: districtIdentity.office,
+			representativeCount: 0,
+			roleGuide: buildNationwideDistrictRoleGuide({
+				jurisdiction: districtIdentity.jurisdiction,
+				office: districtIdentity.office,
+				title: districtIdentity.title,
+			}),
+			slug: districtIdentity.slug,
+			summary: districtIdentity.summary,
+			title: districtIdentity.title,
+			updatedAt,
+		},
+		districtOriginLabel: districtIdentity.originLabel,
+		districtOriginNote: districtIdentity.originNote,
+		election: {
+			date: updatedAt,
+			jurisdictionSlug: "",
+			locationName: districtIdentity.locationName,
+			name: "Public district record",
+			slug: "nationwide-lookup",
+			updatedAt,
+		},
+		mode: "nationwide",
+		note: "This district page resolves as a first-class public route even without browser lookup state. Active nationwide lookup context can still enrich it further with user-specific district confirmation and official tools.",
+		officialResources: districtIdentity.officialResources,
+		relatedContests: [],
+		representativeAvailabilityNote: districtIdentity.representativeAvailabilityNote,
+		representatives: [],
+		sources,
+		updatedAt,
 	};
 }
 
@@ -575,7 +1190,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 	const adminLoginThrottle = createAdminLoginThrottle();
 	const googleCivicClient = options.googleCivicClient === undefined ? createGoogleCivicClient() : options.googleCivicClient;
 	const ldaClient = options.ldaClient === undefined ? createLdaClient() : options.ldaClient;
-	const openStatesClient = createOpenStatesClient();
+	const openStatesClient = options.openStatesClient === undefined ? createOpenStatesClient() : options.openStatesClient;
 	const openFecClient = options.openFecClient === undefined ? createOpenFecClient() : options.openFecClient;
 	const representativeModuleResolver = createRepresentativeModuleResolver({
 		ldaClient,
@@ -1010,10 +1625,29 @@ export async function createApp(options: CreateAppOptions = {}) {
 	async function getPublicRepresentative(slug: string) {
 		const candidate = await getPublicCandidate(slug);
 
-		if (!candidate || !candidate.incumbent)
+		if (candidate?.incumbent)
+			return buildPersonProfileFromCandidate(candidate);
+
+		if (!openStatesClient)
 			return null;
 
-		return buildPersonProfileFromCandidate(candidate);
+		const searchName = buildSearchNameFromRepresentativeSlug(slug);
+
+		if (!searchName)
+			return null;
+
+		const representativeRecord = (await openStatesClient.searchPeopleByName(searchName, {
+			current: true,
+			perPage: 10
+		})).find(record => toLookupSlug(record.name) === toLookupSlug(slug));
+
+		if (!representativeRecord)
+			return null;
+
+		const baseProfile = buildRepresentativeProfileFromOpenStates(representativeRecord);
+		const lookupContext = buildRepresentativeLookupContext(representativeRecord, baseProfile.person.slug, baseProfile.updatedAt);
+
+		return await representativeModuleResolver.enrichNationwidePersonProfile(lookupContext, baseProfile);
 	}
 
 	function buildContestRecordResponse(contest: Contest, election: Election): ContestRecordResponse {
@@ -1091,7 +1725,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 			},
 			mode: "guide",
 			note: "District pages group the current representative, the upcoming contest, and the strongest available source links for one office area. Use them when you want district context without the full ballot stack.",
-			officialResources: [],
+			officialResources: election.officialResources,
 			relatedContests,
 			representativeAvailabilityNote: representatives.length
 				? `${representatives.length} current officeholder${representatives.length === 1 ? "" : "s"} ${representatives.length === 1 ? "is" : "are"} attached to this published district page.`
@@ -1746,7 +2380,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 		const result = await getPublicDistrict(request.params.slug);
 
 		if (!result) {
-			response.json(buildRouteFallbackDistrictRecordResponse(request.params.slug));
+			response.json(buildPublicDistrictRecordFromSlug(request.params.slug) ?? buildRouteFallbackDistrictRecordResponse(request.params.slug));
 			return;
 		}
 

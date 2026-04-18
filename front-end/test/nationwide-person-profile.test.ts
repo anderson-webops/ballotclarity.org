@@ -57,7 +57,7 @@ const nationwideLookupResult = {
 } satisfies NationwideLookupResultContext;
 
 test("nationwide representative fallback builds a first-class person page model", () => {
-	const response = buildNationwidePersonProfileResponse(nationwideLookupResult, "ocd-person-ut-cd-3");
+	const response = buildNationwidePersonProfileResponse(nationwideLookupResult, "mike-kennedy");
 
 	assert.ok(response);
 	assert.equal(response.updatedAt, "2026-04-18T12:43:00.000Z");

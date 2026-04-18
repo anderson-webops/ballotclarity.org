@@ -1135,7 +1135,7 @@ test("nationwide lookup context survives client navigation across results, distr
 		assert.match(representativesText, /Funding not yet available/);
 
 		const representativeDetailLoad = cdp.waitForEvent("Page.loadEventFired");
-		await cdp.send("Page.navigate", { url: `${appBaseUrl}/representatives/ocd-person-ut-cd-3` });
+		await cdp.send("Page.navigate", { url: `${appBaseUrl}/representatives/mike-kennedy` });
 		await representativeDetailLoad;
 		await delay(800);
 		const representativeDetailText = await getDocumentBodyText(cdp);
@@ -1147,18 +1147,20 @@ test("nationwide lookup context survives client navigation across results, distr
 		assert.equal(await countSelectorMatches(cdp, "[data-representative-sidebar='record-details']"), 1);
 
 		const fundingLoad = cdp.waitForEvent("Page.loadEventFired");
-		await cdp.send("Page.navigate", { url: `${appBaseUrl}/representatives/ocd-person-ut-cd-3/funding` });
+		await cdp.send("Page.navigate", { url: `${appBaseUrl}/representatives/mike-kennedy/funding` });
 		await fundingLoad;
 		await delay(800);
 		const fundingText = await getDocumentBodyText(cdp);
-		assert.match(fundingText, /No funding data attached/);
+		assert.match(fundingText, /Mike Kennedy funding/);
+		assert.match(fundingText, /No funding data attached yet/);
 
 		const influenceLoad = cdp.waitForEvent("Page.loadEventFired");
-		await cdp.send("Page.navigate", { url: `${appBaseUrl}/representatives/ocd-person-ut-cd-3/influence` });
+		await cdp.send("Page.navigate", { url: `${appBaseUrl}/representatives/mike-kennedy/influence` });
 		await influenceLoad;
 		await delay(800);
 		const influenceText = await getDocumentBodyText(cdp);
-		assert.match(influenceText, /No influence context attached/);
+		assert.match(influenceText, /Mike Kennedy influence context/);
+		assert.match(influenceText, /No influence context attached yet/);
 
 		await cdp.close();
 		cdp = null;
@@ -1189,9 +1191,9 @@ test("built app server-renders district and representative routes when the activ
 		fetch(`${appBaseUrl}/districts`, { headers: requestHeaders }),
 		fetch(`${appBaseUrl}/districts/provo-city`, { headers: requestHeaders }),
 		fetch(`${appBaseUrl}/representatives`, { headers: requestHeaders }),
-		fetch(`${appBaseUrl}/representatives/ocd-person-ut-cd-3`, { headers: requestHeaders }),
-		fetch(`${appBaseUrl}/representatives/ocd-person-ut-cd-3/funding`, { headers: requestHeaders }),
-		fetch(`${appBaseUrl}/representatives/ocd-person-ut-cd-3/influence`, { headers: requestHeaders })
+		fetch(`${appBaseUrl}/representatives/mike-kennedy`, { headers: requestHeaders }),
+		fetch(`${appBaseUrl}/representatives/mike-kennedy/funding`, { headers: requestHeaders }),
+		fetch(`${appBaseUrl}/representatives/mike-kennedy/influence`, { headers: requestHeaders })
 	]);
 	const [
 		districtsHtml,
@@ -1226,9 +1228,11 @@ test("built app server-renders district and representative routes when the activ
 	assert.equal((representativeHtml.match(/data-representative-layout="profile"/g) ?? []).length, 1);
 	assert.equal((representativeHtml.match(/data-representative-sidebar="record-details"/g) ?? []).length, 1);
 	assert.equal(fundingPage.status, 200);
-	assert.match(fundingHtml, /No funding data attached/);
+	assert.match(fundingHtml, /Mike Kennedy funding/);
+	assert.match(fundingHtml, /No funding data attached yet/);
 	assert.equal(influencePage.status, 200);
-	assert.match(influenceHtml, /No influence context attached/);
+	assert.match(influenceHtml, /Mike Kennedy influence context/);
+	assert.match(influenceHtml, /No influence context attached yet/);
 });
 
 test("fresh SSR district and representative hubs stay nationwide-safe without browser lookup state", async () => {
@@ -1248,7 +1252,7 @@ test("fresh SSR district and representative hubs stay nationwide-safe without br
 	assert.match(representativesHtml, /Active nationwide lookup required/);
 });
 
-test("public nationwide district and representative fallback routes resolve instead of failing", async () => {
+test("public district and representative routes resolve direct loads without generic lookup-required shells", async () => {
 	const [
 		districtPage,
 		representativePage,
@@ -1274,20 +1278,22 @@ test("public nationwide district and representative fallback routes resolve inst
 
 	assert.equal(districtPage.status, 200);
 	assert.match(districtHtml, /Congressional District 7/);
-	assert.match(districtHtml, /Lookup context required/);
+	assert.match(districtHtml, /Canonical district route/);
 	assert.doesNotMatch(districtHtml, /District page not found/i);
 
 	assert.equal(representativePage.status, 200);
 	assert.match(representativeHtml, /Rich McCormick/);
-	assert.match(representativeHtml, /route is live/i);
+	assert.doesNotMatch(representativeHtml, /pending lookup context/i);
 	assert.doesNotMatch(representativeHtml, /Representative profile not found/i);
 
 	assert.equal(fundingPage.status, 200);
-	assert.match(fundingHtml, /No funding data attached/);
+	assert.match(fundingHtml, /Rich McCormick funding/);
+	assert.match(fundingHtml, /No funding data attached yet/);
 	assert.doesNotMatch(fundingHtml, /Representative profile not found/i);
 
 	assert.equal(influencePage.status, 200);
-	assert.match(influenceHtml, /No influence context attached/);
+	assert.match(influenceHtml, /Rich McCormick influence context/);
+	assert.match(influenceHtml, /No influence context attached yet/);
 	assert.doesNotMatch(influenceHtml, /Representative profile not found/i);
 });
 

@@ -8,7 +8,7 @@ import type {
 	RepresentativesResponse
 } from "~/types/civic";
 import { buildDistrictMatchKeys, buildRepresentativeMatchKeys } from "./canonical-district";
-import { toLookupSlug } from "./nationwide-slug";
+import { buildNationwideRepresentativeSlug, toLookupSlug } from "./nationwide-slug";
 
 function deriveNationwideDistrictJurisdiction(districtType: string): Contest["jurisdiction"] {
 	const normalizedType = districtType.toLowerCase();
@@ -60,13 +60,13 @@ function buildRepresentativeSummary(
 			note: "Derived from the active nationwide lookup layer rather than a published local ballot guide.",
 			status: "crosswalked"
 		},
-		slug: toLookupSlug(match.id || match.name),
+		slug: buildNationwideRepresentativeSlug(match),
 		summary: match.sourceSystem ? `Matched from ${match.sourceSystem}` : "Matched from nationwide lookup",
 		districtLabel: match.districtLabel,
 		districtSlug: toLookupSlug(match.districtLabel),
 		fundingAvailable: false,
 		fundingSummary: "No person-level funding record is attached to this representative yet.",
-		href: `/representatives/${toLookupSlug(match.id || match.name)}`,
+		href: `/representatives/${buildNationwideRepresentativeSlug(match)}`,
 		openstatesUrl: match.openstatesUrl,
 		influenceAvailable: false,
 		influenceSummary: "No person-level influence record is attached to this representative yet.",

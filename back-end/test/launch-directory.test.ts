@@ -69,6 +69,9 @@ test("buildLaunchDirectorySnapshot composes provider-fed launch data without pre
 						sourceSystem: "Open States"
 					}
 				];
+			},
+			async searchPeopleByName() {
+				return [];
 			}
 		}
 	});

@@ -64,6 +64,17 @@ function toLookupSlug(value: string) {
 		.replace(/^-|-$/g, "");
 }
 
+export function buildNationwideRepresentativeSlug(match: Pick<LocationRepresentativeMatch, "id" | "name">) {
+	return toLookupSlug(match.name || match.id || "representative");
+}
+
+function buildNationwideRepresentativeRouteAliases(match: Pick<LocationRepresentativeMatch, "id" | "name">) {
+	return Array.from(new Set([
+		buildNationwideRepresentativeSlug(match),
+		toLookupSlug(match.id || match.name || "representative"),
+	]));
+}
+
 function titleCaseToken(value: string) {
 	return value
 		.split("-")
@@ -499,7 +510,7 @@ function buildDistrictCandidateAvailabilityNote(hasPublishedGuide: boolean) {
 		: "Candidate field records, contest summaries, and local ballot-guide pages remain unavailable here because Ballot Clarity does not currently have a published local guide for this district.";
 }
 
-function buildNationwideDistrictRoleGuide(district: DistrictDescriptor) {
+export function buildNationwideDistrictRoleGuide(district: DistrictDescriptor) {
 	const kind = deriveDistrictPipelineKind(district);
 
 	if (kind === "federal") {
@@ -609,7 +620,7 @@ function buildDirectoryBundle(context: ActiveNationwideLookupContext) {
 
 	const districts = Array.from(districtBySlug.values());
 	const representatives = context.representativeMatches.map((representative) => {
-		const slug = toLookupSlug(representative.id || representative.name);
+		const slug = buildNationwideRepresentativeSlug(representative);
 		const districtSlug = districtRepresentatives.get(representative.id) ?? toLookupSlug(representative.districtLabel);
 
 		return {
@@ -833,47 +844,47 @@ export function buildRouteFallbackPersonProfileResponse(representativeSlug: stri
 	const sources = [buildFallbackRouteSource(`representative:${representativeSlug}:fallback`, `${name} route availability`, updatedAt)];
 
 	return {
-		note: "This representative route resolves publicly, but Ballot Clarity still needs an active nationwide lookup or a source-backed local record to attach exact office, district, finance, and influence details to it.",
+		note: "This representative route resolves publicly and keeps the person identity stable, even when Ballot Clarity cannot yet attach a provider-backed office record or user-specific lookup enrichment to it.",
 		person: {
-			ballotStatusLabel: "Current ballot status unavailable without active lookup context",
+			ballotStatusLabel: "Current ballot status not yet attached",
 			biography: [
 				{
 					id: `route:${representativeSlug}`,
 					sources,
-					summary: "This person route is live, but richer representative detail still depends on the current nationwide lookup context or a published local record.",
-					title: "Route availability",
+					summary: "This public person route is stable, but Ballot Clarity has not yet attached a provider-backed office record or user-specific lookup confirmation to it.",
+					title: "Public route identity",
 				},
 			],
 			comparison: null,
 			contestSlug: "",
-			districtLabel: "Active nationwide lookup required",
+			districtLabel: "District confirmation pending",
 			districtSlug: "",
 			freshness: {
 				contentLastVerifiedAt: updatedAt,
 				dataLastUpdatedAt: updatedAt,
 				nextReviewAt: updatedAt,
 				status: "up-to-date",
-				statusLabel: "Route-backed",
-				statusNote: "This route is available, but Ballot Clarity has not attached a current lookup-backed or source-backed representative record to it yet.",
+				statusLabel: "Public route",
+				statusNote: "This route is available and identity-stable, but Ballot Clarity has not attached a current provider-backed office record to it yet.",
 			},
 			funding: null,
 			incumbent: true,
 			keyActions: [],
 			lobbyingContext: [],
-			location: "Nationwide civic lookup required",
+			location: "Public representative route",
 			methodologyNotes: [
-				"Representative routes stay public even when Ballot Clarity cannot yet attach a richer person record.",
-				"Open a nationwide lookup result first to attach district matches, representative provenance, and official tools to this person route.",
+				"Representative routes stay public even when Ballot Clarity cannot yet attach a richer provider-backed person record.",
+				"Active nationwide lookup context can still add user-specific district confirmation, official tools, and stronger locality context.",
 			],
 			name,
-			officeholderLabel: "Current officeholder record pending lookup context",
-			officeSought: "Representative details pending active lookup",
+			officeholderLabel: "Current officeholder route",
+			officeSought: "Office record pending provider crosswalk",
 			onCurrentBallot: false,
 			party: "Unknown",
 			provenance: {
 				asOf: updatedAt,
-				label: "Lookup context required",
-				note: "This route is live, but no active nationwide lookup or published local person record was attached to this request.",
+				label: "Representative route identity",
+				note: "This route is live, but Ballot Clarity could not yet crosswalk it to a provider-backed officeholder record on this request.",
 				source: "nationwide",
 				status: "inferred",
 			},
@@ -881,20 +892,20 @@ export function buildRouteFallbackPersonProfileResponse(representativeSlug: stri
 			slug: representativeSlug,
 			sourceCount: sources.length,
 			sources,
-			summary: "This representative page is available, but Ballot Clarity still needs an active nationwide lookup or a source-backed local record to attach office, district, finance, and influence detail.",
+			summary: "This representative page resolves publicly and keeps the person identity stable, but Ballot Clarity has not yet attached provider-backed office, district, finance, or influence detail to it.",
 			topIssues: [],
 			updatedAt,
 			whatWeDoNotKnow: [
 				buildTrustBullet(
-					"lookup-required",
-					"An active nationwide lookup or source-backed local record is still required to attach exact district, representative, finance, and influence detail to this route.",
+					"provider-crosswalk-pending",
+					"Ballot Clarity has not yet attached a provider-backed office record, district confirmation, or person-level finance and influence modules to this route.",
 					sources,
 				),
 			],
 			whatWeKnow: [
 				buildTrustBullet(
 					"route-available",
-					"This public route itself is live and can render an honest unavailable state instead of failing.",
+					"This public route itself is live, identity-stable, and can render an honest unavailable state instead of failing.",
 					sources,
 				),
 			],
@@ -990,7 +1001,8 @@ export function buildNationwideDistrictRecordResponse(context: ActiveNationwideL
 
 export function buildNationwidePersonProfileResponse(context: ActiveNationwideLookupContext, representativeSlug: string): PersonProfileResponse | null {
 	const directory = buildDirectoryBundle(context);
-	const representative = directory.representatives.find(item => item.slug === representativeSlug);
+	const representativeMatch = context.representativeMatches.find(match => buildNationwideRepresentativeRouteAliases(match).includes(representativeSlug)) ?? null;
+	const representative = directory.representatives.find(item => item.slug === (representativeMatch ? buildNationwideRepresentativeSlug(representativeMatch) : representativeSlug));
 
 	if (!representative)
 		return null;

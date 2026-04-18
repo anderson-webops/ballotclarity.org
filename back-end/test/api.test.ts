@@ -184,6 +184,34 @@ before(async () => {
 				};
 			}
 		},
+		openStatesClient: {
+			async listPeopleByJurisdiction() {
+				return [];
+			},
+			async lookupPeopleByCoordinates() {
+				return [];
+			},
+			async searchPeopleByName(name) {
+				if (name !== "Rich Mccormick" && name !== "Rich McCormick")
+					return [];
+
+				return [
+					{
+						currentRoleClassification: "lower",
+						currentRoleDistrict: "GA-7",
+						currentRoleDivisionId: "ocd-division/country:us/state:ga/cd:7",
+						districtLabel: "Representative GA-7",
+						id: "ocd-person/3056cc98-9ca1-5293-8064-fc12fd9c689f",
+						jurisdictionName: "Georgia",
+						name: "Rich McCormick",
+						officeTitle: "Representative",
+						openstatesUrl: "https://openstates.org/person/rich-mccormick-1TDIXW9alvLnVNfiuknTot/",
+						party: "Republican",
+						updatedAt: "2026-04-04T08:17:12.121999+00:00"
+					}
+				];
+			}
+		},
 		ldaClient: {
 			async listContributionReports({ contributionPayee, filingYear }) {
 				if (contributionPayee !== "MIKE KENNEDY FOR UTAH" || filingYear !== 2025)
@@ -1090,7 +1118,7 @@ test("active nationwide lookup cookie backs /api/districts and /api/districts/:s
 	assert.equal(districtResponse.status, 200);
 	assert.equal(districtBody.mode, "nationwide");
 	assert.equal(districtBody.district.slug, "congressional-3");
-	assert.equal(districtBody.representatives[0].slug, "ocd-person-test-ut-rep");
+	assert.equal(districtBody.representatives[0].slug, "mike-kennedy");
 	assert.equal(districtBody.representatives[0].fundingAvailable, true);
 	assert.equal(districtBody.representatives[0].influenceAvailable, true);
 	assert.ok(districtBody.officialResources.length >= 1);
@@ -1104,19 +1132,34 @@ test("lookup query backs /api/districts/:slug without relying on a saved cookie"
 	assert.equal(response.status, 200);
 	assert.equal(body.mode, "nationwide");
 	assert.equal(body.district.slug, "congressional-3");
-	assert.equal(body.representatives[0].slug, "ocd-person-test-ut-rep");
+	assert.equal(body.representatives[0].slug, "mike-kennedy");
 	assert.match(body.note, /API-backed nationwide district detail/i);
 });
 
-test("unknown nationwide district slugs return a structured public fallback instead of 404", async () => {
+test("direct district routes return a canonical public record instead of a lookup-required placeholder", async () => {
 	const response = await fetch(`${baseUrl}/api/districts/congressional-7`);
 	const body = await response.json();
 
 	assert.equal(response.status, 200);
 	assert.equal(body.mode, "nationwide");
 	assert.equal(body.district.slug, "congressional-7");
-	assert.equal(body.districtOriginLabel, "Lookup context required");
-	assert.match(body.note, /public nationwide route/i);
+	assert.equal(body.districtOriginLabel, "Canonical district route");
+	assert.match(body.district.title, /Congressional District 7/i);
+	assert.doesNotMatch(body.districtOriginNote, /lookup context required/i);
+});
+
+test("provider-style statewide district routes return a public district identity instead of a lookup-required placeholder", async () => {
+	const response = await fetch(`${baseUrl}/api/districts/senator-utah`);
+	const body = await response.json();
+
+	assert.equal(response.status, 200);
+	assert.equal(body.mode, "nationwide");
+	assert.equal(body.district.slug, "senator-utah");
+	assert.equal(body.districtOriginLabel, "Provider-qualified district route");
+	assert.match(body.district.title, /Utah statewide Senate seat/i);
+	assert.equal(body.election.locationName, "Utah");
+	assert.equal(body.officialResources.length, 2);
+	assert.doesNotMatch(body.districtOriginNote, /lookup context required/i);
 });
 
 test("GET /api/representatives returns incumbents tied to district pages", async () => {
@@ -1152,9 +1195,9 @@ test("active nationwide lookup cookie backs /api/representatives and /api/repres
 
 	assert.equal(listResponse.status, 200);
 	assert.equal(listBody.mode, "nationwide");
-	assert.ok(listBody.representatives.some((item: { fundingAvailable: boolean; href: string; influenceAvailable: boolean; slug: string }) => item.slug === "ocd-person-test-ut-rep" && item.href === "/representatives/ocd-person-test-ut-rep" && item.fundingAvailable && item.influenceAvailable));
+	assert.ok(listBody.representatives.some((item: { fundingAvailable: boolean; href: string; influenceAvailable: boolean; slug: string }) => item.slug === "mike-kennedy" && item.href === "/representatives/mike-kennedy" && item.fundingAvailable && item.influenceAvailable));
 
-	const representativeResponse = await fetch(`${baseUrl}/api/representatives/ocd-person-test-ut-rep`, {
+	const representativeResponse = await fetch(`${baseUrl}/api/representatives/mike-kennedy`, {
 		headers: {
 			cookie: cookie || ""
 		}
@@ -1162,7 +1205,7 @@ test("active nationwide lookup cookie backs /api/representatives and /api/repres
 	const representativeBody = await representativeResponse.json();
 
 	assert.equal(representativeResponse.status, 200);
-	assert.equal(representativeBody.person.slug, "ocd-person-test-ut-rep");
+	assert.equal(representativeBody.person.slug, "mike-kennedy");
 	assert.equal(representativeBody.person.provenance.source, "lookup");
 	assert.ok(representativeBody.person.funding);
 	assert.match(representativeBody.person.funding.summary, /MIKE KENNEDY FOR UTAH/i);
@@ -1171,11 +1214,11 @@ test("active nationwide lookup cookie backs /api/representatives and /api/repres
 });
 
 test("lookup query backs /api/representatives/:slug without relying on a saved cookie", async () => {
-	const response = await fetch(`${baseUrl}/api/representatives/ocd-person-test-ut-rep?lookup=84604`);
+	const response = await fetch(`${baseUrl}/api/representatives/mike-kennedy?lookup=84604`);
 	const body = await response.json();
 
 	assert.equal(response.status, 200);
-	assert.equal(body.person.slug, "ocd-person-test-ut-rep");
+	assert.equal(body.person.slug, "mike-kennedy");
 	assert.equal(body.person.provenance.source, "lookup");
 	assert.ok(body.person.funding);
 	assert.ok(body.person.lobbyingContext.length >= 1);
@@ -1183,24 +1226,26 @@ test("lookup query backs /api/representatives/:slug without relying on a saved c
 });
 
 test("representatives without a reliable finance or influence crosswalk still return an honest unavailable profile state", async () => {
-	const response = await fetch(`${baseUrl}/api/representatives/ocd-person-test-ut-rep-4?lookup=84001&selection=zip:84001:orem-utah`);
+	const response = await fetch(`${baseUrl}/api/representatives/burgess-owens?lookup=84001&selection=zip:84001:orem-utah`);
 	const body = await response.json();
 
 	assert.equal(response.status, 200);
-	assert.equal(body.person.slug, "ocd-person-test-ut-rep-4");
+	assert.equal(body.person.slug, "burgess-owens");
 	assert.equal(body.person.funding, null);
 	assert.deepEqual(body.person.lobbyingContext, []);
 	assert.match(body.person.whatWeDoNotKnow[0]?.text ?? "", /Finance and influence modules appear only when Ballot Clarity can verify a reliable person-level linkage/i);
 });
 
-test("unknown nationwide representative slugs return a structured public fallback instead of 404", async () => {
+test("direct representative routes return a stable provider-backed identity record instead of a lookup-required placeholder", async () => {
 	const response = await fetch(`${baseUrl}/api/representatives/rich-mccormick`);
 	const body = await response.json();
 
 	assert.equal(response.status, 200);
 	assert.equal(body.person.slug, "rich-mccormick");
-	assert.equal(body.person.provenance.status, "inferred");
-	assert.match(body.note, /route resolves publicly/i);
+	assert.equal(body.person.provenance.status, "crosswalked");
+	assert.match(body.person.officeSought, /U\.S\. House, District 7/i);
+	assert.match(body.person.provenance.label, /Open States current officeholder record/i);
+	assert.doesNotMatch(body.person.officeholderLabel, /pending lookup context/i);
 });
 
 test("GET /api/representatives/:slug returns a source-backed representative profile", async () => {

@@ -83,7 +83,7 @@ test("nationwide directory derivation uses district matches and representative m
 	assert.equal(bundle.representatives.representatives.length, 2);
 	assert.equal(bundle.representatives.representatives[0].districtLabel, "Congressional District 3");
 	assert.equal(bundle.representatives.representatives[0].location, "Provo, Utah");
-	assert.equal(bundle.representatives.representatives[0].href, "/representatives/ocd-person-ut-cd-3");
+	assert.equal(bundle.representatives.representatives[0].href, "/representatives/john-curtis");
 	assert.equal(bundle.representatives.representatives[0].officeholderLabel, "Current officeholder");
 	assert.equal(bundle.representatives.representatives[0].onCurrentBallot, false);
 	assert.equal(bundle.representatives.representatives[0].ballotStatusLabel, "Published ballot status unavailable in this area");

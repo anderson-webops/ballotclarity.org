@@ -87,7 +87,7 @@ test("nationwide district fallback builds a usable detail page for routed distri
 	assert.equal(districtPage.mode, "nationwide");
 	assert.equal(districtPage.district.title, "Congressional District 3");
 	assert.equal(districtPage.representatives.length, 1);
-	assert.equal(districtPage.representatives[0]?.href, "/representatives/ocd-person-ut-cd-3");
+	assert.equal(districtPage.representatives[0]?.href, "/representatives/mike-kennedy");
 	assert.equal(districtPage.officialResources.length, 1);
 	assert.match(districtPage.candidateAvailabilityNote, /published local guide/i);
 	assert.match(districtPage.districtOriginNote, /ZIP-based nationwide lookup/i);

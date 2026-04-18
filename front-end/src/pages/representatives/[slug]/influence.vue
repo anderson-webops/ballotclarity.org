@@ -45,6 +45,9 @@ const person = computed(() => profileData.value?.person ?? null);
 const pagePending = computed(() => pending.value || (!data.value && !fallbackData.value));
 const linkageConfidence = computed(() => person.value ? buildPersonLinkageConfidence(person.value.provenance.status) : null);
 const influenceAvailable = computed(() => person.value ? hasPersonInfluence(person.value) : false);
+const influenceUnavailableSummary = computed(() => person.value
+	? `${person.value.name} resolves as a stable public officeholder record, but Ballot Clarity does not currently have a publishable lobbying or influence context block attached to this person.`
+	: "");
 const influenceSources = computed(() => person.value
 	? uniqueSources([
 			...person.value.lobbyingContext.flatMap(item => item.sources),
@@ -65,7 +68,16 @@ const summaryItems = computed(() => {
 	if (!person.value)
 		return [];
 
+	if (!influenceAvailable.value) {
+		return [
+			{ label: "Current office", note: "Office context attached to this representative record.", value: person.value.officeSought },
+			{ label: "Influence status", note: "Lobbying or disclosure attachment for this route.", value: "Unavailable" },
+			{ label: "Updated", note: "Profile freshness.", value: formatDateTime(person.value.updatedAt) }
+		];
+	}
+
 	return [
+		{ label: "Current office", note: "Office context attached to this representative record.", value: person.value.officeSought },
 		{ label: "Influence notes", note: "Context blocks on donors, sectors, and public disclosures.", value: person.value.lobbyingContext.length },
 		{ label: "Public statements", note: "Statements that interact with the influence context.", value: person.value.publicStatements.length },
 		{ label: "Updated", note: "Profile freshness.", value: formatDateTime(person.value.updatedAt) }
@@ -92,12 +104,6 @@ usePageSeo({
 			</InfoCallout>
 		</div>
 
-		<div v-else-if="!influenceAvailable" class="max-w-3xl">
-			<InfoCallout title="No influence context attached" tone="warning">
-				Ballot Clarity does not currently have a publishable lobbying or influence context block attached to this representative record.
-			</InfoCallout>
-		</div>
-
 		<div v-else class="space-y-8">
 			<header class="surface-panel">
 				<AppBreadcrumbs :items="breadcrumbs" />
@@ -110,23 +116,27 @@ usePageSeo({
 					{{ person.name }} influence context
 				</h1>
 				<p class="text-base text-app-muted leading-8 mt-5 dark:text-app-muted-dark">
-					This page isolates the donor, sector, lobbying, and disclosure context attached to the representative profile. It is meant to help scrutiny, not to imply automatic motive or proof of influence.
+					{{
+						influenceAvailable
+							? "This page isolates the donor, sector, lobbying, and disclosure context attached to the representative profile. It is meant to help scrutiny, not to imply automatic motive or proof of influence."
+							: influenceUnavailableSummary
+					}}
 				</p>
 				<div class="mt-6 flex flex-wrap gap-3">
 					<NuxtLink :to="buildLookupAwareTarget(`/representatives/${person.slug}`)" class="btn-secondary">
 						Back to profile
 					</NuxtLink>
-					<NuxtLink v-if="person.funding" :to="buildLookupAwareTarget(`/representatives/${person.slug}/funding`)" class="btn-secondary">
+					<NuxtLink :to="buildLookupAwareTarget(`/representatives/${person.slug}/funding`)" class="btn-secondary">
 						Open funding page
 					</NuxtLink>
-					<SourceDrawer :sources="influenceSources" :title="`${person.name} influence sources`" button-label="Influence sources" />
+					<SourceDrawer :sources="influenceSources.length ? influenceSources : person.sources" :title="`${person.name} influence sources`" button-label="Influence sources" />
 				</div>
 				<div class="mt-6">
 					<PageSummaryStrip :items="summaryItems" />
 				</div>
 			</header>
 
-			<section class="gap-6 grid xl:grid-cols-[minmax(0,1fr)_minmax(0,0.95fr)]">
+			<section v-if="influenceAvailable" class="gap-6 grid xl:grid-cols-[minmax(0,1fr)_minmax(0,0.95fr)]">
 				<div class="surface-panel">
 					<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
 						Influence notes
@@ -191,6 +201,23 @@ usePageSeo({
 						</ul>
 					</div>
 				</div>
+			</section>
+
+			<section v-else class="surface-panel max-w-4xl">
+				<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
+					No influence context attached yet
+				</h2>
+				<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
+					Ballot Clarity resolved the person identity and office context for this route, but it does not currently have a publishable lobbying or disclosure context block attached to this representative record.
+				</p>
+				<ul class="readable-list text-sm text-app-muted mt-6 pl-5 dark:text-app-muted-dark">
+					<li><strong class="text-app-ink dark:text-app-text-dark">Office:</strong> {{ person.officeSought }}</li>
+					<li><strong class="text-app-ink dark:text-app-text-dark">District:</strong> {{ person.districtLabel }}</li>
+					<li><strong class="text-app-ink dark:text-app-text-dark">Linkage:</strong> {{ linkageConfidence?.label }}</li>
+					<li><strong class="text-app-ink dark:text-app-text-dark">Provenance:</strong> {{ person.provenance.label }}</li>
+					<li><strong class="text-app-ink dark:text-app-text-dark">Updated:</strong> {{ formatDate(person.freshness.dataLastUpdatedAt ?? person.updatedAt) }}</li>
+					<li>{{ person.freshness.statusNote }}</li>
+				</ul>
 			</section>
 		</div>
 	</section>

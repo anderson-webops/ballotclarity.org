@@ -201,9 +201,42 @@ async function main() {
 		if (!Array.isArray(representativeProfileBody.person?.lobbyingContext) || representativeProfileBody.person.lobbyingContext.length === 0)
 			throw new Error("Representative profile probe did not attach lobbying or influence context from the provider-backed federal crosswalk.");
 
+		const firstDistrictSlug = representativeDirectoryBody.representatives[0]?.districtSlug || "congressional-3";
+		const { payload: directDistrictBody, response: directDistrictResponse } = await fetchJson(
+			`${baseUrl}`,
+			`/api/districts/${firstDistrictSlug}`
+		);
+
+		if (directDistrictResponse.status !== 200)
+			throw new Error(`Direct district route probe failed with ${directDistrictResponse.status}.`);
+
+		if (/Lookup context required/i.test(String(directDistrictBody.districtOriginLabel || "")))
+			throw new Error("Direct district route probe still fell back to lookup-required district copy.");
+
+		const { payload: directRepresentativeBody, response: directRepresentativeResponse } = await fetchJson(
+			`${baseUrl}`,
+			`/api/representatives/${firstRepresentativeSlug}`
+		);
+
+		if (directRepresentativeResponse.status !== 200)
+			throw new Error(`Direct representative route probe failed with ${directRepresentativeResponse.status}.`);
+
+		if (String(directRepresentativeBody.person?.name || "").trim() !== String(representativeDirectoryBody.representatives[0]?.name || "").trim())
+			throw new Error("Direct representative route probe did not preserve the expected person identity.");
+
+		if (/pending lookup context/i.test(String(directRepresentativeBody.person?.officeholderLabel || "")))
+			throw new Error("Direct representative route probe still exposed lookup-context placeholder copy.");
+
+		if (!directRepresentativeBody.person?.funding)
+			throw new Error("Direct representative route probe did not preserve finance data on the public route-backed person record.");
+
+		if (!Array.isArray(directRepresentativeBody.person?.lobbyingContext) || directRepresentativeBody.person.lobbyingContext.length === 0)
+			throw new Error("Direct representative route probe did not preserve influence data on the public route-backed person record.");
+
 		console.log("\n== Local runtime verification passed ==");
 		console.log(`Resolved ${lookupBody.location?.displayName || "unknown location"} with ${lookupBody.districtMatches.length} district matches and ${lookupBody.representativeMatches.length} representative matches.`);
 		console.log(`Verified representative directory/profile backing for ${representativeDirectoryBody.representatives[0].name}, including live finance and influence modules.`);
+		console.log(`Verified direct district route backing for ${directDistrictBody.district?.title || firstDistrictSlug} and direct representative route backing for ${directRepresentativeBody.person?.name || firstRepresentativeSlug}.`);
 	}
 	finally {
 		await stopProcess(server);

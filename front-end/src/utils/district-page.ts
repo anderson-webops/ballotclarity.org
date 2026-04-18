@@ -8,7 +8,7 @@ import type {
 } from "../types/civic";
 import { buildDistrictCandidateAvailabilityNote, buildDistrictRepresentativeAvailabilityNote, buildNationwideDistrictRoleGuide } from "./district-availability";
 import { buildNationwideDirectoryResponses } from "./nationwide-directory";
-import { toLookupSlug } from "./nationwide-slug";
+import { buildNationwideRepresentativeRouteAliases } from "./nationwide-slug";
 
 const censusGeocoderDocsUrl = "https://geocoding.geo.census.gov/geocoder/Geocoding_Services_API.html";
 const openStatesUrl = "https://openstates.org";
@@ -70,7 +70,7 @@ function buildNationwideSources(
 	}) ?? context.districtMatches.find(match => match.label === district.title);
 	const representativeMatches = context.representativeMatches.filter((match) => {
 		return directoryBundle.representatives.representatives.some((representative) => {
-			return representative.districtSlug === district.slug && representative.slug === toLookupSlug(match.id || match.name);
+			return representative.districtSlug === district.slug && buildNationwideRepresentativeRouteAliases(match).includes(representative.slug);
 		});
 	});
 	const sources: Source[] = [];

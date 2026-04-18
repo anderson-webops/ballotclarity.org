@@ -10,6 +10,7 @@ import type {
 	Source,
 	TrustBullet,
 } from "./types/civic.js";
+import { buildNationwideRepresentativeSlug } from "./active-nationwide-lookup.js";
 
 const currencyFormatter = new Intl.NumberFormat("en-US", {
 	currency: "USD",
@@ -161,16 +162,6 @@ function normalizeText(value: string | null | undefined) {
 		.replace(/\s+/g, " ");
 }
 
-function toLookupSlug(value: string) {
-	return value
-		.toLowerCase()
-		.trim()
-		.replace(/[\s_]+/g, "-")
-		.replace(/[^a-z0-9-]/g, "-")
-		.replace(/-+/g, "-")
-		.replace(/^-|-$/g, "");
-}
-
 function formatCurrency(amount: number) {
 	return currencyFormatter.format(amount || 0);
 }
@@ -208,7 +199,7 @@ function mergeDate(...values: Array<string | undefined>) {
 }
 
 function personSlug(match: LocationRepresentativeMatch) {
-	return toLookupSlug(match.id || match.name);
+	return buildNationwideRepresentativeSlug(match);
 }
 
 function findRepresentativeMatch(context: ActiveNationwideLookupContext, representativeSlug: string) {

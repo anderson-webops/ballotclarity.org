@@ -8,6 +8,7 @@ import type {
 } from "../types/civic";
 import { buildDistrictRepresentativeAvailabilityNote } from "./district-availability";
 import { buildNationwideDirectoryResponses } from "./nationwide-directory";
+import { buildNationwideRepresentativeRouteAliases, buildNationwideRepresentativeSlug } from "./nationwide-slug";
 
 const censusGeocoderDocsUrl = "https://geocoding.geo.census.gov/geocoder/Geocoding_Services_API.html";
 const openStatesUrl = "https://openstates.org";
@@ -72,7 +73,8 @@ export function buildNationwidePersonProfileResponse(
 		return null;
 
 	const directoryBundle = buildNationwideDirectoryResponses(context);
-	const representative = directoryBundle.representatives.representatives.find(item => item.slug === representativeSlug);
+	const representativeMatch = context.representativeMatches.find(match => buildNationwideRepresentativeRouteAliases(match).includes(representativeSlug)) ?? null;
+	const representative = directoryBundle.representatives.representatives.find(item => item.slug === (representativeMatch ? buildNationwideRepresentativeSlug(representativeMatch) : representativeSlug));
 
 	if (!representative)
 		return null;

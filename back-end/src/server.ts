@@ -20,6 +20,9 @@ import type {
 	EvidenceBlock,
 	ExternalLink,
 	FundingSummary,
+	GuidePackageDiagnosticsResponse,
+	GuidePackageRecordResponse,
+	GuidePackageWorkflow,
 	IssueTag,
 	Jurisdiction,
 	JurisdictionSummary,
@@ -80,6 +83,12 @@ import { createCensusGeocoderClient } from "./census-geocoder.js";
 import { createCongressClient, isCurrentCongressMemberRecord } from "./congress.js";
 import { createCoverageRepository } from "./coverage-repository.js";
 import { createGoogleCivicClient } from "./google-civic.js";
+import {
+	buildDefaultGuidePackageSeed,
+	buildGuidePackageId,
+	buildGuidePackageList,
+	buildGuidePackageRecord,
+} from "./guide-packages.js";
 import { buildCoverageResponse } from "./launch-profile.js";
 import { createLdaClient } from "./lda.js";
 import { buildLocationGuessNotePrefix, createLocationGuessService } from "./location-guess.js";
@@ -114,6 +123,7 @@ interface CreateAppOptions {
 	correctionSeed?: AdminCorrectionRequest[];
 	activitySeed?: AdminActivityItem[];
 	googleCivicClient?: ReturnType<typeof createGoogleCivicClient>;
+	guidePackageSeed?: GuidePackageWorkflow[];
 	ldaClient?: ReturnType<typeof createLdaClient>;
 	locationGuessOptions?: Parameters<typeof createLocationGuessService>[0];
 	openFecClient?: ReturnType<typeof createOpenFecClient>;
@@ -2535,6 +2545,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 	const app = express();
 	const adminApiKey = options.adminApiKey ?? process.env.ADMIN_API_KEY ?? null;
 	const coverageRepository = options.coverageRepository ?? await createCoverageRepository();
+	const guidePackageSeed = options.guidePackageSeed ?? buildDefaultGuidePackageSeed(coverageRepository);
 	const adminRepository = await createAdminRepository({
 		activitySeed: options.activitySeed,
 		bootstrapDisplayName: options.bootstrapDisplayName,
@@ -2544,6 +2555,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 		correctionSeed: options.correctionSeed,
 		dbPath: options.adminDbPath,
 		databaseUrl: process.env.ADMIN_DATABASE_URL || process.env.DATABASE_URL || null,
+		guidePackageSeed,
 		sourceMonitorSeed: options.sourceMonitorSeed
 	});
 	const logger = createLogger("ballot-clarity-api");
@@ -2766,6 +2778,53 @@ export async function createApp(options: CreateAppOptions = {}) {
 		return new Map(content.items.map(item => [`${item.entityType}:${item.entitySlug}`, item] as const));
 	}
 
+	async function listGuidePackageWorkflows() {
+		return (await adminRepository.listGuidePackages()).packages;
+	}
+
+	async function listGuidePackageRecords() {
+		const [workflows, content] = await Promise.all([
+			listGuidePackageWorkflows(),
+			adminRepository.listContent(),
+		]);
+
+		return workflows.map(workflow => buildGuidePackageRecord(workflow, coverageRepository, content.items));
+	}
+
+	async function getGuidePackageRecord(id: string) {
+		const workflow = await adminRepository.getGuidePackage(id);
+
+		if (!workflow)
+			return null;
+
+		const content = await adminRepository.listContent();
+		return buildGuidePackageRecord(workflow, coverageRepository, content.items);
+	}
+
+	async function listPublishedGuidePackageRecords() {
+		return (await listGuidePackageRecords()).filter(item => item.workflow.status === "published");
+	}
+
+	async function getPublishedGuidePackageByElectionSlug(electionSlug: string) {
+		return (await listPublishedGuidePackageRecords()).find(item => item.workflow.electionSlug === electionSlug) ?? null;
+	}
+
+	async function getPublishedGuidePackageByJurisdictionSlug(jurisdictionSlug: string) {
+		return (await listPublishedGuidePackageRecords()).find(item => item.workflow.jurisdictionSlug === jurisdictionSlug) ?? null;
+	}
+
+	async function listPublishedElectionSummaries() {
+		const publishedPackages = await listPublishedGuidePackageRecords();
+		return coverageRepository.data.electionSummaries.filter(summary =>
+			publishedPackages.some(item => item.workflow.electionSlug === summary.slug));
+	}
+
+	async function listPublishedJurisdictionSummaries() {
+		const publishedPackages = await listPublishedGuidePackageRecords();
+		return coverageRepository.data.jurisdictionSummaries.filter(summary =>
+			publishedPackages.some(item => item.workflow.jurisdictionSlug === summary.slug));
+	}
+
 	function applyCandidateContent(candidate: Candidate, contentIndex: Map<string, Awaited<ReturnType<typeof adminRepository.listContent>>["items"][number]>): Candidate | null {
 		const content = contentIndex.get(`candidate:${candidate.slug}`);
 
@@ -2846,50 +2905,61 @@ export async function createApp(options: CreateAppOptions = {}) {
 	}
 
 	async function listPublicCandidates() {
-		const contentIndex = await getContentIndex();
+		const primaryElectionSlug = getPrimaryElectionSlug();
 
-		return coverageRepository.data.candidates
-			.map(candidate => applyCandidateContent(candidate, contentIndex))
-			.filter((candidate): candidate is Candidate => Boolean(candidate));
+		if (!primaryElectionSlug)
+			return [];
+
+		const election = await getPublicElection(primaryElectionSlug);
+
+		if (!election)
+			return [];
+
+		return election.contests.flatMap(contest => contest.candidates ?? []);
 	}
 
 	async function listPublicMeasures() {
-		const contentIndex = await getContentIndex();
+		const primaryElectionSlug = getPrimaryElectionSlug();
 
-		return coverageRepository.data.measures
-			.map(measure => applyMeasureContent(measure, contentIndex))
-			.filter((measure): measure is Measure => Boolean(measure));
+		if (!primaryElectionSlug)
+			return [];
+
+		const election = await getPublicElection(primaryElectionSlug);
+
+		if (!election)
+			return [];
+
+		return election.contests.flatMap(contest => contest.measures ?? []);
 	}
 
 	async function getPublicCandidate(slug: string) {
-		const candidate = coverageRepository.getCandidateBySlug(slug);
-		const contentIndex = await getContentIndex();
-		return candidate ? applyCandidateContent(candidate, contentIndex) : null;
+		return (await listPublicCandidates()).find(candidate => candidate.slug === slug) ?? null;
 	}
 
 	async function getPublicMeasure(slug: string) {
-		const measure = coverageRepository.getMeasureBySlug(slug);
-		const contentIndex = await getContentIndex();
-		return measure ? applyMeasureContent(measure, contentIndex) : null;
+		return (await listPublicMeasures()).find(measure => measure.slug === slug) ?? null;
 	}
 
 	async function getPublicCandidatesBySlugs(slugs: string[]) {
-		const contentIndex = await getContentIndex();
-
-		return coverageRepository.getCandidatesBySlugs(slugs)
-			.map(candidate => applyCandidateContent(candidate, contentIndex))
-			.filter((candidate): candidate is Candidate => Boolean(candidate));
+		const requested = new Set(slugs);
+		return (await listPublicCandidates()).filter(candidate => requested.has(candidate.slug));
 	}
 
 	async function getPublicElection(slug: string) {
+		const publishedPackage = await getPublishedGuidePackageByElectionSlug(slug);
+
+		if (!publishedPackage)
+			return null;
+
 		const election = coverageRepository.getElectionBySlug(slug);
 		const contentIndex = await getContentIndex();
 		return election ? applyElectionContent(election, contentIndex) : null;
 	}
 
 	async function getPublicElectionSummaries() {
+		const publishedSummaries = await listPublishedElectionSummaries();
 		const contentIndex = await getContentIndex();
-		return coverageRepository.data.electionSummaries.filter((summary) => {
+		return publishedSummaries.filter((summary) => {
 			const election = coverageRepository.getElectionBySlug(summary.slug);
 			return Boolean(election && applyElectionContent(election, contentIndex));
 		});
@@ -3093,6 +3163,67 @@ export async function createApp(options: CreateAppOptions = {}) {
 		}
 
 		return null;
+	}
+
+	function buildGuidePackageRecordResponsePayload(packageRecord: ReturnType<typeof buildGuidePackageRecord>): GuidePackageRecordResponse {
+		return {
+			package: packageRecord,
+			updatedAt: packageRecord.workflow.updatedAt,
+		};
+	}
+
+	function buildGuidePackageDiagnosticsPayload(packageRecord: ReturnType<typeof buildGuidePackageRecord>): GuidePackageDiagnosticsResponse {
+		return {
+			diagnostics: packageRecord.diagnostics,
+			packageId: packageRecord.workflow.id,
+			updatedAt: packageRecord.workflow.updatedAt,
+		};
+	}
+
+	function parseStringArray(value: unknown) {
+		return Array.isArray(value)
+			? value.map(item => String(item ?? "").trim()).filter(Boolean)
+			: undefined;
+	}
+
+	async function createGuidePackageDraft(electionSlug: string, jurisdictionSlug?: string | null) {
+		const election = coverageRepository.getElectionBySlug(electionSlug);
+
+		if (!election)
+			throw new Error("Election snapshot not found for guide package generation.");
+
+		const resolvedJurisdictionSlug = jurisdictionSlug?.trim() || election.jurisdictionSlug;
+		const jurisdiction = coverageRepository.getJurisdictionBySlug(resolvedJurisdictionSlug);
+
+		if (!jurisdiction)
+			throw new Error("Jurisdiction snapshot not found for guide package generation.");
+
+		const existingWorkflow = await adminRepository.getGuidePackage(buildGuidePackageId(election.slug));
+
+		if (existingWorkflow)
+			throw new Error("Guide package already exists for this election.");
+
+		await adminRepository.createGuidePackage({
+			coverageLimits: [
+				"Final publish decision remains manual even when the package passes automated checks.",
+				"Official election tools remain the authority for final ballot confirmation and polling logistics.",
+			],
+			coverageNotes: [
+				"Draft package assembled from the current imported coverage snapshot.",
+				"Contest, candidate, and measure records should still be reviewed before publish.",
+			],
+			electionSlug: election.slug,
+			id: buildGuidePackageId(election.slug),
+			jurisdictionSlug: jurisdiction.slug,
+			status: "draft",
+		});
+
+		const guidePackage = await getGuidePackageRecord(buildGuidePackageId(election.slug));
+
+		if (!guidePackage)
+			throw new Error("Guide package draft could not be created.");
+
+		return guidePackage;
 	}
 
 	function buildContestRecordResponse(contest: Contest, election: Election): ContestRecordResponse {
@@ -3478,11 +3609,15 @@ export async function createApp(options: CreateAppOptions = {}) {
 	}
 
 	async function resolveLocationLookup(raw: string, requestId?: string, selectionId?: string) {
+		const publishedPrimaryPackage = coverageRepository.data.election
+			? await getPublishedGuidePackageByElectionSlug(coverageRepository.data.election.slug)
+			: null;
+		const publishedJurisdictionSummaries = await listPublishedJurisdictionSummaries();
 		const coverage = buildCoverageResponse(
 			coverageRepository.mode,
 			coverageRepository.data.updatedAt,
 			locationGuessService.publicConfig,
-			coverageRepository.data.dataSources.launchTarget
+			publishedPrimaryPackage ? coverageRepository.data.dataSources.launchTarget : undefined
 		);
 
 		let officialLookup = null;
@@ -3592,7 +3727,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 						};
 						selectionOptions = resolvedZipMatches.map(match => buildZipSelectionOption(
 							match,
-							coverageRepository.data.jurisdictionSummaries
+							publishedJurisdictionSummaries
 						));
 					}
 				}
@@ -3610,10 +3745,10 @@ export async function createApp(options: CreateAppOptions = {}) {
 
 		const lookupResponse = buildLocationLookupResponse(
 			raw,
-			coverageRepository.data.jurisdiction,
-			coverageRepository.data.jurisdictionSummaries,
-			coverageRepository.data.location,
-			coverageRepository.data.election?.slug,
+			publishedPrimaryPackage ? coverageRepository.data.jurisdiction : null,
+			publishedJurisdictionSummaries,
+			publishedPrimaryPackage ? coverageRepository.data.location : null,
+			publishedPrimaryPackage?.workflow.electionSlug,
 			coverageRepository.mode,
 			coverage,
 			geoContext,
@@ -3875,9 +4010,9 @@ export async function createApp(options: CreateAppOptions = {}) {
 		});
 	});
 
-	app.get("/api/jurisdictions", (_request, response) => {
+	app.get("/api/jurisdictions", async (_request, response) => {
 		response.json({
-			jurisdictions: coverageRepository.data.jurisdictionSummaries
+			jurisdictions: await listPublishedJurisdictionSummaries()
 		});
 	});
 
@@ -3890,12 +4025,13 @@ export async function createApp(options: CreateAppOptions = {}) {
 		});
 	});
 
-	app.get("/api/coverage", (_request, response) => {
+	app.get("/api/coverage", async (_request, response) => {
+		const hasPublishedGuides = (await listPublishedGuidePackageRecords()).length > 0;
 		const payload: CoverageResponse = buildCoverageResponse(
 			coverageRepository.mode,
 			coverageRepository.data.updatedAt,
 			locationGuessService.publicConfig,
-			coverageRepository.data.dataSources.launchTarget
+			hasPublishedGuides ? coverageRepository.data.dataSources.launchTarget : undefined
 		);
 		response.json(payload);
 	});
@@ -3935,7 +4071,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 			measures,
 			contests,
 			election,
-			coverageRepository.data.jurisdiction,
+			election ? coverageRepository.data.jurisdiction : null,
 			sourceDirectory,
 			districts
 		));
@@ -4079,7 +4215,16 @@ export async function createApp(options: CreateAppOptions = {}) {
 		response.json(representative);
 	});
 
-	app.get("/api/jurisdictions/:slug", (request, response) => {
+	app.get("/api/jurisdictions/:slug", async (request, response) => {
+		const publishedPackage = await getPublishedGuidePackageByJurisdictionSlug(request.params.slug);
+
+		if (!publishedPackage) {
+			response.status(404).json({
+				message: "Jurisdiction not found."
+			});
+			return;
+		}
+
 		const jurisdiction = coverageRepository.getJurisdictionBySlug(request.params.slug);
 
 		if (!jurisdiction) {
@@ -4188,6 +4333,19 @@ export async function createApp(options: CreateAppOptions = {}) {
 		});
 	});
 
+	app.get("/api/guide-packages/:id", async (request, response) => {
+		const guidePackage = await getGuidePackageRecord(request.params.id);
+
+		if (!guidePackage || guidePackage.workflow.status !== "published") {
+			response.status(404).json({
+				message: "Published guide package not found."
+			});
+			return;
+		}
+
+		response.json(buildGuidePackageRecordResponsePayload(guidePackage));
+	});
+
 	app.get("/api/admin/overview", async (_request, response) => {
 		response.json(await adminRepository.getOverview());
 	});
@@ -4242,6 +4400,221 @@ export async function createApp(options: CreateAppOptions = {}) {
 		catch (error) {
 			response.status(400).json({
 				message: error instanceof Error ? error.message : "Unable to update content."
+			});
+		}
+	});
+
+	app.get("/api/admin/packages", async (_request, response) => {
+		const [guidePackages, content] = await Promise.all([
+			adminRepository.listGuidePackages(),
+			adminRepository.listContent(),
+		]);
+
+		response.json(buildGuidePackageList(guidePackages.packages, coverageRepository, content.items));
+	});
+
+	app.post("/api/admin/packages", async (request, response) => {
+		try {
+			const electionSlug = typeof request.body?.electionSlug === "string" ? request.body.electionSlug.trim() : "";
+			const jurisdictionSlug = typeof request.body?.jurisdictionSlug === "string" ? request.body.jurisdictionSlug.trim() : undefined;
+
+			if (!electionSlug) {
+				response.status(400).json({
+					message: "Election slug is required."
+				});
+				return;
+			}
+
+			const guidePackage = await createGuidePackageDraft(electionSlug, jurisdictionSlug);
+			response.status(201).json(buildGuidePackageRecordResponsePayload(guidePackage));
+		}
+		catch (error) {
+			response.status(400).json({
+				message: error instanceof Error ? error.message : "Unable to generate guide package draft."
+			});
+		}
+	});
+
+	app.get("/api/admin/packages/:id", async (request, response) => {
+		const guidePackage = await getGuidePackageRecord(request.params.id);
+
+		if (!guidePackage) {
+			response.status(404).json({
+				message: "Guide package not found."
+			});
+			return;
+		}
+
+		response.json(buildGuidePackageRecordResponsePayload(guidePackage));
+	});
+
+	app.get("/api/admin/packages/:id/diagnostics", async (request, response) => {
+		const guidePackage = await getGuidePackageRecord(request.params.id);
+
+		if (!guidePackage) {
+			response.status(404).json({
+				message: "Guide package not found."
+			});
+			return;
+		}
+
+		response.json(buildGuidePackageDiagnosticsPayload(guidePackage));
+	});
+
+	app.patch("/api/admin/packages/:id", async (request, response) => {
+		try {
+			const currentPackage = await getGuidePackageRecord(request.params.id);
+
+			if (!currentPackage) {
+				response.status(404).json({
+					message: "Guide package not found."
+				});
+				return;
+			}
+
+			const requestedStatus = typeof request.body?.status === "string" ? request.body.status : undefined;
+
+			if (requestedStatus === "published") {
+				response.status(400).json({
+					message: "Use the publish action to promote a guide package to published."
+				});
+				return;
+			}
+
+			if (requestedStatus === "ready_to_publish" && !currentPackage.diagnostics.readyToPublish) {
+				response.status(400).json({
+					diagnostics: currentPackage.diagnostics,
+					message: "Guide package still has blocking publish checks."
+				});
+				return;
+			}
+
+			await adminRepository.updateGuidePackage(request.params.id, {
+				coverageLimits: parseStringArray(request.body?.coverageLimits),
+				coverageNotes: parseStringArray(request.body?.coverageNotes),
+				draftedAt: typeof request.body?.draftedAt === "string" ? request.body.draftedAt : undefined,
+				reviewNotes: request.body?.reviewNotes === null
+					? null
+					: typeof request.body?.reviewNotes === "string"
+						? request.body.reviewNotes
+						: undefined,
+				reviewedAt: typeof request.body?.reviewedAt === "string" ? request.body.reviewedAt : undefined,
+				reviewer: request.body?.reviewer === null
+					? null
+					: typeof request.body?.reviewer === "string"
+						? request.body.reviewer
+						: undefined,
+				status: requestedStatus === "draft" || requestedStatus === "in_review" || requestedStatus === "ready_to_publish"
+					? requestedStatus
+					: undefined,
+			});
+
+			const updatedPackage = await getGuidePackageRecord(request.params.id);
+
+			if (!updatedPackage)
+				throw new Error("Guide package was updated but could not be reloaded.");
+
+			response.json(buildGuidePackageRecordResponsePayload(updatedPackage));
+		}
+		catch (error) {
+			response.status(400).json({
+				message: error instanceof Error ? error.message : "Unable to update guide package."
+			});
+		}
+	});
+
+	app.post("/api/admin/packages/:id/publish", async (request, response) => {
+		try {
+			const currentPackage = await getGuidePackageRecord(request.params.id);
+
+			if (!currentPackage) {
+				response.status(404).json({
+					message: "Guide package not found."
+				});
+				return;
+			}
+
+			if (!currentPackage.diagnostics.readyToPublish) {
+				response.status(400).json({
+					diagnostics: currentPackage.diagnostics,
+					message: "Guide package still has blocking publish checks."
+				});
+				return;
+			}
+
+			const reviewer = typeof request.body?.reviewer === "string" ? request.body.reviewer.trim() : currentPackage.workflow.reviewer || "";
+
+			if (!reviewer) {
+				response.status(400).json({
+					message: "Reviewer name is required before publishing a guide package."
+				});
+				return;
+			}
+
+			const now = new Date().toISOString();
+
+			await adminRepository.updateGuidePackage(request.params.id, {
+				publishedAt: now,
+				reviewNotes: request.body?.reviewNotes === null
+					? null
+					: typeof request.body?.reviewNotes === "string"
+						? request.body.reviewNotes
+						: currentPackage.workflow.reviewNotes,
+				reviewedAt: now,
+				reviewer,
+				status: "published",
+			});
+
+			const updatedPackage = await getGuidePackageRecord(request.params.id);
+
+			if (!updatedPackage)
+				throw new Error("Guide package was published but could not be reloaded.");
+
+			response.json(buildGuidePackageRecordResponsePayload(updatedPackage));
+		}
+		catch (error) {
+			response.status(400).json({
+				message: error instanceof Error ? error.message : "Unable to publish guide package."
+			});
+		}
+	});
+
+	app.post("/api/admin/packages/:id/unpublish", async (request, response) => {
+		try {
+			const currentPackage = await getGuidePackageRecord(request.params.id);
+
+			if (!currentPackage) {
+				response.status(404).json({
+					message: "Guide package not found."
+				});
+				return;
+			}
+
+			await adminRepository.updateGuidePackage(request.params.id, {
+				publishedAt: null,
+				reviewNotes: request.body?.reviewNotes === null
+					? null
+					: typeof request.body?.reviewNotes === "string"
+						? request.body.reviewNotes
+						: currentPackage.workflow.reviewNotes,
+				reviewer: request.body?.reviewer === null
+					? null
+					: typeof request.body?.reviewer === "string"
+						? request.body.reviewer
+						: currentPackage.workflow.reviewer,
+				status: "in_review",
+			});
+
+			const updatedPackage = await getGuidePackageRecord(request.params.id);
+
+			if (!updatedPackage)
+				throw new Error("Guide package was unpublished but could not be reloaded.");
+
+			response.json(buildGuidePackageRecordResponsePayload(updatedPackage));
+		}
+		catch (error) {
+			response.status(400).json({
+				message: error instanceof Error ? error.message : "Unable to unpublish guide package."
 			});
 		}
 	});

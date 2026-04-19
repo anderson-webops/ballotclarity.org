@@ -7,7 +7,10 @@ import type {
 	AdminSessionResponse,
 	AdminSourceMonitorResponse,
 	AdminUserRole,
-	AdminUsersResponse
+	AdminUsersResponse,
+	GuidePackageDiagnosticsResponse,
+	GuidePackageListResponse,
+	GuidePackageRecordResponse,
 } from "~/types/civic";
 import { Buffer } from "node:buffer";
 import { createHmac, timingSafeEqual } from "node:crypto";
@@ -313,6 +316,53 @@ export async function updateAdminContent(event: H3Event, id: string, body: Recor
 	return await fetchAdminApi<AdminContentResponse>(event, `/admin/content/${id}`, {
 		body,
 		method: "PATCH"
+	});
+}
+
+export async function getAdminGuidePackages(event: H3Event) {
+	requireAdminSession(event);
+	return await fetchAdminApi<GuidePackageListResponse>(event, "/admin/packages");
+}
+
+export async function getAdminGuidePackage(event: H3Event, id: string) {
+	requireAdminSession(event);
+	return await fetchAdminApi<GuidePackageRecordResponse>(event, `/admin/packages/${id}`);
+}
+
+export async function getAdminGuidePackageDiagnostics(event: H3Event, id: string) {
+	requireAdminSession(event);
+	return await fetchAdminApi<GuidePackageDiagnosticsResponse>(event, `/admin/packages/${id}/diagnostics`);
+}
+
+export async function createAdminGuidePackage(event: H3Event, body: Record<string, unknown>) {
+	requireAdminSession(event);
+	return await fetchAdminApi<GuidePackageRecordResponse>(event, "/admin/packages", {
+		body,
+		method: "POST"
+	});
+}
+
+export async function updateAdminGuidePackage(event: H3Event, id: string, body: Record<string, unknown>) {
+	requireAdminSession(event);
+	return await fetchAdminApi<GuidePackageRecordResponse>(event, `/admin/packages/${id}`, {
+		body,
+		method: "PATCH"
+	});
+}
+
+export async function publishAdminGuidePackage(event: H3Event, id: string, body: Record<string, unknown>) {
+	requireAdminSession(event);
+	return await fetchAdminApi<GuidePackageRecordResponse>(event, `/admin/packages/${id}/publish`, {
+		body,
+		method: "POST"
+	});
+}
+
+export async function unpublishAdminGuidePackage(event: H3Event, id: string, body: Record<string, unknown>) {
+	requireAdminSession(event);
+	return await fetchAdminApi<GuidePackageRecordResponse>(event, `/admin/packages/${id}/unpublish`, {
+		body,
+		method: "POST"
 	});
 }
 

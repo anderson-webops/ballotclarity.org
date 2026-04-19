@@ -5,7 +5,9 @@ import type {
 	AdminReviewResponse,
 	AdminSessionResponse,
 	AdminSourceMonitorResponse,
-	AdminUsersResponse
+	AdminUsersResponse,
+	GuidePackageListResponse,
+	GuidePackageRecordResponse,
 } from "~/types/civic";
 
 function adminRequestHeaders() {
@@ -41,6 +43,29 @@ export function useAdminContent() {
 	return useFetch<AdminContentResponse>("/api/admin/content", {
 		headers: adminRequestHeaders()
 	});
+}
+
+export function useAdminGuidePackages() {
+	return useFetch<GuidePackageListResponse>("/api/admin/packages", {
+		headers: adminRequestHeaders()
+	});
+}
+
+export function useAdminGuidePackage(id: MaybeRefOrGetter<string | undefined>) {
+	const packageId = computed(() => toValue(id));
+
+	return useAsyncData<GuidePackageRecordResponse | null>(
+		() => `admin-guide-package:${packageId.value ?? "missing"}`,
+		() => packageId.value
+			? $fetch(`/api/admin/packages/${packageId.value}`, {
+					headers: adminRequestHeaders(),
+				})
+			: Promise.resolve(null),
+		{
+			default: () => null,
+			watch: [packageId],
+		}
+	);
 }
 
 export function useAdminSourceMonitor() {

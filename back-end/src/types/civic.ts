@@ -918,6 +918,150 @@ export interface BallotResponse {
 	note: string;
 }
 
+export type GuidePackageStatus = "draft" | "in_review" | "ready_to_publish" | "published";
+
+export type GuidePipelineClass = "fully_automatable" | "automatable_with_review" | "review_first_manual";
+
+export type GuidePackageIssueSeverity = "info" | "warning" | "error";
+
+export type GuidePackageIssueKind
+	= | "ambiguous_match"
+		| "coverage_limit"
+		| "missing_field"
+		| "normalization_issue"
+		| "publish_gate"
+		| "source_gap";
+
+export interface GuidePackageCoverageScope {
+	label: string;
+	electionSlug: string;
+	jurisdictionSlug: string;
+	locationSlug?: string;
+	districtSlugs: string[];
+	routeFamilies: string[];
+}
+
+export interface GuidePackageCounts {
+	contests: number;
+	candidates: number;
+	measures: number;
+	officialResources: number;
+	attachedSources: number;
+}
+
+export interface GuidePackageIssue {
+	id: string;
+	severity: GuidePackageIssueSeverity;
+	kind: GuidePackageIssueKind;
+	title: string;
+	summary: string;
+	blocking: boolean;
+	pipelineClass: GuidePipelineClass;
+	entityType?: "candidate" | "contest" | "election" | "jurisdiction" | "measure";
+	entitySlug?: string;
+}
+
+export interface GuidePackageChecklistItem {
+	id: string;
+	label: string;
+	detail: string;
+	passed: boolean;
+	blocking: boolean;
+	pipelineClass: GuidePipelineClass;
+}
+
+export interface GuidePackageDiagnostics {
+	readyToPublish: boolean;
+	completenessScore: number;
+	blockingIssueCount: number;
+	warningCount: number;
+	issues: GuidePackageIssue[];
+	checklist: GuidePackageChecklistItem[];
+}
+
+export interface GuidePackageWorkflow {
+	id: string;
+	electionSlug: string;
+	jurisdictionSlug: string;
+	status: GuidePackageStatus;
+	reviewer?: string;
+	reviewNotes?: string;
+	coverageNotes: string[];
+	coverageLimits: string[];
+	createdAt: string;
+	draftedAt: string;
+	reviewedAt?: string;
+	publishedAt?: string;
+	updatedAt: string;
+}
+
+export interface GuidePackageContestSummary {
+	slug: string;
+	title: string;
+	office: string;
+	type: Contest["type"];
+	href: string;
+	candidateCount: number;
+	measureCount: number;
+	sourceCount: number;
+}
+
+export interface GuidePackageCandidateSummary {
+	slug: string;
+	name: string;
+	contestSlug: string;
+	officeSought: string;
+	party: string;
+	href: string;
+	sourceCount: number;
+	summary: string;
+}
+
+export interface GuidePackageMeasureSummary {
+	slug: string;
+	title: string;
+	contestSlug: string;
+	href: string;
+	sourceCount: number;
+	summary: string;
+}
+
+export interface GuidePackageSummary {
+	workflow: GuidePackageWorkflow;
+	election: ElectionSummary | null;
+	jurisdiction: JurisdictionSummary | null;
+	coverageScope: GuidePackageCoverageScope;
+	counts: GuidePackageCounts;
+	diagnostics: Pick<GuidePackageDiagnostics, "blockingIssueCount" | "completenessScore" | "readyToPublish" | "warningCount">;
+}
+
+export interface GuidePackageRecord extends GuidePackageSummary {
+	electionRecord: Election | null;
+	jurisdictionRecord: Jurisdiction | null;
+	contests: GuidePackageContestSummary[];
+	candidates: GuidePackageCandidateSummary[];
+	measures: GuidePackageMeasureSummary[];
+	officialResources: OfficialResource[];
+	attachedSources: Source[];
+	diagnostics: GuidePackageDiagnostics;
+}
+
+export interface GuidePackageListResponse {
+	packages: GuidePackageRecord[];
+	updatedAt: string;
+}
+
+export interface GuidePackageRecordResponse {
+	package: GuidePackageRecord;
+	updatedAt: string;
+}
+
+export interface GuidePackageDiagnosticsResponse {
+	packageId: string;
+	diagnostics: GuidePackageDiagnostics;
+	updatedAt: string;
+}
+
 export interface CompareResponse {
 	requestedSlugs: string[];
 	contestSlug: string | null;

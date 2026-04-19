@@ -1,6 +1,9 @@
 import type {
 	AdminRepository,
 	AdminRepositoryOptions,
+	CreateGuidePackageInput,
+	GuidePackagePatch,
+	GuidePackageWorkflowListResponse,
 } from "./admin-store.js";
 import type {
 	AdminActivityItem,
@@ -10,6 +13,8 @@ import type {
 	AdminSourceMonitorItem,
 	AdminUser,
 	AdminUserRole,
+	GuidePackageStatus,
+	GuidePackageWorkflow,
 } from "./types/civic.js";
 import { randomUUID } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
@@ -89,6 +94,22 @@ interface ActivityRow {
 	type: AdminActivityItem["type"];
 	timestamp: string;
 	summary: string;
+}
+
+interface GuidePackageRow {
+	id: string;
+	election_slug: string;
+	jurisdiction_slug: string;
+	status: GuidePackageStatus;
+	reviewer: string | null;
+	review_notes: string | null;
+	coverage_notes: string;
+	coverage_limits: string;
+	created_at: string;
+	drafted_at: string;
+	reviewed_at: string | null;
+	published_at: string | null;
+	updated_at: string;
 }
 
 const packagedSchemaPath = new URL("./admin-schema.postgres.sql", import.meta.url);
@@ -175,12 +196,46 @@ function rowToActivity(row: ActivityRow): AdminActivityItem {
 	};
 }
 
+function parseStoredStringArray(raw: string | null | undefined) {
+	if (!raw)
+		return [];
+
+	try {
+		const parsed = JSON.parse(raw) as unknown;
+		return Array.isArray(parsed)
+			? parsed.map(item => String(item ?? "").trim()).filter(Boolean)
+			: [];
+	}
+	catch {
+		return [];
+	}
+}
+
+function rowToGuidePackage(row: GuidePackageRow): GuidePackageWorkflow {
+	return {
+		coverageLimits: parseStoredStringArray(row.coverage_limits),
+		coverageNotes: parseStoredStringArray(row.coverage_notes),
+		createdAt: row.created_at,
+		draftedAt: row.drafted_at,
+		electionSlug: row.election_slug,
+		id: row.id,
+		jurisdictionSlug: row.jurisdiction_slug,
+		publishedAt: row.published_at || undefined,
+		reviewNotes: row.review_notes || undefined,
+		reviewedAt: row.reviewed_at || undefined,
+		reviewer: row.reviewer || undefined,
+		status: row.status,
+		updatedAt: row.updated_at,
+	};
+}
+
 async function seedPostgresDatabase(pool: Pool, options: AdminRepositoryOptions) {
 	const schema = readFileSync(resolvePostgresSchemaPath(), "utf8");
 	const contentSeed = options.contentSeed ?? [];
 	const correctionSeed = options.correctionSeed ?? [];
 	const sourceMonitorSeed = options.sourceMonitorSeed ?? [];
 	const activitySeed = options.activitySeed ?? [];
+	const guidePackageSeed = options.guidePackageSeed ?? [];
 	await pool.query(schema);
 	await pool.query("ALTER TABLE admin_content ADD COLUMN IF NOT EXISTS public_summary TEXT");
 	await pool.query("ALTER TABLE admin_content ADD COLUMN IF NOT EXISTS ballot_summary TEXT");
@@ -206,6 +261,7 @@ async function seedPostgresDatabase(pool: Pool, options: AdminRepositoryOptions)
 	const correctionsCount = Number((await pool.query<CountRow>("SELECT COUNT(*)::int AS count FROM admin_corrections")).rows[0]?.count ?? 0);
 	const sourcesCount = Number((await pool.query<CountRow>("SELECT COUNT(*)::int AS count FROM admin_source_monitors")).rows[0]?.count ?? 0);
 	const activityCount = Number((await pool.query<CountRow>("SELECT COUNT(*)::int AS count FROM admin_activity")).rows[0]?.count ?? 0);
+	const guidePackagesCount = Number((await pool.query<CountRow>("SELECT COUNT(*)::int AS count FROM admin_guide_packages")).rows[0]?.count ?? 0);
 
 	if (!contentCount) {
 		for (const item of contentSeed) {
@@ -314,6 +370,31 @@ async function seedPostgresDatabase(pool: Pool, options: AdminRepositoryOptions)
 				INSERT INTO admin_activity (id, label, type, timestamp, summary)
 				VALUES ($1, $2, $3, $4, $5)
 			`, [item.id, item.label, item.type, item.timestamp, item.summary]);
+		}
+	}
+
+	if (!guidePackagesCount) {
+		for (const item of guidePackageSeed) {
+			await pool.query(`
+				INSERT INTO admin_guide_packages (
+					id, election_slug, jurisdiction_slug, status, reviewer, review_notes, coverage_notes, coverage_limits,
+					created_at, drafted_at, reviewed_at, published_at, updated_at
+				) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+			`, [
+				item.id,
+				item.electionSlug,
+				item.jurisdictionSlug,
+				item.status,
+				item.reviewer || null,
+				item.reviewNotes || null,
+				JSON.stringify(item.coverageNotes ?? []),
+				JSON.stringify(item.coverageLimits ?? []),
+				item.createdAt,
+				item.draftedAt,
+				item.reviewedAt || null,
+				item.publishedAt || null,
+				item.updatedAt
+			]);
 		}
 	}
 
@@ -494,6 +575,15 @@ export async function createPostgresAdminRepository(options: AdminRepositoryOpti
 
 			return result.rows[0] ? rowToContent(result.rows[0]) : null;
 		},
+		async getGuidePackage(id) {
+			const result = await pool.query<GuidePackageRow>(`
+				SELECT id, election_slug, jurisdiction_slug, status, reviewer, review_notes, coverage_notes, coverage_limits, created_at, drafted_at, reviewed_at, published_at, updated_at
+				FROM admin_guide_packages
+				WHERE id = $1
+			`, [id]);
+
+			return result.rows[0] ? rowToGuidePackage(result.rows[0]) : null;
+		},
 		async getHealth() {
 			await pool.query("SELECT 1");
 			return { ok: true };
@@ -501,13 +591,16 @@ export async function createPostgresAdminRepository(options: AdminRepositoryOpti
 		async getOverview() {
 			const content = (await repository.listContent()).items;
 			const corrections = (await repository.listCorrections()).corrections;
+			const guidePackages = (await repository.listGuidePackages()).packages;
 			const sources = (await repository.listSourceMonitor()).sources;
 			const healthySourceCount = sources.filter(item => item.health === "healthy").length;
 			const openCorrections = corrections.filter(item => item.status !== "resolved");
 			const reviewQueue = content.filter(item => item.status !== "published" || !item.published);
+			const packageQueue = guidePackages.filter(item => item.status !== "published");
 			const dueChecks = sources.filter(item => new Date(item.nextCheckAt).getTime() <= Date.now());
 			const needsAttention = [
 				...openCorrections.filter(item => item.priority === "high").slice(0, 2).map(item => `${item.subject}: ${item.nextStep}`),
+				...packageQueue.slice(0, 2).map(item => `${item.electionSlug}: package is ${item.status.replaceAll("_", " ")}.`),
 				...content.filter(item => item.status === "needs-sources").slice(0, 2).map(item => `${item.title}: ${item.blocker || "Waiting on source coverage."}`),
 				...sources.filter(item => item.health === "incident" || item.health === "stale").slice(0, 2).map(item => `${item.label}: ${item.note}`)
 			].slice(0, 6);
@@ -522,11 +615,11 @@ export async function createPostgresAdminRepository(options: AdminRepositoryOpti
 						value: String(openCorrections.length)
 					},
 					{
-						helpText: "Candidate, measure, and election records not yet marked published.",
+						helpText: "Candidate, measure, election, and guide-package records not yet marked published.",
 						id: "review-queue",
 						label: "Awaiting publish",
-						tone: reviewQueue.length ? "review" : "healthy",
-						value: String(reviewQueue.length)
+						tone: (reviewQueue.length || packageQueue.length) ? "review" : "healthy",
+						value: String(reviewQueue.length + packageQueue.length)
 					},
 					{
 						helpText: "Tracked source systems passing the latest check cycle.",
@@ -569,6 +662,23 @@ export async function createPostgresAdminRepository(options: AdminRepositoryOpti
 
 			return { corrections: result.rows.map(rowToCorrection) };
 		},
+		async listGuidePackages() {
+			const result = await pool.query<GuidePackageRow>(`
+				SELECT id, election_slug, jurisdiction_slug, status, reviewer, review_notes, coverage_notes, coverage_limits, created_at, drafted_at, reviewed_at, published_at, updated_at
+				FROM admin_guide_packages
+				ORDER BY CASE status
+					WHEN 'published' THEN 0
+					WHEN 'ready_to_publish' THEN 1
+					WHEN 'in_review' THEN 2
+					ELSE 3
+				END, updated_at DESC
+			`);
+
+			return {
+				packages: result.rows.map(rowToGuidePackage),
+				updatedAt: result.rows.map(row => row.updated_at).sort((left, right) => right.localeCompare(left))[0] ?? new Date().toISOString(),
+			} satisfies GuidePackageWorkflowListResponse;
+		},
 		async listReview() {
 			return {
 				items: (await repository.listContent()).items.map(item => ({
@@ -584,6 +694,38 @@ export async function createPostgresAdminRepository(options: AdminRepositoryOpti
 					updatedAt: item.updatedAt
 				}))
 			};
+		},
+		async createGuidePackage(input: CreateGuidePackageInput) {
+			const existing = await repository.getGuidePackage(input.id);
+
+			if (existing)
+				throw new Error("Guide package already exists.");
+
+			const now = new Date().toISOString();
+
+			await pool.query(`
+				INSERT INTO admin_guide_packages (
+					id, election_slug, jurisdiction_slug, status, reviewer, review_notes, coverage_notes, coverage_limits,
+					created_at, drafted_at, reviewed_at, published_at, updated_at
+				) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+			`, [
+				input.id,
+				input.electionSlug,
+				input.jurisdictionSlug,
+				input.status ?? "draft",
+				input.reviewer?.trim() || null,
+				input.reviewNotes?.trim() || null,
+				JSON.stringify(input.coverageNotes ?? []),
+				JSON.stringify(input.coverageLimits ?? []),
+				input.createdAt || now,
+				input.draftedAt || now,
+				input.reviewedAt || null,
+				input.publishedAt || null,
+				input.updatedAt || now
+			]);
+
+			await logActivity("review", "Guide package drafted", `${input.electionSlug} guide package entered the ${(input.status ?? "draft").replaceAll("_", " ")} state.`);
+			return await repository.listGuidePackages();
 		},
 		async listSourceMonitor() {
 			const result = await pool.query<SourceRow>(`
@@ -661,6 +803,55 @@ export async function createPostgresAdminRepository(options: AdminRepositoryOpti
 			);
 
 			return await repository.listContent();
+		},
+		async updateGuidePackage(id, patch: GuidePackagePatch) {
+			const current = await repository.getGuidePackage(id);
+
+			if (!current)
+				throw new Error("Guide package not found.");
+
+			const now = new Date().toISOString();
+			const nextStatus = patch.status ?? current.status;
+			const nextReviewer = patch.reviewer === undefined ? current.reviewer ?? null : patch.reviewer?.trim() || null;
+			const nextReviewNotes = patch.reviewNotes === undefined ? current.reviewNotes ?? null : patch.reviewNotes?.trim() || null;
+			const nextCoverageNotes = patch.coverageNotes === undefined ? current.coverageNotes : patch.coverageNotes ?? [];
+			const nextCoverageLimits = patch.coverageLimits === undefined ? current.coverageLimits : patch.coverageLimits ?? [];
+			const nextDraftedAt = patch.draftedAt || current.draftedAt;
+			const nextReviewedAt = patch.reviewedAt === undefined ? current.reviewedAt ?? null : patch.reviewedAt;
+			const nextPublishedAt = patch.publishedAt === undefined ? current.publishedAt ?? null : patch.publishedAt;
+
+			await pool.query(`
+				UPDATE admin_guide_packages
+				SET status = $1,
+					reviewer = $2,
+					review_notes = $3,
+					coverage_notes = $4,
+					coverage_limits = $5,
+					drafted_at = $6,
+					reviewed_at = $7,
+					published_at = $8,
+					updated_at = $9
+				WHERE id = $10
+			`, [
+				nextStatus,
+				nextReviewer,
+				nextReviewNotes,
+				JSON.stringify(nextCoverageNotes),
+				JSON.stringify(nextCoverageLimits),
+				nextDraftedAt,
+				nextReviewedAt,
+				nextPublishedAt,
+				now,
+				id
+			]);
+
+			await logActivity(
+				nextStatus === "published" ? "publish" : "review",
+				`Guide package ${current.electionSlug} updated`,
+				`Guide package moved to ${nextStatus.replaceAll("_", " ")}.`
+			);
+
+			return await repository.listGuidePackages();
 		},
 		async updateCorrection(id, patch) {
 			const currentResult = await pool.query<CorrectionRow>(`

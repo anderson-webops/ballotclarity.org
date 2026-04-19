@@ -13,6 +13,7 @@ import {
 	demoAdminSourceMonitor,
 } from "../src/coverage-data.js";
 import { buildSeedCoverageSnapshot } from "../src/coverage-repository.js";
+import { buildGuidePackageId } from "../src/guide-packages.js";
 import { classifyRepresentative } from "../src/representative-classification.js";
 import { createApp } from "../src/server.js";
 
@@ -1064,6 +1065,30 @@ test("default runtime stays empty instead of auto-seeding coverage and public op
 			isolatedServer.close(error => error ? reject(error) : resolve());
 		});
 	}
+});
+
+test("snapshot runtime exposes the published guide package and its public record", async () => {
+	const packageId = buildGuidePackageId("2026-fulton-county-general");
+	const packagesResponse = await fetch(`${baseUrl}/api/admin/packages`, {
+		headers: {
+			"x-admin-api-key": adminApiKey
+		}
+	});
+	const packagesBody = await packagesResponse.json();
+	const publicPackageResponse = await fetch(`${baseUrl}/api/guide-packages/${packageId}`);
+	const publicPackageBody = await publicPackageResponse.json();
+
+	assert.equal(packagesResponse.status, 200);
+	assert.ok(Array.isArray(packagesBody.packages));
+	assert.equal(packagesBody.packages[0]?.workflow.id, packageId);
+	assert.equal(packagesBody.packages[0]?.workflow.status, "published");
+	assert.equal(packagesBody.packages[0]?.counts.contests > 0, true);
+	assert.equal(packagesBody.packages[0]?.counts.attachedSources > 0, true);
+	assert.equal(publicPackageResponse.status, 200);
+	assert.equal(publicPackageBody.package.workflow.id, packageId);
+	assert.equal(publicPackageBody.package.workflow.status, "published");
+	assert.equal(publicPackageBody.package.officialResources.length > 0, true);
+	assert.equal(publicPackageBody.package.attachedSources.length > 0, true);
 });
 
 test("GET /api/status suppresses launch-specific source monitors when coverage mode is empty", async () => {
@@ -2381,6 +2406,222 @@ test("PATCH /api/admin/content updates public content fields and publish gating"
 		assert.equal(ballotResponse.status, 200);
 		assert.equal(houseContest.candidates.length, 1);
 		assert.equal(houseContest.candidates[0].slug, "daniel-brooks");
+	}
+	finally {
+		await new Promise<void>((resolve, reject) => {
+			isolatedServer.close(error => error ? reject(error) : resolve());
+		});
+	}
+});
+
+test("guide package workflow gates local guide publication from draft through rollback", async () => {
+	const isolatedServer = (await createApp({
+		addressEnrichmentService: {
+			async lookupAddress() {
+				return {
+					benchmark: "Public_AR_Current",
+					countyFips: "121",
+					districtMatches: [
+						{
+							districtCode: "7",
+							districtType: "congressional",
+							id: "congressional:7",
+							label: "Congressional District 7",
+							sourceSystem: "U.S. Census Geocoder"
+						}
+					],
+					fromCache: false,
+					latitude: 33.7479,
+					longitude: -84.3902,
+					normalizedAddress: "55 TRINITY AVE SW, ATLANTA, GA, 30303",
+					representativeMatches: [],
+					state: "GA",
+					vintage: "Current_Current",
+					zip5: "30303"
+				};
+			}
+		},
+		adminApiKey,
+		adminDbPath: ":memory:",
+		contentSeed,
+		coverageRepository: {
+			data: coverageSnapshot,
+			getCandidateBySlug(slug) {
+				return coverageSnapshot.candidates.find(candidate => candidate.slug === slug) ?? null;
+			},
+			getCandidatesBySlugs(slugs) {
+				const requested = new Set(slugs);
+				return coverageSnapshot.candidates.filter(candidate => requested.has(candidate.slug));
+			},
+			getElectionBySlug(slug) {
+				return coverageSnapshot.election?.slug === slug ? coverageSnapshot.election : null;
+			},
+			getJurisdictionBySlug(slug) {
+				return coverageSnapshot.jurisdiction?.slug === slug ? coverageSnapshot.jurisdiction : null;
+			},
+			getMeasureBySlug(slug) {
+				return coverageSnapshot.measures.find(measure => measure.slug === slug) ?? null;
+			},
+			getSourceById(id) {
+				return coverageSnapshot.sources.find(source => source.id === id) ?? null;
+			},
+			mode: "snapshot",
+			snapshotPath: ":memory:"
+		},
+		correctionSeed,
+		googleCivicClient: {
+			async lookupVoterInfo() {
+				return {
+					actions: [],
+					logistics: null,
+					note: "Google Civic accepted the Fulton County test address.",
+					verified: true
+				};
+			}
+		},
+		guidePackageSeed: [],
+		sourceMonitorSeed
+	})).listen(0, "127.0.0.1");
+
+	await once(isolatedServer, "listening");
+	const isolatedAddress = isolatedServer.address() as AddressInfo;
+	const isolatedBaseUrl = `http://127.0.0.1:${isolatedAddress.port}`;
+	const packageId = buildGuidePackageId("2026-fulton-county-general");
+
+	try {
+		const lookupBeforeResponse = await fetch(`${isolatedBaseUrl}/api/location`, {
+			body: JSON.stringify({ q: "55 Trinity Ave SW, Atlanta, GA 30303" }),
+			headers: {
+				"Content-Type": "application/json"
+			},
+			method: "POST"
+		});
+		const lookupBeforeBody = await lookupBeforeResponse.json();
+		const ballotBeforeResponse = await fetch(`${isolatedBaseUrl}/api/ballot?election=2026-fulton-county-general`);
+		const compareBeforeResponse = await fetch(`${isolatedBaseUrl}/api/compare?slugs=elena-torres,daniel-brooks`);
+		const compareBeforeBody = await compareBeforeResponse.json();
+		const packagesBeforeResponse = await fetch(`${isolatedBaseUrl}/api/admin/packages`, {
+			headers: {
+				"x-admin-api-key": adminApiKey
+			}
+		});
+		const packagesBeforeBody = await packagesBeforeResponse.json();
+
+		assert.equal(lookupBeforeResponse.status, 200);
+		assert.equal(lookupBeforeBody.guideAvailability, "not-published");
+		assert.equal(ballotBeforeResponse.status, 404);
+		assert.equal(compareBeforeResponse.status, 200);
+		assert.deepEqual(compareBeforeBody.candidates, []);
+		assert.deepEqual(packagesBeforeBody.packages, []);
+
+		const createResponse = await fetch(`${isolatedBaseUrl}/api/admin/packages`, {
+			body: JSON.stringify({
+				electionSlug: "2026-fulton-county-general",
+				jurisdictionSlug: "fulton-county-georgia"
+			}),
+			headers: {
+				"Content-Type": "application/json",
+				"x-admin-api-key": adminApiKey
+			},
+			method: "POST"
+		});
+		const createBody = await createResponse.json();
+		const diagnosticsResponse = await fetch(`${isolatedBaseUrl}/api/admin/packages/${packageId}/diagnostics`, {
+			headers: {
+				"x-admin-api-key": adminApiKey
+			}
+		});
+		const diagnosticsBody = await diagnosticsResponse.json();
+
+		assert.equal(createResponse.status, 201);
+		assert.equal(createBody.package.workflow.status, "draft");
+		assert.equal(diagnosticsResponse.status, 200);
+		assert.equal(diagnosticsBody.diagnostics.readyToPublish, true);
+		assert.equal(diagnosticsBody.diagnostics.blockingIssueCount, 0);
+
+		const inReviewResponse = await fetch(`${isolatedBaseUrl}/api/admin/packages/${packageId}`, {
+			body: JSON.stringify({
+				reviewNotes: "Editorial review completed for the Fulton County package.",
+				reviewer: "Smoke Reviewer",
+				status: "in_review"
+			}),
+			headers: {
+				"Content-Type": "application/json",
+				"x-admin-api-key": adminApiKey
+			},
+			method: "PATCH"
+		});
+
+		assert.equal(inReviewResponse.status, 200);
+
+		const readyResponse = await fetch(`${isolatedBaseUrl}/api/admin/packages/${packageId}`, {
+			body: JSON.stringify({
+				reviewer: "Smoke Reviewer",
+				status: "ready_to_publish"
+			}),
+			headers: {
+				"Content-Type": "application/json",
+				"x-admin-api-key": adminApiKey
+			},
+			method: "PATCH"
+		});
+
+		assert.equal(readyResponse.status, 200);
+
+		const publishResponse = await fetch(`${isolatedBaseUrl}/api/admin/packages/${packageId}/publish`, {
+			body: JSON.stringify({
+				reviewNotes: "Published after passing all package checks.",
+				reviewer: "Smoke Reviewer"
+			}),
+			headers: {
+				"Content-Type": "application/json",
+				"x-admin-api-key": adminApiKey
+			},
+			method: "POST"
+		});
+		const publishBody = await publishResponse.json();
+		const publicPackageResponse = await fetch(`${isolatedBaseUrl}/api/guide-packages/${packageId}`);
+		const lookupAfterResponse = await fetch(`${isolatedBaseUrl}/api/location`, {
+			body: JSON.stringify({ q: "55 Trinity Ave SW, Atlanta, GA 30303" }),
+			headers: {
+				"Content-Type": "application/json"
+			},
+			method: "POST"
+		});
+		const lookupAfterBody = await lookupAfterResponse.json();
+		const ballotAfterResponse = await fetch(`${isolatedBaseUrl}/api/ballot?election=2026-fulton-county-general`);
+		const ballotAfterBody = await ballotAfterResponse.json();
+		const compareAfterResponse = await fetch(`${isolatedBaseUrl}/api/compare?slugs=elena-torres,daniel-brooks`);
+		const compareAfterBody = await compareAfterResponse.json();
+
+		assert.equal(publishResponse.status, 200);
+		assert.equal(publishBody.package.workflow.status, "published");
+		assert.equal(publicPackageResponse.status, 200);
+		assert.equal(lookupAfterResponse.status, 200);
+		assert.equal(lookupAfterBody.guideAvailability, "published");
+		assert.equal(lookupAfterBody.electionSlug, "2026-fulton-county-general");
+		assert.equal(ballotAfterResponse.status, 200);
+		assert.equal(ballotAfterBody.election.slug, "2026-fulton-county-general");
+		assert.equal(compareAfterResponse.status, 200);
+		assert.equal(compareAfterBody.candidates.length, 2);
+
+		const unpublishResponse = await fetch(`${isolatedBaseUrl}/api/admin/packages/${packageId}/unpublish`, {
+			body: JSON.stringify({
+				reviewNotes: "Rolled back after publication smoke test.",
+				reviewer: "Smoke Reviewer"
+			}),
+			headers: {
+				"Content-Type": "application/json",
+				"x-admin-api-key": adminApiKey
+			},
+			method: "POST"
+		});
+		const ballotAfterRollbackResponse = await fetch(`${isolatedBaseUrl}/api/ballot?election=2026-fulton-county-general`);
+		const publicPackageAfterRollbackResponse = await fetch(`${isolatedBaseUrl}/api/guide-packages/${packageId}`);
+
+		assert.equal(unpublishResponse.status, 200);
+		assert.equal(ballotAfterRollbackResponse.status, 404);
+		assert.equal(publicPackageAfterRollbackResponse.status, 404);
 	}
 	finally {
 		await new Promise<void>((resolve, reject) => {

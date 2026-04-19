@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { OfficeContext } from "~/types/civic";
+import FactStatCard from "~/components/graphics/FactStatCard.vue";
 
 const props = defineProps<{
 	context: OfficeContext;

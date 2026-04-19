@@ -2,6 +2,9 @@
 import type { BallotResponse, ElectionsResponse } from "~/types/civic";
 import { storeToRefs } from "pinia";
 import { defineAsyncComponent } from "vue";
+import AvailabilityStatusPanel from "~/components/graphics/AvailabilityStatusPanel.vue";
+import FactStatCard from "~/components/graphics/FactStatCard.vue";
+import SourceProvenanceStrip from "~/components/graphics/SourceProvenanceStrip.vue";
 import { contactEmail } from "~/constants";
 import { buildLocationGuessUiContent } from "~/utils/location-guess";
 import { buildHomeExperienceState } from "~/utils/nationwide-results";

@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import ComparisonMatrix from "~/components/graphics/ComparisonMatrix.vue";
+import OfficeContextCard from "~/components/graphics/OfficeContextCard.vue";
+import SourceDensityByEntity from "~/components/graphics/SourceDensityByEntity.vue";
 import {
 	buildContestComparisonMatrix,
 	buildContestOfficeContext,

@@ -4,6 +4,10 @@ import type {
 	LocationLookupSelectionOption,
 	NationwideLookupResultContext
 } from "~/types/civic";
+import AvailabilityStatusPanel from "~/components/graphics/AvailabilityStatusPanel.vue";
+import DistrictLadder from "~/components/graphics/DistrictLadder.vue";
+import RepresentativeGrid from "~/components/graphics/RepresentativeGrid.vue";
+import SourceProvenanceStrip from "~/components/graphics/SourceProvenanceStrip.vue";
 import {
 	buildLocationAvailabilityItems,
 	buildLookupProvenanceSummary,

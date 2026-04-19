@@ -684,7 +684,7 @@ test("built app renders the key ballot guide pages against the built API", async
 	assert.match(candidateHtml, /Issue positions/);
 	assert.match(candidateHtml, /Context and terms/);
 	assert.match(candidateHtml, /Votes(?:\s*&amp;\s*|\s*&\s*|\s*&#38;\s*)actions/);
-	assert.match(candidateHtml, /Constituent context and future analysis/);
+	assert.match(candidateHtml, /Public context around funding and policy exposure/);
 	assert.match(candidateHtml, /Sources and methodology notes/);
 	assert.match(candidateHtml, /Evidence(?:\s*&amp;\s*|\s*&\s*|\s*&#38;\s*)sources/);
 	assert.match(candidateHtml, /Evidence rail/);

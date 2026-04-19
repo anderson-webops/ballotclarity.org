@@ -1,6 +1,11 @@
 <script setup lang="ts">
 import type { Source } from "~/types/civic";
 import { storeToRefs } from "pinia";
+import ComparisonMatrix from "~/components/graphics/ComparisonMatrix.vue";
+import EvidenceCompletenessPanel from "~/components/graphics/EvidenceCompletenessPanel.vue";
+import OfficeContextCard from "~/components/graphics/OfficeContextCard.vue";
+import SourceProvenanceStrip from "~/components/graphics/SourceProvenanceStrip.vue";
+import TimelineList from "~/components/graphics/TimelineList.vue";
 import { contactEmail } from "~/constants";
 import { buildCompareLaunchSlugs, buildCompareRoute } from "~/stores/civic";
 import {

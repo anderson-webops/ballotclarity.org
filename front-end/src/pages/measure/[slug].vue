@@ -1,6 +1,10 @@
 <script setup lang="ts">
 import type { Source, SourceType } from "~/types/civic";
 import { storeToRefs } from "pinia";
+import BeforeAfterDiff from "~/components/graphics/BeforeAfterDiff.vue";
+import EvidenceCompletenessPanel from "~/components/graphics/EvidenceCompletenessPanel.vue";
+import MeasureImpactDiagram from "~/components/graphics/MeasureImpactDiagram.vue";
+import SourceProvenanceStrip from "~/components/graphics/SourceProvenanceStrip.vue";
 import { contactEmail } from "~/constants";
 import {
 	buildMeasureBeforeAfterData,

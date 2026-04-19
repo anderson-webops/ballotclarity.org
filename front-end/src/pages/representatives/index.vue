@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import type { OfficeContext, RepresentativesResponse } from "~/types/civic";
 import { storeToRefs } from "pinia";
+import OfficeContextCard from "~/components/graphics/OfficeContextCard.vue";
+import SourceProvenanceStrip from "~/components/graphics/SourceProvenanceStrip.vue";
+import TimelineList from "~/components/graphics/TimelineList.vue";
 
 import { buildActiveLookupSummary } from "~/utils/active-lookup";
 import { activeNationwideLookupCookieName, parseActiveNationwideLookupCookie } from "~/utils/active-nationwide-cookie";

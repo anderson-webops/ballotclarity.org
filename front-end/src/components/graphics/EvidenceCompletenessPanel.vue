@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { EvidenceCompleteness } from "~/types/civic";
+import FactStatCard from "~/components/graphics/FactStatCard.vue";
 
 const props = defineProps<{
 	evidence: EvidenceCompleteness;

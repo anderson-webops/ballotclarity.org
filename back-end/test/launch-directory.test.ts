@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { buildLaunchDirectorySnapshot } from "../src/launch-directory.js";
+import { classifyRepresentative } from "../src/representative-classification.js";
 
 test("buildLaunchDirectorySnapshot composes provider-fed launch data without pretending funding crosswalks are complete", async () => {
 	const snapshot = await buildLaunchDirectorySnapshot({
@@ -74,11 +75,19 @@ test("buildLaunchDirectorySnapshot composes provider-fed launch data without pre
 				];
 			},
 			async lookupPeopleByCoordinates() {
+				const classification = classifyRepresentative({
+					districtLabel: "Senator 36",
+					officeTitle: "Senator",
+					stateName: "Georgia",
+				});
 				return [
 					{
 						districtLabel: "Senator 36",
+						governmentLevel: classification.governmentLevel,
 						id: "ocd-person:test-senator",
 						name: "Nan Orrock",
+						officeDisplayLabel: classification.officeDisplayLabel,
+						officeType: classification.officeType,
 						officeTitle: "Senator",
 						openstatesUrl: "https://openstates.org/person/example-two",
 						party: "Democratic",

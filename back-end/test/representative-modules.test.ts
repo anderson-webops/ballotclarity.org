@@ -2,7 +2,14 @@ import type { ActiveNationwideLookupContext } from "../src/active-nationwide-loo
 import type { PersonProfileResponse } from "../src/types/civic.js";
 import assert from "node:assert/strict";
 import test from "node:test";
+import { classifyRepresentative } from "../src/representative-classification.js";
 import { createRepresentativeModuleResolver } from "../src/representative-modules.js";
+
+const testClassification = classifyRepresentative({
+	districtLabel: "Representative UT-3",
+	officeTitle: "Representative",
+	stateName: "Utah",
+});
 
 const testContext: ActiveNationwideLookupContext = {
 	actions: [],
@@ -31,8 +38,11 @@ const testContext: ActiveNationwideLookupContext = {
 	representativeMatches: [
 		{
 			districtLabel: "Representative UT-3",
+			governmentLevel: testClassification.governmentLevel,
 			id: "ocd-person:test-mike-kennedy",
 			name: "Mike Kennedy",
+			officeDisplayLabel: testClassification.officeDisplayLabel,
+			officeType: testClassification.officeType,
 			officeTitle: "Representative",
 			party: "Republican",
 			sourceSystem: "Open States",
@@ -60,14 +70,17 @@ const testProfileResponse: PersonProfileResponse = {
 			statusNote: "Representative identity resolved from the active nationwide lookup.",
 		},
 		funding: null,
+		governmentLevel: testClassification.governmentLevel,
 		incumbent: true,
 		keyActions: [],
 		location: "Provo, Utah",
 		lobbyingContext: [],
 		methodologyNotes: [],
 		name: "Mike Kennedy",
+		officeDisplayLabel: testClassification.officeDisplayLabel,
 		officeSought: "Representative",
 		officeholderLabel: "Current officeholder",
+		officeType: testClassification.officeType,
 		onCurrentBallot: false,
 		party: "Republican",
 		provenance: {

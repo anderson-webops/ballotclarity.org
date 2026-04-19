@@ -363,12 +363,28 @@ export interface LocationDistrictMatch {
 	sourceSystem: string;
 }
 
+export type RepresentativeGovernmentLevel = "federal" | "state" | "county" | "city";
+
+export type RepresentativeOfficeType
+	= | "county_commission"
+		| "county_official"
+		| "city_official"
+		| "mayor"
+		| "other"
+		| "state_house"
+		| "state_senate"
+		| "us_house"
+		| "us_senate";
+
 export interface LocationRepresentativeMatch {
 	id: string;
 	name: string;
 	party?: string;
 	officeTitle: string;
 	districtLabel: string;
+	governmentLevel: RepresentativeGovernmentLevel | null;
+	officeDisplayLabel: string;
+	officeType: RepresentativeOfficeType | null;
 	sourceSystem: string;
 	openstatesUrl?: string;
 }
@@ -698,8 +714,11 @@ export interface RepresentativeSummary {
 	slug: string;
 	name: string;
 	location: string;
+	governmentLevel: RepresentativeGovernmentLevel | null;
 	party: string;
 	officeholderLabel: string;
+	officeDisplayLabel: string;
+	officeType: RepresentativeOfficeType | null;
 	officeSought: string;
 	districtSlug: string;
 	districtLabel: string;
@@ -761,6 +780,9 @@ export interface PersonProfile {
 	slug: string;
 	name: string;
 	location: string;
+	governmentLevel: RepresentativeGovernmentLevel | null;
+	officeDisplayLabel: string;
+	officeType: RepresentativeOfficeType | null;
 	officeSought: string;
 	contestSlug: string;
 	party: string;

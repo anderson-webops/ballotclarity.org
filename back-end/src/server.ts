@@ -82,6 +82,7 @@ import { getOfficialToolsForState, getStateAbbreviationForName, getStateNameForA
 import { createOpenFecClient } from "./openfec.js";
 import { createOpenStatesClient } from "./openstates.js";
 import { buildProviderSummary } from "./provider-config.js";
+import { classifyRepresentative } from "./representative-classification.js";
 import { createRepresentativeModuleResolver } from "./representative-modules.js";
 import { createSourceAssetStore } from "./source-asset-store.js";
 import {
@@ -303,8 +304,14 @@ function buildSourceRecord(
 
 function buildRepresentativeSummary(candidate: Candidate): RepresentativeSummary {
 	const sources = collectCandidateSources(candidate);
+	const classification = classifyRepresentative({
+		districtLabel: candidate.officeSought,
+		officeSought: candidate.officeSought,
+		stateName: candidate.location.split(",").slice(-1)[0]?.trim() || candidate.location,
+	});
 
 	return {
+		governmentLevel: classification.governmentLevel,
 		location: candidate.location,
 		districtLabel: candidate.officeSought,
 		districtSlug: candidate.contestSlug,
@@ -312,6 +319,8 @@ function buildRepresentativeSummary(candidate: Candidate): RepresentativeSummary
 		fundingSummary: candidate.funding.summary,
 		href: `/representatives/${candidate.slug}`,
 		officeholderLabel: candidate.incumbent ? "Current officeholder" : "Incumbent contender",
+		officeDisplayLabel: classification.officeDisplayLabel,
+		officeType: classification.officeType,
 		influenceAvailable: candidate.lobbyingContext.length > 0 || candidate.publicStatements.length > 0,
 		influenceSummary: candidate.lobbyingContext[0]?.summary ?? "No published influence-context note is attached to this profile yet.",
 		incumbent: candidate.incumbent,
@@ -676,6 +685,13 @@ function buildRepresentativeOfficeContext(record: OpenStatesRepresentativeRecord
 function buildRepresentativeLookupContext(record: OpenStatesRepresentativeRecord, representativeSlug: string, updatedAt: string) {
 	const officeContext = buildRepresentativeOfficeContext(record);
 	const officialResources = getOfficialToolsForState(officeContext.stateCode);
+	const classification = classifyRepresentative({
+		districtLabel: officeContext.districtLabel,
+		officeSought: officeContext.officeSought,
+		officeTitle: record.officeTitle,
+		stateCode: officeContext.stateCode,
+		stateName: officeContext.stateName,
+	});
 
 	return {
 		actions: officialResources.map((resource, index) => ({
@@ -710,8 +726,11 @@ function buildRepresentativeLookupContext(record: OpenStatesRepresentativeRecord
 		representativeMatches: [
 			{
 				districtLabel: officeContext.districtLabel,
+				governmentLevel: classification.governmentLevel,
 				id: representativeSlug,
 				name: record.name,
+				officeDisplayLabel: classification.officeDisplayLabel,
+				officeType: classification.officeType,
 				officeTitle: record.officeTitle,
 				openstatesUrl: record.openstatesUrl,
 				party: record.party,
@@ -770,6 +789,14 @@ function buildRepresentativeLookupContextFromSupplementalOfficeholder(
 function buildRepresentativeProfileFromSupplementalOfficeholder(record: SupplementalOfficeholderRecord): PersonProfileResponse {
 	const updatedAt = record.updatedAt || new Date().toISOString();
 	const officialResources = getOfficialToolsForState(record.stateCode);
+	const classification = classifyRepresentative({
+		districtLabel: record.districtLabel,
+		districtType: record.districtType,
+		officeSought: record.officeSought,
+		officeTitle: record.officeTitle,
+		stateCode: record.stateCode,
+		stateName: record.stateName,
+	});
 	const sources = [
 		...record.sources,
 		...buildOfficialToolSources(officialResources, updatedAt),
@@ -811,13 +838,16 @@ function buildRepresentativeProfileFromSupplementalOfficeholder(record: Suppleme
 					: "This page is route-backed from a reviewed current local officeholder source. Active lookup context can still confirm whether this officeholder is part of the user's exact matched district stack.",
 			},
 			funding: null,
+			governmentLevel: classification.governmentLevel,
 			incumbent: true,
 			keyActions: [],
 			lobbyingContext: [],
 			location: record.location,
 			methodologyNotes,
 			name: record.name,
+			officeDisplayLabel: classification.officeDisplayLabel,
 			officeholderLabel: "Current officeholder",
+			officeType: classification.officeType,
 			officeSought: record.officeSought,
 			onCurrentBallot: false,
 			officialWebsiteUrl: record.officialWebsiteUrl,
@@ -863,6 +893,14 @@ function mergeRepresentativeProfileWithSupplementalOfficeholder(
 	record: SupplementalOfficeholderRecord,
 ): PersonProfileResponse {
 	const updatedAt = [baseProfile.updatedAt, record.updatedAt].filter(Boolean).sort().slice(-1)[0] || baseProfile.updatedAt;
+	const classification = classifyRepresentative({
+		districtLabel: record.districtLabel,
+		districtType: record.districtType,
+		officeSought: record.officeSought,
+		officeTitle: record.officeTitle,
+		stateCode: record.stateCode,
+		stateName: record.stateName,
+	});
 	const normalizedReviewedSourceLabel = record.provenanceLabel.replace(reviewedPrefixPattern, "").toLowerCase();
 	const mergedSources = uniqueSources([
 		...baseProfile.person.sources,
@@ -927,10 +965,13 @@ function mergeRepresentativeProfileWithSupplementalOfficeholder(
 				statusLabel,
 				statusNote,
 			},
+			governmentLevel: classification.governmentLevel,
 			location: record.location,
 			methodologyNotes,
 			officialWebsiteUrl: baseProfile.person.officialWebsiteUrl || record.officialWebsiteUrl,
+			officeDisplayLabel: classification.officeDisplayLabel,
 			officeSought: record.officeSought,
+			officeType: classification.officeType,
 			openstatesUrl: baseProfile.person.openstatesUrl || record.openstatesUrl,
 			provenance: {
 				...baseProfile.person.provenance,
@@ -1064,23 +1105,47 @@ async function buildCongressRepresentativeMatchesFromDistrictContext(
 					if (!congressionalDistrictNumber || String(member.district) !== congressionalDistrictNumber)
 						return null;
 
+					const classification = classifyRepresentative({
+						districtLabel: `Congressional District ${congressionalDistrictNumber}`,
+						officeSought: `U.S. House, District ${congressionalDistrictNumber}`,
+						officeTitle: "Representative",
+						stateCode,
+						stateName,
+					});
+
 					return {
 						districtLabel: `Congressional District ${congressionalDistrictNumber}`,
+						governmentLevel: classification.governmentLevel,
 						id: `congress:${member.bioguideId}`,
 						name: directName,
+						officeDisplayLabel: classification.officeDisplayLabel,
+						officeType: classification.officeType,
 						officeTitle: "Representative",
 						party: member.party,
 						sourceSystem: "Congress.gov",
 					} satisfies LocationRepresentativeMatch;
 				})()
-			: {
-				districtLabel: stateName,
-				id: `congress:${member.bioguideId}`,
-				name: directName,
-				officeTitle: "Senator",
-				party: member.party,
-				sourceSystem: "Congress.gov",
-			} satisfies LocationRepresentativeMatch;
+			: (() => {
+					const classification = classifyRepresentative({
+						districtLabel: stateName,
+						officeSought: "U.S. Senate",
+						officeTitle: "Senator",
+						stateCode,
+						stateName,
+					});
+
+					return {
+						districtLabel: stateName,
+						governmentLevel: classification.governmentLevel,
+						id: `congress:${member.bioguideId}`,
+						name: directName,
+						officeDisplayLabel: classification.officeDisplayLabel,
+						officeType: classification.officeType,
+						officeTitle: "Senator",
+						party: member.party,
+						sourceSystem: "Congress.gov",
+					} satisfies LocationRepresentativeMatch;
+				})();
 
 		if (!candidateMatch)
 			return [];
@@ -1120,6 +1185,13 @@ function buildRepresentativeProfileFromOpenStates(record: OpenStatesRepresentati
 	const updatedAt = record.updatedAt || new Date().toISOString();
 	const officeContext = buildRepresentativeOfficeContext(record);
 	const officialResources = getOfficialToolsForState(officeContext.stateCode);
+	const classification = classifyRepresentative({
+		districtLabel: officeContext.districtLabel,
+		officeSought: officeContext.officeSought,
+		officeTitle: record.officeTitle,
+		stateCode: officeContext.stateCode,
+		stateName: officeContext.stateName,
+	});
 	const sources = [
 		buildRouteSource({
 			authority: record.openstatesUrl ? "nonprofit-provider" : "open-data",
@@ -1159,6 +1231,7 @@ function buildRepresentativeProfileFromOpenStates(record: OpenStatesRepresentati
 				statusNote: "This page is route-backed from a current officeholder record. An active lookup can still add user-specific district confirmation and locality-specific official-tool context.",
 			},
 			funding: null,
+			governmentLevel: classification.governmentLevel,
 			incumbent: true,
 			keyActions: [],
 			lobbyingContext: [],
@@ -1168,7 +1241,9 @@ function buildRepresentativeProfileFromOpenStates(record: OpenStatesRepresentati
 				"Active nationwide lookup context can still add user-specific district confirmation and locality-specific official tools, but route-backed enrichment modules also attach directly when Ballot Clarity can verify them reliably.",
 			],
 			name: record.name,
+			officeDisplayLabel: classification.officeDisplayLabel,
 			officeholderLabel: "Current officeholder",
+			officeType: classification.officeType,
 			officeSought: officeContext.officeSought,
 			onCurrentBallot: false,
 			openstatesUrl: record.openstatesUrl,
@@ -1257,6 +1332,13 @@ function buildRepresentativeLookupContextFromCongressMember(
 	const officeContext = buildRepresentativeOfficeContextFromCongressMember(member);
 	const officialResources = getOfficialToolsForState(officeContext.stateCode);
 	const officeTitle = officeContext.officeSought === "U.S. Senate" ? "Senator" : "Representative";
+	const classification = classifyRepresentative({
+		districtLabel: officeContext.districtLabel,
+		officeSought: officeContext.officeSought,
+		officeTitle,
+		stateCode: officeContext.stateCode,
+		stateName: officeContext.stateName,
+	});
 
 	return {
 		actions: officialResources.map((resource, index) => ({
@@ -1289,8 +1371,11 @@ function buildRepresentativeLookupContextFromCongressMember(
 		representativeMatches: [
 			{
 				districtLabel: officeContext.districtLabel,
+				governmentLevel: classification.governmentLevel,
 				id: representativeSlug,
 				name: member.directOrderName,
+				officeDisplayLabel: classification.officeDisplayLabel,
+				officeType: classification.officeType,
 				officeTitle,
 				party: member.party,
 				sourceSystem: "Congress.gov",
@@ -1308,6 +1393,13 @@ function buildRepresentativeProfileFromCongressMember(
 	const updatedAt = member.updatedAt || new Date().toISOString();
 	const officeContext = buildRepresentativeOfficeContextFromCongressMember(member);
 	const officialResources = getOfficialToolsForState(officeContext.stateCode);
+	const classification = classifyRepresentative({
+		districtLabel: officeContext.districtLabel,
+		officeSought: officeContext.officeSought,
+		officeTitle: officeContext.officeSought === "U.S. Senate" ? "Senator" : "Representative",
+		stateCode: officeContext.stateCode,
+		stateName: officeContext.stateName,
+	});
 	const sources = [
 		buildRouteSource({
 			authority: "official-government",
@@ -1347,6 +1439,7 @@ function buildRepresentativeProfileFromCongressMember(
 				statusNote: "This page is route-backed from a current federal officeholder record. An active lookup can still add user-specific district confirmation and locality-specific official-tool context.",
 			},
 			funding: null,
+			governmentLevel: classification.governmentLevel,
 			incumbent: true,
 			keyActions: [],
 			lobbyingContext: [],
@@ -1356,7 +1449,9 @@ function buildRepresentativeProfileFromCongressMember(
 				"When Open States route lookup is unavailable, Ballot Clarity can still build a federal officeholder base record from Congress.gov and then attach finance and lobbying modules through the federal provider crosswalk.",
 			],
 			name: member.directOrderName,
+			officeDisplayLabel: classification.officeDisplayLabel,
 			officeholderLabel: "Current officeholder",
+			officeType: classification.officeType,
 			officeSought: officeContext.officeSought,
 			onCurrentBallot: false,
 			party: member.party || "Unknown",
@@ -1608,38 +1703,52 @@ function buildPublicDistrictRecordFromSlug(slug: string): DistrictRecordResponse
 	const resolvedOfficialResources = supplementalOfficeholders[0]?.stateCode
 		? getOfficialToolsForState(supplementalOfficeholders[0].stateCode)
 		: districtIdentity.officialResources;
-	const representatives = supplementalOfficeholders.map(record => ({
-		ballotStatusLabel: "Published ballot status unavailable in this area",
-		districtLabel: record.districtLabel,
-		districtSlug: record.districtSlug,
-		fundingAvailable: false,
-		fundingSummary: record.jurisdiction === "State"
-			? `No reviewed state finance source is configured yet for ${record.stateName} officeholder routes.`
-			: "No reviewed local finance source is configured yet for this officeholder route.",
-		href: `/representatives/${record.slug}`,
-		incumbent: true,
-		influenceAvailable: false,
-		influenceSummary: record.jurisdiction === "State"
-			? `No reviewed state disclosure or lobbying source is configured yet for ${record.stateName} officeholder routes.`
-			: "No reviewed local disclosure or lobbying source is configured yet for this officeholder route.",
-		location: record.location,
-		name: record.name,
-		officeSought: record.officeSought,
-		officeholderLabel: "Current officeholder",
-		onCurrentBallot: false,
-		openstatesUrl: record.openstatesUrl,
-		party: record.party,
-		provenance: {
-			label: record.provenanceLabel,
-			note: record.provenanceNote,
-			status: record.sourceSystem.toLowerCase().includes("official") ? "direct" : "crosswalked",
-		},
-		slug: record.slug,
-		sourceCount: record.sources.length,
-		sources: record.sources,
-		summary: record.summary,
-		updatedAt: record.updatedAt,
-	})) satisfies RepresentativeSummary[];
+	const representatives = supplementalOfficeholders.map((record) => {
+		const classification = classifyRepresentative({
+			districtLabel: record.districtLabel,
+			districtType: record.districtType,
+			officeSought: record.officeSought,
+			officeTitle: record.officeTitle,
+			stateCode: record.stateCode,
+			stateName: record.stateName,
+		});
+
+		return {
+			ballotStatusLabel: "Published ballot status unavailable in this area",
+			districtLabel: record.districtLabel,
+			districtSlug: record.districtSlug,
+			fundingAvailable: false,
+			fundingSummary: record.jurisdiction === "State"
+				? `No reviewed state finance source is configured yet for ${record.stateName} officeholder routes.`
+				: "No reviewed local finance source is configured yet for this officeholder route.",
+			governmentLevel: classification.governmentLevel,
+			href: `/representatives/${record.slug}`,
+			incumbent: true,
+			influenceAvailable: false,
+			influenceSummary: record.jurisdiction === "State"
+				? `No reviewed state disclosure or lobbying source is configured yet for ${record.stateName} officeholder routes.`
+				: "No reviewed local disclosure or lobbying source is configured yet for this officeholder route.",
+			location: record.location,
+			name: record.name,
+			officeDisplayLabel: classification.officeDisplayLabel,
+			officeSought: record.officeSought,
+			officeholderLabel: "Current officeholder",
+			officeType: classification.officeType,
+			onCurrentBallot: false,
+			openstatesUrl: record.openstatesUrl,
+			party: record.party,
+			provenance: {
+				label: record.provenanceLabel,
+				note: record.provenanceNote,
+				status: record.sourceSystem.toLowerCase().includes("official") ? "direct" : "crosswalked",
+			},
+			slug: record.slug,
+			sourceCount: record.sources.length,
+			sources: record.sources,
+			summary: record.summary,
+			updatedAt: record.updatedAt,
+		} satisfies RepresentativeSummary;
+	});
 	const sources = [
 		buildRouteSource({
 			authority: "open-data",
@@ -1719,6 +1828,11 @@ function buildPublicDistrictRecordFromSlug(slug: string): DistrictRecordResponse
 
 function buildPersonProfileFromCandidate(candidate: Candidate): PersonProfileResponse {
 	const sources = collectCandidateSources(candidate);
+	const classification = classifyRepresentative({
+		districtLabel: candidate.officeSought,
+		officeSought: candidate.officeSought,
+		stateName: candidate.location.split(",").slice(-1)[0]?.trim() || candidate.location,
+	});
 	const funding: PersonProfileResponse["person"]["funding"] = candidate.funding
 		? {
 				...candidate.funding,
@@ -1735,12 +1849,15 @@ function buildPersonProfileFromCandidate(candidate: Candidate): PersonProfileRes
 			districtLabel: candidate.officeSought,
 			districtSlug: candidate.contestSlug,
 			funding,
+			governmentLevel: classification.governmentLevel,
 			keyActions: candidate.keyActions,
 			lobbyingContext: candidate.lobbyingContext,
 			methodologyNotes: candidate.methodologyNotes,
 			name: candidate.name,
+			officeDisplayLabel: classification.officeDisplayLabel,
 			officeSought: candidate.officeSought,
 			officeholderLabel: candidate.incumbent ? "Current officeholder" : "Candidate",
+			officeType: classification.officeType,
 			onCurrentBallot: true,
 			openstatesUrl: undefined,
 			party: candidate.party,

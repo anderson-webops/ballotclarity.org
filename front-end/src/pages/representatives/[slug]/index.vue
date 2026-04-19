@@ -7,6 +7,7 @@ import { activeNationwideLookupCookieName, parseActiveNationwideLookupCookie } f
 import { buildNationwidePersonProfileResponse } from "~/utils/nationwide-person-profile";
 import { buildLookupContextFromNationwideResult, buildNationwideLookupRouteQuery, buildNationwideRouteTarget } from "~/utils/nationwide-route-context";
 import { buildPersonLinkageConfidence, hasPersonFunding, hasPersonInfluence } from "~/utils/person-profile";
+import { resolveRepresentativePresentation } from "~/utils/representative-presentation";
 
 const route = useRoute();
 const runtimeConfig = useRuntimeConfig();
@@ -48,6 +49,9 @@ const activeLookupSummary = computed(() => buildActiveLookupSummary({
 	routeLookupQuery: activeLookupQuery.value?.lookup ?? null,
 	selectedLocation: isHydrated.value ? selectedLocation.value : null
 }));
+const representativePresentation = computed(() => person.value
+	? resolveRepresentativePresentation(person.value, activeNationwideLookupResult.value?.location?.state ?? null)
+	: null);
 const linkageConfidence = computed(() => person.value ? buildPersonLinkageConfidence(person.value.provenance.status) : null);
 const dataThroughLabel = computed(() => {
 	if (!person.value)
@@ -111,7 +115,7 @@ const summaryItems = computed(() => {
 		{
 			label: "Current office",
 			note: "Office context attached to this person record.",
-			value: person.value.officeSought
+			value: representativePresentation.value?.officeDisplayLabel ?? person.value.officeSought
 		},
 		{
 			label: "Funding data",
@@ -192,6 +196,7 @@ usePageSeo({
 					<AppBreadcrumbs :items="breadcrumbs" />
 					<div class="flex flex-wrap gap-2 items-center">
 						<VerificationBadge label="Representative profile" tone="accent" />
+						<VerificationBadge v-if="representativePresentation" :label="representativePresentation.levelLabel" />
 						<VerificationBadge :label="person.officeholderLabel" />
 						<VerificationBadge :label="person.onCurrentBallot ? person.ballotStatusLabel : 'Not on current ballot'" />
 						<VerificationBadge v-if="isNationwideFallback" label="Nationwide lookup fallback" tone="warning" />
@@ -211,7 +216,7 @@ usePageSeo({
 						<IncumbentBadge v-if="person.incumbent" />
 					</div>
 					<p class="text-lg text-app-muted mt-4 dark:text-app-muted-dark">
-						{{ person.officeSought }} · {{ person.party }}
+						{{ representativePresentation?.officeDisplayLabel ?? person.officeSought }} · {{ person.party }}
 					</p>
 					<p class="text-base text-app-muted leading-8 mt-6 max-w-3xl dark:text-app-muted-dark">
 						{{ person.summary }}

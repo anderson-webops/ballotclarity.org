@@ -7,6 +7,7 @@ import { buildGuideDistrictPageRecord, buildNationwideDistrictPageRecord } from 
 import { buildDistrictCandidateSummaryHref, buildDistrictRepresentativeSummaryHref } from "~/utils/district-page-links";
 import { isExternalHref } from "~/utils/link";
 import { buildLookupContextFromNationwideResult, buildNationwideLookupRouteQuery, buildNationwideRouteTarget } from "~/utils/nationwide-route-context";
+import { resolveRepresentativePresentation } from "~/utils/representative-presentation";
 
 const route = useRoute();
 const civicStore = useCivicStore();
@@ -52,6 +53,10 @@ function buildSummaryHref(path: string | undefined) {
 		return path;
 
 	return buildLookupAwareTarget(path);
+}
+
+function getRepresentativePresentation(representative: NonNullable<typeof districtPageData.value>["representatives"][number]) {
+	return resolveRepresentativePresentation(representative, activeNationwideLookupResult.value?.location?.state ?? null);
 }
 
 const breadcrumbs = computed(() => [
@@ -193,10 +198,11 @@ usePageSeo({
 								<p class="text-2xl text-app-ink font-serif dark:text-app-text-dark">
 									{{ representative.name }}
 								</p>
+								<VerificationBadge :label="getRepresentativePresentation(representative).levelLabel" tone="accent" />
 								<IncumbentBadge />
 							</div>
 							<p class="text-sm text-app-muted mt-3 dark:text-app-muted-dark">
-								{{ representative.party }} · {{ representative.officeSought }}
+								{{ representative.party }} · {{ getRepresentativePresentation(representative).officeDisplayLabel }}
 							</p>
 							<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
 								{{ representative.summary }}

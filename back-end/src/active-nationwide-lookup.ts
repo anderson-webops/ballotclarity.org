@@ -14,6 +14,7 @@ import type {
 	Source,
 	TrustBullet,
 } from "./types/civic.js";
+import { classifyRepresentative } from "./representative-classification.js";
 
 export interface ActiveNationwideLookupContext {
 	actions: LocationLookupAction[];
@@ -200,10 +201,35 @@ function sanitizeRepresentativeMatch(value: unknown): LocationRepresentativeMatc
 	if (!districtLabel || !id || !name || !officeTitle || !sourceSystem)
 		return null;
 
+	const classification = classifyRepresentative({
+		districtLabel,
+		governmentLevel: value.governmentLevel === "federal" || value.governmentLevel === "state" || value.governmentLevel === "county" || value.governmentLevel === "city"
+			? value.governmentLevel
+			: null,
+		officeSought: typeof value.officeDisplayLabel === "string" ? value.officeDisplayLabel : undefined,
+		officeTitle,
+		officeType: value.officeType === "us_senate"
+			|| value.officeType === "us_house"
+			|| value.officeType === "state_senate"
+			|| value.officeType === "state_house"
+			|| value.officeType === "county_commission"
+			|| value.officeType === "county_official"
+			|| value.officeType === "city_official"
+			|| value.officeType === "mayor"
+			|| value.officeType === "other"
+			? value.officeType
+			: null,
+	});
+
 	return {
 		districtLabel,
+		governmentLevel: classification.governmentLevel,
 		id,
 		name,
+		officeDisplayLabel: typeof value.officeDisplayLabel === "string" && value.officeDisplayLabel
+			? value.officeDisplayLabel
+			: classification.officeDisplayLabel,
+		officeType: classification.officeType,
 		officeTitle,
 		openstatesUrl: typeof value.openstatesUrl === "string" ? value.openstatesUrl : undefined,
 		party: typeof value.party === "string" ? value.party : undefined,
@@ -659,14 +685,17 @@ function buildDirectoryBundle(context: ActiveNationwideLookupContext) {
 			districtSlug,
 			fundingAvailable: false,
 			fundingSummary: "No person-level funding record is attached to this representative yet.",
+			governmentLevel: representative.governmentLevel,
 			href: `/representatives/${slug}`,
 			incumbent: true,
 			influenceAvailable: false,
 			influenceSummary: "No person-level influence record is attached to this representative yet.",
 			location: locationLabel,
 			name: representative.name,
+			officeDisplayLabel: representative.officeDisplayLabel,
 			officeSought: representative.officeTitle,
 			officeholderLabel: "Current officeholder",
+			officeType: representative.officeType,
 			onCurrentBallot: false,
 			openstatesUrl: representative.openstatesUrl,
 			party: representative.party ?? "Unknown",
@@ -899,6 +928,7 @@ export function buildRouteFallbackPersonProfileResponse(representativeSlug: stri
 				statusNote: "This route is available and identity-stable, but Ballot Clarity has not attached a current provider-backed office record to it yet.",
 			},
 			funding: null,
+			governmentLevel: null,
 			incumbent: true,
 			keyActions: [],
 			lobbyingContext: [],
@@ -908,7 +938,9 @@ export function buildRouteFallbackPersonProfileResponse(representativeSlug: stri
 				"Active nationwide lookup context can still add user-specific district confirmation, official tools, and stronger locality context.",
 			],
 			name,
+			officeDisplayLabel: "Office record pending provider crosswalk",
 			officeholderLabel: "Current officeholder route",
+			officeType: null,
 			officeSought: "Office record pending provider crosswalk",
 			onCurrentBallot: false,
 			party: "Unknown",
@@ -1069,6 +1101,7 @@ export function buildNationwidePersonProfileResponse(context: ActiveNationwideLo
 				statusNote: "This profile reflects the latest nationwide lookup currently saved in this browser. Verify critical details against the attached provider record and official election tools.",
 			},
 			funding: null,
+			governmentLevel: representative.governmentLevel,
 			incumbent: true,
 			keyActions: [],
 			lobbyingContext: [],
@@ -1078,7 +1111,9 @@ export function buildNationwidePersonProfileResponse(context: ActiveNationwideLo
 				"Provider-backed representative matches can be crosswalked or approximate, especially for ZIP-based lookups.",
 			],
 			name: representative.name,
+			officeDisplayLabel: representative.officeDisplayLabel,
 			officeholderLabel: representative.officeholderLabel,
+			officeType: representative.officeType,
 			officeSought: representative.officeSought,
 			onCurrentBallot: false,
 			openstatesUrl: representative.openstatesUrl,

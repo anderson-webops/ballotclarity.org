@@ -1,5 +1,6 @@
 import type { LocationRepresentativeMatch } from "./types/civic.js";
 import process from "node:process";
+import { classifyRepresentative } from "./representative-classification.js";
 
 interface OpenStatesPersonResponse {
 	results?: OpenStatesPerson[];
@@ -75,10 +76,19 @@ function mapRepresentative(person: OpenStatesPerson): OpenStatesRepresentativeRe
 }
 
 function toLocationRepresentative(person: OpenStatesRepresentativeRecord): LocationRepresentativeMatch {
+	const classification = classifyRepresentative({
+		districtLabel: person.districtLabel,
+		officeTitle: person.officeTitle,
+		stateName: person.jurisdictionName,
+	});
+
 	return {
 		districtLabel: person.districtLabel,
+		governmentLevel: classification.governmentLevel,
 		id: person.id,
 		name: person.name,
+		officeDisplayLabel: classification.officeDisplayLabel,
+		officeType: classification.officeType,
 		officeTitle: person.officeTitle,
 		openstatesUrl: person.openstatesUrl,
 		party: person.party,

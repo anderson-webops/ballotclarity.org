@@ -62,6 +62,9 @@ test("nationwide representative fallback builds a first-class person page model"
 	assert.ok(response);
 	assert.equal(response.updatedAt, "2026-04-18T12:43:00.000Z");
 	assert.equal(response.person.name, "Mike Kennedy");
+	assert.equal(response.person.governmentLevel, "federal");
+	assert.equal(response.person.officeType, "us_house");
+	assert.equal(response.person.officeDisplayLabel, "U.S. Representative for Utah's 3rd Congressional District");
 	assert.equal(response.person.openstatesUrl, "https://openstates.org/person/mike-kennedy/");
 	assert.equal(response.person.funding, null);
 	assert.equal(response.person.onCurrentBallot, false);

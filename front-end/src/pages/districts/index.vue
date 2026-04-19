@@ -7,6 +7,7 @@ import { buildDistrictRepresentativeAvailabilityNote, buildDistrictRepresentativ
 import { isExternalHref } from "~/utils/link";
 import { buildNationwideDirectoryResponses } from "~/utils/nationwide-directory";
 import { buildLookupContextFromNationwideResult, buildNationwideLookupRouteQuery, buildNationwideRouteTarget } from "~/utils/nationwide-route-context";
+import { resolveRepresentativePresentation } from "~/utils/representative-presentation";
 
 const route = useRoute();
 const { formatDateTime } = useFormatters();
@@ -87,6 +88,19 @@ function getDistrictRepresentativeCountLabel(district: typeof districts.value[nu
 
 function getDistrictRepresentativeAvailabilityNote(district: typeof districts.value[number]) {
 	return buildDistrictRepresentativeAvailabilityNote(district, getDistrictRepresentatives(district.slug).length || district.representativeCount);
+}
+
+function getRepresentativePresentation(representative: RepresentativesResponse["representatives"][number]) {
+	return resolveRepresentativePresentation(representative, activeNationwideLookupResult.value?.location?.state ?? null);
+}
+
+function getPrimaryDistrictRepresentative(districtSlug: string) {
+	return getDistrictRepresentatives(districtSlug)[0] ?? null;
+}
+
+function getPrimaryDistrictRepresentativePresentation(districtSlug: string) {
+	const representative = getPrimaryDistrictRepresentative(districtSlug);
+	return representative ? getRepresentativePresentation(representative) : null;
 }
 
 const summaryItems = computed(() => {
@@ -214,11 +228,14 @@ function buildLookupAwareTarget(path: string) {
 							{{ getDistrictRepresentatives(district.slug).length === 1 ? 'Current representative' : 'Current representatives' }}
 						</p>
 						<p class="text-lg text-app-ink font-semibold mt-3 dark:text-app-text-dark">
-							{{ getDistrictRepresentatives(district.slug)[0]?.name }}
+							{{ getPrimaryDistrictRepresentative(district.slug)?.name }}
 						</p>
-						<p class="text-sm text-app-muted mt-2 dark:text-app-muted-dark">
-							{{ getDistrictRepresentatives(district.slug)[0]?.party }} · {{ getDistrictRepresentatives(district.slug)[0]?.officeSought }}
-						</p>
+						<div class="mt-2 flex flex-wrap gap-2 items-center">
+							<VerificationBadge :label="getPrimaryDistrictRepresentativePresentation(district.slug)?.levelLabel ?? 'Unclassified'" tone="accent" />
+							<p class="text-sm text-app-muted dark:text-app-muted-dark">
+								{{ getPrimaryDistrictRepresentative(district.slug)?.party }} · {{ getPrimaryDistrictRepresentativePresentation(district.slug)?.officeDisplayLabel }}
+							</p>
+						</div>
 						<p v-if="getDistrictRepresentatives(district.slug).length > 1" class="text-sm text-app-muted mt-2 dark:text-app-muted-dark">
 							{{ getDistrictRepresentatives(district.slug).length - 1 }} more linked official{{ getDistrictRepresentatives(district.slug).length - 1 === 1 ? '' : 's' }} are attached to this district match.
 						</p>

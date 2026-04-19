@@ -3,6 +3,7 @@ import type {
 	LocationRepresentativeMatch,
 	Source,
 } from "./types/civic.js";
+import { classifyRepresentative } from "./representative-classification.js";
 
 export interface SupplementalOfficeholderRecord {
 	biographySummary: string;
@@ -333,10 +334,22 @@ const supplementalOfficeholders: SupplementalOfficeholderRecord[] = [
 ];
 
 export function buildSupplementalRepresentativeMatch(record: SupplementalOfficeholderRecord): LocationRepresentativeMatch {
+	const classification = classifyRepresentative({
+		districtLabel: record.districtLabel,
+		districtType: record.districtType,
+		officeSought: record.officeSought,
+		officeTitle: record.officeTitle,
+		stateCode: record.stateCode,
+		stateName: record.stateName,
+	});
+
 	return {
 		districtLabel: record.districtLabel,
+		governmentLevel: classification.governmentLevel,
 		id: `supplemental:${record.slug}`,
 		name: record.name,
+		officeDisplayLabel: classification.officeDisplayLabel,
+		officeType: classification.officeType,
 		officeTitle: record.officeTitle,
 		openstatesUrl: record.openstatesUrl,
 		party: record.party,

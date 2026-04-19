@@ -10,6 +10,7 @@ import type {
 } from "~/types/civic";
 import { buildDistrictMatchKeys, buildRepresentativeMatchKeys } from "./canonical-district";
 import { buildNationwideRepresentativeSlug, toLookupSlug } from "./nationwide-slug";
+import { classifyRepresentative } from "./representative-classification";
 
 function deriveNationwideDistrictJurisdiction(districtType: string): Contest["jurisdiction"] {
 	const normalizedType = districtType.toLowerCase();
@@ -45,8 +46,17 @@ function buildDistrictSummary(
 function buildRepresentativeSummary(
 	match: LocationRepresentativeMatch,
 	updatedAt: string,
-	locationLabel: string
+	locationLabel: string,
+	stateName?: string
 ) {
+	const classification = classifyRepresentative({
+		districtLabel: match.districtLabel,
+		governmentLevel: match.governmentLevel,
+		officeSought: match.officeDisplayLabel,
+		officeTitle: match.officeTitle,
+		officeType: match.officeType,
+		stateName,
+	});
 	const sources: Source[] = match.openstatesUrl
 		? [
 				{
@@ -65,9 +75,12 @@ function buildRepresentativeSummary(
 
 	return {
 		incumbent: true,
+		governmentLevel: classification.governmentLevel,
 		location: locationLabel,
 		name: match.name,
+		officeDisplayLabel: classification.officeDisplayLabel,
 		officeholderLabel: "Current officeholder",
+		officeType: classification.officeType,
 		officeSought: match.officeTitle,
 		onCurrentBallot: false,
 		ballotStatusLabel: "Published ballot status unavailable in this area",
@@ -138,7 +151,7 @@ export function buildNationwideDirectoryResponses(
 
 	const districts = Array.from(districtBySlug.values());
 	const representatives = representativeMatches.map((representative) => {
-		const summary = buildRepresentativeSummary(representative, updatedAt, locationLabel);
+		const summary = buildRepresentativeSummary(representative, updatedAt, locationLabel, locationState);
 		const districtSlug = districtRepresentatives.get(representative.id) ?? toLookupSlug(representative.districtLabel);
 
 		return {

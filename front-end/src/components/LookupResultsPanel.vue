@@ -6,6 +6,7 @@ import type {
 } from "~/types/civic";
 import { buildLookupPresentation, filterLookupActionsForPresentation } from "~/utils/location-lookup";
 import { buildNationwideDistrictHref, buildNationwideRepresentativeHref } from "~/utils/lookup-links";
+import { resolveRepresentativePresentation } from "~/utils/representative-presentation";
 
 const props = defineProps<{
 	compact?: boolean;
@@ -63,6 +64,10 @@ function buildDistrictHref(match: NationwideLookupResultContext["districtMatches
 
 function buildRepresentativeHref(match: NationwideLookupResultContext["representativeMatches"][number]) {
 	return buildNationwideRepresentativeHref(match, props.lookup);
+}
+
+function getRepresentativePresentation(match: NationwideLookupResultContext["representativeMatches"][number]) {
+	return resolveRepresentativePresentation(match, props.lookup.location?.state);
 }
 </script>
 
@@ -231,10 +236,11 @@ function buildRepresentativeHref(match: NationwideLookupResultContext["represent
 							>
 								{{ match.name }}
 							</NuxtLink>
+							<VerificationBadge :label="getRepresentativePresentation(match).levelLabel" tone="accent" />
 							<span v-if="match.party" class="text-xs tracking-[0.12em] uppercase">{{ match.party }}</span>
 							<VerificationBadge :label="match.sourceSystem" />
 						</div>
-						<p>{{ match.officeTitle }} · {{ match.districtLabel }}</p>
+						<p>{{ getRepresentativePresentation(match).officeDisplayLabel }}</p>
 						<a
 							v-if="match.openstatesUrl"
 							:href="match.openstatesUrl"

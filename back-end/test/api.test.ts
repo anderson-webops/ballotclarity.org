@@ -13,6 +13,7 @@ import {
 	demoAdminSourceMonitor,
 } from "../src/coverage-data.js";
 import { buildSeedCoverageSnapshot } from "../src/coverage-repository.js";
+import { classifyRepresentative } from "../src/representative-classification.js";
 import { createApp } from "../src/server.js";
 
 let server: Server;
@@ -27,6 +28,45 @@ const contentSeed = defaultContentSeed();
 const correctionSeed = demoAdminCorrections.corrections;
 const sourceMonitorSeed = demoAdminSourceMonitor.sources;
 const activitySeed = demoAdminOverview.recentActivity;
+
+function buildRepresentativeMatch({
+	districtLabel,
+	id,
+	name,
+	officeTitle,
+	openstatesUrl,
+	party,
+	sourceSystem,
+	stateName,
+}: {
+	districtLabel: string;
+	id: string;
+	name: string;
+	officeTitle: string;
+	openstatesUrl?: string;
+	party?: string;
+	sourceSystem: string;
+	stateName?: string;
+}) {
+	const classification = classifyRepresentative({
+		districtLabel,
+		officeTitle,
+		stateName,
+	});
+
+	return {
+		districtLabel,
+		governmentLevel: classification.governmentLevel,
+		id,
+		name,
+		officeDisplayLabel: classification.officeDisplayLabel,
+		officeTitle,
+		officeType: classification.officeType,
+		openstatesUrl,
+		party,
+		sourceSystem,
+	};
+}
 
 before(async () => {
 	process.env.ADMIN_STORE_DRIVER = "sqlite";
@@ -93,15 +133,16 @@ before(async () => {
 						longitude: -111.6585,
 						normalizedAddress: "151 S UNIVERSITY AVE, PROVO, UT, 84601",
 						representativeMatches: [
-							{
+							buildRepresentativeMatch({
 								districtLabel: "Congressional District 3",
 								id: "ocd-person:test-ut-rep",
 								name: "Mike Kennedy",
 								officeTitle: "Representative",
 								openstatesUrl: "https://openstates.org/person/example-ut",
 								party: "Republican",
-								sourceSystem: "Open States"
-							}
+								sourceSystem: "Open States",
+								stateName: "Utah"
+							})
 						],
 						state: "UT",
 						vintage: "Current_Current",
@@ -133,15 +174,16 @@ before(async () => {
 					longitude: -84.3902,
 					normalizedAddress: "55 TRINITY AVE SW, ATLANTA, GA, 30303",
 					representativeMatches: [
-						{
+						buildRepresentativeMatch({
 							districtLabel: "Senator Georgia",
 							id: "ocd-person:test-senator",
 							name: "Jon Ossoff",
 							officeTitle: "Senator",
 							openstatesUrl: "https://openstates.org/person/example",
 							party: "Democratic",
-							sourceSystem: "Open States"
-						}
+							sourceSystem: "Open States",
+							stateName: "Georgia"
+						})
 					],
 					state: "GA",
 					vintage: "Current_Current",
@@ -707,15 +749,16 @@ before(async () => {
 								longitude: -111.6549,
 								postalCode: "84604",
 								representativeMatches: [
-									{
+									buildRepresentativeMatch({
 										districtLabel: "Congressional District 3",
 										id: "ocd-person:test-ut-rep",
 										name: "Mike Kennedy",
 										officeTitle: "Representative",
 										openstatesUrl: "https://openstates.org/person/example-ut",
 										party: "Republican",
-										sourceSystem: "Open States"
-									}
+										sourceSystem: "Open States",
+										stateName: "Utah"
+									})
 								],
 								sourceSystem: "Zippopotam.us + U.S. Census Geocoder",
 								stateAbbreviation: "UT",
@@ -754,15 +797,16 @@ before(async () => {
 								longitude: -84.3928,
 								postalCode: "30303",
 								representativeMatches: [
-									{
+									buildRepresentativeMatch({
 										districtLabel: "Senator Georgia",
 										id: "ocd-person:test-senator",
 										name: "Jon Ossoff",
 										officeTitle: "Senator",
 										openstatesUrl: "https://openstates.org/person/example",
 										party: "Democratic",
-										sourceSystem: "Open States"
-									}
+										sourceSystem: "Open States",
+										stateName: "Georgia"
+									})
 								],
 								sourceSystem: "Zippopotam.us + U.S. Census Geocoder",
 								stateAbbreviation: "GA",
@@ -852,15 +896,16 @@ before(async () => {
 								longitude: -111.64,
 								postalCode: "84001",
 								representativeMatches: [
-									{
+									buildRepresentativeMatch({
 										districtLabel: "Congressional District 3",
 										id: "ocd-person:test-ut-rep",
 										name: "Mike Kennedy",
 										officeTitle: "Representative",
 										openstatesUrl: "https://openstates.org/person/example-ut",
 										party: "Republican",
-										sourceSystem: "Open States"
-									}
+										sourceSystem: "Open States",
+										stateName: "Utah"
+									})
 								],
 								sourceSystem: "Zippopotam.us + U.S. Census Geocoder",
 								stateAbbreviation: "UT",
@@ -884,15 +929,16 @@ before(async () => {
 								longitude: -111.6946,
 								postalCode: "84001",
 								representativeMatches: [
-									{
+									buildRepresentativeMatch({
 										districtLabel: "Congressional District 4",
 										id: "ocd-person:test-ut-rep-4",
 										name: "Burgess Owens",
 										officeTitle: "Representative",
 										openstatesUrl: "https://openstates.org/person/example-ut-4",
 										party: "Republican",
-										sourceSystem: "Open States"
-									}
+										sourceSystem: "Open States",
+										stateName: "Utah"
+									})
 								],
 								sourceSystem: "Zippopotam.us + U.S. Census Geocoder",
 								stateAbbreviation: "UT",
@@ -1176,6 +1222,13 @@ test("POST /api/location filters former Congress members out of ZIP lookup repre
 	const body = await response.json();
 	const representativeNames = (body.representativeMatches ?? []).map((item: { name: string }) => item.name);
 	const representativeSources = (body.representativeMatches ?? []).map((item: { sourceSystem?: string }) => item.sourceSystem ?? "");
+	const representatives = (body.representativeMatches ?? []) as Array<{
+		governmentLevel?: string;
+		name: string;
+		officeDisplayLabel?: string;
+		officeType?: string;
+	}>;
+	const findRepresentative = (pattern: RegExp) => representatives.find(item => pattern.test(item.name));
 
 	assert.equal(response.status, 200);
 	assert.equal(body.result, "resolved");
@@ -1190,6 +1243,26 @@ test("POST /api/location filters former Congress members out of ZIP lookup repre
 	assert.equal(representativeNames.includes("Richard Russell"), false);
 	assert.equal(representativeNames.includes("Rob Woodall"), false);
 	assert.equal(representativeSources.includes("Congress.gov"), true);
+	assert.equal(findRepresentative(/^Jon Ossoff$/i)?.governmentLevel, "federal");
+	assert.equal(findRepresentative(/^Jon Ossoff$/i)?.officeType, "us_senate");
+	assert.equal(findRepresentative(/warnock/i)?.governmentLevel, "federal");
+	assert.equal(findRepresentative(/warnock/i)?.officeType, "us_senate");
+	assert.equal(findRepresentative(/mccormick/i)?.governmentLevel, "federal");
+	assert.equal(findRepresentative(/mccormick/i)?.officeType, "us_house");
+	assert.equal(findRepresentative(/^Scott Hilton$/i)?.governmentLevel, "state");
+	assert.equal(findRepresentative(/^Scott Hilton$/i)?.officeType, "state_house");
+	assert.equal(findRepresentative(/^Shawn Still$/i)?.governmentLevel, "state");
+	assert.equal(findRepresentative(/^Shawn Still$/i)?.officeType, "state_senate");
+	assert.equal(findRepresentative(/^Robb Pitts$/i)?.governmentLevel, "county");
+	assert.equal(findRepresentative(/^Robb Pitts$/i)?.officeType, "county_commission");
+	assert.equal(findRepresentative(/^John Bradberry$/i)?.governmentLevel, "city");
+	assert.equal(findRepresentative(/^John Bradberry$/i)?.officeType, "mayor");
+	assert.equal(findRepresentative(/^Jon Ossoff$/i)?.officeDisplayLabel, "U.S. Senator for Georgia");
+	assert.equal(findRepresentative(/mccormick/i)?.officeDisplayLabel, "U.S. Representative for Georgia's 7th Congressional District");
+	assert.equal(findRepresentative(/^Scott Hilton$/i)?.officeDisplayLabel, "Georgia State Representative for District 48");
+	assert.equal(findRepresentative(/^Shawn Still$/i)?.officeDisplayLabel, "Georgia State Senator for District 48");
+	assert.equal(findRepresentative(/^Robb Pitts$/i)?.officeDisplayLabel, "Fulton County Commission Chair");
+	assert.equal(findRepresentative(/^John Bradberry$/i)?.officeDisplayLabel, "Mayor of Johns Creek");
 });
 
 test("POST /api/location returns district lookup results without a published guide for out-of-guide ZIPs", async () => {
@@ -1835,6 +1908,9 @@ test("state representative routes merge reviewed state-officeholder sources into
 
 	assert.equal(response.status, 200);
 	assert.equal(body.person.slug, "scott-hilton");
+	assert.equal(body.person.governmentLevel, "state");
+	assert.equal(body.person.officeType, "state_house");
+	assert.equal(body.person.officeDisplayLabel, "Georgia State Representative for District 48");
 	assert.equal(body.person.officeSought, "State House District 48");
 	assert.equal(body.person.districtLabel, "State House District 48");
 	assert.equal(body.person.enrichmentStatus?.funding.reasonCode, "no_state_finance_source");
@@ -1853,6 +1929,9 @@ test("state senator routes merge reviewed official state sources without driftin
 
 	assert.equal(response.status, 200);
 	assert.equal(body.person.slug, "shawn-still");
+	assert.equal(body.person.governmentLevel, "state");
+	assert.equal(body.person.officeType, "state_senate");
+	assert.equal(body.person.officeDisplayLabel, "Georgia State Senator for District 48");
 	assert.equal(body.person.officeSought, "State Senate District 48");
 	assert.equal(body.person.districtLabel, "State Senate District 48");
 	assert.equal(body.person.enrichmentStatus?.funding.reasonCode, "no_state_finance_source");

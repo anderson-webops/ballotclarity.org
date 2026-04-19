@@ -1,9 +1,31 @@
 import type { NationwideLookupResultContext } from "~/types/civic";
+import { classifyRepresentative } from "./representative-classification";
 
 export const activeNationwideLookupCookieName = "ballot-clarity-nationwide-lookup";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
 	return Boolean(value) && typeof value === "object";
+}
+
+function normalizeRepresentativeMatch(
+	value: NationwideLookupResultContext["representativeMatches"][number],
+	stateName: string | null
+) {
+	const classification = classifyRepresentative({
+		districtLabel: value.districtLabel,
+		governmentLevel: value.governmentLevel,
+		officeSought: value.officeDisplayLabel,
+		officeTitle: value.officeTitle,
+		officeType: value.officeType,
+		stateName,
+	});
+
+	return {
+		...value,
+		governmentLevel: classification.governmentLevel,
+		officeDisplayLabel: value.officeDisplayLabel || classification.officeDisplayLabel,
+		officeType: classification.officeType,
+	};
 }
 
 export function parseActiveNationwideLookupCookie(cookieValue: string | null | undefined): NationwideLookupResultContext | null {
@@ -16,6 +38,13 @@ export function parseActiveNationwideLookupCookie(cookieValue: string | null | u
 		if (!isRecord(parsed) || parsed.result !== "resolved" || parsed.guideAvailability !== "not-published")
 			return null;
 
+		const location = isRecord(parsed.location) ? parsed.location as unknown as NationwideLookupResultContext["location"] : null;
+		const stateName = location?.state ?? null;
+		const representativeMatches = Array.isArray(parsed.representativeMatches)
+			? (parsed.representativeMatches as NationwideLookupResultContext["representativeMatches"])
+					.map(item => normalizeRepresentativeMatch(item, stateName))
+			: [];
+
 		return {
 			actions: Array.isArray(parsed.actions) ? parsed.actions as NationwideLookupResultContext["actions"] : [],
 			availability: null,
@@ -26,10 +55,10 @@ export function parseActiveNationwideLookupCookie(cookieValue: string | null | u
 			fromCache: false,
 			guideAvailability: "not-published",
 			inputKind: parsed.inputKind === "address" ? "address" : "zip",
-			location: isRecord(parsed.location) ? parsed.location as unknown as NationwideLookupResultContext["location"] : null,
+			location,
 			normalizedAddress: typeof parsed.normalizedAddress === "string" ? parsed.normalizedAddress : "",
 			note: typeof parsed.note === "string" ? parsed.note : "Nationwide civic lookup context is active in this browser.",
-			representativeMatches: Array.isArray(parsed.representativeMatches) ? parsed.representativeMatches as NationwideLookupResultContext["representativeMatches"] : [],
+			representativeMatches,
 			selectionId: typeof parsed.selectionId === "string" ? parsed.selectionId : undefined,
 			resolvedAt: typeof parsed.resolvedAt === "string" ? parsed.resolvedAt : "",
 			result: "resolved",

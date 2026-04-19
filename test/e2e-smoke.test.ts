@@ -557,6 +557,8 @@ test("built app renders the key ballot guide pages against the built API", async
 	assert.match(sourcesDirectoryHtml, /Core source systems/);
 	const publishedSourcePage = await fetch(`${appBaseUrl}/sources/open-states`);
 	const publishedSourceHtml = await publishedSourcePage.text();
+	const publishedRouteSourcePage = await fetch(`${appBaseUrl}/sources/supplemental:shawn-still:bio`);
+	const publishedRouteSourceHtml = await publishedRouteSourcePage.text();
 	const unpublishedSourcePage = await fetch(`${appBaseUrl}/sources/district:state-senate-48`);
 	const unpublishedSourceHtml = await unpublishedSourcePage.text();
 	const contestPage = await fetch(`${appBaseUrl}/contest/us-house-district-7`);
@@ -658,6 +660,9 @@ test("built app renders the key ballot guide pages against the built API", async
 	assert.equal(publishedSourcePage.status, 200);
 	assert.match(publishedSourceHtml, /Pages and route layers that use this record/);
 	assert.match(publishedSourceHtml, /What Ballot Clarity uses it for/);
+	assert.equal(publishedRouteSourcePage.status, 200);
+	assert.match(publishedRouteSourceHtml, /Shawn Still/);
+	assert.match(publishedRouteSourceHtml, /state-senate-48/);
 	assert.equal(unpublishedSourcePage.status, 404);
 	assert.doesNotMatch(unpublishedSourceHtml, /Source record unavailable/);
 	assert.equal(contestPage.status, 200);

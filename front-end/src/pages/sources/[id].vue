@@ -144,7 +144,7 @@ usePageSeo({
 					<div class="mt-6 space-y-4">
 						<NuxtLink
 							v-for="citation in data.source.citedBy"
-							:key="citation.id"
+							:key="citation.href"
 							:to="citation.href"
 							class="px-5 py-5 border border-app-line/80 rounded-3xl bg-white/80 block transition dark:border-app-line-dark hover:border-app-accent dark:bg-app-panel-dark/70 focus-ring"
 						>

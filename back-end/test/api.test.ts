@@ -2084,6 +2084,23 @@ test("GET /api/sources and /api/sources/:id include contest citations", async ()
 	assert.ok(recordBody.source.citedBy.some((citation: { type: string }) => citation.type === "contest"));
 });
 
+test("GET /api/sources publishes stable representative and district route provenance records", async () => {
+	const directoryResponse = await fetch(`${baseUrl}/api/sources`);
+	const directoryBody = await directoryResponse.json();
+	const shawnSource = directoryBody.sources.find((item: { id: string }) => item.id === "supplemental:shawn-still:bio");
+	const districtIdentitySource = directoryBody.sources.find((item: { id: string }) => item.id === "district:state-senate-48:identity");
+
+	assert.equal(directoryResponse.status, 200);
+	assert.ok(shawnSource);
+	assert.equal(shawnSource.publicationKind, "published-provenance");
+	assert.ok(shawnSource.citedBy.some((citation: { href: string }) => citation.href === "/representatives/shawn-still"));
+	assert.ok(shawnSource.citedBy.some((citation: { href: string }) => citation.href === "/districts/state-senate-48"));
+
+	assert.ok(districtIdentitySource);
+	assert.equal(districtIdentitySource.publicationKind, "published-provenance");
+	assert.ok(districtIdentitySource.citedBy.some((citation: { href: string }) => citation.href === "/districts/state-senate-48"));
+});
+
 test("GET /api/sources/:id resolves curated global source records", async () => {
 	const response = await fetch(`${baseUrl}/api/sources/open-states`);
 	const body = await response.json();
@@ -2094,6 +2111,17 @@ test("GET /api/sources/:id resolves curated global source records", async () => 
 	assert.equal(body.source.publisherType, "public-interest");
 	assert.ok(body.source.routeFamilies.includes("Representative pages"));
 	assert.ok(body.source.limitations.length > 0);
+});
+
+test("GET /api/sources/:id resolves intentionally published route-backed provenance records", async () => {
+	const response = await fetch(`${baseUrl}/api/sources/supplemental:shawn-still:bio`);
+	const body = await response.json();
+
+	assert.equal(response.status, 200);
+	assert.equal(body.source.id, "supplemental:shawn-still:bio");
+	assert.equal(body.source.publicationKind, "published-provenance");
+	assert.ok(body.source.citedBy.some((citation: { href: string }) => citation.href === "/representatives/shawn-still"));
+	assert.ok(body.source.citedBy.some((citation: { href: string }) => citation.href === "/districts/state-senate-48"));
 });
 
 test("GET /api/sources/:id returns 404 for unpublished district provenance ids", async () => {

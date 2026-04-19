@@ -401,10 +401,48 @@ async function main() {
 		if (String(localDistrictBody.representatives?.[0]?.slug || "").trim() !== "marsha-judkins")
 			throw new Error("Local district route probe did not attach the expected reviewed officeholder.");
 
+		const { payload: sourceDirectoryBody, response: sourceDirectoryResponse } = await fetchJson(
+			`${baseUrl}`,
+			"/api/sources"
+		);
+
+		if (sourceDirectoryResponse.status !== 200)
+			throw new Error(`Source directory probe failed with ${sourceDirectoryResponse.status}.`);
+
+		if (!Array.isArray(sourceDirectoryBody.sources) || sourceDirectoryBody.sources.length === 0)
+			throw new Error("Source directory probe returned no published source records.");
+
+		const shawnSourceRecord = sourceDirectoryBody.sources.find((item) => item.id === "supplemental:shawn-still:bio");
+
+		if (!shawnSourceRecord)
+			throw new Error("Source directory probe did not publish the reviewed Shawn Still route provenance record.");
+
+		if (sourceDirectoryBody.sources.some((item) => item.id === "district:state-senate-48"))
+			throw new Error("Source directory probe incorrectly published an inline-only district provenance id.");
+
+		const { payload: shawnSourceBody, response: shawnSourceResponse } = await fetchJson(
+			`${baseUrl}`,
+			"/api/sources/supplemental:shawn-still:bio"
+		);
+
+		if (shawnSourceResponse.status !== 200)
+			throw new Error(`Published route source probe failed with ${shawnSourceResponse.status}.`);
+
+		if (!Array.isArray(shawnSourceBody.source?.citedBy) || !shawnSourceBody.source.citedBy.some((item) => item.href === "/representatives/shawn-still"))
+			throw new Error("Published route source probe did not preserve the representative-page citation for Shawn Still.");
+
+		if (!shawnSourceBody.source.citedBy.some((item) => item.href === "/districts/state-senate-48"))
+			throw new Error("Published route source probe did not preserve the district-page citation for Shawn Still.");
+
+		const unpublishedSourceResponse = await fetch(`${baseUrl}/api/sources/district:state-senate-48`);
+
+		if (unpublishedSourceResponse.status !== 404)
+			throw new Error(`Inline-only district provenance probe should return 404, received ${unpublishedSourceResponse.status}.`);
+
 		console.log("\n== Local runtime verification passed ==");
 		console.log(`Resolved ${lookupBody.location?.displayName || "unknown location"} with ${lookupBody.districtMatches.length} district matches and ${lookupBody.representativeMatches.length} representative matches.`);
 		console.log(`Verified representative directory/profile backing for ${moduleBackedRepresentative.name}, including live finance and influence modules.`);
-		console.log(`Verified direct district route backing for ${directDistrictBody.district?.title || firstDistrictSlug}, reviewed state/local district backing for ${stateDistrictBody.district?.title || "state-house-60"} and ${localDistrictBody.district?.title || "provo-city"}, and direct representative backing for ${directRepresentativeBody.person?.name || firstRepresentativeSlug}, ${shawnRepresentativeBody.person?.name || "shawn-still"}, ${scottRepresentativeBody.person?.name || "scott-hilton"}, and ${localRepresentativeBody.person?.name || "marsha-judkins"}.`);
+		console.log(`Verified direct district route backing for ${directDistrictBody.district?.title || firstDistrictSlug}, reviewed state/local district backing for ${stateDistrictBody.district?.title || "state-house-60"} and ${localDistrictBody.district?.title || "provo-city"}, direct representative backing for ${directRepresentativeBody.person?.name || firstRepresentativeSlug}, ${shawnRepresentativeBody.person?.name || "shawn-still"}, ${scottRepresentativeBody.person?.name || "scott-hilton"}, and ${localRepresentativeBody.person?.name || "marsha-judkins"}, plus published source records for stable route provenance.`);
 	}
 	finally {
 		await stopProcess(server);

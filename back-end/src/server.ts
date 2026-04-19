@@ -90,6 +90,7 @@ import {
 	buildSupplementalRepresentativeMatch,
 	findSupplementalOfficeholderByRepresentativeSlug,
 	findSupplementalOfficeholdersByDistrictSlug,
+	listSupplementalOfficeholders,
 	mergeRepresentativeMatchesWithSupplementalRecords,
 } from "./supplemental-officeholders.js";
 import { createZipLocationService } from "./zip-location.js";
@@ -219,8 +220,21 @@ function collectContestSources(contest: Contest) {
 }
 
 function routeFamilyFromCitation(citation: SourceDirectoryItem["citedBy"][number]) {
-	if (citation.type === "page")
+	if (citation.type === "page") {
+		if (citation.href.startsWith("/representatives/") && citation.href.endsWith("/funding"))
+			return "Representative funding pages";
+
+		if (citation.href.startsWith("/representatives/") && citation.href.endsWith("/influence"))
+			return "Representative influence pages";
+
+		if (citation.href.startsWith("/representatives/"))
+			return "Representative pages";
+
+		if (citation.href.startsWith("/districts/"))
+			return "District pages";
+
 		return citation.label;
+	}
 
 	switch (citation.type) {
 		case "candidate":
@@ -238,21 +252,154 @@ function routeFamilyFromCitation(citation: SourceDirectoryItem["citedBy"][number
 	}
 }
 
+function addSourceCitation(
+	citations: Map<string, SourceDirectoryItem["citedBy"]>,
+	sourceId: string,
+	citation: SourceDirectoryItem["citedBy"][number],
+) {
+	const existing = citations.get(sourceId) ?? [];
+
+	if (!existing.some(item => item.href === citation.href && item.id === citation.id))
+		existing.push(citation);
+
+	citations.set(sourceId, existing);
+}
+
+function mergeSourceCitations(
+	...maps: Array<Map<string, SourceDirectoryItem["citedBy"]>>
+) {
+	const merged = new Map<string, SourceDirectoryItem["citedBy"]>();
+
+	for (const map of maps) {
+		for (const [sourceId, citations] of map.entries()) {
+			for (const citation of citations)
+				addSourceCitation(merged, sourceId, citation);
+		}
+	}
+
+	return merged;
+}
+
+function isPublishedRouteSource(source: Source) {
+	const sourceId = String(source.id || "").trim().toLowerCase();
+
+	if (!sourceId)
+		return false;
+
+	if (sourceId.includes(":fallback"))
+		return false;
+
+	if (sourceId.startsWith("district:"))
+		return sourceId.endsWith(":identity");
+
+	return sourceId.startsWith("congress:member:")
+		|| sourceId.startsWith("congress:official-site:")
+		|| sourceId.startsWith("lda:")
+		|| sourceId.startsWith("official:")
+		|| sourceId.startsWith("openfec:candidate:")
+		|| sourceId.startsWith("openfec:committee:")
+		|| sourceId.startsWith("representative:")
+		|| sourceId.startsWith("supplemental:");
+}
+
+function inferPublishedSourceGeographicScope(
+	source: Source,
+	citations: SourceDirectoryItem["citedBy"],
+	coverageLocationName: string | null | undefined,
+) {
+	const sourceId = String(source.id || "").toLowerCase();
+
+	if (sourceId.startsWith("openfec:"))
+		return "United States federal campaign finance";
+
+	if (sourceId.startsWith("lda:"))
+		return "United States federal lobbying disclosures";
+
+	if (sourceId.startsWith("congress:"))
+		return "United States federal offices";
+
+	if (sourceId.startsWith("district:"))
+		return "Public district route";
+
+	if (sourceId.startsWith("representative:"))
+		return "Public representative route";
+
+	if (sourceId.startsWith("supplemental:")) {
+		return citations.some(citation => citation.href.startsWith("/districts/"))
+			? "Reviewed district and officeholder route"
+			: "Reviewed officeholder route";
+	}
+
+	if (sourceId.startsWith("official:"))
+		return "Official verification route layer";
+
+	return coverageLocationName ?? "Published public route layer";
+}
+
+function inferPublishedSourceReviewNote(source: Source) {
+	const sourceId = String(source.id || "").toLowerCase();
+
+	if (sourceId.startsWith("openfec:"))
+		return "This finance record is intentionally published because Ballot Clarity attaches it to a public funding page.";
+
+	if (sourceId.startsWith("lda:"))
+		return "This disclosure record is intentionally published because Ballot Clarity attaches it to a public influence page.";
+
+	if (sourceId.startsWith("congress:"))
+		return "This official congressional record is intentionally published because Ballot Clarity attaches it to a public representative page.";
+
+	if (sourceId.startsWith("district:"))
+		return "This stable district-route provenance record is intentionally published as a standalone public source page.";
+
+	if (sourceId.startsWith("representative:"))
+		return "This stable representative-route provenance record is intentionally published as a standalone public source page.";
+
+	if (sourceId.startsWith("supplemental:"))
+		return "This reviewed officeholder provenance record is intentionally published because it anchors a stable public district or representative route.";
+
+	if (sourceId.startsWith("official:"))
+		return "This official verification record is intentionally published because Ballot Clarity links it from public district and representative routes.";
+
+	return "This source record is intentionally published because it supports a stable public Ballot Clarity route.";
+}
+
+function inferPublishedSourceSummary(source: Source) {
+	if (source.note?.trim())
+		return source.note.trim();
+
+	const sourceId = String(source.id || "").toLowerCase();
+
+	if (sourceId.startsWith("district:"))
+		return "Stable district-route provenance record published from Ballot Clarity's public route layer.";
+
+	if (sourceId.startsWith("representative:"))
+		return "Stable representative-route provenance record published from Ballot Clarity's public route layer.";
+
+	if (sourceId.startsWith("official:"))
+		return "Official verification record published because it is linked from a public Ballot Clarity route.";
+
+	return "Published source record cited on Ballot Clarity.";
+}
+
+function inferPublishedSourceUsage(source: Source, citations: SourceDirectoryItem["citedBy"]) {
+	const routeFamilies = Array.from(new Set(citations.map(routeFamilyFromCitation)));
+	const routeSummary = routeFamilies.length
+		? routeFamilies.join(", ")
+		: "public Ballot Clarity routes";
+	const citationCount = Math.max(citations.length, 1);
+
+	if (String(source.id || "").toLowerCase().startsWith("official:"))
+		return `Supports ${citationCount} public official-verification page${citationCount === 1 ? "" : "s"} across ${routeSummary}.`;
+
+	return `Supports ${citationCount} published page${citationCount === 1 ? "" : "s"} across ${routeSummary}.`;
+}
+
 function buildSourceCitations(candidates: Candidate[], measures: Measure[], contests: Contest[]) {
 	const citations = new Map<string, SourceDirectoryItem["citedBy"]>();
 
-	function addCitation(sourceId: string, citation: SourceDirectoryItem["citedBy"][number]) {
-		const existing = citations.get(sourceId) ?? [];
-
-		if (!existing.some(item => item.id === citation.id))
-			existing.push(citation);
-
-		citations.set(sourceId, existing);
-	}
-
 	for (const candidate of candidates) {
 		for (const source of collectCandidateSources(candidate)) {
-			addCitation(source.id, {
+			addSourceCitation(citations, source.id, {
 				href: `/candidate/${candidate.slug}`,
 				id: candidate.slug,
 				label: candidate.name,
@@ -263,7 +410,7 @@ function buildSourceCitations(candidates: Candidate[], measures: Measure[], cont
 
 	for (const measure of measures) {
 		for (const source of collectMeasureSources(measure)) {
-			addCitation(source.id, {
+			addSourceCitation(citations, source.id, {
 				href: `/measure/${measure.slug}`,
 				id: measure.slug,
 				label: measure.title,
@@ -274,7 +421,7 @@ function buildSourceCitations(candidates: Candidate[], measures: Measure[], cont
 
 	for (const contest of contests) {
 		for (const source of collectContestSources(contest)) {
-			addCitation(source.id, {
+			addSourceCitation(citations, source.id, {
 				href: `/contest/${contest.slug}`,
 				id: contest.slug,
 				label: contest.office,
@@ -291,27 +438,31 @@ function buildSourceDirectory(
 	measures: Measure[],
 	contests: Contest[],
 	sources: Source[],
+	additionalCitations: Map<string, SourceDirectoryItem["citedBy"]>,
 	coverageLocationName: string | null | undefined,
 	updatedAt: string
 ): SourceDirectoryItem[] {
-	const citations = buildSourceCitations(candidates, measures, contests);
+	const citations = mergeSourceCitations(
+		buildSourceCitations(candidates, measures, contests),
+		additionalCitations,
+	);
 	const curatedSources = buildCuratedPublicSourceRecords(updatedAt);
 	const publishedProvenanceSources = sources
 		.map(source => ({
 			...source,
 			citationCount: (citations.get(source.id) ?? []).length,
 			citedBy: citations.get(source.id) ?? [],
-			geographicScope: coverageLocationName ?? "Published local coverage area",
+			geographicScope: inferPublishedSourceGeographicScope(source, citations.get(source.id) ?? [], coverageLocationName),
 			limitations: [
 				"This standalone record reflects a Ballot Clarity citation published on the pages listed below.",
 				"Use the parent page context and the linked primary source before treating this citation as a complete account."
 			],
 			publicationKind: "published-provenance" as const,
 			publisherType: mapAuthorityToPublisherType(source.authority),
-			reviewNote: "This source record is published because it is cited by a public Ballot Clarity page.",
+			reviewNote: inferPublishedSourceReviewNote(source),
 			routeFamilies: Array.from(new Set((citations.get(source.id) ?? []).map(routeFamilyFromCitation))),
-			summary: source.note || "Published source record cited on Ballot Clarity.",
-			usedFor: `Supports ${Math.max((citations.get(source.id) ?? []).length, 1)} published Ballot Clarity page${(citations.get(source.id) ?? []).length === 1 ? "" : "s"} listed below.`
+			summary: inferPublishedSourceSummary(source),
+			usedFor: inferPublishedSourceUsage(source, citations.get(source.id) ?? []),
 		}))
 		.filter(source => source.citationCount > 0)
 		.sort((left, right) => right.date.localeCompare(left.date) || left.title.localeCompare(right.title));
@@ -334,10 +485,11 @@ function buildSourceRecord(
 	measures: Measure[],
 	contests: Contest[],
 	sources: Source[],
+	additionalCitations: Map<string, SourceDirectoryItem["citedBy"]>,
 	coverageLocationName: string | null | undefined,
 	updatedAt: string
 ): SourceRecordResponse | null {
-	const directoryItem = buildSourceDirectory(candidates, measures, contests, sources, coverageLocationName, updatedAt).find(item => item.id === id);
+	const directoryItem = buildSourceDirectory(candidates, measures, contests, sources, additionalCitations, coverageLocationName, updatedAt).find(item => item.id === id);
 
 	if (!directoryItem)
 		return null;
@@ -2805,6 +2957,161 @@ export async function createApp(options: CreateAppOptions = {}) {
 		};
 	}
 
+	const publishedRouteSourceDatasetCache: {
+		promise: Promise<{
+			citations: Map<string, SourceDirectoryItem["citedBy"]>;
+			sources: Source[];
+			updatedAt: string;
+		}> | null;
+	} = {
+		promise: null,
+	};
+
+	function buildPageCitation(href: string, id: string, label: string): SourceDirectoryItem["citedBy"][number] {
+		return {
+			href,
+			id,
+			label,
+			type: "page",
+		};
+	}
+
+	function addPublishedRouteSources(
+		sourceIndex: Map<string, Source>,
+		citations: Map<string, SourceDirectoryItem["citedBy"]>,
+		sources: Source[],
+		citation: SourceDirectoryItem["citedBy"][number],
+	) {
+		for (const source of sources) {
+			const existing = sourceIndex.get(source.id);
+
+			if (isPublishedRouteSource(source) && (!existing || existing.date.localeCompare(source.date) < 0))
+				sourceIndex.set(source.id, source);
+
+			addSourceCitation(citations, source.id, citation);
+		}
+	}
+
+	async function getPublishedRouteSourceDataset() {
+		if (publishedRouteSourceDatasetCache.promise)
+			return await publishedRouteSourceDatasetCache.promise;
+
+		const pending = (async () => {
+			const sourceIndex = new Map<string, Source>();
+			const citations = new Map<string, SourceDirectoryItem["citedBy"]>();
+			const guideRepresentativeSlugs = new Set<string>();
+			const supplementalDistrictSlugs = new Set<string>();
+			const supplementalOfficeholders = listSupplementalOfficeholders();
+
+			for (const representative of await listPublicRepresentatives())
+				guideRepresentativeSlugs.add(representative.slug);
+
+			for (const supplementalOfficeholder of supplementalOfficeholders)
+				supplementalDistrictSlugs.add(supplementalOfficeholder.districtSlug);
+
+			for (const districtSummary of await listPublicDistricts()) {
+				const districtRecord = await getPublicDistrict(districtSummary.slug);
+
+				if (!districtRecord)
+					continue;
+
+				const response = buildDistrictRecordResponse(districtRecord.contest, districtRecord.election);
+				addPublishedRouteSources(
+					sourceIndex,
+					citations,
+					response.sources,
+					buildPageCitation(`/districts/${response.district.slug}`, response.district.slug, response.district.title),
+				);
+			}
+
+			for (const districtSlug of supplementalDistrictSlugs) {
+				const response = buildPublicDistrictRecordFromSlug(districtSlug);
+
+				if (!response)
+					continue;
+
+				addPublishedRouteSources(
+					sourceIndex,
+					citations,
+					response.sources,
+					buildPageCitation(`/districts/${response.district.slug}`, response.district.slug, response.district.title),
+				);
+			}
+
+			for (const supplementalOfficeholder of supplementalOfficeholders) {
+				const response = buildRepresentativeProfileFromSupplementalOfficeholder(supplementalOfficeholder);
+				addPublishedRouteSources(
+					sourceIndex,
+					citations,
+					response.person.sources,
+					buildPageCitation(`/representatives/${response.person.slug}`, response.person.slug, response.person.name),
+				);
+			}
+
+			for (const representativeSlug of guideRepresentativeSlugs) {
+				const response = await getPublicRepresentative(representativeSlug);
+
+				if (!response)
+					continue;
+
+				addPublishedRouteSources(
+					sourceIndex,
+					citations,
+					response.person.sources,
+					buildPageCitation(`/representatives/${response.person.slug}`, response.person.slug, response.person.name),
+				);
+
+				if (response.person.funding?.sources?.length) {
+					addPublishedRouteSources(
+						sourceIndex,
+						citations,
+						response.person.funding.sources,
+						buildPageCitation(
+							`/representatives/${response.person.slug}/funding`,
+							`${response.person.slug}:funding`,
+							`${response.person.name} funding`,
+						),
+					);
+				}
+
+				const influenceSources = uniqueSources([
+					...response.person.lobbyingContext.flatMap(block => block.sources),
+					...response.person.publicStatements.flatMap(block => block.sources),
+				]);
+
+				if (influenceSources.length) {
+					addPublishedRouteSources(
+						sourceIndex,
+						citations,
+						influenceSources,
+						buildPageCitation(
+							`/representatives/${response.person.slug}/influence`,
+							`${response.person.slug}:influence`,
+							`${response.person.name} influence`,
+						),
+					);
+				}
+			}
+
+			const sources = [...sourceIndex.values()].sort((left, right) => {
+				return right.date.localeCompare(left.date) || left.title.localeCompare(right.title);
+			});
+			const updatedAt = sources[0]?.date || coverageRepository.data.updatedAt;
+
+			return {
+				citations,
+				sources,
+				updatedAt,
+			};
+		})().catch((error) => {
+			publishedRouteSourceDatasetCache.promise = null;
+			throw error;
+		});
+
+		publishedRouteSourceDatasetCache.promise = pending;
+		return await pending;
+	}
+
 	function buildPublicCorrectionsResponse(corrections: Awaited<ReturnType<typeof adminRepository.listCorrections>>["corrections"]): PublicCorrectionsResponse {
 		const pageLookup = new Map<string, string>();
 
@@ -3370,6 +3677,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 			measures,
 			contests,
 			resolvedSourceInventory,
+			new Map<string, SourceDirectoryItem["citedBy"]>(),
 			coverageRepository.data.location?.displayName ?? null,
 			coverageRepository.data.updatedAt
 		);
@@ -3391,29 +3699,41 @@ export async function createApp(options: CreateAppOptions = {}) {
 		const candidates = await listPublicCandidates();
 		const measures = await listPublicMeasures();
 		const contests = await listPublicContests();
+		const publishedRouteSourceDataset = await getPublishedRouteSourceDataset();
+		const publishedSourceInventory = uniqueSources([
+			...resolvedSourceInventory,
+			...publishedRouteSourceDataset.sources,
+		]);
 
 		response.json({
 			sources: buildSourceDirectory(
 				candidates,
 				measures,
 				contests,
-				resolvedSourceInventory,
+				publishedSourceInventory,
+				publishedRouteSourceDataset.citations,
 				coverageRepository.data.location?.displayName ?? null,
-				coverageRepository.data.updatedAt
+				maxUpdatedAt(coverageRepository.data.updatedAt, publishedRouteSourceDataset.updatedAt) || coverageRepository.data.updatedAt
 			),
-			updatedAt: coverageRepository.data.updatedAt
+			updatedAt: maxUpdatedAt(coverageRepository.data.updatedAt, publishedRouteSourceDataset.updatedAt) || coverageRepository.data.updatedAt
 		});
 	});
 
 	app.get("/api/sources/:id", async (request, response) => {
+		const publishedRouteSourceDataset = await getPublishedRouteSourceDataset();
+		const publishedSourceInventory = uniqueSources([
+			...resolvedSourceInventory,
+			...publishedRouteSourceDataset.sources,
+		]);
 		const record = buildSourceRecord(
 			request.params.id,
 			await listPublicCandidates(),
 			await listPublicMeasures(),
 			await listPublicContests(),
-			resolvedSourceInventory,
+			publishedSourceInventory,
+			publishedRouteSourceDataset.citations,
 			coverageRepository.data.location?.displayName ?? null,
-			coverageRepository.data.updatedAt
+			maxUpdatedAt(coverageRepository.data.updatedAt, publishedRouteSourceDataset.updatedAt) || coverageRepository.data.updatedAt
 		);
 
 		if (!record) {

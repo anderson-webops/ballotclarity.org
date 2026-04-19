@@ -140,6 +140,25 @@ export interface FundingSummary {
 	sources: Source[];
 }
 
+export interface ElectionLogisticsSite {
+	id: string;
+	name: string;
+	address: string;
+	note?: string;
+}
+
+export interface ElectionLogistics {
+	additionalElectionNames: string[];
+	dropOffLocations: ElectionLogisticsSite[];
+	earlyVoteSites: ElectionLogisticsSite[];
+	electionDay?: string;
+	electionName?: string;
+	mailOnly: boolean;
+	normalizedAddress?: string;
+	officialSourceNote: string;
+	pollingLocations: ElectionLogisticsSite[];
+}
+
 export interface VoteRecordSummary {
 	id: string;
 	title: string;
@@ -462,6 +481,7 @@ export interface LocationLookupResponse {
 	actions?: LocationLookupAction[];
 	selectionOptions?: LocationLookupSelectionOption[];
 	normalizedAddress?: string;
+	electionLogistics?: ElectionLogistics | null;
 	districtMatches?: LocationDistrictMatch[];
 	representativeMatches?: LocationRepresentativeMatch[];
 	fromCache?: boolean;
@@ -483,6 +503,7 @@ export interface NationwideLookupResultContext {
 	actions: LocationLookupAction[];
 	selectionOptions: LocationLookupSelectionOption[];
 	normalizedAddress: string;
+	electionLogistics: ElectionLogistics | null;
 	districtMatches: LocationDistrictMatch[];
 	representativeMatches: LocationRepresentativeMatch[];
 	fromCache: boolean;
@@ -762,7 +783,37 @@ export interface RepresentativeSummary {
 }
 
 export interface PersonProfileFunding extends FundingSummary {
+	committeeName?: string;
+	coverageLabel?: string;
+	receiptBreakdown?: FundingLineItem[];
 	provenanceLabel?: string;
+	totalSpent?: number;
+}
+
+export interface InfluenceRegistrantSummary {
+	name: string;
+	amount: number;
+}
+
+export interface PersonProfileInfluence {
+	contributionCount: number;
+	coverageLabel?: string;
+	filingYear?: number;
+	matchMode?: "committee" | "honoree";
+	reportCount: number;
+	topRegistrants: InfluenceRegistrantSummary[];
+	totalMatched: number;
+}
+
+export interface PersonProfileOfficeContext {
+	chamberLabel?: string;
+	committeeMemberships?: string[];
+	currentTermLabel?: string;
+	districtLabel?: string;
+	jurisdictionLabel?: string;
+	officialOfficeAddress?: string;
+	officialPhone?: string;
+	referenceLinks?: ExternalLink[];
 }
 
 export interface PersonProfileEnrichmentStatusItem {
@@ -814,6 +865,7 @@ export interface PersonProfile {
 	updatedAt: string;
 	freshness: FreshnessMeta;
 	funding: PersonProfileFunding | null;
+	influence?: PersonProfileInfluence | null;
 	lobbyingContext: EvidenceBlock[];
 	publicStatements: EvidenceBlock[];
 	biography: EvidenceBlock[];
@@ -826,6 +878,7 @@ export interface PersonProfile {
 	onCurrentBallot: boolean;
 	ballotStatusLabel: string;
 	officeholderLabel: string;
+	officeContext?: PersonProfileOfficeContext;
 	enrichmentStatus?: PersonProfileEnrichmentStatus;
 	officialWebsiteUrl?: string;
 	provenance: {

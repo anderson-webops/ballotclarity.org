@@ -162,3 +162,98 @@ test("createGoogleCivicClient converts election-unknown responses into a fallbac
 	assert.equal(result.verified, false);
 	assert.match(result.note, /did not return election-specific voter information/i);
 });
+
+test("createGoogleCivicClient returns structured polling, early-vote, and drop-off logistics when Google Civic provides them", async () => {
+	const client = createGoogleCivicClient({
+		apiKey: "test-google-civic-key",
+		fetchImpl: (async () => {
+			return new Response(JSON.stringify({
+				dropOffLocations: [
+					{
+						address: {
+							city: "Atlanta",
+							line1: "125 Central Ave SW",
+							state: "GA",
+							zip: "30303"
+						},
+						name: "Fulton County Election Hub",
+						sources: [
+							{
+								name: "Fulton County Elections"
+							}
+						]
+					}
+				],
+				earlyVoteSites: [
+					{
+						address: {
+							city: "Atlanta",
+							line1: "560 Amsterdam Ave NE",
+							state: "GA",
+							zip: "30306"
+						},
+						name: "Atlanta Early Vote Center",
+						sources: [
+							{
+								name: "Georgia Secretary of State"
+							}
+						]
+					}
+				],
+				election: {
+					electionDay: "2026-11-03",
+					name: "2026 Georgia General Election"
+				},
+				kind: "civicinfo#voterInfoResponse",
+				normalizedInput: {
+					city: "Atlanta",
+					line1: "55 Trinity Avenue Southwest",
+					state: "GA",
+					zip: "30303"
+				},
+				otherElections: [
+					{
+						electionDay: "2026-12-01",
+						name: "2026 Atlanta Runoff Election"
+					}
+				],
+				pollingLocations: [
+					{
+						address: {
+							city: "Atlanta",
+							line1: "55 Trinity Ave SW",
+							state: "GA",
+							zip: "30303"
+						},
+						name: "Atlanta City Hall Atrium",
+						pollingHours: "7:00 AM - 7:00 PM",
+						sources: [
+							{
+								name: "Google Civic"
+							}
+						]
+					}
+				]
+			}), {
+				headers: {
+					"Content-Type": "application/json"
+				},
+				status: 200
+			});
+		}) as typeof fetch
+	});
+
+	assert.ok(client);
+
+	const result = await client.lookupVoterInfo("55 Trinity Ave SW, Atlanta, GA 30303");
+
+	assert.ok(result);
+	assert.equal(result.verified, true);
+	assert.equal(result.logistics?.electionName, "2026 Georgia General Election");
+	assert.equal(result.logistics?.electionDay, "2026-11-03");
+	assert.equal(result.logistics?.pollingLocations[0]?.name, "Atlanta City Hall Atrium");
+	assert.match(result.logistics?.pollingLocations[0]?.note ?? "", /7:00 AM - 7:00 PM/);
+	assert.equal(result.logistics?.earlyVoteSites[0]?.name, "Atlanta Early Vote Center");
+	assert.equal(result.logistics?.dropOffLocations[0]?.name, "Fulton County Election Hub");
+	assert.deepEqual(result.logistics?.additionalElectionNames, ["2026 Atlanta Runoff Election"]);
+});

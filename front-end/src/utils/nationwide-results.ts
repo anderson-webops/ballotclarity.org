@@ -43,6 +43,7 @@ export function normalizeLookupResponseForDisplay(
 		detectedFromIp: Boolean(response.detectedFromIp),
 		districtMatches: response.districtMatches ?? [],
 		election: election ?? null,
+		electionLogistics: response.electionLogistics ?? null,
 		electionSlug: response.electionSlug,
 		fromCache: Boolean(response.fromCache),
 		guideAvailability: response.guideAvailability,

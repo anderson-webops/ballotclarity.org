@@ -17,6 +17,7 @@ const emit = defineEmits<{
 	openGuide: [action: LocationLookupAction];
 	selectOption: [option: LocationLookupSelectionOption];
 }>();
+const { formatDate } = useFormatters();
 
 const externalHrefPattern = /^https?:\/\//;
 
@@ -34,6 +35,19 @@ const lookupPresentation = computed(() => buildLookupPresentation(lookupResoluti
 const visibleLookupActions = computed(() => filterLookupActionsForPresentation(props.lookup.actions, lookupResolution.value));
 const selectionOptions = computed(() => props.lookup.selectionOptions ?? []);
 const hasSelectionOptions = computed(() => selectionOptions.value.length > 0);
+const electionLogistics = computed(() => props.lookup.electionLogistics);
+const hasElectionLogistics = computed(() => Boolean(
+	electionLogistics.value
+	&& (
+		electionLogistics.value.electionName
+		|| electionLogistics.value.electionDay
+		|| electionLogistics.value.pollingLocations.length
+		|| electionLogistics.value.earlyVoteSites.length
+		|| electionLogistics.value.dropOffLocations.length
+		|| electionLogistics.value.additionalElectionNames.length
+		|| electionLogistics.value.mailOnly
+	)
+));
 const availabilityItems = computed(() => {
 	if (!props.lookup.availability)
 		return [];
@@ -197,6 +211,68 @@ function getRepresentativePresentation(match: NationwideLookupResultContext["rep
 						<span class="i-carbon-launch" />
 						Open official tool
 					</a>
+				</div>
+			</div>
+		</div>
+		<div v-if="hasElectionLogistics && electionLogistics" class="mt-4 gap-4 grid">
+			<div class="p-4 border border-app-line rounded-2xl bg-white dark:border-app-line-dark dark:bg-app-panel-dark">
+				<div class="flex flex-wrap gap-2 items-center">
+					<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+						Official election logistics
+					</p>
+					<VerificationBadge label="Google Civic" tone="accent" />
+				</div>
+				<div class="mt-4 flex flex-wrap gap-3 items-center">
+					<p v-if="electionLogistics.electionName" class="text-lg text-app-ink font-semibold dark:text-app-text-dark">
+						{{ electionLogistics.electionName }}
+					</p>
+					<p v-if="electionLogistics.electionDay" class="text-sm text-app-muted dark:text-app-muted-dark">
+						{{ formatDate(electionLogistics.electionDay) }}
+					</p>
+					<VerificationBadge v-if="electionLogistics.mailOnly" label="Mail-only precinct" tone="warning" />
+				</div>
+				<p v-if="electionLogistics.normalizedAddress" class="text-sm text-app-muted leading-6 mt-3 dark:text-app-muted-dark">
+					Structured logistics returned for {{ electionLogistics.normalizedAddress }}.
+				</p>
+				<p class="text-sm text-app-muted leading-6 mt-3 dark:text-app-muted-dark">
+					{{ electionLogistics.officialSourceNote }}
+				</p>
+				<div class="mt-4 gap-4 grid lg:grid-cols-3">
+					<article
+						v-for="section in [
+							{ id: 'polling', items: electionLogistics.pollingLocations, title: 'Polling locations' },
+							{ id: 'early', items: electionLogistics.earlyVoteSites, title: 'Early vote sites' },
+							{ id: 'dropoff', items: electionLogistics.dropOffLocations, title: 'Ballot drop-off locations' },
+						]"
+						v-show="section.items.length"
+						:key="section.id"
+						class="p-4 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70"
+					>
+						<h3 class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
+							{{ section.title }}
+						</h3>
+						<ul class="mt-3 space-y-3">
+							<li v-for="site in section.items.slice(0, 3)" :key="site.id" class="text-sm text-app-muted leading-6 dark:text-app-muted-dark">
+								<p class="text-app-ink font-semibold dark:text-app-text-dark">
+									{{ site.name }}
+								</p>
+								<p>{{ site.address }}</p>
+								<p v-if="site.note">
+									{{ site.note }}
+								</p>
+							</li>
+						</ul>
+					</article>
+				</div>
+				<div v-if="electionLogistics.additionalElectionNames.length" class="mt-4">
+					<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+						Additional elections
+					</p>
+					<ul class="mt-2 space-y-2">
+						<li v-for="name in electionLogistics.additionalElectionNames" :key="name" class="text-sm text-app-muted leading-6 dark:text-app-muted-dark">
+							{{ name }}
+						</li>
+					</ul>
 				</div>
 			</div>
 		</div>

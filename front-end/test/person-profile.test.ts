@@ -19,6 +19,7 @@ test("person profile helpers detect funding and influence module availability", 
 			topFunders: [],
 			totalRaised: 500
 		},
+		influence: null,
 		lobbyingContext: [],
 		publicStatements: [{ id: "statement-1", sources: [], summary: "Statement", title: "Statement" }]
 	} as const;
@@ -27,6 +28,19 @@ test("person profile helpers detect funding and influence module availability", 
 	assert.equal(hasPersonInfluence(person as never), true);
 	assert.equal(hasPersonFunding({ ...person, funding: null } as never), false);
 	assert.equal(hasPersonInfluence({ ...person, publicStatements: [] } as never), false);
+	assert.equal(hasPersonInfluence({
+		...person,
+		influence: {
+			contributionCount: 4,
+			coverageLabel: "2026 LD-203 reports",
+			filingYear: 2026,
+			matchMode: "committee",
+			reportCount: 2,
+			topRegistrants: [],
+			totalMatched: 10000,
+		},
+		publicStatements: [],
+	} as never), true);
 });
 
 test("person summary items link to office, funding, and influence sections with honest states", () => {

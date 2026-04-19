@@ -1,4 +1,4 @@
-import type { LocationLookupAction } from "./types/civic.js";
+import type { ElectionLogistics, LocationLookupAction } from "./types/civic.js";
 import { Buffer } from "node:buffer";
 import { lookup as dnsLookup } from "node:dns";
 import { request as httpsRequest } from "node:https";
@@ -37,6 +37,10 @@ interface GoogleCivicState {
 interface GoogleCivicLocation {
 	address?: GoogleCivicAddress;
 	name?: string;
+	pollingHours?: string;
+	sources?: Array<{
+		name?: string;
+	}>;
 }
 
 interface GoogleCivicErrorResponse {
@@ -62,6 +66,7 @@ interface GoogleCivicVoterInfoResponse {
 
 export interface OfficialAddressMatch {
 	actions: LocationLookupAction[];
+	logistics: ElectionLogistics | null;
 	note: string;
 	verified: boolean;
 }
@@ -133,6 +138,65 @@ function normalizeAddress(address: GoogleCivicAddress | undefined) {
 		.map(part => part?.trim())
 		.filter(Boolean)
 		.join(", ");
+}
+
+function buildElectionLogisticsSites(
+	locations: GoogleCivicLocation[] | undefined,
+	siteType: "drop-off" | "early-vote" | "polling",
+) {
+	return (locations ?? [])
+		.map((location, index) => {
+			const address = normalizeAddress(location.address);
+			const name = location.name?.trim() || location.address?.locationName?.trim() || `${siteType} site ${index + 1}`;
+			const sourceLabel = (location.sources ?? []).map(source => source.name?.trim()).filter(Boolean).join(", ");
+			const note = [location.pollingHours?.trim(), sourceLabel].filter(Boolean).join(" · ");
+
+			if (!name && !address)
+				return null;
+
+			return {
+				address: address || name,
+				id: `${siteType}:${index}`,
+				name: name || address || `${siteType} site ${index + 1}`,
+				note: note || undefined,
+			};
+		})
+		.filter((site): site is NonNullable<typeof site> => Boolean(site));
+}
+
+function buildElectionLogistics(payload: GoogleCivicVoterInfoResponse): ElectionLogistics | null {
+	const pollingLocations = buildElectionLogisticsSites(payload.pollingLocations, "polling");
+	const earlyVoteSites = buildElectionLogisticsSites(payload.earlyVoteSites, "early-vote");
+	const dropOffLocations = buildElectionLogisticsSites(payload.dropOffLocations, "drop-off");
+	const additionalElectionNames = (payload.otherElections ?? [])
+		.map(item => item.name?.trim())
+		.filter((item): item is string => Boolean(item));
+	const normalizedAddress = normalizeAddress(payload.normalizedInput);
+
+	if (
+		!payload.election?.name
+		&& !payload.election?.electionDay
+		&& !normalizedAddress
+		&& !pollingLocations.length
+		&& !earlyVoteSites.length
+		&& !dropOffLocations.length
+		&& !additionalElectionNames.length
+		&& !payload.mailOnly
+	) {
+		return null;
+	}
+
+	return {
+		additionalElectionNames,
+		dropOffLocations,
+		earlyVoteSites,
+		electionDay: payload.election?.electionDay?.trim() || undefined,
+		electionName: payload.election?.name?.trim() || undefined,
+		mailOnly: payload.mailOnly === true,
+		normalizedAddress: normalizedAddress || undefined,
+		officialSourceNote: "Structured election administration details returned by Google Civic for this address. Verify final hours, locations, and ballot-handling rules with the linked official election tools.",
+		pollingLocations,
+	};
 }
 
 function pushOfficialAction(actions: LocationLookupAction[], id: string, title: string, url: string | undefined, description: string) {
@@ -297,6 +361,7 @@ export function createGoogleCivicClient(
 
 				return {
 					actions: [],
+					logistics: null,
 					note: normalizeGoogleCivicError(errorPayload),
 					verified: false
 				};
@@ -309,12 +374,14 @@ export function createGoogleCivicClient(
 			const normalizedAddress = normalizeAddress(payload.normalizedInput);
 			const pollingLocation = normalizeAddress(payload.pollingLocations?.[0]?.address);
 			const actions = buildOfficialActions(payload);
+			const logistics = buildElectionLogistics(payload);
 			const otherElectionCount = payload.otherElections?.length ?? 0;
 			const earlyVoteCount = payload.earlyVoteSites?.length ?? 0;
 			const dropOffCount = payload.dropOffLocations?.length ?? 0;
 
 			return {
 				actions,
+				logistics,
 				note: [
 					normalizedAddress ? `Google Civic accepted the address as ${normalizedAddress}.` : "Google Civic accepted the submitted address.",
 					payload.election?.name ? `The current official election record is ${payload.election.name}${payload.election.electionDay ? ` on ${payload.election.electionDay}` : ""}.` : "",

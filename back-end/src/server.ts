@@ -912,6 +912,7 @@ function buildRepresentativeLookupContext(record: OpenStatesRepresentativeRecord
 					},
 				]
 			: [],
+		electionLogistics: null,
 		guideAvailability: "not-published" as const,
 		inputKind: "address" as const,
 		location: {
@@ -967,6 +968,7 @@ function buildRepresentativeLookupContextFromSupplementalOfficeholder(
 				sourceSystem: record.sourceSystem,
 			},
 		],
+		electionLogistics: null,
 		guideAvailability: "not-published" as const,
 		inputKind: "address" as const,
 		location: {
@@ -1557,6 +1559,7 @@ function buildRepresentativeLookupContextFromCongressMember(
 				sourceSystem: "Congress.gov",
 			},
 		],
+		electionLogistics: null,
 		guideAvailability: "not-published" as const,
 		inputKind: "address" as const,
 		location: {

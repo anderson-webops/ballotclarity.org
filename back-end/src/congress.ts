@@ -20,6 +20,8 @@ export interface CongressMemberDetail {
 		zipCode?: number;
 	};
 	bioguideId: string;
+	cosponsoredLegislationCount?: number;
+	cosponsoredLegislationUrl?: string;
 	currentMember: boolean;
 	district?: number;
 	directOrderName: string;
@@ -28,7 +30,7 @@ export interface CongressMemberDetail {
 	officialWebsiteUrl?: string;
 	party: string;
 	sponsoredLegislationCount?: number;
-	cosponsoredLegislationCount?: number;
+	sponsoredLegislationUrl?: string;
 	state: string;
 	terms: Array<{
 		chamber: string;
@@ -85,6 +87,7 @@ interface CongressMemberDetailResponse {
 		bioguideId?: string;
 		cosponsoredLegislation?: {
 			count?: number;
+			url?: string;
 		};
 		currentMember?: boolean;
 		district?: number;
@@ -97,6 +100,7 @@ interface CongressMemberDetailResponse {
 		}>;
 		sponsoredLegislation?: {
 			count?: number;
+			url?: string;
 		};
 		state?: string;
 		terms?: Array<{
@@ -214,6 +218,7 @@ export function createCongressClient({
 				cosponsoredLegislationCount: typeof member.cosponsoredLegislation?.count === "number"
 					? member.cosponsoredLegislation.count
 					: undefined,
+				cosponsoredLegislationUrl: member.cosponsoredLegislation?.url?.trim() || undefined,
 				currentMember: member.currentMember !== false,
 				district: member.district,
 				directOrderName: member.directOrderName.trim(),
@@ -224,6 +229,7 @@ export function createCongressClient({
 				sponsoredLegislationCount: typeof member.sponsoredLegislation?.count === "number"
 					? member.sponsoredLegislation.count
 					: undefined,
+				sponsoredLegislationUrl: member.sponsoredLegislation?.url?.trim() || undefined,
 				state: member.state?.trim() || "",
 				terms: (member.terms ?? [])
 					.filter(term => typeof term.chamber === "string" && typeof term.congress === "number" && typeof term.startYear === "number")

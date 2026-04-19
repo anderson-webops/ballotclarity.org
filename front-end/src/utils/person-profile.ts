@@ -33,7 +33,7 @@ export function hasPersonFunding(person: PersonProfile) {
 }
 
 export function hasPersonInfluence(person: PersonProfile) {
-	return person.lobbyingContext.length > 0 || person.publicStatements.length > 0;
+	return Boolean(person.influence) || person.lobbyingContext.length > 0 || person.publicStatements.length > 0;
 }
 
 export function buildPersonSummaryItems(options: {

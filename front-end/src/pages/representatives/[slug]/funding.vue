@@ -44,6 +44,27 @@ const fundingAvailable = computed(() => person.value ? hasPersonFunding(person.v
 const fundingUnavailableSummary = computed(() => person.value
 	? person.value.enrichmentStatus?.funding.summary || `${person.value.name} resolves as a stable public officeholder record, but Ballot Clarity does not currently have a source-backed finance summary attached to this person.`
 	: "");
+const fundingHighlights = computed(() => {
+	if (!funding.value)
+		return [];
+
+	return [
+		funding.value.committeeName ? { label: "Committee", value: funding.value.committeeName } : null,
+		funding.value.coverageLabel ? { label: "Coverage", value: funding.value.coverageLabel } : null,
+		typeof funding.value.totalSpent === "number" ? { label: "Disbursements", value: formatCurrency(funding.value.totalSpent) } : null,
+		typeof funding.value.smallDonorShare === "number" ? { label: "Small-donor share", value: formatPercent(funding.value.smallDonorShare) } : null,
+	].filter((item): item is { label: string; value: string } => Boolean(item));
+});
+const fundingLineItems = computed(() => {
+	if (!funding.value)
+		return [];
+
+	if (funding.value.receiptBreakdown?.length)
+		return funding.value.receiptBreakdown;
+
+	return funding.value.topFunders;
+});
+const fundingLineItemsTitle = computed(() => funding.value?.receiptBreakdown?.length ? "Receipt breakdown" : "Top funders");
 function buildLookupAwareTarget(path: string) {
 	return buildNationwideRouteTarget(path, buildLookupContextFromNationwideResult(activeNationwideLookupResult.value), route.query);
 }
@@ -69,8 +90,8 @@ const summaryItems = computed(() => {
 	return [
 		{ label: "Current office", note: "Office context attached to this representative record.", value: person.value.officeDisplayLabel || person.value.officeSought },
 		{ label: "Total raised", note: "Current filing-window total.", value: formatCurrency(funding.value.totalRaised) },
-		{ label: "Cash on hand", note: "Reported funds still available.", value: formatCurrency(funding.value.cashOnHand) },
-		{ label: "Small-donor share", note: "Share attributed to smaller donors in the current summary.", value: formatPercent(funding.value.smallDonorShare) }
+		{ label: "Disbursements", note: "Reported spending in the same filing window.", value: typeof funding.value.totalSpent === "number" ? formatCurrency(funding.value.totalSpent) : "Not published" },
+		{ label: "Cash on hand", note: "Reported funds still available.", value: formatCurrency(funding.value.cashOnHand) }
 	];
 });
 
@@ -125,13 +146,27 @@ usePageSeo({
 			<section v-if="fundingAvailable && funding" class="gap-6 grid xl:grid-cols-[minmax(0,1fr)_minmax(0,0.95fr)]">
 				<div class="surface-panel">
 					<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
-						Top funders
+						{{ fundingLineItemsTitle }}
 					</h2>
 					<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-						This section surfaces the largest named or categorized funders in the current finance summary. Open the source drawer for the underlying filings.
+						{{
+							funding.receiptBreakdown?.length
+								? "This section surfaces the largest receipt categories in the attached finance summary. Open the source drawer for the underlying filings."
+								: "This section surfaces the largest named or categorized funders in the current finance summary. Open the source drawer for the underlying filings."
+						}}
 					</p>
+					<div v-if="fundingHighlights.length" class="mt-6 gap-3 grid sm:grid-cols-2">
+						<div v-for="item in fundingHighlights" :key="item.label" class="p-4 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
+							<p class="text-xs text-app-muted tracking-[0.14em] font-semibold uppercase dark:text-app-muted-dark">
+								{{ item.label }}
+							</p>
+							<p class="text-base text-app-ink mt-2 dark:text-app-text-dark">
+								{{ item.value }}
+							</p>
+						</div>
+					</div>
 					<ul class="mt-6 space-y-3">
-						<li v-for="funder in funding.topFunders" :key="`${funder.name}-${funder.category}`" class="p-4 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
+						<li v-for="funder in fundingLineItems" :key="`${funder.name}-${funder.category}`" class="p-4 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
 							<div class="flex flex-wrap gap-4 items-center justify-between">
 								<div>
 									<p class="text-lg text-app-ink font-semibold dark:text-app-text-dark">
@@ -157,7 +192,8 @@ usePageSeo({
 						<ul class="readable-list text-sm text-app-muted mt-5 pl-5 dark:text-app-muted-dark">
 							<li><strong class="text-app-ink dark:text-app-text-dark">Linkage:</strong> {{ person.provenance.status }}</li>
 							<li><strong class="text-app-ink dark:text-app-text-dark">Confidence:</strong> {{ linkageConfidence?.label }}</li>
-							<li><strong class="text-app-ink dark:text-app-text-dark">Coverage:</strong> {{ funding.provenanceLabel ?? "Source-backed finance summary" }}</li>
+							<li><strong class="text-app-ink dark:text-app-text-dark">Committee:</strong> {{ funding.committeeName || "Current matched committee not published in this summary." }}</li>
+							<li><strong class="text-app-ink dark:text-app-text-dark">Coverage:</strong> {{ funding.coverageLabel || funding.provenanceLabel || "Source-backed finance summary" }}</li>
 							<li><strong class="text-app-ink dark:text-app-text-dark">Data through:</strong> {{ formatDate(person.freshness.dataLastUpdatedAt ?? person.updatedAt) }}</li>
 							<li><strong class="text-app-ink dark:text-app-text-dark">Warning:</strong> {{ person.freshness.statusNote }}</li>
 						</ul>

@@ -23,6 +23,7 @@ const testContext: ActiveNationwideLookupContext = {
 			sourceSystem: "U.S. Census Geocoder",
 		},
 	],
+	electionLogistics: null,
 	guideAvailability: "not-published",
 	inputKind: "zip",
 	location: {

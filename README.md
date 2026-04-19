@@ -67,7 +67,7 @@ That path:
 After that, run the API in one terminal:
 
 ```bash
-npm run server:local:watch
+npm run server
 ```
 
 Then run the Nuxt front-end in another terminal:
@@ -77,6 +77,18 @@ npm run dev:local
 ```
 
 Use the Docker stack only when you want local Postgres address caching and MinIO parity with the fuller infrastructure path.
+
+If you want that fuller stack path explicitly, use:
+
+```bash
+npm run server:stack
+```
+
+or for a one-shot backend start:
+
+```bash
+npm run server:once:stack
+```
 
 To verify the real local runtime with your configured provider keys, run:
 

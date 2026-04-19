@@ -14,10 +14,6 @@ if (existsSync(envPath) && !force) {
 	process.exit(0);
 }
 
-const postgresUser = "postgres";
-const postgresPassword = "postgres";
-const postgresDb = "ballot_clarity";
-const postgresPort = "5432";
 const minioRootUser = "minioadmin";
 const minioRootPassword = randomSecret(18);
 const minioBucket = "source-files";
@@ -32,10 +28,6 @@ NUXT_PUBLIC_SITE_URL=http://127.0.0.1:3333
 NUXT_PUBLIC_API_BASE=http://127.0.0.1:3001/api
 
 # Local infrastructure
-POSTGRES_DB=${postgresDb}
-POSTGRES_USER=${postgresUser}
-POSTGRES_PASSWORD=${postgresPassword}
-POSTGRES_PORT=${postgresPort}
 MINIO_ROOT_USER=${minioRootUser}
 MINIO_ROOT_PASSWORD=${minioRootPassword}
 MINIO_BUCKET=${minioBucket}
@@ -46,8 +38,15 @@ MINIO_CONSOLE_PORT=${minioConsolePort}
 ADMIN_API_BASE=http://127.0.0.1:3001/api
 ADMIN_API_KEY=${randomSecret(24)}
 ADMIN_SESSION_SECRET=${randomSecret(24)}
-ADMIN_STORE_DRIVER=postgres
-ADMIN_DATABASE_URL=postgres://${postgresUser}:${postgresPassword}@127.0.0.1:${postgresPort}/${postgresDb}
+ADMIN_STORE_DRIVER=sqlite
+ADMIN_DB_PATH=./back-end/data/ballot-clarity.sqlite
+# Uncomment these only when you deliberately want the fuller local Docker stack.
+# POSTGRES_DB=ballot_clarity
+# POSTGRES_USER=postgres
+# POSTGRES_PASSWORD=postgres
+# POSTGRES_PORT=5432
+# ADMIN_STORE_DRIVER=postgres
+# ADMIN_DATABASE_URL=postgres://postgres:postgres@127.0.0.1:5432/ballot_clarity
 
 # Public source-asset delivery
 SOURCE_ASSET_BASE_URL=http://127.0.0.1:${minioPort}/${minioBucket}

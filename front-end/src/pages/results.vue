@@ -6,6 +6,7 @@ import { activeNationwideLookupCookieName, parseActiveNationwideLookupCookie } f
 import { buildLocationGuessUiContent } from "~/utils/location-guess";
 import { normalizeLookupResponseForDisplay, resolveLookupDestination } from "~/utils/nationwide-results";
 import { buildLookupContextFromNationwideResult, buildNationwideLookupRouteQuery, buildNationwideRouteTarget } from "~/utils/nationwide-route-context";
+import { buildResultsSummaryItems } from "~/utils/results-summary";
 
 const api = useApiClient();
 const route = useRoute();
@@ -49,28 +50,11 @@ const activeLookupSummary = computed(() => buildActiveLookupSummary({
 }));
 const locationGuessUi = computed(() => buildLocationGuessUiContent(coverageData.value?.locationGuess ?? null));
 const officialToolCount = computed(() => activeResult.value?.actions.filter(action => action.kind === "official-verification").length ?? 0);
-const summaryItems = computed(() => ([
-	{
-		label: "District matches",
-		note: "Matched through the current provider-backed lookup.",
-		value: activeResult.value?.districtMatches.length ?? 0
-	},
-	{
-		label: "Representatives",
-		note: "Current representative records linked below when available.",
-		value: activeResult.value?.representativeMatches.length ?? 0
-	},
-	{
-		label: "Official tools",
-		note: "State and county election links kept in the active lookup context.",
-		value: officialToolCount.value
-	},
-	{
-		label: "Guide status",
-		note: "Ballot plan and local guide pages remain guide-only.",
-		value: activeResult.value?.guideAvailability === "published" ? "Published" : "Not published"
-	}
-]));
+const summaryItems = computed(() => buildResultsSummaryItems(
+	activeResult.value,
+	officialToolCount.value,
+	route.query
+));
 function buildLookupAwareTarget(path: string) {
 	return buildNationwideRouteTarget(path, buildLookupContextFromNationwideResult(activeResult.value), route.query);
 }

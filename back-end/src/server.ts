@@ -137,6 +137,67 @@ function summarizeMatchedDistricts(labels: string[]) {
 	return `Matched districts: ${labels.join(", ")}.`;
 }
 
+const localCorsOriginPattern = /^https?:\/\/(?:localhost|127(?:\.\d{1,3}){3}|\[::1\])(?::\d+)?$/i;
+
+function normalizeCorsOrigin(value: string | null | undefined) {
+	if (!value)
+		return "";
+
+	try {
+		return new URL(value).origin;
+	}
+	catch {
+		return "";
+	}
+}
+
+function buildConfiguredCorsOriginSet() {
+	const configuredOrigins = new Set<string>();
+	const rawOrigins = [
+		process.env.NUXT_PUBLIC_SITE_URL,
+		process.env.FRONTEND_ORIGIN,
+		...(process.env.CORS_ALLOWED_ORIGINS || "")
+			.split(",")
+			.map(origin => origin.trim())
+			.filter(Boolean)
+	];
+
+	for (const rawOrigin of rawOrigins) {
+		const normalizedOrigin = normalizeCorsOrigin(rawOrigin);
+
+		if (normalizedOrigin)
+			configuredOrigins.add(normalizedOrigin);
+	}
+
+	return configuredOrigins;
+}
+
+function shouldAllowLocalCorsOrigins() {
+	return (process.env.NODE_ENV || "development").trim().toLowerCase() !== "production";
+}
+
+function createCorsOriginResolver() {
+	const configuredOrigins = buildConfiguredCorsOriginSet();
+
+	return (origin: string | undefined, callback: (error: Error | null, allow?: boolean) => void) => {
+		if (!origin)
+			return callback(null, true);
+
+		const normalizedOrigin = normalizeCorsOrigin(origin);
+
+		if (!normalizedOrigin)
+			return callback(null, false);
+
+		if (configuredOrigins.has(normalizedOrigin))
+			return callback(null, true);
+
+		if (shouldAllowLocalCorsOrigins() && localCorsOriginPattern.test(normalizedOrigin))
+			return callback(null, true);
+
+		return callback(null, false);
+	};
+}
+
 function resolveErrorCode(error: unknown) {
 	if (!error || typeof error !== "object" || !("code" in error)) {
 		return "";
@@ -3164,7 +3225,8 @@ export async function createApp(options: CreateAppOptions = {}) {
 		app.set("trust proxy", true);
 
 	app.use(cors({
-		origin: true
+		credentials: true,
+		origin: createCorsOriginResolver()
 	}));
 
 	app.use(express.json());

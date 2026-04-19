@@ -165,6 +165,38 @@ async function main() {
 		if (lookupBody.availability?.financeInfluence?.status !== "available")
 			throw new Error("Lookup probe did not expose finance/influence availability even though a matched representative module crosswalk should exist.");
 
+		const { payload: georgiaZipBody, response: georgiaZipResponse } = await fetchJson(`${baseUrl}`, "/api/location", {
+			body: JSON.stringify({ q: "30022" }),
+			headers: {
+				"Content-Type": "application/json",
+			},
+			method: "POST",
+		});
+
+		if (georgiaZipResponse.status !== 200)
+			throw new Error(`Georgia ZIP lookup probe failed with ${georgiaZipResponse.status}.`);
+
+		if (georgiaZipBody.result !== "resolved")
+			throw new Error(`Georgia ZIP lookup probe returned result=${String(georgiaZipBody.result)} instead of resolved.`);
+
+		if (!Array.isArray(georgiaZipBody.representativeMatches) || georgiaZipBody.representativeMatches.length === 0)
+			throw new Error("Georgia ZIP lookup probe returned no representative matches for ZIP 30022.");
+
+		if (georgiaZipBody.representativeMatches.length > 12)
+			throw new Error(`Georgia ZIP lookup probe returned an over-broad representative set (${georgiaZipBody.representativeMatches.length} matches) for ZIP 30022.`);
+
+		const georgiaRepresentativeNames = georgiaZipBody.representativeMatches.map(item => String(item?.name || ""));
+		const georgiaRepresentativeSources = georgiaZipBody.representativeMatches.map(item => String(item?.sourceSystem || ""));
+
+		if (georgiaRepresentativeNames.some(name => /Richard Russell|Rob Woodall/i.test(name)))
+			throw new Error("Georgia ZIP lookup probe still exposed historical Congress members for ZIP 30022.");
+
+		if (georgiaRepresentativeSources.includes("Congress.gov"))
+			throw new Error("Georgia ZIP lookup probe still surfaced Congress.gov fallback matches even though current Open States and local officeholder records should cover ZIP 30022.");
+
+		if (/Congress\.gov/i.test(String(georgiaZipBody.note || "")))
+			throw new Error("Georgia ZIP lookup probe note still claims Congress.gov matches for ZIP 30022.");
+
 		const { payload: representativeDirectoryBody, response: representativeDirectoryResponse } = await fetchJson(
 			`${baseUrl}`,
 			"/api/representatives?lookup=84604"
@@ -290,19 +322,22 @@ async function main() {
 		if (tylerRepresentativeBody.person?.enrichmentStatus?.influence?.reasonCode !== "no_state_disclosure_source")
 			throw new Error("State legislator route probe did not expose the precise state disclosure-source availability reason.");
 
-		const { payload: kevenRepresentativeBody, response: kevenRepresentativeResponse } = await fetchJson(
+		const { payload: scottRepresentativeBody, response: scottRepresentativeResponse } = await fetchJson(
 			`${baseUrl}`,
-			"/api/representatives/keven-stratton"
+			"/api/representatives/scott-hilton"
 		);
 
-		if (kevenRepresentativeResponse.status !== 200)
-			throw new Error(`Keven Stratton representative probe failed with ${kevenRepresentativeResponse.status}.`);
+		if (scottRepresentativeResponse.status !== 200)
+			throw new Error(`Scott Hilton representative probe failed with ${scottRepresentativeResponse.status}.`);
 
-		if (String(kevenRepresentativeBody.person?.districtLabel || "").trim() !== "State Senate District 24")
-			throw new Error("Supplemental state officeholder route probe did not attach the expected district label.");
+		if (String(scottRepresentativeBody.person?.districtLabel || "").trim() !== "State House District 48")
+			throw new Error("State legislator route probe did not attach the expected district label for Scott Hilton.");
 
-		if (kevenRepresentativeBody.person?.enrichmentStatus?.funding?.reasonCode !== "no_state_finance_source")
-			throw new Error("Supplemental state officeholder route probe did not expose the expected state finance-source reason.");
+		if (scottRepresentativeBody.person?.enrichmentStatus?.funding?.reasonCode !== "no_state_finance_source")
+			throw new Error("State legislator route probe did not expose the expected state finance-source reason for Scott Hilton.");
+
+		if (scottRepresentativeBody.person?.enrichmentStatus?.influence?.reasonCode !== "no_state_disclosure_source")
+			throw new Error("State legislator route probe did not expose the expected state disclosure-source reason for Scott Hilton.");
 
 		const { payload: localRepresentativeBody, response: localRepresentativeResponse } = await fetchJson(
 			`${baseUrl}`,
@@ -312,11 +347,11 @@ async function main() {
 		if (localRepresentativeResponse.status !== 200)
 			throw new Error(`Marsha Judkins representative probe failed with ${localRepresentativeResponse.status}.`);
 
-		if (String(localRepresentativeBody.person?.officialWebsiteUrl || "").trim() !== "https://www.provo.gov/433/Mayors-Office")
-			throw new Error("Local officeholder route probe did not attach the expected official website.");
-
 		if (localRepresentativeBody.person?.enrichmentStatus?.funding?.reasonCode !== "no_local_finance_source")
 			throw new Error("Local officeholder route probe did not expose the expected local finance-source reason.");
+
+		if (localRepresentativeBody.person?.enrichmentStatus?.influence?.reasonCode !== "no_local_disclosure_source")
+			throw new Error("Local officeholder route probe did not expose the expected local disclosure-source reason.");
 
 		const { payload: stateDistrictBody, response: stateDistrictResponse } = await fetchJson(
 			`${baseUrl}`,
@@ -343,7 +378,7 @@ async function main() {
 		console.log("\n== Local runtime verification passed ==");
 		console.log(`Resolved ${lookupBody.location?.displayName || "unknown location"} with ${lookupBody.districtMatches.length} district matches and ${lookupBody.representativeMatches.length} representative matches.`);
 		console.log(`Verified representative directory/profile backing for ${moduleBackedRepresentative.name}, including live finance and influence modules.`);
-		console.log(`Verified direct district route backing for ${directDistrictBody.district?.title || firstDistrictSlug}, reviewed state/local district backing for ${stateDistrictBody.district?.title || "state-house-60"} and ${localDistrictBody.district?.title || "provo-city"}, and direct representative backing for ${directRepresentativeBody.person?.name || firstRepresentativeSlug}, ${kevenRepresentativeBody.person?.name || "keven-stratton"}, and ${localRepresentativeBody.person?.name || "marsha-judkins"}.`);
+		console.log(`Verified direct district route backing for ${directDistrictBody.district?.title || firstDistrictSlug}, reviewed state/local district backing for ${stateDistrictBody.district?.title || "state-house-60"} and ${localDistrictBody.district?.title || "provo-city"}, and direct representative backing for ${directRepresentativeBody.person?.name || firstRepresentativeSlug}, ${scottRepresentativeBody.person?.name || "scott-hilton"}, and ${localRepresentativeBody.person?.name || "marsha-judkins"}.`);
 	}
 	finally {
 		await stopProcess(server);

@@ -1175,18 +1175,21 @@ test("POST /api/location filters former Congress members out of ZIP lookup repre
 	});
 	const body = await response.json();
 	const representativeNames = (body.representativeMatches ?? []).map((item: { name: string }) => item.name);
+	const representativeSources = (body.representativeMatches ?? []).map((item: { sourceSystem?: string }) => item.sourceSystem ?? "");
 
 	assert.equal(response.status, 200);
 	assert.equal(body.result, "resolved");
 	assert.equal(body.inputKind, "zip");
 	assert.equal(body.availability.representatives.status, "available");
 	assert.equal(body.availability.financeInfluence.status, "available");
+	assert.equal(body.representativeMatches.length, 7);
 	assert.match(body.note, /(Alpharetta|Fulton County), Georgia/i);
 	assert.equal(representativeNames.includes("Jon Ossoff"), true);
 	assert.equal(representativeNames.some((name: string) => /warnock/i.test(name)), true);
 	assert.equal(representativeNames.some((name: string) => /mccormick/i.test(name)), true);
 	assert.equal(representativeNames.includes("Richard Russell"), false);
 	assert.equal(representativeNames.includes("Rob Woodall"), false);
+	assert.equal(representativeSources.includes("Congress.gov"), true);
 });
 
 test("POST /api/location returns district lookup results without a published guide for out-of-guide ZIPs", async () => {

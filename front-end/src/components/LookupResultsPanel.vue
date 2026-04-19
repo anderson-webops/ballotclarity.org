@@ -9,7 +9,10 @@ import {
 	buildLookupProvenanceSummary,
 	buildRepresentativeCards
 } from "~/utils/graphics-schema";
+import { isExternalHref } from "~/utils/link";
 import { buildLookupPresentation, filterLookupActionsForPresentation } from "~/utils/location-lookup";
+import { buildNationwideDistrictHref, buildNationwideRepresentativeHref } from "~/utils/lookup-links";
+import { resolveRepresentativePresentation } from "~/utils/representative-presentation";
 
 const props = defineProps<{
 	compact?: boolean;
@@ -61,6 +64,18 @@ function openGuideAction(action: LocationLookupAction) {
 
 function selectLookupOption(option: LocationLookupSelectionOption) {
 	emit("selectOption", option);
+}
+
+function buildDistrictHref(match: NationwideLookupResultContext["districtMatches"][number]) {
+	return buildNationwideDistrictHref(match, props.lookup);
+}
+
+function buildRepresentativeHref(match: NationwideLookupResultContext["representativeMatches"][number]) {
+	return buildNationwideRepresentativeHref(match, props.lookup);
+}
+
+function getRepresentativePresentation(match: NationwideLookupResultContext["representativeMatches"][number]) {
+	return resolveRepresentativePresentation(match, props.lookup.location?.state);
 }
 </script>
 
@@ -196,6 +211,61 @@ function selectLookupOption(option: LocationLookupSelectionOption) {
 						Open official tool
 					</a>
 				</div>
+			</div>
+		</div>
+		<div v-if="lookup.normalizedAddress || lookup.districtMatches.length || lookup.representativeMatches.length" class="mt-4 gap-4 grid lg:grid-cols-2">
+			<div v-if="lookup.districtMatches.length" class="p-4 border border-app-line rounded-2xl bg-white dark:border-app-line-dark dark:bg-app-panel-dark">
+				<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+					Matched districts
+				</p>
+				<p v-if="lookup.normalizedAddress" class="text-sm text-app-muted leading-6 mt-2 dark:text-app-muted-dark">
+					{{ lookup.normalizedAddress }}
+				</p>
+				<ul class="mt-3 space-y-2">
+					<li v-for="match in lookup.districtMatches" :key="match.id" class="text-sm text-app-muted leading-6 dark:text-app-muted-dark">
+						<NuxtLink
+							:to="buildDistrictHref(match)"
+							class="text-app-ink font-semibold underline decoration-transparent underline-offset-3 transition dark:text-app-text-dark focus-visible:text-app-accent hover:text-app-accent focus-visible:decoration-current hover:decoration-current"
+						>
+							{{ match.label }}
+						</NuxtLink>
+						<span class="text-xs tracking-[0.12em] ml-2 uppercase">{{ match.sourceSystem }}</span>
+					</li>
+				</ul>
+				<p v-if="lookup.fromCache" class="text-xs text-app-muted leading-6 mt-3 dark:text-app-muted-dark">
+					Loaded from the local lookup cache.
+				</p>
+			</div>
+			<div v-if="lookup.representativeMatches.length" class="p-4 border border-app-line rounded-2xl bg-white dark:border-app-line-dark dark:bg-app-panel-dark">
+				<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+					Current representatives
+				</p>
+				<ul class="mt-3 space-y-3">
+					<li v-for="match in lookup.representativeMatches" :key="match.id" class="text-sm text-app-muted leading-6 dark:text-app-muted-dark">
+						<div class="flex flex-wrap gap-2 items-center">
+							<NuxtLink
+								:to="buildRepresentativeHref(match)"
+								class="text-app-ink font-semibold underline decoration-transparent underline-offset-3 transition dark:text-app-text-dark focus-visible:text-app-accent hover:text-app-accent focus-visible:decoration-current hover:decoration-current"
+							>
+								{{ match.name }}
+							</NuxtLink>
+							<VerificationBadge :label="getRepresentativePresentation(match).levelLabel" tone="accent" />
+							<span v-if="match.party" class="text-xs tracking-[0.12em] uppercase">{{ match.party }}</span>
+							<VerificationBadge :label="match.sourceSystem" />
+						</div>
+						<p>{{ getRepresentativePresentation(match).officeDisplayLabel }}</p>
+						<a
+							v-if="match.openstatesUrl"
+							:href="match.openstatesUrl"
+							target="_blank"
+							rel="noreferrer"
+							class="text-app-accent underline underline-offset-3 inline-flex gap-2 items-center"
+						>
+							Open record
+							<span v-if="isExternalHref(match.openstatesUrl)" class="i-carbon-launch" />
+						</a>
+					</li>
+				</ul>
 			</div>
 		</div>
 		<div v-if="lookupPresentation.canOpenGuide && lookup.location && lookup.electionSlug" class="mt-4 flex flex-wrap gap-3">

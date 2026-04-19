@@ -46,7 +46,7 @@ const pagePending = computed(() => pending.value || (!data.value && !fallbackDat
 const linkageConfidence = computed(() => person.value ? buildPersonLinkageConfidence(person.value.provenance.status) : null);
 const influenceAvailable = computed(() => person.value ? hasPersonInfluence(person.value) : false);
 const influenceUnavailableSummary = computed(() => person.value
-	? `${person.value.name} resolves as a stable public officeholder record, but Ballot Clarity does not currently have a publishable lobbying or influence context block attached to this person.`
+	? person.value.enrichmentStatus?.influence.summary || `${person.value.name} resolves as a stable public officeholder record, but Ballot Clarity does not currently have a publishable lobbying or influence context block attached to this person.`
 	: "");
 const influenceSources = computed(() => person.value
 	? uniqueSources([
@@ -70,14 +70,14 @@ const summaryItems = computed(() => {
 
 	if (!influenceAvailable.value) {
 		return [
-			{ label: "Current office", note: "Office context attached to this representative record.", value: person.value.officeSought },
+			{ label: "Current office", note: "Office context attached to this representative record.", value: person.value.officeDisplayLabel || person.value.officeSought },
 			{ label: "Influence status", note: "Lobbying or disclosure attachment for this route.", value: "Unavailable" },
 			{ label: "Updated", note: "Profile freshness.", value: formatDateTime(person.value.updatedAt) }
 		];
 	}
 
 	return [
-		{ label: "Current office", note: "Office context attached to this representative record.", value: person.value.officeSought },
+		{ label: "Current office", note: "Office context attached to this representative record.", value: person.value.officeDisplayLabel || person.value.officeSought },
 		{ label: "Influence notes", note: "Context blocks on donors, sectors, and public disclosures.", value: person.value.lobbyingContext.length },
 		{ label: "Public statements", note: "Statements that interact with the influence context.", value: person.value.publicStatements.length },
 		{ label: "Updated", note: "Profile freshness.", value: formatDateTime(person.value.updatedAt) }
@@ -211,9 +211,10 @@ usePageSeo({
 					Ballot Clarity resolved the person identity and office context for this route, but it does not currently have a publishable lobbying or disclosure context block attached to this representative record.
 				</p>
 				<ul class="readable-list text-sm text-app-muted mt-6 pl-5 dark:text-app-muted-dark">
-					<li><strong class="text-app-ink dark:text-app-text-dark">Office:</strong> {{ person.officeSought }}</li>
+					<li><strong class="text-app-ink dark:text-app-text-dark">Office:</strong> {{ person.officeDisplayLabel || person.officeSought }}</li>
 					<li><strong class="text-app-ink dark:text-app-text-dark">District:</strong> {{ person.districtLabel }}</li>
 					<li><strong class="text-app-ink dark:text-app-text-dark">Linkage:</strong> {{ linkageConfidence?.label }}</li>
+					<li><strong class="text-app-ink dark:text-app-text-dark">Status:</strong> {{ person.enrichmentStatus?.influence.summary || influenceUnavailableSummary }}</li>
 					<li><strong class="text-app-ink dark:text-app-text-dark">Provenance:</strong> {{ person.provenance.label }}</li>
 					<li><strong class="text-app-ink dark:text-app-text-dark">Updated:</strong> {{ formatDate(person.freshness.dataLastUpdatedAt ?? person.updatedAt) }}</li>
 					<li>{{ person.freshness.statusNote }}</li>

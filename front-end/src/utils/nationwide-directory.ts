@@ -5,10 +5,12 @@ import type {
 	LocationDistrictMatch,
 	LocationRepresentativeMatch,
 	NationwideLookupResultContext,
-	RepresentativesResponse
+	RepresentativesResponse,
+	Source
 } from "~/types/civic";
 import { buildDistrictMatchKeys, buildRepresentativeMatchKeys } from "./canonical-district";
 import { buildNationwideRepresentativeSlug, toLookupSlug } from "./nationwide-slug";
+import { classifyRepresentative } from "./representative-classification";
 
 function deriveNationwideDistrictJurisdiction(districtType: string): Contest["jurisdiction"] {
 	const normalizedType = districtType.toLowerCase();
@@ -44,14 +46,42 @@ function buildDistrictSummary(
 function buildRepresentativeSummary(
 	match: LocationRepresentativeMatch,
 	updatedAt: string,
-	locationLabel: string
+	locationLabel: string,
+	stateName?: string
 ) {
+	const classification = classifyRepresentative({
+		districtLabel: match.districtLabel,
+		governmentLevel: match.governmentLevel,
+		officeSought: match.officeDisplayLabel,
+		officeTitle: match.officeTitle,
+		officeType: match.officeType,
+		stateName,
+	});
+	const sources: Source[] = match.openstatesUrl
+		? [
+				{
+					authority: "nonprofit-provider",
+					date: updatedAt,
+					id: `representative:${buildNationwideRepresentativeSlug(match)}`,
+					note: "Representative record carried into this directory card from the active nationwide lookup.",
+					publisher: "Open States",
+					sourceSystem: match.sourceSystem || "Open States",
+					title: match.name,
+					type: "official record",
+					url: match.openstatesUrl
+				}
+			]
+		: [];
+
 	return {
 		id: match.id,
 		incumbent: true,
+		governmentLevel: classification.governmentLevel,
 		location: locationLabel,
 		name: match.name,
+		officeDisplayLabel: classification.officeDisplayLabel,
 		officeholderLabel: "Current officeholder",
+		officeType: classification.officeType,
 		officeTitle: match.officeTitle,
 		officeSought: match.officeTitle,
 		onCurrentBallot: false,
@@ -72,7 +102,8 @@ function buildRepresentativeSummary(
 		openstatesUrl: match.openstatesUrl,
 		influenceAvailable: false,
 		influenceSummary: "No person-level influence record is attached to this representative yet.",
-		sourceCount: match.openstatesUrl ? 1 : 0,
+		sourceCount: sources.length,
+		sources,
 		updatedAt
 	} satisfies RepresentativesResponse["representatives"][number];
 }
@@ -122,7 +153,7 @@ export function buildNationwideDirectoryResponses(
 
 	const districts = Array.from(districtBySlug.values());
 	const representatives = representativeMatches.map((representative) => {
-		const summary = buildRepresentativeSummary(representative, updatedAt, locationLabel);
+		const summary = buildRepresentativeSummary(representative, updatedAt, locationLabel, locationState);
 		const districtSlug = districtRepresentatives.get(representative.id) ?? toLookupSlug(representative.districtLabel);
 
 		return {

@@ -1,13 +1,17 @@
 <script setup lang="ts">
 import type { Source } from "~/types/civic";
 
-withDefaults(defineProps<{
+const props = withDefaults(defineProps<{
 	buttonLabel?: string;
 	note?: string;
 	sources: Source[];
 	title: string;
+	tone?: "accent" | "neutral" | "warning";
+	variant?: "badge" | "button";
 }>(), {
 	buttonLabel: "View sources",
+	tone: "neutral",
+	variant: "button",
 });
 
 const isOpen = ref(false);
@@ -16,6 +20,20 @@ const noteId = `${headingId}-note`;
 const closeButton = ref<HTMLButtonElement | null>(null);
 const activeElementBeforeOpen = ref<HTMLElement | null>(null);
 const panelRef = ref<HTMLElement | null>(null);
+
+const triggerClass = computed(() => {
+	if (props.variant === "badge") {
+		const toneClass = props.tone === "accent"
+			? "border-app-accent/22 bg-app-accent/8 text-app-accent dark:border-app-accent/28 dark:bg-app-accent/12 dark:text-[#9ed4e3]"
+			: props.tone === "warning"
+				? "border-[#b7791f]/18 bg-[#f8edd8]/85 text-[#8a5b0a] dark:border-[#b7791f]/24 dark:bg-[#3b2a0f]/88 dark:text-[#efc77b]"
+				: "border-app-line/90 bg-white/85 text-app-muted dark:border-app-line-dark dark:bg-app-panel-dark/85 dark:text-app-muted-dark";
+
+		return `text-[11px] font-semibold px-2.5 py-1 border rounded-full inline-flex gap-1.5 items-center cursor-pointer ${toneClass} focus-ring`;
+	}
+
+	return "btn-secondary text-xs px-4 py-2 focus-ring";
+});
 
 function getFocusableElements() {
 	if (!panelRef.value)
@@ -91,8 +109,9 @@ onBeforeUnmount(() => {
 
 <template>
 	<div class="inline-flex">
-		<button type="button" class="btn-secondary text-xs px-4 py-2 focus-ring" @click="isOpen = true">
-			<span class="i-carbon-document-multiple-01 text-sm" />
+		<button type="button" :class="triggerClass" @click="isOpen = true">
+			<span v-if="props.variant === 'badge'" class="rounded-full bg-current h-1.5 w-1.5" />
+			<span v-else class="i-carbon-document-multiple-01 text-sm" />
 			{{ buttonLabel }}
 		</button>
 

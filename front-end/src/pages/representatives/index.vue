@@ -8,6 +8,8 @@ import { buildRepresentativesDirectoryProvenanceSummary, buildRepresentativesDir
 import { isExternalHref } from "~/utils/link";
 import { buildNationwideDirectoryResponses } from "~/utils/nationwide-directory";
 import { buildLookupContextFromNationwideResult, buildNationwideLookupRouteQuery, buildNationwideRouteTarget } from "~/utils/nationwide-route-context";
+import { groupRepresentativeSummariesByGovernmentLevel, resolveRepresentativePresentation } from "~/utils/representative-presentation";
+import { formatSourceCountLabel } from "~/utils/source-label";
 
 const route = useRoute();
 const { formatDateTime } = useFormatters();
@@ -67,6 +69,10 @@ const directoryError = computed(() => showGuideDirectory.value || directoryUsesN
 	? directoryUsesNationwide.value && directoryBundle.value ? null : guideError.value
 	: null);
 const directoryData = computed(() => directoryBundle.value);
+const groupedRepresentatives = computed(() => groupRepresentativeSummariesByGovernmentLevel(
+	directoryData.value.representatives,
+	activeNationwideLookupResult.value?.location?.state ?? null
+));
 const activeLookupSummary = computed(() => buildActiveLookupSummary({
 	nationwideLookupResult: activeNationwideLookupResult.value,
 	routeLookupQuery: activeLookupQuery.value?.lookup ?? null,
@@ -200,6 +206,9 @@ function buildLookupAwareTarget(path: string) {
 	return buildNationwideRouteTarget(path, buildLookupContextFromNationwideResult(activeNationwideLookupResult.value), route.query);
 }
 
+function getRepresentativePresentation(representative: RepresentativesResponse["representatives"][number]) {
+	return resolveRepresentativePresentation(representative, activeNationwideLookupResult.value?.location?.state ?? null);
+}
 usePageSeo({
 	description: "Directory of current representatives in your active Ballot Clarity context, with guide-dependent links made clear when no local guide is available.",
 	path: "/representatives",
@@ -302,82 +311,115 @@ usePageSeo({
 				uncertainty="Detailed action timelines remain on the linked candidate or representative profile surfaces, not in this directory overview."
 			/>
 
-			<section class="gap-6 grid lg:grid-cols-2">
-				<article
-					v-for="representative in directoryData.representatives"
-					:key="representative.slug"
-					class="surface-panel"
+			<div class="space-y-8">
+				<section
+					v-for="group in groupedRepresentatives"
+					:key="group.label"
+					class="space-y-5"
 				>
-					<div class="flex flex-wrap gap-3 items-center">
-						<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
-							{{ representative.name }}
-						</h2>
-						<IncumbentBadge />
+					<div class="flex flex-wrap gap-3 items-center justify-between">
+						<div>
+							<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
+								{{ group.label }}
+							</h2>
+							<p class="text-sm text-app-muted mt-3 dark:text-app-muted-dark">
+								{{ group.representatives.length }} current official{{ group.representatives.length === 1 ? "" : "s" }} in this section.
+							</p>
+						</div>
+						<VerificationBadge :label="`${group.representatives.length} official${group.representatives.length === 1 ? '' : 's'}`" tone="accent" />
 					</div>
-					<p class="text-sm text-app-muted mt-4 dark:text-app-muted-dark">
-						{{ representative.party }} · {{ representative.officeSought }}
-					</p>
-					<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-						{{ representative.summary }} {{ noActionCopy }}
-					</p>
-					<div class="mt-5 flex flex-wrap gap-2">
-						<VerificationBadge :label="representative.districtLabel" />
-						<VerificationBadge :label="`${representative.sourceCount} sources`" tone="accent" />
+					<div class="gap-6 grid lg:grid-cols-2">
+						<article
+							v-for="representative in group.representatives"
+							:key="representative.slug"
+							class="surface-panel"
+						>
+							<div class="flex flex-wrap gap-2 items-center">
+								<VerificationBadge :label="getRepresentativePresentation(representative).levelLabel" tone="accent" />
+								<IncumbentBadge />
+							</div>
+							<div class="mt-4 flex flex-wrap gap-3 items-center">
+								<h3 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
+									{{ representative.name }}
+								</h3>
+							</div>
+							<p class="text-sm text-app-muted mt-4 dark:text-app-muted-dark">
+								{{ representative.party }} · {{ getRepresentativePresentation(representative).officeDisplayLabel }}
+							</p>
+							<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
+								{{ representative.summary }} {{ noActionCopy }}
+							</p>
+							<div class="mt-5 flex flex-wrap gap-2">
+								<VerificationBadge :label="representative.districtLabel" />
+								<SourceDrawer
+									v-if="representative.sourceCount > 0 && representative.sources.length"
+									:button-label="formatSourceCountLabel(representative.sourceCount)"
+									:note="directoryUsesNationwide
+										? 'These are the provider-backed and Ballot Clarity-attached records currently visible in this representative directory card.'
+										: 'These are the source-backed records currently visible in this representative directory card.'"
+									:sources="representative.sources"
+									:title="`${representative.name} directory sources`"
+									tone="accent"
+									variant="badge"
+								/>
+								<VerificationBadge v-else :label="formatSourceCountLabel(representative.sourceCount)" tone="accent" />
+							</div>
+							<div class="mt-6 flex flex-wrap gap-3">
+								<NuxtLink :to="buildLookupAwareTarget(`/districts/${representative.districtSlug}`)" class="btn-secondary">
+									District page
+								</NuxtLink>
+								<NuxtLink v-if="!representativeLinkIsExternal(representative.href)" :to="buildLookupAwareTarget(representative.href)" class="btn-secondary">
+									Profile
+								</NuxtLink>
+								<a
+									v-else
+									:href="representative.href"
+									target="_blank"
+									rel="noreferrer"
+									class="btn-secondary inline-flex gap-2 items-center"
+								>
+									Open record
+									<span class="i-carbon-launch" />
+								</a>
+								<a
+									v-if="directoryUsesNationwide && representative.openstatesUrl"
+									:href="representative.openstatesUrl"
+									target="_blank"
+									rel="noreferrer"
+									class="btn-secondary inline-flex gap-2 items-center"
+								>
+									Provider record
+									<span class="i-carbon-launch" />
+								</a>
+								<NuxtLink
+									v-if="!representativeLinkIsExternal(representative.href) && representative.fundingAvailable"
+									:to="buildLookupAwareTarget(`${representative.href}/funding`)"
+									class="btn-primary"
+								>
+									Funding
+								</NuxtLink>
+								<NuxtLink
+									v-if="!representativeLinkIsExternal(representative.href) && representative.influenceAvailable"
+									:to="buildLookupAwareTarget(`${representative.href}/influence`)"
+									class="btn-secondary"
+								>
+									Influence
+								</NuxtLink>
+								<VerificationBadge v-if="!representative.fundingAvailable" label="Funding not yet available" tone="warning" />
+								<VerificationBadge v-if="!representative.influenceAvailable" label="Influence not yet available" tone="warning" />
+							</div>
+							<div class="mt-4 space-y-2">
+								<p class="text-sm text-app-muted leading-6 dark:text-app-muted-dark">
+									<strong class="text-app-ink dark:text-app-text-dark">Funding:</strong> {{ representative.fundingSummary }}
+								</p>
+								<p class="text-sm text-app-muted leading-6 dark:text-app-muted-dark">
+									<strong class="text-app-ink dark:text-app-text-dark">Influence:</strong> {{ representative.influenceSummary }}
+								</p>
+							</div>
+						</article>
 					</div>
-					<div class="mt-6 flex flex-wrap gap-3">
-						<NuxtLink :to="buildLookupAwareTarget(`/districts/${representative.districtSlug}`)" class="btn-secondary">
-							District page
-						</NuxtLink>
-						<NuxtLink v-if="!representativeLinkIsExternal(representative.href)" :to="buildLookupAwareTarget(representative.href)" class="btn-secondary">
-							Profile
-						</NuxtLink>
-						<a
-							v-else
-							:href="representative.href"
-							target="_blank"
-							rel="noreferrer"
-							class="btn-secondary inline-flex gap-2 items-center"
-						>
-							Open record
-							<span class="i-carbon-launch" />
-						</a>
-						<a
-							v-if="directoryUsesNationwide && representative.openstatesUrl"
-							:href="representative.openstatesUrl"
-							target="_blank"
-							rel="noreferrer"
-							class="btn-secondary inline-flex gap-2 items-center"
-						>
-							Provider record
-							<span class="i-carbon-launch" />
-						</a>
-						<NuxtLink
-							v-if="!representativeLinkIsExternal(representative.href) && representative.fundingAvailable"
-							:to="buildLookupAwareTarget(`${representative.href}/funding`)"
-							class="btn-primary"
-						>
-							Funding
-						</NuxtLink>
-						<NuxtLink
-							v-if="!representativeLinkIsExternal(representative.href) && representative.influenceAvailable"
-							:to="buildLookupAwareTarget(`${representative.href}/influence`)"
-							class="btn-secondary"
-						>
-							Influence
-						</NuxtLink>
-						<VerificationBadge v-if="!representative.fundingAvailable" label="Funding not yet available" tone="warning" />
-						<VerificationBadge v-if="!representative.influenceAvailable" label="Influence not yet available" tone="warning" />
-					</div>
-					<div class="mt-4 space-y-2">
-						<p class="text-sm text-app-muted leading-6 dark:text-app-muted-dark">
-							<strong class="text-app-ink dark:text-app-text-dark">Funding:</strong> {{ representative.fundingSummary }}
-						</p>
-						<p class="text-sm text-app-muted leading-6 dark:text-app-muted-dark">
-							<strong class="text-app-ink dark:text-app-text-dark">Influence:</strong> {{ representative.influenceSummary }}
-						</p>
-					</div>
-				</article>
-			</section>
+				</section>
+			</div>
 		</div>
 	</section>
 </template>

@@ -82,9 +82,12 @@ test("nationwide directory derivation uses district matches and representative m
 	assert.equal(bundle.districts.districts.length, 3);
 	assert.equal(bundle.representatives.representatives.length, 2);
 	assert.equal(bundle.representatives.representatives[0].districtLabel, "Congressional District 3");
+	assert.equal(bundle.representatives.representatives[0].governmentLevel, "federal");
 	assert.equal(bundle.representatives.representatives[0].location, "Provo, Utah");
+	assert.equal(bundle.representatives.representatives[0].officeDisplayLabel, "U.S. Representative for Utah's 3rd Congressional District");
 	assert.equal(bundle.representatives.representatives[0].href, "/representatives/john-curtis");
 	assert.equal(bundle.representatives.representatives[0].officeholderLabel, "Current officeholder");
+	assert.equal(bundle.representatives.representatives[0].officeType, "us_house");
 	assert.equal(bundle.representatives.representatives[0].onCurrentBallot, false);
 	assert.equal(bundle.representatives.representatives[0].ballotStatusLabel, "Published ballot status unavailable in this area");
 	assert.equal(bundle.representatives.representatives[0].fundingAvailable, false);
@@ -93,7 +96,13 @@ test("nationwide directory derivation uses district matches and representative m
 	assert.equal(bundle.representatives.representatives[0].influenceSummary, "No person-level influence record is attached to this representative yet.");
 	assert.equal(bundle.representatives.representatives[0].openstatesUrl, "https://openstates.org/ocd-person/ut-cd-3");
 	assert.equal(bundle.representatives.representatives[0].provenance?.status, "crosswalked");
+	assert.equal(bundle.representatives.representatives[0].sources.length, 1);
+	assert.equal(bundle.representatives.representatives[0].sources[0]?.publisher, "Open States");
+	assert.equal(bundle.representatives.representatives[1].sources.length, 0);
 	assert.equal(bundle.representatives.representatives[1].districtSlug, "ut-senate-24");
+	assert.equal(bundle.representatives.representatives[1].governmentLevel, "state");
+	assert.equal(bundle.representatives.representatives[1].officeType, "state_senate");
+	assert.equal(bundle.representatives.representatives[1].officeDisplayLabel, "Utah State Senator for District 24");
 	assert.equal(bundle.districts.districts.find(district => district.slug === "ut-cd-03")?.representativeCount, 1);
 	assert.equal(bundle.districts.districts.find(district => district.slug === "ut-senate-24")?.representativeCount, 1);
 	assert.equal(bundle.districts.districts.find(district => district.slug === "ut-house-60")?.representativeCount, 0);
@@ -137,8 +146,11 @@ test("nationwide directory canonical matching links mismatched provider labels t
 	});
 
 	assert.equal(bundle.representatives.representatives.find(representative => representative.name === "Mike Kennedy")?.districtSlug, "ut-cd-03");
+	assert.equal(bundle.representatives.representatives.find(representative => representative.name === "Mike Kennedy")?.officeType, "us_house");
 	assert.equal(bundle.representatives.representatives.find(representative => representative.name === "Keven Stratton")?.districtSlug, "ut-senate-24");
+	assert.equal(bundle.representatives.representatives.find(representative => representative.name === "Keven Stratton")?.officeType, "state_senate");
 	assert.equal(bundle.representatives.representatives.find(representative => representative.name === "Tyler Clancy")?.districtSlug, "ut-house-60");
+	assert.equal(bundle.representatives.representatives.find(representative => representative.name === "Tyler Clancy")?.officeType, "state_house");
 	assert.equal(bundle.districts.districts.find(district => district.slug === "ut-cd-03")?.representativeCount, 1);
 	assert.equal(bundle.districts.districts.find(district => district.slug === "ut-senate-24")?.representativeCount, 1);
 	assert.equal(bundle.districts.districts.find(district => district.slug === "ut-house-60")?.representativeCount, 1);

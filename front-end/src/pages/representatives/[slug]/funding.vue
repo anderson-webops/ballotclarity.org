@@ -42,7 +42,7 @@ const linkageConfidence = computed(() => person.value ? buildPersonLinkageConfid
 const funding = computed(() => person.value?.funding ?? null);
 const fundingAvailable = computed(() => person.value ? hasPersonFunding(person.value) : false);
 const fundingUnavailableSummary = computed(() => person.value
-	? `${person.value.name} resolves as a stable public officeholder record, but Ballot Clarity does not currently have a source-backed finance summary attached to this person.`
+	? person.value.enrichmentStatus?.funding.summary || `${person.value.name} resolves as a stable public officeholder record, but Ballot Clarity does not currently have a source-backed finance summary attached to this person.`
 	: "");
 function buildLookupAwareTarget(path: string) {
 	return buildNationwideRouteTarget(path, buildLookupContextFromNationwideResult(activeNationwideLookupResult.value), route.query);
@@ -60,14 +60,14 @@ const summaryItems = computed(() => {
 
 	if (!fundingAvailable.value || !funding.value) {
 		return [
-			{ label: "Current office", note: "Office context attached to this representative record.", value: person.value.officeSought },
+			{ label: "Current office", note: "Office context attached to this representative record.", value: person.value.officeDisplayLabel || person.value.officeSought },
 			{ label: "Finance status", note: "Person-level campaign-finance attachment for this route.", value: "Unavailable" },
 			{ label: "Updated", note: "Profile freshness.", value: formatDate(person.value.freshness.dataLastUpdatedAt ?? person.value.updatedAt) }
 		];
 	}
 
 	return [
-		{ label: "Current office", note: "Office context attached to this representative record.", value: person.value.officeSought },
+		{ label: "Current office", note: "Office context attached to this representative record.", value: person.value.officeDisplayLabel || person.value.officeSought },
 		{ label: "Total raised", note: "Current filing-window total.", value: formatCurrency(funding.value.totalRaised) },
 		{ label: "Cash on hand", note: "Reported funds still available.", value: formatCurrency(funding.value.cashOnHand) },
 		{ label: "Small-donor share", note: "Share attributed to smaller donors in the current summary.", value: formatPercent(funding.value.smallDonorShare) }
@@ -190,9 +190,10 @@ usePageSeo({
 					Ballot Clarity resolved the person identity and office context for this route, but it does not currently have a source-backed campaign-finance summary attached to this representative record.
 				</p>
 				<ul class="readable-list text-sm text-app-muted mt-6 pl-5 dark:text-app-muted-dark">
-					<li><strong class="text-app-ink dark:text-app-text-dark">Office:</strong> {{ person.officeSought }}</li>
+					<li><strong class="text-app-ink dark:text-app-text-dark">Office:</strong> {{ person.officeDisplayLabel || person.officeSought }}</li>
 					<li><strong class="text-app-ink dark:text-app-text-dark">District:</strong> {{ person.districtLabel }}</li>
 					<li><strong class="text-app-ink dark:text-app-text-dark">Linkage:</strong> {{ linkageConfidence?.label }}</li>
+					<li><strong class="text-app-ink dark:text-app-text-dark">Status:</strong> {{ person.enrichmentStatus?.funding.summary || fundingUnavailableSummary }}</li>
 					<li><strong class="text-app-ink dark:text-app-text-dark">Provenance:</strong> {{ person.provenance.label }}</li>
 					<li><strong class="text-app-ink dark:text-app-text-dark">Updated:</strong> {{ formatDate(person.freshness.dataLastUpdatedAt ?? person.updatedAt) }}</li>
 					<li>{{ person.freshness.statusNote }}</li>

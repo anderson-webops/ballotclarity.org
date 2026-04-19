@@ -1,10 +1,27 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { buildLaunchDirectorySnapshot } from "../src/launch-directory.js";
+import { classifyRepresentative } from "../src/representative-classification.js";
 
 test("buildLaunchDirectorySnapshot composes provider-fed launch data without pretending funding crosswalks are complete", async () => {
 	const snapshot = await buildLaunchDirectorySnapshot({
 		congressClient: {
+			async getMember() {
+				return null;
+			},
+			async listMembers() {
+				return [
+					{
+						bioguideId: "W000790",
+						district: undefined,
+						name: "Warnock, Raphael G.",
+						party: "Democratic",
+						state: "Georgia",
+						updatedAt: "2026-04-17T00:00:00Z",
+						url: "https://api.congress.gov/v3/member/W000790?format=json"
+					}
+				];
+			},
 			async listMembersByState() {
 				return [
 					{
@@ -58,11 +75,19 @@ test("buildLaunchDirectorySnapshot composes provider-fed launch data without pre
 				];
 			},
 			async lookupPeopleByCoordinates() {
+				const classification = classifyRepresentative({
+					districtLabel: "Senator 36",
+					officeTitle: "Senator",
+					stateName: "Georgia",
+				});
 				return [
 					{
 						districtLabel: "Senator 36",
+						governmentLevel: classification.governmentLevel,
 						id: "ocd-person:test-senator",
 						name: "Nan Orrock",
+						officeDisplayLabel: classification.officeDisplayLabel,
+						officeType: classification.officeType,
 						officeTitle: "Senator",
 						openstatesUrl: "https://openstates.org/person/example-two",
 						party: "Democratic",

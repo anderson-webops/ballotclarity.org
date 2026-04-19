@@ -2,6 +2,7 @@ import process from "node:process";
 import { defineNuxtConfig } from "nuxt/config";
 import { appDescription, appName } from "./src/constants/index";
 import { buildPreHydrationDeployRecoveryScript } from "./src/utils/deploy-recovery";
+import { buildPreHydrationDisplayTimeZoneScript } from "./src/utils/display-time-zone";
 
 const assetVersion = "20260417";
 const buildId = process.env.NUXT_PUBLIC_BUILD_ID
@@ -53,6 +54,12 @@ export default defineNuxtConfig({
 				{ name: "theme-color", media: "(prefers-color-scheme: dark)", content: "#09131F" }
 			],
 			script: [
+				{
+					innerHTML: buildPreHydrationDisplayTimeZoneScript(),
+					id: "ballot-clarity-display-time-zone",
+					tagPosition: "head",
+					type: "text/javascript",
+				},
 				{
 					innerHTML: buildPreHydrationDeployRecoveryScript(),
 					id: "ballot-clarity-deploy-recovery",

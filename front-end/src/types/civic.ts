@@ -579,12 +579,23 @@ export interface LocationDistrictMatch {
 	sourceSystem: string;
 }
 
+export type RepresentativeGovernmentLevel = "federal" | "state" | "county" | "city";
+
+export type RepresentativeOfficeType
+	= | "county_commission"
+		| "county_official"
+		| "city_official"
+		| "mayor"
+		| "other"
+		| "state_house"
+		| "state_senate"
+		| "us_house"
+		| "us_senate";
+
 export interface LocationRepresentativeMatch extends RepresentativeCard {
-	id: string;
-	name: string;
-	party?: string;
-	officeTitle: string;
-	districtLabel: string;
+	governmentLevel: RepresentativeGovernmentLevel | null;
+	officeDisplayLabel: string;
+	officeType: RepresentativeOfficeType | null;
 	sourceSystem: string;
 	openstatesUrl?: string;
 }
@@ -910,8 +921,11 @@ export interface RepresentativeSummary extends RepresentativeCard {
 	slug: string;
 	name: string;
 	location: string;
+	governmentLevel: RepresentativeGovernmentLevel | null;
 	party: string;
 	officeholderLabel: string;
+	officeDisplayLabel: string;
+	officeType: RepresentativeOfficeType | null;
 	officeSought: string;
 	districtSlug: string;
 	districtLabel: string;
@@ -932,16 +946,50 @@ export interface RepresentativeSummary extends RepresentativeCard {
 	influenceSummary: string;
 	updatedAt: string;
 	sourceCount: number;
+	sources: Source[];
 }
 
 export interface PersonProfileFunding extends FundingSummary {
 	provenanceLabel?: string;
 }
 
+export interface PersonProfileEnrichmentStatusItem {
+	status: "available" | "unavailable";
+	reasonCode:
+		| "attached"
+		| "federal_only_provider"
+		| "identity_only_provider"
+		| "no_local_disclosure_source"
+		| "no_local_finance_source"
+		| "no_local_legislative_source"
+		| "no_committee_record"
+		| "no_provider_match"
+		| "no_reliable_crosswalk"
+		| "no_state_disclosure_source"
+		| "no_state_finance_source"
+		| "no_state_legislative_source"
+		| "provider_error"
+		| "provider_returned_no_records"
+		| "provider_unconfigured"
+		| "requires_funding_match";
+	sourceSystem?: string;
+	summary: string;
+}
+
+export interface PersonProfileEnrichmentStatus {
+	funding: PersonProfileEnrichmentStatusItem;
+	influence: PersonProfileEnrichmentStatusItem;
+	legislativeContext: PersonProfileEnrichmentStatusItem;
+	officeContext: PersonProfileEnrichmentStatusItem;
+}
+
 export interface PersonProfile {
 	slug: string;
 	name: string;
 	location: string;
+	governmentLevel: RepresentativeGovernmentLevel | null;
+	officeDisplayLabel: string;
+	officeType: RepresentativeOfficeType | null;
 	officeSought: string;
 	contestSlug: string;
 	party: string;
@@ -966,6 +1014,8 @@ export interface PersonProfile {
 	onCurrentBallot: boolean;
 	ballotStatusLabel: string;
 	officeholderLabel: string;
+	enrichmentStatus?: PersonProfileEnrichmentStatus;
+	officialWebsiteUrl?: string;
 	provenance: {
 		source: "guide" | "nationwide" | "lookup";
 		label: string;

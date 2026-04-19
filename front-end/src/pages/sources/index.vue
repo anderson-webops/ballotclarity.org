@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { publicApiTransparencyItems } from "~/utils/api-transparency";
+
 const searchQuery = ref("");
 const { data, pending } = await useSourceDirectory();
 
@@ -99,5 +101,56 @@ usePageSeo({
 				</div>
 			</NuxtLink>
 		</div>
+
+		<section class="surface-panel">
+			<div class="flex flex-wrap gap-2">
+				<TrustBadge label="Public API layer" tone="accent" />
+				<TrustBadge label="Lookup and enrichment provenance" />
+			</div>
+			<h2 class="text-3xl text-app-ink font-serif mt-5 dark:text-app-text-dark">
+				Public APIs and provider systems used by Ballot Clarity
+			</h2>
+			<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
+				Individual pages above still show their own source citations. This section is the broader provider-level transparency layer: the APIs and public systems Ballot Clarity uses for lookup, district matching, representative records, and person-level finance or influence enrichment where available.
+			</p>
+			<div class="mt-6 gap-4 grid lg:grid-cols-2">
+				<article
+					v-for="api in publicApiTransparencyItems"
+					:key="api.id"
+					class="px-5 py-5 border border-app-line/70 rounded-3xl bg-white/80 dark:border-app-line-dark dark:bg-app-panel-dark/70"
+				>
+					<div class="flex flex-wrap gap-2 items-center">
+						<TrustBadge :label="api.category" />
+						<span
+							v-for="routeFamily in api.routeFamilies"
+							:key="`${api.id}-${routeFamily}`"
+							class="text-[11px] text-app-muted tracking-[0.14em] font-semibold px-2.5 py-1 rounded-full bg-app-bg uppercase dark:text-app-muted-dark dark:bg-app-bg-dark/70"
+						>
+							{{ routeFamily }}
+						</span>
+					</div>
+					<h3 class="text-2xl text-app-ink font-serif mt-4 dark:text-app-text-dark">
+						{{ api.label }}
+					</h3>
+					<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
+						{{ api.usedFor }}
+					</p>
+					<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
+						{{ api.note }}
+					</p>
+					<div class="mt-5 flex flex-wrap gap-3">
+						<a
+							:href="api.docsUrl"
+							target="_blank"
+							rel="noreferrer"
+							class="btn-secondary inline-flex gap-2 items-center"
+						>
+							API docs
+							<span class="i-carbon-launch" />
+						</a>
+					</div>
+				</article>
+			</div>
+		</section>
 	</section>
 </template>

@@ -4,6 +4,19 @@ const siteUrl = useSiteUrl();
 const sourceId = computed(() => String(route.params.id));
 const { formatDate } = useFormatters();
 const { data, pending, error } = await useSourceRecord(sourceId);
+const errorStatusCode = computed(() => {
+	const sourceError = error.value as { status?: number; statusCode?: number } | null;
+
+	return sourceError?.statusCode ?? sourceError?.status ?? null;
+});
+
+if (errorStatusCode.value) {
+	throw createError({
+		statusCode: errorStatusCode.value,
+		statusMessage: errorStatusCode.value === 404 ? "Source record not found" : "Source record unavailable",
+		fatal: true
+	});
+}
 
 usePageSeo({
 	description: data.value?.source.note || "Ballot Clarity source record with citations and linked public file.",
@@ -25,13 +38,7 @@ usePageSeo({
 	<section class="app-shell section-gap space-y-8">
 		<div v-if="pending" class="surface-panel bg-white/70 h-96 animate-pulse dark:bg-app-panel-dark/70" />
 
-		<div v-else-if="error || !data" class="max-w-3xl">
-			<InfoCallout title="Source record unavailable" tone="warning">
-				This source record could not be loaded. Return to the source directory and try another record.
-			</InfoCallout>
-		</div>
-
-		<div v-else class="space-y-8">
+		<div v-else-if="data" class="space-y-8">
 			<header class="surface-panel">
 				<div class="flex flex-wrap gap-2">
 					<SourceAuthorityBadge :authority="data.source.authority" />

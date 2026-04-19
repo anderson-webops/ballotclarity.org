@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { formatSourceCountLabel } from "~/utils/source-label";
+
 const route = useRoute();
 const siteUrl = useSiteUrl();
 const searchInput = ref(typeof route.query.q === "string" ? route.query.q : "");
@@ -155,7 +157,7 @@ usePageSeo({
 							</div>
 							<div class="flex flex-wrap gap-2 justify-end">
 								<TrustBadge v-if="item.authority" :label="item.authority" tone="neutral" />
-								<TrustBadge v-if="item.sourceCount" :label="`${item.sourceCount} sources`" />
+								<TrustBadge v-if="item.sourceCount" :label="formatSourceCountLabel(item.sourceCount)" />
 							</div>
 						</div>
 					</NuxtLink>

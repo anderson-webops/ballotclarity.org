@@ -13,6 +13,7 @@ import {
 	demoAdminSourceMonitor,
 } from "../src/coverage-data.js";
 import { buildSeedCoverageSnapshot } from "../src/coverage-repository.js";
+import { classifyRepresentative } from "../src/representative-classification.js";
 import { createApp } from "../src/server.js";
 
 let server: Server;
@@ -27,6 +28,45 @@ const contentSeed = defaultContentSeed();
 const correctionSeed = demoAdminCorrections.corrections;
 const sourceMonitorSeed = demoAdminSourceMonitor.sources;
 const activitySeed = demoAdminOverview.recentActivity;
+
+function buildRepresentativeMatch({
+	districtLabel,
+	id,
+	name,
+	officeTitle,
+	openstatesUrl,
+	party,
+	sourceSystem,
+	stateName,
+}: {
+	districtLabel: string;
+	id: string;
+	name: string;
+	officeTitle: string;
+	openstatesUrl?: string;
+	party?: string;
+	sourceSystem: string;
+	stateName?: string;
+}) {
+	const classification = classifyRepresentative({
+		districtLabel,
+		officeTitle,
+		stateName,
+	});
+
+	return {
+		districtLabel,
+		governmentLevel: classification.governmentLevel,
+		id,
+		name,
+		officeDisplayLabel: classification.officeDisplayLabel,
+		officeTitle,
+		officeType: classification.officeType,
+		openstatesUrl,
+		party,
+		sourceSystem,
+	};
+}
 
 before(async () => {
 	process.env.ADMIN_STORE_DRIVER = "sqlite";
@@ -93,15 +133,16 @@ before(async () => {
 						longitude: -111.6585,
 						normalizedAddress: "151 S UNIVERSITY AVE, PROVO, UT, 84601",
 						representativeMatches: [
-							{
+							buildRepresentativeMatch({
 								districtLabel: "Congressional District 3",
 								id: "ocd-person:test-ut-rep",
 								name: "Mike Kennedy",
 								officeTitle: "Representative",
 								openstatesUrl: "https://openstates.org/person/example-ut",
 								party: "Republican",
-								sourceSystem: "Open States"
-							}
+								sourceSystem: "Open States",
+								stateName: "Utah"
+							})
 						],
 						state: "UT",
 						vintage: "Current_Current",
@@ -133,15 +174,16 @@ before(async () => {
 					longitude: -84.3902,
 					normalizedAddress: "55 TRINITY AVE SW, ATLANTA, GA, 30303",
 					representativeMatches: [
-						{
+						buildRepresentativeMatch({
 							districtLabel: "Senator Georgia",
 							id: "ocd-person:test-senator",
 							name: "Jon Ossoff",
 							officeTitle: "Senator",
 							openstatesUrl: "https://openstates.org/person/example",
 							party: "Democratic",
-							sourceSystem: "Open States"
-						}
+							sourceSystem: "Open States",
+							stateName: "Georgia"
+						})
 					],
 					state: "GA",
 					vintage: "Current_Current",
@@ -184,6 +226,159 @@ before(async () => {
 				};
 			}
 		},
+		congressClient: {
+			async getMember(bioguideId) {
+				if (bioguideId === "O000174") {
+					return {
+						addressInformation: {
+							city: "Washington",
+							district: "DC",
+							officeAddress: "317 Hart Senate Office Building  Washington, DC 20510",
+							phoneNumber: "(202) 224-3521",
+							zipCode: 20510,
+						},
+						bioguideId,
+						cosponsoredLegislationCount: 780,
+						currentMember: true,
+						directOrderName: "Jon Ossoff",
+						firstName: "Jon",
+						lastName: "Ossoff",
+						officialWebsiteUrl: "https://www.ossoff.senate.gov",
+						party: "Democratic",
+						sponsoredLegislationCount: 216,
+						state: "Georgia",
+						terms: [
+							{
+								chamber: "Senate",
+								congress: 119,
+								memberType: "Senator",
+								startYear: 2025,
+								stateCode: "GA",
+								stateName: "Georgia",
+							},
+						],
+						updatedAt: "2026-03-08T10:32:15Z",
+						url: "https://api.congress.gov/v3/member/O000174?format=json",
+					};
+				}
+
+				if (bioguideId === "M001218") {
+					return {
+						addressInformation: {
+							city: "Washington",
+							district: "DC",
+							officeAddress: "1719 Longworth House Office Building",
+							phoneNumber: "(202) 225-4272",
+							zipCode: 20515,
+						},
+						bioguideId,
+						cosponsoredLegislationCount: 506,
+						currentMember: true,
+						district: 7,
+						directOrderName: "Richard McCormick",
+						firstName: "Richard",
+						lastName: "McCormick",
+						officialWebsiteUrl: "https://mccormick.house.gov",
+						party: "Republican",
+						sponsoredLegislationCount: 50,
+						state: "Georgia",
+						terms: [
+							{
+								chamber: "House of Representatives",
+								congress: 119,
+								district: 7,
+								memberType: "Representative",
+								startYear: 2025,
+								stateCode: "GA",
+								stateName: "Georgia",
+							},
+						],
+						updatedAt: "2025-09-24T07:40:20Z",
+						url: "https://api.congress.gov/v3/member/M001218?format=json",
+					};
+				}
+
+				return null;
+			},
+			async listMembers() {
+				return [
+					{
+						bioguideId: "O000174",
+						currentMember: true,
+						name: "Ossoff, Jon",
+						party: "Democratic",
+						state: "GA",
+						updatedAt: "2026-03-08T10:32:15Z",
+						url: "https://api.congress.gov/v3/member/O000174?format=json",
+					},
+					{
+						bioguideId: "M001218",
+						currentMember: true,
+						district: 7,
+						name: "McCormick, Richard",
+						party: "Republican",
+						state: "GA",
+						updatedAt: "2025-09-24T07:40:20Z",
+						url: "https://api.congress.gov/v3/member/M001218?format=json",
+					},
+				];
+			},
+			async listMembersByState(stateCode) {
+				if (stateCode !== "GA")
+					return [];
+
+				return [
+					{
+						bioguideId: "O000174",
+						currentMember: true,
+						name: "Ossoff, Jon",
+						party: "Democratic",
+						state: "Georgia",
+						updatedAt: "2026-03-08T10:32:15Z",
+						url: "https://api.congress.gov/v3/member/O000174?format=json",
+					},
+					{
+						bioguideId: "W000790",
+						currentMember: true,
+						name: "Warnock, Raphael G.",
+						party: "Democratic",
+						state: "Georgia",
+						updatedAt: "2026-03-08T10:32:15Z",
+						url: "https://api.congress.gov/v3/member/W000790?format=json",
+					},
+					{
+						bioguideId: "M001218",
+						currentMember: true,
+						district: 7,
+						name: "McCormick, Richard",
+						party: "Republican",
+						state: "Georgia",
+						updatedAt: "2025-09-24T07:40:20Z",
+						url: "https://api.congress.gov/v3/member/M001218?format=json",
+					},
+					{
+						bioguideId: "R000000",
+						currentMember: false,
+						district: undefined,
+						name: "Russell, Richard",
+						party: "Democratic",
+						state: "Georgia",
+						updatedAt: "1971-01-21T00:00:00Z",
+						url: "https://api.congress.gov/v3/member/R000000?format=json",
+					},
+					{
+						bioguideId: "W000001",
+						currentMember: false,
+						district: 7,
+						name: "Woodall, Rob",
+						party: "Republican",
+						state: "Georgia",
+						updatedAt: "2021-01-03T00:00:00Z",
+						url: "https://api.congress.gov/v3/member/W000001?format=json",
+					},
+				];
+			},
+		},
 		openStatesClient: {
 			async listPeopleByJurisdiction() {
 				return [];
@@ -192,6 +387,48 @@ before(async () => {
 				return [];
 			},
 			async searchPeopleByName(name) {
+				if (name === "Quota Limited")
+					throw new Error("Open States lookup failed: 429 Too Many Requests - {\"detail\":\"exceeded limit of 250/day: 252\"}");
+
+				if (name === "Richard McCormick" || name === "Rich Mccormick" || name === "Rich McCormick")
+					throw new Error("Open States lookup failed: 429 Too Many Requests - {\"detail\":\"exceeded limit of 250/day: 252\"}");
+
+				if (name === "Jon Ossoff") {
+					return [
+						{
+							currentRoleClassification: "upper",
+							currentRoleDistrict: "Georgia",
+							currentRoleDivisionId: "ocd-division/country:us/state:ga",
+							districtLabel: "Senator Georgia",
+							id: "ocd-person/4e48da38-17ab-5580-bced-2ea00b9b2843",
+							jurisdictionName: "United States",
+							name: "Jon Ossoff",
+							officeTitle: "Senator",
+							openstatesUrl: "https://openstates.org/person/jon-ossoff-2Nih6ATbzWQaex4isGpjSV/",
+							party: "Democratic",
+							updatedAt: "2026-04-04T08:14:07.724440+00:00",
+						},
+					];
+				}
+
+				if (name === "Tyler Clancy") {
+					return [
+						{
+							currentRoleClassification: "lower",
+							currentRoleDistrict: "60",
+							currentRoleDivisionId: "ocd-division/country:us/state:ut/sldl:60",
+							districtLabel: "Representative 60",
+							id: "ocd-person/739625fa-268f-48d6-9ffa-b80fc19797d5",
+							jurisdictionName: "Utah",
+							name: "Tyler Clancy",
+							officeTitle: "Representative",
+							openstatesUrl: "https://openstates.org/person/tyler-clancy-3W6jbbmt1WAFbxzzxWeza9/",
+							party: "Republican",
+							updatedAt: "2025-07-18T02:37:12.444801+00:00",
+						},
+					];
+				}
+
 				if (name !== "Rich Mccormick" && name !== "Rich McCormick")
 					return [];
 
@@ -214,90 +451,249 @@ before(async () => {
 		},
 		ldaClient: {
 			async listContributionReports({ contributionPayee, filingYear }) {
-				if (contributionPayee !== "MIKE KENNEDY FOR UTAH" || filingYear !== 2025)
-					return [];
+				if (contributionPayee === "JON OSSOFF FOR SENATE" && filingYear === 2025) {
+					return [
+						{
+							contributionItems: [
+								{
+									amount: 2000,
+									contributionType: "FECA",
+									contributorName: "United Parcel Service",
+									date: "2025-03-14",
+									honoreeName: "Sen. Jon Ossoff",
+									payeeName: "JON OSSOFF FOR SENATE",
+								},
+								{
+									amount: 1000,
+									contributionType: "FECA",
+									contributorName: "Delta Air Lines",
+									date: "2025-05-02",
+									honoreeName: "Sen. Jon Ossoff",
+									payeeName: "JON OSSOFF FOR US SENATE",
+								},
+							],
+							filingDocumentUrl: "https://lda.senate.gov/filings/public/contribution/mock-jon-ossoff/print/",
+							filingPeriodDisplay: "Mid-Year (Jan 1 - Jun 30)",
+							filingUuid: "mock-jon-ossoff",
+							filingYear: 2025,
+							postedAt: "2025-07-03T12:00:00-04:00",
+							registrantName: "UPS",
+							url: "https://lda.senate.gov/api/v1/contributions/mock-jon-ossoff/",
+						},
+					];
+				}
 
-				return [
-					{
-						contributionItems: [
-							{
-								amount: 2500,
-								contributionType: "FECA",
-								contributorName: "SELF",
-								date: "2025-01-15",
-								honoreeName: "Rep. Mike Kennedy",
-								payeeName: "MIKE KENNEDY FOR UTAH"
-							},
-							{
-								amount: 1750,
-								contributionType: "FECA",
-								contributorName: "SELF",
-								date: "2025-02-02",
-								honoreeName: "Rep. Mike Kennedy",
-								payeeName: "MIKE KENNEDY FOR UTAH"
-							}
-						],
-						filingDocumentUrl: "https://lda.senate.gov/filings/public/contribution/mock-mike-kennedy/print/",
-						filingPeriodDisplay: "Mid-Year (Jan 1 - Jun 30)",
-						filingUuid: "mock-mike-kennedy",
-						filingYear: 2025,
-						postedAt: "2025-07-04T12:11:12-04:00",
-						registrantName: "Marshall Brachman",
-						url: "https://lda.senate.gov/api/v1/contributions/mock-mike-kennedy/"
-					}
-				];
+				if (contributionPayee === "MIKE KENNEDY FOR UTAH" && filingYear === 2025) {
+					return [
+						{
+							contributionItems: [
+								{
+									amount: 2500,
+									contributionType: "FECA",
+									contributorName: "SELF",
+									date: "2025-01-15",
+									honoreeName: "Rep. Mike Kennedy",
+									payeeName: "MIKE KENNEDY FOR UTAH"
+								},
+								{
+									amount: 1750,
+									contributionType: "FECA",
+									contributorName: "SELF",
+									date: "2025-02-02",
+									honoreeName: "Rep. Mike Kennedy",
+									payeeName: "MIKE KENNEDY FOR UTAH"
+								}
+							],
+							filingDocumentUrl: "https://lda.senate.gov/filings/public/contribution/mock-mike-kennedy/print/",
+							filingPeriodDisplay: "Mid-Year (Jan 1 - Jun 30)",
+							filingUuid: "mock-mike-kennedy",
+							filingYear: 2025,
+							postedAt: "2025-07-04T12:11:12-04:00",
+							registrantName: "Marshall Brachman",
+							url: "https://lda.senate.gov/api/v1/contributions/mock-mike-kennedy/"
+						}
+					];
+				}
+
+				if (contributionPayee === "FRIENDS OF MCCORMICK" && filingYear === 2025) {
+					return [
+						{
+							contributionItems: [
+								{
+									amount: 2500,
+									contributionType: "FECA",
+									contributorName: "AMERICAN ACADEMY OF DERMATOLOGY ASSOCIATION",
+									date: "2025-04-03",
+									honoreeName: "Rep. Rich McCormick",
+									payeeName: "FRIENDS OF MCCORMICK"
+								},
+								{
+									amount: 1500,
+									contributionType: "FECA",
+									contributorName: "AMERICAN MARITIME OFFICERS",
+									date: "2025-06-11",
+									honoreeName: "Rep. Rich McCormick",
+									payeeName: "FRIENDS OF MCCORMICK"
+								}
+							],
+							filingDocumentUrl: "https://lda.senate.gov/filings/public/contribution/mock-rich-mccormick/print/",
+							filingPeriodDisplay: "Mid-Year (Jan 1 - Jun 30)",
+							filingUuid: "mock-rich-mccormick",
+							filingYear: 2025,
+							postedAt: "2025-07-09T10:15:00-04:00",
+							registrantName: "American Academy of Dermatology Association",
+							url: "https://lda.senate.gov/api/v1/contributions/mock-rich-mccormick/"
+						}
+					];
+				}
+
+				return [];
 			}
 		},
 		openFecClient: {
 			async getCommitteeTotals(committeeId, cycle) {
-				if (committeeId !== "C00864488" || cycle !== 2026)
-					return null;
+				if (committeeId === "C00718866" && cycle === 2026) {
+					return {
+						candidateContribution: 0,
+						cashOnHandBeginningPeriod: 575000,
+						committeeId,
+						committeeName: "JON OSSOFF FOR SENATE",
+						contributions: 1845120.45,
+						coverageEndDate: "2026-03-31",
+						coverageStartDate: "2025-01-01",
+						cycle,
+						disbursements: 993002.12,
+						individualContributions: 1324012.45,
+						individualItemizedContributions: 1189012.45,
+						individualUnitemizedContributions: 135000,
+						lastCashOnHandEndPeriod: 1428118.33,
+						lastReportYear: 2026,
+						otherPoliticalCommitteeContributions: 40200,
+						otherReceipts: 910.55,
+						politicalPartyCommitteeContributions: 480997.45,
+						receipts: 1845120.45,
+						transfersFromOtherAuthorizedCommittee: 0,
+					};
+				}
 
-				return {
-					candidateContribution: 0,
-					cashOnHandBeginningPeriod: 210000,
-					committeeId,
-					committeeName: "MIKE KENNEDY FOR UTAH",
-					contributions: 802218.94,
-					coverageEndDate: "2026-04-05",
-					coverageStartDate: "2025-01-01",
-					cycle,
-					disbursements: 556573.87,
-					individualContributions: 481158.78,
-					individualItemizedContributions: 381158.78,
-					individualUnitemizedContributions: 100000,
-					lastCashOnHandEndPeriod: 370846.88,
-					lastReportYear: 2026,
-					otherPoliticalCommitteeContributions: 372000,
-					otherReceipts: 4918.94,
-					politicalPartyCommitteeContributions: 25000,
-					receipts: 802218.94,
-					transfersFromOtherAuthorizedCommittee: 0
-				};
+				if (committeeId === "C00864488" && cycle === 2026) {
+					return {
+						candidateContribution: 0,
+						cashOnHandBeginningPeriod: 210000,
+						committeeId,
+						committeeName: "MIKE KENNEDY FOR UTAH",
+						contributions: 802218.94,
+						coverageEndDate: "2026-04-05",
+						coverageStartDate: "2025-01-01",
+						cycle,
+						disbursements: 556573.87,
+						individualContributions: 481158.78,
+						individualItemizedContributions: 381158.78,
+						individualUnitemizedContributions: 100000,
+						lastCashOnHandEndPeriod: 370846.88,
+						lastReportYear: 2026,
+						otherPoliticalCommitteeContributions: 372000,
+						otherReceipts: 4918.94,
+						politicalPartyCommitteeContributions: 25000,
+						receipts: 802218.94,
+						transfersFromOtherAuthorizedCommittee: 0
+					};
+				}
+
+				if (committeeId === "C00706747" && cycle === 2026) {
+					return {
+						candidateContribution: 0,
+						cashOnHandBeginningPeriod: 412345.12,
+						committeeId,
+						committeeName: "FRIENDS OF MCCORMICK",
+						contributions: 954321.01,
+						coverageEndDate: "2026-04-15",
+						coverageStartDate: "2025-01-01",
+						cycle,
+						disbursements: 534221.44,
+						individualContributions: 612000.55,
+						individualItemizedContributions: 522000.55,
+						individualUnitemizedContributions: 90000,
+						lastCashOnHandEndPeriod: 820144.69,
+						lastReportYear: 2026,
+						otherPoliticalCommitteeContributions: 240000,
+						otherReceipts: 1020.46,
+						politicalPartyCommitteeContributions: 101300,
+						receipts: 954321.01,
+						transfersFromOtherAuthorizedCommittee: 0
+					};
+				}
+
+				return null;
 			},
 			async searchCandidates({ district, name, office, state }) {
-				if (name !== "Mike Kennedy" || office !== "H" || state !== "UT" || district !== "03")
-					return [];
+				if (name === "Jon Ossoff" && office === "S" && state === "GA") {
+					return [
+						{
+							candidateId: "S8GA00180",
+							cycles: [2020, 2022, 2024, 2026],
+							district: "00",
+							incumbentChallengeFull: "Incumbent",
+							name: "OSSOFF, T. JONATHAN",
+							office: "S",
+							principalCommittees: [
+								{
+									committeeId: "C00718866",
+									lastFileDate: "2026-04-15",
+									name: "JON OSSOFF FOR SENATE",
+									party: "Democratic",
+								},
+							],
+							state: "GA",
+						},
+					];
+				}
 
-				return [
-					{
-						candidateId: "H4UT03260",
-						cycles: [2024, 2026],
-						district: "03",
-						incumbentChallengeFull: "Incumbent",
-						name: "KENNEDY, MIKE",
-						office: "H",
-						principalCommittees: [
-							{
-								committeeId: "C00864488",
-								lastFileDate: "2026-04-15",
-								name: "MIKE KENNEDY FOR UTAH",
-								party: "Republican"
-							}
-						],
-						state: "UT"
-					}
-				];
+				if (name === "Mike Kennedy" && office === "H" && state === "UT" && district === "03") {
+					return [
+						{
+							candidateId: "H4UT03260",
+							cycles: [2024, 2026],
+							district: "03",
+							incumbentChallengeFull: "Incumbent",
+							name: "KENNEDY, MIKE",
+							office: "H",
+							principalCommittees: [
+								{
+									committeeId: "C00864488",
+									lastFileDate: "2026-04-15",
+									name: "MIKE KENNEDY FOR UTAH",
+									party: "Republican"
+								}
+							],
+							state: "UT"
+						}
+					];
+				}
+
+				if ((name === "Rich McCormick" || name === "Richard McCormick") && office === "H" && state === "GA" && district === "07") {
+					return [
+						{
+							candidateId: "H0GA07273",
+							cycles: [2020, 2022, 2024, 2026],
+							district: "07",
+							incumbentChallengeFull: "Incumbent",
+							name: "MCCORMICK, RICHARD DEAN DR.",
+							office: "H",
+							principalCommittees: [
+								{
+									committeeId: "C00706747",
+									lastFileDate: "2026-04-15",
+									name: "FRIENDS OF MCCORMICK",
+									party: "Republican"
+								}
+							],
+							state: "GA"
+						}
+					];
+				}
+
+				return [];
 			}
 		},
 		sourceMonitorSeed,
@@ -324,6 +720,27 @@ before(async () => {
 										id: "state-senate:24",
 										label: "State Senate District 24",
 										sourceSystem: "U.S. Census Geocoder"
+									},
+									{
+										districtCode: "60",
+										districtType: "state-house",
+										id: "state-house:60",
+										label: "State House District 60",
+										sourceSystem: "U.S. Census Geocoder"
+									},
+									{
+										districtCode: "049",
+										districtType: "county",
+										id: "county:049",
+										label: "Utah County",
+										sourceSystem: "U.S. Census Geocoder"
+									},
+									{
+										districtCode: "provo",
+										districtType: "place",
+										id: "place:provo",
+										label: "Provo city",
+										sourceSystem: "U.S. Census Geocoder"
 									}
 								],
 								id: "zip:84604:provo-utah",
@@ -332,15 +749,16 @@ before(async () => {
 								longitude: -111.6549,
 								postalCode: "84604",
 								representativeMatches: [
-									{
+									buildRepresentativeMatch({
 										districtLabel: "Congressional District 3",
 										id: "ocd-person:test-ut-rep",
 										name: "Mike Kennedy",
 										officeTitle: "Representative",
 										openstatesUrl: "https://openstates.org/person/example-ut",
 										party: "Republican",
-										sourceSystem: "Open States"
-									}
+										sourceSystem: "Open States",
+										stateName: "Utah"
+									})
 								],
 								sourceSystem: "Zippopotam.us + U.S. Census Geocoder",
 								stateAbbreviation: "UT",
@@ -379,16 +797,75 @@ before(async () => {
 								longitude: -84.3928,
 								postalCode: "30303",
 								representativeMatches: [
-									{
+									buildRepresentativeMatch({
 										districtLabel: "Senator Georgia",
 										id: "ocd-person:test-senator",
 										name: "Jon Ossoff",
 										officeTitle: "Senator",
 										openstatesUrl: "https://openstates.org/person/example",
 										party: "Democratic",
-										sourceSystem: "Open States"
+										sourceSystem: "Open States",
+										stateName: "Georgia"
+									})
+								],
+								sourceSystem: "Zippopotam.us + U.S. Census Geocoder",
+								stateAbbreviation: "GA",
+								stateName: "Georgia"
+							}
+						]
+					};
+				}
+
+				if (zipCode === "30022") {
+					return {
+						postalCode: "30022",
+						matches: [
+							{
+								countyFips: "121",
+								countyName: "Fulton County",
+								districtMatches: [
+									{
+										districtCode: "7",
+										districtType: "congressional",
+										id: "congressional:7",
+										label: "Congressional District 7",
+										sourceSystem: "U.S. Census Geocoder"
+									},
+									{
+										districtCode: "48",
+										districtType: "state-senate",
+										id: "state-senate:48",
+										label: "State Senate District 48",
+										sourceSystem: "U.S. Census Geocoder"
+									},
+									{
+										districtCode: "48",
+										districtType: "state-house",
+										id: "state-house:48",
+										label: "State House District 48",
+										sourceSystem: "U.S. Census Geocoder"
+									},
+									{
+										districtCode: "121",
+										districtType: "county",
+										id: "county:121",
+										label: "Fulton County",
+										sourceSystem: "U.S. Census Geocoder"
+									},
+									{
+										districtCode: "johns-creek",
+										districtType: "place",
+										id: "place:johns-creek",
+										label: "Johns Creek city",
+										sourceSystem: "U.S. Census Geocoder"
 									}
 								],
+								id: "zip:30022:alpharetta-georgia",
+								latitude: 34.0407,
+								locality: "Alpharetta",
+								longitude: -84.2376,
+								postalCode: "30022",
+								representativeMatches: [],
 								sourceSystem: "Zippopotam.us + U.S. Census Geocoder",
 								stateAbbreviation: "GA",
 								stateName: "Georgia"
@@ -419,15 +896,16 @@ before(async () => {
 								longitude: -111.64,
 								postalCode: "84001",
 								representativeMatches: [
-									{
+									buildRepresentativeMatch({
 										districtLabel: "Congressional District 3",
 										id: "ocd-person:test-ut-rep",
 										name: "Mike Kennedy",
 										officeTitle: "Representative",
 										openstatesUrl: "https://openstates.org/person/example-ut",
 										party: "Republican",
-										sourceSystem: "Open States"
-									}
+										sourceSystem: "Open States",
+										stateName: "Utah"
+									})
 								],
 								sourceSystem: "Zippopotam.us + U.S. Census Geocoder",
 								stateAbbreviation: "UT",
@@ -451,15 +929,16 @@ before(async () => {
 								longitude: -111.6946,
 								postalCode: "84001",
 								representativeMatches: [
-									{
+									buildRepresentativeMatch({
 										districtLabel: "Congressional District 4",
 										id: "ocd-person:test-ut-rep-4",
 										name: "Burgess Owens",
 										officeTitle: "Representative",
 										openstatesUrl: "https://openstates.org/person/example-ut-4",
 										party: "Republican",
-										sourceSystem: "Open States"
-									}
+										sourceSystem: "Open States",
+										stateName: "Utah"
+									})
 								],
 								sourceSystem: "Zippopotam.us + U.S. Census Geocoder",
 								stateAbbreviation: "UT",
@@ -732,6 +1211,60 @@ test("POST /api/location returns the supported Fulton coverage guide for ZIPs in
 	assert.match(body.note, /single guide area/i);
 });
 
+test("POST /api/location filters former Congress members out of ZIP lookup representative fallback", async () => {
+	const response = await fetch(`${baseUrl}/api/location`, {
+		body: JSON.stringify({ q: "30022" }),
+		headers: {
+			"Content-Type": "application/json"
+		},
+		method: "POST"
+	});
+	const body = await response.json();
+	const representativeNames = (body.representativeMatches ?? []).map((item: { name: string }) => item.name);
+	const representativeSources = (body.representativeMatches ?? []).map((item: { sourceSystem?: string }) => item.sourceSystem ?? "");
+	const representatives = (body.representativeMatches ?? []) as Array<{
+		governmentLevel?: string;
+		name: string;
+		officeDisplayLabel?: string;
+		officeType?: string;
+	}>;
+	const findRepresentative = (pattern: RegExp) => representatives.find(item => pattern.test(item.name));
+
+	assert.equal(response.status, 200);
+	assert.equal(body.result, "resolved");
+	assert.equal(body.inputKind, "zip");
+	assert.equal(body.availability.representatives.status, "available");
+	assert.equal(body.availability.financeInfluence.status, "available");
+	assert.equal(body.representativeMatches.length, 7);
+	assert.match(body.note, /(Alpharetta|Fulton County), Georgia/i);
+	assert.equal(representativeNames.includes("Jon Ossoff"), true);
+	assert.equal(representativeNames.some((name: string) => /warnock/i.test(name)), true);
+	assert.equal(representativeNames.some((name: string) => /mccormick/i.test(name)), true);
+	assert.equal(representativeNames.includes("Richard Russell"), false);
+	assert.equal(representativeNames.includes("Rob Woodall"), false);
+	assert.equal(representativeSources.includes("Congress.gov"), true);
+	assert.equal(findRepresentative(/^Jon Ossoff$/i)?.governmentLevel, "federal");
+	assert.equal(findRepresentative(/^Jon Ossoff$/i)?.officeType, "us_senate");
+	assert.equal(findRepresentative(/warnock/i)?.governmentLevel, "federal");
+	assert.equal(findRepresentative(/warnock/i)?.officeType, "us_senate");
+	assert.equal(findRepresentative(/mccormick/i)?.governmentLevel, "federal");
+	assert.equal(findRepresentative(/mccormick/i)?.officeType, "us_house");
+	assert.equal(findRepresentative(/^Scott Hilton$/i)?.governmentLevel, "state");
+	assert.equal(findRepresentative(/^Scott Hilton$/i)?.officeType, "state_house");
+	assert.equal(findRepresentative(/^Shawn Still$/i)?.governmentLevel, "state");
+	assert.equal(findRepresentative(/^Shawn Still$/i)?.officeType, "state_senate");
+	assert.equal(findRepresentative(/^Robb Pitts$/i)?.governmentLevel, "county");
+	assert.equal(findRepresentative(/^Robb Pitts$/i)?.officeType, "county_commission");
+	assert.equal(findRepresentative(/^John Bradberry$/i)?.governmentLevel, "city");
+	assert.equal(findRepresentative(/^John Bradberry$/i)?.officeType, "mayor");
+	assert.equal(findRepresentative(/^Jon Ossoff$/i)?.officeDisplayLabel, "U.S. Senator for Georgia");
+	assert.equal(findRepresentative(/mccormick/i)?.officeDisplayLabel, "U.S. Representative for Georgia's 7th Congressional District");
+	assert.equal(findRepresentative(/^Scott Hilton$/i)?.officeDisplayLabel, "Georgia State Representative for District 48");
+	assert.equal(findRepresentative(/^Shawn Still$/i)?.officeDisplayLabel, "Georgia State Senator for District 48");
+	assert.equal(findRepresentative(/^Robb Pitts$/i)?.officeDisplayLabel, "Fulton County Commission Chair");
+	assert.equal(findRepresentative(/^John Bradberry$/i)?.officeDisplayLabel, "Mayor of Johns Creek");
+});
+
 test("POST /api/location returns district lookup results without a published guide for out-of-guide ZIPs", async () => {
 	const response = await fetch(`${baseUrl}/api/location`, {
 		body: JSON.stringify({ q: "84604" }),
@@ -840,7 +1373,7 @@ test("POST /api/location returns the current Fulton County launch location for f
 	assert.equal(body.availability.financeInfluence.status, "available");
 	assert.equal(body.availability.fullLocalGuide.status, "available");
 	assert.match(body.note, /Census geography matched/i);
-	assert.match(body.note, /Open States returned 1 representative match/i);
+	assert.match(body.note, /Ballot Clarity attached 2 current official matches for this address from Open States and Congress\.gov/i);
 });
 
 test("POST /api/location returns district lookup results without a published guide for out-of-guide full addresses", async () => {
@@ -1107,6 +1640,10 @@ test("active nationwide lookup cookie backs /api/districts and /api/districts/:s
 	assert.equal(listResponse.status, 200);
 	assert.equal(listBody.mode, "nationwide");
 	assert.ok(listBody.districts.some((item: { slug: string; representativeCount: number }) => item.slug === "congressional-3" && item.representativeCount === 1));
+	assert.ok(listBody.districts.some((item: { slug: string; representativeCount: number }) => item.slug === "state-senate-24" && item.representativeCount === 1));
+	assert.ok(listBody.districts.some((item: { slug: string; representativeCount: number }) => item.slug === "state-house-60" && item.representativeCount === 1));
+	assert.ok(listBody.districts.some((item: { slug: string; representativeCount: number }) => item.slug === "utah-county" && item.representativeCount === 1));
+	assert.ok(listBody.districts.some((item: { slug: string; representativeCount: number }) => item.slug === "provo-city" && item.representativeCount === 1));
 
 	const districtResponse = await fetch(`${baseUrl}/api/districts/congressional-3`, {
 		headers: {
@@ -1123,6 +1660,31 @@ test("active nationwide lookup cookie backs /api/districts and /api/districts/:s
 	assert.equal(districtBody.representatives[0].influenceAvailable, true);
 	assert.ok(districtBody.officialResources.length >= 1);
 	assert.match(districtBody.note, /API-backed nationwide district detail/i);
+});
+
+test("direct state and local district routes attach reviewed officeholder records instead of generic zero-state placeholders", async () => {
+	const [stateDistrictResponse, localDistrictResponse] = await Promise.all([
+		fetch(`${baseUrl}/api/districts/state-house-60`),
+		fetch(`${baseUrl}/api/districts/provo-city`),
+	]);
+	const [stateDistrictBody, localDistrictBody] = await Promise.all([
+		stateDistrictResponse.json(),
+		localDistrictResponse.json(),
+	]);
+
+	assert.equal(stateDistrictResponse.status, 200);
+	assert.equal(stateDistrictBody.district.slug, "state-house-60");
+	assert.equal(stateDistrictBody.districtOriginLabel, "Reviewed state officeholder record");
+	assert.equal(stateDistrictBody.representatives[0]?.slug, "tyler-clancy");
+	assert.match(stateDistrictBody.representativeAvailabilityNote, /reviewed state officeholder record/i);
+	assert.ok(stateDistrictBody.officialResources.length >= 1);
+
+	assert.equal(localDistrictResponse.status, 200);
+	assert.equal(localDistrictBody.district.slug, "provo-city");
+	assert.equal(localDistrictBody.districtOriginLabel, "Reviewed local officeholder record");
+	assert.equal(localDistrictBody.representatives[0]?.slug, "marsha-judkins");
+	assert.match(localDistrictBody.representativeAvailabilityNote, /reviewed local officeholder record/i);
+	assert.ok(localDistrictBody.officialResources.length >= 1);
 });
 
 test("lookup query backs /api/districts/:slug without relying on a saved cookie", async () => {
@@ -1169,6 +1731,7 @@ test("GET /api/representatives returns incumbents tied to district pages", async
 	assert.equal(response.status, 200);
 	assert.ok(body.representatives.some((item: { districtSlug: string; slug: string }) => item.districtSlug === "us-house-district-7" && item.slug === "daniel-brooks"));
 	assert.ok(body.representatives.some((item: { href: string; slug: string }) => item.slug === "daniel-brooks" && item.href === "/representatives/daniel-brooks"));
+	assert.ok(body.representatives.some((item: { slug: string; sourceCount: number; sources: Array<{ id: string }> }) => item.slug === "daniel-brooks" && item.sourceCount >= 1 && item.sources.length >= 1));
 	assert.ok(body.districts.some((item: { href: string }) => item.href === "/districts/state-senate-district-12"));
 	assert.match(body.note, /currently serving officials/i);
 });
@@ -1243,9 +1806,153 @@ test("direct representative routes return a stable provider-backed identity reco
 	assert.equal(response.status, 200);
 	assert.equal(body.person.slug, "rich-mccormick");
 	assert.equal(body.person.provenance.status, "crosswalked");
+	assert.equal(body.person.provenance.label, "Congress.gov current officeholder record");
 	assert.match(body.person.officeSought, /U\.S\. House, District 7/i);
-	assert.match(body.person.provenance.label, /Open States current officeholder record/i);
+	assert.match(body.person.districtLabel, /Congressional District 7/i);
 	assert.doesNotMatch(body.person.officeholderLabel, /pending lookup context/i);
+	assert.ok(body.person.funding);
+	assert.match(body.person.funding.summary, /FRIENDS OF MCCORMICK/i);
+	assert.ok(body.person.lobbyingContext.length > 0);
+	assert.match(body.person.lobbyingContext[0].summary, /LD-203/i);
+	assert.equal(body.person.enrichmentStatus?.funding.reasonCode, "attached");
+	assert.equal(body.person.enrichmentStatus?.influence.reasonCode, "attached");
+});
+
+test("direct representative routes can resolve from federal providers even when Open States name lookup does not return a route match", async () => {
+	const response = await fetch(`${baseUrl}/api/representatives/richard-mccormick`);
+	const body = await response.json();
+
+	assert.equal(response.status, 200);
+	assert.equal(body.person.slug, "richard-mccormick");
+	assert.equal(body.person.provenance.label, "Congress.gov current officeholder record");
+	assert.equal(body.person.provenance.status, "crosswalked");
+	assert.match(body.person.officeSought, /U\.S\. House, District 7/i);
+	assert.match(body.person.districtLabel, /Congressional District 7/i);
+	assert.ok(body.person.funding);
+	assert.ok(body.person.lobbyingContext.length > 0);
+	assert.equal(body.person.enrichmentStatus?.funding.reasonCode, "attached");
+	assert.equal(body.person.enrichmentStatus?.influence.reasonCode, "attached");
+});
+
+test("direct senator routes attach federal funding, influence, and Congress office context when the crosswalk is reliable", async () => {
+	const response = await fetch(`${baseUrl}/api/representatives/jon-ossoff`);
+	const body = await response.json();
+
+	assert.equal(response.status, 200);
+	assert.equal(body.person.slug, "jon-ossoff");
+	assert.equal(body.person.officialWebsiteUrl, "https://www.ossoff.senate.gov");
+	assert.ok(body.person.funding);
+	assert.match(body.person.funding.summary, /JON OSSOFF FOR SENATE/i);
+	assert.ok(body.person.lobbyingContext.length > 0);
+	assert.match(body.person.biography.map((item: { title: string }) => item.title).join(" "), /Congress\.gov office context/i);
+	assert.equal(body.person.enrichmentStatus?.funding.reasonCode, "attached");
+	assert.equal(body.person.enrichmentStatus?.influence.reasonCode, "attached");
+	assert.equal(body.person.enrichmentStatus?.legislativeContext.reasonCode, "attached");
+});
+
+test("state legislators expose a precise unavailable reason when federal finance and influence providers do not apply", async () => {
+	const response = await fetch(`${baseUrl}/api/representatives/tyler-clancy`);
+	const body = await response.json();
+
+	assert.equal(response.status, 200);
+	assert.equal(body.person.slug, "tyler-clancy");
+	assert.equal(body.person.funding, null);
+	assert.deepEqual(body.person.lobbyingContext, []);
+	assert.equal(body.person.officeSought, "State House District 60");
+	assert.equal(body.person.districtLabel, "State House District 60");
+	assert.equal(body.person.enrichmentStatus?.funding.reasonCode, "no_state_finance_source");
+	assert.equal(body.person.enrichmentStatus?.influence.reasonCode, "no_state_disclosure_source");
+	assert.equal(body.person.enrichmentStatus?.legislativeContext.reasonCode, "identity_only_provider");
+	assert.equal(body.person.enrichmentStatus?.officeContext.reasonCode, "attached");
+	assert.match(body.person.enrichmentStatus?.funding.summary ?? "", /state campaign-finance source configured/i);
+	assert.match(body.person.enrichmentStatus?.legislativeContext.summary ?? "", /identity, chamber, party, and district context/i);
+});
+
+test("supplemental state and local officeholder routes resolve as stable public person records with precise unavailable-state reasons", async () => {
+	const [stateResponse, localResponse] = await Promise.all([
+		fetch(`${baseUrl}/api/representatives/keven-stratton`),
+		fetch(`${baseUrl}/api/representatives/marsha-judkins`),
+	]);
+	const [stateBody, localBody] = await Promise.all([
+		stateResponse.json(),
+		localResponse.json(),
+	]);
+
+	assert.equal(stateResponse.status, 200);
+	assert.equal(stateBody.person.slug, "keven-stratton");
+	assert.match(stateBody.person.provenance.label, /Reviewed Open States officeholder snapshot/i);
+	assert.equal(stateBody.person.officeSought, "State Senate District 24");
+	assert.equal(stateBody.person.districtLabel, "State Senate District 24");
+	assert.equal(stateBody.person.enrichmentStatus?.funding.reasonCode, "no_state_finance_source");
+	assert.equal(stateBody.person.enrichmentStatus?.influence.reasonCode, "no_state_disclosure_source");
+	assert.ok(["identity_only_provider", "no_state_legislative_source"].includes(stateBody.person.enrichmentStatus?.legislativeContext.reasonCode));
+	assert.equal(stateBody.person.officialWebsiteUrl, undefined);
+	assert.match(stateBody.person.summary, /Utah Senate District 24/i);
+	assert.ok(stateBody.person.biography.some((item: { title: string }) => /reviewed/i.test(item.title)));
+	assert.ok(stateBody.person.sources.some((item: { sourceSystem?: string }) => /Open States officeholder snapshot/i.test(item.sourceSystem ?? "")));
+
+	assert.equal(localResponse.status, 200);
+	assert.equal(localBody.person.slug, "marsha-judkins");
+	assert.equal(localBody.person.provenance.label, "Official mayor's office page");
+	assert.equal(localBody.person.officeSought, "Mayor");
+	assert.equal(localBody.person.districtLabel, "Provo city");
+	assert.equal(localBody.person.officialWebsiteUrl, "https://www.provo.gov/433/Mayors-Office");
+	assert.equal(localBody.person.enrichmentStatus?.funding.reasonCode, "no_local_finance_source");
+	assert.equal(localBody.person.enrichmentStatus?.influence.reasonCode, "no_local_disclosure_source");
+	assert.match(localBody.person.summary, /current Provo mayor/i);
+});
+
+test("state representative routes merge reviewed state-officeholder sources into the public profile", async () => {
+	const response = await fetch(`${baseUrl}/api/representatives/scott-hilton`);
+	const body = await response.json();
+
+	assert.equal(response.status, 200);
+	assert.equal(body.person.slug, "scott-hilton");
+	assert.equal(body.person.governmentLevel, "state");
+	assert.equal(body.person.officeType, "state_house");
+	assert.equal(body.person.officeDisplayLabel, "Georgia State Representative for District 48");
+	assert.equal(body.person.officeSought, "State House District 48");
+	assert.equal(body.person.districtLabel, "State House District 48");
+	assert.equal(body.person.enrichmentStatus?.funding.reasonCode, "no_state_finance_source");
+	assert.equal(body.person.enrichmentStatus?.influence.reasonCode, "no_state_disclosure_source");
+	assert.ok(["identity_only_provider", "no_state_legislative_source"].includes(body.person.enrichmentStatus?.legislativeContext.reasonCode));
+	assert.ok(body.person.biography.some((item: { title: string }) => /reviewed/i.test(item.title)));
+	assert.ok(
+		body.person.provenance.label.toLowerCase().includes("reviewed")
+		|| body.person.freshness.statusLabel.toLowerCase().includes("reviewed"),
+	);
+});
+
+test("state senator routes merge reviewed official state sources without drifting into the federal route model", async () => {
+	const response = await fetch(`${baseUrl}/api/representatives/shawn-still`);
+	const body = await response.json();
+
+	assert.equal(response.status, 200);
+	assert.equal(body.person.slug, "shawn-still");
+	assert.equal(body.person.governmentLevel, "state");
+	assert.equal(body.person.officeType, "state_senate");
+	assert.equal(body.person.officeDisplayLabel, "Georgia State Senator for District 48");
+	assert.equal(body.person.officeSought, "State Senate District 48");
+	assert.equal(body.person.districtLabel, "State Senate District 48");
+	assert.equal(body.person.enrichmentStatus?.funding.reasonCode, "no_state_finance_source");
+	assert.equal(body.person.enrichmentStatus?.influence.reasonCode, "no_state_disclosure_source");
+	assert.ok(["identity_only_provider", "no_state_legislative_source"].includes(body.person.enrichmentStatus?.legislativeContext.reasonCode));
+	assert.ok(body.person.biography.some((item: { title: string }) => /reviewed/i.test(item.title)));
+	assert.ok(body.person.sources.some((item: { sourceSystem?: string }) => /Georgia General Assembly member bio/i.test(item.sourceSystem ?? "")));
+	assert.doesNotMatch(body.person.officeSought, /U\.S\. Senate/i);
+});
+
+test("direct representative routes degrade to a public fallback instead of 500 when the provider route lookup fails", async () => {
+	const response = await fetch(`${baseUrl}/api/representatives/quota-limited`);
+	const body = await response.json();
+
+	assert.equal(response.status, 200);
+	assert.equal(body.person.slug, "quota-limited");
+	assert.equal(body.person.funding, null);
+	assert.deepEqual(body.person.lobbyingContext, []);
+	assert.equal(body.person.provenance.status, "inferred");
+	assert.match(body.person.summary, /keeps the person identity stable/i);
+	assert.match(body.person.whatWeKnow[0]?.text ?? "", /identity-stable/i);
 });
 
 test("GET /api/representatives/:slug returns a source-backed representative profile", async () => {
@@ -1368,6 +2075,29 @@ test("GET /api/sources and /api/sources/:id include contest citations", async ()
 
 	assert.equal(recordResponse.status, 200);
 	assert.ok(recordBody.source.citedBy.some((citation: { type: string }) => citation.type === "contest"));
+});
+
+test("GET /api/sources/:id returns 404 for unpublished district provenance ids", async () => {
+	const response = await fetch(`${baseUrl}/api/sources/district:state-senate-48`);
+	const body = await response.json();
+
+	assert.equal(response.status, 404);
+	assert.match(body.message, /Source record not found/i);
+});
+
+test("GET /api/sources only lists ids that resolve as public source records", async () => {
+	const directoryResponse = await fetch(`${baseUrl}/api/sources`);
+	const directoryBody = await directoryResponse.json();
+
+	assert.equal(directoryResponse.status, 200);
+	assert.ok(Array.isArray(directoryBody.sources));
+	assert.ok(!directoryBody.sources.some((item: { id: string }) => item.id === "district:state-senate-48"));
+
+	for (const item of directoryBody.sources as Array<{ id: string }>) {
+		const recordResponse = await fetch(`${baseUrl}/api/sources/${item.id}`);
+
+		assert.equal(recordResponse.status, 200, `expected published source ${item.id} to resolve`);
+	}
 });
 
 test("GET /api/admin/overview rejects unauthenticated access", async () => {

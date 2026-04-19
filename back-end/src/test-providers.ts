@@ -305,6 +305,16 @@ async function checkOpenStates() {
 		const { payload, text } = await readJson(response);
 
 		if (!response.ok) {
+			if (response.status === 429) {
+				return {
+					detail: `Open States probe hit the current API rate limit (${response.status}): ${summarizeBody(text)}. Ballot Clarity should continue validating route behavior from locally saved provider-backed data instead of treating this as a missing-credential failure.`,
+					id: "openstates",
+					label: "Open States API",
+					source: credential.source,
+					status: "skip"
+				} satisfies DiagnosticResult;
+			}
+
 			return {
 				detail: `Open States probe failed with ${response.status}: ${summarizeBody(text)}`,
 				id: "openstates",

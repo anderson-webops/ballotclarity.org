@@ -6,7 +6,8 @@ import { buildActiveLookupSummary } from "~/utils/active-lookup";
 import { activeNationwideLookupCookieName, parseActiveNationwideLookupCookie } from "~/utils/active-nationwide-cookie";
 import { buildNationwidePersonProfileResponse } from "~/utils/nationwide-person-profile";
 import { buildLookupContextFromNationwideResult, buildNationwideLookupRouteQuery, buildNationwideRouteTarget } from "~/utils/nationwide-route-context";
-import { buildPersonLinkageConfidence, hasPersonFunding, hasPersonInfluence } from "~/utils/person-profile";
+import { buildPersonLinkageConfidence, buildPersonSummaryItems, hasPersonFunding, hasPersonInfluence } from "~/utils/person-profile";
+import { resolveRepresentativePresentation } from "~/utils/representative-presentation";
 
 const route = useRoute();
 const runtimeConfig = useRuntimeConfig();
@@ -48,6 +49,9 @@ const activeLookupSummary = computed(() => buildActiveLookupSummary({
 	routeLookupQuery: activeLookupQuery.value?.lookup ?? null,
 	selectedLocation: isHydrated.value ? selectedLocation.value : null
 }));
+const representativePresentation = computed(() => person.value
+	? resolveRepresentativePresentation(person.value, activeNationwideLookupResult.value?.location?.state ?? null)
+	: null);
 const linkageConfidence = computed(() => person.value ? buildPersonLinkageConfidence(person.value.provenance.status) : null);
 const dataThroughLabel = computed(() => {
 	if (!person.value)
@@ -79,6 +83,10 @@ const campaignLink = computed(() => {
 
 	return person.value.comparison.campaignWebsiteUrl || person.value.comparison.contactChannels[0]?.url || "";
 });
+const fundingStatusSummary = computed(() => person.value?.enrichmentStatus?.funding.summary
+	|| "No source-backed finance summary is attached to this person record yet.");
+const influenceStatusSummary = computed(() => person.value?.enrichmentStatus?.influence.summary
+	|| "No lobbying or public-statement context is attached to this person record yet.");
 const hasFunding = computed(() => person.value ? hasPersonFunding(person.value) : false);
 const hasInfluence = computed(() => person.value ? hasPersonInfluence(person.value) : false);
 const representativeLayoutKey = computed(() => person.value
@@ -103,29 +111,20 @@ const summaryItems = computed(() => {
 	if (!person.value)
 		return [];
 
-	return [
-		{
-			label: "Current office",
-			note: "Office context attached to this person record.",
-			value: person.value.officeSought
-		},
-		{
-			label: "Funding data",
-			note: hasFunding.value
-				? `Source-backed finance summary available. Data through ${dataThroughLabel.value}.`
-				: "No source-backed finance summary is attached to this person record yet.",
-			value: hasFunding.value && person.value.funding
-				? formatCurrency(person.value.funding.totalRaised)
-				: "Unavailable"
-		},
-		{
-			label: "Influence context",
-			note: hasInfluence.value
-				? "Lobbying, donor, or disclosure context is attached below."
-				: "No lobbying or public-statement context is attached to this person record yet.",
-			value: hasInfluence.value ? `${person.value.lobbyingContext.length + person.value.publicStatements.length} notes` : "Unavailable"
-		}
-	];
+	return buildPersonSummaryItems({
+		dataThroughLabel: dataThroughLabel.value,
+		formatCurrency,
+		fundingHref: "#funding",
+		fundingStatusSummary: fundingStatusSummary.value,
+		fundingTotalRaised: person.value.funding?.totalRaised ?? null,
+		hasFunding: hasFunding.value,
+		hasInfluence: hasInfluence.value,
+		influenceHref: "#influence",
+		influenceNoteCount: person.value.lobbyingContext.length + person.value.publicStatements.length,
+		influenceStatusSummary: influenceStatusSummary.value,
+		officeDisplayLabel: representativePresentation.value?.officeDisplayLabel ?? person.value.officeSought,
+		officeHref: "#office-context"
+	});
 });
 const reportIssueHref = computed(() => person.value
 	? `mailto:${contactEmail}?subject=${encodeURIComponent(`Ballot Clarity representative review: ${person.value.name}`)}`
@@ -188,6 +187,7 @@ usePageSeo({
 					<AppBreadcrumbs :items="breadcrumbs" />
 					<div class="flex flex-wrap gap-2 items-center">
 						<VerificationBadge label="Representative profile" tone="accent" />
+						<VerificationBadge v-if="representativePresentation" :label="representativePresentation.levelLabel" />
 						<VerificationBadge :label="person.officeholderLabel" />
 						<VerificationBadge :label="person.onCurrentBallot ? person.ballotStatusLabel : 'Not on current ballot'" />
 						<VerificationBadge v-if="isNationwideFallback" label="Nationwide lookup fallback" tone="warning" />
@@ -207,7 +207,7 @@ usePageSeo({
 						<IncumbentBadge v-if="person.incumbent" />
 					</div>
 					<p class="text-lg text-app-muted mt-4 dark:text-app-muted-dark">
-						{{ person.officeSought }} · {{ person.party }}
+						{{ representativePresentation?.officeDisplayLabel ?? person.officeSought }} · {{ person.party }}
 					</p>
 					<p class="text-base text-app-muted leading-8 mt-6 max-w-3xl dark:text-app-muted-dark">
 						{{ person.summary }}
@@ -224,6 +224,10 @@ usePageSeo({
 						<a v-if="campaignLink" :href="campaignLink" target="_blank" rel="noreferrer" class="btn-secondary">
 							<span class="i-carbon-launch" />
 							Open campaign site
+						</a>
+						<a v-if="person.officialWebsiteUrl" :href="person.officialWebsiteUrl" target="_blank" rel="noreferrer" class="btn-secondary inline-flex gap-2 items-center">
+							Official office site
+							<span class="i-carbon-launch" />
 						</a>
 						<a v-if="person.openstatesUrl" :href="person.openstatesUrl" target="_blank" rel="noreferrer" class="btn-secondary inline-flex gap-2 items-center">
 							Provider record
@@ -264,7 +268,7 @@ usePageSeo({
 						<PageSummaryStrip :items="summaryItems" />
 					</div>
 					<div class="mt-6 gap-4 grid lg:grid-cols-[minmax(0,1.3fr)_minmax(18rem,0.9fr)]">
-						<div class="px-5 py-5 border border-app-line/80 rounded-3xl bg-white/80 dark:border-app-line-dark dark:bg-app-panel-dark/70">
+						<div id="office-context" class="px-5 py-5 border border-app-line/80 rounded-3xl bg-white/80 scroll-mt-32 dark:border-app-line-dark dark:bg-app-panel-dark/70">
 							<div class="flex flex-wrap gap-3 items-center justify-between">
 								<h3 class="text-xl text-app-ink font-serif dark:text-app-text-dark">
 									Linkage and coverage
@@ -313,6 +317,8 @@ usePageSeo({
 							<ul class="text-sm text-app-muted leading-7 mt-4 space-y-2 dark:text-app-muted-dark">
 								<li>Direct, crosswalked, and inferred linkage should not be treated as the same confidence level.</li>
 								<li>Finance and influence sections only appear when the underlying person record has publishable data.</li>
+								<li>{{ person.enrichmentStatus?.officeContext.summary || "Office context is attached from the current provider-backed officeholder record." }}</li>
+								<li>{{ person.enrichmentStatus?.legislativeContext.summary || "Additional legislative context is attached only when a stronger official crosswalk is available." }}</li>
 								<li>{{ person.freshness.statusNote }}</li>
 								<li>Use the attached records and official sources before treating this page as complete.</li>
 							</ul>
@@ -387,7 +393,7 @@ usePageSeo({
 							</h2>
 						</div>
 					</div>
-					<div class="mt-6 space-y-4">
+					<div v-if="person.keyActions.length" class="mt-6 space-y-4">
 						<article v-for="action in person.keyActions" :key="action.id" class="p-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
 							<div class="flex flex-wrap gap-3 items-start justify-between">
 								<div>
@@ -407,6 +413,17 @@ usePageSeo({
 								{{ action.significance }}
 							</p>
 						</article>
+					</div>
+					<div v-else class="mt-6 p-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
+						<h3 class="text-lg text-app-ink font-semibold dark:text-app-text-dark">
+							No attached action record yet
+						</h3>
+						<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
+							{{ person.enrichmentStatus?.legislativeContext.summary || "Ballot Clarity does not currently have a source-backed legislative or action feed attached to this person record." }}
+						</p>
+						<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
+							The page still carries office context, district context, provenance, and official-source links for this officeholder.
+						</p>
 					</div>
 				</section>
 

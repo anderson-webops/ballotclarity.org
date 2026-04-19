@@ -4,8 +4,10 @@ import { storeToRefs } from "pinia";
 import { buildActiveLookupSummary } from "~/utils/active-lookup";
 import { activeNationwideLookupCookieName, parseActiveNationwideLookupCookie } from "~/utils/active-nationwide-cookie";
 import { buildGuideDistrictPageRecord, buildNationwideDistrictPageRecord } from "~/utils/district-page";
+import { buildDistrictCandidateSummaryHref, buildDistrictRepresentativeSummaryHref } from "~/utils/district-page-links";
 import { isExternalHref } from "~/utils/link";
 import { buildLookupContextFromNationwideResult, buildNationwideLookupRouteQuery, buildNationwideRouteTarget } from "~/utils/nationwide-route-context";
+import { resolveRepresentativePresentation } from "~/utils/representative-presentation";
 
 const route = useRoute();
 const civicStore = useCivicStore();
@@ -46,6 +48,17 @@ function buildLookupAwareTarget(path: string) {
 	return buildNationwideRouteTarget(path, buildLookupContextFromNationwideResult(activeNationwideLookupResult.value), route.query);
 }
 
+function buildSummaryHref(path: string | undefined) {
+	if (!path || path.startsWith("#") || isExternalHref(path))
+		return path;
+
+	return buildLookupAwareTarget(path);
+}
+
+function getRepresentativePresentation(representative: NonNullable<typeof districtPageData.value>["representatives"][number]) {
+	return resolveRepresentativePresentation(representative, activeNationwideLookupResult.value?.location?.state ?? null);
+}
+
 const breadcrumbs = computed(() => [
 	{ label: "Home", to: "/" },
 	{ label: "Districts", to: "/districts" },
@@ -73,13 +86,15 @@ const summaryItems = computed(() => {
 			label: "Candidates",
 			note: districtPageData.value.candidateAvailabilityNote,
 			value: districtPageData.value.mode === "guide" ? districtPageData.value.candidates.length : "Unavailable",
-			href: districtPageData.value.mode === "guide" ? `/contest/${districtPageData.value.district.slug}` : undefined
+			href: districtPageData.value.mode === "guide"
+				? buildSummaryHref(buildDistrictCandidateSummaryHref(districtPageData.value.candidates))
+				: undefined
 		},
 		{
 			label: "Current representatives",
 			note: districtPageData.value.representativeAvailabilityNote,
 			value: districtPageData.value.representatives.length,
-			href: "/representatives"
+			href: buildSummaryHref(buildDistrictRepresentativeSummaryHref(districtPageData.value.representatives))
 		},
 		{ label: "Updated", note: "District page freshness.", value: formatDateTime(districtPageData.value.updatedAt) }
 	];
@@ -183,10 +198,11 @@ usePageSeo({
 								<p class="text-2xl text-app-ink font-serif dark:text-app-text-dark">
 									{{ representative.name }}
 								</p>
+								<VerificationBadge :label="getRepresentativePresentation(representative).levelLabel" tone="accent" />
 								<IncumbentBadge />
 							</div>
 							<p class="text-sm text-app-muted mt-3 dark:text-app-muted-dark">
-								{{ representative.party }} · {{ representative.officeSought }}
+								{{ representative.party }} · {{ getRepresentativePresentation(representative).officeDisplayLabel }}
 							</p>
 							<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
 								{{ representative.summary }}

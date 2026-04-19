@@ -144,9 +144,22 @@ export function createOpenFecClient({
 
 	return {
 		async getCommitteeTotals(committeeId, cycle) {
-			const payload = await fetchOpenFec<OpenFecCommitteeTotalsResponse>(`committee/${committeeId}/totals/`, {
-				cycle: String(cycle),
-			});
+			let payload: OpenFecCommitteeTotalsResponse;
+
+			try {
+				payload = await fetchOpenFec<OpenFecCommitteeTotalsResponse>(`committee/${committeeId}/totals/`, {
+					cycle: String(cycle),
+				});
+			}
+			catch (error) {
+				const message = error instanceof Error ? error.message : String(error);
+
+				if (message.includes("OpenFEC request failed: 404"))
+					return null;
+
+				throw error;
+			}
+
 			const record = payload.results?.[0];
 
 			if (!record)

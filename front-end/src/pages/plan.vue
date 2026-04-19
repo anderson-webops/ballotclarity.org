@@ -4,6 +4,7 @@ import { storeToRefs } from "pinia";
 import { buildCompareRoute } from "~/stores/civic";
 import { buildLocationGuessUiContent } from "~/utils/location-guess";
 import { buildPlanUnavailableMessaging } from "~/utils/plan-messaging";
+import { formatSourceCountLabel } from "~/utils/source-label";
 
 const civicStore = useCivicStore();
 const route = useRoute();
@@ -347,7 +348,7 @@ function printPlan() {
 						</p>
 						<div class="mt-4 flex flex-wrap gap-3 items-center justify-between">
 							<p class="text-sm text-app-muted dark:text-app-muted-dark">
-								{{ entry.sourceCount }} sources linked in the detail page.
+								{{ formatSourceCountLabel(entry.sourceCount) }} linked in the detail page.
 							</p>
 							<div class="flex flex-wrap gap-3">
 								<NuxtLink :to="entry.href" class="btn-secondary">

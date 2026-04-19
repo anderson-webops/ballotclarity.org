@@ -14,6 +14,7 @@ import type {
 	Source,
 	TrustBullet,
 } from "./types/civic.js";
+import { classifyRepresentative } from "./representative-classification.js";
 
 export interface ActiveNationwideLookupContext {
 	actions: LocationLookupAction[];
@@ -200,10 +201,35 @@ function sanitizeRepresentativeMatch(value: unknown): LocationRepresentativeMatc
 	if (!districtLabel || !id || !name || !officeTitle || !sourceSystem)
 		return null;
 
+	const classification = classifyRepresentative({
+		districtLabel,
+		governmentLevel: value.governmentLevel === "federal" || value.governmentLevel === "state" || value.governmentLevel === "county" || value.governmentLevel === "city"
+			? value.governmentLevel
+			: null,
+		officeSought: typeof value.officeDisplayLabel === "string" ? value.officeDisplayLabel : undefined,
+		officeTitle,
+		officeType: value.officeType === "us_senate"
+			|| value.officeType === "us_house"
+			|| value.officeType === "state_senate"
+			|| value.officeType === "state_house"
+			|| value.officeType === "county_commission"
+			|| value.officeType === "county_official"
+			|| value.officeType === "city_official"
+			|| value.officeType === "mayor"
+			|| value.officeType === "other"
+			? value.officeType
+			: null,
+	});
+
 	return {
 		districtLabel,
+		governmentLevel: classification.governmentLevel,
 		id,
 		name,
+		officeDisplayLabel: typeof value.officeDisplayLabel === "string" && value.officeDisplayLabel
+			? value.officeDisplayLabel
+			: classification.officeDisplayLabel,
+		officeType: classification.officeType,
 		officeTitle,
 		openstatesUrl: typeof value.openstatesUrl === "string" ? value.openstatesUrl : undefined,
 		party: typeof value.party === "string" ? value.party : undefined,
@@ -342,6 +368,22 @@ function deriveDistrictScopeFromMatch(match: LocationDistrictMatch): DistrictSco
 		return "city";
 
 	return "label";
+}
+
+function buildDistrictSlugFromMatch(match: LocationDistrictMatch) {
+	const scope = deriveDistrictScopeFromMatch(match);
+	const districtCode = normalizeDistrictCode(match.districtCode || match.label);
+
+	if (scope === "federal-house" && districtCode)
+		return `congressional-${districtCode}`;
+
+	if (scope === "state-senate" && districtCode)
+		return `state-senate-${districtCode}`;
+
+	if (scope === "state-house" && districtCode)
+		return `state-house-${districtCode}`;
+
+	return toLookupSlug(match.label);
 }
 
 function deriveRepresentativeScope(match: LocationRepresentativeMatch, locationState: string | undefined): DistrictScope {
@@ -585,7 +627,7 @@ function buildDirectoryBundle(context: ActiveNationwideLookupContext) {
 	const districtKeyToSlug = new Map<string, string>();
 
 	for (const districtMatch of context.districtMatches) {
-		const slug = toLookupSlug(districtMatch.id || districtMatch.label);
+		const slug = buildDistrictSlugFromMatch(districtMatch);
 		const summary = {
 			candidateCount: 0,
 			href: `/districts/${slug}`,
@@ -622,6 +664,20 @@ function buildDirectoryBundle(context: ActiveNationwideLookupContext) {
 	const representatives = context.representativeMatches.map((representative) => {
 		const slug = buildNationwideRepresentativeSlug(representative);
 		const districtSlug = districtRepresentatives.get(representative.id) ?? toLookupSlug(representative.districtLabel);
+		const sources = representative.openstatesUrl
+			? [
+					toSource({
+						authority: "nonprofit-provider",
+						date: updatedAt,
+						id: `representative:${slug}`,
+						note: "Representative record carried into this directory card from the active nationwide lookup.",
+						publisher: "Open States",
+						sourceSystem: representative.sourceSystem || "Open States",
+						title: representative.name,
+						url: representative.openstatesUrl,
+					}),
+				]
+			: [];
 
 		return {
 			ballotStatusLabel: "Published ballot status unavailable in this area",
@@ -629,6 +685,7 @@ function buildDirectoryBundle(context: ActiveNationwideLookupContext) {
 			districtSlug,
 			fundingAvailable: false,
 			fundingSummary: "No person-level funding record is attached to this representative yet.",
+			governmentLevel: representative.governmentLevel,
 			href: `/representatives/${slug}`,
 			id: representative.id,
 			incumbent: true,
@@ -636,9 +693,11 @@ function buildDirectoryBundle(context: ActiveNationwideLookupContext) {
 			influenceSummary: "No person-level influence record is attached to this representative yet.",
 			location: locationLabel,
 			name: representative.name,
+			officeDisplayLabel: representative.officeDisplayLabel,
 			officeTitle: representative.officeTitle,
 			officeSought: representative.officeTitle,
 			officeholderLabel: "Current officeholder",
+			officeType: representative.officeType,
 			onCurrentBallot: false,
 			openstatesUrl: representative.openstatesUrl,
 			party: representative.party ?? "Unknown",
@@ -648,7 +707,8 @@ function buildDirectoryBundle(context: ActiveNationwideLookupContext) {
 				status: "crosswalked",
 			},
 			slug,
-			sourceCount: representative.openstatesUrl ? 1 : 0,
+			sourceCount: sources.length,
+			sources,
 			summary: representative.sourceSystem ? `Matched from ${representative.sourceSystem}` : "Matched from nationwide lookup",
 			updatedAt,
 		} satisfies RepresentativeSummary;
@@ -870,6 +930,7 @@ export function buildRouteFallbackPersonProfileResponse(representativeSlug: stri
 				statusNote: "This route is available and identity-stable, but Ballot Clarity has not attached a current provider-backed office record to it yet.",
 			},
 			funding: null,
+			governmentLevel: null,
 			incumbent: true,
 			keyActions: [],
 			lobbyingContext: [],
@@ -879,7 +940,9 @@ export function buildRouteFallbackPersonProfileResponse(representativeSlug: stri
 				"Active nationwide lookup context can still add user-specific district confirmation, official tools, and stronger locality context.",
 			],
 			name,
+			officeDisplayLabel: "Office record pending provider crosswalk",
 			officeholderLabel: "Current officeholder route",
+			officeType: null,
 			officeSought: "Office record pending provider crosswalk",
 			onCurrentBallot: false,
 			party: "Unknown",
@@ -929,7 +992,7 @@ export function buildNationwideDistrictRecordResponse(context: ActiveNationwideL
 		.map(buildOfficialResource)
 		.filter((item): item is OfficialResource => Boolean(item));
 	const districtMatch = context.districtMatches.find((match) => {
-		return toLookupSlug(match.id || match.label) === district.slug;
+		return buildDistrictSlugFromMatch(match) === district.slug;
 	}) ?? null;
 	const sources: Array<ReturnType<typeof toSource> | null> = [
 		districtMatch
@@ -1040,6 +1103,7 @@ export function buildNationwidePersonProfileResponse(context: ActiveNationwideLo
 				statusNote: "This profile reflects the latest nationwide lookup currently saved in this browser. Verify critical details against the attached provider record and official election tools.",
 			},
 			funding: null,
+			governmentLevel: representative.governmentLevel,
 			incumbent: true,
 			keyActions: [],
 			lobbyingContext: [],
@@ -1049,7 +1113,9 @@ export function buildNationwidePersonProfileResponse(context: ActiveNationwideLo
 				"Provider-backed representative matches can be crosswalked or approximate, especially for ZIP-based lookups.",
 			],
 			name: representative.name,
+			officeDisplayLabel: representative.officeDisplayLabel,
 			officeholderLabel: representative.officeholderLabel,
+			officeType: representative.officeType,
 			officeSought: representative.officeSought,
 			onCurrentBallot: false,
 			openstatesUrl: representative.openstatesUrl,

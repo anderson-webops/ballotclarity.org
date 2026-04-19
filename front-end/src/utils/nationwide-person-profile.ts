@@ -9,6 +9,7 @@ import type {
 import { buildDistrictRepresentativeAvailabilityNote } from "./district-availability";
 import { buildNationwideDirectoryResponses } from "./nationwide-directory";
 import { buildNationwideRepresentativeRouteAliases, buildNationwideRepresentativeSlug } from "./nationwide-slug";
+import { classifyRepresentative } from "./representative-classification";
 
 const censusGeocoderDocsUrl = "https://geocoding.geo.census.gov/geocoder/Geocoding_Services_API.html";
 const openStatesUrl = "https://openstates.org";
@@ -79,6 +80,14 @@ export function buildNationwidePersonProfileResponse(
 	if (!representative)
 		return null;
 
+	const classification = classifyRepresentative({
+		districtLabel: representative.districtLabel,
+		governmentLevel: representative.governmentLevel,
+		officeSought: representative.officeDisplayLabel,
+		officeTitle: representative.officeSought,
+		officeType: representative.officeType,
+		stateName: context.location?.state,
+	});
 	const district = directoryBundle.districts.districts.find(item => item.slug === representative.districtSlug) ?? null;
 	const updatedAt = directoryBundle.representatives.updatedAt;
 	const officialSources = context.actions
@@ -169,6 +178,7 @@ export function buildNationwidePersonProfileResponse(
 			districtSlug: district?.slug || representative.districtSlug,
 			freshness: buildFreshness(updatedAt),
 			funding: null,
+			governmentLevel: classification.governmentLevel,
 			incumbent: true,
 			keyActions: [],
 			lobbyingContext: [],
@@ -178,7 +188,9 @@ export function buildNationwidePersonProfileResponse(
 				"Provider-backed representative matches can be crosswalked or approximate, especially for ZIP-based lookups."
 			],
 			name: representative.name,
+			officeDisplayLabel: classification.officeDisplayLabel,
 			officeholderLabel: representative.officeholderLabel,
+			officeType: classification.officeType,
 			officeSought: representative.officeSought,
 			onCurrentBallot: false,
 			openstatesUrl: representative.openstatesUrl,

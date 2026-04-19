@@ -322,6 +322,29 @@ async function main() {
 		if (tylerRepresentativeBody.person?.enrichmentStatus?.influence?.reasonCode !== "no_state_disclosure_source")
 			throw new Error("State legislator route probe did not expose the precise state disclosure-source availability reason.");
 
+		if (tylerRepresentativeBody.person?.enrichmentStatus?.legislativeContext?.reasonCode !== "identity_only_provider")
+			throw new Error("State legislator route probe did not expose the precise state legislative-context availability reason.");
+
+		const { payload: shawnRepresentativeBody, response: shawnRepresentativeResponse } = await fetchJson(
+			`${baseUrl}`,
+			"/api/representatives/shawn-still"
+		);
+
+		if (shawnRepresentativeResponse.status !== 200)
+			throw new Error(`Shawn Still representative probe failed with ${shawnRepresentativeResponse.status}.`);
+
+		if (String(shawnRepresentativeBody.person?.districtLabel || "").trim() !== "State Senate District 48")
+			throw new Error("State senator route probe did not attach the expected district label for Shawn Still.");
+
+		const shawnSources = Array.isArray(shawnRepresentativeBody.person?.sources) ? shawnRepresentativeBody.person.sources : [];
+		const shawnBiography = Array.isArray(shawnRepresentativeBody.person?.biography) ? shawnRepresentativeBody.person.biography : [];
+		const shawnHasReviewedStateSource = shawnBiography.some((item) => /reviewed state officeholder source|reviewed officeholder record/i.test(String(item?.title || "")))
+			|| shawnSources.some((item) => /georgia general assembly member bio/i.test(String(item?.sourceSystem || "")))
+			|| /georgia general assembly member bio/i.test(String(shawnRepresentativeBody.person?.provenance?.label || ""));
+
+		if (!shawnHasReviewedStateSource)
+			throw new Error("State senator route probe did not preserve the reviewed Georgia state-officeholder source attachment.");
+
 		const { payload: scottRepresentativeBody, response: scottRepresentativeResponse } = await fetchJson(
 			`${baseUrl}`,
 			"/api/representatives/scott-hilton"
@@ -338,6 +361,9 @@ async function main() {
 
 		if (scottRepresentativeBody.person?.enrichmentStatus?.influence?.reasonCode !== "no_state_disclosure_source")
 			throw new Error("State legislator route probe did not expose the expected state disclosure-source reason for Scott Hilton.");
+
+		if (scottRepresentativeBody.person?.enrichmentStatus?.legislativeContext?.reasonCode !== "identity_only_provider")
+			throw new Error("State legislator route probe did not expose the expected state legislative-context reason for Scott Hilton.");
 
 		const { payload: localRepresentativeBody, response: localRepresentativeResponse } = await fetchJson(
 			`${baseUrl}`,
@@ -378,7 +404,7 @@ async function main() {
 		console.log("\n== Local runtime verification passed ==");
 		console.log(`Resolved ${lookupBody.location?.displayName || "unknown location"} with ${lookupBody.districtMatches.length} district matches and ${lookupBody.representativeMatches.length} representative matches.`);
 		console.log(`Verified representative directory/profile backing for ${moduleBackedRepresentative.name}, including live finance and influence modules.`);
-		console.log(`Verified direct district route backing for ${directDistrictBody.district?.title || firstDistrictSlug}, reviewed state/local district backing for ${stateDistrictBody.district?.title || "state-house-60"} and ${localDistrictBody.district?.title || "provo-city"}, and direct representative backing for ${directRepresentativeBody.person?.name || firstRepresentativeSlug}, ${scottRepresentativeBody.person?.name || "scott-hilton"}, and ${localRepresentativeBody.person?.name || "marsha-judkins"}.`);
+		console.log(`Verified direct district route backing for ${directDistrictBody.district?.title || firstDistrictSlug}, reviewed state/local district backing for ${stateDistrictBody.district?.title || "state-house-60"} and ${localDistrictBody.district?.title || "provo-city"}, and direct representative backing for ${directRepresentativeBody.person?.name || firstRepresentativeSlug}, ${shawnRepresentativeBody.person?.name || "shawn-still"}, ${scottRepresentativeBody.person?.name || "scott-hilton"}, and ${localRepresentativeBody.person?.name || "marsha-judkins"}.`);
 	}
 	finally {
 		await stopProcess(server);

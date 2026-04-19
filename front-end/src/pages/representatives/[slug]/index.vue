@@ -397,7 +397,7 @@ usePageSeo({
 							</h2>
 						</div>
 					</div>
-					<div class="mt-6 space-y-4">
+					<div v-if="person.keyActions.length" class="mt-6 space-y-4">
 						<article v-for="action in person.keyActions" :key="action.id" class="p-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
 							<div class="flex flex-wrap gap-3 items-start justify-between">
 								<div>
@@ -417,6 +417,17 @@ usePageSeo({
 								{{ action.significance }}
 							</p>
 						</article>
+					</div>
+					<div v-else class="mt-6 p-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
+						<h3 class="text-lg text-app-ink font-semibold dark:text-app-text-dark">
+							No attached action record yet
+						</h3>
+						<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
+							{{ person.enrichmentStatus?.legislativeContext.summary || "Ballot Clarity does not currently have a source-backed legislative or action feed attached to this person record." }}
+						</p>
+						<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
+							The page still carries office context, district context, provenance, and official-source links for this officeholder.
+						</p>
 					</div>
 				</section>
 

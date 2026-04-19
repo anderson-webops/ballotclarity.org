@@ -335,6 +335,7 @@ function buildRepresentativeSummary(candidate: Candidate): RepresentativeSummary
 
 const cityRoutePattern = /^([a-z0-9-]+)-city$/i;
 const congressionalDistrictCodePattern = /^([A-Z]{2})-(\d+)$/i;
+const congressionalDivisionPattern = /\/cd:(\d+)(?:\/|$)/i;
 const congressionalRoutePattern = /^congressional-(\d+)$/i;
 const countyRoutePattern = /^([a-z0-9-]+)-county$/i;
 const districtNumberPattern = /\b(\d+)\b/;
@@ -342,10 +343,13 @@ const ocdPersonRoutePattern = /^ocd-person-/i;
 const representativeOfficePattern = /representative/i;
 const representativeRoutePattern = /^representative-(\d+)$/i;
 const representativeStateRoutePattern = /^representative-([a-z]{2})-(\d+)$/i;
+const reviewedPrefixPattern = /^reviewed\s+/i;
 const routeDivisionStatePattern = /\/state:([a-z]{2})(?:\/|$)/i;
 const senateChamberPattern = /senate/i;
 const senatorOfficePattern = /senator/i;
+const stateHouseDivisionPattern = /\/sldl:(\d+)(?:\/|$)/i;
 const senatorRoutePattern = /^senator-(\d+)$/i;
+const stateSenateDivisionPattern = /\/sldu:(\d+)(?:\/|$)/i;
 const senatorStatewideCodeRoutePattern = /^([a-z]{2})-sen-statewide$/i;
 const senatorStatewideNameRoutePattern = /^senator-([a-z0-9-]+)$/i;
 const stateAbbreviationRouteTokenPattern = /^[a-z]{2}$/i;
@@ -595,12 +599,48 @@ function buildRepresentativeOfficeContext(record: OpenStatesRepresentativeRecord
 	const stateCode = inferRepresentativeStateCode(record);
 	const stateName = getStateNameForAbbreviation(stateCode) || record.jurisdictionName || stateCode || "Unknown jurisdiction";
 	const districtCodeMatch = record.currentRoleDistrict?.match(congressionalDistrictCodePattern);
+	const congressionalDivisionMatch = record.currentRoleDivisionId?.match(congressionalDivisionPattern);
 	const numericDistrictMatch = record.currentRoleDistrict?.match(districtNumberPattern);
+	const stateHouseDivisionMatch = record.currentRoleDivisionId?.match(stateHouseDivisionPattern);
+	const stateSenateDivisionMatch = record.currentRoleDivisionId?.match(stateSenateDivisionPattern);
+	const hasCongressionalDistrictContext = Boolean(districtCodeMatch?.[2] || congressionalDivisionMatch?.[1]);
 	const isSenator = senatorOfficePattern.test(officeTitle);
 	const isRepresentative = representativeOfficePattern.test(officeTitle);
+	const normalizedRoleClassification = toLookupSlug(record.currentRoleClassification);
 
-	if (isRepresentative && districtCodeMatch?.[2]) {
-		const districtNumber = String(Number.parseInt(districtCodeMatch[2], 10));
+	const stateLegislativeDistrictNumber = stateSenateDivisionMatch?.[1]
+		|| stateHouseDivisionMatch?.[1]
+		|| numericDistrictMatch?.[1]
+		|| "";
+
+	if ((stateSenateDivisionMatch?.[1] || (!hasCongressionalDistrictContext && normalizedRoleClassification === "upper" && stateLegislativeDistrictNumber)) && isSenator) {
+		const districtNumber = String(Number.parseInt(stateLegislativeDistrictNumber, 10));
+
+		return {
+			districtLabel: `State Senate District ${districtNumber}`,
+			districtSlug: `state-senate-${districtNumber}`,
+			location: stateName,
+			officeSought: `State Senate District ${districtNumber}`,
+			stateCode,
+			stateName,
+		};
+	}
+
+	if ((stateHouseDivisionMatch?.[1] || (!hasCongressionalDistrictContext && normalizedRoleClassification === "lower" && stateLegislativeDistrictNumber)) && isRepresentative) {
+		const districtNumber = String(Number.parseInt(stateLegislativeDistrictNumber, 10));
+
+		return {
+			districtLabel: `State House District ${districtNumber}`,
+			districtSlug: `state-house-${districtNumber}`,
+			location: stateName,
+			officeSought: `State House District ${districtNumber}`,
+			stateCode,
+			stateName,
+		};
+	}
+
+	if (isRepresentative && (districtCodeMatch?.[2] || congressionalDivisionMatch?.[1])) {
+		const districtNumber = String(Number.parseInt(districtCodeMatch?.[2] || congressionalDivisionMatch?.[1] || "", 10));
 
 		return {
 			districtLabel: `Congressional District ${districtNumber}`,
@@ -618,32 +658,6 @@ function buildRepresentativeOfficeContext(record: OpenStatesRepresentativeRecord
 			districtSlug: `${stateCode.toLowerCase()}-sen-statewide`,
 			location: stateName,
 			officeSought: "U.S. Senate",
-			stateCode,
-			stateName,
-		};
-	}
-
-	if (isSenator && numericDistrictMatch?.[1]) {
-		const districtNumber = String(Number.parseInt(numericDistrictMatch[1], 10));
-
-		return {
-			districtLabel: `State Senate District ${districtNumber}`,
-			districtSlug: `state-senate-${districtNumber}`,
-			location: stateName,
-			officeSought: `State Senate District ${districtNumber}`,
-			stateCode,
-			stateName,
-		};
-	}
-
-	if (isRepresentative && numericDistrictMatch?.[1]) {
-		const districtNumber = String(Number.parseInt(numericDistrictMatch[1], 10));
-
-		return {
-			districtLabel: `State House District ${districtNumber}`,
-			districtSlug: `state-house-${districtNumber}`,
-			location: stateName,
-			officeSought: `State House District ${districtNumber}`,
 			stateCode,
 			stateName,
 		};
@@ -839,6 +853,98 @@ function buildRepresentativeProfileFromSupplementalOfficeholder(record: Suppleme
 					text: record.summary,
 				},
 			],
+		},
+		updatedAt,
+	};
+}
+
+function mergeRepresentativeProfileWithSupplementalOfficeholder(
+	baseProfile: PersonProfileResponse,
+	record: SupplementalOfficeholderRecord,
+): PersonProfileResponse {
+	const updatedAt = [baseProfile.updatedAt, record.updatedAt].filter(Boolean).sort().slice(-1)[0] || baseProfile.updatedAt;
+	const normalizedReviewedSourceLabel = record.provenanceLabel.replace(reviewedPrefixPattern, "").toLowerCase();
+	const mergedSources = uniqueSources([
+		...baseProfile.person.sources,
+		...record.sources,
+	]);
+	const biographyBlockId = `supplemental:${record.slug}:context`;
+	const biography = [
+		...baseProfile.person.biography,
+		...(!baseProfile.person.biography.some(block => block.id === biographyBlockId)
+			? [{
+					id: biographyBlockId,
+					sources: record.sources,
+					summary: record.biographySummary,
+					title: record.jurisdiction === "State" ? "Reviewed state officeholder source" : "Reviewed local officeholder source",
+				}]
+			: []),
+	];
+	const methodologyNotes = Array.from(new Set([
+		...baseProfile.person.methodologyNotes,
+		record.jurisdiction === "State"
+			? `Ballot Clarity also attached a reviewed ${normalizedReviewedSourceLabel} so this state-legislator route carries official-source office context alongside the provider-backed identity record.`
+			: `Ballot Clarity also attached a reviewed ${normalizedReviewedSourceLabel} so this local officeholder route carries official-source context alongside the provider-backed identity record.`,
+	]));
+	const whatWeKnow = [
+		...baseProfile.person.whatWeKnow,
+		...(!baseProfile.person.whatWeKnow.some(item => item.id === `supplemental:${record.slug}:reviewed-source`)
+			? [{
+					id: `supplemental:${record.slug}:reviewed-source`,
+					note: record.provenanceNote,
+					sources: record.sources,
+					text: record.summary,
+				}]
+			: []),
+	];
+	const provenanceLabel = baseProfile.person.provenance.label === record.provenanceLabel
+		? baseProfile.person.provenance.label
+		: `${baseProfile.person.provenance.label} + ${record.provenanceLabel}`;
+	const provenanceNote = [
+		baseProfile.person.provenance.note,
+		`Ballot Clarity also attached ${normalizedReviewedSourceLabel} for additional officeholder context on this route.`,
+	].filter(Boolean).join(" ");
+	const statusLabel = record.jurisdiction === "State"
+		? "Provider-backed + reviewed state source"
+		: "Provider-backed + reviewed official source";
+	const statusNote = record.jurisdiction === "State"
+		? "This profile reflects a current state officeholder record with provider-backed office and district context plus a reviewed state-officeholder source attached for public verification. State finance, disclosure, and legislative-activity modules still attach only where Ballot Clarity has a reviewed jurisdiction-specific source."
+		: "This profile reflects a current officeholder record with provider-backed identity plus a reviewed official local source attached for public verification. Local finance, disclosure, and issue modules still attach only where Ballot Clarity has a reviewed local source.";
+
+	return {
+		...baseProfile,
+		person: {
+			...baseProfile.person,
+			biography,
+			contestSlug: record.districtSlug,
+			districtLabel: record.districtLabel,
+			districtSlug: record.districtSlug,
+			freshness: {
+				...baseProfile.person.freshness,
+				contentLastVerifiedAt: updatedAt,
+				dataLastUpdatedAt: updatedAt,
+				nextReviewAt: updatedAt,
+				statusLabel,
+				statusNote,
+			},
+			location: record.location,
+			methodologyNotes,
+			officialWebsiteUrl: baseProfile.person.officialWebsiteUrl || record.officialWebsiteUrl,
+			officeSought: record.officeSought,
+			openstatesUrl: baseProfile.person.openstatesUrl || record.openstatesUrl,
+			provenance: {
+				...baseProfile.person.provenance,
+				asOf: updatedAt,
+				label: provenanceLabel,
+				note: provenanceNote,
+			},
+			sourceCount: mergedSources.length,
+			sources: mergedSources,
+			summary: record.jurisdiction === "State"
+				? `${record.name} is the current ${record.party ? `${record.party} ` : ""}${record.officeSought} record Ballot Clarity can attach from the public provider layer, with reviewed state-officeholder context attached from official or reviewed sources.`
+				: `${record.name} is the current ${record.officeSought} record Ballot Clarity can attach from the public provider layer, with reviewed local officeholder context attached from official sources.`,
+			updatedAt,
+			whatWeKnow,
 		},
 		updatedAt,
 	};
@@ -2368,6 +2474,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 			return null;
 
 		let representativeRecord = null;
+		const supplementalOfficeholder = findSupplementalOfficeholderByRepresentativeSlug(slug);
 
 		if (openStatesClient) {
 			try {
@@ -2386,12 +2493,19 @@ export async function createApp(options: CreateAppOptions = {}) {
 		}
 
 		if (representativeRecord) {
-			const baseProfile = buildRepresentativeProfileFromOpenStates(representativeRecord);
-			const lookupContext = buildRepresentativeLookupContext(representativeRecord, baseProfile.person.slug, baseProfile.updatedAt);
+			const openStatesProfile = buildRepresentativeProfileFromOpenStates(representativeRecord);
+			const baseProfile = supplementalOfficeholder
+				? mergeRepresentativeProfileWithSupplementalOfficeholder(openStatesProfile, supplementalOfficeholder)
+				: openStatesProfile;
+			const lookupContext = supplementalOfficeholder
+				? buildRepresentativeLookupContextFromSupplementalOfficeholder(
+						supplementalOfficeholder,
+						baseProfile.person.slug,
+						baseProfile.updatedAt,
+					)
+				: buildRepresentativeLookupContext(representativeRecord, baseProfile.person.slug, baseProfile.updatedAt);
 			return await representativeModuleResolver.enrichNationwidePersonProfile(lookupContext, baseProfile);
 		}
-
-		const supplementalOfficeholder = findSupplementalOfficeholderByRepresentativeSlug(slug);
 
 		if (supplementalOfficeholder) {
 			const baseProfile = buildRepresentativeProfileFromSupplementalOfficeholder(supplementalOfficeholder);

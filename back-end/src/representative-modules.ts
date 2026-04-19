@@ -1232,8 +1232,8 @@ export function createRepresentativeModuleResolver({
 				|| (officeholderLayer === "state"
 					? buildEnrichmentStatus(
 							"unavailable",
-							"no_state_legislative_source",
-							`The current state officeholder record for this route resolves identity and district context, but Ballot Clarity does not yet have a reviewed state legislative activity or statements feed configured for ${contextStateName}.`,
+							"identity_only_provider",
+							`${match.sourceSystem || "The current state officeholder source"} currently supports identity, chamber, party, and district context for this route, but Ballot Clarity does not yet have a reviewed ${contextStateName} legislative-activity, vote, or statements feed attached here.`,
 							match.sourceSystem || "State officeholder record",
 						)
 					: officeholderLayer === "local"

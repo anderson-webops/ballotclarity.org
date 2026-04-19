@@ -1789,8 +1789,10 @@ test("state legislators expose a precise unavailable reason when federal finance
 	assert.equal(body.person.districtLabel, "State House District 60");
 	assert.equal(body.person.enrichmentStatus?.funding.reasonCode, "no_state_finance_source");
 	assert.equal(body.person.enrichmentStatus?.influence.reasonCode, "no_state_disclosure_source");
+	assert.equal(body.person.enrichmentStatus?.legislativeContext.reasonCode, "identity_only_provider");
 	assert.equal(body.person.enrichmentStatus?.officeContext.reasonCode, "attached");
 	assert.match(body.person.enrichmentStatus?.funding.summary ?? "", /state campaign-finance source configured/i);
+	assert.match(body.person.enrichmentStatus?.legislativeContext.summary ?? "", /identity, chamber, party, and district context/i);
 });
 
 test("supplemental state and local officeholder routes resolve as stable public person records with precise unavailable-state reasons", async () => {
@@ -1805,13 +1807,16 @@ test("supplemental state and local officeholder routes resolve as stable public 
 
 	assert.equal(stateResponse.status, 200);
 	assert.equal(stateBody.person.slug, "keven-stratton");
-	assert.equal(stateBody.person.provenance.label, "Reviewed Open States officeholder snapshot");
+	assert.match(stateBody.person.provenance.label, /Reviewed Open States officeholder snapshot/i);
 	assert.equal(stateBody.person.officeSought, "State Senate District 24");
 	assert.equal(stateBody.person.districtLabel, "State Senate District 24");
 	assert.equal(stateBody.person.enrichmentStatus?.funding.reasonCode, "no_state_finance_source");
 	assert.equal(stateBody.person.enrichmentStatus?.influence.reasonCode, "no_state_disclosure_source");
+	assert.ok(["identity_only_provider", "no_state_legislative_source"].includes(stateBody.person.enrichmentStatus?.legislativeContext.reasonCode));
 	assert.equal(stateBody.person.officialWebsiteUrl, undefined);
 	assert.match(stateBody.person.summary, /Utah Senate District 24/i);
+	assert.ok(stateBody.person.biography.some((item: { title: string }) => /reviewed/i.test(item.title)));
+	assert.ok(stateBody.person.sources.some((item: { sourceSystem?: string }) => /Open States officeholder snapshot/i.test(item.sourceSystem ?? "")));
 
 	assert.equal(localResponse.status, 200);
 	assert.equal(localBody.person.slug, "marsha-judkins");
@@ -1822,6 +1827,40 @@ test("supplemental state and local officeholder routes resolve as stable public 
 	assert.equal(localBody.person.enrichmentStatus?.funding.reasonCode, "no_local_finance_source");
 	assert.equal(localBody.person.enrichmentStatus?.influence.reasonCode, "no_local_disclosure_source");
 	assert.match(localBody.person.summary, /current Provo mayor/i);
+});
+
+test("state representative routes merge reviewed state-officeholder sources into the public profile", async () => {
+	const response = await fetch(`${baseUrl}/api/representatives/scott-hilton`);
+	const body = await response.json();
+
+	assert.equal(response.status, 200);
+	assert.equal(body.person.slug, "scott-hilton");
+	assert.equal(body.person.officeSought, "State House District 48");
+	assert.equal(body.person.districtLabel, "State House District 48");
+	assert.equal(body.person.enrichmentStatus?.funding.reasonCode, "no_state_finance_source");
+	assert.equal(body.person.enrichmentStatus?.influence.reasonCode, "no_state_disclosure_source");
+	assert.ok(["identity_only_provider", "no_state_legislative_source"].includes(body.person.enrichmentStatus?.legislativeContext.reasonCode));
+	assert.ok(body.person.biography.some((item: { title: string }) => /reviewed/i.test(item.title)));
+	assert.ok(
+		body.person.provenance.label.toLowerCase().includes("reviewed")
+		|| body.person.freshness.statusLabel.toLowerCase().includes("reviewed"),
+	);
+});
+
+test("state senator routes merge reviewed official state sources without drifting into the federal route model", async () => {
+	const response = await fetch(`${baseUrl}/api/representatives/shawn-still`);
+	const body = await response.json();
+
+	assert.equal(response.status, 200);
+	assert.equal(body.person.slug, "shawn-still");
+	assert.equal(body.person.officeSought, "State Senate District 48");
+	assert.equal(body.person.districtLabel, "State Senate District 48");
+	assert.equal(body.person.enrichmentStatus?.funding.reasonCode, "no_state_finance_source");
+	assert.equal(body.person.enrichmentStatus?.influence.reasonCode, "no_state_disclosure_source");
+	assert.ok(["identity_only_provider", "no_state_legislative_source"].includes(body.person.enrichmentStatus?.legislativeContext.reasonCode));
+	assert.ok(body.person.biography.some((item: { title: string }) => /reviewed/i.test(item.title)));
+	assert.ok(body.person.sources.some((item: { sourceSystem?: string }) => /Georgia General Assembly member bio/i.test(item.sourceSystem ?? "")));
+	assert.doesNotMatch(body.person.officeSought, /U\.S\. Senate/i);
 });
 
 test("direct representative routes degrade to a public fallback instead of 500 when the provider route lookup fails", async () => {

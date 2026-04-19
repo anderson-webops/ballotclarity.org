@@ -2536,12 +2536,31 @@ test("guide package workflow gates local guide publication from draft through ro
 		assert.equal(createResponse.status, 201);
 		assert.equal(createBody.package.workflow.status, "draft");
 		assert.equal(diagnosticsResponse.status, 200);
-		assert.equal(diagnosticsBody.diagnostics.readyToPublish, true);
+		assert.equal(diagnosticsBody.diagnostics.readyToPublish, false);
 		assert.equal(diagnosticsBody.diagnostics.blockingIssueCount, 0);
+		assert.equal(diagnosticsBody.diagnostics.recommendation.system, "publish_with_warnings");
+		assert.equal(diagnosticsBody.diagnostics.recommendation.final, "publish_with_warnings");
+
+		const readyBeforeReviewResponse = await fetch(`${isolatedBaseUrl}/api/admin/packages/${packageId}`, {
+			body: JSON.stringify({
+				reviewer: "Smoke Reviewer",
+				status: "ready_to_publish"
+			}),
+			headers: {
+				"Content-Type": "application/json",
+				"x-admin-api-key": adminApiKey
+			},
+			method: "PATCH"
+		});
+		const readyBeforeReviewBody = await readyBeforeReviewResponse.json();
+
+		assert.equal(readyBeforeReviewResponse.status, 400);
+		assert.match(readyBeforeReviewBody.message, /reviewer signoff or a publish recommendation/i);
 
 		const inReviewResponse = await fetch(`${isolatedBaseUrl}/api/admin/packages/${packageId}`, {
 			body: JSON.stringify({
 				reviewNotes: "Editorial review completed for the Fulton County package.",
+				reviewRecommendation: "publish_with_warnings",
 				reviewer: "Smoke Reviewer",
 				status: "in_review"
 			}),
@@ -2551,11 +2570,15 @@ test("guide package workflow gates local guide publication from draft through ro
 			},
 			method: "PATCH"
 		});
+		const inReviewBody = await inReviewResponse.json();
 
 		assert.equal(inReviewResponse.status, 200);
+		assert.equal(inReviewBody.package.workflow.reviewNotes, "Editorial review completed for the Fulton County package.");
+		assert.equal(inReviewBody.package.workflow.reviewRecommendation, "publish_with_warnings");
 
 		const readyResponse = await fetch(`${isolatedBaseUrl}/api/admin/packages/${packageId}`, {
 			body: JSON.stringify({
+				reviewRecommendation: "publish_with_warnings",
 				reviewer: "Smoke Reviewer",
 				status: "ready_to_publish"
 			}),
@@ -2571,6 +2594,7 @@ test("guide package workflow gates local guide publication from draft through ro
 		const publishResponse = await fetch(`${isolatedBaseUrl}/api/admin/packages/${packageId}/publish`, {
 			body: JSON.stringify({
 				reviewNotes: "Published after passing all package checks.",
+				reviewRecommendation: "publish_with_warnings",
 				reviewer: "Smoke Reviewer"
 			}),
 			headers: {
@@ -2596,6 +2620,7 @@ test("guide package workflow gates local guide publication from draft through ro
 
 		assert.equal(publishResponse.status, 200);
 		assert.equal(publishBody.package.workflow.status, "published");
+		assert.equal(publishBody.package.workflow.reviewRecommendation, "publish_with_warnings");
 		assert.equal(publicPackageResponse.status, 200);
 		assert.equal(lookupAfterResponse.status, 200);
 		assert.equal(lookupAfterBody.guideAvailability, "published");
@@ -2608,6 +2633,7 @@ test("guide package workflow gates local guide publication from draft through ro
 		const unpublishResponse = await fetch(`${isolatedBaseUrl}/api/admin/packages/${packageId}/unpublish`, {
 			body: JSON.stringify({
 				reviewNotes: "Rolled back after publication smoke test.",
+				reviewRecommendation: "needs_revision",
 				reviewer: "Smoke Reviewer"
 			}),
 			headers: {

@@ -35,6 +35,7 @@ CREATE TABLE IF NOT EXISTS admin_guide_packages (
 	status TEXT NOT NULL CHECK (status IN ('draft', 'in_review', 'ready_to_publish', 'published')),
 	reviewer TEXT,
 	review_notes TEXT,
+	review_recommendation TEXT,
 	coverage_notes TEXT NOT NULL DEFAULT '[]',
 	coverage_limits TEXT NOT NULL DEFAULT '[]',
 	created_at TEXT NOT NULL,

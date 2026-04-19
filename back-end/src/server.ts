@@ -3186,6 +3186,19 @@ export async function createApp(options: CreateAppOptions = {}) {
 			: undefined;
 	}
 
+	function parseGuidePackageReviewRecommendation(value: unknown) {
+		return value === "publish"
+			|| value === "publish_with_warnings"
+			|| value === "needs_revision"
+			|| value === "do_not_publish"
+			? value
+			: undefined;
+	}
+
+	function isPublishReadyRecommendation(value: unknown) {
+		return value === "publish" || value === "publish_with_warnings";
+	}
+
 	async function createGuidePackageDraft(electionSlug: string, jurisdictionSlug?: string | null) {
 		const election = coverageRepository.getElectionBySlug(electionSlug);
 
@@ -4484,7 +4497,9 @@ export async function createApp(options: CreateAppOptions = {}) {
 			if (requestedStatus === "ready_to_publish" && !currentPackage.diagnostics.readyToPublish) {
 				response.status(400).json({
 					diagnostics: currentPackage.diagnostics,
-					message: "Guide package still has blocking publish checks."
+					message: currentPackage.diagnostics.blockingIssueCount
+						? "Guide package still has blocking publish checks."
+						: "Guide package still needs reviewer signoff or a publish recommendation."
 				});
 				return;
 			}
@@ -4493,6 +4508,9 @@ export async function createApp(options: CreateAppOptions = {}) {
 				coverageLimits: parseStringArray(request.body?.coverageLimits),
 				coverageNotes: parseStringArray(request.body?.coverageNotes),
 				draftedAt: typeof request.body?.draftedAt === "string" ? request.body.draftedAt : undefined,
+				reviewRecommendation: request.body?.reviewRecommendation === null
+					? null
+					: parseGuidePackageReviewRecommendation(request.body?.reviewRecommendation),
 				reviewNotes: request.body?.reviewNotes === null
 					? null
 					: typeof request.body?.reviewNotes === "string"
@@ -4537,12 +4555,17 @@ export async function createApp(options: CreateAppOptions = {}) {
 			if (!currentPackage.diagnostics.readyToPublish) {
 				response.status(400).json({
 					diagnostics: currentPackage.diagnostics,
-					message: "Guide package still has blocking publish checks."
+					message: currentPackage.diagnostics.blockingIssueCount
+						? "Guide package still has blocking publish checks."
+						: "Guide package still needs reviewer signoff or a publish recommendation."
 				});
 				return;
 			}
 
 			const reviewer = typeof request.body?.reviewer === "string" ? request.body.reviewer.trim() : currentPackage.workflow.reviewer || "";
+			const reviewRecommendation = request.body?.reviewRecommendation === null
+				? null
+				: parseGuidePackageReviewRecommendation(request.body?.reviewRecommendation) ?? currentPackage.workflow.reviewRecommendation;
 
 			if (!reviewer) {
 				response.status(400).json({
@@ -4551,10 +4574,19 @@ export async function createApp(options: CreateAppOptions = {}) {
 				return;
 			}
 
+			if (!isPublishReadyRecommendation(reviewRecommendation)) {
+				response.status(400).json({
+					diagnostics: currentPackage.diagnostics,
+					message: "Reviewer recommendation must be publish or publish with warnings before publication."
+				});
+				return;
+			}
+
 			const now = new Date().toISOString();
 
 			await adminRepository.updateGuidePackage(request.params.id, {
 				publishedAt: now,
+				reviewRecommendation,
 				reviewNotes: request.body?.reviewNotes === null
 					? null
 					: typeof request.body?.reviewNotes === "string"
@@ -4592,6 +4624,9 @@ export async function createApp(options: CreateAppOptions = {}) {
 
 			await adminRepository.updateGuidePackage(request.params.id, {
 				publishedAt: null,
+				reviewRecommendation: request.body?.reviewRecommendation === null
+					? null
+					: parseGuidePackageReviewRecommendation(request.body?.reviewRecommendation),
 				reviewNotes: request.body?.reviewNotes === null
 					? null
 					: typeof request.body?.reviewNotes === "string"

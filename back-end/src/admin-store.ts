@@ -17,6 +17,7 @@ import type {
 	AdminUser,
 	AdminUserRole,
 	AdminUsersResponse,
+	GuidePackageReviewRecommendation,
 	GuidePackageStatus,
 	GuidePackageWorkflow,
 } from "./types/civic.js";
@@ -104,6 +105,7 @@ export interface CreateGuidePackageInput {
 	id: string;
 	jurisdictionSlug: string;
 	publishedAt?: string | null;
+	reviewRecommendation?: GuidePackageReviewRecommendation | null;
 	reviewNotes?: string | null;
 	reviewedAt?: string | null;
 	reviewer?: string | null;
@@ -116,6 +118,7 @@ export interface GuidePackagePatch {
 	coverageNotes?: string[] | null;
 	draftedAt?: string;
 	publishedAt?: string | null;
+	reviewRecommendation?: GuidePackageReviewRecommendation | null;
 	reviewNotes?: string | null;
 	reviewedAt?: string | null;
 	reviewer?: string | null;
@@ -227,6 +230,7 @@ interface GuidePackageRow {
 	status: GuidePackageStatus;
 	reviewer: string | null;
 	review_notes: string | null;
+	review_recommendation: GuidePackageReviewRecommendation | null;
 	coverage_notes: string;
 	coverage_limits: string;
 	created_at: string;
@@ -368,6 +372,7 @@ function rowToGuidePackage(row: GuidePackageRow): GuidePackageWorkflow {
 		id: row.id,
 		jurisdictionSlug: row.jurisdiction_slug,
 		publishedAt: row.published_at || undefined,
+		reviewRecommendation: row.review_recommendation || undefined,
 		reviewNotes: row.review_notes || undefined,
 		reviewedAt: row.reviewed_at || undefined,
 		reviewer: row.reviewer || undefined,
@@ -500,6 +505,7 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 	database.exec(schema);
 	ensureColumn(database, "admin_content", "public_summary", "TEXT");
 	ensureColumn(database, "admin_content", "ballot_summary", "TEXT");
+	ensureColumn(database, "admin_guide_packages", "review_recommendation", "TEXT");
 
 	if (shouldPurgeLegacyDemoAdminData(options)) {
 		const legacyIds = getLegacyDemoAdminIds();
@@ -684,6 +690,7 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 				status,
 				reviewer,
 				review_notes,
+				review_recommendation,
 				coverage_notes,
 				coverage_limits,
 				created_at,
@@ -691,7 +698,7 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 				reviewed_at,
 				published_at,
 				updated_at
-			) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		`);
 
 		for (const item of guidePackageSeed) {
@@ -702,6 +709,7 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 				item.status,
 				item.reviewer || null,
 				item.reviewNotes || null,
+				item.reviewRecommendation || null,
 				JSON.stringify(item.coverageNotes ?? []),
 				JSON.stringify(item.coverageLimits ?? []),
 				item.createdAt,
@@ -861,7 +869,7 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 
 	function listGuidePackages(): GuidePackageWorkflowListResponse {
 		const rows = database.prepare(`
-			SELECT id, election_slug, jurisdiction_slug, status, reviewer, review_notes, coverage_notes, coverage_limits, created_at, drafted_at, reviewed_at, published_at, updated_at
+			SELECT id, election_slug, jurisdiction_slug, status, reviewer, review_notes, review_recommendation, coverage_notes, coverage_limits, created_at, drafted_at, reviewed_at, published_at, updated_at
 			FROM admin_guide_packages
 			ORDER BY CASE status
 				WHEN 'published' THEN 0
@@ -879,7 +887,7 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 
 	function getGuidePackage(id: string) {
 		const row = database.prepare(`
-			SELECT id, election_slug, jurisdiction_slug, status, reviewer, review_notes, coverage_notes, coverage_limits, created_at, drafted_at, reviewed_at, published_at, updated_at
+			SELECT id, election_slug, jurisdiction_slug, status, reviewer, review_notes, review_recommendation, coverage_notes, coverage_limits, created_at, drafted_at, reviewed_at, published_at, updated_at
 			FROM admin_guide_packages
 			WHERE id = ?
 		`).get(id) as GuidePackageRow | undefined;
@@ -894,6 +902,7 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 		const draftedAt = input.draftedAt || now;
 		const updatedAt = input.updatedAt || now;
 		const reviewNotes = input.reviewNotes?.trim() || null;
+		const reviewRecommendation = input.reviewRecommendation || null;
 		const reviewer = input.reviewer?.trim() || null;
 		const existing = getGuidePackage(input.id);
 
@@ -908,6 +917,7 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 				status,
 				reviewer,
 				review_notes,
+				review_recommendation,
 				coverage_notes,
 				coverage_limits,
 				created_at,
@@ -915,7 +925,7 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 				reviewed_at,
 				published_at,
 				updated_at
-			) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		`).run(
 			input.id,
 			input.electionSlug,
@@ -923,6 +933,7 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 			status,
 			reviewer,
 			reviewNotes,
+			reviewRecommendation,
 			JSON.stringify(input.coverageNotes ?? []),
 			JSON.stringify(input.coverageLimits ?? []),
 			createdAt,
@@ -1010,7 +1021,7 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 
 	function updateGuidePackage(id: string, patch: GuidePackagePatch) {
 		const current = database.prepare(`
-			SELECT id, election_slug, jurisdiction_slug, status, reviewer, review_notes, coverage_notes, coverage_limits, created_at, drafted_at, reviewed_at, published_at, updated_at
+			SELECT id, election_slug, jurisdiction_slug, status, reviewer, review_notes, review_recommendation, coverage_notes, coverage_limits, created_at, drafted_at, reviewed_at, published_at, updated_at
 			FROM admin_guide_packages
 			WHERE id = ?
 		`).get(id) as GuidePackageRow | undefined;
@@ -1023,6 +1034,9 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 		const nextReviewer = patch.reviewer === undefined
 			? current.reviewer
 			: patch.reviewer?.trim() || null;
+		const nextReviewRecommendation = patch.reviewRecommendation === undefined
+			? current.review_recommendation
+			: patch.reviewRecommendation || null;
 		const nextReviewNotes = patch.reviewNotes === undefined
 			? current.review_notes
 			: patch.reviewNotes?.trim() || null;
@@ -1045,6 +1059,7 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 			SET status = ?,
 				reviewer = ?,
 				review_notes = ?,
+				review_recommendation = ?,
 				coverage_notes = ?,
 				coverage_limits = ?,
 				drafted_at = ?,
@@ -1056,6 +1071,7 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 			nextStatus,
 			nextReviewer,
 			nextReviewNotes,
+			nextReviewRecommendation,
 			JSON.stringify(nextCoverageNotes),
 			JSON.stringify(nextCoverageLimits),
 			nextDraftedAt,

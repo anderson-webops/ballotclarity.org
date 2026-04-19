@@ -946,6 +946,23 @@ export type GuidePipelineClass = "fully_automatable" | "automatable_with_review"
 
 export type GuidePackageIssueSeverity = "info" | "warning" | "error";
 
+export type GuidePackageChecklistItemStatus = "pass" | "warning" | "fail" | "not_applicable";
+
+export type GuidePackageChecklistCategory
+	= | "election_identity_scope"
+		| "contest_completeness"
+		| "candidate_completeness"
+		| "measure_completeness"
+		| "official_resources"
+		| "source_coverage"
+		| "content_quality_neutrality"
+		| "freshness_timing"
+		| "known_limitations";
+
+export type GuidePackageChecklistEvaluationMode = "auto" | "reviewer_confirmed" | "hybrid";
+
+export type GuidePackageReviewRecommendation = "publish" | "publish_with_warnings" | "needs_revision" | "do_not_publish";
+
 export type GuidePackageIssueKind
 	= | "ambiguous_match"
 		| "coverage_limit"
@@ -985,11 +1002,38 @@ export interface GuidePackageIssue {
 
 export interface GuidePackageChecklistItem {
 	id: string;
+	category: GuidePackageChecklistCategory;
 	label: string;
 	detail: string;
-	passed: boolean;
+	status: GuidePackageChecklistItemStatus;
 	blocking: boolean;
 	pipelineClass: GuidePipelineClass;
+	evaluationMode: GuidePackageChecklistEvaluationMode;
+	whatToCheck: string;
+	whyItMatters: string;
+	passStandard: string;
+	warningStandard: string;
+	failStandard: string;
+	autoSignal?: string;
+	reviewerSignal?: string;
+	issueKind: GuidePackageIssueKind;
+}
+
+export interface GuidePackageChecklistCategoryGroup {
+	id: GuidePackageChecklistCategory;
+	label: string;
+	description: string;
+	items: GuidePackageChecklistItem[];
+	blockingIssueCount: number;
+	warningCount: number;
+	failCount: number;
+}
+
+export interface GuidePackageRecommendationSummary {
+	system: GuidePackageReviewRecommendation;
+	reviewer?: GuidePackageReviewRecommendation;
+	final: GuidePackageReviewRecommendation;
+	reason: string;
 }
 
 export interface GuidePackageDiagnostics {
@@ -998,7 +1042,12 @@ export interface GuidePackageDiagnostics {
 	blockingIssueCount: number;
 	warningCount: number;
 	issues: GuidePackageIssue[];
+	blockers: GuidePackageIssue[];
+	warnings: GuidePackageIssue[];
 	checklist: GuidePackageChecklistItem[];
+	checklistCategories: GuidePackageChecklistCategoryGroup[];
+	recommendation: GuidePackageRecommendationSummary;
+	rubricVersion: string;
 }
 
 export interface GuidePackageWorkflow {
@@ -1008,6 +1057,7 @@ export interface GuidePackageWorkflow {
 	status: GuidePackageStatus;
 	reviewer?: string;
 	reviewNotes?: string;
+	reviewRecommendation?: GuidePackageReviewRecommendation;
 	coverageNotes: string[];
 	coverageLimits: string[];
 	createdAt: string;
@@ -1054,7 +1104,7 @@ export interface GuidePackageSummary {
 	jurisdiction: JurisdictionSummary | null;
 	coverageScope: GuidePackageCoverageScope;
 	counts: GuidePackageCounts;
-	diagnostics: Pick<GuidePackageDiagnostics, "blockingIssueCount" | "completenessScore" | "readyToPublish" | "warningCount">;
+	diagnostics: Pick<GuidePackageDiagnostics, "blockingIssueCount" | "completenessScore" | "readyToPublish" | "recommendation" | "warningCount">;
 }
 
 export interface GuidePackageRecord extends GuidePackageSummary {

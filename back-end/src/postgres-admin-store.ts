@@ -13,6 +13,7 @@ import type {
 	AdminSourceMonitorItem,
 	AdminUser,
 	AdminUserRole,
+	GuidePackageReviewRecommendation,
 	GuidePackageStatus,
 	GuidePackageWorkflow,
 } from "./types/civic.js";
@@ -103,6 +104,7 @@ interface GuidePackageRow {
 	status: GuidePackageStatus;
 	reviewer: string | null;
 	review_notes: string | null;
+	review_recommendation: GuidePackageReviewRecommendation | null;
 	coverage_notes: string;
 	coverage_limits: string;
 	created_at: string;
@@ -221,6 +223,7 @@ function rowToGuidePackage(row: GuidePackageRow): GuidePackageWorkflow {
 		id: row.id,
 		jurisdictionSlug: row.jurisdiction_slug,
 		publishedAt: row.published_at || undefined,
+		reviewRecommendation: row.review_recommendation || undefined,
 		reviewNotes: row.review_notes || undefined,
 		reviewedAt: row.reviewed_at || undefined,
 		reviewer: row.reviewer || undefined,
@@ -239,6 +242,7 @@ async function seedPostgresDatabase(pool: Pool, options: AdminRepositoryOptions)
 	await pool.query(schema);
 	await pool.query("ALTER TABLE admin_content ADD COLUMN IF NOT EXISTS public_summary TEXT");
 	await pool.query("ALTER TABLE admin_content ADD COLUMN IF NOT EXISTS ballot_summary TEXT");
+	await pool.query("ALTER TABLE admin_guide_packages ADD COLUMN IF NOT EXISTS review_recommendation TEXT");
 
 	if (shouldPurgeLegacyDemoAdminData(options)) {
 		const legacyIds = getLegacyDemoAdminIds();
@@ -377,9 +381,9 @@ async function seedPostgresDatabase(pool: Pool, options: AdminRepositoryOptions)
 		for (const item of guidePackageSeed) {
 			await pool.query(`
 				INSERT INTO admin_guide_packages (
-					id, election_slug, jurisdiction_slug, status, reviewer, review_notes, coverage_notes, coverage_limits,
+					id, election_slug, jurisdiction_slug, status, reviewer, review_notes, review_recommendation, coverage_notes, coverage_limits,
 					created_at, drafted_at, reviewed_at, published_at, updated_at
-				) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+				) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
 			`, [
 				item.id,
 				item.electionSlug,
@@ -387,6 +391,7 @@ async function seedPostgresDatabase(pool: Pool, options: AdminRepositoryOptions)
 				item.status,
 				item.reviewer || null,
 				item.reviewNotes || null,
+				item.reviewRecommendation || null,
 				JSON.stringify(item.coverageNotes ?? []),
 				JSON.stringify(item.coverageLimits ?? []),
 				item.createdAt,
@@ -577,7 +582,7 @@ export async function createPostgresAdminRepository(options: AdminRepositoryOpti
 		},
 		async getGuidePackage(id) {
 			const result = await pool.query<GuidePackageRow>(`
-				SELECT id, election_slug, jurisdiction_slug, status, reviewer, review_notes, coverage_notes, coverage_limits, created_at, drafted_at, reviewed_at, published_at, updated_at
+				SELECT id, election_slug, jurisdiction_slug, status, reviewer, review_notes, review_recommendation, coverage_notes, coverage_limits, created_at, drafted_at, reviewed_at, published_at, updated_at
 				FROM admin_guide_packages
 				WHERE id = $1
 			`, [id]);
@@ -664,7 +669,7 @@ export async function createPostgresAdminRepository(options: AdminRepositoryOpti
 		},
 		async listGuidePackages() {
 			const result = await pool.query<GuidePackageRow>(`
-				SELECT id, election_slug, jurisdiction_slug, status, reviewer, review_notes, coverage_notes, coverage_limits, created_at, drafted_at, reviewed_at, published_at, updated_at
+				SELECT id, election_slug, jurisdiction_slug, status, reviewer, review_notes, review_recommendation, coverage_notes, coverage_limits, created_at, drafted_at, reviewed_at, published_at, updated_at
 				FROM admin_guide_packages
 				ORDER BY CASE status
 					WHEN 'published' THEN 0
@@ -705,9 +710,9 @@ export async function createPostgresAdminRepository(options: AdminRepositoryOpti
 
 			await pool.query(`
 				INSERT INTO admin_guide_packages (
-					id, election_slug, jurisdiction_slug, status, reviewer, review_notes, coverage_notes, coverage_limits,
+					id, election_slug, jurisdiction_slug, status, reviewer, review_notes, review_recommendation, coverage_notes, coverage_limits,
 					created_at, drafted_at, reviewed_at, published_at, updated_at
-				) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+				) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
 			`, [
 				input.id,
 				input.electionSlug,
@@ -715,6 +720,7 @@ export async function createPostgresAdminRepository(options: AdminRepositoryOpti
 				input.status ?? "draft",
 				input.reviewer?.trim() || null,
 				input.reviewNotes?.trim() || null,
+				input.reviewRecommendation || null,
 				JSON.stringify(input.coverageNotes ?? []),
 				JSON.stringify(input.coverageLimits ?? []),
 				input.createdAt || now,
@@ -813,6 +819,9 @@ export async function createPostgresAdminRepository(options: AdminRepositoryOpti
 			const now = new Date().toISOString();
 			const nextStatus = patch.status ?? current.status;
 			const nextReviewer = patch.reviewer === undefined ? current.reviewer ?? null : patch.reviewer?.trim() || null;
+			const nextReviewRecommendation = patch.reviewRecommendation === undefined
+				? current.reviewRecommendation ?? null
+				: patch.reviewRecommendation || null;
 			const nextReviewNotes = patch.reviewNotes === undefined ? current.reviewNotes ?? null : patch.reviewNotes?.trim() || null;
 			const nextCoverageNotes = patch.coverageNotes === undefined ? current.coverageNotes : patch.coverageNotes ?? [];
 			const nextCoverageLimits = patch.coverageLimits === undefined ? current.coverageLimits : patch.coverageLimits ?? [];
@@ -825,17 +834,19 @@ export async function createPostgresAdminRepository(options: AdminRepositoryOpti
 				SET status = $1,
 					reviewer = $2,
 					review_notes = $3,
-					coverage_notes = $4,
-					coverage_limits = $5,
-					drafted_at = $6,
-					reviewed_at = $7,
-					published_at = $8,
-					updated_at = $9
-				WHERE id = $10
+					review_recommendation = $4,
+					coverage_notes = $5,
+					coverage_limits = $6,
+					drafted_at = $7,
+					reviewed_at = $8,
+					published_at = $9,
+					updated_at = $10
+				WHERE id = $11
 			`, [
 				nextStatus,
 				nextReviewer,
 				nextReviewNotes,
+				nextReviewRecommendation,
 				JSON.stringify(nextCoverageNotes),
 				JSON.stringify(nextCoverageLimits),
 				nextDraftedAt,

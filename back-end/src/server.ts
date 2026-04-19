@@ -137,6 +137,100 @@ function summarizeMatchedDistricts(labels: string[]) {
 	return `Matched districts: ${labels.join(", ")}.`;
 }
 
+function resolveErrorCode(error: unknown) {
+	if (!error || typeof error !== "object" || !("code" in error)) {
+		return "";
+	}
+
+	const { code } = error as { code?: unknown };
+	return typeof code === "string" ? code : "";
+}
+
+function isRecoverableLocalPostgresError(error: unknown) {
+	const code = resolveErrorCode(error).toLowerCase();
+	const message = error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase();
+
+	if ([
+		"28000",
+		"28p01",
+		"3d000",
+		"econnrefused",
+		"enotfound",
+		"ehostunreach",
+		"etimedout",
+	].includes(code)) {
+		return true;
+	}
+
+	return [
+		"postgres admin store requires admin_database_url or database_url",
+		"role \"postgres\" does not exist",
+		"password authentication failed",
+		"connect econnrefused",
+		"getaddrinfo enotfound",
+	].some(pattern => message.includes(pattern));
+}
+
+function shouldAllowLocalDatabaseFallback() {
+	return (process.env.NODE_ENV || "development").trim().toLowerCase() !== "production";
+}
+
+async function createAdminRepositoryWithFallback(
+	logger: ReturnType<typeof createLogger>,
+	options: {
+		activitySeed?: AdminActivityItem[];
+		bootstrapDisplayName?: string | null;
+		bootstrapPassword?: string | null;
+		bootstrapUsername?: string | null;
+		contentSeed?: AdminContentItem[];
+		correctionSeed?: AdminCorrectionRequest[];
+		dbPath?: string | null;
+		databaseUrl?: string | null;
+		sourceMonitorSeed?: AdminSourceMonitorItem[];
+	}
+) {
+	try {
+		return await createAdminRepository(options);
+	}
+	catch (error) {
+		if (!shouldAllowLocalDatabaseFallback() || !isRecoverableLocalPostgresError(error)) {
+			throw error;
+		}
+
+		logger.warn("admin.store.local-fallback", {
+			databaseDriver: "sqlite",
+			error: error instanceof Error ? error.message : String(error),
+		});
+
+		return createAdminRepository({
+			...options,
+			databaseUrl: null,
+			storeDriver: "sqlite",
+		});
+	}
+}
+
+async function createAddressCacheRepositoryWithFallback(
+	logger: ReturnType<typeof createLogger>,
+	databaseUrl: string
+) {
+	try {
+		return await createAddressCacheRepository(databaseUrl);
+	}
+	catch (error) {
+		if (!shouldAllowLocalDatabaseFallback() || !isRecoverableLocalPostgresError(error)) {
+			throw error;
+		}
+
+		logger.warn("address-cache.local-fallback", {
+			databaseDriver: "none",
+			error: error instanceof Error ? error.message : String(error),
+		});
+
+		return await createAddressCacheRepository("");
+	}
+}
+
 function buildZipSelectionOption(
 	match: ZipLocationMatch,
 	jurisdictionSummaries: JurisdictionSummary[]
@@ -2081,9 +2175,11 @@ function buildSearchResponse(
 
 export async function createApp(options: CreateAppOptions = {}) {
 	const app = express();
+	const logger = createLogger("ballot-clarity-api");
 	const adminApiKey = options.adminApiKey ?? process.env.ADMIN_API_KEY ?? null;
+	const adminDatabaseUrl = process.env.ADMIN_DATABASE_URL || process.env.DATABASE_URL || null;
 	const coverageRepository = options.coverageRepository ?? await createCoverageRepository();
-	const adminRepository = await createAdminRepository({
+	const adminRepository = await createAdminRepositoryWithFallback(logger, {
 		activitySeed: options.activitySeed,
 		bootstrapDisplayName: options.bootstrapDisplayName,
 		bootstrapPassword: options.bootstrapPassword,
@@ -2091,10 +2187,9 @@ export async function createApp(options: CreateAppOptions = {}) {
 		contentSeed: options.contentSeed,
 		correctionSeed: options.correctionSeed,
 		dbPath: options.adminDbPath,
-		databaseUrl: process.env.ADMIN_DATABASE_URL || process.env.DATABASE_URL || null,
+		databaseUrl: adminDatabaseUrl,
 		sourceMonitorSeed: options.sourceMonitorSeed
 	});
-	const logger = createLogger("ballot-clarity-api");
 	const sourceAssetStore = createSourceAssetStore();
 	const locationGuessService = createLocationGuessService(options.locationGuessOptions);
 	const adminLoginThrottle = createAdminLoginThrottle();
@@ -2115,7 +2210,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 		? createAddressEnrichmentService(
 				createCensusGeocoderClient(),
 				openStatesClient,
-				await createAddressCacheRepository(process.env.ADMIN_DATABASE_URL || process.env.DATABASE_URL || "")
+				await createAddressCacheRepositoryWithFallback(logger, adminDatabaseUrl || "")
 			)
 		: options.addressEnrichmentService;
 	const resolvedSourceInventory = resolveSources(coverageRepository.data.sources);

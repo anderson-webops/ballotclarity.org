@@ -37,6 +37,7 @@ import {
 export interface AdminRepositoryOptions {
 	dbPath?: string | null;
 	databaseUrl?: string | null;
+	storeDriver?: "postgres" | "sqlite" | null;
 	bootstrapDisplayName?: string | null;
 	bootstrapPassword?: string | null;
 	bootstrapRole?: AdminUserRole | null;

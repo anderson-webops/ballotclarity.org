@@ -4,6 +4,12 @@ import { createSqliteAdminRepository } from "./admin-store.js";
 import { createPostgresAdminRepository } from "./postgres-admin-store.js";
 
 function resolveStoreDriver(options: AdminRepositoryOptions) {
+	if (options.storeDriver === "postgres")
+		return "postgres" as const;
+
+	if (options.storeDriver === "sqlite")
+		return "sqlite" as const;
+
 	const configured = (process.env.ADMIN_STORE_DRIVER || "").trim().toLowerCase();
 
 	if (configured === "postgres")

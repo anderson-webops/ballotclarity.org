@@ -1929,9 +1929,15 @@ test("supplemental state and local officeholder routes resolve as stable public 
 	assert.ok(localBody.person.officeContext);
 	assert.equal(localBody.person.officeContext.chamberLabel, "City government");
 	assert.equal(localBody.person.officeContext.jurisdictionLabel, "Provo, Utah");
+	assert.match(localBody.person.officeContext.currentTermLabel ?? "", /January 2026/i);
 	assert.equal(localBody.person.officialWebsiteUrl, "https://www.provo.gov/433/Mayors-Office");
-	assert.equal(localBody.person.enrichmentStatus?.funding.reasonCode, "no_local_finance_source");
+	assert.equal(localBody.person.enrichmentStatus?.funding.reasonCode, "attached");
 	assert.equal(localBody.person.enrichmentStatus?.influence.reasonCode, "no_local_disclosure_source");
+	assert.equal(localBody.person.enrichmentStatus?.legislativeContext.reasonCode, "attached");
+	assert.ok(localBody.person.funding);
+	assert.equal(localBody.person.funding.totalRaised, 63522.39);
+	assert.equal(localBody.person.funding.cashOnHand, 954.76);
+	assert.ok(localBody.person.keyActions.length > 0);
 	assert.match(localBody.person.summary, /current Provo mayor/i);
 });
 
@@ -1950,8 +1956,12 @@ test("state representative routes merge reviewed state-officeholder sources into
 	assert.equal(body.person.officeContext.chamberLabel, "State House");
 	assert.equal(body.person.officeContext.jurisdictionLabel, "Georgia");
 	assert.equal(body.person.enrichmentStatus?.funding.reasonCode, "no_state_finance_source");
-	assert.equal(body.person.enrichmentStatus?.influence.reasonCode, "no_state_disclosure_source");
-	assert.ok(["identity_only_provider", "no_state_legislative_source"].includes(body.person.enrichmentStatus?.legislativeContext.reasonCode));
+	assert.equal(body.person.enrichmentStatus?.influence.reasonCode, "attached");
+	assert.equal(body.person.enrichmentStatus?.legislativeContext.reasonCode, "attached");
+	assert.ok(body.person.keyActions.length >= 2);
+	assert.ok(body.person.lobbyingContext.length > 0);
+	assert.ok(body.person.influence);
+	assert.ok(body.person.officeContext.committeeMemberships?.includes("Chairman, Information & Audits"));
 	assert.ok(body.person.biography.some((item: { title: string }) => /reviewed/i.test(item.title)));
 	assert.ok(
 		body.person.provenance.label.toLowerCase().includes("reviewed")
@@ -1975,7 +1985,10 @@ test("state senator routes merge reviewed official state sources without driftin
 	assert.equal(body.person.officeContext.jurisdictionLabel, "Georgia");
 	assert.equal(body.person.enrichmentStatus?.funding.reasonCode, "no_state_finance_source");
 	assert.equal(body.person.enrichmentStatus?.influence.reasonCode, "no_state_disclosure_source");
-	assert.ok(["identity_only_provider", "no_state_legislative_source"].includes(body.person.enrichmentStatus?.legislativeContext.reasonCode));
+	assert.equal(body.person.enrichmentStatus?.legislativeContext.reasonCode, "attached");
+	assert.ok(body.person.keyActions.length >= 2);
+	assert.ok(body.person.topIssues.length >= 2);
+	assert.ok(body.person.officeContext.committeeMemberships?.includes("Judiciary"));
 	assert.ok(body.person.biography.some((item: { title: string }) => /reviewed/i.test(item.title)));
 	assert.ok(body.person.sources.some((item: { sourceSystem?: string }) => /Georgia General Assembly member bio/i.test(item.sourceSystem ?? "")));
 	assert.doesNotMatch(body.person.officeSought, /U\.S\. Senate/i);
@@ -1998,6 +2011,9 @@ test("county and city officeholder routes expose normalized office context and p
 	assert.equal(countyBody.person.officeContext.jurisdictionLabel, "Fulton County, Georgia");
 	assert.equal(countyBody.person.enrichmentStatus?.funding.reasonCode, "no_local_finance_source");
 	assert.equal(countyBody.person.enrichmentStatus?.influence.reasonCode, "no_local_disclosure_source");
+	assert.equal(countyBody.person.enrichmentStatus?.legislativeContext.reasonCode, "attached");
+	assert.ok(countyBody.person.keyActions.length >= 2);
+	assert.match(countyBody.person.officeContext.currentTermLabel ?? "", /2023/);
 
 	assert.equal(cityResponse.status, 200);
 	assert.equal(cityBody.person.slug, "john-bradberry");
@@ -2007,8 +2023,10 @@ test("county and city officeholder routes expose normalized office context and p
 	assert.ok(cityBody.person.officeContext);
 	assert.equal(cityBody.person.officeContext.chamberLabel, "City government");
 	assert.equal(cityBody.person.officeContext.jurisdictionLabel, "Johns Creek, Georgia");
+	assert.equal(cityBody.person.enrichmentStatus?.legislativeContext.reasonCode, "attached");
 	assert.equal(cityBody.person.enrichmentStatus?.funding.reasonCode, "no_local_finance_source");
 	assert.equal(cityBody.person.enrichmentStatus?.influence.reasonCode, "no_local_disclosure_source");
+	assert.ok(cityBody.person.keyActions.length >= 2);
 });
 
 test("direct representative routes degrade to a public fallback instead of 500 when the provider route lookup fails", async () => {

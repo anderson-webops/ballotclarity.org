@@ -18,7 +18,9 @@ import type {
 	DistrictsResponse,
 	Election,
 	EvidenceBlock,
+	ExternalLink,
 	FundingSummary,
+	IssueTag,
 	Jurisdiction,
 	JurisdictionSummary,
 	LocationDistrictMatch,
@@ -30,6 +32,11 @@ import type {
 	MeasureFiscalItem,
 	MeasureTimelineItem,
 	OfficialResource,
+	PersonProfileEnrichmentStatus,
+	PersonProfileEnrichmentStatusItem,
+	PersonProfileFunding,
+	PersonProfileInfluence,
+	PersonProfileOfficeContext,
 	PersonProfileResponse,
 	PublicCorrectionsResponse,
 	PublicStatusResponse,
@@ -87,7 +94,6 @@ import { classifyRepresentative } from "./representative-classification.js";
 import { createRepresentativeModuleResolver } from "./representative-modules.js";
 import { createSourceAssetStore } from "./source-asset-store.js";
 import {
-	buildSupplementalRepresentativeMatch,
 	findSupplementalOfficeholderByRepresentativeSlug,
 	findSupplementalOfficeholdersByDistrictSlug,
 	listSupplementalOfficeholders,
@@ -180,6 +186,230 @@ function buildZipSelectionOption(
 
 function uniqueSources(sources: Source[]) {
 	return Array.from(new Map(sources.map(source => [source.id, source])).values());
+}
+
+function uniqueById<T extends { id: string }>(items: T[]) {
+	return Array.from(new Map(items.map(item => [item.id, item])).values());
+}
+
+function uniqueBySlug<T extends { slug: string }>(items: T[]) {
+	return Array.from(new Map(items.map(item => [item.slug, item])).values());
+}
+
+function uniqueStrings(values: Array<string | null | undefined>) {
+	return Array.from(new Set(values.map(value => String(value ?? "").trim()).filter(Boolean)));
+}
+
+const openStatesOfficeholderSnapshotPattern = /open states officeholder snapshot/i;
+
+function uniqueExternalLinks(links: ExternalLink[]) {
+	return Array.from(new Map(
+		links
+			.filter(link => link?.label?.trim() && link?.url?.trim())
+			.map(link => [`${link.label.trim().toLowerCase()}:${link.url.trim()}`, link]),
+	).values());
+}
+
+function buildSupplementalEnrichmentStatusItem(
+	status: PersonProfileEnrichmentStatusItem["status"],
+	reasonCode: PersonProfileEnrichmentStatusItem["reasonCode"],
+	summary: string,
+	sourceSystem?: string,
+): PersonProfileEnrichmentStatusItem {
+	return {
+		reasonCode,
+		sourceSystem,
+		status,
+		summary,
+	};
+}
+
+function inferSupplementalChamberLabel(
+	record: SupplementalOfficeholderRecord,
+	classification: ReturnType<typeof classifyRepresentative>,
+) {
+	if (record.jurisdiction === "State") {
+		if (classification.officeType === "state_senate")
+			return "State Senate";
+
+		if (classification.officeType === "state_house")
+			return "State House";
+	}
+
+	if (classification.governmentLevel === "county")
+		return "County commission";
+
+	if (classification.governmentLevel === "city")
+		return "City government";
+
+	return undefined;
+}
+
+function buildSupplementalOfficeContext(
+	record: SupplementalOfficeholderRecord,
+	classification: ReturnType<typeof classifyRepresentative>,
+): PersonProfileOfficeContext | undefined {
+	const enrichmentOfficeContext = record.enrichment?.officeContext;
+	const referenceLinks = uniqueExternalLinks([
+		...(enrichmentOfficeContext?.referenceLinks ?? []),
+		...(record.officialWebsiteUrl
+			? [
+					{
+						label: "Official office website",
+						note: "Official public office page for this officeholder.",
+						url: record.officialWebsiteUrl,
+					} satisfies ExternalLink,
+				]
+			: []),
+		...(record.openstatesUrl
+			? [
+					{
+						label: "Provider record",
+						note: "Provider-backed officeholder record Ballot Clarity used for identity and district context.",
+						url: record.openstatesUrl,
+					} satisfies ExternalLink,
+				]
+			: []),
+	]);
+
+	const mergedContext: PersonProfileOfficeContext = {
+		chamberLabel: enrichmentOfficeContext?.chamberLabel || inferSupplementalChamberLabel(record, classification),
+		committeeMemberships: uniqueStrings(enrichmentOfficeContext?.committeeMemberships ?? []),
+		currentTermLabel: enrichmentOfficeContext?.currentTermLabel,
+		districtLabel: enrichmentOfficeContext?.districtLabel || record.districtLabel,
+		jurisdictionLabel: enrichmentOfficeContext?.jurisdictionLabel || (record.jurisdiction === "State" ? record.stateName : record.location),
+		officialOfficeAddress: enrichmentOfficeContext?.officialOfficeAddress,
+		officialPhone: enrichmentOfficeContext?.officialPhone,
+		referenceLinks: referenceLinks.length ? referenceLinks : undefined,
+	};
+
+	return Object.values(mergedContext).some(value => Array.isArray(value) ? value.length > 0 : Boolean(value))
+		? mergedContext
+		: undefined;
+}
+
+function mergeOfficeContext(
+	baseContext: PersonProfileOfficeContext | undefined,
+	supplementalContext: PersonProfileOfficeContext | undefined,
+) {
+	if (!baseContext && !supplementalContext)
+		return undefined;
+
+	const mergedContext: PersonProfileOfficeContext = {
+		chamberLabel: supplementalContext?.chamberLabel || baseContext?.chamberLabel,
+		committeeMemberships: uniqueStrings([
+			...(baseContext?.committeeMemberships ?? []),
+			...(supplementalContext?.committeeMemberships ?? []),
+		]),
+		currentTermLabel: supplementalContext?.currentTermLabel || baseContext?.currentTermLabel,
+		districtLabel: supplementalContext?.districtLabel || baseContext?.districtLabel,
+		jurisdictionLabel: supplementalContext?.jurisdictionLabel || baseContext?.jurisdictionLabel,
+		officialOfficeAddress: supplementalContext?.officialOfficeAddress || baseContext?.officialOfficeAddress,
+		officialPhone: supplementalContext?.officialPhone || baseContext?.officialPhone,
+		referenceLinks: uniqueExternalLinks([
+			...(baseContext?.referenceLinks ?? []),
+			...(supplementalContext?.referenceLinks ?? []),
+		]),
+	};
+
+	return Object.values(mergedContext).some(value => Array.isArray(value) ? value.length > 0 : Boolean(value))
+		? {
+				...mergedContext,
+				committeeMemberships: mergedContext.committeeMemberships?.length ? mergedContext.committeeMemberships : undefined,
+				referenceLinks: mergedContext.referenceLinks?.length ? mergedContext.referenceLinks : undefined,
+			}
+		: undefined;
+}
+
+function buildSupplementalEnrichmentStatus(
+	record: SupplementalOfficeholderRecord,
+	officeContext: PersonProfileOfficeContext | undefined,
+	funding: PersonProfileFunding | null,
+	influence: PersonProfileInfluence | null,
+	keyActions: VoteRecordSummary[],
+	lobbyingContext: EvidenceBlock[],
+	publicStatements: EvidenceBlock[],
+	topIssues: IssueTag[],
+): PersonProfileEnrichmentStatus {
+	const sourceSystem = record.sources[0]?.sourceSystem || record.sourceSystem;
+	const hasInfluence = Boolean(influence) || lobbyingContext.length > 0 || publicStatements.length > 0;
+	const hasLegislativeContext = keyActions.length > 0 || topIssues.length > 0;
+	const isStateRoute = record.jurisdiction === "State";
+	const hasIdentityOnlyProviderSource = isStateRoute && openStatesOfficeholderSnapshotPattern.test(sourceSystem);
+
+	return {
+		funding: funding
+			? buildSupplementalEnrichmentStatusItem(
+					"available",
+					"attached",
+					isStateRoute
+						? "Ballot Clarity attached a reviewed state campaign-finance summary to this state-legislator route."
+						: "Ballot Clarity attached a reviewed local campaign-finance summary to this officeholder route.",
+					sourceSystem,
+				)
+			: buildSupplementalEnrichmentStatusItem(
+					"unavailable",
+					isStateRoute ? "no_state_finance_source" : "no_local_finance_source",
+					isStateRoute
+						? "Ballot Clarity does not currently have a reviewed state campaign-finance source configured for this jurisdiction."
+						: "Ballot Clarity does not currently have a reviewed local campaign-finance source configured for this jurisdiction.",
+					sourceSystem,
+				),
+		influence: hasInfluence
+			? buildSupplementalEnrichmentStatusItem(
+					"available",
+					"attached",
+					isStateRoute
+						? "Ballot Clarity attached reviewed state disclosure or lobbying context to this state-legislator route."
+						: "Ballot Clarity attached reviewed local disclosure or influence context to this officeholder route.",
+					sourceSystem,
+				)
+			: buildSupplementalEnrichmentStatusItem(
+					"unavailable",
+					isStateRoute ? "no_state_disclosure_source" : "no_local_disclosure_source",
+					isStateRoute
+						? "Ballot Clarity does not currently have a reviewed state disclosure or lobbying source configured for this jurisdiction."
+						: "Ballot Clarity does not currently have a reviewed local disclosure or ethics source configured for this jurisdiction.",
+					sourceSystem,
+				),
+		legislativeContext: hasLegislativeContext
+			? buildSupplementalEnrichmentStatusItem(
+					"available",
+					"attached",
+					isStateRoute
+						? "Ballot Clarity attached reviewed legislative, committee, or public-action context to this state-legislator route."
+						: "Ballot Clarity attached reviewed public-action or issue context to this local officeholder route.",
+					sourceSystem,
+				)
+			: hasIdentityOnlyProviderSource
+				? buildSupplementalEnrichmentStatusItem(
+						"unavailable",
+						"identity_only_provider",
+						"Current provider data supports identity, chamber, party, and district context for this route, but Ballot Clarity does not yet have a reviewed state legislative-actions feed attached here.",
+						sourceSystem,
+					)
+				: buildSupplementalEnrichmentStatusItem(
+						"unavailable",
+						isStateRoute ? "no_state_legislative_source" : "no_local_legislative_source",
+						isStateRoute
+							? "Ballot Clarity does not currently have a reviewed state legislative-actions or voting-context source attached for this jurisdiction."
+							: "Ballot Clarity does not currently have a reviewed local public-actions or issue feed attached for this officeholder route.",
+						sourceSystem,
+					),
+		officeContext: officeContext
+			? buildSupplementalEnrichmentStatusItem(
+					"available",
+					"attached",
+					"Ballot Clarity attached structured office, district, and jurisdiction context to this public officeholder route.",
+					sourceSystem,
+				)
+			: buildSupplementalEnrichmentStatusItem(
+					"unavailable",
+					hasIdentityOnlyProviderSource ? "identity_only_provider" : "provider_returned_no_records",
+					"Ballot Clarity could not attach structured office-context details beyond the identity record for this route.",
+					sourceSystem,
+				),
+	};
 }
 
 function collectCandidateSources(candidate: Candidate) {
@@ -941,51 +1171,6 @@ function buildRepresentativeLookupContext(record: OpenStatesRepresentativeRecord
 	};
 }
 
-function buildRepresentativeLookupContextFromSupplementalOfficeholder(
-	record: SupplementalOfficeholderRecord,
-	representativeSlug: string,
-	updatedAt: string,
-) {
-	const officialResources = getOfficialToolsForState(record.stateCode);
-	const districtCodeMatch = record.districtSlug.match(districtNumberPattern);
-
-	return {
-		actions: officialResources.map((resource, index) => ({
-			badge: resource.sourceLabel,
-			description: resource.note || "",
-			id: `official:${record.stateCode || "unknown"}:${index}`,
-			kind: "official-verification" as const,
-			title: resource.label,
-			url: resource.url,
-		})),
-		detectedFromIp: false,
-		districtMatches: [
-			{
-				districtCode: districtCodeMatch?.[1] || record.districtSlug,
-				districtType: record.districtType,
-				id: record.districtSlug,
-				label: record.districtLabel,
-				sourceSystem: record.sourceSystem,
-			},
-		],
-		electionLogistics: null,
-		guideAvailability: "not-published" as const,
-		inputKind: "address" as const,
-		location: {
-			coverageLabel: "Nationwide civic results available",
-			displayName: record.location,
-			slug: toLookupSlug(record.location),
-			state: record.stateName,
-		},
-		normalizedAddress: record.stateCode || record.location,
-		representativeMatches: [
-			buildSupplementalRepresentativeMatch(record),
-		],
-		resolvedAt: updatedAt,
-		result: "resolved" as const,
-	};
-}
-
 function buildRepresentativeProfileFromSupplementalOfficeholder(record: SupplementalOfficeholderRecord): PersonProfileResponse {
 	const updatedAt = record.updatedAt || new Date().toISOString();
 	const officialResources = getOfficialToolsForState(record.stateCode);
@@ -997,18 +1182,40 @@ function buildRepresentativeProfileFromSupplementalOfficeholder(record: Suppleme
 		stateCode: record.stateCode,
 		stateName: record.stateName,
 	});
-	const sources = [
-		...record.sources,
-		...buildOfficialToolSources(officialResources, updatedAt),
-	];
 	const provenanceStatus = record.sourceSystem.toLowerCase().includes("official")
 		? "direct"
 		: "crosswalked";
+	const funding = record.enrichment?.funding ?? null;
+	const influence = record.enrichment?.influence ?? null;
+	const keyActions = uniqueById(record.enrichment?.keyActions ?? []);
+	const lobbyingContext = uniqueById(record.enrichment?.lobbyingContext ?? []);
+	const publicStatements = uniqueById(record.enrichment?.publicStatements ?? []);
+	const topIssues = uniqueBySlug(record.enrichment?.topIssues ?? []);
+	const officeContext = buildSupplementalOfficeContext(record, classification);
+	const enrichmentStatus = buildSupplementalEnrichmentStatus(
+		record,
+		officeContext,
+		funding,
+		influence,
+		keyActions,
+		lobbyingContext,
+		publicStatements,
+		topIssues,
+	);
+	const sources = uniqueSources([
+		...record.sources,
+		...buildOfficialToolSources(officialResources, updatedAt),
+		...(funding?.sources ?? []),
+		...keyActions.flatMap(action => action.sources),
+		...lobbyingContext.flatMap(block => block.sources),
+		...publicStatements.flatMap(block => block.sources),
+	]);
 	const methodologyNotes = [
 		record.jurisdiction === "State"
 			? "This representative route is backed by a reviewed state officeholder record that Ballot Clarity keeps available when live provider lookups are unavailable or incomplete."
 			: "This representative route is backed by a reviewed official local-government officeholder source so the public person page can stay stable even where nationwide provider coverage is incomplete.",
 		"An active nationwide lookup can still add exact district confirmation for the current user when multiple local layers overlap.",
+		...(record.enrichment?.methodologyNotes ?? []),
 	];
 
 	return {
@@ -1037,16 +1244,18 @@ function buildRepresentativeProfileFromSupplementalOfficeholder(record: Suppleme
 					? "This page is route-backed from a reviewed current state officeholder record. Active lookup context can still add user-specific district confirmation and stronger locality context."
 					: "This page is route-backed from a reviewed current local officeholder source. Active lookup context can still confirm whether this officeholder is part of the user's exact matched district stack.",
 			},
-			funding: null,
+			funding,
 			governmentLevel: classification.governmentLevel,
 			incumbent: true,
-			keyActions: [],
-			lobbyingContext: [],
+			influence,
+			keyActions,
+			lobbyingContext,
 			location: record.location,
 			methodologyNotes,
 			name: record.name,
 			officeDisplayLabel: classification.officeDisplayLabel,
 			officeholderLabel: "Current officeholder",
+			officeContext,
 			officeType: classification.officeType,
 			officeSought: record.officeSought,
 			onCurrentBallot: false,
@@ -1060,13 +1269,14 @@ function buildRepresentativeProfileFromSupplementalOfficeholder(record: Suppleme
 				source: "nationwide",
 				status: provenanceStatus,
 			},
-			publicStatements: [],
+			publicStatements,
 			slug: record.slug,
 			sourceCount: sources.length,
 			sources,
 			summary: record.summary,
-			topIssues: [],
+			topIssues,
 			updatedAt,
+			enrichmentStatus,
 			whatWeDoNotKnow: [
 				{
 					id: "lookup-confirmation",
@@ -1102,9 +1312,45 @@ function mergeRepresentativeProfileWithSupplementalOfficeholder(
 		stateName: record.stateName,
 	});
 	const normalizedReviewedSourceLabel = record.provenanceLabel.replace(reviewedPrefixPattern, "").toLowerCase();
+	const funding = baseProfile.person.funding ?? record.enrichment?.funding ?? null;
+	const influence = baseProfile.person.influence ?? record.enrichment?.influence ?? null;
+	const keyActions = uniqueById([
+		...baseProfile.person.keyActions,
+		...(record.enrichment?.keyActions ?? []),
+	]);
+	const lobbyingContext = uniqueById([
+		...baseProfile.person.lobbyingContext,
+		...(record.enrichment?.lobbyingContext ?? []),
+	]);
+	const publicStatements = uniqueById([
+		...baseProfile.person.publicStatements,
+		...(record.enrichment?.publicStatements ?? []),
+	]);
+	const topIssues = uniqueBySlug([
+		...baseProfile.person.topIssues,
+		...(record.enrichment?.topIssues ?? []),
+	]);
+	const officeContext = mergeOfficeContext(
+		baseProfile.person.officeContext,
+		buildSupplementalOfficeContext(record, classification),
+	);
+	const enrichmentStatus = buildSupplementalEnrichmentStatus(
+		record,
+		officeContext,
+		funding,
+		influence,
+		keyActions,
+		lobbyingContext,
+		publicStatements,
+		topIssues,
+	);
 	const mergedSources = uniqueSources([
 		...baseProfile.person.sources,
 		...record.sources,
+		...(funding?.sources ?? []),
+		...keyActions.flatMap(action => action.sources),
+		...lobbyingContext.flatMap(block => block.sources),
+		...publicStatements.flatMap(block => block.sources),
 	]);
 	const biographyBlockId = `supplemental:${record.slug}:context`;
 	const biography = [
@@ -1123,6 +1369,7 @@ function mergeRepresentativeProfileWithSupplementalOfficeholder(
 		record.jurisdiction === "State"
 			? `Ballot Clarity also attached a reviewed ${normalizedReviewedSourceLabel} so this state-legislator route carries official-source office context alongside the provider-backed identity record.`
 			: `Ballot Clarity also attached a reviewed ${normalizedReviewedSourceLabel} so this local officeholder route carries official-source context alongside the provider-backed identity record.`,
+		...(record.enrichment?.methodologyNotes ?? []),
 	]));
 	const whatWeKnow = [
 		...baseProfile.person.whatWeKnow,
@@ -1166,9 +1413,14 @@ function mergeRepresentativeProfileWithSupplementalOfficeholder(
 				statusNote,
 			},
 			governmentLevel: classification.governmentLevel,
+			funding,
+			influence,
+			keyActions,
+			lobbyingContext,
 			location: record.location,
 			methodologyNotes,
 			officialWebsiteUrl: baseProfile.person.officialWebsiteUrl || record.officialWebsiteUrl,
+			officeContext,
 			officeDisplayLabel: classification.officeDisplayLabel,
 			officeSought: record.officeSought,
 			officeType: classification.officeType,
@@ -1179,13 +1431,16 @@ function mergeRepresentativeProfileWithSupplementalOfficeholder(
 				label: provenanceLabel,
 				note: provenanceNote,
 			},
+			publicStatements,
 			sourceCount: mergedSources.length,
 			sources: mergedSources,
 			summary: record.jurisdiction === "State"
 				? `${record.name} is the current ${record.party ? `${record.party} ` : ""}${record.officeSought} record Ballot Clarity can attach from the public provider layer, with reviewed state-officeholder context attached from official or reviewed sources.`
 				: `${record.name} is the current ${record.officeSought} record Ballot Clarity can attach from the public provider layer, with reviewed local officeholder context attached from official sources.`,
+			topIssues,
 			updatedAt,
 			whatWeKnow,
+			enrichmentStatus,
 		},
 		updatedAt,
 	};
@@ -2812,27 +3067,15 @@ export async function createApp(options: CreateAppOptions = {}) {
 
 		if (representativeRecord) {
 			const openStatesProfile = buildRepresentativeProfileFromOpenStates(representativeRecord);
-			const baseProfile = supplementalOfficeholder
-				? mergeRepresentativeProfileWithSupplementalOfficeholder(openStatesProfile, supplementalOfficeholder)
-				: openStatesProfile;
-			const lookupContext = supplementalOfficeholder
-				? buildRepresentativeLookupContextFromSupplementalOfficeholder(
-						supplementalOfficeholder,
-						baseProfile.person.slug,
-						baseProfile.updatedAt,
-					)
-				: buildRepresentativeLookupContext(representativeRecord, baseProfile.person.slug, baseProfile.updatedAt);
-			return await representativeModuleResolver.enrichNationwidePersonProfile(lookupContext, baseProfile);
+			if (supplementalOfficeholder)
+				return mergeRepresentativeProfileWithSupplementalOfficeholder(openStatesProfile, supplementalOfficeholder);
+
+			const lookupContext = buildRepresentativeLookupContext(representativeRecord, openStatesProfile.person.slug, openStatesProfile.updatedAt);
+			return await representativeModuleResolver.enrichNationwidePersonProfile(lookupContext, openStatesProfile);
 		}
 
 		if (supplementalOfficeholder) {
-			const baseProfile = buildRepresentativeProfileFromSupplementalOfficeholder(supplementalOfficeholder);
-			const lookupContext = buildRepresentativeLookupContextFromSupplementalOfficeholder(
-				supplementalOfficeholder,
-				baseProfile.person.slug,
-				baseProfile.updatedAt,
-			);
-			return await representativeModuleResolver.enrichNationwidePersonProfile(lookupContext, baseProfile);
+			return buildRepresentativeProfileFromSupplementalOfficeholder(supplementalOfficeholder);
 		}
 
 		try {

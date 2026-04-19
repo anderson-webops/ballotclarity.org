@@ -15,6 +15,7 @@ interface GoogleCivicAddress {
 }
 
 interface GoogleCivicElection {
+	id?: number | string;
 	electionDay?: string;
 	name?: string;
 }
@@ -64,6 +65,10 @@ interface GoogleCivicVoterInfoResponse {
 	state?: GoogleCivicState[];
 }
 
+interface GoogleCivicElectionsResponse {
+	elections?: GoogleCivicElection[];
+}
+
 export interface OfficialAddressMatch {
 	actions: LocationLookupAction[];
 	logistics: ElectionLogistics | null;
@@ -102,9 +107,16 @@ interface DnsLookupFn {
 }
 
 const lookupBaseUrl = "https://www.googleapis.com/civicinfo/v2/voterinfo";
+const electionsBaseUrl = "https://www.googleapis.com/civicinfo/v2/elections";
 const truthyEnvPattern = /^(?:1|true|yes|on)$/i;
 const electionUnknownPattern = /election unknown/i;
 const addressParsePattern = /address.*parse|unparseable/i;
+const fallbackAddressTokenSplitPattern = /[,\s]+/;
+const electionLookbackWindowMs = 45 * 24 * 60 * 60 * 1000;
+const electionRetryLimit = 6;
+const regionDisplayNames = typeof Intl.DisplayNames === "function"
+	? new Intl.DisplayNames(["en"], { type: "region" })
+	: null;
 
 function normalizeGoogleCivicError(errorPayload: GoogleCivicErrorResponse | null | undefined) {
 	const reason = errorPayload?.error?.errors?.[0]?.reason?.trim();
@@ -196,6 +208,116 @@ function buildElectionLogistics(payload: GoogleCivicVoterInfoResponse): Election
 		normalizedAddress: normalizedAddress || undefined,
 		officialSourceNote: "Structured election administration details returned by Google Civic for this address. Verify final hours, locations, and ballot-handling rules with the linked official election tools.",
 		pollingLocations,
+	};
+}
+
+function hasStructuredElectionDetails(payload: GoogleCivicVoterInfoResponse) {
+	return Boolean(
+		payload.election?.name
+		|| payload.election?.electionDay
+		|| payload.pollingLocations?.length
+		|| payload.earlyVoteSites?.length
+		|| payload.dropOffLocations?.length
+		|| payload.mailOnly
+		|| payload.otherElections?.length
+		|| payload.state?.[0]?.electionAdministrationBody,
+	);
+}
+
+function buildElectionSearchTerms(payload: GoogleCivicVoterInfoResponse, address: string) {
+	const normalizedStateCode = payload.normalizedInput?.state?.trim().toUpperCase() || "";
+	const normalizedStateName = normalizedStateCode
+		? regionDisplayNames?.of(normalizedStateCode)?.toLowerCase().trim() || ""
+		: "";
+	const normalizedCity = payload.normalizedInput?.city?.trim().toLowerCase() || "";
+	const fallbackAddressTokens = String(address)
+		.toLowerCase()
+		.split(fallbackAddressTokenSplitPattern)
+		.map(token => token.trim())
+		.filter(token => token.length > 2);
+
+	return Array.from(new Set([
+		normalizedStateCode.toLowerCase(),
+		normalizedStateName,
+		normalizedCity,
+		...fallbackAddressTokens,
+	].filter(Boolean)));
+}
+
+function isUpcomingElection(election: GoogleCivicElection) {
+	const electionDay = election.electionDay?.trim();
+
+	if (!electionDay)
+		return true;
+
+	const timestamp = Date.parse(electionDay);
+
+	if (Number.isNaN(timestamp))
+		return true;
+
+	return timestamp >= (Date.now() - electionLookbackWindowMs);
+}
+
+function selectFallbackElectionCandidates(
+	elections: GoogleCivicElection[] | undefined,
+	payload: GoogleCivicVoterInfoResponse,
+	address: string,
+) {
+	const searchTerms = buildElectionSearchTerms(payload, address);
+	const upcomingElections = (elections ?? [])
+		.filter(election => Boolean(election?.id))
+		.filter(isUpcomingElection)
+		.sort((left, right) => String(left.electionDay || "").localeCompare(String(right.electionDay || "")));
+	const jurisdictionMatches = upcomingElections.filter((election) => {
+		const name = election.name?.toLowerCase() || "";
+		return searchTerms.some(term => name.includes(term));
+	});
+
+	return (jurisdictionMatches.length ? jurisdictionMatches : upcomingElections).slice(0, electionRetryLimit);
+}
+
+function buildVoterInfoRequestUrl(address: string, apiKey: string, electionId?: number | string) {
+	const requestUrl = new URL(lookupBaseUrl);
+	requestUrl.searchParams.set("address", address);
+	requestUrl.searchParams.set("key", apiKey);
+	requestUrl.searchParams.set("officialOnly", "true");
+	requestUrl.searchParams.set("returnAllAvailableData", "true");
+
+	if (electionId !== undefined)
+		requestUrl.searchParams.set("electionId", String(electionId));
+
+	return requestUrl;
+}
+
+async function requestGoogleCivicJson<T>(
+	resource: URL,
+	{
+		fetchImpl,
+		forceIPv4,
+	}: Pick<GoogleCivicClientOptions, "fetchImpl" | "forceIPv4">,
+) {
+	const response = await fetchGoogleCivic(resource, {
+		fetchImpl,
+		forceIPv4,
+	});
+
+	if (response.status === 400 || response.status === 404) {
+		const errorPayload = await response.json().catch(() => ({})) as GoogleCivicErrorResponse;
+
+		return {
+			errorPayload,
+			ok: false as const,
+			response,
+		};
+	}
+
+	if (!response.ok)
+		throw new Error(`Google Civic lookup failed: ${response.status} ${response.statusText}`);
+
+	return {
+		ok: true as const,
+		payload: await response.json() as T,
+		response,
 	};
 }
 
@@ -345,32 +467,70 @@ export function createGoogleCivicClient(
 
 	return {
 		async lookupVoterInfo(address: string) {
-			const requestUrl = new URL(lookupBaseUrl);
-			requestUrl.searchParams.set("address", address);
-			requestUrl.searchParams.set("key", resolvedApiKey);
-			requestUrl.searchParams.set("officialOnly", "true");
-			requestUrl.searchParams.set("returnAllAvailableData", "true");
+			const initialLookup = await requestGoogleCivicJson<GoogleCivicVoterInfoResponse>(
+				buildVoterInfoRequestUrl(address, resolvedApiKey),
+				{
+					fetchImpl: options.fetchImpl,
+					forceIPv4: options.forceIPv4,
+				},
+			);
 
-			const response = await fetchGoogleCivic(requestUrl, {
-				fetchImpl: options.fetchImpl,
-				forceIPv4: options.forceIPv4
-			});
-
-			if (response.status === 400 || response.status === 404) {
-				const errorPayload = await response.json().catch(() => ({})) as GoogleCivicErrorResponse;
-
+			if (!initialLookup.ok && !electionUnknownPattern.test(initialLookup.errorPayload?.error?.message || "")) {
 				return {
 					actions: [],
 					logistics: null,
-					note: normalizeGoogleCivicError(errorPayload),
-					verified: false
+					note: normalizeGoogleCivicError(initialLookup.errorPayload),
+					verified: false,
 				};
 			}
 
-			if (!response.ok)
-				throw new Error(`Google Civic lookup failed: ${response.status} ${response.statusText}`);
+			let payload = initialLookup.ok ? initialLookup.payload : null;
 
-			const payload = await response.json() as GoogleCivicVoterInfoResponse;
+			if (
+				(!payload && !initialLookup.ok)
+				|| (payload && payload.normalizedInput && !hasStructuredElectionDetails(payload))
+			) {
+				const electionsLookup = await requestGoogleCivicJson<GoogleCivicElectionsResponse>(
+					new URL(`${electionsBaseUrl}?key=${encodeURIComponent(resolvedApiKey)}`),
+					{
+						fetchImpl: options.fetchImpl,
+						forceIPv4: options.forceIPv4,
+					},
+				);
+
+				if (electionsLookup.ok) {
+					const fallbackCandidates = selectFallbackElectionCandidates(
+						electionsLookup.payload.elections,
+						payload ?? { normalizedInput: undefined },
+						address,
+					);
+
+					for (const election of fallbackCandidates) {
+						const electionLookup = await requestGoogleCivicJson<GoogleCivicVoterInfoResponse>(
+							buildVoterInfoRequestUrl(address, resolvedApiKey, election.id),
+							{
+								fetchImpl: options.fetchImpl,
+								forceIPv4: options.forceIPv4,
+							},
+						);
+
+						if (electionLookup.ok && hasStructuredElectionDetails(electionLookup.payload)) {
+							payload = electionLookup.payload;
+							break;
+						}
+					}
+				}
+			}
+
+			if (!payload) {
+				return {
+					actions: [],
+					logistics: null,
+					note: normalizeGoogleCivicError(initialLookup.ok ? null : initialLookup.errorPayload),
+					verified: false,
+				};
+			}
+
 			const normalizedAddress = normalizeAddress(payload.normalizedInput);
 			const pollingLocation = normalizeAddress(payload.pollingLocations?.[0]?.address);
 			const actions = buildOfficialActions(payload);

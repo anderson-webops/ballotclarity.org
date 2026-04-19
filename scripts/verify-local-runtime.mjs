@@ -170,6 +170,42 @@ async function main() {
 				throw new Error("Lookup probe exposed election logistics, but the structured polling, early-vote, or drop-off arrays were not shaped correctly.");
 		}
 
+		let liveGoogleCivicLogisticsProbe = null;
+		for (const logisticsQuery of [
+			"900 E Broad St, Richmond, VA 23219",
+			"100 N Capitol Ave, Lansing, MI 48933",
+		]) {
+			const { payload, response } = await fetchJson(`${baseUrl}`, "/api/location", {
+				body: JSON.stringify({ q: logisticsQuery }),
+				headers: {
+					"Content-Type": "application/json",
+				},
+				method: "POST",
+			});
+
+			if (response.status !== 200 || payload.result !== "resolved")
+				continue;
+
+			const logistics = payload.electionLogistics;
+			if (
+				logistics
+				&& Array.isArray(logistics.pollingLocations)
+				&& Array.isArray(logistics.earlyVoteSites)
+				&& Array.isArray(logistics.dropOffLocations)
+				&& (logistics.pollingLocations.length > 0 || logistics.earlyVoteSites.length > 0 || logistics.dropOffLocations.length > 0)
+			) {
+				liveGoogleCivicLogisticsProbe = {
+					logistics,
+					payload,
+					query: logisticsQuery,
+				};
+				break;
+			}
+		}
+
+		if (!liveGoogleCivicLogisticsProbe)
+			throw new Error("Google Civic live logistics probe did not return structured polling, early-vote, or drop-off data for any known verified address.");
+
 		const { payload: georgiaZipBody, response: georgiaZipResponse } = await fetchJson(`${baseUrl}`, "/api/location", {
 			body: JSON.stringify({ q: "30022" }),
 			headers: {
@@ -378,6 +414,12 @@ async function main() {
 		if (String(shawnRepresentativeBody.person?.officeContext?.chamberLabel || "").trim() !== "State Senate")
 			throw new Error("State senator route probe did not attach normalized structured office context for Shawn Still.");
 
+		if (shawnRepresentativeBody.person?.enrichmentStatus?.legislativeContext?.reasonCode !== "attached")
+			throw new Error("State senator route probe did not attach reviewed legislative or action context for Shawn Still.");
+
+		if (!Array.isArray(shawnRepresentativeBody.person?.keyActions) || shawnRepresentativeBody.person.keyActions.length === 0)
+			throw new Error("State senator route probe did not attach reviewed key-action records for Shawn Still.");
+
 		const { payload: scottRepresentativeBody, response: scottRepresentativeResponse } = await fetchJson(
 			`${baseUrl}`,
 			"/api/representatives/scott-hilton"
@@ -392,14 +434,20 @@ async function main() {
 		if (scottRepresentativeBody.person?.enrichmentStatus?.funding?.reasonCode !== "no_state_finance_source")
 			throw new Error("State legislator route probe did not expose the expected state finance-source reason for Scott Hilton.");
 
-		if (scottRepresentativeBody.person?.enrichmentStatus?.influence?.reasonCode !== "no_state_disclosure_source")
-			throw new Error("State legislator route probe did not expose the expected state disclosure-source reason for Scott Hilton.");
+		if (scottRepresentativeBody.person?.enrichmentStatus?.influence?.reasonCode !== "attached")
+			throw new Error("State legislator route probe did not attach reviewed disclosure or lobbying context for Scott Hilton.");
 
-		if (scottRepresentativeBody.person?.enrichmentStatus?.legislativeContext?.reasonCode !== "no_state_legislative_source")
-			throw new Error("State legislator route probe did not expose the expected reviewed-state-source legislative-context reason for Scott Hilton.");
+		if (scottRepresentativeBody.person?.enrichmentStatus?.legislativeContext?.reasonCode !== "attached")
+			throw new Error("State legislator route probe did not attach reviewed legislative-context records for Scott Hilton.");
 
 		if (String(scottRepresentativeBody.person?.officeContext?.chamberLabel || "").trim() !== "State House")
 			throw new Error("State legislator route probe did not attach normalized structured office context for Scott Hilton.");
+
+		if (!Array.isArray(scottRepresentativeBody.person?.lobbyingContext) || scottRepresentativeBody.person.lobbyingContext.length === 0)
+			throw new Error("State legislator route probe did not attach reviewed lobbying context for Scott Hilton.");
+
+		if (!Array.isArray(scottRepresentativeBody.person?.keyActions) || scottRepresentativeBody.person.keyActions.length === 0)
+			throw new Error("State legislator route probe did not attach reviewed key-action records for Scott Hilton.");
 
 		const { payload: localRepresentativeBody, response: localRepresentativeResponse } = await fetchJson(
 			`${baseUrl}`,
@@ -409,14 +457,20 @@ async function main() {
 		if (localRepresentativeResponse.status !== 200)
 			throw new Error(`Marsha Judkins representative probe failed with ${localRepresentativeResponse.status}.`);
 
-		if (localRepresentativeBody.person?.enrichmentStatus?.funding?.reasonCode !== "no_local_finance_source")
-			throw new Error("Local officeholder route probe did not expose the expected local finance-source reason.");
+		if (localRepresentativeBody.person?.enrichmentStatus?.funding?.reasonCode !== "attached")
+			throw new Error("Local officeholder route probe did not attach the reviewed local finance summary for Marsha Judkins.");
 
 		if (localRepresentativeBody.person?.enrichmentStatus?.influence?.reasonCode !== "no_local_disclosure_source")
 			throw new Error("Local officeholder route probe did not expose the expected local disclosure-source reason.");
 
+		if (localRepresentativeBody.person?.enrichmentStatus?.legislativeContext?.reasonCode !== "attached")
+			throw new Error("Local officeholder route probe did not attach reviewed local action context for Marsha Judkins.");
+
 		if (String(localRepresentativeBody.person?.officeContext?.chamberLabel || "").trim() !== "City government")
 			throw new Error("Local officeholder route probe did not attach normalized structured office context for Marsha Judkins.");
+
+		if (typeof localRepresentativeBody.person?.funding?.totalRaised !== "number")
+			throw new Error("Local officeholder route probe did not attach structured funding totals for Marsha Judkins.");
 
 		const { payload: countyRepresentativeBody, response: countyRepresentativeResponse } = await fetchJson(
 			`${baseUrl}`,
@@ -429,8 +483,14 @@ async function main() {
 		if (countyRepresentativeBody.person?.enrichmentStatus?.funding?.reasonCode !== "no_local_finance_source")
 			throw new Error("County officeholder probe did not expose the expected local finance-source reason.");
 
+		if (countyRepresentativeBody.person?.enrichmentStatus?.legislativeContext?.reasonCode !== "attached")
+			throw new Error("County officeholder probe did not attach reviewed public-action context for Robb Pitts.");
+
 		if (String(countyRepresentativeBody.person?.officeContext?.chamberLabel || "").trim() !== "County commission")
 			throw new Error("County officeholder probe did not attach normalized structured office context for Robb Pitts.");
+
+		if (!Array.isArray(countyRepresentativeBody.person?.keyActions) || countyRepresentativeBody.person.keyActions.length === 0)
+			throw new Error("County officeholder probe did not attach reviewed action records for Robb Pitts.");
 
 		const { payload: cityRepresentativeBody, response: cityRepresentativeResponse } = await fetchJson(
 			`${baseUrl}`,
@@ -443,8 +503,14 @@ async function main() {
 		if (cityRepresentativeBody.person?.enrichmentStatus?.influence?.reasonCode !== "no_local_disclosure_source")
 			throw new Error("City officeholder probe did not expose the expected local disclosure-source reason.");
 
+		if (cityRepresentativeBody.person?.enrichmentStatus?.legislativeContext?.reasonCode !== "attached")
+			throw new Error("City officeholder probe did not attach reviewed public-action context for John Bradberry.");
+
 		if (String(cityRepresentativeBody.person?.officeContext?.chamberLabel || "").trim() !== "City government")
 			throw new Error("City officeholder probe did not attach normalized structured office context for John Bradberry.");
+
+		if (!Array.isArray(cityRepresentativeBody.person?.keyActions) || cityRepresentativeBody.person.keyActions.length === 0)
+			throw new Error("City officeholder probe did not attach reviewed action records for John Bradberry.");
 
 		const { payload: stateDistrictBody, response: stateDistrictResponse } = await fetchJson(
 			`${baseUrl}`,
@@ -508,6 +574,7 @@ async function main() {
 
 		console.log("\n== Local runtime verification passed ==");
 		console.log(`Resolved ${lookupBody.location?.displayName || "unknown location"} with ${lookupBody.districtMatches.length} district matches and ${lookupBody.representativeMatches.length} representative matches.`);
+		console.log(`Verified live Google Civic logistics for ${liveGoogleCivicLogisticsProbe.query} with ${liveGoogleCivicLogisticsProbe.logistics.pollingLocations.length} polling location(s), ${liveGoogleCivicLogisticsProbe.logistics.earlyVoteSites.length} early-vote site(s), and ${liveGoogleCivicLogisticsProbe.logistics.dropOffLocations.length} drop-off location(s).`);
 		console.log(`Verified representative directory/profile backing for ${moduleBackedRepresentative.name}, including live finance and influence modules.`);
 		console.log(`Verified direct district route backing for ${directDistrictBody.district?.title || firstDistrictSlug}, reviewed state/local district backing for ${stateDistrictBody.district?.title || "state-house-60"} and ${localDistrictBody.district?.title || "provo-city"}, direct representative backing for ${directRepresentativeBody.person?.name || firstRepresentativeSlug}, ${shawnRepresentativeBody.person?.name || "shawn-still"}, ${scottRepresentativeBody.person?.name || "scott-hilton"}, ${countyRepresentativeBody.person?.name || "robb-pitts"}, ${cityRepresentativeBody.person?.name || "john-bradberry"}, and ${localRepresentativeBody.person?.name || "marsha-judkins"}, plus published source records for stable route provenance.`);
 	}

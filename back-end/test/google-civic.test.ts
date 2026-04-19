@@ -104,6 +104,17 @@ test("createGoogleCivicClient requests partial voterinfo data before treating th
 
 			requestedUrls.push(requestUrl);
 
+			if (requestUrl.pathname.endsWith("/elections")) {
+				return new Response(JSON.stringify({
+					elections: [],
+				}), {
+					headers: {
+						"Content-Type": "application/json",
+					},
+					status: 200,
+				});
+			}
+
 			return new Response(JSON.stringify({
 				kind: "civicinfo#voterInfoResponse",
 				normalizedInput: {
@@ -126,8 +137,9 @@ test("createGoogleCivicClient requests partial voterinfo data before treating th
 	const result = await client.lookupVoterInfo("55 Trinity Ave SW, Atlanta, GA 30303");
 
 	assert.ok(result);
-	assert.equal(requestedUrls.length, 1);
+	assert.equal(requestedUrls.length, 2);
 	assert.equal(requestedUrls[0].searchParams.get("returnAllAvailableData"), "true");
+	assert.equal(requestedUrls[1].pathname.endsWith("/elections"), true);
 	assert.equal(result.verified, true);
 	assert.match(result.note, /did not return an election-specific record/i);
 });
@@ -256,4 +268,123 @@ test("createGoogleCivicClient returns structured polling, early-vote, and drop-o
 	assert.equal(result.logistics?.earlyVoteSites[0]?.name, "Atlanta Early Vote Center");
 	assert.equal(result.logistics?.dropOffLocations[0]?.name, "Fulton County Election Hub");
 	assert.deepEqual(result.logistics?.additionalElectionNames, ["2026 Atlanta Runoff Election"]);
+});
+
+test("createGoogleCivicClient retries voterinfo with a matching election id when the initial lookup returns only normalized address data", async () => {
+	const requestedUrls: URL[] = [];
+	const client = createGoogleCivicClient({
+		apiKey: "test-google-civic-key",
+		fetchImpl: (async (resource) => {
+			const requestUrl = resource as URL;
+			requestedUrls.push(requestUrl);
+
+			if (requestUrl.pathname.endsWith("/voterinfo") && !requestUrl.searchParams.get("electionId")) {
+				return new Response(JSON.stringify({
+					kind: "civicinfo#voterInfoResponse",
+					normalizedInput: {
+						city: "Richmond",
+						line1: "900 E Broad St",
+						state: "VA",
+						zip: "23219",
+					},
+				}), {
+					headers: {
+						"Content-Type": "application/json",
+					},
+					status: 200,
+				});
+			}
+
+			if (requestUrl.pathname.endsWith("/elections")) {
+				return new Response(JSON.stringify({
+					elections: [
+						{
+							electionDay: "2026-11-03",
+							id: 11201,
+							name: "2026 Virginia General Election",
+						},
+						{
+							electionDay: "2026-11-03",
+							id: 22100,
+							name: "2026 Oregon General Election",
+						},
+					],
+				}), {
+					headers: {
+						"Content-Type": "application/json",
+					},
+					status: 200,
+				});
+			}
+
+			assert.equal(requestUrl.pathname.endsWith("/voterinfo"), true);
+			assert.equal(requestUrl.searchParams.get("electionId"), "11201");
+
+			return new Response(JSON.stringify({
+				dropOffLocations: [
+					{
+						address: {
+							city: "Richmond",
+							line1: "1209 E Cary St",
+							state: "VA",
+							zip: "23219",
+						},
+						name: "Richmond ballot drop-off",
+					},
+				],
+				earlyVoteSites: [
+					{
+						address: {
+							city: "Richmond",
+							line1: "101 N 9th St",
+							state: "VA",
+							zip: "23219",
+						},
+						name: "Richmond early voting office",
+					},
+				],
+				election: {
+					electionDay: "2026-11-03",
+					name: "2026 Virginia General Election",
+				},
+				normalizedInput: {
+					city: "Richmond",
+					line1: "900 E Broad St",
+					state: "VA",
+					zip: "23219",
+				},
+				pollingLocations: [
+					{
+						address: {
+							city: "Richmond",
+							line1: "900 E Broad St",
+							state: "VA",
+							zip: "23219",
+						},
+						name: "Richmond polling place",
+					},
+				],
+			}), {
+				headers: {
+					"Content-Type": "application/json",
+				},
+				status: 200,
+			});
+		}) as typeof fetch,
+	});
+
+	assert.ok(client);
+
+	const result = await client.lookupVoterInfo("900 E Broad St, Richmond, VA 23219");
+
+	assert.ok(result);
+	assert.equal(result.verified, true);
+	assert.equal(requestedUrls.length, 3);
+	assert.equal(requestedUrls[0].pathname.endsWith("/voterinfo"), true);
+	assert.equal(requestedUrls[1].pathname.endsWith("/elections"), true);
+	assert.equal(requestedUrls[2].searchParams.get("electionId"), "11201");
+	assert.equal(result.logistics?.pollingLocations.length, 1);
+	assert.equal(result.logistics?.earlyVoteSites.length, 1);
+	assert.equal(result.logistics?.dropOffLocations.length, 1);
+	assert.match(result.note, /2026 Virginia General Election/i);
 });

@@ -52,7 +52,9 @@ const fundingHighlights = computed(() => {
 		funding.value.committeeName ? { label: "Committee", value: funding.value.committeeName } : null,
 		funding.value.coverageLabel ? { label: "Coverage", value: funding.value.coverageLabel } : null,
 		typeof funding.value.totalSpent === "number" ? { label: "Disbursements", value: formatCurrency(funding.value.totalSpent) } : null,
-		typeof funding.value.smallDonorShare === "number" ? { label: "Small-donor share", value: formatPercent(funding.value.smallDonorShare) } : null,
+		typeof funding.value.smallDonorShare === "number" && Number.isFinite(funding.value.smallDonorShare) && funding.value.smallDonorShare > 0
+			? { label: "Small-donor share", value: formatPercent(funding.value.smallDonorShare) }
+			: null,
 	].filter((item): item is { label: string; value: string } => Boolean(item));
 });
 const fundingLineItems = computed(() => {

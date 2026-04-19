@@ -85,7 +85,7 @@ export default defineNuxtConfig({
 		public: {
 			apiBase: process.env.NUXT_PUBLIC_API_BASE || "http://127.0.0.1:3001/api",
 			buildId,
-			siteUrl: process.env.NUXT_PUBLIC_SITE_URL || "https://ballotclarity.jacobdanderson.net"
+			siteUrl: process.env.NUXT_PUBLIC_SITE_URL || "https://ballotclarity.org"
 		}
 	},
 

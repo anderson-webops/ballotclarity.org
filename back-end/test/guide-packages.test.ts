@@ -99,7 +99,7 @@ test("buildGuidePackageRecord becomes publish-ready after explicit reviewer reco
 		id: buildGuidePackageId(coverageSnapshot.election!.slug),
 		jurisdictionSlug: coverageSnapshot.jurisdiction!.slug,
 		reviewNotes: "Reviewed for contest completeness, neutrality, and official-link integrity.",
-		reviewRecommendation: "publish",
+		reviewRecommendation: "publish" as const,
 		reviewedAt: coverageSnapshot.updatedAt,
 		reviewer: "QA Reviewer",
 		status: "ready_to_publish" as const,

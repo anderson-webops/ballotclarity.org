@@ -1,21 +1,21 @@
 <script setup lang="ts">
 import { appName, contactEmail } from "~/constants";
 
-const effectiveAt = "2026-04-11T09:00:00-04:00";
+const effectiveAt = "2026-04-19T17:15:00-04:00";
 const siteUrl = useSiteUrl();
 
 const summaryCards = [
 	{
-		body: "Ballot lookup input, and any optional approximate location guess configured on a host, are used only to match ballot coverage and jurisdiction in the current release.",
-		title: "Lookup use is narrow"
+		body: "Lookup input is used only for civic matching, official verification, and route enrichment. The current release does not use it for ad targeting or public publication.",
+		title: "Lookup disclosure is specific"
 	},
 	{
-		body: "The current site does not create user accounts, run targeted advertising, or sell personal data.",
-		title: "No adtech profile"
+		body: "The site uses first-party cookies and browser storage for lookup continuity, timezone display, and internal admin sessions. It does not use an advertising-cookie stack.",
+		title: "First-party storage only"
 	},
 	{
-		body: "Saved location labels, compare choices, reading mode, and ballot-plan selections stay in your browser until you clear them.",
-		title: "Device-side persistence only"
+		body: "The public site has no self-service user accounts, but the current release does include internal editorial/admin accounts and a public correction form.",
+		title: "Public and internal flows differ"
 	}
 ];
 
@@ -23,6 +23,7 @@ const collectionSections = [
 	{
 		body: [
 			"When you use the ballot lookup, the address or ZIP code is sent with a POST request so the service can determine a location and ballot guide.",
+			"That lookup may also trigger provider-backed district matching, representative attachment, and official election verification in the current runtime.",
 			"Some hosts may also use coarse geolocation derived from request metadata to make a best-effort default location guess before you enter anything manually.",
 			"The application is designed not to publish the raw lookup text in the public archive and not to persist it in browser storage used for saved ballot preferences."
 		],
@@ -31,23 +32,64 @@ const collectionSections = [
 	{
 		body: [
 			"The app stores selected location labels, compare selections, saved ballot-plan choices, issue filters, and reading mode in local browser storage so the guide remains usable across refreshes.",
-			"This local storage is tied to the browser on your device. Ballot Clarity does not maintain a server-side user account for that state in the current release."
+			"The site also sets first-party cookies for active nationwide lookup context, display timezone, and internal admin sessions.",
+			"This browser-side state is tied to the browser on your device. Ballot Clarity does not maintain a public server-side user account for that state in the current release."
 		],
-		title: "Information stored on your device"
+		title: "Browser storage and cookies"
 	},
 	{
 		body: [
 			"Hosting and runtime infrastructure may process technical data such as IP address, user agent, endpoint path, timestamp, and basic error or request metadata needed for security, integrity, and reliability.",
-			"That operational metadata is different from the election-guide content itself and is handled as infrastructure telemetry rather than published civic data."
+			"That operational metadata is different from the election-guide content itself and is handled as infrastructure telemetry rather than published civic data.",
+			"Internal admin authentication also creates limited operational records such as last-login timestamps and failed-login throttling signals."
 		],
 		title: "Operational metadata"
 	},
 	{
 		body: [
-			"The current contact and correction paths open your email client instead of hosting a web form inside the site.",
-			"If you email the project, the message, attachments, and any source links you send may be handled in the project inbox so the team can review, verify, and respond."
+			"The public site now offers a hosted contact and correction form in addition to direct email links.",
+			"If you submit the form, the project receives your name, email address, subject, page URL, message, and any supporting links you provide so the issue can be reviewed in the editorial queue.",
+			"If you email the project directly, the message, attachments, and any source links you send may be handled in the project inbox so the team can review, verify, and respond."
 		],
 		title: "Messages you send us"
+	},
+	{
+		body: [
+			"The site includes internal editorial and operations accounts used to review corrections, source health, and local-guide publication status.",
+			"Those internal accounts are not public user accounts, but they do use authentication cookies and server-side account records for access control and auditability."
+		],
+		title: "Internal admin accounts"
+	}
+];
+
+const providerDisclosureSections = [
+	{
+		body: [
+			"Full-address lookups may be sent to the U.S. Census Geocoder and Google Civic Information API to normalize geography, verify address handling, and return official election logistics where available.",
+			"ZIP-only lookups may be resolved through the current ZIP-location service and then enriched with district and official-tool context."
+		],
+		title: "Lookup and official verification providers"
+	},
+	{
+		body: [
+			"District and representative attachment may use Open States together with Ballot Clarity's reviewed local-officeholder records.",
+			"These calls support district matching, officeholder identity, chamber or jurisdiction context, and direct representative routes."
+		],
+		title: "Representative and district matching providers"
+	},
+	{
+		body: [
+			"Representative profile enrichment may query Congress.gov, OpenFEC, and LDA.gov once a route or lookup has already resolved a person or officeholder record.",
+			"Those module calls are used for federal office context, campaign-finance detail, and lobbying or disclosure context. They are not used for advertising or profiling."
+		],
+		title: "Federal office, finance, and disclosure providers"
+	},
+	{
+		body: [
+			"Ballot Clarity also relies on hosting, delivery, logging, and database providers needed to serve the site, process correction submissions, and operate the internal editorial/admin workspace.",
+			"When you follow external links, the destination site operates under its own privacy practices."
+		],
+		title: "Infrastructure and external destinations"
 	}
 ];
 
@@ -55,57 +97,80 @@ const useSections = [
 	"Provide location-based ballot guides and related civic-information pages.",
 	"Preserve local usability features such as saved ballot-plan choices, compare state, and reading preferences.",
 	"Operate, secure, debug, and improve the website and its reliability.",
-	"Review and respond to correction requests, privacy questions, and public-interest inquiries."
+	"Review and respond to correction requests, privacy questions, public-interest inquiries, and internal publication workflow."
 ];
 
 const sharingSections = [
-	"Ballot Clarity may rely on hosting, content-delivery, security, logging, and similar service providers needed to operate the site.",
+	"Ballot Clarity currently discloses lookup or route-derived data only to the service providers and public-interest civic-data systems needed to produce the requested page or official verification result.",
+	"Current third-party recipients in active flows include the U.S. Census Geocoder, Google Civic Information API, Open States, Congress.gov, OpenFEC, and LDA.gov, plus hosting, logging, and delivery providers needed to run the service.",
 	"The current release does not disclose address lookup input to advertising networks and is not designed to sell or share personal data for cross-context behavioral advertising.",
 	"When you follow external source links, official agencies, filing systems, campaigns, or other third-party sites operate under their own privacy practices.",
-	"If future live civic-data APIs require transmitting lookup data or derived district information to third parties, this policy should be updated before that architecture ships."
+	"If Ballot Clarity materially changes the current provider stack or starts sharing data for a new purpose, this policy should be updated before that change goes live."
 ];
 
 const retentionRows = [
 	{
-		access: "Runtime handling only during the request.",
+		access: "Runtime handling only during the request, plus transient processing by the current lookup or verification provider that receives it.",
 		category: "Raw ballot lookup input",
-		deletion: "The current app flow is designed to avoid adding the raw lookup string to published source records or saved browser state.",
-		retention: "Request-time processing only.",
+		deletion: "The current app flow is designed to avoid adding the raw lookup string to published source records or saved browser state. Provider-side retention depends on the recipient's system and policy.",
+		retention: "Request-time processing in Ballot Clarity.",
 		scope: "Street address or ZIP entered into the lookup."
+	},
+	{
+		access: "Stored in your browser on the current device.",
+		category: "Active nationwide lookup cookie",
+		deletion: "Clear browser cookies or submit a new lookup that replaces or clears the stored context.",
+		retention: "Up to 7 days.",
+		scope: "First-party cookie containing current nationwide lookup context such as normalized address or ZIP, matched districts, representative matches, official actions, and lookup timing."
+	},
+	{
+		access: "Stored in your browser on the current device.",
+		category: "Display timezone cookie",
+		deletion: "Clear browser cookies or override the stored timezone with a later visit.",
+		retention: "Up to 1 year.",
+		scope: "First-party cookie containing the browser-reported timezone used for SSR-safe date display."
 	},
 	{
 		access: "Stored in your browser on the current device.",
 		category: "Saved guide preferences",
 		deletion: "Clear browser storage, use a private session, or overwrite the saved state.",
 		retention: "Until you clear it or replace it on your device.",
-		scope: "Selected location label, compare list, ballot plan, issue filters, and reading mode."
+		scope: "Selected location label, compare list, ballot plan, issue filters, reading mode, and related locally saved lookup context."
+	},
+	{
+		access: "Stored in the editor's browser and the admin auth layer.",
+		category: "Internal admin session cookie",
+		deletion: "Sign out, clear browser cookies, or allow the session to expire.",
+		retention: "Up to 12 hours per session.",
+		scope: "Internal admin authentication cookie for editorial and operations access."
 	},
 	{
 		access: "Hosting, operations, and security tooling.",
 		category: "Operational request metadata",
-		deletion: "Managed through provider defaults and operational retention settings.",
-		retention: "Only as long as reasonably needed for security, reliability, and troubleshooting.",
+		deletion: "Managed through host and operator settings, with longer retention permitted for active abuse handling, incident response, or legal obligations.",
+		retention: "Short-term operational retention, generally days to weeks rather than permanent publication.",
 		scope: "IP address, user agent, endpoint path, timestamps, and similar request metadata."
 	},
 	{
-		access: "Project inbox and editorial reviewers handling the issue.",
-		category: "Correction or contact emails",
-		deletion: "Archived or deleted when no longer needed for support, verification, or auditability.",
-		retention: "Until the issue is resolved and follow-up records are no longer needed.",
-		scope: "Email address, message body, attachments, and source links you provide."
+		access: "Project inbox, admin store, and editorial reviewers handling the issue.",
+		category: "Contact and correction submissions",
+		deletion: "Archived or deleted when no longer needed for support, verification, auditability, or the public corrections process.",
+		retention: "Until the issue is resolved and the supporting review record is no longer operationally needed.",
+		scope: "Name, email address, subject, page URL, message, attachments, and source links you provide through email or the contact form."
 	}
 ];
 
 const rightsNotes = [
 	"You can browse much of the site without using the ballot lookup.",
-	"You can clear browser storage on your device to remove saved ballot-plan state and selected location labels kept locally by the app.",
-	"Because the current release does not create public user accounts and is designed to keep some data ephemeral, Ballot Clarity may have limited ability to associate a privacy request with operational logs or transient lookup activity.",
+	"You can clear browser storage and cookies on your device to remove saved ballot-plan state, selected location labels, timezone state, and active lookup cookies kept locally by the app.",
+	"Because the current release does not create public self-service accounts and is designed to keep some data ephemeral, Ballot Clarity may have limited ability to associate a privacy request with operational logs or transient lookup activity.",
 	"If applicable law gives you rights to request access, deletion, correction, or appeal, contact the project and describe the data or interaction as specifically as possible."
 ];
 
 const cookieNotes = [
 	"The current release does not use an advertising-cookie stack and is not designed for targeted advertising or sale or sharing of personal data.",
-	"The site may still use browser storage for user-facing preferences and may rely on infrastructure-level cookies or similar technical mechanisms that support delivery, security, or basic functionality.",
+	"The site currently uses first-party cookies for active nationwide lookup continuity, display timezone, and internal admin sessions, and it uses local browser storage for public-facing preference state.",
+	"Infrastructure providers may also use technical cookies or similar mechanisms needed for delivery, security, and basic functionality.",
 	"If Ballot Clarity later adds analytics, experiments, donations, newsletters, or embedded third-party tools, the cookie and tracking section should be updated before those features go live."
 ];
 
@@ -118,6 +183,7 @@ const childrenNotes = [
 const securityNotes = [
 	"Ballot Clarity aims to use reasonable administrative, technical, and organizational safeguards appropriate to the current release.",
 	"Those safeguards are intended to reduce unnecessary data collection, limit retention, and protect the integrity of the service and its operational systems.",
+	"The current release also uses admin login throttling, signed admin session cookies, and structured request logging for reliability and abuse handling.",
 	"No internet service can guarantee absolute security. If the project's data practices or incident posture changes materially, this policy should change as well."
 ];
 
@@ -140,7 +206,7 @@ usePageSeo({
 				Privacy Policy
 			</h1>
 			<p class="text-base text-app-muted leading-8 mt-5 max-w-3xl dark:text-app-muted-dark">
-				This policy describes how {{ appName }} currently handles address lookup input, any optional approximate location-guessing configured on a host, browser-stored guide preferences, operational metadata, and direct contact messages. It is written for the current release at {{ siteUrl }}, not for a future product that collects more data than the site collects today.
+				This policy describes how {{ appName }} currently handles address lookup input, any optional approximate location-guessing configured on a host, browser-stored guide preferences, hosted contact or correction submissions, operational metadata, and direct contact messages. It is written for the current release at {{ siteUrl }}, not for a future product that collects more data than the site collects today.
 			</p>
 			<div class="mt-5">
 				<UpdatedAt label="Effective" :value="effectiveAt" />
@@ -148,7 +214,7 @@ usePageSeo({
 		</header>
 
 		<InfoCallout title="Plain-language summary">
-			The current release uses address or ZIP input, plus any optional approximate location guess configured on a host, only to match ballot coverage. It does not create public user accounts, does not run targeted advertising, and is not designed to sell or share personal data. The app does save selected location labels and ballot-plan preferences locally in your browser so the guide remains usable across refreshes.
+			The current release uses address or ZIP input, plus any optional approximate location guess configured on a host, only to match ballot coverage and official verification context. It does not create public user accounts, does not run targeted advertising, and is not designed to sell or share personal data. The app does save selected location labels and ballot-plan preferences locally in your browser so the guide remains usable across refreshes.
 		</InfoCallout>
 
 		<section class="gap-6 grid lg:grid-cols-3">
@@ -174,6 +240,27 @@ usePageSeo({
 			</h2>
 			<div class="mt-6 gap-4 grid lg:grid-cols-2">
 				<article v-for="item in collectionSections" :key="item.title" class="px-5 py-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
+					<h3 class="text-xl text-app-ink font-serif dark:text-app-text-dark">
+						{{ item.title }}
+					</h3>
+					<div class="text-sm text-app-muted leading-7 mt-4 space-y-3 dark:text-app-muted-dark">
+						<p v-for="paragraph in item.body" :key="paragraph">
+							{{ paragraph }}
+						</p>
+					</div>
+				</article>
+			</div>
+		</section>
+
+		<section class="surface-panel">
+			<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+				Current third-party recipients
+			</p>
+			<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
+				Current third-party processors and civic-data recipients
+			</h2>
+			<div class="mt-6 gap-4 grid lg:grid-cols-2">
+				<article v-for="item in providerDisclosureSections" :key="item.title" class="px-5 py-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
 					<h3 class="text-xl text-app-ink font-serif dark:text-app-text-dark">
 						{{ item.title }}
 					</h3>

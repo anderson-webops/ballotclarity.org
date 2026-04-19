@@ -740,6 +740,8 @@ test("built app renders the key ballot guide pages against the built API", async
 	assert.match(privacyHtml, /What data Ballot Clarity handles today/);
 	assert.match(privacyHtml, /The application is designed not to publish the raw lookup text/);
 	assert.match(privacyHtml, /No sale, sharing, or targeted advertising in the current build/);
+	assert.match(privacyHtml, /Current third-party processors and civic-data recipients/);
+	assert.match(privacyHtml, /Google Civic Information API/);
 	assert.match(privacyHtml, /Rights requests and limits in a no-account public build/);
 	assert.match(privacyHtml, /Children(?:&#39;|&apos;|’|')s privacy/);
 	assert.equal(termsPage.status, 200);
@@ -747,6 +749,8 @@ test("built app renders the key ballot guide pages against the built API", async
 	assert.match(termsHtml, /How the service may and may not be used/);
 	assert.match(termsHtml, /Permitted use and limited license/);
 	assert.match(termsHtml, /By accessing or using the Ballot Clarity website/);
+	assert.match(termsHtml, /Who operates the site and how to send notice/);
+	assert.match(termsHtml, /Jacob Anderson/);
 	assert.match(termsHtml, /The site is not an official government election website/);
 	assert.match(termsHtml, /The site is provided on an (?:\"|&quot;)as is(?:\"|&quot;) and (?:\"|&quot;)as available(?:\"|&quot;) basis/);
 	assert.match(contactHtml, /Contact and correction requests/);

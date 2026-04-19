@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { appName, contactEmail } from "~/constants";
 
-const effectiveAt = "2026-04-11T09:00:00-04:00";
+const effectiveAt = "2026-04-19T17:15:00-04:00";
 const siteUrl = useSiteUrl();
+const currentOperatorName = "Jacob Anderson";
 
 const summaryCards = [
 	{
@@ -29,7 +30,13 @@ const serviceScope = [
 const coreTerms = [
 	`By accessing or using the Ballot Clarity website at ${siteUrl}, you agree to these Terms of Service and the Privacy Notice.`,
 	"If you do not agree to these terms, do not use the site.",
-	"The current release does not require a public account. A later launch may add a clearer click-through assent step before higher-risk features go live."
+	"The current release does not require a public account for the public site, although separate internal/admin authentication exists for editorial operations."
+];
+
+const operatorAndNoticeRules = [
+	`Ballot Clarity is currently operated by ${currentOperatorName}.`,
+	`Operational questions, corrections, and formal notices can be sent to ${contactEmail}.`,
+	"A separate postal notice address is not published on this host today, so email is the current notice channel for the release now online."
 ];
 
 const noAdviceRules = [
@@ -50,12 +57,25 @@ const licenseRules = [
 	"You may not present Ballot Clarity content as an official government publication, a campaign endorsement, or your own original election record without clear attribution."
 ];
 
+const ownershipRules = [
+	"Ballot Clarity retains rights in its original site design, compilation choices, original summaries, rubric text, and other project-created material except where another owner is identified.",
+	"Official records, filing systems, candidate materials, and other third-party source documents remain subject to the rights and terms of their respective publishers.",
+	"Using the site does not transfer ownership of Ballot Clarity content, trademarks, or source records."
+];
+
 const prohibitedUses = [
 	"Do not overload, probe, attack, reverse engineer, or interfere with the site, its hosting, or its source systems.",
 	"Do not use automated access in a way that bypasses rate limits, harms reliability, or creates misleading bulk republication of the service.",
+	"Do not attempt to access internal editorial, admin, or review routes unless you are explicitly authorized to use them.",
 	"Do not use the site to impersonate an election office, spread voter confusion, or create fraudulent voting materials.",
 	"Do not remove coverage notices, source context, correction notes, or trust signals when redistributing content.",
 	"Do not submit knowingly false correction requests, malicious files, or sensitive personal information that the project does not need."
+];
+
+const suspensionRules = [
+	"Ballot Clarity may suspend, block, or rate-limit access that threatens reliability, security, source integrity, legal compliance, or other users' access to the service.",
+	"Internal editorial/admin access may be disabled when credentials are misused, when an account is no longer authorized, or when an operational incident requires lockdown.",
+	"Suspension or blocking may occur without advance notice when the risk is security-sensitive or time-critical."
 ];
 
 const correctionsAndFeedback = [
@@ -70,6 +90,12 @@ const futureFeatureRules = [
 	"Those features should not go live until the public terms, privacy notice, and operational policies are updated to match them."
 ];
 
+const changesToTermsRules = [
+	"The effective date at the top of this page marks the current public version of these terms.",
+	"Material changes should be posted on this page before or when they take effect, with related updates made to the Privacy Policy and other trust pages where needed.",
+	"Continuing to use the public site after a materially updated version becomes effective means you accept the revised terms."
+];
+
 const legalLimits = [
 	"The site is provided on an \"as is\" and \"as available\" basis while Ballot Clarity remains in a limited-coverage release phase.",
 	"Ballot Clarity does not guarantee that every page will be complete, current, uninterrupted, secure, or free from error.",
@@ -79,9 +105,9 @@ const legalLimits = [
 ];
 
 const disputeNotes = [
-	"For the current release, Ballot Clarity has not yet published a final governing-law, venue, or arbitration clause because the production operating entity and legal posture are still being finalized.",
 	"If you believe a legal or factual issue needs review, start with the public contact path so the project can evaluate the issue and respond.",
-	"A production launch should publish the operating legal entity, legal notice address, and any final dispute-resolution terms before the service is treated as a mature public product."
+	"The current public terms do not impose arbitration or a class-action waiver on ordinary site visitors.",
+	"Any non-waivable consumer-protection or election-law rights remain in place regardless of these general website terms."
 ];
 
 usePageSeo({
@@ -111,7 +137,7 @@ usePageSeo({
 		</header>
 
 		<InfoCallout title="Current scope">
-			This page is written for the current release. A production launch should add the final operator legal name, legal notice address, and any governing-law or dispute-resolution clause chosen by counsel.
+			This page is written for the current release now online. It governs the public civic-information site, not separate contracts with upstream providers or any future account, donation, or API products that Ballot Clarity may add later.
 		</InfoCallout>
 
 		<section class="gap-6 grid lg:grid-cols-3">
@@ -143,6 +169,22 @@ usePageSeo({
 				</ul>
 			</div>
 
+			<div class="surface-panel">
+				<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+					Operator and notices
+				</p>
+				<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
+					Who operates the site and how to send notice
+				</h2>
+				<ul class="text-sm text-app-muted leading-7 mt-6 space-y-3 dark:text-app-muted-dark">
+					<li v-for="item in operatorAndNoticeRules" :key="item" class="px-4 py-3 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70">
+						{{ item }}
+					</li>
+				</ul>
+			</div>
+		</section>
+
+		<section class="gap-6 grid lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
 			<div class="surface-panel">
 				<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
 					Service scope
@@ -213,6 +255,22 @@ usePageSeo({
 
 			<div class="surface-panel">
 				<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+					Ownership
+				</p>
+				<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
+					Who owns what on the site
+				</h2>
+				<ul class="text-sm text-app-muted leading-7 mt-6 space-y-3 dark:text-app-muted-dark">
+					<li v-for="item in ownershipRules" :key="item" class="px-4 py-3 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70">
+						{{ item }}
+					</li>
+				</ul>
+			</div>
+		</section>
+
+		<section class="gap-6 grid lg:grid-cols-2">
+			<div class="surface-panel">
+				<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
 					Prohibited conduct
 				</p>
 				<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
@@ -220,6 +278,20 @@ usePageSeo({
 				</h2>
 				<ul class="text-sm text-app-muted leading-7 mt-6 space-y-3 dark:text-app-muted-dark">
 					<li v-for="item in prohibitedUses" :key="item" class="px-4 py-3 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70">
+						{{ item }}
+					</li>
+				</ul>
+			</div>
+
+			<div class="surface-panel">
+				<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+					Suspension and access control
+				</p>
+				<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
+					When access can be restricted
+				</h2>
+				<ul class="text-sm text-app-muted leading-7 mt-6 space-y-3 dark:text-app-muted-dark">
+					<li v-for="item in suspensionRules" :key="item" class="px-4 py-3 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70">
 						{{ item }}
 					</li>
 				</ul>
@@ -251,13 +323,13 @@ usePageSeo({
 
 			<div class="surface-panel">
 				<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-					Future modules
+					Changes and future modules
 				</p>
 				<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-					How later features would change these terms
+					How the terms change as the product changes
 				</h2>
 				<ul class="text-sm text-app-muted leading-7 mt-6 space-y-3 dark:text-app-muted-dark">
-					<li v-for="item in futureFeatureRules" :key="item" class="px-4 py-3 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70">
+					<li v-for="item in [...changesToTermsRules, ...futureFeatureRules]" :key="item" class="px-4 py-3 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70">
 						{{ item }}
 					</li>
 				</ul>
@@ -313,7 +385,7 @@ usePageSeo({
 						</a>.
 					</p>
 					<p>
-						If Ballot Clarity moves beyond the current release phase, this page should be updated with the final operator identity, legal notice address, and versioned material-change process.
+						This section should stay aligned with the operator identity, notice channel, and effective-date process actually used on the public site.
 					</p>
 				</div>
 			</div>

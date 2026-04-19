@@ -12,7 +12,7 @@ const civicStore = useCivicStore();
 const { isHydrated, nationwideLookupResult } = storeToRefs(civicStore);
 const { layerBreadcrumbLink } = useRouteLayerNavigation();
 const representativeSlug = computed(() => String(route.params.slug));
-const { formatDate, formatDateTime } = useFormatters();
+const { formatCurrency, formatDate, formatDateTime } = useFormatters();
 const activeNationwideLookupCookie = useCookie<string | null>(activeNationwideLookupCookieName);
 const serverNationwideLookupResult = computed(() => parseActiveNationwideLookupCookie(activeNationwideLookupCookie.value));
 const activeNationwideLookupResult = computed(() => isHydrated.value ? nationwideLookupResult.value : serverNationwideLookupResult.value);
@@ -44,6 +44,7 @@ const profileData = computed(() => {
 const person = computed(() => profileData.value?.person ?? null);
 const pagePending = computed(() => pending.value || (!data.value && !fallbackData.value));
 const linkageConfidence = computed(() => person.value ? buildPersonLinkageConfidence(person.value.provenance.status) : null);
+const influence = computed(() => person.value?.influence ?? null);
 const influenceAvailable = computed(() => person.value ? hasPersonInfluence(person.value) : false);
 const influenceUnavailableSummary = computed(() => person.value
 	? person.value.enrichmentStatus?.influence.summary || `${person.value.name} resolves as a stable public officeholder record, but Ballot Clarity does not currently have a publishable lobbying or influence context block attached to this person.`
@@ -78,8 +79,9 @@ const summaryItems = computed(() => {
 
 	return [
 		{ label: "Current office", note: "Office context attached to this representative record.", value: person.value.officeDisplayLabel || person.value.officeSought },
-		{ label: "Influence notes", note: "Context blocks on donors, sectors, and public disclosures.", value: person.value.lobbyingContext.length },
-		{ label: "Public statements", note: "Statements that interact with the influence context.", value: person.value.publicStatements.length },
+		{ label: "Reports", note: "Disclosure reports matched for this route.", value: influence.value?.reportCount ?? person.value.lobbyingContext.length },
+		{ label: "Contribution items", note: "Contribution items kept after the route crosswalk.", value: influence.value?.contributionCount ?? person.value.publicStatements.length },
+		{ label: "Matched total", note: "Total dollar amount across the attached disclosure context.", value: typeof influence.value?.totalMatched === "number" ? formatCurrency(influence.value.totalMatched) : "Not published" },
 		{ label: "Updated", note: "Profile freshness.", value: formatDateTime(person.value.updatedAt) }
 	];
 });
@@ -141,6 +143,24 @@ usePageSeo({
 					<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
 						Influence notes
 					</h2>
+					<div v-if="influence" class="mt-6 gap-3 grid sm:grid-cols-2">
+						<div class="p-4 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
+							<p class="text-xs text-app-muted tracking-[0.14em] font-semibold uppercase dark:text-app-muted-dark">
+								Coverage
+							</p>
+							<p class="text-base text-app-ink mt-2 dark:text-app-text-dark">
+								{{ influence.coverageLabel }}
+							</p>
+						</div>
+						<div class="p-4 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
+							<p class="text-xs text-app-muted tracking-[0.14em] font-semibold uppercase dark:text-app-muted-dark">
+								Match mode
+							</p>
+							<p class="text-base text-app-ink mt-2 dark:text-app-text-dark">
+								{{ influence.matchMode === "committee" ? "Committee crosswalk" : influence.matchMode === "honoree" ? "Direct officeholder-name match" : "Not published" }}
+							</p>
+						</div>
+					</div>
 					<div class="mt-6 space-y-4">
 						<article
 							v-for="item in person.lobbyingContext"
@@ -161,6 +181,21 @@ usePageSeo({
 							<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
 								{{ item.summary }}
 							</p>
+						</article>
+						<article v-if="influence?.topRegistrants?.length" class="p-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
+							<h3 class="text-xl text-app-ink font-semibold dark:text-app-text-dark">
+								Top reporting registrants
+							</h3>
+							<ul class="mt-4 space-y-3">
+								<li
+									v-for="registrant in influence.topRegistrants"
+									:key="registrant.name"
+									class="text-sm text-app-muted flex flex-wrap gap-3 items-center justify-between dark:text-app-muted-dark"
+								>
+									<span class="text-app-ink font-semibold dark:text-app-text-dark">{{ registrant.name }}</span>
+									<span>{{ formatCurrency(registrant.amount) }}</span>
+								</li>
+							</ul>
 						</article>
 					</div>
 				</div>
@@ -193,9 +228,11 @@ usePageSeo({
 						<ul class="readable-list text-sm text-app-muted mt-5 pl-5 dark:text-app-muted-dark">
 							<li><strong class="text-app-ink dark:text-app-text-dark">Linkage:</strong> {{ person.provenance.status }}</li>
 							<li><strong class="text-app-ink dark:text-app-text-dark">Confidence:</strong> {{ linkageConfidence?.label }}</li>
-							<li><strong class="text-app-ink dark:text-app-text-dark">Coverage:</strong> Public disclosures and source-backed statements where available.</li>
+							<li><strong class="text-app-ink dark:text-app-text-dark">Coverage:</strong> {{ influence?.coverageLabel || "Public disclosures and source-backed statements where available." }}</li>
+							<li><strong class="text-app-ink dark:text-app-text-dark">Match mode:</strong> {{ influence?.matchMode === "committee" ? "Committee crosswalk" : influence?.matchMode === "honoree" ? "Direct officeholder-name match" : "Not published" }}</li>
 							<li><strong class="text-app-ink dark:text-app-text-dark">Data through:</strong> {{ formatDate(person.freshness.dataLastUpdatedAt ?? person.updatedAt) }}</li>
 							<li>Treat sector and donor overlap as context, not proof.</li>
+							<li>LD-203 contribution reports show disclosed giving and filing behavior, not every form of contact or influence.</li>
 							<li>Compare the influence notes with the funding page and direct filings.</li>
 							<li>{{ person.freshness.statusNote }}</li>
 						</ul>

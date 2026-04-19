@@ -16,7 +16,7 @@ const civicStore = useCivicStore();
 const { isHydrated, nationwideLookupResult, selectedLocation } = storeToRefs(civicStore);
 const representativeSlug = computed(() => String(route.params.slug));
 const { backToLayerLink, layerBreadcrumbLink, overviewLink } = useRouteLayerNavigation();
-const { formatCurrency, formatDate, formatDateTime } = useFormatters();
+const { formatCurrency, formatDate, formatDateTime, formatPercent } = useFormatters();
 const activeNationwideLookupCookie = useCookie<string | null>(activeNationwideLookupCookieName);
 const serverNationwideLookupResult = computed(() => parseActiveNationwideLookupCookie(activeNationwideLookupCookie.value));
 const activeNationwideLookupResult = computed(() => isHydrated.value ? nationwideLookupResult.value : serverNationwideLookupResult.value);
@@ -89,6 +89,8 @@ const influenceStatusSummary = computed(() => person.value?.enrichmentStatus?.in
 	|| "No lobbying or public-statement context is attached to this person record yet.");
 const hasFunding = computed(() => person.value ? hasPersonFunding(person.value) : false);
 const hasInfluence = computed(() => person.value ? hasPersonInfluence(person.value) : false);
+const officeContext = computed(() => person.value?.officeContext ?? null);
+const influence = computed(() => person.value?.influence ?? null);
 const representativeLayoutKey = computed(() => person.value
 	? `${person.value.slug}:${person.value.updatedAt}:${person.value.provenance.asOf}:${hasFunding.value ? "funding" : "no-funding"}:${hasInfluence.value ? "influence" : "no-influence"}`
 	: "representative-profile-empty");
@@ -125,6 +127,90 @@ const summaryItems = computed(() => {
 		officeDisplayLabel: representativePresentation.value?.officeDisplayLabel ?? person.value.officeSought,
 		officeHref: "#office-context"
 	});
+});
+const officeContextFields = computed(() => {
+	if (!person.value)
+		return [];
+
+	return [
+		{ label: "Office", value: representativePresentation.value?.officeDisplayLabel ?? person.value.officeSought },
+		{ label: "District", value: officeContext.value?.districtLabel || person.value.districtLabel },
+		{ label: "Jurisdiction", value: officeContext.value?.jurisdictionLabel || person.value.location },
+		{ label: "Chamber", value: officeContext.value?.chamberLabel },
+		{ label: "Current term", value: officeContext.value?.currentTermLabel },
+		{ label: "Official phone", value: officeContext.value?.officialPhone },
+		{ label: "Official office", value: officeContext.value?.officialOfficeAddress },
+		{ label: "Linkage note", value: person.value.provenance.note },
+		{ label: "Data through", value: dataThroughLabel.value },
+	].filter(item => Boolean(item.value));
+});
+const officeContextReferenceLinks = computed(() => officeContext.value?.referenceLinks ?? []);
+const moduleStatusItems = computed(() => {
+	if (!person.value?.enrichmentStatus)
+		return [];
+
+	return [
+		{
+			...person.value.enrichmentStatus.officeContext,
+			label: "Office context",
+		},
+		{
+			...person.value.enrichmentStatus.legislativeContext,
+			label: "Legislative and action context",
+		},
+		{
+			...person.value.enrichmentStatus.funding,
+			label: "Funding module",
+		},
+		{
+			...person.value.enrichmentStatus.influence,
+			label: "Influence module",
+		},
+	];
+});
+const fundingHighlights = computed(() => {
+	if (!person.value?.funding)
+		return [];
+
+	return [
+		person.value.funding.committeeName ? { label: "Committee", value: person.value.funding.committeeName } : null,
+		person.value.funding.coverageLabel ? { label: "Coverage", value: person.value.funding.coverageLabel } : null,
+		typeof person.value.funding.totalSpent === "number" ? { label: "Disbursements", value: formatCurrency(person.value.funding.totalSpent) } : null,
+		typeof person.value.funding.smallDonorShare === "number" && Number.isFinite(person.value.funding.smallDonorShare) && person.value.funding.smallDonorShare > 0
+			? { label: "Small-donor share", value: formatPercent(person.value.funding.smallDonorShare) }
+			: null,
+	].filter((item): item is { label: string; value: string } => Boolean(item));
+});
+const fundingLineItems = computed(() => {
+	if (!person.value?.funding)
+		return [];
+
+	if (person.value.funding.receiptBreakdown?.length)
+		return person.value.funding.receiptBreakdown.slice(0, 4);
+
+	return person.value.funding.topFunders.slice(0, 4);
+});
+const fundingLineItemsTitle = computed(() => person.value?.funding?.receiptBreakdown?.length ? "Receipt breakdown" : "Top funders");
+function formatInfluenceMatchMode(matchMode: "committee" | "honoree" | undefined) {
+	if (matchMode === "committee")
+		return "Committee crosswalk";
+
+	if (matchMode === "honoree")
+		return "Direct officeholder-name match";
+
+	return "";
+}
+const influenceHighlights = computed(() => {
+	if (!influence.value)
+		return [];
+
+	return [
+		influence.value.coverageLabel ? { label: "Coverage", value: influence.value.coverageLabel } : null,
+		influence.value.matchMode ? { label: "Match mode", value: formatInfluenceMatchMode(influence.value.matchMode) } : null,
+		typeof influence.value.reportCount === "number" ? { label: "Reports", value: String(influence.value.reportCount) } : null,
+		typeof influence.value.contributionCount === "number" ? { label: "Contribution items", value: String(influence.value.contributionCount) } : null,
+		typeof influence.value.totalMatched === "number" ? { label: "Total matched", value: formatCurrency(influence.value.totalMatched) } : null,
+	].filter((item): item is { label: string; value: string } => Boolean(item));
 });
 const reportIssueHref = computed(() => person.value
 	? `mailto:${contactEmail}?subject=${encodeURIComponent(`Ballot Clarity representative review: ${person.value.name}`)}`
@@ -271,57 +357,70 @@ usePageSeo({
 						<div id="office-context" class="px-5 py-5 border border-app-line/80 rounded-3xl bg-white/80 scroll-mt-32 dark:border-app-line-dark dark:bg-app-panel-dark/70">
 							<div class="flex flex-wrap gap-3 items-center justify-between">
 								<h3 class="text-xl text-app-ink font-serif dark:text-app-text-dark">
-									Linkage and coverage
+									Office and jurisdiction context
 								</h3>
 								<VerificationBadge :label="person.provenance.status" />
 							</div>
 							<dl class="mt-5 gap-4 grid sm:grid-cols-2">
-								<div>
+								<div v-for="item in officeContextFields" :key="item.label">
 									<dt class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
-										Office
+										{{ item.label }}
 									</dt>
 									<dd class="text-sm text-app-ink mt-2 dark:text-app-text-dark">
-										{{ person.officeSought }}
-									</dd>
-								</div>
-								<div>
-									<dt class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
-										District
-									</dt>
-									<dd class="text-sm text-app-ink mt-2 dark:text-app-text-dark">
-										{{ person.districtLabel }}
-									</dd>
-								</div>
-								<div>
-									<dt class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
-										Linkage note
-									</dt>
-									<dd class="text-sm text-app-ink mt-2 dark:text-app-text-dark">
-										{{ person.provenance.note }}
-									</dd>
-								</div>
-								<div>
-									<dt class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
-										Data through
-									</dt>
-									<dd class="text-sm text-app-ink mt-2 dark:text-app-text-dark">
-										{{ dataThroughLabel }}
+										{{ item.value }}
 									</dd>
 								</div>
 							</dl>
+							<div v-if="officeContextReferenceLinks.length" class="mt-6 pt-6 border-t border-app-line/80 dark:border-app-line-dark">
+								<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+									Reference links
+								</p>
+								<div class="mt-4 flex flex-wrap gap-3">
+									<a
+										v-for="link in officeContextReferenceLinks"
+										:key="`${link.label}-${link.url}`"
+										:href="link.url"
+										target="_blank"
+										rel="noreferrer"
+										class="btn-secondary"
+									>
+										{{ link.label }}
+										<span class="i-carbon-launch" />
+									</a>
+								</div>
+							</div>
 						</div>
 						<div class="px-5 py-5 border border-app-line/80 rounded-3xl bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
 							<h3 class="text-xl text-app-ink font-serif dark:text-app-text-dark">
-								Read this safely
+								Module status
 							</h3>
-							<ul class="text-sm text-app-muted leading-7 mt-4 space-y-2 dark:text-app-muted-dark">
-								<li>Direct, crosswalked, and inferred linkage should not be treated as the same confidence level.</li>
-								<li>Finance and influence sections only appear when the underlying person record has publishable data.</li>
-								<li>{{ person.enrichmentStatus?.officeContext.summary || "Office context is attached from the current provider-backed officeholder record." }}</li>
-								<li>{{ person.enrichmentStatus?.legislativeContext.summary || "Additional legislative context is attached only when a stronger official crosswalk is available." }}</li>
-								<li>{{ person.freshness.statusNote }}</li>
-								<li>Use the attached records and official sources before treating this page as complete.</li>
+							<ul class="mt-4 space-y-4">
+								<li v-for="item in moduleStatusItems" :key="item.label" class="pb-4 border-b border-app-line/80 last:pb-0 last:border-b-0 dark:border-app-line-dark">
+									<div class="flex flex-wrap gap-3 items-center justify-between">
+										<p class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
+											{{ item.label }}
+										</p>
+										<VerificationBadge :label="item.status" :tone="item.status === 'available' ? 'accent' : 'warning'" />
+									</div>
+									<p class="text-sm text-app-muted leading-7 mt-2 dark:text-app-muted-dark">
+										{{ item.summary }}
+									</p>
+									<p v-if="item.sourceSystem || item.reasonCode" class="text-xs text-app-muted tracking-[0.12em] font-semibold mt-2 uppercase dark:text-app-muted-dark">
+										{{ [item.sourceSystem, item.reasonCode].filter(Boolean).join(" · ") }}
+									</p>
+								</li>
 							</ul>
+							<div class="mt-6 pt-6 border-t border-app-line/80 dark:border-app-line-dark">
+								<h4 class="text-lg text-app-ink font-serif dark:text-app-text-dark">
+									Read this safely
+								</h4>
+								<ul class="text-sm text-app-muted leading-7 mt-4 space-y-2 dark:text-app-muted-dark">
+									<li>Direct, crosswalked, and inferred linkage should not be treated as the same confidence level.</li>
+									<li>Finance and influence sections only appear when the underlying person record has publishable data.</li>
+									<li>{{ person.freshness.statusNote }}</li>
+									<li>Use the attached records and official sources before treating this page as complete.</li>
+								</ul>
+							</div>
 						</div>
 					</div>
 				</section>
@@ -446,8 +545,21 @@ usePageSeo({
 							<p class="text-sm text-app-muted leading-7 dark:text-app-muted-dark">
 								{{ person.funding.summary }}
 							</p>
+							<div v-if="fundingHighlights.length" class="gap-3 grid sm:grid-cols-2">
+								<div v-for="item in fundingHighlights" :key="item.label" class="p-4 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
+									<p class="text-xs text-app-muted tracking-[0.14em] font-semibold uppercase dark:text-app-muted-dark">
+										{{ item.label }}
+									</p>
+									<p class="text-base text-app-ink mt-2 dark:text-app-text-dark">
+										{{ item.value }}
+									</p>
+								</div>
+							</div>
+							<p class="text-xs text-app-muted tracking-[0.18em] font-semibold px-1 pt-2 uppercase dark:text-app-muted-dark">
+								{{ fundingLineItemsTitle }}
+							</p>
 							<ul class="space-y-3">
-								<li v-for="funder in person.funding.topFunders.slice(0, 4)" :key="`${funder.name}-${funder.category}`" class="p-4 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
+								<li v-for="funder in fundingLineItems" :key="`${funder.name}-${funder.category}`" class="p-4 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
 									<div class="flex flex-wrap gap-4 items-center justify-between">
 										<div>
 											<p class="text-lg text-app-ink font-semibold dark:text-app-text-dark">
@@ -471,14 +583,15 @@ usePageSeo({
 							<ul class="text-sm text-app-muted leading-7 mt-4 space-y-2 dark:text-app-muted-dark">
 								<li><strong class="text-app-ink dark:text-app-text-dark">Linkage:</strong> {{ person.provenance.status }}</li>
 								<li><strong class="text-app-ink dark:text-app-text-dark">Confidence:</strong> {{ linkageConfidence?.label }}</li>
-								<li><strong class="text-app-ink dark:text-app-text-dark">Coverage:</strong> {{ person.funding.provenanceLabel ?? "Source-backed finance summary" }}</li>
+								<li><strong class="text-app-ink dark:text-app-text-dark">Committee:</strong> {{ person.funding.committeeName || "Current matched committee not published in this summary." }}</li>
+								<li><strong class="text-app-ink dark:text-app-text-dark">Coverage:</strong> {{ person.funding.coverageLabel || person.funding.provenanceLabel || "Source-backed finance summary" }}</li>
 								<li><strong class="text-app-ink dark:text-app-text-dark">Data through:</strong> {{ dataThroughLabel }}</li>
 								<li><strong class="text-app-ink dark:text-app-text-dark">Warning:</strong> {{ person.freshness.statusNote }}</li>
 							</ul>
 						</div>
 					</div>
 					<InfoCallout v-else title="No funding data attached" tone="warning" class="mt-6">
-						Ballot Clarity does not currently have a source-backed finance summary attached to this person record.
+						{{ fundingStatusSummary }}
 					</InfoCallout>
 				</section>
 
@@ -498,6 +611,16 @@ usePageSeo({
 					</div>
 					<div v-if="hasInfluence" class="mt-6 gap-6 grid xl:grid-cols-[minmax(0,1fr)_minmax(0,0.95fr)]">
 						<div class="space-y-4">
+							<div v-if="influenceHighlights.length" class="gap-3 grid sm:grid-cols-2">
+								<div v-for="item in influenceHighlights" :key="item.label" class="p-4 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
+									<p class="text-xs text-app-muted tracking-[0.14em] font-semibold uppercase dark:text-app-muted-dark">
+										{{ item.label }}
+									</p>
+									<p class="text-base text-app-ink mt-2 dark:text-app-text-dark">
+										{{ item.value }}
+									</p>
+								</div>
+							</div>
 							<article v-for="block in person.lobbyingContext.slice(0, 3)" :key="block.id" class="p-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
 								<div class="flex flex-wrap gap-3 items-start justify-between">
 									<h3 class="text-lg text-app-ink font-semibold dark:text-app-text-dark">
@@ -509,6 +632,17 @@ usePageSeo({
 									{{ block.summary }}
 								</p>
 							</article>
+							<div v-if="influence?.topRegistrants?.length" class="p-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
+								<h3 class="text-lg text-app-ink font-semibold dark:text-app-text-dark">
+									Top reporting registrants
+								</h3>
+								<ul class="mt-4 space-y-3">
+									<li v-for="registrant in influence.topRegistrants" :key="registrant.name" class="text-sm text-app-muted flex flex-wrap gap-3 items-center justify-between dark:text-app-muted-dark">
+										<span class="text-app-ink font-semibold dark:text-app-text-dark">{{ registrant.name }}</span>
+										<span>{{ formatCurrency(registrant.amount) }}</span>
+									</li>
+								</ul>
+							</div>
 						</div>
 						<div class="p-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
 							<h3 class="text-xl text-app-ink font-serif dark:text-app-text-dark">
@@ -517,14 +651,15 @@ usePageSeo({
 							<ul class="text-sm text-app-muted leading-7 mt-4 space-y-2 dark:text-app-muted-dark">
 								<li><strong class="text-app-ink dark:text-app-text-dark">Linkage:</strong> {{ person.provenance.status }}</li>
 								<li><strong class="text-app-ink dark:text-app-text-dark">Confidence:</strong> {{ linkageConfidence?.label }}</li>
-								<li><strong class="text-app-ink dark:text-app-text-dark">Coverage:</strong> Public disclosures, donor context, and source-backed statements where available.</li>
+								<li><strong class="text-app-ink dark:text-app-text-dark">Coverage:</strong> {{ influence?.coverageLabel || "Public disclosures, donor context, and source-backed statements where available." }}</li>
+								<li><strong class="text-app-ink dark:text-app-text-dark">Match mode:</strong> {{ influence?.matchMode ? formatInfluenceMatchMode(influence.matchMode) : "Not published" }}</li>
 								<li><strong class="text-app-ink dark:text-app-text-dark">Data through:</strong> {{ dataThroughLabel }}</li>
 								<li><strong class="text-app-ink dark:text-app-text-dark">Warning:</strong> Context is not proof of causation. {{ person.freshness.statusNote }}</li>
 							</ul>
 						</div>
 					</div>
 					<InfoCallout v-else title="No influence context attached" tone="warning" class="mt-6">
-						Ballot Clarity does not currently have a publishable lobbying or influence context block attached to this person record.
+						{{ influenceStatusSummary }}
 					</InfoCallout>
 				</section>
 

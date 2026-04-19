@@ -51,6 +51,7 @@ export function parseActiveNationwideLookupCookie(cookieValue: string | null | u
 			detectedFromIp: parsed.detectedFromIp === true,
 			districtMatches: Array.isArray(parsed.districtMatches) ? parsed.districtMatches as NationwideLookupResultContext["districtMatches"] : [],
 			election: null,
+			electionLogistics: isRecord(parsed.electionLogistics) ? parsed.electionLogistics as unknown as NationwideLookupResultContext["electionLogistics"] : null,
 			electionSlug: typeof parsed.electionSlug === "string" ? parsed.electionSlug : undefined,
 			fromCache: false,
 			guideAvailability: "not-published",

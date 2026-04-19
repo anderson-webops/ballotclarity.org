@@ -64,6 +64,36 @@ const nationwideResponse: LocationLookupResponse = {
 	],
 	guideAvailability: "not-published",
 	inputKind: "zip",
+	electionLogistics: {
+		additionalElectionNames: ["2026 Atlanta Runoff Election"],
+		dropOffLocations: [
+			{
+				address: "125 Central Ave SW, Atlanta, GA 30303",
+				id: "dropoff-1",
+				name: "Fulton County Election Hub",
+			},
+		],
+		earlyVoteSites: [
+			{
+				address: "560 Amsterdam Ave NE, Atlanta, GA 30306",
+				id: "early-1",
+				name: "Atlanta Early Vote Center",
+			},
+		],
+		electionDay: "2026-11-03",
+		electionName: "2026 Georgia General Election",
+		mailOnly: false,
+		normalizedAddress: "55 Trinity Avenue Southwest, Atlanta, GA 30303",
+		officialSourceNote: "Google Civic returned structured polling and early-vote logistics for this address.",
+		pollingLocations: [
+			{
+				address: "55 Trinity Ave SW, Atlanta, GA 30303",
+				id: "polling-1",
+				name: "Atlanta City Hall Atrium",
+				note: "7:00 AM - 7:00 PM",
+			},
+		],
+	},
 	location: {
 		coverageLabel: "Nationwide civic results available",
 		displayName: "Provo, Utah",
@@ -142,6 +172,7 @@ test("successful nationwide lookup builds a persisted nationwide result context"
 	assert.equal(update.nationwideLookupResult?.location?.displayName, "Provo, Utah");
 	assert.equal(update.nationwideLookupResult?.election?.slug, activeElection.slug);
 	assert.equal(update.nationwideLookupResult?.actions.length, 1);
+	assert.equal(update.nationwideLookupResult?.electionLogistics?.pollingLocations[0]?.name, "Atlanta City Hall Atrium");
 });
 
 test("non-published-guide lookups keep a persisted app context instead of dropping back to null state", () => {

@@ -16,6 +16,16 @@ export type SourceAuthority
 		| "official-government"
 		| "open-data";
 
+export type SourcePublisherType
+	= | "ballot-clarity archive"
+		| "campaign"
+		| "nonprofit"
+		| "official"
+		| "public-interest"
+		| "third-party civic infrastructure";
+
+export type SourcePublicationKind = "curated-global" | "published-provenance";
+
 export interface Source {
 	id: string;
 	title: string;
@@ -32,12 +42,21 @@ export interface SourceCitationTarget {
 	id: string;
 	label: string;
 	href: string;
-	type: "candidate" | "contest" | "election" | "jurisdiction" | "measure";
+	type: "candidate" | "contest" | "election" | "jurisdiction" | "measure" | "page";
 }
 
 export interface SourceDirectoryItem extends Source {
 	citationCount: number;
 	citedBy: SourceCitationTarget[];
+	geographicScope: string;
+	limitations: string[];
+	primarySourceLabel?: string;
+	publicationKind: SourcePublicationKind;
+	publisherType: SourcePublisherType;
+	reviewNote: string;
+	routeFamilies: string[];
+	summary: string;
+	usedFor: string;
 }
 
 export interface SourcesDirectoryResponse {
@@ -119,6 +138,25 @@ export interface FundingSummary {
 	summary: string;
 	topFunders: FundingLineItem[];
 	sources: Source[];
+}
+
+export interface ElectionLogisticsSite {
+	id: string;
+	name: string;
+	address: string;
+	note?: string;
+}
+
+export interface ElectionLogistics {
+	additionalElectionNames: string[];
+	dropOffLocations: ElectionLogisticsSite[];
+	earlyVoteSites: ElectionLogisticsSite[];
+	electionDay?: string;
+	electionName?: string;
+	mailOnly: boolean;
+	normalizedAddress?: string;
+	officialSourceNote: string;
+	pollingLocations: ElectionLogisticsSite[];
 }
 
 export interface VoteRecordSummary {
@@ -650,6 +688,7 @@ export interface LocationLookupResponse {
 	actions?: LocationLookupAction[];
 	selectionOptions?: LocationLookupSelectionOption[];
 	normalizedAddress?: string;
+	electionLogistics?: ElectionLogistics | null;
 	districtMatches?: LocationDistrictMatch[];
 	representativeMatches?: LocationRepresentativeMatch[];
 	fromCache?: boolean;
@@ -929,7 +968,37 @@ export interface RepresentativeSummary extends RepresentativeCard {
 }
 
 export interface PersonProfileFunding extends FundingSummary {
+	committeeName?: string;
+	coverageLabel?: string;
+	receiptBreakdown?: FundingLineItem[];
 	provenanceLabel?: string;
+	totalSpent?: number;
+}
+
+export interface InfluenceRegistrantSummary {
+	name: string;
+	amount: number;
+}
+
+export interface PersonProfileInfluence {
+	contributionCount: number;
+	coverageLabel?: string;
+	filingYear?: number;
+	matchMode?: "committee" | "honoree";
+	reportCount: number;
+	topRegistrants: InfluenceRegistrantSummary[];
+	totalMatched: number;
+}
+
+export interface PersonProfileOfficeContext {
+	chamberLabel?: string;
+	committeeMemberships?: string[];
+	currentTermLabel?: string;
+	districtLabel?: string;
+	jurisdictionLabel?: string;
+	officialOfficeAddress?: string;
+	officialPhone?: string;
+	referenceLinks?: ExternalLink[];
 }
 
 export interface PersonProfileEnrichmentStatusItem {
@@ -981,6 +1050,7 @@ export interface PersonProfile {
 	updatedAt: string;
 	freshness: FreshnessMeta;
 	funding: PersonProfileFunding | null;
+	influence?: PersonProfileInfluence | null;
 	lobbyingContext: EvidenceBlock[];
 	publicStatements: EvidenceBlock[];
 	biography: EvidenceBlock[];
@@ -993,6 +1063,7 @@ export interface PersonProfile {
 	onCurrentBallot: boolean;
 	ballotStatusLabel: string;
 	officeholderLabel: string;
+	officeContext?: PersonProfileOfficeContext;
 	enrichmentStatus?: PersonProfileEnrichmentStatus;
 	officialWebsiteUrl?: string;
 	provenance: {
@@ -1052,6 +1123,200 @@ export interface BallotResponse {
 	election: Election;
 	updatedAt: string;
 	note: string;
+}
+
+export type GuidePackageStatus = "draft" | "in_review" | "ready_to_publish" | "published";
+
+export type GuidePipelineClass = "fully_automatable" | "automatable_with_review" | "review_first_manual";
+
+export type GuidePackageIssueSeverity = "info" | "warning" | "error";
+
+export type GuidePackageChecklistItemStatus = "pass" | "warning" | "fail" | "not_applicable";
+
+export type GuidePackageChecklistCategory
+	= | "election_identity_scope"
+		| "contest_completeness"
+		| "candidate_completeness"
+		| "measure_completeness"
+		| "official_resources"
+		| "source_coverage"
+		| "content_quality_neutrality"
+		| "freshness_timing"
+		| "known_limitations";
+
+export type GuidePackageChecklistEvaluationMode = "auto" | "reviewer_confirmed" | "hybrid";
+
+export type GuidePackageReviewRecommendation = "publish" | "publish_with_warnings" | "needs_revision" | "do_not_publish";
+
+export type GuidePackageIssueKind
+	= | "ambiguous_match"
+		| "coverage_limit"
+		| "missing_field"
+		| "normalization_issue"
+		| "publish_gate"
+		| "source_gap";
+
+export interface GuidePackageCoverageScope {
+	label: string;
+	electionSlug: string;
+	jurisdictionSlug: string;
+	locationSlug?: string;
+	districtSlugs: string[];
+	routeFamilies: string[];
+}
+
+export interface GuidePackageCounts {
+	contests: number;
+	candidates: number;
+	measures: number;
+	officialResources: number;
+	attachedSources: number;
+}
+
+export interface GuidePackageIssue {
+	id: string;
+	severity: GuidePackageIssueSeverity;
+	kind: GuidePackageIssueKind;
+	title: string;
+	summary: string;
+	blocking: boolean;
+	pipelineClass: GuidePipelineClass;
+	entityType?: "candidate" | "contest" | "election" | "jurisdiction" | "measure";
+	entitySlug?: string;
+}
+
+export interface GuidePackageChecklistItem {
+	id: string;
+	category: GuidePackageChecklistCategory;
+	label: string;
+	detail: string;
+	status: GuidePackageChecklistItemStatus;
+	blocking: boolean;
+	pipelineClass: GuidePipelineClass;
+	evaluationMode: GuidePackageChecklistEvaluationMode;
+	whatToCheck: string;
+	whyItMatters: string;
+	passStandard: string;
+	warningStandard: string;
+	failStandard: string;
+	autoSignal?: string;
+	reviewerSignal?: string;
+	issueKind: GuidePackageIssueKind;
+}
+
+export interface GuidePackageChecklistCategoryGroup {
+	id: GuidePackageChecklistCategory;
+	label: string;
+	description: string;
+	items: GuidePackageChecklistItem[];
+	blockingIssueCount: number;
+	warningCount: number;
+	failCount: number;
+}
+
+export interface GuidePackageRecommendationSummary {
+	system: GuidePackageReviewRecommendation;
+	reviewer?: GuidePackageReviewRecommendation;
+	final: GuidePackageReviewRecommendation;
+	reason: string;
+}
+
+export interface GuidePackageDiagnostics {
+	readyToPublish: boolean;
+	completenessScore: number;
+	blockingIssueCount: number;
+	warningCount: number;
+	issues: GuidePackageIssue[];
+	blockers: GuidePackageIssue[];
+	warnings: GuidePackageIssue[];
+	checklist: GuidePackageChecklistItem[];
+	checklistCategories: GuidePackageChecklistCategoryGroup[];
+	recommendation: GuidePackageRecommendationSummary;
+	rubricVersion: string;
+}
+
+export interface GuidePackageWorkflow {
+	id: string;
+	electionSlug: string;
+	jurisdictionSlug: string;
+	status: GuidePackageStatus;
+	reviewer?: string;
+	reviewNotes?: string;
+	reviewRecommendation?: GuidePackageReviewRecommendation;
+	coverageNotes: string[];
+	coverageLimits: string[];
+	createdAt: string;
+	draftedAt: string;
+	reviewedAt?: string;
+	publishedAt?: string;
+	updatedAt: string;
+}
+
+export interface GuidePackageContestSummary {
+	slug: string;
+	title: string;
+	office: string;
+	type: Contest["type"];
+	href: string;
+	candidateCount: number;
+	measureCount: number;
+	sourceCount: number;
+}
+
+export interface GuidePackageCandidateSummary {
+	slug: string;
+	name: string;
+	contestSlug: string;
+	officeSought: string;
+	party: string;
+	href: string;
+	sourceCount: number;
+	summary: string;
+}
+
+export interface GuidePackageMeasureSummary {
+	slug: string;
+	title: string;
+	contestSlug: string;
+	href: string;
+	sourceCount: number;
+	summary: string;
+}
+
+export interface GuidePackageSummary {
+	workflow: GuidePackageWorkflow;
+	election: ElectionSummary | null;
+	jurisdiction: JurisdictionSummary | null;
+	coverageScope: GuidePackageCoverageScope;
+	counts: GuidePackageCounts;
+	diagnostics: Pick<GuidePackageDiagnostics, "blockingIssueCount" | "completenessScore" | "readyToPublish" | "recommendation" | "warningCount">;
+}
+
+export interface GuidePackageRecord extends GuidePackageSummary {
+	electionRecord: Election | null;
+	jurisdictionRecord: Jurisdiction | null;
+	contests: GuidePackageContestSummary[];
+	candidates: GuidePackageCandidateSummary[];
+	measures: GuidePackageMeasureSummary[];
+	officialResources: OfficialResource[];
+	attachedSources: Source[];
+	diagnostics: GuidePackageDiagnostics;
+}
+
+export interface GuidePackageListResponse {
+	packages: GuidePackageRecord[];
+	updatedAt: string;
+}
+
+export interface GuidePackageRecordResponse {
+	package: GuidePackageRecord;
+	updatedAt: string;
+}
+
+export interface GuidePackageDiagnosticsResponse {
+	packageId: string;
+	diagnostics: GuidePackageDiagnostics;
+	updatedAt: string;
 }
 
 export interface CompareResponse {

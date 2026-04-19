@@ -4,11 +4,14 @@ import type { LdaClient, LdaContributionReport } from "./lda.js";
 import type { OpenFecCandidateSearchRecord, OpenFecClient, OpenFecCommitteeTotalsRecord } from "./openfec.js";
 import type {
 	EvidenceBlock,
+	ExternalLink,
 	LocationRepresentativeMatch,
 	LookupAvailabilityStatus,
 	PersonProfileEnrichmentStatus,
 	PersonProfileEnrichmentStatusItem,
 	PersonProfileFunding,
+	PersonProfileInfluence,
+	PersonProfileOfficeContext,
 	PersonProfileResponse,
 	RepresentativeSummary,
 	Source,
@@ -38,6 +41,7 @@ const personNameSuffixPattern = /\b(?:jr|sr|ii|iii|iv|v|md|phd|dds|esq)\b/gi;
 const representativeOfficePattern = /representative/i;
 const senatorLabelPrefixPattern = /^senator\s+/;
 const senatorOfficePattern = /senator/i;
+const openStatesSourcePattern = /open states/i;
 
 const canonicalFirstNameAliases = new Map<string, string>([
 	["andy", "andrew"],
@@ -150,6 +154,7 @@ interface FederalRepresentativeTarget {
 
 interface LdaInfluenceAttachment {
 	dataAsOf?: string;
+	influence?: PersonProfileInfluence | null;
 	influenceSummary: string;
 	lobbyingContext: EvidenceBlock[];
 	publicStatements: EvidenceBlock[];
@@ -162,6 +167,7 @@ interface CongressAttachment {
 	dataAsOf?: string;
 	legislativeContextStatus: PersonProfileEnrichmentStatusItem;
 	methodologyNotes: string[];
+	officeContext?: PersonProfileOfficeContext;
 	officialWebsiteUrl?: string;
 	officeContextStatus: PersonProfileEnrichmentStatusItem;
 	sources: Source[];
@@ -175,10 +181,12 @@ interface RepresentativeModuleAttachment {
 	funding: PersonProfileFunding | null;
 	fundingAvailable: boolean;
 	fundingSummary: string;
+	influence?: PersonProfileInfluence | null;
 	influenceAvailable: boolean;
 	influenceSummary: string;
 	lobbyingContext: EvidenceBlock[];
 	methodologyNotes: string[];
+	officeContext?: PersonProfileOfficeContext;
 	officialWebsiteUrl?: string;
 	publicStatements: EvidenceBlock[];
 	sources: Source[];
@@ -338,6 +346,39 @@ function toStateCode(value: string | null | undefined) {
 
 function buildTrustBullet(id: string, text: string, sources: Source[], note?: string): TrustBullet {
 	return { id, note, sources, text };
+}
+
+function buildReferenceLink(label: string, url: string | undefined, note?: string): ExternalLink | null {
+	if (!url)
+		return null;
+
+	return {
+		label,
+		note,
+		url,
+	};
+}
+
+function formatOrdinal(value: number | undefined) {
+	if (!Number.isFinite(value) || !value)
+		return "";
+
+	const numericValue = Math.abs(value);
+	const remainder = numericValue % 100;
+
+	if (remainder >= 11 && remainder <= 13)
+		return `${numericValue}th`;
+
+	switch (numericValue % 10) {
+		case 1:
+			return `${numericValue}st`;
+		case 2:
+			return `${numericValue}nd`;
+		case 3:
+			return `${numericValue}rd`;
+		default:
+			return `${numericValue}th`;
+	}
 }
 
 function uniqueSources(sources: Source[]) {
@@ -692,21 +733,28 @@ async function resolveFundingAttachment(
 	].filter(Boolean).join(" ");
 	const sources = buildOpenFecSources(candidate, committeeTotals);
 	const totalRaised = committeeTotals.receipts;
+	const totalSpent = committeeTotals.disbursements;
 	const smallDonorShare = committeeTotals.receipts > 0
 		? Math.min(1, committeeTotals.individualUnitemizedContributions / committeeTotals.receipts)
 		: 0;
 	const committeeName = candidate.principalCommittees[0]?.name || committeeTotals.committeeName;
+	const coverageRangeLabel = coverageLabel;
+	const receiptBreakdown = buildFundingLineItems(committeeTotals);
 	const attachment = {
 		candidate,
 		dataAsOf: committeeTotals.coverageEndDate || candidate.principalCommittees[0]?.lastFileDate,
 		funding: {
 			cashOnHand: committeeTotals.lastCashOnHandEndPeriod || committeeTotals.cashOnHandBeginningPeriod,
+			committeeName,
+			coverageLabel: coverageRangeLabel,
 			provenanceLabel: `OpenFEC principal committee totals (${coverageLabel})`,
+			receiptBreakdown,
 			smallDonorShare,
 			sources,
-			summary: `${committeeName} reported ${formatCurrency(totalRaised)} in receipts${committeeTotals.lastCashOnHandEndPeriod ? ` and ${formatCurrency(committeeTotals.lastCashOnHandEndPeriod)} cash on hand` : ""} in the ${coverageLabel}.`,
-			topFunders: buildFundingLineItems(committeeTotals),
+			summary: `${committeeName} reported ${formatCurrency(totalRaised)} in receipts${totalSpent ? `, ${formatCurrency(totalSpent)} in disbursements,` : ""}${committeeTotals.lastCashOnHandEndPeriod ? ` and ${formatCurrency(committeeTotals.lastCashOnHandEndPeriod)} cash on hand` : ""} in the ${coverageLabel}.`,
+			topFunders: receiptBreakdown,
 			totalRaised,
+			totalSpent,
 		},
 		fundingSummary: `OpenFEC finance summary attached for the ${coverageLabel}.`,
 		sources,
@@ -921,7 +969,7 @@ async function resolveInfluenceAttachment(
 	const topRegistrants = [...registrantTotals.entries()]
 		.sort((left, right) => right[1] - left[1])
 		.slice(0, 3)
-		.map(([name, amount]) => `${name} (${formatCurrency(amount)})`);
+		.map(([name, amount]) => ({ amount, name }));
 	const sources = uniqueSources(filteredReports
 		.slice(0, 6)
 		.map(report => buildLdaReportSource(
@@ -932,9 +980,18 @@ async function resolveInfluenceAttachment(
 		)));
 	const latestPostedAt = mergeDate(...filteredReports.map(report => report.postedAt));
 	const matchLabel = matchMode === "committee" ? committeeName : target.name;
-	const summary = `${contributionCount} LD-203 contribution item${contributionCount === 1 ? "" : "s"} across ${filteredReports.length} report${filteredReports.length === 1 ? "" : "s"} in ${resolvedYear} matched ${matchLabel}, totaling ${formatCurrency(totalAmount)}.${topRegistrants.length ? ` Largest reporting registrants: ${topRegistrants.join(", ")}.` : ""}`;
+	const summary = `${contributionCount} LD-203 contribution item${contributionCount === 1 ? "" : "s"} across ${filteredReports.length} report${filteredReports.length === 1 ? "" : "s"} in ${resolvedYear} matched ${matchLabel}, totaling ${formatCurrency(totalAmount)}.${topRegistrants.length ? ` Largest reporting registrants: ${topRegistrants.map(item => `${item.name} (${formatCurrency(item.amount)})`).join(", ")}.` : ""}`;
 	const attachment = {
 		dataAsOf: latestPostedAt,
+		influence: {
+			contributionCount,
+			coverageLabel: `${resolvedYear} LD-203 contribution reports`,
+			filingYear: resolvedYear,
+			matchMode,
+			reportCount: filteredReports.length,
+			topRegistrants,
+			totalMatched: totalAmount,
+		},
 		influenceSummary: `LD-203 contribution disclosure context attached from ${resolvedYear} reports.`,
 		lobbyingContext: [
 			{
@@ -1051,15 +1108,27 @@ async function resolveCongressAttachment(
 
 	const sources = buildCongressSources(detail);
 	const term = [...detail.terms].sort((left, right) => right.congress - left.congress)[0];
+	const officeTypeLabel = term?.memberType || (target.office === "S" ? "Senator" : "Representative");
+	const districtLabel = target.office === "H" && term?.district
+		? `${term.stateName || detail.state}'s ${formatOrdinal(term.district)} Congressional District`
+		: term?.stateName || detail.state;
+	const referenceLinks = [
+		buildReferenceLink("Congress member record", detail.url, "Official Congress.gov member page for this officeholder."),
+		buildReferenceLink("Sponsored legislation", detail.sponsoredLegislationUrl, "Current sponsored-legislation feed attached by Congress.gov."),
+		buildReferenceLink("Cosponsored legislation", detail.cosponsoredLegislationUrl, "Current cosponsored-legislation feed attached by Congress.gov."),
+		buildReferenceLink("Official office website", detail.officialWebsiteUrl, "Official office site linked from Congress.gov."),
+	].filter((link): link is ExternalLink => Boolean(link));
 	const officeSummaryParts = [
-		`Congress.gov lists ${detail.directOrderName} as a current ${term?.memberType || (target.office === "S" ? "Senator" : "Representative")} from ${term?.stateName || detail.state}.`,
+		`Congress.gov lists ${detail.directOrderName} as a current ${officeTypeLabel} from ${term?.stateName || detail.state}.`,
+		districtLabel && target.office === "H" ? `District context: ${districtLabel}.` : "",
 		detail.addressInformation?.officeAddress ? `Official office: ${detail.addressInformation.officeAddress}.` : "",
+		detail.addressInformation?.phoneNumber ? `Official phone: ${detail.addressInformation.phoneNumber}.` : "",
 		detail.officialWebsiteUrl ? `Official website: ${detail.officialWebsiteUrl}.` : "",
 	].filter(Boolean);
 	const legislativeSummaryParts = [
 		typeof detail.sponsoredLegislationCount === "number" ? `Sponsored legislation count: ${detail.sponsoredLegislationCount}.` : "",
 		typeof detail.cosponsoredLegislationCount === "number" ? `Cosponsored legislation count: ${detail.cosponsoredLegislationCount}.` : "",
-		term ? `Current Congress tracked here: ${term.congress}.` : "",
+		term ? `Current Congress tracked here: ${term.congress} (${term.startYear}-${term.endYear || "present"}).` : "",
 	].filter(Boolean);
 
 	return {
@@ -1081,8 +1150,17 @@ async function resolveCongressAttachment(
 			"Congress.gov",
 		),
 		methodologyNotes: [
-			"Congress.gov is used on federal representative routes to attach official office context and current legislative metadata when the officeholder crosswalk is reliable.",
+			"Congress.gov is used on federal representative routes to attach official office context, current term context, and current legislative metadata when the officeholder crosswalk is reliable.",
 		],
+		officeContext: {
+			chamberLabel: term?.chamber || officeTypeLabel,
+			currentTermLabel: term ? `${term.congress}th Congress (${term.startYear}-${term.endYear || "present"})` : undefined,
+			districtLabel: districtLabel || undefined,
+			jurisdictionLabel: term?.stateName || detail.state,
+			officialOfficeAddress: detail.addressInformation?.officeAddress,
+			officialPhone: detail.addressInformation?.phoneNumber,
+			referenceLinks,
+		},
 		officialWebsiteUrl: detail.officialWebsiteUrl,
 		officeContextStatus: buildEnrichmentStatus(
 			"available",
@@ -1126,6 +1204,158 @@ function buildStatusNote({
 		return "This profile reflects a current county or city officeholder record with reviewed official-source context. Local finance, disclosure, and issue modules still attach only where Ballot Clarity has a reviewed local source.";
 
 	return "This profile reflects the current officeholder record Ballot Clarity could verify for this route. Verify critical details against the attached provider record and official election tools.";
+}
+
+function inferOfficeContextChamberLabel(match: LocationRepresentativeMatch) {
+	switch (match.officeType) {
+		case "us_senate":
+			return "U.S. Senate";
+		case "us_house":
+			return "U.S. House";
+		case "state_senate":
+			return "State Senate";
+		case "state_house":
+			return "State House";
+		case "county_commission":
+			return "County commission";
+		case "mayor":
+			return "City government";
+		case "county_official":
+			return "County government";
+		case "city_official":
+			return "City government";
+		default:
+			return match.officeTitle;
+	}
+}
+
+function buildOfficeContextStatus(
+	congressAttachment: CongressAttachment | null,
+	match: LocationRepresentativeMatch,
+	officeholderLayer: OfficeholderLayer,
+) {
+	if (congressAttachment?.officeContextStatus)
+		return congressAttachment.officeContextStatus;
+
+	if (officeholderLayer === "state") {
+		return buildEnrichmentStatus(
+			"available",
+			"attached",
+			`${match.sourceSystem || "The current state officeholder source"} supplied the current chamber, district, party, and jurisdiction context for this state legislator route.`,
+			match.sourceSystem || "State officeholder record",
+		);
+	}
+
+	if (officeholderLayer === "local") {
+		return buildEnrichmentStatus(
+			"available",
+			"attached",
+			`${match.sourceSystem || "The current local officeholder source"} supplied the current office title, jurisdiction, and official public-record context for this county or city officeholder route.`,
+			match.sourceSystem || "Local officeholder record",
+		);
+	}
+
+	return buildEnrichmentStatus(
+		"available",
+		"attached",
+		`${match.sourceSystem || "Ballot Clarity"} supplied the current office, party, and district context for this representative route.`,
+		match.sourceSystem || undefined,
+	);
+}
+
+function buildLegislativeContextStatus(
+	congressAttachment: CongressAttachment | null,
+	congressErrorStatus: PersonProfileEnrichmentStatusItem | null,
+	match: LocationRepresentativeMatch,
+	officeholderLayer: OfficeholderLayer,
+	contextStateName: string,
+	target: FederalRepresentativeTarget | null,
+) {
+	if (congressAttachment?.legislativeContextStatus)
+		return congressAttachment.legislativeContextStatus;
+
+	if (congressErrorStatus)
+		return congressErrorStatus;
+
+	if (officeholderLayer === "state") {
+		const sourceLabel = match.sourceSystem || "The current state officeholder source";
+		const isIdentityOnlyProvider = openStatesSourcePattern.test(sourceLabel);
+		return buildEnrichmentStatus(
+			"unavailable",
+			isIdentityOnlyProvider ? "identity_only_provider" : "no_state_legislative_source",
+			isIdentityOnlyProvider
+				? `${sourceLabel} currently supports identity, chamber, party, and district context for this route, but Ballot Clarity does not yet have a reviewed ${contextStateName} legislative-activity, vote, or statements feed attached here.`
+				: `${sourceLabel} supports this route's state officeholding identity and public record context, but Ballot Clarity does not yet have a reviewed ${contextStateName} legislative-activity, vote, or public-statements feed attached here.`,
+			sourceLabel,
+		);
+	}
+
+	if (officeholderLayer === "local") {
+		return buildEnrichmentStatus(
+			"unavailable",
+			"no_local_legislative_source",
+			"The current county or city officeholder record for this route resolves identity and office context, but Ballot Clarity does not yet have a reviewed local issue, action, or disclosure feed attached here.",
+			match.sourceSystem || "Local officeholder record",
+		);
+	}
+
+	return buildEnrichmentStatus(
+		"unavailable",
+		target ? "no_provider_match" : "federal_only_provider",
+		target
+			? "Ballot Clarity could not verify an additional Congress.gov member record for this route, so legislative context remains limited to the current officeholder identity record."
+			: "Ballot Clarity currently attaches Congress.gov legislative context only to federal officeholders. This route still carries office context from the provider-backed representative record.",
+		"Congress.gov",
+	);
+}
+
+function buildDerivedOfficeContext(
+	response: PersonProfileResponse["person"],
+	match: LocationRepresentativeMatch,
+	attachment: RepresentativeModuleAttachment,
+): PersonProfileOfficeContext | undefined {
+	const referenceLinks = [
+		...(attachment.officeContext?.referenceLinks ?? []),
+		buildReferenceLink("Official office website", response.officialWebsiteUrl, "Official website carried on this public officeholder route."),
+		buildReferenceLink("Provider record", response.openstatesUrl, "Provider-backed public record for this officeholder."),
+	].filter((link): link is ExternalLink => Boolean(link));
+	const mergedContext: PersonProfileOfficeContext = {
+		...(attachment.officeContext ?? {}),
+		chamberLabel: attachment.officeContext?.chamberLabel || inferOfficeContextChamberLabel(match),
+		districtLabel: attachment.officeContext?.districtLabel || response.districtLabel,
+		jurisdictionLabel: attachment.officeContext?.jurisdictionLabel || response.location,
+		referenceLinks: referenceLinks.length ? referenceLinks : undefined,
+	};
+
+	return Object.values(mergedContext).some(Boolean) ? mergedContext : undefined;
+}
+
+function buildOfficeContextBlock(
+	person: PersonProfileResponse["person"],
+	officeContext: PersonProfileOfficeContext | undefined,
+	sources: Source[],
+): EvidenceBlock | null {
+	if (!officeContext)
+		return null;
+
+	const summaryParts = [
+		officeContext.jurisdictionLabel ? `Jurisdiction: ${officeContext.jurisdictionLabel}.` : "",
+		officeContext.chamberLabel ? `Chamber: ${officeContext.chamberLabel}.` : "",
+		officeContext.districtLabel ? `District or seat: ${officeContext.districtLabel}.` : "",
+		officeContext.currentTermLabel ? `Current term context: ${officeContext.currentTermLabel}.` : "",
+		officeContext.officialOfficeAddress ? `Official office address: ${officeContext.officialOfficeAddress}.` : "",
+		officeContext.officialPhone ? `Official phone: ${officeContext.officialPhone}.` : "",
+	].filter(Boolean);
+
+	if (!summaryParts.length)
+		return null;
+
+	return {
+		id: `office-context:${person.slug}`,
+		sources,
+		summary: summaryParts.join(" "),
+		title: "Office and jurisdiction context",
+	};
 }
 
 export function createRepresentativeModuleResolver({
@@ -1222,36 +1452,15 @@ export function createRepresentativeModuleResolver({
 						]
 					: []),
 			];
-			const officeContextStatus = congressAttachment?.officeContextStatus || buildEnrichmentStatus(
-				"available",
-				"attached",
-				`${match.sourceSystem || "Ballot Clarity"} supplied the current office, party, and district context for this representative route.`,
-				match.sourceSystem || undefined,
+			const officeContextStatus = buildOfficeContextStatus(congressAttachment, match, officeholderLayer);
+			const legislativeContextStatus = buildLegislativeContextStatus(
+				congressAttachment,
+				congressErrorStatus,
+				match,
+				officeholderLayer,
+				contextStateName,
+				target,
 			);
-			const legislativeContextStatus = congressAttachment?.legislativeContextStatus
-				|| congressErrorStatus
-				|| (officeholderLayer === "state"
-					? buildEnrichmentStatus(
-							"unavailable",
-							"identity_only_provider",
-							`${match.sourceSystem || "The current state officeholder source"} currently supports identity, chamber, party, and district context for this route, but Ballot Clarity does not yet have a reviewed ${contextStateName} legislative-activity, vote, or statements feed attached here.`,
-							match.sourceSystem || "State officeholder record",
-						)
-					: officeholderLayer === "local"
-						? buildEnrichmentStatus(
-								"unavailable",
-								"no_local_legislative_source",
-								"The current county or city officeholder record for this route resolves identity and office context, but Ballot Clarity does not yet have a reviewed local issue, action, or disclosure feed attached here.",
-								match.sourceSystem || "Local officeholder record",
-							)
-						: buildEnrichmentStatus(
-								"unavailable",
-								target ? "no_provider_match" : "federal_only_provider",
-								target
-									? "Ballot Clarity could not verify an additional Congress.gov member record for this route, so legislative context remains limited to the current officeholder identity record."
-									: "Ballot Clarity currently attaches Congress.gov legislative context only to federal officeholders. This route still carries office context from the provider-backed representative record.",
-								"Congress.gov",
-							));
 
 			return {
 				dataAsOf: mergeDate(
@@ -1268,6 +1477,7 @@ export function createRepresentativeModuleResolver({
 				funding,
 				fundingAvailable: Boolean(funding),
 				fundingSummary: fundingResult.status.summary,
+				influence: influenceAttachment?.influence ?? null,
 				influenceAvailable: lobbyingContext.length > 0 || publicStatements.length > 0,
 				influenceSummary: influenceResult.status.summary,
 				lobbyingContext,
@@ -1286,6 +1496,7 @@ export function createRepresentativeModuleResolver({
 						? ["County and city officeholder routes attach reviewed official-source identity and office context even when Ballot Clarity does not yet have a local finance, disclosure, or issue feed for that jurisdiction."]
 						: []),
 				],
+				officeContext: congressAttachment?.officeContext,
 				officialWebsiteUrl: congressAttachment?.officialWebsiteUrl,
 				publicStatements,
 				sources,
@@ -1398,18 +1609,28 @@ export function createRepresentativeModuleResolver({
 				...attachment.lobbyingContext.flatMap(block => block.sources),
 				...attachment.publicStatements.flatMap(block => block.sources),
 			]);
-			const biography = attachment.sources.length
-				? [
-						...response.person.biography,
-						...attachment.biography,
-						{
-							id: `federal-crosswalk:${response.person.slug}`,
-							sources: attachment.sources,
-							summary: "Ballot Clarity attached federal finance and disclosure records to this officeholder through a structured crosswalk from the active nationwide lookup.",
-							title: "Federal finance and disclosure crosswalk",
-						} satisfies EvidenceBlock,
-					]
-				: response.person.biography;
+			const officeContext = buildDerivedOfficeContext(response.person, match, attachment);
+			const derivedOfficeContextBlock = !attachment.biography.length
+				? buildOfficeContextBlock(response.person, officeContext, addedSources)
+				: null;
+			const hasAttachedFederalModules = Boolean(attachment.funding) || attachment.lobbyingContext.length > 0 || attachment.publicStatements.length > 0;
+			const biography = [
+				...response.person.biography,
+				...(derivedOfficeContextBlock && !response.person.biography.some(block => block.id === derivedOfficeContextBlock.id)
+					? [derivedOfficeContextBlock]
+					: []),
+				...attachment.biography,
+				...(hasAttachedFederalModules
+					? [
+								{
+									id: `federal-crosswalk:${response.person.slug}`,
+									sources: attachment.sources,
+									summary: "Ballot Clarity attached federal finance or disclosure records to this officeholder through a structured crosswalk from the active nationwide lookup.",
+									title: "Federal finance and disclosure crosswalk",
+								} satisfies EvidenceBlock,
+						]
+					: []),
+			];
 			const whatWeKnow = uniqueSources([
 				...response.person.whatWeKnow.flatMap(item => item.sources),
 				...attachment.whatWeKnow.flatMap(item => item.sources),
@@ -1446,11 +1667,13 @@ export function createRepresentativeModuleResolver({
 						statusNote: attachment.statusNote || response.person.freshness.statusNote,
 					},
 					funding: attachment.funding,
+					influence: attachment.influence ?? response.person.influence ?? null,
 					lobbyingContext: attachment.lobbyingContext,
 					methodologyNotes: [
 						...response.person.methodologyNotes,
 						...attachment.methodologyNotes,
 					],
+					officeContext: officeContext ?? response.person.officeContext,
 					officialWebsiteUrl: attachment.officialWebsiteUrl || response.person.officialWebsiteUrl,
 					publicStatements: attachment.publicStatements,
 					sourceCount: addedSources.length,

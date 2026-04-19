@@ -4,6 +4,7 @@ const { data: session } = await useAdminSession(`admin-layout-session-${route.fu
 
 const baseLinks = [
 	{ label: "Dashboard", to: "/admin" },
+	{ label: "Guide packages", to: "/admin/packages" },
 	{ label: "Content", to: "/admin/content" },
 	{ label: "Review queue", to: "/admin/review" },
 	{ label: "Corrections", to: "/admin/corrections" },

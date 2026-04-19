@@ -553,10 +553,12 @@ test("built app renders the key ballot guide pages against the built API", async
 	const correctionsHtml = await correctionsPage.text();
 	const sourcesDirectoryPage = await fetch(`${appBaseUrl}/sources`);
 	const sourcesDirectoryHtml = await sourcesDirectoryPage.text();
-	const publishedSourceIdMatch = sourcesDirectoryHtml.match(/\/sources\/([^"]+)/);
-	assert.ok(publishedSourceIdMatch, "expected at least one published source link in the source directory");
-	const publishedSourcePage = await fetch(`${appBaseUrl}/sources/${publishedSourceIdMatch[1]}`);
+	assert.match(sourcesDirectoryHtml, /Open States/);
+	assert.match(sourcesDirectoryHtml, /Core source systems/);
+	const publishedSourcePage = await fetch(`${appBaseUrl}/sources/open-states`);
 	const publishedSourceHtml = await publishedSourcePage.text();
+	const publishedRouteSourcePage = await fetch(`${appBaseUrl}/sources/supplemental:shawn-still:bio`);
+	const publishedRouteSourceHtml = await publishedRouteSourcePage.text();
 	const unpublishedSourcePage = await fetch(`${appBaseUrl}/sources/district:state-senate-48`);
 	const unpublishedSourceHtml = await unpublishedSourcePage.text();
 	const contestPage = await fetch(`${appBaseUrl}/contest/us-house-district-7`);
@@ -656,7 +658,11 @@ test("built app renders the key ballot guide pages against the built API", async
 	assert.equal(sourcesDirectoryPage.status, 200);
 	assert.match(sourcesDirectoryHtml, /Source directory/);
 	assert.equal(publishedSourcePage.status, 200);
-	assert.match(publishedSourceHtml, /Pages that use this record/);
+	assert.match(publishedSourceHtml, /Pages and route layers that use this record/);
+	assert.match(publishedSourceHtml, /What Ballot Clarity uses it for/);
+	assert.equal(publishedRouteSourcePage.status, 200);
+	assert.match(publishedRouteSourceHtml, /Shawn Still/);
+	assert.match(publishedRouteSourceHtml, /state-senate-48/);
 	assert.equal(unpublishedSourcePage.status, 404);
 	assert.doesNotMatch(unpublishedSourceHtml, /Source record unavailable/);
 	assert.equal(contestPage.status, 200);
@@ -734,6 +740,8 @@ test("built app renders the key ballot guide pages against the built API", async
 	assert.match(privacyHtml, /What data Ballot Clarity handles today/);
 	assert.match(privacyHtml, /The application is designed not to publish the raw lookup text/);
 	assert.match(privacyHtml, /No sale, sharing, or targeted advertising in the current build/);
+	assert.match(privacyHtml, /Current third-party processors and civic-data recipients/);
+	assert.match(privacyHtml, /Google Civic Information API/);
 	assert.match(privacyHtml, /Rights requests and limits in a no-account public build/);
 	assert.match(privacyHtml, /Children(?:&#39;|&apos;|’|')s privacy/);
 	assert.equal(termsPage.status, 200);
@@ -741,6 +749,8 @@ test("built app renders the key ballot guide pages against the built API", async
 	assert.match(termsHtml, /How the service may and may not be used/);
 	assert.match(termsHtml, /Permitted use and limited license/);
 	assert.match(termsHtml, /By accessing or using the Ballot Clarity website/);
+	assert.match(termsHtml, /Who operates the site and how to send notice/);
+	assert.match(termsHtml, /Jacob Anderson/);
 	assert.match(termsHtml, /The site is not an official government election website/);
 	assert.match(termsHtml, /The site is provided on an (?:\"|&quot;)as is(?:\"|&quot;) and (?:\"|&quot;)as available(?:\"|&quot;) basis/);
 	assert.match(contactHtml, /Contact and correction requests/);

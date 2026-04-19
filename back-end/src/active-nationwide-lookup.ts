@@ -1,6 +1,7 @@
 import type {
 	DistrictRecordResponse,
 	DistrictsResponse,
+	ElectionLogistics,
 	ElectionSummary,
 	LocationDistrictMatch,
 	LocationLookupAction,
@@ -25,6 +26,7 @@ export interface ActiveNationwideLookupContext {
 	inputKind: "address" | "zip";
 	location: LocationSelection | null;
 	normalizedAddress: string;
+	electionLogistics: ElectionLogistics | null;
 	representativeMatches: LocationRepresentativeMatch[];
 	selectionId?: string;
 	resolvedAt: string;
@@ -282,6 +284,7 @@ function sanitizeActiveNationwideLookupContext(value: unknown): ActiveNationwide
 		detectedFromIp: value.detectedFromIp === true,
 		districtMatches,
 		electionSlug: typeof value.electionSlug === "string" ? value.electionSlug : undefined,
+		electionLogistics: isRecord(value.electionLogistics) ? value.electionLogistics as unknown as ElectionLogistics : null,
 		guideAvailability: "not-published",
 		inputKind: value.inputKind === "address" ? "address" : "zip",
 		location: sanitizeLocationSelection(value.location),
@@ -310,6 +313,7 @@ function buildCookiePayload(context: ActiveNationwideLookupContext) {
 		detectedFromIp: context.detectedFromIp,
 		districtMatches: context.districtMatches,
 		electionSlug: context.electionSlug,
+		electionLogistics: context.electionLogistics,
 		guideAvailability: context.guideAvailability,
 		inputKind: context.inputKind,
 		location: context.location,

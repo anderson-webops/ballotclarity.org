@@ -4,16 +4,18 @@ definePageMeta({
 	middleware: "admin"
 });
 
-const [{ data: overview }, { data: review }, { data: corrections }, { data: sources }] = await Promise.all([
+const [{ data: overview }, { data: review }, { data: corrections }, { data: sources }, { data: guidePackages }] = await Promise.all([
 	useAdminOverview(),
 	useAdminReview(),
 	useAdminCorrections(),
-	useAdminSourceMonitor()
+	useAdminSourceMonitor(),
+	useAdminGuidePackages()
 ]);
 
 const reviewPreview = computed(() => review.value?.items.slice(0, 3) ?? []);
 const correctionPreview = computed(() => corrections.value?.corrections.slice(0, 3) ?? []);
 const sourcePreview = computed(() => sources.value?.sources.slice(0, 3) ?? []);
+const packagePreview = computed(() => guidePackages.value?.packages.slice(0, 2) ?? []);
 
 usePageSeo({
 	description: "Internal Ballot Clarity admin dashboard for review, corrections, and source-health operations.",
@@ -89,7 +91,36 @@ usePageSeo({
 			</div>
 		</section>
 
-		<section class="gap-6 grid xl:grid-cols-3">
+		<section class="gap-6 grid 2xl:grid-cols-4 xl:grid-cols-2">
+			<div class="surface-panel">
+				<div class="flex gap-4 items-center justify-between">
+					<div>
+						<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+							Guide packages
+						</p>
+						<h2 class="text-2xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
+							Local guide publication
+						</h2>
+					</div>
+					<NuxtLink to="/admin/packages" class="btn-secondary">
+						Open packages
+					</NuxtLink>
+				</div>
+				<div class="mt-6 space-y-4">
+					<article v-for="item in packagePreview" :key="item.workflow.id" class="px-4 py-4 border border-app-line/80 rounded-[1.4rem] bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
+						<p class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
+							{{ item.coverageScope.label }}
+						</p>
+						<p class="text-xs text-app-muted tracking-[0.16em] font-semibold mt-2 uppercase dark:text-app-muted-dark">
+							{{ item.workflow.status.replaceAll('_', ' ') }} · {{ item.diagnostics.completenessScore }}% complete
+						</p>
+						<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
+							{{ item.diagnostics.blockingIssueCount ? `${item.diagnostics.blockingIssueCount} blocking checks still need resolution.` : 'No blocking publish checks are currently open.' }}
+						</p>
+					</article>
+				</div>
+			</div>
+
 			<div class="surface-panel">
 				<div class="flex gap-4 items-center justify-between">
 					<div>

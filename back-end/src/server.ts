@@ -18,7 +18,12 @@ import type {
 	DistrictsResponse,
 	Election,
 	EvidenceBlock,
+	ExternalLink,
 	FundingSummary,
+	GuidePackageDiagnosticsResponse,
+	GuidePackageRecordResponse,
+	GuidePackageWorkflow,
+	IssueTag,
 	Jurisdiction,
 	JurisdictionSummary,
 	LocationDistrictMatch,
@@ -30,6 +35,11 @@ import type {
 	MeasureFiscalItem,
 	MeasureTimelineItem,
 	OfficialResource,
+	PersonProfileEnrichmentStatus,
+	PersonProfileEnrichmentStatusItem,
+	PersonProfileFunding,
+	PersonProfileInfluence,
+	PersonProfileOfficeContext,
 	PersonProfileResponse,
 	PublicCorrectionsResponse,
 	PublicStatusResponse,
@@ -73,6 +83,12 @@ import { createCensusGeocoderClient } from "./census-geocoder.js";
 import { createCongressClient, isCurrentCongressMemberRecord } from "./congress.js";
 import { createCoverageRepository } from "./coverage-repository.js";
 import { createGoogleCivicClient } from "./google-civic.js";
+import {
+	buildDefaultGuidePackageSeed,
+	buildGuidePackageId,
+	buildGuidePackageList,
+	buildGuidePackageRecord,
+} from "./guide-packages.js";
 import { buildCoverageResponse } from "./launch-profile.js";
 import { createLdaClient } from "./lda.js";
 import { buildLocationGuessNotePrefix, createLocationGuessService } from "./location-guess.js";
@@ -82,13 +98,14 @@ import { getOfficialToolsForState, getStateAbbreviationForName, getStateNameForA
 import { createOpenFecClient } from "./openfec.js";
 import { createOpenStatesClient } from "./openstates.js";
 import { buildProviderSummary } from "./provider-config.js";
+import { buildCuratedPublicSourceRecords, mapAuthorityToPublisherType } from "./public-source-directory.js";
 import { classifyRepresentative } from "./representative-classification.js";
 import { createRepresentativeModuleResolver } from "./representative-modules.js";
 import { createSourceAssetStore } from "./source-asset-store.js";
 import {
-	buildSupplementalRepresentativeMatch,
 	findSupplementalOfficeholderByRepresentativeSlug,
 	findSupplementalOfficeholdersByDistrictSlug,
+	listSupplementalOfficeholders,
 	mergeRepresentativeMatchesWithSupplementalRecords,
 } from "./supplemental-officeholders.js";
 import { createZipLocationService } from "./zip-location.js";
@@ -106,6 +123,7 @@ interface CreateAppOptions {
 	correctionSeed?: AdminCorrectionRequest[];
 	activitySeed?: AdminActivityItem[];
 	googleCivicClient?: ReturnType<typeof createGoogleCivicClient>;
+	guidePackageSeed?: GuidePackageWorkflow[];
 	ldaClient?: ReturnType<typeof createLdaClient>;
 	locationGuessOptions?: Parameters<typeof createLocationGuessService>[0];
 	openFecClient?: ReturnType<typeof createOpenFecClient>;
@@ -247,6 +265,7 @@ async function createAdminRepositoryWithFallback(
 		correctionSeed?: AdminCorrectionRequest[];
 		dbPath?: string | null;
 		databaseUrl?: string | null;
+		guidePackageSeed?: GuidePackageWorkflow[];
 		sourceMonitorSeed?: AdminSourceMonitorItem[];
 	}
 ) {
@@ -335,6 +354,230 @@ function uniqueSources(sources: Source[]) {
 	return Array.from(new Map(sources.map(source => [source.id, source])).values());
 }
 
+function uniqueById<T extends { id: string }>(items: T[]) {
+	return Array.from(new Map(items.map(item => [item.id, item])).values());
+}
+
+function uniqueBySlug<T extends { slug: string }>(items: T[]) {
+	return Array.from(new Map(items.map(item => [item.slug, item])).values());
+}
+
+function uniqueStrings(values: Array<string | null | undefined>) {
+	return Array.from(new Set(values.map(value => String(value ?? "").trim()).filter(Boolean)));
+}
+
+const openStatesOfficeholderSnapshotPattern = /open states officeholder snapshot/i;
+
+function uniqueExternalLinks(links: ExternalLink[]) {
+	return Array.from(new Map(
+		links
+			.filter(link => link?.label?.trim() && link?.url?.trim())
+			.map(link => [`${link.label.trim().toLowerCase()}:${link.url.trim()}`, link]),
+	).values());
+}
+
+function buildSupplementalEnrichmentStatusItem(
+	status: PersonProfileEnrichmentStatusItem["status"],
+	reasonCode: PersonProfileEnrichmentStatusItem["reasonCode"],
+	summary: string,
+	sourceSystem?: string,
+): PersonProfileEnrichmentStatusItem {
+	return {
+		reasonCode,
+		sourceSystem,
+		status,
+		summary,
+	};
+}
+
+function inferSupplementalChamberLabel(
+	record: SupplementalOfficeholderRecord,
+	classification: ReturnType<typeof classifyRepresentative>,
+) {
+	if (record.jurisdiction === "State") {
+		if (classification.officeType === "state_senate")
+			return "State Senate";
+
+		if (classification.officeType === "state_house")
+			return "State House";
+	}
+
+	if (classification.governmentLevel === "county")
+		return "County commission";
+
+	if (classification.governmentLevel === "city")
+		return "City government";
+
+	return undefined;
+}
+
+function buildSupplementalOfficeContext(
+	record: SupplementalOfficeholderRecord,
+	classification: ReturnType<typeof classifyRepresentative>,
+): PersonProfileOfficeContext | undefined {
+	const enrichmentOfficeContext = record.enrichment?.officeContext;
+	const referenceLinks = uniqueExternalLinks([
+		...(enrichmentOfficeContext?.referenceLinks ?? []),
+		...(record.officialWebsiteUrl
+			? [
+					{
+						label: "Official office website",
+						note: "Official public office page for this officeholder.",
+						url: record.officialWebsiteUrl,
+					} satisfies ExternalLink,
+				]
+			: []),
+		...(record.openstatesUrl
+			? [
+					{
+						label: "Provider record",
+						note: "Provider-backed officeholder record Ballot Clarity used for identity and district context.",
+						url: record.openstatesUrl,
+					} satisfies ExternalLink,
+				]
+			: []),
+	]);
+
+	const mergedContext: PersonProfileOfficeContext = {
+		chamberLabel: enrichmentOfficeContext?.chamberLabel || inferSupplementalChamberLabel(record, classification),
+		committeeMemberships: uniqueStrings(enrichmentOfficeContext?.committeeMemberships ?? []),
+		currentTermLabel: enrichmentOfficeContext?.currentTermLabel,
+		districtLabel: enrichmentOfficeContext?.districtLabel || record.districtLabel,
+		jurisdictionLabel: enrichmentOfficeContext?.jurisdictionLabel || (record.jurisdiction === "State" ? record.stateName : record.location),
+		officialOfficeAddress: enrichmentOfficeContext?.officialOfficeAddress,
+		officialPhone: enrichmentOfficeContext?.officialPhone,
+		referenceLinks: referenceLinks.length ? referenceLinks : undefined,
+	};
+
+	return Object.values(mergedContext).some(value => Array.isArray(value) ? value.length > 0 : Boolean(value))
+		? mergedContext
+		: undefined;
+}
+
+function mergeOfficeContext(
+	baseContext: PersonProfileOfficeContext | undefined,
+	supplementalContext: PersonProfileOfficeContext | undefined,
+) {
+	if (!baseContext && !supplementalContext)
+		return undefined;
+
+	const mergedContext: PersonProfileOfficeContext = {
+		chamberLabel: supplementalContext?.chamberLabel || baseContext?.chamberLabel,
+		committeeMemberships: uniqueStrings([
+			...(baseContext?.committeeMemberships ?? []),
+			...(supplementalContext?.committeeMemberships ?? []),
+		]),
+		currentTermLabel: supplementalContext?.currentTermLabel || baseContext?.currentTermLabel,
+		districtLabel: supplementalContext?.districtLabel || baseContext?.districtLabel,
+		jurisdictionLabel: supplementalContext?.jurisdictionLabel || baseContext?.jurisdictionLabel,
+		officialOfficeAddress: supplementalContext?.officialOfficeAddress || baseContext?.officialOfficeAddress,
+		officialPhone: supplementalContext?.officialPhone || baseContext?.officialPhone,
+		referenceLinks: uniqueExternalLinks([
+			...(baseContext?.referenceLinks ?? []),
+			...(supplementalContext?.referenceLinks ?? []),
+		]),
+	};
+
+	return Object.values(mergedContext).some(value => Array.isArray(value) ? value.length > 0 : Boolean(value))
+		? {
+				...mergedContext,
+				committeeMemberships: mergedContext.committeeMemberships?.length ? mergedContext.committeeMemberships : undefined,
+				referenceLinks: mergedContext.referenceLinks?.length ? mergedContext.referenceLinks : undefined,
+			}
+		: undefined;
+}
+
+function buildSupplementalEnrichmentStatus(
+	record: SupplementalOfficeholderRecord,
+	officeContext: PersonProfileOfficeContext | undefined,
+	funding: PersonProfileFunding | null,
+	influence: PersonProfileInfluence | null,
+	keyActions: VoteRecordSummary[],
+	lobbyingContext: EvidenceBlock[],
+	publicStatements: EvidenceBlock[],
+	topIssues: IssueTag[],
+): PersonProfileEnrichmentStatus {
+	const sourceSystem = record.sources[0]?.sourceSystem || record.sourceSystem;
+	const hasInfluence = Boolean(influence) || lobbyingContext.length > 0 || publicStatements.length > 0;
+	const hasLegislativeContext = keyActions.length > 0 || topIssues.length > 0;
+	const isStateRoute = record.jurisdiction === "State";
+	const hasIdentityOnlyProviderSource = isStateRoute && openStatesOfficeholderSnapshotPattern.test(sourceSystem);
+
+	return {
+		funding: funding
+			? buildSupplementalEnrichmentStatusItem(
+					"available",
+					"attached",
+					isStateRoute
+						? "Ballot Clarity attached a reviewed state campaign-finance summary to this state-legislator route."
+						: "Ballot Clarity attached a reviewed local campaign-finance summary to this officeholder route.",
+					sourceSystem,
+				)
+			: buildSupplementalEnrichmentStatusItem(
+					"unavailable",
+					isStateRoute ? "no_state_finance_source" : "no_local_finance_source",
+					isStateRoute
+						? "Ballot Clarity does not currently have a reviewed state campaign-finance source configured for this jurisdiction."
+						: "Ballot Clarity does not currently have a reviewed local campaign-finance source configured for this jurisdiction.",
+					sourceSystem,
+				),
+		influence: hasInfluence
+			? buildSupplementalEnrichmentStatusItem(
+					"available",
+					"attached",
+					isStateRoute
+						? "Ballot Clarity attached reviewed state disclosure or lobbying context to this state-legislator route."
+						: "Ballot Clarity attached reviewed local disclosure or influence context to this officeholder route.",
+					sourceSystem,
+				)
+			: buildSupplementalEnrichmentStatusItem(
+					"unavailable",
+					isStateRoute ? "no_state_disclosure_source" : "no_local_disclosure_source",
+					isStateRoute
+						? "Ballot Clarity does not currently have a reviewed state disclosure or lobbying source configured for this jurisdiction."
+						: "Ballot Clarity does not currently have a reviewed local disclosure or ethics source configured for this jurisdiction.",
+					sourceSystem,
+				),
+		legislativeContext: hasLegislativeContext
+			? buildSupplementalEnrichmentStatusItem(
+					"available",
+					"attached",
+					isStateRoute
+						? "Ballot Clarity attached reviewed legislative, committee, or public-action context to this state-legislator route."
+						: "Ballot Clarity attached reviewed public-action or issue context to this local officeholder route.",
+					sourceSystem,
+				)
+			: hasIdentityOnlyProviderSource
+				? buildSupplementalEnrichmentStatusItem(
+						"unavailable",
+						"identity_only_provider",
+						"Current provider data supports identity, chamber, party, and district context for this route, but Ballot Clarity does not yet have a reviewed state legislative-actions feed attached here.",
+						sourceSystem,
+					)
+				: buildSupplementalEnrichmentStatusItem(
+						"unavailable",
+						isStateRoute ? "no_state_legislative_source" : "no_local_legislative_source",
+						isStateRoute
+							? "Ballot Clarity does not currently have a reviewed state legislative-actions or voting-context source attached for this jurisdiction."
+							: "Ballot Clarity does not currently have a reviewed local public-actions or issue feed attached for this officeholder route.",
+						sourceSystem,
+					),
+		officeContext: officeContext
+			? buildSupplementalEnrichmentStatusItem(
+					"available",
+					"attached",
+					"Ballot Clarity attached structured office, district, and jurisdiction context to this public officeholder route.",
+					sourceSystem,
+				)
+			: buildSupplementalEnrichmentStatusItem(
+					"unavailable",
+					hasIdentityOnlyProviderSource ? "identity_only_provider" : "provider_returned_no_records",
+					"Ballot Clarity could not attach structured office-context details beyond the identity record for this route.",
+					sourceSystem,
+				),
+	};
+}
+
 function collectCandidateSources(candidate: Candidate) {
 	return uniqueSources([
 		...candidate.sources,
@@ -372,26 +615,187 @@ function collectContestSources(contest: Contest) {
 	return uniqueSources((contest.measures ?? []).flatMap(measure => collectMeasureSources(measure)));
 }
 
-function buildSourceDirectory(
-	candidates: Candidate[],
-	measures: Measure[],
-	contests: Contest[],
-	sources: Source[]
-): SourceDirectoryItem[] {
-	const citations = new Map<string, SourceDirectoryItem["citedBy"]>();
+function routeFamilyFromCitation(citation: SourceDirectoryItem["citedBy"][number]) {
+	if (citation.type === "page") {
+		if (citation.href.startsWith("/representatives/") && citation.href.endsWith("/funding"))
+			return "Representative funding pages";
 
-	function addCitation(sourceId: string, citation: SourceDirectoryItem["citedBy"][number]) {
-		const existing = citations.get(sourceId) ?? [];
+		if (citation.href.startsWith("/representatives/") && citation.href.endsWith("/influence"))
+			return "Representative influence pages";
 
-		if (!existing.some(item => item.id === citation.id))
-			existing.push(citation);
+		if (citation.href.startsWith("/representatives/"))
+			return "Representative pages";
 
-		citations.set(sourceId, existing);
+		if (citation.href.startsWith("/districts/"))
+			return "District pages";
+
+		return citation.label;
 	}
+
+	switch (citation.type) {
+		case "candidate":
+			return "Candidate pages";
+		case "contest":
+			return "Contest pages";
+		case "election":
+			return "Election pages";
+		case "jurisdiction":
+			return "Location pages";
+		case "measure":
+			return "Measure pages";
+		default:
+			return citation.label;
+	}
+}
+
+function addSourceCitation(
+	citations: Map<string, SourceDirectoryItem["citedBy"]>,
+	sourceId: string,
+	citation: SourceDirectoryItem["citedBy"][number],
+) {
+	const existing = citations.get(sourceId) ?? [];
+
+	if (!existing.some(item => item.href === citation.href && item.id === citation.id))
+		existing.push(citation);
+
+	citations.set(sourceId, existing);
+}
+
+function mergeSourceCitations(
+	...maps: Array<Map<string, SourceDirectoryItem["citedBy"]>>
+) {
+	const merged = new Map<string, SourceDirectoryItem["citedBy"]>();
+
+	for (const map of maps) {
+		for (const [sourceId, citations] of map.entries()) {
+			for (const citation of citations)
+				addSourceCitation(merged, sourceId, citation);
+		}
+	}
+
+	return merged;
+}
+
+function isPublishedRouteSource(source: Source) {
+	const sourceId = String(source.id || "").trim().toLowerCase();
+
+	if (!sourceId)
+		return false;
+
+	if (sourceId.includes(":fallback"))
+		return false;
+
+	if (sourceId.startsWith("district:"))
+		return sourceId.endsWith(":identity");
+
+	return sourceId.startsWith("congress:member:")
+		|| sourceId.startsWith("congress:official-site:")
+		|| sourceId.startsWith("lda:")
+		|| sourceId.startsWith("official:")
+		|| sourceId.startsWith("openfec:candidate:")
+		|| sourceId.startsWith("openfec:committee:")
+		|| sourceId.startsWith("representative:")
+		|| sourceId.startsWith("supplemental:");
+}
+
+function inferPublishedSourceGeographicScope(
+	source: Source,
+	citations: SourceDirectoryItem["citedBy"],
+	coverageLocationName: string | null | undefined,
+) {
+	const sourceId = String(source.id || "").toLowerCase();
+
+	if (sourceId.startsWith("openfec:"))
+		return "United States federal campaign finance";
+
+	if (sourceId.startsWith("lda:"))
+		return "United States federal lobbying disclosures";
+
+	if (sourceId.startsWith("congress:"))
+		return "United States federal offices";
+
+	if (sourceId.startsWith("district:"))
+		return "Public district route";
+
+	if (sourceId.startsWith("representative:"))
+		return "Public representative route";
+
+	if (sourceId.startsWith("supplemental:")) {
+		return citations.some(citation => citation.href.startsWith("/districts/"))
+			? "Reviewed district and officeholder route"
+			: "Reviewed officeholder route";
+	}
+
+	if (sourceId.startsWith("official:"))
+		return "Official verification route layer";
+
+	return coverageLocationName ?? "Published public route layer";
+}
+
+function inferPublishedSourceReviewNote(source: Source) {
+	const sourceId = String(source.id || "").toLowerCase();
+
+	if (sourceId.startsWith("openfec:"))
+		return "This finance record is intentionally published because Ballot Clarity attaches it to a public funding page.";
+
+	if (sourceId.startsWith("lda:"))
+		return "This disclosure record is intentionally published because Ballot Clarity attaches it to a public influence page.";
+
+	if (sourceId.startsWith("congress:"))
+		return "This official congressional record is intentionally published because Ballot Clarity attaches it to a public representative page.";
+
+	if (sourceId.startsWith("district:"))
+		return "This stable district-route provenance record is intentionally published as a standalone public source page.";
+
+	if (sourceId.startsWith("representative:"))
+		return "This stable representative-route provenance record is intentionally published as a standalone public source page.";
+
+	if (sourceId.startsWith("supplemental:"))
+		return "This reviewed officeholder provenance record is intentionally published because it anchors a stable public district or representative route.";
+
+	if (sourceId.startsWith("official:"))
+		return "This official verification record is intentionally published because Ballot Clarity links it from public district and representative routes.";
+
+	return "This source record is intentionally published because it supports a stable public Ballot Clarity route.";
+}
+
+function inferPublishedSourceSummary(source: Source) {
+	if (source.note?.trim())
+		return source.note.trim();
+
+	const sourceId = String(source.id || "").toLowerCase();
+
+	if (sourceId.startsWith("district:"))
+		return "Stable district-route provenance record published from Ballot Clarity's public route layer.";
+
+	if (sourceId.startsWith("representative:"))
+		return "Stable representative-route provenance record published from Ballot Clarity's public route layer.";
+
+	if (sourceId.startsWith("official:"))
+		return "Official verification record published because it is linked from a public Ballot Clarity route.";
+
+	return "Published source record cited on Ballot Clarity.";
+}
+
+function inferPublishedSourceUsage(source: Source, citations: SourceDirectoryItem["citedBy"]) {
+	const routeFamilies = Array.from(new Set(citations.map(routeFamilyFromCitation)));
+	const routeSummary = routeFamilies.length
+		? routeFamilies.join(", ")
+		: "public Ballot Clarity routes";
+	const citationCount = Math.max(citations.length, 1);
+
+	if (String(source.id || "").toLowerCase().startsWith("official:"))
+		return `Supports ${citationCount} public official-verification page${citationCount === 1 ? "" : "s"} across ${routeSummary}.`;
+
+	return `Supports ${citationCount} published page${citationCount === 1 ? "" : "s"} across ${routeSummary}.`;
+}
+
+function buildSourceCitations(candidates: Candidate[], measures: Measure[], contests: Contest[]) {
+	const citations = new Map<string, SourceDirectoryItem["citedBy"]>();
 
 	for (const candidate of candidates) {
 		for (const source of collectCandidateSources(candidate)) {
-			addCitation(source.id, {
+			addSourceCitation(citations, source.id, {
 				href: `/candidate/${candidate.slug}`,
 				id: candidate.slug,
 				label: candidate.name,
@@ -402,7 +806,7 @@ function buildSourceDirectory(
 
 	for (const measure of measures) {
 		for (const source of collectMeasureSources(measure)) {
-			addCitation(source.id, {
+			addSourceCitation(citations, source.id, {
 				href: `/measure/${measure.slug}`,
 				id: measure.slug,
 				label: measure.title,
@@ -413,7 +817,7 @@ function buildSourceDirectory(
 
 	for (const contest of contests) {
 		for (const source of collectContestSources(contest)) {
-			addCitation(source.id, {
+			addSourceCitation(citations, source.id, {
 				href: `/contest/${contest.slug}`,
 				id: contest.slug,
 				label: contest.office,
@@ -422,14 +826,51 @@ function buildSourceDirectory(
 		}
 	}
 
-	return sources
+	return citations;
+}
+
+function buildSourceDirectory(
+	candidates: Candidate[],
+	measures: Measure[],
+	contests: Contest[],
+	sources: Source[],
+	additionalCitations: Map<string, SourceDirectoryItem["citedBy"]>,
+	coverageLocationName: string | null | undefined,
+	updatedAt: string
+): SourceDirectoryItem[] {
+	const citations = mergeSourceCitations(
+		buildSourceCitations(candidates, measures, contests),
+		additionalCitations,
+	);
+	const curatedSources = buildCuratedPublicSourceRecords(updatedAt);
+	const publishedProvenanceSources = sources
 		.map(source => ({
 			...source,
 			citationCount: (citations.get(source.id) ?? []).length,
-			citedBy: citations.get(source.id) ?? []
+			citedBy: citations.get(source.id) ?? [],
+			geographicScope: inferPublishedSourceGeographicScope(source, citations.get(source.id) ?? [], coverageLocationName),
+			limitations: [
+				"This standalone record reflects a Ballot Clarity citation published on the pages listed below.",
+				"Use the parent page context and the linked primary source before treating this citation as a complete account."
+			],
+			publicationKind: "published-provenance" as const,
+			publisherType: mapAuthorityToPublisherType(source.authority),
+			reviewNote: inferPublishedSourceReviewNote(source),
+			routeFamilies: Array.from(new Set((citations.get(source.id) ?? []).map(routeFamilyFromCitation))),
+			summary: inferPublishedSourceSummary(source),
+			usedFor: inferPublishedSourceUsage(source, citations.get(source.id) ?? []),
 		}))
 		.filter(source => source.citationCount > 0)
+		.sort((left, right) => right.date.localeCompare(left.date) || left.title.localeCompare(right.title));
+
+	return [...curatedSources, ...publishedProvenanceSources]
 		.sort((left, right) => {
+			if (left.publicationKind !== right.publicationKind)
+				return left.publicationKind === "curated-global" ? -1 : 1;
+
+			if (left.publicationKind === "curated-global" && right.publicationKind === "curated-global")
+				return left.title.localeCompare(right.title);
+
 			return right.date.localeCompare(left.date) || left.title.localeCompare(right.title);
 		});
 }
@@ -439,21 +880,19 @@ function buildSourceRecord(
 	candidates: Candidate[],
 	measures: Measure[],
 	contests: Contest[],
-	sources: Source[]
+	sources: Source[],
+	additionalCitations: Map<string, SourceDirectoryItem["citedBy"]>,
+	coverageLocationName: string | null | undefined,
+	updatedAt: string
 ): SourceRecordResponse | null {
-	const source = sources.find(item => item.id === id);
-
-	if (!source)
-		return null;
-
-	const directoryItem = buildSourceDirectory(candidates, measures, contests, sources).find(item => item.id === id);
+	const directoryItem = buildSourceDirectory(candidates, measures, contests, sources, additionalCitations, coverageLocationName, updatedAt).find(item => item.id === id);
 
 	if (!directoryItem)
 		return null;
 
 	return {
 		source: directoryItem,
-		updatedAt: source.date
+		updatedAt: directoryItem.date
 	};
 }
 
@@ -871,6 +1310,7 @@ function buildRepresentativeLookupContext(record: OpenStatesRepresentativeRecord
 					},
 				]
 			: [],
+		electionLogistics: null,
 		guideAvailability: "not-published" as const,
 		inputKind: "address" as const,
 		location: {
@@ -899,50 +1339,6 @@ function buildRepresentativeLookupContext(record: OpenStatesRepresentativeRecord
 	};
 }
 
-function buildRepresentativeLookupContextFromSupplementalOfficeholder(
-	record: SupplementalOfficeholderRecord,
-	representativeSlug: string,
-	updatedAt: string,
-) {
-	const officialResources = getOfficialToolsForState(record.stateCode);
-	const districtCodeMatch = record.districtSlug.match(districtNumberPattern);
-
-	return {
-		actions: officialResources.map((resource, index) => ({
-			badge: resource.sourceLabel,
-			description: resource.note || "",
-			id: `official:${record.stateCode || "unknown"}:${index}`,
-			kind: "official-verification" as const,
-			title: resource.label,
-			url: resource.url,
-		})),
-		detectedFromIp: false,
-		districtMatches: [
-			{
-				districtCode: districtCodeMatch?.[1] || record.districtSlug,
-				districtType: record.districtType,
-				id: record.districtSlug,
-				label: record.districtLabel,
-				sourceSystem: record.sourceSystem,
-			},
-		],
-		guideAvailability: "not-published" as const,
-		inputKind: "address" as const,
-		location: {
-			coverageLabel: "Nationwide civic results available",
-			displayName: record.location,
-			slug: toLookupSlug(record.location),
-			state: record.stateName,
-		},
-		normalizedAddress: record.stateCode || record.location,
-		representativeMatches: [
-			buildSupplementalRepresentativeMatch(record),
-		],
-		resolvedAt: updatedAt,
-		result: "resolved" as const,
-	};
-}
-
 function buildRepresentativeProfileFromSupplementalOfficeholder(record: SupplementalOfficeholderRecord): PersonProfileResponse {
 	const updatedAt = record.updatedAt || new Date().toISOString();
 	const officialResources = getOfficialToolsForState(record.stateCode);
@@ -954,18 +1350,40 @@ function buildRepresentativeProfileFromSupplementalOfficeholder(record: Suppleme
 		stateCode: record.stateCode,
 		stateName: record.stateName,
 	});
-	const sources = [
-		...record.sources,
-		...buildOfficialToolSources(officialResources, updatedAt),
-	];
 	const provenanceStatus = record.sourceSystem.toLowerCase().includes("official")
 		? "direct"
 		: "crosswalked";
+	const funding = record.enrichment?.funding ?? null;
+	const influence = record.enrichment?.influence ?? null;
+	const keyActions = uniqueById(record.enrichment?.keyActions ?? []);
+	const lobbyingContext = uniqueById(record.enrichment?.lobbyingContext ?? []);
+	const publicStatements = uniqueById(record.enrichment?.publicStatements ?? []);
+	const topIssues = uniqueBySlug(record.enrichment?.topIssues ?? []);
+	const officeContext = buildSupplementalOfficeContext(record, classification);
+	const enrichmentStatus = buildSupplementalEnrichmentStatus(
+		record,
+		officeContext,
+		funding,
+		influence,
+		keyActions,
+		lobbyingContext,
+		publicStatements,
+		topIssues,
+	);
+	const sources = uniqueSources([
+		...record.sources,
+		...buildOfficialToolSources(officialResources, updatedAt),
+		...(funding?.sources ?? []),
+		...keyActions.flatMap(action => action.sources),
+		...lobbyingContext.flatMap(block => block.sources),
+		...publicStatements.flatMap(block => block.sources),
+	]);
 	const methodologyNotes = [
 		record.jurisdiction === "State"
 			? "This representative route is backed by a reviewed state officeholder record that Ballot Clarity keeps available when live provider lookups are unavailable or incomplete."
 			: "This representative route is backed by a reviewed official local-government officeholder source so the public person page can stay stable even where nationwide provider coverage is incomplete.",
 		"An active nationwide lookup can still add exact district confirmation for the current user when multiple local layers overlap.",
+		...(record.enrichment?.methodologyNotes ?? []),
 	];
 
 	return {
@@ -994,16 +1412,18 @@ function buildRepresentativeProfileFromSupplementalOfficeholder(record: Suppleme
 					? "This page is route-backed from a reviewed current state officeholder record. Active lookup context can still add user-specific district confirmation and stronger locality context."
 					: "This page is route-backed from a reviewed current local officeholder source. Active lookup context can still confirm whether this officeholder is part of the user's exact matched district stack.",
 			},
-			funding: null,
+			funding,
 			governmentLevel: classification.governmentLevel,
 			incumbent: true,
-			keyActions: [],
-			lobbyingContext: [],
+			influence,
+			keyActions,
+			lobbyingContext,
 			location: record.location,
 			methodologyNotes,
 			name: record.name,
 			officeDisplayLabel: classification.officeDisplayLabel,
 			officeholderLabel: "Current officeholder",
+			officeContext,
 			officeType: classification.officeType,
 			officeSought: record.officeSought,
 			onCurrentBallot: false,
@@ -1017,13 +1437,14 @@ function buildRepresentativeProfileFromSupplementalOfficeholder(record: Suppleme
 				source: "nationwide",
 				status: provenanceStatus,
 			},
-			publicStatements: [],
+			publicStatements,
 			slug: record.slug,
 			sourceCount: sources.length,
 			sources,
 			summary: record.summary,
-			topIssues: [],
+			topIssues,
 			updatedAt,
+			enrichmentStatus,
 			whatWeDoNotKnow: [
 				{
 					id: "lookup-confirmation",
@@ -1059,9 +1480,45 @@ function mergeRepresentativeProfileWithSupplementalOfficeholder(
 		stateName: record.stateName,
 	});
 	const normalizedReviewedSourceLabel = record.provenanceLabel.replace(reviewedPrefixPattern, "").toLowerCase();
+	const funding = baseProfile.person.funding ?? record.enrichment?.funding ?? null;
+	const influence = baseProfile.person.influence ?? record.enrichment?.influence ?? null;
+	const keyActions = uniqueById([
+		...baseProfile.person.keyActions,
+		...(record.enrichment?.keyActions ?? []),
+	]);
+	const lobbyingContext = uniqueById([
+		...baseProfile.person.lobbyingContext,
+		...(record.enrichment?.lobbyingContext ?? []),
+	]);
+	const publicStatements = uniqueById([
+		...baseProfile.person.publicStatements,
+		...(record.enrichment?.publicStatements ?? []),
+	]);
+	const topIssues = uniqueBySlug([
+		...baseProfile.person.topIssues,
+		...(record.enrichment?.topIssues ?? []),
+	]);
+	const officeContext = mergeOfficeContext(
+		baseProfile.person.officeContext,
+		buildSupplementalOfficeContext(record, classification),
+	);
+	const enrichmentStatus = buildSupplementalEnrichmentStatus(
+		record,
+		officeContext,
+		funding,
+		influence,
+		keyActions,
+		lobbyingContext,
+		publicStatements,
+		topIssues,
+	);
 	const mergedSources = uniqueSources([
 		...baseProfile.person.sources,
 		...record.sources,
+		...(funding?.sources ?? []),
+		...keyActions.flatMap(action => action.sources),
+		...lobbyingContext.flatMap(block => block.sources),
+		...publicStatements.flatMap(block => block.sources),
 	]);
 	const biographyBlockId = `supplemental:${record.slug}:context`;
 	const biography = [
@@ -1080,6 +1537,7 @@ function mergeRepresentativeProfileWithSupplementalOfficeholder(
 		record.jurisdiction === "State"
 			? `Ballot Clarity also attached a reviewed ${normalizedReviewedSourceLabel} so this state-legislator route carries official-source office context alongside the provider-backed identity record.`
 			: `Ballot Clarity also attached a reviewed ${normalizedReviewedSourceLabel} so this local officeholder route carries official-source context alongside the provider-backed identity record.`,
+		...(record.enrichment?.methodologyNotes ?? []),
 	]));
 	const whatWeKnow = [
 		...baseProfile.person.whatWeKnow,
@@ -1123,9 +1581,14 @@ function mergeRepresentativeProfileWithSupplementalOfficeholder(
 				statusNote,
 			},
 			governmentLevel: classification.governmentLevel,
+			funding,
+			influence,
+			keyActions,
+			lobbyingContext,
 			location: record.location,
 			methodologyNotes,
 			officialWebsiteUrl: baseProfile.person.officialWebsiteUrl || record.officialWebsiteUrl,
+			officeContext,
 			officeDisplayLabel: classification.officeDisplayLabel,
 			officeSought: record.officeSought,
 			officeType: classification.officeType,
@@ -1136,13 +1599,16 @@ function mergeRepresentativeProfileWithSupplementalOfficeholder(
 				label: provenanceLabel,
 				note: provenanceNote,
 			},
+			publicStatements,
 			sourceCount: mergedSources.length,
 			sources: mergedSources,
 			summary: record.jurisdiction === "State"
 				? `${record.name} is the current ${record.party ? `${record.party} ` : ""}${record.officeSought} record Ballot Clarity can attach from the public provider layer, with reviewed state-officeholder context attached from official or reviewed sources.`
 				: `${record.name} is the current ${record.officeSought} record Ballot Clarity can attach from the public provider layer, with reviewed local officeholder context attached from official sources.`,
+			topIssues,
 			updatedAt,
 			whatWeKnow,
+			enrichmentStatus,
 		},
 		updatedAt,
 	};
@@ -1516,6 +1982,7 @@ function buildRepresentativeLookupContextFromCongressMember(
 				sourceSystem: "Congress.gov",
 			},
 		],
+		electionLogistics: null,
 		guideAvailability: "not-published" as const,
 		inputKind: "address" as const,
 		location: {
@@ -2240,6 +2707,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 	const adminApiKey = options.adminApiKey ?? process.env.ADMIN_API_KEY ?? null;
 	const adminDatabaseUrl = process.env.ADMIN_DATABASE_URL || process.env.DATABASE_URL || null;
 	const coverageRepository = options.coverageRepository ?? await createCoverageRepository();
+	const guidePackageSeed = options.guidePackageSeed ?? buildDefaultGuidePackageSeed(coverageRepository);
 	const adminRepository = await createAdminRepositoryWithFallback(logger, {
 		activitySeed: options.activitySeed,
 		bootstrapDisplayName: options.bootstrapDisplayName,
@@ -2249,6 +2717,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 		correctionSeed: options.correctionSeed,
 		dbPath: options.adminDbPath,
 		databaseUrl: adminDatabaseUrl,
+		guidePackageSeed,
 		sourceMonitorSeed: options.sourceMonitorSeed
 	});
 	const sourceAssetStore = createSourceAssetStore();
@@ -2470,6 +2939,53 @@ export async function createApp(options: CreateAppOptions = {}) {
 		return new Map(content.items.map(item => [`${item.entityType}:${item.entitySlug}`, item] as const));
 	}
 
+	async function listGuidePackageWorkflows() {
+		return (await adminRepository.listGuidePackages()).packages;
+	}
+
+	async function listGuidePackageRecords() {
+		const [workflows, content] = await Promise.all([
+			listGuidePackageWorkflows(),
+			adminRepository.listContent(),
+		]);
+
+		return workflows.map(workflow => buildGuidePackageRecord(workflow, coverageRepository, content.items));
+	}
+
+	async function getGuidePackageRecord(id: string) {
+		const workflow = await adminRepository.getGuidePackage(id);
+
+		if (!workflow)
+			return null;
+
+		const content = await adminRepository.listContent();
+		return buildGuidePackageRecord(workflow, coverageRepository, content.items);
+	}
+
+	async function listPublishedGuidePackageRecords() {
+		return (await listGuidePackageRecords()).filter(item => item.workflow.status === "published");
+	}
+
+	async function getPublishedGuidePackageByElectionSlug(electionSlug: string) {
+		return (await listPublishedGuidePackageRecords()).find(item => item.workflow.electionSlug === electionSlug) ?? null;
+	}
+
+	async function getPublishedGuidePackageByJurisdictionSlug(jurisdictionSlug: string) {
+		return (await listPublishedGuidePackageRecords()).find(item => item.workflow.jurisdictionSlug === jurisdictionSlug) ?? null;
+	}
+
+	async function listPublishedElectionSummaries() {
+		const publishedPackages = await listPublishedGuidePackageRecords();
+		return coverageRepository.data.electionSummaries.filter(summary =>
+			publishedPackages.some(item => item.workflow.electionSlug === summary.slug));
+	}
+
+	async function listPublishedJurisdictionSummaries() {
+		const publishedPackages = await listPublishedGuidePackageRecords();
+		return coverageRepository.data.jurisdictionSummaries.filter(summary =>
+			publishedPackages.some(item => item.workflow.jurisdictionSlug === summary.slug));
+	}
+
 	function applyCandidateContent(candidate: Candidate, contentIndex: Map<string, Awaited<ReturnType<typeof adminRepository.listContent>>["items"][number]>): Candidate | null {
 		const content = contentIndex.get(`candidate:${candidate.slug}`);
 
@@ -2550,50 +3066,61 @@ export async function createApp(options: CreateAppOptions = {}) {
 	}
 
 	async function listPublicCandidates() {
-		const contentIndex = await getContentIndex();
+		const primaryElectionSlug = getPrimaryElectionSlug();
 
-		return coverageRepository.data.candidates
-			.map(candidate => applyCandidateContent(candidate, contentIndex))
-			.filter((candidate): candidate is Candidate => Boolean(candidate));
+		if (!primaryElectionSlug)
+			return [];
+
+		const election = await getPublicElection(primaryElectionSlug);
+
+		if (!election)
+			return [];
+
+		return election.contests.flatMap(contest => contest.candidates ?? []);
 	}
 
 	async function listPublicMeasures() {
-		const contentIndex = await getContentIndex();
+		const primaryElectionSlug = getPrimaryElectionSlug();
 
-		return coverageRepository.data.measures
-			.map(measure => applyMeasureContent(measure, contentIndex))
-			.filter((measure): measure is Measure => Boolean(measure));
+		if (!primaryElectionSlug)
+			return [];
+
+		const election = await getPublicElection(primaryElectionSlug);
+
+		if (!election)
+			return [];
+
+		return election.contests.flatMap(contest => contest.measures ?? []);
 	}
 
 	async function getPublicCandidate(slug: string) {
-		const candidate = coverageRepository.getCandidateBySlug(slug);
-		const contentIndex = await getContentIndex();
-		return candidate ? applyCandidateContent(candidate, contentIndex) : null;
+		return (await listPublicCandidates()).find(candidate => candidate.slug === slug) ?? null;
 	}
 
 	async function getPublicMeasure(slug: string) {
-		const measure = coverageRepository.getMeasureBySlug(slug);
-		const contentIndex = await getContentIndex();
-		return measure ? applyMeasureContent(measure, contentIndex) : null;
+		return (await listPublicMeasures()).find(measure => measure.slug === slug) ?? null;
 	}
 
 	async function getPublicCandidatesBySlugs(slugs: string[]) {
-		const contentIndex = await getContentIndex();
-
-		return coverageRepository.getCandidatesBySlugs(slugs)
-			.map(candidate => applyCandidateContent(candidate, contentIndex))
-			.filter((candidate): candidate is Candidate => Boolean(candidate));
+		const requested = new Set(slugs);
+		return (await listPublicCandidates()).filter(candidate => requested.has(candidate.slug));
 	}
 
 	async function getPublicElection(slug: string) {
+		const publishedPackage = await getPublishedGuidePackageByElectionSlug(slug);
+
+		if (!publishedPackage)
+			return null;
+
 		const election = coverageRepository.getElectionBySlug(slug);
 		const contentIndex = await getContentIndex();
 		return election ? applyElectionContent(election, contentIndex) : null;
 	}
 
 	async function getPublicElectionSummaries() {
+		const publishedSummaries = await listPublishedElectionSummaries();
 		const contentIndex = await getContentIndex();
-		return coverageRepository.data.electionSummaries.filter((summary) => {
+		return publishedSummaries.filter((summary) => {
 			const election = coverageRepository.getElectionBySlug(summary.slug);
 			return Boolean(election && applyElectionContent(election, contentIndex));
 		});
@@ -2771,27 +3298,15 @@ export async function createApp(options: CreateAppOptions = {}) {
 
 		if (representativeRecord) {
 			const openStatesProfile = buildRepresentativeProfileFromOpenStates(representativeRecord);
-			const baseProfile = supplementalOfficeholder
-				? mergeRepresentativeProfileWithSupplementalOfficeholder(openStatesProfile, supplementalOfficeholder)
-				: openStatesProfile;
-			const lookupContext = supplementalOfficeholder
-				? buildRepresentativeLookupContextFromSupplementalOfficeholder(
-						supplementalOfficeholder,
-						baseProfile.person.slug,
-						baseProfile.updatedAt,
-					)
-				: buildRepresentativeLookupContext(representativeRecord, baseProfile.person.slug, baseProfile.updatedAt);
-			return await representativeModuleResolver.enrichNationwidePersonProfile(lookupContext, baseProfile);
+			if (supplementalOfficeholder)
+				return mergeRepresentativeProfileWithSupplementalOfficeholder(openStatesProfile, supplementalOfficeholder);
+
+			const lookupContext = buildRepresentativeLookupContext(representativeRecord, openStatesProfile.person.slug, openStatesProfile.updatedAt);
+			return await representativeModuleResolver.enrichNationwidePersonProfile(lookupContext, openStatesProfile);
 		}
 
 		if (supplementalOfficeholder) {
-			const baseProfile = buildRepresentativeProfileFromSupplementalOfficeholder(supplementalOfficeholder);
-			const lookupContext = buildRepresentativeLookupContextFromSupplementalOfficeholder(
-				supplementalOfficeholder,
-				baseProfile.person.slug,
-				baseProfile.updatedAt,
-			);
-			return await representativeModuleResolver.enrichNationwidePersonProfile(lookupContext, baseProfile);
+			return buildRepresentativeProfileFromSupplementalOfficeholder(supplementalOfficeholder);
 		}
 
 		try {
@@ -2809,6 +3324,80 @@ export async function createApp(options: CreateAppOptions = {}) {
 		}
 
 		return null;
+	}
+
+	function buildGuidePackageRecordResponsePayload(packageRecord: ReturnType<typeof buildGuidePackageRecord>): GuidePackageRecordResponse {
+		return {
+			package: packageRecord,
+			updatedAt: packageRecord.workflow.updatedAt,
+		};
+	}
+
+	function buildGuidePackageDiagnosticsPayload(packageRecord: ReturnType<typeof buildGuidePackageRecord>): GuidePackageDiagnosticsResponse {
+		return {
+			diagnostics: packageRecord.diagnostics,
+			packageId: packageRecord.workflow.id,
+			updatedAt: packageRecord.workflow.updatedAt,
+		};
+	}
+
+	function parseStringArray(value: unknown) {
+		return Array.isArray(value)
+			? value.map(item => String(item ?? "").trim()).filter(Boolean)
+			: undefined;
+	}
+
+	function parseGuidePackageReviewRecommendation(value: unknown) {
+		return value === "publish"
+			|| value === "publish_with_warnings"
+			|| value === "needs_revision"
+			|| value === "do_not_publish"
+			? value
+			: undefined;
+	}
+
+	function isPublishReadyRecommendation(value: unknown) {
+		return value === "publish" || value === "publish_with_warnings";
+	}
+
+	async function createGuidePackageDraft(electionSlug: string, jurisdictionSlug?: string | null) {
+		const election = coverageRepository.getElectionBySlug(electionSlug);
+
+		if (!election)
+			throw new Error("Election snapshot not found for guide package generation.");
+
+		const resolvedJurisdictionSlug = jurisdictionSlug?.trim() || election.jurisdictionSlug;
+		const jurisdiction = coverageRepository.getJurisdictionBySlug(resolvedJurisdictionSlug);
+
+		if (!jurisdiction)
+			throw new Error("Jurisdiction snapshot not found for guide package generation.");
+
+		const existingWorkflow = await adminRepository.getGuidePackage(buildGuidePackageId(election.slug));
+
+		if (existingWorkflow)
+			throw new Error("Guide package already exists for this election.");
+
+		await adminRepository.createGuidePackage({
+			coverageLimits: [
+				"Final publish decision remains manual even when the package passes automated checks.",
+				"Official election tools remain the authority for final ballot confirmation and polling logistics.",
+			],
+			coverageNotes: [
+				"Draft package assembled from the current imported coverage snapshot.",
+				"Contest, candidate, and measure records should still be reviewed before publish.",
+			],
+			electionSlug: election.slug,
+			id: buildGuidePackageId(election.slug),
+			jurisdictionSlug: jurisdiction.slug,
+			status: "draft",
+		});
+
+		const guidePackage = await getGuidePackageRecord(buildGuidePackageId(election.slug));
+
+		if (!guidePackage)
+			throw new Error("Guide package draft could not be created.");
+
+		return guidePackage;
 	}
 
 	function buildContestRecordResponse(contest: Contest, election: Election): ContestRecordResponse {
@@ -2917,6 +3506,161 @@ export async function createApp(options: CreateAppOptions = {}) {
 			representatives,
 			updatedAt: representatives.map(item => item.updatedAt).sort((left, right) => right.localeCompare(left))[0] ?? coverageRepository.data.updatedAt
 		};
+	}
+
+	const publishedRouteSourceDatasetCache: {
+		promise: Promise<{
+			citations: Map<string, SourceDirectoryItem["citedBy"]>;
+			sources: Source[];
+			updatedAt: string;
+		}> | null;
+	} = {
+		promise: null,
+	};
+
+	function buildPageCitation(href: string, id: string, label: string): SourceDirectoryItem["citedBy"][number] {
+		return {
+			href,
+			id,
+			label,
+			type: "page",
+		};
+	}
+
+	function addPublishedRouteSources(
+		sourceIndex: Map<string, Source>,
+		citations: Map<string, SourceDirectoryItem["citedBy"]>,
+		sources: Source[],
+		citation: SourceDirectoryItem["citedBy"][number],
+	) {
+		for (const source of sources) {
+			const existing = sourceIndex.get(source.id);
+
+			if (isPublishedRouteSource(source) && (!existing || existing.date.localeCompare(source.date) < 0))
+				sourceIndex.set(source.id, source);
+
+			addSourceCitation(citations, source.id, citation);
+		}
+	}
+
+	async function getPublishedRouteSourceDataset() {
+		if (publishedRouteSourceDatasetCache.promise)
+			return await publishedRouteSourceDatasetCache.promise;
+
+		const pending = (async () => {
+			const sourceIndex = new Map<string, Source>();
+			const citations = new Map<string, SourceDirectoryItem["citedBy"]>();
+			const guideRepresentativeSlugs = new Set<string>();
+			const supplementalDistrictSlugs = new Set<string>();
+			const supplementalOfficeholders = listSupplementalOfficeholders();
+
+			for (const representative of await listPublicRepresentatives())
+				guideRepresentativeSlugs.add(representative.slug);
+
+			for (const supplementalOfficeholder of supplementalOfficeholders)
+				supplementalDistrictSlugs.add(supplementalOfficeholder.districtSlug);
+
+			for (const districtSummary of await listPublicDistricts()) {
+				const districtRecord = await getPublicDistrict(districtSummary.slug);
+
+				if (!districtRecord)
+					continue;
+
+				const response = buildDistrictRecordResponse(districtRecord.contest, districtRecord.election);
+				addPublishedRouteSources(
+					sourceIndex,
+					citations,
+					response.sources,
+					buildPageCitation(`/districts/${response.district.slug}`, response.district.slug, response.district.title),
+				);
+			}
+
+			for (const districtSlug of supplementalDistrictSlugs) {
+				const response = buildPublicDistrictRecordFromSlug(districtSlug);
+
+				if (!response)
+					continue;
+
+				addPublishedRouteSources(
+					sourceIndex,
+					citations,
+					response.sources,
+					buildPageCitation(`/districts/${response.district.slug}`, response.district.slug, response.district.title),
+				);
+			}
+
+			for (const supplementalOfficeholder of supplementalOfficeholders) {
+				const response = buildRepresentativeProfileFromSupplementalOfficeholder(supplementalOfficeholder);
+				addPublishedRouteSources(
+					sourceIndex,
+					citations,
+					response.person.sources,
+					buildPageCitation(`/representatives/${response.person.slug}`, response.person.slug, response.person.name),
+				);
+			}
+
+			for (const representativeSlug of guideRepresentativeSlugs) {
+				const response = await getPublicRepresentative(representativeSlug);
+
+				if (!response)
+					continue;
+
+				addPublishedRouteSources(
+					sourceIndex,
+					citations,
+					response.person.sources,
+					buildPageCitation(`/representatives/${response.person.slug}`, response.person.slug, response.person.name),
+				);
+
+				if (response.person.funding?.sources?.length) {
+					addPublishedRouteSources(
+						sourceIndex,
+						citations,
+						response.person.funding.sources,
+						buildPageCitation(
+							`/representatives/${response.person.slug}/funding`,
+							`${response.person.slug}:funding`,
+							`${response.person.name} funding`,
+						),
+					);
+				}
+
+				const influenceSources = uniqueSources([
+					...response.person.lobbyingContext.flatMap(block => block.sources),
+					...response.person.publicStatements.flatMap(block => block.sources),
+				]);
+
+				if (influenceSources.length) {
+					addPublishedRouteSources(
+						sourceIndex,
+						citations,
+						influenceSources,
+						buildPageCitation(
+							`/representatives/${response.person.slug}/influence`,
+							`${response.person.slug}:influence`,
+							`${response.person.name} influence`,
+						),
+					);
+				}
+			}
+
+			const sources = [...sourceIndex.values()].sort((left, right) => {
+				return right.date.localeCompare(left.date) || left.title.localeCompare(right.title);
+			});
+			const updatedAt = sources[0]?.date || coverageRepository.data.updatedAt;
+
+			return {
+				citations,
+				sources,
+				updatedAt,
+			};
+		})().catch((error) => {
+			publishedRouteSourceDatasetCache.promise = null;
+			throw error;
+		});
+
+		publishedRouteSourceDatasetCache.promise = pending;
+		return await pending;
 	}
 
 	function buildPublicCorrectionsResponse(corrections: Awaited<ReturnType<typeof adminRepository.listCorrections>>["corrections"]): PublicCorrectionsResponse {
@@ -3039,11 +3783,15 @@ export async function createApp(options: CreateAppOptions = {}) {
 	}
 
 	async function resolveLocationLookup(raw: string, requestId?: string, selectionId?: string) {
+		const publishedPrimaryPackage = coverageRepository.data.election
+			? await getPublishedGuidePackageByElectionSlug(coverageRepository.data.election.slug)
+			: null;
+		const publishedJurisdictionSummaries = await listPublishedJurisdictionSummaries();
 		const coverage = buildCoverageResponse(
 			coverageRepository.mode,
 			coverageRepository.data.updatedAt,
 			locationGuessService.publicConfig,
-			coverageRepository.data.dataSources.launchTarget
+			publishedPrimaryPackage ? coverageRepository.data.dataSources.launchTarget : undefined
 		);
 
 		let officialLookup = null;
@@ -3153,7 +3901,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 						};
 						selectionOptions = resolvedZipMatches.map(match => buildZipSelectionOption(
 							match,
-							coverageRepository.data.jurisdictionSummaries
+							publishedJurisdictionSummaries
 						));
 					}
 				}
@@ -3171,10 +3919,10 @@ export async function createApp(options: CreateAppOptions = {}) {
 
 		const lookupResponse = buildLocationLookupResponse(
 			raw,
-			coverageRepository.data.jurisdiction,
-			coverageRepository.data.jurisdictionSummaries,
-			coverageRepository.data.location,
-			coverageRepository.data.election?.slug,
+			publishedPrimaryPackage ? coverageRepository.data.jurisdiction : null,
+			publishedJurisdictionSummaries,
+			publishedPrimaryPackage ? coverageRepository.data.location : null,
+			publishedPrimaryPackage?.workflow.electionSlug,
 			coverageRepository.mode,
 			coverage,
 			geoContext,
@@ -3437,9 +4185,9 @@ export async function createApp(options: CreateAppOptions = {}) {
 		});
 	});
 
-	app.get("/api/jurisdictions", (_request, response) => {
+	app.get("/api/jurisdictions", async (_request, response) => {
 		response.json({
-			jurisdictions: coverageRepository.data.jurisdictionSummaries
+			jurisdictions: await listPublishedJurisdictionSummaries()
 		});
 	});
 
@@ -3452,12 +4200,13 @@ export async function createApp(options: CreateAppOptions = {}) {
 		});
 	});
 
-	app.get("/api/coverage", (_request, response) => {
+	app.get("/api/coverage", async (_request, response) => {
+		const hasPublishedGuides = (await listPublishedGuidePackageRecords()).length > 0;
 		const payload: CoverageResponse = buildCoverageResponse(
 			coverageRepository.mode,
 			coverageRepository.data.updatedAt,
 			locationGuessService.publicConfig,
-			coverageRepository.data.dataSources.launchTarget
+			hasPublishedGuides ? coverageRepository.data.dataSources.launchTarget : undefined
 		);
 		response.json(payload);
 	});
@@ -3480,7 +4229,15 @@ export async function createApp(options: CreateAppOptions = {}) {
 		const candidates = await listPublicCandidates();
 		const measures = await listPublicMeasures();
 		const contests = await listPublicContests();
-		const sourceDirectory = buildSourceDirectory(candidates, measures, contests, resolvedSourceInventory);
+		const sourceDirectory = buildSourceDirectory(
+			candidates,
+			measures,
+			contests,
+			resolvedSourceInventory,
+			new Map<string, SourceDirectoryItem["citedBy"]>(),
+			coverageRepository.data.location?.displayName ?? null,
+			coverageRepository.data.updatedAt
+		);
 		const districts = await listPublicDistricts();
 
 		response.json(buildSearchResponse(
@@ -3489,7 +4246,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 			measures,
 			contests,
 			election,
-			coverageRepository.data.jurisdiction,
+			election ? coverageRepository.data.jurisdiction : null,
 			sourceDirectory,
 			districts
 		));
@@ -3499,20 +4256,41 @@ export async function createApp(options: CreateAppOptions = {}) {
 		const candidates = await listPublicCandidates();
 		const measures = await listPublicMeasures();
 		const contests = await listPublicContests();
+		const publishedRouteSourceDataset = await getPublishedRouteSourceDataset();
+		const publishedSourceInventory = uniqueSources([
+			...resolvedSourceInventory,
+			...publishedRouteSourceDataset.sources,
+		]);
 
 		response.json({
-			sources: buildSourceDirectory(candidates, measures, contests, resolvedSourceInventory),
-			updatedAt: coverageRepository.data.updatedAt
+			sources: buildSourceDirectory(
+				candidates,
+				measures,
+				contests,
+				publishedSourceInventory,
+				publishedRouteSourceDataset.citations,
+				coverageRepository.data.location?.displayName ?? null,
+				maxUpdatedAt(coverageRepository.data.updatedAt, publishedRouteSourceDataset.updatedAt) || coverageRepository.data.updatedAt
+			),
+			updatedAt: maxUpdatedAt(coverageRepository.data.updatedAt, publishedRouteSourceDataset.updatedAt) || coverageRepository.data.updatedAt
 		});
 	});
 
 	app.get("/api/sources/:id", async (request, response) => {
+		const publishedRouteSourceDataset = await getPublishedRouteSourceDataset();
+		const publishedSourceInventory = uniqueSources([
+			...resolvedSourceInventory,
+			...publishedRouteSourceDataset.sources,
+		]);
 		const record = buildSourceRecord(
 			request.params.id,
 			await listPublicCandidates(),
 			await listPublicMeasures(),
 			await listPublicContests(),
-			resolvedSourceInventory
+			publishedSourceInventory,
+			publishedRouteSourceDataset.citations,
+			coverageRepository.data.location?.displayName ?? null,
+			maxUpdatedAt(coverageRepository.data.updatedAt, publishedRouteSourceDataset.updatedAt) || coverageRepository.data.updatedAt
 		);
 
 		if (!record) {
@@ -3612,7 +4390,16 @@ export async function createApp(options: CreateAppOptions = {}) {
 		response.json(representative);
 	});
 
-	app.get("/api/jurisdictions/:slug", (request, response) => {
+	app.get("/api/jurisdictions/:slug", async (request, response) => {
+		const publishedPackage = await getPublishedGuidePackageByJurisdictionSlug(request.params.slug);
+
+		if (!publishedPackage) {
+			response.status(404).json({
+				message: "Jurisdiction not found."
+			});
+			return;
+		}
+
 		const jurisdiction = coverageRepository.getJurisdictionBySlug(request.params.slug);
 
 		if (!jurisdiction) {
@@ -3721,6 +4508,19 @@ export async function createApp(options: CreateAppOptions = {}) {
 		});
 	});
 
+	app.get("/api/guide-packages/:id", async (request, response) => {
+		const guidePackage = await getGuidePackageRecord(request.params.id);
+
+		if (!guidePackage || guidePackage.workflow.status !== "published") {
+			response.status(404).json({
+				message: "Published guide package not found."
+			});
+			return;
+		}
+
+		response.json(buildGuidePackageRecordResponsePayload(guidePackage));
+	});
+
 	app.get("/api/admin/overview", async (_request, response) => {
 		response.json(await adminRepository.getOverview());
 	});
@@ -3775,6 +4575,243 @@ export async function createApp(options: CreateAppOptions = {}) {
 		catch (error) {
 			response.status(400).json({
 				message: error instanceof Error ? error.message : "Unable to update content."
+			});
+		}
+	});
+
+	app.get("/api/admin/packages", async (_request, response) => {
+		const [guidePackages, content] = await Promise.all([
+			adminRepository.listGuidePackages(),
+			adminRepository.listContent(),
+		]);
+
+		response.json(buildGuidePackageList(guidePackages.packages, coverageRepository, content.items));
+	});
+
+	app.post("/api/admin/packages", async (request, response) => {
+		try {
+			const electionSlug = typeof request.body?.electionSlug === "string" ? request.body.electionSlug.trim() : "";
+			const jurisdictionSlug = typeof request.body?.jurisdictionSlug === "string" ? request.body.jurisdictionSlug.trim() : undefined;
+
+			if (!electionSlug) {
+				response.status(400).json({
+					message: "Election slug is required."
+				});
+				return;
+			}
+
+			const guidePackage = await createGuidePackageDraft(electionSlug, jurisdictionSlug);
+			response.status(201).json(buildGuidePackageRecordResponsePayload(guidePackage));
+		}
+		catch (error) {
+			response.status(400).json({
+				message: error instanceof Error ? error.message : "Unable to generate guide package draft."
+			});
+		}
+	});
+
+	app.get("/api/admin/packages/:id", async (request, response) => {
+		const guidePackage = await getGuidePackageRecord(request.params.id);
+
+		if (!guidePackage) {
+			response.status(404).json({
+				message: "Guide package not found."
+			});
+			return;
+		}
+
+		response.json(buildGuidePackageRecordResponsePayload(guidePackage));
+	});
+
+	app.get("/api/admin/packages/:id/diagnostics", async (request, response) => {
+		const guidePackage = await getGuidePackageRecord(request.params.id);
+
+		if (!guidePackage) {
+			response.status(404).json({
+				message: "Guide package not found."
+			});
+			return;
+		}
+
+		response.json(buildGuidePackageDiagnosticsPayload(guidePackage));
+	});
+
+	app.patch("/api/admin/packages/:id", async (request, response) => {
+		try {
+			const currentPackage = await getGuidePackageRecord(request.params.id);
+
+			if (!currentPackage) {
+				response.status(404).json({
+					message: "Guide package not found."
+				});
+				return;
+			}
+
+			const requestedStatus = typeof request.body?.status === "string" ? request.body.status : undefined;
+
+			if (requestedStatus === "published") {
+				response.status(400).json({
+					message: "Use the publish action to promote a guide package to published."
+				});
+				return;
+			}
+
+			if (requestedStatus === "ready_to_publish" && !currentPackage.diagnostics.readyToPublish) {
+				response.status(400).json({
+					diagnostics: currentPackage.diagnostics,
+					message: currentPackage.diagnostics.blockingIssueCount
+						? "Guide package still has blocking publish checks."
+						: "Guide package still needs reviewer signoff or a publish recommendation."
+				});
+				return;
+			}
+
+			await adminRepository.updateGuidePackage(request.params.id, {
+				coverageLimits: parseStringArray(request.body?.coverageLimits),
+				coverageNotes: parseStringArray(request.body?.coverageNotes),
+				draftedAt: typeof request.body?.draftedAt === "string" ? request.body.draftedAt : undefined,
+				reviewRecommendation: request.body?.reviewRecommendation === null
+					? null
+					: parseGuidePackageReviewRecommendation(request.body?.reviewRecommendation),
+				reviewNotes: request.body?.reviewNotes === null
+					? null
+					: typeof request.body?.reviewNotes === "string"
+						? request.body.reviewNotes
+						: undefined,
+				reviewedAt: typeof request.body?.reviewedAt === "string" ? request.body.reviewedAt : undefined,
+				reviewer: request.body?.reviewer === null
+					? null
+					: typeof request.body?.reviewer === "string"
+						? request.body.reviewer
+						: undefined,
+				status: requestedStatus === "draft" || requestedStatus === "in_review" || requestedStatus === "ready_to_publish"
+					? requestedStatus
+					: undefined,
+			});
+
+			const updatedPackage = await getGuidePackageRecord(request.params.id);
+
+			if (!updatedPackage)
+				throw new Error("Guide package was updated but could not be reloaded.");
+
+			response.json(buildGuidePackageRecordResponsePayload(updatedPackage));
+		}
+		catch (error) {
+			response.status(400).json({
+				message: error instanceof Error ? error.message : "Unable to update guide package."
+			});
+		}
+	});
+
+	app.post("/api/admin/packages/:id/publish", async (request, response) => {
+		try {
+			const currentPackage = await getGuidePackageRecord(request.params.id);
+
+			if (!currentPackage) {
+				response.status(404).json({
+					message: "Guide package not found."
+				});
+				return;
+			}
+
+			if (!currentPackage.diagnostics.readyToPublish) {
+				response.status(400).json({
+					diagnostics: currentPackage.diagnostics,
+					message: currentPackage.diagnostics.blockingIssueCount
+						? "Guide package still has blocking publish checks."
+						: "Guide package still needs reviewer signoff or a publish recommendation."
+				});
+				return;
+			}
+
+			const reviewer = typeof request.body?.reviewer === "string" ? request.body.reviewer.trim() : currentPackage.workflow.reviewer || "";
+			const reviewRecommendation = request.body?.reviewRecommendation === null
+				? null
+				: parseGuidePackageReviewRecommendation(request.body?.reviewRecommendation) ?? currentPackage.workflow.reviewRecommendation;
+
+			if (!reviewer) {
+				response.status(400).json({
+					message: "Reviewer name is required before publishing a guide package."
+				});
+				return;
+			}
+
+			if (!isPublishReadyRecommendation(reviewRecommendation)) {
+				response.status(400).json({
+					diagnostics: currentPackage.diagnostics,
+					message: "Reviewer recommendation must be publish or publish with warnings before publication."
+				});
+				return;
+			}
+
+			const now = new Date().toISOString();
+
+			await adminRepository.updateGuidePackage(request.params.id, {
+				publishedAt: now,
+				reviewRecommendation,
+				reviewNotes: request.body?.reviewNotes === null
+					? null
+					: typeof request.body?.reviewNotes === "string"
+						? request.body.reviewNotes
+						: currentPackage.workflow.reviewNotes,
+				reviewedAt: now,
+				reviewer,
+				status: "published",
+			});
+
+			const updatedPackage = await getGuidePackageRecord(request.params.id);
+
+			if (!updatedPackage)
+				throw new Error("Guide package was published but could not be reloaded.");
+
+			response.json(buildGuidePackageRecordResponsePayload(updatedPackage));
+		}
+		catch (error) {
+			response.status(400).json({
+				message: error instanceof Error ? error.message : "Unable to publish guide package."
+			});
+		}
+	});
+
+	app.post("/api/admin/packages/:id/unpublish", async (request, response) => {
+		try {
+			const currentPackage = await getGuidePackageRecord(request.params.id);
+
+			if (!currentPackage) {
+				response.status(404).json({
+					message: "Guide package not found."
+				});
+				return;
+			}
+
+			await adminRepository.updateGuidePackage(request.params.id, {
+				publishedAt: null,
+				reviewRecommendation: request.body?.reviewRecommendation === null
+					? null
+					: parseGuidePackageReviewRecommendation(request.body?.reviewRecommendation),
+				reviewNotes: request.body?.reviewNotes === null
+					? null
+					: typeof request.body?.reviewNotes === "string"
+						? request.body.reviewNotes
+						: currentPackage.workflow.reviewNotes,
+				reviewer: request.body?.reviewer === null
+					? null
+					: typeof request.body?.reviewer === "string"
+						? request.body.reviewer
+						: currentPackage.workflow.reviewer,
+				status: "in_review",
+			});
+
+			const updatedPackage = await getGuidePackageRecord(request.params.id);
+
+			if (!updatedPackage)
+				throw new Error("Guide package was unpublished but could not be reloaded.");
+
+			response.json(buildGuidePackageRecordResponsePayload(updatedPackage));
+		}
+		catch (error) {
+			response.status(400).json({
+				message: error instanceof Error ? error.message : "Unable to unpublish guide package."
 			});
 		}
 	});

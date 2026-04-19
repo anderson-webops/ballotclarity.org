@@ -13,6 +13,7 @@ import {
 	demoAdminSourceMonitor,
 } from "../src/coverage-data.js";
 import { buildSeedCoverageSnapshot } from "../src/coverage-repository.js";
+import { buildGuidePackageId } from "../src/guide-packages.js";
 import { classifyRepresentative } from "../src/representative-classification.js";
 import { createApp } from "../src/server.js";
 
@@ -205,6 +206,7 @@ before(async () => {
 								url: "https://vote.utah.gov/voter-registration-portal/"
 							}
 						],
+						logistics: null,
 						note: "Google Civic accepted the address as 151 S University Ave, Provo, UT 84601.",
 						verified: true
 					};
@@ -221,6 +223,7 @@ before(async () => {
 							url: "https://example.org/ballot"
 						}
 					],
+					logistics: null,
 					note: "Google Civic accepted the address as 5600 Campbellton Fairburn Rd, Union City, GA 30213.",
 					verified: true
 				};
@@ -1036,14 +1039,16 @@ test("default runtime stays empty instead of auto-seeding coverage and public op
 	const isolatedBaseUrl = `http://127.0.0.1:${isolatedAddress.port}`;
 
 	try {
-		const [electionsResponse, coverageResponse, statusResponse] = await Promise.all([
+		const [electionsResponse, coverageResponse, statusResponse, sourcesResponse] = await Promise.all([
 			fetch(`${isolatedBaseUrl}/api/elections`),
 			fetch(`${isolatedBaseUrl}/api/coverage`),
-			fetch(`${isolatedBaseUrl}/api/status`)
+			fetch(`${isolatedBaseUrl}/api/status`),
+			fetch(`${isolatedBaseUrl}/api/sources`)
 		]);
 		const electionsBody = await electionsResponse.json();
 		const coverageBody = await coverageResponse.json();
 		const statusBody = await statusResponse.json();
+		const sourcesBody = await sourcesResponse.json();
 
 		assert.equal(electionsResponse.status, 200);
 		assert.deepEqual(electionsBody.elections, []);
@@ -1069,6 +1074,11 @@ test("default runtime stays empty instead of auto-seeding coverage and public op
 			"Nationwide civic lookup is available across the public site.",
 			"Local guide publication status remains generic until a verified local snapshot is published."
 		]);
+		assert.equal(sourcesResponse.status, 200);
+		assert.ok(Array.isArray(sourcesBody.sources));
+		assert.ok(sourcesBody.sources.length >= 8);
+		assert.ok(sourcesBody.sources.some((item: { id: string; publicationKind: string }) => item.id === "open-states" && item.publicationKind === "curated-global"));
+		assert.ok(sourcesBody.sources.some((item: { id: string }) => item.id === "official-state-voter-portals"));
 
 		const ballotResponse = await fetch(`${isolatedBaseUrl}/api/ballot?election=2026-fulton-county-general`);
 		const ballotBody = await ballotResponse.json();
@@ -1081,6 +1091,30 @@ test("default runtime stays empty instead of auto-seeding coverage and public op
 			isolatedServer.close(error => error ? reject(error) : resolve());
 		});
 	}
+});
+
+test("snapshot runtime exposes the published guide package and its public record", async () => {
+	const packageId = buildGuidePackageId("2026-fulton-county-general");
+	const packagesResponse = await fetch(`${baseUrl}/api/admin/packages`, {
+		headers: {
+			"x-admin-api-key": adminApiKey
+		}
+	});
+	const packagesBody = await packagesResponse.json();
+	const publicPackageResponse = await fetch(`${baseUrl}/api/guide-packages/${packageId}`);
+	const publicPackageBody = await publicPackageResponse.json();
+
+	assert.equal(packagesResponse.status, 200);
+	assert.ok(Array.isArray(packagesBody.packages));
+	assert.equal(packagesBody.packages[0]?.workflow.id, packageId);
+	assert.equal(packagesBody.packages[0]?.workflow.status, "published");
+	assert.equal(packagesBody.packages[0]?.counts.contests > 0, true);
+	assert.equal(packagesBody.packages[0]?.counts.attachedSources > 0, true);
+	assert.equal(publicPackageResponse.status, 200);
+	assert.equal(publicPackageBody.package.workflow.id, packageId);
+	assert.equal(publicPackageBody.package.workflow.status, "published");
+	assert.equal(publicPackageBody.package.officialResources.length > 0, true);
+	assert.equal(publicPackageBody.package.attachedSources.length > 0, true);
 });
 
 test("GET /api/status suppresses launch-specific source monitors when coverage mode is empty", async () => {
@@ -1838,8 +1872,17 @@ test("direct representative routes return a stable provider-backed identity reco
 	assert.doesNotMatch(body.person.officeholderLabel, /pending lookup context/i);
 	assert.ok(body.person.funding);
 	assert.match(body.person.funding.summary, /FRIENDS OF MCCORMICK/i);
+	assert.equal(typeof body.person.funding.totalSpent, "number");
+	assert.ok((body.person.funding.receiptBreakdown?.length ?? 0) > 0);
+	assert.match(body.person.funding.coverageLabel ?? "", /cycle/i);
 	assert.ok(body.person.lobbyingContext.length > 0);
 	assert.match(body.person.lobbyingContext[0].summary, /LD-203/i);
+	assert.ok(body.person.influence);
+	assert.equal(typeof body.person.influence.totalMatched, "number");
+	assert.ok((body.person.influence.topRegistrants?.length ?? 0) > 0);
+	assert.ok(body.person.officeContext);
+	assert.match(body.person.officeContext.currentTermLabel ?? "", /Congress/i);
+	assert.ok((body.person.officeContext.referenceLinks?.length ?? 0) >= 2);
 	assert.equal(body.person.enrichmentStatus?.funding.reasonCode, "attached");
 	assert.equal(body.person.enrichmentStatus?.influence.reasonCode, "attached");
 });
@@ -1871,6 +1914,10 @@ test("direct senator routes attach federal funding, influence, and Congress offi
 	assert.match(body.person.funding.summary, /JON OSSOFF FOR SENATE/i);
 	assert.ok(body.person.lobbyingContext.length > 0);
 	assert.match(body.person.biography.map((item: { title: string }) => item.title).join(" "), /Congress\.gov office context/i);
+	assert.ok(body.person.officeContext);
+	assert.equal(body.person.officeContext.chamberLabel, "Senate");
+	assert.equal(body.person.officeContext.jurisdictionLabel, "Georgia");
+	assert.ok(body.person.officeContext.referenceLinks.some((item: { label: string }) => ["Congress member record", "Official office website"].includes(item.label)));
 	assert.equal(body.person.enrichmentStatus?.funding.reasonCode, "attached");
 	assert.equal(body.person.enrichmentStatus?.influence.reasonCode, "attached");
 	assert.equal(body.person.enrichmentStatus?.legislativeContext.reasonCode, "attached");
@@ -1886,6 +1933,10 @@ test("state legislators expose a precise unavailable reason when federal finance
 	assert.deepEqual(body.person.lobbyingContext, []);
 	assert.equal(body.person.officeSought, "State House District 60");
 	assert.equal(body.person.districtLabel, "State House District 60");
+	assert.ok(body.person.officeContext);
+	assert.equal(body.person.officeContext.chamberLabel, "State House");
+	assert.equal(body.person.officeContext.districtLabel, "State House District 60");
+	assert.equal(body.person.officeContext.jurisdictionLabel, "Utah");
 	assert.equal(body.person.enrichmentStatus?.funding.reasonCode, "no_state_finance_source");
 	assert.equal(body.person.enrichmentStatus?.influence.reasonCode, "no_state_disclosure_source");
 	assert.equal(body.person.enrichmentStatus?.legislativeContext.reasonCode, "identity_only_provider");
@@ -1912,6 +1963,10 @@ test("supplemental state and local officeholder routes resolve as stable public 
 	assert.equal(stateBody.person.enrichmentStatus?.funding.reasonCode, "no_state_finance_source");
 	assert.equal(stateBody.person.enrichmentStatus?.influence.reasonCode, "no_state_disclosure_source");
 	assert.ok(["identity_only_provider", "no_state_legislative_source"].includes(stateBody.person.enrichmentStatus?.legislativeContext.reasonCode));
+	assert.ok(stateBody.person.officeContext);
+	assert.equal(stateBody.person.officeContext.chamberLabel, "State Senate");
+	assert.equal(stateBody.person.officeContext.districtLabel, "State Senate District 24");
+	assert.equal(stateBody.person.officeContext.jurisdictionLabel, "Utah");
 	assert.equal(stateBody.person.officialWebsiteUrl, undefined);
 	assert.match(stateBody.person.summary, /Utah Senate District 24/i);
 	assert.ok(stateBody.person.biography.some((item: { title: string }) => /reviewed/i.test(item.title)));
@@ -1922,9 +1977,18 @@ test("supplemental state and local officeholder routes resolve as stable public 
 	assert.equal(localBody.person.provenance.label, "Official mayor's office page");
 	assert.equal(localBody.person.officeSought, "Mayor");
 	assert.equal(localBody.person.districtLabel, "Provo city");
+	assert.ok(localBody.person.officeContext);
+	assert.equal(localBody.person.officeContext.chamberLabel, "City government");
+	assert.equal(localBody.person.officeContext.jurisdictionLabel, "Provo, Utah");
+	assert.match(localBody.person.officeContext.currentTermLabel ?? "", /January 2026/i);
 	assert.equal(localBody.person.officialWebsiteUrl, "https://www.provo.gov/433/Mayors-Office");
-	assert.equal(localBody.person.enrichmentStatus?.funding.reasonCode, "no_local_finance_source");
+	assert.equal(localBody.person.enrichmentStatus?.funding.reasonCode, "attached");
 	assert.equal(localBody.person.enrichmentStatus?.influence.reasonCode, "no_local_disclosure_source");
+	assert.equal(localBody.person.enrichmentStatus?.legislativeContext.reasonCode, "attached");
+	assert.ok(localBody.person.funding);
+	assert.equal(localBody.person.funding.totalRaised, 63522.39);
+	assert.equal(localBody.person.funding.cashOnHand, 954.76);
+	assert.ok(localBody.person.keyActions.length > 0);
 	assert.match(localBody.person.summary, /current Provo mayor/i);
 });
 
@@ -1939,9 +2003,16 @@ test("state representative routes merge reviewed state-officeholder sources into
 	assert.equal(body.person.officeDisplayLabel, "Georgia State Representative for District 48");
 	assert.equal(body.person.officeSought, "State House District 48");
 	assert.equal(body.person.districtLabel, "State House District 48");
+	assert.ok(body.person.officeContext);
+	assert.equal(body.person.officeContext.chamberLabel, "State House");
+	assert.equal(body.person.officeContext.jurisdictionLabel, "Georgia");
 	assert.equal(body.person.enrichmentStatus?.funding.reasonCode, "no_state_finance_source");
-	assert.equal(body.person.enrichmentStatus?.influence.reasonCode, "no_state_disclosure_source");
-	assert.ok(["identity_only_provider", "no_state_legislative_source"].includes(body.person.enrichmentStatus?.legislativeContext.reasonCode));
+	assert.equal(body.person.enrichmentStatus?.influence.reasonCode, "attached");
+	assert.equal(body.person.enrichmentStatus?.legislativeContext.reasonCode, "attached");
+	assert.ok(body.person.keyActions.length >= 2);
+	assert.ok(body.person.lobbyingContext.length > 0);
+	assert.ok(body.person.influence);
+	assert.ok(body.person.officeContext.committeeMemberships?.includes("Chairman, Information & Audits"));
 	assert.ok(body.person.biography.some((item: { title: string }) => /reviewed/i.test(item.title)));
 	assert.ok(
 		body.person.provenance.label.toLowerCase().includes("reviewed")
@@ -1960,12 +2031,53 @@ test("state senator routes merge reviewed official state sources without driftin
 	assert.equal(body.person.officeDisplayLabel, "Georgia State Senator for District 48");
 	assert.equal(body.person.officeSought, "State Senate District 48");
 	assert.equal(body.person.districtLabel, "State Senate District 48");
+	assert.ok(body.person.officeContext);
+	assert.equal(body.person.officeContext.chamberLabel, "State Senate");
+	assert.equal(body.person.officeContext.jurisdictionLabel, "Georgia");
 	assert.equal(body.person.enrichmentStatus?.funding.reasonCode, "no_state_finance_source");
 	assert.equal(body.person.enrichmentStatus?.influence.reasonCode, "no_state_disclosure_source");
-	assert.ok(["identity_only_provider", "no_state_legislative_source"].includes(body.person.enrichmentStatus?.legislativeContext.reasonCode));
+	assert.equal(body.person.enrichmentStatus?.legislativeContext.reasonCode, "attached");
+	assert.ok(body.person.keyActions.length >= 2);
+	assert.ok(body.person.topIssues.length >= 2);
+	assert.ok(body.person.officeContext.committeeMemberships?.includes("Judiciary"));
 	assert.ok(body.person.biography.some((item: { title: string }) => /reviewed/i.test(item.title)));
 	assert.ok(body.person.sources.some((item: { sourceSystem?: string }) => /Georgia General Assembly member bio/i.test(item.sourceSystem ?? "")));
 	assert.doesNotMatch(body.person.officeSought, /U\.S\. Senate/i);
+});
+
+test("county and city officeholder routes expose normalized office context and precise local unavailable reasons", async () => {
+	const [countyResponse, cityResponse] = await Promise.all([
+		fetch(`${baseUrl}/api/representatives/robb-pitts`),
+		fetch(`${baseUrl}/api/representatives/john-bradberry`),
+	]);
+	const [countyBody, cityBody] = await Promise.all([countyResponse.json(), cityResponse.json()]);
+
+	assert.equal(countyResponse.status, 200);
+	assert.equal(countyBody.person.slug, "robb-pitts");
+	assert.equal(countyBody.person.governmentLevel, "county");
+	assert.equal(countyBody.person.officeType, "county_commission");
+	assert.equal(countyBody.person.officeDisplayLabel, "Fulton County Commission Chair");
+	assert.ok(countyBody.person.officeContext);
+	assert.equal(countyBody.person.officeContext.chamberLabel, "County commission");
+	assert.equal(countyBody.person.officeContext.jurisdictionLabel, "Fulton County, Georgia");
+	assert.equal(countyBody.person.enrichmentStatus?.funding.reasonCode, "no_local_finance_source");
+	assert.equal(countyBody.person.enrichmentStatus?.influence.reasonCode, "no_local_disclosure_source");
+	assert.equal(countyBody.person.enrichmentStatus?.legislativeContext.reasonCode, "attached");
+	assert.ok(countyBody.person.keyActions.length >= 2);
+	assert.match(countyBody.person.officeContext.currentTermLabel ?? "", /2023/);
+
+	assert.equal(cityResponse.status, 200);
+	assert.equal(cityBody.person.slug, "john-bradberry");
+	assert.equal(cityBody.person.governmentLevel, "city");
+	assert.equal(cityBody.person.officeType, "mayor");
+	assert.equal(cityBody.person.officeDisplayLabel, "Mayor of Johns Creek");
+	assert.ok(cityBody.person.officeContext);
+	assert.equal(cityBody.person.officeContext.chamberLabel, "City government");
+	assert.equal(cityBody.person.officeContext.jurisdictionLabel, "Johns Creek, Georgia");
+	assert.equal(cityBody.person.enrichmentStatus?.legislativeContext.reasonCode, "attached");
+	assert.equal(cityBody.person.enrichmentStatus?.funding.reasonCode, "no_local_finance_source");
+	assert.equal(cityBody.person.enrichmentStatus?.influence.reasonCode, "no_local_disclosure_source");
+	assert.ok(cityBody.person.keyActions.length >= 2);
 });
 
 test("direct representative routes degrade to a public fallback instead of 500 when the provider route lookup fails", async () => {
@@ -2103,6 +2215,46 @@ test("GET /api/sources and /api/sources/:id include contest citations", async ()
 	assert.ok(recordBody.source.citedBy.some((citation: { type: string }) => citation.type === "contest"));
 });
 
+test("GET /api/sources publishes stable representative and district route provenance records", async () => {
+	const directoryResponse = await fetch(`${baseUrl}/api/sources`);
+	const directoryBody = await directoryResponse.json();
+	const shawnSource = directoryBody.sources.find((item: { id: string }) => item.id === "supplemental:shawn-still:bio");
+	const districtIdentitySource = directoryBody.sources.find((item: { id: string }) => item.id === "district:state-senate-48:identity");
+
+	assert.equal(directoryResponse.status, 200);
+	assert.ok(shawnSource);
+	assert.equal(shawnSource.publicationKind, "published-provenance");
+	assert.ok(shawnSource.citedBy.some((citation: { href: string }) => citation.href === "/representatives/shawn-still"));
+	assert.ok(shawnSource.citedBy.some((citation: { href: string }) => citation.href === "/districts/state-senate-48"));
+
+	assert.ok(districtIdentitySource);
+	assert.equal(districtIdentitySource.publicationKind, "published-provenance");
+	assert.ok(districtIdentitySource.citedBy.some((citation: { href: string }) => citation.href === "/districts/state-senate-48"));
+});
+
+test("GET /api/sources/:id resolves curated global source records", async () => {
+	const response = await fetch(`${baseUrl}/api/sources/open-states`);
+	const body = await response.json();
+
+	assert.equal(response.status, 200);
+	assert.equal(body.source.id, "open-states");
+	assert.equal(body.source.publicationKind, "curated-global");
+	assert.equal(body.source.publisherType, "public-interest");
+	assert.ok(body.source.routeFamilies.includes("Representative pages"));
+	assert.ok(body.source.limitations.length > 0);
+});
+
+test("GET /api/sources/:id resolves intentionally published route-backed provenance records", async () => {
+	const response = await fetch(`${baseUrl}/api/sources/supplemental:shawn-still:bio`);
+	const body = await response.json();
+
+	assert.equal(response.status, 200);
+	assert.equal(body.source.id, "supplemental:shawn-still:bio");
+	assert.equal(body.source.publicationKind, "published-provenance");
+	assert.ok(body.source.citedBy.some((citation: { href: string }) => citation.href === "/representatives/shawn-still"));
+	assert.ok(body.source.citedBy.some((citation: { href: string }) => citation.href === "/districts/state-senate-48"));
+});
+
 test("GET /api/sources/:id returns 404 for unpublished district provenance ids", async () => {
 	const response = await fetch(`${baseUrl}/api/sources/district:state-senate-48`);
 	const body = await response.json();
@@ -2117,6 +2269,7 @@ test("GET /api/sources only lists ids that resolve as public source records", as
 
 	assert.equal(directoryResponse.status, 200);
 	assert.ok(Array.isArray(directoryBody.sources));
+	assert.ok(directoryBody.sources.some((item: { id: string }) => item.id === "census-geocoder"));
 	assert.ok(!directoryBody.sources.some((item: { id: string }) => item.id === "district:state-senate-48"));
 
 	for (const item of directoryBody.sources as Array<{ id: string }>) {
@@ -2279,6 +2432,248 @@ test("PATCH /api/admin/content updates public content fields and publish gating"
 		assert.equal(ballotResponse.status, 200);
 		assert.equal(houseContest.candidates.length, 1);
 		assert.equal(houseContest.candidates[0].slug, "daniel-brooks");
+	}
+	finally {
+		await new Promise<void>((resolve, reject) => {
+			isolatedServer.close(error => error ? reject(error) : resolve());
+		});
+	}
+});
+
+test("guide package workflow gates local guide publication from draft through rollback", async () => {
+	const isolatedServer = (await createApp({
+		addressEnrichmentService: {
+			async lookupAddress() {
+				return {
+					benchmark: "Public_AR_Current",
+					countyFips: "121",
+					districtMatches: [
+						{
+							districtCode: "7",
+							districtType: "congressional",
+							id: "congressional:7",
+							label: "Congressional District 7",
+							sourceSystem: "U.S. Census Geocoder"
+						}
+					],
+					fromCache: false,
+					latitude: 33.7479,
+					longitude: -84.3902,
+					normalizedAddress: "55 TRINITY AVE SW, ATLANTA, GA, 30303",
+					representativeMatches: [],
+					state: "GA",
+					vintage: "Current_Current",
+					zip5: "30303"
+				};
+			}
+		},
+		adminApiKey,
+		adminDbPath: ":memory:",
+		contentSeed,
+		coverageRepository: {
+			data: coverageSnapshot,
+			getCandidateBySlug(slug) {
+				return coverageSnapshot.candidates.find(candidate => candidate.slug === slug) ?? null;
+			},
+			getCandidatesBySlugs(slugs) {
+				const requested = new Set(slugs);
+				return coverageSnapshot.candidates.filter(candidate => requested.has(candidate.slug));
+			},
+			getElectionBySlug(slug) {
+				return coverageSnapshot.election?.slug === slug ? coverageSnapshot.election : null;
+			},
+			getJurisdictionBySlug(slug) {
+				return coverageSnapshot.jurisdiction?.slug === slug ? coverageSnapshot.jurisdiction : null;
+			},
+			getMeasureBySlug(slug) {
+				return coverageSnapshot.measures.find(measure => measure.slug === slug) ?? null;
+			},
+			getSourceById(id) {
+				return coverageSnapshot.sources.find(source => source.id === id) ?? null;
+			},
+			mode: "snapshot",
+			snapshotPath: ":memory:"
+		},
+		correctionSeed,
+		googleCivicClient: {
+			async lookupVoterInfo() {
+				return {
+					actions: [],
+					logistics: null,
+					note: "Google Civic accepted the Fulton County test address.",
+					verified: true
+				};
+			}
+		},
+		guidePackageSeed: [],
+		sourceMonitorSeed
+	})).listen(0, "127.0.0.1");
+
+	await once(isolatedServer, "listening");
+	const isolatedAddress = isolatedServer.address() as AddressInfo;
+	const isolatedBaseUrl = `http://127.0.0.1:${isolatedAddress.port}`;
+	const packageId = buildGuidePackageId("2026-fulton-county-general");
+
+	try {
+		const lookupBeforeResponse = await fetch(`${isolatedBaseUrl}/api/location`, {
+			body: JSON.stringify({ q: "55 Trinity Ave SW, Atlanta, GA 30303" }),
+			headers: {
+				"Content-Type": "application/json"
+			},
+			method: "POST"
+		});
+		const lookupBeforeBody = await lookupBeforeResponse.json();
+		const ballotBeforeResponse = await fetch(`${isolatedBaseUrl}/api/ballot?election=2026-fulton-county-general`);
+		const compareBeforeResponse = await fetch(`${isolatedBaseUrl}/api/compare?slugs=elena-torres,daniel-brooks`);
+		const compareBeforeBody = await compareBeforeResponse.json();
+		const packagesBeforeResponse = await fetch(`${isolatedBaseUrl}/api/admin/packages`, {
+			headers: {
+				"x-admin-api-key": adminApiKey
+			}
+		});
+		const packagesBeforeBody = await packagesBeforeResponse.json();
+
+		assert.equal(lookupBeforeResponse.status, 200);
+		assert.equal(lookupBeforeBody.guideAvailability, "not-published");
+		assert.equal(ballotBeforeResponse.status, 404);
+		assert.equal(compareBeforeResponse.status, 200);
+		assert.deepEqual(compareBeforeBody.candidates, []);
+		assert.deepEqual(packagesBeforeBody.packages, []);
+
+		const createResponse = await fetch(`${isolatedBaseUrl}/api/admin/packages`, {
+			body: JSON.stringify({
+				electionSlug: "2026-fulton-county-general",
+				jurisdictionSlug: "fulton-county-georgia"
+			}),
+			headers: {
+				"Content-Type": "application/json",
+				"x-admin-api-key": adminApiKey
+			},
+			method: "POST"
+		});
+		const createBody = await createResponse.json();
+		const diagnosticsResponse = await fetch(`${isolatedBaseUrl}/api/admin/packages/${packageId}/diagnostics`, {
+			headers: {
+				"x-admin-api-key": adminApiKey
+			}
+		});
+		const diagnosticsBody = await diagnosticsResponse.json();
+
+		assert.equal(createResponse.status, 201);
+		assert.equal(createBody.package.workflow.status, "draft");
+		assert.equal(diagnosticsResponse.status, 200);
+		assert.equal(diagnosticsBody.diagnostics.readyToPublish, false);
+		assert.equal(diagnosticsBody.diagnostics.blockingIssueCount, 0);
+		assert.equal(diagnosticsBody.diagnostics.recommendation.system, "publish_with_warnings");
+		assert.equal(diagnosticsBody.diagnostics.recommendation.final, "publish_with_warnings");
+
+		const readyBeforeReviewResponse = await fetch(`${isolatedBaseUrl}/api/admin/packages/${packageId}`, {
+			body: JSON.stringify({
+				reviewer: "Smoke Reviewer",
+				status: "ready_to_publish"
+			}),
+			headers: {
+				"Content-Type": "application/json",
+				"x-admin-api-key": adminApiKey
+			},
+			method: "PATCH"
+		});
+		const readyBeforeReviewBody = await readyBeforeReviewResponse.json();
+
+		assert.equal(readyBeforeReviewResponse.status, 400);
+		assert.match(readyBeforeReviewBody.message, /reviewer signoff or a publish recommendation/i);
+
+		const inReviewResponse = await fetch(`${isolatedBaseUrl}/api/admin/packages/${packageId}`, {
+			body: JSON.stringify({
+				reviewNotes: "Editorial review completed for the Fulton County package.",
+				reviewRecommendation: "publish_with_warnings",
+				reviewer: "Smoke Reviewer",
+				status: "in_review"
+			}),
+			headers: {
+				"Content-Type": "application/json",
+				"x-admin-api-key": adminApiKey
+			},
+			method: "PATCH"
+		});
+		const inReviewBody = await inReviewResponse.json();
+
+		assert.equal(inReviewResponse.status, 200);
+		assert.equal(inReviewBody.package.workflow.reviewNotes, "Editorial review completed for the Fulton County package.");
+		assert.equal(inReviewBody.package.workflow.reviewRecommendation, "publish_with_warnings");
+
+		const readyResponse = await fetch(`${isolatedBaseUrl}/api/admin/packages/${packageId}`, {
+			body: JSON.stringify({
+				reviewRecommendation: "publish_with_warnings",
+				reviewer: "Smoke Reviewer",
+				status: "ready_to_publish"
+			}),
+			headers: {
+				"Content-Type": "application/json",
+				"x-admin-api-key": adminApiKey
+			},
+			method: "PATCH"
+		});
+
+		assert.equal(readyResponse.status, 200);
+
+		const publishResponse = await fetch(`${isolatedBaseUrl}/api/admin/packages/${packageId}/publish`, {
+			body: JSON.stringify({
+				reviewNotes: "Published after passing all package checks.",
+				reviewRecommendation: "publish_with_warnings",
+				reviewer: "Smoke Reviewer"
+			}),
+			headers: {
+				"Content-Type": "application/json",
+				"x-admin-api-key": adminApiKey
+			},
+			method: "POST"
+		});
+		const publishBody = await publishResponse.json();
+		const publicPackageResponse = await fetch(`${isolatedBaseUrl}/api/guide-packages/${packageId}`);
+		const lookupAfterResponse = await fetch(`${isolatedBaseUrl}/api/location`, {
+			body: JSON.stringify({ q: "55 Trinity Ave SW, Atlanta, GA 30303" }),
+			headers: {
+				"Content-Type": "application/json"
+			},
+			method: "POST"
+		});
+		const lookupAfterBody = await lookupAfterResponse.json();
+		const ballotAfterResponse = await fetch(`${isolatedBaseUrl}/api/ballot?election=2026-fulton-county-general`);
+		const ballotAfterBody = await ballotAfterResponse.json();
+		const compareAfterResponse = await fetch(`${isolatedBaseUrl}/api/compare?slugs=elena-torres,daniel-brooks`);
+		const compareAfterBody = await compareAfterResponse.json();
+
+		assert.equal(publishResponse.status, 200);
+		assert.equal(publishBody.package.workflow.status, "published");
+		assert.equal(publishBody.package.workflow.reviewRecommendation, "publish_with_warnings");
+		assert.equal(publicPackageResponse.status, 200);
+		assert.equal(lookupAfterResponse.status, 200);
+		assert.equal(lookupAfterBody.guideAvailability, "published");
+		assert.equal(lookupAfterBody.electionSlug, "2026-fulton-county-general");
+		assert.equal(ballotAfterResponse.status, 200);
+		assert.equal(ballotAfterBody.election.slug, "2026-fulton-county-general");
+		assert.equal(compareAfterResponse.status, 200);
+		assert.equal(compareAfterBody.candidates.length, 2);
+
+		const unpublishResponse = await fetch(`${isolatedBaseUrl}/api/admin/packages/${packageId}/unpublish`, {
+			body: JSON.stringify({
+				reviewNotes: "Rolled back after publication smoke test.",
+				reviewRecommendation: "needs_revision",
+				reviewer: "Smoke Reviewer"
+			}),
+			headers: {
+				"Content-Type": "application/json",
+				"x-admin-api-key": adminApiKey
+			},
+			method: "POST"
+		});
+		const ballotAfterRollbackResponse = await fetch(`${isolatedBaseUrl}/api/ballot?election=2026-fulton-county-general`);
+		const publicPackageAfterRollbackResponse = await fetch(`${isolatedBaseUrl}/api/guide-packages/${packageId}`);
+
+		assert.equal(unpublishResponse.status, 200);
+		assert.equal(ballotAfterRollbackResponse.status, 404);
+		assert.equal(publicPackageAfterRollbackResponse.status, 404);
 	}
 	finally {
 		await new Promise<void>((resolve, reject) => {

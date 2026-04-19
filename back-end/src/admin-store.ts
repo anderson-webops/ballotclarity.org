@@ -17,6 +17,9 @@ import type {
 	AdminUser,
 	AdminUserRole,
 	AdminUsersResponse,
+	GuidePackageReviewRecommendation,
+	GuidePackageStatus,
+	GuidePackageWorkflow,
 } from "./types/civic.js";
 import { Buffer } from "node:buffer";
 import { randomUUID, scryptSync, timingSafeEqual } from "node:crypto";
@@ -46,6 +49,7 @@ export interface AdminRepositoryOptions {
 	correctionSeed?: AdminCorrectionRequest[];
 	activitySeed?: AdminActivityItem[];
 	sourceMonitorSeed?: AdminSourceMonitorItem[];
+	guidePackageSeed?: GuidePackageWorkflow[];
 }
 
 export interface LegacyDemoAdminIds {
@@ -53,6 +57,11 @@ export interface LegacyDemoAdminIds {
 	contentIds: string[];
 	correctionIds: string[];
 	sourceMonitorIds: string[];
+}
+
+export interface GuidePackageWorkflowListResponse {
+	packages: GuidePackageWorkflow[];
+	updatedAt: string;
 }
 
 export interface CorrectionSubmissionInput {
@@ -88,6 +97,35 @@ export interface SourcePatch {
 	owner?: string;
 }
 
+export interface CreateGuidePackageInput {
+	coverageLimits?: string[];
+	coverageNotes?: string[];
+	createdAt?: string;
+	draftedAt?: string;
+	electionSlug: string;
+	id: string;
+	jurisdictionSlug: string;
+	publishedAt?: string | null;
+	reviewRecommendation?: GuidePackageReviewRecommendation | null;
+	reviewNotes?: string | null;
+	reviewedAt?: string | null;
+	reviewer?: string | null;
+	status?: GuidePackageStatus;
+	updatedAt?: string;
+}
+
+export interface GuidePackagePatch {
+	coverageLimits?: string[] | null;
+	coverageNotes?: string[] | null;
+	draftedAt?: string;
+	publishedAt?: string | null;
+	reviewRecommendation?: GuidePackageReviewRecommendation | null;
+	reviewNotes?: string | null;
+	reviewedAt?: string | null;
+	reviewer?: string | null;
+	status?: GuidePackageStatus;
+}
+
 export interface CreateUserInput {
 	displayName: string;
 	password: string;
@@ -106,11 +144,15 @@ export interface AdminRepository {
 	hasUsers: () => boolean | Promise<boolean>;
 	listContent: () => AdminContentResponse | Promise<AdminContentResponse>;
 	listCorrections: () => AdminCorrectionsResponse | Promise<AdminCorrectionsResponse>;
+	listGuidePackages: () => GuidePackageWorkflowListResponse | Promise<GuidePackageWorkflowListResponse>;
 	listReview: () => AdminReviewResponse | Promise<AdminReviewResponse>;
 	listSourceMonitor: () => AdminSourceMonitorResponse | Promise<AdminSourceMonitorResponse>;
 	listUsers: () => AdminUsersResponse | Promise<AdminUsersResponse>;
+	createGuidePackage: (input: CreateGuidePackageInput) => GuidePackageWorkflowListResponse | Promise<GuidePackageWorkflowListResponse>;
+	getGuidePackage: (id: string) => GuidePackageWorkflow | null | Promise<GuidePackageWorkflow | null>;
 	updateContent: (id: string, patch: ContentPatch) => AdminContentResponse | Promise<AdminContentResponse>;
 	updateCorrection: (id: string, patch: CorrectionPatch) => AdminCorrectionsResponse | Promise<AdminCorrectionsResponse>;
+	updateGuidePackage: (id: string, patch: GuidePackagePatch) => GuidePackageWorkflowListResponse | Promise<GuidePackageWorkflowListResponse>;
 	updateSource: (id: string, patch: SourcePatch) => AdminSourceMonitorResponse | Promise<AdminSourceMonitorResponse>;
 }
 
@@ -180,6 +222,23 @@ interface ActivityRow {
 	type: AdminActivityItem["type"];
 	timestamp: string;
 	summary: string;
+}
+
+interface GuidePackageRow {
+	id: string;
+	election_slug: string;
+	jurisdiction_slug: string;
+	status: GuidePackageStatus;
+	reviewer: string | null;
+	review_notes: string | null;
+	review_recommendation: GuidePackageReviewRecommendation | null;
+	coverage_notes: string;
+	coverage_limits: string;
+	created_at: string;
+	drafted_at: string;
+	reviewed_at: string | null;
+	published_at: string | null;
+	updated_at: string;
 }
 
 export const defaultDbPath = fileURLToPath(new URL("../data/ballot-clarity.sqlite", import.meta.url));
@@ -286,6 +345,40 @@ function rowToActivity(row: ActivityRow): AdminActivityItem {
 		summary: row.summary,
 		timestamp: row.timestamp,
 		type: row.type
+	};
+}
+
+function parseStoredStringArray(raw: string | null | undefined) {
+	if (!raw)
+		return [];
+
+	try {
+		const parsed = JSON.parse(raw) as unknown;
+		return Array.isArray(parsed)
+			? parsed.map(item => String(item ?? "").trim()).filter(Boolean)
+			: [];
+	}
+	catch {
+		return [];
+	}
+}
+
+function rowToGuidePackage(row: GuidePackageRow): GuidePackageWorkflow {
+	return {
+		coverageLimits: parseStoredStringArray(row.coverage_limits),
+		coverageNotes: parseStoredStringArray(row.coverage_notes),
+		createdAt: row.created_at,
+		draftedAt: row.drafted_at,
+		electionSlug: row.election_slug,
+		id: row.id,
+		jurisdictionSlug: row.jurisdiction_slug,
+		publishedAt: row.published_at || undefined,
+		reviewRecommendation: row.review_recommendation || undefined,
+		reviewNotes: row.review_notes || undefined,
+		reviewedAt: row.reviewed_at || undefined,
+		reviewer: row.reviewer || undefined,
+		status: row.status,
+		updatedAt: row.updated_at,
 	};
 }
 
@@ -408,10 +501,12 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 	const correctionSeed = options.correctionSeed ?? [];
 	const sourceMonitorSeed = options.sourceMonitorSeed ?? [];
 	const activitySeed = options.activitySeed ?? [];
+	const guidePackageSeed = options.guidePackageSeed ?? [];
 
 	database.exec(schema);
 	ensureColumn(database, "admin_content", "public_summary", "TEXT");
 	ensureColumn(database, "admin_content", "ballot_summary", "TEXT");
+	ensureColumn(database, "admin_guide_packages", "review_recommendation", "TEXT");
 
 	if (shouldPurgeLegacyDemoAdminData(options)) {
 		const legacyIds = getLegacyDemoAdminIds();
@@ -429,6 +524,7 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 	const correctionsCount = Number((countStatement("admin_corrections").get() as unknown as DatabaseCountRow).count);
 	const sourcesCount = Number((countStatement("admin_source_monitors").get() as unknown as DatabaseCountRow).count);
 	const activityCount = Number((countStatement("admin_activity").get() as unknown as DatabaseCountRow).count);
+	const guidePackagesCount = Number((countStatement("admin_guide_packages").get() as unknown as DatabaseCountRow).count);
 
 	if (!contentCount) {
 		const insertContent = database.prepare(`
@@ -586,6 +682,46 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 		}
 	}
 
+	if (!guidePackagesCount) {
+		const insertGuidePackage = database.prepare(`
+			INSERT INTO admin_guide_packages (
+				id,
+				election_slug,
+				jurisdiction_slug,
+				status,
+				reviewer,
+				review_notes,
+				review_recommendation,
+				coverage_notes,
+				coverage_limits,
+				created_at,
+				drafted_at,
+				reviewed_at,
+				published_at,
+				updated_at
+			) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		`);
+
+		for (const item of guidePackageSeed) {
+			insertGuidePackage.run(
+				item.id,
+				item.electionSlug,
+				item.jurisdictionSlug,
+				item.status,
+				item.reviewer || null,
+				item.reviewNotes || null,
+				item.reviewRecommendation || null,
+				JSON.stringify(item.coverageNotes ?? []),
+				JSON.stringify(item.coverageLimits ?? []),
+				item.createdAt,
+				item.draftedAt,
+				item.reviewedAt || null,
+				item.publishedAt || null,
+				item.updatedAt
+			);
+		}
+	}
+
 	const bootstrapUsername = options.bootstrapUsername || process.env.ADMIN_BOOTSTRAP_USERNAME || process.env.ADMIN_USERNAME || null;
 	const bootstrapPassword = options.bootstrapPassword || process.env.ADMIN_BOOTSTRAP_PASSWORD || process.env.ADMIN_PASSWORD || null;
 	const bootstrapDisplayName = options.bootstrapDisplayName || process.env.ADMIN_BOOTSTRAP_DISPLAY_NAME || "Ballot Clarity Admin";
@@ -732,6 +868,86 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 		};
 	}
 
+	function listGuidePackages(): GuidePackageWorkflowListResponse {
+		const rows = database.prepare(`
+			SELECT id, election_slug, jurisdiction_slug, status, reviewer, review_notes, review_recommendation, coverage_notes, coverage_limits, created_at, drafted_at, reviewed_at, published_at, updated_at
+			FROM admin_guide_packages
+			ORDER BY CASE status
+				WHEN 'published' THEN 0
+				WHEN 'ready_to_publish' THEN 1
+				WHEN 'in_review' THEN 2
+				ELSE 3
+			END, updated_at DESC
+		`).all() as unknown as GuidePackageRow[];
+
+		return {
+			packages: rows.map(rowToGuidePackage),
+			updatedAt: rows.map(row => row.updated_at).sort((left, right) => right.localeCompare(left))[0] ?? new Date().toISOString(),
+		};
+	}
+
+	function getGuidePackage(id: string) {
+		const row = database.prepare(`
+			SELECT id, election_slug, jurisdiction_slug, status, reviewer, review_notes, review_recommendation, coverage_notes, coverage_limits, created_at, drafted_at, reviewed_at, published_at, updated_at
+			FROM admin_guide_packages
+			WHERE id = ?
+		`).get(id) as GuidePackageRow | undefined;
+
+		return row ? rowToGuidePackage(row) : null;
+	}
+
+	function createGuidePackage(input: CreateGuidePackageInput) {
+		const now = new Date().toISOString();
+		const status = input.status ?? "draft";
+		const createdAt = input.createdAt || now;
+		const draftedAt = input.draftedAt || now;
+		const updatedAt = input.updatedAt || now;
+		const reviewNotes = input.reviewNotes?.trim() || null;
+		const reviewRecommendation = input.reviewRecommendation || null;
+		const reviewer = input.reviewer?.trim() || null;
+		const existing = getGuidePackage(input.id);
+
+		if (existing)
+			throw new Error("Guide package already exists.");
+
+		database.prepare(`
+			INSERT INTO admin_guide_packages (
+				id,
+				election_slug,
+				jurisdiction_slug,
+				status,
+				reviewer,
+				review_notes,
+				review_recommendation,
+				coverage_notes,
+				coverage_limits,
+				created_at,
+				drafted_at,
+				reviewed_at,
+				published_at,
+				updated_at
+			) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		`).run(
+			input.id,
+			input.electionSlug,
+			input.jurisdictionSlug,
+			status,
+			reviewer,
+			reviewNotes,
+			reviewRecommendation,
+			JSON.stringify(input.coverageNotes ?? []),
+			JSON.stringify(input.coverageLimits ?? []),
+			createdAt,
+			draftedAt,
+			input.reviewedAt || null,
+			input.publishedAt || null,
+			updatedAt
+		);
+
+		logActivity("review", "Guide package drafted", `${input.electionSlug} guide package entered the ${status.replaceAll("_", " ")} state.`);
+		return listGuidePackages();
+	}
+
 	function getContentRecord(entityType: AdminEntityType, entitySlug: string) {
 		const row = database.prepare(`
 			SELECT id, title, entity_type, entity_slug, status, priority, updated_at, assigned_to, blocker, summary, public_summary, ballot_summary, source_coverage, published, published_at
@@ -802,6 +1018,77 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 		);
 
 		return listContent();
+	}
+
+	function updateGuidePackage(id: string, patch: GuidePackagePatch) {
+		const current = database.prepare(`
+			SELECT id, election_slug, jurisdiction_slug, status, reviewer, review_notes, review_recommendation, coverage_notes, coverage_limits, created_at, drafted_at, reviewed_at, published_at, updated_at
+			FROM admin_guide_packages
+			WHERE id = ?
+		`).get(id) as GuidePackageRow | undefined;
+
+		if (!current)
+			throw new Error("Guide package not found.");
+
+		const now = new Date().toISOString();
+		const nextStatus = patch.status ?? current.status;
+		const nextReviewer = patch.reviewer === undefined
+			? current.reviewer
+			: patch.reviewer?.trim() || null;
+		const nextReviewRecommendation = patch.reviewRecommendation === undefined
+			? current.review_recommendation
+			: patch.reviewRecommendation || null;
+		const nextReviewNotes = patch.reviewNotes === undefined
+			? current.review_notes
+			: patch.reviewNotes?.trim() || null;
+		const nextCoverageNotes = patch.coverageNotes === undefined
+			? parseStoredStringArray(current.coverage_notes)
+			: patch.coverageNotes ?? [];
+		const nextCoverageLimits = patch.coverageLimits === undefined
+			? parseStoredStringArray(current.coverage_limits)
+			: patch.coverageLimits ?? [];
+		const nextDraftedAt = patch.draftedAt || current.drafted_at;
+		const nextReviewedAt = patch.reviewedAt === undefined
+			? current.reviewed_at
+			: patch.reviewedAt;
+		const nextPublishedAt = patch.publishedAt === undefined
+			? current.published_at
+			: patch.publishedAt;
+
+		database.prepare(`
+			UPDATE admin_guide_packages
+			SET status = ?,
+				reviewer = ?,
+				review_notes = ?,
+				review_recommendation = ?,
+				coverage_notes = ?,
+				coverage_limits = ?,
+				drafted_at = ?,
+				reviewed_at = ?,
+				published_at = ?,
+				updated_at = ?
+			WHERE id = ?
+		`).run(
+			nextStatus,
+			nextReviewer,
+			nextReviewNotes,
+			nextReviewRecommendation,
+			JSON.stringify(nextCoverageNotes),
+			JSON.stringify(nextCoverageLimits),
+			nextDraftedAt,
+			nextReviewedAt || null,
+			nextPublishedAt || null,
+			now,
+			id
+		);
+
+		logActivity(
+			nextStatus === "published" ? "publish" : "review",
+			`Guide package ${current.election_slug} updated`,
+			`Guide package moved to ${nextStatus.replaceAll("_", " ")}.`
+		);
+
+		return listGuidePackages();
 	}
 
 	function listReview(): AdminReviewResponse {
@@ -965,17 +1252,22 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 	function getOverview(): AdminOverviewResponse {
 		const content = listContent().items;
 		const corrections = listCorrections().corrections;
+		const guidePackages = listGuidePackages().packages;
 		const sources = listSourceMonitor().sources;
 
 		const healthySourceCount = sources.filter(item => item.health === "healthy").length;
 		const openCorrections = corrections.filter(item => item.status !== "resolved");
 		const reviewQueue = content.filter(item => item.status !== "published" || !item.published);
+		const packageQueue = guidePackages.filter(item => item.status !== "published");
 		const dueChecks = sources.filter(item => new Date(item.nextCheckAt).getTime() <= Date.now());
 		const needsAttention = [
 			...openCorrections
 				.filter(item => item.priority === "high")
 				.slice(0, 2)
 				.map(item => `${item.subject}: ${item.nextStep}`),
+			...packageQueue
+				.slice(0, 2)
+				.map(item => `${item.electionSlug}: package is ${item.status.replaceAll("_", " ")}.`),
 			...content
 				.filter(item => item.status === "needs-sources")
 				.slice(0, 2)
@@ -996,11 +1288,11 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 					value: String(openCorrections.length)
 				},
 				{
-					helpText: "Candidate, measure, and election records not yet marked published.",
+					helpText: "Candidate, measure, election, and guide-package records not yet marked published.",
 					id: "review-queue",
 					label: "Awaiting publish",
-					tone: reviewQueue.length ? "review" : "healthy",
-					value: String(reviewQueue.length)
+					tone: (reviewQueue.length || packageQueue.length) ? "review" : "healthy",
+					value: String(reviewQueue.length + packageQueue.length)
 				},
 				{
 					helpText: "Tracked source systems passing the latest check cycle.",
@@ -1031,18 +1323,22 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 		driver: "sqlite",
 		authenticateUser,
 		createCorrectionSubmission,
+		createGuidePackage,
 		createUser,
 		getContentRecord,
+		getGuidePackage,
 		getHealth: () => ({ ok: true }),
 		getOverview,
 		hasUsers,
 		listContent,
 		listCorrections,
+		listGuidePackages,
 		listReview,
 		listSourceMonitor,
 		listUsers,
 		updateContent,
 		updateCorrection,
+		updateGuidePackage,
 		updateSource
 	};
 }

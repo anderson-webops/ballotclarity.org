@@ -16,6 +16,16 @@ export type SourceAuthority
 		| "official-government"
 		| "open-data";
 
+export type SourcePublisherType
+	= | "ballot-clarity archive"
+		| "campaign"
+		| "nonprofit"
+		| "official"
+		| "public-interest"
+		| "third-party civic infrastructure";
+
+export type SourcePublicationKind = "curated-global" | "published-provenance";
+
 export interface Source {
 	id: string;
 	title: string;
@@ -32,12 +42,21 @@ export interface SourceCitationTarget {
 	id: string;
 	label: string;
 	href: string;
-	type: "candidate" | "contest" | "election" | "jurisdiction" | "measure";
+	type: "candidate" | "contest" | "election" | "jurisdiction" | "measure" | "page";
 }
 
 export interface SourceDirectoryItem extends Source {
 	citationCount: number;
 	citedBy: SourceCitationTarget[];
+	geographicScope: string;
+	limitations: string[];
+	primarySourceLabel?: string;
+	publicationKind: SourcePublicationKind;
+	publisherType: SourcePublisherType;
+	reviewNote: string;
+	routeFamilies: string[];
+	summary: string;
+	usedFor: string;
 }
 
 export interface SourcesDirectoryResponse {

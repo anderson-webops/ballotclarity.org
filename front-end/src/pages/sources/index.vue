@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { publicApiTransparencyItems } from "~/utils/api-transparency";
+import { formatSourcePublicationKind, formatSourcePublisherType, groupSourceDirectoryItems } from "~/utils/source-directory";
 
 const searchQuery = ref("");
 const { data, pending } = await useSourceDirectory();
@@ -11,15 +11,23 @@ const filteredSources = computed(() => {
 		return data.value?.sources ?? [];
 
 	return (data.value?.sources ?? []).filter(source => [
+		source.summary,
 		source.title,
 		source.publisher,
+		source.publisherType,
+		source.geographicScope,
 		source.sourceSystem,
-		source.type
+		source.type,
+		source.usedFor,
+		source.routeFamilies.join(" "),
+		source.limitations.join(" ")
 	].join(" ").toLowerCase().includes(query));
 });
 
+const sections = computed(() => groupSourceDirectoryItems(filteredSources.value));
+
 usePageSeo({
-	description: "Browse the public source directory behind Ballot Clarity pages, including publishers, dates, citation counts, and linked record files.",
+	description: "Browse Ballot Clarity’s public source directory for official systems, public-interest providers, and published source records used across the site.",
 	jsonLd: {
 		"@context": "https://schema.org",
 		"@type": "CollectionPage",
@@ -42,7 +50,7 @@ usePageSeo({
 				Source directory
 			</h1>
 			<p class="text-base text-app-muted leading-8 mt-5 dark:text-app-muted-dark">
-				Every source record in Ballot Clarity is listed here with authority, publisher, citation count, and the pages where it is used.
+				Ballot Clarity uses multiple official, public-interest, and provider-backed source systems depending on the page and coverage layer. This directory mixes always-published core source records with intentionally published page-specific provenance records that resolve as standalone public source pages.
 			</p>
 		</header>
 
@@ -75,82 +83,67 @@ usePageSeo({
 			</p>
 		</div>
 
-		<div v-else class="space-y-4">
-			<NuxtLink
-				v-for="source in filteredSources"
-				:key="source.id"
-				:to="`/sources/${source.id}`"
-				class="surface-panel block transition hover:border-app-accent focus-ring"
+		<div v-else class="space-y-8">
+			<section
+				v-for="section in sections"
+				:key="section.kind"
+				class="space-y-4"
 			>
-				<div class="flex flex-wrap gap-3 items-start justify-between">
-					<div class="min-w-0">
-						<div class="flex flex-wrap gap-2 items-center">
-							<SourceAuthorityBadge :authority="source.authority" />
-							<span class="text-[11px] text-app-muted tracking-[0.14em] font-semibold px-2.5 py-1 rounded-full bg-app-bg uppercase dark:text-app-muted-dark dark:bg-app-bg-dark/70">
-								{{ source.type }}
-							</span>
-						</div>
-						<h2 class="text-2xl text-app-ink font-serif mt-4 dark:text-app-text-dark">
-							{{ source.title }}
-						</h2>
-						<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
-							{{ source.publisher }} · {{ source.sourceSystem }}
-						</p>
-					</div>
-					<TrustBadge :label="`${source.citationCount} citation${source.citationCount === 1 ? '' : 's'}`" />
-				</div>
-			</NuxtLink>
-		</div>
+				<header class="max-w-4xl">
+					<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
+						{{ section.heading }}
+					</h2>
+					<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
+						{{ section.description }}
+					</p>
+				</header>
 
-		<section class="surface-panel">
-			<div class="flex flex-wrap gap-2">
-				<TrustBadge label="Public API layer" tone="accent" />
-				<TrustBadge label="Lookup and enrichment provenance" />
-			</div>
-			<h2 class="text-3xl text-app-ink font-serif mt-5 dark:text-app-text-dark">
-				Public APIs and provider systems used by Ballot Clarity
-			</h2>
-			<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-				Individual pages above still show their own source citations. This section is the broader provider-level transparency layer: the APIs and public systems Ballot Clarity uses for lookup, district matching, representative records, and person-level finance or influence enrichment where available.
-			</p>
-			<div class="mt-6 gap-4 grid lg:grid-cols-2">
-				<article
-					v-for="api in publicApiTransparencyItems"
-					:key="api.id"
-					class="px-5 py-5 border border-app-line/70 rounded-3xl bg-white/80 dark:border-app-line-dark dark:bg-app-panel-dark/70"
-				>
-					<div class="flex flex-wrap gap-2 items-center">
-						<TrustBadge :label="api.category" />
-						<span
-							v-for="routeFamily in api.routeFamilies"
-							:key="`${api.id}-${routeFamily}`"
-							class="text-[11px] text-app-muted tracking-[0.14em] font-semibold px-2.5 py-1 rounded-full bg-app-bg uppercase dark:text-app-muted-dark dark:bg-app-bg-dark/70"
-						>
-							{{ routeFamily }}
-						</span>
-					</div>
-					<h3 class="text-2xl text-app-ink font-serif mt-4 dark:text-app-text-dark">
-						{{ api.label }}
-					</h3>
-					<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
-						{{ api.usedFor }}
-					</p>
-					<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
-						{{ api.note }}
-					</p>
-					<div class="mt-5 flex flex-wrap gap-3">
-						<a
-							:href="api.docsUrl"
-							target="_blank"
-							rel="noreferrer"
-							class="btn-secondary inline-flex gap-2 items-center"
-						>
-							API docs
-							<span class="i-carbon-launch" />
-						</a>
-					</div>
-				</article>
-			</div>
-		</section>
+				<div class="space-y-4">
+					<NuxtLink
+						v-for="source in section.items"
+						:key="source.id"
+						:to="`/sources/${source.id}`"
+						class="surface-panel block transition hover:border-app-accent focus-ring"
+					>
+						<div class="flex flex-wrap gap-3 items-start justify-between">
+							<div class="max-w-4xl min-w-0">
+								<div class="flex flex-wrap gap-2 items-center">
+									<SourceAuthorityBadge :authority="source.authority" />
+									<TrustBadge :label="formatSourcePublisherType(source.publisherType)" />
+									<TrustBadge :label="formatSourcePublicationKind(source.publicationKind)" tone="accent" />
+								</div>
+								<h3 class="text-2xl text-app-ink font-serif mt-4 dark:text-app-text-dark">
+									{{ source.title }}
+								</h3>
+								<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
+									{{ source.summary }}
+								</p>
+								<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
+									{{ source.publisher }} · {{ source.sourceSystem }}
+								</p>
+								<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
+									{{ source.usedFor }}
+								</p>
+								<div class="mt-4 flex flex-wrap gap-2">
+									<span
+										v-for="routeFamily in source.routeFamilies"
+										:key="`${source.id}-${routeFamily}`"
+										class="text-[11px] text-app-muted tracking-[0.14em] font-semibold px-2.5 py-1 rounded-full bg-app-bg uppercase dark:text-app-muted-dark dark:bg-app-bg-dark/70"
+									>
+										{{ routeFamily }}
+									</span>
+								</div>
+							</div>
+							<div class="flex flex-col gap-3 items-start sm:items-end">
+								<TrustBadge :label="`${source.citationCount} citation${source.citationCount === 1 ? '' : 's'}`" />
+								<p class="text-xs text-app-muted leading-6 text-left max-w-[14rem] dark:text-app-muted-dark sm:text-right">
+									{{ source.geographicScope }}
+								</p>
+							</div>
+						</div>
+					</NuxtLink>
+				</div>
+			</section>
+		</div>
 	</section>
 </template>

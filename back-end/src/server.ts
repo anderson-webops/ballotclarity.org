@@ -82,6 +82,7 @@ import { getOfficialToolsForState, getStateAbbreviationForName, getStateNameForA
 import { createOpenFecClient } from "./openfec.js";
 import { createOpenStatesClient } from "./openstates.js";
 import { buildProviderSummary } from "./provider-config.js";
+import { buildCuratedPublicSourceRecords, mapAuthorityToPublisherType } from "./public-source-directory.js";
 import { classifyRepresentative } from "./representative-classification.js";
 import { createRepresentativeModuleResolver } from "./representative-modules.js";
 import { createSourceAssetStore } from "./source-asset-store.js";
@@ -217,12 +218,27 @@ function collectContestSources(contest: Contest) {
 	return uniqueSources((contest.measures ?? []).flatMap(measure => collectMeasureSources(measure)));
 }
 
-function buildSourceDirectory(
-	candidates: Candidate[],
-	measures: Measure[],
-	contests: Contest[],
-	sources: Source[]
-): SourceDirectoryItem[] {
+function routeFamilyFromCitation(citation: SourceDirectoryItem["citedBy"][number]) {
+	if (citation.type === "page")
+		return citation.label;
+
+	switch (citation.type) {
+		case "candidate":
+			return "Candidate pages";
+		case "contest":
+			return "Contest pages";
+		case "election":
+			return "Election pages";
+		case "jurisdiction":
+			return "Location pages";
+		case "measure":
+			return "Measure pages";
+		default:
+			return citation.label;
+	}
+}
+
+function buildSourceCitations(candidates: Candidate[], measures: Measure[], contests: Contest[]) {
 	const citations = new Map<string, SourceDirectoryItem["citedBy"]>();
 
 	function addCitation(sourceId: string, citation: SourceDirectoryItem["citedBy"][number]) {
@@ -267,14 +283,47 @@ function buildSourceDirectory(
 		}
 	}
 
-	return sources
+	return citations;
+}
+
+function buildSourceDirectory(
+	candidates: Candidate[],
+	measures: Measure[],
+	contests: Contest[],
+	sources: Source[],
+	coverageLocationName: string | null | undefined,
+	updatedAt: string
+): SourceDirectoryItem[] {
+	const citations = buildSourceCitations(candidates, measures, contests);
+	const curatedSources = buildCuratedPublicSourceRecords(updatedAt);
+	const publishedProvenanceSources = sources
 		.map(source => ({
 			...source,
 			citationCount: (citations.get(source.id) ?? []).length,
-			citedBy: citations.get(source.id) ?? []
+			citedBy: citations.get(source.id) ?? [],
+			geographicScope: coverageLocationName ?? "Published local coverage area",
+			limitations: [
+				"This standalone record reflects a Ballot Clarity citation published on the pages listed below.",
+				"Use the parent page context and the linked primary source before treating this citation as a complete account."
+			],
+			publicationKind: "published-provenance" as const,
+			publisherType: mapAuthorityToPublisherType(source.authority),
+			reviewNote: "This source record is published because it is cited by a public Ballot Clarity page.",
+			routeFamilies: Array.from(new Set((citations.get(source.id) ?? []).map(routeFamilyFromCitation))),
+			summary: source.note || "Published source record cited on Ballot Clarity.",
+			usedFor: `Supports ${Math.max((citations.get(source.id) ?? []).length, 1)} published Ballot Clarity page${(citations.get(source.id) ?? []).length === 1 ? "" : "s"} listed below.`
 		}))
 		.filter(source => source.citationCount > 0)
+		.sort((left, right) => right.date.localeCompare(left.date) || left.title.localeCompare(right.title));
+
+	return [...curatedSources, ...publishedProvenanceSources]
 		.sort((left, right) => {
+			if (left.publicationKind !== right.publicationKind)
+				return left.publicationKind === "curated-global" ? -1 : 1;
+
+			if (left.publicationKind === "curated-global" && right.publicationKind === "curated-global")
+				return left.title.localeCompare(right.title);
+
 			return right.date.localeCompare(left.date) || left.title.localeCompare(right.title);
 		});
 }
@@ -284,21 +333,18 @@ function buildSourceRecord(
 	candidates: Candidate[],
 	measures: Measure[],
 	contests: Contest[],
-	sources: Source[]
+	sources: Source[],
+	coverageLocationName: string | null | undefined,
+	updatedAt: string
 ): SourceRecordResponse | null {
-	const source = sources.find(item => item.id === id);
-
-	if (!source)
-		return null;
-
-	const directoryItem = buildSourceDirectory(candidates, measures, contests, sources).find(item => item.id === id);
+	const directoryItem = buildSourceDirectory(candidates, measures, contests, sources, coverageLocationName, updatedAt).find(item => item.id === id);
 
 	if (!directoryItem)
 		return null;
 
 	return {
 		source: directoryItem,
-		updatedAt: source.date
+		updatedAt: directoryItem.date
 	};
 }
 
@@ -3319,7 +3365,14 @@ export async function createApp(options: CreateAppOptions = {}) {
 		const candidates = await listPublicCandidates();
 		const measures = await listPublicMeasures();
 		const contests = await listPublicContests();
-		const sourceDirectory = buildSourceDirectory(candidates, measures, contests, resolvedSourceInventory);
+		const sourceDirectory = buildSourceDirectory(
+			candidates,
+			measures,
+			contests,
+			resolvedSourceInventory,
+			coverageRepository.data.location?.displayName ?? null,
+			coverageRepository.data.updatedAt
+		);
 		const districts = await listPublicDistricts();
 
 		response.json(buildSearchResponse(
@@ -3340,7 +3393,14 @@ export async function createApp(options: CreateAppOptions = {}) {
 		const contests = await listPublicContests();
 
 		response.json({
-			sources: buildSourceDirectory(candidates, measures, contests, resolvedSourceInventory),
+			sources: buildSourceDirectory(
+				candidates,
+				measures,
+				contests,
+				resolvedSourceInventory,
+				coverageRepository.data.location?.displayName ?? null,
+				coverageRepository.data.updatedAt
+			),
 			updatedAt: coverageRepository.data.updatedAt
 		});
 	});
@@ -3351,7 +3411,9 @@ export async function createApp(options: CreateAppOptions = {}) {
 			await listPublicCandidates(),
 			await listPublicMeasures(),
 			await listPublicContests(),
-			resolvedSourceInventory
+			resolvedSourceInventory,
+			coverageRepository.data.location?.displayName ?? null,
+			coverageRepository.data.updatedAt
 		);
 
 		if (!record) {

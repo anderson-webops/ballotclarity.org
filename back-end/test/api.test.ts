@@ -1010,14 +1010,16 @@ test("default runtime stays empty instead of auto-seeding coverage and public op
 	const isolatedBaseUrl = `http://127.0.0.1:${isolatedAddress.port}`;
 
 	try {
-		const [electionsResponse, coverageResponse, statusResponse] = await Promise.all([
+		const [electionsResponse, coverageResponse, statusResponse, sourcesResponse] = await Promise.all([
 			fetch(`${isolatedBaseUrl}/api/elections`),
 			fetch(`${isolatedBaseUrl}/api/coverage`),
-			fetch(`${isolatedBaseUrl}/api/status`)
+			fetch(`${isolatedBaseUrl}/api/status`),
+			fetch(`${isolatedBaseUrl}/api/sources`)
 		]);
 		const electionsBody = await electionsResponse.json();
 		const coverageBody = await coverageResponse.json();
 		const statusBody = await statusResponse.json();
+		const sourcesBody = await sourcesResponse.json();
 
 		assert.equal(electionsResponse.status, 200);
 		assert.deepEqual(electionsBody.elections, []);
@@ -1043,6 +1045,11 @@ test("default runtime stays empty instead of auto-seeding coverage and public op
 			"Nationwide civic lookup is available across the public site.",
 			"Local guide publication status remains generic until a verified local snapshot is published."
 		]);
+		assert.equal(sourcesResponse.status, 200);
+		assert.ok(Array.isArray(sourcesBody.sources));
+		assert.ok(sourcesBody.sources.length >= 8);
+		assert.ok(sourcesBody.sources.some((item: { id: string; publicationKind: string }) => item.id === "open-states" && item.publicationKind === "curated-global"));
+		assert.ok(sourcesBody.sources.some((item: { id: string }) => item.id === "official-state-voter-portals"));
 
 		const ballotResponse = await fetch(`${isolatedBaseUrl}/api/ballot?election=2026-fulton-county-general`);
 		const ballotBody = await ballotResponse.json();
@@ -2077,6 +2084,18 @@ test("GET /api/sources and /api/sources/:id include contest citations", async ()
 	assert.ok(recordBody.source.citedBy.some((citation: { type: string }) => citation.type === "contest"));
 });
 
+test("GET /api/sources/:id resolves curated global source records", async () => {
+	const response = await fetch(`${baseUrl}/api/sources/open-states`);
+	const body = await response.json();
+
+	assert.equal(response.status, 200);
+	assert.equal(body.source.id, "open-states");
+	assert.equal(body.source.publicationKind, "curated-global");
+	assert.equal(body.source.publisherType, "public-interest");
+	assert.ok(body.source.routeFamilies.includes("Representative pages"));
+	assert.ok(body.source.limitations.length > 0);
+});
+
 test("GET /api/sources/:id returns 404 for unpublished district provenance ids", async () => {
 	const response = await fetch(`${baseUrl}/api/sources/district:state-senate-48`);
 	const body = await response.json();
@@ -2091,6 +2110,7 @@ test("GET /api/sources only lists ids that resolve as public source records", as
 
 	assert.equal(directoryResponse.status, 200);
 	assert.ok(Array.isArray(directoryBody.sources));
+	assert.ok(directoryBody.sources.some((item: { id: string }) => item.id === "census-geocoder"));
 	assert.ok(!directoryBody.sources.some((item: { id: string }) => item.id === "district:state-senate-48"));
 
 	for (const item of directoryBody.sources as Array<{ id: string }>) {

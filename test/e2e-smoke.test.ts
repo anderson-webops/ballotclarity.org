@@ -553,9 +553,9 @@ test("built app renders the key ballot guide pages against the built API", async
 	const correctionsHtml = await correctionsPage.text();
 	const sourcesDirectoryPage = await fetch(`${appBaseUrl}/sources`);
 	const sourcesDirectoryHtml = await sourcesDirectoryPage.text();
-	const publishedSourceIdMatch = sourcesDirectoryHtml.match(/\/sources\/([^"]+)/);
-	assert.ok(publishedSourceIdMatch, "expected at least one published source link in the source directory");
-	const publishedSourcePage = await fetch(`${appBaseUrl}/sources/${publishedSourceIdMatch[1]}`);
+	assert.match(sourcesDirectoryHtml, /Open States/);
+	assert.match(sourcesDirectoryHtml, /Core source systems/);
+	const publishedSourcePage = await fetch(`${appBaseUrl}/sources/open-states`);
 	const publishedSourceHtml = await publishedSourcePage.text();
 	const unpublishedSourcePage = await fetch(`${appBaseUrl}/sources/district:state-senate-48`);
 	const unpublishedSourceHtml = await unpublishedSourcePage.text();
@@ -656,7 +656,8 @@ test("built app renders the key ballot guide pages against the built API", async
 	assert.equal(sourcesDirectoryPage.status, 200);
 	assert.match(sourcesDirectoryHtml, /Source directory/);
 	assert.equal(publishedSourcePage.status, 200);
-	assert.match(publishedSourceHtml, /Pages that use this record/);
+	assert.match(publishedSourceHtml, /Pages and route layers that use this record/);
+	assert.match(publishedSourceHtml, /What Ballot Clarity uses it for/);
 	assert.equal(unpublishedSourcePage.status, 404);
 	assert.doesNotMatch(unpublishedSourceHtml, /Source record unavailable/);
 	assert.equal(contestPage.status, 200);

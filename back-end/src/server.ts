@@ -70,7 +70,7 @@ import { createAddressEnrichmentService } from "./address-enrichment.js";
 import { createAdminLoginThrottle } from "./admin-login-throttle.js";
 import { createAdminRepository } from "./admin-repository.js";
 import { createCensusGeocoderClient } from "./census-geocoder.js";
-import { createCongressClient } from "./congress.js";
+import { createCongressClient, isCurrentCongressMemberRecord } from "./congress.js";
 import { createCoverageRepository } from "./coverage-repository.js";
 import { createGoogleCivicClient } from "./google-civic.js";
 import { buildCoverageResponse } from "./launch-profile.js";
@@ -895,6 +895,42 @@ function mergeRepresentativeMatches(representativeMatches: LocationRepresentativ
 	).values());
 }
 
+function normalizeRepresentativeOfficeKey(value: string) {
+	const normalized = toLookupSlug(value);
+
+	if (normalized.includes("senator"))
+		return "senator";
+
+	if (normalized.includes("representative"))
+		return "representative";
+
+	return normalized;
+}
+
+function extractRepresentativeDistrictCode(value: string) {
+	const match = String(value ?? "").match(districtNumberPattern);
+	return match?.[1] || "";
+}
+
+function representativeMatchesEquivalent(
+	left: Pick<LocationRepresentativeMatch, "districtLabel" | "name" | "officeTitle">,
+	right: Pick<LocationRepresentativeMatch, "districtLabel" | "name" | "officeTitle">,
+) {
+	if (normalizeRepresentativeOfficeKey(left.officeTitle) !== normalizeRepresentativeOfficeKey(right.officeTitle))
+		return false;
+
+	if (!directRouteNamesReliablyMatch(left.name, right.name))
+		return false;
+
+	const leftDistrictCode = extractRepresentativeDistrictCode(left.districtLabel);
+	const rightDistrictCode = extractRepresentativeDistrictCode(right.districtLabel);
+
+	if (leftDistrictCode || rightDistrictCode)
+		return leftDistrictCode === rightDistrictCode;
+
+	return true;
+}
+
 async function buildCongressRepresentativeMatchesFromDistrictContext(
 	congressClient: CongressClient | null | undefined,
 	stateCode: string,
@@ -904,7 +940,7 @@ async function buildCongressRepresentativeMatchesFromDistrictContext(
 	if (!congressClient || !stateCode)
 		return [];
 
-	const stateMembers = await congressClient.listMembersByState(stateCode);
+	const stateMembers = (await congressClient.listMembersByState(stateCode)).filter(isCurrentCongressMemberRecord);
 	const stateName = getStateNameForAbbreviation(stateCode) || stateCode;
 	const congressionalDistrictMatch = districtMatches.find(district => toLookupSlug(district.districtType).includes("congress"));
 	const congressionalDistrictNumber = congressionalDistrictMatch?.districtCode
@@ -914,33 +950,42 @@ async function buildCongressRepresentativeMatchesFromDistrictContext(
 
 	return stateMembers.flatMap((member) => {
 		const directName = formatCongressLookupName(member.name);
-		const normalizedName = toLookupSlug(directName);
-
-		if (!normalizedName || normalizedExistingNames.has(normalizedName))
+		if (!directName)
 			return [];
 
-		if (typeof member.district === "number") {
-			if (!congressionalDistrictNumber || String(member.district) !== congressionalDistrictNumber)
-				return [];
+		const candidateMatch = typeof member.district === "number"
+			? (() => {
+					if (!congressionalDistrictNumber || String(member.district) !== congressionalDistrictNumber)
+						return null;
 
-			return [{
-				districtLabel: `Congressional District ${congressionalDistrictNumber}`,
+					return {
+						districtLabel: `Congressional District ${congressionalDistrictNumber}`,
+						id: `congress:${member.bioguideId}`,
+						name: directName,
+						officeTitle: "Representative",
+						party: member.party,
+						sourceSystem: "Congress.gov",
+					} satisfies LocationRepresentativeMatch;
+				})()
+			: {
+				districtLabel: stateName,
 				id: `congress:${member.bioguideId}`,
 				name: directName,
-				officeTitle: "Representative",
+				officeTitle: "Senator",
 				party: member.party,
 				sourceSystem: "Congress.gov",
-			} satisfies LocationRepresentativeMatch];
-		}
+			} satisfies LocationRepresentativeMatch;
 
-		return [{
-			districtLabel: stateName,
-			id: `congress:${member.bioguideId}`,
-			name: directName,
-			officeTitle: "Senator",
-			party: member.party,
-			sourceSystem: "Congress.gov",
-		} satisfies LocationRepresentativeMatch];
+		if (!candidateMatch)
+			return [];
+
+		if (normalizedExistingNames.has(toLookupSlug(candidateMatch.name)))
+			return [];
+
+		if (existingMatches.some(match => representativeMatchesEquivalent(match, candidateMatch)))
+			return [];
+
+		return [candidateMatch];
 	});
 }
 

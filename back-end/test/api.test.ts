@@ -262,6 +262,7 @@ before(async () => {
 				return [
 					{
 						bioguideId: "O000174",
+						currentMember: true,
 						name: "Ossoff, Jon",
 						party: "Democratic",
 						state: "GA",
@@ -270,6 +271,7 @@ before(async () => {
 					},
 					{
 						bioguideId: "M001218",
+						currentMember: true,
 						district: 7,
 						name: "McCormick, Richard",
 						party: "Republican",
@@ -286,6 +288,7 @@ before(async () => {
 				return [
 					{
 						bioguideId: "O000174",
+						currentMember: true,
 						name: "Ossoff, Jon",
 						party: "Democratic",
 						state: "Georgia",
@@ -293,13 +296,43 @@ before(async () => {
 						url: "https://api.congress.gov/v3/member/O000174?format=json",
 					},
 					{
+						bioguideId: "W000790",
+						currentMember: true,
+						name: "Warnock, Raphael G.",
+						party: "Democratic",
+						state: "Georgia",
+						updatedAt: "2026-03-08T10:32:15Z",
+						url: "https://api.congress.gov/v3/member/W000790?format=json",
+					},
+					{
 						bioguideId: "M001218",
+						currentMember: true,
 						district: 7,
 						name: "McCormick, Richard",
 						party: "Republican",
 						state: "Georgia",
 						updatedAt: "2025-09-24T07:40:20Z",
 						url: "https://api.congress.gov/v3/member/M001218?format=json",
+					},
+					{
+						bioguideId: "R000000",
+						currentMember: false,
+						district: undefined,
+						name: "Russell, Richard",
+						party: "Democratic",
+						state: "Georgia",
+						updatedAt: "1971-01-21T00:00:00Z",
+						url: "https://api.congress.gov/v3/member/R000000?format=json",
+					},
+					{
+						bioguideId: "W000001",
+						currentMember: false,
+						district: 7,
+						name: "Woodall, Rob",
+						party: "Republican",
+						state: "Georgia",
+						updatedAt: "2021-01-03T00:00:00Z",
+						url: "https://api.congress.gov/v3/member/W000001?format=json",
 					},
 				];
 			},
@@ -739,6 +772,64 @@ before(async () => {
 					};
 				}
 
+				if (zipCode === "30022") {
+					return {
+						postalCode: "30022",
+						matches: [
+							{
+								countyFips: "121",
+								countyName: "Fulton County",
+								districtMatches: [
+									{
+										districtCode: "7",
+										districtType: "congressional",
+										id: "congressional:7",
+										label: "Congressional District 7",
+										sourceSystem: "U.S. Census Geocoder"
+									},
+									{
+										districtCode: "48",
+										districtType: "state-senate",
+										id: "state-senate:48",
+										label: "State Senate District 48",
+										sourceSystem: "U.S. Census Geocoder"
+									},
+									{
+										districtCode: "48",
+										districtType: "state-house",
+										id: "state-house:48",
+										label: "State House District 48",
+										sourceSystem: "U.S. Census Geocoder"
+									},
+									{
+										districtCode: "121",
+										districtType: "county",
+										id: "county:121",
+										label: "Fulton County",
+										sourceSystem: "U.S. Census Geocoder"
+									},
+									{
+										districtCode: "johns-creek",
+										districtType: "place",
+										id: "place:johns-creek",
+										label: "Johns Creek city",
+										sourceSystem: "U.S. Census Geocoder"
+									}
+								],
+								id: "zip:30022:alpharetta-georgia",
+								latitude: 34.0407,
+								locality: "Alpharetta",
+								longitude: -84.2376,
+								postalCode: "30022",
+								representativeMatches: [],
+								sourceSystem: "Zippopotam.us + U.S. Census Geocoder",
+								stateAbbreviation: "GA",
+								stateName: "Georgia"
+							}
+						]
+					};
+				}
+
 				if (zipCode === "84001") {
 					return {
 						postalCode: "84001",
@@ -1074,6 +1165,30 @@ test("POST /api/location returns the supported Fulton coverage guide for ZIPs in
 	assert.match(body.note, /single guide area/i);
 });
 
+test("POST /api/location filters former Congress members out of ZIP lookup representative fallback", async () => {
+	const response = await fetch(`${baseUrl}/api/location`, {
+		body: JSON.stringify({ q: "30022" }),
+		headers: {
+			"Content-Type": "application/json"
+		},
+		method: "POST"
+	});
+	const body = await response.json();
+	const representativeNames = (body.representativeMatches ?? []).map((item: { name: string }) => item.name);
+
+	assert.equal(response.status, 200);
+	assert.equal(body.result, "resolved");
+	assert.equal(body.inputKind, "zip");
+	assert.equal(body.availability.representatives.status, "available");
+	assert.equal(body.availability.financeInfluence.status, "available");
+	assert.match(body.note, /(Alpharetta|Fulton County), Georgia/i);
+	assert.equal(representativeNames.includes("Jon Ossoff"), true);
+	assert.equal(representativeNames.some((name: string) => /warnock/i.test(name)), true);
+	assert.equal(representativeNames.some((name: string) => /mccormick/i.test(name)), true);
+	assert.equal(representativeNames.includes("Richard Russell"), false);
+	assert.equal(representativeNames.includes("Rob Woodall"), false);
+});
+
 test("POST /api/location returns district lookup results without a published guide for out-of-guide ZIPs", async () => {
 	const response = await fetch(`${baseUrl}/api/location`, {
 		body: JSON.stringify({ q: "84604" }),
@@ -1182,7 +1297,7 @@ test("POST /api/location returns the current Fulton County launch location for f
 	assert.equal(body.availability.financeInfluence.status, "available");
 	assert.equal(body.availability.fullLocalGuide.status, "available");
 	assert.match(body.note, /Census geography matched/i);
-	assert.match(body.note, /Ballot Clarity attached 1 current official match for this address from Open States/i);
+	assert.match(body.note, /Ballot Clarity attached 2 current official matches for this address from Open States and Congress\.gov/i);
 });
 
 test("POST /api/location returns district lookup results without a published guide for out-of-guide full addresses", async () => {

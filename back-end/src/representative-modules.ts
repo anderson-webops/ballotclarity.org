@@ -14,6 +14,7 @@ import type {
 	TrustBullet,
 } from "./types/civic.js";
 import { buildNationwideRepresentativeSlug } from "./active-nationwide-lookup.js";
+import { isCurrentCongressMemberRecord } from "./congress.js";
 
 const currencyFormatter = new Intl.NumberFormat("en-US", {
 	currency: "USD",
@@ -1036,7 +1037,7 @@ async function resolveCongressAttachment(
 	if (!target || !congressClient)
 		return null;
 
-	const members = await congressClient.listMembersByState(target.state);
+	const members = (await congressClient.listMembersByState(target.state)).filter(isCurrentCongressMemberRecord);
 	const member = pickBestCongressMember(members, target);
 
 	if (!member)

@@ -2,6 +2,7 @@ import process from "node:process";
 
 export interface CongressMemberRecord {
 	bioguideId: string;
+	currentMember?: boolean;
 	district?: number;
 	name: string;
 	party: string;
@@ -61,6 +62,12 @@ interface CongressMembersResponse {
 		name?: string;
 		partyName?: string;
 		state?: string;
+		terms?: {
+			item?: Array<{
+				endYear?: number;
+				startYear?: number;
+			}>;
+		};
 		updateDate?: string;
 		url?: string;
 	}>;
@@ -107,6 +114,23 @@ interface CongressMemberDetailResponse {
 	};
 }
 
+function deriveCurrentMemberFromTerms(
+	terms: Array<{
+		endYear?: number;
+		startYear?: number;
+	}> | undefined,
+	currentYear = new Date().getUTCFullYear(),
+) {
+	if (!terms?.length)
+		return undefined;
+
+	return terms.some(term => typeof term.startYear === "number" && (typeof term.endYear !== "number" || term.endYear >= currentYear));
+}
+
+export function isCurrentCongressMemberRecord(member: CongressMemberRecord) {
+	return member.currentMember !== false;
+}
+
 export function createCongressClient({
 	apiKey = process.env.CONGRESS_API_KEY?.trim() || process.env.DATA_API_KEY?.trim(),
 	fetchImpl = fetch
@@ -141,6 +165,7 @@ export function createCongressClient({
 				const payload = await response.json() as CongressMembersResponse;
 				const pageMembers = (payload.members ?? []).map(member => ({
 					bioguideId: member.bioguideId?.trim() || "unknown-member",
+					currentMember: deriveCurrentMemberFromTerms(member.terms?.item),
 					district: member.district,
 					name: member.name?.trim() || "Unknown member",
 					party: member.partyName?.trim() || "Unknown party",
@@ -235,6 +260,7 @@ export function createCongressClient({
 
 			return (payload.members ?? []).map(member => ({
 				bioguideId: member.bioguideId?.trim() || "unknown-member",
+				currentMember: deriveCurrentMemberFromTerms(member.terms?.item),
 				district: member.district,
 				name: member.name?.trim() || "Unknown member",
 				party: member.partyName?.trim() || "Unknown party",

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Source } from "~/types/civic";
+import { buildSourceRecordHref } from "~/utils/source-record-links";
 
 withDefaults(defineProps<{
 	compact?: boolean;
@@ -11,6 +12,12 @@ withDefaults(defineProps<{
 });
 
 const { formatDate } = useFormatters();
+const { data: sourceDirectory } = await useSourceDirectory();
+const publishedSourceIds = computed(() => new Set((sourceDirectory.value?.sources ?? []).map(source => source.id)));
+
+function getSourceRecordHref(source: Source) {
+	return buildSourceRecordHref(source.id, publishedSourceIds.value);
+}
 </script>
 
 <template>
@@ -38,15 +45,26 @@ const { formatDate } = useFormatters();
 					</span>
 					<span class="text-xs text-app-muted dark:text-app-muted-dark">{{ formatDate(source.date) }}</span>
 				</div>
-				<NuxtLink :to="`/sources/${source.id}`" class="text-sm text-app-ink font-semibold mt-3 rounded-lg inline-flex gap-2 transition items-start dark:text-app-text-dark hover:text-app-accent focus-ring dark:hover:text-white">
+				<NuxtLink
+					v-if="getSourceRecordHref(source)"
+					:to="getSourceRecordHref(source)!"
+					class="text-sm text-app-ink font-semibold mt-3 rounded-lg inline-flex gap-2 transition items-start dark:text-app-text-dark hover:text-app-accent focus-ring dark:hover:text-white"
+				>
 					<span class="i-carbon-document text-base mt-0.5" />
 					<span>{{ source.title }}</span>
 				</NuxtLink>
+				<p v-else class="text-sm text-app-ink font-semibold mt-3 inline-flex gap-2 items-start dark:text-app-text-dark">
+					<span class="i-carbon-document text-base mt-0.5" />
+					<span>{{ source.title }}</span>
+				</p>
 				<p class="text-xs text-app-muted mt-2 dark:text-app-muted-dark">
 					{{ source.publisher }}
 				</p>
 				<p class="text-xs text-app-muted mt-1 dark:text-app-muted-dark">
 					Source system: {{ source.sourceSystem }}
+				</p>
+				<p v-if="!getSourceRecordHref(source)" class="text-xs text-app-muted mt-2 dark:text-app-muted-dark">
+					This citation stays inline on this page and is not published as a standalone source record.
 				</p>
 				<p v-if="source.note" class="text-xs text-app-muted mt-2 dark:text-app-muted-dark">
 					{{ source.note }}

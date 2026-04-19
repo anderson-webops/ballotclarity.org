@@ -2077,6 +2077,29 @@ test("GET /api/sources and /api/sources/:id include contest citations", async ()
 	assert.ok(recordBody.source.citedBy.some((citation: { type: string }) => citation.type === "contest"));
 });
 
+test("GET /api/sources/:id returns 404 for unpublished district provenance ids", async () => {
+	const response = await fetch(`${baseUrl}/api/sources/district:state-senate-48`);
+	const body = await response.json();
+
+	assert.equal(response.status, 404);
+	assert.match(body.message, /Source record not found/i);
+});
+
+test("GET /api/sources only lists ids that resolve as public source records", async () => {
+	const directoryResponse = await fetch(`${baseUrl}/api/sources`);
+	const directoryBody = await directoryResponse.json();
+
+	assert.equal(directoryResponse.status, 200);
+	assert.ok(Array.isArray(directoryBody.sources));
+	assert.ok(!directoryBody.sources.some((item: { id: string }) => item.id === "district:state-senate-48"));
+
+	for (const item of directoryBody.sources as Array<{ id: string }>) {
+		const recordResponse = await fetch(`${baseUrl}/api/sources/${item.id}`);
+
+		assert.equal(recordResponse.status, 200, `expected published source ${item.id} to resolve`);
+	}
+});
+
 test("GET /api/admin/overview rejects unauthenticated access", async () => {
 	const response = await fetch(`${baseUrl}/api/admin/overview`);
 	const body = await response.json();

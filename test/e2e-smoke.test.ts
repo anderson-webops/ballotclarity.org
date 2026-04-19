@@ -551,6 +551,14 @@ test("built app renders the key ballot guide pages against the built API", async
 	const statusHtml = await statusPage.text();
 	const correctionsPage = await fetch(`${appBaseUrl}/corrections`);
 	const correctionsHtml = await correctionsPage.text();
+	const sourcesDirectoryPage = await fetch(`${appBaseUrl}/sources`);
+	const sourcesDirectoryHtml = await sourcesDirectoryPage.text();
+	const publishedSourceIdMatch = sourcesDirectoryHtml.match(/\/sources\/([^"]+)/);
+	assert.ok(publishedSourceIdMatch, "expected at least one published source link in the source directory");
+	const publishedSourcePage = await fetch(`${appBaseUrl}/sources/${publishedSourceIdMatch[1]}`);
+	const publishedSourceHtml = await publishedSourcePage.text();
+	const unpublishedSourcePage = await fetch(`${appBaseUrl}/sources/district:state-senate-48`);
+	const unpublishedSourceHtml = await unpublishedSourcePage.text();
 	const contestPage = await fetch(`${appBaseUrl}/contest/us-house-district-7`);
 	const contestHtml = await contestPage.text();
 	const districtsPage = await fetch(`${appBaseUrl}/districts`);
@@ -645,6 +653,12 @@ test("built app renders the key ballot guide pages against the built API", async
 	assert.match(correctionsHtml, /Corrections log/);
 	assert.match(correctionsHtml, /Reporter identity withheld/);
 	assert.match(correctionsHtml, /How this differs from the admin queue/);
+	assert.equal(sourcesDirectoryPage.status, 200);
+	assert.match(sourcesDirectoryHtml, /Source directory/);
+	assert.equal(publishedSourcePage.status, 200);
+	assert.match(publishedSourceHtml, /Pages that use this record/);
+	assert.equal(unpublishedSourcePage.status, 404);
+	assert.doesNotMatch(unpublishedSourceHtml, /Source record unavailable/);
 	assert.equal(contestPage.status, 200);
 	assert.match(contestHtml, /Canonical contest page/);
 	assert.match(contestHtml, /Open district page/);
@@ -657,6 +671,7 @@ test("built app renders the key ballot guide pages against the built API", async
 	assert.match(districtHtml, /Current representatives/);
 	assert.match(districtHtml, /Candidate field/);
 	assert.match(districtHtml, /District sources/);
+	assert.doesNotMatch(districtHtml, /href="\/sources\/district:state-senate-48"/);
 	assert.equal(representativesPage.status, 200);
 	assert.match(representativesHtml, /Representative directory/);
 	assert.match(representativesHtml, /Opening person-level funding context directly|Funding not yet available/);

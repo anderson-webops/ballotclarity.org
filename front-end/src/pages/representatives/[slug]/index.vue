@@ -6,7 +6,7 @@ import { buildActiveLookupSummary } from "~/utils/active-lookup";
 import { activeNationwideLookupCookieName, parseActiveNationwideLookupCookie } from "~/utils/active-nationwide-cookie";
 import { buildNationwidePersonProfileResponse } from "~/utils/nationwide-person-profile";
 import { buildLookupContextFromNationwideResult, buildNationwideLookupRouteQuery, buildNationwideRouteTarget } from "~/utils/nationwide-route-context";
-import { buildPersonLinkageConfidence, hasPersonFunding, hasPersonInfluence } from "~/utils/person-profile";
+import { buildPersonLinkageConfidence, buildPersonSummaryItems, hasPersonFunding, hasPersonInfluence } from "~/utils/person-profile";
 import { resolveRepresentativePresentation } from "~/utils/representative-presentation";
 
 const route = useRoute();
@@ -111,29 +111,20 @@ const summaryItems = computed(() => {
 	if (!person.value)
 		return [];
 
-	return [
-		{
-			label: "Current office",
-			note: "Office context attached to this person record.",
-			value: representativePresentation.value?.officeDisplayLabel ?? person.value.officeSought
-		},
-		{
-			label: "Funding data",
-			note: hasFunding.value
-				? `Source-backed finance summary available. Data through ${dataThroughLabel.value}.`
-				: fundingStatusSummary.value,
-			value: hasFunding.value && person.value.funding
-				? formatCurrency(person.value.funding.totalRaised)
-				: "Unavailable"
-		},
-		{
-			label: "Influence context",
-			note: hasInfluence.value
-				? "Lobbying, donor, or disclosure context is attached below."
-				: influenceStatusSummary.value,
-			value: hasInfluence.value ? `${person.value.lobbyingContext.length + person.value.publicStatements.length} notes` : "Unavailable"
-		}
-	];
+	return buildPersonSummaryItems({
+		dataThroughLabel: dataThroughLabel.value,
+		formatCurrency,
+		fundingHref: "#funding",
+		fundingStatusSummary: fundingStatusSummary.value,
+		fundingTotalRaised: person.value.funding?.totalRaised ?? null,
+		hasFunding: hasFunding.value,
+		hasInfluence: hasInfluence.value,
+		influenceHref: "#influence",
+		influenceNoteCount: person.value.lobbyingContext.length + person.value.publicStatements.length,
+		influenceStatusSummary: influenceStatusSummary.value,
+		officeDisplayLabel: representativePresentation.value?.officeDisplayLabel ?? person.value.officeSought,
+		officeHref: "#office-context"
+	});
 });
 const reportIssueHref = computed(() => person.value
 	? `mailto:${contactEmail}?subject=${encodeURIComponent(`Ballot Clarity representative review: ${person.value.name}`)}`
@@ -277,7 +268,7 @@ usePageSeo({
 						<PageSummaryStrip :items="summaryItems" />
 					</div>
 					<div class="mt-6 gap-4 grid lg:grid-cols-[minmax(0,1.3fr)_minmax(18rem,0.9fr)]">
-						<div class="px-5 py-5 border border-app-line/80 rounded-3xl bg-white/80 dark:border-app-line-dark dark:bg-app-panel-dark/70">
+						<div id="office-context" class="px-5 py-5 border border-app-line/80 rounded-3xl bg-white/80 scroll-mt-32 dark:border-app-line-dark dark:bg-app-panel-dark/70">
 							<div class="flex flex-wrap gap-3 items-center justify-between">
 								<h3 class="text-xl text-app-ink font-serif dark:text-app-text-dark">
 									Linkage and coverage

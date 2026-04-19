@@ -4,6 +4,7 @@ import { storeToRefs } from "pinia";
 import { defineAsyncComponent } from "vue";
 import AvailabilityStatusPanel from "~/components/graphics/AvailabilityStatusPanel.vue";
 import FactStatCard from "~/components/graphics/FactStatCard.vue";
+import HorizontalBarChart from "~/components/graphics/HorizontalBarChart.vue";
 import SourceProvenanceStrip from "~/components/graphics/SourceProvenanceStrip.vue";
 import { contactEmail } from "~/constants";
 import { buildLocationGuessUiContent } from "~/utils/location-guess";
@@ -213,6 +214,40 @@ const heroFactCards = computed(() => [
 		value: "Nationwide"
 	}
 ]);
+const heroChartItems = computed(() => [
+	{
+		detail: "Published contest sections currently surfaced in the flagship public guide layer.",
+		id: "contest-sections",
+		label: "Contest sections",
+		tone: "accent" as const,
+		value: ballotPreview.value?.election.contests.length ?? 0,
+		valueLabel: String(ballotPreview.value?.election.contests.length ?? 0)
+	},
+	{
+		detail: "Source families documented in the current public roadmap and data-source inventory.",
+		id: "source-families",
+		label: "Source families",
+		tone: "neutral" as const,
+		value: dataSources.value?.categories.length ?? 0,
+		valueLabel: String(dataSources.value?.categories.length ?? 0)
+	},
+	{
+		detail: "Capabilities marked live-now in the public coverage profile.",
+		id: "live-capabilities",
+		label: "Live capabilities",
+		tone: "accent" as const,
+		value: coverageData.value?.supportedContentTypes.filter(item => item.status === "live-now").length ?? 0,
+		valueLabel: String(coverageData.value?.supportedContentTypes.filter(item => item.status === "live-now").length ?? 0)
+	},
+	{
+		detail: "Official election-office links attached to the active public coverage profile.",
+		id: "official-links",
+		label: "Official links",
+		tone: "warning" as const,
+		value: featuredLaunchTarget.value?.officialResources.length ?? 0,
+		valueLabel: String(featuredLaunchTarget.value?.officialResources.length ?? 0)
+	}
+]);
 const homepageProvenanceSummary = computed(() => ({
 	badges: [
 		{ label: "Nonpartisan nonprofit", tone: "accent" as const },
@@ -296,14 +331,27 @@ const homepageAvailabilityItems = computed(() => [
 							<strong class="text-app-ink dark:text-app-text-dark">Active nationwide lookup:</strong> {{ activeNationwideResult.location.displayName }}. Ballot Clarity is keeping this civic-results context active across the app even though a published local guide is not available there yet.
 						</p>
 
-						<div class="mt-8 gap-4 grid md:grid-cols-2 xl:grid-cols-4">
-							<FactStatCard
-								v-for="item in heroFactCards"
-								:key="item.label"
-								:label="item.label"
-								:note="item.note"
-								:value="item.value"
-							/>
+						<div class="mt-8 gap-4 grid xl:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)]">
+							<div class="gap-4 grid md:grid-cols-2">
+								<FactStatCard
+									v-for="item in heroFactCards"
+									:key="item.label"
+									:label="item.label"
+									:note="item.note"
+									:value="item.value"
+								/>
+							</div>
+							<div class="px-4 py-4 border border-app-line/80 rounded-[1.4rem] bg-app-bg/75 dark:border-app-line-dark dark:bg-app-bg-dark/60">
+								<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+									Current product shape
+								</p>
+								<p class="text-sm text-app-muted leading-6 mt-3 dark:text-app-muted-dark">
+									These bars make the current nationwide-first product state visible in the first viewport instead of pushing all of the data graphics further down the page.
+								</p>
+								<div class="mt-4">
+									<HorizontalBarChart :items="heroChartItems" />
+								</div>
+							</div>
 						</div>
 
 						<div class="mt-8 pt-8 border-t border-app-line/80 gap-5 grid dark:border-app-line-dark md:grid-cols-3">

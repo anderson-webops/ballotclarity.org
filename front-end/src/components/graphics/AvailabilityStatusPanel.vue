@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import type { LookupAvailability } from "~/types/civic";
+import HorizontalBarChart from "~/components/graphics/HorizontalBarChart.vue";
+import StackedMeter from "~/components/graphics/StackedMeter.vue";
 
 const props = withDefaults(defineProps<{
 	eyebrow?: string;
@@ -12,6 +14,31 @@ const props = withDefaults(defineProps<{
 	note: "",
 	uncertainty: ""
 });
+
+const availabilitySegments = computed(() => {
+	const counts = {
+		available: props.items.filter(item => item.status === "available").length,
+		partial: props.items.filter(item => item.status === "partial").length,
+		unavailable: props.items.filter(item => item.status === "unavailable").length
+	};
+
+	return [
+		{ id: "available", label: "Available", tone: "accent" as const, value: counts.available },
+		{ id: "partial", label: "Partial", tone: "warning" as const, value: counts.partial },
+		{ id: "unavailable", label: "Unavailable", tone: "neutral" as const, value: counts.unavailable }
+	].filter(segment => segment.value > 0);
+});
+
+const readinessBars = computed(() => props.items.map(item => ({
+	detail: item.detail,
+	id: item.label,
+	label: item.label,
+	sources: item.sources,
+	tone: item.status === "available" ? "accent" as const : item.status === "partial" ? "warning" as const : "neutral" as const,
+	uncertainty: item.note ?? undefined,
+	value: item.status === "available" ? 100 : item.status === "partial" ? 60 : 24,
+	valueLabel: item.status
+})));
 </script>
 
 <template>
@@ -30,38 +57,20 @@ const props = withDefaults(defineProps<{
 			</div>
 		</div>
 
-		<div class="mt-5 gap-3 grid md:grid-cols-2 xl:grid-cols-4">
-			<article
-				v-for="item in props.items"
-				:key="item.label"
-				class="px-4 py-4 border border-app-line/80 rounded-[1.2rem] bg-white/85 dark:border-app-line-dark dark:bg-app-panel-dark/80"
-			>
-				<div class="flex flex-wrap gap-2 items-center justify-between">
-					<p class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
-						{{ item.label }}
-					</p>
-					<div class="flex flex-wrap gap-2 items-center">
-						<VerificationBadge :label="item.status" :tone="item.status === 'available' ? 'accent' : item.status === 'partial' ? 'warning' : 'neutral'" />
-						<SourceDrawer
-							v-if="item.sources?.length"
-							:sources="item.sources"
-							:title="item.label"
-							button-label="Sources"
-						/>
-					</div>
-				</div>
+		<div class="mt-5 gap-4 grid xl:grid-cols-[minmax(0,0.72fr)_minmax(0,1.28fr)]">
+			<div class="px-4 py-4 border border-app-line/70 rounded-[1rem] bg-white/85 dark:border-app-line-dark dark:bg-app-panel-dark/80">
+				<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+					Coverage split
+				</p>
 				<p class="text-sm text-app-muted leading-6 mt-3 dark:text-app-muted-dark">
-					{{ item.detail }}
+					This stacked bar shows how many of the major product layers for this page are available now, partial, or still unavailable.
 				</p>
-				<p v-if="item.confidence || item.note" class="text-xs text-app-muted leading-6 mt-2 dark:text-app-muted-dark">
-					<span v-if="item.confidence">
-						<strong class="text-app-ink dark:text-app-text-dark">Confidence:</strong>
-						{{ item.confidence }}
-					</span>
-					<span v-if="item.confidence && item.note"> · </span>
-					<span v-if="item.note">{{ item.note }}</span>
-				</p>
-			</article>
+				<div class="mt-4">
+					<StackedMeter :segments="availabilitySegments" />
+				</div>
+			</div>
+
+			<HorizontalBarChart :items="readinessBars" />
 		</div>
 
 		<p v-if="props.uncertainty" class="text-xs text-app-muted leading-6 mt-4 dark:text-app-muted-dark">

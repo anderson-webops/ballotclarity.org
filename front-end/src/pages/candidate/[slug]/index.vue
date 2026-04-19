@@ -3,6 +3,7 @@ import type { Source } from "~/types/civic";
 import { storeToRefs } from "pinia";
 import ComparisonMatrix from "~/components/graphics/ComparisonMatrix.vue";
 import EvidenceCompletenessPanel from "~/components/graphics/EvidenceCompletenessPanel.vue";
+import FinanceBreakdownChart from "~/components/graphics/FinanceBreakdownChart.vue";
 import OfficeContextCard from "~/components/graphics/OfficeContextCard.vue";
 import SourceProvenanceStrip from "~/components/graphics/SourceProvenanceStrip.vue";
 import TimelineList from "~/components/graphics/TimelineList.vue";
@@ -515,6 +516,9 @@ function saveToPlan() {
 								{{ formatPercent(candidate.funding.smallDonorShare) }}
 							</p>
 						</div>
+					</div>
+					<div v-if="financeBreakdown" class="mt-6">
+						<FinanceBreakdownChart :breakdown="financeBreakdown" />
 					</div>
 					<InfoCallout v-if="financeBreakdown" class="mt-6" title="Finance context and confidence">
 						{{ financeBreakdown.disclaimer }} Coverage: {{ financeBreakdown.coverageNote }} Linkage: {{ financeBreakdown.linkageType }}. Confidence: {{ financeBreakdown.confidence }}.

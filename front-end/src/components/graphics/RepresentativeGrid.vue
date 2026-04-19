@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { RepresentativeCard } from "~/types/civic";
+import StackedMeter from "~/components/graphics/StackedMeter.vue";
 
 const props = withDefaults(defineProps<{
 	cards: RepresentativeCard[];
@@ -43,6 +44,13 @@ const groupedCards = computed(() => {
 		.map(level => ({ items: groups.get(level) ?? [], level }))
 		.filter(group => group.items.length);
 });
+
+const levelSegments = computed(() => groupedCards.value.map(group => ({
+	id: group.level,
+	label: group.level,
+	tone: group.level === "Federal" ? "accent" as const : group.level === "State" ? "warning" as const : "neutral" as const,
+	value: group.items.length
+})));
 </script>
 
 <template>
@@ -60,6 +68,18 @@ const groupedCards = computed(() => {
 				</p>
 			</div>
 			<VerificationBadge :label="`${props.cards.length} officeholder match${props.cards.length === 1 ? '' : 'es'}`" tone="accent" />
+		</div>
+
+		<div class="mt-5 px-4 py-4 border border-app-line/70 rounded-[1rem] bg-white/85 dark:border-app-line-dark dark:bg-app-panel-dark/80">
+			<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+				Office hierarchy split
+			</p>
+			<p class="text-sm text-app-muted leading-6 mt-3 dark:text-app-muted-dark">
+				This meter shows whether the matched officials are concentrated at the federal, state, or local layer for the current lookup.
+			</p>
+			<div class="mt-4">
+				<StackedMeter :segments="levelSegments" />
+			</div>
 		</div>
 
 		<div class="mt-5 gap-4 grid xl:grid-cols-2">

@@ -1,4 +1,4 @@
-const defaultSiteUrl = "https://ballotclarity.jacobdanderson.net";
+const defaultSiteUrl = "https://ballotclarity.org";
 const trailingSlashPattern = /\/$/;
 
 export function useSiteUrl() {

@@ -15,7 +15,7 @@ test("nuxt config uses srcDir and expected civic modules", async () => {
 	);
 	assert.equal(config.runtimeConfig?.public?.apiBase, "http://127.0.0.1:3001/api");
 	assert.ok(typeof config.runtimeConfig?.public?.buildId === "string" && config.runtimeConfig.public.buildId.length > 0);
-	assert.equal(config.runtimeConfig?.public?.siteUrl, "https://ballotclarity.jacobdanderson.net");
+	assert.equal(config.runtimeConfig?.public?.siteUrl, "https://ballotclarity.org");
 	assert.equal(config.colorMode?.preference, "light");
 	assert.equal(config.experimental?.typedPages, true);
 	assert.deepEqual(config.vite?.build?.modulePreload, { polyfill: false });

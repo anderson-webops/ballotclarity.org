@@ -79,4 +79,4 @@ Disallow: /compare
 Disallow: /plan
 Disallow: /search
 
-Sitemap: https://ballotclarity.jacobdanderson.net/sitemap.xml
+Sitemap: https://ballotclarity.org/sitemap.xml

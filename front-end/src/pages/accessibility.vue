@@ -22,7 +22,7 @@ const standards = [
 
 const designPractices = [
 	"Keyboard-first navigation with a skip link, visible focus styles, and focus-managed drawers and overlays.",
-	"High-contrast text and control boundaries on the primary reading surfaces, with light mode as the default and dark mode supported.",
+	"High-contrast text and control boundaries on the primary reading surfaces, with the initial theme following the user's browser or system preference until they choose otherwise.",
 	"Plain-language summaries that sit next to official wording instead of replacing it when legal or campaign language is harder to read.",
 	"Responsive layouts that stay usable on narrow screens and under browser zoom, including a simplified print surface for ballot reading."
 ];

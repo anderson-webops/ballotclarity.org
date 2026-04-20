@@ -5,16 +5,16 @@ import { resolveColorModeHydrationState } from "../src/utils/color-mode-hydratio
 test("color mode hydration state follows the pre-hydration helper when it is available", () => {
 	const resolvedState = resolveColorModeHydrationState({
 		className: "light",
-		fallbackPreference: "light",
+		fallbackPreference: "system",
 		fallbackValue: "light",
 		helper: {
-			preference: "dark",
+			preference: "system",
 			value: "dark"
 		}
 	});
 
 	assert.deepEqual(resolvedState, {
-		preference: "dark",
+		preference: "system",
 		unknown: false,
 		value: "dark"
 	});
@@ -23,13 +23,13 @@ test("color mode hydration state follows the pre-hydration helper when it is ava
 test("color mode hydration state falls back to the already-applied document class when helper data is missing", () => {
 	const resolvedState = resolveColorModeHydrationState({
 		className: "app-shell dark",
-		fallbackPreference: "light",
+		fallbackPreference: "system",
 		fallbackValue: "light",
 		helper: null
 	});
 
 	assert.deepEqual(resolvedState, {
-		preference: "light",
+		preference: "system",
 		unknown: false,
 		value: "dark"
 	});

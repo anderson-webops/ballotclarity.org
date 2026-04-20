@@ -1002,6 +1002,32 @@ test("GET /health returns readiness and coverage metadata", async () => {
 	assert.match(body.timestamp, /^\d{4}-\d{2}-\d{2}T/);
 });
 
+test("GET /health allows credentialed CORS for local dev origins", async () => {
+	const response = await fetch(`${baseUrl}/health`, {
+		headers: new Headers([
+			["Origin", "http://localhost:3333"]
+		])
+	});
+
+	assert.equal(response.status, 200);
+	assert.equal(response.headers.get("access-control-allow-origin"), "http://localhost:3333");
+	assert.equal(response.headers.get("access-control-allow-credentials"), "true");
+});
+
+test("OPTIONS /api/location answers local dev CORS preflight with credentials enabled", async () => {
+	const response = await fetch(`${baseUrl}/api/location`, {
+		headers: new Headers([
+			["Access-Control-Request-Method", "POST"],
+			["Origin", "http://localhost:3000"]
+		]),
+		method: "OPTIONS"
+	});
+
+	assert.equal(response.status, 204);
+	assert.equal(response.headers.get("access-control-allow-origin"), "http://localhost:3000");
+	assert.equal(response.headers.get("access-control-allow-credentials"), "true");
+});
+
 test("default runtime stays empty instead of auto-seeding coverage and public ops data", async () => {
 	const isolatedServer = (await createApp({
 		adminApiKey,

@@ -39,10 +39,10 @@ const primaryNavLabel = computed(() => hasPublishedGuideContext.value
 		? "Explore active results"
 		: "Start with lookup");
 const primaryNavDescription = computed(() => hasPublishedGuideContext.value
-	? "Published-guide tools and active voter workflows."
+	? "Ballot guide, plan, and related tools."
 	: hasNationwideResultContext.value
-		? "Nationwide civic results, districts, representatives, and official-tool paths from the latest lookup."
-		: "Lookup-first navigation and nationwide civic reading paths.");
+		? "Results, districts, representatives, and official links."
+		: "Lookup and starting pages.");
 const headerPrimaryAction = computed(() => hasPublishedGuideContext.value
 	? { badge: "plan" as const, label: "My plan", to: "/plan" }
 	: hasNationwideResultContext.value
@@ -52,20 +52,20 @@ const headerPrimaryAction = computed(() => hasPublishedGuideContext.value
 const navGroups = computed<HeaderGroup[]>(() => {
 	const guideLinks: HeaderLink[] = hasPublishedGuideContext.value
 		? [
-				{ badge: "plan", description: "Saved checklist and print-friendly plan for the active published guide.", label: "My plan", to: "/plan" },
-				{ description: "Contest reading view with filters and official links.", label: "Ballot guide", to: "/ballot" },
-				{ description: "Office-area pages for each active district or contest area.", label: "Districts", to: "/districts" },
-				{ description: "Current representatives linked to district, funding, and influence pages.", label: "Representatives", to: "/representatives" },
+				{ badge: "plan", description: "Saved checklist and print-friendly plan.", label: "My plan", to: "/plan" },
+				{ description: "Contest guide with official links and summaries.", label: "Ballot guide", to: "/ballot" },
+				{ description: "District pages for the current election.", label: "Districts", to: "/districts" },
+				{ description: "Current officials and person pages.", label: "Representatives", to: "/representatives" },
 				{ badge: "compare", description: "Side-by-side candidate comparison.", label: "Compare", to: "/compare" },
-				{ description: "Search the current public coverage archive.", label: "Search", to: "/search" }
+				{ description: "Search public pages and records.", label: "Search", to: "/search" }
 			]
 		: [
 				...(hasNationwideResultContext.value
-					? [{ description: "Return to the active nationwide civic results from your latest lookup.", label: "Nationwide results", to: "/results" }]
-					: [{ description: "Open the lookup on the homepage to load nationwide civic results for a real location.", label: "Location lookup", to: "/" }]),
-				{ description: "Office-area pages for each active district or contest area.", label: "Districts", to: "/districts" },
-				{ description: "Current representatives linked to district, funding, and influence pages.", label: "Representatives", to: "/representatives" },
-				{ description: "Search the current public coverage archive.", label: "Search", to: "/search" }
+					? [{ description: "Return to the latest lookup results.", label: "Nationwide results", to: "/results" }]
+					: [{ description: "Start with a location lookup.", label: "Location lookup", to: "/" }]),
+				{ description: "District pages for your area.", label: "Districts", to: "/districts" },
+				{ description: "Current officials and person pages.", label: "Representatives", to: "/representatives" },
+				{ description: "Search public pages and records.", label: "Search", to: "/search" }
 			];
 
 	return [
@@ -75,24 +75,24 @@ const navGroups = computed<HeaderGroup[]>(() => {
 			links: guideLinks
 		},
 		{
-			description: "How Ballot Clarity works and how to verify it.",
+			description: "Sources, methods, and coverage.",
 			label: "Learn and verify",
 			links: [
-				{ description: "Source directory and citation targets.", label: "Sources", to: "/sources" },
-				{ description: "Coverage scope and launch profile.", label: "Coverage", to: "/coverage" },
-				{ description: "Official-source roadmap and provider hierarchy.", label: "Data sources", to: "/data-sources" },
-				{ description: "How summaries and links are produced.", label: "Methodology", to: "/methodology" },
-				{ description: "Neutrality, sourcing, and editorial rules.", label: "Neutrality", to: "/neutrality" }
+				{ description: "Public source directory and citations.", label: "Sources", to: "/sources" },
+				{ description: "What coverage is available right now.", label: "Coverage", to: "/coverage" },
+				{ description: "How Ballot Clarity uses official and provider data.", label: "Data sources", to: "/data-sources" },
+				{ description: "How summaries, sourcing, and limits are handled.", label: "Methodology", to: "/methodology" },
+				{ description: "Neutrality and editorial rules.", label: "Neutrality", to: "/neutrality" }
 			]
 		},
 		{
-			description: "Help, public standards, and organization context.",
+			description: "Help, corrections, and project info.",
 			label: "Project and help",
 			links: [
 				{ description: "Voting FAQ and how to use the site.", label: "Help", to: "/help" },
-				{ description: "Corrections workflow and public updates.", label: "Corrections", to: "/corrections" },
-				{ description: "Public site status and source review notes.", label: "Status", to: "/status" },
-				{ description: "About the nonprofit and contact options.", label: "About", to: "/about" }
+				{ description: "Corrections process and public updates.", label: "Corrections", to: "/corrections" },
+				{ description: "Public site status.", label: "Status", to: "/status" },
+				{ description: "About the project and contact options.", label: "About", to: "/about" }
 			]
 		}
 	];

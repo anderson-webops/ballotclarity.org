@@ -55,30 +55,30 @@ export function buildDistrictRepresentativeAvailabilityNote(
 	representativeCount: number
 ) {
 	if (representativeCount > 0)
-		return `${representativeCount} current official${representativeCount === 1 ? "" : "s"} ${representativeCount === 1 ? "is" : "are"} linked from the active nationwide lookup for this district.`;
+		return `${representativeCount} current official${representativeCount === 1 ? "" : "s"} ${representativeCount === 1 ? "is" : "are"} linked to this district.`;
 
 	const kind = deriveDistrictPipelineKind(district);
 
 	if (kind === "county")
-		return "No county officeholder data is connected for this area yet. This does not mean the county has no officials, only that the current nationwide provider set does not yet publish a county officeholder pipeline here.";
+		return "No county officeholder data is attached here yet. This does not mean the county has no officials.";
 
 	if (kind === "city")
-		return "City officeholder data is not yet available from the current nationwide provider set. This does not mean the city has no officials, only that Ballot Clarity cannot yet attach them here.";
+		return "No city officeholder data is attached here yet. This does not mean the city has no officials.";
 
 	if (kind === "other-local")
-		return "Local officeholder data is not yet fully connected for this area. Official local election tools remain the verification path until a local officeholder pipeline is attached.";
+		return "No local officeholder data is attached here yet. Use the official election links for verification.";
 
-	return "No current official record is linked from the active nationwide provider set for this district yet.";
+	return "No current official record is linked to this district yet.";
 }
 
 export function buildDistrictCandidateAvailabilityNote(candidateCount: number, hasPublishedGuide: boolean) {
 	if (candidateCount > 0)
-		return "Candidate field records are attached to this district page from the published local guide.";
+		return "Candidate records are attached to this district page.";
 
 	if (hasPublishedGuide)
-		return "No source-backed candidate field is attached to this district page yet.";
+		return "No candidate field is attached to this district page yet.";
 
-	return "Candidate field records, contest summaries, and local ballot-guide pages remain unavailable here because Ballot Clarity does not currently have a published local guide for this district.";
+	return "Candidate records and local guide pages are not published for this district yet.";
 }
 
 export function buildNationwideDistrictRoleGuide(district: DistrictDescriptorInput): ContestRoleGuide {
@@ -91,8 +91,8 @@ export function buildNationwideDistrictRoleGuide(district: DistrictDescriptorInp
 				"Appropriations and district project advocacy",
 				"Constituent casework with federal agencies"
 			],
-			summary: "This district identifies the federal office area tied to the current nationwide lookup.",
-			whyItMatters: "Federal district matches help confirm the current U.S. House officeholder and the official election tools tied to that geography."
+			summary: "This district identifies the federal office area for this lookup.",
+			whyItMatters: "Federal district matches help confirm the current U.S. House officeholder and the official election links for that geography."
 		};
 	}
 
@@ -103,8 +103,8 @@ export function buildNationwideDistrictRoleGuide(district: DistrictDescriptorInp
 				"State statutory changes",
 				"Committee oversight and constituent services"
 			],
-			summary: "This district identifies the state legislative office area tied to the current nationwide lookup.",
-			whyItMatters: "State legislative district matches help orient voters to the current officeholder, the district geography, and the official election tools tied to that area."
+			summary: "This district identifies the state legislative office area for this lookup.",
+			whyItMatters: "State legislative district matches help orient voters to the current officeholder, district geography, and official election links for that area."
 		};
 	}
 
@@ -115,7 +115,7 @@ export function buildNationwideDistrictRoleGuide(district: DistrictDescriptorInp
 				"County services and local implementation",
 				"Local verification through county election offices"
 			],
-			summary: "This county geography is attached as a lookup orientation layer, even when Ballot Clarity does not yet have a county officeholder pipeline for it.",
+			summary: "This county geography helps orient the lookup even when county officeholder records are still limited.",
 			whyItMatters: "County matches still help users reach the right official county election tools and verify which local government area a lookup resolved into."
 		};
 	}
@@ -127,7 +127,7 @@ export function buildNationwideDistrictRoleGuide(district: DistrictDescriptorInp
 				"Council, mayoral, and local administrative context",
 				"Official local verification through municipal or county election tools"
 			],
-			summary: "This city geography is attached as a lookup orientation layer, even when Ballot Clarity does not yet have city officeholder records for it.",
+			summary: "This city geography helps orient the lookup even when city officeholder records are still limited.",
 			whyItMatters: "City matches still help users verify locality, official tools, and the local jurisdiction tied to the current lookup."
 		};
 	}
@@ -138,7 +138,7 @@ export function buildNationwideDistrictRoleGuide(district: DistrictDescriptorInp
 			"District and office matching",
 			"Official election tool discovery"
 		],
-		summary: "This district is part of the active nationwide lookup context for the current location.",
-		whyItMatters: "Even when Ballot Clarity does not yet have a published local guide, this district layer helps orient the user around geography, offices, and official verification tools."
+		summary: "This district is part of the current lookup for this location.",
+		whyItMatters: "Even when a local guide is not published, this district layer helps orient users around geography, offices, and official election links."
 	};
 }

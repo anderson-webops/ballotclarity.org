@@ -240,7 +240,7 @@ usePageSeo({
 					Volunteer or research
 				</h2>
 				<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-					Researchers, designers, civic technologists, and public-interest reviewers can use this route for collaboration or independent review.
+					Use this if you want to volunteer, collaborate, or help review public records and guides.
 				</p>
 				<a :href="volunteerHref" class="btn-secondary mt-6">
 					Send a volunteer inquiry
@@ -252,7 +252,7 @@ usePageSeo({
 					General contact
 				</h2>
 				<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-					For general questions about Ballot Clarity, the current release, or the nonprofit concept, use the direct project inbox.
+					For general questions about Ballot Clarity, use the direct project inbox.
 				</p>
 				<a :href="generalHref" class="btn-secondary mt-6">
 					Email {{ contactEmail }}

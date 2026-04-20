@@ -2,7 +2,7 @@
 const { data: dataSources } = await useDataSources();
 
 usePageSeo({
-	description: "Learn how Ballot Clarity generates summaries, attaches sources, handles uncertainty, and plans future transparency features.",
+	description: "Learn how Ballot Clarity writes summaries, attaches sources, handles uncertainty, and explains limits.",
 	path: "/methodology",
 	title: "Methodology",
 });
@@ -167,7 +167,7 @@ const informationTypes = [
 						Information types we publish
 					</h2>
 				</div>
-				<TrustBadge label="Source-first labels" tone="accent" />
+				<TrustBadge label="Clear labels" tone="accent" />
 			</div>
 			<div class="mt-6 gap-4 grid md:grid-cols-2 xl:grid-cols-3">
 				<article v-for="item in informationTypes" :key="item.label" class="px-5 py-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
@@ -187,16 +187,16 @@ const informationTypes = [
 			<div class="flex flex-wrap gap-4 items-start justify-between">
 				<div>
 					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-						Live data roadmap
+						Coverage model
 					</p>
 					<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-						How published local coverage is meant to be built
+						How local guides are assembled
 					</h2>
 				</div>
-				<TrustBadge label="Implementation order" tone="accent" />
+				<TrustBadge label="Public plan" tone="accent" />
 			</div>
 			<p class="text-sm text-app-muted leading-7 mt-4 max-w-3xl dark:text-app-muted-dark">
-				The data roadmap separates address and district lookup, ballot packaging, and money or influence records so the final product can scale without pretending there is one perfect civic-data feed.
+				Ballot Clarity builds local guides in layers: location matching, district context, election records, and supporting public data. This page links to the source model behind that work.
 			</p>
 			<div class="mt-6 gap-4 grid md:grid-cols-3">
 				<article v-for="milestone in dataSources.roadmap.slice(0, 3)" :key="milestone.id" class="px-5 py-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
@@ -210,7 +210,7 @@ const informationTypes = [
 			</div>
 			<div class="mt-6 flex flex-wrap gap-3">
 				<NuxtLink to="/data-sources" class="btn-secondary">
-					Open data sources roadmap
+					Open data sources
 				</NuxtLink>
 				<NuxtLink to="/coverage" class="btn-secondary">
 					Open coverage profile
@@ -233,18 +233,18 @@ const informationTypes = [
 			</div>
 
 			<div class="space-y-4">
-				<InfoCallout title="Current build status" tone="warning">
-					This site may run with empty local coverage, nationwide civic lookup results, or published local guide data depending on the environment. The architecture is designed so those states are labeled clearly instead of falling back to fixture content.
+				<InfoCallout title="Coverage note" tone="warning">
+					Coverage varies by area. When a local guide is not published, Ballot Clarity keeps lookup results and official election links available instead.
 				</InfoCallout>
 				<InfoCallout title="Neutrality policy">
 					Ballot Clarity is designed to explain what is documented, not to endorse candidates, oppose parties, or tell users how to vote.
 				</InfoCallout>
 				<div class="surface-panel">
 					<h2 class="text-2xl text-app-ink font-serif dark:text-app-text-dark">
-						Operational trust pages
+						Related trust pages
 					</h2>
 					<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-						Read the dedicated neutrality policy for source hierarchy and language rules, or use the contact page to report a correction or dispute.
+						Read the neutrality policy for sourcing and language rules, or use the contact page to report a correction or dispute.
 					</p>
 					<div class="mt-6 flex flex-wrap gap-3">
 						<NuxtLink to="/neutrality" class="btn-secondary">

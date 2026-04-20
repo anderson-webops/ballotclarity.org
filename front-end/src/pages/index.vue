@@ -66,14 +66,14 @@ const startHereSecondaryLabel = computed(() => hasPublishedGuideContext.value
 		? "Check live coverage"
 		: "Review sources");
 const pathwayIntro = computed(() => hasPublishedGuideContext.value
-	? "Start with the ballot guide as the table of contents, then open deeper pages only when you need more context."
+	? "Start with the ballot guide, then open deeper pages only when you need more detail."
 	: hasNationwideResultContext.value
-		? "Start from the active nationwide results, then move into district pages, representative pages, and official tools without losing the lookup context."
-		: "Start with the lookup, then use nationwide civic results, district pages, representative pages, and source links before treating any local guide as the main frame.");
+		? "Start from your saved results, then move into district pages, representative pages, and official links."
+		: "Enter a location to see districts, current officials, official links, and any published local guide for your area.");
 
 const faqEntries = [
 	{
-		answer: "Start with the location lookup. Ballot Clarity carries nationwide civic results across the app first, then opens a deeper ballot guide only where published local coverage exists.",
+		answer: "Start with the location lookup. Ballot Clarity shows districts, representatives, official election links, and a local guide when one is published for your area.",
 		question: "How should a voter use Ballot Clarity?"
 	},
 	{
@@ -137,14 +137,14 @@ const quickStartSteps = computed(() => [
 		text: hasPublishedGuideContext.value
 			? "Scan contests first, then open detail pages only when you need more depth."
 			: hasNationwideResultContext.value
-				? "Stay with the nationwide civic results, district matches, representative records, and official tools when Ballot Clarity does not have a published local guide for that area."
-				: "Use the lookup first so Ballot Clarity can confirm whether a published local guide exists for your area."
+				? "Use the results page to move into districts, representatives, and official election links for your area."
+				: "Use the lookup first to see what coverage is available for your area."
 	},
 	{
 		step: "3",
 		text: hasPublishedGuideContext.value
 			? "Save a plan and print a clean checklist for the voting booth."
-			: "Save a ballot plan only after you open a published local guide. Lookup-only and nationwide-only states should not promote plan-first navigation."
+			: "Use the official links and public records first. Ballot plan opens when a local guide is published."
 	}
 ]);
 
@@ -158,27 +158,27 @@ interface PrimaryPath {
 const primaryPaths = computed<PrimaryPath[]>(() => [
 	...(hasPublishedGuideContext.value
 		? [{
-				description: "Open the active published local guide organized as a table of contents, then drill into the contests that matter most.",
+				description: "Open the local guide for your current election.",
 				label: "See your ballot",
 				to: guideBallotPath.value
 			}]
 		: [{
 				description: hasNationwideResultContext.value
-					? "Return to the active nationwide civic results for your latest lookup. District matches, representative records, and official tools remain the main next step."
-					: "Start with the lookup so Ballot Clarity can load nationwide civic results first and only add a local guide when published coverage exists for your area.",
+					? "Return to the results for your latest lookup."
+					: "Enter a location to load results for your area.",
 				label: hasNationwideResultContext.value ? "Open nationwide results" : "Use location lookup",
 				to: hasNationwideResultContext.value ? homeExperience.value.primaryLookupPath : "/#location-lookup"
 			}]),
 	{
 		description: hasNationwideResultContext.value
-			? "Browse district and representative pages while Ballot Clarity keeps the current nationwide lookup active across the app."
-			: "Use district and representative pages as a nationwide-first reading layer before treating a published local guide as the default frame.",
+			? "Browse district and representative pages for your area."
+			: "Browse district and representative pages.",
 		label: "Browse districts and representatives",
 		prefetchOn: "interaction",
 		to: "/districts"
 	},
 	{
-		description: "Review where Ballot Clarity is going live first, what is already production-ready, and what still needs verification.",
+		description: "See what is published, what remains lookup-only, and which sources are live.",
 		label: hasNationwideResultContext.value ? "Check live coverage" : "Check coverage and sources",
 		prefetchOn: "interaction",
 		to: hasNationwideResultContext.value ? "/coverage" : "/data-sources"
@@ -186,10 +186,10 @@ const primaryPaths = computed<PrimaryPath[]>(() => [
 ]);
 
 const trustFacts = computed(() => [
-	"Nonpartisan nonprofit product",
-	featuredLaunchTarget.value ? `Published local target: ${featuredLaunchTarget.value.displayName}` : "No published local target loaded",
+	"Nonpartisan nonprofit",
+	featuredLaunchTarget.value ? `Local guide published for ${featuredLaunchTarget.value.displayName}` : "No local guide published here yet",
 	"Sources linked on every major reading page",
-	hasPublishedGuideContext.value ? "Print-friendly ballot guides supported" : "Nationwide civic lookup stays first"
+	hasPublishedGuideContext.value ? "Ballot plan available for published guides" : "Official election links included where available"
 ]);
 </script>
 
@@ -200,22 +200,26 @@ const trustFacts = computed(() => [
 				<div class="border border-app-line rounded-[2.2rem] bg-white shadow-[0_36px_84px_-58px_rgba(16,37,62,0.62)] overflow-hidden dark:border-app-line-dark dark:bg-app-panel-dark">
 					<div class="px-6 py-8 lg:px-10 sm:px-8 sm:py-10">
 						<p class="text-xs text-app-muted tracking-[0.26em] font-semibold uppercase dark:text-app-muted-dark">
-							{{ hasPublishedGuideContext ? "Published local guide active" : hasNationwideResultContext ? "Nationwide civic results active" : "Nationwide civic lookup" }}
+							{{ hasPublishedGuideContext ? "Local guide active" : hasNationwideResultContext ? "Results for your area" : "Location lookup" }}
 						</p>
 						<h1 class="text-5xl text-app-ink leading-tight font-serif mt-4 max-w-4xl sm:text-6xl dark:text-app-text-dark">
-							Understand your civic results without falling into a stale local guide.
+							{{ hasPublishedGuideContext ? "See your ballot with sources and official links nearby." : hasNationwideResultContext ? "Start with your area, then follow the public record." : "Look up your area and see what is available." }}
 						</h1>
 						<p class="bc-measure text-lg text-app-muted leading-8 mt-6 dark:text-app-muted-dark">
-							Ballot Clarity now starts nationwide-first: lookup, district matches, representative records, official election tools, and visible sources up front. Published local ballot guides are still available, but they should feel like the deeper layer rather than the default frame for the whole site.
+							{{ hasPublishedGuideContext
+								? "Ballot Clarity keeps contests, districts, representatives, official election links, and sources together so you can move through the ballot without losing context."
+								: hasNationwideResultContext
+									? "Your current lookup already includes districts, representatives, official election links, and source-backed context where available."
+									: "Start with a street address or ZIP code to see districts, current officials, official election links, and whether a local guide is published for your area." }}
 						</p>
 						<p v-if="featuredLaunchTarget" class="text-sm text-app-muted leading-7 mt-5 dark:text-app-muted-dark">
-							<strong class="text-app-ink dark:text-app-text-dark">Current published local target:</strong> {{ featuredLaunchTarget.displayName }}. That guide depth is available, but the main product path should still begin with lookup and civic results unless a published guide is already active for your current context.
+							<strong class="text-app-ink dark:text-app-text-dark">Published local guide:</strong> {{ featuredLaunchTarget.displayName }}.
 						</p>
 						<p v-else class="text-sm text-app-muted leading-7 mt-5 dark:text-app-muted-dark">
-							<strong class="text-app-ink dark:text-app-text-dark">Current local coverage:</strong> No published local launch target is active in this environment right now. Use the lookup to see whether nationwide civic results and official election tools are available for your area.
+							<strong class="text-app-ink dark:text-app-text-dark">Local guide status:</strong> No local guide is published in this environment right now.
 						</p>
 						<p v-if="activeNationwideResult?.location" class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-							<strong class="text-app-ink dark:text-app-text-dark">Active nationwide lookup:</strong> {{ activeNationwideResult.location.displayName }}. Ballot Clarity is keeping this civic-results context active across the app even though a published local guide is not available there yet.
+							<strong class="text-app-ink dark:text-app-text-dark">Current lookup:</strong> {{ activeNationwideResult.location.displayName }}. These results stay available across the site until you change location.
 						</p>
 
 						<div class="mt-8 gap-4 grid md:grid-cols-2 xl:grid-cols-4">
@@ -267,9 +271,9 @@ const trustFacts = computed(() => [
 							One task, then a clear reading path
 						</h2>
 						<ul class="readable-list text-sm text-app-muted mt-4 dark:text-app-muted-dark">
-							<li>Use the lookup to open nationwide civic results first, then a personalized ballot guide when local coverage is published.</li>
+							<li>Use the lookup to open results for your area, then a local guide if one is published.</li>
 							<li>Start with contest summaries before opening any dossier or full explainer.</li>
-							<li>{{ blocksGuideEntryPoints ? "Open the ballot plan only after Ballot Clarity confirms a published local guide for your current lookup." : "Save choices to your ballot plan only after checking the evidence links." }}</li>
+							<li>{{ blocksGuideEntryPoints ? "Open ballot plan only when a local guide is available for your area." : "Save choices to your ballot plan only after checking the evidence links." }}</li>
 						</ul>
 						<div class="mt-6 flex flex-wrap gap-3">
 							<NuxtLink :to="startHerePrimaryPath" class="btn-primary" prefetch-on="interaction">

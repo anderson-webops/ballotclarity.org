@@ -140,7 +140,7 @@ usePageSeo({
 
 		<div v-else-if="pageError || !districtPageData" class="max-w-3xl">
 			<InfoCallout title="District detail not available yet" tone="warning">
-				This district route could not be resolved from the current guide layer or active nationwide lookup context. Return to the district hub or nationwide results and try again.
+				This district could not be loaded right now. Return to the district hub or results page and try again.
 			</InfoCallout>
 		</div>
 
@@ -312,8 +312,8 @@ usePageSeo({
 					</h2>
 					<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
 						{{ districtPageData.mode === "guide"
-							? "These sources aggregate the current representative and candidate field on this district page. For narrower evidence review, use each candidate profile and its source drawer."
-							: "These sources document the provider-backed district match, linked representative records, and official verification tools carried into this fallback page." }}
+							? "These sources support the current representative and candidate field shown on this district page."
+							: "These sources support the district match, linked officials, and official election links shown on this page." }}
 					</p>
 					<div class="mt-6">
 						<SourceList :sources="districtPageData.sources" />
@@ -325,8 +325,8 @@ usePageSeo({
 				<PageSectionNav
 					:breadcrumbs="breadcrumbs"
 					:description="districtPageData.mode === 'guide'
-						? 'Use this page when you want one office area at a time instead of the full ballot stack.'
-						: 'Use this fallback district page to stay in the active nationwide lookup context without falling into a dead end.'"
+						? 'Use this page to review one office area at a time.'
+						: 'Use this page to review the district, its current officials, and official election links.'"
 					:items="sectionLinks"
 					title="District page"
 				>
@@ -344,7 +344,7 @@ usePageSeo({
 
 				<div class="surface-panel">
 					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-						Active lookup context
+						Current lookup
 					</p>
 					<h2 class="text-2xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
 						{{ activeLookupSummary.label }}
@@ -354,7 +354,7 @@ usePageSeo({
 					</p>
 					<div class="mt-5 flex flex-wrap gap-3 items-center">
 						<TrustBadge
-							:label="activeLookupSummary.mode === 'nationwide' ? 'Nationwide lookup context' : activeLookupSummary.mode === 'guide' ? 'Published guide context' : 'No saved lookup context'"
+							:label="activeLookupSummary.mode === 'nationwide' ? 'Lookup results' : activeLookupSummary.mode === 'guide' ? 'Local guide' : 'No saved location'"
 							:tone="activeLookupSummary.mode === 'nationwide' ? 'accent' : activeLookupSummary.mode === 'guide' ? undefined : 'warning'"
 						/>
 						<UpdatedAt v-if="activeLookupSummary.resolvedAt" :value="activeLookupSummary.resolvedAt" label="Lookup updated" />

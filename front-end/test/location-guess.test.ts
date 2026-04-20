@@ -47,8 +47,8 @@ test("location-guess copy explains the approximate IP-based path when automatic 
 	assert.equal(resolvedCapability.canGuessOnLoad, true);
 	assert.equal(resolvedCapability.mode, "proxy_headers");
 	assert.match(uiContent.home, /IP address on load/i);
-	assert.match(uiContent.lookupForm, /replace that guess/i);
-	assert.match(uiContent.resultsEmpty, /approximate location guess/i);
+	assert.match(uiContent.lookupForm, /replace it here/i);
+	assert.match(uiContent.resultsEmpty, /saved results in this browser yet/i);
 	assert.match(uiContent.plan, /best-effort IP-based location guess/i);
 	assert.equal(buildHomeLocationGuessCopy(locationGuess), uiContent.home);
 	assert.equal(buildLookupFormLocationGuessCopy(locationGuess), uiContent.lookupForm);

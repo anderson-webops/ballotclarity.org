@@ -245,7 +245,7 @@ usePageSeo({
 					No influence context attached yet
 				</h2>
 				<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-					Ballot Clarity resolved the person identity and office context for this route, but it does not currently have a publishable lobbying or disclosure context block attached to this representative record.
+					Ballot Clarity has this officeholder page, but no lobbying or disclosure summary is attached for this route.
 				</p>
 				<ul class="readable-list text-sm text-app-muted mt-6 pl-5 dark:text-app-muted-dark">
 					<li><strong class="text-app-ink dark:text-app-text-dark">Office:</strong> {{ person.officeDisplayLabel || person.officeSought }}</li>

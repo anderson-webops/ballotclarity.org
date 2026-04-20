@@ -109,7 +109,7 @@ async function selectLookupOption(option: LocationLookupSelectionOption) {
 			{{ locationGuessUi.lookupForm }}
 		</p>
 		<p :id="usageId" class="text-sm text-app-muted leading-6 mt-3 dark:text-app-muted-dark">
-			Ballot Clarity can already use provider-backed lookup to match many U.S. addresses to nationwide civic results, districts, and representative records. Full published ballot guides are still narrower. A full street address is still the strongest input, while a ZIP can either resolve to one clear matched area or ask you to choose between multiple matched areas.
+			Ballot Clarity can match many U.S. addresses and ZIP codes to districts, current officials, and official election links. A full street address is the strongest input. A ZIP code can be broader and may ask you to choose between more than one matched area.
 		</p>
 		<p :id="privacyId" class="text-sm text-app-muted leading-6 mt-3 dark:text-app-muted-dark">
 			Data use: your lookup is sent only to match ballot coverage. The raw lookup is not added to the public content archive or used for advertising, and the app saves only your selected location label and ballot-plan preferences locally in your browser. Read the

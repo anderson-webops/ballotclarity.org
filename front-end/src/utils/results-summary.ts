@@ -29,7 +29,7 @@ export function buildResultsSummaryItems(
 		{
 			href: buildNationwideRouteTarget("/districts", lookupContext, routeQuery),
 			label: "District matches",
-			note: "Matched through the current provider-backed lookup.",
+			note: "Matched from your current lookup.",
 			value: activeResult?.districtMatches.length ?? 0
 		},
 		{
@@ -40,12 +40,12 @@ export function buildResultsSummaryItems(
 		},
 		{
 			label: "Official tools",
-			note: "State and county election links kept in the active lookup context.",
+			note: "State and county election links for this area.",
 			value: officialToolCount
 		},
 		{
 			label: "Guide status",
-			note: "Ballot plan and local guide pages remain guide-only.",
+			note: "Detailed ballot pages open when a local guide is published.",
 			value: activeResult?.guideAvailability === "published" ? "Published" : "Not published"
 		}
 	];

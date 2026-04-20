@@ -90,8 +90,8 @@ test("nationwide district fallback builds a usable detail page for routed distri
 	assert.equal(districtPage.representatives.length, 1);
 	assert.equal(districtPage.representatives[0]?.href, "/representatives/mike-kennedy");
 	assert.equal(districtPage.officialResources.length, 1);
-	assert.match(districtPage.candidateAvailabilityNote, /published local guide/i);
-	assert.match(districtPage.districtOriginNote, /ZIP-based nationwide lookup/i);
+	assert.match(districtPage.candidateAvailabilityNote, /local guide pages are not published/i);
+	assert.match(districtPage.districtOriginNote, /current ZIP lookup/i);
 	assert.ok(districtPage.sources.some(source => /Open States|U\.S\. Census Geocoder/.test(source.publisher)));
 });
 
@@ -100,8 +100,8 @@ test("nationwide district fallback is honest about missing city officeholder pip
 
 	assert.ok(districtPage);
 	assert.equal(districtPage.representatives.length, 0);
-	assert.match(districtPage.representativeAvailabilityNote, /City officeholder data is not yet available/i);
-	assert.match(buildDistrictRepresentativeAvailabilityNote(districtPage.district, 0), /City officeholder data is not yet available/i);
+	assert.match(districtPage.representativeAvailabilityNote, /No city officeholder data is attached here yet/i);
+	assert.match(buildDistrictRepresentativeAvailabilityNote(districtPage.district, 0), /No city officeholder data is attached here yet/i);
 });
 
 test("district summary cards only link when candidate or representative data exists", () => {

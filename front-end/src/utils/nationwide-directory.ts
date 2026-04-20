@@ -63,7 +63,7 @@ function buildRepresentativeSummary(
 					authority: "nonprofit-provider",
 					date: updatedAt,
 					id: `representative:${buildNationwideRepresentativeSlug(match)}`,
-					note: "Representative record carried into this directory card from the active nationwide lookup.",
+					note: "Representative record attached from your current lookup.",
 					publisher: "Open States",
 					sourceSystem: match.sourceSystem || "Open States",
 					title: match.name,
@@ -87,11 +87,11 @@ function buildRepresentativeSummary(
 		party: match.party ?? "Unknown",
 		provenance: {
 			label: match.sourceSystem ? `${match.sourceSystem} representative match` : "Nationwide lookup representative match",
-			note: "Derived from the active nationwide lookup layer rather than a published local ballot guide.",
+			note: "Matched from your current lookup.",
 			status: "crosswalked"
 		},
 		slug: buildNationwideRepresentativeSlug(match),
-		summary: match.sourceSystem ? `Matched from ${match.sourceSystem}` : "Matched from nationwide lookup",
+		summary: match.sourceSystem ? `Matched from ${match.sourceSystem}` : "Matched from your current lookup",
 		districtLabel: match.districtLabel,
 		districtSlug: toLookupSlug(match.districtLabel),
 		fundingAvailable: false,
@@ -164,13 +164,13 @@ export function buildNationwideDirectoryResponses(
 		districts: {
 			mode: "nationwide",
 			updatedAt,
-			note: "Derived from active nationwide lookup coverage.",
+			note: "Matched from your current lookup.",
 			districts
 		},
 		representatives: {
 			districts,
 			mode: "nationwide",
-			note: "Derived from active nationwide lookup coverage.",
+			note: "Matched from your current lookup.",
 			representatives,
 			updatedAt
 		}

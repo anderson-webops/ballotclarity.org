@@ -97,7 +97,7 @@ function routeFamilyLabel(status: "guide-dependent" | "limited" | "live-now") {
 					Public route families and active data sources
 				</h2>
 				<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-					This is the current source-of-truth map for which route families are running nationwide-first, which remain guide-dependent, and which source layers are actually active behind them.
+					This page shows which route families are live right now, which still need a published local guide, and which source layers are behind them.
 				</p>
 				<div class="mt-6 gap-5 grid xl:grid-cols-2">
 					<article v-for="family in data.routeFamilies" :key="family.id" class="px-5 py-5 border border-app-line/70 rounded-3xl bg-white/80 dark:border-app-line-dark dark:bg-app-panel-dark/70">
@@ -194,7 +194,7 @@ function routeFamilyLabel(status: "guide-dependent" | "limited" | "live-now") {
 								Open public status
 							</NuxtLink>
 							<NuxtLink to="/data-sources" class="btn-secondary">
-								Open data roadmap
+								Open data sources
 							</NuxtLink>
 						</div>
 					</div>
@@ -207,7 +207,7 @@ function routeFamilyLabel(status: "guide-dependent" | "limited" | "live-now") {
 						Official launch systems
 					</h2>
 					<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-						These are the official systems Ballot Clarity should point to and verify against for the current published local target.
+						These are the official systems Ballot Clarity points to and verifies against for the current published local guide.
 					</p>
 					<div class="mt-6">
 						<OfficialResourceList :resources="data.launchTarget.officialResources" />
@@ -219,7 +219,7 @@ function routeFamilyLabel(status: "guide-dependent" | "limited" | "live-now") {
 						Reference providers and docs
 					</h2>
 					<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-						These links are the chosen provider and documentation layer for launch engineering, data normalization, and production operations.
+						These links show the provider and documentation layer Ballot Clarity uses for data normalization and operations.
 					</p>
 					<ul class="mt-6 space-y-4">
 						<li v-for="link in data.launchTarget.referenceLinks" :key="link.url" class="px-5 py-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">

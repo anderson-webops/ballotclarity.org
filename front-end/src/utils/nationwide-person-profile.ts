@@ -107,7 +107,7 @@ export function buildNationwidePersonProfileResponse(
 			authority: representative.openstatesUrl ? "nonprofit-provider" : "open-data",
 			date: updatedAt,
 			id: `representative:${representative.slug}`,
-			note: "Representative record carried into this page from the active nationwide lookup.",
+			note: "Representative record matched from your saved lookup.",
 			publisher: representative.openstatesUrl ? "Open States" : "Nationwide lookup provider",
 			sourceSystem: representative.provenance?.label || "Nationwide lookup representative match",
 			title: representative.name,
@@ -120,7 +120,7 @@ export function buildNationwidePersonProfileResponse(
 			authority: "official-government",
 			date: updatedAt,
 			id: `district:${district.slug}`,
-			note: "District geography attached from the active nationwide lookup.",
+			note: "District match attached from your saved lookup.",
 			publisher: "U.S. Census Geocoder",
 			sourceSystem: "U.S. Census Geocoder",
 			title: district.title,
@@ -131,15 +131,15 @@ export function buildNationwidePersonProfileResponse(
 	const sources = [...providerSources, ...officialSources];
 	const districtAvailabilityNote = district
 		? buildDistrictRepresentativeAvailabilityNote(district, 1)
-		: "District context is attached from the active nationwide lookup when available.";
+		: "District information is attached when available.";
 	const biography: EvidenceBlock[] = [
 		{
 			id: `provider:${representative.slug}`,
 			sources,
 			summary: representative.openstatesUrl
-				? `${representative.name} is linked here through the active nationwide lookup and the matched provider-backed representative record.`
-				: `${representative.name} is linked here through the active nationwide lookup.`,
-			title: "Provider-backed office record"
+				? `${representative.name} is listed here as a current official from your saved lookup.`
+				: `${representative.name} is listed here from your saved lookup.`,
+			title: "Office record"
 		}
 	];
 	const whatWeKnow: TrustBullet[] = [
@@ -147,28 +147,28 @@ export function buildNationwidePersonProfileResponse(
 		buildTrustBullet(
 			"official-tools",
 			context.actions.some(action => action.kind === "official-verification")
-				? "Official election tools remain attached to the current lookup context for ballot confirmation, voter status, or polling-place verification."
-				: "No official election tool links were attached to this lookup response.",
+				? "Official election links are available for this area."
+				: "No official election links were attached to this lookup.",
 			sources
 		)
 	];
 	const whatWeDoNotKnow: TrustBullet[] = [
 		buildTrustBullet(
 			"guide-status",
-			"Candidate-field and ballot-comparison records are not attached to this person page. Finance and influence modules appear only when Ballot Clarity can verify a reliable person-level linkage for them.",
+			"Candidate comparisons are not attached on this page. Funding and influence appear only when Ballot Clarity can match the person reliably.",
 			sources
 		),
 		buildTrustBullet(
 			"lookup-precision",
 			context.inputKind === "zip"
-				? "This record came from a ZIP-based lookup and should be treated as a likely match until verified against a full street address or official election tools."
-				: "Provider-backed person matching can still be incomplete and should be verified against the linked provider record and official tools.",
+				? "This came from a ZIP lookup, so confirm district details with a full street address or official tools."
+				: "Check the linked official records if you need exact confirmation.",
 			sources
 		)
 	];
 
 	return {
-		note: "Representative profile assembled from the active nationwide lookup context rather than a published local person record.",
+		note: "Person page built from your saved lookup.",
 		updatedAt,
 		person: {
 			ballotStatusLabel: "Published ballot status unavailable in this area",
@@ -184,8 +184,8 @@ export function buildNationwidePersonProfileResponse(
 			lobbyingContext: [],
 			location: representative.location,
 			methodologyNotes: [
-				"This page is generated from the active nationwide lookup and should not be mistaken for a published local person record.",
-				"Provider-backed representative matches can be crosswalked or approximate, especially for ZIP-based lookups."
+				"This page is based on your saved lookup, not a published local guide.",
+				"ZIP-based lookups can be broader than a full street-address match."
 			],
 			name: representative.name,
 			officeDisplayLabel: classification.officeDisplayLabel,
@@ -198,7 +198,7 @@ export function buildNationwidePersonProfileResponse(
 			provenance: {
 				asOf: updatedAt,
 				label: representative.provenance?.label || "Nationwide lookup representative match",
-				note: representative.provenance?.note || "Derived from the active nationwide lookup rather than a published local person record.",
+				note: representative.provenance?.note || "Matched from your saved lookup.",
 				source: "lookup",
 				status: representative.provenance?.status || "crosswalked"
 			},

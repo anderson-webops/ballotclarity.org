@@ -80,7 +80,7 @@ function buildNationwideSources(
 			authority: districtMatch.sourceSystem.toLowerCase().includes("census") ? "official-government" : "open-data",
 			date: updatedAt,
 			id: `district:${district.slug}:match`,
-			note: `Provider-backed district match carried into this page from the active nationwide lookup.`,
+			note: "District match attached from your current lookup.",
 			publisher: districtMatch.sourceSystem,
 			sourceSystem: districtMatch.sourceSystem,
 			title: `${district.title} district match`,
@@ -93,7 +93,7 @@ function buildNationwideSources(
 			authority: representative.sourceSystem.toLowerCase().includes("open states") ? "nonprofit-provider" : "open-data",
 			date: updatedAt,
 			id: `representative:${representative.id}`,
-			note: `Representative record linked to this district from the active nationwide lookup.`,
+			note: "Representative record linked to this district from your current lookup.",
 			publisher: representative.sourceSystem,
 			sourceSystem: representative.sourceSystem,
 			title: representative.name,
@@ -165,14 +165,14 @@ export function buildNationwideDistrictPageRecord(
 		candidateAvailabilityNote: buildDistrictCandidateAvailabilityNote(0, hasPublishedGuide),
 		district: {
 			...district,
-			description: `${district.summary}. This district page is being rendered from the active nationwide lookup context rather than a published local guide.`,
+			description: district.summary,
 			electionSlug: context.electionSlug || "",
 			roleGuide: buildNationwideDistrictRoleGuide(district)
 		},
-		districtOriginLabel: "Nationwide lookup fallback",
+		districtOriginLabel: "Lookup-based district page",
 		districtOriginNote: context.inputKind === "zip"
-			? "This district page was assembled from the active ZIP-based nationwide lookup. District and representative matches can still be useful, but a full street address remains the stronger precision path when multiple local layers could overlap."
-			: "This district page was assembled from the active nationwide lookup so the district hub does not dead-end when a published local guide is not available.",
+			? "Built from your current ZIP lookup. A full street address gives a more precise match when local layers overlap."
+			: "Built from your current lookup because no local guide is published for this district.",
 		election: context.election ?? {
 			date: updatedAt,
 			jurisdictionSlug: "",
@@ -182,7 +182,7 @@ export function buildNationwideDistrictPageRecord(
 			updatedAt
 		},
 		mode: "nationwide",
-		note: "This district page is the nationwide-safe district detail fallback for the active lookup. It keeps district context, linked officials, provider provenance, and official election tools visible even when a published local guide is not available.",
+		note: "This page keeps the district, current officials, and official election links together when no local guide is published.",
 		officialResources,
 		relatedContests: [],
 		representativeAvailabilityNote: buildDistrictRepresentativeAvailabilityNote(district, representatives.length),

@@ -125,8 +125,8 @@ const summaryItems = computed(() => {
 	const updatedAt = directoryData.value?.districts.updatedAt ?? "";
 
 	return [
-		{ label: "District pages", note: isNationwideMode ? "District matches from the active nationwide lookup." : "Candidate-contest areas in the active election.", value: districts.value.length },
-		{ label: "Representative directory", note: isNationwideMode ? "Officials linked to the active nationwide lookup." : "Currently serving officials on the active ballot.", value: representatives.value.length, href: "/representatives" },
+		{ label: "District pages", note: isNationwideMode ? "District matches from your current lookup." : "Candidate-contest areas in the active election.", value: districts.value.length },
+		{ label: "Representative directory", note: isNationwideMode ? "Officials linked to this lookup." : "Currently serving officials on the active ballot.", value: representatives.value.length, href: "/representatives" },
 		{ label: "Updated", note: "Latest district data refresh.", value: formatDateTime(updatedAt) }
 	];
 });
@@ -137,8 +137,8 @@ usePageSeo({
 	title: "District hub"
 });
 const districtIntroCopy = computed(() => directoryUsesNationwide.value
-	? "Use district pages to inspect nationwide lookup matches, including linked officials where active lookup provides those links. Candidate fields are shown when local guide coverage exists."
-	: "Use district pages when you want the office area, the current representative, and the current candidate field in one place without leaving the current results layer."
+	? "Use district pages to inspect the office areas matched to your current lookup, along with linked officials and official election links."
+	: "Use district pages when you want the office area, current representative, and current candidate field in one place."
 );
 const requiresLookupPrompt = computed(() => !directoryUsesNationwide.value && !showGuideDirectory.value);
 
@@ -165,7 +165,7 @@ function buildLookupAwareTarget(path: string) {
 
 			<div class="surface-panel">
 				<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-					Active lookup context
+					Current lookup
 				</p>
 				<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
 					{{ activeLookupSummary.label }}
@@ -175,7 +175,7 @@ function buildLookupAwareTarget(path: string) {
 				</p>
 				<div class="mt-5 flex flex-wrap gap-3 items-center">
 					<TrustBadge
-						:label="activeLookupSummary.mode === 'nationwide' ? 'Nationwide lookup context' : activeLookupSummary.mode === 'guide' ? 'Published guide context' : 'No saved lookup context'"
+						:label="activeLookupSummary.mode === 'nationwide' ? 'Lookup results' : activeLookupSummary.mode === 'guide' ? 'Local guide' : 'No saved location'"
 						:tone="activeLookupSummary.mode === 'nationwide' ? 'accent' : activeLookupSummary.mode === 'guide' ? undefined : 'warning'"
 					/>
 					<UpdatedAt v-if="activeLookupSummary.resolvedAt" :value="activeLookupSummary.resolvedAt" label="Lookup updated" />
@@ -206,7 +206,7 @@ function buildLookupAwareTarget(path: string) {
 
 		<div v-else-if="requiresLookupPrompt" class="max-w-3xl">
 			<InfoCallout title="Active nationwide lookup required" tone="warning">
-				This district hub stays nationwide-first. Start from the lookup or open saved nationwide results so Ballot Clarity can attach the current district matches and linked representatives instead of falling back to unrelated guide data.
+				Open lookup results first so this district hub can show the matched districts and linked officials for your area.
 			</InfoCallout>
 			<div class="mt-6 flex flex-wrap gap-3">
 				<NuxtLink to="/" class="btn-primary">

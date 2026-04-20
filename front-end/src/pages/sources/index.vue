@@ -50,7 +50,7 @@ usePageSeo({
 				Source directory
 			</h1>
 			<p class="text-base text-app-muted leading-8 mt-5 dark:text-app-muted-dark">
-				Ballot Clarity uses multiple official, public-interest, and provider-backed source systems depending on the page and coverage layer. This directory mixes always-published core source records with intentionally published page-specific provenance records that resolve as standalone public source pages.
+				Here are the source systems and published source records Ballot Clarity uses across the site. Use this directory to see what a source is, what it is used for, and where you can inspect it directly.
 			</p>
 		</header>
 

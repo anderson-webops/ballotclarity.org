@@ -515,13 +515,13 @@ usePageSeo({
 					</div>
 					<div v-else class="mt-6 p-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
 						<h3 class="text-lg text-app-ink font-semibold dark:text-app-text-dark">
-							No attached action record yet
+							No action record attached
 						</h3>
 						<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
-							{{ person.enrichmentStatus?.legislativeContext.summary || "Ballot Clarity does not currently have a source-backed legislative or action feed attached to this person record." }}
+							{{ person.enrichmentStatus?.legislativeContext.summary || "No legislative or action feed is attached to this page." }}
 						</p>
 						<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
-							The page still carries office context, district context, provenance, and official-source links for this officeholder.
+							Office context, district details, and sources are still available above.
 						</p>
 					</div>
 				</section>
@@ -578,7 +578,7 @@ usePageSeo({
 						</div>
 						<div class="p-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
 							<h3 class="text-xl text-app-ink font-serif dark:text-app-text-dark">
-								Finance disclaimer
+								How to read this data
 							</h3>
 							<ul class="text-sm text-app-muted leading-7 mt-4 space-y-2 dark:text-app-muted-dark">
 								<li><strong class="text-app-ink dark:text-app-text-dark">Linkage:</strong> {{ person.provenance.status }}</li>
@@ -586,7 +586,7 @@ usePageSeo({
 								<li><strong class="text-app-ink dark:text-app-text-dark">Committee:</strong> {{ person.funding.committeeName || "Current matched committee not published in this summary." }}</li>
 								<li><strong class="text-app-ink dark:text-app-text-dark">Coverage:</strong> {{ person.funding.coverageLabel || person.funding.provenanceLabel || "Source-backed finance summary" }}</li>
 								<li><strong class="text-app-ink dark:text-app-text-dark">Data through:</strong> {{ dataThroughLabel }}</li>
-								<li><strong class="text-app-ink dark:text-app-text-dark">Warning:</strong> {{ person.freshness.statusNote }}</li>
+								<li><strong class="text-app-ink dark:text-app-text-dark">Freshness note:</strong> {{ person.freshness.statusNote }}</li>
 							</ul>
 						</div>
 					</div>
@@ -646,7 +646,7 @@ usePageSeo({
 						</div>
 						<div class="p-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
 							<h3 class="text-xl text-app-ink font-serif dark:text-app-text-dark">
-								Influence disclaimer
+								How to read this data
 							</h3>
 							<ul class="text-sm text-app-muted leading-7 mt-4 space-y-2 dark:text-app-muted-dark">
 								<li><strong class="text-app-ink dark:text-app-text-dark">Linkage:</strong> {{ person.provenance.status }}</li>
@@ -654,7 +654,7 @@ usePageSeo({
 								<li><strong class="text-app-ink dark:text-app-text-dark">Coverage:</strong> {{ influence?.coverageLabel || "Public disclosures, donor context, and source-backed statements where available." }}</li>
 								<li><strong class="text-app-ink dark:text-app-text-dark">Match mode:</strong> {{ influence?.matchMode ? formatInfluenceMatchMode(influence.matchMode) : "Not published" }}</li>
 								<li><strong class="text-app-ink dark:text-app-text-dark">Data through:</strong> {{ dataThroughLabel }}</li>
-								<li><strong class="text-app-ink dark:text-app-text-dark">Warning:</strong> Context is not proof of causation. {{ person.freshness.statusNote }}</li>
+								<li><strong class="text-app-ink dark:text-app-text-dark">Caution:</strong> Context is not proof of causation. {{ person.freshness.statusNote }}</li>
 							</ul>
 						</div>
 					</div>
@@ -672,7 +672,7 @@ usePageSeo({
 									Sources and methodology notes
 								</h2>
 								<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-									This person page aggregates the source-backed record available for this officeholder without requiring the ballot guide to be the active app layer.
+									This page brings together the public records currently attached to this officeholder.
 								</p>
 							</div>
 							<a :href="reportIssueHref" class="btn-secondary">
@@ -723,7 +723,7 @@ usePageSeo({
 			<div class="space-y-6 xl:pt-[4.5rem]">
 				<div class="surface-panel">
 					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-						Active lookup context
+						Current lookup
 					</p>
 					<h2 class="text-2xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
 						{{ activeLookupSummary.label }}
@@ -733,7 +733,7 @@ usePageSeo({
 					</p>
 					<div class="mt-5 flex flex-wrap gap-3 items-center">
 						<TrustBadge
-							:label="activeLookupSummary.mode === 'nationwide' ? 'Nationwide lookup context' : activeLookupSummary.mode === 'guide' ? 'Published guide context' : 'No saved lookup context'"
+							:label="activeLookupSummary.mode === 'nationwide' ? 'Lookup results' : activeLookupSummary.mode === 'guide' ? 'Local guide' : 'No saved location'"
 							:tone="activeLookupSummary.mode === 'nationwide' ? 'accent' : activeLookupSummary.mode === 'guide' ? undefined : 'warning'"
 						/>
 						<UpdatedAt v-if="activeLookupSummary.resolvedAt" :value="activeLookupSummary.resolvedAt" label="Lookup updated" />
@@ -743,8 +743,8 @@ usePageSeo({
 				<PageSectionNav
 					:breadcrumbs="breadcrumbs"
 					:description="isNationwideFallback
-						? 'Use this page for the active nationwide person record when Ballot Clarity does not yet have a published local person profile for the official.'
-						: 'Use this page for the person-level civic record tied to a current officeholder when Ballot Clarity has publishable local data.'"
+						? 'Use this page to review the current officeholder, attached records, and source notes for this route.'
+						: 'Use this page to review the current officeholder and the records attached to this local guide.'"
 					:items="sectionLinks"
 					title="Representative profile"
 				>

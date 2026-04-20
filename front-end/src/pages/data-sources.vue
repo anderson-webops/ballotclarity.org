@@ -3,9 +3,9 @@ const { formatDateTime } = useFormatters();
 const { data, error, pending } = await useDataSources();
 
 usePageSeo({
-	description: "Ballot Clarity's live data roadmap: official source hierarchy, provider strategy, migration risks, and the backend architecture planned to support published local coverage.",
+	description: "How Ballot Clarity uses official sources, public-interest providers, and supporting data systems across the site.",
 	path: "/data-sources",
-	title: "Data Sources and Live API Roadmap"
+	title: "Data Sources"
 });
 
 function statusLabel(status: "planned-live" | "reference-pattern" | "research-layer") {
@@ -39,14 +39,14 @@ function statusTone(status: "planned-live" | "reference-pattern" | "research-lay
 		</div>
 
 		<div v-else-if="error || !data" class="max-w-3xl">
-			<InfoCallout title="Data roadmap unavailable" tone="warning">
-				The data-sources roadmap could not be loaded. Refresh the page or return to the methodology page and try again.
+			<InfoCallout title="Data sources unavailable" tone="warning">
+				The data-sources page could not be loaded. Refresh the page or return to the methodology page and try again.
 			</InfoCallout>
 		</div>
 
 		<div v-else-if="!data.launchTarget && !data.categories.length && !data.roadmap.length" class="max-w-4xl space-y-6">
-			<InfoCallout title="No published data roadmap" tone="info">
-				Ballot Clarity does not currently have a published local data-source roadmap or launch target in this environment. When local coverage is unavailable, the app should say so directly and keep nationwide civic results and official tools as the main user path.
+			<InfoCallout title="No local source plan published" tone="info">
+				Ballot Clarity does not currently have a published local source plan in this environment. When local coverage is unavailable, the site should say so clearly and keep lookup results and official election links available.
 			</InfoCallout>
 			<div class="flex flex-wrap gap-3">
 				<NuxtLink to="/coverage" class="btn-primary">
@@ -62,24 +62,24 @@ function statusTone(status: "planned-live" | "reference-pattern" | "research-lay
 			<header class="gap-8 grid xl:grid-cols-[minmax(0,1.2fr)_minmax(22rem,0.85fr)]">
 				<div class="surface-panel">
 					<div class="flex flex-wrap gap-2">
-						<TrustBadge label="Official where authoritative" tone="accent" />
-						<TrustBadge label="Provider layer for scale" />
-						<TrustBadge label="Current archive, live later" tone="warning" />
+						<TrustBadge label="Official sources first" tone="accent" />
+						<TrustBadge label="Providers when needed" />
+						<TrustBadge label="Limits stated" tone="warning" />
 					</div>
 					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold mt-6 uppercase dark:text-app-muted-dark">
-						Data sources and live API roadmap
+						Data sources and coverage model
 					</p>
 					<h1 class="text-5xl text-app-ink leading-tight font-serif mt-3 dark:text-app-text-dark">
-						The trust model depends on the data stack, not just the interface.
+						How Ballot Clarity uses public data
 					</h1>
 					<p class="bc-prose text-app-muted mt-5 dark:text-app-muted-dark">
-						This page shows how Ballot Clarity is designed to move toward verified civic-data coverage without pretending there is a single perfect national source. The rule is simple: official sources where they are authoritative, normalized providers where scale matters, and a separate research layer when context needs its own provenance.
+						This page explains which source systems Ballot Clarity uses, what each one is good for, and where the limits are. The rule is simple: use official sources where they are authoritative, use providers where they help with scale or normalization, and say so clearly.
 					</p>
 					<p v-if="data.launchTarget" class="text-sm text-app-muted leading-7 mt-5 dark:text-app-muted-dark">
-						<strong class="text-app-ink dark:text-app-text-dark">Current published local target:</strong> {{ data.launchTarget.displayName }}. The launch path starts with official local and statewide election systems, then adds normalized provider layers only where scale or cross-jurisdiction consistency demands it.
+						<strong class="text-app-ink dark:text-app-text-dark">Current published local guide:</strong> {{ data.launchTarget.displayName }}.
 					</p>
 					<div class="mt-6 flex flex-wrap gap-4 items-center">
-						<UpdatedAt :value="data.updatedAt" label="Roadmap updated" />
+						<UpdatedAt :value="data.updatedAt" label="Updated" />
 						<NuxtLink to="/methodology" class="btn-secondary">
 							Read methodology
 						</NuxtLink>
@@ -88,11 +88,11 @@ function statusTone(status: "planned-live" | "reference-pattern" | "research-lay
 
 				<div class="space-y-4">
 					<InfoCallout title="Why this matters" tone="warning">
-						A voter-facing civic product can look calm and trustworthy while still hiding weak data assumptions. This roadmap makes the planned source hierarchy public before live integrations are added.
+						A civic site can look clear while still hiding weak sourcing. This page is here so readers can see the source hierarchy for themselves.
 					</InfoCallout>
 					<div class="surface-panel">
 						<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-							Current position
+							Core rules
 						</p>
 						<ul class="readable-list text-sm text-app-muted mt-5 pl-5 dark:text-app-muted-dark">
 							<li v-for="principle in data.principles" :key="principle">
@@ -200,10 +200,10 @@ function statusTone(status: "planned-live" | "reference-pattern" | "research-lay
 			<section class="gap-6 grid xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
 				<div class="surface-panel">
 					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-						Backend architecture
+						Data flow
 					</p>
 					<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-						How live civic data would move through the platform
+						How data moves through the site
 					</h2>
 					<div class="mt-6 space-y-4">
 						<article v-for="stage in data.architectureStages" :key="stage.id" class="px-5 py-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
@@ -225,10 +225,10 @@ function statusTone(status: "planned-live" | "reference-pattern" | "research-lay
 				<div class="space-y-6">
 					<div class="surface-panel">
 						<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-							Migration watch
+							Provider changes
 						</p>
 						<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-							Provider changes the architecture already anticipates
+							Provider changes Ballot Clarity already watches
 						</h2>
 						<ul class="mt-6 space-y-4">
 							<li v-for="item in data.migrationWatch" :key="item.id" class="px-5 py-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
@@ -247,10 +247,10 @@ function statusTone(status: "planned-live" | "reference-pattern" | "research-lay
 
 					<div class="surface-panel">
 						<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-							Implementation order
+							Coverage steps
 						</p>
 						<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-							Six-step live data roadmap
+							How coverage expands
 						</h2>
 						<ol class="mt-6 space-y-4">
 							<li v-for="milestone in data.roadmap" :key="milestone.id" class="px-5 py-5 border border-app-line/70 rounded-3xl bg-white/80 dark:border-app-line-dark dark:bg-app-panel-dark/70">
@@ -281,7 +281,7 @@ function statusTone(status: "planned-live" | "reference-pattern" | "research-lay
 							Trust takeaway
 						</p>
 						<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-							The product should always say which layer a fact came from.
+							Every important fact should show where it came from.
 						</h2>
 					</div>
 					<p class="text-sm text-app-muted dark:text-app-muted-dark">
@@ -289,7 +289,7 @@ function statusTone(status: "planned-live" | "reference-pattern" | "research-lay
 					</p>
 				</div>
 				<p class="bc-prose text-app-muted mt-5 dark:text-app-muted-dark">
-					As Ballot Clarity moves between empty, nationwide-only, and published local coverage states, the interface should keep exposing source authority, source system, and freshness at the field level. That is what lets a voter tell the difference between an official office notice, a provider-normalized ballot package, a candidate-submitted statement, and an archival research source.
+					Ballot Clarity should keep showing source authority, source system, and freshness at the field level. That is what lets a reader tell the difference between an official notice, a provider-normalized record, a candidate statement, and supporting research.
 				</p>
 			</section>
 		</div>

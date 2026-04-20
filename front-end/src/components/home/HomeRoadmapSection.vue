@@ -11,17 +11,17 @@ defineProps<{
 		<div class="gap-8 grid lg:grid-cols-[minmax(0,0.58fr)_minmax(0,1fr)]">
 			<div>
 				<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-					Live data roadmap
+					Data sources
 				</p>
 				<h2 class="text-4xl text-app-ink font-serif mt-3 max-w-xl dark:text-app-text-dark">
-					Use official sources where they are authoritative, then normalize the rest.
+					Use official sources where they are authoritative, then explain the rest clearly.
 				</h2>
 				<p class="bc-measure text-base text-app-muted leading-8 mt-5 dark:text-app-muted-dark">
-					The next major iteration is operational, not decorative: replacing empty or fixture fallbacks with a public, auditable data stack that separates official logistics, normalized ballot data, and federal money and influence pipelines.
+					Ballot Clarity should show readers which source systems it uses, what each one is for, and where the limits are.
 				</p>
 				<div class="mt-6 flex flex-wrap gap-3">
 					<NuxtLink to="/data-sources" class="btn-primary" prefetch-on="interaction">
-						Open data sources roadmap
+						Open data sources
 					</NuxtLink>
 					<NuxtLink to="/methodology" class="btn-secondary" prefetch-on="interaction">
 						Review methodology

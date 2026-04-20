@@ -84,14 +84,14 @@ const activeLookupSummary = computed(() => buildActiveLookupSummary({
 const representativeLinkIsExternal = (href: string) => isExternalHref(href);
 const representativeUseCases = computed(() => directoryUsesNationwide.value
 	? [
-			"Open a Ballot Clarity person page for each matched official",
-			"Open funding and influence pages where a reliable person-level crosswalk is attached",
-			"Open the provider-backed record for direct verification"
+			"Open a person page for each matched official",
+			"Open funding and influence pages when those records are attached",
+			"Open district pages and source links for verification"
 		]
 	: [
-			"Finding the current officeholder tied to a district page",
-			"Opening person-level funding context directly",
-			"Opening influence and lobbying context directly"
+			"Find the current officeholder for a district",
+			"Open funding pages directly",
+			"Open influence and lobbying pages directly"
 		]);
 
 const summaryItems = computed(() => {
@@ -196,11 +196,11 @@ const representativeProvenanceSummary = computed(() => directoryData.value ? bui
 const representativeTimelineItems = computed(() => directoryData.value ? buildRepresentativesDirectoryTimeline(directoryData.value) : []);
 
 const introCopy = computed(() => directoryUsesNationwide.value
-	? "This directory pulls out the current officials linked to the active nationwide lookup and points to district-level pages, provider-backed records, and person-level funding or influence pages where Ballot Clarity has a reliable crosswalk."
-	: "This directory pulls out the current officeholders Ballot Clarity can tie to published person records, so you can jump straight into their district, funding, and influence pages."
+	? "This directory lists the current officials tied to your current lookup, with links to district pages, person pages, and attached funding or influence records where available."
+	: "This directory lists current officeholders with person pages, district pages, and attached funding or influence records where available."
 );
 const noActionCopy = computed(() => directoryUsesNationwide.value
-	? "Open the district layer, provider-backed record, or any live person-level modules for this official."
+	? "Open the district, profile, or attached data pages for this official."
 	: "Open the person profile, funding page, or influence page for this official."
 );
 const requiresLookupPrompt = computed(() => !directoryUsesNationwide.value && !showGuideDirectory.value);
@@ -213,7 +213,7 @@ function getRepresentativePresentation(representative: RepresentativesResponse["
 	return resolveRepresentativePresentation(representative, activeNationwideLookupResult.value?.location?.state ?? null);
 }
 usePageSeo({
-	description: "Directory of current representatives in your active Ballot Clarity context, with guide-dependent links made clear when no local guide is available.",
+	description: "Directory of current representatives with district links, person pages, and attached public-record context.",
 	path: "/representatives",
 	title: "Representatives"
 });
@@ -288,7 +288,7 @@ usePageSeo({
 
 		<div v-else-if="requiresLookupPrompt" class="max-w-3xl">
 			<InfoCallout title="Active nationwide lookup required" tone="warning">
-				This directory stays nationwide-first. Start from the lookup or open saved nationwide results so Ballot Clarity can attach the current representative matches to this page instead of falling back to unrelated guide data.
+				Open lookup results first so this directory can show the current officials for your area.
 			</InfoCallout>
 			<div class="mt-6 flex flex-wrap gap-3">
 				<NuxtLink to="/" class="btn-primary">
@@ -358,8 +358,8 @@ usePageSeo({
 									v-if="representative.sourceCount > 0 && representative.sources.length"
 									:button-label="formatSourceCountLabel(representative.sourceCount)"
 									:note="directoryUsesNationwide
-										? 'These are the provider-backed and Ballot Clarity-attached records currently visible in this representative directory card.'
-										: 'These are the source-backed records currently visible in this representative directory card.'"
+										? 'These are the records currently attached to this representative card.'
+										: 'These are the records currently attached to this representative card.'"
 									:sources="representative.sources"
 									:title="`${representative.name} directory sources`"
 									tone="accent"

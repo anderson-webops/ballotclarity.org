@@ -10,29 +10,29 @@ import {
 const stagedGuideContent = {
 	candidates: {
 		count: 5,
-		detail: "Candidate records still rely on staged reference-archive material instead of verified local packaging.",
+		detail: "Candidate records still rely on staged reference material instead of verified local content.",
 		hasContent: true,
 		label: "Candidates",
 		status: "staged_reference" as const,
 	},
 	contests: {
 		count: 4,
-		detail: "Contest records still rely on staged reference-archive material instead of verified local packaging.",
+		detail: "Contest records still rely on staged reference material instead of verified local content.",
 		hasContent: true,
 		label: "Contests",
 		status: "staged_reference" as const,
 	},
 	guideShell: {
 		count: 1,
-		detail: "The local guide shell is published and official logistics are verified, but the contest package still needs verified local review.",
+		detail: "This local guide is published with verified official election links, but the contest pages still need local review.",
 		hasContent: true,
-		label: "Guide shell",
+		label: "Local guide",
 		status: "official_logistics_only" as const,
 	},
 	mixedContent: true,
 	measures: {
 		count: 2,
-		detail: "Measure records still rely on staged reference-archive material instead of verified local packaging.",
+		detail: "Measure records still rely on staged reference material instead of verified local content.",
 		hasContent: true,
 		label: "Measures",
 		status: "staged_reference" as const,
@@ -45,7 +45,7 @@ const stagedGuideContent = {
 		status: "verified_local" as const,
 	},
 	publishedGuideShell: true,
-	summary: "This published local guide shell has verified official logistics, but contest, candidate, or measure content is still staged until local verification is complete.",
+	summary: "This published local guide includes verified official election links, but some contest, candidate, or measure pages are still under local review.",
 	verifiedContestPackage: false,
 };
 
@@ -80,13 +80,13 @@ const nationwideResponse: LocationLookupResponse = {
 			status: "unavailable"
 		},
 		guideShell: {
-			detail: "No local guide shell is published for this area yet.",
-			label: "Local guide shell",
+			detail: "No local guide is published for this area yet.",
+			label: "Local guide",
 			status: "unavailable"
 		},
 		fullLocalGuide: {
 			detail: "A full local contest and measure guide is not published for this area yet.",
-			label: "Full local guide",
+			label: "Local guide coverage",
 			status: "unavailable"
 		},
 		nationwideCivicResults: {
@@ -105,8 +105,8 @@ const nationwideResponse: LocationLookupResponse = {
 			status: "available"
 		},
 		verifiedContestPackage: {
-			detail: "No verified local contest package is published for this area yet.",
-			label: "Verified contest package",
+			detail: "No verified local contest pages are published for this area yet.",
+			label: "Verified contest pages",
 			status: "unavailable"
 		}
 	},

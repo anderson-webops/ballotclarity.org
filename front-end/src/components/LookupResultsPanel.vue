@@ -59,8 +59,6 @@ const availabilityItems = computed(() => {
 		props.lookup.availability.representatives,
 		props.lookup.availability.ballotCandidates,
 		props.lookup.availability.financeInfluence,
-		props.lookup.availability.guideShell,
-		props.lookup.availability.verifiedContestPackage,
 		props.lookup.availability.fullLocalGuide
 	];
 });
@@ -126,7 +124,7 @@ function getRepresentativePresentation(match: NationwideLookupResultContext["rep
 						{{ option.label }}
 					</p>
 					<VerificationBadge
-						:label="option.guideAvailability === 'published' ? 'Live local guide' : 'Nationwide results'"
+						:label="option.guideAvailability === 'published' ? 'Local guide available' : 'Nationwide results'"
 						:tone="option.guideAvailability === 'published' ? 'accent' : 'neutral'"
 					/>
 					<VerificationBadge
@@ -207,7 +205,7 @@ function getRepresentativePresentation(match: NationwideLookupResultContext["rep
 						@click="openGuideAction(action)"
 					>
 						<span class="i-carbon-arrow-right" />
-						{{ lookup.guideContent?.verifiedContestPackage ? "Open local guide" : "Open guide shell" }}
+						Open local guide
 					</button>
 					<a
 						v-else-if="action.url"
@@ -344,7 +342,7 @@ function getRepresentativePresentation(match: NationwideLookupResultContext["rep
 				type="button"
 				class="btn-primary"
 				@click="openGuideAction({
-					description: 'Open the published local guide for this lookup.',
+					description: 'Open the local guide for this lookup.',
 					electionSlug: lookup.electionSlug,
 					id: `lookup-guide-${lookup.location.slug}`,
 					kind: 'ballot-guide',

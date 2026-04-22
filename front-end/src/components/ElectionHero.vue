@@ -12,21 +12,21 @@ const { formatDate } = useFormatters();
 const contestCount = computed(() => props.election.contests.length);
 const measureCount = computed(() => props.election.contests.reduce((count, contest) => count + (contest.measures?.length ?? 0), 0));
 const personalizationLabel = computed(() => props.location.lookupInput ?? props.location.displayName);
-const guideStatusTitle = computed(() => props.guideContent?.verifiedContestPackage
-	? "Verified local guide"
+const guideStatusTitle = computed(() => "Guide status");
+const guideStatusNote = computed(() => props.guideContent?.verifiedContestPackage
+	? "Contest, candidate, and measure pages are verified for this area."
 	: props.guideContent?.publishedGuideShell
-		? "Guide shell live"
-		: "Coverage note");
-const guideStatusNote = computed(() => props.guideContent?.summary ?? props.note);
+		? "Official election links are current. Contest, candidate, and measure pages are still under local review."
+		: props.note);
 const matchGuidance = computed(() => {
 	if (props.location.lookupMode === "zip-preview")
 		return "This guide was opened from a ZIP-only preview. ZIPs can span multiple districts, so verify the exact ballot in the official election tools before relying on district-specific contests.";
 
 	if (props.location.lookupMode === "address-verified")
-		return "This address was accepted by the configured official voter-information provider. Ballot Clarity still opens the current guide surface while exact contest packaging is being connected.";
+		return "This address was accepted by the voter-information provider. Use official election tools for any late changes or final ballot confirmation.";
 
 	if (props.location.lookupMode === "address-submitted")
-		return "A full address is the correct input for exact ballot matching. Ballot Clarity still treats the current result as a reference guide until verified address-to-ballot matching is live.";
+		return "A full address is the right input for exact ballot matching. Verify the exact ballot with official election tools when details are time-sensitive.";
 
 	return "Use the official election office links for final district, polling-place, and ballot verification when details are time-sensitive.";
 });

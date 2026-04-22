@@ -6,7 +6,7 @@ import { buildActiveLookupSummary } from "~/utils/active-lookup";
 import { activeNationwideLookupCookieName, parseActiveNationwideLookupCookie } from "~/utils/active-nationwide-cookie";
 import { buildNationwidePersonProfileResponse } from "~/utils/nationwide-person-profile";
 import { buildLookupContextFromNationwideResult, buildNationwideLookupRouteQuery, buildNationwideRouteTarget } from "~/utils/nationwide-route-context";
-import { buildPersonLinkageConfidence, buildPersonSummaryItems, hasPersonFunding, hasPersonInfluence } from "~/utils/person-profile";
+import { buildPersonSummaryItems, hasPersonFunding, hasPersonInfluence } from "~/utils/person-profile";
 import { resolveRepresentativePresentation } from "~/utils/representative-presentation";
 
 const route = useRoute();
@@ -51,7 +51,6 @@ const activeLookupSummary = computed(() => buildActiveLookupSummary({
 const representativePresentation = computed(() => person.value
 	? resolveRepresentativePresentation(person.value, activeNationwideLookupResult.value?.location?.state ?? null)
 	: null);
-const linkageConfidence = computed(() => person.value ? buildPersonLinkageConfidence(person.value.provenance.status) : null);
 const dataThroughLabel = computed(() => {
 	if (!person.value)
 		return "";
@@ -139,7 +138,6 @@ const officeContextFields = computed(() => {
 		{ label: "Current term", value: officeContext.value?.currentTermLabel },
 		{ label: "Official phone", value: officeContext.value?.officialPhone },
 		{ label: "Official office", value: officeContext.value?.officialOfficeAddress },
-		{ label: "Linkage note", value: person.value.provenance.note },
 		{ label: "Data through", value: dataThroughLabel.value },
 	].filter(item => Boolean(item.value));
 });
@@ -151,21 +149,31 @@ const moduleStatusItems = computed(() => {
 	return [
 		{
 			...person.value.enrichmentStatus.officeContext,
-			label: "Office context",
+			label: "Office details",
 		},
 		{
 			...person.value.enrichmentStatus.legislativeContext,
-			label: "Legislative and action context",
+			label: "Actions",
 		},
 		{
 			...person.value.enrichmentStatus.funding,
-			label: "Funding module",
+			label: "Funding",
 		},
 		{
 			...person.value.enrichmentStatus.influence,
-			label: "Influence module",
+			label: "Influence",
 		},
 	];
+});
+const pageNotes = computed(() => {
+	if (!person.value)
+		return [];
+
+	return [
+		...person.value.whatWeKnow.map(item => item.text),
+		...person.value.whatWeDoNotKnow.map(item => item.text),
+		...person.value.methodologyNotes.slice(0, 1),
+	].filter(Boolean);
 });
 const fundingHighlights = computed(() => {
 	if (!person.value?.funding)
@@ -275,11 +283,6 @@ usePageSeo({
 						<VerificationBadge v-if="representativePresentation" :label="representativePresentation.levelLabel" />
 						<VerificationBadge :label="person.officeholderLabel" />
 						<VerificationBadge :label="person.onCurrentBallot ? person.ballotStatusLabel : 'Not on current ballot'" />
-						<VerificationBadge
-							v-if="linkageConfidence"
-							:label="linkageConfidence.label"
-							:title="linkageConfidence.note"
-						/>
 					</div>
 					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold mt-5 uppercase dark:text-app-muted-dark">
 						{{ person.location }}
@@ -390,7 +393,7 @@ usePageSeo({
 						</div>
 						<div class="px-5 py-5 border border-app-line/80 rounded-3xl bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
 							<h3 class="text-xl text-app-ink font-serif dark:text-app-text-dark">
-								Module status
+								Available here
 							</h3>
 							<ul class="mt-4 space-y-4">
 								<li v-for="item in moduleStatusItems" :key="item.label" class="pb-4 border-b border-app-line/80 last:pb-0 last:border-b-0 dark:border-app-line-dark">
@@ -408,16 +411,6 @@ usePageSeo({
 									</p>
 								</li>
 							</ul>
-							<div class="mt-6 pt-6 border-t border-app-line/80 dark:border-app-line-dark">
-								<h4 class="text-lg text-app-ink font-serif dark:text-app-text-dark">
-									Keep in mind
-								</h4>
-								<ul class="text-sm text-app-muted leading-7 mt-4 space-y-2 dark:text-app-muted-dark">
-									<li>Confidence labels show how directly Ballot Clarity matched this record.</li>
-									<li>{{ person.freshness.statusNote }}</li>
-									<li>Use the attached records and official sources before treating this page as complete.</li>
-								</ul>
-							</div>
 						</div>
 					</div>
 				</section>
@@ -572,15 +565,13 @@ usePageSeo({
 						</div>
 						<div class="p-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
 							<h3 class="text-xl text-app-ink font-serif dark:text-app-text-dark">
-								How to read this data
+								Record facts
 							</h3>
 							<ul class="text-sm text-app-muted leading-7 mt-4 space-y-2 dark:text-app-muted-dark">
-								<li><strong class="text-app-ink dark:text-app-text-dark">Linkage:</strong> {{ person.provenance.status }}</li>
-								<li><strong class="text-app-ink dark:text-app-text-dark">Confidence:</strong> {{ linkageConfidence?.label }}</li>
 								<li><strong class="text-app-ink dark:text-app-text-dark">Committee:</strong> {{ person.funding.committeeName || "Current matched committee not published in this summary." }}</li>
 								<li><strong class="text-app-ink dark:text-app-text-dark">Coverage:</strong> {{ person.funding.coverageLabel || person.funding.provenanceLabel || "Source-backed finance summary" }}</li>
 								<li><strong class="text-app-ink dark:text-app-text-dark">Data through:</strong> {{ dataThroughLabel }}</li>
-								<li><strong class="text-app-ink dark:text-app-text-dark">Freshness note:</strong> {{ person.freshness.statusNote }}</li>
+								<li>{{ person.freshness.statusNote }}</li>
 							</ul>
 						</div>
 					</div>
@@ -640,15 +631,13 @@ usePageSeo({
 						</div>
 						<div class="p-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
 							<h3 class="text-xl text-app-ink font-serif dark:text-app-text-dark">
-								How to read this data
+								Record facts
 							</h3>
 							<ul class="text-sm text-app-muted leading-7 mt-4 space-y-2 dark:text-app-muted-dark">
-								<li><strong class="text-app-ink dark:text-app-text-dark">Linkage:</strong> {{ person.provenance.status }}</li>
-								<li><strong class="text-app-ink dark:text-app-text-dark">Confidence:</strong> {{ linkageConfidence?.label }}</li>
 								<li><strong class="text-app-ink dark:text-app-text-dark">Coverage:</strong> {{ influence?.coverageLabel || "Public disclosures, donor context, and source-backed statements where available." }}</li>
 								<li><strong class="text-app-ink dark:text-app-text-dark">Match mode:</strong> {{ influence?.matchMode ? formatInfluenceMatchMode(influence.matchMode) : "Not published" }}</li>
 								<li><strong class="text-app-ink dark:text-app-text-dark">Data through:</strong> {{ dataThroughLabel }}</li>
-								<li><strong class="text-app-ink dark:text-app-text-dark">Caution:</strong> Context is not proof of causation. {{ person.freshness.statusNote }}</li>
+								<li>Context is not proof of causation. {{ person.freshness.statusNote }}</li>
 							</ul>
 						</div>
 					</div>
@@ -680,30 +669,10 @@ usePageSeo({
 							<div class="space-y-4">
 								<div class="p-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
 									<h3 class="text-xl text-app-ink font-serif dark:text-app-text-dark">
-										What we know
+										Page notes
 									</h3>
 									<ul class="mt-4 space-y-2">
-										<li v-for="item in person.whatWeKnow" :key="item.id" class="text-sm text-app-muted leading-6 dark:text-app-muted-dark">
-											{{ item.text }}
-										</li>
-									</ul>
-								</div>
-								<div class="p-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
-									<h3 class="text-xl text-app-ink font-serif dark:text-app-text-dark">
-										What we do not know
-									</h3>
-									<ul class="mt-4 space-y-2">
-										<li v-for="item in person.whatWeDoNotKnow" :key="item.id" class="text-sm text-app-muted leading-6 dark:text-app-muted-dark">
-											{{ item.text }}
-										</li>
-									</ul>
-								</div>
-								<div class="p-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
-									<h3 class="text-xl text-app-ink font-serif dark:text-app-text-dark">
-										Methodology notes
-									</h3>
-									<ul class="mt-4 space-y-2">
-										<li v-for="note in person.methodologyNotes" :key="note" class="text-sm text-app-muted leading-6 dark:text-app-muted-dark">
+										<li v-for="note in pageNotes" :key="note" class="text-sm text-app-muted leading-6 dark:text-app-muted-dark">
 											{{ note }}
 										</li>
 									</ul>
@@ -717,7 +686,7 @@ usePageSeo({
 			<div class="space-y-6 xl:pt-[4.5rem]">
 				<div class="surface-panel">
 					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-						Current lookup
+						Current area
 					</p>
 					<h2 class="text-2xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
 						{{ activeLookupSummary.label }}
@@ -736,7 +705,7 @@ usePageSeo({
 
 				<PageSectionNav
 					:breadcrumbs="breadcrumbs"
-					description="Office, background, actions, funding, influence, and sources."
+					description="Office, actions, funding, influence, and sources."
 					:items="sectionLinks"
 					title="Representative profile"
 				>
@@ -754,19 +723,13 @@ usePageSeo({
 
 				<div class="surface-panel" data-representative-sidebar="record-details">
 					<h2 class="text-2xl text-app-ink font-serif dark:text-app-text-dark">
-						Record details
+						Profile facts
 					</h2>
 					<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
 						<strong class="text-app-ink dark:text-app-text-dark">Provenance:</strong> {{ person.provenance.label }}
 					</p>
 					<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
-						<strong class="text-app-ink dark:text-app-text-dark">Confidence:</strong> {{ linkageConfidence?.label }}. {{ linkageConfidence?.note }}
-					</p>
-					<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
 						<strong class="text-app-ink dark:text-app-text-dark">As of:</strong> {{ formatDateTime(person.provenance.asOf) }}
-					</p>
-					<p class="text-sm text-app-muted leading-7 mt-5 dark:text-app-muted-dark">
-						Funding, influence, and ballot status appear here when those records are attached to this officeholder.
 					</p>
 				</div>
 			</div>

@@ -53,7 +53,7 @@ usePageSeo({
 				<div class="flex flex-wrap gap-2">
 					<TrustBadge label="WCAG 2.2 AA target" tone="accent" />
 					<TrustBadge label="Print-friendly ballot guides" />
-					<TrustBadge label="Current limits published" tone="warning" />
+					<TrustBadge label="Known limits visible" tone="warning" />
 				</div>
 				<h1 class="text-5xl text-app-ink font-serif mt-5 dark:text-app-text-dark">
 					Accessibility and print standards

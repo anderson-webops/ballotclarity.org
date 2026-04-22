@@ -1058,7 +1058,7 @@ test("default runtime stays empty instead of auto-seeding coverage and public op
 			canGuessOnLoad: false,
 			mode: "disabled"
 		});
-		assert.match(coverageBody.currentState, /No published local coverage snapshot/i);
+		assert.match(coverageBody.currentState, /No local guide is active in this environment right now/i);
 		assert.equal(statusBody.coverageMode, "empty");
 		assert.equal(statusBody.overallStatus, "reviewing");
 		assert.deepEqual(statusBody.sourceSummary, {
@@ -1135,8 +1135,8 @@ test("GET /api/ballot exposes mixed guide provenance honestly for the published 
 	assert.equal(body.guideContent.candidates.status, "staged_reference");
 	assert.equal(body.guideContent.measures.status, "staged_reference");
 	assert.equal(body.guideContent.verifiedContestPackage, false);
-	assert.match(body.note, /verified official logistics/i);
-	assert.match(body.note, /still staged/i);
+	assert.match(body.note, /verified official election links/i);
+	assert.match(body.note, /under local review/i);
 });
 
 test("GET /api/status suppresses launch-specific source monitors when coverage mode is empty", async () => {
@@ -1297,7 +1297,7 @@ test("POST /api/location returns the supported Fulton coverage guide for ZIPs in
 	assert.equal(body.availability.fullLocalGuide.status, "limited");
 	assert.equal(body.representativeMatches[0].name, "Jon Ossoff");
 	assert.match(body.note, /Atlanta, Georgia/i);
-	assert.match(body.note, /guide shell/i);
+	assert.match(body.note, /local guide/i);
 });
 
 test("POST /api/location filters former Congress members out of ZIP lookup representative fallback", async () => {
@@ -1579,7 +1579,7 @@ test("GET /api/ballot returns the election guide and contests", async () => {
 	assert.equal(body.election.contests[0].title, "Federal Race");
 	assert.equal(body.election.contests[0].roleGuide.decisionAreas.length, 3);
 	assert.match(body.election.contests[0].roleGuide.summary, /federal law/i);
-	assert.match(body.note, /verified official logistics/i);
+	assert.match(body.note, /verified official election links/i);
 	assert.match(body.election.name, /Fulton County/i);
 });
 
@@ -1763,7 +1763,7 @@ test("active nationwide lookup cookie backs /api/districts and /api/districts/:s
 	assert.equal(districtBody.representatives[0].fundingAvailable, true);
 	assert.equal(districtBody.representatives[0].influenceAvailable, true);
 	assert.ok(districtBody.officialResources.length >= 1);
-	assert.match(districtBody.note, /API-backed nationwide district detail/i);
+	assert.match(districtBody.note, /keeps district context, linked officials, and official election links visible for the current lookup/i);
 });
 
 test("direct state and local district routes attach reviewed officeholder records instead of generic zero-state placeholders", async () => {
@@ -1799,7 +1799,7 @@ test("lookup query backs /api/districts/:slug without relying on a saved cookie"
 	assert.equal(body.mode, "nationwide");
 	assert.equal(body.district.slug, "congressional-3");
 	assert.equal(body.representatives[0].slug, "mike-kennedy");
-	assert.match(body.note, /API-backed nationwide district detail/i);
+	assert.match(body.note, /keeps district context, linked officials, and official election links visible for the current lookup/i);
 });
 
 test("direct district routes return a canonical public record instead of a lookup-required placeholder", async () => {
@@ -1877,7 +1877,7 @@ test("active nationwide lookup cookie backs /api/representatives and /api/repres
 	assert.ok(representativeBody.person.funding);
 	assert.match(representativeBody.person.funding.summary, /MIKE KENNEDY FOR UTAH/i);
 	assert.ok(representativeBody.person.lobbyingContext.length >= 1);
-	assert.match(representativeBody.note, /active nationwide lookup context/i);
+	assert.match(representativeBody.note, /current saved lookup/i);
 });
 
 test("lookup query backs /api/representatives/:slug without relying on a saved cookie", async () => {
@@ -1889,7 +1889,7 @@ test("lookup query backs /api/representatives/:slug without relying on a saved c
 	assert.equal(body.person.provenance.source, "lookup");
 	assert.ok(body.person.funding);
 	assert.ok(body.person.lobbyingContext.length >= 1);
-	assert.match(body.note, /active nationwide lookup context/i);
+	assert.match(body.note, /current saved lookup/i);
 });
 
 test("representatives without a reliable finance or influence crosswalk still return an honest unavailable profile state", async () => {
@@ -2133,8 +2133,8 @@ test("direct representative routes degrade to a public fallback instead of 500 w
 	assert.equal(body.person.funding, null);
 	assert.deepEqual(body.person.lobbyingContext, []);
 	assert.equal(body.person.provenance.status, "inferred");
-	assert.match(body.person.summary, /keeps the person identity stable/i);
-	assert.match(body.person.whatWeKnow[0]?.text ?? "", /identity-stable/i);
+	assert.match(body.person.summary, /representative page is public, but office, district, finance, and influence details are not attached yet/i);
+	assert.match(body.person.whatWeKnow[0]?.text ?? "", /honest unavailable state instead of failing/i);
 });
 
 test("GET /api/representatives/:slug returns a source-backed representative profile", async () => {

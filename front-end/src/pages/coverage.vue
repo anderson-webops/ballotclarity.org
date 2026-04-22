@@ -1,9 +1,10 @@
 <script setup lang="ts">
 const { formatDate } = useFormatters();
 const { data, error, pending } = await useCoverage();
+const publicCapabilities = computed(() => (data.value?.supportedContentTypes ?? []).filter(capability => capability.id !== "editorial-ops" && capability.status !== "planned"));
 
 usePageSeo({
-	description: "Public launch profile for Ballot Clarity, including the starting jurisdiction, coverage limits, official verification links, and rollout priorities.",
+	description: "Guide availability, official election links, and known limits for Ballot Clarity coverage.",
 	path: "/coverage",
 	title: "Coverage"
 });
@@ -27,26 +28,6 @@ function capabilityLabel(status: "in-build" | "live-now" | "planned") {
 
 	return "Planned";
 }
-
-function routeFamilyTone(status: "guide-dependent" | "limited" | "live-now") {
-	if (status === "live-now")
-		return "accent" as const;
-
-	if (status === "limited")
-		return "warning" as const;
-
-	return "neutral" as const;
-}
-
-function routeFamilyLabel(status: "guide-dependent" | "limited" | "live-now") {
-	if (status === "live-now")
-		return "Live now";
-
-	if (status === "limited")
-		return "Partial depth";
-
-	return "Guide dependent";
-}
 </script>
 
 <template>
@@ -65,17 +46,17 @@ function routeFamilyLabel(status: "guide-dependent" | "limited" | "live-now") {
 		</div>
 
 		<div v-else-if="!data.launchTarget" class="max-w-4xl space-y-6">
-			<InfoCallout title="No published local coverage profile" tone="info">
-				{{ data.currentState }} {{ data.scopeNote }}
+			<InfoCallout title="No local guide published right now" tone="info">
+				Ballot Clarity can still show lookup results, district pages, representative pages, and official election links when they are available.
 			</InfoCallout>
 			<div class="surface-panel">
 				<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
-					What is available right now
+					What you can use now
 				</h2>
 				<ul class="readable-list text-sm text-app-muted mt-5 pl-5 dark:text-app-muted-dark">
-					<li>No published local guide snapshot is active in this environment.</li>
 					<li>Lookup, district pages, representative pages, and official election links can still be available.</li>
-					<li>Candidate, measure, compare, and ballot-plan pages open only when a local guide is available.</li>
+					<li>Contest, candidate, measure, compare, and ballot-plan pages open only when a local guide is available.</li>
+					<li>Official election tools remain the final authority for ballot, deadline, and polling-place confirmation.</li>
 				</ul>
 				<div class="mt-6 flex flex-wrap gap-3">
 					<NuxtLink to="/#location-lookup" class="btn-primary">
@@ -92,65 +73,28 @@ function routeFamilyLabel(status: "guide-dependent" | "limited" | "live-now") {
 					</NuxtLink>
 				</div>
 			</div>
-			<section class="surface-panel">
-				<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
-					Available public pages
-				</h2>
-				<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-					These are the public page groups currently available in this environment.
-				</p>
-				<div class="mt-6 gap-5 grid xl:grid-cols-2">
-					<article v-for="family in data.routeFamilies" :key="family.id" class="px-5 py-5 border border-app-line/70 rounded-3xl bg-white/80 dark:border-app-line-dark dark:bg-app-panel-dark/70">
-						<div class="flex flex-wrap gap-2 items-center">
-							<TrustBadge :label="routeFamilyLabel(family.status)" :tone="routeFamilyTone(family.status)" />
-						</div>
-						<h3 class="text-2xl text-app-ink font-serif mt-4 dark:text-app-text-dark">
-							{{ family.label }}
-						</h3>
-						<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
-							{{ family.summary }}
-						</p>
-						<p v-if="family.note" class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
-							{{ family.note }}
-						</p>
-						<div class="mt-5">
-							<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
-								Routes
-							</p>
-							<div class="mt-3 flex flex-wrap gap-2">
-								<VerificationBadge v-for="routeName in family.routes" :key="routeName" :label="routeName" />
-							</div>
-						</div>
-						<ul class="readable-list text-sm text-app-muted mt-5 pl-5 dark:text-app-muted-dark">
-							<li v-for="source in family.activeSources" :key="source">
-								{{ source }}
-							</li>
-						</ul>
-					</article>
-				</div>
-			</section>
 		</div>
 
 		<div v-else class="space-y-8">
 			<header class="gap-6 grid xl:grid-cols-[minmax(0,1.2fr)_minmax(24rem,0.8fr)]">
 				<div class="surface-panel">
 					<div class="flex flex-wrap gap-2">
-						<TrustBadge :label="data.launchTarget.phaseLabel" tone="accent" />
-						<TrustBadge label="Official verification first" tone="warning" />
+						<TrustBadge label="Local guide available" tone="accent" />
+						<TrustBadge label="Official links attached" />
 					</div>
 					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold mt-6 uppercase dark:text-app-muted-dark">
-						Current launch target
+						Guide coverage
 					</p>
 					<h1 class="text-5xl text-app-ink leading-tight font-serif mt-3 dark:text-app-text-dark">
 						{{ data.launchTarget.displayName }}
 					</h1>
 					<p class="bc-prose text-app-muted mt-5 dark:text-app-muted-dark">
-						{{ data.launchTarget.summary }}
+						This page shows what Ballot Clarity currently publishes for {{ data.launchTarget.displayName }}. Use the official election tools for final deadline, polling-place, and ballot confirmation.
 					</p>
 					<div class="mt-6 gap-4 grid md:grid-cols-2">
 						<div class="px-5 py-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
 							<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
-								Current election target
+								Current election
 							</p>
 							<p class="text-lg text-app-ink font-semibold mt-3 dark:text-app-text-dark">
 								{{ data.launchTarget.currentElectionName }}
@@ -161,7 +105,7 @@ function routeFamilyLabel(status: "guide-dependent" | "limited" | "live-now") {
 						</div>
 						<div class="px-5 py-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
 							<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
-								Next election target
+								Next election
 							</p>
 							<p class="text-lg text-app-ink font-semibold mt-3 dark:text-app-text-dark">
 								{{ data.launchTarget.nextElectionName }}
@@ -171,29 +115,25 @@ function routeFamilyLabel(status: "guide-dependent" | "limited" | "live-now") {
 							</p>
 						</div>
 					</div>
-					<div class="mt-6 flex flex-wrap gap-3">
-						<UpdatedAt :value="data.updatedAt" label="Coverage profile updated" />
-						<TrustBadge :label="data.coverageMode === 'snapshot' ? 'Local guide published' : 'Lookup-first mode'" :tone="data.coverageMode === 'snapshot' ? 'accent' : 'warning'" />
+					<div class="mt-6">
+						<UpdatedAt :value="data.updatedAt" label="Coverage updated" />
 					</div>
 				</div>
 
 				<div class="space-y-4">
-					<InfoCallout title="Current state" tone="warning">
-						{{ data.currentState }}
-					</InfoCallout>
 					<div class="surface-panel">
 						<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-							Scope note
+							What you can use
 						</p>
 						<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-							{{ data.scopeNote }}
+							Use the local guide, district pages, representative pages, and official election links for this area.
 						</p>
 						<div class="mt-6 flex flex-wrap gap-3">
-							<NuxtLink to="/status" class="btn-secondary">
-								Open public status
+							<NuxtLink to="/results" class="btn-secondary">
+								Open results
 							</NuxtLink>
-							<NuxtLink to="/data-sources" class="btn-secondary">
-								Open data sources
+							<NuxtLink to="/sources" class="btn-secondary">
+								Open sources
 							</NuxtLink>
 						</div>
 					</div>
@@ -206,7 +146,7 @@ function routeFamilyLabel(status: "guide-dependent" | "limited" | "live-now") {
 						Official election links
 					</h2>
 					<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-						These are the official systems Ballot Clarity points to for the current published local guide.
+						These are the official systems Ballot Clarity points to for this area.
 					</p>
 					<div class="mt-6">
 						<OfficialResourceList :resources="data.launchTarget.officialResources" />
@@ -215,10 +155,10 @@ function routeFamilyLabel(status: "guide-dependent" | "limited" | "live-now") {
 
 				<div class="surface-panel">
 					<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
-						Related source systems
+						Key sources
 					</h2>
 					<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-						These links show the provider and documentation layer behind this guide.
+						These links show the main source systems behind this area.
 					</p>
 					<ul class="mt-6 space-y-4">
 						<li v-for="link in data.launchTarget.referenceLinks" :key="link.url" class="px-5 py-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
@@ -238,18 +178,18 @@ function routeFamilyLabel(status: "guide-dependent" | "limited" | "live-now") {
 				<div class="flex flex-wrap gap-4 items-start justify-between">
 					<div>
 						<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
-							What is available
+							Available now
 						</h2>
 						<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
-							This is the line between what is currently available and what still needs more work.
+							These are the main public layers currently available for this area.
 						</p>
 					</div>
-					<NuxtLink to="/corrections" class="btn-secondary">
-						Open corrections log
+					<NuxtLink to="/results" class="btn-secondary">
+						Open results
 					</NuxtLink>
 				</div>
 				<div class="mt-6 gap-5 grid xl:grid-cols-2">
-					<article v-for="capability in data.supportedContentTypes" :key="capability.id" class="px-5 py-5 border border-app-line/70 rounded-3xl bg-white/80 dark:border-app-line-dark dark:bg-app-panel-dark/70">
+					<article v-for="capability in publicCapabilities" :key="capability.id" class="px-5 py-5 border border-app-line/70 rounded-3xl bg-white/80 dark:border-app-line-dark dark:bg-app-panel-dark/70">
 						<div class="flex flex-wrap gap-2 items-center">
 							<TrustBadge :label="capabilityLabel(capability.status)" :tone="capabilityTone(capability.status)" />
 						</div>
@@ -263,48 +203,10 @@ function routeFamilyLabel(status: "guide-dependent" | "limited" | "live-now") {
 				</div>
 			</section>
 
-			<section class="surface-panel">
-				<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
-					Available public pages
-				</h2>
-				<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-					These are the public page groups currently available in this environment.
-				</p>
-				<div class="mt-6 gap-5 grid xl:grid-cols-2">
-					<article v-for="family in data.routeFamilies" :key="family.id" class="px-5 py-5 border border-app-line/70 rounded-3xl bg-white/80 dark:border-app-line-dark dark:bg-app-panel-dark/70">
-						<div class="flex flex-wrap gap-2 items-center">
-							<TrustBadge :label="routeFamilyLabel(family.status)" :tone="routeFamilyTone(family.status)" />
-						</div>
-						<h3 class="text-2xl text-app-ink font-serif mt-4 dark:text-app-text-dark">
-							{{ family.label }}
-						</h3>
-						<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
-							{{ family.summary }}
-						</p>
-						<p v-if="family.note" class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
-							{{ family.note }}
-						</p>
-						<div class="mt-5">
-							<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
-								Routes
-							</p>
-							<div class="mt-3 flex flex-wrap gap-2">
-								<TrustBadge v-for="routeName in family.routes" :key="routeName" :label="routeName" />
-							</div>
-						</div>
-						<ul class="readable-list text-sm text-app-muted mt-5 pl-5 dark:text-app-muted-dark">
-							<li v-for="source in family.activeSources" :key="source">
-								{{ source }}
-							</li>
-						</ul>
-					</article>
-				</div>
-			</section>
-
 			<section class="gap-6 grid xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
 				<div class="surface-panel">
 					<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
-						Current limitations
+						Known limits
 					</h2>
 					<ul class="mt-6 space-y-4">
 						<li v-for="item in data.limitations" :key="item.id" class="px-5 py-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
@@ -317,41 +219,20 @@ function routeFamilyLabel(status: "guide-dependent" | "limited" | "live-now") {
 						</li>
 					</ul>
 				</div>
-
-				<div class="space-y-6">
-					<div class="surface-panel">
-						<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
-							Next implementation steps
-						</h2>
-						<ul class="readable-list text-sm text-app-muted mt-6 pl-5 dark:text-app-muted-dark">
-							<li v-for="step in data.nextSteps" :key="step">
-								{{ step }}
-							</li>
-						</ul>
-					</div>
-
-					<div class="surface-panel">
-						<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
-							Public collections
-						</h2>
-						<div class="mt-6 space-y-4">
-							<NuxtLink
-								v-for="collection in data.collections"
-								:key="collection.id"
-								:to="collection.href"
-								class="px-5 py-5 border border-app-line/70 rounded-3xl bg-white/80 block transition dark:border-app-line-dark hover:border-app-accent dark:bg-app-panel-dark/70 focus-ring"
-							>
-								<div class="flex flex-wrap gap-2 items-center">
-									<TrustBadge :label="collection.status === 'canonical' ? 'Canonical page' : 'Reference collection'" :tone="collection.status === 'canonical' ? 'accent' : 'warning'" />
-								</div>
-								<p class="text-xl text-app-ink font-semibold mt-4 dark:text-app-text-dark">
-									{{ collection.label }}
-								</p>
-								<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
-									{{ collection.summary }}
-								</p>
-							</NuxtLink>
-						</div>
+				<div class="surface-panel">
+					<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
+						Use official tools for final checks
+					</h2>
+					<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
+						Ballot Clarity can organize sources and public records, but official election offices remain the final authority for deadlines, precincts, polling places, and the exact ballot you receive.
+					</p>
+					<div class="mt-6 flex flex-wrap gap-3">
+						<NuxtLink to="/status" class="btn-secondary">
+							Open public status
+						</NuxtLink>
+						<NuxtLink to="/data-sources" class="btn-secondary">
+							Open data sources
+						</NuxtLink>
 					</div>
 				</div>
 			</section>

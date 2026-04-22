@@ -23,7 +23,6 @@ const { data: electionsData } = await useAsyncData<ElectionsResponse>(
 );
 const featuredElection = computed(() => electionsData.value?.elections[0] ?? null);
 const hasFeaturedGuide = computed(() => Boolean(featuredElection.value));
-const featuredLaunchTarget = computed(() => coverageData.value?.launchTarget ?? null);
 const locationGuessUi = computed(() => buildLocationGuessUiContent(coverageData.value?.locationGuess ?? null));
 const roadmapPreview = computed(() => dataSources.value?.categories.slice(0, 3) ?? []);
 const guideBallotPath = computed(() => {
@@ -64,13 +63,7 @@ const startHereSecondaryLabel = computed(() => hasPublishedGuideContext.value
 	? "Open ballot plan"
 	: hasNationwideResultContext.value
 		? "Check coverage"
-		: "Read sources");
-const pathwayIntro = computed(() => hasPublishedGuideContext.value
-	? "Start with the ballot guide, then open other pages only when you need more detail."
-	: hasNationwideResultContext.value
-		? "Open your results, then move into district pages, representative pages, and official election links."
-		: "Enter a location to see districts, current officials, official election links, and whether a guide is available for your area.");
-
+		: "Check coverage");
 const faqEntries = [
 	{
 		answer: "Start with the location lookup. Ballot Clarity shows districts, representatives, official election links, and a local guide when one is published for your area.",
@@ -159,16 +152,18 @@ const primaryPaths = computed<PrimaryPath[]>(() => [
 	{
 		description: hasNationwideResultContext.value
 			? "See whether a local guide is available for this area."
-			: "See which public pages and sources are available.",
-		label: hasNationwideResultContext.value ? "Check coverage" : "Check coverage and sources",
+			: "See which public pages are available.",
+		label: "Check coverage",
 		prefetchOn: "interaction",
-		to: hasNationwideResultContext.value ? "/coverage" : "/data-sources"
+		to: "/coverage"
 	}
 ]);
 
 const trustFacts = computed(() => [
 	"Nonpartisan nonprofit",
-	featuredLaunchTarget.value ? `Guide available for ${featuredLaunchTarget.value.displayName}` : "Guide availability varies by area",
+	activeNationwideResult.value?.location
+		? `Current area: ${activeNationwideResult.value.location.displayName}`
+		: "Districts and officials vary by area",
 	"Sources linked on every major reading page",
 	hasPublishedGuideContext.value ? "Ballot plan available" : "Official election links included where available"
 ]);
@@ -193,16 +188,6 @@ const trustFacts = computed(() => [
 									? "Review districts, current officials, official election links, and any available local guide for this area."
 									: "Enter a street address or ZIP code to see districts, current officials, and official election links for your area." }}
 						</p>
-						<p v-if="featuredLaunchTarget" class="text-sm text-app-muted leading-7 mt-5 dark:text-app-muted-dark">
-							<strong class="text-app-ink dark:text-app-text-dark">Guide available:</strong> {{ featuredLaunchTarget.displayName }}.
-						</p>
-						<p v-else class="text-sm text-app-muted leading-7 mt-5 dark:text-app-muted-dark">
-							<strong class="text-app-ink dark:text-app-text-dark">Guide status:</strong> No local guide is published in this environment right now.
-						</p>
-						<p v-if="activeNationwideResult?.location" class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-							<strong class="text-app-ink dark:text-app-text-dark">Current area:</strong> {{ activeNationwideResult.location.displayName }}.
-						</p>
-
 						<div class="mt-8 gap-4 grid md:grid-cols-2 xl:grid-cols-4">
 							<div
 								v-for="fact in trustFacts"
@@ -235,18 +220,11 @@ const trustFacts = computed(() => [
 
 					<div class="surface-panel">
 						<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-							Next steps
+							Popular pages
 						</p>
 						<h2 class="text-2xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
 							Open the page you need.
 						</h2>
-						<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-							{{ hasPublishedGuideContext
-								? "Start with the ballot guide, then open other pages only when you need more detail."
-								: hasNationwideResultContext
-									? "Start with your results, then open districts, representatives, or sources."
-									: "Start with lookup, then open results, districts, representatives, or sources." }}
-						</p>
 						<div class="mt-6 flex flex-wrap gap-3">
 							<NuxtLink :to="startHerePrimaryPath" class="btn-primary" prefetch-on="interaction">
 								{{ startHerePrimaryLabel }}
@@ -264,14 +242,11 @@ const trustFacts = computed(() => [
 			<div class="gap-6 grid lg:grid-cols-[minmax(0,0.52fr)_minmax(0,1fr)] lg:items-start">
 				<div>
 					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-						Primary pathways
+						Start here
 					</p>
 					<h2 class="text-4xl text-app-ink font-serif mt-3 max-w-xl dark:text-app-text-dark">
-						Start with the task you are trying to complete.
+						Choose the page you need.
 					</h2>
-					<p class="bc-measure text-base text-app-muted leading-8 mt-5 dark:text-app-muted-dark">
-						{{ pathwayIntro }}
-					</p>
 				</div>
 
 				<div class="divide-app-line divide-y dark:divide-app-line-dark">

@@ -21,9 +21,7 @@ const districtMatchesHref = computed(() => buildHomeNationwideSummaryHref("/dist
 const representativesHref = computed(() => buildHomeNationwideSummaryHref("/representatives", props.nationwideLookupResult));
 const featuredGuideStatusLabel = computed(() => props.ballotPreview?.guideContent?.verifiedContestPackage
 	? "Verified local guide"
-	: props.ballotPreview?.guideContent?.publishedGuideShell
-		? "Guide shell live"
-		: "Guide status");
+	: "Guide status");
 const featuredGuideStatusNote = computed(() => props.ballotPreview?.guideContent?.summary ?? "");
 </script>
 
@@ -97,13 +95,13 @@ const featuredGuideStatusNote = computed(() => props.ballotPreview?.guideContent
 							Local guide
 						</p>
 						<p class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-							{{ nationwideLookupResult.guideContent?.verifiedContestPackage ? "Verified" : nationwideLookupResult.guideAvailability === "published" ? "Shell live" : "Not yet" }}
+							{{ nationwideLookupResult.guideContent?.verifiedContestPackage ? "Verified" : nationwideLookupResult.guideAvailability === "published" ? "In review" : "Not yet" }}
 						</p>
 						<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
 							{{ nationwideLookupResult.guideContent?.verifiedContestPackage
 								? "Contest and measure pages are locally verified for this area."
 								: nationwideLookupResult.guideAvailability === "published"
-									? "The guide shell is live, but contest pages are still being locally verified."
+									? "Official election links are current. Contest pages are still under local review."
 									: "Contest and measure pages open when a local guide is available." }}
 						</p>
 					</li>

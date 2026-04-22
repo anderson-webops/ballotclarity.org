@@ -121,18 +121,25 @@ usePageSeo({
 			<header class="gap-6 grid xl:grid-cols-[minmax(0,1.1fr)_minmax(22rem,0.9fr)] xl:items-end">
 				<div class="surface-panel">
 					<div class="flex flex-wrap gap-2">
-						<TrustBadge label="Nationwide civic results" tone="accent" />
+						<TrustBadge label="Current results" tone="accent" />
 						<TrustBadge label="Official tools visible" />
-						<TrustBadge label="Guide-dependent flows remain guide-only" tone="warning" />
+						<TrustBadge
+							:label="activeResult.guideContent?.verifiedContestPackage
+								? 'Verified local guide'
+								: activeResult.guideAvailability === 'published'
+									? 'Local guide available'
+									: 'Local guide not published'"
+							:tone="activeResult.guideAvailability === 'published' ? 'accent' : 'warning'"
+						/>
 					</div>
 					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold mt-6 uppercase dark:text-app-muted-dark">
-						Active lookup context
+						Current area
 					</p>
 					<h1 class="text-5xl text-app-ink leading-tight font-serif mt-3 dark:text-app-text-dark">
 						{{ activeLookupSummary.label }}
 					</h1>
 					<p class="text-base text-app-muted leading-8 mt-5 max-w-3xl dark:text-app-muted-dark">
-						This page is the first-class nationwide civic results view for the latest successful lookup. It carries district matches, representative records, availability status, and official election tools across the app even when Ballot Clarity does not yet have a published local guide for this area.
+						Review districts, current officials, official election links, and any available local guide for this area.
 					</p>
 					<p class="text-sm text-app-muted leading-7 mt-4 max-w-3xl dark:text-app-muted-dark">
 						{{ activeLookupSummary.note }}
@@ -144,10 +151,14 @@ usePageSeo({
 
 				<div class="surface-panel">
 					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-						Current limits
+						Browse
 					</p>
 					<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
-						The ballot plan, compare flow, and local ballot-guide pages remain guide-dependent and open only after Ballot Clarity confirms a published local guide for the active lookup. Until then, nationwide civic results and official tools are the main cross-page context.
+						{{
+							hasPublishedGuideContext
+								? "Open the local guide, ballot plan, districts, or representatives for this area."
+								: "Open districts, representatives, or coverage for this area."
+						}}
 					</p>
 					<div class="mt-5 flex flex-wrap gap-3">
 						<NuxtLink v-if="hasPublishedGuideContext" to="/plan" class="btn-secondary">
@@ -172,7 +183,7 @@ usePageSeo({
 
 			<section class="surface-panel">
 				<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-					Nationwide results
+					Results
 				</p>
 				<LookupResultsPanel :lookup="activeResult" @select-option="selectLookupOption" />
 			</section>

@@ -24,7 +24,7 @@ const collectionSections = [
 		body: [
 			"When you use the ballot lookup, the address or ZIP code is sent with a POST request so the service can determine a location and ballot guide.",
 			"That lookup may also trigger provider-backed district matching, representative attachment, and official election verification in the current runtime.",
-			"Some hosts may also use coarse geolocation derived from request metadata to make a best-effort default location guess before you enter anything manually.",
+			"Some hosts may also use coarse geolocation derived from request metadata to make an approximate default location guess before you enter anything manually.",
 			"The application is designed not to publish the raw lookup text in the public archive and not to persist it in browser storage used for saved ballot preferences."
 		],
 		title: "Address or ZIP lookup input"
@@ -49,7 +49,7 @@ const collectionSections = [
 	{
 		body: [
 			"The public site now offers a hosted contact and correction form in addition to direct email links.",
-			"If you submit the form, the project receives your name, email address, subject, page URL, message, and any supporting links you provide so the issue can be reviewed in the editorial queue.",
+			"If you submit the form, the project receives your name, email address, subject, page URL, message, and any supporting links you provide so the issue can be reviewed and answered.",
 			"If you email the project directly, the message, attachments, and any source links you send may be handled in the project inbox so the team can review, verify, and respond."
 		],
 		title: "Messages you send us"

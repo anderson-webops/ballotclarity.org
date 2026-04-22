@@ -35,7 +35,7 @@ export function buildResultsSummaryItems(
 		{
 			href: buildNationwideRouteTarget("/representatives", lookupContext, routeQuery),
 			label: "Representatives",
-			note: "Current representative records linked below when available.",
+			note: "Current officials linked below when available.",
 			value: activeResult?.representativeMatches.length ?? 0
 		},
 		{
@@ -46,14 +46,14 @@ export function buildResultsSummaryItems(
 		{
 			label: "Guide status",
 			note: activeResult?.guideContent?.verifiedContestPackage
-				? "This area has a verified local contest package."
+				? "Verified local contest pages are available for this area."
 				: activeResult?.guideAvailability === "published"
-					? "The guide shell is live, but contest pages are still being locally verified."
+					? "Official links are available. Contest pages are still under local review."
 					: "Detailed ballot pages open when a local guide is published.",
 			value: activeResult?.guideContent?.verifiedContestPackage
 				? "Verified"
 				: activeResult?.guideAvailability === "published"
-					? "Shell live"
+					? "In review"
 					: "Not published"
 		}
 	];

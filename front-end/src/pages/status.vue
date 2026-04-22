@@ -3,7 +3,7 @@ const { formatDateTime } = useFormatters();
 const { data, error, pending } = await usePublicStatus();
 
 usePageSeo({
-	description: "Public status page for Ballot Clarity showing source-health signals, current coverage mode, and launch review notices.",
+	description: "Public status page for Ballot Clarity showing source health, coverage, and current review notices.",
 	path: "/status",
 	title: "Public Status"
 });
@@ -58,7 +58,7 @@ const statusLabel = computed(() => {
 						Public status
 					</h1>
 					<p class="text-base text-app-muted leading-8 mt-5 dark:text-app-muted-dark">
-						This page reports public-facing source health, current coverage mode, and launch review notices. It is meant to explain whether the site is ready for reliance, not to expose internal admin-only detail.
+						This page shows whether Ballot Clarity's public data and guide coverage are ready to rely on.
 					</p>
 					<div class="mt-6 flex flex-wrap gap-4 items-center">
 						<UpdatedAt :value="data.updatedAt" label="Status updated" />
@@ -70,7 +70,7 @@ const statusLabel = computed(() => {
 
 				<div class="space-y-4">
 					<InfoCallout title="How to read this page" tone="warning">
-						Healthy means the currently published public surfaces and source checks are stable. Reviewing means work is in progress but key source or launch steps still need verification. Degraded means a current incident should materially change how much trust to place in a public page.
+						Healthy means public pages and source checks are stable. Reviewing means some public information is still being checked. Degraded means a current issue should materially lower confidence in a public page.
 					</InfoCallout>
 					<div class="surface-panel">
 						<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">

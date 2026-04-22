@@ -187,7 +187,7 @@ function printPlan() {
 						<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
 							{{ data
 								? "Print the plan, go back to the ballot guide, or clear saved choices before you leave."
-								: "The ballot plan only opens after Ballot Clarity confirms a published local guide for the current lookup." }}
+								: "The ballot plan opens after Ballot Clarity publishes a local guide for this area." }}
 						</p>
 						<div class="mt-5 flex flex-col gap-3">
 							<button v-if="data" type="button" class="btn-primary w-full justify-center" @click="printPlan">

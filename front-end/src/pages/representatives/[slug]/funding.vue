@@ -4,7 +4,7 @@ import { storeToRefs } from "pinia";
 import { activeNationwideLookupCookieName, parseActiveNationwideLookupCookie } from "~/utils/active-nationwide-cookie";
 import { buildNationwidePersonProfileResponse } from "~/utils/nationwide-person-profile";
 import { buildLookupContextFromNationwideResult, buildNationwideLookupRouteQuery, buildNationwideRouteTarget } from "~/utils/nationwide-route-context";
-import { buildPersonLinkageConfidence, hasPersonFunding } from "~/utils/person-profile";
+import { hasPersonFunding } from "~/utils/person-profile";
 
 const route = useRoute();
 const civicStore = useCivicStore();
@@ -38,7 +38,6 @@ const profileData = computed(() => {
 });
 const person = computed(() => profileData.value?.person ?? null);
 const pagePending = computed(() => pending.value || (!data.value && !fallbackData.value));
-const linkageConfidence = computed(() => person.value ? buildPersonLinkageConfidence(person.value.provenance.status) : null);
 const funding = computed(() => person.value?.funding ?? null);
 const fundingAvailable = computed(() => person.value ? hasPersonFunding(person.value) : false);
 const fundingUnavailableSummary = computed(() => person.value
@@ -123,7 +122,6 @@ usePageSeo({
 				<div class="flex flex-wrap gap-2">
 					<VerificationBadge label="Funding page" tone="accent" />
 					<VerificationBadge :label="person.officeholderLabel" />
-					<VerificationBadge :label="linkageConfidence?.label ?? 'Linkage review'" />
 				</div>
 				<h1 class="text-5xl text-app-ink font-serif mt-5 dark:text-app-text-dark">
 					{{ person.name }} funding
@@ -189,27 +187,16 @@ usePageSeo({
 				<div class="space-y-6">
 					<div class="surface-panel">
 						<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
-							About this data
+							Source note
 						</h2>
 						<ul class="readable-list text-sm text-app-muted mt-5 pl-5 dark:text-app-muted-dark">
-							<li><strong class="text-app-ink dark:text-app-text-dark">Linkage:</strong> {{ person.provenance.status }}</li>
-							<li><strong class="text-app-ink dark:text-app-text-dark">Confidence:</strong> {{ linkageConfidence?.label }}</li>
 							<li><strong class="text-app-ink dark:text-app-text-dark">Committee:</strong> {{ funding.committeeName || "Current matched committee not published in this summary." }}</li>
 							<li><strong class="text-app-ink dark:text-app-text-dark">Coverage:</strong> {{ funding.coverageLabel || funding.provenanceLabel || "Source-backed finance summary" }}</li>
 							<li><strong class="text-app-ink dark:text-app-text-dark">Data through:</strong> {{ formatDate(person.freshness.dataLastUpdatedAt ?? person.updatedAt) }}</li>
-							<li><strong class="text-app-ink dark:text-app-text-dark">Warning:</strong> {{ person.freshness.statusNote }}</li>
 						</ul>
-					</div>
-
-					<div class="surface-panel">
-						<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
-							Keep in mind
-						</h2>
-						<ul class="readable-list text-sm text-app-muted mt-5 pl-5 dark:text-app-muted-dark">
-							<li>Compare the reporting window before comparing totals across records.</li>
-							<li>Use the attached filings for the full committee and donor context.</li>
-							<li>{{ person.freshness.statusNote }}</li>
-						</ul>
+						<p class="text-sm text-app-muted leading-7 mt-5 dark:text-app-muted-dark">
+							Compare the reporting window before comparing totals across records.
+						</p>
 						<div class="mt-6 pt-6 border-t border-app-line/80 dark:border-app-line-dark">
 							<p class="text-sm text-app-muted leading-7 dark:text-app-muted-dark">
 								<strong class="text-app-ink dark:text-app-text-dark">Reference count:</strong> {{ formatCompactNumber(funding.sources.length) }} filing and methodology source{{ funding.sources.length === 1 ? "" : "s" }} are attached to this funding page.

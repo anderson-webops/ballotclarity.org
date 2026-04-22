@@ -4,13 +4,12 @@ const route = useRoute();
 const { formatDate, formatDateTime } = useFormatters();
 const electionSlug = computed(() => String(route.params.slug));
 const { data, error, pending } = await useBallot(electionSlug);
-const guideStatusTitle = computed(() => data.value?.guideContent?.verifiedContestPackage
-	? "Verified local guide"
+const guideStatusTitle = computed(() => "Guide status");
+const guideStatusNote = computed(() => data.value?.guideContent?.verifiedContestPackage
+	? "Contest, candidate, and measure pages are verified for this area."
 	: data.value?.guideContent?.publishedGuideShell
-		? "Guide shell live"
-		: "Trust note");
-const guideStatusNote = computed(() => data.value?.guideContent?.summary
-	?? "Use this page for key dates and official links, then open the full ballot guide for contest-by-contest reading.");
+		? "Official election links are current. Contest, candidate, and measure pages are still under local review."
+		: "Use this page for key dates and official links, then open the ballot guide for contest-by-contest reading.");
 
 watchEffect(() => {
 	if (data.value) {
@@ -68,8 +67,7 @@ usePageSeo({
 				<div class="surface-panel">
 					<div class="flex flex-wrap gap-2">
 						<TrustBadge label="Election overview" tone="accent" />
-						<TrustBadge label="Source-first" />
-						<TrustBadge label="Current coverage" tone="warning" />
+						<TrustBadge label="Official links attached" />
 					</div>
 					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold mt-6 uppercase dark:text-app-muted-dark">
 						{{ data.location.displayName }}
@@ -95,7 +93,7 @@ usePageSeo({
 					</InfoCallout>
 					<div class="surface-panel">
 						<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-							Next steps
+							Browse
 						</p>
 						<div class="mt-4 flex flex-wrap gap-3">
 							<NuxtLink :to="`/ballot/${data.election.slug}`" class="btn-primary">
@@ -110,11 +108,8 @@ usePageSeo({
 							<NuxtLink :to="`/locations/${data.election.jurisdictionSlug}`" class="btn-secondary">
 								Open location hub
 							</NuxtLink>
-							<NuxtLink to="/coverage" class="btn-secondary">
-								Coverage profile
-							</NuxtLink>
-							<NuxtLink to="/data-sources" class="btn-secondary">
-								Data sources roadmap
+							<NuxtLink to="/sources" class="btn-secondary">
+								Sources
 							</NuxtLink>
 						</div>
 					</div>
@@ -141,7 +136,7 @@ usePageSeo({
 						Official links and notices
 					</h2>
 					<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-						These resource links surface the official election notices, calendars, and logistics Ballot Clarity has attached for this guide package.
+						These links point to the official election notices, calendars, and logistics attached to this page.
 					</p>
 					<div class="mt-6">
 						<OfficialResourceList :resources="data.election.officialResources" />
@@ -153,7 +148,7 @@ usePageSeo({
 						Change log
 					</h2>
 					<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-						Recent edits stay visible here so voters can judge freshness without comparing multiple tabs.
+						Recent edits stay visible here so readers can judge freshness at a glance.
 					</p>
 					<ul class="mt-6 space-y-3">
 						<li v-for="entry in data.election.changeLog" :key="entry.id" class="px-4 py-4 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70">
@@ -175,7 +170,7 @@ usePageSeo({
 							Contest index
 						</h2>
 						<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
-							This index is meant to help voters see what kinds of contests are on the ballot before they open the longer pamphlet-style guide.
+							See the contests on the ballot before opening the full guide.
 						</p>
 					</div>
 					<NuxtLink :to="`/ballot/${data.election.slug}`" class="btn-secondary">

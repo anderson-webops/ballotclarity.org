@@ -7,13 +7,11 @@ import { buildLookupContextFromNationwideResult, buildNationwideRouteTarget } fr
 
 interface HeaderLink {
 	badge?: "compare" | "plan";
-	description: string;
 	label: string;
 	to: string;
 }
 
 interface HeaderGroup {
-	description: string;
 	label: string;
 	links: HeaderLink[];
 }
@@ -33,66 +31,54 @@ const headerDirectionThreshold = 12;
 let scrollFramePending = false;
 
 const { ballotPlanCount, compareCount, compareList, isHydrated, selectedLocation } = storeToRefs(civicStore);
-const primaryNavLabel = computed(() => hasPublishedGuideContext.value
-	? "Use the guide"
-	: hasNationwideResultContext.value
-		? "Explore active results"
-		: "Start with lookup");
-const primaryNavDescription = computed(() => hasPublishedGuideContext.value
-	? "Ballot guide, plan, and related tools."
-	: hasNationwideResultContext.value
-		? "Results, districts, representatives, and official links."
-		: "Lookup and starting pages.");
+const primaryNavLabel = computed(() => "Explore");
 const headerPrimaryAction = computed(() => hasPublishedGuideContext.value
 	? { badge: "plan" as const, label: "My plan", to: "/plan" }
 	: hasNationwideResultContext.value
-		? { label: "Nationwide results", to: "/results" }
-		: { label: "Location lookup", to: "/" });
+		? { label: "Results", to: "/results" }
+		: { label: "Lookup", to: "/" });
 
 const navGroups = computed<HeaderGroup[]>(() => {
 	const guideLinks: HeaderLink[] = hasPublishedGuideContext.value
 		? [
-				{ badge: "plan", description: "Saved checklist and print-friendly plan.", label: "My plan", to: "/plan" },
-				{ description: "Contest guide with official links and summaries.", label: "Ballot guide", to: "/ballot" },
-				{ description: "District pages for the current election.", label: "Districts", to: "/districts" },
-				{ description: "Current officials and person pages.", label: "Representatives", to: "/representatives" },
-				{ badge: "compare", description: "Side-by-side candidate comparison.", label: "Compare", to: "/compare" },
-				{ description: "Search public pages and records.", label: "Search", to: "/search" }
+				{ badge: "plan", label: "My plan", to: "/plan" },
+				{ label: "Ballot guide", to: "/ballot" },
+				{ label: "Districts", to: "/districts" },
+				{ label: "Representatives", to: "/representatives" },
+				{ badge: "compare", label: "Compare", to: "/compare" },
+				{ label: "Search", to: "/search" }
 			]
 		: [
 				...(hasNationwideResultContext.value
-					? [{ description: "Return to the latest lookup results.", label: "Nationwide results", to: "/results" }]
-					: [{ description: "Start with a location lookup.", label: "Location lookup", to: "/" }]),
-				{ description: "District pages for your area.", label: "Districts", to: "/districts" },
-				{ description: "Current officials and person pages.", label: "Representatives", to: "/representatives" },
-				{ description: "Search public pages and records.", label: "Search", to: "/search" }
+					? [{ label: "Nationwide results", to: "/results" }]
+					: [{ label: "Location lookup", to: "/" }]),
+				{ label: "Districts", to: "/districts" },
+				{ label: "Representatives", to: "/representatives" },
+				{ label: "Search", to: "/search" }
 			];
 
 	return [
 		{
-			description: primaryNavDescription.value,
 			label: primaryNavLabel.value,
 			links: guideLinks
 		},
 		{
-			description: "Sources, methods, and coverage.",
 			label: "Learn and verify",
 			links: [
-				{ description: "Public source directory and citations.", label: "Sources", to: "/sources" },
-				{ description: "What coverage is available right now.", label: "Coverage", to: "/coverage" },
-				{ description: "How Ballot Clarity uses official and provider data.", label: "Data sources", to: "/data-sources" },
-				{ description: "How summaries, sourcing, and limits are handled.", label: "Methodology", to: "/methodology" },
-				{ description: "Neutrality and editorial rules.", label: "Neutrality", to: "/neutrality" }
+				{ label: "Sources", to: "/sources" },
+				{ label: "Coverage", to: "/coverage" },
+				{ label: "Data sources", to: "/data-sources" },
+				{ label: "Methodology", to: "/methodology" },
+				{ label: "Neutrality", to: "/neutrality" }
 			]
 		},
 		{
-			description: "Help, corrections, and project info.",
 			label: "Project and help",
 			links: [
-				{ description: "Voting FAQ and how to use the site.", label: "Help", to: "/help" },
-				{ description: "Corrections process and public updates.", label: "Corrections", to: "/corrections" },
-				{ description: "Public site status.", label: "Status", to: "/status" },
-				{ description: "About the project and contact options.", label: "About", to: "/about" }
+				{ label: "Help", to: "/help" },
+				{ label: "Corrections", to: "/corrections" },
+				{ label: "Status", to: "/status" },
+				{ label: "About", to: "/about" }
 			]
 		}
 	];

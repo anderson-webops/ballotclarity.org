@@ -10,18 +10,17 @@ const { data: nextElectionData } = await useBallot(nextElectionSlug);
 
 const registrationDeadline = computed(() => nextElectionData.value?.election.keyDates.find(item => item.label === "Registration deadline") ?? null);
 const earlyVotingDate = computed(() => nextElectionData.value?.election.keyDates.find(item => item.label === "Early voting opens") ?? null);
-const guideStatusTitle = computed(() => nextElectionData.value?.guideContent?.verifiedContestPackage
-	? "Verified local guide"
+const guideStatusTitle = computed(() => "Guide status");
+const guideStatusNote = computed(() => nextElectionData.value?.guideContent?.verifiedContestPackage
+	? "Contest, candidate, and measure pages are verified for this area."
 	: nextElectionData.value?.guideContent?.publishedGuideShell
-		? "Guide shell live"
-		: "Coverage note");
-const guideStatusNote = computed(() => nextElectionData.value?.guideContent?.summary
-	?? "Use this page to orient yourself, then verify deadlines, polling logistics, and late changes with the linked official election office and voter tools.");
+		? "Official election links are current. Contest, candidate, and measure pages are still under local review."
+		: "Use this page to orient yourself, then verify deadlines, polling logistics, and late changes with the linked official election office and voter tools.");
 
 watchEffect(() => {
 	if (jurisdiction.value) {
 		civicStore.setLocation({
-			coverageLabel: `Live local guide area: ${jurisdiction.value.displayName}`,
+			coverageLabel: `Current area: ${jurisdiction.value.displayName}`,
 			displayName: jurisdiction.value.displayName,
 			slug: jurisdiction.value.slug,
 			state: jurisdiction.value.state
@@ -85,7 +84,6 @@ usePageSeo({
 					<div class="flex flex-wrap gap-2">
 						<TrustBadge label="Jurisdiction hub" tone="accent" />
 						<TrustBadge label="Official office links" />
-						<TrustBadge label="Current coverage" tone="warning" />
 					</div>
 					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold mt-6 uppercase dark:text-app-muted-dark">
 						{{ jurisdiction.jurisdictionType }} guide
@@ -214,7 +212,7 @@ usePageSeo({
 					<OfficialResourceList
 						:resources="jurisdiction.officialResources"
 						title="Official links and notices"
-						note="These links stand in for election-office calendars, office contact sheets, and voting-method instructions while live integrations are being connected."
+						note="These links collect the election-office calendars, contact details, and voting instructions attached to this page."
 					/>
 				</div>
 			</section>
@@ -256,7 +254,7 @@ usePageSeo({
 						Archive guides
 					</h2>
 					<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-						Archived guides help users compare current election material with prior cycles without forcing duplicate landing pages into the main navigation.
+						Archived guides let readers compare the current election with prior cycles.
 					</p>
 					<ul class="mt-6 space-y-3">
 						<li v-for="guide in jurisdiction.archivedGuides" :key="guide.id" class="p-4 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70">
@@ -275,7 +273,7 @@ usePageSeo({
 			<section class="gap-6 grid xl:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]">
 				<div class="surface-panel">
 					<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
-						Voting methods in the current coverage area
+						Voting methods in this area
 					</h2>
 					<div class="mt-6 space-y-4">
 						<article v-for="method in jurisdiction.votingMethods" :key="method.slug" class="p-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
@@ -305,7 +303,7 @@ usePageSeo({
 
 				<div class="surface-panel">
 					<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
-						Coverage and scope notes
+						Notes
 					</h2>
 					<ul class="text-sm text-app-muted leading-7 mt-6 space-y-3 dark:text-app-muted-dark">
 						<li v-for="note in jurisdiction.coverageNotes" :key="note" class="px-4 py-3 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70">
@@ -320,7 +318,7 @@ usePageSeo({
 							Review methodology
 						</NuxtLink>
 						<NuxtLink to="/data-sources" class="btn-secondary">
-							Data sources roadmap
+							Data sources
 						</NuxtLink>
 					</div>
 				</div>

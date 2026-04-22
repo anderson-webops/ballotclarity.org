@@ -5,7 +5,7 @@ import { storeToRefs } from "pinia";
 import { activeNationwideLookupCookieName, parseActiveNationwideLookupCookie } from "~/utils/active-nationwide-cookie";
 import { buildNationwidePersonProfileResponse } from "~/utils/nationwide-person-profile";
 import { buildLookupContextFromNationwideResult, buildNationwideLookupRouteQuery, buildNationwideRouteTarget } from "~/utils/nationwide-route-context";
-import { buildPersonLinkageConfidence, hasPersonInfluence } from "~/utils/person-profile";
+import { hasPersonInfluence } from "~/utils/person-profile";
 
 const route = useRoute();
 const civicStore = useCivicStore();
@@ -43,7 +43,6 @@ const profileData = computed(() => {
 });
 const person = computed(() => profileData.value?.person ?? null);
 const pagePending = computed(() => pending.value || (!data.value && !fallbackData.value));
-const linkageConfidence = computed(() => person.value ? buildPersonLinkageConfidence(person.value.provenance.status) : null);
 const influence = computed(() => person.value?.influence ?? null);
 const influenceAvailable = computed(() => person.value ? hasPersonInfluence(person.value) : false);
 const influenceUnavailableSummary = computed(() => person.value
@@ -112,10 +111,9 @@ usePageSeo({
 				<div class="flex flex-wrap gap-2">
 					<VerificationBadge label="Influence page" tone="accent" />
 					<VerificationBadge label="Context, not causation" />
-					<VerificationBadge :label="linkageConfidence?.label ?? 'Linkage review'" />
 				</div>
 				<h1 class="text-5xl text-app-ink font-serif mt-5 dark:text-app-text-dark">
-					{{ person.name }} influence context
+					{{ person.name }} influence
 				</h1>
 				<p class="text-base text-app-muted leading-8 mt-5 dark:text-app-muted-dark">
 					{{
@@ -223,19 +221,16 @@ usePageSeo({
 
 					<div class="surface-panel">
 						<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
-							Keep in mind
+							Source note
 						</h2>
 						<ul class="readable-list text-sm text-app-muted mt-5 pl-5 dark:text-app-muted-dark">
-							<li><strong class="text-app-ink dark:text-app-text-dark">Linkage:</strong> {{ person.provenance.status }}</li>
-							<li><strong class="text-app-ink dark:text-app-text-dark">Confidence:</strong> {{ linkageConfidence?.label }}</li>
 							<li><strong class="text-app-ink dark:text-app-text-dark">Coverage:</strong> {{ influence?.coverageLabel || "Public disclosures and source-backed statements where available." }}</li>
 							<li><strong class="text-app-ink dark:text-app-text-dark">Match mode:</strong> {{ influence?.matchMode === "committee" ? "Committee crosswalk" : influence?.matchMode === "honoree" ? "Direct officeholder-name match" : "Not published" }}</li>
 							<li><strong class="text-app-ink dark:text-app-text-dark">Data through:</strong> {{ formatDate(person.freshness.dataLastUpdatedAt ?? person.updatedAt) }}</li>
-							<li>Treat sector and donor overlap as context, not proof.</li>
-							<li>Disclosure filings do not show every form of contact or influence.</li>
-							<li>Compare these records with the funding page and the underlying filings.</li>
-							<li>{{ person.freshness.statusNote }}</li>
 						</ul>
+						<p class="text-sm text-app-muted leading-7 mt-5 dark:text-app-muted-dark">
+							Treat sector and donor overlap as context, not proof. Disclosure filings do not show every form of contact or influence.
+						</p>
 					</div>
 				</div>
 			</section>

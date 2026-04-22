@@ -136,7 +136,7 @@ export function buildCoverageResponse(
 			coverageMode,
 			coverageUpdatedAt,
 			locationGuess,
-			currentState: "No published local coverage snapshot or launch jurisdiction is active in this environment right now.",
+			currentState: "No local guide is active in this environment right now.",
 			routeFamilies: [
 				{
 					activeSources: [
@@ -146,10 +146,10 @@ export function buildCoverageResponse(
 					],
 					id: "nationwide-results",
 					label: "Nationwide lookup and results routes",
-					note: "District, representative, and person pages stay useful here even when a published local guide is not active.",
+					note: "District, representative, and person pages stay useful here even when a local guide is not active.",
 					routes: ["/results", "/districts", "/districts/<slug>", "/representatives", "/representatives/<slug>"],
 					status: "live-now",
-					summary: "These routes are the main public product in an empty-coverage environment and run from the active nationwide lookup context saved in the browser."
+					summary: "These routes are the main public product in an empty-coverage environment and run from the saved lookup in the browser."
 				},
 				{
 					activeSources: [
@@ -157,10 +157,10 @@ export function buildCoverageResponse(
 					],
 					id: "published-guides",
 					label: "Published local guide routes",
-					note: "These routes stay guide-dependent and should not be promoted as the main success path until a verified local guide snapshot is active.",
+					note: "These routes stay secondary until a verified local guide is active.",
 					routes: ["/ballot", "/contest", "/candidate", "/measure", "/plan"],
 					status: "guide-dependent",
-					summary: "Ballot guide, contest, candidate, measure, and plan routes remain optional deeper layers rather than the default nationwide experience."
+					summary: "Ballot guide, contest, candidate, measure, and plan routes remain optional deeper layers rather than the default experience."
 				},
 				{
 					activeSources: [
@@ -172,7 +172,7 @@ export function buildCoverageResponse(
 					note: "Funding and influence modules remain conditional on reliable person-level linkage and should not be presented as universal nationwide coverage yet.",
 					routes: ["/representatives/<slug>", "/representatives/<slug>/funding", "/representatives/<slug>/influence", "/candidate/<slug>", "/candidate/<slug>/funding", "/candidate/<slug>/influence"],
 					status: "limited",
-					summary: "Person pages are live, but richer finance and influence coverage still depends on the underlying person/entity record rather than existing for every nationwide lookup match."
+					summary: "Person pages are live, but richer finance and influence coverage still depends on the underlying person or entity record."
 				},
 				{
 					activeSources: [
@@ -184,21 +184,21 @@ export function buildCoverageResponse(
 					label: "Public reference and operations routes",
 					routes: ["/coverage", "/status", "/data-sources", "/corrections", "/help", "/methodology"],
 					status: "live-now",
-					summary: "These pages explain what is live, what is not, and which public data-source layers are currently active."
+					summary: "These pages explain what is available and which public source layers are active."
 				}
 			],
 			limitations: [
 				{
 					id: "no-published-coverage",
-					summary: "Ballot Clarity does not currently have a published local guide, launch profile, or imported coverage snapshot loaded here.",
+					summary: "Ballot Clarity does not currently have a local guide loaded here.",
 					title: "No published local coverage is available"
 				}
 			],
 			nextSteps: [
 				"Use nationwide civic lookup results and official election tools when they are available for a location.",
-				"Publish a verified local coverage snapshot before exposing local guide, candidate, measure, or election routes as current coverage."
+				"Publish a verified local guide before exposing ballot, candidate, measure, or election routes as current coverage."
 			],
-			scopeNote: "Until a verified local coverage snapshot is published, Ballot Clarity should present missing local coverage honestly instead of falling back to fixture or archive content.",
+			scopeNote: "Until a verified local guide is published, Ballot Clarity should present missing local coverage honestly instead of falling back to fixture or archive content.",
 			supportedContentTypes: [],
 			updatedAt: new Date().toISOString()
 		};

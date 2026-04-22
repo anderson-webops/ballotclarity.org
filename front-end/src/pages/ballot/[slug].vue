@@ -351,7 +351,7 @@ function clearFilters() {
 				</div>
 
 				<p class="print-guide-footnote">
-					Current coverage is limited to the published source set available for this ballot. Review original records and official notices before relying on any election information.
+					Review original records and official notices before relying on any election information.
 				</p>
 			</div>
 		</section>

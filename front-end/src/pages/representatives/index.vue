@@ -77,12 +77,8 @@ const summaryItems = computed(() => {
 });
 
 const introCopy = computed(() => directoryUsesNationwide.value
-	? "This directory lists the current officials linked to your saved area."
+	? "Current officials for your saved area."
 	: "This directory lists current officeholders and links to their district, profile, funding, and influence pages where available."
-);
-const lookupPanelCopy = computed(() => directoryUsesNationwide.value
-	? "Showing the officials currently linked to your saved area."
-	: "Showing the officeholders currently available in this guide."
 );
 const requiresLookupPrompt = computed(() => !directoryUsesNationwide.value && !showGuideDirectory.value);
 
@@ -118,7 +114,7 @@ usePageSeo({
 
 			<div class="surface-panel">
 				<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-					Current lookup
+					Current area
 				</p>
 				<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
 					{{ activeLookupSummary.label }}
@@ -133,9 +129,6 @@ usePageSeo({
 					/>
 					<UpdatedAt v-if="activeLookupSummary.resolvedAt" :value="activeLookupSummary.resolvedAt" label="Lookup updated" />
 				</div>
-				<p class="text-sm text-app-muted leading-7 mt-6 dark:text-app-muted-dark">
-					{{ lookupPanelCopy }}
-				</p>
 				<div class="mt-6">
 					<NuxtLink :to="buildLookupAwareTarget('/districts')" class="btn-secondary">
 						Open district hub
@@ -215,9 +208,7 @@ usePageSeo({
 								<SourceDrawer
 									v-if="representative.sourceCount > 0 && representative.sources.length"
 									:button-label="formatSourceCountLabel(representative.sourceCount)"
-									:note="directoryUsesNationwide
-										? 'These are the records currently attached to this representative card.'
-										: 'These are the records currently attached to this representative card.'"
+									note="Sources attached to this card."
 									:sources="representative.sources"
 									:title="`${representative.name} directory sources`"
 									tone="accent"

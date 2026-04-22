@@ -624,7 +624,7 @@ async function resolveFundingAttachment(
 				status: buildEnrichmentStatus(
 					"unavailable",
 					"no_state_finance_source",
-					`Ballot Clarity does not yet have a reviewed state campaign-finance source configured for current ${stateName || "state"} legislative officeholder routes. This route still carries the officeholder identity and district context.`,
+					`No reviewed state campaign-finance source is configured for ${stateName || "this state"} legislative routes yet.`,
 					"State finance pipeline",
 				),
 			};
@@ -636,7 +636,7 @@ async function resolveFundingAttachment(
 				status: buildEnrichmentStatus(
 					"unavailable",
 					"no_local_finance_source",
-					"Ballot Clarity does not yet have a reviewed local campaign-finance source configured for this county or city officeholder route. This route still carries the current officeholder identity and provenance.",
+					"No reviewed local campaign-finance source is configured for this county or city officeholder route yet.",
 					"Local officeholder pipeline",
 				),
 			};
@@ -647,7 +647,7 @@ async function resolveFundingAttachment(
 			status: buildEnrichmentStatus(
 				"unavailable",
 				"federal_only_provider",
-				"Ballot Clarity currently attaches route-backed finance modules only for federal officeholders with a reliable OpenFEC crosswalk. This route still resolves the officeholder identity, but it is outside that current finance pipeline.",
+				"A finance record is currently available only for federal officeholders with a reliable OpenFEC match.",
 				"OpenFEC",
 			),
 		};
@@ -823,7 +823,7 @@ async function resolveInfluenceAttachment(
 				status: buildEnrichmentStatus(
 					"unavailable",
 					"no_state_disclosure_source",
-					`Ballot Clarity does not yet have a reviewed state lobbying or disclosure source configured for ${stateName || "this"} legislative officeholder route. This page stays person-backed, but influence context is not yet attached.`,
+					`No reviewed state lobbying or disclosure source is configured for ${stateName || "this"} legislative route yet.`,
 					"State disclosure pipeline",
 				),
 			};
@@ -835,7 +835,7 @@ async function resolveInfluenceAttachment(
 				status: buildEnrichmentStatus(
 					"unavailable",
 					"no_local_disclosure_source",
-					"Ballot Clarity does not yet have a reviewed local lobbying, ethics, or disclosure source configured for this county or city officeholder route. This page stays person-backed, but influence context is not yet attached.",
+					"No reviewed local lobbying, ethics, or disclosure source is configured for this county or city officeholder route yet.",
 					"Local officeholder pipeline",
 				),
 			};
@@ -846,7 +846,7 @@ async function resolveInfluenceAttachment(
 			status: buildEnrichmentStatus(
 				"unavailable",
 				"federal_only_provider",
-				"Ballot Clarity currently attaches route-backed lobbying and disclosure modules only for federal officeholders with a reliable federal crosswalk. This route still resolves the officeholder identity, but it is outside that current influence pipeline.",
+				"Disclosure and lobbying records are currently available only for federal officeholders with a reliable federal match.",
 				"LDA.gov",
 			),
 		};
@@ -905,7 +905,7 @@ async function resolveInfluenceAttachment(
 			status: buildEnrichmentStatus(
 				"unavailable",
 				"requires_funding_match",
-				"Ballot Clarity could not attach LD-203 contribution disclosures for this officeholder because the current route did not yield a reliable federal campaign committee anchor and the direct officeholder-name disclosure search did not return a usable match.",
+				"Ballot Clarity could not attach LD-203 contribution disclosures for this officeholder because it could not match the officeholder to a reliable federal campaign committee anchor, and the direct officeholder-name disclosure search did not return a usable match.",
 				"LDA.gov",
 			),
 		};
@@ -917,7 +917,7 @@ async function resolveInfluenceAttachment(
 			status: buildEnrichmentStatus(
 				"unavailable",
 				"provider_returned_no_records",
-				"LDA.gov did not return any LD-203 contribution reports for the committee and officeholder crosswalks Ballot Clarity checked for this route.",
+				"LDA.gov did not return any LD-203 contribution reports for the committee and officeholder crosswalks Ballot Clarity checked for this officeholder.",
 				"LDA.gov",
 			),
 		};
@@ -1303,7 +1303,7 @@ function buildLegislativeContextStatus(
 		target ? "no_provider_match" : "federal_only_provider",
 		target
 			? "Ballot Clarity could not verify an additional Congress.gov member record for this route, so legislative context remains limited to the current officeholder identity record."
-			: "Ballot Clarity currently attaches Congress.gov legislative context only to federal officeholders. This route still carries office context from the provider-backed representative record.",
+			: "Detailed Congress.gov activity is currently available only for federal officeholders. This page still shows the current office context.",
 		"Congress.gov",
 	);
 }

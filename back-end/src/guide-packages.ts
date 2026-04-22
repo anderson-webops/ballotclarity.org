@@ -198,12 +198,12 @@ function buildGuideContentSummary(
 		"Official logistics",
 		officialLogisticsSourceCount,
 		{
-			official_logistics_only: "Official logistics links are attached, but this layer still needs direct local verification.",
-			seeded_demo: "No official logistics links are attached to this guide package yet.",
-			staged_reference: "Logistics links still point at staged reference material instead of current official local sources.",
+			official_logistics_only: "Official election links are attached, but this layer still needs direct local verification.",
+			seeded_demo: "No official election links are attached yet.",
+			staged_reference: "Election links still point to staged reference material instead of current local sources.",
 			verified_local: officialLogisticsSourceCount
 				? "Official county and statewide election logistics are attached from current official sources."
-				: "Official logistics are not attached to this guide package yet.",
+				: "Official election links are not attached yet.",
 		},
 		officialResources.map((resource, index) => ({
 			authority: resource.authority,
@@ -220,10 +220,10 @@ function buildGuideContentSummary(
 		"Contests",
 		contests.length,
 		{
-			official_logistics_only: "Contest records are present, but this layer is still waiting on verified local packaging.",
-			seeded_demo: "No contest records are attached to this guide package yet.",
-			staged_reference: "Contest records still rely on staged reference-archive material instead of verified local packaging.",
-			verified_local: "Contest records are attached with verified local source coverage for this guide package.",
+			official_logistics_only: "Contest records are present, but they are still waiting on local review.",
+			seeded_demo: "No contest records are attached yet.",
+			staged_reference: "Contest records still rely on staged reference material instead of verified local content.",
+			verified_local: "Contest records are attached with verified local source coverage.",
 		},
 		contestSources,
 	);
@@ -231,10 +231,10 @@ function buildGuideContentSummary(
 		"Candidates",
 		candidates.length,
 		{
-			official_logistics_only: "Candidate records are present, but this layer is still waiting on verified local packaging.",
-			seeded_demo: "No candidate records are attached to this guide package yet.",
-			staged_reference: "Candidate records still rely on staged reference-archive material instead of verified local packaging.",
-			verified_local: "Candidate records are attached with verified local source coverage for this guide package.",
+			official_logistics_only: "Candidate records are present, but they are still waiting on local review.",
+			seeded_demo: "No candidate records are attached yet.",
+			staged_reference: "Candidate records still rely on staged reference material instead of verified local content.",
+			verified_local: "Candidate records are attached with verified local source coverage.",
 		},
 		candidateSources,
 	);
@@ -242,10 +242,10 @@ function buildGuideContentSummary(
 		"Measures",
 		measures.length,
 		{
-			official_logistics_only: "Measure records are present, but this layer is still waiting on verified local packaging.",
-			seeded_demo: "No measure records are attached to this guide package yet.",
-			staged_reference: "Measure records still rely on staged reference-archive material instead of verified local packaging.",
-			verified_local: "Measure records are attached with verified local source coverage for this guide package.",
+			official_logistics_only: "Measure records are present, but they are still waiting on local review.",
+			seeded_demo: "No measure records are attached yet.",
+			staged_reference: "Measure records still rely on staged reference material instead of verified local content.",
+			verified_local: "Measure records are attached with verified local source coverage.",
 		},
 		measureSources,
 	);
@@ -265,16 +265,16 @@ function buildGuideContentSummary(
 				: "seeded_demo";
 
 	const guideShellDetailByStatus: Record<GuideContentStatus, string> = {
-		official_logistics_only: "The local guide shell is published and official logistics are verified, but the contest package still needs verified local review.",
-		seeded_demo: "This guide shell is published for route wiring, but the package still reads as seeded demo content.",
-		staged_reference: "This guide shell is published, but contest, candidate, or measure layers still depend on staged reference content.",
-		verified_local: "This guide shell and its contest package are published with verified local content layers.",
+		official_logistics_only: "This local guide is published with verified official election links, but the contest pages still need local review.",
+		seeded_demo: "This local guide is published, but its contest pages still read as demo content.",
+		staged_reference: "This local guide is published, but some contest, candidate, or measure pages still rely on staged reference content.",
+		verified_local: "This local guide is published with verified local contest, candidate, and measure pages.",
 	};
 	const draftGuideShellDetailByStatus: Record<GuideContentStatus, string> = {
-		official_logistics_only: "This draft package already has verified official logistics, but the contest package still needs verified local review before publication.",
-		seeded_demo: "This draft package still reads as seeded demo content and is not ready for publication.",
-		staged_reference: "This draft package still depends on staged reference content and is not ready to represent a verified local guide.",
-		verified_local: "This draft package carries verified local content layers and can move toward publication review.",
+		official_logistics_only: "This draft already has verified official election links, but the contest pages still need local review before publication.",
+		seeded_demo: "This draft still reads as demo content and is not ready for publication.",
+		staged_reference: "This draft still depends on staged reference content and is not ready to represent a verified local guide.",
+		verified_local: "This draft carries verified local contest, candidate, and measure pages and can move toward publication review.",
 	};
 
 	return {
@@ -286,7 +286,7 @@ function buildGuideContentSummary(
 				? guideShellDetailByStatus[guideShellStatus]
 				: draftGuideShellDetailByStatus[guideShellStatus],
 			hasContent: workflow.status === "published",
-			label: "Guide shell",
+			label: "Local guide",
 			status: guideShellStatus,
 		},
 		mixedContent,
@@ -295,15 +295,15 @@ function buildGuideContentSummary(
 		publishedGuideShell: workflow.status === "published",
 		summary: workflow.status === "published"
 			? verifiedContestPackage
-				? "This published local guide includes verified official logistics and a verified local contest package."
+				? "This local guide includes verified official election links and verified contest, candidate, and measure pages."
 				: officialLogistics.status === "verified_local"
-					? "This published local guide shell has verified official logistics, but contest, candidate, or measure content is still staged until local verification is complete."
-					: "This published local guide shell is live, but its contest layers still need verified local packaging."
+					? "This local guide includes verified official election links, but some contest, candidate, or measure pages are still under local review."
+					: "This local guide is available, but its contest pages still need local verification."
 			: verifiedContestPackage
-				? "This draft package already carries verified official logistics and a verified local contest package."
+				? "This draft already carries verified official election links and verified contest, candidate, and measure pages."
 				: officialLogistics.status === "verified_local"
-					? "This draft package has verified official logistics, but contest, candidate, or measure content is still staged until local verification is complete."
-					: "This draft package still needs verified local packaging before it should be promoted as a guide.",
+					? "This draft has verified official election links, but some contest, candidate, or measure pages are still under local review."
+					: "This draft still needs local verification before it should be promoted as a guide.",
 		verifiedContestPackage,
 	};
 }
@@ -1137,11 +1137,11 @@ export function buildDefaultGuidePackageSeed(coverageRepository: CoverageReposit
 			coverageLimits: [
 				"Guide pages remain explanatory and should not be treated as the official ballot service.",
 				"District confirmation still belongs to official election tools for the final personalized ballot.",
-				"Contest, candidate, and measure pages stay staged until verified Fulton-specific ballot packaging replaces the reference archive.",
+				"Contest, candidate, and measure pages stay under local review until verified Fulton-specific ballot content replaces the reference archive.",
 			],
 			coverageNotes: [
-				"Guide shell is live so official logistics, route wiring, and verified lookup context stay public.",
-				"Contest, candidate, and measure layers still include staged reference-archive material until verified Fulton-specific ballot packaging is loaded.",
+				"The local guide is live so official links and core election pages stay public.",
+				"Contest, candidate, and measure pages still include staged reference material until verified Fulton-specific ballot content is loaded.",
 			],
 			createdAt: election.updatedAt,
 			draftedAt: election.updatedAt,
@@ -1150,7 +1150,7 @@ export function buildDefaultGuidePackageSeed(coverageRepository: CoverageReposit
 			jurisdictionSlug: jurisdiction.slug,
 			publishedAt,
 			reviewRecommendation: "publish",
-			reviewNotes: "Imported coverage snapshot promoted as a live guide shell with verified logistics and staged reference-archive contest layers.",
+			reviewNotes: "Imported coverage snapshot published with verified official links and staged contest layers still under local review.",
 			reviewedAt: publishedAt,
 			reviewer: "Imported snapshot",
 			status: "published",

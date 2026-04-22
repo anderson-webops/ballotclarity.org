@@ -6,9 +6,9 @@ export interface PlanUnavailableMessaging {
 	tone: "info" | "warning";
 }
 
-export const planRequiresPublishedGuideTitle = "Ballot plan requires a published local guide";
-export const missingGuideContextBody = "Ballot Clarity did not carry a published local guide into this page. The ballot plan stays guide-only for now, so return to the lookup and use the nationwide civic results and official tools instead.";
-export const nationwideOnlyGuideBody = "The latest lookup succeeded nationwide, but a published local Ballot Clarity guide is not available for this area yet. The ballot plan stays guide-only for now, so use the nationwide civic results and official tools instead.";
+export const planRequiresPublishedGuideTitle = "Ballot plan requires a local guide";
+export const missingGuideContextBody = "A local guide is not attached to this page yet. Return to the lookup and use the results, districts, representatives, and official election tools instead.";
+export const nationwideOnlyGuideBody = "The latest lookup succeeded, but a local guide is not available for this area yet. Use the results, districts, representatives, and official election tools instead.";
 
 export function buildPlanUnavailableMessaging(lookupContext: LookupContextState | null | undefined): PlanUnavailableMessaging {
 	if (lookupContext?.guideAvailability === "not-published") {

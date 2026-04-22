@@ -184,7 +184,7 @@ export function buildNationwidePersonProfileResponse(
 			lobbyingContext: [],
 			location: representative.location,
 			methodologyNotes: [
-				"This page is based on your saved lookup, not a published local guide.",
+				"This page is based on your saved lookup.",
 				"ZIP-based lookups can be broader than a full street-address match."
 			],
 			name: representative.name,

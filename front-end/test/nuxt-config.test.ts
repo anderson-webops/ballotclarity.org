@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
-import { appDescription, appName } from "../src/constants/index.ts";
+import { analyticsDomain, analyticsWebsiteId, appDescription, appName } from "../src/constants/index.ts";
 import { staleClientBuildStorageKey } from "../src/utils/deploy-recovery.ts";
 import { displayTimeZoneCookieName } from "../src/utils/display-time-zone.ts";
 
@@ -33,6 +33,11 @@ test("nuxt config uses srcDir and expected civic modules", async () => {
 		&& typeof script.innerHTML === "string"
 		&& script.innerHTML.includes(staleClientBuildStorageKey)
 		&& script.innerHTML.includes("window.location.reload()")
+	));
+	assert.ok(config.app?.head?.script?.some(script =>
+		script.src === `https://${analyticsDomain}/script.js`
+		&& script["data-website-id"] === analyticsWebsiteId
+		&& script.defer === true
 	));
 	assert.ok(config.app?.head?.link?.some(link => link.rel === "manifest" && typeof link.href === "string" && link.href.startsWith("/site.webmanifest")));
 	assert.equal(config.nitro?.routeRules?.["/_nuxt/**"]?.headers?.["cache-control"], "public, max-age=31536000, immutable");

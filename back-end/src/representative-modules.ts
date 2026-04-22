@@ -194,9 +194,9 @@ interface RepresentativeModuleAttachment {
 }
 
 export interface RepresentativeModuleResolver {
-	enrichLocationFinanceInfluenceAvailability: (context: ActiveNationwideLookupContext, currentDetail: string, currentStatus: "available" | "unavailable") => Promise<{
+	enrichLocationFinanceInfluenceAvailability: (context: ActiveNationwideLookupContext, currentDetail: string, currentStatus: "available" | "limited" | "unavailable") => Promise<{
 		detail: string;
-		status: "available" | "unavailable";
+		status: "available" | "limited" | "unavailable";
 	}>;
 	enrichNationwideDistrictRepresentatives: (context: ActiveNationwideLookupContext, representatives: RepresentativeSummary[]) => Promise<RepresentativeSummary[]>;
 	enrichNationwidePersonProfile: (context: ActiveNationwideLookupContext, response: PersonProfileResponse) => Promise<PersonProfileResponse>;

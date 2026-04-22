@@ -431,7 +431,28 @@ export type LocationLookupActionKind = "ballot-guide" | "official-verification";
 export type LocationLookupInputKind = "address" | "zip";
 export type LocationLookupResult = "resolved" | "unsupported";
 export type LocationGuideAvailability = "published" | "not-published";
-export type LocationDataAvailabilityStatus = "available" | "unavailable";
+export type GuideContentStatus = "verified_local" | "official_logistics_only" | "staged_reference" | "seeded_demo";
+export type LocationDataAvailabilityStatus = "available" | "limited" | "unavailable";
+
+export interface GuideContentLayerStatus {
+	count: number;
+	detail: string;
+	hasContent: boolean;
+	label: string;
+	status: GuideContentStatus;
+}
+
+export interface GuideContentSummary {
+	candidates: GuideContentLayerStatus;
+	contests: GuideContentLayerStatus;
+	guideShell: GuideContentLayerStatus;
+	mixedContent: boolean;
+	measures: GuideContentLayerStatus;
+	officialLogistics: GuideContentLayerStatus;
+	publishedGuideShell: boolean;
+	summary: string;
+	verifiedContestPackage: boolean;
+}
 
 export interface LocationDataAvailabilityItem {
 	label: string;
@@ -442,8 +463,11 @@ export interface LocationDataAvailabilityItem {
 export interface LocationDataAvailabilitySummary {
 	nationwideCivicResults: LocationDataAvailabilityItem;
 	representatives: LocationDataAvailabilityItem;
+	officialLogistics: LocationDataAvailabilityItem;
 	ballotCandidates: LocationDataAvailabilityItem;
 	financeInfluence: LocationDataAvailabilityItem;
+	guideShell: LocationDataAvailabilityItem;
+	verifiedContestPackage: LocationDataAvailabilityItem;
 	fullLocalGuide: LocationDataAvailabilityItem;
 }
 
@@ -475,6 +499,7 @@ export interface LocationLookupResponse {
 	selectionId?: string;
 	detectedFromIp?: boolean;
 	guideAvailability?: LocationGuideAvailability;
+	guideContent?: GuideContentSummary | null;
 	availability?: LocationDataAvailabilitySummary;
 	location?: LocationSelection;
 	electionSlug?: string;
@@ -496,6 +521,7 @@ export interface NationwideLookupResultContext {
 	selectionId?: string;
 	detectedFromIp?: boolean;
 	guideAvailability?: LocationGuideAvailability;
+	guideContent?: GuideContentSummary | null;
 	availability: LocationDataAvailabilitySummary | null;
 	location: LocationSelection | null;
 	election: ElectionSummary | null;
@@ -934,6 +960,7 @@ export interface RepresentativesResponse {
 }
 
 export interface BallotResponse {
+	guideContent: GuideContentSummary | null;
 	location: LocationSelection;
 	election: Election;
 	updatedAt: string;
@@ -1100,6 +1127,7 @@ export interface GuidePackageMeasureSummary {
 
 export interface GuidePackageSummary {
 	workflow: GuidePackageWorkflow;
+	contentStatus: GuideContentSummary;
 	election: ElectionSummary | null;
 	jurisdiction: JurisdictionSummary | null;
 	coverageScope: GuidePackageCoverageScope;

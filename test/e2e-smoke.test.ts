@@ -69,6 +69,11 @@ const nationwideLookupSnapshot = {
 				label: "Finance and influence",
 				status: "unavailable"
 			},
+			guideShell: {
+				detail: "No local guide shell is published for this area yet.",
+				label: "Local guide shell",
+				status: "unavailable"
+			},
 			fullLocalGuide: {
 				detail: "A full local contest and measure guide is not published for this area yet.",
 				label: "Full local guide",
@@ -79,10 +84,20 @@ const nationwideLookupSnapshot = {
 				label: "Nationwide civic results",
 				status: "available"
 			},
+			officialLogistics: {
+				detail: "Official election logistics or verification tools are attached for this lookup.",
+				label: "Official logistics",
+				status: "available"
+			},
 			representatives: {
 				detail: "Current representative data is available for this lookup from Open States (5 matches).",
 				label: "Representative data",
 				status: "available"
+			},
+			verifiedContestPackage: {
+				detail: "No verified local contest package is published for this area yet.",
+				label: "Verified contest package",
+				status: "unavailable"
 			}
 		},
 		detectedFromIp: false,

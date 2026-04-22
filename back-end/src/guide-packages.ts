@@ -4,6 +4,9 @@ import type {
 	Candidate,
 	Contest,
 	Election,
+	GuideContentLayerStatus,
+	GuideContentStatus,
+	GuideContentSummary,
 	GuidePackageCandidateSummary,
 	GuidePackageChecklistCategory,
 	GuidePackageChecklistCategoryGroup,
@@ -26,6 +29,7 @@ import type {
 	Jurisdiction,
 	Measure,
 	OfficialResource,
+	Source,
 } from "./types/civic.js";
 
 function uniqueById<T extends { id: string }>(items: T[]) {
@@ -132,6 +136,176 @@ function collectElectionSources(election: Election | null, jurisdiction: Jurisdi
 			url: resource.url,
 		})),
 	]);
+}
+
+const ballotClarityArchivePattern = /ballot clarity.*archive/i;
+const demoPattern = /\bdemo\b/i;
+const referenceArchivePattern = /reference[-\s]archive/i;
+
+function isReferenceArchiveSource(source: Source) {
+	return source.authority === "ballot-clarity-archive"
+		|| referenceArchivePattern.test(source.sourceSystem)
+		|| referenceArchivePattern.test(source.publisher)
+		|| referenceArchivePattern.test(source.title)
+		|| referenceArchivePattern.test(source.url)
+		|| ballotClarityArchivePattern.test(source.sourceSystem)
+		|| ballotClarityArchivePattern.test(source.publisher);
+}
+
+function isSeededDemoSource(source: Source) {
+	return demoPattern.test(source.sourceSystem)
+		|| demoPattern.test(source.publisher)
+		|| demoPattern.test(source.title);
+}
+
+function buildGuideContentLayerStatus(
+	label: string,
+	count: number,
+	detailByStatus: Record<GuideContentStatus, string>,
+	sources: Source[],
+): GuideContentLayerStatus {
+	const hasContent = count > 0;
+	let status: GuideContentStatus = "verified_local";
+
+	if (!hasContent)
+		status = "seeded_demo";
+	else if (sources.some(isReferenceArchiveSource))
+		status = "staged_reference";
+	else if (sources.every(isSeededDemoSource))
+		status = "seeded_demo";
+
+	return {
+		count,
+		detail: detailByStatus[status],
+		hasContent,
+		label,
+		status,
+	};
+}
+
+function buildGuideContentSummary(
+	workflow: GuidePackageWorkflow,
+	contests: Contest[],
+	candidates: Candidate[],
+	measures: Measure[],
+	officialResources: OfficialResource[],
+): GuideContentSummary {
+	const contestSources = uniqueById(contests.flatMap(collectContestSources));
+	const candidateSources = uniqueById(candidates.flatMap(candidate => candidate.sources));
+	const measureSources = uniqueById(measures.flatMap(measure => measure.sources));
+	const officialLogisticsSourceCount = officialResources.filter(resource => resource.authority === "official-government").length;
+	const officialLogistics = buildGuideContentLayerStatus(
+		"Official logistics",
+		officialLogisticsSourceCount,
+		{
+			official_logistics_only: "Official logistics links are attached, but this layer still needs direct local verification.",
+			seeded_demo: "No official logistics links are attached to this guide package yet.",
+			staged_reference: "Logistics links still point at staged reference material instead of current official local sources.",
+			verified_local: officialLogisticsSourceCount
+				? "Official county and statewide election logistics are attached from current official sources."
+				: "Official logistics are not attached to this guide package yet.",
+		},
+		officialResources.map((resource, index) => ({
+			authority: resource.authority,
+			date: workflow.updatedAt,
+			id: `official-logistics:${resource.label}:${index}`,
+			publisher: resource.sourceLabel,
+			sourceSystem: resource.sourceSystem,
+			title: resource.label,
+			type: "official record" as const,
+			url: resource.url,
+		})),
+	);
+	const contestsLayer = buildGuideContentLayerStatus(
+		"Contests",
+		contests.length,
+		{
+			official_logistics_only: "Contest records are present, but this layer is still waiting on verified local packaging.",
+			seeded_demo: "No contest records are attached to this guide package yet.",
+			staged_reference: "Contest records still rely on staged reference-archive material instead of verified local packaging.",
+			verified_local: "Contest records are attached with verified local source coverage for this guide package.",
+		},
+		contestSources,
+	);
+	const candidatesLayer = buildGuideContentLayerStatus(
+		"Candidates",
+		candidates.length,
+		{
+			official_logistics_only: "Candidate records are present, but this layer is still waiting on verified local packaging.",
+			seeded_demo: "No candidate records are attached to this guide package yet.",
+			staged_reference: "Candidate records still rely on staged reference-archive material instead of verified local packaging.",
+			verified_local: "Candidate records are attached with verified local source coverage for this guide package.",
+		},
+		candidateSources,
+	);
+	const measuresLayer = buildGuideContentLayerStatus(
+		"Measures",
+		measures.length,
+		{
+			official_logistics_only: "Measure records are present, but this layer is still waiting on verified local packaging.",
+			seeded_demo: "No measure records are attached to this guide package yet.",
+			staged_reference: "Measure records still rely on staged reference-archive material instead of verified local packaging.",
+			verified_local: "Measure records are attached with verified local source coverage for this guide package.",
+		},
+		measureSources,
+	);
+	const contestLayers = [contestsLayer, candidatesLayer, measuresLayer].filter(layer => layer.hasContent);
+	const verifiedContestPackage = contestLayers.length > 0
+		&& contestLayers.every(layer => layer.status === "verified_local");
+	const mixedContent = new Set([
+		officialLogistics.status,
+		...contestLayers.map(layer => layer.status),
+	]).size > 1;
+	const guideShellStatus: GuideContentStatus = verifiedContestPackage
+		? "verified_local"
+		: officialLogistics.status === "verified_local"
+			? "official_logistics_only"
+			: contestLayers.some(layer => layer.status === "staged_reference")
+				? "staged_reference"
+				: "seeded_demo";
+
+	const guideShellDetailByStatus: Record<GuideContentStatus, string> = {
+		official_logistics_only: "The local guide shell is published and official logistics are verified, but the contest package still needs verified local review.",
+		seeded_demo: "This guide shell is published for route wiring, but the package still reads as seeded demo content.",
+		staged_reference: "This guide shell is published, but contest, candidate, or measure layers still depend on staged reference content.",
+		verified_local: "This guide shell and its contest package are published with verified local content layers.",
+	};
+	const draftGuideShellDetailByStatus: Record<GuideContentStatus, string> = {
+		official_logistics_only: "This draft package already has verified official logistics, but the contest package still needs verified local review before publication.",
+		seeded_demo: "This draft package still reads as seeded demo content and is not ready for publication.",
+		staged_reference: "This draft package still depends on staged reference content and is not ready to represent a verified local guide.",
+		verified_local: "This draft package carries verified local content layers and can move toward publication review.",
+	};
+
+	return {
+		candidates: candidatesLayer,
+		contests: contestsLayer,
+		guideShell: {
+			count: Number(workflow.status === "published"),
+			detail: workflow.status === "published"
+				? guideShellDetailByStatus[guideShellStatus]
+				: draftGuideShellDetailByStatus[guideShellStatus],
+			hasContent: workflow.status === "published",
+			label: "Guide shell",
+			status: guideShellStatus,
+		},
+		mixedContent,
+		measures: measuresLayer,
+		officialLogistics,
+		publishedGuideShell: workflow.status === "published",
+		summary: workflow.status === "published"
+			? verifiedContestPackage
+				? "This published local guide includes verified official logistics and a verified local contest package."
+				: officialLogistics.status === "verified_local"
+					? "This published local guide shell has verified official logistics, but contest, candidate, or measure content is still staged until local verification is complete."
+					: "This published local guide shell is live, but its contest layers still need verified local packaging."
+			: verifiedContestPackage
+				? "This draft package already carries verified official logistics and a verified local contest package."
+				: officialLogistics.status === "verified_local"
+					? "This draft package has verified official logistics, but contest, candidate, or measure content is still staged until local verification is complete."
+					: "This draft package still needs verified local packaging before it should be promoted as a guide.",
+		verifiedContestPackage,
+	};
 }
 
 const guidePackageRubricVersion = "2026-04-19";
@@ -963,10 +1137,11 @@ export function buildDefaultGuidePackageSeed(coverageRepository: CoverageReposit
 			coverageLimits: [
 				"Guide pages remain explanatory and should not be treated as the official ballot service.",
 				"District confirmation still belongs to official election tools for the final personalized ballot.",
+				"Contest, candidate, and measure pages stay staged until verified Fulton-specific ballot packaging replaces the reference archive.",
 			],
 			coverageNotes: [
-				"Draft package assembled from the imported coverage snapshot and the current editorial content store.",
-				"Final publish state still depends on explicit reviewer promotion, even when the package is already active in this environment.",
+				"Guide shell is live so official logistics, route wiring, and verified lookup context stay public.",
+				"Contest, candidate, and measure layers still include staged reference-archive material until verified Fulton-specific ballot packaging is loaded.",
 			],
 			createdAt: election.updatedAt,
 			draftedAt: election.updatedAt,
@@ -975,7 +1150,7 @@ export function buildDefaultGuidePackageSeed(coverageRepository: CoverageReposit
 			jurisdictionSlug: jurisdiction.slug,
 			publishedAt,
 			reviewRecommendation: "publish",
-			reviewNotes: "Imported coverage snapshot promoted as the current public local guide package.",
+			reviewNotes: "Imported coverage snapshot promoted as a live guide shell with verified logistics and staged reference-archive contest layers.",
 			reviewedAt: publishedAt,
 			reviewer: "Imported snapshot",
 			status: "published",
@@ -1005,10 +1180,12 @@ export function buildGuidePackageRecord(
 	const attachedSources = collectElectionSources(election, jurisdiction);
 	const contentIndex = buildContentIndex(contentItems);
 	const diagnostics = buildDiagnostics(workflow, election, jurisdiction, contests, candidates, measures, officialResources, contentIndex);
+	const contentStatus = buildGuideContentSummary(workflow, contests, candidates, measures, officialResources);
 
 	return {
 		attachedSources,
 		candidates: candidates.map(candidate => buildCandidateSummary(candidate, contentIndex)),
+		contentStatus,
 		contests: contests.map(buildContestSummary),
 		counts: {
 			attachedSources: attachedSources.length,
@@ -1068,6 +1245,7 @@ export function buildGuidePackageRecord(
 
 export function buildGuidePackageSummary(packageRecord: GuidePackageRecord): GuidePackageSummary {
 	return {
+		contentStatus: packageRecord.contentStatus,
 		counts: packageRecord.counts,
 		coverageScope: packageRecord.coverageScope,
 		diagnostics: {

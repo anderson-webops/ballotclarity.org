@@ -4,6 +4,13 @@ const route = useRoute();
 const { formatDate, formatDateTime } = useFormatters();
 const electionSlug = computed(() => String(route.params.slug));
 const { data, error, pending } = await useBallot(electionSlug);
+const guideStatusTitle = computed(() => data.value?.guideContent?.verifiedContestPackage
+	? "Verified local guide"
+	: data.value?.guideContent?.publishedGuideShell
+		? "Guide shell live"
+		: "Trust note");
+const guideStatusNote = computed(() => data.value?.guideContent?.summary
+	?? "Use this page for key dates and official links, then open the full ballot guide for contest-by-contest reading.");
 
 watchEffect(() => {
 	if (data.value) {
@@ -83,8 +90,8 @@ usePageSeo({
 				</div>
 
 				<div class="space-y-4">
-					<InfoCallout title="Trust note" tone="warning">
-						This page is designed to be the stable, indexable election overview. Use it for key dates and official links, then open the full ballot guide for contest-by-contest reading.
+					<InfoCallout :title="guideStatusTitle" tone="warning">
+						{{ guideStatusNote }}
 					</InfoCallout>
 					<div class="surface-panel">
 						<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
@@ -134,7 +141,7 @@ usePageSeo({
 						Official links and notices
 					</h2>
 					<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-						These resource links stand in for election calendars, voting-method instructions, and other official notices that a live jurisdiction page should surface prominently.
+						These resource links surface the official election notices, calendars, and logistics Ballot Clarity has attached for this guide package.
 					</p>
 					<div class="mt-6">
 						<OfficialResourceList :resources="data.election.officialResources" />
@@ -146,7 +153,7 @@ usePageSeo({
 						Change log
 					</h2>
 					<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-						Election pages should make recent edits visible so voters can judge freshness without comparing multiple tabs.
+						Recent edits stay visible here so voters can judge freshness without comparing multiple tabs.
 					</p>
 					<ul class="mt-6 space-y-3">
 						<li v-for="entry in data.election.changeLog" :key="entry.id" class="px-4 py-4 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70">

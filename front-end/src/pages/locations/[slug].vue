@@ -10,11 +10,18 @@ const { data: nextElectionData } = await useBallot(nextElectionSlug);
 
 const registrationDeadline = computed(() => nextElectionData.value?.election.keyDates.find(item => item.label === "Registration deadline") ?? null);
 const earlyVotingDate = computed(() => nextElectionData.value?.election.keyDates.find(item => item.label === "Early voting opens") ?? null);
+const guideStatusTitle = computed(() => nextElectionData.value?.guideContent?.verifiedContestPackage
+	? "Verified local guide"
+	: nextElectionData.value?.guideContent?.publishedGuideShell
+		? "Guide shell live"
+		: "Coverage note");
+const guideStatusNote = computed(() => nextElectionData.value?.guideContent?.summary
+	?? "Use this page to orient yourself, then verify deadlines, polling logistics, and late changes with the linked official election office and voter tools.");
 
 watchEffect(() => {
 	if (jurisdiction.value) {
 		civicStore.setLocation({
-			coverageLabel: `Published ballot guide area: ${jurisdiction.value.displayName}`,
+			coverageLabel: `Live local guide area: ${jurisdiction.value.displayName}`,
 			displayName: jurisdiction.value.displayName,
 			slug: jurisdiction.value.slug,
 			state: jurisdiction.value.state
@@ -106,6 +113,9 @@ usePageSeo({
 				<div class="space-y-4">
 					<InfoCallout title="Not an official government site" tone="warning">
 						Use this page to orient yourself, then verify deadlines, polling logistics, and late changes with {{ jurisdiction.officialOffice.name }} and the linked official voter tools.
+					</InfoCallout>
+					<InfoCallout :title="guideStatusTitle" tone="warning">
+						{{ guideStatusNote }}
 					</InfoCallout>
 					<AddressLookupForm compact :election="jurisdiction.upcomingElections[0] ?? null" />
 				</div>

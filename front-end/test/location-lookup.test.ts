@@ -28,9 +28,20 @@ test("location lookup treats nationwide-only resolved coverage as a success stat
 test("location lookup only exposes guide navigation when published guide coverage exists", () => {
 	const response = {
 		electionSlug: "2026-fulton-county-general",
+		guideContent: {
+			candidates: { count: 5, detail: "Candidate records still rely on staged reference-archive material instead of verified local packaging.", hasContent: true, label: "Candidates", status: "staged_reference" as const },
+			contests: { count: 4, detail: "Contest records still rely on staged reference-archive material instead of verified local packaging.", hasContent: true, label: "Contests", status: "staged_reference" as const },
+			guideShell: { count: 1, detail: "The local guide shell is published and official logistics are verified, but the contest package still needs verified local review.", hasContent: true, label: "Guide shell", status: "official_logistics_only" as const },
+			mixedContent: true,
+			measures: { count: 2, detail: "Measure records still rely on staged reference-archive material instead of verified local packaging.", hasContent: true, label: "Measures", status: "staged_reference" as const },
+			officialLogistics: { count: 3, detail: "Official county and statewide election logistics are attached from current official sources.", hasContent: true, label: "Official logistics", status: "verified_local" as const },
+			publishedGuideShell: true,
+			summary: "This published local guide shell has verified official logistics, but contest, candidate, or measure content is still staged until local verification is complete.",
+			verifiedContestPackage: false
+		},
 		guideAvailability: "published" as const,
 		location: {
-			coverageLabel: "Published ballot guide area: Fulton County, Georgia",
+			coverageLabel: "Live local guide area: Fulton County, Georgia",
 			displayName: "Fulton County, Georgia",
 			slug: "fulton-county-georgia",
 			state: "Georgia"
@@ -43,7 +54,8 @@ test("location lookup only exposes guide navigation when published guide coverag
 		{ description: "Open guide", electionSlug: "2026-fulton-county-general", id: "guide", kind: "ballot-guide", location: response.location, title: "Fulton County" }
 	], response).length, 1);
 	assert.equal(buildLookupPresentation(response).canOpenGuide, true);
-	assert.equal(buildLookupPresentation(response).heading, "Local guide and civic results ready");
+	assert.equal(buildLookupPresentation(response).heading, "Local guide shell and civic results ready");
+	assert.equal(buildLookupPresentation(response).availabilityBadgeLabel, "Local guide shell live");
 });
 
 test("location lookup shows a chooser state when a ZIP still needs one more area selection", () => {

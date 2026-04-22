@@ -44,6 +44,7 @@ export function normalizeLookupResponseForDisplay(
 		districtMatches: response.districtMatches ?? [],
 		election: election ?? null,
 		electionLogistics: response.electionLogistics ?? null,
+		guideContent: response.guideContent ?? null,
 		electionSlug: response.electionSlug,
 		fromCache: Boolean(response.fromCache),
 		guideAvailability: response.guideAvailability,

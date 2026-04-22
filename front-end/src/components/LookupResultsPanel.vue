@@ -27,6 +27,7 @@ function isExternalHref(href: string) {
 
 const lookupResolution = computed(() => ({
 	electionSlug: props.lookup.electionSlug,
+	guideContent: props.lookup.guideContent,
 	guideAvailability: props.lookup.guideAvailability,
 	location: props.lookup.location ?? undefined,
 	result: props.lookup.result
@@ -54,12 +55,19 @@ const availabilityItems = computed(() => {
 
 	return [
 		props.lookup.availability.nationwideCivicResults,
+		props.lookup.availability.officialLogistics,
 		props.lookup.availability.representatives,
 		props.lookup.availability.ballotCandidates,
 		props.lookup.availability.financeInfluence,
+		props.lookup.availability.guideShell,
+		props.lookup.availability.verifiedContestPackage,
 		props.lookup.availability.fullLocalGuide
 	];
 });
+
+function availabilityTone(status: "available" | "limited" | "unavailable") {
+	return status === "available" ? "accent" : status === "limited" ? "warning" : "neutral";
+}
 
 function openGuideAction(action: LocationLookupAction) {
 	if (action.kind !== "ballot-guide")
@@ -118,7 +126,7 @@ function getRepresentativePresentation(match: NationwideLookupResultContext["rep
 						{{ option.label }}
 					</p>
 					<VerificationBadge
-						:label="option.guideAvailability === 'published' ? 'Local guide available' : 'Nationwide results'"
+						:label="option.guideAvailability === 'published' ? 'Live local guide' : 'Nationwide results'"
 						:tone="option.guideAvailability === 'published' ? 'accent' : 'neutral'"
 					/>
 					<VerificationBadge
@@ -164,7 +172,7 @@ function getRepresentativePresentation(match: NationwideLookupResultContext["rep
 					<p class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
 						{{ item.label }}
 					</p>
-					<VerificationBadge :label="item.status" :tone="item.status === 'available' ? 'accent' : 'neutral'" />
+					<VerificationBadge :label="item.status" :tone="availabilityTone(item.status)" />
 				</div>
 				<p class="text-sm text-app-muted leading-6 mt-3 dark:text-app-muted-dark">
 					{{ item.detail }}
@@ -199,7 +207,7 @@ function getRepresentativePresentation(match: NationwideLookupResultContext["rep
 						@click="openGuideAction(action)"
 					>
 						<span class="i-carbon-arrow-right" />
-						Open local guide
+						{{ lookup.guideContent?.verifiedContestPackage ? "Open local guide" : "Open guide shell" }}
 					</button>
 					<a
 						v-else-if="action.url"

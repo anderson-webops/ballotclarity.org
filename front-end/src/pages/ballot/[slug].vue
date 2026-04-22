@@ -215,6 +215,7 @@ const coverageNotes = computed(() => {
 
 	return [
 		`This ballot is personalized to ${personalizationLabel.value}. ${personalizationNote.value}`,
+		...(data.value.guideContent ? [data.value.guideContent.summary] : []),
 		`${data.value.election.officialResources.length} official links are attached for election logistics, notices, and office contact details.`,
 		`${ballotCounts.value.sourceLinkedItems} contest items in this guide link to source drawers or evidence panels in the project archive.`,
 		`${effectiveBallotPlanCount.value} contest${effectiveBallotPlanCount.value === 1 ? "" : "s"} saved to your ballot plan so far.`,
@@ -290,6 +291,7 @@ function clearFilters() {
 		<ElectionHero
 			v-if="data"
 			:election="data.election"
+			:guide-content="data.guideContent"
 			:location="data.location"
 			:note="data.note"
 		/>

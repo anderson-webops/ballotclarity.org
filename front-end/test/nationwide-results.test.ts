@@ -7,6 +7,48 @@ import {
 	resolveLookupDestination
 } from "../src/utils/nationwide-results.ts";
 
+const stagedGuideContent = {
+	candidates: {
+		count: 5,
+		detail: "Candidate records still rely on staged reference-archive material instead of verified local packaging.",
+		hasContent: true,
+		label: "Candidates",
+		status: "staged_reference" as const,
+	},
+	contests: {
+		count: 4,
+		detail: "Contest records still rely on staged reference-archive material instead of verified local packaging.",
+		hasContent: true,
+		label: "Contests",
+		status: "staged_reference" as const,
+	},
+	guideShell: {
+		count: 1,
+		detail: "The local guide shell is published and official logistics are verified, but the contest package still needs verified local review.",
+		hasContent: true,
+		label: "Guide shell",
+		status: "official_logistics_only" as const,
+	},
+	mixedContent: true,
+	measures: {
+		count: 2,
+		detail: "Measure records still rely on staged reference-archive material instead of verified local packaging.",
+		hasContent: true,
+		label: "Measures",
+		status: "staged_reference" as const,
+	},
+	officialLogistics: {
+		count: 3,
+		detail: "Official county and statewide election logistics are attached from current official sources.",
+		hasContent: true,
+		label: "Official logistics",
+		status: "verified_local" as const,
+	},
+	publishedGuideShell: true,
+	summary: "This published local guide shell has verified official logistics, but contest, candidate, or measure content is still staged until local verification is complete.",
+	verifiedContestPackage: false,
+};
+
 const activeElection: ElectionSummary = {
 	date: "2026-11-03",
 	jurisdictionSlug: "utah-county-utah",
@@ -37,6 +79,11 @@ const nationwideResponse: LocationLookupResponse = {
 			label: "Finance and influence",
 			status: "unavailable"
 		},
+		guideShell: {
+			detail: "No local guide shell is published for this area yet.",
+			label: "Local guide shell",
+			status: "unavailable"
+		},
 		fullLocalGuide: {
 			detail: "A full local contest and measure guide is not published for this area yet.",
 			label: "Full local guide",
@@ -47,10 +94,20 @@ const nationwideResponse: LocationLookupResponse = {
 			label: "Nationwide civic results",
 			status: "available"
 		},
+		officialLogistics: {
+			detail: "Official election logistics or verification tools are attached for this lookup.",
+			label: "Official logistics",
+			status: "available"
+		},
 		representatives: {
 			detail: "Current representative data is available for this lookup from Open States (1 match).",
 			label: "Representative data",
 			status: "available"
+		},
+		verifiedContestPackage: {
+			detail: "No verified local contest package is published for this area yet.",
+			label: "Verified contest package",
+			status: "unavailable"
 		}
 	},
 	districtMatches: [
@@ -122,9 +179,10 @@ const ipGuessedPublishedGuideResponse: LocationLookupResponse = {
 	...nationwideResponse,
 	detectedFromIp: true,
 	electionSlug: "2026-fulton-county-general",
+	guideContent: stagedGuideContent,
 	guideAvailability: "published",
 	location: {
-		coverageLabel: "Published ballot guide area: Fulton County, Georgia",
+		coverageLabel: "Live local guide area: Fulton County, Georgia",
 		displayName: "Fulton County, Georgia",
 		lookupMode: "zip-preview",
 		requiresOfficialConfirmation: true,
@@ -193,6 +251,7 @@ test("ip-guessed guide availability stays in nationwide context until the user c
 	assert.equal(update.selectedLocation, null);
 	assert.equal(update.nationwideLookupResult?.detectedFromIp, true);
 	assert.equal(update.nationwideLookupResult?.guideAvailability, "published");
+	assert.equal(update.nationwideLookupResult?.guideContent?.publishedGuideShell, true);
 });
 
 test("manual address or ZIP lookup overrides guessed context by activating the published guide location", () => {

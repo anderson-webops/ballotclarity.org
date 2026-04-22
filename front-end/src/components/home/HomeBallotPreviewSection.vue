@@ -19,6 +19,12 @@ const nationwideLocationLabel = computed(() => props.nationwideLookupResult?.loc
 const officialToolCount = computed(() => props.nationwideLookupResult?.actions.filter(action => action.kind === "official-verification").length ?? 0);
 const districtMatchesHref = computed(() => buildHomeNationwideSummaryHref("/districts", props.nationwideLookupResult));
 const representativesHref = computed(() => buildHomeNationwideSummaryHref("/representatives", props.nationwideLookupResult));
+const featuredGuideStatusLabel = computed(() => props.ballotPreview?.guideContent?.verifiedContestPackage
+	? "Verified local guide"
+	: props.ballotPreview?.guideContent?.publishedGuideShell
+		? "Guide shell live"
+		: "Guide status");
+const featuredGuideStatusNote = computed(() => props.ballotPreview?.guideContent?.summary ?? "");
 </script>
 
 <template>
@@ -91,32 +97,46 @@ const representativesHref = computed(() => buildHomeNationwideSummaryHref("/repr
 							Local guide
 						</p>
 						<p class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-							{{ nationwideLookupResult.guideAvailability === "published" ? "Published" : "Not yet" }}
+							{{ nationwideLookupResult.guideContent?.verifiedContestPackage ? "Verified" : nationwideLookupResult.guideAvailability === "published" ? "Shell live" : "Not yet" }}
 						</p>
 						<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
-							Contest and measure pages open when a local guide is available.
+							{{ nationwideLookupResult.guideContent?.verifiedContestPackage
+								? "Contest and measure pages are locally verified for this area."
+								: nationwideLookupResult.guideAvailability === "published"
+									? "The guide shell is live, but contest pages are still being locally verified."
+									: "Contest and measure pages open when a local guide is available." }}
 						</p>
 					</li>
 				</ul>
-				<ul v-else-if="showFeaturedGuidePreview && ballotPreview" class="mt-6 divide-app-line divide-y dark:divide-app-line-dark">
-					<li
-						v-for="contest in ballotPreview.election.contests"
-						:key="contest.slug"
-						class="py-4 flex gap-4 items-start justify-between"
-					>
-						<div>
-							<p class="text-app-ink font-semibold dark:text-app-text-dark">
-								{{ contest.office }}
-							</p>
-							<p class="text-sm text-app-muted leading-7 mt-1 dark:text-app-muted-dark">
-								{{ contest.description }}
-							</p>
-						</div>
-						<span class="text-xs text-app-muted font-semibold px-3 py-1 rounded-full bg-app-bg whitespace-nowrap dark:text-app-muted-dark dark:bg-app-bg-dark/70">
-							{{ contest.type === "candidate" ? `${contest.candidates?.length || 0} candidates` : `${contest.measures?.length || 0} measure` }}
-						</span>
-					</li>
-				</ul>
+				<template v-else-if="showFeaturedGuidePreview && ballotPreview">
+					<div v-if="ballotPreview.guideContent" class="mt-6 p-4 rounded-[1.35rem] bg-app-bg/70 dark:bg-app-bg-dark/70">
+						<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+							{{ featuredGuideStatusLabel }}
+						</p>
+						<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
+							{{ featuredGuideStatusNote }}
+						</p>
+					</div>
+					<ul class="mt-6 divide-app-line divide-y dark:divide-app-line-dark">
+						<li
+							v-for="contest in ballotPreview.election.contests"
+							:key="contest.slug"
+							class="py-4 flex gap-4 items-start justify-between"
+						>
+							<div>
+								<p class="text-app-ink font-semibold dark:text-app-text-dark">
+									{{ contest.office }}
+								</p>
+								<p class="text-sm text-app-muted leading-7 mt-1 dark:text-app-muted-dark">
+									{{ contest.description }}
+								</p>
+							</div>
+							<span class="text-xs text-app-muted font-semibold px-3 py-1 rounded-full bg-app-bg whitespace-nowrap dark:text-app-muted-dark dark:bg-app-bg-dark/70">
+								{{ contest.type === "candidate" ? `${contest.candidates?.length || 0} candidates` : `${contest.measures?.length || 0} measure` }}
+							</span>
+						</li>
+					</ul>
+				</template>
 				<p v-else class="text-sm text-app-muted leading-7 mt-6 dark:text-app-muted-dark">
 					{{ showNationwideResults
 						? "Your lookup is loaded. Open the results page for the full district, representative, and official-link view."

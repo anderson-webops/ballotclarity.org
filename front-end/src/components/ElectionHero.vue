@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import type { Election, LocationSelection } from "~/types/civic";
+import type { Election, GuideContentSummary, LocationSelection } from "~/types/civic";
 
 const props = defineProps<{
 	election: Election;
+	guideContent?: GuideContentSummary | null;
 	location: LocationSelection;
 	note: string;
 }>();
@@ -11,6 +12,12 @@ const { formatDate } = useFormatters();
 const contestCount = computed(() => props.election.contests.length);
 const measureCount = computed(() => props.election.contests.reduce((count, contest) => count + (contest.measures?.length ?? 0), 0));
 const personalizationLabel = computed(() => props.location.lookupInput ?? props.location.displayName);
+const guideStatusTitle = computed(() => props.guideContent?.verifiedContestPackage
+	? "Verified local guide"
+	: props.guideContent?.publishedGuideShell
+		? "Guide shell live"
+		: "Coverage note");
+const guideStatusNote = computed(() => props.guideContent?.summary ?? props.note);
 const matchGuidance = computed(() => {
 	if (props.location.lookupMode === "zip-preview")
 		return "This guide was opened from a ZIP-only preview. ZIPs can span multiple districts, so verify the exact ballot in the official election tools before relying on district-specific contests.";
@@ -102,8 +109,8 @@ function printBallot() {
 					</div>
 
 					<div class="mt-6 space-y-3">
-						<InfoCallout title="Coverage note" tone="warning">
-							{{ props.note }}
+						<InfoCallout :title="guideStatusTitle" tone="warning">
+							{{ guideStatusNote }}
 						</InfoCallout>
 
 						<div class="bc-action-cluster">

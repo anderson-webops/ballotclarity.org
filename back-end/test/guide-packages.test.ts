@@ -58,6 +58,12 @@ test("buildGuidePackageRecord generates the grouped reviewer rubric for draft pa
 	assert.equal(record.diagnostics.recommendation.final, "publish_with_warnings");
 	assert.equal(record.diagnostics.readyToPublish, false);
 	assert.match(record.diagnostics.recommendation.reason, /reviewer/i);
+	assert.equal(record.contentStatus.publishedGuideShell, false);
+	assert.equal(record.contentStatus.officialLogistics.status, "verified_local");
+	assert.equal(record.contentStatus.contests.status, "staged_reference");
+	assert.equal(record.contentStatus.candidates.status, "staged_reference");
+	assert.equal(record.contentStatus.guideShell.status, "official_logistics_only");
+	assert.equal(record.contentStatus.verifiedContestPackage, false);
 
 	const scopeCategory = record.diagnostics.checklistCategories.find(group => group.id === "election_identity_scope");
 	assert.ok(scopeCategory);

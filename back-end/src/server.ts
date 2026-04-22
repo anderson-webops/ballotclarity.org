@@ -235,9 +235,9 @@ function buildZipSelectionOption(
 		|| match.postalCode;
 	const guideSentence = supportedCoverageSummaries.length
 		? supportedCoverageSummaries.length === 1
-			? "A published local guide is available after you choose this area."
-			: `${supportedCoverageSummaries.length} published local guide areas still match this ZIP area.`
-		: "No published local guide is available for this area yet.";
+			? "A live local guide package is available after you choose this area."
+			: `${supportedCoverageSummaries.length} live local guide areas still match this ZIP area.`
+		: "No live local guide package is available for this area yet.";
 
 	return {
 		description: [
@@ -3354,7 +3354,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 
 		return {
 			candidateAvailabilityNote: contest.candidates?.length
-				? "Candidate field records are attached to this district page from the published local guide."
+				? "Candidate records are attached to this district page, but some guide areas may still carry staged contest material until local verification is complete."
 				: "No source-backed candidate field is attached to this district page yet.",
 			candidates: contest.candidates ?? [],
 			district: {
@@ -3364,7 +3364,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 				roleGuide: contest.roleGuide
 			},
 			districtOriginLabel: "Published district page",
-			districtOriginNote: "This district page comes from Ballot Clarity's published local guide layer.",
+			districtOriginNote: "This district page comes from Ballot Clarity's live local guide package. Official logistics may be verified before every contest layer in the package is fully locally verified.",
 			election: {
 				date: election.date,
 				jurisdictionSlug: election.jurisdictionSlug,
@@ -3378,7 +3378,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 			officialResources: election.officialResources,
 			relatedContests,
 			representativeAvailabilityNote: representatives.length
-				? `${representatives.length} current officeholder${representatives.length === 1 ? "" : "s"} ${representatives.length === 1 ? "is" : "are"} attached to this published district page.`
+				? `${representatives.length} current officeholder${representatives.length === 1 ? "" : "s"} ${representatives.length === 1 ? "is" : "are"} attached to this district page from the live guide package.`
 				: "This published district page does not currently have an incumbent officeholder card attached.",
 			representatives,
 			sources,
@@ -3402,7 +3402,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 		return {
 			districts,
 			mode: "guide",
-			note: "This directory highlights currently serving officials Ballot Clarity can attach to either the active nationwide lookup or the published local guide layer, then links back to district, funding, and influence pages where those modules exist.",
+			note: "This directory highlights current officials Ballot Clarity can attach to either the active lookup or the live local guide package, then links back to district, funding, and influence pages where those records exist.",
 			representatives,
 			updatedAt: representatives.map(item => item.updatedAt).sort((left, right) => right.localeCompare(left))[0] ?? coverageRepository.data.updatedAt
 		};
@@ -3829,7 +3829,8 @@ export async function createApp(options: CreateAppOptions = {}) {
 			officialLookup,
 			addressEnrichment,
 			selectionOptions,
-			selectionId
+			selectionId,
+			publishedPrimaryPackage?.contentStatus ?? null,
 		);
 
 		const activeLookupContext = buildActiveNationwideLookupContext(lookupResponse);
@@ -4324,7 +4325,10 @@ export async function createApp(options: CreateAppOptions = {}) {
 			return;
 		}
 
-		const election = await getPublicElection(electionSlug);
+		const [election, guidePackage] = await Promise.all([
+			getPublicElection(electionSlug),
+			getPublishedGuidePackageByElectionSlug(electionSlug),
+		]);
 
 		if (!election) {
 			response.status(404).json({
@@ -4341,12 +4345,15 @@ export async function createApp(options: CreateAppOptions = {}) {
 		}
 
 		response.json({
+			guideContent: guidePackage?.contentStatus ?? null,
 			election,
 			location: {
 				...defaultLocation,
 				slug: requestedLocationSlug || defaultLocation.slug
 			},
-			note: "Current public coverage is running from the latest imported civic-data snapshot. Verify official election logistics with the linked election office.",
+			note: guidePackage?.contentStatus
+				? `${guidePackage.contentStatus.summary} Verify official election logistics with the linked election office.`
+				: "Current public coverage is running from the latest imported civic-data snapshot. Verify official election logistics with the linked election office.",
 			updatedAt: election.updatedAt
 		});
 	});

@@ -3,7 +3,7 @@ import { buildNationwideRouteTarget } from "./nationwide-route-context";
 
 type ResultsSummaryContext = Pick<
 	NationwideLookupResultContext,
-	"districtMatches" | "guideAvailability" | "lookupQuery" | "representativeMatches" | "selectionId"
+	"districtMatches" | "guideAvailability" | "guideContent" | "lookupQuery" | "representativeMatches" | "selectionId"
 > | null | undefined;
 
 export interface ResultsSummaryItem {
@@ -45,8 +45,16 @@ export function buildResultsSummaryItems(
 		},
 		{
 			label: "Guide status",
-			note: "Detailed ballot pages open when a local guide is published.",
-			value: activeResult?.guideAvailability === "published" ? "Published" : "Not published"
+			note: activeResult?.guideContent?.verifiedContestPackage
+				? "This area has a verified local contest package."
+				: activeResult?.guideAvailability === "published"
+					? "The guide shell is live, but contest pages are still being locally verified."
+					: "Detailed ballot pages open when a local guide is published.",
+			value: activeResult?.guideContent?.verifiedContestPackage
+				? "Verified"
+				: activeResult?.guideAvailability === "published"
+					? "Shell live"
+					: "Not published"
 		}
 	];
 }

@@ -1,6 +1,6 @@
 import type { LocationLookupAction, LocationLookupResponse } from "../types/civic";
 
-type LookupResolution = Pick<LocationLookupResponse, "result" | "guideAvailability" | "location" | "electionSlug" | "selectionOptions">;
+type LookupResolution = Pick<LocationLookupResponse, "result" | "guideAvailability" | "guideContent" | "location" | "electionSlug" | "selectionOptions">;
 
 export interface LookupPresentation {
 	availabilityBadgeLabel: string;
@@ -50,12 +50,19 @@ export function buildLookupPresentation(response: LookupResolution): LookupPrese
 	}
 
 	if (canOpenGuide) {
+		const hasVerifiedContestPackage = Boolean(response.guideContent?.verifiedContestPackage);
+
 		return {
-			availabilityBadgeLabel: "Full local guide available",
+			availabilityBadgeLabel: hasVerifiedContestPackage ? "Verified local guide" : "Local guide shell live",
 			canOpenGuide: true,
-			footerNote: "This lookup succeeded. Review the nationwide civic results here first, then open the local guide when you want Ballot Clarity's contest, candidate, and measure pages.",
-			heading: "Local guide and civic results ready",
-			supportingNote: "A published local guide is available for this lookup. Nationwide civic results and official tools remain visible below first."
+			footerNote: hasVerifiedContestPackage
+				? "This lookup succeeded. Review the civic results here first, then open the local guide for verified contest, candidate, and measure pages."
+				: "This lookup succeeded. Review the civic results here first, then open the live guide shell when you want Ballot Clarity's current local package and official logistics.",
+			heading: hasVerifiedContestPackage ? "Local guide and civic results ready" : "Local guide shell and civic results ready",
+			supportingNote: hasVerifiedContestPackage
+				? "A verified local guide is available for this lookup. Official tools remain visible below for final ballot confirmation."
+				: response.guideContent?.summary
+					?? "A live local guide shell is available for this lookup. Official logistics are verified here while contest pages are still being finalized for this jurisdiction."
 		};
 	}
 

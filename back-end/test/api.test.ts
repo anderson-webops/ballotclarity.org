@@ -1110,11 +1110,33 @@ test("snapshot runtime exposes the published guide package and its public record
 	assert.equal(packagesBody.packages[0]?.workflow.status, "published");
 	assert.equal(packagesBody.packages[0]?.counts.contests > 0, true);
 	assert.equal(packagesBody.packages[0]?.counts.attachedSources > 0, true);
+	assert.equal(packagesBody.packages[0]?.contentStatus.guideShell.status, "official_logistics_only");
+	assert.equal(packagesBody.packages[0]?.contentStatus.officialLogistics.status, "verified_local");
+	assert.equal(packagesBody.packages[0]?.contentStatus.contests.status, "staged_reference");
+	assert.equal(packagesBody.packages[0]?.contentStatus.verifiedContestPackage, false);
 	assert.equal(publicPackageResponse.status, 200);
 	assert.equal(publicPackageBody.package.workflow.id, packageId);
 	assert.equal(publicPackageBody.package.workflow.status, "published");
 	assert.equal(publicPackageBody.package.officialResources.length > 0, true);
 	assert.equal(publicPackageBody.package.attachedSources.length > 0, true);
+	assert.equal(publicPackageBody.package.contentStatus.guideShell.status, "official_logistics_only");
+	assert.equal(publicPackageBody.package.contentStatus.candidates.status, "staged_reference");
+	assert.equal(publicPackageBody.package.contentStatus.measures.status, "staged_reference");
+});
+
+test("GET /api/ballot exposes mixed guide provenance honestly for the published Fulton package", async () => {
+	const response = await fetch(`${baseUrl}/api/ballot?election=2026-fulton-county-general`);
+	const body = await response.json();
+
+	assert.equal(response.status, 200);
+	assert.equal(body.guideContent.guideShell.status, "official_logistics_only");
+	assert.equal(body.guideContent.officialLogistics.status, "verified_local");
+	assert.equal(body.guideContent.contests.status, "staged_reference");
+	assert.equal(body.guideContent.candidates.status, "staged_reference");
+	assert.equal(body.guideContent.measures.status, "staged_reference");
+	assert.equal(body.guideContent.verifiedContestPackage, false);
+	assert.match(body.note, /verified official logistics/i);
+	assert.match(body.note, /still staged/i);
 });
 
 test("GET /api/status suppresses launch-specific source monitors when coverage mode is empty", async () => {
@@ -1261,14 +1283,21 @@ test("POST /api/location returns the supported Fulton coverage guide for ZIPs in
 	assert.equal(body.location.slug, "fulton-county-georgia");
 	assert.equal(body.location.lookupMode, "zip-preview");
 	assert.equal(body.actions.some((item: { kind: string; title: string }) => item.kind === "official-verification" && /My Voter Page/i.test(item.title)), true);
+	assert.equal(body.guideContent.guideShell.status, "official_logistics_only");
+	assert.equal(body.guideContent.officialLogistics.status, "verified_local");
+	assert.equal(body.guideContent.contests.status, "staged_reference");
+	assert.equal(body.guideContent.verifiedContestPackage, false);
 	assert.equal(body.availability.nationwideCivicResults.status, "available");
+	assert.equal(body.availability.officialLogistics.status, "available");
 	assert.equal(body.availability.representatives.status, "available");
-	assert.equal(body.availability.ballotCandidates.status, "available");
-	assert.equal(body.availability.financeInfluence.status, "available");
-	assert.equal(body.availability.fullLocalGuide.status, "available");
+	assert.equal(body.availability.ballotCandidates.status, "limited");
+	assert.equal(body.availability.financeInfluence.status, "limited");
+	assert.equal(body.availability.guideShell.status, "available");
+	assert.equal(body.availability.verifiedContestPackage.status, "unavailable");
+	assert.equal(body.availability.fullLocalGuide.status, "limited");
 	assert.equal(body.representativeMatches[0].name, "Jon Ossoff");
 	assert.match(body.note, /Atlanta, Georgia/i);
-	assert.match(body.note, /single guide area/i);
+	assert.match(body.note, /guide shell/i);
 });
 
 test("POST /api/location filters former Congress members out of ZIP lookup representative fallback", async () => {
@@ -1293,8 +1322,12 @@ test("POST /api/location filters former Congress members out of ZIP lookup repre
 	assert.equal(response.status, 200);
 	assert.equal(body.result, "resolved");
 	assert.equal(body.inputKind, "zip");
+	assert.equal(body.guideAvailability, "published");
+	assert.equal(body.guideContent.guideShell.status, "official_logistics_only");
 	assert.equal(body.availability.representatives.status, "available");
-	assert.equal(body.availability.financeInfluence.status, "available");
+	assert.equal(body.availability.financeInfluence.status, "limited");
+	assert.equal(body.availability.ballotCandidates.status, "limited");
+	assert.equal(body.availability.verifiedContestPackage.status, "unavailable");
 	assert.equal(body.representativeMatches.length, 7);
 	assert.match(body.note, /(Alpharetta|Fulton County), Georgia/i);
 	assert.equal(representativeNames.includes("Jon Ossoff"), true);
@@ -1342,11 +1375,14 @@ test("POST /api/location returns district lookup results without a published gui
 	assert.equal(body.actions.some((item: { kind: string }) => item.kind === "ballot-guide"), false);
 	assert.equal(body.actions.some((item: { title: string }) => /Utah voter registration portal/i.test(item.title)), true);
 	assert.equal(body.availability.nationwideCivicResults.status, "available");
+	assert.equal(body.availability.officialLogistics.status, "available");
 	assert.equal(body.availability.representatives.status, "available");
 	assert.equal(body.availability.ballotCandidates.status, "unavailable");
 	assert.equal(body.availability.financeInfluence.status, "available");
 	assert.match(body.availability.financeInfluence.detail, /matched representative pages now include person-level funding and influence modules/i);
 	assert.doesNotMatch(body.availability.financeInfluence.detail, /source-backed local candidate records/i);
+	assert.equal(body.availability.guideShell.status, "unavailable");
+	assert.equal(body.availability.verifiedContestPackage.status, "unavailable");
 	assert.equal(body.availability.fullLocalGuide.status, "unavailable");
 	assert.equal(body.location.displayName, "Provo, Utah");
 	assert.equal(body.representativeMatches[0].name, "Mike Kennedy");
@@ -1427,11 +1463,16 @@ test("POST /api/location returns the current Fulton County launch location for f
 	assert.equal(body.normalizedAddress, "55 TRINITY AVE SW, ATLANTA, GA, 30303");
 	assert.equal(body.districtMatches[0].label, "Congressional District 5");
 	assert.equal(body.representativeMatches[0].name, "Jon Ossoff");
+	assert.equal(body.guideContent.guideShell.status, "official_logistics_only");
+	assert.equal(body.guideContent.verifiedContestPackage, false);
 	assert.equal(body.availability.nationwideCivicResults.status, "available");
+	assert.equal(body.availability.officialLogistics.status, "available");
 	assert.equal(body.availability.representatives.status, "available");
-	assert.equal(body.availability.ballotCandidates.status, "available");
-	assert.equal(body.availability.financeInfluence.status, "available");
-	assert.equal(body.availability.fullLocalGuide.status, "available");
+	assert.equal(body.availability.ballotCandidates.status, "limited");
+	assert.equal(body.availability.financeInfluence.status, "limited");
+	assert.equal(body.availability.guideShell.status, "available");
+	assert.equal(body.availability.verifiedContestPackage.status, "unavailable");
+	assert.equal(body.availability.fullLocalGuide.status, "limited");
 	assert.match(body.note, /Census geography matched/i);
 	assert.match(body.note, /Ballot Clarity attached 2 current official matches for this address from Open States and Congress\.gov/i);
 });
@@ -1457,11 +1498,14 @@ test("POST /api/location returns district lookup results without a published gui
 	assert.equal(body.normalizedAddress, "151 S UNIVERSITY AVE, PROVO, UT, 84601");
 	assert.equal(body.representativeMatches[0].name, "Mike Kennedy");
 	assert.equal(body.availability.nationwideCivicResults.status, "available");
+	assert.equal(body.availability.officialLogistics.status, "available");
 	assert.equal(body.availability.representatives.status, "available");
 	assert.equal(body.availability.ballotCandidates.status, "unavailable");
 	assert.equal(body.availability.financeInfluence.status, "available");
 	assert.match(body.availability.financeInfluence.detail, /matched representative pages now include person-level funding and influence modules/i);
 	assert.doesNotMatch(body.availability.financeInfluence.detail, /source-backed local candidate records/i);
+	assert.equal(body.availability.guideShell.status, "unavailable");
+	assert.equal(body.availability.verifiedContestPackage.status, "unavailable");
 	assert.equal(body.availability.fullLocalGuide.status, "unavailable");
 	assert.match(body.note, /nationwide civic result layers/i);
 	assert.match(body.note, /Census geography matched/i);
@@ -1535,7 +1579,7 @@ test("GET /api/ballot returns the election guide and contests", async () => {
 	assert.equal(body.election.contests[0].title, "Federal Race");
 	assert.equal(body.election.contests[0].roleGuide.decisionAreas.length, 3);
 	assert.match(body.election.contests[0].roleGuide.summary, /federal law/i);
-	assert.match(body.note, /latest imported civic-data snapshot/i);
+	assert.match(body.note, /verified official logistics/i);
 	assert.match(body.election.name, /Fulton County/i);
 });
 
@@ -1793,7 +1837,7 @@ test("GET /api/representatives returns incumbents tied to district pages", async
 	assert.ok(body.representatives.some((item: { href: string; slug: string }) => item.slug === "daniel-brooks" && item.href === "/representatives/daniel-brooks"));
 	assert.ok(body.representatives.some((item: { slug: string; sourceCount: number; sources: Array<{ id: string }> }) => item.slug === "daniel-brooks" && item.sourceCount >= 1 && item.sources.length >= 1));
 	assert.ok(body.districts.some((item: { href: string }) => item.href === "/districts/state-senate-district-12"));
-	assert.match(body.note, /currently serving officials/i);
+	assert.match(body.note, /current officials/i);
 });
 
 test("active nationwide lookup cookie backs /api/representatives and /api/representatives/:slug", async () => {

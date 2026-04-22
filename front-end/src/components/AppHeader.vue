@@ -249,7 +249,6 @@ onBeforeUnmount(() => {
 							</span>
 							<span class="min-w-0">
 								<span class="text-[0.98rem] text-app-ink leading-none font-serif block sm:text-[1.05rem] dark:text-app-text-dark">{{ appName }}</span>
-								<span class="text-[11px] text-app-muted mt-1 hidden dark:text-app-muted-dark 2xl:block">Nonpartisan ballot guide and civic lookup</span>
 							</span>
 						</span>
 					</NuxtLink>
@@ -283,9 +282,6 @@ onBeforeUnmount(() => {
 										<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
 											{{ group.label }}
 										</p>
-										<p class="text-xs text-app-muted leading-6 mt-2 dark:text-app-muted-dark">
-											{{ group.description }}
-										</p>
 										<div class="mt-3 gap-1 grid">
 											<NuxtLink
 												v-for="link in group.links"
@@ -299,9 +295,6 @@ onBeforeUnmount(() => {
 													<div class="min-w-0">
 														<p class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
 															{{ link.label }}
-														</p>
-														<p class="text-xs text-app-muted leading-6 mt-1 dark:text-app-muted-dark">
-															{{ link.description }}
 														</p>
 													</div>
 													<span v-if="linkBadge(link)" class="text-[11px] text-app-ink font-bold px-1.5 rounded-full bg-app-warm inline-flex h-5 min-w-5 items-center justify-center">
@@ -408,9 +401,6 @@ onBeforeUnmount(() => {
 						<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
 							{{ group.label }}
 						</p>
-						<p class="text-xs text-app-muted leading-6 mt-1 dark:text-app-muted-dark">
-							{{ group.description }}
-						</p>
 					</div>
 					<NuxtLink
 						v-for="link in group.links"
@@ -425,9 +415,6 @@ onBeforeUnmount(() => {
 						<span class="min-w-0">
 							<span class="text-sm font-semibold block">
 								{{ link.label }}
-							</span>
-							<span class="text-xs mt-1 block" :class="isActive(link.to) ? 'text-white/75' : 'text-app-muted dark:text-app-muted-dark'">
-								{{ link.description }}
 							</span>
 						</span>
 						<span v-if="linkBadge(link)" class="text-[11px] text-app-ink font-bold px-2 py-0.5 rounded-full bg-app-warm">

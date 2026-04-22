@@ -137,8 +137,8 @@ usePageSeo({
 	title: "District hub"
 });
 const districtIntroCopy = computed(() => directoryUsesNationwide.value
-	? "Use district pages to inspect the office areas matched to your current lookup, along with linked officials and official election links."
-	: "Use district pages when you want the office area, current representative, and current candidate field in one place."
+	? "Open each matched office area to review the office, current officials, candidates, and official election links for your area."
+	: "Open each office area to review the office, current representative, and candidate field in one place."
 );
 const requiresLookupPrompt = computed(() => !directoryUsesNationwide.value && !showGuideDirectory.value);
 
@@ -180,17 +180,9 @@ function buildLookupAwareTarget(path: string) {
 					/>
 					<UpdatedAt v-if="activeLookupSummary.resolvedAt" :value="activeLookupSummary.resolvedAt" label="Lookup updated" />
 				</div>
-				<div class="mt-6 pt-6 border-t border-app-line/80 dark:border-app-line-dark">
-					<h3 class="text-2xl text-app-ink font-serif dark:text-app-text-dark">
-						What lives here
-					</h3>
-					<ul class="readable-list text-sm text-app-muted mt-5 pl-5 dark:text-app-muted-dark">
-						<li>District and office context</li>
-						<li>Current incumbent or currently serving official, when one is on the ballot</li>
-						<li>Candidate field for the active election</li>
-						<li>Representative person pages and dedicated funding or influence pages where Ballot Clarity has person-level data</li>
-					</ul>
-				</div>
+				<p class="text-sm text-app-muted leading-7 mt-6 dark:text-app-muted-dark">
+					Each district page shows the office area, current officials, candidates, and official election links when available.
+				</p>
 			</div>
 		</header>
 

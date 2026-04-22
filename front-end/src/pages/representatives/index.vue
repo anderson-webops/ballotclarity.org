@@ -64,18 +64,6 @@ const activeLookupSummary = computed(() => buildActiveLookupSummary({
 	selectedLocation: isHydrated.value ? selectedLocation.value : null
 }));
 const representativeLinkIsExternal = (href: string) => isExternalHref(href);
-const representativeUseCases = computed(() => directoryUsesNationwide.value
-	? [
-			"Open a person page for each matched official",
-			"Open funding and influence pages when those records are attached",
-			"Open district pages and source links for verification"
-		]
-	: [
-			"Find the current officeholder for a district",
-			"Open funding pages directly",
-			"Open influence and lobbying pages directly"
-		]);
-
 const summaryItems = computed(() => {
 	if (!directoryData.value)
 		return [];
@@ -89,12 +77,12 @@ const summaryItems = computed(() => {
 });
 
 const introCopy = computed(() => directoryUsesNationwide.value
-	? "This directory lists the current officials tied to your current lookup, with links to district pages, person pages, and attached funding or influence records where available."
-	: "This directory lists current officeholders with person pages, district pages, and attached funding or influence records where available."
+	? "This directory lists the current officials linked to your saved area."
+	: "This directory lists current officeholders and links to their district, profile, funding, and influence pages where available."
 );
-const noActionCopy = computed(() => directoryUsesNationwide.value
-	? "Open the district, profile, or attached data pages for this official."
-	: "Open the person profile, funding page, or influence page for this official."
+const lookupPanelCopy = computed(() => directoryUsesNationwide.value
+	? "Showing the officials currently linked to your saved area."
+	: "Showing the officeholders currently available in this guide."
 );
 const requiresLookupPrompt = computed(() => !directoryUsesNationwide.value && !showGuideDirectory.value);
 
@@ -145,14 +133,9 @@ usePageSeo({
 					/>
 					<UpdatedAt v-if="activeLookupSummary.resolvedAt" :value="activeLookupSummary.resolvedAt" label="Lookup updated" />
 				</div>
-				<h3 class="text-2xl text-app-ink font-serif mt-6 dark:text-app-text-dark">
-					What you can do here
-				</h3>
-				<ul class="readable-list text-sm text-app-muted mt-5 pl-5 dark:text-app-muted-dark">
-					<li v-for="useCase in representativeUseCases" :key="useCase">
-						{{ useCase }}
-					</li>
-				</ul>
+				<p class="text-sm text-app-muted leading-7 mt-6 dark:text-app-muted-dark">
+					{{ lookupPanelCopy }}
+				</p>
 				<div class="mt-6">
 					<NuxtLink :to="buildLookupAwareTarget('/districts')" class="btn-secondary">
 						Open district hub
@@ -225,7 +208,7 @@ usePageSeo({
 								{{ representative.party }} · {{ getRepresentativePresentation(representative).officeDisplayLabel }}
 							</p>
 							<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-								{{ representative.summary }} {{ noActionCopy }}
+								{{ representative.summary }}
 							</p>
 							<div class="mt-5 flex flex-wrap gap-2">
 								<VerificationBadge :label="representative.districtLabel" />

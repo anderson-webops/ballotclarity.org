@@ -10,7 +10,7 @@ const api = useApiClient();
 const siteUrl = useSiteUrl();
 const civicStore = useCivicStore();
 const { selectedElection } = storeToRefs(civicStore);
-const { activeNationwideResult, blocksGuideEntryPoints, hasNationwideResultContext, hasPublishedGuideContext } = useGuideEntryGate();
+const { activeNationwideResult, hasNationwideResultContext, hasPublishedGuideContext } = useGuideEntryGate();
 const AsyncHomeBallotPreviewSection = defineAsyncComponent(() => import("~/components/home/HomeBallotPreviewSection.vue"));
 const AsyncHomeRoadmapSection = defineAsyncComponent(() => import("~/components/home/HomeRoadmapSection.vue"));
 const AsyncHomeCoverageOverviewSection = defineAsyncComponent(() => import("~/components/home/HomeCoverageOverviewSection.vue"));
@@ -63,13 +63,13 @@ const startHereSecondaryPath = computed(() => hasPublishedGuideContext.value
 const startHereSecondaryLabel = computed(() => hasPublishedGuideContext.value
 	? "Open ballot plan"
 	: hasNationwideResultContext.value
-		? "Check live coverage"
-		: "Review sources");
+		? "Check coverage"
+		: "Read sources");
 const pathwayIntro = computed(() => hasPublishedGuideContext.value
-	? "Start with the ballot guide, then open deeper pages only when you need more detail."
+	? "Start with the ballot guide, then open other pages only when you need more detail."
 	: hasNationwideResultContext.value
-		? "Start from your saved results, then move into district pages, representative pages, and official links."
-		: "Enter a location to see districts, current officials, official links, and any published local guide for your area.");
+		? "Open your results, then move into district pages, representative pages, and official election links."
+		: "Enter a location to see districts, current officials, official election links, and whether a guide is available for your area.");
 
 const faqEntries = [
 	{
@@ -127,27 +127,6 @@ usePageSeo({
 	title: "Understand Your Ballot"
 });
 
-const quickStartSteps = computed(() => [
-	{
-		step: "1",
-		text: "Enter a full address for the best district match, or use a 5-digit ZIP code when you need a broader nationwide civic lookup."
-	},
-	{
-		step: "2",
-		text: hasPublishedGuideContext.value
-			? "Scan contests first, then open detail pages only when you need more depth."
-			: hasNationwideResultContext.value
-				? "Use the results page to move into districts, representatives, and official election links for your area."
-				: "Use the lookup first to see what coverage is available for your area."
-	},
-	{
-		step: "3",
-		text: hasPublishedGuideContext.value
-			? "Save a plan and print a clean checklist for the voting booth."
-			: "Use the official links and public records first. Ballot plan opens when a local guide is published."
-	}
-]);
-
 interface PrimaryPath {
 	description: string;
 	label: string;
@@ -178,8 +157,10 @@ const primaryPaths = computed<PrimaryPath[]>(() => [
 		to: "/districts"
 	},
 	{
-		description: "See what is published, what remains lookup-only, and which sources are live.",
-		label: hasNationwideResultContext.value ? "Check live coverage" : "Check coverage and sources",
+		description: hasNationwideResultContext.value
+			? "See whether a local guide is available for this area."
+			: "See which public pages and sources are available.",
+		label: hasNationwideResultContext.value ? "Check coverage" : "Check coverage and sources",
 		prefetchOn: "interaction",
 		to: hasNationwideResultContext.value ? "/coverage" : "/data-sources"
 	}
@@ -187,9 +168,9 @@ const primaryPaths = computed<PrimaryPath[]>(() => [
 
 const trustFacts = computed(() => [
 	"Nonpartisan nonprofit",
-	featuredLaunchTarget.value ? `Local guide published for ${featuredLaunchTarget.value.displayName}` : "No local guide published here yet",
+	featuredLaunchTarget.value ? `Guide available for ${featuredLaunchTarget.value.displayName}` : "Guide availability varies by area",
 	"Sources linked on every major reading page",
-	hasPublishedGuideContext.value ? "Ballot plan available for published guides" : "Official election links included where available"
+	hasPublishedGuideContext.value ? "Ballot plan available" : "Official election links included where available"
 ]);
 </script>
 
@@ -200,26 +181,26 @@ const trustFacts = computed(() => [
 				<div class="border border-app-line rounded-[2.2rem] bg-white shadow-[0_36px_84px_-58px_rgba(16,37,62,0.62)] overflow-hidden dark:border-app-line-dark dark:bg-app-panel-dark">
 					<div class="px-6 py-8 lg:px-10 sm:px-8 sm:py-10">
 						<p class="text-xs text-app-muted tracking-[0.26em] font-semibold uppercase dark:text-app-muted-dark">
-							{{ hasPublishedGuideContext ? "Local guide active" : hasNationwideResultContext ? "Results for your area" : "Location lookup" }}
+							{{ hasPublishedGuideContext ? "Ballot guide" : hasNationwideResultContext ? "Civic results" : "Location lookup" }}
 						</p>
 						<h1 class="text-5xl text-app-ink leading-tight font-serif mt-4 max-w-4xl sm:text-6xl dark:text-app-text-dark">
-							{{ hasPublishedGuideContext ? "See your ballot with sources and official links nearby." : hasNationwideResultContext ? "Start with your area, then follow the public record." : "Look up your area and see what is available." }}
+							{{ hasPublishedGuideContext ? "Your ballot guide is ready." : hasNationwideResultContext ? "Your civic results are ready." : "Look up your area." }}
 						</h1>
 						<p class="bc-measure text-lg text-app-muted leading-8 mt-6 dark:text-app-muted-dark">
 							{{ hasPublishedGuideContext
-								? "Ballot Clarity keeps contests, districts, representatives, official election links, and sources together so you can move through the ballot without losing context."
+								? "Open your ballot, districts, representatives, and official election links from one place."
 								: hasNationwideResultContext
-									? "Your current lookup already includes districts, representatives, official election links, and source-backed context where available."
-									: "Start with a street address or ZIP code to see districts, current officials, official election links, and whether a local guide is published for your area." }}
+									? "Review districts, current officials, official election links, and any available local guide for this area."
+									: "Enter a street address or ZIP code to see districts, current officials, and official election links for your area." }}
 						</p>
 						<p v-if="featuredLaunchTarget" class="text-sm text-app-muted leading-7 mt-5 dark:text-app-muted-dark">
-							<strong class="text-app-ink dark:text-app-text-dark">Published local guide:</strong> {{ featuredLaunchTarget.displayName }}.
+							<strong class="text-app-ink dark:text-app-text-dark">Guide available:</strong> {{ featuredLaunchTarget.displayName }}.
 						</p>
 						<p v-else class="text-sm text-app-muted leading-7 mt-5 dark:text-app-muted-dark">
-							<strong class="text-app-ink dark:text-app-text-dark">Local guide status:</strong> No local guide is published in this environment right now.
+							<strong class="text-app-ink dark:text-app-text-dark">Guide status:</strong> No local guide is published in this environment right now.
 						</p>
 						<p v-if="activeNationwideResult?.location" class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-							<strong class="text-app-ink dark:text-app-text-dark">Current lookup:</strong> {{ activeNationwideResult.location.displayName }}. These results stay available across the site until you change location.
+							<strong class="text-app-ink dark:text-app-text-dark">Current area:</strong> {{ activeNationwideResult.location.displayName }}.
 						</p>
 
 						<div class="mt-8 gap-4 grid md:grid-cols-2 xl:grid-cols-4">
@@ -233,17 +214,6 @@ const trustFacts = computed(() => [
 								</p>
 							</div>
 						</div>
-
-						<div class="mt-8 pt-8 border-t border-app-line/80 gap-5 grid dark:border-app-line-dark md:grid-cols-3">
-							<div v-for="item in quickStartSteps" :key="item.step">
-								<p class="text-sm text-app-accent font-semibold">
-									Step {{ item.step }}
-								</p>
-								<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
-									{{ item.text }}
-								</p>
-							</div>
-						</div>
 					</div>
 				</div>
 
@@ -253,7 +223,7 @@ const trustFacts = computed(() => [
 							Choose your area
 						</p>
 						<h2 class="text-2xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-							Start from a real location, not a default guide.
+							Start from your location.
 						</h2>
 						<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
 							{{ locationGuessUi.home }}
@@ -265,16 +235,18 @@ const trustFacts = computed(() => [
 
 					<div class="surface-panel">
 						<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-							Start here
+							Next steps
 						</p>
 						<h2 class="text-2xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-							One task, then a clear reading path
+							Open the page you need.
 						</h2>
-						<ul class="readable-list text-sm text-app-muted mt-4 dark:text-app-muted-dark">
-							<li>Use the lookup to open results for your area, then a local guide if one is published.</li>
-							<li>Start with contest summaries before opening any dossier or full explainer.</li>
-							<li>{{ blocksGuideEntryPoints ? "Open ballot plan only when a local guide is available for your area." : "Save choices to your ballot plan only after checking the evidence links." }}</li>
-						</ul>
+						<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
+							{{ hasPublishedGuideContext
+								? "Start with the ballot guide, then open other pages only when you need more detail."
+								: hasNationwideResultContext
+									? "Start with your results, then open districts, representatives, or sources."
+									: "Start with lookup, then open results, districts, representatives, or sources." }}
+						</p>
 						<div class="mt-6 flex flex-wrap gap-3">
 							<NuxtLink :to="startHerePrimaryPath" class="btn-primary" prefetch-on="interaction">
 								{{ startHerePrimaryLabel }}

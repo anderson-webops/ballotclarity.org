@@ -108,10 +108,10 @@ usePageSeo({
 				<TrustBadge label="Public update process" tone="warning" />
 			</div>
 			<h1 class="text-5xl text-app-ink font-serif mt-5 dark:text-app-text-dark">
-				Contact and correction requests
+				Contact and corrections
 			</h1>
 			<p class="text-base text-app-muted leading-8 mt-5 max-w-3xl dark:text-app-muted-dark">
-				Use this page to report factual issues, flag missing context, challenge framing, or send research and volunteer inquiries. Corrections are treated as part of the product's trust model, not as a private side channel.
+				Use this page to report an error, request a correction, ask a question, or volunteer.
 			</p>
 		</header>
 
@@ -125,7 +125,7 @@ usePageSeo({
 						Send a correction request or product note
 					</h2>
 					<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-						Use this form when a page appears inaccurate, incomplete, unevenly framed, or hard to use. Submissions are added to the internal editorial queue with the page URL and supporting notes you provide.
+						Use this form when a page appears inaccurate, incomplete, unevenly framed, or hard to use. Submissions are reviewed with the page URL and supporting notes you provide.
 					</p>
 				</div>
 
@@ -216,7 +216,7 @@ usePageSeo({
 					</p>
 
 					<button type="submit" class="btn-primary w-full" :disabled="isSubmitting">
-						{{ isSubmitting ? "Submitting..." : "Submit to editorial queue" }}
+						{{ isSubmitting ? "Submitting..." : "Send request" }}
 					</button>
 				</form>
 			</div>
@@ -240,7 +240,7 @@ usePageSeo({
 					Volunteer or research
 				</h2>
 				<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-					Use this if you want to volunteer, collaborate, or help review public records and guides.
+					Use this if you want to volunteer, collaborate, or help review public records.
 				</p>
 				<a :href="volunteerHref" class="btn-secondary mt-6">
 					Send a volunteer inquiry

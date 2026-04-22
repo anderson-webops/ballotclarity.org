@@ -43,7 +43,6 @@ const profileData = computed(() => {
 });
 const person = computed(() => profileData.value?.person ?? null);
 const pagePending = computed(() => pending.value || (!data.value && !fallbackData.value));
-const isNationwideFallback = computed(() => Boolean(profileData.value) && profileData.value === fallbackData.value);
 const activeLookupSummary = computed(() => buildActiveLookupSummary({
 	nationwideLookupResult: activeNationwideLookupResult.value,
 	routeLookupQuery: activeLookupQuery.value?.lookup ?? null,
@@ -276,7 +275,6 @@ usePageSeo({
 						<VerificationBadge v-if="representativePresentation" :label="representativePresentation.levelLabel" />
 						<VerificationBadge :label="person.officeholderLabel" />
 						<VerificationBadge :label="person.onCurrentBallot ? person.ballotStatusLabel : 'Not on current ballot'" />
-						<VerificationBadge v-if="isNationwideFallback" label="Nationwide lookup fallback" tone="warning" />
 						<VerificationBadge
 							v-if="linkageConfidence"
 							:label="linkageConfidence.label"
@@ -412,11 +410,10 @@ usePageSeo({
 							</ul>
 							<div class="mt-6 pt-6 border-t border-app-line/80 dark:border-app-line-dark">
 								<h4 class="text-lg text-app-ink font-serif dark:text-app-text-dark">
-									Read this safely
+									Keep in mind
 								</h4>
 								<ul class="text-sm text-app-muted leading-7 mt-4 space-y-2 dark:text-app-muted-dark">
-									<li>Direct, crosswalked, and inferred linkage should not be treated as the same confidence level.</li>
-									<li>Finance and influence sections only appear when the underlying person record has publishable data.</li>
+									<li>Confidence labels show how directly Ballot Clarity matched this record.</li>
 									<li>{{ person.freshness.statusNote }}</li>
 									<li>Use the attached records and official sources before treating this page as complete.</li>
 								</ul>
@@ -519,9 +516,6 @@ usePageSeo({
 						</h3>
 						<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
 							{{ person.enrichmentStatus?.legislativeContext.summary || "No legislative or action feed is attached to this page." }}
-						</p>
-						<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
-							Office context, district details, and sources are still available above.
 						</p>
 					</div>
 				</section>
@@ -669,10 +663,10 @@ usePageSeo({
 						<div class="flex flex-wrap gap-4 items-center justify-between">
 							<div>
 								<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
-									Sources and methodology notes
+									Sources and notes
 								</h2>
 								<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-									This page brings together the public records currently attached to this officeholder.
+									Sources attached to this profile.
 								</p>
 							</div>
 							<a :href="reportIssueHref" class="btn-secondary">
@@ -742,9 +736,7 @@ usePageSeo({
 
 				<PageSectionNav
 					:breadcrumbs="breadcrumbs"
-					:description="isNationwideFallback
-						? 'Use this page to review the current officeholder, attached records, and source notes for this route.'
-						: 'Use this page to review the current officeholder and the records attached to this local guide.'"
+					description="Office, background, actions, funding, influence, and sources."
 					:items="sectionLinks"
 					title="Representative profile"
 				>
@@ -773,11 +765,9 @@ usePageSeo({
 					<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
 						<strong class="text-app-ink dark:text-app-text-dark">As of:</strong> {{ formatDateTime(person.provenance.asOf) }}
 					</p>
-					<ul class="readable-list text-sm text-app-muted mt-5 pl-5 dark:text-app-muted-dark">
-						<li>{{ hasFunding ? "Funding summary and dedicated funding page are live for this person record." : "Funding module is not attached to this person record yet." }}</li>
-						<li>{{ hasInfluence ? "Influence and public-disclosure context are live for this person record." : "Influence module is not attached to this person record yet." }}</li>
-						<li>{{ person.onCurrentBallot ? "Ballot status is attached because this officeholder is also on the current ballot." : "Ballot status is not attached because this person is not on the current ballot in the current source set." }}</li>
-					</ul>
+					<p class="text-sm text-app-muted leading-7 mt-5 dark:text-app-muted-dark">
+						Funding, influence, and ballot status appear here when those records are attached to this officeholder.
+					</p>
 				</div>
 			</div>
 		</div>

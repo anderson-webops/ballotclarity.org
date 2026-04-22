@@ -64,31 +64,8 @@ function resolveGuideLinkTo(path: string) {
 						Ballot Clarity
 					</p>
 					<p class="bc-measure text-base text-app-muted mt-4 dark:text-app-muted-dark">
-						Ballot Clarity is a nonprofit civic-information project built to make election records easier to read and verify.
+						Ballot Clarity is a nonprofit civic-information site built to help people look up their area, review the public record, and verify details with official sources.
 					</p>
-					<div class="mt-5 gap-3 grid sm:gap-4 sm:grid-cols-2">
-						<div class="p-4 rounded-[1.35rem] bg-app-bg/70 dark:bg-app-bg-dark/70">
-							<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
-								What this site is for
-							</p>
-							<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
-								Look up your area, review districts and officials, open local guides where published, and verify details with sources and official links.
-							</p>
-						</div>
-
-						<div class="p-4 rounded-[1.35rem] bg-app-bg/70 dark:bg-app-bg-dark/70">
-							<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
-								How to use it
-							</p>
-							<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
-								{{ hasPublishedGuideContext
-									? "Start with the ballot guide, then open deeper pages only when you need more detail."
-									: hasNationwideResultContext
-										? "Start with your saved results, then move through districts, representatives, and official links."
-										: "Start with lookup to see what is available for your area." }}
-							</p>
-						</div>
-					</div>
 				</div>
 
 				<div class="gap-6 grid sm:grid-cols-2">

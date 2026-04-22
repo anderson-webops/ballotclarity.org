@@ -1,6 +1,4 @@
 <script setup lang="ts">
-const { data: dataSources } = await useDataSources();
-
 usePageSeo({
 	description: "Learn how Ballot Clarity writes summaries, attaches sources, handles uncertainty, and explains limits.",
 	path: "/methodology",
@@ -10,22 +8,22 @@ usePageSeo({
 const items = [
 	{
 		body: [
-			"Ballot Clarity is designed so published summaries can be generated from public records, then reviewed against source citations and editorial rules before they appear in a local guide.",
-			"Summaries are designed to describe what is documented, not to predict outcomes or recommend a vote.",
+			"Published summaries are written from public records and reviewed before they appear in a guide.",
+			"Summaries are meant to describe what is documented, not tell people how to vote.",
 		],
 		title: "How summaries are generated",
 	},
 	{
 		body: [
-			"Each candidate, measure, and evidence block includes attached source objects. When Ballot Clarity publishes local coverage, those sources should point to real public records like filings, hearing notes, and budget documents.",
-			"The interface keeps source counts visible and offers drawers or side panels so users can inspect source context without losing their place.",
+			"Major summaries and evidence blocks link back to source records.",
+			"Source counts and drawers are meant to help readers verify a page without losing their place.",
 		],
 		title: "How sources are attached",
 	},
 	{
 		body: [
-			"Serious allegations, edited quotes, and disputed claims require a narrower drafting posture than routine biography or issue summaries. Ballot Clarity aims to show source posture clearly instead of turning allegations into unexplained house facts.",
-			"Quote handling is part of the trust model: transcripts, official records, and candidate-submitted statements should preserve meaning rather than be trimmed into a sharper claim."
+			"Serious allegations, edited quotes, and disputed claims require a narrower drafting posture than routine biography or issue summaries.",
+			"Transcripts, official records, and candidate-submitted statements should preserve meaning rather than be trimmed into a sharper claim."
 		],
 		title: "High-risk claims and quote handling",
 	},
@@ -52,36 +50,36 @@ const items = [
 	},
 	{
 		body: [
-			"Election pages should show visible update timestamps, a lightweight change log, and official-source links for deadlines, office contacts, and voting methods.",
-			"A live version would declare an update cadence publicly so users can understand when pages are refreshed during election season and when they should verify directly with the election office."
+			"Pages should show update timestamps and official election links where the data model supports them.",
+			"Readers should verify time-sensitive deadlines, locations, and rules with the election office."
 		],
 		title: "Editorial governance and update cadence",
 	},
 	{
 		body: [
-			"A live version should include a public correction pathway, review timeline, and visible change log entry when page content changes in a material way.",
-			"The goal is to make error handling operational rather than leaving trust to a one-time methodology statement."
+			"Ballot Clarity has a public correction path.",
+			"Material changes should be logged visibly rather than rewritten without notice."
 		],
 		title: "Corrections and disputes",
 	},
 	{
 		body: [
-			"Address lookup is used to estimate districts and ballot style. Some hosts may also be configured for a best-effort IP-based location guess, while ZIP-only lookup can preview the likely coverage area without standing in for exact district-level ballot matching.",
-			"The current build sends lookup input with a POST request, can use configured deployment geolocation signals for a coarse default guess when that feature is enabled, avoids persisting the raw lookup text in browser storage, and keeps the data-use explanation near the lookup form rather than burying it in legal copy."
+			"Address lookup helps match districts and ballot coverage. ZIP codes and IP-based guesses are approximate; a full street address is the strongest input for exact matching.",
+			"Ballot Clarity keeps the data-use explanation near the lookup form and explains storage details in the privacy notice."
 		],
 		title: "Privacy and personalization",
 	},
 	{
 		body: [
-			"Ballot Clarity is being shaped to support a strict nonpartisan voter-education posture. Candidate pages should not function like endorsements, rankings, or scorecards.",
-			"Ballot measure pages should keep factual explanation separate from advocacy, and any future paid promotion or election-season sponsorship should receive a separate compliance review before launch."
+			"Ballot Clarity does not rank, endorse, or score candidates or measures.",
+			"Explanatory text is kept separate from advocacy."
 		],
 		title: "Nonpartisan operating posture",
 	},
 	{
 		body: [
 			"Public data is incomplete, uneven across race types, and often delayed. Challengers usually have fewer public records than incumbents, and local races can depend heavily on meeting minutes or questionnaires.",
-			"This build makes those limits explicit through coverage notes, “What we know” and “What we do not know” sections, and repeated reminders to consult original records.",
+			"Coverage notes and uncertainty labels are meant to show those limits plainly.",
 		],
 		title: "Limitations and uncertainty",
 	},
@@ -97,15 +95,15 @@ const trustInterfaceItems = [
 	},
 	{
 		body: [
-			"Freshness strips distinguish page review timing, source-data timing, and the next planned review date.",
-			"Status labels like Up to date or Incomplete are paired with short explanations so they are not just decorative badges."
+			"Freshness labels show when a page or source was last updated.",
+			"Status labels like Up to date or Incomplete are paired with short explanations."
 		],
 		label: "Freshness"
 	},
 	{
 		body: [
-			"The product now uses paired What we know and What we're still checking summaries so uncertainty is explicit instead of hidden.",
-			"Those sections are informational only and should never be read as endorsements or probability judgments."
+			"Uncertainty notes explain what is known and what still needs checking.",
+			"They are informational only and should not be read as endorsements or probability judgments."
 		],
 		label: "Uncertainty"
 	}
@@ -144,17 +142,17 @@ const informationTypes = [
 				<TrustBadge label="Limits disclosed" tone="warning" />
 			</div>
 			<h1 class="text-5xl text-app-ink font-serif mt-5 dark:text-app-text-dark">
-				Methodology and trust notes
+				Methodology
 			</h1>
 			<p class="text-base text-app-muted leading-8 mt-5 max-w-3xl dark:text-app-muted-dark">
-				Ballot Clarity is built around a simple trust model: show the source trail, explain what is known and unknown, and keep the product informational rather than advisory.
+				This page explains how Ballot Clarity writes summaries, shows sources, marks uncertainty, and handles corrections.
 			</p>
 		</header>
 
 		<MethodologySummaryCard
 			:items="trustInterfaceItems"
-			summary="The trust interface is designed to make evidence, freshness, and uncertainty visible at the point where a voter is reading, not buried in a separate documentation wall."
-			title="How to read the trust signals"
+			summary="Page signals are meant to keep evidence, freshness, and uncertainty visible where a voter is already reading."
+			title="How to read page signals"
 		/>
 
 		<section class="surface-panel">
@@ -183,45 +181,10 @@ const informationTypes = [
 
 		<MethodologyAccordion :items="items" />
 
-		<section v-if="dataSources && (dataSources.roadmap.length || dataSources.categories.length)" class="surface-panel">
-			<div class="flex flex-wrap gap-4 items-start justify-between">
-				<div>
-					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-						Coverage model
-					</p>
-					<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-						How local guides are assembled
-					</h2>
-				</div>
-				<TrustBadge label="Public plan" tone="accent" />
-			</div>
-			<p class="text-sm text-app-muted leading-7 mt-4 max-w-3xl dark:text-app-muted-dark">
-				Ballot Clarity builds local guides in layers: location matching, district context, election records, and supporting public data. This page links to the source model behind that work.
-			</p>
-			<div class="mt-6 gap-4 grid md:grid-cols-3">
-				<article v-for="milestone in dataSources.roadmap.slice(0, 3)" :key="milestone.id" class="px-5 py-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
-					<p class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
-						{{ milestone.title }}
-					</p>
-					<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
-						{{ milestone.summary }}
-					</p>
-				</article>
-			</div>
-			<div class="mt-6 flex flex-wrap gap-3">
-				<NuxtLink to="/data-sources" class="btn-secondary">
-					Open data sources
-				</NuxtLink>
-				<NuxtLink to="/coverage" class="btn-secondary">
-					Open coverage profile
-				</NuxtLink>
-			</div>
-		</section>
-
 		<section class="gap-6 grid lg:grid-cols-2">
 			<div class="surface-panel">
 				<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
-					Trust section
+					Editorial rules
 				</h2>
 				<ul class="text-sm text-app-muted leading-7 mt-6 space-y-4 dark:text-app-muted-dark">
 					<li><strong class="text-app-ink dark:text-app-text-dark">Neutrality:</strong> No rankings, recommendations, or partisan cues.</li>
@@ -233,9 +196,6 @@ const informationTypes = [
 			</div>
 
 			<div class="space-y-4">
-				<InfoCallout title="Coverage note" tone="warning">
-					Coverage varies by area. When a local guide is not published, Ballot Clarity keeps lookup results and official election links available instead.
-				</InfoCallout>
 				<InfoCallout title="Neutrality policy">
 					Ballot Clarity is designed to explain what is documented, not to endorse candidates, oppose parties, or tell users how to vote.
 				</InfoCallout>

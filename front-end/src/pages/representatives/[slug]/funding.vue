@@ -42,7 +42,7 @@ const linkageConfidence = computed(() => person.value ? buildPersonLinkageConfid
 const funding = computed(() => person.value?.funding ?? null);
 const fundingAvailable = computed(() => person.value ? hasPersonFunding(person.value) : false);
 const fundingUnavailableSummary = computed(() => person.value
-	? person.value.enrichmentStatus?.funding.summary || `${person.value.name} resolves as a stable public officeholder record, but Ballot Clarity does not currently have a source-backed finance summary attached to this person.`
+	? person.value.enrichmentStatus?.funding.summary || "No campaign-finance summary is attached to this officeholder yet."
 	: "");
 const fundingHighlights = computed(() => {
 	if (!funding.value)
@@ -83,14 +83,14 @@ const summaryItems = computed(() => {
 
 	if (!fundingAvailable.value || !funding.value) {
 		return [
-			{ label: "Current office", note: "Office context attached to this representative record.", value: person.value.officeDisplayLabel || person.value.officeSought },
-			{ label: "Finance status", note: "Person-level campaign-finance attachment for this route.", value: "Unavailable" },
+			{ label: "Current office", note: "Current office.", value: person.value.officeDisplayLabel || person.value.officeSought },
+			{ label: "Finance status", note: "Campaign-finance attachment for this page.", value: "Unavailable" },
 			{ label: "Updated", note: "Profile freshness.", value: formatDate(person.value.freshness.dataLastUpdatedAt ?? person.value.updatedAt) }
 		];
 	}
 
 	return [
-		{ label: "Current office", note: "Office context attached to this representative record.", value: person.value.officeDisplayLabel || person.value.officeSought },
+		{ label: "Current office", note: "Current office.", value: person.value.officeDisplayLabel || person.value.officeSought },
 		{ label: "Total raised", note: "Current filing-window total.", value: formatCurrency(funding.value.totalRaised) },
 		{ label: "Disbursements", note: "Reported spending in the same filing window.", value: typeof funding.value.totalSpent === "number" ? formatCurrency(funding.value.totalSpent) : "Not published" },
 		{ label: "Cash on hand", note: "Reported funds still available.", value: formatCurrency(funding.value.cashOnHand) }
@@ -153,8 +153,8 @@ usePageSeo({
 					<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
 						{{
 							funding.receiptBreakdown?.length
-								? "This section surfaces the largest receipt categories in the attached finance summary. Open the source drawer for the underlying filings."
-								: "This section surfaces the largest named or categorized funders in the current finance summary. Open the source drawer for the underlying filings."
+								? "Largest receipt categories in the attached finance summary."
+								: "Largest named or categorized funders in the attached finance summary."
 						}}
 					</p>
 					<div v-if="fundingHighlights.length" class="mt-6 gap-3 grid sm:grid-cols-2">
@@ -189,7 +189,7 @@ usePageSeo({
 				<div class="space-y-6">
 					<div class="surface-panel">
 						<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
-							Finance disclaimer
+							About this data
 						</h2>
 						<ul class="readable-list text-sm text-app-muted mt-5 pl-5 dark:text-app-muted-dark">
 							<li><strong class="text-app-ink dark:text-app-text-dark">Linkage:</strong> {{ person.provenance.status }}</li>
@@ -203,13 +203,12 @@ usePageSeo({
 
 					<div class="surface-panel">
 						<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
-							What to look for
+							Keep in mind
 						</h2>
 						<ul class="readable-list text-sm text-app-muted mt-5 pl-5 dark:text-app-muted-dark">
-							<li>Whether fundraising scale is materially different across the field</li>
-							<li>Which sectors or donor categories appear repeatedly</li>
-							<li>How much runway the officeholder still has in cash on hand</li>
-							<li>Whether the source filings cover the same reporting window for all linked records</li>
+							<li>Compare the reporting window before comparing totals across records.</li>
+							<li>Use the attached filings for the full committee and donor context.</li>
+							<li>{{ person.freshness.statusNote }}</li>
 						</ul>
 						<div class="mt-6 pt-6 border-t border-app-line/80 dark:border-app-line-dark">
 							<p class="text-sm text-app-muted leading-7 dark:text-app-muted-dark">
@@ -222,19 +221,14 @@ usePageSeo({
 
 			<section v-else class="surface-panel max-w-4xl">
 				<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
-					No funding data attached yet
+					Funding unavailable
 				</h2>
 				<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-					Ballot Clarity has this officeholder page, but no campaign-finance summary is attached for this route.
+					{{ person.enrichmentStatus?.funding.summary || fundingUnavailableSummary }}
 				</p>
 				<ul class="readable-list text-sm text-app-muted mt-6 pl-5 dark:text-app-muted-dark">
-					<li><strong class="text-app-ink dark:text-app-text-dark">Office:</strong> {{ person.officeDisplayLabel || person.officeSought }}</li>
-					<li><strong class="text-app-ink dark:text-app-text-dark">District:</strong> {{ person.districtLabel }}</li>
-					<li><strong class="text-app-ink dark:text-app-text-dark">Linkage:</strong> {{ linkageConfidence?.label }}</li>
-					<li><strong class="text-app-ink dark:text-app-text-dark">Status:</strong> {{ person.enrichmentStatus?.funding.summary || fundingUnavailableSummary }}</li>
 					<li><strong class="text-app-ink dark:text-app-text-dark">Provenance:</strong> {{ person.provenance.label }}</li>
 					<li><strong class="text-app-ink dark:text-app-text-dark">Updated:</strong> {{ formatDate(person.freshness.dataLastUpdatedAt ?? person.updatedAt) }}</li>
-					<li>{{ person.freshness.statusNote }}</li>
 				</ul>
 			</section>
 		</div>

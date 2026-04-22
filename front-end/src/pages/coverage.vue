@@ -5,7 +5,7 @@ const { data, error, pending } = await useCoverage();
 usePageSeo({
 	description: "Public launch profile for Ballot Clarity, including the starting jurisdiction, coverage limits, official verification links, and rollout priorities.",
 	path: "/coverage",
-	title: "Coverage and Launch Profile"
+	title: "Coverage"
 });
 
 function capabilityTone(status: "in-build" | "live-now" | "planned") {
@@ -70,12 +70,12 @@ function routeFamilyLabel(status: "guide-dependent" | "limited" | "live-now") {
 			</InfoCallout>
 			<div class="surface-panel">
 				<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
-					What this means
+					What is available right now
 				</h2>
 				<ul class="readable-list text-sm text-app-muted mt-5 pl-5 dark:text-app-muted-dark">
 					<li>No published local guide snapshot is active in this environment.</li>
-					<li>Nationwide civic lookup is still available and remains the main success path: district matches, representative records, and official election tools are shown here when providers can resolve them.</li>
-					<li>Guide-dependent features (local guide, candidate detail flows, measure pages, and plan) stay unavailable until a published local guide snapshot is active for the location.</li>
+					<li>Lookup, district pages, representative pages, and official election links can still be available.</li>
+					<li>Candidate, measure, compare, and ballot-plan pages open only when a local guide is available.</li>
 				</ul>
 				<div class="mt-6 flex flex-wrap gap-3">
 					<NuxtLink to="/#location-lookup" class="btn-primary">
@@ -94,10 +94,10 @@ function routeFamilyLabel(status: "guide-dependent" | "limited" | "live-now") {
 			</div>
 			<section class="surface-panel">
 				<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
-					Public route families and active data sources
+					Available public pages
 				</h2>
 				<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-					This page shows which route families are live right now, which still need a published local guide, and which source layers are behind them.
+					These are the public page groups currently available in this environment.
 				</p>
 				<div class="mt-6 gap-5 grid xl:grid-cols-2">
 					<article v-for="family in data.routeFamilies" :key="family.id" class="px-5 py-5 border border-app-line/70 rounded-3xl bg-white/80 dark:border-app-line-dark dark:bg-app-panel-dark/70">
@@ -136,7 +136,6 @@ function routeFamilyLabel(status: "guide-dependent" | "limited" | "live-now") {
 				<div class="surface-panel">
 					<div class="flex flex-wrap gap-2">
 						<TrustBadge :label="data.launchTarget.phaseLabel" tone="accent" />
-						<TrustBadge label="Postgres-backed ops" />
 						<TrustBadge label="Official verification first" tone="warning" />
 					</div>
 					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold mt-6 uppercase dark:text-app-muted-dark">
@@ -174,7 +173,7 @@ function routeFamilyLabel(status: "guide-dependent" | "limited" | "live-now") {
 					</div>
 					<div class="mt-6 flex flex-wrap gap-3">
 						<UpdatedAt :value="data.updatedAt" label="Coverage profile updated" />
-						<TrustBadge :label="data.coverageMode === 'snapshot' ? 'Imported snapshot active' : 'No local snapshot active'" :tone="data.coverageMode === 'snapshot' ? 'accent' : 'warning'" />
+						<TrustBadge :label="data.coverageMode === 'snapshot' ? 'Local guide published' : 'Lookup-first mode'" :tone="data.coverageMode === 'snapshot' ? 'accent' : 'warning'" />
 					</div>
 				</div>
 
@@ -204,10 +203,10 @@ function routeFamilyLabel(status: "guide-dependent" | "limited" | "live-now") {
 			<section class="gap-6 grid xl:grid-cols-2">
 				<div class="surface-panel">
 					<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
-						Official launch systems
+						Official election links
 					</h2>
 					<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-						These are the official systems Ballot Clarity points to and verifies against for the current published local guide.
+						These are the official systems Ballot Clarity points to for the current published local guide.
 					</p>
 					<div class="mt-6">
 						<OfficialResourceList :resources="data.launchTarget.officialResources" />
@@ -216,10 +215,10 @@ function routeFamilyLabel(status: "guide-dependent" | "limited" | "live-now") {
 
 				<div class="surface-panel">
 					<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
-						Reference providers and docs
+						Related source systems
 					</h2>
 					<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-						These links show the provider and documentation layer Ballot Clarity uses for data normalization and operations.
+						These links show the provider and documentation layer behind this guide.
 					</p>
 					<ul class="mt-6 space-y-4">
 						<li v-for="link in data.launchTarget.referenceLinks" :key="link.url" class="px-5 py-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
@@ -239,10 +238,10 @@ function routeFamilyLabel(status: "guide-dependent" | "limited" | "live-now") {
 				<div class="flex flex-wrap gap-4 items-start justify-between">
 					<div>
 						<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
-							Product capabilities
+							What is available
 						</h2>
 						<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
-							This is the honest line between what is already live in the product and what still needs verified local integration work.
+							This is the line between what is currently available and what still needs more work.
 						</p>
 					</div>
 					<NuxtLink to="/corrections" class="btn-secondary">
@@ -266,10 +265,10 @@ function routeFamilyLabel(status: "guide-dependent" | "limited" | "live-now") {
 
 			<section class="surface-panel">
 				<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
-					Public route families and active data sources
+					Available public pages
 				</h2>
 				<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-					These route families separate the nationwide lookup product from guide-dependent pages and show which data-source layers are actively feeding each public surface.
+					These are the public page groups currently available in this environment.
 				</p>
 				<div class="mt-6 gap-5 grid xl:grid-cols-2">
 					<article v-for="family in data.routeFamilies" :key="family.id" class="px-5 py-5 border border-app-line/70 rounded-3xl bg-white/80 dark:border-app-line-dark dark:bg-app-panel-dark/70">

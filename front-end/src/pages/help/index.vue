@@ -38,8 +38,8 @@ const faqItems = [
 	},
 	{
 		answer: [
-			"Because Ballot Clarity does not publish the same level of local coverage in every environment or for every location.",
-			"Coverage notes remain visible so users can understand when the product has a published local guide, when only nationwide civic results are available, and when no local coverage is published yet."
+			"Coverage varies by place.",
+			"Some areas have a full local guide, and others currently have lookup results, district pages, representative pages, and official links only."
 		],
 		question: "Why are some pages labeled as current coverage?"
 	},
@@ -106,7 +106,7 @@ const accordionItems = faqItems.map(item => ({
 					Start with the coverage profile
 				</h2>
 				<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-					The coverage profile is the best starting point when you need to know whether Ballot Clarity has any published local coverage loaded, what is still unavailable, and when the app is correctly keeping official election tools and lookup-first civic results in front.
+					Use the coverage page to see whether a local guide is available for your area and which public pages are currently available.
 				</p>
 				<NuxtLink to="/coverage" class="btn-primary mt-6">
 					Open the coverage profile

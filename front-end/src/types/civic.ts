@@ -684,8 +684,6 @@ export type CoverageSnapshotSourceType = "imported" | "seed" | "unknown";
 
 export interface CoverageSnapshotProvenance {
 	status: CoverageSnapshotStatus;
-	activeSnapshotPath?: string;
-	configuredSnapshotPath?: string;
 	configuredSnapshotMissing: boolean;
 	sourceLabel: string;
 	sourceType: CoverageSnapshotSourceType;

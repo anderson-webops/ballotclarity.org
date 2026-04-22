@@ -3620,10 +3620,8 @@ export async function createApp(options: CreateAppOptions = {}) {
 		const snapshotMetadata = coverageRepository.snapshotMetadata;
 
 		return {
-			activeSnapshotPath: coverageRepository.mode === "snapshot" ? coverageRepository.snapshotPath : undefined,
 			approvedAt: snapshotMetadata.approvedAt,
 			configuredSnapshotMissing: coverageRepository.configuredSnapshotMissing,
-			configuredSnapshotPath: coverageRepository.configuredSnapshotPath,
 			importedAt: snapshotMetadata.importedAt,
 			loadedAt: coverageRepository.loadedAt,
 			note: snapshotMetadata.note,

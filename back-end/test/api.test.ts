@@ -108,6 +108,16 @@ function buildTestCoverageRepository(overrides: Partial<CoverageRepository> = {}
 	};
 }
 
+function assertNoPublicSnapshotPaths(payload: { snapshotProvenance?: Record<string, unknown> }, rawPath?: string) {
+	assert.equal(payload.snapshotProvenance?.activeSnapshotPath, undefined);
+	assert.equal(payload.snapshotProvenance?.configuredSnapshotPath, undefined);
+	assert.equal(Object.hasOwn(payload.snapshotProvenance ?? {}, "activeSnapshotPath"), false);
+	assert.equal(Object.hasOwn(payload.snapshotProvenance ?? {}, "configuredSnapshotPath"), false);
+
+	if (rawPath)
+		assert.doesNotMatch(JSON.stringify(payload), new RegExp(rawPath.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+}
+
 before(async () => {
 	process.env.ADMIN_STORE_DRIVER = "sqlite";
 	delete process.env.ADMIN_DATABASE_URL;
@@ -1017,6 +1027,7 @@ test("GET /health returns readiness and coverage metadata", async () => {
 	assert.equal(body.snapshotProvenance.status, "seed");
 	assert.equal(body.snapshotProvenance.sourceLabel, "Test seed coverage snapshot");
 	assert.equal(body.snapshotProvenance.configuredSnapshotMissing, false);
+	assertNoPublicSnapshotPaths(body);
 	assert.equal(body.providerSummary.total >= 6, true);
 	assert.match(body.timestamp, /^\d{4}-\d{2}-\d{2}T/);
 });
@@ -1080,9 +1091,11 @@ test("default runtime stays empty instead of auto-seeding coverage and public op
 		assert.match(coverageBody.currentState, /No local guide is active in this environment right now/i);
 		assert.equal(coverageBody.snapshotProvenance.status, "unknown");
 		assert.equal(coverageBody.snapshotProvenance.configuredSnapshotMissing, false);
+		assertNoPublicSnapshotPaths(coverageBody);
 		assert.equal(statusBody.coverageMode, "empty");
 		assert.equal(statusBody.overallStatus, "reviewing");
 		assert.equal(statusBody.snapshotProvenance.status, "unknown");
+		assertNoPublicSnapshotPaths(statusBody);
 		assert.deepEqual(statusBody.sourceSummary, {
 			"healthy": 0,
 			"incident": 0,
@@ -1148,15 +1161,16 @@ test("configured missing snapshot path fails health and surfaces missing provena
 		assert.equal(healthBody.ok, false);
 		assert.equal(healthBody.ready, false);
 		assert.equal(healthBody.snapshotProvenance.configuredSnapshotMissing, true);
-		assert.equal(healthBody.snapshotProvenance.configuredSnapshotPath, missingSnapshotPath);
+		assertNoPublicSnapshotPaths(healthBody, missingSnapshotPath);
 
 		assert.equal(coverageResponse.status, 200);
 		assert.equal(coverageBody.coverageMode, "empty");
 		assert.equal(coverageBody.snapshotProvenance.configuredSnapshotMissing, true);
-		assert.equal(coverageBody.snapshotProvenance.configuredSnapshotPath, missingSnapshotPath);
+		assertNoPublicSnapshotPaths(coverageBody, missingSnapshotPath);
 
 		assert.equal(statusResponse.status, 200);
 		assert.equal(statusBody.snapshotProvenance.configuredSnapshotMissing, true);
+		assertNoPublicSnapshotPaths(statusBody, missingSnapshotPath);
 		assert.ok(statusBody.notes.some((note: string) => /Configured live coverage snapshot is missing/i.test(note)));
 	}
 	finally {
@@ -1712,6 +1726,7 @@ test("GET /api/coverage returns the public launch profile for Fulton County, Geo
 	assert.equal(body.coverageMode, "snapshot");
 	assert.equal(body.snapshotProvenance.status, "seed");
 	assert.equal(body.snapshotProvenance.sourceType, "seed");
+	assertNoPublicSnapshotPaths(body);
 	assert.equal(body.guideContent.publishedGuideShell, true);
 	assert.equal(body.guideContent.verifiedContestPackage, false);
 	assert.equal(body.supportedContentTypes.find((item: { id: string }) => item.id === "logistics")?.status, "live-now");
@@ -1728,6 +1743,7 @@ test("GET /api/status returns public source-health and launch notices", async ()
 	assert.equal(body.overallStatus, "degraded");
 	assert.equal(body.coverageMode, "snapshot");
 	assert.equal(body.snapshotProvenance.status, "seed");
+	assertNoPublicSnapshotPaths(body);
 	assert.equal(body.sourceSummary.healthy, 1);
 	assert.equal(body.sourceSummary.incident, 1);
 	assert.ok(body.notes.length >= 2);

@@ -1,10 +1,11 @@
 import process from "node:process";
 import { defineNuxtConfig } from "nuxt/config";
-import { appDescription, appName } from "./src/constants/index";
+import { analyticsDomain, analyticsWebsiteId, appDescription, appName } from "./src/constants/index";
 import { buildPreHydrationDeployRecoveryScript } from "./src/utils/deploy-recovery";
 import { buildPreHydrationDisplayTimeZoneScript } from "./src/utils/display-time-zone";
 
 const assetVersion = "20260417";
+const isDev = process.env.NODE_ENV === "development";
 const buildId = process.env.NUXT_PUBLIC_BUILD_ID
 	|| process.env.RELEASE_VERSION
 	|| process.env.SOURCE_VERSION
@@ -66,6 +67,13 @@ export default defineNuxtConfig({
 					tagPosition: "head",
 					type: "text/javascript",
 				},
+				...(isDev
+					? []
+					: [{
+							"defer": true,
+							"src": `https://${analyticsDomain}/script.js`,
+							"data-website-id": analyticsWebsiteId,
+						}]),
 			]
 		}
 	},

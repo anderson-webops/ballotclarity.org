@@ -13,15 +13,14 @@ const guideStatusNote = computed(() => data.value?.guideContent?.verifiedContest
 
 watchEffect(() => {
 	if (data.value) {
-		civicStore.setElection({
+		civicStore.setGuideSurfaceContext({
 			date: data.value.election.date,
 			jurisdictionSlug: data.value.election.jurisdictionSlug,
 			locationName: data.value.election.locationName,
 			name: data.value.election.name,
 			slug: data.value.election.slug,
 			updatedAt: data.value.election.updatedAt
-		});
-		civicStore.setLocation(data.value.location);
+		}, data.value.location, data.value.guideContent);
 	}
 });
 
@@ -96,8 +95,15 @@ usePageSeo({
 							Browse
 						</p>
 						<div class="mt-4 flex flex-wrap gap-3">
-							<NuxtLink :to="`/ballot/${data.election.slug}`" class="btn-primary">
+							<NuxtLink
+								v-if="data.guideContent?.verifiedContestPackage"
+								:to="`/ballot/${data.election.slug}`"
+								class="btn-primary"
+							>
 								Open ballot guide
+							</NuxtLink>
+							<NuxtLink v-else :to="`/locations/${data.election.jurisdictionSlug}`" class="btn-primary">
+								Open location hub
 							</NuxtLink>
 							<NuxtLink to="/districts" class="btn-secondary">
 								District pages
@@ -163,7 +169,7 @@ usePageSeo({
 				</div>
 			</section>
 
-			<section class="surface-panel">
+			<section v-if="data.election.contests.length" class="surface-panel">
 				<div class="flex flex-wrap gap-4 items-center justify-between">
 					<div>
 						<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
@@ -221,6 +227,14 @@ usePageSeo({
 						</ul>
 					</article>
 				</div>
+			</section>
+			<section v-else class="surface-panel">
+				<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
+					Verified contest pages are still pending
+				</h2>
+				<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
+					Official election links and key dates are attached here now. Contest, candidate, and measure pages will appear after the Fulton-specific ballot package clears local review.
+				</p>
 			</section>
 		</div>
 	</section>

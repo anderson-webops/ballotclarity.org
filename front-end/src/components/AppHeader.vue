@@ -18,7 +18,7 @@ interface HeaderGroup {
 
 const civicStore = useCivicStore();
 const route = useRoute();
-const { activeNationwideResult, hasNationwideResultContext, hasPublishedGuideContext } = useGuideEntryGate();
+const { activeNationwideResult, hasGuideShellContext, hasNationwideResultContext, hasVerifiedGuideContext } = useGuideEntryGate();
 const isMenuOpen = ref(false);
 const isHeaderVisible = ref(true);
 const lastScrollY = ref(0);
@@ -30,16 +30,20 @@ const headerDirectionThreshold = 12;
 
 let scrollFramePending = false;
 
-const { ballotPlanCount, compareCount, compareList, isHydrated, selectedLocation } = storeToRefs(civicStore);
+const { ballotPlanCount, compareCount, compareList, isHydrated, selectedElection, selectedLocation } = storeToRefs(civicStore);
 const primaryNavLabel = computed(() => "Explore");
-const headerPrimaryAction = computed(() => hasPublishedGuideContext.value
+const electionOverviewPath = computed(() => selectedElection.value?.slug ? `/elections/${selectedElection.value.slug}` : "/coverage");
+const locationHubPath = computed(() => selectedLocation.value?.slug ? `/locations/${selectedLocation.value.slug}` : "/coverage");
+const headerPrimaryAction = computed(() => hasVerifiedGuideContext.value
 	? { badge: "plan" as const, label: "My plan", to: "/plan" }
-	: hasNationwideResultContext.value
-		? { label: "Results", to: "/results" }
-		: { label: "Lookup", to: "/" });
+	: hasGuideShellContext.value
+		? { label: "Election overview", to: electionOverviewPath.value }
+		: hasNationwideResultContext.value
+			? { label: "Results", to: "/results" }
+			: { label: "Lookup", to: "/" });
 
 const navGroups = computed<HeaderGroup[]>(() => {
-	const guideLinks: HeaderLink[] = hasPublishedGuideContext.value
+	const guideLinks: HeaderLink[] = hasVerifiedGuideContext.value
 		? [
 				{ badge: "plan", label: "My plan", to: "/plan" },
 				{ label: "Ballot guide", to: "/ballot" },
@@ -48,14 +52,22 @@ const navGroups = computed<HeaderGroup[]>(() => {
 				{ badge: "compare", label: "Compare", to: "/compare" },
 				{ label: "Search", to: "/search" }
 			]
-		: [
-				...(hasNationwideResultContext.value
-					? [{ label: "Results", to: "/results" }]
-					: [{ label: "Location lookup", to: "/" }]),
-				{ label: "Districts", to: "/districts" },
-				{ label: "Representatives", to: "/representatives" },
-				{ label: "Search", to: "/search" }
-			];
+		: hasGuideShellContext.value
+			? [
+					{ label: "Election overview", to: electionOverviewPath.value },
+					{ label: "Location hub", to: locationHubPath.value },
+					{ label: "Districts", to: "/districts" },
+					{ label: "Representatives", to: "/representatives" },
+					{ label: "Search", to: "/search" }
+				]
+			: [
+					...(hasNationwideResultContext.value
+						? [{ label: "Results", to: "/results" }]
+						: [{ label: "Location lookup", to: "/" }]),
+					{ label: "Districts", to: "/districts" },
+					{ label: "Representatives", to: "/representatives" },
+					{ label: "Search", to: "/search" }
+				];
 
 	return [
 		{

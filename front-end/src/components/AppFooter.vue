@@ -5,16 +5,22 @@ import { buildCompareRoute } from "~/stores/civic";
 
 const year = new Date().getFullYear();
 const civicStore = useCivicStore();
-const { hasNationwideResultContext, hasPublishedGuideContext } = useGuideEntryGate();
+const { hasGuideShellContext, hasNationwideResultContext, hasVerifiedGuideContext } = useGuideEntryGate();
 const { compareList, isHydrated } = storeToRefs(civicStore);
 const effectiveCompareList = computed(() => isHydrated.value ? compareList.value : []);
-const primarySectionLabel = computed(() => hasPublishedGuideContext.value
+const selectedElection = computed(() => civicStore.selectedElection);
+const selectedLocation = computed(() => civicStore.selectedLocation);
+const electionOverviewPath = computed(() => selectedElection.value?.slug ? `/elections/${selectedElection.value.slug}` : "/coverage");
+const locationHubPath = computed(() => selectedLocation.value?.slug ? `/locations/${selectedLocation.value.slug}` : "/coverage");
+const primarySectionLabel = computed(() => hasVerifiedGuideContext.value
 	? "Use the guide"
-	: hasNationwideResultContext.value
-		? "Explore active results"
-		: "Start with lookup");
+	: hasGuideShellContext.value
+		? "Use the election overview"
+		: hasNationwideResultContext.value
+			? "Explore active results"
+			: "Start with lookup");
 
-const guideLinks = computed(() => hasPublishedGuideContext.value
+const guideLinks = computed(() => hasVerifiedGuideContext.value
 	? [
 			{ label: "My ballot plan", to: "/plan" },
 			{ label: "Ballot guide", to: "/ballot" },
@@ -23,14 +29,22 @@ const guideLinks = computed(() => hasPublishedGuideContext.value
 			{ label: "Representatives", to: "/representatives" },
 			{ label: "Search", to: "/search" },
 		]
-	: [
-			...(hasNationwideResultContext.value
-				? [{ label: "Results", to: "/results" }]
-				: [{ label: "Location lookup", to: "/" }]),
-			{ label: "District pages", to: "/districts" },
-			{ label: "Representatives", to: "/representatives" },
-			{ label: "Search", to: "/search" },
-		]);
+	: hasGuideShellContext.value
+		? [
+				{ label: "Election overview", to: electionOverviewPath.value },
+				{ label: "Location hub", to: locationHubPath.value },
+				{ label: "District pages", to: "/districts" },
+				{ label: "Representatives", to: "/representatives" },
+				{ label: "Search", to: "/search" },
+			]
+		: [
+				...(hasNationwideResultContext.value
+					? [{ label: "Results", to: "/results" }]
+					: [{ label: "Location lookup", to: "/" }]),
+				{ label: "District pages", to: "/districts" },
+				{ label: "Representatives", to: "/representatives" },
+				{ label: "Search", to: "/search" },
+			]);
 
 const discoveryLinks = [
 	{ label: "About", to: "/about" },

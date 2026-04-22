@@ -9,8 +9,8 @@ import { buildHomeExperienceState } from "~/utils/nationwide-results";
 const api = useApiClient();
 const siteUrl = useSiteUrl();
 const civicStore = useCivicStore();
-const { selectedElection } = storeToRefs(civicStore);
-const { activeNationwideResult, hasNationwideResultContext, hasPublishedGuideContext } = useGuideEntryGate();
+const { selectedElection, selectedLocation } = storeToRefs(civicStore);
+const { activeNationwideResult, hasGuideShellContext, hasNationwideResultContext, hasVerifiedGuideContext } = useGuideEntryGate();
 const AsyncHomeBallotPreviewSection = defineAsyncComponent(() => import("~/components/home/HomeBallotPreviewSection.vue"));
 const AsyncHomeRoadmapSection = defineAsyncComponent(() => import("~/components/home/HomeRoadmapSection.vue"));
 const AsyncHomeCoverageOverviewSection = defineAsyncComponent(() => import("~/components/home/HomeCoverageOverviewSection.vue"));
@@ -30,9 +30,16 @@ const guideBallotPath = computed(() => {
 
 	return activeGuideElection ? `/ballot/${activeGuideElection.slug}` : "/ballot";
 });
+const guideOverviewPath = computed(() => {
+	const activeGuideElection = selectedElection.value ?? featuredElection.value;
+
+	return activeGuideElection ? `/elections/${activeGuideElection.slug}` : "/coverage";
+});
+const guideLocationPath = computed(() => selectedLocation.value?.slug ? `/locations/${selectedLocation.value.slug}` : "/coverage");
 const homeExperience = computed(() => buildHomeExperienceState(
 	hasNationwideResultContext.value,
-	hasPublishedGuideContext.value
+	hasGuideShellContext.value,
+	hasVerifiedGuideContext.value
 ));
 const shouldShowFeaturedGuidePreview = computed(() => homeExperience.value.showFeaturedGuidePreview && hasFeaturedGuide.value);
 
@@ -50,20 +57,26 @@ const { data: ballotPreview } = await useAsyncData<BallotResponse | null>(
 		watch: [featuredElection, shouldShowFeaturedGuidePreview]
 	}
 );
-const startHerePrimaryPath = computed(() => hasPublishedGuideContext.value
+const startHerePrimaryPath = computed(() => hasVerifiedGuideContext.value
 	? guideBallotPath.value
-	: homeExperience.value.startHerePrimaryPath);
+	: hasGuideShellContext.value
+		? guideOverviewPath.value
+		: homeExperience.value.startHerePrimaryPath);
 const startHerePrimaryLabel = computed(() => homeExperience.value.startHerePrimaryLabel);
-const startHereSecondaryPath = computed(() => hasPublishedGuideContext.value
+const startHereSecondaryPath = computed(() => hasVerifiedGuideContext.value
 	? "/plan"
-	: hasNationwideResultContext.value
-		? "/coverage"
-		: "/data-sources");
-const startHereSecondaryLabel = computed(() => hasPublishedGuideContext.value
+	: hasGuideShellContext.value
+		? guideLocationPath.value
+		: hasNationwideResultContext.value
+			? "/coverage"
+			: "/data-sources");
+const startHereSecondaryLabel = computed(() => hasVerifiedGuideContext.value
 	? "Open ballot plan"
-	: hasNationwideResultContext.value
-		? "Check coverage"
-		: "Check coverage");
+	: hasGuideShellContext.value
+		? "Open location hub"
+		: hasNationwideResultContext.value
+			? "Check coverage"
+			: "Check coverage");
 const faqEntries = [
 	{
 		answer: "Start with the location lookup. Ballot Clarity shows districts, representatives, official election links, and a local guide when one is published for your area.",
@@ -128,19 +141,25 @@ interface PrimaryPath {
 }
 
 const primaryPaths = computed<PrimaryPath[]>(() => [
-	...(hasPublishedGuideContext.value
+	...(hasVerifiedGuideContext.value
 		? [{
 				description: "Open the local guide for your current election.",
 				label: "See your ballot",
 				to: guideBallotPath.value
 			}]
-		: [{
-				description: hasNationwideResultContext.value
-					? "Return to the results for your latest lookup."
-					: "Enter a location to load results for your area.",
-				label: hasNationwideResultContext.value ? "Open results" : "Use location lookup",
-				to: hasNationwideResultContext.value ? homeExperience.value.primaryLookupPath : "/#location-lookup"
-			}]),
+		: hasGuideShellContext.value
+			? [{
+					description: "Open the election overview for official links and current guide status.",
+					label: "Open election overview",
+					to: guideOverviewPath.value
+				}]
+			: [{
+					description: hasNationwideResultContext.value
+						? "Return to the results for your latest lookup."
+						: "Enter a location to load results for your area.",
+					label: hasNationwideResultContext.value ? "Open results" : "Use location lookup",
+					to: hasNationwideResultContext.value ? homeExperience.value.primaryLookupPath : "/#location-lookup"
+				}]),
 	{
 		description: hasNationwideResultContext.value
 			? "Browse district and representative pages for your area."
@@ -165,7 +184,11 @@ const trustFacts = computed(() => [
 		? `Current area: ${activeNationwideResult.value.location.displayName}`
 		: "Districts and officials vary by area",
 	"Sources linked on every major reading page",
-	hasPublishedGuideContext.value ? "Ballot plan available" : "Official election links included where available"
+	hasVerifiedGuideContext.value
+		? "Ballot plan available"
+		: hasGuideShellContext.value
+			? "Election overview available"
+			: "Official election links included where available"
 ]);
 </script>
 
@@ -176,17 +199,25 @@ const trustFacts = computed(() => [
 				<div class="border border-app-line rounded-[2.2rem] bg-white shadow-[0_36px_84px_-58px_rgba(16,37,62,0.62)] overflow-hidden dark:border-app-line-dark dark:bg-app-panel-dark">
 					<div class="px-6 py-8 lg:px-10 sm:px-8 sm:py-10">
 						<p class="text-xs text-app-muted tracking-[0.26em] font-semibold uppercase dark:text-app-muted-dark">
-							{{ hasPublishedGuideContext ? "Ballot guide" : hasNationwideResultContext ? "Civic results" : "Location lookup" }}
+							{{ hasVerifiedGuideContext ? "Ballot guide" : hasGuideShellContext ? "Election overview" : hasNationwideResultContext ? "Civic results" : "Location lookup" }}
 						</p>
 						<h1 class="text-5xl text-app-ink leading-tight font-serif mt-4 max-w-4xl sm:text-6xl dark:text-app-text-dark">
-							{{ hasPublishedGuideContext ? "Your ballot guide is ready." : hasNationwideResultContext ? "Your civic results are ready." : "Look up your area." }}
+							{{ hasVerifiedGuideContext
+								? "Your ballot guide is ready."
+								: hasGuideShellContext
+									? "Your election overview is ready."
+									: hasNationwideResultContext
+										? "Your civic results are ready."
+										: "Look up your area." }}
 						</h1>
 						<p class="bc-measure text-lg text-app-muted leading-8 mt-6 dark:text-app-muted-dark">
-							{{ hasPublishedGuideContext
+							{{ hasVerifiedGuideContext
 								? "Open your ballot, districts, representatives, and official election links from one place."
-								: hasNationwideResultContext
-									? "Review districts, current officials, official election links, and any available local guide for this area."
-									: "Enter a street address or ZIP code to see districts, current officials, and official election links for your area." }}
+								: hasGuideShellContext
+									? "Open the election overview, districts, representatives, and official election links for this area."
+									: hasNationwideResultContext
+										? "Review districts, current officials, official election links, and any available local guide for this area."
+										: "Enter a street address or ZIP code to see districts, current officials, and official election links for your area." }}
 						</p>
 						<div class="mt-8 gap-4 grid md:grid-cols-2 xl:grid-cols-4">
 							<div
@@ -273,7 +304,7 @@ const trustFacts = computed(() => [
 
 		<DeferredSection placeholder-class="min-h-[38rem]">
 			<AsyncHomeBallotPreviewSection
-				:allow-guide-entry-points="hasPublishedGuideContext"
+				:allow-guide-entry-points="hasVerifiedGuideContext"
 				:ballot-preview="shouldShowFeaturedGuidePreview ? ballotPreview : null"
 				:featured-election-slug="featuredElection?.slug ?? null"
 				:nationwide-lookup-result="activeNationwideResult"

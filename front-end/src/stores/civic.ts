@@ -266,12 +266,26 @@ export const useCivicStore = defineStore("civic", {
 
 			if (location) {
 				this.nationwideLookupResult = null;
-				this.lookupContext = {
-					guideAvailability: "published",
-					result: "resolved"
-				};
 			}
 
+			this.persist();
+		},
+		setGuideSurfaceContext(
+			election: ElectionSummary | null,
+			location: LocationSelection | null,
+			guideContent?: LocationLookupResponse["guideContent"] | null
+		) {
+			this.selectedElection = election;
+			this.selectedLocation = sanitizeLocationSelection(location);
+			this.nationwideLookupResult = null;
+			this.lookupContext = location && election
+				? {
+						guideAvailability: guideContent?.publishedGuideShell ? "published" : "not-published",
+						hasPublishedGuideShell: Boolean(guideContent?.publishedGuideShell),
+						hasVerifiedContestPackage: Boolean(guideContent?.verifiedContestPackage),
+						result: "resolved"
+					}
+				: null;
 			this.persist();
 		},
 		setBallotViewMode(mode: BallotViewMode) {

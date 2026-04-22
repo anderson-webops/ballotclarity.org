@@ -124,7 +124,7 @@ function getRepresentativePresentation(match: NationwideLookupResultContext["rep
 						{{ option.label }}
 					</p>
 					<VerificationBadge
-						:label="option.guideAvailability === 'published' ? 'Local guide available' : 'Results available'"
+						:label="option.guideAvailability === 'published' ? 'Election overview available' : 'Results available'"
 						:tone="option.guideAvailability === 'published' ? 'accent' : 'neutral'"
 					/>
 					<VerificationBadge
@@ -205,7 +205,7 @@ function getRepresentativePresentation(match: NationwideLookupResultContext["rep
 						@click="openGuideAction(action)"
 					>
 						<span class="i-carbon-arrow-right" />
-						Open local guide
+						{{ lookupPresentation.guideActionLabel }}
 					</button>
 					<a
 						v-else-if="action.url"

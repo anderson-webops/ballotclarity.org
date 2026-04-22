@@ -12,12 +12,44 @@ const { formatDate } = useFormatters();
 const contestCount = computed(() => props.election.contests.length);
 const measureCount = computed(() => props.election.contests.reduce((count, contest) => count + (contest.measures?.length ?? 0), 0));
 const personalizationLabel = computed(() => props.location.lookupInput ?? props.location.displayName);
+const hasVerifiedContestPackage = computed(() => Boolean(props.guideContent?.verifiedContestPackage));
+const isGuideShellOnly = computed(() => Boolean(props.guideContent?.publishedGuideShell) && !hasVerifiedContestPackage.value);
 const guideStatusTitle = computed(() => "Guide status");
 const guideStatusNote = computed(() => props.guideContent?.verifiedContestPackage
 	? "Contest, candidate, and measure pages are verified for this area."
 	: props.guideContent?.publishedGuideShell
 		? "Official election links are current. Contest, candidate, and measure pages are still under local review."
 		: props.note);
+const primaryContextNote = computed(() => hasVerifiedContestPackage.value
+	? `Showing contests for your districts in ${props.location.displayName}.`
+	: `Official election links are attached for ${props.location.displayName}. Verified contest pages are still under local review.`);
+const secondaryMetric = computed(() => hasVerifiedContestPackage.value
+	? {
+			label: "Contests",
+			note: "Candidate and measure sections included in this ballot guide.",
+			value: String(contestCount.value)
+		}
+	: {
+			label: "Official links",
+			note: "Current election-office links attached to this page.",
+			value: String(props.election.officialResources.length)
+		});
+const tertiaryMetric = computed(() => hasVerifiedContestPackage.value
+	? {
+			label: "Measures",
+			note: "Countywide measures with plain-language summaries and sources.",
+			value: String(measureCount.value)
+		}
+	: {
+			label: "Key dates",
+			note: "Calendar items attached for deadlines and election logistics.",
+			value: String(props.election.keyDates.length)
+		});
+const readingTitle = computed(() => hasVerifiedContestPackage.value ? "Read this ballot like a pamphlet" : "Use this page as an election overview");
+const readingLead = computed(() => hasVerifiedContestPackage.value
+	? "Each contest below includes plainspoken summaries, record highlights, funding context, and direct source lists. Information may still be incomplete, so review original records before voting."
+	: "This page keeps official links, key dates, and guide status in one place while verified contest, candidate, and measure pages are still under local review.");
+const actionLabel = computed(() => isGuideShellOnly.value ? "Print this election overview" : "Print this ballot guide");
 const matchGuidance = computed(() => {
 	if (props.location.lookupMode === "zip-preview")
 		return "This guide was opened from a ZIP-only preview. ZIPs can span multiple districts, so verify the exact ballot in the official election tools before relying on district-specific contests.";
@@ -67,29 +99,29 @@ function printBallot() {
 								{{ personalizationLabel }}
 							</p>
 							<p class="text-xs text-app-muted leading-6 mt-2 dark:text-app-muted-dark">
-								Showing contests for your districts in {{ props.location.displayName }}.
+								{{ primaryContextNote }}
 							</p>
 						</div>
 						<div class="px-5 py-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
 							<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
-								Contests
+								{{ secondaryMetric.label }}
 							</p>
 							<p class="text-3xl text-app-ink font-semibold mt-3 dark:text-app-text-dark">
-								{{ contestCount }}
+								{{ secondaryMetric.value }}
 							</p>
 							<p class="text-xs text-app-muted leading-6 mt-2 dark:text-app-muted-dark">
-								Candidate and measure sections included in this ballot guide.
+								{{ secondaryMetric.note }}
 							</p>
 						</div>
 						<div class="px-5 py-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
 							<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
-								Measures
+								{{ tertiaryMetric.label }}
 							</p>
 							<p class="text-3xl text-app-ink font-semibold mt-3 dark:text-app-text-dark">
-								{{ measureCount }}
+								{{ tertiaryMetric.value }}
 							</p>
 							<p class="text-xs text-app-muted leading-6 mt-2 dark:text-app-muted-dark">
-								Countywide measures with plain-language summaries and sources.
+								{{ tertiaryMetric.note }}
 							</p>
 						</div>
 					</div>
@@ -98,10 +130,10 @@ function printBallot() {
 				<div class="surface-panel flex flex-col max-w-2xl justify-between relative z-10 xl:max-w-none">
 					<div>
 						<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-							Read this ballot like a pamphlet
+							{{ readingTitle }}
 						</p>
 						<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-							Each contest below includes plainspoken summaries, record highlights, funding context, and direct source lists. Information may still be incomplete, so review original records before voting.
+							{{ readingLead }}
 						</p>
 						<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
 							This ballot is personalized to {{ personalizationLabel }}. {{ matchGuidance }}
@@ -116,7 +148,7 @@ function printBallot() {
 						<div class="bc-action-cluster">
 							<button type="button" class="btn-primary" @click="printBallot">
 								<span class="i-carbon-printer" />
-								Print this ballot guide
+								{{ actionLabel }}
 							</button>
 							<NuxtLink to="/coverage" class="btn-secondary">
 								Check coverage

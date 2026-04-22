@@ -10,6 +10,8 @@ const { data: nextElectionData } = await useBallot(nextElectionSlug);
 
 const registrationDeadline = computed(() => nextElectionData.value?.election.keyDates.find(item => item.label === "Registration deadline") ?? null);
 const earlyVotingDate = computed(() => nextElectionData.value?.election.keyDates.find(item => item.label === "Early voting opens") ?? null);
+const hasVerifiedContestPackage = computed(() => Boolean(nextElectionData.value?.guideContent?.verifiedContestPackage));
+const hasPublishedGuideShell = computed(() => Boolean(nextElectionData.value?.guideContent?.publishedGuideShell));
 const guideStatusTitle = computed(() => "Guide status");
 const guideStatusNote = computed(() => nextElectionData.value?.guideContent?.verifiedContestPackage
 	? "Contest, candidate, and measure pages are verified for this area."
@@ -28,14 +30,21 @@ watchEffect(() => {
 	}
 
 	if (nextElectionData.value) {
-		civicStore.setElection({
+		civicStore.setGuideSurfaceContext({
 			date: nextElectionData.value.election.date,
 			jurisdictionSlug: nextElectionData.value.election.jurisdictionSlug,
 			locationName: nextElectionData.value.election.locationName,
 			name: nextElectionData.value.election.name,
 			slug: nextElectionData.value.election.slug,
 			updatedAt: nextElectionData.value.election.updatedAt
-		});
+		}, {
+			coverageLabel: `Current area: ${jurisdiction.value?.displayName ?? nextElectionData.value.location.displayName}`,
+			displayName: nextElectionData.value.location.displayName,
+			lookupMode: nextElectionData.value.location.lookupMode,
+			requiresOfficialConfirmation: nextElectionData.value.location.requiresOfficialConfirmation,
+			slug: nextElectionData.value.location.slug,
+			state: nextElectionData.value.location.state
+		}, nextElectionData.value.guideContent);
 	}
 });
 
@@ -84,6 +93,10 @@ usePageSeo({
 					<div class="flex flex-wrap gap-2">
 						<TrustBadge label="Jurisdiction hub" tone="accent" />
 						<TrustBadge label="Official office links" />
+						<TrustBadge
+							v-if="hasPublishedGuideShell"
+							:label="hasVerifiedContestPackage ? 'Verified ballot guide' : 'Election overview available'"
+						/>
 					</div>
 					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold mt-6 uppercase dark:text-app-muted-dark">
 						{{ jurisdiction.jurisdictionType }} guide
@@ -240,7 +253,11 @@ usePageSeo({
 									<NuxtLink :to="`/elections/${election.slug}`" class="btn-primary">
 										Open election overview
 									</NuxtLink>
-									<NuxtLink :to="`/ballot/${election.slug}`" class="btn-secondary">
+									<NuxtLink
+										v-if="hasVerifiedContestPackage && election.slug === jurisdiction.nextElectionSlug"
+										:to="`/ballot/${election.slug}`"
+										class="btn-secondary"
+									>
 										Open ballot guide
 									</NuxtLink>
 								</div>

@@ -685,6 +685,7 @@ export interface CoverageResponse {
 	coverageUpdatedAt: string;
 	locationGuess: LocationGuessCapability;
 	launchTarget?: LaunchTargetProfile;
+	guideContent?: GuideContentSummary | null;
 	scopeNote: string;
 	currentState: string;
 	supportedContentTypes: CoverageCapability[];

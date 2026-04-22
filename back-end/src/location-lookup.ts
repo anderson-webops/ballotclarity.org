@@ -45,7 +45,7 @@ export interface LookupGeoContext {
 
 function buildCoverageSelection(summary: JurisdictionSummary): LocationSelection {
 	return {
-		coverageLabel: `Live local guide area: ${summary.displayName}`,
+		coverageLabel: `Current published election area: ${summary.displayName}`,
 		displayName: summary.displayName,
 		lookupMode: "zip-preview",
 		requiresOfficialConfirmation: true,
@@ -95,7 +95,7 @@ function findOfficialVerificationResource(jurisdiction: Jurisdiction | null, cov
 function buildCoverageActions(jurisdictionSummaries: JurisdictionSummary[]): LocationLookupAction[] {
 	return jurisdictionSummaries.map(summary => ({
 		badge: "Approximate",
-		description: `Open the current ${summary.displayName} coverage guide. ZIP-only lookups can cross district or city boundaries, so verify the final ballot in the official tools before relying on this guide.`,
+		description: `Open the current ${summary.displayName} election overview. ZIP-only lookups can cross district or city boundaries, so verify the final ballot in the official tools before relying on district-specific contest pages.`,
 		electionSlug: summary.nextElectionSlug,
 		id: `coverage:${summary.slug}`,
 		kind: "ballot-guide",
@@ -292,7 +292,7 @@ function buildPublishedZipGuideNote(
 	const guideSentence = guideContent?.verifiedContestPackage
 		? "Ballot Clarity matched a single guide area for this ZIP and loaded a verified local guide for it."
 		: guideContent?.publishedGuideShell
-			? "Ballot Clarity matched a single guide area for this ZIP and loaded a local guide for it. Official election links are current, and contest pages are still under local review."
+			? "Ballot Clarity matched a single published election area for this ZIP and loaded the election overview for it. Official election links are current, and verified contest pages are still under local review."
 			: "Ballot Clarity matched a single guide area for this ZIP and loaded the civic results available for this area.";
 	const districtSentence = addressEnrichment?.districtMatches?.length
 		? `Census geography matched ${addressEnrichment.districtMatches.map(match => match.label).join(", ")}.`
@@ -393,9 +393,9 @@ function buildAvailabilitySummary(
 			detail: hasGuide && guideContent
 				? guideContent.guideShell.detail
 				: hasGuide
-					? "A local guide is available for this area."
-					: "No local guide is published for this area yet.",
-			label: "Local guide",
+					? "An election overview is available for this area."
+					: "No published election overview is available for this area yet.",
+			label: "Election overview",
 			status: hasGuide ? "available" : "unavailable"
 		},
 		verifiedContestPackage: {
@@ -412,8 +412,8 @@ function buildAvailabilitySummary(
 				? guideContent.summary
 				: hasGuide
 					? inputKind === "zip"
-						? "A local guide is available for the matched ZIP area."
-						: "A local guide is available for this lookup."
+						? "A published election overview is available for the matched ZIP area."
+						: "A published election overview is available for this lookup."
 					: "A full local contest and measure guide is not published for this area yet.",
 			label: "Local guide coverage",
 			status: hasVerifiedContestPackage ? "available" : hasPublishedShellOnly ? "limited" : "unavailable"
@@ -605,7 +605,7 @@ export function buildLocationLookupResponse(
 			officialLookup?.note || (coverageMode === "snapshot"
 				? guideContent?.verifiedContestPackage
 					? "A full address is the right input for exact ballot matching. This area opens a verified local guide, but official election tools still remain the final authority for district-level ballot confirmation."
-					: "A full address is the right input for exact ballot matching. This area opens a local guide with verified official election links, but contest pages are still under local review, so confirm the final ballot in the official election tools."
+					: "A full address is the right input for exact ballot matching. This area opens an election overview with verified official election links, but verified contest pages are still under local review, so confirm the final ballot in the official election tools."
 				: "A full address is the right input for exact ballot matching. This area may also open a local guide, but confirm the final ballot in the official election tools."),
 			addressEnrichment?.districtMatches?.length
 				? `Census geography matched ${addressEnrichment.districtMatches.map(match => match.label).join(", ")}.`

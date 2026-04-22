@@ -19,10 +19,24 @@ const nationwideLocationLabel = computed(() => props.nationwideLookupResult?.loc
 const officialToolCount = computed(() => props.nationwideLookupResult?.actions.filter(action => action.kind === "official-verification").length ?? 0);
 const districtMatchesHref = computed(() => buildHomeNationwideSummaryHref("/districts", props.nationwideLookupResult));
 const representativesHref = computed(() => buildHomeNationwideSummaryHref("/representatives", props.nationwideLookupResult));
-const featuredGuideStatusLabel = computed(() => props.ballotPreview?.guideContent?.verifiedContestPackage
-	? "Verified local guide"
-	: "Guide status");
+const featuredGuideIsVerified = computed(() => Boolean(props.ballotPreview?.guideContent?.verifiedContestPackage));
+const featuredGuideIsShellOnly = computed(() => Boolean(props.ballotPreview?.guideContent?.publishedGuideShell) && !featuredGuideIsVerified.value);
+const featuredGuideStatusLabel = computed(() => featuredGuideIsVerified.value
+	? "Verified ballot guide"
+	: featuredGuideIsShellOnly.value
+		? "Election overview"
+		: "Guide status");
 const featuredGuideStatusNote = computed(() => props.ballotPreview?.guideContent?.summary ?? "");
+const featuredPrimaryHref = computed(() => featuredGuideIsVerified.value
+	? featuredBallotHref.value
+	: featuredGuideIsShellOnly.value
+		? props.featuredElectionSlug ? `/elections/${props.featuredElectionSlug}` : "/elections"
+		: "/#location-lookup");
+const featuredPrimaryLabel = computed(() => featuredGuideIsVerified.value
+	? "Explore the ballot guide"
+	: featuredGuideIsShellOnly.value
+		? "Open election overview"
+		: "Open location lookup");
 </script>
 
 <template>
@@ -36,14 +50,18 @@ const featuredGuideStatusNote = computed(() => props.ballotPreview?.guideContent
 					{{ showNationwideResults
 						? `Results for ${nationwideLocationLabel}`
 						: showFeaturedGuidePreview
-							? "Preview the ballot guide."
+							? featuredGuideIsVerified
+								? "Preview the ballot guide."
+								: "Review the current election overview."
 							: "Look up your area to see districts, officials, and official links." }}
 				</h2>
 				<p class="bc-measure text-base text-app-muted leading-8 mt-5 dark:text-app-muted-dark">
 					{{ showNationwideResults
 						? "Use this lookup to open district pages, representative pages, and official election tools for this area."
 						: showFeaturedGuidePreview
-							? "Browse contests and official links before you open a detail page."
+							? featuredGuideIsVerified
+								? "Browse contests and official links before you open a detail page."
+								: "Official election links are current for this area. Verified contest, candidate, and measure pages are still under local review."
 							: "Look up an address or ZIP code to see districts, officials, and official election links." }}
 				</p>
 				<ul v-if="showNationwideResults && nationwideLookupResult" class="mt-6 gap-4 grid md:grid-cols-2">
@@ -92,17 +110,17 @@ const featuredGuideStatusNote = computed(() => props.ballotPreview?.guideContent
 					</li>
 					<li class="p-4 rounded-[1.35rem] bg-app-bg/70 dark:bg-app-bg-dark/70">
 						<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
-							Local guide
+							Election coverage
 						</p>
 						<p class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-							{{ nationwideLookupResult.guideContent?.verifiedContestPackage ? "Verified" : nationwideLookupResult.guideAvailability === "published" ? "In review" : "Not yet" }}
+							{{ nationwideLookupResult.guideContent?.verifiedContestPackage ? "Verified" : nationwideLookupResult.guideAvailability === "published" ? "Overview" : "Not yet" }}
 						</p>
 						<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
 							{{ nationwideLookupResult.guideContent?.verifiedContestPackage
 								? "Contest and measure pages are locally verified for this area."
 								: nationwideLookupResult.guideAvailability === "published"
-									? "Official election links are current. Contest pages are still under local review."
-									: "Contest and measure pages open when a local guide is available." }}
+									? "Official election links are current. Verified contest pages are still under local review."
+									: "Election overview pages open when current local coverage is available." }}
 						</p>
 					</li>
 				</ul>
@@ -115,7 +133,7 @@ const featuredGuideStatusNote = computed(() => props.ballotPreview?.guideContent
 							{{ featuredGuideStatusNote }}
 						</p>
 					</div>
-					<ul class="mt-6 divide-app-line divide-y dark:divide-app-line-dark">
+					<ul v-if="featuredGuideIsVerified && ballotPreview.election.contests.length" class="mt-6 divide-app-line divide-y dark:divide-app-line-dark">
 						<li
 							v-for="contest in ballotPreview.election.contests"
 							:key="contest.slug"
@@ -134,6 +152,9 @@ const featuredGuideStatusNote = computed(() => props.ballotPreview?.guideContent
 							</span>
 						</li>
 					</ul>
+					<p v-else class="text-sm text-app-muted leading-7 mt-6 dark:text-app-muted-dark">
+						Use the election overview for official links, key dates, and current verification status for this area. Contest, candidate, and measure pages open after the local package is verified.
+					</p>
 				</template>
 				<p v-else class="text-sm text-app-muted leading-7 mt-6 dark:text-app-muted-dark">
 					{{ showNationwideResults
@@ -152,17 +173,17 @@ const featuredGuideStatusNote = computed(() => props.ballotPreview?.guideContent
 						Open results
 					</NuxtLink>
 					<NuxtLink
-						v-else-if="showFeaturedGuidePreview && showGuideEntryPoints"
-						:to="featuredBallotHref"
+						v-else-if="showFeaturedGuidePreview"
+						:to="featuredPrimaryHref"
 						class="btn-primary"
 						prefetch-on="interaction"
 					>
-						Explore the ballot guide
+						{{ featuredPrimaryLabel }}
 					</NuxtLink>
 					<NuxtLink v-else to="/" class="btn-primary" prefetch-on="interaction">
 						Open location lookup
 					</NuxtLink>
-					<NuxtLink v-if="showFeaturedGuidePreview && showGuideEntryPoints" to="/compare" class="btn-secondary" prefetch-on="interaction">
+					<NuxtLink v-if="showFeaturedGuidePreview && showGuideEntryPoints && featuredGuideIsVerified" to="/compare" class="btn-secondary" prefetch-on="interaction">
 						Open compare
 					</NuxtLink>
 					<NuxtLink v-if="!showNationwideResults && !showFeaturedGuidePreview" to="/districts" class="btn-secondary" prefetch-on="interaction">

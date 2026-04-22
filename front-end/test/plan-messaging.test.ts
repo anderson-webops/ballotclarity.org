@@ -4,7 +4,8 @@ import {
 	buildPlanUnavailableMessaging,
 	missingGuideContextBody,
 	nationwideOnlyGuideBody,
-	planRequiresPublishedGuideTitle
+	planRequiresPublishedGuideTitle,
+	shellOnlyGuideBody
 } from "../src/utils/plan-messaging.ts";
 
 const oldPlanUnavailableTitle = "Ballot plan unavailable";
@@ -36,11 +37,13 @@ test("plan messaging uses permanent missing-guide copy when guide context is abs
 test("plan messaging does not fall back to the old guide-first text even with published guide context", () => {
 	const message = buildPlanUnavailableMessaging({
 		guideAvailability: "published",
+		hasPublishedGuideShell: true,
+		hasVerifiedContestPackage: false,
 		result: "resolved"
 	});
 
-	assert.equal(message.title, planRequiresPublishedGuideTitle);
-	assert.equal(message.body, missingGuideContextBody);
+	assert.equal(message.title, "Ballot plan needs verified contest pages");
+	assert.equal(message.body, shellOnlyGuideBody);
 	assert.equal(message.tone, "warning");
 	assert.notEqual(message.title, oldPlanUnavailableTitle);
 	assert.notEqual(message.body, oldGuideFirstBody);

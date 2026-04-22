@@ -1,21 +1,31 @@
 <script setup lang="ts">
 import type { ElectionsResponse } from "~/types/civic";
+import { storeToRefs } from "pinia";
 import { nationwideResultsPath } from "~/utils/nationwide-results";
 
 const api = useApiClient();
-const { allowsGuideEntryPoints, hasNationwideResultContext } = useGuideEntryGate();
+const civicStore = useCivicStore();
+const { selectedElection } = storeToRefs(civicStore);
+const { allowsGuideEntryPoints, hasGuideShellContext, hasNationwideResultContext } = useGuideEntryGate();
 const { data } = await useAsyncData<ElectionsResponse>(
 	"ballot-index-elections",
 	() => api<ElectionsResponse>("/elections")
 );
 const target = data.value?.elections[0]?.slug ?? null;
+const electionOverviewTarget = selectedElection.value?.slug
+	? `/elections/${selectedElection.value.slug}`
+	: target
+		? `/elections/${target}`
+		: "/coverage";
 
 await navigateTo(
 	allowsGuideEntryPoints.value && target
 		? `/ballot/${target}`
-		: hasNationwideResultContext.value
-			? nationwideResultsPath
-			: "/#location-lookup",
+		: hasGuideShellContext.value
+			? electionOverviewTarget
+			: hasNationwideResultContext.value
+				? nationwideResultsPath
+				: "/#location-lookup",
 	{ replace: true }
 );
 </script>

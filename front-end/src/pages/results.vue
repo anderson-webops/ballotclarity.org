@@ -4,6 +4,7 @@ import { storeToRefs } from "pinia";
 import { buildActiveLookupSummary } from "~/utils/active-lookup";
 import { activeNationwideLookupCookieName, parseActiveNationwideLookupCookie } from "~/utils/active-nationwide-cookie";
 import { buildLocationGuessUiContent } from "~/utils/location-guess";
+import { buildPublishedGuideDestination } from "~/utils/location-lookup";
 import { normalizeLookupResponseForDisplay, resolveLookupDestination } from "~/utils/nationwide-results";
 import { buildLookupContextFromNationwideResult, buildNationwideLookupRouteQuery, buildNationwideRouteTarget } from "~/utils/nationwide-route-context";
 import { buildResultsSummaryItems } from "~/utils/results-summary";
@@ -13,7 +14,7 @@ const route = useRoute();
 const civicStore = useCivicStore();
 const { data: coverageData } = useCoverage();
 const { isHydrated, nationwideLookupResult } = storeToRefs(civicStore);
-const { hasPublishedGuideContext } = useGuideEntryGate();
+const { hasGuideShellContext, hasVerifiedGuideContext } = useGuideEntryGate();
 const activeNationwideLookupCookie = useCookie<string | null>(activeNationwideLookupCookieName);
 const serverNationwideLookupResult = computed(() => parseActiveNationwideLookupCookie(activeNationwideLookupCookie.value));
 const storedNationwideLookupResult = computed(() => isHydrated.value ? nationwideLookupResult.value : serverNationwideLookupResult.value);
@@ -82,7 +83,7 @@ async function selectLookupOption(option: LocationLookupSelectionOption) {
 	}
 
 	if (response.location && response.electionSlug) {
-		await navigateTo(`/ballot/${response.electionSlug}?location=${response.location.slug}`);
+		await navigateTo(buildPublishedGuideDestination(response) ?? `/elections/${response.electionSlug}`);
 		return;
 	}
 
@@ -125,9 +126,9 @@ usePageSeo({
 						<TrustBadge label="Official tools visible" />
 						<TrustBadge
 							:label="activeResult.guideContent?.verifiedContestPackage
-								? 'Verified local guide'
+								? 'Verified ballot guide'
 								: activeResult.guideAvailability === 'published'
-									? 'Local guide available'
+									? 'Election overview available'
 									: 'Local guide not published'"
 							:tone="activeResult.guideAvailability === 'published' ? 'accent' : 'warning'"
 						/>
@@ -155,19 +156,28 @@ usePageSeo({
 					</p>
 					<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
 						{{
-							hasPublishedGuideContext
-								? "Open the local guide, ballot plan, districts, or representatives for this area."
-								: "Open districts, representatives, or coverage for this area."
+							hasVerifiedGuideContext
+								? "Open the ballot guide, ballot plan, districts, or representatives for this area."
+								: hasGuideShellContext
+									? "Open the election overview, districts, representatives, or coverage for this area."
+									: "Open districts, representatives, or coverage for this area."
 						}}
 					</p>
 					<div class="mt-5 flex flex-wrap gap-3">
-						<NuxtLink v-if="hasPublishedGuideContext" to="/plan" class="btn-secondary">
+						<NuxtLink v-if="hasVerifiedGuideContext" to="/plan" class="btn-secondary">
 							Open ballot plan
+						</NuxtLink>
+						<NuxtLink
+							v-else-if="hasGuideShellContext && activeResult.electionSlug"
+							:to="`/elections/${activeResult.electionSlug}`"
+							class="btn-secondary"
+						>
+							Open election overview
 						</NuxtLink>
 						<NuxtLink v-else :to="buildLookupAwareTarget('/districts')" class="btn-secondary">
 							Open districts
 						</NuxtLink>
-						<NuxtLink v-if="!hasPublishedGuideContext" :to="buildLookupAwareTarget('/representatives')" class="btn-secondary">
+						<NuxtLink v-if="!hasVerifiedGuideContext" :to="buildLookupAwareTarget('/representatives')" class="btn-secondary">
 							Open representatives
 						</NuxtLink>
 						<NuxtLink to="/coverage" class="btn-secondary">

@@ -2,6 +2,14 @@
 const { formatDate } = useFormatters();
 const { data, error, pending } = await useCoverage();
 const publicCapabilities = computed(() => (data.value?.supportedContentTypes ?? []).filter(capability => capability.id !== "editorial-ops" && capability.status !== "planned"));
+const hasPublishedGuideShell = computed(() => Boolean(data.value?.guideContent?.publishedGuideShell));
+const hasVerifiedContestPackage = computed(() => Boolean(data.value?.guideContent?.verifiedContestPackage));
+const coverageBadgeLabel = computed(() => hasVerifiedContestPackage.value ? "Verified ballot guide" : hasPublishedGuideShell.value ? "Election overview available" : "Published election area");
+const coverageIntro = computed(() => hasVerifiedContestPackage.value
+	? "This page shows the verified local guide layers currently published for this area."
+	: hasPublishedGuideShell.value
+		? "This page shows the official election links and overview layers currently published for this area. Verified contest pages are still under local review."
+		: "This page shows the current published election area and its official election links.");
 
 usePageSeo({
 	description: "Guide availability, official election links, and known limits for Ballot Clarity coverage.",
@@ -79,17 +87,17 @@ function capabilityLabel(status: "in-build" | "live-now" | "planned") {
 			<header class="gap-6 grid xl:grid-cols-[minmax(0,1.2fr)_minmax(24rem,0.8fr)]">
 				<div class="surface-panel">
 					<div class="flex flex-wrap gap-2">
-						<TrustBadge label="Local guide available" tone="accent" />
+						<TrustBadge :label="coverageBadgeLabel" tone="accent" />
 						<TrustBadge label="Official links attached" />
 					</div>
 					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold mt-6 uppercase dark:text-app-muted-dark">
-						Guide coverage
+						Election coverage
 					</p>
 					<h1 class="text-5xl text-app-ink leading-tight font-serif mt-3 dark:text-app-text-dark">
 						{{ data.launchTarget.displayName }}
 					</h1>
 					<p class="bc-prose text-app-muted mt-5 dark:text-app-muted-dark">
-						This page shows what Ballot Clarity currently publishes for {{ data.launchTarget.displayName }}. Use the official election tools for final deadline, polling-place, and ballot confirmation.
+						{{ coverageIntro }} Use the official election tools for final deadline, polling-place, and ballot confirmation.
 					</p>
 					<div class="mt-6 gap-4 grid md:grid-cols-2">
 						<div class="px-5 py-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
@@ -126,7 +134,9 @@ function capabilityLabel(status: "in-build" | "live-now" | "planned") {
 							What you can use
 						</p>
 						<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-							Use the local guide, district pages, representative pages, and official election links for this area.
+							{{ hasVerifiedContestPackage
+								? "Use the ballot guide, district pages, representative pages, and official election links for this area."
+								: "Use the election overview, district pages, representative pages, and official election links for this area." }}
 						</p>
 						<div class="mt-6 flex flex-wrap gap-3">
 							<NuxtLink to="/results" class="btn-secondary">

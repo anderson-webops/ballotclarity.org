@@ -7,6 +7,7 @@ import type {
 	NationwideLookupResultContext
 } from "~/types/civic";
 import { buildLocationGuessUiContent } from "~/utils/location-guess";
+import { buildPublishedGuideDestination } from "~/utils/location-lookup";
 import { normalizeLookupResponseForDisplay, resolveLookupDestination } from "~/utils/nationwide-results";
 
 const props = defineProps<{
@@ -42,14 +43,18 @@ async function openLookupAction(action: LocationLookupAction) {
 	if (action.kind !== "ballot-guide" || !action.location || !action.electionSlug)
 		return;
 
-	civicStore.setLocation(action.location);
+	const destination = buildPublishedGuideDestination({
+		electionSlug: action.electionSlug,
+		guideAvailability: lookupResult.value?.guideAvailability,
+		guideContent: lookupResult.value?.guideContent,
+		location: action.location,
+		selectionOptions: []
+	});
 
-	const activeElection = props.election ?? lookupResult.value?.election ?? null;
+	if (!destination)
+		return;
 
-	if (activeElection)
-		civicStore.setElection(activeElection);
-
-	await navigateTo(`/ballot/${action.electionSlug}?location=${action.location.slug}`);
+	await navigateTo(destination);
 }
 
 async function applyLookup(queryValue: string, selectionId?: string) {
@@ -81,7 +86,7 @@ async function applyLookup(queryValue: string, selectionId?: string) {
 		if (redirectTarget)
 			await navigateTo(redirectTarget);
 		else if (selectionId && response.location && response.electionSlug)
-			await navigateTo(`/ballot/${response.electionSlug}?location=${response.location.slug}`);
+			await navigateTo(buildPublishedGuideDestination(response) ?? `/elections/${response.electionSlug}`);
 	}
 	catch (error) {
 		errorMessage.value = error instanceof Error ? error.message : "Unable to load civic results right now.";

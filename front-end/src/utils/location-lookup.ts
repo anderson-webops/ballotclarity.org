@@ -6,14 +6,31 @@ export interface LookupPresentation {
 	availabilityBadgeLabel: string;
 	canOpenGuide: boolean;
 	footerNote: string;
+	guideActionLabel: string;
 	heading: string;
 	supportingNote: string;
 }
 
 export function hasPublishedGuideResult(response: Omit<LookupResolution, "result">) {
 	return response.guideAvailability === "published"
+		&& Boolean(response.guideContent?.publishedGuideShell)
 		&& Boolean(response.location)
 		&& Boolean(response.electionSlug);
+}
+
+export function hasVerifiedGuideResult(response: Omit<LookupResolution, "result">) {
+	return hasPublishedGuideResult(response)
+		&& Boolean(response.guideContent?.verifiedContestPackage);
+}
+
+export function buildPublishedGuideDestination(response: Omit<LookupResolution, "result">) {
+	if (!hasPublishedGuideResult(response) || !response.electionSlug)
+		return null;
+
+	if (hasVerifiedGuideResult(response))
+		return response.location ? `/ballot/${response.electionSlug}?location=${response.location.slug}` : `/ballot/${response.electionSlug}`;
+
+	return `/elections/${response.electionSlug}`;
 }
 
 export function filterLookupActionsForPresentation(
@@ -34,6 +51,7 @@ export function buildLookupPresentation(response: LookupResolution): LookupPrese
 			availabilityBadgeLabel: "Lookup not resolved",
 			canOpenGuide: false,
 			footerNote: "Use the official tools above for this location, or replace the ZIP code with a full street address for a more precise lookup.",
+			guideActionLabel: "Open election overview",
 			heading: "Location not yet resolved",
 			supportingNote: ""
 		};
@@ -44,25 +62,27 @@ export function buildLookupPresentation(response: LookupResolution): LookupPrese
 			availabilityBadgeLabel: "ZIP area selection needed",
 			canOpenGuide: false,
 			footerNote: "Choose one of the matched ZIP areas here to load the right districts, officials, and official election links.",
+			guideActionLabel: "Choose this area",
 			heading: "Choose the matched ZIP area",
 			supportingNote: "This ZIP matched more than one civic area. Choose the right area to continue."
 		};
 	}
 
 	if (canOpenGuide) {
-		const hasVerifiedContestPackage = Boolean(response.guideContent?.verifiedContestPackage);
+		const hasVerifiedContestPackage = hasVerifiedGuideResult(response);
 
 		return {
-			availabilityBadgeLabel: hasVerifiedContestPackage ? "Verified local guide" : "Local guide available",
+			availabilityBadgeLabel: hasVerifiedContestPackage ? "Verified ballot guide" : "Election overview available",
 			canOpenGuide: true,
 			footerNote: hasVerifiedContestPackage
-				? "Review the results here first, then open the local guide for verified contest, candidate, and measure pages."
-				: "Review the results here first, then open the local guide for official links and the current local content.",
-			heading: hasVerifiedContestPackage ? "Local guide and civic results ready" : "Civic results and local guide ready",
+				? "Review the results here first, then open the ballot guide for verified contest, candidate, and measure pages."
+				: "Review the results here first, then open the election overview for official links and the current verification status.",
+			guideActionLabel: hasVerifiedContestPackage ? "Open ballot guide" : "Open election overview",
+			heading: hasVerifiedContestPackage ? "Ballot guide and civic results ready" : "Civic results and election overview ready",
 			supportingNote: hasVerifiedContestPackage
 				? "A verified local guide is available for this lookup. Official tools remain visible below for final ballot confirmation."
 				: response.guideContent?.summary
-					?? "Official election links are verified for this area. Contest pages are still under local review."
+					?? "Official election links are current for this area. Verified contest pages are still under local review."
 		};
 	}
 
@@ -70,6 +90,7 @@ export function buildLookupPresentation(response: LookupResolution): LookupPrese
 		availabilityBadgeLabel: "Civic results available",
 		canOpenGuide: false,
 		footerNote: "Use the district, representative, and official election links here even when a local guide is not available yet.",
+		guideActionLabel: "Open results",
 		heading: "Civic results ready",
 		supportingNote: "Official tools stay visible below for ballot confirmation, voter status, and polling-place details."
 	};

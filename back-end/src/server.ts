@@ -21,6 +21,7 @@ import type {
 	ExternalLink,
 	FundingSummary,
 	GuidePackageDiagnosticsResponse,
+	GuidePackageRecord,
 	GuidePackageRecordResponse,
 	GuidePackageWorkflow,
 	IssueTag,
@@ -2965,6 +2966,19 @@ export async function createApp(options: CreateAppOptions = {}) {
 		};
 	}
 
+	function suppressUnverifiedContestContent(
+		election: Election,
+		publishedPackage: GuidePackageRecord | null,
+	): Election {
+		if (!publishedPackage?.contentStatus.publishedGuideShell || publishedPackage.contentStatus.verifiedContestPackage)
+			return election;
+
+		return {
+			...election,
+			contests: []
+		};
+	}
+
 	async function listPublicCandidates() {
 		const primaryElectionSlug = getPrimaryElectionSlug();
 
@@ -3014,7 +3028,11 @@ export async function createApp(options: CreateAppOptions = {}) {
 
 		const election = coverageRepository.getElectionBySlug(slug);
 		const contentIndex = await getContentIndex();
-		return election ? applyElectionContent(election, contentIndex) : null;
+		const resolvedElection = election ? applyElectionContent(election, contentIndex) : null;
+
+		return resolvedElection
+			? suppressUnverifiedContestContent(resolvedElection, publishedPackage)
+			: null;
 	}
 
 	async function getPublicElectionSummaries() {
@@ -3691,7 +3709,8 @@ export async function createApp(options: CreateAppOptions = {}) {
 			coverageRepository.mode,
 			coverageRepository.data.updatedAt,
 			locationGuessService.publicConfig,
-			publishedPrimaryPackage ? coverageRepository.data.dataSources.launchTarget : undefined
+			publishedPrimaryPackage ? coverageRepository.data.dataSources.launchTarget : undefined,
+			publishedPrimaryPackage?.contentStatus ?? null
 		);
 
 		let officialLookup = null;
@@ -4102,12 +4121,15 @@ export async function createApp(options: CreateAppOptions = {}) {
 	});
 
 	app.get("/api/coverage", async (_request, response) => {
-		const hasPublishedGuides = (await listPublishedGuidePackageRecords()).length > 0;
+		const publishedPrimaryPackage = coverageRepository.data.election
+			? await getPublishedGuidePackageByElectionSlug(coverageRepository.data.election.slug)
+			: null;
 		const payload: CoverageResponse = buildCoverageResponse(
 			coverageRepository.mode,
 			coverageRepository.data.updatedAt,
 			locationGuessService.publicConfig,
-			hasPublishedGuides ? coverageRepository.data.dataSources.launchTarget : undefined
+			publishedPrimaryPackage ? coverageRepository.data.dataSources.launchTarget : undefined,
+			publishedPrimaryPackage?.contentStatus ?? null
 		);
 		response.json(payload);
 	});

@@ -75,13 +75,27 @@ const compareSummaryItems = computed(() => ([
 		value: comparisonStats.value.questionCount
 	}
 ]));
+const hasUnavailableSelection = computed(() => {
+	return selectedSlugs.value.length >= 2 && (data.value?.candidates.length ?? 0) === 0;
+});
 const emptyStateTitle = computed(() => {
+	if (hasUnavailableSelection.value)
+		return "Candidate comparison is not available yet";
+
 	if (selectedSlugs.value.length === 1)
 		return "Select one more candidate to compare";
 
 	return "No compare candidates selected";
 });
 const emptyStateBody = computed(() => {
+	if (hasUnavailableSelection.value) {
+		return allowsGuideEntryPoints.value
+			? "These candidate records are not published for comparison yet. Use the ballot guide or profile pages until verified candidate comparison is available."
+			: hasNationwideResultContext.value
+				? "These candidate records are not published for comparison yet. Use the results page or profile pages until verified candidate comparison is available."
+				: "These candidate records are not published for comparison yet. Use the available profile or overview pages until verified candidate comparison is available.";
+	}
+
 	if (selectedSlugs.value.length === 1) {
 		return allowsGuideEntryPoints.value
 			? "This compare link includes only one candidate. Add one or two more candidates from the ballot guide or a candidate profile, then reopen compare with the updated URL."

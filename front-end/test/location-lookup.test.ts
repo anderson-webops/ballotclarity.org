@@ -20,6 +20,7 @@ test("location lookup treats nationwide-only resolved coverage as a success stat
 		availabilityBadgeLabel: "Civic results available",
 		canOpenGuide: false,
 		footerNote: "Use the district, representative, and official election links here even when a local guide is not available yet.",
+		guideActionLabel: "Open results",
 		heading: "Civic results ready",
 		supportingNote: "Official tools stay visible below for ballot confirmation, voter status, and polling-place details."
 	});
@@ -54,8 +55,9 @@ test("location lookup only exposes guide navigation when published guide coverag
 		{ description: "Open guide", electionSlug: "2026-fulton-county-general", id: "guide", kind: "ballot-guide", location: response.location, title: "Fulton County" }
 	], response).length, 1);
 	assert.equal(buildLookupPresentation(response).canOpenGuide, true);
-	assert.equal(buildLookupPresentation(response).heading, "Civic results and local guide ready");
-	assert.equal(buildLookupPresentation(response).availabilityBadgeLabel, "Local guide available");
+	assert.equal(buildLookupPresentation(response).heading, "Civic results and election overview ready");
+	assert.equal(buildLookupPresentation(response).availabilityBadgeLabel, "Election overview available");
+	assert.equal(buildLookupPresentation(response).guideActionLabel, "Open election overview");
 });
 
 test("location lookup shows a chooser state when a ZIP still needs one more area selection", () => {
@@ -74,6 +76,7 @@ test("location lookup shows a chooser state when a ZIP still needs one more area
 		availabilityBadgeLabel: "ZIP area selection needed",
 		canOpenGuide: false,
 		footerNote: "Choose one of the matched ZIP areas here to load the right districts, officials, and official election links.",
+		guideActionLabel: "Choose this area",
 		heading: "Choose the matched ZIP area",
 		supportingNote: "This ZIP matched more than one civic area. Choose the right area to continue."
 	});

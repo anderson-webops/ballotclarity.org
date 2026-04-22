@@ -224,6 +224,8 @@ test("successful nationwide lookup builds a persisted nationwide result context"
 
 	assert.deepEqual(update.lookupContext, {
 		guideAvailability: "not-published",
+		hasPublishedGuideShell: false,
+		hasVerifiedContestPackage: false,
 		result: "resolved"
 	});
 	assert.equal(update.selectedLocation, null);
@@ -241,6 +243,8 @@ test("non-published-guide lookups keep a persisted app context instead of droppi
 	assert.equal(update.nationwideLookupResult?.normalizedAddress, "84604");
 	assert.deepEqual(update.lookupContext, {
 		guideAvailability: "not-published",
+		hasPublishedGuideShell: false,
+		hasVerifiedContestPackage: false,
 		result: "resolved"
 	});
 });
@@ -275,9 +279,10 @@ test("nationwide lookups route into the results experience", () => {
 });
 
 test("homepage entry state stops promoting the featured guide preview when a nationwide context is active", () => {
-	assert.deepEqual(buildHomeExperienceState(true, false), {
+	assert.deepEqual(buildHomeExperienceState(true, false, false), {
 		primaryLookupPath: "/results",
 		showFeaturedGuidePreview: false,
+		showPublishedElectionOverview: false,
 		showNationwideResults: true,
 		startHerePrimaryLabel: "Open results",
 		startHerePrimaryPath: "/results"
@@ -285,21 +290,34 @@ test("homepage entry state stops promoting the featured guide preview when a nat
 });
 
 test("homepage entry state stays lookup-first when no nationwide or published guide context is active", () => {
-	assert.deepEqual(buildHomeExperienceState(false, false), {
+	assert.deepEqual(buildHomeExperienceState(false, false, false), {
 		primaryLookupPath: "/#location-lookup",
 		showFeaturedGuidePreview: false,
+		showPublishedElectionOverview: false,
 		showNationwideResults: false,
 		startHerePrimaryLabel: "Open location lookup",
 		startHerePrimaryPath: "/#location-lookup"
 	});
 });
 
-test("homepage entry state only promotes the ballot guide when a published guide context is active", () => {
-	assert.deepEqual(buildHomeExperienceState(false, true), {
+test("homepage entry state only promotes the ballot guide when a verified guide context is active", () => {
+	assert.deepEqual(buildHomeExperienceState(false, true, true), {
 		primaryLookupPath: "/ballot",
 		showFeaturedGuidePreview: true,
+		showPublishedElectionOverview: false,
 		showNationwideResults: false,
 		startHerePrimaryLabel: "Open ballot guide",
 		startHerePrimaryPath: "/ballot"
+	});
+});
+
+test("homepage entry state promotes the election overview when only the guide shell is active", () => {
+	assert.deepEqual(buildHomeExperienceState(false, true, false), {
+		primaryLookupPath: "/elections",
+		showFeaturedGuidePreview: false,
+		showPublishedElectionOverview: true,
+		showNationwideResults: false,
+		startHerePrimaryLabel: "Open election overview",
+		startHerePrimaryPath: "/elections"
 	});
 });

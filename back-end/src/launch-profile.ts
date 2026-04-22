@@ -1,4 +1,11 @@
-import type { CoverageResponse, ExternalLink, LaunchTargetProfile, LocationGuessCapability, OfficialResource } from "./types/civic.js";
+import type {
+	CoverageResponse,
+	ExternalLink,
+	GuideContentSummary,
+	LaunchTargetProfile,
+	LocationGuessCapability,
+	OfficialResource
+} from "./types/civic.js";
 
 const officialResources: OfficialResource[] = [
 	{
@@ -93,7 +100,7 @@ export const launchTargetProfile: LaunchTargetProfile = {
 	state: "Georgia",
 	phase: "launching",
 	phaseLabel: "Launch jurisdiction",
-	summary: "Ballot Clarity's first real production jurisdiction is Fulton County, Georgia. The platform will launch there with official logistics, auditable source links, and a Postgres-backed editorial workflow before expanding to additional counties.",
+	summary: "Ballot Clarity's first production jurisdiction is Fulton County, Georgia. Official election links and the election overview can publish first, while verified contest pages wait for local review before wider guide promotion.",
 	currentElectionName: "2026 General Primary Election and Nonpartisan Election",
 	currentElectionDate: "2026-05-19",
 	nextElectionName: "2026 General Election and Special Election",
@@ -106,7 +113,8 @@ export function buildCoverageResponse(
 	coverageMode: "empty" | "snapshot",
 	coverageUpdatedAt: string,
 	locationGuess: LocationGuessCapability,
-	launchTarget?: LaunchTargetProfile
+	launchTarget?: LaunchTargetProfile,
+	guideContent?: GuideContentSummary | null
 ): CoverageResponse {
 	if (!launchTarget || coverageMode === "empty") {
 		return {
@@ -136,6 +144,7 @@ export function buildCoverageResponse(
 			coverageMode,
 			coverageUpdatedAt,
 			locationGuess,
+			guideContent: null,
 			currentState: "No local guide is active in this environment right now.",
 			routeFamilies: [
 				{
@@ -204,14 +213,23 @@ export function buildCoverageResponse(
 		};
 	}
 
+	const hasPublishedGuideShell = Boolean(guideContent?.publishedGuideShell);
+	const hasVerifiedContestPackage = Boolean(guideContent?.verifiedContestPackage);
+	const publishedGuideSummary = hasVerifiedContestPackage
+		? "A verified local contest package is published for the current launch area."
+		: hasPublishedGuideShell
+			? "An election overview with official links is published for the current launch area, but verified contest pages are still under local review."
+			: "No verified local guide package is published for the current launch area yet.";
+
 	return {
 		updatedAt: new Date().toISOString(),
 		coverageMode,
 		coverageUpdatedAt,
 		locationGuess,
 		launchTarget,
-		scopeNote: `${launchTarget.displayName} is the current published local coverage target in this environment. Official election tools should remain the final authority for deadlines, precincts, polling places, and ballot confirmation.`,
-		currentState: "A vetted imported coverage snapshot is active for the public API.",
+		guideContent: guideContent ?? null,
+		scopeNote: `${launchTarget.displayName} is the current published election area in this environment. Official election tools should remain the final authority for deadlines, precincts, polling places, and ballot confirmation.`,
+		currentState: publishedGuideSummary,
 		routeFamilies: [
 			{
 				activeSources: [
@@ -229,15 +247,23 @@ export function buildCoverageResponse(
 			{
 				activeSources: [
 					`Published local coverage snapshot for ${launchTarget.displayName}`,
-					"Verified local contest, candidate, and measure records",
+					...(hasVerifiedContestPackage
+						? ["Verified local contest, candidate, and measure records"]
+						: ["Official local election links and election overview pages"]),
 					"Official local election links tied to the active published guide"
 				],
 				id: "published-guides",
 				label: "Published local guide routes",
-				note: "Guide routes are deeper reading layers when a verified local snapshot is active.",
-				routes: ["/ballot", "/contest", "/candidate", "/measure", "/plan"],
-				status: "live-now",
-				summary: "Ballot guide, contest, candidate, measure, and plan routes are active here because this environment has a published local coverage snapshot."
+				note: hasVerifiedContestPackage
+					? "Guide routes are deeper reading layers when a verified local snapshot is active."
+					: "Election overview and location hub routes are active now. Contest, candidate, measure, compare, and plan routes wait for verified local packaging.",
+				routes: hasVerifiedContestPackage
+					? ["/ballot", "/contest", "/candidate", "/measure", "/plan", "/compare"]
+					: ["/elections", "/locations", "/ballot"],
+				status: hasVerifiedContestPackage ? "live-now" : "limited",
+				summary: hasVerifiedContestPackage
+					? "Ballot guide, contest, candidate, measure, compare, and plan routes are active here because this environment has a verified local package."
+					: "Election overview and location pages are active here because this environment has a published guide shell with official links, but verified contest pages are still pending."
 			},
 			{
 				activeSources: [
@@ -269,14 +295,18 @@ export function buildCoverageResponse(
 			{
 				id: "logistics",
 				label: "Election logistics and official links",
-				status: "in-build",
-				summary: `Official election-office links, statewide voter tools, and logistics notes for ${launchTarget.displayName}.`
+				status: hasPublishedGuideShell ? "live-now" : "in-build",
+				summary: hasPublishedGuideShell
+					? `Official election-office links, statewide voter tools, and logistics notes are published now for ${launchTarget.displayName}.`
+					: `Official election-office links, statewide voter tools, and logistics notes are still being prepared for ${launchTarget.displayName}.`
 			},
 			{
 				id: "contest-packages",
 				label: "Canonical contest pages",
-				status: "live-now",
-				summary: "Election, contest, candidate, measure, and source surfaces are now separate canonical page types in the product."
+				status: hasVerifiedContestPackage ? "live-now" : "in-build",
+				summary: hasVerifiedContestPackage
+					? "Election, contest, candidate, measure, compare, and source surfaces are live with a verified local package."
+					: "Verified contest, candidate, and measure pages are still under local review before wider publication."
 			},
 			{
 				id: "editorial-ops",

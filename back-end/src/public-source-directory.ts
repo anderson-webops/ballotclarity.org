@@ -33,7 +33,7 @@ const curatedSourceDefinitions: CuratedSourceDefinition[] = [
 			"ZIP-centroid lookups can be broader than a full address lookup.",
 			"The geocoder returns geography and district boundaries, not candidate or officeholder data.",
 		],
-		note: "Official federal geography service used to anchor nationwide district matching.",
+		note: "Official federal geography service used to anchor U.S. district matching.",
 		publisher: "U.S. Census Bureau",
 		publisherType: "official",
 		primarySourceLabel: "Open Census Geocoder",
@@ -48,7 +48,7 @@ const curatedSourceDefinitions: CuratedSourceDefinition[] = [
 		title: "U.S. Census Geocoder",
 		type: "official record",
 		url: "https://geocoding.geo.census.gov/geocoder/Geocoding_Services_API.html",
-		usedFor: "Nationwide district matches, canonical district routing, and geography-backed lookup context."
+		usedFor: "District matches across the United States, canonical district routing, and geography-backed lookup context."
 	},
 	{
 		authority: "nonprofit-provider",
@@ -58,7 +58,7 @@ const curatedSourceDefinitions: CuratedSourceDefinition[] = [
 			"Coverage depth varies by state and chamber.",
 			"Officeholding records can support identity and office context without guaranteeing finance or disclosure depth.",
 		],
-		note: "Primary nationwide provider for current federal, state, and some local officeholder identity records.",
+		note: "Primary U.S. provider for current federal, state, and some local officeholder identity records.",
 		publisher: "Open States / Plural",
 		publisherType: "public-interest",
 		primarySourceLabel: "Open Open States",
@@ -152,7 +152,7 @@ const curatedSourceDefinitions: CuratedSourceDefinition[] = [
 			"Official election data availability varies by place and election.",
 			"Ballot Clarity does not treat Google Civic as a replacement for the official election office links shown on the page.",
 		],
-		note: "Supplemental nationwide election-info provider used when it returns useful official-tool context.",
+		note: "Supplemental U.S. election-information provider used when it returns useful official-tool context.",
 		publisher: "Google",
 		publisherType: "third-party civic infrastructure",
 		primarySourceLabel: "Open Google Civic API docs",

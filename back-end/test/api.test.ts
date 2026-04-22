@@ -1264,7 +1264,7 @@ test("POST /api/location validates incomplete numeric ZIP fragments", async () =
 	assert.match(body.message, /full 5-digit ZIP code/i);
 });
 
-test("POST /api/location returns the supported Fulton coverage guide for ZIPs inside current coverage", async () => {
+test("POST /api/location returns honest shell-only Fulton coverage for ZIPs inside current coverage", async () => {
 	const response = await fetch(`${baseUrl}/api/location`, {
 		body: JSON.stringify({ q: "30303" }),
 		headers: {
@@ -1297,7 +1297,7 @@ test("POST /api/location returns the supported Fulton coverage guide for ZIPs in
 	assert.equal(body.availability.fullLocalGuide.status, "limited");
 	assert.equal(body.representativeMatches[0].name, "Jon Ossoff");
 	assert.match(body.note, /Atlanta, Georgia/i);
-	assert.match(body.note, /local guide/i);
+	assert.match(body.note, /election overview/i);
 });
 
 test("POST /api/location filters former Congress members out of ZIP lookup representative fallback", async () => {
@@ -1568,18 +1568,18 @@ test("GET /api/location/guess returns 404 when automatic location guessing is di
 	}
 });
 
-test("GET /api/ballot returns the election guide and contests", async () => {
+test("GET /api/ballot returns the shell-only election overview without staged contest pages", async () => {
 	const response = await fetch(`${baseUrl}/api/ballot?election=2026-fulton-county-general`);
 	const body = await response.json();
 
 	assert.equal(response.status, 200);
 	assert.equal(body.election.slug, "2026-fulton-county-general");
 	assert.equal(body.election.jurisdictionSlug, "fulton-county-georgia");
-	assert.equal(body.election.contests.length, 5);
-	assert.equal(body.election.contests[0].title, "Federal Race");
-	assert.equal(body.election.contests[0].roleGuide.decisionAreas.length, 3);
-	assert.match(body.election.contests[0].roleGuide.summary, /federal law/i);
+	assert.equal(body.election.contests.length, 0);
+	assert.equal(body.guideContent.guideShell.status, "official_logistics_only");
+	assert.equal(body.guideContent.verifiedContestPackage, false);
 	assert.match(body.note, /verified official election links/i);
+	assert.match(body.note, /under local review/i);
 	assert.match(body.election.name, /Fulton County/i);
 });
 
@@ -1626,6 +1626,11 @@ test("GET /api/coverage returns the public launch profile for Fulton County, Geo
 	assert.equal(body.supportedContentTypes.length, 5);
 	assert.equal(body.collections[0].href, "/coverage");
 	assert.equal(body.coverageMode, "snapshot");
+	assert.equal(body.guideContent.publishedGuideShell, true);
+	assert.equal(body.guideContent.verifiedContestPackage, false);
+	assert.equal(body.supportedContentTypes.find((item: { id: string }) => item.id === "logistics")?.status, "live-now");
+	assert.equal(body.supportedContentTypes.find((item: { id: string }) => item.id === "contest-packages")?.status, "in-build");
+	assert.equal(body.routeFamilies.find((item: { id: string }) => item.id === "published-guides")?.status, "limited");
 });
 
 test("GET /api/status returns public source-health and launch notices", async () => {
@@ -1687,35 +1692,30 @@ test("GET /api/jurisdictions/:slug returns the official office and voting-method
 	assert.match(body.officialResources[0].sourceSystem, /Fulton County elections contacts/i);
 });
 
-test("GET /api/contests/:slug returns a canonical contest page payload with sources", async () => {
+test("GET /api/contests/:slug returns 404 while verified contest pages are still pending", async () => {
 	const response = await fetch(`${baseUrl}/api/contests/us-house-district-7`);
 	const body = await response.json();
 
-	assert.equal(response.status, 200);
-	assert.equal(body.contest.slug, "us-house-district-7");
-	assert.equal(body.election.slug, "2026-fulton-county-general");
-	assert.equal(body.jurisdiction.slug, "fulton-county-georgia");
-	assert.ok(body.sourceCount >= 4);
-	assert.ok(body.relatedContests.length >= 1);
-	assert.equal(body.sources[0].authority, "official-government");
+	assert.equal(response.status, 404);
+	assert.match(body.message, /Contest not found/i);
 });
 
-test("GET /api/districts and /api/districts/:slug return district-first ballot surfaces", async () => {
+test("GET /api/districts stays empty and guide-backed district slugs fall back to lookup-required records while contest pages are pending", async () => {
 	const listResponse = await fetch(`${baseUrl}/api/districts`);
 	const listBody = await listResponse.json();
 
 	assert.equal(listResponse.status, 200);
-	assert.ok(listBody.districts.some((item: { slug: string }) => item.slug === "us-house-district-7"));
+	assert.deepEqual(listBody.districts, []);
 
 	const districtResponse = await fetch(`${baseUrl}/api/districts/us-house-district-7`);
 	const districtBody = await districtResponse.json();
 
 	assert.equal(districtResponse.status, 200);
 	assert.equal(districtBody.district.slug, "us-house-district-7");
-	assert.equal(districtBody.representatives[0].slug, "daniel-brooks");
-	assert.equal(districtBody.candidates.length, 2);
-	assert.ok(districtBody.sources.length >= 4);
-	assert.match(districtBody.note, /district pages group/i);
+	assert.equal(districtBody.districtOriginLabel, "Lookup context required");
+	assert.deepEqual(districtBody.candidates, []);
+	assert.deepEqual(districtBody.representatives, []);
+	assert.match(districtBody.districtOriginNote, /attach the exact geography/i);
 });
 
 test("active nationwide lookup cookie backs /api/districts and /api/districts/:slug", async () => {
@@ -1828,15 +1828,13 @@ test("provider-style statewide district routes return a public district identity
 	assert.doesNotMatch(body.districtOriginNote, /lookup context required/i);
 });
 
-test("GET /api/representatives returns incumbents tied to district pages", async () => {
+test("GET /api/representatives stays empty until the verified contest package is published", async () => {
 	const response = await fetch(`${baseUrl}/api/representatives`);
 	const body = await response.json();
 
 	assert.equal(response.status, 200);
-	assert.ok(body.representatives.some((item: { districtSlug: string; slug: string }) => item.districtSlug === "us-house-district-7" && item.slug === "daniel-brooks"));
-	assert.ok(body.representatives.some((item: { href: string; slug: string }) => item.slug === "daniel-brooks" && item.href === "/representatives/daniel-brooks"));
-	assert.ok(body.representatives.some((item: { slug: string; sourceCount: number; sources: Array<{ id: string }> }) => item.slug === "daniel-brooks" && item.sourceCount >= 1 && item.sources.length >= 1));
-	assert.ok(body.districts.some((item: { href: string }) => item.href === "/districts/state-senate-district-12"));
+	assert.deepEqual(body.representatives, []);
+	assert.deepEqual(body.districts, []);
 	assert.match(body.note, /current officials/i);
 });
 
@@ -2137,17 +2135,17 @@ test("direct representative routes degrade to a public fallback instead of 500 w
 	assert.match(body.person.whatWeKnow[0]?.text ?? "", /honest unavailable state instead of failing/i);
 });
 
-test("GET /api/representatives/:slug returns a source-backed representative profile", async () => {
+test("GET /api/representatives/:slug returns a public fallback record when the contest package is still pending", async () => {
 	const response = await fetch(`${baseUrl}/api/representatives/daniel-brooks`);
 	const body = await response.json();
 
 	assert.equal(response.status, 200);
 	assert.equal(body.person.slug, "daniel-brooks");
-	assert.equal(body.person.officeholderLabel, "Current officeholder");
-	assert.equal(body.person.provenance.status, "direct");
-	assert.equal(body.person.funding.provenanceLabel, "Source-backed published filing summary");
-	assert.ok(body.person.lobbyingContext.length >= 1);
-	assert.ok(body.person.sources.length >= body.person.funding.sources.length);
+	assert.equal(body.person.officeholderLabel, "Current officeholder route");
+	assert.equal(body.person.provenance.status, "inferred");
+	assert.equal(body.person.funding, null);
+	assert.deepEqual(body.person.lobbyingContext, []);
+	assert.match(body.person.summary, /public, but office, district, finance, and influence details are not attached yet/i);
 });
 
 test("GET /api/ballot returns 404 for unknown elections", async () => {
@@ -2158,105 +2156,70 @@ test("GET /api/ballot returns 404 for unknown elections", async () => {
 	assert.match(body.message, /Ballot not found/);
 });
 
-test("GET /api/candidates/:slug returns a source-backed candidate profile", async () => {
+test("GET /api/candidates/:slug returns 404 while candidate pages are still under local review", async () => {
 	const response = await fetch(`${baseUrl}/api/candidates/elena-torres`);
 	const body = await response.json();
 
-	assert.equal(response.status, 200);
-	assert.equal(body.slug, "elena-torres");
-	assert.equal(body.officeSought, "U.S. House, District 7");
-	assert.ok(body.sources.length >= 4);
-	assert.equal(body.freshness.status, "up-to-date");
-	assert.equal(body.whatWeKnow.length, 2);
-	assert.ok(body.whatWeKnow[0].sources.length >= 1);
-	assert.equal(body.sources[0].authority, "official-government");
-	assert.ok(body.sources[0].sourceSystem);
+	assert.equal(response.status, 404);
+	assert.match(body.message, /Candidate not found/i);
 });
 
-test("GET /api/measures/:slug returns a ballot measure profile", async () => {
+test("GET /api/measures/:slug returns 404 while measure pages are still under local review", async () => {
 	const response = await fetch(`${baseUrl}/api/measures/charter-amendment-a`);
 	const body = await response.json();
 
-	assert.equal(response.status, 200);
-	assert.equal(body.slug, "charter-amendment-a");
-	assert.match(body.yesMeaning, /YES vote/);
-	assert.match(body.currentLawOverview, /state public-records law/i);
-	assert.equal(body.currentPractice.length, 2);
-	assert.equal(body.proposedChanges.length, 3);
-	assert.equal(body.yesHighlights.length, 3);
-	assert.equal(body.noHighlights.length, 3);
-	assert.equal(body.implementationTimeline.length, 3);
-	assert.equal(body.fiscalSummary.length, 3);
-	assert.equal(body.supportArguments.length, 2);
-	assert.equal(body.opposeArguments.length, 2);
-	assert.match(body.supportArguments[0].attribution, /Supporters/);
-	assert.match(body.argumentsDisclaimer, /not Ballot Clarity endorsements/i);
-	assert.equal(body.freshness.status, "up-to-date");
-	assert.equal(body.whatWeDoNotKnow.length, 2);
+	assert.equal(response.status, 404);
+	assert.match(body.message, /Measure not found/i);
 });
 
-test("GET /api/compare limits compare results and preserves a shared office when applicable", async () => {
+test("GET /api/compare stays empty while candidate pages are still under local review", async () => {
 	const response = await fetch(`${baseUrl}/api/compare?slugs=elena-torres,daniel-brooks,sandra-patel,naomi-park`);
 	const body = await response.json();
 
 	assert.equal(response.status, 200);
 	assert.deepEqual(body.requestedSlugs, ["elena-torres", "daniel-brooks", "sandra-patel"]);
-	assert.equal(body.candidates.length, 3);
+	assert.equal(body.candidates.length, 0);
 	assert.equal(body.sameContest, false);
 	assert.equal(body.contestSlug, null);
 	assert.equal(body.office, null);
 	assert.match(body.note, /informational only/i);
 });
 
-test("GET /api/compare returns a same-contest questionnaire-first comparison payload", async () => {
+test("GET /api/compare does not expose questionnaire comparisons before verified candidate pages are published", async () => {
 	const response = await fetch(`${baseUrl}/api/compare?slugs=elena-torres,daniel-brooks`);
 	const body = await response.json();
 
 	assert.equal(response.status, 200);
 	assert.deepEqual(body.requestedSlugs, ["elena-torres", "daniel-brooks"]);
-	assert.equal(body.sameContest, true);
-	assert.equal(body.contestSlug, "us-house-district-7");
-	assert.equal(body.office, "U.S. House, District 7");
-	assert.equal(body.candidates.length, 2);
-	assert.equal(body.candidates[0].comparison.ballotStatus.label, "On ballot (verified)");
-	assert.equal(body.candidates[0].comparison.questionnaireResponses.length, 3);
-	assert.equal(body.candidates[1].comparison.questionnaireResponses[2].responseStatus, "no-response");
+	assert.equal(body.sameContest, false);
+	assert.equal(body.contestSlug, null);
+	assert.equal(body.office, null);
+	assert.equal(body.candidates.length, 0);
 	assert.match(body.note, /do not rank candidates/i);
 });
 
-test("GET /api/search includes contest results when a contest office matches", async () => {
+test("GET /api/search omits contest results while verified contest pages are still pending", async () => {
 	const response = await fetch(`${baseUrl}/api/search?q=School Board`);
 	const body = await response.json();
-	const contestGroup = body.groups.find((group: { type: string }) => group.type === "contest");
 
 	assert.equal(response.status, 200);
-	assert.ok(contestGroup);
-	assert.ok(contestGroup.items.some((item: { href: string }) => item.href === "/contest/county-school-board-at-large"));
+	assert.deepEqual(body.groups, []);
 });
 
-test("GET /api/search includes district results when a district office matches", async () => {
+test("GET /api/search omits guide-backed district results while the contest package is still pending", async () => {
 	const response = await fetch(`${baseUrl}/api/search?q=District 7`);
 	const body = await response.json();
-	const districtGroup = body.groups.find((group: { type: string }) => group.type === "district");
 
 	assert.equal(response.status, 200);
-	assert.ok(districtGroup);
-	assert.ok(districtGroup.items.some((item: { href: string }) => item.href === "/districts/us-house-district-7"));
+	assert.deepEqual(body.groups, []);
 });
 
-test("GET /api/sources and /api/sources/:id include contest citations", async () => {
+test("GET /api/sources does not publish contest citations while contest pages are still under review", async () => {
 	const directoryResponse = await fetch(`${baseUrl}/api/sources`);
 	const directoryBody = await directoryResponse.json();
-	const sourceWithContestCitation = directoryBody.sources.find((item: { citedBy: Array<{ type: string }> }) => item.citedBy.some(citation => citation.type === "contest"));
 
 	assert.equal(directoryResponse.status, 200);
-	assert.ok(sourceWithContestCitation);
-
-	const recordResponse = await fetch(`${baseUrl}/api/sources/${sourceWithContestCitation.id}`);
-	const recordBody = await recordResponse.json();
-
-	assert.equal(recordResponse.status, 200);
-	assert.ok(recordBody.source.citedBy.some((citation: { type: string }) => citation.type === "contest"));
+	assert.ok(directoryBody.sources.every((item: { citedBy: Array<{ type: string }> }) => item.citedBy.every(citation => citation.type !== "contest")));
 });
 
 test("GET /api/sources publishes stable representative and district route provenance records", async () => {
@@ -2446,12 +2409,23 @@ test("PATCH /api/admin/content updates public content fields and publish gating"
 
 		assert.equal(patchResponse.status, 200);
 
+		const updatedContentResponse = await fetch(`${isolatedBaseUrl}/api/admin/content`, {
+			headers: {
+				"x-admin-api-key": adminApiKey
+			}
+		});
+		const updatedContentBody = await updatedContentResponse.json();
+		const updatedElenaRecord = updatedContentBody.items.find((item: { entitySlug: string }) => item.entitySlug === "elena-torres");
+
+		assert.equal(updatedContentResponse.status, 200);
+		assert.equal(updatedElenaRecord?.publicSummary, updatedSummary);
+		assert.equal(updatedElenaRecord?.publicBallotSummary, updatedBallotSummary);
+
 		const candidateResponse = await fetch(`${isolatedBaseUrl}/api/candidates/elena-torres`);
 		const candidateBody = await candidateResponse.json();
 
-		assert.equal(candidateResponse.status, 200);
-		assert.equal(candidateBody.summary, updatedSummary);
-		assert.equal(candidateBody.ballotSummary, updatedBallotSummary);
+		assert.equal(candidateResponse.status, 404);
+		assert.match(candidateBody.message, /Candidate not found/i);
 
 		const unpublishResponse = await fetch(`${isolatedBaseUrl}/api/admin/content/content-elena-torres`, {
 			body: JSON.stringify({
@@ -2470,12 +2444,10 @@ test("PATCH /api/admin/content updates public content fields and publish gating"
 		const hiddenCandidateResponse = await fetch(`${isolatedBaseUrl}/api/candidates/elena-torres`);
 		const ballotResponse = await fetch(`${isolatedBaseUrl}/api/ballot?election=2026-fulton-county-general`);
 		const ballotBody = await ballotResponse.json();
-		const houseContest = ballotBody.election.contests.find((contest: { slug: string }) => contest.slug === "us-house-district-7");
 
 		assert.equal(hiddenCandidateResponse.status, 404);
 		assert.equal(ballotResponse.status, 200);
-		assert.equal(houseContest.candidates.length, 1);
-		assert.equal(houseContest.candidates[0].slug, "daniel-brooks");
+		assert.equal(ballotBody.election.contests.length, 0);
 	}
 	finally {
 		await new Promise<void>((resolve, reject) => {
@@ -2695,10 +2667,13 @@ test("guide package workflow gates local guide publication from draft through ro
 		assert.equal(lookupAfterResponse.status, 200);
 		assert.equal(lookupAfterBody.guideAvailability, "published");
 		assert.equal(lookupAfterBody.electionSlug, "2026-fulton-county-general");
+		assert.equal(lookupAfterBody.guideContent.publishedGuideShell, true);
+		assert.equal(lookupAfterBody.guideContent.verifiedContestPackage, false);
 		assert.equal(ballotAfterResponse.status, 200);
 		assert.equal(ballotAfterBody.election.slug, "2026-fulton-county-general");
+		assert.equal(ballotAfterBody.election.contests.length, 0);
 		assert.equal(compareAfterResponse.status, 200);
-		assert.equal(compareAfterBody.candidates.length, 2);
+		assert.equal(compareAfterBody.candidates.length, 0);
 
 		const unpublishResponse = await fetch(`${isolatedBaseUrl}/api/admin/packages/${packageId}/unpublish`, {
 			body: JSON.stringify({

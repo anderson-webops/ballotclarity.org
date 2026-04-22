@@ -1,8 +1,9 @@
 import { nationwideResultsPath } from "./nationwide-results";
 
 export interface RouteLayerNavigationInput {
+	hasGuideShellContext: boolean;
 	hasNationwideResultContext: boolean;
-	hasPublishedGuideContext: boolean;
+	hasVerifiedGuideContext: boolean;
 	selectedElectionSlug?: null | string;
 	selectedLocationSlug?: null | string;
 }
@@ -21,7 +22,7 @@ export interface RouteLayerNavigation {
 }
 
 export function buildRouteLayerNavigation(input: RouteLayerNavigationInput): RouteLayerNavigation {
-	if (input.hasPublishedGuideContext) {
+	if (input.hasVerifiedGuideContext) {
 		const ballotGuidePath = input.selectedElectionSlug ? `/ballot/${input.selectedElectionSlug}` : "/ballot";
 		const electionOverviewPath = input.selectedElectionSlug ? `/elections/${input.selectedElectionSlug}` : "/coverage";
 		const locationHubPath = input.selectedLocationSlug ? `/locations/${input.selectedLocationSlug}` : "/coverage";
@@ -46,6 +47,34 @@ export function buildRouteLayerNavigation(input: RouteLayerNavigationInput): Rou
 			overview: {
 				label: "Election overview",
 				to: electionOverviewPath
+			}
+		};
+	}
+
+	if (input.hasGuideShellContext) {
+		const electionOverviewPath = input.selectedElectionSlug ? `/elections/${input.selectedElectionSlug}` : "/coverage";
+		const locationHubPath = input.selectedLocationSlug ? `/locations/${input.selectedLocationSlug}` : "/coverage";
+
+		return {
+			backToLayer: {
+				label: "Back to election overview",
+				to: electionOverviewPath
+			},
+			layerBreadcrumb: {
+				label: "Election overview",
+				to: electionOverviewPath
+			},
+			locationHub: {
+				label: "Location hub",
+				to: locationHubPath
+			},
+			openLayer: {
+				label: "Open election overview",
+				to: electionOverviewPath
+			},
+			overview: {
+				label: "Location hub",
+				to: locationHubPath
 			}
 		};
 	}

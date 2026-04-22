@@ -109,7 +109,7 @@ export function buildHomeExperienceState(
 			primaryLookupPath: nationwideResultsPath,
 			showFeaturedGuidePreview: false,
 			showNationwideResults: true,
-			startHerePrimaryLabel: "Open nationwide results",
+			startHerePrimaryLabel: "Open results",
 			startHerePrimaryPath: nationwideResultsPath
 		};
 	}

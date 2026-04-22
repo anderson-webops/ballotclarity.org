@@ -11,7 +11,7 @@ const provoLookupResponse: LocationLookupResponse = {
 	guideAvailability: "not-published",
 	inputKind: "zip",
 	location: {
-		coverageLabel: "Nationwide civic results available",
+		coverageLabel: "Civic results available",
 		displayName: "Provo, Utah",
 		lookupMode: "zip-preview",
 		requiresOfficialConfirmation: false,
@@ -19,7 +19,7 @@ const provoLookupResponse: LocationLookupResponse = {
 		state: "Utah"
 	},
 	lookupQuery: "84604",
-	note: "Nationwide lookup for Provo, Utah.",
+	note: "Lookup results for Provo, Utah.",
 	representativeMatches: [],
 	result: "resolved"
 };
@@ -27,7 +27,7 @@ const provoLookupResponse: LocationLookupResponse = {
 const oremLookupResponse: LocationLookupResponse = {
 	...provoLookupResponse,
 	location: {
-		coverageLabel: "Nationwide civic results available",
+		coverageLabel: "Civic results available",
 		displayName: "Orem, Utah",
 		lookupMode: "zip-preview",
 		requiresOfficialConfirmation: false,
@@ -35,7 +35,7 @@ const oremLookupResponse: LocationLookupResponse = {
 		state: "Utah"
 	},
 	lookupQuery: "84057",
-	note: "Nationwide lookup for Orem, Utah."
+	note: "Lookup results for Orem, Utah."
 };
 
 test("active lookup summary follows the latest successful lookup context used by districts and results", () => {

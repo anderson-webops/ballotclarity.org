@@ -138,7 +138,7 @@ const primaryPaths = computed<PrimaryPath[]>(() => [
 				description: hasNationwideResultContext.value
 					? "Return to the results for your latest lookup."
 					: "Enter a location to load results for your area.",
-				label: hasNationwideResultContext.value ? "Open nationwide results" : "Use location lookup",
+				label: hasNationwideResultContext.value ? "Open results" : "Use location lookup",
 				to: hasNationwideResultContext.value ? homeExperience.value.primaryLookupPath : "/#location-lookup"
 			}]),
 	{

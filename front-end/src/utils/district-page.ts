@@ -176,8 +176,8 @@ export function buildNationwideDistrictPageRecord(
 		election: context.election ?? {
 			date: updatedAt,
 			jurisdictionSlug: "",
-			locationName: context.location?.displayName || context.normalizedAddress || "Nationwide lookup",
-			name: "Nationwide civic lookup context",
+			locationName: context.location?.displayName || context.normalizedAddress || "Your area",
+			name: "Civic results context",
 			slug: context.electionSlug || "nationwide-lookup",
 			updatedAt
 		},

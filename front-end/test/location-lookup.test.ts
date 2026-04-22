@@ -17,7 +17,7 @@ test("location lookup treats nationwide-only resolved coverage as a success stat
 	], response).map(action => action.kind), ["official-verification"]);
 
 	assert.deepEqual(buildLookupPresentation(response), {
-		availabilityBadgeLabel: "Nationwide civic results available",
+		availabilityBadgeLabel: "Civic results available",
 		canOpenGuide: false,
 		footerNote: "Use the district, representative, and official election links here even when a local guide is not available yet.",
 		heading: "Civic results ready",

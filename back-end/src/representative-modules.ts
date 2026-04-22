@@ -1560,7 +1560,7 @@ export function createRepresentativeModuleResolver({
 					incumbent: true,
 					influenceAvailable: false,
 					influenceSummary: "",
-					location: context.location?.displayName || context.normalizedAddress || "Nationwide lookup",
+					location: context.location?.displayName || context.normalizedAddress || "Your area",
 					name: match.name,
 					officeDisplayLabel: match.officeDisplayLabel,
 					officeSought: match.officeTitle,
@@ -1622,7 +1622,7 @@ export function createRepresentativeModuleResolver({
 								{
 									id: `federal-crosswalk:${response.person.slug}`,
 									sources: attachment.sources,
-									summary: "Ballot Clarity attached federal finance or disclosure records to this officeholder through a structured crosswalk from the active nationwide lookup.",
+									summary: "Ballot Clarity attached federal finance or disclosure records to this officeholder through a structured crosswalk from your saved lookup results.",
 									title: "Federal finance and disclosure crosswalk",
 								} satisfies EvidenceBlock,
 						]

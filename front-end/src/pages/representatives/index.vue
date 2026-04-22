@@ -149,15 +149,15 @@ usePageSeo({
 		</div>
 
 		<div v-else-if="requiresLookupPrompt" class="max-w-3xl">
-			<InfoCallout title="Active nationwide lookup required" tone="warning">
-				Open lookup results first so this directory can show the current officials for your area.
+			<InfoCallout title="Current location required" tone="warning">
+				Open results first so this directory can show the current officials for your area.
 			</InfoCallout>
 			<div class="mt-6 flex flex-wrap gap-3">
 				<NuxtLink to="/" class="btn-primary">
 					Open lookup
 				</NuxtLink>
 				<NuxtLink to="/results" class="btn-secondary">
-					Nationwide results
+					Results for your area
 				</NuxtLink>
 			</div>
 		</div>

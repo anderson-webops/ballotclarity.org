@@ -103,7 +103,7 @@ const summaryItems = computed(() => {
 const districtContextLink = computed(() => {
 	if (districtPageData.value?.mode === "nationwide" || hasNationwideResultContext.value) {
 		return {
-			label: "Open nationwide results",
+			label: "Open results",
 			to: "/results"
 		};
 	}

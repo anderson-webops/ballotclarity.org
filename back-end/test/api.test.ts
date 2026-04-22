@@ -1071,7 +1071,7 @@ test("default runtime stays empty instead of auto-seeding coverage and public op
 		assert.deepEqual(statusBody.sources, []);
 		assert.deepEqual(statusBody.notes, [
 			"No published local coverage snapshot is active right now.",
-			"Nationwide civic lookup is available across the public site.",
+			"Lookup results are available across the public site.",
 			"Local guide publication status remains generic until a verified local snapshot is published."
 		]);
 		assert.equal(sourcesResponse.status, 200);
@@ -1387,7 +1387,7 @@ test("POST /api/location returns district lookup results without a published gui
 	assert.equal(body.location.displayName, "Provo, Utah");
 	assert.equal(body.representativeMatches[0].name, "Mike Kennedy");
 	assert.match(body.note, /Provo, Utah/i);
-	assert.match(body.note, /nationwide civic result layers/i);
+	assert.match(body.note, /civic results available for this area/i);
 });
 
 test("POST /api/location returns a selection panel when a ZIP resolves to multiple civic areas", async () => {
@@ -1507,7 +1507,7 @@ test("POST /api/location returns district lookup results without a published gui
 	assert.equal(body.availability.guideShell.status, "unavailable");
 	assert.equal(body.availability.verifiedContestPackage.status, "unavailable");
 	assert.equal(body.availability.fullLocalGuide.status, "unavailable");
-	assert.match(body.note, /nationwide civic result layers/i);
+	assert.match(body.note, /civic results available for this area/i);
 	assert.match(body.note, /Census geography matched/i);
 });
 

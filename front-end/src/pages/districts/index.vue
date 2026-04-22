@@ -189,20 +189,20 @@ function buildLookupAwareTarget(path: string) {
 
 		<div v-else-if="directoriesError || !directoryData" class="max-w-3xl">
 			<InfoCallout title="District pages unavailable" tone="warning">
-				The district hub could not be loaded. Open nationwide results or the coverage profile and try again.
+				The district hub could not be loaded. Open results or the coverage profile and try again.
 			</InfoCallout>
 		</div>
 
 		<div v-else-if="requiresLookupPrompt" class="max-w-3xl">
-			<InfoCallout title="Active nationwide lookup required" tone="warning">
-				Open lookup results first so this district hub can show the matched districts and linked officials for your area.
+			<InfoCallout title="Current location required" tone="warning">
+				Open results first so this district hub can show the matched districts and linked officials for your area.
 			</InfoCallout>
 			<div class="mt-6 flex flex-wrap gap-3">
 				<NuxtLink to="/" class="btn-primary">
 					Open lookup
 				</NuxtLink>
 				<NuxtLink to="/results" class="btn-secondary">
-					Nationwide results
+					Results for your area
 				</NuxtLink>
 			</div>
 		</div>

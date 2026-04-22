@@ -63,7 +63,7 @@ function capabilityLabel(status: "in-build" | "live-now" | "planned") {
 						Open location lookup
 					</NuxtLink>
 					<NuxtLink to="/results" class="btn-secondary">
-						Open nationwide results
+						Open results
 					</NuxtLink>
 					<NuxtLink to="/status" class="btn-secondary">
 						Open public status

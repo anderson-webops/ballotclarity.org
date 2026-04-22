@@ -86,7 +86,7 @@ const emptyStateBody = computed(() => {
 		return allowsGuideEntryPoints.value
 			? "This compare link includes only one candidate. Add one or two more candidates from the ballot guide or a candidate profile, then reopen compare with the updated URL."
 			: hasNationwideResultContext.value
-				? "This compare link includes only one candidate. Add one or two more candidates from a candidate profile or the nationwide results layer, then reopen compare with the updated URL."
+				? "This compare link includes only one candidate. Add one or two more candidates from a candidate profile or the results page, then reopen compare with the updated URL."
 				: "This compare link includes only one candidate. Add one or two more candidates from a candidate profile, then reopen compare with the updated URL.";
 	}
 
@@ -94,14 +94,14 @@ const emptyStateBody = computed(() => {
 		return allowsGuideEntryPoints.value
 			? "This compare link does not include any selected candidates yet. You can reopen the saved compare selection from this browser, or start a fresh compare from the ballot guide."
 			: hasNationwideResultContext.value
-				? "This compare link does not include any selected candidates yet. You can reopen the saved compare selection from this browser, or start a fresh compare from the nationwide results layer or a candidate profile."
+				? "This compare link does not include any selected candidates yet. You can reopen the saved compare selection from this browser, or start a fresh compare from the results page or a candidate profile."
 				: "This compare link does not include any selected candidates yet. You can reopen the saved compare selection from this browser, or start a fresh compare from a candidate profile.";
 	}
 
 	return allowsGuideEntryPoints.value
 		? "This compare page needs candidate slugs in the URL to render a side-by-side view. Start from the ballot guide or a candidate profile and open compare with two or three selected candidates."
 		: hasNationwideResultContext.value
-			? "This compare page needs candidate slugs in the URL to render a side-by-side view. Start from the nationwide results layer or a candidate profile and open compare with two or three selected candidates."
+			? "This compare page needs candidate slugs in the URL to render a side-by-side view. Start from the results page or a candidate profile and open compare with two or three selected candidates."
 			: "This compare page needs candidate slugs in the URL to render a side-by-side view. Start from a candidate profile and open compare with two or three selected candidates.";
 });
 

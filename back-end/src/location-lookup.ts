@@ -71,7 +71,7 @@ function buildZipNationwideSelection(
 		return null;
 
 	return {
-		coverageLabel: "Nationwide civic results available",
+		coverageLabel: "Civic results available",
 		displayName,
 		lookupInput: geoContext?.postalCode || rawQuery,
 		lookupMode: "zip-preview",
@@ -263,7 +263,7 @@ function buildGuideUnavailableNote(
 	addressEnrichment?: AddressEnrichmentResult | null
 ) {
 	const locationSentence = describeDetectedLocation(inputKind, rawQuery, geoContext);
-	const publishedGuideSentence = `Ballot Clarity matched this ${inputKind === "zip" ? "location" : "address"} and loaded the nationwide civic result layers available here.`;
+	const publishedGuideSentence = `Ballot Clarity matched this ${inputKind === "zip" ? "location" : "address"} and loaded the civic results available for this area.`;
 	const districtSentence = addressEnrichment?.districtMatches?.length
 		? `Census geography matched ${addressEnrichment.districtMatches.map(match => match.label).join(", ")}.`
 		: "";
@@ -293,7 +293,7 @@ function buildPublishedZipGuideNote(
 		? "Ballot Clarity matched a single guide area for this ZIP and loaded a verified local guide for it."
 		: guideContent?.publishedGuideShell
 			? "Ballot Clarity matched a single guide area for this ZIP and loaded a local guide for it. Official election links are current, and contest pages are still under local review."
-			: "Ballot Clarity matched a single guide area for this ZIP and loaded the nationwide civic result layers available here.";
+			: "Ballot Clarity matched a single guide area for this ZIP and loaded the civic results available for this area.";
 	const districtSentence = addressEnrichment?.districtMatches?.length
 		? `Census geography matched ${addressEnrichment.districtMatches.map(match => match.label).join(", ")}.`
 		: "";
@@ -350,18 +350,18 @@ function buildAvailabilitySummary(
 					? "No person-level funding or influence records are attached to this lookup yet. Ballot Clarity only shows those modules when a matched candidate or representative profile has reliable linked data."
 					: "No person-level funding or influence records are attached to this lookup yet.";
 	const nationwideDetail = hasGuide
-		? "Nationwide results, district context, and official election links remain available alongside the local guide for this lookup."
+		? "Results, district context, and official election links remain available alongside the local guide for this lookup."
 		: selectionRequired
-			? "Nationwide civic results are available for this ZIP after you choose one of the matched areas below."
+			? "Civic results for this area are available for this ZIP after you choose one of the matched areas below."
 			: inputKind === "zip"
-				? "Nationwide results and official election links are available for this ZIP."
-				: "Nationwide results, district context, and official election links are available for this address.";
+				? "Civic results and official election links are available for this ZIP."
+				: "Results, district context, and official election links are available for this address.";
 	const representativeSourceSummary = summarizeRepresentativeSources(addressEnrichment?.representativeMatches);
 
 	return {
 		nationwideCivicResults: {
 			detail: nationwideDetail,
-			label: "Nationwide civic results",
+			label: "Civic results for your area",
 			status: "available"
 		},
 		officialLogistics: {

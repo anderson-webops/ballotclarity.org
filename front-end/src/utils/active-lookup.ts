@@ -20,7 +20,7 @@ export function buildActiveLookupSummary({
 }: BuildActiveLookupSummaryInput): ActiveLookupSummary {
 	if (nationwideLookupResult?.result === "resolved") {
 		return {
-			label: nationwideLookupResult.location?.displayName || nationwideLookupResult.normalizedAddress || "Nationwide civic results",
+			label: nationwideLookupResult.location?.displayName || nationwideLookupResult.normalizedAddress || "Results for your area",
 			mode: "nationwide",
 			note: nationwideLookupResult.detectedFromIp
 				? "Using an approximate saved location. Enter an address or ZIP code if you need a more exact match."

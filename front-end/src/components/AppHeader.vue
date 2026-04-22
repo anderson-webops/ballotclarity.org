@@ -50,7 +50,7 @@ const navGroups = computed<HeaderGroup[]>(() => {
 			]
 		: [
 				...(hasNationwideResultContext.value
-					? [{ label: "Nationwide results", to: "/results" }]
+					? [{ label: "Results", to: "/results" }]
 					: [{ label: "Location lookup", to: "/" }]),
 				{ label: "Districts", to: "/districts" },
 				{ label: "Representatives", to: "/representatives" },

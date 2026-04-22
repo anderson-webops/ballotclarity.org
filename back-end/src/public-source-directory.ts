@@ -39,7 +39,7 @@ const curatedSourceDefinitions: CuratedSourceDefinition[] = [
 		primarySourceLabel: "Open Census Geocoder",
 		reviewNote: "Ballot Clarity reviews this provider description when district-matching logic or published geography coverage changes.",
 		routeCitations: [
-			{ href: "/results", id: "results", label: "Nationwide results", type: "page" },
+			{ href: "/results", id: "results", label: "Results", type: "page" },
 			{ href: "/districts", id: "districts", label: "District pages", type: "page" },
 			{ href: "/representatives", id: "representatives", label: "Representative pages", type: "page" },
 		],
@@ -64,7 +64,7 @@ const curatedSourceDefinitions: CuratedSourceDefinition[] = [
 		primarySourceLabel: "Open Open States",
 		reviewNote: "Ballot Clarity reviews provider matching and public route attachment when representative identity or district crosswalk logic changes.",
 		routeCitations: [
-			{ href: "/results", id: "results", label: "Nationwide results", type: "page" },
+			{ href: "/results", id: "results", label: "Results", type: "page" },
 			{ href: "/districts", id: "districts", label: "District pages", type: "page" },
 			{ href: "/representatives", id: "representatives", label: "Representative pages", type: "page" },
 		],
@@ -158,7 +158,7 @@ const curatedSourceDefinitions: CuratedSourceDefinition[] = [
 		primarySourceLabel: "Open Google Civic API docs",
 		reviewNote: "Ballot Clarity reviews this lookup layer when official-tool attachment or election-context fallback behavior changes.",
 		routeCitations: [
-			{ href: "/results", id: "results", label: "Nationwide results", type: "page" },
+			{ href: "/results", id: "results", label: "Results", type: "page" },
 		],
 		sourceSystem: "Google Civic Information API",
 		summary: "Third-party civic infrastructure API that can return official election information and voter-tool context for matched locations.",
@@ -181,7 +181,7 @@ const curatedSourceDefinitions: CuratedSourceDefinition[] = [
 		primarySourceLabel: "Open state election authority directory",
 		reviewNote: "Ballot Clarity reviews these official-tool links when state portal coverage or verification routing changes.",
 		routeCitations: [
-			{ href: "/results", id: "results", label: "Nationwide results", type: "page" },
+			{ href: "/results", id: "results", label: "Results", type: "page" },
 			{ href: "/coverage", id: "coverage", label: "Coverage profile", type: "page" },
 		],
 		sourceSystem: "Official state voter portals",
@@ -205,7 +205,7 @@ const curatedSourceDefinitions: CuratedSourceDefinition[] = [
 		primarySourceLabel: "Open election office directory",
 		reviewNote: "Ballot Clarity reviews this layer when official verification links or county-election-office routing changes.",
 		routeCitations: [
-			{ href: "/results", id: "results", label: "Nationwide results", type: "page" },
+			{ href: "/results", id: "results", label: "Results", type: "page" },
 			{ href: "/districts", id: "districts", label: "District pages", type: "page" },
 			{ href: "/representatives", id: "representatives", label: "Representative pages", type: "page" },
 		],
@@ -214,7 +214,7 @@ const curatedSourceDefinitions: CuratedSourceDefinition[] = [
 		title: "Official election verification layer",
 		type: "official record",
 		url: "https://www.usa.gov/state-election-office",
-		usedFor: "Official tool panels, election verification routing, and place-specific authority links carried across nationwide results pages."
+		usedFor: "Official tool panels, election verification routing, and place-specific authority links carried across results pages."
 	},
 	{
 		authority: "ballot-clarity-archive",

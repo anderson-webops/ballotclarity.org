@@ -34,7 +34,7 @@ test("route layer navigation keeps ballot-guide labels only for published guide 
 	});
 });
 
-test("route layer navigation switches mixed pages to nationwide results when a nationwide context is active", () => {
+test("route layer navigation switches mixed pages to results when a nationwide context is active", () => {
 	const navigation = buildRouteLayerNavigation({
 		hasNationwideResultContext: true,
 		hasPublishedGuideContext: false,
@@ -42,12 +42,12 @@ test("route layer navigation switches mixed pages to nationwide results when a n
 		selectedLocationSlug: "utah-county-utah"
 	});
 
-	assert.equal(navigation.openLayer.label, "Open nationwide results");
+	assert.equal(navigation.openLayer.label, "Open results");
 	assert.equal(navigation.openLayer.to, "/results");
-	assert.equal(navigation.backToLayer.label, "Back to nationwide results");
-	assert.equal(navigation.layerBreadcrumb.label, "Nationwide results");
-	assert.equal(navigation.overview.label, "Nationwide results");
-	assert.equal(navigation.locationHub.label, "Nationwide results");
+	assert.equal(navigation.backToLayer.label, "Back to results");
+	assert.equal(navigation.layerBreadcrumb.label, "Results");
+	assert.equal(navigation.overview.label, "Results");
+	assert.equal(navigation.locationHub.label, "Results");
 });
 
 test("route layer navigation falls back to generic coverage labels when no guide or nationwide context is active", () => {

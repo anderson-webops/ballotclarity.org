@@ -34,7 +34,7 @@ const printPractices = [
 ];
 
 const knownLimits = [
-	"Print views are only as current as the published local coverage or nationwide lookup context available for that page. Official election tools still remain the final authority for live logistics.",
+	"Print views are only as current as the published local coverage or lookup results available for that page. Official election tools still remain the final authority for live logistics.",
 	"Ballot Clarity does not yet generate a downloadable tagged PDF. The current accessible print path is the browser print view on supported pages.",
 	"We have not implemented multilingual ballot content or alternative reading modes yet, though the design system is being shaped to support them later."
 ];

@@ -80,8 +80,8 @@ const nationwideLookupSnapshot = {
 				status: "unavailable"
 			},
 			nationwideCivicResults: {
-				detail: "Nationwide civic results and official election tools are available for this ZIP lookup even though a published local guide is not available for this area yet.",
-				label: "Nationwide civic results",
+				detail: "Civic results and official election tools are available for this ZIP lookup even though a published local guide is not available for this area yet.",
+				label: "Civic results for your area",
 				status: "available"
 			},
 			officialLogistics: {
@@ -145,7 +145,7 @@ const nationwideLookupSnapshot = {
 		inputKind: "zip",
 		lookupQuery: "84604",
 		location: {
-			coverageLabel: "Nationwide civic results available",
+			coverageLabel: "Civic results available",
 			displayName: "Provo, Utah",
 			lookupMode: "zip-preview",
 			requiresOfficialConfirmation: false,
@@ -153,7 +153,7 @@ const nationwideLookupSnapshot = {
 			state: "Utah"
 		},
 		normalizedAddress: "84604",
-		note: "Nationwide civic results ready.",
+		note: "Civic results ready.",
 		representativeMatches: [
 			{
 				districtLabel: "Senator Utah",
@@ -1149,7 +1149,7 @@ test("nationwide lookup context survives client navigation across results, distr
 		const resultsText = await getDocumentBodyText(cdp);
 		assert.match(resultsText, /Provo, Utah/);
 		assert.match(resultsText, /Mike Kennedy/);
-		assert.match(resultsText, /Nationwide civic results ready/i);
+		assert.match(resultsText, /Civic results ready/i);
 
 		const districtsLoad = cdp.waitForEvent("Page.loadEventFired");
 		await cdp.send("Page.navigate", { url: `${appBaseUrl}/districts` });
@@ -1295,10 +1295,10 @@ test("fresh SSR district and representative hubs stay nationwide-safe without br
 	]);
 
 	assert.equal(districtsPage.status, 200);
-	assert.match(districtsHtml, /Active nationwide lookup required/);
+	assert.match(districtsHtml, /Current location required/);
 
 	assert.equal(representativesPage.status, 200);
-	assert.match(representativesHtml, /Active nationwide lookup required/);
+	assert.match(representativesHtml, /Current location required/);
 });
 
 test("public district and representative routes resolve direct loads without generic lookup-required shells", async () => {

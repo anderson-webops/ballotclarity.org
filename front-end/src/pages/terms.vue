@@ -15,7 +15,7 @@ const summaryCards = [
 		title: "Not official"
 	},
 	{
-		body: "Ballot Clarity may publish only limited local coverage or nationwide civic lookup results in some environments. Time-sensitive election details should be verified with the relevant public authority.",
+		body: "Ballot Clarity may publish only limited local coverage or lookup results for some areas in some environments. Time-sensitive election details should be verified with the relevant public authority.",
 		title: "Coverage and verification limits"
 	}
 ];

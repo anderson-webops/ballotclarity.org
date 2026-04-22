@@ -67,7 +67,7 @@ export function buildLookupPresentation(response: LookupResolution): LookupPrese
 	}
 
 	return {
-		availabilityBadgeLabel: "Nationwide civic results available",
+		availabilityBadgeLabel: "Civic results available",
 		canOpenGuide: false,
 		footerNote: "Use the district, representative, and official election links here even when a local guide is not available yet.",
 		heading: "Civic results ready",

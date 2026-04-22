@@ -53,23 +53,23 @@ export function buildRouteLayerNavigation(input: RouteLayerNavigationInput): Rou
 	if (input.hasNationwideResultContext) {
 		return {
 			backToLayer: {
-				label: "Back to nationwide results",
+				label: "Back to results",
 				to: nationwideResultsPath
 			},
 			layerBreadcrumb: {
-				label: "Nationwide results",
+				label: "Results",
 				to: nationwideResultsPath
 			},
 			locationHub: {
-				label: "Nationwide results",
+				label: "Results",
 				to: nationwideResultsPath
 			},
 			openLayer: {
-				label: "Open nationwide results",
+				label: "Open results",
 				to: nationwideResultsPath
 			},
 			overview: {
-				label: "Nationwide results",
+				label: "Results",
 				to: nationwideResultsPath
 			}
 		};

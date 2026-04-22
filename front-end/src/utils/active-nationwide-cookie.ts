@@ -58,7 +58,7 @@ export function parseActiveNationwideLookupCookie(cookieValue: string | null | u
 			inputKind: parsed.inputKind === "address" ? "address" : "zip",
 			location,
 			normalizedAddress: typeof parsed.normalizedAddress === "string" ? parsed.normalizedAddress : "",
-			note: typeof parsed.note === "string" ? parsed.note : "Nationwide civic lookup context is active in this browser.",
+			note: typeof parsed.note === "string" ? parsed.note : "Saved lookup results are active in this browser.",
 			representativeMatches,
 			selectionId: typeof parsed.selectionId === "string" ? parsed.selectionId : undefined,
 			resolvedAt: typeof parsed.resolvedAt === "string" ? parsed.resolvedAt : "",

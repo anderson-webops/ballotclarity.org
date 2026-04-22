@@ -1217,7 +1217,7 @@ function buildRepresentativeLookupContext(record: OpenStatesRepresentativeRecord
 		guideAvailability: "not-published" as const,
 		inputKind: "address" as const,
 		location: {
-			coverageLabel: "Nationwide civic results available",
+			coverageLabel: "Civic results available",
 			displayName: officeContext.stateName,
 			slug: toLookupSlug(officeContext.stateName),
 			state: officeContext.stateName,
@@ -1889,7 +1889,7 @@ function buildRepresentativeLookupContextFromCongressMember(
 		guideAvailability: "not-published" as const,
 		inputKind: "address" as const,
 		location: {
-			coverageLabel: "Nationwide civic results available",
+			coverageLabel: "Civic results available",
 			displayName: officeContext.stateName,
 			slug: toLookupSlug(officeContext.stateName),
 			state: officeContext.stateName,
@@ -2208,7 +2208,7 @@ function buildPublicDistrictRouteIdentity(slug: string): PublicDistrictRouteIden
 			officialResources: [],
 			originLabel: "Canonical district route",
 			originNote: "This local government route identifies the city geography itself, even when Ballot Clarity does not yet have a city officeholder pipeline attached for it.",
-			representativeAvailabilityNote: "City officeholder data is not yet available from the current nationwide provider set. This does not mean the city has no officials, only that Ballot Clarity cannot yet attach them here.",
+			representativeAvailabilityNote: "City officeholder data is not yet available from the current provider set. This does not mean the city has no officials, only that Ballot Clarity cannot yet attach them here.",
 			slug: updatedSlug,
 			summary: "This city route stays public so users can orient around the government area even when Ballot Clarity does not yet have a city officeholder pipeline for it.",
 			title,
@@ -2284,8 +2284,8 @@ function buildPublicDistrictRecordFromSlug(slug: string): DistrictRecordResponse
 			note: supplementalOfficeholders.length
 				? "This public district route resolves a stable district identity and reviewed officeholder records from Ballot Clarity's public route layer even when no active browser lookup context is attached to the request."
 				: "This public district route resolves a stable district identity from the slug itself even when no active browser lookup context is attached to the request.",
-			publisher: "Ballot Clarity nationwide route layer",
-			sourceSystem: "Ballot Clarity nationwide route layer",
+			publisher: "Ballot Clarity results layer",
+			sourceSystem: "Ballot Clarity results layer",
 			title: `${districtIdentity.title} route identity`,
 			url: "/coverage",
 		}),
@@ -2306,8 +2306,8 @@ function buildPublicDistrictRecordFromSlug(slug: string): DistrictRecordResponse
 		? `${supplementalOfficeholders[0]?.provenanceNote || districtIdentity.originNote} Active lookup context can still add exact user-specific district confirmation and any stronger locality-specific election tools.`
 		: districtIdentity.originNote;
 	const note = supplementalOfficeholders.length
-		? "This district page resolves as a first-class public route with reviewed officeholder records attached from Ballot Clarity's nationwide officeholder layer. Active nationwide lookup context can still enrich it further with user-specific district confirmation and locality-specific official tools."
-		: "This district page resolves as a first-class public route even without browser lookup state. Active nationwide lookup context can still enrich it further with user-specific district confirmation and official tools.";
+		? "This district page resolves as a first-class public route with reviewed officeholder records attached from Ballot Clarity's officeholder layer. Your saved lookup results can still enrich it further with user-specific district confirmation and locality-specific official tools."
+		: "This district page resolves as a first-class public route even without browser lookup state. Your saved lookup results can still enrich it further with user-specific district confirmation and official tools.";
 
 	return {
 		candidateAvailabilityNote: "Candidate and contest pages are not attached to this district yet, but official links and district details can still appear here.",
@@ -3608,7 +3608,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 				incidents: [],
 				notes: [
 					"No published local coverage snapshot is active right now.",
-					"Nationwide civic lookup is available across the public site.",
+					"Lookup results are available across the public site.",
 					"Local guide publication status remains generic until a verified local snapshot is published."
 				],
 				overallStatus: "reviewing",

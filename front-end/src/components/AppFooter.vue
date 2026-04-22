@@ -25,7 +25,7 @@ const guideLinks = computed(() => hasPublishedGuideContext.value
 		]
 	: [
 			...(hasNationwideResultContext.value
-				? [{ label: "Nationwide civic results", to: "/results" }]
+				? [{ label: "Results", to: "/results" }]
 				: [{ label: "Location lookup", to: "/" }]),
 			{ label: "District pages", to: "/districts" },
 			{ label: "Representatives", to: "/representatives" },

@@ -21,7 +21,7 @@ function buildFreshness(updatedAt: string): FreshnessMeta {
 		nextReviewAt: updatedAt,
 		status: "up-to-date",
 		statusLabel: "Lookup-backed",
-		statusNote: "This profile reflects the latest nationwide lookup currently saved in this browser. Verify critical details against the attached provider record and official election tools."
+		statusNote: "This profile reflects the latest lookup results currently saved in this browser. Verify critical details against the attached provider record and official election tools."
 	};
 }
 
@@ -108,8 +108,8 @@ export function buildNationwidePersonProfileResponse(
 			date: updatedAt,
 			id: `representative:${representative.slug}`,
 			note: "Representative record matched from your saved lookup.",
-			publisher: representative.openstatesUrl ? "Open States" : "Nationwide lookup provider",
-			sourceSystem: representative.provenance?.label || "Nationwide lookup representative match",
+			publisher: representative.openstatesUrl ? "Open States" : "Lookup results provider",
+			sourceSystem: representative.provenance?.label || "Lookup results representative match",
 			title: representative.name,
 			url: representative.openstatesUrl || openStatesUrl
 		})
@@ -197,7 +197,7 @@ export function buildNationwidePersonProfileResponse(
 			party: representative.party,
 			provenance: {
 				asOf: updatedAt,
-				label: representative.provenance?.label || "Nationwide lookup representative match",
+				label: representative.provenance?.label || "Lookup results representative match",
 				note: representative.provenance?.note || "Matched from your saved lookup.",
 				source: "lookup",
 				status: representative.provenance?.status || "crosswalked"

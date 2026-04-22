@@ -124,7 +124,7 @@ function getRepresentativePresentation(match: NationwideLookupResultContext["rep
 						{{ option.label }}
 					</p>
 					<VerificationBadge
-						:label="option.guideAvailability === 'published' ? 'Local guide available' : 'Nationwide results'"
+						:label="option.guideAvailability === 'published' ? 'Local guide available' : 'Results available'"
 						:tone="option.guideAvailability === 'published' ? 'accent' : 'neutral'"
 					/>
 					<VerificationBadge

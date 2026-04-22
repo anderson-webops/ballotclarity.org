@@ -90,8 +90,8 @@ const nationwideResponse: LocationLookupResponse = {
 			status: "unavailable"
 		},
 		nationwideCivicResults: {
-			detail: "Nationwide civic results and official election tools are available for this ZIP lookup even though a published local guide is not available for this area yet.",
-			label: "Nationwide civic results",
+			detail: "Civic results and official election tools are available for this ZIP lookup even though a published local guide is not available for this area yet.",
+			label: "Civic results for your area",
 			status: "available"
 		},
 		officialLogistics: {
@@ -152,7 +152,7 @@ const nationwideResponse: LocationLookupResponse = {
 		],
 	},
 	location: {
-		coverageLabel: "Nationwide civic results available",
+		coverageLabel: "Civic results available",
 		displayName: "Provo, Utah",
 		lookupMode: "zip-preview",
 		requiresOfficialConfirmation: false,
@@ -160,7 +160,7 @@ const nationwideResponse: LocationLookupResponse = {
 		state: "Utah"
 	},
 	lookupQuery: "84604",
-	note: "ZIP code 84604 appears to be in Provo, Utah. Ballot Clarity matched this location and loaded the nationwide civic result layers available here.",
+	note: "ZIP code 84604 appears to be in Provo, Utah. Ballot Clarity matched this location and loaded the civic results available for this area.",
 	normalizedAddress: "84604",
 	representativeMatches: [
 		{
@@ -270,7 +270,7 @@ test("ambiguous ZIP lookups keep their selection options in persisted nationwide
 	assert.equal(update.nationwideLookupResult?.lookupQuery, "84001");
 });
 
-test("nationwide lookups route into the nationwide results experience", () => {
+test("nationwide lookups route into the results experience", () => {
 	assert.equal(resolveLookupDestination(nationwideResponse), "/results?lookup=84604");
 });
 
@@ -279,7 +279,7 @@ test("homepage entry state stops promoting the featured guide preview when a nat
 		primaryLookupPath: "/results",
 		showFeaturedGuidePreview: false,
 		showNationwideResults: true,
-		startHerePrimaryLabel: "Open nationwide results",
+		startHerePrimaryLabel: "Open results",
 		startHerePrimaryPath: "/results"
 	});
 });

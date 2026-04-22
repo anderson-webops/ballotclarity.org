@@ -149,7 +149,7 @@ const featuredGuideStatusNote = computed(() => props.ballotPreview?.guideContent
 						class="btn-primary"
 						prefetch-on="interaction"
 					>
-						Open nationwide results
+						Open results
 					</NuxtLink>
 					<NuxtLink
 						v-else-if="showFeaturedGuidePreview && showGuideEntryPoints"

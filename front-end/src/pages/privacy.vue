@@ -32,7 +32,7 @@ const collectionSections = [
 	{
 		body: [
 			"The app stores selected location labels, compare selections, saved ballot-plan choices, issue filters, and reading mode in local browser storage so the guide remains usable across refreshes.",
-			"The site also sets first-party cookies for active nationwide lookup context, display timezone, and internal admin sessions.",
+			"The site also sets first-party cookies for saved lookup context, display timezone, and internal admin sessions.",
 			"This browser-side state is tied to the browser on your device. Ballot Clarity does not maintain a public server-side user account for that state in the current release."
 		],
 		title: "Browser storage and cookies"
@@ -119,10 +119,10 @@ const retentionRows = [
 	},
 	{
 		access: "Stored in your browser on the current device.",
-		category: "Active nationwide lookup cookie",
+		category: "Saved lookup cookie",
 		deletion: "Clear browser cookies or submit a new lookup that replaces or clears the stored context.",
 		retention: "Up to 7 days.",
-		scope: "First-party cookie containing current nationwide lookup context such as normalized address or ZIP, matched districts, representative matches, official actions, and lookup timing."
+		scope: "First-party cookie containing current lookup context such as normalized address or ZIP, matched districts, representative matches, official actions, and lookup timing."
 	},
 	{
 		access: "Stored in your browser on the current device.",
@@ -170,7 +170,7 @@ const rightsNotes = [
 
 const cookieNotes = [
 	"The current release does not use an advertising-cookie stack and is not designed for targeted advertising or sale or sharing of personal data.",
-	"The site currently uses first-party cookies for active nationwide lookup continuity, display timezone, and internal admin sessions, and it uses local browser storage for public-facing preference state.",
+	"The site currently uses first-party cookies for saved lookup continuity, display timezone, and internal admin sessions, and it uses local browser storage for public-facing preference state.",
 	"Infrastructure providers may also use technical cookies or similar mechanisms needed for delivery, security, and basic functionality.",
 	`Deployed versions of the site currently load a first-party analytics script from ${analyticsDomain} to understand usage and performance. That service may receive technical request data and pageview metadata, but it is not used for targeted advertising.`
 ];

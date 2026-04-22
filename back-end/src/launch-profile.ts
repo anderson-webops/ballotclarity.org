@@ -145,7 +145,7 @@ export function buildCoverageResponse(
 						"Official state and county election tools returned by the active lookup"
 					],
 					id: "nationwide-results",
-					label: "Nationwide lookup and results routes",
+					label: "Lookup and results routes",
 					note: "District, representative, and person pages stay useful here even when a local guide is not active.",
 					routes: ["/results", "/districts", "/districts/<slug>", "/representatives", "/representatives/<slug>"],
 					status: "live-now",
@@ -165,11 +165,11 @@ export function buildCoverageResponse(
 				{
 					activeSources: [
 						"Source-backed local person records where Ballot Clarity has publishable finance or influence data",
-						"Provider-backed nationwide representative fallback records when only lookup context is available"
+						"Provider-backed representative fallback records when only lookup context is available"
 					],
 					id: "person-modules",
 					label: "Person, funding, and influence routes",
-					note: "Funding and influence modules remain conditional on reliable person-level linkage and should not be presented as universal nationwide coverage yet.",
+					note: "Funding and influence modules remain conditional on reliable person-level linkage and should not be presented as universal coverage yet.",
 					routes: ["/representatives/<slug>", "/representatives/<slug>/funding", "/representatives/<slug>/influence", "/candidate/<slug>", "/candidate/<slug>/funding", "/candidate/<slug>/influence"],
 					status: "limited",
 					summary: "Person pages are live, but richer finance and influence coverage still depends on the underlying person or entity record."
@@ -195,7 +195,7 @@ export function buildCoverageResponse(
 				}
 			],
 			nextSteps: [
-				"Use nationwide civic lookup results and official election tools when they are available for a location.",
+				"Use lookup results and official election tools when they are available for a location.",
 				"Publish a verified local guide before exposing ballot, candidate, measure, or election routes as current coverage."
 			],
 			scopeNote: "Until a verified local guide is published, Ballot Clarity should present missing local coverage honestly instead of falling back to fixture or archive content.",
@@ -216,15 +216,15 @@ export function buildCoverageResponse(
 			{
 				activeSources: [
 					"U.S. Census Geocoder district matches",
-					"Open States representative matches where nationwide provider linkage succeeds",
+					"Open States representative matches where provider linkage succeeds",
 					"Official state and county election tools returned by the active lookup"
 				],
 				id: "nationwide-results",
-				label: "Nationwide lookup and results routes",
+				label: "Lookup and results routes",
 				note: "These routes should remain useful even outside the current published guide area.",
 				routes: ["/results", "/districts", "/districts/<slug>", "/representatives", "/representatives/<slug>"],
 				status: "live-now",
-				summary: "Nationwide lookup remains the cross-page context layer for district matches, representative records, and official tools."
+				summary: "Lookup results remain the cross-page context layer for district matches, representative records, and official tools."
 			},
 			{
 				activeSources: [
@@ -243,7 +243,7 @@ export function buildCoverageResponse(
 				activeSources: [
 					"Source-backed local person records",
 					"Published finance summaries and influence context where Ballot Clarity has reliable linkage",
-					"Provider-backed nationwide fallback records when no local person page exists"
+					"Provider-backed fallback records when no local person page exists"
 				],
 				id: "person-modules",
 				label: "Person, funding, and influence routes",

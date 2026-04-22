@@ -90,9 +90,9 @@ async function selectLookupOption(option: LocationLookupSelectionOption) {
 }
 
 usePageSeo({
-	description: "Nationwide civic results from the active lookup, including district matches, representative records, and official election tools.",
+	description: "Results for your area from the active lookup, including district matches, representative records, and official election tools.",
 	path: "/results",
-	title: "Nationwide Civic Results"
+	title: "Results for Your Area"
 });
 </script>
 
@@ -104,7 +104,7 @@ usePageSeo({
 		</div>
 
 		<div v-else-if="!activeResult" class="max-w-3xl">
-			<InfoCallout title="Nationwide civic results not loaded" tone="warning">
+			<InfoCallout title="Results for your area not loaded" tone="warning">
 				{{ locationGuessUi.resultsEmpty }}
 			</InfoCallout>
 			<div class="mt-6 flex flex-wrap gap-3">
@@ -198,7 +198,7 @@ usePageSeo({
 							Try another address or ZIP code.
 						</h2>
 						<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-							Enter a full street address for the strongest district match, or use a ZIP code when you only need the broader nationwide civic results and official election tools for that area.
+							Enter a full street address for the strongest district match, or use a ZIP code when you only need civic results and official election tools for that area.
 						</p>
 					</div>
 					<AddressLookupForm compact :election="activeResult.election" :framed="false" />

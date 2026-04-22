@@ -29,6 +29,22 @@ const statusLabel = computed(() => {
 			return "Reviewing";
 	}
 });
+
+const snapshotLabel = computed(() => {
+	if (data.value?.coverageMode !== "snapshot")
+		return data.value?.snapshotProvenance?.configuredSnapshotMissing ? "Snapshot missing" : "No local snapshot";
+
+	switch (data.value?.snapshotProvenance?.status) {
+		case "production_approved":
+			return "Production-approved snapshot";
+		case "reviewed":
+			return "Reviewed snapshot";
+		case "seed":
+			return "Seed snapshot";
+		default:
+			return "Unclassified snapshot";
+	}
+});
 </script>
 
 <template>
@@ -51,7 +67,7 @@ const statusLabel = computed(() => {
 				<div class="surface-panel">
 					<div class="flex flex-wrap gap-2">
 						<TrustBadge :label="statusLabel" :tone="statusTone" />
-						<TrustBadge :label="data.coverageMode === 'snapshot' ? 'Imported snapshot' : 'No local snapshot'" />
+						<TrustBadge :label="snapshotLabel" />
 						<TrustBadge label="Public source health" tone="warning" />
 					</div>
 					<h1 class="text-5xl text-app-ink font-serif mt-5 dark:text-app-text-dark">

@@ -679,10 +679,29 @@ export interface LocationGuessCapability {
 	canGuessOnLoad: boolean;
 }
 
+export type CoverageSnapshotStatus = "production_approved" | "reviewed" | "seed" | "unknown";
+export type CoverageSnapshotSourceType = "imported" | "seed" | "unknown";
+
+export interface CoverageSnapshotProvenance {
+	status: CoverageSnapshotStatus;
+	activeSnapshotPath?: string;
+	configuredSnapshotPath?: string;
+	configuredSnapshotMissing: boolean;
+	sourceLabel: string;
+	sourceType: CoverageSnapshotSourceType;
+	sourceOrigin?: string;
+	loadedAt: string;
+	importedAt?: string;
+	reviewedAt?: string;
+	approvedAt?: string;
+	note?: string;
+}
+
 export interface CoverageResponse {
 	updatedAt: string;
 	coverageMode: "empty" | "snapshot";
 	coverageUpdatedAt: string;
+	snapshotProvenance?: CoverageSnapshotProvenance;
 	locationGuess: LocationGuessCapability;
 	launchTarget?: LaunchTargetProfile;
 	guideContent?: GuideContentSummary | null;
@@ -718,6 +737,7 @@ export interface PublicStatusResponse {
 	overallStatus: PublicOperationalStatus;
 	coverageMode: "empty" | "snapshot";
 	coverageUpdatedAt: string;
+	snapshotProvenance?: CoverageSnapshotProvenance;
 	sourceSummary: Record<AdminSourceHealth, number>;
 	nextReviewAt?: string;
 	nextPublishWindow?: string;

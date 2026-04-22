@@ -1,5 +1,7 @@
 import type {
 	Candidate,
+	CoverageSnapshotSourceType,
+	CoverageSnapshotStatus,
 	DataSourcesResponse,
 	Election,
 	ElectionSummary,
@@ -10,7 +12,7 @@ import type {
 	Source,
 } from "./types/civic.js";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
+import { basename, dirname, resolve } from "node:path";
 import {
 	demoCandidates,
 	demoDataSources,
@@ -44,8 +46,23 @@ export interface CoverageRepository {
 	getJurisdictionBySlug: (slug: string) => Jurisdiction | null;
 	getMeasureBySlug: (slug: string) => Measure | null;
 	getSourceById: (id: string) => Source | null;
+	configuredSnapshotMissing: boolean;
+	configuredSnapshotPath?: string;
+	loadedAt: string;
 	mode: "empty" | "snapshot";
+	snapshotMetadata: CoverageSnapshotMetadata;
 	snapshotPath: string;
+}
+
+export interface CoverageSnapshotMetadata {
+	status: CoverageSnapshotStatus;
+	sourceLabel: string;
+	sourceType: CoverageSnapshotSourceType;
+	sourceOrigin?: string;
+	importedAt?: string;
+	reviewedAt?: string;
+	approvedAt?: string;
+	note?: string;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -54,6 +71,38 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function defaultCoverageFilePath() {
 	return resolve(dirname(new URL(import.meta.url).pathname), "..", "data", "live-coverage.local.json");
+}
+
+export function coverageSnapshotMetadataPath(snapshotPath: string) {
+	return `${snapshotPath}.meta.json`;
+}
+
+function buildEmptySnapshotMetadata(configuredSnapshotPath?: string): CoverageSnapshotMetadata {
+	if (configuredSnapshotPath) {
+		return {
+			note: `Configured coverage snapshot path is missing. Ballot Clarity is running without a published local snapshot until ${basename(configuredSnapshotPath)} is restored or replaced.`,
+			sourceLabel: `Missing configured snapshot (${basename(configuredSnapshotPath)})`,
+			sourceType: "unknown",
+			status: "unknown"
+		};
+	}
+
+	return {
+		note: "No imported live coverage snapshot is active. Ballot Clarity is running without a published local guide package.",
+		sourceLabel: "No active live coverage snapshot",
+		sourceType: "unknown",
+		status: "unknown"
+	};
+}
+
+export function buildSeedCoverageSnapshotMetadata(importedAt = new Date().toISOString()): CoverageSnapshotMetadata {
+	return {
+		importedAt,
+		note: "Seed coverage snapshot exported for route wiring or local verification. Not production-approved content.",
+		sourceLabel: "Built-in seed coverage snapshot export",
+		sourceType: "seed",
+		status: "seed"
+	};
 }
 
 function buildEmptyDataSourcesResponse(updatedAt: string): DataSourcesResponse {
@@ -98,6 +147,35 @@ export function buildSeedCoverageSnapshot(): CoverageSnapshot {
 	};
 }
 
+export function parseCoverageSnapshotMetadata(raw: unknown): CoverageSnapshotMetadata {
+	if (!isRecord(raw))
+		throw new Error("Coverage snapshot metadata must be a JSON object.");
+
+	const status = raw.status;
+	const sourceLabel = raw.sourceLabel;
+	const sourceType = raw.sourceType;
+
+	if (status !== "production_approved" && status !== "reviewed" && status !== "seed" && status !== "unknown")
+		throw new Error("Coverage snapshot metadata must include a valid status.");
+
+	if (typeof sourceLabel !== "string" || !sourceLabel.trim())
+		throw new Error("Coverage snapshot metadata must include sourceLabel.");
+
+	if (sourceType !== "imported" && sourceType !== "seed" && sourceType !== "unknown")
+		throw new Error("Coverage snapshot metadata must include a valid sourceType.");
+
+	return {
+		approvedAt: typeof raw.approvedAt === "string" ? raw.approvedAt : undefined,
+		importedAt: typeof raw.importedAt === "string" ? raw.importedAt : undefined,
+		note: typeof raw.note === "string" ? raw.note : undefined,
+		reviewedAt: typeof raw.reviewedAt === "string" ? raw.reviewedAt : undefined,
+		sourceLabel: sourceLabel.trim(),
+		sourceOrigin: typeof raw.sourceOrigin === "string" ? raw.sourceOrigin : undefined,
+		sourceType,
+		status
+	};
+}
+
 export function parseCoverageSnapshot(raw: unknown): CoverageSnapshot {
 	if (!isRecord(raw))
 		throw new Error("Coverage snapshot must be a JSON object.");
@@ -133,24 +211,61 @@ export function readCoverageSnapshot(snapshotPath = defaultCoverageFilePath()) {
 	return parseCoverageSnapshot(JSON.parse(raw));
 }
 
+export function readCoverageSnapshotMetadata(snapshotPath = defaultCoverageFilePath()) {
+	const raw = readFileSync(coverageSnapshotMetadataPath(snapshotPath), "utf8");
+	return parseCoverageSnapshotMetadata(JSON.parse(raw));
+}
+
 export function writeCoverageSnapshot(snapshot: CoverageSnapshot, snapshotPath = defaultCoverageFilePath()) {
 	mkdirSync(dirname(snapshotPath), { recursive: true });
 	writeFileSync(snapshotPath, `${JSON.stringify(snapshot, null, 2)}\n`, "utf8");
 	return snapshotPath;
 }
 
+export function writeCoverageSnapshotMetadata(
+	metadata: CoverageSnapshotMetadata,
+	snapshotPath = defaultCoverageFilePath()
+) {
+	const metadataPath = coverageSnapshotMetadataPath(snapshotPath);
+	mkdirSync(dirname(metadataPath), { recursive: true });
+	writeFileSync(metadataPath, `${JSON.stringify(metadata, null, 2)}\n`, "utf8");
+	return metadataPath;
+}
+
 export async function createCoverageRepository(): Promise<CoverageRepository> {
 	const environment = (Reflect.get(globalThis, "process") as NodeJS.Process | undefined)?.env;
-	const configuredSnapshotPath = environment?.LIVE_COVERAGE_FILE?.trim();
+	const configuredSnapshotPath = environment?.LIVE_COVERAGE_FILE?.trim() || undefined;
 	const snapshotPath = configuredSnapshotPath || defaultCoverageFilePath();
 	const requireLiveCoverage = environment?.LIVE_COVERAGE_REQUIRED === "true";
 	const hasSnapshot = Boolean(configuredSnapshotPath) && existsSync(snapshotPath);
+	const configuredSnapshotMissing = Boolean(configuredSnapshotPath) && !hasSnapshot;
+	const loadedAt = new Date().toISOString();
 	const snapshot = hasSnapshot ? readCoverageSnapshot(snapshotPath) : buildEmptyCoverageSnapshot();
+	let snapshotMetadata: CoverageSnapshotMetadata;
 
 	if (requireLiveCoverage && !hasSnapshot)
 		throw new Error(`LIVE_COVERAGE_REQUIRED is enabled but no coverage snapshot was found at ${snapshotPath}. Set LIVE_COVERAGE_FILE to an imported snapshot path.`);
 
+	if (hasSnapshot) {
+		if (existsSync(coverageSnapshotMetadataPath(snapshotPath))) {
+			snapshotMetadata = readCoverageSnapshotMetadata(snapshotPath);
+		}
+		else {
+			snapshotMetadata = {
+				note: "Active snapshot file has no provenance metadata sidecar. Treat this runtime as unclassified until the snapshot is re-imported or promoted with metadata.",
+				sourceLabel: `Unclassified snapshot (${basename(snapshotPath)})`,
+				sourceType: "unknown",
+				status: "unknown"
+			};
+		}
+	}
+	else {
+		snapshotMetadata = buildEmptySnapshotMetadata(configuredSnapshotPath);
+	}
+
 	return {
+		configuredSnapshotMissing,
+		configuredSnapshotPath,
 		data: snapshot,
 		getCandidateBySlug(slug) {
 			return snapshot.candidates.find(candidate => candidate.slug === slug) ?? null;
@@ -171,7 +286,9 @@ export async function createCoverageRepository(): Promise<CoverageRepository> {
 		getSourceById(id) {
 			return snapshot.sources.find(source => source.id === id) ?? null;
 		},
+		loadedAt,
 		mode: hasSnapshot ? "snapshot" : "empty",
+		snapshotMetadata,
 		snapshotPath
 	};
 }

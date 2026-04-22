@@ -1,5 +1,6 @@
 import type {
 	CoverageResponse,
+	CoverageSnapshotProvenance,
 	ExternalLink,
 	GuideContentSummary,
 	LaunchTargetProfile,
@@ -114,9 +115,14 @@ export function buildCoverageResponse(
 	coverageUpdatedAt: string,
 	locationGuess: LocationGuessCapability,
 	launchTarget?: LaunchTargetProfile,
-	guideContent?: GuideContentSummary | null
+	guideContent?: GuideContentSummary | null,
+	snapshotProvenance?: CoverageSnapshotProvenance
 ): CoverageResponse {
 	if (!launchTarget || coverageMode === "empty") {
+		const snapshotScopeNote = snapshotProvenance?.configuredSnapshotMissing
+			? "The configured live coverage snapshot is missing, so Ballot Clarity is serving lookup results without a published local guide snapshot."
+			: "Snapshot provenance remains unavailable until an imported reviewed or approved local snapshot is loaded.";
+
 		return {
 			collections: [
 				{
@@ -144,6 +150,7 @@ export function buildCoverageResponse(
 			coverageMode,
 			coverageUpdatedAt,
 			locationGuess,
+			snapshotProvenance,
 			guideContent: null,
 			currentState: "No local guide is active in this environment right now.",
 			routeFamilies: [
@@ -207,7 +214,7 @@ export function buildCoverageResponse(
 				"Use lookup results and official election tools when they are available for a location.",
 				"Publish a verified local guide before exposing ballot, candidate, measure, or election routes as current coverage."
 			],
-			scopeNote: "Until a verified local guide is published, Ballot Clarity should present missing local coverage honestly instead of falling back to fixture or archive content.",
+			scopeNote: `Until a verified local guide is published, Ballot Clarity should present missing local coverage honestly instead of falling back to fixture or archive content. ${snapshotScopeNote}`.trim(),
 			supportedContentTypes: [],
 			updatedAt: new Date().toISOString()
 		};
@@ -228,7 +235,8 @@ export function buildCoverageResponse(
 		locationGuess,
 		launchTarget,
 		guideContent: guideContent ?? null,
-		scopeNote: `${launchTarget.displayName} is the current published election area in this environment. Official election tools should remain the final authority for deadlines, precincts, polling places, and ballot confirmation.`,
+		snapshotProvenance,
+		scopeNote: `${launchTarget.displayName} is the current published election area in this environment. Active snapshot status: ${(snapshotProvenance?.status || "unknown").replaceAll("_", " ")}${snapshotProvenance?.sourceLabel ? ` (${snapshotProvenance.sourceLabel})` : ""}. Official election tools should remain the final authority for deadlines, precincts, polling places, and ballot confirmation.`,
 		currentState: publishedGuideSummary,
 		routeFamilies: [
 			{

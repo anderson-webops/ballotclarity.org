@@ -1,3 +1,4 @@
+import type { CoverageRepository } from "../src/coverage-repository.js";
 import assert from "node:assert/strict";
 import test from "node:test";
 import { defaultContentSeed } from "../src/admin-store.js";
@@ -7,7 +8,9 @@ import { buildGuidePackageId, buildGuidePackageRecord } from "../src/guide-packa
 const coverageSnapshot = buildSeedCoverageSnapshot();
 const contentSeed = defaultContentSeed();
 
-const coverageRepository = {
+const coverageRepository: CoverageRepository = {
+	configuredSnapshotMissing: false,
+	configuredSnapshotPath: undefined,
 	data: coverageSnapshot,
 	getCandidateBySlug(slug: string) {
 		return coverageSnapshot.candidates.find(candidate => candidate.slug === slug) ?? null;
@@ -28,7 +31,15 @@ const coverageRepository = {
 	getSourceById(id: string) {
 		return coverageSnapshot.sources.find(source => source.id === id) ?? null;
 	},
-	mode: "snapshot" as const,
+	loadedAt: "2026-04-22T00:00:00.000Z",
+	mode: "snapshot",
+	snapshotMetadata: {
+		importedAt: "2026-04-21T18:30:00.000Z",
+		note: "Guide-package tests use the seed coverage snapshot fixture.",
+		sourceLabel: "Guide-package seed snapshot",
+		sourceType: "seed",
+		status: "seed"
+	},
 	snapshotPath: ":memory:",
 };
 

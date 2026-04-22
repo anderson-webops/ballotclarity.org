@@ -14,6 +14,7 @@ import type {
 	ContestLinkSummary,
 	ContestRecordResponse,
 	CoverageResponse,
+	CoverageSnapshotProvenance,
 	DistrictRecordResponse,
 	DistrictsResponse,
 	Election,
@@ -3615,21 +3616,62 @@ export async function createApp(options: CreateAppOptions = {}) {
 		};
 	}
 
+	function buildCoverageSnapshotProvenance(coverageRepository: CoverageRepository): CoverageSnapshotProvenance {
+		const snapshotMetadata = coverageRepository.snapshotMetadata;
+
+		return {
+			activeSnapshotPath: coverageRepository.mode === "snapshot" ? coverageRepository.snapshotPath : undefined,
+			approvedAt: snapshotMetadata.approvedAt,
+			configuredSnapshotMissing: coverageRepository.configuredSnapshotMissing,
+			configuredSnapshotPath: coverageRepository.configuredSnapshotPath,
+			importedAt: snapshotMetadata.importedAt,
+			loadedAt: coverageRepository.loadedAt,
+			note: snapshotMetadata.note,
+			reviewedAt: snapshotMetadata.reviewedAt,
+			sourceLabel: snapshotMetadata.sourceLabel,
+			sourceOrigin: snapshotMetadata.sourceOrigin,
+			sourceType: snapshotMetadata.sourceType,
+			status: snapshotMetadata.status
+		};
+	}
+
+	function buildSnapshotStatusNotes(
+		snapshotProvenance: CoverageSnapshotProvenance,
+		coverageMode: CoverageRepository["mode"]
+	) {
+		if (coverageMode === "empty") {
+			return uniqueStrings([
+				snapshotProvenance.configuredSnapshotMissing
+					? "Configured live coverage snapshot is missing, so Ballot Clarity is serving lookup results without a published local guide snapshot."
+					: "No published local coverage snapshot is active right now.",
+				snapshotProvenance.note
+			]);
+		}
+
+		return uniqueStrings([
+			`Active snapshot status: ${snapshotProvenance.status.replaceAll("_", " ")} (${snapshotProvenance.sourceLabel}).`,
+			snapshotProvenance.note
+		]);
+	}
+
 	function buildPublicStatusResponse(
 		sources: Awaited<ReturnType<typeof adminRepository.listSourceMonitor>>["sources"],
 		overview: Awaited<ReturnType<typeof adminRepository.getOverview>>
 	): PublicStatusResponse {
+		const snapshotProvenance = buildCoverageSnapshotProvenance(coverageRepository);
+
 		if (coverageRepository.mode === "empty") {
 			return {
 				coverageMode: coverageRepository.mode,
 				coverageUpdatedAt: coverageRepository.data.updatedAt,
 				incidents: [],
-				notes: [
-					"No published local coverage snapshot is active right now.",
+				notes: uniqueStrings([
+					...buildSnapshotStatusNotes(snapshotProvenance, coverageRepository.mode),
 					"Lookup results are available across the public site.",
 					"Local guide publication status remains generic until a verified local snapshot is published."
-				],
+				]),
 				overallStatus: "reviewing",
+				snapshotProvenance,
 				sourceSummary: {
 					"healthy": 0,
 					"incident": 0,
@@ -3654,10 +3696,18 @@ export async function createApp(options: CreateAppOptions = {}) {
 		else if (sourceSummary["review-soon"] || sourceSummary.stale)
 			overallStatus = "reviewing";
 		const nextPublishWindow = overview.metrics.find(metric => metric.id === "next-publish")?.value;
-		const notes = [
+		const snapshotSummaryNote = snapshotProvenance.status === "production_approved"
+			? "Public pages are serving a production-approved coverage snapshot."
+			: snapshotProvenance.status === "reviewed"
+				? "Public pages are serving a reviewed coverage snapshot that is not yet marked production-approved."
+				: snapshotProvenance.status === "seed"
+					? "Public pages are serving a seed coverage snapshot. Treat guide routes as staged until a reviewed local snapshot replaces it."
+					: "Public pages are serving an unclassified coverage snapshot.";
+		const notes = uniqueStrings([
+			...buildSnapshotStatusNotes(snapshotProvenance, coverageRepository.mode),
 			...overview.needsAttention,
-			"Public pages are serving an imported coverage snapshot."
-		];
+			snapshotSummaryNote
+		]);
 
 		return {
 			coverageMode: coverageRepository.mode,
@@ -3675,6 +3725,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 				.sort((left, right) => left.localeCompare(right))[0],
 			notes,
 			overallStatus,
+			snapshotProvenance,
 			sourceSummary,
 			sources,
 			updatedAt: new Date().toISOString()
@@ -3710,7 +3761,8 @@ export async function createApp(options: CreateAppOptions = {}) {
 			coverageRepository.data.updatedAt,
 			locationGuessService.publicConfig,
 			publishedPrimaryPackage ? coverageRepository.data.dataSources.launchTarget : undefined,
-			publishedPrimaryPackage?.contentStatus ?? null
+			publishedPrimaryPackage?.contentStatus ?? null,
+			buildCoverageSnapshotProvenance(coverageRepository)
 		);
 
 		let officialLookup = null;
@@ -3899,24 +3951,49 @@ export async function createApp(options: CreateAppOptions = {}) {
 
 	app.use(express.json());
 	app.use(createRequestLoggingMiddleware(logger));
+	const snapshotProvenance = buildCoverageSnapshotProvenance(coverageRepository);
 	logger.info("coverage.loaded", {
 		assetMode: sourceAssetStore.mode,
 		coverageMode: coverageRepository.mode,
 		coverageUpdatedAt: coverageRepository.data.updatedAt,
-		snapshotPath: coverageRepository.mode === "snapshot" ? coverageRepository.snapshotPath : undefined
+		configuredSnapshotMissing: coverageRepository.configuredSnapshotMissing,
+		configuredSnapshotPath: coverageRepository.configuredSnapshotPath,
+		loadedAt: coverageRepository.loadedAt,
+		snapshotPath: coverageRepository.mode === "snapshot" ? coverageRepository.snapshotPath : undefined,
+		snapshotSourceLabel: snapshotProvenance.sourceLabel,
+		snapshotStatus: snapshotProvenance.status
 	});
+
+	if (coverageRepository.configuredSnapshotMissing) {
+		logger.warn("coverage.snapshot_missing", {
+			configuredSnapshotPath: coverageRepository.configuredSnapshotPath,
+			loadedAt: coverageRepository.loadedAt
+		});
+	}
+	else if (coverageRepository.mode === "snapshot" && snapshotProvenance.status !== "production_approved") {
+		logger.warn("coverage.snapshot_not_production_approved", {
+			snapshotPath: coverageRepository.snapshotPath,
+			snapshotSourceLabel: snapshotProvenance.sourceLabel,
+			snapshotStatus: snapshotProvenance.status
+		});
+	}
 
 	app.get("/health", async (_request, response) => {
 		try {
 			await adminRepository.getHealth();
-			response.json({
+			const healthSnapshotProvenance = buildCoverageSnapshotProvenance(coverageRepository);
+			const healthySnapshot = !coverageRepository.configuredSnapshotMissing;
+
+			response.status(healthySnapshot ? 200 : 503).json({
 				assetMode: sourceAssetStore.mode,
 				coverageMode: coverageRepository.mode,
 				coverageUpdatedAt: coverageRepository.data.updatedAt,
 				driver: adminRepository.driver,
-				ok: true,
+				message: healthySnapshot ? undefined : "Configured live coverage snapshot is missing.",
+				ok: healthySnapshot,
 				providerSummary: buildProviderSummary(),
-				ready: true,
+				ready: healthySnapshot,
+				snapshotProvenance: healthSnapshotProvenance,
 				timestamp: new Date().toISOString()
 			});
 		}
@@ -3924,11 +4001,13 @@ export async function createApp(options: CreateAppOptions = {}) {
 			response.status(503).json({
 				assetMode: sourceAssetStore.mode,
 				coverageMode: coverageRepository.mode,
+				coverageUpdatedAt: coverageRepository.data.updatedAt,
 				driver: adminRepository.driver,
 				message: error instanceof Error ? error.message : "Admin repository health check failed.",
 				ok: false,
 				providerSummary: buildProviderSummary(),
 				ready: false,
+				snapshotProvenance: buildCoverageSnapshotProvenance(coverageRepository),
 				timestamp: new Date().toISOString()
 			});
 		}
@@ -4129,7 +4208,8 @@ export async function createApp(options: CreateAppOptions = {}) {
 			coverageRepository.data.updatedAt,
 			locationGuessService.publicConfig,
 			publishedPrimaryPackage ? coverageRepository.data.dataSources.launchTarget : undefined,
-			publishedPrimaryPackage?.contentStatus ?? null
+			publishedPrimaryPackage?.contentStatus ?? null,
+			buildCoverageSnapshotProvenance(coverageRepository)
 		);
 		response.json(payload);
 	});

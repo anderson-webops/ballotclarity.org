@@ -666,7 +666,7 @@ test("built app renders the key ballot guide pages against the built API", async
 	assert.match(statusHtml, /Tracked public sources/);
 	assert.match(statusHtml, /Active notices/);
 	assert.match(statusHtml, /source health, coverage, and current review notices/i);
-	assert.match(statusHtml, /Imported snapshot|Reference archive/i);
+	assert.match(statusHtml, /No published local coverage snapshot is active right now|Active snapshot status:/i);
 	assert.equal(correctionsPage.status, 200);
 	assert.match(correctionsHtml, /Corrections log/);
 	assert.match(correctionsHtml, /Reporter identity withheld/);

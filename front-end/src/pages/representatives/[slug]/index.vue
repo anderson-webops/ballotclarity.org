@@ -299,12 +299,8 @@ usePageSeo({
 					<p class="text-base text-app-muted leading-8 mt-6 max-w-3xl dark:text-app-muted-dark">
 						{{ person.summary }}
 					</p>
-					<div class="mt-6 flex flex-wrap gap-3 items-center">
+					<div class="mt-6">
 						<UpdatedAt :value="person.freshness.dataLastUpdatedAt ?? person.updatedAt" label="Data through" />
-						<span class="text-app-line dark:text-app-line-dark">•</span>
-						<p class="text-sm text-app-muted dark:text-app-muted-dark">
-							{{ person.provenance.label }}
-						</p>
 					</div>
 					<div class="bc-action-cluster mt-6">
 						<SourceDrawer :sources="person.sources" :title="`${person.name} evidence and sources`" button-label="Evidence & sources" />
@@ -356,11 +352,10 @@ usePageSeo({
 					</div>
 					<div class="mt-6 gap-4 grid lg:grid-cols-[minmax(0,1.3fr)_minmax(18rem,0.9fr)]">
 						<div id="office-context" class="px-5 py-5 border border-app-line/80 rounded-3xl bg-white/80 scroll-mt-32 dark:border-app-line-dark dark:bg-app-panel-dark/70">
-							<div class="flex flex-wrap gap-3 items-center justify-between">
+							<div class="flex flex-wrap gap-3 items-center">
 								<h3 class="text-xl text-app-ink font-serif dark:text-app-text-dark">
 									Office and jurisdiction context
 								</h3>
-								<VerificationBadge :label="person.provenance.status" />
 							</div>
 							<dl class="mt-5 gap-4 grid sm:grid-cols-2">
 								<div v-for="item in officeContextFields" :key="item.label">
@@ -723,13 +718,13 @@ usePageSeo({
 
 				<div class="surface-panel" data-representative-sidebar="record-details">
 					<h2 class="text-2xl text-app-ink font-serif dark:text-app-text-dark">
-						Profile facts
+						Record dates
 					</h2>
 					<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-						<strong class="text-app-ink dark:text-app-text-dark">Provenance:</strong> {{ person.provenance.label }}
+						<strong class="text-app-ink dark:text-app-text-dark">Profile reviewed:</strong> {{ formatDateTime(person.provenance.asOf) }}
 					</p>
 					<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
-						<strong class="text-app-ink dark:text-app-text-dark">As of:</strong> {{ formatDateTime(person.provenance.asOf) }}
+						<strong class="text-app-ink dark:text-app-text-dark">Data through:</strong> {{ formatDateTime(person.freshness.dataLastUpdatedAt ?? person.updatedAt) }}
 					</p>
 				</div>
 			</div>

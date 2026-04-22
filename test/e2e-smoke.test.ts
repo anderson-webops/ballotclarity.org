@@ -686,7 +686,10 @@ test("built app renders the key ballot guide pages against the built API", async
 	assert.match(contestHtml, /Related contests/);
 	assert.equal(districtsPage.status, 200);
 	assert.match(districtsHtml, /District pages/);
-	assert.match(districtsHtml, /Each district page shows the office area, current officials, candidates, and official election links when available\./);
+	assert.match(
+		districtsHtml,
+		/Open each matched office area to review the office, current officials, candidates, and official election links for your area\.|Open each office area to review the office, current representative, and candidate field in one place\./
+	);
 	assert.equal(districtPage.status, 200);
 	assert.match(districtHtml, /Current representatives/);
 	assert.match(districtHtml, /Candidate field/);
@@ -1255,7 +1258,10 @@ test("built app server-renders district and representative routes when the activ
 	assert.equal(districtsPage.status, 200);
 	assert.match(districtsHtml, /Provo, Utah/);
 	assert.match(districtsHtml, /Apr 18, 2026, 8:43 AM/);
-	assert.match(districtsHtml, /Each district page shows the office area, current officials, candidates, and official election links when available\./);
+	assert.match(
+		districtsHtml,
+		/Open each matched office area to review the office, current officials, candidates, and official election links for your area\.|Open each office area to review the office, current representative, and candidate field in one place\./
+	);
 	assert.equal(districtPage.status, 200);
 	assert.match(districtHtml, /Provo city/);
 	assert.doesNotMatch(districtHtml, /District detail not available yet/);

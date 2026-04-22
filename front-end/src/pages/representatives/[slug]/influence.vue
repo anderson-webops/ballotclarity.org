@@ -242,10 +242,9 @@ usePageSeo({
 				<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
 					{{ person.enrichmentStatus?.influence.summary || influenceUnavailableSummary }}
 				</p>
-				<ul class="readable-list text-sm text-app-muted mt-6 pl-5 dark:text-app-muted-dark">
-					<li><strong class="text-app-ink dark:text-app-text-dark">Provenance:</strong> {{ person.provenance.label }}</li>
-					<li><strong class="text-app-ink dark:text-app-text-dark">Updated:</strong> {{ formatDate(person.freshness.dataLastUpdatedAt ?? person.updatedAt) }}</li>
-				</ul>
+				<p class="text-sm text-app-muted leading-7 mt-5 dark:text-app-muted-dark">
+					Last reviewed {{ formatDate(person.freshness.dataLastUpdatedAt ?? person.updatedAt) }}.
+				</p>
 			</section>
 		</div>
 	</section>

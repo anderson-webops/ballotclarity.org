@@ -68,10 +68,7 @@ const statusLabel = computed(() => {
 					</div>
 				</div>
 
-				<div class="space-y-4">
-					<InfoCallout title="How to read this page" tone="warning">
-						Healthy means public pages and source checks are stable. Reviewing means some public information is still being checked. Degraded means a current issue should materially lower confidence in a public page.
-					</InfoCallout>
+				<div>
 					<div class="surface-panel">
 						<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
 							Next windows

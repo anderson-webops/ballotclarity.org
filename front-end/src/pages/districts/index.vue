@@ -165,7 +165,7 @@ function buildLookupAwareTarget(path: string) {
 
 			<div class="surface-panel">
 				<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-					Current lookup
+					Area
 				</p>
 				<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
 					{{ activeLookupSummary.label }}
@@ -180,9 +180,6 @@ function buildLookupAwareTarget(path: string) {
 					/>
 					<UpdatedAt v-if="activeLookupSummary.resolvedAt" :value="activeLookupSummary.resolvedAt" label="Lookup updated" />
 				</div>
-				<p class="text-sm text-app-muted leading-7 mt-6 dark:text-app-muted-dark">
-					Each district page shows the office area, current officials, candidates, and official election links when available.
-				</p>
 			</div>
 		</header>
 

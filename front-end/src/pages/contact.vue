@@ -60,7 +60,7 @@ async function submitForm() {
 }
 
 usePageSeo({
-	description: "Contact Ballot Clarity, request a correction, or review the public dispute and update process for source-backed civic information.",
+	description: "Contact Ballot Clarity, request a correction, or send feedback about the site.",
 	path: "/contact",
 	title: "Contact"
 });
@@ -72,7 +72,6 @@ usePageSeo({
 			<div class="flex flex-wrap gap-2">
 				<TrustBadge label="Contact" tone="accent" />
 				<TrustBadge label="Corrections path" />
-				<TrustBadge label="Public update process" tone="warning" />
 			</div>
 			<h1 class="text-5xl text-app-ink font-serif mt-5 dark:text-app-text-dark">
 				Contact and corrections
@@ -89,7 +88,7 @@ usePageSeo({
 						Submit online
 					</p>
 					<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-						Send a correction request or product note
+						Send a correction request or feedback
 					</h2>
 					<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
 						Use this form when a page appears inaccurate, incomplete, unevenly framed, or hard to use.

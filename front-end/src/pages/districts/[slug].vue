@@ -338,7 +338,7 @@ usePageSeo({
 
 				<div class="surface-panel">
 					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-						Current lookup
+						Area
 					</p>
 					<h2 class="text-2xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
 						{{ activeLookupSummary.label }}

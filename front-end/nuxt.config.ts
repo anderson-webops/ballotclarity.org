@@ -1,6 +1,13 @@
 import process from "node:process";
 import { defineNuxtConfig } from "nuxt/config";
-import { analyticsDomain, analyticsWebsiteId, appDescription, appName } from "./src/constants/index";
+import {
+	analyticsDomain,
+	analyticsWebsiteId,
+	appDescription,
+	appName,
+	centralAnalyticsDomain,
+	centralAnalyticsWebsiteId
+} from "./src/constants/index";
 import { buildPreHydrationDeployRecoveryScript } from "./src/utils/deploy-recovery";
 import { buildPreHydrationDisplayTimeZoneScript } from "./src/utils/display-time-zone";
 
@@ -69,11 +76,18 @@ export default defineNuxtConfig({
 				},
 				...(isDev
 					? []
-					: [{
-							"defer": true,
-							"src": `https://${analyticsDomain}/script.js`,
-							"data-website-id": analyticsWebsiteId,
-						}]),
+					: [
+							{
+								"defer": true,
+								"src": `https://${analyticsDomain}/script.js`,
+								"data-website-id": analyticsWebsiteId,
+							},
+							{
+								"defer": true,
+								"src": `https://${centralAnalyticsDomain}/script.js`,
+								"data-website-id": centralAnalyticsWebsiteId,
+							},
+						]),
 			]
 		}
 	},

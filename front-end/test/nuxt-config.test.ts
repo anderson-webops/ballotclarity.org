@@ -1,7 +1,14 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
-import { analyticsDomain, analyticsWebsiteId, appDescription, appName } from "../src/constants/index.ts";
+import {
+	analyticsDomain,
+	analyticsWebsiteId,
+	appDescription,
+	appName,
+	centralAnalyticsDomain,
+	centralAnalyticsWebsiteId
+} from "../src/constants/index.ts";
 import { staleClientBuildStorageKey } from "../src/utils/deploy-recovery.ts";
 import { displayTimeZoneCookieName } from "../src/utils/display-time-zone.ts";
 
@@ -37,6 +44,11 @@ test("nuxt config uses srcDir and expected civic modules", async () => {
 	assert.ok(config.app?.head?.script?.some(script =>
 		script.src === `https://${analyticsDomain}/script.js`
 		&& script["data-website-id"] === analyticsWebsiteId
+		&& script.defer === true
+	));
+	assert.ok(config.app?.head?.script?.some(script =>
+		script.src === `https://${centralAnalyticsDomain}/script.js`
+		&& script["data-website-id"] === centralAnalyticsWebsiteId
 		&& script.defer === true
 	));
 	assert.ok(config.app?.head?.link?.some(link => link.rel === "manifest" && typeof link.href === "string" && link.href.startsWith("/site.webmanifest")));

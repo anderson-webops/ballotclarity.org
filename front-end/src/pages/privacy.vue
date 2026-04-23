@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { analyticsDomain, appName, contactEmail } from "~/constants";
+import { analyticsDomain, appName, centralAnalyticsDomain, contactEmail } from "~/constants";
 
 const effectiveAt = "2026-04-22T12:00:00-04:00";
 const siteUrl = useSiteUrl();
@@ -40,7 +40,7 @@ const collectionSections = [
 	{
 		body: [
 			"Hosting and runtime infrastructure may process technical data such as IP address, user agent, endpoint path, timestamp, and basic error or request metadata needed for security, integrity, and reliability.",
-			"On deployed versions of the site, a first-party analytics script loaded from analytics.ballotclarity.org also receives page usage and technical request metadata needed to understand adoption, performance, and reliability.",
+			`On deployed versions of the site, first-party analytics scripts loaded from ${analyticsDomain} and ${centralAnalyticsDomain} also receive page usage and technical request metadata needed to understand adoption, performance, and reliability.`,
 			"That operational metadata is different from the election-guide content itself and is handled as infrastructure telemetry rather than published civic data.",
 			"Internal admin authentication also creates limited operational records such as last-login timestamps and failed-login throttling signals."
 		],
@@ -87,7 +87,7 @@ const providerDisclosureSections = [
 	},
 	{
 		body: [
-			"Ballot Clarity also relies on hosting, delivery, logging, database providers, and the analytics service hosted at analytics.ballotclarity.org to serve the site, understand usage, process correction submissions, and operate the internal editorial/admin workspace.",
+			`Ballot Clarity also relies on hosting, delivery, logging, database providers, and the analytics services hosted at ${analyticsDomain} and ${centralAnalyticsDomain} to serve the site, understand usage, process correction submissions, and operate the internal editorial/admin workspace.`,
 			"When you follow external links, the destination site operates under its own privacy practices."
 		],
 		title: "Infrastructure and external destinations"
@@ -103,7 +103,7 @@ const useSections = [
 
 const sharingSections = [
 	"Ballot Clarity currently discloses lookup or route-derived data only to the service providers and public-interest civic-data systems needed to produce the requested page or official verification result.",
-	"Current third-party recipients in active flows include the U.S. Census Geocoder, Google Civic Information API, Open States, Congress.gov, OpenFEC, LDA.gov, and the analytics service hosted at analytics.ballotclarity.org, plus hosting, logging, and delivery providers needed to run the service.",
+	`Current third-party recipients in active flows include the U.S. Census Geocoder, Google Civic Information API, Open States, Congress.gov, OpenFEC, LDA.gov, and the analytics services hosted at ${analyticsDomain} and ${centralAnalyticsDomain}, plus hosting, logging, and delivery providers needed to run the service.`,
 	"The current release does not disclose address lookup input to advertising networks and is not designed to sell or share personal data for cross-context behavioral advertising.",
 	"When you follow external source links, official agencies, filing systems, campaigns, or other third-party sites operate under their own privacy practices.",
 	"If Ballot Clarity materially changes the current provider stack or starts sharing data for a new purpose, this policy should be updated before that change goes live."
@@ -146,7 +146,7 @@ const retentionRows = [
 		scope: "Internal admin authentication cookie for editorial and operations access."
 	},
 	{
-		access: "Hosting, operations, security tooling, and the analytics service at analytics.ballotclarity.org.",
+		access: `Hosting, operations, security tooling, and the analytics services at ${analyticsDomain} and ${centralAnalyticsDomain}.`,
 		category: "Operational request metadata",
 		deletion: "Managed through host and operator settings, with longer retention permitted for active abuse handling, incident response, or legal obligations.",
 		retention: "Short-term operational retention, generally days to weeks rather than permanent publication.",
@@ -172,7 +172,7 @@ const cookieNotes = [
 	"The current release does not use an advertising-cookie stack and is not designed for targeted advertising or sale or sharing of personal data.",
 	"The site currently uses first-party cookies for active nationwide lookup continuity, display timezone, and internal admin sessions, and it uses local browser storage for public-facing preference state.",
 	"Infrastructure providers may also use technical cookies or similar mechanisms needed for delivery, security, and basic functionality.",
-	`Deployed versions of the site currently load a first-party analytics script from ${analyticsDomain} to understand usage and performance. That service may receive technical request data and pageview metadata, but it is not used for targeted advertising.`
+	`Deployed versions of the site currently load first-party analytics scripts from ${analyticsDomain} and ${centralAnalyticsDomain} to understand usage and performance. Those services may receive technical request data and pageview metadata, but they are not used for targeted advertising.`
 ];
 
 const childrenNotes = [

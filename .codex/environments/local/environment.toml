@@ -1,0 +1,58 @@
+version = 1
+name = "ballotclarity.org"
+
+[setup]
+script = """
+npm ci --include=optional
+npm run env:local
+"""
+
+[[actions]]
+name = "Install"
+icon = "tool"
+command = "npm ci --include=optional"
+
+[[actions]]
+name = "Local Env"
+icon = "tool"
+command = "npm run env:local"
+
+[[actions]]
+name = "Build"
+icon = "run"
+command = "npm run build"
+
+[[actions]]
+name = "Typecheck"
+icon = "test"
+command = "npm run typecheck"
+
+[[actions]]
+name = "Lint"
+icon = "test"
+command = "npm run lint"
+
+[[actions]]
+name = "Test"
+icon = "test"
+command = "npm test"
+
+[[actions]]
+name = "Stack Up"
+icon = "tool"
+command = "npm run stack:up"
+
+[[actions]]
+name = "Verify Local"
+icon = "test"
+command = "npm run verify:local"
+
+[[actions]]
+name = "Frontend Dev Local"
+icon = "debug"
+command = "npm run dev:local"
+
+[[actions]]
+name = "Backend Dev Local"
+icon = "debug"
+command = "npm run server:local:watch"

@@ -1,6 +1,6 @@
 import process from "node:process";
 import { defineNuxtConfig } from "nuxt/config";
-import { analyticsDomain, analyticsWebsiteId, appDescription, appName } from "./src/constants/index";
+import { analyticsTrackers, appDescription, appName } from "./src/constants/index";
 import { buildPreHydrationDeployRecoveryScript } from "./src/utils/deploy-recovery";
 import { buildPreHydrationDisplayTimeZoneScript } from "./src/utils/display-time-zone";
 
@@ -69,11 +69,12 @@ export default defineNuxtConfig({
 				},
 				...(isDev
 					? []
-					: [{
+					: analyticsTrackers.map(tracker => ({
 							"defer": true,
-							"src": `https://${analyticsDomain}/script.js`,
-							"data-website-id": analyticsWebsiteId,
-						}]),
+							"key": `ballot-clarity-analytics-${tracker.label}`,
+							"src": `https://${tracker.domain}/script.js`,
+							"data-website-id": tracker.websiteId,
+						}))),
 			]
 		}
 	},

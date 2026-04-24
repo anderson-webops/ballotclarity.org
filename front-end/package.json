@@ -18,7 +18,8 @@
 		"typecheck": "nuxt typecheck",
 		"lint": "nuxt prepare && eslint \"src/**/*.{js,ts,vue}\" \"server/**/*.ts\" \"test/**/*.ts\" \"*.config.{js,ts,mjs}\"",
 		"lint-fix": "nuxt prepare && eslint \"src/**/*.{js,ts,vue}\" \"server/**/*.ts\" \"test/**/*.ts\" \"*.config.{js,ts,mjs}\" --fix",
-		"test:unit": "node --test --import tsx test/*.test.ts"
+		"test:unit": "node --test --import tsx test/*.test.ts",
+		"verify:analytics": "node scripts/verify-analytics-output.mjs"
 	},
 	"dependencies": {
 		"@iconify-json/carbon": "^1.2.19",

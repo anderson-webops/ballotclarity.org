@@ -30,6 +30,8 @@
 		"bootstrap-admin:local": "node ./scripts/run-local-command.mjs --provider-local -- npm run -w back-end bootstrap-admin:src --",
 		"coverage:seed-local": "npm run -w back-end export-seed-coverage",
 		"coverage:seed-local:local": "node ./scripts/run-local-command.mjs --provider-local -- npm run -w back-end export-seed-coverage:src",
+		"coverage:fulton-reviewed": "npm run -w back-end export:fulton-reviewed-coverage",
+		"coverage:fulton-reviewed:local": "node ./scripts/run-local-command.mjs --provider-local -- npm run -w back-end export:fulton-reviewed-coverage:src",
 		"launch-directory:sync": "npm run -w back-end sync:launch-directory",
 		"launch-directory:sync:local": "node ./scripts/run-local-command.mjs --provider-local -- npm run -w back-end sync:launch-directory:src",
 		"launch-directory:sync:src": "npm run -w back-end sync:launch-directory:src",

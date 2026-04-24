@@ -163,12 +163,15 @@ function buildGuideContentLayerStatus(
 	count: number,
 	detailByStatus: Record<GuideContentStatus, string>,
 	sources: Source[],
+	options: {
+		emptyStatus?: GuideContentStatus;
+	} = {},
 ): GuideContentLayerStatus {
 	const hasContent = count > 0;
 	let status: GuideContentStatus = "verified_local";
 
 	if (!hasContent)
-		status = "seeded_demo";
+		status = options.emptyStatus ?? "seeded_demo";
 	else if (sources.some(isReferenceArchiveSource))
 		status = "staged_reference";
 	else if (sources.every(isSeededDemoSource))
@@ -216,38 +219,50 @@ function buildGuideContentSummary(
 			url: resource.url,
 		})),
 	);
+	const emptyContestLayerStatus: GuideContentStatus = officialLogistics.status === "verified_local"
+		? "official_logistics_only"
+		: "seeded_demo";
 	const contestsLayer = buildGuideContentLayerStatus(
 		"Contests",
 		contests.length,
 		{
-			official_logistics_only: "Contest records are present, but they are still waiting on local review.",
+			official_logistics_only: "No verified local contest roster is published yet; official election logistics are available.",
 			seeded_demo: "No contest records are attached yet.",
 			staged_reference: "Contest records still rely on staged reference material instead of verified local content.",
 			verified_local: "Contest records are attached with verified local source coverage.",
 		},
 		contestSources,
+		{
+			emptyStatus: emptyContestLayerStatus,
+		},
 	);
 	const candidatesLayer = buildGuideContentLayerStatus(
 		"Candidates",
 		candidates.length,
 		{
-			official_logistics_only: "Candidate records are present, but they are still waiting on local review.",
+			official_logistics_only: "No verified local candidate roster is published yet; official election logistics are available.",
 			seeded_demo: "No candidate records are attached yet.",
 			staged_reference: "Candidate records still rely on staged reference material instead of verified local content.",
 			verified_local: "Candidate records are attached with verified local source coverage.",
 		},
 		candidateSources,
+		{
+			emptyStatus: emptyContestLayerStatus,
+		},
 	);
 	const measuresLayer = buildGuideContentLayerStatus(
 		"Measures",
 		measures.length,
 		{
-			official_logistics_only: "Measure records are present, but they are still waiting on local review.",
+			official_logistics_only: "No verified local measure records are published yet; official election logistics are available.",
 			seeded_demo: "No measure records are attached yet.",
 			staged_reference: "Measure records still rely on staged reference material instead of verified local content.",
 			verified_local: "Measure records are attached with verified local source coverage.",
 		},
 		measureSources,
+		{
+			emptyStatus: emptyContestLayerStatus,
+		},
 	);
 	const contestLayers = [contestsLayer, candidatesLayer, measuresLayer].filter(layer => layer.hasContent);
 	const verifiedContestPackage = contestLayers.length > 0
@@ -1131,26 +1146,40 @@ export function buildDefaultGuidePackageSeed(coverageRepository: CoverageReposit
 		return [];
 
 	const publishedAt = election.updatedAt;
+	const hasContestRecords = election.contests.length > 0;
 
 	return [
 		{
-			coverageLimits: [
-				"Guide pages remain explanatory and should not be treated as the official ballot service.",
-				"District confirmation still belongs to official election tools for the final personalized ballot.",
-				"Contest, candidate, and measure pages stay under local review until verified Fulton-specific ballot content replaces the reference archive.",
-			],
-			coverageNotes: [
-				"The local guide is live so official links and core election pages stay public.",
-				"Contest, candidate, and measure pages still include staged reference material until verified Fulton-specific ballot content is loaded.",
-			],
+			coverageLimits: hasContestRecords
+				? [
+						"Guide pages remain explanatory and should not be treated as the official ballot service.",
+						"District confirmation still belongs to official election tools for the final personalized ballot.",
+						"Contest, candidate, and measure pages stay under local review until verified Fulton-specific ballot content replaces the reference archive.",
+					]
+				: [
+						"Guide pages remain explanatory and should not be treated as the official ballot service.",
+						"District confirmation still belongs to official election tools for the final personalized ballot.",
+						"Verified contest, candidate, and measure pages are not published in this package.",
+					],
+			coverageNotes: hasContestRecords
+				? [
+						"The local guide is live so official links and core election pages stay public.",
+						"Contest, candidate, and measure pages still include staged reference material until verified Fulton-specific ballot content is loaded.",
+					]
+				: [
+						"The local guide shell is live so official election links and core election pages stay public.",
+						"Verified Fulton-specific contest, candidate, and measure records are still pending and are not included in this package.",
+					],
 			createdAt: election.updatedAt,
 			draftedAt: election.updatedAt,
 			electionSlug: election.slug,
 			id: buildPackageId(election.slug),
 			jurisdictionSlug: jurisdiction.slug,
 			publishedAt,
-			reviewRecommendation: "publish",
-			reviewNotes: "Imported coverage snapshot published with verified official links and staged contest layers still under local review.",
+			reviewRecommendation: hasContestRecords ? "publish" : "publish_with_warnings",
+			reviewNotes: hasContestRecords
+				? "Imported coverage snapshot published with verified official links and staged contest layers still under local review."
+				: "Imported coverage snapshot published as an official-logistics-only guide shell. Verified contest, candidate, and measure records are not included.",
 			reviewedAt: publishedAt,
 			reviewer: "Imported snapshot",
 			status: "published",

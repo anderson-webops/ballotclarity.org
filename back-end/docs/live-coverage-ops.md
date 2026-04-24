@@ -36,6 +36,37 @@ npm run -w back-end export-seed-coverage:src -- \
 
 Seed exports are for local verification or route wiring only. Their sidecar metadata marks them as non-production content.
 
+## Export the reviewed Fulton official-logistics package
+
+Use this when production should stop serving the built-in seed/reference package but verified Fulton-specific contest,
+candidate, and measure records are not available yet.
+
+```bash
+npm run -w back-end export:fulton-reviewed-coverage:src -- \
+  --output data/reviewed/fulton-county-2026-general.official-logistics-only.json \
+  --status reviewed \
+  --source-label "Reviewed Fulton County official-logistics-only coverage snapshot" \
+  --source-origin "Ballot Clarity source/data pipeline"
+```
+
+Generated artifacts:
+
+- `back-end/data/reviewed/fulton-county-2026-general.official-logistics-only.json`
+- `back-end/data/reviewed/fulton-county-2026-general.official-logistics-only.json.meta.json`
+
+The export validates that no staged/reference candidate names remain in the reviewed artifact and that production-approved
+metadata cannot be paired with mixed or staged guide content. The reviewed Fulton export intentionally keeps the guide in
+official-logistics-only mode: official election resources are published, while verified contest, candidate, and measure
+records remain unavailable.
+
+Ops handoff:
+
+```bash
+/usr/local/sbin/ballotclarity-coverage promote \
+  --from /srv/ballotclarity.org/back-end/data/reviewed/fulton-county-2026-general.official-logistics-only.json \
+  --target /srv/ballotclarity.org/back-end/data/live-coverage.active.json
+```
+
 ## Promote a candidate snapshot to active
 
 ```bash

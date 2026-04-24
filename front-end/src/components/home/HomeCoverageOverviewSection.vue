@@ -42,7 +42,7 @@
 				</ul>
 			</div>
 
-			<InfoCallout title="How to use this safely" tone="warning">
+			<InfoCallout title="How to use this safely" tone="warning" class="self-start">
 				Ballot Clarity should only show local guide pages when that material is ready. When a guide is not available, use the lookup results and the linked official election tools instead.
 				<NuxtLink to="/methodology" class="underline underline-offset-3" prefetch-on="interaction">
 					Read the methodology

@@ -74,7 +74,18 @@ usePageSeo({
 			{{ feedbackMessage }}
 		</p>
 
-		<div class="space-y-5">
+		<AdminEmptyState
+			v-if="!(data?.corrections?.length ?? 0)"
+			action-label="Open public contact page"
+			action-to="/contact"
+			eyebrow="No open reports"
+			message="No reader or internal correction reports are currently active. When a report arrives, this page should show the affected record, source attachments, owner, and next step."
+			secondary-label="Review public status"
+			secondary-to="/status"
+			title="Corrections queue is clear"
+		/>
+
+		<div v-else class="space-y-5">
 			<article v-for="item in data?.corrections ?? []" :key="item.id" class="surface-panel">
 				<div class="gap-6 grid xl:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
 					<div class="min-w-0">

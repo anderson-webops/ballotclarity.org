@@ -1,13 +1,13 @@
 <script setup lang="ts">
 const route = useRoute();
-const { layerBreadcrumbLink } = useRouteLayerNavigation();
+const { openLayerLink, overviewLink } = useRouteLayerNavigation();
 const candidateSlug = computed(() => String(route.params.slug));
 const { formatDateTime } = useFormatters();
 const { data: candidate, error, pending } = await useCandidate(candidateSlug);
 
 const breadcrumbs = computed(() => [
 	{ label: "Home", to: "/" },
-	layerBreadcrumbLink.value,
+	overviewLink.value,
 	{ label: candidate.value?.name ?? "Candidate profile", to: candidate.value ? `/candidate/${candidate.value.slug}` : undefined },
 	{ label: "Influence" }
 ]);
@@ -41,11 +41,18 @@ usePageSeo({
 			<div class="surface-panel bg-white/70 h-64 animate-pulse dark:bg-app-panel-dark/70" />
 		</div>
 
-		<div v-else-if="error || !candidate" class="max-w-3xl">
-			<InfoCallout title="Influence page unavailable" tone="warning">
-				This candidate influence page could not be loaded. Return to the candidate profile and try again.
-			</InfoCallout>
-		</div>
+		<GuideUnavailableState
+			v-else-if="error || !candidate"
+			eyebrow="Candidate influence"
+			message="Influence context is not published for this candidate record yet. Ballot Clarity keeps donor, disclosure, and lobbying context out of public candidate pages until supporting records are reviewed."
+			:primary-label="openLayerLink.label"
+			:primary-to="openLayerLink.to"
+			secondary-label="Open coverage profile"
+			secondary-to="/coverage"
+			tertiary-label="Report missing information"
+			tertiary-to="/contact"
+			title="Influence context not published yet"
+		/>
 
 		<div v-else class="space-y-8">
 			<header class="surface-panel">

@@ -302,7 +302,7 @@ const trustFacts = computed(() => [
 			</div>
 		</section>
 
-		<DeferredSection placeholder-class="min-h-[38rem]">
+		<DeferredSection placeholder-class="min-h-[10rem] sm:min-h-[14rem]">
 			<AsyncHomeBallotPreviewSection
 				:allow-guide-entry-points="hasVerifiedGuideContext"
 				:ballot-preview="shouldShowFeaturedGuidePreview ? ballotPreview : null"
@@ -312,11 +312,11 @@ const trustFacts = computed(() => [
 			/>
 		</DeferredSection>
 
-		<DeferredSection placeholder-class="min-h-[26rem]">
+		<DeferredSection placeholder-class="min-h-[8rem] sm:min-h-[10rem]">
 			<AsyncHomeRoadmapSection :roadmap-preview="roadmapPreview" />
 		</DeferredSection>
 
-		<DeferredSection placeholder-class="min-h-[24rem]">
+		<DeferredSection placeholder-class="min-h-[8rem] sm:min-h-[10rem]">
 			<AsyncHomeCoverageOverviewSection />
 		</DeferredSection>
 	</div>

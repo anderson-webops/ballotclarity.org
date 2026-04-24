@@ -7,7 +7,7 @@ const civicStore = useCivicStore();
 const route = useRoute();
 const runtimeConfig = useRuntimeConfig();
 const siteUrl = useSiteUrl();
-const { backToLayerLink, layerBreadcrumbLink, locationHubLink, overviewLink } = useRouteLayerNavigation();
+const { backToLayerLink, layerBreadcrumbLink, locationHubLink, openLayerLink, overviewLink } = useRouteLayerNavigation();
 const { ballotPlan, isHydrated } = storeToRefs(civicStore);
 const { formatDateTime } = useFormatters();
 const measureSlug = computed(() => String(route.params.slug));
@@ -164,11 +164,18 @@ function saveMeasure(decision: "no" | "review" | "yes") {
 			<div class="surface-panel bg-white/70 h-96 animate-pulse dark:bg-app-panel-dark/70" />
 		</div>
 
-		<div v-else-if="error || !measure" class="max-w-3xl">
-			<InfoCallout title="Measure page not available" tone="warning">
-				The ballot measure detail page could not be loaded. Return to the current results context and choose another item.
-			</InfoCallout>
-		</div>
+		<GuideUnavailableState
+			v-else-if="error || !measure"
+			eyebrow="Measure detail"
+			message="This measure explainer is not published as verified local ballot content yet. The election overview can still show official logistics, but measure text and summaries stay closed until reviewed source records are attached."
+			:primary-label="openLayerLink.label"
+			:primary-to="openLayerLink.to"
+			secondary-label="Open coverage profile"
+			secondary-to="/coverage"
+			tertiary-label="Report missing information"
+			tertiary-to="/contact"
+			title="Measure page not published yet"
+		/>
 
 		<div v-else class="gap-8 grid 2xl:grid-cols-[minmax(0,1.35fr)_minmax(22rem,0.85fr)]">
 			<div class="space-y-6">

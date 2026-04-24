@@ -44,6 +44,7 @@ const { data: routeLookupResult } = await useAsyncData(
 	}
 );
 const activeResult = computed(() => storedNationwideLookupResult.value ?? routeLookupResult.value);
+const shouldShowResultsSkeleton = computed(() => !activeResult.value && !isHydrated.value && Boolean(activeLookupQuery.value?.lookup));
 const activeLookupSummary = computed(() => buildActiveLookupSummary({
 	nationwideLookupResult: activeResult.value,
 	routeLookupQuery: activeLookupQuery.value?.lookup ?? null,
@@ -99,15 +100,25 @@ usePageSeo({
 
 <template>
 	<section class="app-shell section-gap space-y-8">
-		<div v-if="!activeResult && !isHydrated" class="space-y-6">
+		<div v-if="shouldShowResultsSkeleton" class="space-y-6">
 			<div class="surface-panel bg-white/70 h-56 animate-pulse dark:bg-app-panel-dark/70" />
 			<div class="surface-panel bg-white/70 h-[34rem] animate-pulse dark:bg-app-panel-dark/70" />
 		</div>
 
-		<div v-else-if="!activeResult" class="max-w-3xl">
-			<InfoCallout title="Results for your area not loaded" tone="warning">
+		<div v-else-if="!activeResult" class="surface-panel max-w-4xl">
+			<div class="flex flex-wrap gap-2">
+				<TrustBadge label="No active lookup" tone="warning" />
+				<TrustBadge label="Start with an address or ZIP" />
+			</div>
+			<p class="text-xs text-app-muted tracking-[0.24em] font-semibold mt-6 uppercase dark:text-app-muted-dark">
+				Results
+			</p>
+			<h1 class="text-4xl text-app-ink leading-tight font-serif mt-3 sm:text-5xl dark:text-app-text-dark">
+				Results for your area are not loaded
+			</h1>
+			<p class="text-base text-app-muted leading-8 mt-5 dark:text-app-muted-dark">
 				{{ locationGuessUi.resultsEmpty }}
-			</InfoCallout>
+			</p>
 			<div class="mt-6 flex flex-wrap gap-3">
 				<NuxtLink to="/" class="btn-primary">
 					Open lookup

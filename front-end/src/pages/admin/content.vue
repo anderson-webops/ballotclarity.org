@@ -80,7 +80,18 @@ usePageSeo({
 			{{ feedbackMessage }}
 		</p>
 
-		<div class="space-y-5">
+		<AdminEmptyState
+			v-if="!(data?.items?.length ?? 0)"
+			action-label="Open guide packages"
+			action-to="/admin/packages"
+			eyebrow="No content records"
+			message="No editable public-content records are currently queued. Generate or import guide-package content first, then use this page for publish-state and public-copy adjustments."
+			secondary-label="Review source health"
+			secondary-to="/admin/sources"
+			title="Nothing needs content review right now"
+		/>
+
+		<div v-else class="space-y-5">
 			<article v-for="item in data?.items ?? []" :key="item.id" class="surface-panel">
 				<div class="gap-6 grid xl:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
 					<div>

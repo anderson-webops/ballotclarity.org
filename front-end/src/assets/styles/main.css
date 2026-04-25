@@ -187,6 +187,46 @@ html.dark .home-summary-card-link:focus-visible {
   box-shadow: 0 18px 40px rgba(2, 8, 23, 0.42);
 }
 
+.home-card,
+.home-mini-card,
+.home-summary-card-link {
+  min-width: 0;
+}
+
+.home-panel-stack {
+  align-content: start;
+}
+
+.home-trust-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr));
+  align-items: stretch;
+}
+
+.home-result-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
+  align-items: stretch;
+  grid-auto-rows: 1fr;
+}
+
+.home-mini-card,
+.home-result-grid > li,
+.home-result-grid .home-summary-card-link {
+  height: 100%;
+}
+
+.home-path-list {
+  border-radius: 1.4rem;
+}
+
+.home-path-list > a {
+  border-radius: 1.1rem;
+  padding-inline: clamp(0.25rem, 1.4vw, 1rem);
+}
+
+.home-roadmap-list article {
+  break-inside: avoid;
+}
+
 .summary-strip {
   display: grid;
   gap: 0.9rem;
@@ -579,6 +619,74 @@ html.dark .expandable-section__body {
     box-shadow: none !important;
     border-color: #cbd5df !important;
     background: white !important;
+  }
+
+  .home-page {
+    padding-bottom: 0 !important;
+  }
+
+  .home-page .app-shell {
+    max-width: none !important;
+    width: 100% !important;
+    padding-right: 0 !important;
+    padding-left: 0 !important;
+  }
+
+  .home-section {
+    break-inside: auto;
+    margin-bottom: 0.85rem !important;
+  }
+
+  .home-hero-grid,
+  .home-preview-grid,
+  .home-split-grid,
+  .home-coverage-grid,
+  .home-roadmap-grid {
+    display: block !important;
+    grid-template-columns: 1fr !important;
+  }
+
+  .home-hero-grid > *,
+  .home-preview-grid > *,
+  .home-split-grid > *,
+  .home-coverage-grid > *,
+  .home-roadmap-grid > * {
+    margin-bottom: 0.75rem !important;
+  }
+
+  .home-panel-stack {
+    display: block !important;
+  }
+
+  .home-panel-stack > * + * {
+    margin-top: 0.65rem !important;
+  }
+
+  .home-trust-grid,
+  .home-result-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 0.5rem !important;
+  }
+
+  .home-card,
+  .home-mini-card,
+  .home-summary-card-link,
+  .home-page .surface-panel {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    box-shadow: none !important;
+  }
+
+  .home-mini-card,
+  .home-summary-card-link {
+    padding: 0.7rem !important;
+  }
+
+  .home-page .btn-primary,
+  .home-page .btn-secondary {
+    min-height: auto !important;
+    padding: 0.35rem 0.65rem !important;
   }
 
   .print-guide-grid,

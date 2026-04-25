@@ -1,7 +1,7 @@
 <template>
-	<section class="app-shell">
-		<div class="gap-8 grid lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
-			<div class="surface-panel">
+	<section class="home-section app-shell">
+		<div class="home-coverage-grid gap-8 grid lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
+			<div class="home-card surface-panel">
 				<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
 					What Ballot Clarity shows
 				</p>
@@ -42,7 +42,7 @@
 				</ul>
 			</div>
 
-			<InfoCallout title="How to use this safely" tone="warning" class="self-start">
+			<InfoCallout title="How to use this safely" tone="warning" class="home-card self-start">
 				Ballot Clarity should only show local guide pages when that material is ready. When a guide is not available, use the lookup results and the linked official election tools instead.
 				<NuxtLink to="/methodology" class="underline underline-offset-3" prefetch-on="interaction">
 					Read the methodology

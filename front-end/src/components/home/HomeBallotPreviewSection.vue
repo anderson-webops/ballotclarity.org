@@ -40,9 +40,9 @@ const featuredPrimaryLabel = computed(() => featuredGuideIsVerified.value
 </script>
 
 <template>
-	<section class="app-shell">
-		<div class="gap-6 grid lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
-			<div class="surface-panel">
+	<section class="home-section app-shell">
+		<div class="home-preview-grid gap-6 grid lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
+			<div class="home-card surface-panel">
 				<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
 					{{ showNationwideResults ? "Current results" : showFeaturedGuidePreview ? "Ballot preview" : "Start here" }}
 				</p>
@@ -64,8 +64,8 @@ const featuredPrimaryLabel = computed(() => featuredGuideIsVerified.value
 								: "Official election links are current for this area. Verified contest, candidate, and measure pages are still under local review."
 							: "Look up an address or ZIP code to see districts, officials, and official election links." }}
 				</p>
-				<ul v-if="showNationwideResults && nationwideLookupResult" class="mt-6 gap-4 grid md:grid-cols-2">
-					<li class="p-4 rounded-[1.35rem] bg-app-bg/70 dark:bg-app-bg-dark/70">
+				<ul v-if="showNationwideResults && nationwideLookupResult" class="home-result-grid mt-6 gap-4 grid md:grid-cols-2">
+					<li class="home-mini-card p-4 rounded-[1.35rem] bg-app-bg/70 dark:bg-app-bg-dark/70">
 						<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
 							Official tools
 						</p>
@@ -108,7 +108,7 @@ const featuredPrimaryLabel = computed(() => featuredGuideIsVerified.value
 							</p>
 						</NuxtLink>
 					</li>
-					<li class="p-4 rounded-[1.35rem] bg-app-bg/70 dark:bg-app-bg-dark/70">
+					<li class="home-mini-card p-4 rounded-[1.35rem] bg-app-bg/70 dark:bg-app-bg-dark/70">
 						<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
 							Election coverage
 						</p>
@@ -198,8 +198,8 @@ const featuredPrimaryLabel = computed(() => featuredGuideIsVerified.value
 				</div>
 			</div>
 
-			<div class="gap-5 grid">
-				<div class="surface-panel">
+			<div class="home-panel-stack gap-5 grid">
+				<div class="home-card surface-panel">
 					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
 						Nonprofit mission
 					</p>
@@ -214,7 +214,7 @@ const featuredPrimaryLabel = computed(() => featuredGuideIsVerified.value
 					</p>
 				</div>
 
-				<div class="surface-panel">
+				<div class="home-card surface-panel">
 					<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
 						Check coverage before you dive in.
 					</h2>

@@ -69,7 +69,7 @@ const startHereSecondaryPath = computed(() => hasVerifiedGuideContext.value
 		? guideLocationPath.value
 		: hasNationwideResultContext.value
 			? "/coverage"
-			: "/data-sources");
+			: "/coverage");
 const startHereSecondaryLabel = computed(() => hasVerifiedGuideContext.value
 	? "Open ballot plan"
 	: hasGuideShellContext.value
@@ -193,10 +193,10 @@ const trustFacts = computed(() => [
 </script>
 
 <template>
-	<div class="pb-10 space-y-12 sm:space-y-16">
-		<section class="app-shell">
-			<div class="gap-6 grid xl:grid-cols-[minmax(0,1.18fr)_minmax(21rem,0.82fr)] xl:items-start">
-				<div class="border border-app-line rounded-[2.2rem] bg-white shadow-[0_36px_84px_-58px_rgba(16,37,62,0.62)] overflow-hidden dark:border-app-line-dark dark:bg-app-panel-dark">
+	<div class="home-page pb-10 space-y-12 sm:space-y-16">
+		<section class="home-section app-shell">
+			<div class="home-hero-grid gap-6 grid xl:grid-cols-[minmax(0,1.18fr)_minmax(21rem,0.82fr)] xl:items-start">
+				<div class="home-card border border-app-line rounded-[2.2rem] bg-white shadow-[0_36px_84px_-58px_rgba(16,37,62,0.62)] overflow-hidden dark:border-app-line-dark dark:bg-app-panel-dark">
 					<div class="px-6 py-8 lg:px-10 sm:px-8 sm:py-10">
 						<p class="text-xs text-app-muted tracking-[0.26em] font-semibold uppercase dark:text-app-muted-dark">
 							{{ hasVerifiedGuideContext ? "Ballot guide" : hasGuideShellContext ? "Election overview" : hasNationwideResultContext ? "Civic results" : "Location lookup" }}
@@ -219,11 +219,11 @@ const trustFacts = computed(() => [
 										? "Review districts, current officials, official election links, and any available local guide for this area."
 										: "Enter a street address or ZIP code to see districts, current officials, and official election links for your area." }}
 						</p>
-						<div class="mt-8 gap-4 grid md:grid-cols-2 xl:grid-cols-4">
+						<div class="home-trust-grid mt-8 gap-4 grid md:grid-cols-2 xl:grid-cols-4">
 							<div
 								v-for="fact in trustFacts"
 								:key="fact"
-								class="px-4 py-4 border border-app-line/80 rounded-[1.5rem] bg-app-bg/70 dark:border-app-line-dark dark:bg-app-bg-dark/70"
+								class="home-mini-card px-4 py-4 border border-app-line/80 rounded-[1.5rem] bg-app-bg/70 dark:border-app-line-dark dark:bg-app-bg-dark/70"
 							>
 								<p class="text-sm text-app-ink leading-6 font-medium dark:text-app-text-dark">
 									{{ fact }}
@@ -233,8 +233,8 @@ const trustFacts = computed(() => [
 					</div>
 				</div>
 
-				<div class="space-y-5">
-					<div id="location-lookup" class="surface-panel">
+				<div class="home-panel-stack space-y-5">
+					<div id="location-lookup" class="home-card surface-panel">
 						<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
 							Choose your area
 						</p>
@@ -249,7 +249,7 @@ const trustFacts = computed(() => [
 						</div>
 					</div>
 
-					<div class="surface-panel">
+					<div class="home-card surface-panel">
 						<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
 							Popular pages
 						</p>
@@ -269,8 +269,8 @@ const trustFacts = computed(() => [
 			</div>
 		</section>
 
-		<section class="app-shell">
-			<div class="gap-6 grid lg:grid-cols-[minmax(0,0.52fr)_minmax(0,1fr)] lg:items-start">
+		<section class="home-section app-shell">
+			<div class="home-split-grid gap-6 grid lg:grid-cols-[minmax(0,0.52fr)_minmax(0,1fr)] lg:items-start">
 				<div>
 					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
 						Start here
@@ -280,7 +280,7 @@ const trustFacts = computed(() => [
 					</h2>
 				</div>
 
-				<div class="divide-app-line divide-y dark:divide-app-line-dark">
+				<div class="home-path-list divide-app-line divide-y dark:divide-app-line-dark">
 					<NuxtLink
 						v-for="path in primaryPaths"
 						:key="path.label"

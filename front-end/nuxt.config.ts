@@ -50,9 +50,7 @@ export default defineNuxtConfig({
 				{ name: "description", content: appDescription },
 				{ name: "ballot-clarity-build-id", content: buildId },
 				{ name: "application-name", content: appName },
-				{ name: "apple-mobile-web-app-status-bar-style", content: "default" },
-				{ name: "theme-color", media: "(prefers-color-scheme: light)", content: "#F7F4EE" },
-				{ name: "theme-color", media: "(prefers-color-scheme: dark)", content: "#09131F" }
+				{ name: "apple-mobile-web-app-status-bar-style", content: "default" }
 			],
 			script: [
 				{

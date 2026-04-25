@@ -159,9 +159,14 @@ function resolveGuideLinkTo(path: string) {
 						</NuxtLink>
 					</div>
 				</div>
-				<p class="text-sm text-app-muted whitespace-nowrap dark:text-app-muted-dark">
-					© {{ year }} Ballot Clarity
-				</p>
+				<div class="flex flex-col gap-3 items-start lg:items-end">
+					<div class="max-w-[28rem] w-full lg:w-[13rem]">
+						<ThemeSchemePicker compact align="end" panel-align="end" />
+					</div>
+					<p class="text-sm text-app-muted whitespace-nowrap dark:text-app-muted-dark">
+						© {{ year }} Ballot Clarity
+					</p>
+				</div>
 			</div>
 		</div>
 	</footer>

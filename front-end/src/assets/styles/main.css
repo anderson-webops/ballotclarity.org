@@ -197,6 +197,17 @@ html.dark .home-summary-card-link:focus-visible {
   align-content: start;
 }
 
+.home-lookup-results-shell {
+  overflow: hidden;
+}
+
+.home-lookup-results-panel {
+  margin-top: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+}
+
 .home-trust-grid {
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr));
   align-items: stretch;

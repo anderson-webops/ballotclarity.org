@@ -1,10 +1,18 @@
 <script setup lang="ts">
-import type { BallotResponse, ElectionsResponse } from "~/types/civic";
+import type {
+	BallotResponse,
+	ElectionsResponse,
+	LocationLookupAction,
+	LocationLookupResponse,
+	LocationLookupSelectionOption,
+	NationwideLookupResultContext
+} from "~/types/civic";
 import { storeToRefs } from "pinia";
 import { defineAsyncComponent } from "vue";
 import { contactEmail } from "~/constants";
 import { buildLocationGuessUiContent } from "~/utils/location-guess";
-import { buildHomeExperienceState } from "~/utils/nationwide-results";
+import { buildPublishedGuideDestination } from "~/utils/location-lookup";
+import { buildHomeExperienceState, normalizeLookupResponseForDisplay, resolveLookupDestination } from "~/utils/nationwide-results";
 
 const api = useApiClient();
 const siteUrl = useSiteUrl();
@@ -16,6 +24,9 @@ const AsyncHomeRoadmapSection = defineAsyncComponent(() => import("~/components/
 const AsyncHomeCoverageOverviewSection = defineAsyncComponent(() => import("~/components/home/HomeCoverageOverviewSection.vue"));
 const { data: dataSources } = await useDataSources();
 const { data: coverageData } = await useCoverage();
+const homeLookupResult = ref<NationwideLookupResultContext | null>(null);
+const homeLookupSelectionError = ref("");
+const displayedHomeLookupResult = computed(() => homeLookupResult.value);
 
 const { data: electionsData } = await useAsyncData<ElectionsResponse>(
 	"home-elections",
@@ -190,6 +201,67 @@ const trustFacts = computed(() => [
 			? "Election overview available"
 			: "Official election links included where available"
 ]);
+
+function clearHomeLookupResult() {
+	homeLookupSelectionError.value = "";
+	homeLookupResult.value = null;
+}
+
+function handleHomeLookupResolved(lookup: NationwideLookupResultContext) {
+	homeLookupSelectionError.value = "";
+	homeLookupResult.value = lookup;
+}
+
+async function openHomeLookupAction(action: LocationLookupAction) {
+	if (action.kind !== "ballot-guide" || !action.location || !action.electionSlug)
+		return;
+
+	const destination = buildPublishedGuideDestination({
+		electionSlug: action.electionSlug,
+		guideAvailability: displayedHomeLookupResult.value?.guideAvailability,
+		guideContent: displayedHomeLookupResult.value?.guideContent,
+		location: action.location,
+		selectionOptions: []
+	});
+
+	if (destination)
+		await navigateTo(destination);
+}
+
+async function selectHomeLookupOption(option: LocationLookupSelectionOption) {
+	const currentLookup = displayedHomeLookupResult.value;
+	const queryValue = currentLookup?.lookupQuery || currentLookup?.normalizedAddress || "";
+
+	if (!queryValue.trim()) {
+		homeLookupSelectionError.value = "Enter the location again to load this matched area.";
+		return;
+	}
+
+	homeLookupSelectionError.value = "";
+
+	try {
+		const response = await api<LocationLookupResponse>("/location", {
+			body: {
+				q: queryValue,
+				selectionId: option.id
+			},
+			method: "POST"
+		});
+		const normalizedResult = normalizeLookupResponseForDisplay(response, featuredElection.value ?? null);
+		civicStore.setLookupResponse(response, featuredElection.value ?? null);
+		homeLookupResult.value = normalizedResult;
+
+		const redirectTarget = resolveLookupDestination(response);
+
+		if (redirectTarget)
+			await navigateTo(redirectTarget);
+		else if (response.location && response.electionSlug)
+			await navigateTo(buildPublishedGuideDestination(response) ?? `/elections/${response.electionSlug}`);
+	}
+	catch (error) {
+		homeLookupSelectionError.value = error instanceof Error ? error.message : "Unable to load that matched area right now.";
+	}
+}
 </script>
 
 <template>
@@ -245,7 +317,14 @@ const trustFacts = computed(() => [
 							{{ locationGuessUi.home }}
 						</p>
 						<div class="mt-5">
-							<AddressLookupForm compact :election="featuredElection" :framed="false" />
+							<AddressLookupForm
+								compact
+								:election="featuredElection"
+								:framed="false"
+								:show-inline-results="false"
+								@lookup-cleared="clearHomeLookupResult"
+								@lookup-resolved="handleHomeLookupResolved"
+							/>
 						</div>
 					</div>
 
@@ -266,6 +345,25 @@ const trustFacts = computed(() => [
 						</div>
 					</div>
 				</div>
+			</div>
+		</section>
+
+		<section v-if="displayedHomeLookupResult" class="home-section app-shell">
+			<div class="home-lookup-results-shell surface-panel">
+				<LookupResultsPanel
+					class="home-lookup-results-panel"
+					:compact="false"
+					:lookup="displayedHomeLookupResult"
+					@open-guide="openHomeLookupAction"
+					@select-option="selectHomeLookupOption"
+				/>
+				<p
+					v-if="homeLookupSelectionError"
+					role="alert"
+					class="text-sm text-[#8f341f] mt-4 dark:text-[#f2a493]"
+				>
+					{{ homeLookupSelectionError }}
+				</p>
 			</div>
 		</section>
 
@@ -307,7 +405,7 @@ const trustFacts = computed(() => [
 				:allow-guide-entry-points="hasVerifiedGuideContext"
 				:ballot-preview="shouldShowFeaturedGuidePreview ? ballotPreview : null"
 				:featured-election-slug="featuredElection?.slug ?? null"
-				:nationwide-lookup-result="activeNationwideResult"
+				:nationwide-lookup-result="displayedHomeLookupResult ? null : activeNationwideResult"
 				:show-featured-guide-preview="shouldShowFeaturedGuidePreview"
 			/>
 		</DeferredSection>

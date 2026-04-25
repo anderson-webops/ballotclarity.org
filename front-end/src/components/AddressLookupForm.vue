@@ -14,6 +14,12 @@ const props = defineProps<{
 	compact?: boolean;
 	election?: ElectionSummary | null;
 	framed?: boolean;
+	showInlineResults?: boolean;
+}>();
+
+const emit = defineEmits<{
+	lookupCleared: [];
+	lookupResolved: [lookup: NationwideLookupResultContext];
 }>();
 
 const api = useApiClient();
@@ -32,17 +38,20 @@ const errorId = `${inputId}-error`;
 const actionsId = `${inputId}-actions`;
 const lookupInput = ref<HTMLInputElement | null>(null);
 const locationGuessUi = computed(() => buildLocationGuessUiContent(coverageData.value?.locationGuess ?? null));
+const shouldShowInlineResults = computed(() => props.showInlineResults !== false);
 const inputDescribedBy = computed(() => [
 	descriptionId,
 	props.compact ? "" : usageId,
 	privacyId,
-	lookupResult.value ? actionsId : "",
+	lookupResult.value && shouldShowInlineResults.value ? actionsId : "",
 	errorMessage.value ? errorId : ""
 ].filter(Boolean).join(" "));
 
 watch(query, () => {
-	if (lookupResult.value)
+	if (lookupResult.value) {
 		lookupResult.value = null;
+		emit("lookupCleared");
+	}
 });
 
 async function openLookupAction(action: LocationLookupAction) {
@@ -85,7 +94,9 @@ async function applyLookup(queryValue: string, selectionId?: string) {
 			method: "POST"
 		});
 		civicStore.setLookupResponse(response, props.election ?? null);
-		lookupResult.value = normalizeLookupResponseForDisplay(response, props.election ?? null);
+		const normalizedResult = normalizeLookupResponseForDisplay(response, props.election ?? null);
+		lookupResult.value = normalizedResult;
+		emit("lookupResolved", normalizedResult);
 
 		const redirectTarget = resolveLookupDestination(response);
 
@@ -166,7 +177,7 @@ async function selectLookupOption(option: LocationLookupSelectionOption) {
 		</p>
 
 		<LookupResultsPanel
-			v-if="lookupResult"
+			v-if="lookupResult && shouldShowInlineResults"
 			:id="actionsId"
 			:compact="compact"
 			:lookup="lookupResult"

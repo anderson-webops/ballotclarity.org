@@ -14,5 +14,7 @@ back-end/data/*.sqlite
 back-end/data/*.sqlite-shm
 back-end/data/*.sqlite-wal
 back-end/data/launch-directory.local.json
+data/live-coverage.local.json
+data/live-coverage.local.json.meta.json
 .env
 .idea/

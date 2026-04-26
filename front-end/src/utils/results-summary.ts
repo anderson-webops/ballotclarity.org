@@ -3,7 +3,7 @@ import { buildNationwideRouteTarget } from "./nationwide-route-context";
 
 type ResultsSummaryContext = Pick<
 	NationwideLookupResultContext,
-	"districtMatches" | "guideAvailability" | "lookupQuery" | "representativeMatches" | "selectionId"
+	"districtMatches" | "guideAvailability" | "guideContent" | "lookupQuery" | "representativeMatches" | "selectionId"
 > | null | undefined;
 
 export interface ResultsSummaryItem {
@@ -35,7 +35,7 @@ export function buildResultsSummaryItems(
 		{
 			href: buildNationwideRouteTarget("/representatives", lookupContext, routeQuery),
 			label: "Representatives",
-			note: "Current representative records linked below when available.",
+			note: "Current officials linked below when available.",
 			value: activeResult?.representativeMatches.length ?? 0
 		},
 		{
@@ -45,8 +45,16 @@ export function buildResultsSummaryItems(
 		},
 		{
 			label: "Guide status",
-			note: "Detailed ballot pages open when a local guide is published.",
-			value: activeResult?.guideAvailability === "published" ? "Published" : "Not published"
+			note: activeResult?.guideContent?.verifiedContestPackage
+				? "Verified local contest pages are available for this area."
+				: activeResult?.guideAvailability === "published"
+					? "Official links are available. Contest pages are still under local review."
+					: "Detailed ballot pages open when a local guide is published.",
+			value: activeResult?.guideContent?.verifiedContestPackage
+				? "Verified"
+				: activeResult?.guideAvailability === "published"
+					? "In review"
+					: "Not published"
 		}
 	];
 }

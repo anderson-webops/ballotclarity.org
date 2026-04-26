@@ -4,11 +4,12 @@ import { buildRouteLayerNavigation } from "~/utils/route-layer-navigation";
 export function useRouteLayerNavigation() {
 	const civicStore = useCivicStore();
 	const { selectedElection, selectedLocation } = storeToRefs(civicStore);
-	const { hasNationwideResultContext, hasPublishedGuideContext } = useGuideEntryGate();
+	const { hasGuideShellContext, hasNationwideResultContext, hasVerifiedGuideContext } = useGuideEntryGate();
 
 	const navigation = computed(() => buildRouteLayerNavigation({
+		hasGuideShellContext: hasGuideShellContext.value,
 		hasNationwideResultContext: hasNationwideResultContext.value,
-		hasPublishedGuideContext: hasPublishedGuideContext.value,
+		hasVerifiedGuideContext: hasVerifiedGuideContext.value,
 		selectedElectionSlug: selectedElection.value?.slug ?? null,
 		selectedLocationSlug: selectedLocation.value?.slug ?? null
 	}));

@@ -2,7 +2,7 @@ import type { SourceDirectoryItem, SourcePublicationKind, SourcePublisherType } 
 
 const sectionMetadata: Record<SourcePublicationKind, { description: string; heading: string }> = {
 	"curated-global": {
-		description: "Major official, public-interest, and provider-backed source systems Ballot Clarity relies on across nationwide results and public person pages.",
+		description: "Major official, public-interest, and source systems Ballot Clarity relies on across results and public person pages.",
 		heading: "Core source systems"
 	},
 	"published-provenance": {

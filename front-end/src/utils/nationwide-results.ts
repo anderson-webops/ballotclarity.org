@@ -19,16 +19,19 @@ export interface CivicLookupStateUpdate {
 export interface HomeExperienceState {
 	primaryLookupPath: string;
 	showFeaturedGuidePreview: boolean;
+	showPublishedElectionOverview: boolean;
 	showNationwideResults: boolean;
 	startHerePrimaryPath: string;
 	startHerePrimaryLabel: string;
 }
 
 export function buildLookupContextState(
-	response: Pick<LocationLookupResponse, "guideAvailability" | "result">
+	response: Pick<LocationLookupResponse, "guideAvailability" | "guideContent" | "result">
 ): LookupContextState {
 	return {
 		guideAvailability: response.guideAvailability,
+		hasPublishedGuideShell: Boolean(response.guideContent?.publishedGuideShell),
+		hasVerifiedContestPackage: Boolean(response.guideContent?.verifiedContestPackage),
 		result: response.result
 	};
 }
@@ -44,6 +47,7 @@ export function normalizeLookupResponseForDisplay(
 		districtMatches: response.districtMatches ?? [],
 		election: election ?? null,
 		electionLogistics: response.electionLogistics ?? null,
+		guideContent: response.guideContent ?? null,
 		electionSlug: response.electionSlug,
 		fromCache: Boolean(response.fromCache),
 		guideAvailability: response.guideAvailability,
@@ -101,31 +105,46 @@ export function resolveLookupDestination(response: LocationLookupResponse) {
 
 export function buildHomeExperienceState(
 	hasNationwideLookupResult: boolean,
-	hasPublishedGuideContext: boolean
+	hasGuideShellContext: boolean,
+	hasVerifiedGuideContext: boolean
 ): HomeExperienceState {
 	if (hasNationwideLookupResult) {
 		return {
 			primaryLookupPath: nationwideResultsPath,
 			showFeaturedGuidePreview: false,
+			showPublishedElectionOverview: false,
 			showNationwideResults: true,
-			startHerePrimaryLabel: "Open nationwide results",
+			startHerePrimaryLabel: "Open results",
 			startHerePrimaryPath: nationwideResultsPath
 		};
 	}
 
-	if (hasPublishedGuideContext) {
+	if (hasVerifiedGuideContext) {
 		return {
 			primaryLookupPath: "/ballot",
 			showFeaturedGuidePreview: true,
+			showPublishedElectionOverview: false,
 			showNationwideResults: false,
 			startHerePrimaryLabel: "Open ballot guide",
 			startHerePrimaryPath: "/ballot"
 		};
 	}
 
+	if (hasGuideShellContext) {
+		return {
+			primaryLookupPath: "/elections",
+			showFeaturedGuidePreview: false,
+			showPublishedElectionOverview: true,
+			showNationwideResults: false,
+			startHerePrimaryLabel: "Open election overview",
+			startHerePrimaryPath: "/elections"
+		};
+	}
+
 	return {
 		primaryLookupPath: "/#location-lookup",
 		showFeaturedGuidePreview: false,
+		showPublishedElectionOverview: false,
 		showNationwideResults: false,
 		startHerePrimaryLabel: "Open location lookup",
 		startHerePrimaryPath: "/#location-lookup"

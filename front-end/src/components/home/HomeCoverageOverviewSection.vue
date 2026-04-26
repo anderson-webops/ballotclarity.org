@@ -1,19 +1,19 @@
 <template>
-	<section class="app-shell">
-		<div class="gap-8 grid lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
-			<div class="surface-panel">
+	<section class="home-section app-shell">
+		<div class="home-coverage-grid gap-8 grid lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
+			<div class="home-card surface-panel">
 				<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-					How the current coverage is organized
+					What Ballot Clarity shows
 				</p>
 				<ul class="mt-6 space-y-5">
 					<li class="flex gap-4">
 						<span class="text-sm text-app-ink font-semibold mt-1 rounded-full bg-app-bg inline-flex h-8 w-8 items-center justify-center dark:text-app-text-dark dark:bg-app-bg-dark/70">1</span>
 						<div>
 							<p class="text-app-ink font-semibold dark:text-app-text-dark">
-								One federal, one state, one local race
+								Districts and current officials
 							</p>
 							<p class="text-sm text-app-muted leading-7 mt-2 dark:text-app-muted-dark">
-								The ballot guide shows different contest types so the product can be tested against different evidence shapes and ballot layouts.
+								Use lookup results, district pages, and representative pages to see the offices tied to your area.
 							</p>
 						</div>
 					</li>
@@ -21,10 +21,10 @@
 						<span class="text-sm text-app-ink font-semibold mt-1 rounded-full bg-app-bg inline-flex h-8 w-8 items-center justify-center dark:text-app-text-dark dark:bg-app-bg-dark/70">2</span>
 						<div>
 							<p class="text-app-ink font-semibold dark:text-app-text-dark">
-								Plain-language ballot measure pages
+								Official election links
 							</p>
 							<p class="text-sm text-app-muted leading-7 mt-2 dark:text-app-muted-dark">
-								Measures separate current law, proposed change, YES and NO outcomes, fiscal context, and attributed arguments so the user can scan structure before reading details.
+								Use the attached voter portals, election offices, and polling tools for final deadline, precinct, and ballot confirmation.
 							</p>
 						</div>
 					</li>
@@ -32,22 +32,22 @@
 						<span class="text-sm text-app-ink font-semibold mt-1 rounded-full bg-app-bg inline-flex h-8 w-8 items-center justify-center dark:text-app-text-dark dark:bg-app-bg-dark/70">3</span>
 						<div>
 							<p class="text-app-ink font-semibold dark:text-app-text-dark">
-								Future-ready data architecture
+								Local guides where available
 							</p>
 							<p class="text-sm text-app-muted leading-7 mt-2 dark:text-app-muted-dark">
-								The front end already consumes API-driven data, so published local coverage snapshots can replace empty or lookup-only states later without rewriting the page structure.
+								When Ballot Clarity has a local guide for an area, ballot, candidate, and measure pages open from the same workflow.
 							</p>
 						</div>
 					</li>
 				</ul>
 			</div>
 
-			<InfoCallout title="How we verify data" tone="warning">
-				Ballot Clarity should only show published local data when a verified coverage snapshot exists. Otherwise the app should say that local coverage is unavailable and keep official election tools visible.
+			<InfoCallout title="How to use this safely" tone="warning" class="home-card self-start">
+				Ballot Clarity should only show local guide pages when that material is ready. When a guide is not available, use the lookup results and the linked official election tools instead.
 				<NuxtLink to="/methodology" class="underline underline-offset-3" prefetch-on="interaction">
 					Read the methodology
 				</NuxtLink>
-				or open the footer’s data-verification panel for the current badge, freshness, and source rules.
+				for more on sourcing, freshness, and review standards.
 			</InfoCallout>
 		</div>
 	</section>

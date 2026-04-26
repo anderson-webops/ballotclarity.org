@@ -27,39 +27,6 @@ const correctionChecklist = [
 	"Any timing note that matters, such as a recent filing, late correction, or new election-office notice."
 ];
 
-const reviewSteps = [
-	{
-		description: "The request is logged, categorized, and checked for the specific claim, page, and sources at issue.",
-		title: "1. Intake"
-	},
-	{
-		description: "A reviewer compares the reported issue against the attached records, page citations, and any newly submitted primary sources.",
-		title: "2. Verification"
-	},
-	{
-		description: "Ballot Clarity may correct the claim, add missing context, attach additional sourcing, or note that the information remains disputed.",
-		title: "3. Resolution"
-	},
-	{
-		description: "If the change is substantive, the page should receive a visible update note rather than a silent rewrite.",
-		title: "4. Public update"
-	}
-];
-
-const outcomes = [
-	"Correct a factual error.",
-	"Add clarification, sourcing, or procedural context.",
-	"Add a note explaining that a claim is disputed or still being verified.",
-	"Decline the request if the content remains accurate and appropriately sourced."
-];
-
-const handlingNotes = [
-	"We aim to acknowledge correction requests within 2 business days.",
-	"We aim to resolve straightforward factual issues within 7 business days. Complex disputes can take longer when multiple records or jurisdictions are involved.",
-	"Ballot Clarity will not remove accurate, well-sourced information solely because it is unfavorable to a candidate, committee, or other subject.",
-	"Do not send Social Security numbers, financial account data, unpublished home addresses, or other sensitive personal information."
-];
-
 async function submitForm() {
 	isSubmitting.value = true;
 	formMessage.value = "";
@@ -70,8 +37,8 @@ async function submitForm() {
 			method: "POST"
 		});
 		formMessage.value = form.submissionType === "correction"
-			? "Correction request submitted. It has been added to the editorial queue."
-			: "Feedback submitted. It has been added to the editorial queue.";
+			? "Correction request submitted. We will review the page and follow up if needed."
+			: "Feedback submitted. Thank you.";
 		formTone.value = "success";
 		form.email = "";
 		form.message = "";
@@ -93,7 +60,7 @@ async function submitForm() {
 }
 
 usePageSeo({
-	description: "Contact Ballot Clarity, request a correction, or review the public dispute and update process for source-backed civic information.",
+	description: "Contact Ballot Clarity, request a correction, or send feedback about the site.",
 	path: "/contact",
 	title: "Contact"
 });
@@ -105,13 +72,12 @@ usePageSeo({
 			<div class="flex flex-wrap gap-2">
 				<TrustBadge label="Contact" tone="accent" />
 				<TrustBadge label="Corrections path" />
-				<TrustBadge label="Public update process" tone="warning" />
 			</div>
 			<h1 class="text-5xl text-app-ink font-serif mt-5 dark:text-app-text-dark">
-				Contact and correction requests
+				Contact and corrections
 			</h1>
 			<p class="text-base text-app-muted leading-8 mt-5 max-w-3xl dark:text-app-muted-dark">
-				Use this page to report factual issues, flag missing context, challenge framing, or send research and volunteer inquiries. Corrections are treated as part of the product's trust model, not as a private side channel.
+				Use this page to report an error, request a correction, ask a question, or volunteer.
 			</p>
 		</header>
 
@@ -122,10 +88,10 @@ usePageSeo({
 						Submit online
 					</p>
 					<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-						Send a correction request or product note
+						Send a correction request or feedback
 					</h2>
 					<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-						Use this form when a page appears inaccurate, incomplete, unevenly framed, or hard to use. Submissions are added to the internal editorial queue with the page URL and supporting notes you provide.
+						Use this form when a page appears inaccurate, incomplete, unevenly framed, or hard to use.
 					</p>
 				</div>
 
@@ -216,7 +182,7 @@ usePageSeo({
 					</p>
 
 					<button type="submit" class="btn-primary w-full" :disabled="isSubmitting">
-						{{ isSubmitting ? "Submitting..." : "Submit to editorial queue" }}
+						{{ isSubmitting ? "Submitting..." : "Send request" }}
 					</button>
 				</form>
 			</div>
@@ -240,7 +206,7 @@ usePageSeo({
 					Volunteer or research
 				</h2>
 				<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-					Use this if you want to volunteer, collaborate, or help review public records and guides.
+					Use this if you want to volunteer, collaborate, or help review public records.
 				</p>
 				<a :href="volunteerHref" class="btn-secondary mt-6">
 					Send a volunteer inquiry
@@ -288,55 +254,6 @@ usePageSeo({
 						privacy notice
 					</NuxtLink> to see how source review, dispute handling, and contact data are handled together.
 				</InfoCallout>
-			</div>
-		</section>
-
-		<section class="surface-panel">
-			<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-				Process
-			</p>
-			<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-				What happens after you send a request
-			</h2>
-			<div class="mt-6 gap-4 grid lg:grid-cols-4">
-				<article v-for="step in reviewSteps" :key="step.title" class="px-5 py-5 border border-app-line/80 rounded-3xl bg-white/80 dark:border-app-line-dark dark:bg-app-panel-dark/70">
-					<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
-						{{ step.title }}
-					</p>
-					<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-						{{ step.description }}
-					</p>
-				</article>
-			</div>
-		</section>
-
-		<section class="gap-6 grid lg:grid-cols-2">
-			<div class="surface-panel">
-				<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-					Possible outcomes
-				</p>
-				<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-					How a request can be resolved
-				</h2>
-				<ul class="text-sm text-app-muted leading-7 mt-6 space-y-3 dark:text-app-muted-dark">
-					<li v-for="item in outcomes" :key="item" class="px-4 py-3 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70">
-						{{ item }}
-					</li>
-				</ul>
-			</div>
-
-			<div class="surface-panel">
-				<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-					Handling notes
-				</p>
-				<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-					Standards around timing, fairness, and sensitive data
-				</h2>
-				<ul class="text-sm text-app-muted leading-7 mt-6 space-y-3 dark:text-app-muted-dark">
-					<li v-for="item in handlingNotes" :key="item" class="px-4 py-3 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70">
-						{{ item }}
-					</li>
-				</ul>
 			</div>
 		</section>
 	</section>

@@ -74,7 +74,18 @@ usePageSeo({
 			{{ feedbackMessage }}
 		</p>
 
-		<div class="space-y-5">
+		<AdminEmptyState
+			v-if="!(data?.sources?.length ?? 0)"
+			action-label="Open public sources"
+			action-to="/sources"
+			eyebrow="No monitored sources"
+			message="No source-health records are configured for the admin monitor. Public source records may still exist, but operational monitoring should be added before relying on freshness warnings."
+			secondary-label="Open methodology"
+			secondary-to="/methodology"
+			title="Source monitor has no entries"
+		/>
+
+		<div v-else class="space-y-5">
 			<article v-for="item in data?.sources ?? []" :key="item.id" class="surface-panel">
 				<div class="gap-6 grid xl:grid-cols-[minmax(0,1fr)_minmax(0,0.95fr)]">
 					<div class="min-w-0">

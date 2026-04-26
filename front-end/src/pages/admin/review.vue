@@ -28,7 +28,18 @@ usePageSeo({
 			</p>
 		</header>
 
-		<div class="space-y-5">
+		<AdminEmptyState
+			v-if="!(data?.items?.length ?? 0)"
+			action-label="Open guide packages"
+			action-to="/admin/packages"
+			eyebrow="Review queue clear"
+			message="There are no editorial records waiting for review. New candidate, measure, contest, or source-backed updates will appear here when they need a reviewer decision."
+			secondary-label="Open corrections"
+			secondary-to="/admin/corrections"
+			title="No review work is queued"
+		/>
+
+		<div v-else class="space-y-5">
 			<article v-for="item in data?.items ?? []" :key="item.id" class="surface-panel">
 				<div class="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
 					<div class="min-w-0">

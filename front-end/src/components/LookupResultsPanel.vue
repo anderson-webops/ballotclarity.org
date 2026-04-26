@@ -31,6 +31,7 @@ const { formatDate } = useFormatters();
 
 const lookupResolution = computed(() => ({
 	electionSlug: props.lookup.electionSlug,
+	guideContent: props.lookup.guideContent,
 	guideAvailability: props.lookup.guideAvailability,
 	location: props.lookup.location ?? undefined,
 	result: props.lookup.result
@@ -147,7 +148,7 @@ function getRepresentativePresentation(match: NationwideLookupResultContext["rep
 						{{ option.label }}
 					</p>
 					<VerificationBadge
-						:label="option.guideAvailability === 'published' ? 'Local guide available' : 'Nationwide results'"
+						:label="option.guideAvailability === 'published' ? 'Election overview available' : 'Results available'"
 						:tone="option.guideAvailability === 'published' ? 'accent' : 'neutral'"
 					/>
 					<VerificationBadge
@@ -216,7 +217,7 @@ function getRepresentativePresentation(match: NationwideLookupResultContext["rep
 						@click="openGuideAction(action)"
 					>
 						<span class="i-carbon-arrow-right" />
-						Open local guide
+						{{ lookupPresentation.guideActionLabel }}
 					</button>
 					<a
 						v-else-if="action.url"
@@ -353,7 +354,7 @@ function getRepresentativePresentation(match: NationwideLookupResultContext["rep
 				type="button"
 				class="btn-primary"
 				@click="openGuideAction({
-					description: 'Open the published local guide for this lookup.',
+					description: 'Open the local guide for this lookup.',
 					electionSlug: lookup.electionSlug,
 					id: `lookup-guide-${lookup.location.slug}`,
 					kind: 'ballot-guide',

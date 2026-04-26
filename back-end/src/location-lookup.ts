@@ -2,6 +2,7 @@ import type { AddressEnrichmentResult } from "./address-enrichment.js";
 import type { OfficialAddressMatch } from "./google-civic.js";
 import type {
 	CoverageResponse,
+	GuideContentSummary,
 	Jurisdiction,
 	JurisdictionSummary,
 	LocationLookupAction,
@@ -44,7 +45,7 @@ export interface LookupGeoContext {
 
 function buildCoverageSelection(summary: JurisdictionSummary): LocationSelection {
 	return {
-		coverageLabel: `Published ballot guide area: ${summary.displayName}`,
+		coverageLabel: `Current published election area: ${summary.displayName}`,
 		displayName: summary.displayName,
 		lookupMode: "zip-preview",
 		requiresOfficialConfirmation: true,
@@ -70,7 +71,7 @@ function buildZipNationwideSelection(
 		return null;
 
 	return {
-		coverageLabel: "Nationwide civic results available",
+		coverageLabel: "Civic results available",
 		displayName,
 		lookupInput: geoContext?.postalCode || rawQuery,
 		lookupMode: "zip-preview",
@@ -94,7 +95,7 @@ function findOfficialVerificationResource(jurisdiction: Jurisdiction | null, cov
 function buildCoverageActions(jurisdictionSummaries: JurisdictionSummary[]): LocationLookupAction[] {
 	return jurisdictionSummaries.map(summary => ({
 		badge: "Approximate",
-		description: `Open the current ${summary.displayName} coverage guide. ZIP-only lookups can cross district or city boundaries, so verify the final ballot in the official tools before relying on this guide.`,
+		description: `Open the current ${summary.displayName} election overview. ZIP-only lookups can cross district or city boundaries, so verify the final ballot in the official tools before relying on district-specific contest pages.`,
 		electionSlug: summary.nextElectionSlug,
 		id: `coverage:${summary.slug}`,
 		kind: "ballot-guide",
@@ -232,7 +233,7 @@ function summarizeRepresentativeSources(matches: LocationRepresentativeMatch[] |
 		: [];
 
 	if (!normalizedSources.length)
-		return "the current provider layer";
+		return "current public records";
 
 	if (normalizedSources.length === 1)
 		return normalizedSources[0];
@@ -262,7 +263,7 @@ function buildGuideUnavailableNote(
 	addressEnrichment?: AddressEnrichmentResult | null
 ) {
 	const locationSentence = describeDetectedLocation(inputKind, rawQuery, geoContext);
-	const publishedGuideSentence = `Ballot Clarity matched this ${inputKind === "zip" ? "location" : "address"} and loaded the nationwide civic result layers available here.`;
+	const publishedGuideSentence = `Ballot Clarity matched this ${inputKind === "zip" ? "location" : "address"} and loaded the civic results available for this area.`;
 	const districtSentence = addressEnrichment?.districtMatches?.length
 		? `Census geography matched ${addressEnrichment.districtMatches.map(match => match.label).join(", ")}.`
 		: "";
@@ -284,10 +285,15 @@ function buildPublishedZipGuideNote(
 	rawQuery: string,
 	geoContext: LookupGeoContext | null | undefined,
 	hasOfficialActions: boolean,
-	addressEnrichment?: AddressEnrichmentResult | null
+	addressEnrichment?: AddressEnrichmentResult | null,
+	guideContent?: GuideContentSummary | null,
 ) {
 	const locationSentence = describeDetectedLocation("zip", rawQuery, geoContext);
-	const guideSentence = "Ballot Clarity matched a single guide area for this ZIP and loaded the nationwide civic result layers available here.";
+	const guideSentence = guideContent?.verifiedContestPackage
+		? "Ballot Clarity matched a single guide area for this ZIP and loaded a verified local guide for it."
+		: guideContent?.publishedGuideShell
+			? "Ballot Clarity matched a single published election area for this ZIP and loaded the election overview for it. Official election links are current, and verified contest pages are still under local review."
+			: "Ballot Clarity matched a single guide area for this ZIP and loaded the civic results available for this area.";
 	const districtSentence = addressEnrichment?.districtMatches?.length
 		? `Census geography matched ${addressEnrichment.districtMatches.map(match => match.label).join(", ")}.`
 		: "";
@@ -321,56 +327,96 @@ function buildAvailabilitySummary(
 	inputKind: LocationLookupInputKind,
 	guideAvailability: "published" | "not-published",
 	addressEnrichment?: AddressEnrichmentResult | null,
-	selectionOptions?: LocationLookupSelectionOption[]
+	selectionOptions?: LocationLookupSelectionOption[],
+	guideContent?: GuideContentSummary | null,
+	hasOfficialLogistics = false,
 ) {
 	const representativeCount = addressEnrichment?.representativeMatches?.length ?? 0;
 	const hasRepresentatives = representativeCount > 0;
 	const hasGuide = guideAvailability === "published";
+	const hasGuideShell = hasGuide && Boolean(guideContent?.publishedGuideShell);
+	const hasVerifiedContestPackage = hasGuide && Boolean(guideContent?.verifiedContestPackage);
+	const hasPublishedShellOnly = hasGuideShell && !hasVerifiedContestPackage;
 	const selectionRequired = inputKind === "zip" && Boolean(selectionOptions?.length);
-	const financeInfluenceDetail = hasGuide
-		? "Funding and influence pages are available through the published Ballot Clarity candidate pages and any linked person profiles for this area."
-		: selectionRequired
-			? "Choose one of the matched areas below to see whether any person-level funding or influence records are attached to this lookup."
-			: hasRepresentatives
-				? "No person-level funding or influence records are attached to this lookup yet. Ballot Clarity only shows those modules when a matched candidate or representative profile has reliable linked data."
-				: "No person-level funding or influence records are attached to this lookup yet.";
+	const officialLogisticsAvailable = hasOfficialLogistics
+		|| Boolean(hasGuide && guideContent?.officialLogistics.status === "verified_local");
+	const financeInfluenceDetail = hasVerifiedContestPackage
+		? "Funding and influence pages are available through the local guide and any linked person profiles for this area."
+		: hasPublishedShellOnly
+			? "Representative funding and influence pages may still be available through linked person profiles, but contest pages in this local guide are still under review."
+			: selectionRequired
+				? "Choose one of the matched areas below to see whether any person-level funding or influence records are attached to this lookup."
+				: hasRepresentatives
+					? "No person-level funding or influence records are attached to this lookup yet. Ballot Clarity only shows those modules when a matched candidate or representative profile has reliable linked data."
+					: "No person-level funding or influence records are attached to this lookup yet.";
 	const nationwideDetail = hasGuide
-		? "Nationwide civic results, district context, and official election tools are available alongside the published local guide for this lookup."
+		? "Results, district context, and official election links remain available alongside the local guide for this lookup."
 		: selectionRequired
-			? "Nationwide civic results are available for this ZIP after you choose one of the matched areas below."
+			? "Civic results for this area are available for this ZIP after you choose one of the matched areas below."
 			: inputKind === "zip"
-				? "Nationwide civic results and official election tools are available for this ZIP lookup even though a published local guide is not available for this area yet."
-				: "Nationwide civic results, district context, and official election tools are available for this address even though a published local guide is not available for this area yet.";
+				? "Civic results and official election links are available for this ZIP."
+				: "Results, district context, and official election links are available for this address.";
 	const representativeSourceSummary = summarizeRepresentativeSources(addressEnrichment?.representativeMatches);
 
 	return {
 		nationwideCivicResults: {
 			detail: nationwideDetail,
-			label: "Nationwide civic results",
+			label: "Civic results for your area",
 			status: "available"
 		},
+		officialLogistics: {
+			detail: hasGuide && guideContent
+				? guideContent.officialLogistics.detail
+				: officialLogisticsAvailable
+					? "Official election logistics or verification tools are attached for this lookup."
+					: "No official election logistics are attached to this lookup yet.",
+			label: "Official logistics",
+			status: officialLogisticsAvailable ? "available" : "unavailable"
+		},
 		ballotCandidates: {
-			detail: hasGuide
+			detail: hasVerifiedContestPackage
 				? inputKind === "zip"
-					? "Ballot Clarity has contest and candidate coverage for the matched ZIP area."
-					: "Ballot Clarity has contest and candidate coverage for this area."
-				: "Ballot candidate pages are not published for this area yet.",
+					? "Ballot Clarity has verified local contest and candidate coverage for the matched ZIP area."
+					: "Ballot Clarity has verified local contest and candidate coverage for this area."
+				: hasPublishedShellOnly
+					? guideContent?.candidates.detail ?? "Candidate pages are available for this local guide, but they are still under local review."
+					: "Ballot candidate pages are not published for this area yet.",
 			label: "Ballot candidate data",
-			status: hasGuide ? "available" : "unavailable"
+			status: hasVerifiedContestPackage ? "available" : hasPublishedShellOnly ? "limited" : "unavailable"
 		},
 		financeInfluence: {
 			detail: financeInfluenceDetail,
 			label: "Finance and influence",
+			status: hasVerifiedContestPackage ? "available" : hasPublishedShellOnly ? "limited" : "unavailable"
+		},
+		guideShell: {
+			detail: hasGuide && guideContent
+				? guideContent.guideShell.detail
+				: hasGuide
+					? "An election overview is available for this area."
+					: "No published election overview is available for this area yet.",
+			label: "Election overview",
 			status: hasGuide ? "available" : "unavailable"
 		},
+		verifiedContestPackage: {
+			detail: hasGuide && guideContent
+				? guideContent.contests.detail
+				: hasGuide
+					? "Contest pages for this guide still need local verification."
+					: "No verified local contest pages are published for this area yet.",
+			label: "Verified contest pages",
+			status: hasVerifiedContestPackage ? "available" : "unavailable"
+		},
 		fullLocalGuide: {
-			detail: hasGuide
-				? inputKind === "zip"
-					? "A published local guide is available for the matched ZIP area."
-					: "A published local ballot guide is available for this lookup."
-				: "A full local contest and measure guide is not published for this area yet.",
-			label: "Full local guide",
-			status: hasGuide ? "available" : "unavailable"
+			detail: hasGuide && guideContent
+				? guideContent.summary
+				: hasGuide
+					? inputKind === "zip"
+						? "A published election overview is available for the matched ZIP area."
+						: "A published election overview is available for this lookup."
+					: "A full local contest and measure guide is not published for this area yet.",
+			label: "Local guide coverage",
+			status: hasVerifiedContestPackage ? "available" : hasPublishedShellOnly ? "limited" : "unavailable"
 		},
 		representatives: {
 			detail: hasRepresentatives
@@ -415,7 +461,8 @@ export function buildLocationLookupResponse(
 	officialLookup?: OfficialAddressMatch | null,
 	addressEnrichment?: AddressEnrichmentResult | null,
 	selectionOptions?: LocationLookupSelectionOption[],
-	selectionId?: string
+	selectionId?: string,
+	guideContent?: GuideContentSummary | null,
 ): LocationLookupResponse {
 	const inputKind = classifyLookupInput(rawQuery);
 	const stateOfficialActions = buildOfficialVerificationActions(
@@ -455,19 +502,27 @@ export function buildLocationLookupResponse(
 
 		return {
 			actions,
-			availability: buildAvailabilitySummary(inputKind, guideAvailability, addressEnrichment, selectionOptions),
+			availability: buildAvailabilitySummary(
+				inputKind,
+				guideAvailability,
+				addressEnrichment,
+				selectionOptions,
+				guideContent,
+				Boolean(officialLookup?.logistics || actions.length),
+			),
 			districtMatches: addressEnrichment?.districtMatches,
 			electionLogistics: officialLookup?.logistics ?? null,
 			electionSlug: autoSelectedCoverage?.nextElectionSlug,
 			fromCache: addressEnrichment?.fromCache,
 			guideAvailability,
+			guideContent: hasPublishedGuide ? guideContent ?? null : null,
 			inputKind,
 			location: nationwideSelection,
 			lookupQuery: rawQuery,
 			note: selectionOptions?.length
 				? buildZipSelectionNote(rawQuery, selectionOptions, Boolean(actions.length))
 				: guideAvailability === "published"
-					? buildPublishedZipGuideNote(rawQuery, geoContext, Boolean(actions.length), addressEnrichment)
+					? buildPublishedZipGuideNote(rawQuery, geoContext, Boolean(actions.length), addressEnrichment, guideContent)
 					: buildGuideUnavailableNote(rawQuery, inputKind, geoContext, Boolean(actions.length), addressEnrichment),
 			normalizedAddress: addressEnrichment?.normalizedAddress || geoContext.postalCode || rawQuery,
 			representativeMatches: addressEnrichment?.representativeMatches,
@@ -486,7 +541,14 @@ export function buildLocationLookupResponse(
 		if (geoContext || officialLookup || addressEnrichment?.normalizedAddress || addressEnrichment?.districtMatches?.length || addressEnrichment?.representativeMatches?.length) {
 			return {
 				actions: officialActions,
-				availability: buildAvailabilitySummary(inputKind, "not-published", addressEnrichment),
+				availability: buildAvailabilitySummary(
+					inputKind,
+					"not-published",
+					addressEnrichment,
+					undefined,
+					null,
+					Boolean(officialLookup?.logistics || officialActions.length),
+				),
 				fromCache: addressEnrichment?.fromCache,
 				guideAvailability: "not-published",
 				inputKind,
@@ -517,11 +579,19 @@ export function buildLocationLookupResponse(
 
 	return {
 		actions: officialLookup?.actions?.length ? officialLookup.actions : undefined,
-		availability: buildAvailabilitySummary(inputKind, "published", addressEnrichment),
+		availability: buildAvailabilitySummary(
+			inputKind,
+			"published",
+			addressEnrichment,
+			undefined,
+			guideContent,
+			Boolean(officialLookup?.logistics || officialLookup?.actions?.length),
+		),
 		electionSlug,
 		electionLogistics: officialLookup?.logistics ?? null,
 		fromCache: addressEnrichment?.fromCache,
 		guideAvailability: "published",
+		guideContent: guideContent ?? null,
 		inputKind,
 		districtMatches: addressEnrichment?.districtMatches,
 		lookupQuery: rawQuery,
@@ -533,8 +603,10 @@ export function buildLocationLookupResponse(
 		},
 		note: [
 			officialLookup?.note || (coverageMode === "snapshot"
-				? "A full address is the right input for exact ballot matching. The current release still opens the latest published public guide for this area and should be verified against official election tools for the final district-level ballot."
-				: "A full address is the right input for exact ballot matching. The current release still opens the published local guide for this area while verified address-to-ballot matching is being connected, so confirm the final ballot in the official election tools."),
+				? guideContent?.verifiedContestPackage
+					? "A full address is the right input for exact ballot matching. This area opens a verified local guide, but official election tools still remain the final authority for district-level ballot confirmation."
+					: "A full address is the right input for exact ballot matching. This area opens an election overview with verified official election links, but verified contest pages are still under local review, so confirm the final ballot in the official election tools."
+				: "A full address is the right input for exact ballot matching. This area may also open a local guide, but confirm the final ballot in the official election tools."),
 			addressEnrichment?.districtMatches?.length
 				? `Census geography matched ${addressEnrichment.districtMatches.map(match => match.label).join(", ")}.`
 				: "",

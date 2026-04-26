@@ -20,11 +20,11 @@ export function buildActiveLookupSummary({
 }: BuildActiveLookupSummaryInput): ActiveLookupSummary {
 	if (nationwideLookupResult?.result === "resolved") {
 		return {
-			label: nationwideLookupResult.location?.displayName || nationwideLookupResult.normalizedAddress || "Nationwide civic results",
+			label: nationwideLookupResult.location?.displayName || nationwideLookupResult.normalizedAddress || "Results for your area",
 			mode: "nationwide",
 			note: nationwideLookupResult.detectedFromIp
-				? "Using the current approximate nationwide lookup guess carried in this browser. Confirm with a manual address or ZIP when precision matters."
-				: "Using the latest successful nationwide lookup saved in this browser so district, representative, and results pages stay on the same active context.",
+				? "Using an approximate saved location. Enter an address or ZIP code if you need a more exact match."
+				: "Using your latest saved lookup.",
 			resolvedAt: nationwideLookupResult.resolvedAt ?? ""
 		};
 	}
@@ -33,7 +33,7 @@ export function buildActiveLookupSummary({
 		return {
 			label: selectedLocation.displayName,
 			mode: "guide",
-			note: "Using the current published-guide location carried in this browser session.",
+			note: "Using the saved guide area in this browser.",
 			resolvedAt: ""
 		};
 	}
@@ -42,7 +42,7 @@ export function buildActiveLookupSummary({
 		return {
 			label: routeLookupQuery,
 			mode: "nationwide",
-			note: "Using the nationwide lookup attached to this URL so the server can resolve district and representative pages without relying on browser-only state.",
+			note: "Using the lookup from this page URL.",
 			resolvedAt: ""
 		};
 	}
@@ -50,7 +50,7 @@ export function buildActiveLookupSummary({
 	return {
 		label: "No active lookup",
 		mode: "none",
-		note: "No lookup-specific context is active in this browser right now, so this page falls back to the published district layer where available.",
+		note: "No saved area is active in this browser right now.",
 		resolvedAt: ""
 	};
 }

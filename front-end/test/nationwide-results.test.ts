@@ -7,6 +7,48 @@ import {
 	resolveLookupDestination
 } from "../src/utils/nationwide-results.ts";
 
+const stagedGuideContent = {
+	candidates: {
+		count: 5,
+		detail: "Candidate records still rely on staged reference material instead of verified local content.",
+		hasContent: true,
+		label: "Candidates",
+		status: "staged_reference" as const,
+	},
+	contests: {
+		count: 4,
+		detail: "Contest records still rely on staged reference material instead of verified local content.",
+		hasContent: true,
+		label: "Contests",
+		status: "staged_reference" as const,
+	},
+	guideShell: {
+		count: 1,
+		detail: "This local guide is published with verified official election links, but the contest pages still need local review.",
+		hasContent: true,
+		label: "Local guide",
+		status: "official_logistics_only" as const,
+	},
+	mixedContent: true,
+	measures: {
+		count: 2,
+		detail: "Measure records still rely on staged reference material instead of verified local content.",
+		hasContent: true,
+		label: "Measures",
+		status: "staged_reference" as const,
+	},
+	officialLogistics: {
+		count: 3,
+		detail: "Official county and statewide election logistics are attached from current official sources.",
+		hasContent: true,
+		label: "Official logistics",
+		status: "verified_local" as const,
+	},
+	publishedGuideShell: true,
+	summary: "This published local guide includes verified official election links, but some contest, candidate, or measure pages are still under local review.",
+	verifiedContestPackage: false,
+};
+
 const activeElection: ElectionSummary = {
 	date: "2026-11-03",
 	jurisdictionSlug: "utah-county-utah",
@@ -37,20 +79,35 @@ const nationwideResponse: LocationLookupResponse = {
 			label: "Finance and influence",
 			status: "unavailable"
 		},
+		guideShell: {
+			detail: "No local guide is published for this area yet.",
+			label: "Local guide",
+			status: "unavailable"
+		},
 		fullLocalGuide: {
 			detail: "A full local contest and measure guide is not published for this area yet.",
-			label: "Full local guide",
+			label: "Local guide coverage",
 			status: "unavailable"
 		},
 		nationwideCivicResults: {
-			detail: "Nationwide civic results and official election tools are available for this ZIP lookup even though a published local guide is not available for this area yet.",
-			label: "Nationwide civic results",
+			detail: "Civic results and official election tools are available for this ZIP lookup even though a published local guide is not available for this area yet.",
+			label: "Civic results for your area",
+			status: "available"
+		},
+		officialLogistics: {
+			detail: "Official election logistics or verification tools are attached for this lookup.",
+			label: "Official logistics",
 			status: "available"
 		},
 		representatives: {
 			detail: "Current representative data is available for this lookup from Open States (1 match).",
 			label: "Representative data",
 			status: "available"
+		},
+		verifiedContestPackage: {
+			detail: "No verified local contest pages are published for this area yet.",
+			label: "Verified contest pages",
+			status: "unavailable"
 		}
 	},
 	districtMatches: [
@@ -95,7 +152,7 @@ const nationwideResponse: LocationLookupResponse = {
 		],
 	},
 	location: {
-		coverageLabel: "Nationwide civic results available",
+		coverageLabel: "Civic results available",
 		displayName: "Provo, Utah",
 		lookupMode: "zip-preview",
 		requiresOfficialConfirmation: false,
@@ -103,7 +160,7 @@ const nationwideResponse: LocationLookupResponse = {
 		state: "Utah"
 	},
 	lookupQuery: "84604",
-	note: "ZIP code 84604 appears to be in Provo, Utah. Ballot Clarity matched this location and loaded the nationwide civic result layers available here.",
+	note: "ZIP code 84604 appears to be in Provo, Utah. Ballot Clarity matched this location and loaded the civic results available for this area.",
 	normalizedAddress: "84604",
 	representativeMatches: [
 		{
@@ -122,9 +179,10 @@ const ipGuessedPublishedGuideResponse: LocationLookupResponse = {
 	...nationwideResponse,
 	detectedFromIp: true,
 	electionSlug: "2026-fulton-county-general",
+	guideContent: stagedGuideContent,
 	guideAvailability: "published",
 	location: {
-		coverageLabel: "Published ballot guide area: Fulton County, Georgia",
+		coverageLabel: "Live local guide area: Fulton County, Georgia",
 		displayName: "Fulton County, Georgia",
 		lookupMode: "zip-preview",
 		requiresOfficialConfirmation: true,
@@ -166,6 +224,8 @@ test("successful nationwide lookup builds a persisted nationwide result context"
 
 	assert.deepEqual(update.lookupContext, {
 		guideAvailability: "not-published",
+		hasPublishedGuideShell: false,
+		hasVerifiedContestPackage: false,
 		result: "resolved"
 	});
 	assert.equal(update.selectedLocation, null);
@@ -183,6 +243,8 @@ test("non-published-guide lookups keep a persisted app context instead of droppi
 	assert.equal(update.nationwideLookupResult?.normalizedAddress, "84604");
 	assert.deepEqual(update.lookupContext, {
 		guideAvailability: "not-published",
+		hasPublishedGuideShell: false,
+		hasVerifiedContestPackage: false,
 		result: "resolved"
 	});
 });
@@ -193,6 +255,7 @@ test("ip-guessed guide availability stays in nationwide context until the user c
 	assert.equal(update.selectedLocation, null);
 	assert.equal(update.nationwideLookupResult?.detectedFromIp, true);
 	assert.equal(update.nationwideLookupResult?.guideAvailability, "published");
+	assert.equal(update.nationwideLookupResult?.guideContent?.publishedGuideShell, true);
 });
 
 test("manual address or ZIP lookup overrides guessed context by activating the published guide location", () => {
@@ -211,36 +274,50 @@ test("ambiguous ZIP lookups keep their selection options in persisted nationwide
 	assert.equal(update.nationwideLookupResult?.lookupQuery, "84001");
 });
 
-test("nationwide lookups route into the nationwide results experience", () => {
+test("nationwide lookups route into the results experience", () => {
 	assert.equal(resolveLookupDestination(nationwideResponse), "/results?lookup=84604");
 });
 
 test("homepage entry state stops promoting the featured guide preview when a nationwide context is active", () => {
-	assert.deepEqual(buildHomeExperienceState(true, false), {
+	assert.deepEqual(buildHomeExperienceState(true, false, false), {
 		primaryLookupPath: "/results",
 		showFeaturedGuidePreview: false,
+		showPublishedElectionOverview: false,
 		showNationwideResults: true,
-		startHerePrimaryLabel: "Open nationwide results",
+		startHerePrimaryLabel: "Open results",
 		startHerePrimaryPath: "/results"
 	});
 });
 
 test("homepage entry state stays lookup-first when no nationwide or published guide context is active", () => {
-	assert.deepEqual(buildHomeExperienceState(false, false), {
+	assert.deepEqual(buildHomeExperienceState(false, false, false), {
 		primaryLookupPath: "/#location-lookup",
 		showFeaturedGuidePreview: false,
+		showPublishedElectionOverview: false,
 		showNationwideResults: false,
 		startHerePrimaryLabel: "Open location lookup",
 		startHerePrimaryPath: "/#location-lookup"
 	});
 });
 
-test("homepage entry state only promotes the ballot guide when a published guide context is active", () => {
-	assert.deepEqual(buildHomeExperienceState(false, true), {
+test("homepage entry state only promotes the ballot guide when a verified guide context is active", () => {
+	assert.deepEqual(buildHomeExperienceState(false, true, true), {
 		primaryLookupPath: "/ballot",
 		showFeaturedGuidePreview: true,
+		showPublishedElectionOverview: false,
 		showNationwideResults: false,
 		startHerePrimaryLabel: "Open ballot guide",
 		startHerePrimaryPath: "/ballot"
+	});
+});
+
+test("homepage entry state promotes the election overview when only the guide shell is active", () => {
+	assert.deepEqual(buildHomeExperienceState(false, true, false), {
+		primaryLookupPath: "/elections",
+		showFeaturedGuidePreview: false,
+		showPublishedElectionOverview: true,
+		showNationwideResults: false,
+		startHerePrimaryLabel: "Open election overview",
+		startHerePrimaryPath: "/elections"
 	});
 });

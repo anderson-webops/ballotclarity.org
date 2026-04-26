@@ -226,7 +226,7 @@ const stateQuestionnaire = source("state-questionnaire", "State Senate District 
 });
 
 export const demoLocation: LocationSelection = {
-	coverageLabel: "Published ballot guide area: Fulton County, Georgia",
+	coverageLabel: "Live local guide area: Fulton County, Georgia",
 	displayName: "Fulton County, Georgia",
 	lookupMode: "coverage-selection",
 	requiresOfficialConfirmation: true,
@@ -1993,7 +1993,7 @@ export const demoElection: Election = {
 	jurisdictionSlug: demoLocation.slug,
 	locationName: demoLocation.displayName,
 	updatedAt: "2026-03-30T18:00:00.000Z",
-	description: "Current launch-jurisdiction guide for Fulton County, Georgia. Election logistics and office links are grounded in official county and statewide sources, while contest-level dossiers remain reference-archive content until verified Fulton County ballot data is loaded.",
+	description: "Guide for Fulton County, Georgia. Official election links and logistics are current, while contest, candidate, and measure pages are still under local review.",
 	contests,
 	freshness: freshnessMeta({
 		contentLastVerifiedAt: "2026-03-30T18:00:00.000Z",
@@ -2040,7 +2040,7 @@ export const demoElection: Election = {
 		{
 			id: "change-2",
 			date: "2026-03-28T15:20:00.000Z",
-			summary: "Labeled contest-level pages as reference-archive content until verified Fulton County ballot packaging is available."
+			summary: "Marked contest, candidate, and measure pages as still under local review."
 		}
 	]
 };
@@ -2062,7 +2062,7 @@ export const demoJurisdiction: Jurisdiction = {
 	displayName: demoLocation.displayName,
 	state: demoLocation.state,
 	jurisdictionType: "County",
-	description: "Fulton County, Georgia is the current launch jurisdiction. This page uses real county and statewide election-office links while the broader candidate, measure, and ballot dossiers remain reference-archive content until verified Fulton-specific ballot packaging is ready.",
+	description: "Fulton County, Georgia election hub with official county and statewide election links. Contest, candidate, and measure pages are still under local review.",
 	nextElectionName: demoElection.name,
 	nextElectionSlug: demoElection.slug,
 	updatedAt: "2026-03-31T15:00:00.000Z",
@@ -2125,8 +2125,8 @@ export const demoJurisdiction: Jurisdiction = {
 	archivedGuides: [],
 	coverageNotes: [
 		"This is not an official government site. Verify deadlines, polling locations, and absentee rules with Fulton County Registration and Elections and Georgia My Voter Page.",
-		"This location hub uses real Fulton County logistics sources, but the wider ballot, candidate, and measure pages still include reference-archive content until verified Fulton-specific contest data is loaded.",
-		"Coverage notes are visible here so users can see what is grounded in official county systems and what is still staged."
+		"Official election links and logistics are current for this area.",
+		"Contest, candidate, and measure pages are still under local review."
 	]
 };
 
@@ -2214,7 +2214,7 @@ export const demoDataSources: DataSourcesResponse = {
 		{
 			slug: "ballots-and-locations",
 			title: "Ballots, deadlines, and polling places",
-			summary: "Election logistics change faster than most civic records, so Ballot Clarity needs an official-source chain plus a normalized provider layer for national scale.",
+			summary: "Election logistics change quickly, so Ballot Clarity relies on official election offices plus national providers for scale.",
 			authoritativeRule: "Election-office notices remain the final authority for deadlines, polling-place changes, and ballot-return instructions.",
 			liveApproach: "Store official notices as the verification layer, then use a provider-normalized ballot API for address-to-ballot lookup and contest packaging.",
 			options: [

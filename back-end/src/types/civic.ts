@@ -271,7 +271,7 @@ export interface OfficeContext {
 	uncertainty?: string;
 }
 
-export type LookupAvailabilityStatus = "available" | "partial" | "unavailable";
+export type LookupAvailabilityStatus = "available" | "partial" | "limited" | "unavailable";
 
 export interface LookupAvailability {
 	label: string;
@@ -644,13 +644,38 @@ export type LocationLookupResult = "resolved" | "unsupported";
 export type LocationGuideAvailability = "published" | "not-published";
 export type LocationDataAvailabilityStatus = LookupAvailabilityStatus;
 
+export type GuideContentStatus = "verified_local" | "official_logistics_only" | "staged_reference" | "seeded_demo";
+
+export interface GuideContentLayerStatus {
+	count: number;
+	detail: string;
+	hasContent: boolean;
+	label: string;
+	status: GuideContentStatus;
+}
+
+export interface GuideContentSummary {
+	candidates: GuideContentLayerStatus;
+	contests: GuideContentLayerStatus;
+	guideShell: GuideContentLayerStatus;
+	mixedContent: boolean;
+	measures: GuideContentLayerStatus;
+	officialLogistics: GuideContentLayerStatus;
+	publishedGuideShell: boolean;
+	summary: string;
+	verifiedContestPackage: boolean;
+}
+
 export interface LocationDataAvailabilityItem extends LookupAvailability {}
 
 export interface LocationDataAvailabilitySummary {
 	nationwideCivicResults: LocationDataAvailabilityItem;
 	representatives: LocationDataAvailabilityItem;
+	officialLogistics: LocationDataAvailabilityItem;
 	ballotCandidates: LocationDataAvailabilityItem;
 	financeInfluence: LocationDataAvailabilityItem;
+	guideShell: LocationDataAvailabilityItem;
+	verifiedContestPackage: LocationDataAvailabilityItem;
 	fullLocalGuide: LocationDataAvailabilityItem;
 }
 
@@ -682,6 +707,7 @@ export interface LocationLookupResponse {
 	selectionId?: string;
 	detectedFromIp?: boolean;
 	guideAvailability?: LocationGuideAvailability;
+	guideContent?: GuideContentSummary | null;
 	availability?: LocationDataAvailabilitySummary;
 	location?: LocationSelection;
 	electionSlug?: string;
@@ -838,12 +864,30 @@ export interface LocationGuessCapability {
 	canGuessOnLoad: boolean;
 }
 
+export type CoverageSnapshotStatus = "production_approved" | "reviewed" | "seed" | "unknown";
+export type CoverageSnapshotSourceType = "imported" | "seed" | "unknown";
+
+export interface CoverageSnapshotProvenance {
+	status: CoverageSnapshotStatus;
+	configuredSnapshotMissing: boolean;
+	sourceLabel: string;
+	sourceType: CoverageSnapshotSourceType;
+	sourceOrigin?: string;
+	loadedAt: string;
+	importedAt?: string;
+	reviewedAt?: string;
+	approvedAt?: string;
+	note?: string;
+}
+
 export interface CoverageResponse {
 	updatedAt: string;
 	coverageMode: "empty" | "snapshot";
 	coverageUpdatedAt: string;
+	snapshotProvenance?: CoverageSnapshotProvenance;
 	locationGuess: LocationGuessCapability;
 	launchTarget?: LaunchTargetProfile;
+	guideContent?: GuideContentSummary | null;
 	scopeNote: string;
 	currentState: string;
 	supportedContentTypes: CoverageCapability[];
@@ -876,6 +920,7 @@ export interface PublicStatusResponse {
 	overallStatus: PublicOperationalStatus;
 	coverageMode: "empty" | "snapshot";
 	coverageUpdatedAt: string;
+	snapshotProvenance?: CoverageSnapshotProvenance;
 	sourceSummary: Record<AdminSourceHealth, number>;
 	nextReviewAt?: string;
 	nextPublishWindow?: string;
@@ -1119,6 +1164,7 @@ export interface RepresentativesResponse {
 }
 
 export interface BallotResponse {
+	guideContent: GuideContentSummary | null;
 	location: LocationSelection;
 	election: Election;
 	updatedAt: string;
@@ -1285,6 +1331,7 @@ export interface GuidePackageMeasureSummary {
 
 export interface GuidePackageSummary {
 	workflow: GuidePackageWorkflow;
+	contentStatus: GuideContentSummary;
 	election: ElectionSummary | null;
 	jurisdiction: JurisdictionSummary | null;
 	coverageScope: GuidePackageCoverageScope;

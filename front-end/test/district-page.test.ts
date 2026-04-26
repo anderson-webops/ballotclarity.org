@@ -47,7 +47,7 @@ const nationwideLookupResult = {
 	guideAvailability: "not-published" as const,
 	inputKind: "zip",
 	location: {
-		coverageLabel: "Nationwide civic results available",
+		coverageLabel: "Civic results available",
 		displayName: "Provo, Utah",
 		lookupMode: "zip-preview",
 		requiresOfficialConfirmation: false,
@@ -55,7 +55,7 @@ const nationwideLookupResult = {
 		state: "Utah"
 	},
 	normalizedAddress: "84604",
-	note: "Nationwide civic results ready.",
+	note: "Civic results ready.",
 	representativeMatches: [
 		{
 			districtLabel: "Representative UT-3",

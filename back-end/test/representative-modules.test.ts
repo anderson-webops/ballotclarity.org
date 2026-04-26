@@ -27,7 +27,7 @@ const testContext: ActiveNationwideLookupContext = {
 	guideAvailability: "not-published",
 	inputKind: "zip",
 	location: {
-		coverageLabel: "Nationwide civic results available",
+		coverageLabel: "Civic results available",
 		displayName: "Provo, Utah",
 		lookupInput: "84604",
 		lookupMode: "zip-preview",
@@ -54,7 +54,7 @@ const testContext: ActiveNationwideLookupContext = {
 };
 
 const testProfileResponse: PersonProfileResponse = {
-	note: "Representative profile loaded from the active nationwide lookup.",
+	note: "Representative profile loaded from your saved lookup results.",
 	person: {
 		ballotStatusLabel: "Not on the current published local guide",
 		biography: [],
@@ -68,7 +68,7 @@ const testProfileResponse: PersonProfileResponse = {
 			nextReviewAt: "2026-04-25T18:45:00.000Z",
 			status: "up-to-date",
 			statusLabel: "Up to date",
-			statusNote: "Representative identity resolved from the active nationwide lookup.",
+			statusNote: "Representative identity resolved from your saved lookup results.",
 		},
 		funding: null,
 		governmentLevel: testClassification.governmentLevel,

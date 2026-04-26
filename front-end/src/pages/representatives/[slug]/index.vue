@@ -6,7 +6,7 @@ import { buildActiveLookupSummary } from "~/utils/active-lookup";
 import { activeNationwideLookupCookieName, parseActiveNationwideLookupCookie } from "~/utils/active-nationwide-cookie";
 import { buildNationwidePersonProfileResponse } from "~/utils/nationwide-person-profile";
 import { buildLookupContextFromNationwideResult, buildNationwideLookupRouteQuery, buildNationwideRouteTarget } from "~/utils/nationwide-route-context";
-import { buildPersonLinkageConfidence, buildPersonSummaryItems, hasPersonFunding, hasPersonInfluence } from "~/utils/person-profile";
+import { buildPersonSummaryItems, hasPersonFunding, hasPersonInfluence } from "~/utils/person-profile";
 import { resolveRepresentativePresentation } from "~/utils/representative-presentation";
 
 const route = useRoute();
@@ -43,7 +43,6 @@ const profileData = computed(() => {
 });
 const person = computed(() => profileData.value?.person ?? null);
 const pagePending = computed(() => pending.value || (!data.value && !fallbackData.value));
-const isNationwideFallback = computed(() => Boolean(profileData.value) && profileData.value === fallbackData.value);
 const activeLookupSummary = computed(() => buildActiveLookupSummary({
 	nationwideLookupResult: activeNationwideLookupResult.value,
 	routeLookupQuery: activeLookupQuery.value?.lookup ?? null,
@@ -52,7 +51,6 @@ const activeLookupSummary = computed(() => buildActiveLookupSummary({
 const representativePresentation = computed(() => person.value
 	? resolveRepresentativePresentation(person.value, activeNationwideLookupResult.value?.location?.state ?? null)
 	: null);
-const linkageConfidence = computed(() => person.value ? buildPersonLinkageConfidence(person.value.provenance.status) : null);
 const dataThroughLabel = computed(() => {
 	if (!person.value)
 		return "";
@@ -140,7 +138,6 @@ const officeContextFields = computed(() => {
 		{ label: "Current term", value: officeContext.value?.currentTermLabel },
 		{ label: "Official phone", value: officeContext.value?.officialPhone },
 		{ label: "Official office", value: officeContext.value?.officialOfficeAddress },
-		{ label: "Linkage note", value: person.value.provenance.note },
 		{ label: "Data through", value: dataThroughLabel.value },
 	].filter(item => Boolean(item.value));
 });
@@ -152,21 +149,31 @@ const moduleStatusItems = computed(() => {
 	return [
 		{
 			...person.value.enrichmentStatus.officeContext,
-			label: "Office context",
+			label: "Office details",
 		},
 		{
 			...person.value.enrichmentStatus.legislativeContext,
-			label: "Legislative and action context",
+			label: "Actions",
 		},
 		{
 			...person.value.enrichmentStatus.funding,
-			label: "Funding module",
+			label: "Funding",
 		},
 		{
 			...person.value.enrichmentStatus.influence,
-			label: "Influence module",
+			label: "Influence",
 		},
 	];
+});
+const pageNotes = computed(() => {
+	if (!person.value)
+		return [];
+
+	return [
+		...person.value.whatWeKnow.map(item => item.text),
+		...person.value.whatWeDoNotKnow.map(item => item.text),
+		...person.value.methodologyNotes.slice(0, 1),
+	].filter(Boolean);
 });
 const fundingHighlights = computed(() => {
 	if (!person.value?.funding)
@@ -276,12 +283,6 @@ usePageSeo({
 						<VerificationBadge v-if="representativePresentation" :label="representativePresentation.levelLabel" />
 						<VerificationBadge :label="person.officeholderLabel" />
 						<VerificationBadge :label="person.onCurrentBallot ? person.ballotStatusLabel : 'Not on current ballot'" />
-						<VerificationBadge v-if="isNationwideFallback" label="Nationwide lookup fallback" tone="warning" />
-						<VerificationBadge
-							v-if="linkageConfidence"
-							:label="linkageConfidence.label"
-							:title="linkageConfidence.note"
-						/>
 					</div>
 					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold mt-5 uppercase dark:text-app-muted-dark">
 						{{ person.location }}
@@ -298,12 +299,8 @@ usePageSeo({
 					<p class="text-base text-app-muted leading-8 mt-6 max-w-3xl dark:text-app-muted-dark">
 						{{ person.summary }}
 					</p>
-					<div class="mt-6 flex flex-wrap gap-3 items-center">
+					<div class="mt-6">
 						<UpdatedAt :value="person.freshness.dataLastUpdatedAt ?? person.updatedAt" label="Data through" />
-						<span class="text-app-line dark:text-app-line-dark">•</span>
-						<p class="text-sm text-app-muted dark:text-app-muted-dark">
-							{{ person.provenance.label }}
-						</p>
 					</div>
 					<div class="bc-action-cluster mt-6">
 						<SourceDrawer :sources="person.sources" :title="`${person.name} evidence and sources`" button-label="Evidence & sources" />
@@ -355,11 +352,10 @@ usePageSeo({
 					</div>
 					<div class="mt-6 gap-4 grid lg:grid-cols-[minmax(0,1.3fr)_minmax(18rem,0.9fr)]">
 						<div id="office-context" class="px-5 py-5 border border-app-line/80 rounded-3xl bg-white/80 scroll-mt-32 dark:border-app-line-dark dark:bg-app-panel-dark/70">
-							<div class="flex flex-wrap gap-3 items-center justify-between">
+							<div class="flex flex-wrap gap-3 items-center">
 								<h3 class="text-xl text-app-ink font-serif dark:text-app-text-dark">
 									Office and jurisdiction context
 								</h3>
-								<VerificationBadge :label="person.provenance.status" />
 							</div>
 							<dl class="mt-5 gap-4 grid sm:grid-cols-2">
 								<div v-for="item in officeContextFields" :key="item.label">
@@ -392,7 +388,7 @@ usePageSeo({
 						</div>
 						<div class="px-5 py-5 border border-app-line/80 rounded-3xl bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
 							<h3 class="text-xl text-app-ink font-serif dark:text-app-text-dark">
-								Module status
+								Available here
 							</h3>
 							<ul class="mt-4 space-y-4">
 								<li v-for="item in moduleStatusItems" :key="item.label" class="pb-4 border-b border-app-line/80 last:pb-0 last:border-b-0 dark:border-app-line-dark">
@@ -410,17 +406,6 @@ usePageSeo({
 									</p>
 								</li>
 							</ul>
-							<div class="mt-6 pt-6 border-t border-app-line/80 dark:border-app-line-dark">
-								<h4 class="text-lg text-app-ink font-serif dark:text-app-text-dark">
-									Read this safely
-								</h4>
-								<ul class="text-sm text-app-muted leading-7 mt-4 space-y-2 dark:text-app-muted-dark">
-									<li>Direct, crosswalked, and inferred linkage should not be treated as the same confidence level.</li>
-									<li>Finance and influence sections only appear when the underlying person record has publishable data.</li>
-									<li>{{ person.freshness.statusNote }}</li>
-									<li>Use the attached records and official sources before treating this page as complete.</li>
-								</ul>
-							</div>
 						</div>
 					</div>
 				</section>
@@ -520,9 +505,6 @@ usePageSeo({
 						<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
 							{{ person.enrichmentStatus?.legislativeContext.summary || "No legislative or action feed is attached to this page." }}
 						</p>
-						<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
-							Office context, district details, and sources are still available above.
-						</p>
 					</div>
 				</section>
 
@@ -578,15 +560,13 @@ usePageSeo({
 						</div>
 						<div class="p-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
 							<h3 class="text-xl text-app-ink font-serif dark:text-app-text-dark">
-								How to read this data
+								Record facts
 							</h3>
 							<ul class="text-sm text-app-muted leading-7 mt-4 space-y-2 dark:text-app-muted-dark">
-								<li><strong class="text-app-ink dark:text-app-text-dark">Linkage:</strong> {{ person.provenance.status }}</li>
-								<li><strong class="text-app-ink dark:text-app-text-dark">Confidence:</strong> {{ linkageConfidence?.label }}</li>
 								<li><strong class="text-app-ink dark:text-app-text-dark">Committee:</strong> {{ person.funding.committeeName || "Current matched committee not published in this summary." }}</li>
 								<li><strong class="text-app-ink dark:text-app-text-dark">Coverage:</strong> {{ person.funding.coverageLabel || person.funding.provenanceLabel || "Source-backed finance summary" }}</li>
 								<li><strong class="text-app-ink dark:text-app-text-dark">Data through:</strong> {{ dataThroughLabel }}</li>
-								<li><strong class="text-app-ink dark:text-app-text-dark">Freshness note:</strong> {{ person.freshness.statusNote }}</li>
+								<li>{{ person.freshness.statusNote }}</li>
 							</ul>
 						</div>
 					</div>
@@ -646,15 +626,13 @@ usePageSeo({
 						</div>
 						<div class="p-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
 							<h3 class="text-xl text-app-ink font-serif dark:text-app-text-dark">
-								How to read this data
+								Record facts
 							</h3>
 							<ul class="text-sm text-app-muted leading-7 mt-4 space-y-2 dark:text-app-muted-dark">
-								<li><strong class="text-app-ink dark:text-app-text-dark">Linkage:</strong> {{ person.provenance.status }}</li>
-								<li><strong class="text-app-ink dark:text-app-text-dark">Confidence:</strong> {{ linkageConfidence?.label }}</li>
 								<li><strong class="text-app-ink dark:text-app-text-dark">Coverage:</strong> {{ influence?.coverageLabel || "Public disclosures, donor context, and source-backed statements where available." }}</li>
 								<li><strong class="text-app-ink dark:text-app-text-dark">Match mode:</strong> {{ influence?.matchMode ? formatInfluenceMatchMode(influence.matchMode) : "Not published" }}</li>
 								<li><strong class="text-app-ink dark:text-app-text-dark">Data through:</strong> {{ dataThroughLabel }}</li>
-								<li><strong class="text-app-ink dark:text-app-text-dark">Caution:</strong> Context is not proof of causation. {{ person.freshness.statusNote }}</li>
+								<li>Context is not proof of causation. {{ person.freshness.statusNote }}</li>
 							</ul>
 						</div>
 					</div>
@@ -669,10 +647,10 @@ usePageSeo({
 						<div class="flex flex-wrap gap-4 items-center justify-between">
 							<div>
 								<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
-									Sources and methodology notes
+									Sources and notes
 								</h2>
 								<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-									This page brings together the public records currently attached to this officeholder.
+									Sources attached to this profile.
 								</p>
 							</div>
 							<a :href="reportIssueHref" class="btn-secondary">
@@ -686,30 +664,10 @@ usePageSeo({
 							<div class="space-y-4">
 								<div class="p-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
 									<h3 class="text-xl text-app-ink font-serif dark:text-app-text-dark">
-										What we know
+										Page notes
 									</h3>
 									<ul class="mt-4 space-y-2">
-										<li v-for="item in person.whatWeKnow" :key="item.id" class="text-sm text-app-muted leading-6 dark:text-app-muted-dark">
-											{{ item.text }}
-										</li>
-									</ul>
-								</div>
-								<div class="p-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
-									<h3 class="text-xl text-app-ink font-serif dark:text-app-text-dark">
-										What we do not know
-									</h3>
-									<ul class="mt-4 space-y-2">
-										<li v-for="item in person.whatWeDoNotKnow" :key="item.id" class="text-sm text-app-muted leading-6 dark:text-app-muted-dark">
-											{{ item.text }}
-										</li>
-									</ul>
-								</div>
-								<div class="p-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
-									<h3 class="text-xl text-app-ink font-serif dark:text-app-text-dark">
-										Methodology notes
-									</h3>
-									<ul class="mt-4 space-y-2">
-										<li v-for="note in person.methodologyNotes" :key="note" class="text-sm text-app-muted leading-6 dark:text-app-muted-dark">
+										<li v-for="note in pageNotes" :key="note" class="text-sm text-app-muted leading-6 dark:text-app-muted-dark">
 											{{ note }}
 										</li>
 									</ul>
@@ -723,7 +681,7 @@ usePageSeo({
 			<div class="space-y-6 xl:pt-[4.5rem]">
 				<div class="surface-panel">
 					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-						Current lookup
+						Current area
 					</p>
 					<h2 class="text-2xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
 						{{ activeLookupSummary.label }}
@@ -742,9 +700,7 @@ usePageSeo({
 
 				<PageSectionNav
 					:breadcrumbs="breadcrumbs"
-					:description="isNationwideFallback
-						? 'Use this page to review the current officeholder, attached records, and source notes for this route.'
-						: 'Use this page to review the current officeholder and the records attached to this local guide.'"
+					description="Office, actions, funding, influence, and sources."
 					:items="sectionLinks"
 					title="Representative profile"
 				>
@@ -762,22 +718,14 @@ usePageSeo({
 
 				<div class="surface-panel" data-representative-sidebar="record-details">
 					<h2 class="text-2xl text-app-ink font-serif dark:text-app-text-dark">
-						Record details
+						Record dates
 					</h2>
 					<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-						<strong class="text-app-ink dark:text-app-text-dark">Provenance:</strong> {{ person.provenance.label }}
+						<strong class="text-app-ink dark:text-app-text-dark">Profile reviewed:</strong> {{ formatDateTime(person.provenance.asOf) }}
 					</p>
 					<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
-						<strong class="text-app-ink dark:text-app-text-dark">Confidence:</strong> {{ linkageConfidence?.label }}. {{ linkageConfidence?.note }}
+						<strong class="text-app-ink dark:text-app-text-dark">Data through:</strong> {{ formatDateTime(person.freshness.dataLastUpdatedAt ?? person.updatedAt) }}
 					</p>
-					<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
-						<strong class="text-app-ink dark:text-app-text-dark">As of:</strong> {{ formatDateTime(person.provenance.asOf) }}
-					</p>
-					<ul class="readable-list text-sm text-app-muted mt-5 pl-5 dark:text-app-muted-dark">
-						<li>{{ hasFunding ? "Funding summary and dedicated funding page are live for this person record." : "Funding module is not attached to this person record yet." }}</li>
-						<li>{{ hasInfluence ? "Influence and public-disclosure context are live for this person record." : "Influence module is not attached to this person record yet." }}</li>
-						<li>{{ person.onCurrentBallot ? "Ballot status is attached because this officeholder is also on the current ballot." : "Ballot status is not attached because this person is not on the current ballot in the current source set." }}</li>
-					</ul>
 				</div>
 			</div>
 		</div>

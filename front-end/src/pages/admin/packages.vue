@@ -72,15 +72,39 @@ function recommendationTone(value: GuidePackageReviewRecommendation | undefined)
 	return "neutral" as const;
 }
 
+function guideContentLabel(packageRecord: GuidePackageRecord) {
+	if (packageRecord.contentStatus.verifiedContestPackage)
+		return "verified local content";
+
+	if (packageRecord.contentStatus.publishedGuideShell)
+		return "guide shell published";
+
+	if (packageRecord.contentStatus.officialLogistics)
+		return "official logistics only";
+
+	return "not public";
+}
+
+function guideContentTone(packageRecord: GuidePackageRecord) {
+	return packageRecord.contentStatus.verifiedContestPackage ? "accent" as const : "warning" as const;
+}
+
+function guideContentDetail(packageRecord: GuidePackageRecord) {
+	const contestStatus = packageRecord.contentStatus.contests.status.replaceAll("_", " ");
+	const measureStatus = packageRecord.contentStatus.measures.status.replaceAll("_", " ");
+
+	return `${packageRecord.contentStatus.summary} Contests: ${contestStatus}; measures: ${measureStatus}.`;
+}
+
 function evaluationModeLabel(value: string) {
 	return value.replaceAll("_", " ");
 }
 
 function summarizeBlockingIssues(packageRecord: GuidePackageRecord) {
 	if (!packageRecord.diagnostics.blockingIssueCount)
-		return "No blocking publish checks are open.";
+		return "No blocking checklist items are open.";
 
-	return `${packageRecord.diagnostics.blockingIssueCount} blocking publish check${packageRecord.diagnostics.blockingIssueCount === 1 ? "" : "s"} still need resolution.`;
+	return `${packageRecord.diagnostics.blockingIssueCount} blocking checklist item${packageRecord.diagnostics.blockingIssueCount === 1 ? "" : "s"} still need resolution.`;
 }
 
 function groupSummary(group: GuidePackageChecklistCategoryGroup) {
@@ -259,19 +283,20 @@ usePageSeo({
 						<div>
 							<div class="flex flex-wrap gap-2">
 								<TrustBadge :label="statusLabel(item.workflow.status)" :tone="statusTone(item.workflow.status)" />
-								<TrustBadge :label="`${item.diagnostics.completenessScore}% complete`" :tone="item.diagnostics.readyToPublish ? 'accent' : 'warning'" />
+								<TrustBadge :label="`${item.diagnostics.completenessScore}% checklist`" :tone="item.diagnostics.readyToPublish ? 'accent' : 'warning'" />
+								<TrustBadge :label="guideContentLabel(item)" :tone="guideContentTone(item)" />
 								<TrustBadge :label="recommendationLabel(item.diagnostics.recommendation.final)" :tone="recommendationTone(item.diagnostics.recommendation.final)" />
-								<TrustBadge :label="item.diagnostics.readyToPublish ? 'Publish gate passes' : 'Publish gate blocked'" :tone="item.diagnostics.readyToPublish ? 'accent' : 'warning'" />
+								<TrustBadge :label="item.diagnostics.readyToPublish ? 'Checklist gate passes' : 'Checklist gate blocked'" :tone="item.diagnostics.readyToPublish ? 'accent' : 'warning'" />
 							</div>
 							<h2 class="text-3xl text-app-ink font-serif mt-4 dark:text-app-text-dark">
 								{{ item.coverageScope.label }}
 							</h2>
 							<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-								{{ summarizeBlockingIssues(item) }}
+								{{ guideContentDetail(item) }} {{ summarizeBlockingIssues(item) }}
 							</p>
 						</div>
 
-						<div class="mt-5 gap-4 grid md:grid-cols-2 xl:grid-cols-3">
+						<div class="mt-5 gap-4 grid md:grid-cols-2 xl:grid-cols-4">
 							<div class="px-4 py-4 border border-app-line/80 rounded-[1.4rem] bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
 								<p class="text-xs text-app-muted tracking-[0.16em] font-semibold uppercase dark:text-app-muted-dark">
 									Counts
@@ -286,6 +311,14 @@ usePageSeo({
 								</p>
 								<p class="text-sm text-app-muted leading-7 mt-2 dark:text-app-muted-dark">
 									{{ item.counts.officialResources }} official resources · {{ item.counts.attachedSources }} attached source records
+								</p>
+							</div>
+							<div class="px-4 py-4 border border-app-line/80 rounded-[1.4rem] bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
+								<p class="text-xs text-app-muted tracking-[0.16em] font-semibold uppercase dark:text-app-muted-dark">
+									Guide content
+								</p>
+								<p class="text-sm text-app-muted leading-7 mt-2 dark:text-app-muted-dark">
+									{{ item.contentStatus.verifiedContestPackage ? "Verified contest package" : "Verified contest package pending" }}
 								</p>
 							</div>
 							<div class="px-4 py-4 border border-app-line/80 rounded-[1.4rem] bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">

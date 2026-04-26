@@ -1,18 +1,12 @@
 import process from "node:process";
 import { defineNuxtConfig } from "nuxt/config";
-import {
-	analyticsDomain,
-	analyticsWebsiteId,
-	appDescription,
-	appName,
-	centralAnalyticsDomain,
-	centralAnalyticsWebsiteId
-} from "./src/constants/index";
+import { analyticsTrackers, appDescription, appName } from "./src/constants/index";
 import { buildPreHydrationDeployRecoveryScript } from "./src/utils/deploy-recovery";
 import { buildPreHydrationDisplayTimeZoneScript } from "./src/utils/display-time-zone";
 
 const assetVersion = "20260417";
 const isDev = process.env.NODE_ENV === "development";
+const analyticsDisabled = process.env.NUXT_DISABLE_ANALYTICS === "1" || process.env.NUXT_DISABLE_ANALYTICS === "true";
 const buildId = process.env.NUXT_PUBLIC_BUILD_ID
 	|| process.env.RELEASE_VERSION
 	|| process.env.SOURCE_VERSION
@@ -57,9 +51,7 @@ export default defineNuxtConfig({
 				{ name: "description", content: appDescription },
 				{ name: "ballot-clarity-build-id", content: buildId },
 				{ name: "application-name", content: appName },
-				{ name: "apple-mobile-web-app-status-bar-style", content: "default" },
-				{ name: "theme-color", media: "(prefers-color-scheme: light)", content: "#F7F4EE" },
-				{ name: "theme-color", media: "(prefers-color-scheme: dark)", content: "#09131F" }
+				{ name: "apple-mobile-web-app-status-bar-style", content: "default" }
 			],
 			script: [
 				{
@@ -74,20 +66,14 @@ export default defineNuxtConfig({
 					tagPosition: "head",
 					type: "text/javascript",
 				},
-				...(isDev
+				...(isDev || analyticsDisabled
 					? []
-					: [
-							{
-								"defer": true,
-								"src": `https://${analyticsDomain}/script.js`,
-								"data-website-id": analyticsWebsiteId,
-							},
-							{
-								"defer": true,
-								"src": `https://${centralAnalyticsDomain}/script.js`,
-								"data-website-id": centralAnalyticsWebsiteId,
-							},
-						]),
+					: analyticsTrackers.map(tracker => ({
+							"defer": true,
+							"key": `ballot-clarity-analytics-${tracker.label}`,
+							"src": `https://${tracker.domain}/script.js`,
+							"data-website-id": tracker.websiteId,
+						}))),
 			]
 		}
 	},
@@ -107,7 +93,11 @@ export default defineNuxtConfig({
 		public: {
 			apiBase: process.env.NUXT_PUBLIC_API_BASE || "http://127.0.0.1:3001/api",
 			buildId,
-			siteUrl: process.env.NUXT_PUBLIC_SITE_URL || "https://ballotclarity.org"
+			governingLaw: process.env.NUXT_PUBLIC_GOVERNING_LAW || "",
+			operatorLegalName: process.env.NUXT_PUBLIC_OPERATOR_LEGAL_NAME || "Jacob Anderson",
+			operatorNoticeAddress: process.env.NUXT_PUBLIC_OPERATOR_NOTICE_ADDRESS || "",
+			siteUrl: process.env.NUXT_PUBLIC_SITE_URL || "https://ballotclarity.org",
+			venue: process.env.NUXT_PUBLIC_VENUE || ""
 		}
 	},
 

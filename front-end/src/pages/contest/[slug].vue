@@ -68,11 +68,18 @@ usePageSeo({
 			</div>
 		</div>
 
-		<div v-else-if="error || !data" class="max-w-3xl">
-			<InfoCallout title="Contest page unavailable" tone="warning">
-				This contest page could not be loaded. Return to the current results context and try again.
-			</InfoCallout>
-		</div>
+		<GuideUnavailableState
+			v-else-if="error || !data"
+			eyebrow="Contest detail"
+			message="This contest record is not published as verified local ballot content yet. Official logistics and representative lookup may still be available, but Ballot Clarity will not present an unverified contest roster as final."
+			:primary-label="openLayerLink.label"
+			:primary-to="openLayerLink.to"
+			secondary-label="Open coverage profile"
+			secondary-to="/coverage"
+			tertiary-label="Report missing information"
+			tertiary-to="/contact"
+			title="Contest page not published yet"
+		/>
 
 		<div v-else class="space-y-8">
 			<AppBreadcrumbs :items="breadcrumbs" />

@@ -23,14 +23,14 @@ const faqItems = [
 	},
 	{
 		answer: [
-			"No. Ballot Clarity is a nonprofit civic-information concept and not an official government website.",
-			"The site is designed to help voters inspect information more clearly, but official election offices should be used to confirm final deadlines, locations, and ballot rules."
+			"No. Ballot Clarity is not an official government website.",
+			"Use it to understand the landscape, then confirm final deadlines, locations, and ballot rules with the election office."
 		],
 		question: "Is Ballot Clarity an official government site?"
 	},
 	{
 		answer: [
-			"On hosts where Ballot Clarity is configured for a best-effort IP-based location guess, that opening guess is still only approximate. A full street address remains the correct input for exact district and ballot matching, and a 5-digit ZIP code should be treated as approximate until the official voter tools confirm the final ballot.",
+			"A location guess or ZIP code can help you get started, but it is still approximate. A full street address is the right input for exact district and ballot matching.",
 			"The lookup is used only to match ballot coverage. The current release does not create user accounts or advertising profiles from that lookup.",
 			"The app does save your selected location label, compare list, and ballot-plan choices in your browser so the guide stays usable across refreshes. The privacy page explains that boundary in more detail."
 		],
@@ -38,10 +38,10 @@ const faqItems = [
 	},
 	{
 		answer: [
-			"Because Ballot Clarity does not publish the same level of local coverage in every environment or for every location.",
-			"Coverage notes remain visible so users can understand when the product has a published local guide, when only nationwide civic results are available, and when no local coverage is published yet."
+			"Coverage varies by place.",
+			"Some areas have a fuller local guide, and others currently have lookup results, district pages, representative pages, and official links only."
 		],
-		question: "Why are some pages labeled as current coverage?"
+		question: "Why is one area more complete than another?"
 	},
 	{
 		answer: [
@@ -89,7 +89,7 @@ const accordionItems = faqItems.map(item => ({
 					Voting help and ballot basics
 				</h1>
 				<p class="text-base text-app-muted leading-8 mt-5 max-w-3xl dark:text-app-muted-dark">
-					This page answers common questions about ballot listings, voter guides, timing, and how to verify election information without turning the site into advice or advocacy.
+					This page answers common questions about ballot listings, voter guides, timing, and how to verify election information.
 				</p>
 			</div>
 
@@ -103,13 +103,13 @@ const accordionItems = faqItems.map(item => ({
 		<section class="gap-6 grid lg:grid-cols-3">
 			<div class="surface-panel">
 				<h2 class="text-2xl text-app-ink font-serif dark:text-app-text-dark">
-					Start with the coverage profile
+					Check what is available
 				</h2>
 				<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-					The coverage profile is the best starting point when you need to know whether Ballot Clarity has any published local coverage loaded, what is still unavailable, and when the app is correctly keeping official election tools and lookup-first civic results in front.
+					Use the coverage page to see whether your area has a local guide and official election links.
 				</p>
 				<NuxtLink to="/coverage" class="btn-primary mt-6">
-					Open the coverage profile
+					Open coverage
 				</NuxtLink>
 			</div>
 
@@ -118,7 +118,7 @@ const accordionItems = faqItems.map(item => ({
 					Review trust, privacy, and accessibility standards
 				</h2>
 				<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-					Methodology, neutrality, privacy, and accessibility notes explain how sources are attached, how summaries are constrained, how lookups are handled, and how the ballot guide is designed for keyboard, print, and plain-language use.
+					Methodology, neutrality, privacy, and accessibility notes explain how Ballot Clarity uses sources, handles lookups, and keeps pages readable.
 				</p>
 				<div class="mt-6 flex flex-wrap gap-3">
 					<NuxtLink to="/methodology" class="btn-secondary">

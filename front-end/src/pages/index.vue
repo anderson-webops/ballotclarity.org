@@ -1,5 +1,12 @@
 <script setup lang="ts">
-import type { BallotResponse, ElectionsResponse } from "~/types/civic";
+import type {
+	BallotResponse,
+	ElectionsResponse,
+	LocationLookupAction,
+	LocationLookupResponse,
+	LocationLookupSelectionOption,
+	NationwideLookupResultContext
+} from "~/types/civic";
 import { storeToRefs } from "pinia";
 import { defineAsyncComponent } from "vue";
 import AvailabilityStatusPanel from "~/components/graphics/AvailabilityStatusPanel.vue";
@@ -8,19 +15,24 @@ import HorizontalBarChart from "~/components/graphics/HorizontalBarChart.vue";
 import SourceProvenanceStrip from "~/components/graphics/SourceProvenanceStrip.vue";
 import { contactEmail } from "~/constants";
 import { buildLocationGuessUiContent } from "~/utils/location-guess";
-import { buildHomeExperienceState } from "~/utils/nationwide-results";
+import { buildPublishedGuideDestination } from "~/utils/location-lookup";
+import { buildHomeExperienceState, normalizeLookupResponseForDisplay, resolveLookupDestination } from "~/utils/nationwide-results";
 
 const api = useApiClient();
 const siteUrl = useSiteUrl();
 const civicStore = useCivicStore();
 const { formatDate } = useFormatters();
-const { selectedElection } = storeToRefs(civicStore);
-const { activeNationwideResult, blocksGuideEntryPoints, hasNationwideResultContext, hasPublishedGuideContext } = useGuideEntryGate();
+const { selectedElection, selectedLocation } = storeToRefs(civicStore);
+const { activeNationwideResult, hasGuideShellContext, hasNationwideResultContext, hasVerifiedGuideContext } = useGuideEntryGate();
 const AsyncHomeBallotPreviewSection = defineAsyncComponent(() => import("~/components/home/HomeBallotPreviewSection.vue"));
 const AsyncHomeRoadmapSection = defineAsyncComponent(() => import("~/components/home/HomeRoadmapSection.vue"));
 const AsyncHomeCoverageOverviewSection = defineAsyncComponent(() => import("~/components/home/HomeCoverageOverviewSection.vue"));
 const { data: dataSources } = await useDataSources();
 const { data: coverageData } = await useCoverage();
+const featuredLaunchTarget = computed(() => coverageData.value?.launchTarget ?? dataSources.value?.launchTarget ?? null);
+const homeLookupResult = ref<NationwideLookupResultContext | null>(null);
+const homeLookupSelectionError = ref("");
+const displayedHomeLookupResult = computed(() => homeLookupResult.value);
 
 const { data: electionsData } = await useAsyncData<ElectionsResponse>(
 	"home-elections",
@@ -28,7 +40,6 @@ const { data: electionsData } = await useAsyncData<ElectionsResponse>(
 );
 const featuredElection = computed(() => electionsData.value?.elections[0] ?? null);
 const hasFeaturedGuide = computed(() => Boolean(featuredElection.value));
-const featuredLaunchTarget = computed(() => coverageData.value?.launchTarget ?? null);
 const locationGuessUi = computed(() => buildLocationGuessUiContent(coverageData.value?.locationGuess ?? null));
 const roadmapPreview = computed(() => dataSources.value?.categories.slice(0, 3) ?? []);
 const guideBallotPath = computed(() => {
@@ -36,9 +47,16 @@ const guideBallotPath = computed(() => {
 
 	return activeGuideElection ? `/ballot/${activeGuideElection.slug}` : "/ballot";
 });
+const guideOverviewPath = computed(() => {
+	const activeGuideElection = selectedElection.value ?? featuredElection.value;
+
+	return activeGuideElection ? `/elections/${activeGuideElection.slug}` : "/coverage";
+});
+const guideLocationPath = computed(() => selectedLocation.value?.slug ? `/locations/${selectedLocation.value.slug}` : "/coverage");
 const homeExperience = computed(() => buildHomeExperienceState(
 	hasNationwideResultContext.value,
-	hasPublishedGuideContext.value
+	hasGuideShellContext.value,
+	hasVerifiedGuideContext.value
 ));
 const shouldShowFeaturedGuidePreview = computed(() => homeExperience.value.showFeaturedGuidePreview && hasFeaturedGuide.value);
 
@@ -56,26 +74,26 @@ const { data: ballotPreview } = await useAsyncData<BallotResponse | null>(
 		watch: [featuredElection, shouldShowFeaturedGuidePreview]
 	}
 );
-const startHerePrimaryPath = computed(() => hasPublishedGuideContext.value
+const startHerePrimaryPath = computed(() => hasVerifiedGuideContext.value
 	? guideBallotPath.value
-	: homeExperience.value.startHerePrimaryPath);
+	: hasGuideShellContext.value
+		? guideOverviewPath.value
+		: homeExperience.value.startHerePrimaryPath);
 const startHerePrimaryLabel = computed(() => homeExperience.value.startHerePrimaryLabel);
-const startHereSecondaryPath = computed(() => hasPublishedGuideContext.value
+const startHereSecondaryPath = computed(() => hasVerifiedGuideContext.value
 	? "/plan"
-	: hasNationwideResultContext.value
-		? "/coverage"
-		: "/data-sources");
-const startHereSecondaryLabel = computed(() => hasPublishedGuideContext.value
+	: hasGuideShellContext.value
+		? guideLocationPath.value
+		: hasNationwideResultContext.value
+			? "/coverage"
+			: "/coverage");
+const startHereSecondaryLabel = computed(() => hasVerifiedGuideContext.value
 	? "Open ballot plan"
-	: hasNationwideResultContext.value
-		? "Check live coverage"
-		: "Review sources");
-const pathwayIntro = computed(() => hasPublishedGuideContext.value
-	? "Start with the ballot guide, then open deeper pages only when you need more detail."
-	: hasNationwideResultContext.value
-		? "Start from your saved results, then move into district pages, representative pages, and official links."
-		: "Enter a location to see districts, current officials, official links, and any published local guide for your area.");
-
+	: hasGuideShellContext.value
+		? "Open location hub"
+		: hasNationwideResultContext.value
+			? "Check coverage"
+			: "Check coverage");
 const faqEntries = [
 	{
 		answer: "Start with the location lookup. Ballot Clarity shows districts, representatives, official election links, and a local guide when one is published for your area.",
@@ -132,27 +150,6 @@ usePageSeo({
 	title: "Understand Your Ballot"
 });
 
-const quickStartSteps = computed(() => [
-	{
-		step: "1",
-		text: "Enter a full address for the best district match, or use a 5-digit ZIP code when you need a broader nationwide civic lookup."
-	},
-	{
-		step: "2",
-		text: hasPublishedGuideContext.value
-			? "Scan contests first, then open detail pages only when you need more depth."
-			: hasNationwideResultContext.value
-				? "Use the results page to move into districts, representatives, and official election links for your area."
-				: "Use the lookup first to see what coverage is available for your area."
-	},
-	{
-		step: "3",
-		text: hasPublishedGuideContext.value
-			? "Save a plan and print a clean checklist for the voting booth."
-			: "Use the official links and public records first. Ballot plan opens when a local guide is published."
-	}
-]);
-
 interface PrimaryPath {
 	description: string;
 	label: string;
@@ -161,19 +158,25 @@ interface PrimaryPath {
 }
 
 const primaryPaths = computed<PrimaryPath[]>(() => [
-	...(hasPublishedGuideContext.value
+	...(hasVerifiedGuideContext.value
 		? [{
 				description: "Open the local guide for your current election.",
 				label: "See your ballot",
 				to: guideBallotPath.value
 			}]
-		: [{
-				description: hasNationwideResultContext.value
-					? "Return to the results for your latest lookup."
-					: "Enter a location to load results for your area.",
-				label: hasNationwideResultContext.value ? "Open nationwide results" : "Use location lookup",
-				to: hasNationwideResultContext.value ? homeExperience.value.primaryLookupPath : "/#location-lookup"
-			}]),
+		: hasGuideShellContext.value
+			? [{
+					description: "Open the election overview for official links and current guide status.",
+					label: "Open election overview",
+					to: guideOverviewPath.value
+				}]
+			: [{
+					description: hasNationwideResultContext.value
+						? "Return to the results for your latest lookup."
+						: "Enter a location to load results for your area.",
+					label: hasNationwideResultContext.value ? "Open results" : "Use location lookup",
+					to: hasNationwideResultContext.value ? homeExperience.value.primaryLookupPath : "/#location-lookup"
+				}]),
 	{
 		description: hasNationwideResultContext.value
 			? "Browse district and representative pages for your area."
@@ -183,25 +186,31 @@ const primaryPaths = computed<PrimaryPath[]>(() => [
 		to: "/districts"
 	},
 	{
-		description: "See what is published, what remains lookup-only, and which sources are live.",
-		label: hasNationwideResultContext.value ? "Check live coverage" : "Check coverage and sources",
+		description: hasNationwideResultContext.value
+			? "See whether a local guide is available for this area."
+			: "See which public pages are available.",
+		label: "Check coverage",
 		prefetchOn: "interaction",
-		to: hasNationwideResultContext.value ? "/coverage" : "/data-sources"
+		to: "/coverage"
 	}
 ]);
 
 const heroFactCards = computed(() => [
 	{
-		label: "Current guide area",
-		note: featuredLaunchTarget.value
-			? `The deepest published guide depth is currently centered on ${featuredLaunchTarget.value.displayName}.`
-			: "A public launch target is selected and documented for the current build.",
-		value: featuredLaunchTarget.value?.displayName ?? "Public launch target"
+		label: "Current area",
+		note: activeNationwideResult.value?.location
+			? "Your latest lookup carries through the district, representative, and official-tool pages."
+			: "Enter a street address or ZIP code to load area-specific civic results.",
+		value: activeNationwideResult.value?.location?.displayName ?? "Location lookup"
 	},
 	{
-		label: "Contest sections",
-		note: "Published contest sections in the current flagship guide.",
-		value: ballotPreview.value?.election.contests.length ?? 0
+		label: "Guide depth",
+		note: hasVerifiedGuideContext.value
+			? "A verified local ballot guide is available for this context."
+			: hasGuideShellContext.value
+				? "An election overview is available even if the full guide is not."
+				: "Nationwide lookup results remain useful without a full local guide.",
+		value: hasVerifiedGuideContext.value ? "Ballot guide" : hasGuideShellContext.value ? "Election overview" : "Nationwide results"
 	},
 	{
 		label: "Source families",
@@ -209,14 +218,16 @@ const heroFactCards = computed(() => [
 		value: dataSources.value?.categories.length ?? 0
 	},
 	{
-		label: "Lookup mode",
-		note: "Nationwide district and representative lookup is already part of the product.",
-		value: "Nationwide"
+		label: "Official tools",
+		note: featuredLaunchTarget.value
+			? "Official election-office links are attached to the active public guide profile."
+			: "Official election links are included where provider data returns them.",
+		value: featuredLaunchTarget.value?.officialResources.length ?? "Included"
 	}
 ]);
 const heroChartItems = computed(() => [
 	{
-		detail: "Published contest sections currently surfaced in the flagship public guide layer.",
+		detail: "Published contest sections currently surfaced in the deepest available local guide layer.",
 		id: "contest-sections",
 		label: "Contest sections",
 		tone: "accent" as const,
@@ -240,7 +251,7 @@ const heroChartItems = computed(() => [
 		valueLabel: String(coverageData.value?.supportedContentTypes.filter(item => item.status === "live-now").length ?? 0)
 	},
 	{
-		detail: "Official election-office links attached to the active public coverage profile.",
+		detail: "Official election-office links attached to the active public guide profile when one is available.",
 		id: "official-links",
 		label: "Official links",
 		tone: "warning" as const,
@@ -260,7 +271,7 @@ const homepageProvenanceSummary = computed(() => ({
 			value: dataSources.value?.categories.length ?? 0
 		},
 		{
-			detail: "Official election-office or statewide links attached to the current launch profile.",
+			detail: "Official election-office or statewide links attached to the current guide profile when one is available.",
 			label: "Official links",
 			value: featuredLaunchTarget.value?.officialResources.length ?? 0
 		},
@@ -270,9 +281,9 @@ const homepageProvenanceSummary = computed(() => ({
 			value: coverageData.value?.supportedContentTypes.filter(item => item.status === "live-now").length ?? 0
 		},
 		{
-			detail: "Date of the current published election target.",
+			detail: "Date of the current public guide target when one is available.",
 			label: "Current election",
-			value: featuredLaunchTarget.value ? formatDate(featuredLaunchTarget.value.currentElectionDate) : "Selected publicly"
+			value: featuredLaunchTarget.value ? formatDate(featuredLaunchTarget.value.currentElectionDate) : "Lookup-driven"
 		}
 	],
 	note: "The homepage should answer what the product can do and why a voter should trust the reading path before opening any deeper page.",
@@ -288,15 +299,15 @@ const homepageAvailabilityItems = computed(() => [
 	},
 	{
 		detail: featuredLaunchTarget.value
-			? `The deepest current local guide remains ${featuredLaunchTarget.value.displayName}.`
-			: "A published local guide area is selected publicly for the current release.",
+			? `The deepest current local guide is ${featuredLaunchTarget.value.displayName}.`
+			: "Full local guide availability is separate from the nationwide lookup layer.",
 		label: "Full local guides",
-		status: "available" as const
+		status: featuredLaunchTarget.value ? "available" as const : "limited" as const
 	},
 	{
 		detail: "Candidate, district, contest, representative, and measure surfaces are published where Ballot Clarity has modeled them.",
 		label: "Profile surfaces",
-		status: "available" as const
+		status: hasVerifiedGuideContext.value || hasGuideShellContext.value ? "available" as const : "limited" as const
 	},
 	{
 		detail: "Finance and influence context exists where the record is modeled, but it is still uneven across jurisdictions.",
@@ -304,32 +315,101 @@ const homepageAvailabilityItems = computed(() => [
 		status: "partial" as const
 	}
 ]);
+
+function clearHomeLookupResult() {
+	homeLookupSelectionError.value = "";
+	homeLookupResult.value = null;
+}
+
+function handleHomeLookupResolved(lookup: NationwideLookupResultContext) {
+	homeLookupSelectionError.value = "";
+	homeLookupResult.value = lookup;
+}
+
+async function openHomeLookupAction(action: LocationLookupAction) {
+	if (action.kind !== "ballot-guide" || !action.location || !action.electionSlug)
+		return;
+
+	const destination = buildPublishedGuideDestination({
+		electionSlug: action.electionSlug,
+		guideAvailability: displayedHomeLookupResult.value?.guideAvailability,
+		guideContent: displayedHomeLookupResult.value?.guideContent,
+		location: action.location,
+		selectionOptions: []
+	});
+
+	if (destination)
+		await navigateTo(destination);
+}
+
+async function selectHomeLookupOption(option: LocationLookupSelectionOption) {
+	const currentLookup = displayedHomeLookupResult.value;
+	const queryValue = currentLookup?.lookupQuery || currentLookup?.normalizedAddress || "";
+
+	if (!queryValue.trim()) {
+		homeLookupSelectionError.value = "Enter the location again to load this matched area.";
+		return;
+	}
+
+	homeLookupSelectionError.value = "";
+
+	try {
+		const response = await api<LocationLookupResponse>("/location", {
+			body: {
+				q: queryValue,
+				selectionId: option.id
+			},
+			method: "POST"
+		});
+		const normalizedResult = normalizeLookupResponseForDisplay(response, featuredElection.value ?? null);
+		civicStore.setLookupResponse(response, featuredElection.value ?? null);
+		homeLookupResult.value = normalizedResult;
+
+		const redirectTarget = resolveLookupDestination(response);
+
+		if (redirectTarget)
+			await navigateTo(redirectTarget);
+		else if (response.location && response.electionSlug)
+			await navigateTo(buildPublishedGuideDestination(response) ?? `/elections/${response.electionSlug}`);
+	}
+	catch (error) {
+		homeLookupSelectionError.value = error instanceof Error ? error.message : "Unable to load that matched area right now.";
+	}
+}
 </script>
 
 <template>
-	<div class="pb-10 space-y-12 sm:space-y-16">
-		<section class="app-shell">
-			<div class="gap-6 grid xl:grid-cols-[minmax(0,1.18fr)_minmax(21rem,0.82fr)] xl:items-start">
-				<div class="border border-app-line rounded-[2.2rem] bg-white shadow-[0_36px_84px_-58px_rgba(16,37,62,0.62)] overflow-hidden dark:border-app-line-dark dark:bg-app-panel-dark">
+	<div class="home-page pb-10 space-y-12 sm:space-y-16">
+		<section class="home-section app-shell">
+			<div class="home-hero-grid gap-6 grid xl:grid-cols-[minmax(0,1.18fr)_minmax(21rem,0.82fr)] xl:items-start">
+				<div class="home-card border border-app-line rounded-[2.2rem] bg-white shadow-[0_36px_84px_-58px_rgba(16,37,62,0.62)] overflow-hidden dark:border-app-line-dark dark:bg-app-panel-dark">
 					<div class="px-6 py-8 lg:px-10 sm:px-8 sm:py-10">
 						<p class="text-xs text-app-muted tracking-[0.26em] font-semibold uppercase dark:text-app-muted-dark">
-							{{ hasPublishedGuideContext ? "Local guide active" : hasNationwideResultContext ? "Results for your area" : "Location lookup" }}
+							{{ hasVerifiedGuideContext ? "Ballot guide" : hasGuideShellContext ? "Election overview" : hasNationwideResultContext ? "Civic results" : "Location lookup" }}
 						</p>
 						<h1 class="text-5xl text-app-ink leading-tight font-serif mt-4 max-w-4xl sm:text-6xl dark:text-app-text-dark">
-							{{ hasPublishedGuideContext ? "See your ballot with sources and official links nearby." : hasNationwideResultContext ? "Start with your area, then follow the public record." : "Look up your area and see what is available." }}
+							{{ hasVerifiedGuideContext
+								? "Your ballot guide is ready."
+								: hasGuideShellContext
+									? "Your election overview is ready."
+									: hasNationwideResultContext
+										? "Your civic results are ready."
+										: "Look up your area." }}
 						</h1>
 						<p class="bc-measure text-lg text-app-muted leading-8 mt-6 dark:text-app-muted-dark">
-							{{ hasPublishedGuideContext
-								? "Ballot Clarity keeps contests, districts, representatives, official election links, and sources together so you can move through the ballot without losing context."
-								: hasNationwideResultContext
-									? "Your current lookup already includes districts, representatives, official election links, and source-backed context where available."
-									: "Start with a street address or ZIP code to see districts, current officials, official election links, and whether a local guide is published for your area." }}
+							{{ hasVerifiedGuideContext
+								? "Open your ballot, districts, representatives, and official election links from one place."
+								: hasGuideShellContext
+									? "Open the election overview, districts, representatives, and official election links for this area."
+									: hasNationwideResultContext
+										? "Review districts, current officials, official election links, and any available local guide for this area."
+										: "Enter a street address or ZIP code to see districts, current officials, and official election links for your area." }}
 						</p>
 						<p v-if="featuredLaunchTarget" class="text-sm text-app-muted leading-7 mt-5 dark:text-app-muted-dark">
 							<strong class="text-app-ink dark:text-app-text-dark">Published local guide:</strong> {{ featuredLaunchTarget.displayName }}.
 						</p>
 						<p v-else class="text-sm text-app-muted leading-7 mt-5 dark:text-app-muted-dark">
-							<strong class="text-app-ink dark:text-app-text-dark">Local guide status:</strong> No local guide is published in this environment right now.
+							<strong class="text-app-ink dark:text-app-text-dark">Local guide status:</strong> Nationwide lookup is available; deeper local guide depth appears where published.
 						</p>
 						<p v-if="activeNationwideResult?.location" class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
 							<strong class="text-app-ink dark:text-app-text-dark">Current lookup:</strong> {{ activeNationwideResult.location.displayName }}. These results stay available across the site until you change location.
@@ -357,48 +437,39 @@ const homepageAvailabilityItems = computed(() => [
 								</div>
 							</div>
 						</div>
-
-						<div class="mt-8 pt-8 border-t border-app-line/80 gap-5 grid dark:border-app-line-dark md:grid-cols-3">
-							<div v-for="item in quickStartSteps" :key="item.step">
-								<p class="text-sm text-app-accent font-semibold">
-									Step {{ item.step }}
-								</p>
-								<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
-									{{ item.text }}
-								</p>
-							</div>
-						</div>
 					</div>
 				</div>
 
-				<div class="space-y-5">
-					<div id="location-lookup" class="surface-panel">
+				<div class="home-panel-stack space-y-5">
+					<div id="location-lookup" class="home-card surface-panel">
 						<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
 							Choose your area
 						</p>
 						<h2 class="text-2xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-							Start from a real location, not a default guide.
+							Start from your location.
 						</h2>
 						<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
 							{{ locationGuessUi.home }}
 						</p>
 						<div class="mt-5">
-							<AddressLookupForm compact :election="featuredElection" :framed="false" />
+							<AddressLookupForm
+								compact
+								:election="featuredElection"
+								:framed="false"
+								:show-inline-results="false"
+								@lookup-cleared="clearHomeLookupResult"
+								@lookup-resolved="handleHomeLookupResolved"
+							/>
 						</div>
 					</div>
 
-					<div class="surface-panel">
+					<div class="home-card surface-panel">
 						<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-							Start here
+							Popular pages
 						</p>
 						<h2 class="text-2xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-							One task, then a clear reading path
+							Open the page you need.
 						</h2>
-						<ul class="readable-list text-sm text-app-muted mt-4 dark:text-app-muted-dark">
-							<li>Use the lookup to open results for your area, then a local guide if one is published.</li>
-							<li>Start with contest summaries before opening any dossier or full explainer.</li>
-							<li>{{ blocksGuideEntryPoints ? "Open ballot plan only when a local guide is available for your area." : "Save choices to your ballot plan only after checking the evidence links." }}</li>
-						</ul>
 						<div class="mt-6 flex flex-wrap gap-3">
 							<NuxtLink :to="startHerePrimaryPath" class="btn-primary" prefetch-on="interaction">
 								{{ startHerePrimaryLabel }}
@@ -412,21 +483,37 @@ const homepageAvailabilityItems = computed(() => [
 			</div>
 		</section>
 
-		<section class="app-shell">
-			<div class="gap-6 grid lg:grid-cols-[minmax(0,0.52fr)_minmax(0,1fr)] lg:items-start">
+		<section v-if="displayedHomeLookupResult" class="home-section app-shell">
+			<div class="home-lookup-results-shell surface-panel">
+				<LookupResultsPanel
+					class="home-lookup-results-panel"
+					:compact="false"
+					:lookup="displayedHomeLookupResult"
+					@open-guide="openHomeLookupAction"
+					@select-option="selectHomeLookupOption"
+				/>
+				<p
+					v-if="homeLookupSelectionError"
+					role="alert"
+					class="text-sm text-[#8f341f] mt-4 dark:text-[#f2a493]"
+				>
+					{{ homeLookupSelectionError }}
+				</p>
+			</div>
+		</section>
+
+		<section class="home-section app-shell">
+			<div class="home-split-grid gap-6 grid lg:grid-cols-[minmax(0,0.52fr)_minmax(0,1fr)] lg:items-start">
 				<div>
 					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-						Primary pathways
+						Start here
 					</p>
 					<h2 class="text-4xl text-app-ink font-serif mt-3 max-w-xl dark:text-app-text-dark">
-						Start with the task you are trying to complete.
+						Choose the page you need.
 					</h2>
-					<p class="bc-measure text-base text-app-muted leading-8 mt-5 dark:text-app-muted-dark">
-						{{ pathwayIntro }}
-					</p>
 				</div>
 
-				<div class="divide-app-line divide-y dark:divide-app-line-dark">
+				<div class="home-path-list divide-app-line divide-y dark:divide-app-line-dark">
 					<NuxtLink
 						v-for="path in primaryPaths"
 						:key="path.label"
@@ -462,21 +549,21 @@ const homepageAvailabilityItems = computed(() => [
 			</div>
 		</section>
 
-		<DeferredSection placeholder-class="min-h-[38rem]">
+		<DeferredSection placeholder-class="min-h-[10rem] sm:min-h-[14rem]">
 			<AsyncHomeBallotPreviewSection
-				:allow-guide-entry-points="hasPublishedGuideContext"
+				:allow-guide-entry-points="hasVerifiedGuideContext"
 				:ballot-preview="shouldShowFeaturedGuidePreview ? ballotPreview : null"
 				:featured-election-slug="featuredElection?.slug ?? null"
-				:nationwide-lookup-result="activeNationwideResult"
+				:nationwide-lookup-result="displayedHomeLookupResult ? null : activeNationwideResult"
 				:show-featured-guide-preview="shouldShowFeaturedGuidePreview"
 			/>
 		</DeferredSection>
 
-		<DeferredSection placeholder-class="min-h-[26rem]">
+		<DeferredSection placeholder-class="min-h-[8rem] sm:min-h-[10rem]">
 			<AsyncHomeRoadmapSection :roadmap-preview="roadmapPreview" />
 		</DeferredSection>
 
-		<DeferredSection placeholder-class="min-h-[24rem]">
+		<DeferredSection placeholder-class="min-h-[8rem] sm:min-h-[10rem]">
 			<AsyncHomeCoverageOverviewSection />
 		</DeferredSection>
 	</div>

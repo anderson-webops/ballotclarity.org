@@ -1,4 +1,12 @@
-import type { CoverageResponse, ExternalLink, LaunchTargetProfile, LocationGuessCapability, OfficialResource } from "./types/civic.js";
+import type {
+	CoverageResponse,
+	CoverageSnapshotProvenance,
+	ExternalLink,
+	GuideContentSummary,
+	LaunchTargetProfile,
+	LocationGuessCapability,
+	OfficialResource
+} from "./types/civic.js";
 
 const officialResources: OfficialResource[] = [
 	{
@@ -93,7 +101,7 @@ export const launchTargetProfile: LaunchTargetProfile = {
 	state: "Georgia",
 	phase: "launching",
 	phaseLabel: "Launch jurisdiction",
-	summary: "Ballot Clarity's first real production jurisdiction is Fulton County, Georgia. The platform will launch there with official logistics, auditable source links, and a Postgres-backed editorial workflow before expanding to additional counties.",
+	summary: "Ballot Clarity's first production jurisdiction is Fulton County, Georgia. Official election links and the election overview can publish first, while verified contest pages wait for local review before wider guide promotion.",
 	currentElectionName: "2026 General Primary Election and Nonpartisan Election",
 	currentElectionDate: "2026-05-19",
 	nextElectionName: "2026 General Election and Special Election",
@@ -106,9 +114,15 @@ export function buildCoverageResponse(
 	coverageMode: "empty" | "snapshot",
 	coverageUpdatedAt: string,
 	locationGuess: LocationGuessCapability,
-	launchTarget?: LaunchTargetProfile
+	launchTarget?: LaunchTargetProfile,
+	guideContent?: GuideContentSummary | null,
+	snapshotProvenance?: CoverageSnapshotProvenance
 ): CoverageResponse {
 	if (!launchTarget || coverageMode === "empty") {
+		const snapshotScopeNote = snapshotProvenance?.configuredSnapshotMissing
+			? "The configured live coverage snapshot is missing, so Ballot Clarity is serving lookup results without a published local guide snapshot."
+			: "Snapshot provenance remains unavailable until an imported reviewed or approved local snapshot is loaded.";
+
 		return {
 			collections: [
 				{
@@ -136,7 +150,9 @@ export function buildCoverageResponse(
 			coverageMode,
 			coverageUpdatedAt,
 			locationGuess,
-			currentState: "No published local coverage snapshot or launch jurisdiction is active in this environment right now.",
+			snapshotProvenance,
+			guideContent: null,
+			currentState: "No local guide is active in this environment right now.",
 			routeFamilies: [
 				{
 					activeSources: [
@@ -145,11 +161,11 @@ export function buildCoverageResponse(
 						"Official state and county election tools returned by the active lookup"
 					],
 					id: "nationwide-results",
-					label: "Nationwide lookup and results routes",
-					note: "District, representative, and person pages stay useful here even when a published local guide is not active.",
+					label: "Lookup and results routes",
+					note: "District, representative, and person pages stay useful here even when a local guide is not active.",
 					routes: ["/results", "/districts", "/districts/<slug>", "/representatives", "/representatives/<slug>"],
 					status: "live-now",
-					summary: "These routes are the main public product in an empty-coverage environment and run from the active nationwide lookup context saved in the browser."
+					summary: "These routes are the main public product in an empty-coverage environment and run from the saved lookup in the browser."
 				},
 				{
 					activeSources: [
@@ -157,22 +173,22 @@ export function buildCoverageResponse(
 					],
 					id: "published-guides",
 					label: "Published local guide routes",
-					note: "These routes stay guide-dependent and should not be promoted as the main success path until a verified local guide snapshot is active.",
+					note: "These routes stay secondary until a verified local guide is active.",
 					routes: ["/ballot", "/contest", "/candidate", "/measure", "/plan"],
 					status: "guide-dependent",
-					summary: "Ballot guide, contest, candidate, measure, and plan routes remain optional deeper layers rather than the default nationwide experience."
+					summary: "Ballot guide, contest, candidate, measure, and plan routes remain optional deeper layers rather than the default experience."
 				},
 				{
 					activeSources: [
 						"Source-backed local person records where Ballot Clarity has publishable finance or influence data",
-						"Provider-backed nationwide representative fallback records when only lookup context is available"
+						"Provider-backed representative fallback records when only lookup context is available"
 					],
 					id: "person-modules",
 					label: "Person, funding, and influence routes",
-					note: "Funding and influence modules remain conditional on reliable person-level linkage and should not be presented as universal nationwide coverage yet.",
+					note: "Funding and influence modules remain conditional on reliable person-level linkage and should not be presented as universal coverage yet.",
 					routes: ["/representatives/<slug>", "/representatives/<slug>/funding", "/representatives/<slug>/influence", "/candidate/<slug>", "/candidate/<slug>/funding", "/candidate/<slug>/influence"],
 					status: "limited",
-					summary: "Person pages are live, but richer finance and influence coverage still depends on the underlying person/entity record rather than existing for every nationwide lookup match."
+					summary: "Person pages are live, but richer finance and influence coverage still depends on the underlying person or entity record."
 				},
 				{
 					activeSources: [
@@ -184,25 +200,33 @@ export function buildCoverageResponse(
 					label: "Public reference and operations routes",
 					routes: ["/coverage", "/status", "/data-sources", "/corrections", "/help", "/methodology"],
 					status: "live-now",
-					summary: "These pages explain what is live, what is not, and which public data-source layers are currently active."
+					summary: "These pages explain what is available and which public source layers are active."
 				}
 			],
 			limitations: [
 				{
 					id: "no-published-coverage",
-					summary: "Ballot Clarity does not currently have a published local guide, launch profile, or imported coverage snapshot loaded here.",
+					summary: "Ballot Clarity does not currently have a local guide loaded here.",
 					title: "No published local coverage is available"
 				}
 			],
 			nextSteps: [
-				"Use nationwide civic lookup results and official election tools when they are available for a location.",
-				"Publish a verified local coverage snapshot before exposing local guide, candidate, measure, or election routes as current coverage."
+				"Use lookup results and official election tools when they are available for a location.",
+				"Publish a verified local guide before exposing ballot, candidate, measure, or election routes as current coverage."
 			],
-			scopeNote: "Until a verified local coverage snapshot is published, Ballot Clarity should present missing local coverage honestly instead of falling back to fixture or archive content.",
+			scopeNote: `Until a verified local guide is published, Ballot Clarity should present missing local coverage honestly instead of falling back to fixture or archive content. ${snapshotScopeNote}`.trim(),
 			supportedContentTypes: [],
 			updatedAt: new Date().toISOString()
 		};
 	}
+
+	const hasPublishedGuideShell = Boolean(guideContent?.publishedGuideShell);
+	const hasVerifiedContestPackage = Boolean(guideContent?.verifiedContestPackage);
+	const publishedGuideSummary = hasVerifiedContestPackage
+		? "A verified local contest package is published for the current launch area."
+		: hasPublishedGuideShell
+			? "An election overview with official links is published for the current launch area, but verified contest pages are still under local review."
+			: "No verified local guide package is published for the current launch area yet.";
 
 	return {
 		updatedAt: new Date().toISOString(),
@@ -210,40 +234,50 @@ export function buildCoverageResponse(
 		coverageUpdatedAt,
 		locationGuess,
 		launchTarget,
-		scopeNote: `${launchTarget.displayName} is the current published local coverage target in this environment. Official election tools should remain the final authority for deadlines, precincts, polling places, and ballot confirmation.`,
-		currentState: "A vetted imported coverage snapshot is active for the public API.",
+		guideContent: guideContent ?? null,
+		snapshotProvenance,
+		scopeNote: `${launchTarget.displayName} is the current published election area in this environment. Active snapshot status: ${(snapshotProvenance?.status || "unknown").replaceAll("_", " ")}${snapshotProvenance?.sourceLabel ? ` (${snapshotProvenance.sourceLabel})` : ""}. Official election tools should remain the final authority for deadlines, precincts, polling places, and ballot confirmation.`,
+		currentState: publishedGuideSummary,
 		routeFamilies: [
 			{
 				activeSources: [
 					"U.S. Census Geocoder district matches",
-					"Open States representative matches where nationwide provider linkage succeeds",
+					"Open States representative matches where provider linkage succeeds",
 					"Official state and county election tools returned by the active lookup"
 				],
 				id: "nationwide-results",
-				label: "Nationwide lookup and results routes",
+				label: "Lookup and results routes",
 				note: "These routes should remain useful even outside the current published guide area.",
 				routes: ["/results", "/districts", "/districts/<slug>", "/representatives", "/representatives/<slug>"],
 				status: "live-now",
-				summary: "Nationwide lookup remains the cross-page context layer for district matches, representative records, and official tools."
+				summary: "Lookup results remain the cross-page context layer for district matches, representative records, and official tools."
 			},
 			{
 				activeSources: [
 					`Published local coverage snapshot for ${launchTarget.displayName}`,
-					"Verified local contest, candidate, and measure records",
+					...(hasVerifiedContestPackage
+						? ["Verified local contest, candidate, and measure records"]
+						: ["Official local election links and election overview pages"]),
 					"Official local election links tied to the active published guide"
 				],
 				id: "published-guides",
 				label: "Published local guide routes",
-				note: "Guide routes are deeper reading layers when a verified local snapshot is active.",
-				routes: ["/ballot", "/contest", "/candidate", "/measure", "/plan"],
-				status: "live-now",
-				summary: "Ballot guide, contest, candidate, measure, and plan routes are active here because this environment has a published local coverage snapshot."
+				note: hasVerifiedContestPackage
+					? "Guide routes are deeper reading layers when a verified local snapshot is active."
+					: "Election overview and location hub routes are active now. Contest, candidate, measure, compare, and plan routes wait for verified local packaging.",
+				routes: hasVerifiedContestPackage
+					? ["/ballot", "/contest", "/candidate", "/measure", "/plan", "/compare"]
+					: ["/elections", "/locations", "/ballot"],
+				status: hasVerifiedContestPackage ? "live-now" : "limited",
+				summary: hasVerifiedContestPackage
+					? "Ballot guide, contest, candidate, measure, compare, and plan routes are active here because this environment has a verified local package."
+					: "Election overview and location pages are active here because this environment has a published guide shell with official links, but verified contest pages are still pending."
 			},
 			{
 				activeSources: [
 					"Source-backed local person records",
 					"Published finance summaries and influence context where Ballot Clarity has reliable linkage",
-					"Provider-backed nationwide fallback records when no local person page exists"
+					"Provider-backed fallback records when no local person page exists"
 				],
 				id: "person-modules",
 				label: "Person, funding, and influence routes",
@@ -269,14 +303,18 @@ export function buildCoverageResponse(
 			{
 				id: "logistics",
 				label: "Election logistics and official links",
-				status: "in-build",
-				summary: `Official election-office links, statewide voter tools, and logistics notes for ${launchTarget.displayName}.`
+				status: hasPublishedGuideShell ? "live-now" : "in-build",
+				summary: hasPublishedGuideShell
+					? `Official election-office links, statewide voter tools, and logistics notes are published now for ${launchTarget.displayName}.`
+					: `Official election-office links, statewide voter tools, and logistics notes are still being prepared for ${launchTarget.displayName}.`
 			},
 			{
 				id: "contest-packages",
 				label: "Canonical contest pages",
-				status: "live-now",
-				summary: "Election, contest, candidate, measure, and source surfaces are now separate canonical page types in the product."
+				status: hasVerifiedContestPackage ? "live-now" : "in-build",
+				summary: hasVerifiedContestPackage
+					? "Election, contest, candidate, measure, compare, and source surfaces are live with a verified local package."
+					: "Verified contest, candidate, and measure pages are still under local review before wider publication."
 			},
 			{
 				id: "editorial-ops",

@@ -6,10 +6,29 @@ test("guide entry stays available when there is no lookup override or a publishe
 	assert.equal(lookupAllowsGuideEntryPoints(null), true);
 	assert.equal(lookupAllowsGuideEntryPoints({
 		guideAvailability: "published",
+		hasPublishedGuideShell: true,
+		hasVerifiedContestPackage: true,
 		result: "resolved"
 	}), true);
 	assert.equal(lookupBlocksGuideEntryPoints({
 		guideAvailability: "published",
+		hasPublishedGuideShell: true,
+		hasVerifiedContestPackage: true,
+		result: "resolved"
+	}), false);
+});
+
+test("guide entry stays blocked when only the election overview is published", () => {
+	assert.equal(lookupBlocksGuideEntryPoints({
+		guideAvailability: "published",
+		hasPublishedGuideShell: true,
+		hasVerifiedContestPackage: false,
+		result: "resolved"
+	}), true);
+	assert.equal(lookupAllowsGuideEntryPoints({
+		guideAvailability: "published",
+		hasPublishedGuideShell: true,
+		hasVerifiedContestPackage: false,
 		result: "resolved"
 	}), false);
 });

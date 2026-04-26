@@ -1,0 +1,741 @@
+{
+  "candidates": [],
+  "dataSources": {
+    "updatedAt": "2026-04-24T12:00:00.000Z",
+    "launchTarget": {
+      "slug": "fulton-county-georgia",
+      "name": "Fulton County",
+      "displayName": "Fulton County, Georgia",
+      "state": "Georgia",
+      "phase": "launching",
+      "phaseLabel": "Launch jurisdiction",
+      "summary": "Ballot Clarity's first production jurisdiction is Fulton County, Georgia. Official election links and the election overview can publish first, while verified contest pages wait for local review before wider guide promotion.",
+      "currentElectionName": "2026 General Primary Election and Nonpartisan Election",
+      "currentElectionDate": "2026-05-19",
+      "nextElectionName": "2026 General Election and Special Election",
+      "nextElectionDate": "2026-11-03",
+      "officialResources": [
+        {
+          "label": "Fulton County Registration and Elections",
+          "url": "https://fultoncountyga.gov/inside-fulton-county/fulton-county-departments/registration-and-elections",
+          "sourceLabel": "Fulton County official election office",
+          "authority": "official-government",
+          "sourceSystem": "Fulton County Registration and Elections",
+          "note": "Primary county source for office contacts, voter education, absentee voting, and election notices."
+        },
+        {
+          "label": "Fulton County elections contacts",
+          "url": "https://fultoncountyga.gov/inside-fulton-county/fulton-county-departments/registration-and-elections/elections-contacts",
+          "sourceLabel": "Fulton County official contacts page",
+          "authority": "official-government",
+          "sourceSystem": "Fulton County Registration and Elections",
+          "note": "Use this for the current main line, absentee desk, voter-registration desk, and office addresses."
+        },
+        {
+          "label": "Georgia My Voter Page",
+          "url": "https://mvp.sos.ga.gov/s/",
+          "sourceLabel": "Georgia Secretary of State official voter portal",
+          "authority": "official-government",
+          "sourceSystem": "Georgia My Voter Page",
+          "note": "Official statewide portal for voter registration status, precinct, sample ballot, absentee status, and election-day details."
+        },
+        {
+          "label": "Georgia election calendar and events",
+          "url": "https://sos.ga.gov/index.php/page/election-calendar-and-events",
+          "sourceLabel": "Georgia Secretary of State Elections Division",
+          "authority": "official-government",
+          "sourceSystem": "Georgia elections calendar",
+          "note": "Official statewide election calendar. The current 2026 calendar includes May 19, 2026 and November 3, 2026 election dates."
+        },
+        {
+          "label": "Georgia 2026 elections calendar summary",
+          "url": "https://sos.ga.gov/2026-elections-calendar-summary",
+          "sourceLabel": "Georgia Secretary of State Elections Division",
+          "authority": "official-government",
+          "sourceSystem": "Georgia elections calendar summary",
+          "note": "Official statewide highlights for qualifying windows, voter-registration deadlines, and advance-voting periods."
+        }
+      ],
+      "referenceLinks": [
+        {
+          "label": "Georgia Ethics Commission",
+          "url": "https://ethics.ga.gov",
+          "note": "State campaign-finance and ethics filing system for Georgia state and many local records."
+        },
+        {
+          "label": "Georgia General Assembly",
+          "url": "https://www.legis.ga.gov",
+          "note": "Official member, bill, and vote context for Georgia legislative offices."
+        },
+        {
+          "label": "Georgia Reapportionment Office",
+          "url": "https://www.legis.ga.gov/joint-office/reapportionment",
+          "note": "Official district maps and boundary references for state legislative geography."
+        },
+        {
+          "label": "U.S. Census Geocoder API",
+          "url": "https://geocoding.geo.census.gov/geocoder/Geocoding_Services_API.html",
+          "note": "Official address normalization and geography lookup layer."
+        },
+        {
+          "label": "OpenFEC developer docs",
+          "url": "https://api.open.fec.gov/developers/",
+          "note": "Official federal campaign-finance API for committees, candidates, and filings."
+        },
+        {
+          "label": "Congress.gov API",
+          "url": "https://api.congress.gov/",
+          "note": "Official federal legislative activity API for congressional vote and bill context."
+        },
+        {
+          "label": "LDA.gov",
+          "url": "https://lda.senate.gov/system/public/",
+          "note": "Official federal lobbying disclosure system."
+        },
+        {
+          "label": "Open States",
+          "url": "https://openstates.org",
+          "note": "Practical reference layer for state-legislative normalization when official state feeds are incomplete."
+        }
+      ]
+    },
+    "principles": [
+      "Publish official election logistics when official county and statewide resources are reviewed.",
+      "Do not publish contest, candidate, or measure dossiers until Fulton-specific source records are verified.",
+      "Keep route availability separate from verified local contest-package availability."
+    ],
+    "categories": [
+      {
+        "slug": "address-and-districts",
+        "title": "Address and district lookup",
+        "summary": "A live Ballot Clarity build should treat district assignment as its own subsystem, with versioned geography and explicit as-of timestamps.",
+        "authoritativeRule": "District assignment should be grounded in official geography, not inferred from a vendor profile alone.",
+        "liveApproach": "Use Census geocoding plus versioned district boundaries, then cache address-to-jurisdiction matches with benchmark or vintage metadata.",
+        "options": [
+          {
+            "id": "census-geocoder",
+            "name": "Census Geocoder with geoLookup",
+            "authority": "official-government",
+            "status": "planned-live",
+            "accessMethod": "API",
+            "coverage": "United States, Puerto Rico, and U.S. island areas",
+            "updatePattern": "Versioned by benchmark and vintage",
+            "summary": "Baseline address normalization and geography lookup for a defensible district-assignment pipeline.",
+            "bestUse": "Address-to-jurisdiction matching and cached district lookup.",
+            "notes": [
+              "Keep benchmark and vintage in cache keys so district assignments remain auditable.",
+              "Treat geocoding as a high-risk dependency and design a stale-cache fallback."
+            ],
+            "links": [
+              {
+                "label": "Census Geocoder API",
+                "url": "https://geocoding.geo.census.gov/geocoder/Geocoding_Services_API.html"
+              }
+            ]
+          },
+          {
+            "id": "tiger-line",
+            "name": "TIGER/Line shapefiles",
+            "authority": "official-government",
+            "status": "planned-live",
+            "accessMethod": "Bulk files",
+            "coverage": "National district and administrative boundaries",
+            "updatePattern": "Released by vintage year",
+            "summary": "Versioned geometry layer for districts, places, and other jurisdiction boundaries.",
+            "bestUse": "Offline district joins, reproducible geography snapshots, and geospatial audits.",
+            "notes": [
+              "Useful when the product needs to explain which district model was in force on a given date.",
+              "Should stay separate from election-office content and polling-place feeds."
+            ],
+            "links": [
+              {
+                "label": "TIGER/Line geography files",
+                "url": "https://www.census.gov/geographies/mapping-files/time-series/geo/tiger-line-file.html"
+              }
+            ]
+          },
+          {
+            "id": "google-divisions",
+            "name": "Google Civic Divisions lookup",
+            "authority": "commercial-provider",
+            "status": "reference-pattern",
+            "accessMethod": "API",
+            "coverage": "Supported U.S. elections and OCD-ID lookup flows",
+            "updatePattern": "Provider-controlled",
+            "summary": "Useful as an OCD-ID bootstrap, but not a substitute for canonical district storage.",
+            "bestUse": "Supplemental division lookup after the Representatives API sunset.",
+            "notes": [
+              "The Google Civic Representatives API ended on April 30, 2025.",
+              "District lookup should stay decoupled from any provider-specific official lookup endpoint."
+            ],
+            "links": [
+              {
+                "label": "Google Civic Information API",
+                "url": "https://developers.google.com/civic-information"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "slug": "ballots-and-locations",
+        "title": "Ballots, deadlines, and polling places",
+        "summary": "Election logistics change quickly, so Ballot Clarity relies on official election offices plus national providers for scale.",
+        "authoritativeRule": "Election-office notices remain the final authority for deadlines, polling-place changes, and ballot-return instructions.",
+        "liveApproach": "Store official notices as the verification layer, then use a provider-normalized ballot API for address-to-ballot lookup and contest packaging.",
+        "options": [
+          {
+            "id": "official-election-office",
+            "name": "Official election office notices and VIP-style feeds",
+            "authority": "official-government",
+            "status": "planned-live",
+            "accessMethod": "Official notices or standardized feed publishing",
+            "coverage": "State and local election logistics",
+            "updatePattern": "High-frequency during election windows",
+            "summary": "Primary authority for deadlines, polling locations, drop boxes, and final ballot instructions.",
+            "bestUse": "User-facing verification links, change logs, and last-mile corrections.",
+            "notes": [
+              "Polling-place changes should degrade to cached data with a visible may-be-stale warning if an upstream feed fails.",
+              "The HTML location hub should always link back to the election office before a user prints or travels."
+            ],
+            "links": [
+              {
+                "label": "Fulton County Registration and Elections",
+                "url": "https://fultoncountyga.gov/inside-fulton-county/fulton-county-departments/registration-and-elections"
+              },
+              {
+                "label": "Georgia My Voter Page",
+                "url": "https://mvp.sos.ga.gov/s/"
+              },
+              {
+                "label": "Georgia election calendar",
+                "url": "https://sos.ga.gov/index.php/page/election-calendar-and-events"
+              }
+            ]
+          },
+          {
+            "id": "democracy-works",
+            "name": "National elections provider (Democracy Works-style)",
+            "authority": "nonprofit-provider",
+            "status": "planned-live",
+            "accessMethod": "API",
+            "coverage": "Federal, state, county, municipal, and other local elections",
+            "updatePattern": "Continuously refreshed by provider pipeline",
+            "summary": "Fastest path to national ballot and polling-place coverage without bespoke county-by-county scraping.",
+            "bestUse": "Ballot packaging, election calendars, and personalized lookup at national scale.",
+            "notes": [
+              "Provider data should not replace official links; it should normalize and distribute them.",
+              "Keep provider-specific field mapping isolated behind an internal ballot service."
+            ],
+            "links": [
+              {
+                "label": "Democracy Works",
+                "url": "https://democracy.works"
+              }
+            ]
+          },
+          {
+            "id": "ballotready",
+            "name": "Commercial ballot matching provider (BallotReady-style)",
+            "authority": "commercial-provider",
+            "status": "reference-pattern",
+            "accessMethod": "API or export",
+            "coverage": "Personalized ballots, contests, measures, and voting logistics",
+            "updatePattern": "Provider-controlled refresh",
+            "summary": "Useful when a faster turnkey ballot product matters more than owning the normalization layer internally.",
+            "bestUse": "High-velocity partnerships or embedded ballot widgets.",
+            "notes": [
+              "Treat vendor provenance and licensing as product decisions, not just engineering details.",
+              "Still keep official election-office links visible on every logistics surface."
+            ],
+            "links": [
+              {
+                "label": "BallotReady",
+                "url": "https://www.ballotready.org"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "slug": "candidate-and-measure-records",
+        "title": "Candidate lists, filings, and ballot text",
+        "summary": "Candidate and measure surfaces should combine official filing lists with clearly labeled candidate-supplied and nonprofit-context layers.",
+        "authoritativeRule": "Official filing lists and certified ballot text outrank campaign or nonprofit summaries.",
+        "liveApproach": "Store official candidate lists and ballot text as the base record, then layer questionnaires or explanatory summaries with explicit provenance labels.",
+        "options": [
+          {
+            "id": "official-filing-lists",
+            "name": "Official candidate filing lists and certified ballot text",
+            "authority": "official-government",
+            "status": "planned-live",
+            "accessMethod": "Official notices, PDFs, HTML pages, or exports",
+            "coverage": "Federal, state, and local election records where available",
+            "updatePattern": "Election-window updates plus certification changes",
+            "summary": "Canonical ballot-status, office, and text layer for contests and measures.",
+            "bestUse": "On-ballot verification, official wording, and candidate roster checks.",
+            "notes": [
+              "Local formats will vary widely, so connectors must tolerate PDFs, HTML tables, and manual corrections.",
+              "Candidate status should surface an as-of timestamp and the source system used to verify it."
+            ],
+            "links": [
+              {
+                "label": "Georgia election calendar and events",
+                "url": "https://sos.ga.gov/index.php/page/election-calendar-and-events"
+              },
+              {
+                "label": "Fulton County elections",
+                "url": "https://fultoncountyga.gov/fultonvotes"
+              }
+            ]
+          },
+          {
+            "id": "nonprofit-questionnaires",
+            "name": "Nonprofit questionnaires and civic records",
+            "authority": "nonprofit-provider",
+            "status": "reference-pattern",
+            "accessMethod": "Questionnaire archive or civic data feed",
+            "coverage": "Selected races and issue areas",
+            "updatePattern": "Per questionnaire cycle",
+            "summary": "Useful for comparable issue statements when official records alone do not explain a candidate's stated priorities.",
+            "bestUse": "Side-by-side compare tables and clearly labeled candidate-submitted answers.",
+            "notes": [
+              "Candidate-submitted material should never be mistaken for verified official text.",
+              "Missing responses should be shown explicitly instead of omitted."
+            ],
+            "links": [
+              {
+                "label": "Open States",
+                "url": "https://openstates.org"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "slug": "money-and-influence",
+        "title": "Campaign finance and lobbying",
+        "summary": "Money and influence modules should come from independent federal pipelines so failures there cannot block ballot lookup.",
+        "authoritativeRule": "Federal money and lobbying sections should resolve back to the official disclosure system, not a derivative summary alone.",
+        "liveApproach": "Ingest these domains separately from election lookup, then join them onto candidate pages through stable IDs and manual crosswalks where necessary.",
+        "options": [
+          {
+            "id": "openfec",
+            "name": "FEC OpenFEC API and bulk files",
+            "authority": "official-government",
+            "status": "planned-live",
+            "accessMethod": "API and bulk files",
+            "coverage": "Federal campaign finance only",
+            "updatePattern": "Nightly refresh with cached responses",
+            "summary": "Authoritative federal finance layer for candidates, committees, filings, and contribution patterns.",
+            "bestUse": "Candidate funding overviews, committee context, and reproducible finance snapshots.",
+            "notes": [
+              "Treat the FEC cache window as part of freshness logic rather than assuming continuous real time.",
+              "Use bulk files for warehousing and API calls for interactive page queries."
+            ],
+            "links": [
+              {
+                "label": "OpenFEC developer docs",
+                "url": "https://api.open.fec.gov/developers/"
+              }
+            ]
+          },
+          {
+            "id": "senate-lda",
+            "name": "Senate LDA and LDA.gov disclosures",
+            "authority": "official-government",
+            "status": "planned-live",
+            "accessMethod": "API and bulk files",
+            "coverage": "Federal lobbying disclosures",
+            "updatePattern": "Quarterly filings plus current-year reports",
+            "summary": "Authoritative federal lobbying layer for registrants, clients, and filed reports.",
+            "bestUse": "Lobbying context sections and independent influence pipelines.",
+            "notes": [
+              "Keep the Senate LDA integration isolated so endpoint migrations do not affect ballot lookup.",
+              "The older lda.senate.gov docs path is scheduled to retire after June 30, 2026."
+            ],
+            "links": [
+              {
+                "label": "LDA.gov",
+                "url": "https://lda.senate.gov/system/public/"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "slug": "historical-and-research",
+        "title": "Historical results and research archive",
+        "summary": "Historical datasets are useful for analysis and context, but they should stay out of the critical path for where-do-I-vote workflows.",
+        "authoritativeRule": "Research and historical context should be clearly labeled as archival or analytical, not as a live logistics source.",
+        "liveApproach": "Store these datasets in a separate analytics layer so archival work does not interfere with election-day reliability.",
+        "options": [
+          {
+            "id": "openelections",
+            "name": "OpenElections",
+            "authority": "open-data",
+            "status": "research-layer",
+            "accessMethod": "Bulk repository files",
+            "coverage": "Historical election results by state and year",
+            "updatePattern": "Community-maintained",
+            "summary": "Useful for historical results warehousing and state-by-state archive work.",
+            "bestUse": "Election history, comparison context, and analytics backfills.",
+            "notes": [
+              "Not a replacement for current polling-place or ballot lookup.",
+              "Parser quality and completeness will vary by state and cycle."
+            ],
+            "links": [
+              {
+                "label": "OpenElections",
+                "url": "https://openelections.net"
+              }
+            ]
+          },
+          {
+            "id": "mit-election-lab",
+            "name": "MIT Election Data and Science Lab",
+            "authority": "open-data",
+            "status": "research-layer",
+            "accessMethod": "Bulk datasets",
+            "coverage": "Research-grade election history and related datasets",
+            "updatePattern": "Dataset-specific releases",
+            "summary": "High-value archive layer for benchmarking and public-interest analysis work.",
+            "bestUse": "Longitudinal research, modeling, and historical context pages.",
+            "notes": [
+              "Keep these datasets behind an analytics boundary, not in the critical request path.",
+              "Useful once Ballot Clarity adds post-election archive and results views."
+            ],
+            "links": [
+              {
+                "label": "MIT Election Data and Science Lab",
+                "url": "https://electionlab.mit.edu"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "architectureStages": [
+      {
+        "id": "connector-layer",
+        "title": "Connector layer",
+        "summary": "Every upstream should be isolated behind a single connector contract with retries, rate-limit handling, and schema-aware parsing.",
+        "details": [
+          "Keep election providers, geocoders, and federal disclosure APIs in separate workers.",
+          "Persist raw responses or files before transforming them into canonical entities."
+        ]
+      },
+      {
+        "id": "canonical-storage",
+        "title": "Canonical storage",
+        "summary": "Normalize upstream data into stable entities with explicit identifiers, source systems, and as-of times.",
+        "details": [
+          "Store source_system, source_url, retrieved_at, effective_date, and record_version for user-facing fields.",
+          "Use OCD IDs, GEOIDs, FEC IDs, and LDA identifiers where they exist."
+        ]
+      },
+      {
+        "id": "cache-and-serve",
+        "title": "Cache and serve",
+        "summary": "Election workloads spike near deadlines, so geo lookup and ballot packages need coherent caching and stale-data fallbacks.",
+        "details": [
+          "Cache address-to-district lookups separately from ballot packages.",
+          "Show may-be-stale warnings instead of silently failing when a critical upstream is unavailable."
+        ]
+      },
+      {
+        "id": "audit-and-ops",
+        "title": "Audit and election-window ops",
+        "summary": "Freshness, migrations, and provider drift need operational playbooks, not just code comments.",
+        "details": [
+          "Make update cadence and change logs visible on the public site.",
+          "Maintain migration checklists for provider sunsets, field changes, and election-window sync frequency."
+        ]
+      }
+    ],
+    "migrationWatch": [
+      {
+        "id": "google-representatives-sunset",
+        "title": "Google Representatives API ended on April 30, 2025",
+        "summary": "District and OCD lookup can still be done through divisions-style endpoints, but who-represents-me should no longer be treated as a built-in civic primitive.",
+        "implication": "Ballot Clarity should separate address-to-division logic from official-contact or officeholder enrichment."
+      },
+      {
+        "id": "lda-gov-migration",
+        "title": "Senate LDA migration deadline: June 30, 2026",
+        "summary": "Older lda.senate.gov documentation paths are being retired in favor of LDA.gov.",
+        "implication": "The lobbying connector should be isolated so endpoint or documentation changes do not ripple through the rest of the platform."
+      }
+    ],
+    "roadmap": [
+      {
+        "id": "milestone-one",
+        "title": "Milestone one: address to jurisdiction foundation",
+        "summary": "Implement address normalization, geocoding, district lookup, and benchmark or vintage versioning."
+      },
+      {
+        "id": "milestone-two",
+        "title": "Milestone two: ballot lookup launch",
+        "summary": "Expose a single internal ballot API that returns contests, measures, deadlines, and polling-place context."
+      },
+      {
+        "id": "milestone-three",
+        "title": "Milestone three: federal money and influence modules",
+        "summary": "Add FEC and Senate LDA pipelines without letting them block ballot or location lookup."
+      },
+      {
+        "id": "milestone-four",
+        "title": "Milestone four: normalization and crosswalk service",
+        "summary": "Join elections, divisions, money, and lobbying records through stable identifiers and auditable crosswalks."
+      },
+      {
+        "id": "milestone-five",
+        "title": "Milestone five: election-window hardening",
+        "summary": "Add caching policies, incident playbooks, and higher-frequency sync for deadlines and polling-place changes."
+      },
+      {
+        "id": "milestone-six",
+        "title": "Milestone six: historical results and analytics",
+        "summary": "Bring historical open-data archives into a separate research layer rather than the critical path."
+      }
+    ]
+  },
+  "election": {
+    "slug": "2026-fulton-county-general",
+    "name": "November 3, 2026 Fulton County election guide",
+    "date": "2026-11-03",
+    "jurisdictionSlug": "fulton-county-georgia",
+    "locationName": "Fulton County, Georgia",
+    "updatedAt": "2026-04-24T12:00:00.000Z",
+    "description": "Reviewed Fulton County election overview with official county and statewide election links. Verified contest, candidate, and measure records are not published in this package.",
+    "contests": [],
+    "freshness": {
+      "contentLastVerifiedAt": "2026-04-24T12:00:00.000Z",
+      "dataLastUpdatedAt": "2026-04-24T12:00:00.000Z",
+      "nextReviewAt": "2026-05-08T12:00:00.000Z",
+      "status": "up-to-date",
+      "statusLabel": "Reviewed official logistics",
+      "statusNote": "Official election resources and guide-shell metadata were reviewed. Verified Fulton-specific contest, candidate, and measure records remain unpublished."
+    },
+    "keyDates": [
+      {
+        "label": "Registration deadline",
+        "date": "2026-10-05",
+        "note": "Fulton County lists October 5, 2026 as the voter registration deadline for the November 3, 2026 general election."
+      },
+      {
+        "label": "Vote-by-mail request deadline",
+        "date": "2026-10-23",
+        "note": "Fulton County lists October 23, 2026 as the last day to request an absentee ballot."
+      },
+      {
+        "label": "Early voting opens",
+        "date": "2026-10-13",
+        "note": "Fulton County lists October 13, 2026 as the first day of early voting for this election."
+      },
+      {
+        "label": "Early voting ends",
+        "date": "2026-10-30",
+        "note": "Fulton County lists October 30, 2026 as the last day of early voting."
+      },
+      {
+        "label": "Election Day polls close",
+        "date": "2026-11-03T19:00:00.000Z",
+        "note": "Polls close at 7:00 p.m. local time on Election Day."
+      }
+    ],
+    "officialResources": [
+      {
+        "authority": "official-government",
+        "label": "2026 election key dates",
+        "note": "Mirrored summary of the Fulton County key-election-dates page for the November 3, 2026 election.",
+        "sourceLabel": "Fulton County Registration and Elections",
+        "sourceSystem": "Fulton County key election dates",
+        "url": "/source-files/fulton-county-2026-election-notice.txt"
+      },
+      {
+        "authority": "official-government",
+        "label": "Polling-place and precinct lookup",
+        "note": "County polling-tools page captured with instructions for checking precincts and election-day locations.",
+        "sourceLabel": "Fulton County Registration and Elections",
+        "sourceSystem": "Fulton County polling tools",
+        "url": "/source-files/fulton-county-polling-tools.txt"
+      },
+      {
+        "authority": "official-government",
+        "label": "Georgia My Voter Page",
+        "note": "Statewide voter portal summary for registration checks, sample ballots, precinct lookup, and early-voting location search.",
+        "sourceLabel": "Georgia Secretary of State",
+        "sourceSystem": "Georgia Secretary of State My Voter Page",
+        "url": "/source-files/georgia-my-voter-page.txt"
+      }
+    ],
+    "changeLog": [
+      {
+        "date": "2026-04-24T12:00:00.000Z",
+        "id": "reviewed-official-logistics-only",
+        "summary": "Published a reviewed official-logistics-only Fulton guide shell and removed staged reference contest, candidate, and measure content."
+      },
+      {
+        "id": "change-2",
+        "date": "2026-03-28T15:20:00.000Z",
+        "summary": "Marked contest, candidate, and measure pages as still under local review."
+      }
+    ]
+  },
+  "electionSummaries": [
+    {
+      "date": "2026-11-03",
+      "jurisdictionSlug": "fulton-county-georgia",
+      "locationName": "Fulton County, Georgia",
+      "name": "November 3, 2026 Fulton County election guide",
+      "slug": "2026-fulton-county-general",
+      "updatedAt": "2026-04-24T12:00:00.000Z"
+    }
+  ],
+  "jurisdiction": {
+    "slug": "fulton-county-georgia",
+    "name": "Fulton County",
+    "displayName": "Fulton County, Georgia",
+    "state": "Georgia",
+    "jurisdictionType": "County",
+    "description": "Fulton County, Georgia election hub with reviewed official county and statewide election links. Verified contest, candidate, and measure records are not published in this package.",
+    "nextElectionName": "November 3, 2026 Fulton County election guide",
+    "nextElectionSlug": "2026-fulton-county-general",
+    "updatedAt": "2026-04-24T12:00:00.000Z",
+    "officialOffice": {
+      "name": "Fulton County Registration and Elections",
+      "address": "Election Hub and Operation Center (EHOC), 5600 Campbellton Fairburn Road, Union City, GA 30213",
+      "phone": "(404) 612-7020",
+      "email": "elections.voterregistration@fultoncountyga.gov",
+      "website": "https://fultoncountyga.gov/inside-fulton-county/fulton-county-departments/registration-and-elections",
+      "hours": "See Fulton County Registration and Elections for current office and service hours."
+    },
+    "officialResources": [
+      {
+        "authority": "official-government",
+        "label": "Election office contacts",
+        "sourceLabel": "Fulton County Registration and Elections",
+        "sourceSystem": "Fulton County elections contacts",
+        "url": "/source-files/fulton-county-election-office.txt"
+      },
+      {
+        "authority": "official-government",
+        "label": "2026 election key dates",
+        "note": "Mirrored summary of the Fulton County key-election-dates page for the November 3, 2026 election.",
+        "sourceLabel": "Fulton County Registration and Elections",
+        "sourceSystem": "Fulton County key election dates",
+        "url": "/source-files/fulton-county-2026-election-notice.txt"
+      },
+      {
+        "authority": "official-government",
+        "label": "Polling-place and precinct lookup",
+        "note": "County polling-tools page captured with instructions for checking precincts and election-day locations.",
+        "sourceLabel": "Fulton County Registration and Elections",
+        "sourceSystem": "Fulton County polling tools",
+        "url": "/source-files/fulton-county-polling-tools.txt"
+      },
+      {
+        "authority": "official-government",
+        "label": "Georgia My Voter Page",
+        "note": "Statewide voter portal summary for registration checks, sample ballots, precinct lookup, and early-voting location search.",
+        "sourceLabel": "Georgia Secretary of State",
+        "sourceSystem": "Georgia Secretary of State My Voter Page",
+        "url": "/source-files/georgia-my-voter-page.txt"
+      }
+    ],
+    "votingMethods": [
+      {
+        "slug": "in-person-election-day",
+        "title": "Vote in person on Election Day",
+        "summary": "Fulton County directs voters to confirm their assigned Election Day precinct and polling place before traveling.",
+        "details": [
+          "Bring a printed guide or notes if that helps you track contests.",
+          "Use Georgia My Voter Page to verify your precinct, polling place, and sample ballot.",
+          "Check the county polling-tools page close to Election Day in case precinct assignments or access notes change."
+        ],
+        "officialResource": {
+          "authority": "official-government",
+          "label": "Polling-place and precinct lookup",
+          "sourceLabel": "Fulton County Registration and Elections",
+          "sourceSystem": "Fulton County polling tools",
+          "url": "/source-files/fulton-county-polling-tools.txt"
+        }
+      },
+      {
+        "slug": "early-voting",
+        "title": "Use an early voting site",
+        "summary": "Georgia allows Fulton voters to use any early-voting location in the county, with site lists and hours verified through statewide and county election tools.",
+        "details": [
+          "Georgia says voters can use any early-voting location in their county.",
+          "Use My Voter Page and the Fulton County polling-tools page to confirm which early-voting sites are active and when they open.",
+          "Hours can vary by date and location, so check again shortly before traveling."
+        ],
+        "officialResource": {
+          "authority": "official-government",
+          "label": "Georgia My Voter Page",
+          "sourceLabel": "Georgia Secretary of State",
+          "sourceSystem": "Georgia Secretary of State My Voter Page",
+          "url": "/source-files/georgia-my-voter-page.txt"
+        }
+      },
+      {
+        "slug": "vote-by-mail",
+        "title": "Vote by mail",
+        "summary": "Fulton County publishes absentee-voting contact details, and Georgia provides the statewide absentee-voting rules and voter portal.",
+        "details": [
+          "The first day to request an absentee ballot is August 17, 2026, and Fulton County lists October 23, 2026 as the last day to request one for this election.",
+          "Use the county contacts sheet for absentee-specific phone and email details before relying on vote-by-mail.",
+          "Georgia My Voter Page is the statewide place to review your voter record, sample ballot, and polling-location information."
+        ],
+        "officialResource": {
+          "authority": "official-government",
+          "label": "Election office contacts",
+          "sourceLabel": "Fulton County Registration and Elections",
+          "sourceSystem": "Fulton County elections contacts",
+          "url": "/source-files/fulton-county-election-office.txt"
+        }
+      }
+    ],
+    "upcomingElections": [
+      {
+        "date": "2026-11-03",
+        "jurisdictionSlug": "fulton-county-georgia",
+        "locationName": "Fulton County, Georgia",
+        "name": "November 3, 2026 Fulton County election guide",
+        "slug": "2026-fulton-county-general",
+        "updatedAt": "2026-04-24T12:00:00.000Z"
+      }
+    ],
+    "archivedGuides": [],
+    "coverageNotes": [
+      "This is not an official government site. Verify deadlines, polling locations, and absentee rules with Fulton County Registration and Elections and Georgia My Voter Page.",
+      "Official election links and logistics are current for this area.",
+      "Verified Fulton-specific contest, candidate, and measure records are not published in this package."
+    ]
+  },
+  "jurisdictionSummaries": [
+    {
+      "description": "Fulton County, Georgia election hub with reviewed official county and statewide election links. Verified contest, candidate, and measure records are not published in this package.",
+      "displayName": "Fulton County, Georgia",
+      "jurisdictionType": "County",
+      "name": "Fulton County",
+      "nextElectionName": "November 3, 2026 Fulton County election guide",
+      "nextElectionSlug": "2026-fulton-county-general",
+      "slug": "fulton-county-georgia",
+      "state": "Georgia",
+      "updatedAt": "2026-04-24T12:00:00.000Z"
+    }
+  ],
+  "location": {
+    "coverageLabel": "Live local guide area: Fulton County, Georgia",
+    "displayName": "Fulton County, Georgia",
+    "lookupMode": "coverage-selection",
+    "requiresOfficialConfirmation": true,
+    "slug": "fulton-county-georgia",
+    "state": "Georgia"
+  },
+  "measures": [],
+  "sources": [],
+  "updatedAt": "2026-04-24T12:00:00.000Z"
+}

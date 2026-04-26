@@ -1,17 +1,9 @@
+/*
+  Theme scheme color variables are generated from src/utils/theme-schemes.ts.
+  Add or edit palette families there so CSS tokens, picker metadata, and swatches stay aligned.
+*/
+
 :root {
-  --app-bg: #f7f4ee;
-  --app-bg-dark: #09131f;
-  --app-ink: #10253e;
-  --app-text-dark: #e6edf4;
-  --app-muted: #667787;
-  --app-muted-dark: #91a0b4;
-  --app-line: #d2d7dd;
-  --app-line-dark: #334458;
-  --app-accent: #2b6678;
-  --app-accent-strong: #1e4d5c;
-  --app-paper: #fffdfc;
-  --app-paper-dark: #112032;
-  --app-warm: #e8d8b5;
   --app-font-body: clamp(1rem, 0.96rem + 0.22vw, 1.125rem);
   --app-line-body: 1.7;
   --app-line-heading: 1.18;
@@ -33,8 +25,8 @@ body {
   min-height: 100vh;
   margin: 0;
   background:
-    radial-gradient(circle at top left, rgba(232, 216, 181, 0.25), transparent 28rem),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(247, 244, 238, 1));
+    radial-gradient(circle at top left, var(--app-bg-glow-primary), transparent 28rem),
+    linear-gradient(180deg, rgba(var(--app-panel-rgb), 0.88), rgb(var(--app-bg-rgb)));
   color: var(--app-ink);
   font-family: "Public Sans", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   font-size: var(--app-font-body);
@@ -48,13 +40,13 @@ body {
 
 html.dark {
   color-scheme: dark;
-  background: var(--app-bg-dark);
+  background: var(--app-bg);
 }
 
 html.dark body {
   background:
-    radial-gradient(circle at top left, rgba(43, 102, 120, 0.16), transparent 24rem),
-    linear-gradient(180deg, rgba(9, 19, 31, 0.98), rgba(9, 19, 31, 1));
+    radial-gradient(circle at top left, var(--app-bg-glow-primary), transparent 24rem),
+    linear-gradient(180deg, rgba(var(--app-bg-rgb), 0.98), rgb(var(--app-bg-rgb)));
   color: var(--app-text-dark);
 }
 
@@ -88,7 +80,7 @@ h6 {
 }
 
 ::selection {
-  background: rgba(43, 102, 120, 0.22);
+  background: rgba(var(--app-accent-rgb), 0.22);
 }
 
 .skip-link {
@@ -98,8 +90,8 @@ h6 {
   z-index: 100;
   padding: 0.75rem 1rem;
   border-radius: 9999px;
-  background: var(--app-ink);
-  color: white;
+  background: var(--app-action);
+  color: var(--app-action-text);
   transform: translateY(calc(-100% - 1rem));
   transition: transform 0.2s ease;
 }
@@ -146,8 +138,8 @@ h6 {
   inset: 0;
   background-image: linear-gradient(
     to bottom,
-    rgba(16, 37, 62, 0.04) 0,
-    rgba(16, 37, 62, 0.04) 1px,
+    rgba(var(--app-ink-rgb), 0.04) 0,
+    rgba(var(--app-ink-rgb), 0.04) 1px,
     transparent 1px,
     transparent 4rem
   );
@@ -185,6 +177,57 @@ html.dark .home-summary-card-link:focus-visible {
   background: rgba(17, 32, 50, 0.95);
   border-color: rgba(51, 68, 88, 1);
   box-shadow: 0 18px 40px rgba(2, 8, 23, 0.42);
+}
+
+.home-card,
+.home-mini-card,
+.home-summary-card-link {
+  min-width: 0;
+}
+
+.home-panel-stack {
+  align-content: start;
+}
+
+.home-lookup-results-shell {
+  overflow: hidden;
+}
+
+.home-lookup-results-panel {
+  margin-top: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+}
+
+.home-trust-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr));
+  align-items: stretch;
+}
+
+.home-result-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
+  align-items: stretch;
+  grid-auto-rows: 1fr;
+}
+
+.home-mini-card,
+.home-result-grid > li,
+.home-result-grid .home-summary-card-link {
+  height: 100%;
+}
+
+.home-path-list {
+  border-radius: 1.4rem;
+}
+
+.home-path-list > a {
+  border-radius: 1.1rem;
+  padding-inline: clamp(0.25rem, 1.4vw, 1rem);
+}
+
+.home-roadmap-list article {
+  break-inside: avoid;
 }
 
 .summary-strip {
@@ -473,8 +516,8 @@ html.dark .expandable-section__body {
 @media (max-width: 640px) {
   body {
     background:
-      radial-gradient(circle at top left, rgba(232, 216, 181, 0.22), transparent 18rem),
-      linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(247, 244, 238, 1));
+      radial-gradient(circle at top left, var(--app-bg-glow-primary), transparent 18rem),
+      linear-gradient(180deg, rgba(var(--app-panel-rgb), 0.88), rgb(var(--app-bg-rgb)));
   }
 }
 
@@ -579,6 +622,74 @@ html.dark .expandable-section__body {
     box-shadow: none !important;
     border-color: #cbd5df !important;
     background: white !important;
+  }
+
+  .home-page {
+    padding-bottom: 0 !important;
+  }
+
+  .home-page .app-shell {
+    max-width: none !important;
+    width: 100% !important;
+    padding-right: 0 !important;
+    padding-left: 0 !important;
+  }
+
+  .home-section {
+    break-inside: auto;
+    margin-bottom: 0.85rem !important;
+  }
+
+  .home-hero-grid,
+  .home-preview-grid,
+  .home-split-grid,
+  .home-coverage-grid,
+  .home-roadmap-grid {
+    display: block !important;
+    grid-template-columns: 1fr !important;
+  }
+
+  .home-hero-grid > *,
+  .home-preview-grid > *,
+  .home-split-grid > *,
+  .home-coverage-grid > *,
+  .home-roadmap-grid > * {
+    margin-bottom: 0.75rem !important;
+  }
+
+  .home-panel-stack {
+    display: block !important;
+  }
+
+  .home-panel-stack > * + * {
+    margin-top: 0.65rem !important;
+  }
+
+  .home-trust-grid,
+  .home-result-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 0.5rem !important;
+  }
+
+  .home-card,
+  .home-mini-card,
+  .home-summary-card-link,
+  .home-page .surface-panel {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    box-shadow: none !important;
+  }
+
+  .home-mini-card,
+  .home-summary-card-link {
+    padding: 0.7rem !important;
+  }
+
+  .home-page .btn-primary,
+  .home-page .btn-secondary {
+    min-height: auto !important;
+    padding: 0.35rem 0.65rem !important;
   }
 
   .print-guide-grid,

@@ -3,7 +3,7 @@ const { formatDateTime } = useFormatters();
 const { data, error, pending } = await usePublicStatus();
 
 usePageSeo({
-	description: "Public status page for Ballot Clarity showing source-health signals, current coverage mode, and launch review notices.",
+	description: "Public status page for Ballot Clarity showing source health, coverage, and current review notices.",
 	path: "/status",
 	title: "Public Status"
 });
@@ -29,6 +29,22 @@ const statusLabel = computed(() => {
 			return "Reviewing";
 	}
 });
+
+const snapshotLabel = computed(() => {
+	if (data.value?.coverageMode !== "snapshot")
+		return data.value?.snapshotProvenance?.configuredSnapshotMissing ? "Snapshot missing" : "No local snapshot";
+
+	switch (data.value?.snapshotProvenance?.status) {
+		case "production_approved":
+			return "Production-approved snapshot";
+		case "reviewed":
+			return "Reviewed snapshot";
+		case "seed":
+			return "Seed snapshot";
+		default:
+			return "Unclassified snapshot";
+	}
+});
 </script>
 
 <template>
@@ -51,14 +67,14 @@ const statusLabel = computed(() => {
 				<div class="surface-panel">
 					<div class="flex flex-wrap gap-2">
 						<TrustBadge :label="statusLabel" :tone="statusTone" />
-						<TrustBadge :label="data.coverageMode === 'snapshot' ? 'Imported snapshot' : 'No local snapshot'" />
+						<TrustBadge :label="snapshotLabel" />
 						<TrustBadge label="Public source health" tone="warning" />
 					</div>
 					<h1 class="text-5xl text-app-ink font-serif mt-5 dark:text-app-text-dark">
 						Public status
 					</h1>
 					<p class="text-base text-app-muted leading-8 mt-5 dark:text-app-muted-dark">
-						This page reports public-facing source health, current coverage mode, and launch review notices. It is meant to explain whether the site is ready for reliance, not to expose internal admin-only detail.
+						This page shows whether Ballot Clarity's public data and guide coverage are ready to rely on.
 					</p>
 					<div class="mt-6 flex flex-wrap gap-4 items-center">
 						<UpdatedAt :value="data.updatedAt" label="Status updated" />
@@ -68,10 +84,7 @@ const statusLabel = computed(() => {
 					</div>
 				</div>
 
-				<div class="space-y-4">
-					<InfoCallout title="How to read this page" tone="warning">
-						Healthy means the currently published public surfaces and source checks are stable. Reviewing means work is in progress but key source or launch steps still need verification. Degraded means a current incident should materially change how much trust to place in a public page.
-					</InfoCallout>
+				<div>
 					<div class="surface-panel">
 						<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
 							Next windows

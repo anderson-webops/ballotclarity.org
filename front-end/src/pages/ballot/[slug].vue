@@ -18,18 +18,22 @@ const effectiveBallotViewMode = computed(() => isHydrated.value ? ballotViewMode
 const effectiveCompareList = computed(() => isHydrated.value ? compareList.value : []);
 const effectiveSelectedIssues = computed(() => isHydrated.value ? selectedIssues.value : []);
 const showPersistedBallotState = computed(() => isHydrated.value);
+const hasVerifiedContestPackage = computed(() => Boolean(data.value?.guideContent?.verifiedContestPackage));
+const hasPublishedGuideShell = computed(() => Boolean(data.value?.guideContent?.publishedGuideShell));
+const hasContestContent = computed(() => Boolean(data.value?.election.contests.length));
+const shellOnlyGuideNote = computed(() => data.value?.guideContent?.summary
+	?? "Official election links are current for this area. Verified contest, candidate, and measure pages are still under local review.");
 
 watchEffect(() => {
 	if (data.value) {
-		civicStore.setElection({
+		civicStore.setGuideSurfaceContext({
 			date: data.value.election.date,
 			jurisdictionSlug: data.value.election.jurisdictionSlug,
 			locationName: data.value.election.locationName,
 			name: data.value.election.name,
 			slug: data.value.election.slug,
 			updatedAt: data.value.election.updatedAt,
-		});
-		civicStore.setLocation(data.value.location);
+		}, data.value.location, data.value.guideContent);
 	}
 });
 
@@ -177,44 +181,91 @@ const personalizationNote = computed(() => {
 
 	return "Use a full address for the most specific district match.";
 });
-const guideSummaryItems = computed(() => ([
-	{
-		label: "Personalized to",
-		note: personalizationNote.value,
-		value: personalizationLabel.value
-	},
-	{
-		label: "Contests",
-		href: "#contests-section",
-		note: "Total sections in this ballot guide.",
-		value: ballotCounts.value.contestCount
-	},
-	{
-		label: "Candidates",
-		href: filteredCandidateContests.value.length ? "#candidate-contests-section" : "#contests-section",
-		note: "Candidate profiles linked from this ballot.",
-		value: ballotCounts.value.candidateCount
-	},
-	{
-		label: "Measures",
-		href: filteredMeasureContests.value.length ? "#measure-contests-section" : "#contests-section",
-		note: "Measure explainers with yes / no summaries.",
-		value: ballotCounts.value.measureCount
-	},
-	{
-		label: "Saved to plan",
-		note: showPersistedBallotState.value
-			? "Contests currently saved in your checklist."
-			: "Saved-plan state appears after this browser syncs.",
-		value: showPersistedBallotState.value ? effectiveBallotPlanCount.value : "—"
+const guideSummaryItems = computed(() => {
+	if (!hasContestContent.value) {
+		return [
+			{
+				label: "Personalized to",
+				note: personalizationNote.value,
+				value: personalizationLabel.value
+			},
+			{
+				label: "Official links",
+				href: "#guide-logistics",
+				note: "Election-office links attached to this overview.",
+				value: data.value?.election.officialResources.length ?? 0
+			},
+			{
+				label: "Key dates",
+				href: "#guide-logistics",
+				note: "Calendar items attached to this page.",
+				value: data.value?.election.keyDates.length ?? 0
+			},
+			{
+				label: "Guide status",
+				note: hasPublishedGuideShell.value
+					? "Verified contest pages are still under local review."
+					: "No local guide is published for this area yet.",
+				value: hasVerifiedContestPackage.value ? "Verified" : hasPublishedGuideShell.value ? "In review" : "Not yet"
+			},
+			{
+				label: "Saved to plan",
+				note: "Ballot-plan tools open after verified contest pages are published.",
+				value: "—"
+			}
+		];
 	}
-]));
+
+	return [
+		{
+			label: "Personalized to",
+			note: personalizationNote.value,
+			value: personalizationLabel.value
+		},
+		{
+			label: "Contests",
+			href: "#contests-section",
+			note: "Total sections in this ballot guide.",
+			value: ballotCounts.value.contestCount
+		},
+		{
+			label: "Candidates",
+			href: filteredCandidateContests.value.length ? "#candidate-contests-section" : "#contests-section",
+			note: "Candidate profiles linked from this ballot.",
+			value: ballotCounts.value.candidateCount
+		},
+		{
+			label: "Measures",
+			href: filteredMeasureContests.value.length ? "#measure-contests-section" : "#contests-section",
+			note: "Measure explainers with yes / no summaries.",
+			value: ballotCounts.value.measureCount
+		},
+		{
+			label: "Saved to plan",
+			note: showPersistedBallotState.value
+				? "Contests currently saved in your checklist."
+				: "Saved-plan state appears after this browser syncs.",
+			value: showPersistedBallotState.value ? effectiveBallotPlanCount.value : "—"
+		}
+	];
+});
 const coverageNotes = computed(() => {
 	if (!data.value)
 		return [];
 
+	if (!hasContestContent.value) {
+		return [
+			`This overview is personalized to ${personalizationLabel.value}. ${personalizationNote.value}`,
+			shellOnlyGuideNote.value,
+			`${data.value.election.officialResources.length} official link${data.value.election.officialResources.length === 1 ? "" : "s"} are attached for election logistics, notices, and office contact details.`,
+			`${data.value.election.keyDates.length} key date${data.value.election.keyDates.length === 1 ? "" : "s"} are attached for deadlines and election logistics.`,
+			"Verified contest, candidate, and measure pages will appear here after the local review clears."
+		];
+	}
+
 	return [
 		`This ballot is personalized to ${personalizationLabel.value}. ${personalizationNote.value}`,
+		...(data.value.guideContent ? [data.value.guideContent.summary] : []),
 		`${data.value.election.officialResources.length} official links are attached for election logistics, notices, and office contact details.`,
 		`${ballotCounts.value.sourceLinkedItems} contest items in this guide link to source drawers or evidence panels in the project archive.`,
 		`${effectiveBallotPlanCount.value} contest${effectiveBallotPlanCount.value === 1 ? "" : "s"} saved to your ballot plan so far.`,
@@ -277,7 +328,7 @@ const guideSectionItems = computed(() => ([
 				note: "Questions and measures on this ballot."
 			}]
 		: [])
-]));
+]).filter(item => hasContestContent.value || !["#guide-controls", "#candidate-contests-section", "#measure-contests-section"].includes(item.href)));
 
 function clearFilters() {
 	searchQuery.value = "";
@@ -290,11 +341,12 @@ function clearFilters() {
 		<ElectionHero
 			v-if="data"
 			:election="data.election"
+			:guide-content="data.guideContent"
 			:location="data.location"
 			:note="data.note"
 		/>
 
-		<section v-if="data" class="print-only app-shell">
+		<section v-if="data && hasContestContent" class="print-only app-shell">
 			<div class="print-guide">
 				<header class="print-guide-header">
 					<p class="print-guide-kicker">
@@ -349,7 +401,7 @@ function clearFilters() {
 				</div>
 
 				<p class="print-guide-footnote">
-					Current coverage is limited to the published source set available for this ballot. Review original records and official notices before relying on any election information.
+					Review original records and official notices before relying on any election information.
 				</p>
 			</div>
 		</section>
@@ -359,13 +411,15 @@ function clearFilters() {
 				<div class="self-start space-y-4 2xl:top-24 2xl:sticky">
 					<PageSectionNav
 						title="Guide map"
-						description="Start with the overview, then use filters and contest sections only where you need more detail."
+						:description="hasContestContent
+							? 'Start with the overview, then use filters and contest sections only where you need more detail.'
+							: 'Start with the overview and official links while verified contest pages are still under local review.'"
 						:breadcrumbs="ballotBreadcrumbs"
 						:items="guideSectionItems"
 					>
 						<template #actions>
 							<div class="bc-action-cluster">
-								<NuxtLink :to="planHref" class="btn-primary">
+								<NuxtLink v-if="hasContestContent" :to="planHref" class="btn-primary">
 									Open my ballot plan
 								</NuxtLink>
 								<NuxtLink :to="electionOverviewHref" class="btn-secondary">
@@ -415,7 +469,7 @@ function clearFilters() {
 											<span
 												class="text-[11px] font-semibold px-2.5 py-1 rounded-full inline-flex gap-1 whitespace-nowrap items-center"
 												:class="item.saved
-													? 'bg-app-accent text-white'
+													? 'bg-app-accent text-app-action-text'
 													: 'bg-app-warm/75 text-app-ink dark:bg-app-bg-dark dark:text-app-text-dark'"
 											>
 												<span :class="item.saved ? 'i-carbon-checkmark' : 'i-carbon-time'" aria-hidden="true" />
@@ -432,13 +486,15 @@ function clearFilters() {
 				<div class="space-y-6">
 					<section id="guide-overview" class="surface-panel scroll-mt-28">
 						<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-							Ballot at a glance
+							{{ hasContestContent ? "Ballot at a glance" : "Election overview" }}
 						</p>
 						<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-							Showing contests for your districts
+							{{ hasContestContent ? "Showing contests for your districts" : "Official links are live for this area" }}
 						</h2>
 						<p class="text-sm text-app-muted leading-7 mt-4 max-w-3xl dark:text-app-muted-dark">
-							This guide is personalized to {{ personalizationLabel }}. It is designed to reduce overload, but district matching and time-sensitive logistics should still be checked against the official election overview.
+							{{ hasContestContent
+								? `This guide is personalized to ${personalizationLabel}. It is designed to reduce overload, but district matching and time-sensitive logistics should still be checked against the official election overview.`
+								: `This page is personalized to ${personalizationLabel}. Official links and key dates are current here, while verified contest, candidate, and measure pages are still under local review.` }}
 						</p>
 
 						<div class="mt-6">
@@ -464,12 +520,15 @@ function clearFilters() {
 								<InfoCallout title="Why we ask for your address">
 									A full address helps determine districts and ballot style. ZIP-only lookups can be useful for a quick preview, but they may not reflect every district-specific contest.
 								</InfoCallout>
-								<InfoCallout title="Build a booth-ready plan">
+								<InfoCallout v-if="hasContestContent" title="Build a booth-ready plan">
 									Save one choice per contest as you read. The
 									<NuxtLink :to="planHref" class="underline underline-offset-3">
 										ballot plan page
 									</NuxtLink>
 									keeps your current picks in a print-friendly checklist.
+								</InfoCallout>
+								<InfoCallout v-else title="Verified contest pages pending">
+									Use the official links on this page for logistics and deadline checks. Contest, candidate, and measure pages open after the local package is verified.
 								</InfoCallout>
 								<InfoCallout title="Need a page reviewed?">
 									Use the <NuxtLink to="/contact" class="underline underline-offset-3">
@@ -485,7 +544,7 @@ function clearFilters() {
 							Key dates and official links
 						</p>
 						<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-							Use the ballot guide with the election overview
+							{{ hasContestContent ? "Use the ballot guide with the election overview" : "Use the official links on this page" }}
 						</h2>
 						<div class="mt-6 gap-4 grid 2xl:grid-cols-4 sm:grid-cols-2">
 							<div v-for="item in data.election.keyDates" :key="item.label" class="p-4 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70">
@@ -526,7 +585,7 @@ function clearFilters() {
 						</div>
 					</section>
 
-					<section id="guide-controls" class="surface-panel scroll-mt-28">
+					<section v-if="hasContestContent" id="guide-controls" class="surface-panel scroll-mt-28">
 						<div class="gap-6 grid 2xl:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
 							<div>
 								<label for="ballot-search" class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
@@ -560,7 +619,7 @@ function clearFilters() {
 										type="button"
 										class="text-xs font-semibold px-3 py-2 border rounded-full transition focus-ring"
 										:class="effectiveSelectedIssues.includes(issue.slug)
-											? 'border-app-accent bg-app-accent text-white'
+											? 'border-app-accent bg-app-accent text-app-action-text'
 											: 'border-app-line bg-white text-app-muted hover:border-app-accent hover:text-app-accent dark:border-app-line-dark dark:bg-app-panel-dark dark:text-app-muted-dark'"
 										:aria-pressed="effectiveSelectedIssues.includes(issue.slug)"
 										@click="civicStore.toggleIssue(issue.slug)"
@@ -585,7 +644,7 @@ function clearFilters() {
 										type="button"
 										class="text-xs font-semibold px-3 py-2 border rounded-full transition focus-ring"
 										:class="effectiveBallotViewMode === 'quick'
-											? 'border-app-accent bg-app-accent text-white'
+											? 'border-app-accent bg-app-accent text-app-action-text'
 											: 'border-app-line bg-white text-app-muted hover:border-app-accent hover:text-app-accent dark:border-app-line-dark dark:bg-app-panel-dark dark:text-app-muted-dark'"
 										:aria-pressed="effectiveBallotViewMode === 'quick'"
 										@click="civicStore.setBallotViewMode('quick')"
@@ -597,7 +656,7 @@ function clearFilters() {
 										type="button"
 										class="text-xs font-semibold px-3 py-2 border rounded-full transition focus-ring"
 										:class="effectiveBallotViewMode === 'deep'
-											? 'border-app-accent bg-app-accent text-white'
+											? 'border-app-accent bg-app-accent text-app-action-text'
 											: 'border-app-line bg-white text-app-muted hover:border-app-accent hover:text-app-accent dark:border-app-line-dark dark:bg-app-panel-dark dark:text-app-muted-dark'"
 										:aria-pressed="effectiveBallotViewMode === 'deep'"
 										@click="civicStore.setBallotViewMode('deep')"
@@ -643,6 +702,25 @@ function clearFilters() {
 			<InfoCallout title="Unable to load ballot" tone="warning">
 				The ballot guide could not be loaded. Refresh the page or return to the home page and try again.
 			</InfoCallout>
+		</section>
+
+		<section v-else-if="data && !hasContestContent" class="app-shell">
+			<div class="surface-panel text-center">
+				<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
+					Verified contest pages are still pending
+				</h2>
+				<p class="text-sm text-app-muted leading-7 mx-auto mt-4 max-w-2xl dark:text-app-muted-dark">
+					{{ shellOnlyGuideNote }}
+				</p>
+				<div class="mt-6 flex flex-wrap gap-3 justify-center">
+					<NuxtLink :to="electionOverviewHref" class="btn-primary">
+						Open election overview
+					</NuxtLink>
+					<NuxtLink :to="jurisdictionHref" class="btn-secondary">
+						Open location hub
+					</NuxtLink>
+				</div>
+			</div>
 		</section>
 
 		<section v-else-if="filteredContests.length" id="contests-section" class="app-shell space-y-10">

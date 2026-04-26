@@ -7,8 +7,8 @@ defineProps<{
 </script>
 
 <template>
-	<section v-if="roadmapPreview.length" class="app-shell">
-		<div class="gap-8 grid lg:grid-cols-[minmax(0,0.58fr)_minmax(0,1fr)]">
+	<section v-if="roadmapPreview.length" class="home-section app-shell">
+		<div class="home-roadmap-grid gap-8 grid lg:grid-cols-[minmax(0,0.58fr)_minmax(0,1fr)]">
 			<div>
 				<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
 					Data sources
@@ -29,7 +29,7 @@ defineProps<{
 				</div>
 			</div>
 
-			<div class="divide-app-line divide-y dark:divide-app-line-dark">
+			<div class="home-roadmap-list divide-app-line divide-y dark:divide-app-line-dark">
 				<article v-for="item in roadmapPreview" :key="item.slug" class="py-5">
 					<h3 class="text-2xl text-app-ink font-serif dark:text-app-text-dark">
 						{{ item.title }}

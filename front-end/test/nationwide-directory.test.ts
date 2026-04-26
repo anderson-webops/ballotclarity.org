@@ -37,7 +37,7 @@ const nationwideLookupResult = {
 	inputKind: "zip",
 	lookupQuery: "84604",
 	location: {
-		coverageLabel: "Nationwide civic results available",
+		coverageLabel: "Civic results available",
 		displayName: "Provo, Utah",
 		lookupMode: "zip-preview",
 		requiresOfficialConfirmation: false,
@@ -45,7 +45,7 @@ const nationwideLookupResult = {
 		state: "Utah"
 	},
 	normalizedAddress: "84604",
-	note: "Nationwide lookup for Provo, Utah.",
+	note: "Lookup results for Provo, Utah.",
 	representativeMatches: [
 		{
 			districtLabel: "Congressional District 3",

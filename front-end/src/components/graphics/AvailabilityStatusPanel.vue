@@ -18,7 +18,7 @@ const props = withDefaults(defineProps<{
 const availabilitySegments = computed(() => {
 	const counts = {
 		available: props.items.filter(item => item.status === "available").length,
-		partial: props.items.filter(item => item.status === "partial").length,
+		partial: props.items.filter(item => item.status === "partial" || item.status === "limited").length,
 		unavailable: props.items.filter(item => item.status === "unavailable").length
 	};
 
@@ -34,9 +34,9 @@ const readinessBars = computed(() => props.items.map(item => ({
 	id: item.label,
 	label: item.label,
 	sources: item.sources,
-	tone: item.status === "available" ? "accent" as const : item.status === "partial" ? "warning" as const : "neutral" as const,
+	tone: item.status === "available" ? "accent" as const : item.status === "partial" || item.status === "limited" ? "warning" as const : "neutral" as const,
 	uncertainty: item.note ?? undefined,
-	value: item.status === "available" ? 100 : item.status === "partial" ? 60 : 24,
+	value: item.status === "available" ? 100 : item.status === "partial" || item.status === "limited" ? 60 : 24,
 	valueLabel: item.status
 })));
 </script>

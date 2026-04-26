@@ -103,7 +103,7 @@ const summaryItems = computed(() => {
 const districtContextLink = computed(() => {
 	if (districtPageData.value?.mode === "nationwide" || hasNationwideResultContext.value) {
 		return {
-			label: "Open nationwide results",
+			label: "Open results",
 			to: "/results"
 		};
 	}
@@ -151,16 +151,12 @@ usePageSeo({
 					<div class="flex flex-wrap gap-2">
 						<VerificationBadge label="District page" tone="accent" />
 						<VerificationBadge :label="districtPageData.district.jurisdiction" />
-						<VerificationBadge :label="districtPageData.districtOriginLabel" :tone="districtPageData.mode === 'nationwide' ? 'warning' : undefined" />
 					</div>
 					<h1 class="text-5xl text-app-ink font-serif mt-5 dark:text-app-text-dark">
 						{{ districtPageData.district.title }}
 					</h1>
 					<p class="text-base text-app-muted leading-8 mt-5 dark:text-app-muted-dark">
 						{{ districtPageData.district.description }}
-					</p>
-					<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-						{{ districtPageData.districtOriginNote }}
 					</p>
 					<div class="mt-6 flex flex-wrap gap-3">
 						<NuxtLink v-if="districtPageData.mode === 'guide'" :to="`/contest/${districtPageData.district.slug}`" class="btn-primary">
@@ -299,7 +295,7 @@ usePageSeo({
 						Official verification tools
 					</h2>
 					<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-						These official links stay visible in the district fallback so the route remains useful even without a published local guide or candidate field.
+						Official election links for this office area.
 					</p>
 					<div class="mt-6">
 						<OfficialResourceList :resources="districtPageData.officialResources" />
@@ -312,8 +308,8 @@ usePageSeo({
 					</h2>
 					<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
 						{{ districtPageData.mode === "guide"
-							? "These sources support the current representative and candidate field shown on this district page."
-							: "These sources support the district match, linked officials, and official election links shown on this page." }}
+							? "Sources for the candidate and official information on this page."
+							: "Sources for the district match, linked officials, and official election links on this page." }}
 					</p>
 					<div class="mt-6">
 						<SourceList :sources="districtPageData.sources" />
@@ -324,9 +320,7 @@ usePageSeo({
 			<div class="space-y-6 xl:pt-[4.5rem]">
 				<PageSectionNav
 					:breadcrumbs="breadcrumbs"
-					:description="districtPageData.mode === 'guide'
-						? 'Use this page to review one office area at a time.'
-						: 'Use this page to review the district, its current officials, and official election links.'"
+					description="District details, current officials, candidates, official tools, and sources."
 					:items="sectionLinks"
 					title="District page"
 				>
@@ -344,7 +338,7 @@ usePageSeo({
 
 				<div class="surface-panel">
 					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-						Current lookup
+						Area
 					</p>
 					<h2 class="text-2xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
 						{{ activeLookupSummary.label }}
@@ -366,7 +360,7 @@ usePageSeo({
 						Role guide
 					</p>
 					<h2 class="text-2xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-						What this office controls
+						What this office does
 					</h2>
 					<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
 						{{ districtPageData.district.roleGuide.summary }}

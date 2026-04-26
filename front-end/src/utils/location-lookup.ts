@@ -1,19 +1,36 @@
 import type { LocationLookupAction, LocationLookupResponse } from "../types/civic";
 
-type LookupResolution = Pick<LocationLookupResponse, "result" | "guideAvailability" | "location" | "electionSlug" | "selectionOptions">;
+type LookupResolution = Pick<LocationLookupResponse, "result" | "guideAvailability" | "guideContent" | "location" | "electionSlug" | "selectionOptions">;
 
 export interface LookupPresentation {
 	availabilityBadgeLabel: string;
 	canOpenGuide: boolean;
 	footerNote: string;
+	guideActionLabel: string;
 	heading: string;
 	supportingNote: string;
 }
 
 export function hasPublishedGuideResult(response: Omit<LookupResolution, "result">) {
 	return response.guideAvailability === "published"
+		&& Boolean(response.guideContent?.publishedGuideShell)
 		&& Boolean(response.location)
 		&& Boolean(response.electionSlug);
+}
+
+export function hasVerifiedGuideResult(response: Omit<LookupResolution, "result">) {
+	return hasPublishedGuideResult(response)
+		&& Boolean(response.guideContent?.verifiedContestPackage);
+}
+
+export function buildPublishedGuideDestination(response: Omit<LookupResolution, "result">) {
+	if (!hasPublishedGuideResult(response) || !response.electionSlug)
+		return null;
+
+	if (hasVerifiedGuideResult(response))
+		return response.location ? `/ballot/${response.electionSlug}?location=${response.location.slug}` : `/ballot/${response.electionSlug}`;
+
+	return `/elections/${response.electionSlug}`;
 }
 
 export function filterLookupActionsForPresentation(
@@ -34,6 +51,7 @@ export function buildLookupPresentation(response: LookupResolution): LookupPrese
 			availabilityBadgeLabel: "Lookup not resolved",
 			canOpenGuide: false,
 			footerNote: "Use the official tools above for this location, or replace the ZIP code with a full street address for a more precise lookup.",
+			guideActionLabel: "Open election overview",
 			heading: "Location not yet resolved",
 			supportingNote: ""
 		};
@@ -43,27 +61,37 @@ export function buildLookupPresentation(response: LookupResolution): LookupPrese
 		return {
 			availabilityBadgeLabel: "ZIP area selection needed",
 			canOpenGuide: false,
-			footerNote: "Choose one of the matched ZIP areas here to load the right district, representative, and official-tool layers before moving deeper into the app.",
+			footerNote: "Choose one of the matched ZIP areas here to load the right districts, officials, and official election links.",
+			guideActionLabel: "Choose this area",
 			heading: "Choose the matched ZIP area",
-			supportingNote: "This ZIP resolved to multiple civic areas in the current provider data. Ballot Clarity needs one more selection before it can open a single area cleanly."
+			supportingNote: "This ZIP matched more than one civic area. Choose the right area to continue."
 		};
 	}
 
 	if (canOpenGuide) {
+		const hasVerifiedContestPackage = hasVerifiedGuideResult(response);
+
 		return {
-			availabilityBadgeLabel: "Full local guide available",
+			availabilityBadgeLabel: hasVerifiedContestPackage ? "Verified ballot guide" : "Election overview available",
 			canOpenGuide: true,
-			footerNote: "This lookup succeeded. Review the nationwide civic results here first, then open the local guide when you want Ballot Clarity's contest, candidate, and measure pages.",
-			heading: "Local guide and civic results ready",
-			supportingNote: "A published local guide is available for this lookup. Nationwide civic results and official tools remain visible below first."
+			footerNote: hasVerifiedContestPackage
+				? "Review the results here first, then open the ballot guide for verified contest, candidate, and measure pages."
+				: "Review the results here first, then open the election overview for official links and the current verification status.",
+			guideActionLabel: hasVerifiedContestPackage ? "Open ballot guide" : "Open election overview",
+			heading: hasVerifiedContestPackage ? "Ballot guide and civic results ready" : "Civic results and election overview ready",
+			supportingNote: hasVerifiedContestPackage
+				? "A verified local guide is available for this lookup. Official tools remain visible below for final ballot confirmation."
+				: response.guideContent?.summary
+					?? "Official election links are current for this area. Verified contest pages are still under local review."
 		};
 	}
 
 	return {
-		availabilityBadgeLabel: "Nationwide civic results available",
+		availabilityBadgeLabel: "Civic results available",
 		canOpenGuide: false,
-		footerNote: "This lookup succeeded nationwide. Use the district, representative, provenance, and official-tool layers here even when a full local guide is not published yet.",
-		heading: "Nationwide civic results ready",
-		supportingNote: "Ballot Clarity matched this lookup to nationwide civic coverage. Official tools stay visible below for ballot confirmation, voter status, and polling-place details."
+		footerNote: "Use the district, representative, and official election links here even when a local guide is not available yet.",
+		guideActionLabel: "Open results",
+		heading: "Civic results ready",
+		supportingNote: "Official tools stay visible below for ballot confirmation, voter status, and polling-place details."
 	};
 }

@@ -2,8 +2,12 @@
 import { appName, contactEmail } from "~/constants";
 
 const effectiveAt = "2026-04-19T17:15:00-04:00";
+const runtimeConfig = useRuntimeConfig();
 const siteUrl = useSiteUrl();
-const currentOperatorName = "Jacob Anderson";
+const currentOperatorName = String(runtimeConfig.public.operatorLegalName || "Jacob Anderson").trim();
+const operatorNoticeAddress = String(runtimeConfig.public.operatorNoticeAddress || "").trim();
+const governingLaw = String(runtimeConfig.public.governingLaw || "").trim();
+const venue = String(runtimeConfig.public.venue || "").trim();
 
 const summaryCards = [
 	{
@@ -15,7 +19,7 @@ const summaryCards = [
 		title: "Not official"
 	},
 	{
-		body: "Ballot Clarity may publish only limited local coverage or nationwide civic lookup results in some environments. Time-sensitive election details should be verified with the relevant public authority.",
+		body: "Ballot Clarity may publish only limited local coverage or lookup results for some areas in some environments. Time-sensitive election details should be verified with the relevant public authority.",
 		title: "Coverage and verification limits"
 	}
 ];
@@ -36,7 +40,18 @@ const coreTerms = [
 const operatorAndNoticeRules = [
 	`Ballot Clarity is currently operated by ${currentOperatorName}.`,
 	`Operational questions, corrections, and formal notices can be sent to ${contactEmail}.`,
-	"A separate postal notice address is not published on this host today, so email is the current notice channel for the release now online."
+	...(operatorNoticeAddress
+		? [`Postal notices may also be sent to ${operatorNoticeAddress}.`]
+		: ["A separate postal notice address is not published on this host today, so email is the current notice channel for the release now online."])
+];
+
+const governingLawAndVenueRules = [
+	...(governingLaw
+		? [`These public site terms are governed by the laws of ${governingLaw}, without regard to conflict-of-law rules that would require a different jurisdiction's law to apply.`]
+		: ["No governing-law clause is published on this host today. Do not assume any unstated jurisdiction rule applies."]),
+	...(venue
+		? [`Any claim that must be filed in court should be brought in ${venue}, unless a different venue is required by non-waivable law.`]
+		: ["No venue clause is published on this host today. Do not assume any unstated venue term applies."])
 ];
 
 const noAdviceRules = [
@@ -178,6 +193,22 @@ usePageSeo({
 				</h2>
 				<ul class="text-sm text-app-muted leading-7 mt-6 space-y-3 dark:text-app-muted-dark">
 					<li v-for="item in operatorAndNoticeRules" :key="item" class="px-4 py-3 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70">
+						{{ item }}
+					</li>
+				</ul>
+			</div>
+		</section>
+
+		<section class="gap-6 grid lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
+			<div class="surface-panel">
+				<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+					Governing law and venue
+				</p>
+				<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
+					Which legal terms are currently published
+				</h2>
+				<ul class="text-sm text-app-muted leading-7 mt-6 space-y-3 dark:text-app-muted-dark">
+					<li v-for="item in governingLawAndVenueRules" :key="item" class="px-4 py-3 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70">
 						{{ item }}
 					</li>
 				</ul>

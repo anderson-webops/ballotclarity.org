@@ -32,6 +32,8 @@
 		"bootstrap-admin:local": "node ./scripts/run-local-command.mjs --provider-local -- npm run -w back-end bootstrap-admin:src --",
 		"coverage:seed-local": "npm run -w back-end export-seed-coverage",
 		"coverage:seed-local:local": "node ./scripts/run-local-command.mjs --provider-local -- npm run -w back-end export-seed-coverage:src",
+		"coverage:fulton-reviewed": "npm run -w back-end export:fulton-reviewed-coverage",
+		"coverage:fulton-reviewed:local": "node ./scripts/run-local-command.mjs --provider-local -- npm run -w back-end export:fulton-reviewed-coverage:src",
 		"launch-directory:sync": "npm run -w back-end sync:launch-directory",
 		"launch-directory:sync:local": "node ./scripts/run-local-command.mjs --provider-local -- npm run -w back-end sync:launch-directory:src",
 		"launch-directory:sync:src": "npm run -w back-end sync:launch-directory:src",
@@ -40,6 +42,7 @@
 		"providers:test:src": "npm run -w back-end providers:test:src",
 		"local:setup": "node ./scripts/setup-local-provider.mjs",
 		"verify:local": "node ./scripts/verify-local-runtime.mjs",
+		"verify:analytics": "npm run -w front-end verify:analytics",
 		"serve": "npm run -w front-end serve",
 		"preview": "npm run -w front-end preview",
 		"stack:down": "docker compose down",
@@ -48,7 +51,7 @@
 		"storage:up": "docker compose up -d minio minio-init",
 		"test": "npm run test:unit",
 		"test:unit": "npm run -w front-end test:unit && npm run -w back-end test",
-		"test:e2e": "npm run build && node --test --import tsx test/e2e-smoke.test.ts",
+		"test:e2e": "NUXT_DISABLE_ANALYTICS=1 npm run build && node --test --import tsx test/e2e-smoke.test.ts",
 		"lint-server": "npm run -w back-end lint-fix && npm run -w back-end server",
 		"lint-serve": "npm run -w front-end lint-fix && npm run -w front-end serve",
 		"lint": "npm run -w front-end lint && npm run -w back-end lint",
@@ -58,17 +61,17 @@
 	},
 	"devDependencies": {
 		"@antfu/eslint-config": "^8.2.0",
-		"@typescript-eslint/eslint-plugin": "^8.59.0",
-		"@typescript-eslint/parser": "^8.59.0",
+		"@typescript-eslint/eslint-plugin": "8.59.0",
+		"@typescript-eslint/parser": "8.59.0",
 		"@unocss/eslint-plugin": "^66.6.7",
-		"eslint": "^10.1.0",
+		"eslint": "^10.2.1",
 		"eslint-config-prettier": "^10.1.8",
 		"eslint-plugin-prettier": "^5.5.5",
-		"eslint-plugin-vue": "^10.8.0",
+		"eslint-plugin-vue": "^10.9.0",
 		"globals": "^17.5.0",
 		"prettier": "^3.8.3",
 		"tsx": "^4.21.0",
 		"typescript": "^6.0.3",
-		"typescript-eslint": "^8.59.0"
+		"typescript-eslint": "8.59.0"
 	}
 }

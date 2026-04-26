@@ -75,18 +75,32 @@ const compareSummaryItems = computed(() => ([
 		value: comparisonStats.value.questionCount
 	}
 ]));
+const hasUnavailableSelection = computed(() => {
+	return selectedSlugs.value.length >= 2 && (data.value?.candidates.length ?? 0) === 0;
+});
 const emptyStateTitle = computed(() => {
+	if (hasUnavailableSelection.value)
+		return "Candidate comparison is not available yet";
+
 	if (selectedSlugs.value.length === 1)
 		return "Select one more candidate to compare";
 
 	return "No compare candidates selected";
 });
 const emptyStateBody = computed(() => {
+	if (hasUnavailableSelection.value) {
+		return allowsGuideEntryPoints.value
+			? "These candidate records are not published for comparison yet. Use the ballot guide or profile pages until verified candidate comparison is available."
+			: hasNationwideResultContext.value
+				? "These candidate records are not published for comparison yet. Use the results page or profile pages until verified candidate comparison is available."
+				: "These candidate records are not published for comparison yet. Use the available profile or overview pages until verified candidate comparison is available.";
+	}
+
 	if (selectedSlugs.value.length === 1) {
 		return allowsGuideEntryPoints.value
 			? "This compare link includes only one candidate. Add one or two more candidates from the ballot guide or a candidate profile, then reopen compare with the updated URL."
 			: hasNationwideResultContext.value
-				? "This compare link includes only one candidate. Add one or two more candidates from a candidate profile or the nationwide results layer, then reopen compare with the updated URL."
+				? "This compare link includes only one candidate. Add one or two more candidates from a candidate profile or the results page, then reopen compare with the updated URL."
 				: "This compare link includes only one candidate. Add one or two more candidates from a candidate profile, then reopen compare with the updated URL.";
 	}
 
@@ -94,14 +108,14 @@ const emptyStateBody = computed(() => {
 		return allowsGuideEntryPoints.value
 			? "This compare link does not include any selected candidates yet. You can reopen the saved compare selection from this browser, or start a fresh compare from the ballot guide."
 			: hasNationwideResultContext.value
-				? "This compare link does not include any selected candidates yet. You can reopen the saved compare selection from this browser, or start a fresh compare from the nationwide results layer or a candidate profile."
+				? "This compare link does not include any selected candidates yet. You can reopen the saved compare selection from this browser, or start a fresh compare from the results page or a candidate profile."
 				: "This compare link does not include any selected candidates yet. You can reopen the saved compare selection from this browser, or start a fresh compare from a candidate profile.";
 	}
 
 	return allowsGuideEntryPoints.value
 		? "This compare page needs candidate slugs in the URL to render a side-by-side view. Start from the ballot guide or a candidate profile and open compare with two or three selected candidates."
 		: hasNationwideResultContext.value
-			? "This compare page needs candidate slugs in the URL to render a side-by-side view. Start from the nationwide results layer or a candidate profile and open compare with two or three selected candidates."
+			? "This compare page needs candidate slugs in the URL to render a side-by-side view. Start from the results page or a candidate profile and open compare with two or three selected candidates."
 			: "This compare page needs candidate slugs in the URL to render a side-by-side view. Start from a candidate profile and open compare with two or three selected candidates.";
 });
 
@@ -255,7 +269,7 @@ usePageSeo({
 								type="button"
 								class="text-xs font-semibold px-3 py-2 border rounded-full transition focus-ring"
 								:class="selectedCategory === null
-									? 'border-app-accent bg-app-accent text-white'
+									? 'border-app-accent bg-app-accent text-app-action-text'
 									: 'border-app-line bg-white text-app-muted hover:border-app-accent hover:text-app-accent dark:border-app-line-dark dark:bg-app-panel-dark dark:text-app-muted-dark'"
 								@click="selectedCategory = null"
 							>
@@ -267,7 +281,7 @@ usePageSeo({
 								type="button"
 								class="text-xs font-semibold px-3 py-2 border rounded-full transition focus-ring"
 								:class="selectedCategory === category
-									? 'border-app-accent bg-app-accent text-white'
+									? 'border-app-accent bg-app-accent text-app-action-text'
 									: 'border-app-line bg-white text-app-muted hover:border-app-accent hover:text-app-accent dark:border-app-line-dark dark:bg-app-panel-dark dark:text-app-muted-dark'"
 								@click="selectedCategory = category"
 							>

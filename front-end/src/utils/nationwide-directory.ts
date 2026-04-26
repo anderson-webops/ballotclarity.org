@@ -88,7 +88,7 @@ function buildRepresentativeSummary(
 		ballotStatusLabel: "Published ballot status unavailable in this area",
 		party: match.party ?? "Unknown",
 		provenance: {
-			label: match.sourceSystem ? `${match.sourceSystem} representative match` : "Nationwide lookup representative match",
+			label: match.sourceSystem ? `${match.sourceSystem} representative match` : "Lookup results representative match",
 			note: "Matched from your current lookup.",
 			status: "crosswalked"
 		},
@@ -123,7 +123,7 @@ export function buildNationwideDirectoryResponses(
 	const updatedAt = buildNationwideDirectoryUpdatedAt(context);
 	const districtMatches = context?.districtMatches ?? [];
 	const representativeMatches = context?.representativeMatches ?? [];
-	const locationLabel = context?.location?.displayName ?? context?.normalizedAddress ?? "Nationwide lookup";
+	const locationLabel = context?.location?.displayName ?? context?.normalizedAddress ?? "Your area";
 	const locationState = context?.location?.state;
 	const districtBySlug = new Map<string, DistrictSummary>();
 	const districtRepresentatives = new Map<string, string>();

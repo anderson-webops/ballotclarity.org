@@ -34,7 +34,7 @@ const printPractices = [
 ];
 
 const knownLimits = [
-	"Print views are only as current as the published local coverage or nationwide lookup context available for that page. Official election tools still remain the final authority for live logistics.",
+	"Print views are only as current as the published local coverage or lookup results available for that page. Official election tools still remain the final authority for live logistics.",
 	"Ballot Clarity does not yet generate a downloadable tagged PDF. The current accessible print path is the browser print view on supported pages.",
 	"We have not implemented multilingual ballot content or alternative reading modes yet, though the design system is being shaped to support them later."
 ];
@@ -53,7 +53,7 @@ usePageSeo({
 				<div class="flex flex-wrap gap-2">
 					<TrustBadge label="WCAG 2.2 AA target" tone="accent" />
 					<TrustBadge label="Print-friendly ballot guides" />
-					<TrustBadge label="Current limits published" tone="warning" />
+					<TrustBadge label="Known limits visible" tone="warning" />
 				</div>
 				<h1 class="text-5xl text-app-ink font-serif mt-5 dark:text-app-text-dark">
 					Accessibility and print standards

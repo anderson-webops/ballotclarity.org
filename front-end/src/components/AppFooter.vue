@@ -5,16 +5,22 @@ import { buildCompareRoute } from "~/stores/civic";
 
 const year = new Date().getFullYear();
 const civicStore = useCivicStore();
-const { hasNationwideResultContext, hasPublishedGuideContext } = useGuideEntryGate();
+const { hasGuideShellContext, hasNationwideResultContext, hasVerifiedGuideContext } = useGuideEntryGate();
 const { compareList, isHydrated } = storeToRefs(civicStore);
 const effectiveCompareList = computed(() => isHydrated.value ? compareList.value : []);
-const primarySectionLabel = computed(() => hasPublishedGuideContext.value
+const selectedElection = computed(() => civicStore.selectedElection);
+const selectedLocation = computed(() => civicStore.selectedLocation);
+const electionOverviewPath = computed(() => selectedElection.value?.slug ? `/elections/${selectedElection.value.slug}` : "/coverage");
+const locationHubPath = computed(() => selectedLocation.value?.slug ? `/locations/${selectedLocation.value.slug}` : "/coverage");
+const primarySectionLabel = computed(() => hasVerifiedGuideContext.value
 	? "Use the guide"
-	: hasNationwideResultContext.value
-		? "Explore active results"
-		: "Start with lookup");
+	: hasGuideShellContext.value
+		? "Use the election overview"
+		: hasNationwideResultContext.value
+			? "Explore active results"
+			: "Start with lookup");
 
-const guideLinks = computed(() => hasPublishedGuideContext.value
+const guideLinks = computed(() => hasVerifiedGuideContext.value
 	? [
 			{ label: "My ballot plan", to: "/plan" },
 			{ label: "Ballot guide", to: "/ballot" },
@@ -23,14 +29,22 @@ const guideLinks = computed(() => hasPublishedGuideContext.value
 			{ label: "Representatives", to: "/representatives" },
 			{ label: "Search", to: "/search" },
 		]
-	: [
-			...(hasNationwideResultContext.value
-				? [{ label: "Nationwide civic results", to: "/results" }]
-				: [{ label: "Location lookup", to: "/" }]),
-			{ label: "District pages", to: "/districts" },
-			{ label: "Representatives", to: "/representatives" },
-			{ label: "Search", to: "/search" },
-		]);
+	: hasGuideShellContext.value
+		? [
+				{ label: "Election overview", to: electionOverviewPath.value },
+				{ label: "Location hub", to: locationHubPath.value },
+				{ label: "District pages", to: "/districts" },
+				{ label: "Representatives", to: "/representatives" },
+				{ label: "Search", to: "/search" },
+			]
+		: [
+				...(hasNationwideResultContext.value
+					? [{ label: "Results", to: "/results" }]
+					: [{ label: "Location lookup", to: "/" }]),
+				{ label: "District pages", to: "/districts" },
+				{ label: "Representatives", to: "/representatives" },
+				{ label: "Search", to: "/search" },
+			]);
 
 const discoveryLinks = [
 	{ label: "About", to: "/about" },
@@ -64,31 +78,8 @@ function resolveGuideLinkTo(path: string) {
 						Ballot Clarity
 					</p>
 					<p class="bc-measure text-base text-app-muted mt-4 dark:text-app-muted-dark">
-						Ballot Clarity is a nonprofit civic-information project built to make election records easier to read and verify.
+						Ballot Clarity is a nonprofit civic-information site built to help people look up their area, review the public record, and verify details with official sources.
 					</p>
-					<div class="mt-5 gap-3 grid sm:gap-4 sm:grid-cols-2">
-						<div class="p-4 rounded-[1.35rem] bg-app-bg/70 dark:bg-app-bg-dark/70">
-							<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
-								What this site is for
-							</p>
-							<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
-								Look up your area, review districts and officials, open local guides where published, and verify details with sources and official links.
-							</p>
-						</div>
-
-						<div class="p-4 rounded-[1.35rem] bg-app-bg/70 dark:bg-app-bg-dark/70">
-							<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
-								How to use it
-							</p>
-							<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
-								{{ hasPublishedGuideContext
-									? "Start with the ballot guide, then open deeper pages only when you need more detail."
-									: hasNationwideResultContext
-										? "Start with your saved results, then move through districts, representatives, and official links."
-										: "Start with lookup to see what is available for your area." }}
-							</p>
-						</div>
-					</div>
 				</div>
 
 				<div class="gap-6 grid sm:grid-cols-2">
@@ -168,9 +159,14 @@ function resolveGuideLinkTo(path: string) {
 						</NuxtLink>
 					</div>
 				</div>
-				<p class="text-sm text-app-muted whitespace-nowrap dark:text-app-muted-dark">
-					© {{ year }} Ballot Clarity
-				</p>
+				<div class="flex flex-col gap-3 items-start lg:items-end">
+					<div class="max-w-[28rem] w-full lg:w-[13rem]">
+						<ThemeSchemePicker compact align="end" panel-align="end" />
+					</div>
+					<p class="text-sm text-app-muted whitespace-nowrap dark:text-app-muted-dark">
+						© {{ year }} Ballot Clarity
+					</p>
+				</div>
 			</div>
 		</div>
 	</footer>

@@ -17,20 +17,32 @@ test("location lookup treats nationwide-only resolved coverage as a success stat
 	], response).map(action => action.kind), ["official-verification"]);
 
 	assert.deepEqual(buildLookupPresentation(response), {
-		availabilityBadgeLabel: "Nationwide civic results available",
+		availabilityBadgeLabel: "Civic results available",
 		canOpenGuide: false,
-		footerNote: "This lookup succeeded nationwide. Use the district, representative, provenance, and official-tool layers here even when a full local guide is not published yet.",
-		heading: "Nationwide civic results ready",
-		supportingNote: "Ballot Clarity matched this lookup to nationwide civic coverage. Official tools stay visible below for ballot confirmation, voter status, and polling-place details."
+		footerNote: "Use the district, representative, and official election links here even when a local guide is not available yet.",
+		guideActionLabel: "Open results",
+		heading: "Civic results ready",
+		supportingNote: "Official tools stay visible below for ballot confirmation, voter status, and polling-place details."
 	});
 });
 
 test("location lookup only exposes guide navigation when published guide coverage exists", () => {
 	const response = {
 		electionSlug: "2026-fulton-county-general",
+		guideContent: {
+			candidates: { count: 5, detail: "Candidate records still rely on staged reference material instead of verified local content.", hasContent: true, label: "Candidates", status: "staged_reference" as const },
+			contests: { count: 4, detail: "Contest records still rely on staged reference material instead of verified local content.", hasContent: true, label: "Contests", status: "staged_reference" as const },
+			guideShell: { count: 1, detail: "This local guide is published with verified official election links, but the contest pages still need local review.", hasContent: true, label: "Local guide", status: "official_logistics_only" as const },
+			mixedContent: true,
+			measures: { count: 2, detail: "Measure records still rely on staged reference material instead of verified local content.", hasContent: true, label: "Measures", status: "staged_reference" as const },
+			officialLogistics: { count: 3, detail: "Official county and statewide election logistics are attached from current official sources.", hasContent: true, label: "Official logistics", status: "verified_local" as const },
+			publishedGuideShell: true,
+			summary: "This published local guide includes verified official election links, but some contest, candidate, or measure pages are still under local review.",
+			verifiedContestPackage: false
+		},
 		guideAvailability: "published" as const,
 		location: {
-			coverageLabel: "Published ballot guide area: Fulton County, Georgia",
+			coverageLabel: "Live local guide area: Fulton County, Georgia",
 			displayName: "Fulton County, Georgia",
 			slug: "fulton-county-georgia",
 			state: "Georgia"
@@ -43,7 +55,9 @@ test("location lookup only exposes guide navigation when published guide coverag
 		{ description: "Open guide", electionSlug: "2026-fulton-county-general", id: "guide", kind: "ballot-guide", location: response.location, title: "Fulton County" }
 	], response).length, 1);
 	assert.equal(buildLookupPresentation(response).canOpenGuide, true);
-	assert.equal(buildLookupPresentation(response).heading, "Local guide and civic results ready");
+	assert.equal(buildLookupPresentation(response).heading, "Civic results and election overview ready");
+	assert.equal(buildLookupPresentation(response).availabilityBadgeLabel, "Election overview available");
+	assert.equal(buildLookupPresentation(response).guideActionLabel, "Open election overview");
 });
 
 test("location lookup shows a chooser state when a ZIP still needs one more area selection", () => {
@@ -61,8 +75,9 @@ test("location lookup shows a chooser state when a ZIP still needs one more area
 	assert.deepEqual(buildLookupPresentation(response), {
 		availabilityBadgeLabel: "ZIP area selection needed",
 		canOpenGuide: false,
-		footerNote: "Choose one of the matched ZIP areas here to load the right district, representative, and official-tool layers before moving deeper into the app.",
+		footerNote: "Choose one of the matched ZIP areas here to load the right districts, officials, and official election links.",
+		guideActionLabel: "Choose this area",
 		heading: "Choose the matched ZIP area",
-		supportingNote: "This ZIP resolved to multiple civic areas in the current provider data. Ballot Clarity needs one more selection before it can open a single area cleanly."
+		supportingNote: "This ZIP matched more than one civic area. Choose the right area to continue."
 	});
 });

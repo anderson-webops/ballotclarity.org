@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { GuidePackageRecord } from "~/types/civic";
+
 definePageMeta({
 	layout: "admin",
 	middleware: "admin"
@@ -16,6 +18,35 @@ const reviewPreview = computed(() => review.value?.items.slice(0, 3) ?? []);
 const correctionPreview = computed(() => corrections.value?.corrections.slice(0, 3) ?? []);
 const sourcePreview = computed(() => sources.value?.sources.slice(0, 3) ?? []);
 const packagePreview = computed(() => guidePackages.value?.packages.slice(0, 2) ?? []);
+
+function packageContentLabel(item: GuidePackageRecord) {
+	if (item.contentStatus.verifiedContestPackage)
+		return "verified contests";
+
+	if (item.contentStatus.publishedGuideShell)
+		return "guide shell only";
+
+	if (item.contentStatus.officialLogistics)
+		return "logistics only";
+
+	return "not public";
+}
+
+function packageContentTone(item: GuidePackageRecord) {
+	return item.contentStatus.verifiedContestPackage ? "accent" as const : "warning" as const;
+}
+
+function packageOperationalSummary(item: GuidePackageRecord) {
+	const checklist = `${item.diagnostics.completenessScore}% checklist`;
+	const blockers = item.diagnostics.blockingIssueCount
+		? `${item.diagnostics.blockingIssueCount} blocking check${item.diagnostics.blockingIssueCount === 1 ? "" : "s"} still need resolution.`
+		: "No blocking checklist items are currently open.";
+
+	if (!item.contentStatus.verifiedContestPackage)
+		return `${item.contentStatus.summary} ${checklist}; ${blockers}`;
+
+	return `${blockers} ${checklist}.`;
+}
 
 usePageSeo({
 	description: "Internal Ballot Clarity admin dashboard for review, corrections, and source-health operations.",
@@ -112,10 +143,13 @@ usePageSeo({
 							{{ item.coverageScope.label }}
 						</p>
 						<p class="text-xs text-app-muted tracking-[0.16em] font-semibold mt-2 uppercase dark:text-app-muted-dark">
-							{{ item.workflow.status.replaceAll('_', ' ') }} · {{ item.diagnostics.completenessScore }}% complete
+							{{ item.workflow.status.replaceAll('_', ' ') }} · {{ item.diagnostics.completenessScore }}% checklist
 						</p>
+						<div class="mt-3 flex flex-wrap gap-2">
+							<TrustBadge :label="packageContentLabel(item)" :tone="packageContentTone(item)" />
+						</div>
 						<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
-							{{ item.diagnostics.blockingIssueCount ? `${item.diagnostics.blockingIssueCount} blocking checks still need resolution.` : 'No blocking publish checks are currently open.' }}
+							{{ packageOperationalSummary(item) }}
 						</p>
 					</article>
 				</div>

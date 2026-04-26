@@ -1,3 +1,4 @@
+import type { CoverageRepository } from "../src/coverage-repository.js";
 import assert from "node:assert/strict";
 import test from "node:test";
 import { defaultContentSeed } from "../src/admin-store.js";
@@ -7,7 +8,9 @@ import { buildGuidePackageId, buildGuidePackageRecord } from "../src/guide-packa
 const coverageSnapshot = buildSeedCoverageSnapshot();
 const contentSeed = defaultContentSeed();
 
-const coverageRepository = {
+const coverageRepository: CoverageRepository = {
+	configuredSnapshotMissing: false,
+	configuredSnapshotPath: undefined,
 	data: coverageSnapshot,
 	getCandidateBySlug(slug: string) {
 		return coverageSnapshot.candidates.find(candidate => candidate.slug === slug) ?? null;
@@ -28,7 +31,15 @@ const coverageRepository = {
 	getSourceById(id: string) {
 		return coverageSnapshot.sources.find(source => source.id === id) ?? null;
 	},
-	mode: "snapshot" as const,
+	loadedAt: "2026-04-22T00:00:00.000Z",
+	mode: "snapshot",
+	snapshotMetadata: {
+		importedAt: "2026-04-21T18:30:00.000Z",
+		note: "Guide-package tests use the seed coverage snapshot fixture.",
+		sourceLabel: "Guide-package seed snapshot",
+		sourceType: "seed",
+		status: "seed"
+	},
 	snapshotPath: ":memory:",
 };
 
@@ -58,6 +69,12 @@ test("buildGuidePackageRecord generates the grouped reviewer rubric for draft pa
 	assert.equal(record.diagnostics.recommendation.final, "publish_with_warnings");
 	assert.equal(record.diagnostics.readyToPublish, false);
 	assert.match(record.diagnostics.recommendation.reason, /reviewer/i);
+	assert.equal(record.contentStatus.publishedGuideShell, false);
+	assert.equal(record.contentStatus.officialLogistics.status, "verified_local");
+	assert.equal(record.contentStatus.contests.status, "staged_reference");
+	assert.equal(record.contentStatus.candidates.status, "staged_reference");
+	assert.equal(record.contentStatus.guideShell.status, "official_logistics_only");
+	assert.equal(record.contentStatus.verifiedContestPackage, false);
 
 	const scopeCategory = record.diagnostics.checklistCategories.find(group => group.id === "election_identity_scope");
 	assert.ok(scopeCategory);

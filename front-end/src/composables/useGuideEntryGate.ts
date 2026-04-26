@@ -1,5 +1,10 @@
 import { storeToRefs } from "pinia";
-import { lookupAllowsGuideEntryPoints, lookupBlocksGuideEntryPoints } from "~/utils/guide-entry";
+import {
+	lookupAllowsGuideEntryPoints,
+	lookupBlocksGuideEntryPoints,
+	lookupHasPublishedGuideShell,
+	lookupHasVerifiedContestPackage
+} from "~/utils/guide-entry";
 import { hasActiveNationwideLookupResult } from "~/utils/nationwide-results";
 import { extractNationwideLookupRouteQuery } from "~/utils/nationwide-route-context";
 
@@ -18,11 +23,15 @@ export function useGuideEntryGate() {
 		? true
 		: isHydrated.value && lookupBlocksGuideEntryPoints(lookupContext.value));
 	const hasNationwideResultContext = computed(() => hasActiveNationwideLookupResult(activeNationwideResult.value) || Boolean(routeBackedNationwideLookup.value));
-	const hasPublishedGuideContext = computed(() => Boolean(
+	const hasGuideShellContext = computed(() => Boolean(
 		isHydrated.value
-		&& lookupContext.value?.guideAvailability === "published"
+		&& lookupHasPublishedGuideShell(lookupContext.value)
 		&& selectedElection.value
 		&& selectedLocation.value
+	));
+	const hasVerifiedGuideContext = computed(() => Boolean(
+		hasGuideShellContext.value
+		&& lookupHasVerifiedContestPackage(lookupContext.value)
 	));
 
 	return {
@@ -30,7 +39,9 @@ export function useGuideEntryGate() {
 		activeNationwideResult,
 		allowsGuideEntryPoints,
 		blocksGuideEntryPoints,
-		hasPublishedGuideContext,
-		hasNationwideResultContext
+		hasGuideShellContext,
+		hasNationwideResultContext,
+		hasPublishedGuideContext: hasVerifiedGuideContext,
+		hasVerifiedGuideContext
 	};
 }

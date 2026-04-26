@@ -46,7 +46,7 @@ function statusTone(status: "planned-live" | "reference-pattern" | "research-lay
 
 		<div v-else-if="!data.launchTarget && !data.categories.length && !data.roadmap.length" class="max-w-4xl space-y-6">
 			<InfoCallout title="No local source plan published" tone="info">
-				Ballot Clarity does not currently have a published local source plan in this environment. When local coverage is unavailable, the site should say so clearly and keep lookup results and official election links available.
+				No local source plan is published in this environment. Ballot Clarity should still keep lookup results and official election links available.
 			</InfoCallout>
 			<div class="flex flex-wrap gap-3">
 				<NuxtLink to="/coverage" class="btn-primary">
@@ -67,16 +67,13 @@ function statusTone(status: "planned-live" | "reference-pattern" | "research-lay
 						<TrustBadge label="Limits stated" tone="warning" />
 					</div>
 					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold mt-6 uppercase dark:text-app-muted-dark">
-						Data sources and coverage model
+						Data sources
 					</p>
 					<h1 class="text-5xl text-app-ink leading-tight font-serif mt-3 dark:text-app-text-dark">
-						How Ballot Clarity uses public data
+						Data sources
 					</h1>
 					<p class="bc-prose text-app-muted mt-5 dark:text-app-muted-dark">
-						This page explains which source systems Ballot Clarity uses, what each one is good for, and where the limits are. The rule is simple: use official sources where they are authoritative, use providers where they help with scale or normalization, and say so clearly.
-					</p>
-					<p v-if="data.launchTarget" class="text-sm text-app-muted leading-7 mt-5 dark:text-app-muted-dark">
-						<strong class="text-app-ink dark:text-app-text-dark">Current published local guide:</strong> {{ data.launchTarget.displayName }}.
+						This page explains which source systems Ballot Clarity uses, what each one is good for, and where the limits are.
 					</p>
 					<div class="mt-6 flex flex-wrap gap-4 items-center">
 						<UpdatedAt :value="data.updatedAt" label="Updated" />
@@ -195,83 +192,6 @@ function statusTone(status: "planned-live" | "reference-pattern" | "research-lay
 						</article>
 					</div>
 				</article>
-			</section>
-
-			<section class="gap-6 grid xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-				<div class="surface-panel">
-					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-						Data flow
-					</p>
-					<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-						How data moves through the site
-					</h2>
-					<div class="mt-6 space-y-4">
-						<article v-for="stage in data.architectureStages" :key="stage.id" class="px-5 py-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
-							<h3 class="text-xl text-app-ink font-semibold dark:text-app-text-dark">
-								{{ stage.title }}
-							</h3>
-							<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
-								{{ stage.summary }}
-							</p>
-							<ul class="readable-list text-sm text-app-muted mt-4 pl-5 dark:text-app-muted-dark">
-								<li v-for="detail in stage.details" :key="detail">
-									{{ detail }}
-								</li>
-							</ul>
-						</article>
-					</div>
-				</div>
-
-				<div class="space-y-6">
-					<div class="surface-panel">
-						<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-							Provider changes
-						</p>
-						<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-							Provider changes Ballot Clarity already watches
-						</h2>
-						<ul class="mt-6 space-y-4">
-							<li v-for="item in data.migrationWatch" :key="item.id" class="px-5 py-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
-								<p class="text-lg text-app-ink font-semibold dark:text-app-text-dark">
-									{{ item.title }}
-								</p>
-								<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
-									{{ item.summary }}
-								</p>
-								<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
-									<strong class="text-app-ink dark:text-app-text-dark">Implication:</strong> {{ item.implication }}
-								</p>
-							</li>
-						</ul>
-					</div>
-
-					<div class="surface-panel">
-						<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-							Coverage steps
-						</p>
-						<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-							How coverage expands
-						</h2>
-						<ol class="mt-6 space-y-4">
-							<li v-for="milestone in data.roadmap" :key="milestone.id" class="px-5 py-5 border border-app-line/70 rounded-3xl bg-white/80 dark:border-app-line-dark dark:bg-app-panel-dark/70">
-								<p class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
-									{{ milestone.title }}
-								</p>
-								<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
-									{{ milestone.summary }}
-								</p>
-							</li>
-						</ol>
-						<div class="mt-6 flex flex-wrap gap-3">
-							<NuxtLink to="/coverage" class="btn-secondary">
-								Open coverage profile
-							</NuxtLink>
-							<NuxtLink to="/contact" class="btn-secondary">
-								Contact the project
-							</NuxtLink>
-						</div>
-					</div>
-				</div>
 			</section>
 
 			<section class="surface-panel">

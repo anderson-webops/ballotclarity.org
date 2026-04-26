@@ -137,8 +137,8 @@ usePageSeo({
 	title: "District hub"
 });
 const districtIntroCopy = computed(() => directoryUsesNationwide.value
-	? "Use district pages to inspect the office areas matched to your current lookup, along with linked officials and official election links."
-	: "Use district pages when you want the office area, current representative, and current candidate field in one place."
+	? "Open each matched office area to review the office, current officials, candidates, and official election links for your area."
+	: "Open each office area to review the office, current representative, and candidate field in one place."
 );
 const requiresLookupPrompt = computed(() => !directoryUsesNationwide.value && !showGuideDirectory.value);
 
@@ -165,7 +165,7 @@ function buildLookupAwareTarget(path: string) {
 
 			<div class="surface-panel">
 				<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-					Current lookup
+					Area
 				</p>
 				<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
 					{{ activeLookupSummary.label }}
@@ -180,17 +180,6 @@ function buildLookupAwareTarget(path: string) {
 					/>
 					<UpdatedAt v-if="activeLookupSummary.resolvedAt" :value="activeLookupSummary.resolvedAt" label="Lookup updated" />
 				</div>
-				<div class="mt-6 pt-6 border-t border-app-line/80 dark:border-app-line-dark">
-					<h3 class="text-2xl text-app-ink font-serif dark:text-app-text-dark">
-						What lives here
-					</h3>
-					<ul class="readable-list text-sm text-app-muted mt-5 pl-5 dark:text-app-muted-dark">
-						<li>District and office context</li>
-						<li>Current incumbent or currently serving official, when one is on the ballot</li>
-						<li>Candidate field for the active election</li>
-						<li>Representative person pages and dedicated funding or influence pages where Ballot Clarity has person-level data</li>
-					</ul>
-				</div>
 			</div>
 		</header>
 
@@ -200,20 +189,20 @@ function buildLookupAwareTarget(path: string) {
 
 		<div v-else-if="directoriesError || !directoryData" class="max-w-3xl">
 			<InfoCallout title="District pages unavailable" tone="warning">
-				The district hub could not be loaded. Open nationwide results or the coverage profile and try again.
+				The district hub could not be loaded. Open results or the coverage profile and try again.
 			</InfoCallout>
 		</div>
 
 		<div v-else-if="requiresLookupPrompt" class="max-w-3xl">
-			<InfoCallout title="Active nationwide lookup required" tone="warning">
-				Open lookup results first so this district hub can show the matched districts and linked officials for your area.
+			<InfoCallout title="Current location required" tone="warning">
+				Open results first so this district hub can show the matched districts and linked officials for your area.
 			</InfoCallout>
 			<div class="mt-6 flex flex-wrap gap-3">
 				<NuxtLink to="/" class="btn-primary">
 					Open lookup
 				</NuxtLink>
 				<NuxtLink to="/results" class="btn-secondary">
-					Nationwide results
+					Results for your area
 				</NuxtLink>
 			</div>
 		</div>

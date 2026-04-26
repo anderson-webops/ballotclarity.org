@@ -7,20 +7,18 @@ import { buildLookupContextFromNationwideResult, buildNationwideRouteTarget } fr
 
 interface HeaderLink {
 	badge?: "compare" | "plan";
-	description: string;
 	label: string;
 	to: string;
 }
 
 interface HeaderGroup {
-	description: string;
 	label: string;
 	links: HeaderLink[];
 }
 
 const civicStore = useCivicStore();
 const route = useRoute();
-const { activeNationwideResult, hasNationwideResultContext, hasPublishedGuideContext } = useGuideEntryGate();
+const { activeNationwideResult, hasGuideShellContext, hasNationwideResultContext, hasVerifiedGuideContext } = useGuideEntryGate();
 const isMenuOpen = ref(false);
 const isHeaderVisible = ref(true);
 const lastScrollY = ref(0);
@@ -32,67 +30,67 @@ const headerDirectionThreshold = 12;
 
 let scrollFramePending = false;
 
-const { ballotPlanCount, compareCount, compareList, isHydrated, selectedLocation } = storeToRefs(civicStore);
-const primaryNavLabel = computed(() => hasPublishedGuideContext.value
-	? "Use the guide"
-	: hasNationwideResultContext.value
-		? "Explore active results"
-		: "Start with lookup");
-const primaryNavDescription = computed(() => hasPublishedGuideContext.value
-	? "Ballot guide, plan, and related tools."
-	: hasNationwideResultContext.value
-		? "Results, districts, representatives, and official links."
-		: "Lookup and starting pages.");
-const headerPrimaryAction = computed(() => hasPublishedGuideContext.value
+const { ballotPlanCount, compareCount, compareList, isHydrated, selectedElection, selectedLocation } = storeToRefs(civicStore);
+const primaryNavLabel = computed(() => "Explore");
+const electionOverviewPath = computed(() => selectedElection.value?.slug ? `/elections/${selectedElection.value.slug}` : "/coverage");
+const locationHubPath = computed(() => selectedLocation.value?.slug ? `/locations/${selectedLocation.value.slug}` : "/coverage");
+const headerPrimaryAction = computed(() => hasVerifiedGuideContext.value
 	? { badge: "plan" as const, label: "My plan", to: "/plan" }
-	: hasNationwideResultContext.value
-		? { label: "Nationwide results", to: "/results" }
-		: { label: "Location lookup", to: "/" });
+	: hasGuideShellContext.value
+		? { label: "Election overview", to: electionOverviewPath.value }
+		: hasNationwideResultContext.value
+			? { label: "Results", to: "/results" }
+			: { label: "Lookup", to: "/" });
 
 const navGroups = computed<HeaderGroup[]>(() => {
-	const guideLinks: HeaderLink[] = hasPublishedGuideContext.value
+	const guideLinks: HeaderLink[] = hasVerifiedGuideContext.value
 		? [
-				{ badge: "plan", description: "Saved checklist and print-friendly plan.", label: "My plan", to: "/plan" },
-				{ description: "Contest guide with official links and summaries.", label: "Ballot guide", to: "/ballot" },
-				{ description: "District pages for the current election.", label: "Districts", to: "/districts" },
-				{ description: "Current officials and person pages.", label: "Representatives", to: "/representatives" },
-				{ badge: "compare", description: "Side-by-side candidate comparison.", label: "Compare", to: "/compare" },
-				{ description: "Search public pages and records.", label: "Search", to: "/search" }
+				{ badge: "plan", label: "My plan", to: "/plan" },
+				{ label: "Ballot guide", to: "/ballot" },
+				{ label: "Districts", to: "/districts" },
+				{ label: "Representatives", to: "/representatives" },
+				{ badge: "compare", label: "Compare", to: "/compare" },
+				{ label: "Search", to: "/search" }
 			]
-		: [
-				...(hasNationwideResultContext.value
-					? [{ description: "Return to the latest lookup results.", label: "Nationwide results", to: "/results" }]
-					: [{ description: "Start with a location lookup.", label: "Location lookup", to: "/" }]),
-				{ description: "District pages for your area.", label: "Districts", to: "/districts" },
-				{ description: "Current officials and person pages.", label: "Representatives", to: "/representatives" },
-				{ description: "Search public pages and records.", label: "Search", to: "/search" }
-			];
+		: hasGuideShellContext.value
+			? [
+					{ label: "Election overview", to: electionOverviewPath.value },
+					{ label: "Location hub", to: locationHubPath.value },
+					{ label: "Districts", to: "/districts" },
+					{ label: "Representatives", to: "/representatives" },
+					{ label: "Search", to: "/search" }
+				]
+			: [
+					...(hasNationwideResultContext.value
+						? [{ label: "Results", to: "/results" }]
+						: [{ label: "Location lookup", to: "/" }]),
+					{ label: "Districts", to: "/districts" },
+					{ label: "Representatives", to: "/representatives" },
+					{ label: "Search", to: "/search" }
+				];
 
 	return [
 		{
-			description: primaryNavDescription.value,
 			label: primaryNavLabel.value,
 			links: guideLinks
 		},
 		{
-			description: "Sources, methods, and coverage.",
 			label: "Learn and verify",
 			links: [
-				{ description: "Public source directory and citations.", label: "Sources", to: "/sources" },
-				{ description: "What coverage is available right now.", label: "Coverage", to: "/coverage" },
-				{ description: "How Ballot Clarity uses official and provider data.", label: "Data sources", to: "/data-sources" },
-				{ description: "How summaries, sourcing, and limits are handled.", label: "Methodology", to: "/methodology" },
-				{ description: "Neutrality and editorial rules.", label: "Neutrality", to: "/neutrality" }
+				{ label: "Sources", to: "/sources" },
+				{ label: "Coverage", to: "/coverage" },
+				{ label: "Data sources", to: "/data-sources" },
+				{ label: "Methodology", to: "/methodology" },
+				{ label: "Neutrality", to: "/neutrality" }
 			]
 		},
 		{
-			description: "Help, corrections, and project info.",
 			label: "Project and help",
 			links: [
-				{ description: "Voting FAQ and how to use the site.", label: "Help", to: "/help" },
-				{ description: "Corrections process and public updates.", label: "Corrections", to: "/corrections" },
-				{ description: "Public site status.", label: "Status", to: "/status" },
-				{ description: "About the project and contact options.", label: "About", to: "/about" }
+				{ label: "Help", to: "/help" },
+				{ label: "Corrections", to: "/corrections" },
+				{ label: "Status", to: "/status" },
+				{ label: "About", to: "/about" }
 			]
 		}
 	];
@@ -249,7 +247,6 @@ onBeforeUnmount(() => {
 							</span>
 							<span class="min-w-0">
 								<span class="text-[0.98rem] text-app-ink leading-none font-serif block sm:text-[1.05rem] dark:text-app-text-dark">{{ appName }}</span>
-								<span class="text-[11px] text-app-muted mt-1 hidden dark:text-app-muted-dark 2xl:block">Nonpartisan ballot guide and civic lookup</span>
 							</span>
 						</span>
 					</NuxtLink>
@@ -268,7 +265,7 @@ onBeforeUnmount(() => {
 								:aria-controls="`header-group-panel-${index}`"
 								:aria-expanded="isDesktopGroupOpen(group)"
 								:class="isGroupActive(group) || isDesktopGroupOpen(group)
-									? 'bg-app-ink text-white'
+									? 'bg-app-action text-app-action-text'
 									: 'text-app-muted hover:bg-app-bg hover:text-app-ink dark:text-app-muted-dark dark:hover:bg-app-bg-dark/70 dark:hover:text-app-text-dark'"
 								@click="toggleDesktopGroup(group)"
 							>
@@ -283,9 +280,6 @@ onBeforeUnmount(() => {
 										<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
 											{{ group.label }}
 										</p>
-										<p class="text-xs text-app-muted leading-6 mt-2 dark:text-app-muted-dark">
-											{{ group.description }}
-										</p>
 										<div class="mt-3 gap-1 grid">
 											<NuxtLink
 												v-for="link in group.links"
@@ -299,9 +293,6 @@ onBeforeUnmount(() => {
 													<div class="min-w-0">
 														<p class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
 															{{ link.label }}
-														</p>
-														<p class="text-xs text-app-muted leading-6 mt-1 dark:text-app-muted-dark">
-															{{ link.description }}
 														</p>
 													</div>
 													<span v-if="linkBadge(link)" class="text-[11px] text-app-ink font-bold px-1.5 rounded-full bg-app-warm inline-flex h-5 min-w-5 items-center justify-center">
@@ -380,7 +371,7 @@ onBeforeUnmount(() => {
 						prefetch-on="interaction"
 						class="text-sm font-medium px-4 py-3 rounded-2xl flex transition items-center justify-between focus-ring"
 						:class="isActive(headerPrimaryAction.to)
-							? 'bg-app-ink text-white'
+							? 'bg-app-action text-app-action-text'
 							: 'bg-white text-app-ink dark:bg-app-panel-dark dark:text-app-text-dark'"
 					>
 						<span>{{ headerPrimaryAction.label }}</span>
@@ -408,9 +399,6 @@ onBeforeUnmount(() => {
 						<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
 							{{ group.label }}
 						</p>
-						<p class="text-xs text-app-muted leading-6 mt-1 dark:text-app-muted-dark">
-							{{ group.description }}
-						</p>
 					</div>
 					<NuxtLink
 						v-for="link in group.links"
@@ -419,15 +407,12 @@ onBeforeUnmount(() => {
 						prefetch-on="interaction"
 						class="px-4 py-3 rounded-2xl flex gap-3 transition items-start justify-between focus-ring"
 						:class="isActive(link.to)
-							? 'bg-app-ink text-white'
+							? 'bg-app-action text-app-action-text'
 							: 'bg-white text-app-ink dark:bg-app-panel-dark dark:text-app-text-dark'"
 					>
 						<span class="min-w-0">
 							<span class="text-sm font-semibold block">
 								{{ link.label }}
-							</span>
-							<span class="text-xs mt-1 block" :class="isActive(link.to) ? 'text-white/75' : 'text-app-muted dark:text-app-muted-dark'">
-								{{ link.description }}
 							</span>
 						</span>
 						<span v-if="linkBadge(link)" class="text-[11px] text-app-ink font-bold px-2 py-0.5 rounded-full bg-app-warm">

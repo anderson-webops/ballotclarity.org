@@ -82,18 +82,6 @@ const activeLookupSummary = computed(() => buildActiveLookupSummary({
 	selectedLocation: isHydrated.value ? selectedLocation.value : null
 }));
 const representativeLinkIsExternal = (href: string) => isExternalHref(href);
-const representativeUseCases = computed(() => directoryUsesNationwide.value
-	? [
-			"Open a person page for each matched official",
-			"Open funding and influence pages when those records are attached",
-			"Open district pages and source links for verification"
-		]
-	: [
-			"Find the current officeholder for a district",
-			"Open funding pages directly",
-			"Open influence and lobbying pages directly"
-		]);
-
 const summaryItems = computed(() => {
 	if (!directoryData.value)
 		return [];
@@ -196,12 +184,8 @@ const representativeProvenanceSummary = computed(() => directoryData.value ? bui
 const representativeTimelineItems = computed(() => directoryData.value ? buildRepresentativesDirectoryTimeline(directoryData.value) : []);
 
 const introCopy = computed(() => directoryUsesNationwide.value
-	? "This directory lists the current officials tied to your current lookup, with links to district pages, person pages, and attached funding or influence records where available."
-	: "This directory lists current officeholders with person pages, district pages, and attached funding or influence records where available."
-);
-const noActionCopy = computed(() => directoryUsesNationwide.value
-	? "Open the district, profile, or attached data pages for this official."
-	: "Open the person profile, funding page, or influence page for this official."
+	? "Current officials for your saved area."
+	: "This directory lists current officeholders and links to their district, profile, funding, and influence pages where available."
 );
 const requiresLookupPrompt = computed(() => !directoryUsesNationwide.value && !showGuideDirectory.value);
 
@@ -235,37 +219,27 @@ usePageSeo({
 				</p>
 			</div>
 
-			<div class="space-y-6">
-				<div class="surface-panel">
-					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-						Active lookup context
-					</p>
-					<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-						{{ activeLookupSummary.label }}
-					</h2>
-					<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-						{{ activeLookupSummary.note }}
-					</p>
-					<div class="mt-5 flex flex-wrap gap-3 items-center">
-						<TrustBadge
-							:label="activeLookupSummary.mode === 'nationwide' ? 'Nationwide lookup context' : activeLookupSummary.mode === 'guide' ? 'Published guide context' : 'No saved lookup context'"
-							:tone="activeLookupSummary.mode === 'nationwide' ? 'accent' : activeLookupSummary.mode === 'guide' ? undefined : 'warning'"
-						/>
-						<UpdatedAt v-if="activeLookupSummary.resolvedAt" :value="activeLookupSummary.resolvedAt" label="Lookup updated" />
-					</div>
-					<h3 class="text-2xl text-app-ink font-serif mt-6 dark:text-app-text-dark">
-						Use this page for
-					</h3>
-					<ul class="readable-list text-sm text-app-muted mt-5 pl-5 dark:text-app-muted-dark">
-						<li v-for="useCase in representativeUseCases" :key="useCase">
-							{{ useCase }}
-						</li>
-					</ul>
-					<div class="mt-6">
-						<NuxtLink :to="buildLookupAwareTarget('/districts')" class="btn-secondary">
-							Open district hub
-						</NuxtLink>
-					</div>
+			<div class="surface-panel">
+				<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+					Current area
+				</p>
+				<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
+					{{ activeLookupSummary.label }}
+				</h2>
+				<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
+					{{ activeLookupSummary.note }}
+				</p>
+				<div class="mt-5 flex flex-wrap gap-3 items-center">
+					<TrustBadge
+						:label="activeLookupSummary.mode === 'nationwide' ? 'Lookup results' : activeLookupSummary.mode === 'guide' ? 'Local guide' : 'No saved location'"
+						:tone="activeLookupSummary.mode === 'nationwide' ? 'accent' : activeLookupSummary.mode === 'guide' ? undefined : 'warning'"
+					/>
+					<UpdatedAt v-if="activeLookupSummary.resolvedAt" :value="activeLookupSummary.resolvedAt" label="Lookup updated" />
+				</div>
+				<div class="mt-6">
+					<NuxtLink :to="buildLookupAwareTarget('/districts')" class="btn-secondary">
+						Open district hub
+					</NuxtLink>
 				</div>
 
 				<OfficeContextCard
@@ -287,15 +261,15 @@ usePageSeo({
 		</div>
 
 		<div v-else-if="requiresLookupPrompt" class="max-w-3xl">
-			<InfoCallout title="Active nationwide lookup required" tone="warning">
-				Open lookup results first so this directory can show the current officials for your area.
+			<InfoCallout title="Current location required" tone="warning">
+				Open results first so this directory can show the current officials for your area.
 			</InfoCallout>
 			<div class="mt-6 flex flex-wrap gap-3">
 				<NuxtLink to="/" class="btn-primary">
 					Open lookup
 				</NuxtLink>
 				<NuxtLink to="/results" class="btn-secondary">
-					Nationwide results
+					Results for your area
 				</NuxtLink>
 			</div>
 		</div>
@@ -350,16 +324,14 @@ usePageSeo({
 								{{ representative.party }} · {{ getRepresentativePresentation(representative).officeDisplayLabel }}
 							</p>
 							<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-								{{ representative.summary }} {{ noActionCopy }}
+								{{ representative.summary }}
 							</p>
 							<div class="mt-5 flex flex-wrap gap-2">
 								<VerificationBadge :label="representative.districtLabel" />
 								<SourceDrawer
 									v-if="representative.sourceCount > 0 && representative.sources.length"
 									:button-label="formatSourceCountLabel(representative.sourceCount)"
-									:note="directoryUsesNationwide
-										? 'These are the records currently attached to this representative card.'
-										: 'These are the records currently attached to this representative card.'"
+									note="Sources attached to this card."
 									:sources="representative.sources"
 									:title="`${representative.name} directory sources`"
 									tone="accent"

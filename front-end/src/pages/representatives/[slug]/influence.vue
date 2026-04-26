@@ -5,7 +5,7 @@ import { storeToRefs } from "pinia";
 import { activeNationwideLookupCookieName, parseActiveNationwideLookupCookie } from "~/utils/active-nationwide-cookie";
 import { buildNationwidePersonProfileResponse } from "~/utils/nationwide-person-profile";
 import { buildLookupContextFromNationwideResult, buildNationwideLookupRouteQuery, buildNationwideRouteTarget } from "~/utils/nationwide-route-context";
-import { buildPersonLinkageConfidence, hasPersonInfluence } from "~/utils/person-profile";
+import { hasPersonInfluence } from "~/utils/person-profile";
 
 const route = useRoute();
 const civicStore = useCivicStore();
@@ -43,11 +43,10 @@ const profileData = computed(() => {
 });
 const person = computed(() => profileData.value?.person ?? null);
 const pagePending = computed(() => pending.value || (!data.value && !fallbackData.value));
-const linkageConfidence = computed(() => person.value ? buildPersonLinkageConfidence(person.value.provenance.status) : null);
 const influence = computed(() => person.value?.influence ?? null);
 const influenceAvailable = computed(() => person.value ? hasPersonInfluence(person.value) : false);
 const influenceUnavailableSummary = computed(() => person.value
-	? person.value.enrichmentStatus?.influence.summary || `${person.value.name} resolves as a stable public officeholder record, but Ballot Clarity does not currently have a publishable lobbying or influence context block attached to this person.`
+	? person.value.enrichmentStatus?.influence.summary || "No lobbying or disclosure summary is attached to this officeholder yet."
 	: "");
 const influenceSources = computed(() => person.value
 	? uniqueSources([
@@ -71,14 +70,14 @@ const summaryItems = computed(() => {
 
 	if (!influenceAvailable.value) {
 		return [
-			{ label: "Current office", note: "Office context attached to this representative record.", value: person.value.officeDisplayLabel || person.value.officeSought },
+			{ label: "Current office", note: "Current office.", value: person.value.officeDisplayLabel || person.value.officeSought },
 			{ label: "Influence status", note: "Lobbying or disclosure attachment for this route.", value: "Unavailable" },
 			{ label: "Updated", note: "Profile freshness.", value: formatDateTime(person.value.updatedAt) }
 		];
 	}
 
 	return [
-		{ label: "Current office", note: "Office context attached to this representative record.", value: person.value.officeDisplayLabel || person.value.officeSought },
+		{ label: "Current office", note: "Current office.", value: person.value.officeDisplayLabel || person.value.officeSought },
 		{ label: "Reports", note: "Disclosure reports matched for this route.", value: influence.value?.reportCount ?? person.value.lobbyingContext.length },
 		{ label: "Contribution items", note: "Contribution items kept after the route crosswalk.", value: influence.value?.contributionCount ?? person.value.publicStatements.length },
 		{ label: "Matched total", note: "Total dollar amount across the attached disclosure context.", value: typeof influence.value?.totalMatched === "number" ? formatCurrency(influence.value.totalMatched) : "Not published" },
@@ -112,15 +111,14 @@ usePageSeo({
 				<div class="flex flex-wrap gap-2">
 					<VerificationBadge label="Influence page" tone="accent" />
 					<VerificationBadge label="Context, not causation" />
-					<VerificationBadge :label="linkageConfidence?.label ?? 'Linkage review'" />
 				</div>
 				<h1 class="text-5xl text-app-ink font-serif mt-5 dark:text-app-text-dark">
-					{{ person.name }} influence context
+					{{ person.name }} influence
 				</h1>
 				<p class="text-base text-app-muted leading-8 mt-5 dark:text-app-muted-dark">
 					{{
 						influenceAvailable
-							? "This page isolates the donor, sector, lobbying, and disclosure context attached to the representative profile. It is meant to help scrutiny, not to imply automatic motive or proof of influence."
+							? "This page collects the lobbying, disclosure, and public-statement context attached to this officeholder. Treat it as context, not proof."
 							: influenceUnavailableSummary
 					}}
 				</p>
@@ -223,39 +221,30 @@ usePageSeo({
 
 					<div class="surface-panel">
 						<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
-							How to read this safely
+							Source note
 						</h2>
 						<ul class="readable-list text-sm text-app-muted mt-5 pl-5 dark:text-app-muted-dark">
-							<li><strong class="text-app-ink dark:text-app-text-dark">Linkage:</strong> {{ person.provenance.status }}</li>
-							<li><strong class="text-app-ink dark:text-app-text-dark">Confidence:</strong> {{ linkageConfidence?.label }}</li>
 							<li><strong class="text-app-ink dark:text-app-text-dark">Coverage:</strong> {{ influence?.coverageLabel || "Public disclosures and source-backed statements where available." }}</li>
 							<li><strong class="text-app-ink dark:text-app-text-dark">Match mode:</strong> {{ influence?.matchMode === "committee" ? "Committee crosswalk" : influence?.matchMode === "honoree" ? "Direct officeholder-name match" : "Not published" }}</li>
 							<li><strong class="text-app-ink dark:text-app-text-dark">Data through:</strong> {{ formatDate(person.freshness.dataLastUpdatedAt ?? person.updatedAt) }}</li>
-							<li>Treat sector and donor overlap as context, not proof.</li>
-							<li>LD-203 contribution reports show disclosed giving and filing behavior, not every form of contact or influence.</li>
-							<li>Compare the influence notes with the funding page and direct filings.</li>
-							<li>{{ person.freshness.statusNote }}</li>
 						</ul>
+						<p class="text-sm text-app-muted leading-7 mt-5 dark:text-app-muted-dark">
+							Treat sector and donor overlap as context, not proof. Disclosure filings do not show every form of contact or influence.
+						</p>
 					</div>
 				</div>
 			</section>
 
 			<section v-else class="surface-panel max-w-4xl">
 				<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
-					No influence context attached yet
+					Influence unavailable
 				</h2>
 				<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-					Ballot Clarity has this officeholder page, but no lobbying or disclosure summary is attached for this route.
+					{{ person.enrichmentStatus?.influence.summary || influenceUnavailableSummary }}
 				</p>
-				<ul class="readable-list text-sm text-app-muted mt-6 pl-5 dark:text-app-muted-dark">
-					<li><strong class="text-app-ink dark:text-app-text-dark">Office:</strong> {{ person.officeDisplayLabel || person.officeSought }}</li>
-					<li><strong class="text-app-ink dark:text-app-text-dark">District:</strong> {{ person.districtLabel }}</li>
-					<li><strong class="text-app-ink dark:text-app-text-dark">Linkage:</strong> {{ linkageConfidence?.label }}</li>
-					<li><strong class="text-app-ink dark:text-app-text-dark">Status:</strong> {{ person.enrichmentStatus?.influence.summary || influenceUnavailableSummary }}</li>
-					<li><strong class="text-app-ink dark:text-app-text-dark">Provenance:</strong> {{ person.provenance.label }}</li>
-					<li><strong class="text-app-ink dark:text-app-text-dark">Updated:</strong> {{ formatDate(person.freshness.dataLastUpdatedAt ?? person.updatedAt) }}</li>
-					<li>{{ person.freshness.statusNote }}</li>
-				</ul>
+				<p class="text-sm text-app-muted leading-7 mt-5 dark:text-app-muted-dark">
+					Last reviewed {{ formatDate(person.freshness.dataLastUpdatedAt ?? person.updatedAt) }}.
+				</p>
 			</section>
 		</div>
 	</section>

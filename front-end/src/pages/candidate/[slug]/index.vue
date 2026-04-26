@@ -23,7 +23,7 @@ const civicStore = useCivicStore();
 const route = useRoute();
 const runtimeConfig = useRuntimeConfig();
 const siteUrl = useSiteUrl();
-const { backToLayerLink, layerBreadcrumbLink, locationHubLink, overviewLink } = useRouteLayerNavigation();
+const { backToLayerLink, layerBreadcrumbLink, locationHubLink, openLayerLink, overviewLink } = useRouteLayerNavigation();
 const { ballotPlan, compareList, isHydrated } = storeToRefs(civicStore);
 const candidateSlug = computed(() => String(route.params.slug));
 const { formatCompactNumber, formatCurrency, formatDate, formatPercent } = useFormatters();
@@ -191,11 +191,18 @@ function saveToPlan() {
 			<div class="surface-panel bg-white/70 h-96 animate-pulse dark:bg-app-panel-dark/70" />
 		</div>
 
-		<div v-else-if="error || !candidate" class="max-w-3xl">
-			<InfoCallout title="Candidate profile not available" tone="warning">
-				This candidate page could not be loaded. Return to the current results context and choose another profile.
-			</InfoCallout>
-		</div>
+		<GuideUnavailableState
+			v-else-if="error || !candidate"
+			eyebrow="Candidate detail"
+			message="This candidate dossier is not published as a verified local guide record yet. You can still use the current election overview, official tools, and coverage profile while candidate-level review is pending."
+			:primary-label="openLayerLink.label"
+			:primary-to="openLayerLink.to"
+			secondary-label="Open coverage profile"
+			secondary-to="/coverage"
+			tertiary-label="Report missing information"
+			tertiary-to="/contact"
+			title="Candidate profile not published yet"
+		/>
 
 		<div v-else class="gap-8 grid 2xl:grid-cols-[minmax(0,1.45fr)_minmax(21rem,0.85fr)]">
 			<div class="space-y-6">

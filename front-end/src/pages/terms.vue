@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { appName, contactEmail } from "~/constants";
 
-const effectiveAt = "2026-04-19T17:15:00-04:00";
+const effectiveAt = "2026-04-26T23:30:00-04:00";
 const runtimeConfig = useRuntimeConfig();
 const siteUrl = useSiteUrl();
 const currentOperatorName = String(runtimeConfig.public.operatorLegalName || "Jacob Anderson").trim();
@@ -63,6 +63,7 @@ const noAdviceRules = [
 const sourceAndTimelinessRules = [
 	"Where possible, Ballot Clarity cites official records, primary public documents, candidate-provided materials, and other nonpartisan supporting sources.",
 	"Election information can change quickly. Filing status, polling logistics, deadlines, and ballot composition should be confirmed with the relevant election office before you rely on them.",
+	"Provider-returned ballot previews, candidate lists, contest lists, or measure summaries are not the official ballot and are not treated as a fully reviewed local guide unless Ballot Clarity labels them that way. Verify your exact ballot with the linked official state or local voter/ballot tool.",
 	"Source links may lead to third-party sites. Ballot Clarity does not control those sites and does not endorse every statement or policy they contain."
 ];
 

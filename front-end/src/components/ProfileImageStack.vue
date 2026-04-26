@@ -59,7 +59,7 @@ function handleImageError() {
 <template>
 	<figure class="inline-flex flex-col gap-3 items-center">
 		<div
-			class="profile-image-frame text-app-muted font-serif border border-app-line rounded-[2rem] bg-app-bg shrink-0 grid shadow-sm place-items-center overflow-hidden dark:text-app-muted-dark dark:border-app-line-dark dark:bg-app-bg-dark"
+			class="profile-image-frame text-app-muted leading-none font-serif border border-app-line rounded-[2rem] bg-app-bg shrink-0 grid shadow-sm place-items-center relative overflow-hidden isolate dark:text-app-muted-dark dark:border-app-line-dark dark:bg-app-bg-dark"
 			:class="frameClass"
 		>
 			<img
@@ -67,12 +67,12 @@ function handleImageError() {
 				:key="activeImage.url"
 				:src="activeImage.url"
 				:alt="activeImage.alt || `Portrait of ${name}`"
-				class="h-full w-full object-cover"
+				class="h-[calc(100%+2px)] w-[calc(100%+2px)] block inset-[-1px] absolute object-cover object-center"
 				loading="lazy"
 				decoding="async"
 				@error="handleImageError"
 			>
-			<span v-else aria-hidden="true">{{ initials }}</span>
+			<span v-else class="relative z-10" aria-hidden="true">{{ initials }}</span>
 		</div>
 		<figcaption v-if="caption" class="text-xs text-app-muted leading-5 text-center max-w-44 dark:text-app-muted-dark">
 			{{ caption }}

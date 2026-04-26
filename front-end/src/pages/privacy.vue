@@ -69,7 +69,8 @@ const providerDisclosureSections = [
 	{
 		body: [
 			"Full-address lookups may be sent to the U.S. Census Geocoder and Google Civic Information API to normalize geography, verify address handling, and return official election logistics where available.",
-			"ZIP-only lookups may be resolved through the current ZIP-location service and then enriched with district and official-tool context."
+			"ZIP-only lookups may be resolved through the current ZIP-location service and then enriched with district and official-tool context.",
+			"If optional ballot-content providers such as CTCL BIP, Ballotpedia, BallotReady CivicEngine, or Democracy Works are configured later, full-address or location-derived lookup context may be sent to the configured provider only to return ballot, contest, candidate, measure, or election-logistics data for the requested lookup."
 		],
 		title: "Lookup and official verification providers"
 	},
@@ -105,7 +106,7 @@ const useSections = [
 
 const sharingSections = [
 	"Ballot Clarity currently discloses lookup or route-derived data only to the service providers and public-interest civic-data systems needed to produce the requested page or official verification result.",
-	`Current third-party recipients in active flows include the U.S. Census Geocoder, Google Civic Information API, Open States, Congress.gov, OpenFEC, LDA.gov, and the analytics services hosted at ${analyticsHosts}, plus hosting, logging, and delivery providers needed to run the service.`,
+	`Current third-party recipients in active flows include the U.S. Census Geocoder, Google Civic Information API, Open States, Congress.gov, OpenFEC, LDA.gov, and the analytics services hosted at ${analyticsHosts}, plus hosting, logging, and delivery providers needed to run the service. Optional ballot-content providers are disclosed on the data-sources page and should be treated as active recipients only when configured.`,
 	"The current release does not disclose address lookup input to advertising networks and is not designed to sell or share personal data for cross-context behavioral advertising.",
 	"When you follow external source links, official agencies, filing systems, campaigns, or other third-party sites operate under their own privacy practices.",
 	"If Ballot Clarity materially changes the current provider stack or starts sharing data for a new purpose, this policy should be updated before that change goes live."

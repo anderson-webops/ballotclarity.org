@@ -158,6 +158,59 @@ export interface ElectionLogisticsCandidate {
 	profileImages?: ProfileImage[];
 }
 
+export type BallotContentPreviewStatus = "official_source_unverified" | "provider_unverified";
+
+export interface BallotContentPreviewCandidate {
+	candidateUrl?: string;
+	email?: string;
+	id: string;
+	name: string;
+	orderOnBallot?: number;
+	party?: string;
+	phone?: string;
+	profileImages?: ProfileImage[];
+}
+
+export interface BallotContentPreviewReferendum {
+	brief?: string;
+	effectOfAbstain?: string;
+	passageThreshold?: string;
+	responses: string[];
+	subtitle?: string;
+	text?: string;
+	title?: string;
+	url?: string;
+}
+
+export interface BallotContentPreviewContest {
+	ballotTitle?: string;
+	candidates: BallotContentPreviewCandidate[];
+	districtName?: string;
+	id: string;
+	office?: string;
+	referendum?: BallotContentPreviewReferendum;
+	sourceLabels: string[];
+	title: string;
+	type?: string;
+}
+
+export interface BallotContentPreview {
+	candidateCount: number;
+	contestCount: number;
+	disclaimer: string;
+	generatedAt: string;
+	id: string;
+	measureCount: number;
+	officialOnly: boolean;
+	providerId: string;
+	providerLabel: string;
+	sourceAuthority: SourceAuthority;
+	status: BallotContentPreviewStatus;
+	verificationResource?: OfficialResource;
+	verificationResourceLabel?: string;
+	contests: BallotContentPreviewContest[];
+}
+
 export interface ElectionLogistics {
 	additionalElectionNames: string[];
 	candidatePreviews?: ElectionLogisticsCandidate[];
@@ -523,6 +576,7 @@ export interface LocationLookupResponse {
 	result: LocationLookupResult;
 	inputKind: LocationLookupInputKind;
 	note: string;
+	ballotContentPreviews?: BallotContentPreview[];
 	lookupQuery?: string;
 	selectionId?: string;
 	detectedFromIp?: boolean;
@@ -617,11 +671,28 @@ export interface DataRoadmapMilestone {
 export interface DataSourcesResponse {
 	updatedAt: string;
 	principles: string[];
+	ballotContentProviders?: BallotContentProviderOption[];
 	categories: DataSourceCategory[];
 	architectureStages: DataArchitectureStage[];
 	migrationWatch: DataMigrationWatchItem[];
 	roadmap: DataRoadmapMilestone[];
 	launchTarget?: LaunchTargetProfile;
+}
+
+export type BallotContentProviderConnectionStatus = "active" | "needs_key" | "needs_partner_access" | "needs_endpoint";
+
+export interface BallotContentProviderOption {
+	id: string;
+	label: string;
+	authority: SourceAuthority;
+	connectionStatus: BallotContentProviderConnectionStatus;
+	configured: boolean;
+	envVars: string[];
+	setupUrl: string;
+	docsUrl?: string;
+	capabilities: string[];
+	bestUse: string;
+	limitations: string[];
 }
 
 export type LaunchTargetPhase = "launching" | "planning" | "public-archive";

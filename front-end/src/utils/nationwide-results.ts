@@ -43,6 +43,7 @@ export function normalizeLookupResponseForDisplay(
 	return {
 		actions: response.actions ?? [],
 		availability: response.availability ?? null,
+		ballotContentPreviews: response.ballotContentPreviews ?? [],
 		detectedFromIp: Boolean(response.detectedFromIp),
 		districtMatches: response.districtMatches ?? [],
 		election: election ?? null,

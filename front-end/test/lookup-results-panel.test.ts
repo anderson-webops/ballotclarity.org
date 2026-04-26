@@ -21,3 +21,11 @@ test("lookup availability cards expose page links for actionable categories", ()
 	assert.match(lookupResultsPanel, /:is="card\.href \? NuxtLinkComponent : 'article'"/);
 	assert.doesNotMatch(lookupResultsPanel, /:is="card\.href \? 'NuxtLink' : 'article'"/);
 });
+
+test("lookup results show provider ballot previews with official verification copy", () => {
+	assert.match(lookupResultsPanel, /Provider ballot preview/);
+	assert.match(lookupResultsPanel, /Needs official verification/);
+	assert.match(lookupResultsPanel, /preview\.disclaimer/);
+	assert.match(lookupResultsPanel, /preview\.verificationResource\.url/);
+	assert.match(lookupResultsPanel, /Verify with/);
+});

@@ -83,6 +83,7 @@ import { createAddressCacheRepository } from "./address-cache-repository.js";
 import { createAddressEnrichmentService } from "./address-enrichment.js";
 import { createAdminLoginThrottle } from "./admin-login-throttle.js";
 import { createAdminRepository } from "./admin-repository.js";
+import { buildBallotContentProviderSummary, getBallotContentProviderOptions } from "./ballot-content-providers.js";
 import { createCensusGeocoderClient } from "./census-geocoder.js";
 import { createCongressClient, isCurrentCongressMemberRecord } from "./congress.js";
 import { createCoverageRepository } from "./coverage-repository.js";
@@ -4060,6 +4061,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 				driver: adminRepository.driver,
 				message: healthySnapshot ? undefined : "Configured live coverage snapshot is missing.",
 				ok: healthySnapshot,
+				ballotContentProviderSummary: buildBallotContentProviderSummary(),
 				providerSummary: buildProviderSummary(),
 				ready: healthySnapshot,
 				snapshotProvenance: healthSnapshotProvenance,
@@ -4074,6 +4076,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 				driver: adminRepository.driver,
 				message: error instanceof Error ? error.message : "Admin repository health check failed.",
 				ok: false,
+				ballotContentProviderSummary: buildBallotContentProviderSummary(),
 				providerSummary: buildProviderSummary(),
 				ready: false,
 				snapshotProvenance: buildCoverageSnapshotProvenance(coverageRepository),
@@ -4266,6 +4269,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 		response.json({
 			...coverageRepository.data.dataSources,
 			assetMode: sourceAssetStore.mode,
+			ballotContentProviders: getBallotContentProviderOptions(),
 			coverageMode: coverageRepository.mode,
 			sourceAssetBaseUrl: sourceAssetStore.baseUrl
 		});

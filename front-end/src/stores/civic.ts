@@ -170,6 +170,7 @@ export const useCivicStore = defineStore("civic", {
 			this.nationwideLookupResult = snapshot.nationwideLookupResult
 				? {
 						...snapshot.nationwideLookupResult,
+						ballotContentPreviews: snapshot.nationwideLookupResult.ballotContentPreviews ?? [],
 						selectionOptions: snapshot.nationwideLookupResult.selectionOptions ?? []
 					}
 				: null;

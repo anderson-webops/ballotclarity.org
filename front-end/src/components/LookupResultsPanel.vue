@@ -39,6 +39,8 @@ const visibleLookupActions = computed(() => filterLookupActionsForPresentation(p
 const selectionOptions = computed(() => props.lookup.selectionOptions ?? []);
 const hasSelectionOptions = computed(() => selectionOptions.value.length > 0);
 const electionLogistics = computed(() => props.lookup.electionLogistics);
+const ballotContentPreviews = computed(() => props.lookup.ballotContentPreviews ?? []);
+const hasBallotContentPreviews = computed(() => ballotContentPreviews.value.length > 0);
 const hasElectionLogistics = computed(() => Boolean(
 	electionLogistics.value
 	&& (
@@ -358,7 +360,7 @@ function getRepresentativePresentation(match: NationwideLookupResultContext["rep
 						</li>
 					</ul>
 				</div>
-				<div v-if="electionLogistics.candidatePreviews?.length" class="mt-4">
+				<div v-if="electionLogistics.candidatePreviews?.length && !hasBallotContentPreviews" class="mt-4">
 					<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
 						Candidate previews from Google Civic
 					</p>
@@ -396,6 +398,93 @@ function getRepresentativePresentation(match: NationwideLookupResultContext["rep
 					</ul>
 				</div>
 			</div>
+		</div>
+		<div v-if="hasBallotContentPreviews" class="mt-4 gap-4 grid">
+			<article
+				v-for="preview in ballotContentPreviews"
+				:key="preview.id"
+				class="p-4 border border-app-line rounded-2xl bg-white dark:border-app-line-dark dark:bg-app-panel-dark"
+			>
+				<div class="flex flex-wrap gap-2 items-center">
+					<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+						Provider ballot preview
+					</p>
+					<VerificationBadge :label="preview.providerLabel" tone="accent" />
+					<VerificationBadge label="Needs official verification" tone="warning" />
+				</div>
+				<div class="mt-4 flex flex-wrap gap-3 items-center">
+					<p class="text-lg text-app-ink font-semibold dark:text-app-text-dark">
+						{{ preview.contestCount }} contest{{ preview.contestCount === 1 ? '' : 's' }} returned
+					</p>
+					<VerificationBadge :label="`${preview.candidateCount} candidate${preview.candidateCount === 1 ? '' : 's'}`" />
+					<VerificationBadge v-if="preview.measureCount" :label="`${preview.measureCount} measure${preview.measureCount === 1 ? '' : 's'}`" />
+				</div>
+				<p class="text-sm text-app-muted leading-6 mt-3 dark:text-app-muted-dark">
+					{{ preview.disclaimer }}
+				</p>
+				<a
+					v-if="preview.verificationResource"
+					:href="preview.verificationResource.url"
+					target="_blank"
+					rel="noreferrer"
+					class="text-sm text-app-accent mt-3 underline underline-offset-3 inline-flex gap-2 items-center"
+				>
+					{{ preview.verificationResourceLabel || `Verify with ${preview.verificationResource.label}` }}
+					<span class="i-carbon-launch" />
+				</a>
+				<div class="mt-4 gap-3 grid md:grid-cols-2">
+					<article
+						v-for="contest in preview.contests.slice(0, 6)"
+						:key="contest.id"
+						class="p-4 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70"
+					>
+						<div class="flex flex-wrap gap-2 items-center">
+							<h3 class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
+								{{ contest.title }}
+							</h3>
+							<VerificationBadge v-if="contest.type" :label="contest.type" />
+						</div>
+						<p v-if="contest.districtName" class="text-xs text-app-muted leading-5 mt-2 dark:text-app-muted-dark">
+							{{ contest.districtName }}
+						</p>
+						<ul v-if="contest.candidates.length" class="mt-3 space-y-2">
+							<li
+								v-for="candidate in contest.candidates.slice(0, 4)"
+								:key="candidate.id"
+								class="text-sm text-app-muted leading-6 dark:text-app-muted-dark"
+							>
+								<span class="text-app-ink font-semibold dark:text-app-text-dark">{{ candidate.name }}</span>
+								<span v-if="candidate.party"> · {{ candidate.party }}</span>
+								<span v-if="candidate.orderOnBallot"> · ballot order {{ candidate.orderOnBallot }}</span>
+							</li>
+						</ul>
+						<div v-if="contest.referendum" class="text-sm text-app-muted leading-6 mt-3 dark:text-app-muted-dark">
+							<p v-if="contest.referendum.title" class="text-app-ink font-semibold dark:text-app-text-dark">
+								{{ contest.referendum.title }}
+							</p>
+							<p v-if="contest.referendum.brief">
+								{{ contest.referendum.brief }}
+							</p>
+							<p v-if="contest.referendum.responses.length">
+								Responses: {{ contest.referendum.responses.join(', ') }}
+							</p>
+							<a
+								v-if="contest.referendum.url"
+								:href="contest.referendum.url"
+								target="_blank"
+								rel="noreferrer"
+								class="text-app-accent underline underline-offset-3 inline-flex gap-2 items-center"
+							>
+								Open measure record
+								<span class="i-carbon-launch" />
+							</a>
+						</div>
+						<p v-if="contest.sourceLabels.length" class="text-xs text-app-muted leading-5 mt-3 dark:text-app-muted-dark">
+							Source: {{ contest.sourceLabels.join(', ') }}
+						</p>
+					</article>
+				</div>
+			</article>
 		</div>
 		<div v-if="lookup.normalizedAddress || lookup.districtMatches.length || lookup.representativeMatches.length" class="mt-4 gap-4 grid lg:grid-cols-2">
 			<div v-if="lookup.districtMatches.length" class="p-4 border border-app-line rounded-2xl bg-white dark:border-app-line-dark dark:bg-app-panel-dark">

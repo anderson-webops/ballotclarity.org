@@ -182,15 +182,29 @@ test("createGoogleCivicClient returns structured polling, early-vote, and drop-o
 			return new Response(JSON.stringify({
 				contests: [
 					{
+						ballotTitle: "Mayor of Atlanta",
 						candidates: [
 							{
 								candidateUrl: "https://example.org/jane-candidate",
 								name: "Jane Candidate",
+								orderOnBallot: 1,
 								party: "Nonpartisan",
 								photoUrl: "https://example.org/jane-candidate.jpg"
 							}
 						],
-						office: "Mayor"
+						office: "Mayor",
+						sources: [
+							{
+								name: "Georgia Secretary of State"
+							}
+						]
+					},
+					{
+						referendumBallotResponses: ["Yes", "No"],
+						referendumBrief: "Authorizes a local public-safety bond.",
+						referendumTitle: "Public Safety Bond",
+						referendumUrl: "https://example.org/measure",
+						type: "Referendum"
 					}
 				],
 				dropOffLocations: [
@@ -284,6 +298,14 @@ test("createGoogleCivicClient returns structured polling, early-vote, and drop-o
 	assert.equal(result.logistics?.candidatePreviews?.[0]?.office, "Mayor");
 	assert.equal(result.logistics?.candidatePreviews?.[0]?.profileImages?.[0]?.url, "https://example.org/jane-candidate.jpg");
 	assert.deepEqual(result.logistics?.additionalElectionNames, ["2026 Atlanta Runoff Election"]);
+	assert.equal(result.ballotContentPreviews.length, 1);
+	assert.equal(result.ballotContentPreviews[0]?.contestCount, 2);
+	assert.equal(result.ballotContentPreviews[0]?.candidateCount, 1);
+	assert.equal(result.ballotContentPreviews[0]?.measureCount, 1);
+	assert.equal(result.ballotContentPreviews[0]?.contests[0]?.title, "Mayor of Atlanta");
+	assert.equal(result.ballotContentPreviews[0]?.contests[0]?.candidates[0]?.orderOnBallot, 1);
+	assert.deepEqual(result.ballotContentPreviews[0]?.contests[1]?.referendum?.responses, ["Yes", "No"]);
+	assert.match(result.ballotContentPreviews[0]?.disclaimer ?? "", /Verify your exact ballot/i);
 });
 
 test("createGoogleCivicClient retries voterinfo with a matching election id when the initial lookup returns only normalized address data", async () => {

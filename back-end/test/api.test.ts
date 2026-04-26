@@ -232,6 +232,7 @@ before(async () => {
 								url: "https://vote.utah.gov/voter-registration-portal/"
 							}
 						],
+						ballotContentPreviews: [],
 						logistics: null,
 						note: "Google Civic accepted the address as 151 S University Ave, Provo, UT 84601.",
 						verified: true
@@ -247,6 +248,37 @@ before(async () => {
 							kind: "official-verification",
 							title: "Official ballot information",
 							url: "https://example.org/ballot"
+						}
+					],
+					ballotContentPreviews: [
+						{
+							candidateCount: 1,
+							contestCount: 1,
+							contests: [
+								{
+									candidates: [
+										{
+											id: "google-civic:ballot-candidate:0:0",
+											name: "Jane Candidate",
+											orderOnBallot: 1,
+											party: "Nonpartisan"
+										}
+									],
+									id: "google-civic:contest:0",
+									sourceLabels: ["Google Civic"],
+									title: "Mayor"
+								}
+							],
+							disclaimer: "Provider preview; verify your exact ballot with the official ballot tool.",
+							generatedAt: "2026-04-26T00:00:00.000Z",
+							id: "google-civic:voterinfo:ballot-preview",
+							measureCount: 0,
+							officialOnly: true,
+							providerId: "google-civic",
+							providerLabel: "Google Civic Information API",
+							sourceAuthority: "commercial-provider",
+							status: "official_source_unverified",
+							verificationResourceLabel: "Use the official ballot tool."
 						}
 					],
 					logistics: null,
@@ -1057,6 +1089,7 @@ test("GET /health returns readiness and coverage metadata", async () => {
 	assert.equal(response.status, 200);
 	assert.equal(body.ok, true);
 	assert.equal(body.ready, true);
+	assert.equal(body.ballotContentProviderSummary.total, 5);
 	assert.equal(body.driver, "sqlite");
 	assert.equal(body.coverageMode, "snapshot");
 	assert.equal(body.assetMode, "public-mirror");
@@ -1151,6 +1184,8 @@ test("default runtime stays empty instead of auto-seeding coverage and public op
 		assert.ok(sourcesBody.sources.length >= 8);
 		assert.ok(sourcesBody.sources.some((item: { id: string; publicationKind: string }) => item.id === "open-states" && item.publicationKind === "curated-global"));
 		assert.ok(sourcesBody.sources.some((item: { id: string }) => item.id === "official-state-voter-portals"));
+		assert.ok(sourcesBody.sources.some((item: { id: string }) => item.id === "ballotpedia"));
+		assert.ok(sourcesBody.sources.some((item: { id: string }) => item.id === "democracy-works"));
 
 		const ballotResponse = await fetch(`${isolatedBaseUrl}/api/ballot?election=2026-fulton-county-general`);
 		const ballotBody = await ballotResponse.json();
@@ -1702,6 +1737,10 @@ test("POST /api/location returns the current Fulton County launch location for f
 	assert.equal(body.availability.officialLogistics.status, "available");
 	assert.equal(body.availability.representatives.status, "available");
 	assert.equal(body.availability.ballotCandidates.status, "limited");
+	assert.match(body.availability.ballotCandidates.detail, /provider returned 1 ballot preview set/i);
+	assert.equal(body.ballotContentPreviews[0].providerId, "google-civic");
+	assert.equal(body.ballotContentPreviews[0].contests[0].candidates[0].name, "Jane Candidate");
+	assert.equal(body.ballotContentPreviews[0].verificationResource.label, "Official ballot information");
 	assert.equal(body.availability.financeInfluence.status, "available");
 	assert.equal(body.availability.guideShell.status, "available");
 	assert.equal(body.availability.verifiedContestPackage.status, "unavailable");
@@ -1840,6 +1879,9 @@ test("GET /api/data-sources returns the live-data roadmap and migration notes", 
 	assert.equal(body.roadmap.length, 6);
 	assert.equal(body.launchTarget.displayName, "Fulton County, Georgia");
 	assert.ok(body.categories[0].options[0].links.length >= 1);
+	assert.equal(body.ballotContentProviders.length, 5);
+	assert.equal(body.ballotContentProviders.some((provider: { id: string; envVars: string[] }) => provider.id === "ballotpedia" && provider.envVars.includes("BALLOTPEDIA_API_KEY")), true);
+	assert.equal(body.ballotContentProviders.some((provider: { id: string; connectionStatus: string }) => provider.id === "ctcl-bip" && provider.connectionStatus === "needs_partner_access"), true);
 	assert.equal(body.coverageMode, "snapshot");
 	assert.equal(body.assetMode, "public-mirror");
 });
@@ -2764,6 +2806,7 @@ test("guide package workflow gates local guide publication from draft through ro
 			async lookupVoterInfo() {
 				return {
 					actions: [],
+					ballotContentPreviews: [],
 					logistics: null,
 					note: "Google Civic accepted the Fulton County test address.",
 					verified: true

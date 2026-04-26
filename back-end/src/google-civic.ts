@@ -1,4 +1,12 @@
-import type { ElectionLogistics, LocationLookupAction, ProfileImage } from "./types/civic.js";
+import type {
+	BallotContentPreview,
+	BallotContentPreviewCandidate,
+	BallotContentPreviewContest,
+	ElectionLogistics,
+	LocationLookupAction,
+	OfficialResource,
+	ProfileImage,
+} from "./types/civic.js";
 import { Buffer } from "node:buffer";
 import { lookup as dnsLookup } from "node:dns";
 import { request as httpsRequest } from "node:https";
@@ -39,14 +47,34 @@ interface GoogleCivicCandidate {
 	candidateUrl?: string;
 	email?: string;
 	name?: string;
+	orderOnBallot?: number;
 	party?: string;
 	phone?: string;
 	photoUrl?: string;
 }
 
 interface GoogleCivicContest {
+	ballotTitle?: string;
 	candidates?: GoogleCivicCandidate[];
+	district?: {
+		name?: string;
+		scope?: string;
+	};
+	id?: string;
 	office?: string;
+	referendumBallotResponses?: string[];
+	referendumBrief?: string;
+	referendumEffectOfAbstain?: string;
+	referendumPassageThreshold?: string;
+	referendumSubtitle?: string;
+	referendumText?: string;
+	referendumTitle?: string;
+	referendumUrl?: string;
+	sources?: Array<{
+		name?: string;
+		official?: boolean;
+	}>;
+	type?: string;
 }
 
 interface GoogleCivicLocation {
@@ -86,6 +114,7 @@ interface GoogleCivicElectionsResponse {
 
 export interface OfficialAddressMatch {
 	actions: LocationLookupAction[];
+	ballotContentPreviews: BallotContentPreview[];
 	logistics: ElectionLogistics | null;
 	note: string;
 	verified: boolean;
@@ -235,6 +264,102 @@ function buildCandidatePreviews(contests: GoogleCivicContest[] | undefined) {
 	});
 }
 
+function buildBallotContentCandidate(
+	candidate: GoogleCivicCandidate,
+	contestIndex: number,
+	candidateIndex: number,
+): BallotContentPreviewCandidate | null {
+	const name = candidate.name?.trim();
+
+	if (!name)
+		return null;
+
+	const profileImages = [buildCandidateImage(candidate)].filter((image): image is ProfileImage => Boolean(image));
+
+	return {
+		candidateUrl: candidate.candidateUrl?.trim() || undefined,
+		email: candidate.email?.trim() || undefined,
+		id: `google-civic:ballot-candidate:${contestIndex}:${candidateIndex}`,
+		name,
+		orderOnBallot: typeof candidate.orderOnBallot === "number" ? candidate.orderOnBallot : undefined,
+		party: candidate.party?.trim() || undefined,
+		phone: candidate.phone?.trim() || undefined,
+		profileImages: profileImages.length ? profileImages : undefined,
+	};
+}
+
+function buildBallotContentContest(contest: GoogleCivicContest, contestIndex: number): BallotContentPreviewContest | null {
+	const candidates = (contest.candidates ?? [])
+		.map((candidate, candidateIndex) => buildBallotContentCandidate(candidate, contestIndex, candidateIndex))
+		.filter((candidate): candidate is BallotContentPreviewCandidate => Boolean(candidate));
+	const referendumTitle = contest.referendumTitle?.trim();
+	const referendumBrief = contest.referendumBrief?.trim();
+	const referendumText = contest.referendumText?.trim();
+	const referendumUrl = contest.referendumUrl?.trim();
+	const title = contest.ballotTitle?.trim()
+		|| contest.office?.trim()
+		|| referendumTitle
+		|| `Ballot contest ${contestIndex + 1}`;
+	const sourceLabels = Array.from(new Set((contest.sources ?? [])
+		.map(source => source.name?.trim())
+		.filter((source): source is string => Boolean(source))));
+	const referendum = referendumTitle || referendumBrief || referendumText || referendumUrl
+		? {
+				brief: referendumBrief || undefined,
+				effectOfAbstain: contest.referendumEffectOfAbstain?.trim() || undefined,
+				passageThreshold: contest.referendumPassageThreshold?.trim() || undefined,
+				responses: (contest.referendumBallotResponses ?? []).map(response => response.trim()).filter(Boolean),
+				subtitle: contest.referendumSubtitle?.trim() || undefined,
+				text: referendumText || undefined,
+				title: referendumTitle || undefined,
+				url: referendumUrl || undefined,
+			}
+		: undefined;
+
+	if (!candidates.length && !referendum)
+		return null;
+
+	return {
+		ballotTitle: contest.ballotTitle?.trim() || undefined,
+		candidates,
+		districtName: contest.district?.name?.trim() || undefined,
+		id: contest.id?.trim() || `google-civic:contest:${contestIndex}`,
+		office: contest.office?.trim() || undefined,
+		referendum,
+		sourceLabels,
+		title,
+		type: contest.type?.trim() || undefined,
+	};
+}
+
+function buildBallotContentPreview(payload: GoogleCivicVoterInfoResponse): BallotContentPreview | null {
+	const contests = (payload.contests ?? [])
+		.map(buildBallotContentContest)
+		.filter((contest): contest is BallotContentPreviewContest => Boolean(contest));
+
+	if (!contests.length)
+		return null;
+
+	const candidateCount = contests.reduce((count, contest) => count + contest.candidates.length, 0);
+	const measureCount = contests.filter(contest => Boolean(contest.referendum)).length;
+
+	return {
+		candidateCount,
+		contestCount: contests.length,
+		contests,
+		disclaimer: "This is provider-returned ballot preview data from Google Civic/Voting Information Project. Ballot Clarity has not locally reviewed every contest, candidate, or measure in this preview. Verify your exact ballot with the linked official voter or ballot tool before relying on it.",
+		generatedAt: new Date().toISOString(),
+		id: "google-civic:voterinfo:ballot-preview",
+		measureCount,
+		officialOnly: true,
+		providerId: "google-civic",
+		providerLabel: "Google Civic Information API",
+		sourceAuthority: "commercial-provider",
+		status: "official_source_unverified",
+		verificationResourceLabel: "Use the official voter or ballot tool linked with this lookup to confirm your exact ballot.",
+	};
+}
+
 function buildElectionLogistics(payload: GoogleCivicVoterInfoResponse): ElectionLogistics | null {
 	const pollingLocations = buildElectionLogisticsSites(payload.pollingLocations, "polling");
 	const earlyVoteSites = buildElectionLogisticsSites(payload.earlyVoteSites, "early-vote");
@@ -268,7 +393,7 @@ function buildElectionLogistics(payload: GoogleCivicVoterInfoResponse): Election
 		electionName: payload.election?.name?.trim() || undefined,
 		mailOnly: payload.mailOnly === true,
 		normalizedAddress: normalizedAddress || undefined,
-		officialSourceNote: "Structured election administration details returned by Google Civic for this address. Verify final hours, locations, and ballot-handling rules with the linked official election tools.",
+		officialSourceNote: "Structured election administration details returned by Google Civic for this address. Verify final hours, locations, ballot-handling rules, and the exact ballot you receive with the linked official voter or ballot tools.",
 		pollingLocations,
 	};
 }
@@ -412,6 +537,45 @@ function buildOfficialActions(payload: GoogleCivicVoterInfoResponse) {
 	return actions;
 }
 
+function actionToOfficialResource(action: LocationLookupAction | undefined): OfficialResource | undefined {
+	if (!action?.url)
+		return undefined;
+
+	return {
+		authority: "official-government",
+		label: action.title,
+		note: action.description,
+		sourceLabel: action.badge || "Official election verification",
+		sourceSystem: "Google Civic official election link",
+		url: action.url,
+	};
+}
+
+function attachVerificationResource(
+	previews: BallotContentPreview[],
+	actions: LocationLookupAction[],
+) {
+	const ballotVerificationAction = actions.find(action => /ballot|voter|registration/i.test(`${action.title} ${action.description}`))
+		?? actions.find(action => action.kind === "official-verification");
+	const verificationResource = actionToOfficialResource(ballotVerificationAction);
+
+	return previews.map(preview => ({
+		...preview,
+		verificationResource,
+		verificationResourceLabel: verificationResource
+			? `Verify with ${verificationResource.label}.`
+			: preview.verificationResourceLabel,
+	}));
+}
+
+function buildVerifiedBallotContentPreviews(payload: GoogleCivicVoterInfoResponse, actions: LocationLookupAction[]) {
+	const ballotContentPreview = buildBallotContentPreview(payload);
+
+	return ballotContentPreview
+		? attachVerificationResource([ballotContentPreview], actions)
+		: [];
+}
+
 export function shouldForceGoogleCivicIpv4(value = process.env.GOOGLE_CIVIC_FORCE_IPV4) {
 	return truthyEnvPattern.test(value?.trim() ?? "");
 }
@@ -541,6 +705,7 @@ export function createGoogleCivicClient(
 			if (!initialLookup.ok && !electionUnknownPattern.test(initialLookup.errorPayload?.error?.message || "")) {
 				return {
 					actions: [],
+					ballotContentPreviews: [],
 					logistics: null,
 					note: normalizeGoogleCivicError(initialLookup.errorPayload),
 					verified: false,
@@ -588,6 +753,7 @@ export function createGoogleCivicClient(
 			if (!payload) {
 				return {
 					actions: [],
+					ballotContentPreviews: [],
 					logistics: null,
 					note: normalizeGoogleCivicError(initialLookup.ok ? null : initialLookup.errorPayload),
 					verified: false,
@@ -604,6 +770,7 @@ export function createGoogleCivicClient(
 
 			return {
 				actions,
+				ballotContentPreviews: buildVerifiedBallotContentPreviews(payload, actions),
 				logistics,
 				note: [
 					normalizedAddress ? `Google Civic accepted the address as ${normalizedAddress}.` : "Google Civic accepted the submitted address.",

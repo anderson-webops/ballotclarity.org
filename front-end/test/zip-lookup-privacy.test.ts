@@ -16,3 +16,8 @@ test("privacy policy describes ZIP-only log scope and exclusions", () => {
 	assert.match(privacyPage, /does not include raw lookup text, full street addresses, ZIP\+4 entries, IP address, or user agent/);
 	assert.match(privacyPage, /Full street addresses, ZIP\+4 entries, city names, and mixed address strings are not added to the ZIP-only log/);
 });
+
+test("privacy policy discloses optional ballot-content provider recipients", () => {
+	assert.match(privacyPage, /CTCL BIP, Ballotpedia, BallotReady CivicEngine, or Democracy Works/);
+	assert.match(privacyPage, /should be treated as active recipients only when configured/);
+});

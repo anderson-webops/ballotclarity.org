@@ -45,6 +45,7 @@ const hasElectionLogistics = computed(() => Boolean(
 		|| electionLogistics.value.pollingLocations.length
 		|| electionLogistics.value.earlyVoteSites.length
 		|| electionLogistics.value.dropOffLocations.length
+		|| electionLogistics.value.candidatePreviews?.length
 		|| electionLogistics.value.additionalElectionNames.length
 		|| electionLogistics.value.mailOnly
 	)
@@ -280,6 +281,43 @@ function getRepresentativePresentation(match: NationwideLookupResultContext["rep
 						</li>
 					</ul>
 				</div>
+				<div v-if="electionLogistics.candidatePreviews?.length" class="mt-4">
+					<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+						Candidate previews from Google Civic
+					</p>
+					<ul class="mt-3 gap-3 grid sm:grid-cols-2">
+						<li
+							v-for="candidate in electionLogistics.candidatePreviews.slice(0, 4)"
+							:key="candidate.id"
+							class="p-3 rounded-2xl bg-app-bg flex gap-3 items-start dark:bg-app-bg-dark/70"
+						>
+							<ProfileImageStack
+								v-if="candidate.profileImages?.length"
+								:images="candidate.profileImages"
+								:name="candidate.name"
+								size="sm"
+							/>
+							<div class="min-w-0">
+								<p class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
+									{{ candidate.name }}
+								</p>
+								<p class="text-sm text-app-muted leading-6 dark:text-app-muted-dark">
+									{{ [candidate.party, candidate.office].filter(Boolean).join(' · ') }}
+								</p>
+								<a
+									v-if="candidate.candidateUrl"
+									:href="candidate.candidateUrl"
+									target="_blank"
+									rel="noreferrer"
+									class="text-app-accent underline underline-offset-3 inline-flex gap-2 items-center"
+								>
+									Candidate link
+									<span class="i-carbon-launch" />
+								</a>
+							</div>
+						</li>
+					</ul>
+				</div>
 			</div>
 		</div>
 		<div v-if="lookup.normalizedAddress || lookup.districtMatches.length || lookup.representativeMatches.length" class="mt-4 gap-4 grid lg:grid-cols-2">
@@ -311,18 +349,28 @@ function getRepresentativePresentation(match: NationwideLookupResultContext["rep
 				</p>
 				<ul class="mt-3 space-y-3">
 					<li v-for="match in lookup.representativeMatches" :key="match.id" class="text-sm text-app-muted leading-6 dark:text-app-muted-dark">
-						<div class="flex flex-wrap gap-2 items-center">
-							<NuxtLink
-								:to="buildRepresentativeHref(match)"
-								class="text-app-ink font-semibold underline decoration-transparent underline-offset-3 transition dark:text-app-text-dark focus-visible:text-app-accent hover:text-app-accent focus-visible:decoration-current hover:decoration-current"
-							>
-								{{ match.name }}
-							</NuxtLink>
-							<VerificationBadge :label="getRepresentativePresentation(match).levelLabel" tone="accent" />
-							<span v-if="match.party" class="text-xs tracking-[0.12em] uppercase">{{ match.party }}</span>
-							<VerificationBadge :label="match.sourceSystem" />
+						<div class="flex gap-3 items-start">
+							<ProfileImageStack
+								v-if="match.profileImages?.length"
+								:images="match.profileImages"
+								:name="match.name"
+								size="sm"
+							/>
+							<div class="min-w-0">
+								<div class="flex flex-wrap gap-2 items-center">
+									<NuxtLink
+										:to="buildRepresentativeHref(match)"
+										class="text-app-ink font-semibold underline decoration-transparent underline-offset-3 transition dark:text-app-text-dark focus-visible:text-app-accent hover:text-app-accent focus-visible:decoration-current hover:decoration-current"
+									>
+										{{ match.name }}
+									</NuxtLink>
+									<VerificationBadge :label="getRepresentativePresentation(match).levelLabel" tone="accent" />
+									<span v-if="match.party" class="text-xs tracking-[0.12em] uppercase">{{ match.party }}</span>
+									<VerificationBadge :label="match.sourceSystem" />
+								</div>
+								<p>{{ getRepresentativePresentation(match).officeDisplayLabel }}</p>
+							</div>
 						</div>
-						<p>{{ getRepresentativePresentation(match).officeDisplayLabel }}</p>
 						<a
 							v-if="match.openstatesUrl"
 							:href="match.openstatesUrl"

@@ -192,14 +192,22 @@ usePageSeo({
 								<VerificationBadge :label="getRepresentativePresentation(representative).levelLabel" tone="accent" />
 								<IncumbentBadge />
 							</div>
-							<div class="mt-4 flex flex-wrap gap-3 items-center">
-								<h3 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
-									{{ representative.name }}
-								</h3>
+							<div class="mt-4 flex gap-4 items-start">
+								<ProfileImageStack
+									v-if="representative.profileImages?.length"
+									:images="representative.profileImages"
+									:name="representative.name"
+									size="md"
+								/>
+								<div class="min-w-0">
+									<h3 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
+										{{ representative.name }}
+									</h3>
+									<p class="text-sm text-app-muted mt-3 dark:text-app-muted-dark">
+										{{ representative.party }} · {{ getRepresentativePresentation(representative).officeDisplayLabel }}
+									</p>
+								</div>
 							</div>
-							<p class="text-sm text-app-muted mt-4 dark:text-app-muted-dark">
-								{{ representative.party }} · {{ getRepresentativePresentation(representative).officeDisplayLabel }}
-							</p>
 							<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
 								{{ representative.summary }}
 							</p>

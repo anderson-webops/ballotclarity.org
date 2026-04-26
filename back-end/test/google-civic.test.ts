@@ -180,6 +180,19 @@ test("createGoogleCivicClient returns structured polling, early-vote, and drop-o
 		apiKey: "test-google-civic-key",
 		fetchImpl: (async () => {
 			return new Response(JSON.stringify({
+				contests: [
+					{
+						candidates: [
+							{
+								candidateUrl: "https://example.org/jane-candidate",
+								name: "Jane Candidate",
+								party: "Nonpartisan",
+								photoUrl: "https://example.org/jane-candidate.jpg"
+							}
+						],
+						office: "Mayor"
+					}
+				],
 				dropOffLocations: [
 					{
 						address: {
@@ -267,6 +280,9 @@ test("createGoogleCivicClient returns structured polling, early-vote, and drop-o
 	assert.match(result.logistics?.pollingLocations[0]?.note ?? "", /7:00 AM - 7:00 PM/);
 	assert.equal(result.logistics?.earlyVoteSites[0]?.name, "Atlanta Early Vote Center");
 	assert.equal(result.logistics?.dropOffLocations[0]?.name, "Fulton County Election Hub");
+	assert.equal(result.logistics?.candidatePreviews?.[0]?.name, "Jane Candidate");
+	assert.equal(result.logistics?.candidatePreviews?.[0]?.office, "Mayor");
+	assert.equal(result.logistics?.candidatePreviews?.[0]?.profileImages?.[0]?.url, "https://example.org/jane-candidate.jpg");
 	assert.deepEqual(result.logistics?.additionalElectionNames, ["2026 Atlanta Runoff Election"]);
 });
 

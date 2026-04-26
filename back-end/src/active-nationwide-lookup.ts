@@ -10,6 +10,7 @@ import type {
 	LocationSelection,
 	OfficialResource,
 	PersonProfileResponse,
+	ProfileImage,
 	RepresentativesResponse,
 	RepresentativeSummary,
 	Source,
@@ -190,6 +191,43 @@ function sanitizeDistrictMatch(value: unknown): LocationDistrictMatch | null {
 	};
 }
 
+function sanitizeProfileImage(value: unknown): ProfileImage | null {
+	if (!isRecord(value))
+		return null;
+
+	const alt = typeof value.alt === "string" ? value.alt.trim() : "";
+	const sourceLabel = typeof value.sourceLabel === "string" ? value.sourceLabel.trim() : "";
+	const sourceSystem = typeof value.sourceSystem === "string" ? value.sourceSystem.trim() : "";
+	const url = typeof value.url === "string" ? value.url.trim() : "";
+
+	if (!alt || !sourceLabel || !sourceSystem || !url)
+		return null;
+
+	try {
+		const parsedUrl = new URL(url);
+
+		if (parsedUrl.protocol !== "https:" && parsedUrl.protocol !== "http:")
+			return null;
+	}
+	catch {
+		return null;
+	}
+
+	return {
+		alt,
+		attribution: typeof value.attribution === "string" ? value.attribution.trim() || undefined : undefined,
+		capturedAt: typeof value.capturedAt === "string" ? value.capturedAt.trim() || undefined : undefined,
+		priority: typeof value.priority === "number" && Number.isFinite(value.priority) ? value.priority : 100,
+		sourceKind: value.sourceKind === "archive" || value.sourceKind === "campaign" || value.sourceKind === "official" || value.sourceKind === "provider"
+			? value.sourceKind
+			: "provider",
+		sourceLabel,
+		sourceSystem,
+		sourceUrl: typeof value.sourceUrl === "string" ? value.sourceUrl.trim() || undefined : undefined,
+		url,
+	};
+}
+
 function sanitizeRepresentativeMatch(value: unknown): LocationRepresentativeMatch | null {
 	if (!isRecord(value))
 		return null;
@@ -235,6 +273,9 @@ function sanitizeRepresentativeMatch(value: unknown): LocationRepresentativeMatc
 		officeTitle,
 		openstatesUrl: typeof value.openstatesUrl === "string" ? value.openstatesUrl : undefined,
 		party: typeof value.party === "string" ? value.party : undefined,
+		profileImages: Array.isArray(value.profileImages)
+			? value.profileImages.map(sanitizeProfileImage).filter((item): item is ProfileImage => Boolean(item))
+			: undefined,
 		sourceSystem,
 	};
 }
@@ -318,7 +359,18 @@ function buildCookiePayload(context: ActiveNationwideLookupContext) {
 		inputKind: context.inputKind,
 		location: context.location,
 		normalizedAddress: context.normalizedAddress,
-		representativeMatches: context.representativeMatches,
+		representativeMatches: context.representativeMatches.map(match => ({
+			districtLabel: match.districtLabel,
+			governmentLevel: match.governmentLevel,
+			id: match.id,
+			name: match.name,
+			officeDisplayLabel: match.officeDisplayLabel,
+			officeTitle: match.officeTitle,
+			officeType: match.officeType,
+			openstatesUrl: match.openstatesUrl,
+			party: match.party,
+			sourceSystem: match.sourceSystem,
+		})),
 		selectionId: context.selectionId,
 		resolvedAt: context.resolvedAt,
 		result: context.result,
@@ -703,6 +755,7 @@ function buildDirectoryBundle(context: ActiveNationwideLookupContext) {
 			onCurrentBallot: false,
 			openstatesUrl: representative.openstatesUrl,
 			party: representative.party ?? "Unknown",
+			profileImages: representative.profileImages,
 			provenance: {
 				label: representative.sourceSystem ? `${representative.sourceSystem} representative match` : "Lookup results representative match",
 				note: "Derived from your saved lookup results rather than a published local ballot guide.",
@@ -1122,6 +1175,7 @@ export function buildNationwidePersonProfileResponse(context: ActiveNationwideLo
 			onCurrentBallot: false,
 			openstatesUrl: representative.openstatesUrl,
 			party: representative.party,
+			profileImages: representative.profileImages,
 			provenance: {
 				asOf: updatedAt,
 				label: representative.provenance?.label || "Lookup results representative match",

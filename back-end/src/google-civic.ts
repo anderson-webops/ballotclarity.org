@@ -1,4 +1,4 @@
-import type { ElectionLogistics, LocationLookupAction } from "./types/civic.js";
+import type { ElectionLogistics, LocationLookupAction, ProfileImage } from "./types/civic.js";
 import { Buffer } from "node:buffer";
 import { lookup as dnsLookup } from "node:dns";
 import { request as httpsRequest } from "node:https";
@@ -35,6 +35,20 @@ interface GoogleCivicState {
 	electionAdministrationBody?: GoogleCivicAdministrationBody;
 }
 
+interface GoogleCivicCandidate {
+	candidateUrl?: string;
+	email?: string;
+	name?: string;
+	party?: string;
+	phone?: string;
+	photoUrl?: string;
+}
+
+interface GoogleCivicContest {
+	candidates?: GoogleCivicCandidate[];
+	office?: string;
+}
+
 interface GoogleCivicLocation {
 	address?: GoogleCivicAddress;
 	name?: string;
@@ -55,6 +69,7 @@ interface GoogleCivicErrorResponse {
 }
 
 interface GoogleCivicVoterInfoResponse {
+	contests?: GoogleCivicContest[];
 	dropOffLocations?: GoogleCivicLocation[];
 	earlyVoteSites?: GoogleCivicLocation[];
 	election?: GoogleCivicElection;
@@ -176,10 +191,55 @@ function buildElectionLogisticsSites(
 		.filter((site): site is NonNullable<typeof site> => Boolean(site));
 }
 
+function buildCandidateImage(candidate: GoogleCivicCandidate): ProfileImage | null {
+	const imageUrl = candidate.photoUrl?.trim();
+	const name = candidate.name?.trim();
+
+	if (!imageUrl || !name)
+		return null;
+
+	return {
+		alt: `Photo of ${name}`,
+		priority: 30,
+		sourceKind: "provider",
+		sourceLabel: "Google Civic candidate photo",
+		sourceSystem: "Google Civic Information API",
+		sourceUrl: candidate.candidateUrl?.trim() || undefined,
+		url: imageUrl,
+	};
+}
+
+function buildCandidatePreviews(contests: GoogleCivicContest[] | undefined) {
+	return (contests ?? []).flatMap((contest, contestIndex) => {
+		const office = contest.office?.trim() || undefined;
+
+		return (contest.candidates ?? []).map((candidate, candidateIndex) => {
+			const name = candidate.name?.trim();
+
+			if (!name)
+				return null;
+
+			const profileImages = [buildCandidateImage(candidate)].filter((image): image is ProfileImage => Boolean(image));
+
+			return {
+				candidateUrl: candidate.candidateUrl?.trim() || undefined,
+				email: candidate.email?.trim() || undefined,
+				id: `google-civic:candidate:${contestIndex}:${candidateIndex}`,
+				name,
+				office,
+				party: candidate.party?.trim() || undefined,
+				phone: candidate.phone?.trim() || undefined,
+				profileImages: profileImages.length ? profileImages : undefined,
+			};
+		}).filter((candidate): candidate is NonNullable<typeof candidate> => Boolean(candidate));
+	});
+}
+
 function buildElectionLogistics(payload: GoogleCivicVoterInfoResponse): ElectionLogistics | null {
 	const pollingLocations = buildElectionLogisticsSites(payload.pollingLocations, "polling");
 	const earlyVoteSites = buildElectionLogisticsSites(payload.earlyVoteSites, "early-vote");
 	const dropOffLocations = buildElectionLogisticsSites(payload.dropOffLocations, "drop-off");
+	const candidatePreviews = buildCandidatePreviews(payload.contests);
 	const additionalElectionNames = (payload.otherElections ?? [])
 		.map(item => item.name?.trim())
 		.filter((item): item is string => Boolean(item));
@@ -192,6 +252,7 @@ function buildElectionLogistics(payload: GoogleCivicVoterInfoResponse): Election
 		&& !pollingLocations.length
 		&& !earlyVoteSites.length
 		&& !dropOffLocations.length
+		&& !candidatePreviews.length
 		&& !additionalElectionNames.length
 		&& !payload.mailOnly
 	) {
@@ -200,6 +261,7 @@ function buildElectionLogistics(payload: GoogleCivicVoterInfoResponse): Election
 
 	return {
 		additionalElectionNames,
+		candidatePreviews: candidatePreviews.length ? candidatePreviews : undefined,
 		dropOffLocations,
 		earlyVoteSites,
 		electionDay: payload.election?.electionDay?.trim() || undefined,
@@ -218,6 +280,7 @@ function hasStructuredElectionDetails(payload: GoogleCivicVoterInfoResponse) {
 		|| payload.pollingLocations?.length
 		|| payload.earlyVoteSites?.length
 		|| payload.dropOffLocations?.length
+		|| payload.contests?.some(contest => contest.candidates?.length)
 		|| payload.mailOnly
 		|| payload.otherElections?.length
 		|| payload.state?.[0]?.electionAdministrationBody,

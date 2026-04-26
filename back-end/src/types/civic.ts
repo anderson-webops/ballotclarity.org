@@ -147,8 +147,20 @@ export interface ElectionLogisticsSite {
 	note?: string;
 }
 
+export interface ElectionLogisticsCandidate {
+	candidateUrl?: string;
+	email?: string;
+	id: string;
+	name: string;
+	office?: string;
+	party?: string;
+	phone?: string;
+	profileImages?: ProfileImage[];
+}
+
 export interface ElectionLogistics {
 	additionalElectionNames: string[];
+	candidatePreviews?: ElectionLogisticsCandidate[];
 	dropOffLocations: ElectionLogisticsSite[];
 	earlyVoteSites: ElectionLogisticsSite[];
 	electionDay?: string;
@@ -250,6 +262,20 @@ export interface CandidateLink {
 	note?: string;
 }
 
+export type ProfileImageSourceKind = "archive" | "campaign" | "official" | "provider";
+
+export interface ProfileImage {
+	alt: string;
+	attribution?: string;
+	capturedAt?: string;
+	priority: number;
+	sourceKind: ProfileImageSourceKind;
+	sourceLabel: string;
+	sourceSystem: string;
+	sourceUrl?: string;
+	url: string;
+}
+
 export interface ComparableStatement {
 	id: string;
 	text: string | null;
@@ -314,6 +340,7 @@ export interface Candidate {
 	comparison: CandidateComparisonProfile;
 	sources: Source[];
 	updatedAt: string;
+	profileImages?: ProfileImage[];
 }
 
 export interface Measure {
@@ -425,6 +452,7 @@ export interface LocationRepresentativeMatch {
 	officeType: RepresentativeOfficeType | null;
 	sourceSystem: string;
 	openstatesUrl?: string;
+	profileImages?: ProfileImage[];
 }
 
 export type LocationLookupActionKind = "ballot-guide" | "official-verification";
@@ -794,6 +822,7 @@ export interface RepresentativeSummary {
 	} | null;
 	incumbent: boolean;
 	openstatesUrl?: string;
+	profileImages?: ProfileImage[];
 	summary: string;
 	fundingAvailable: boolean;
 	fundingSummary: string;
@@ -830,12 +859,15 @@ export interface PersonProfileInfluence {
 export interface PersonProfileOfficeContext {
 	chamberLabel?: string;
 	committeeMemberships?: string[];
+	currentTermEndLabel?: string;
 	currentTermLabel?: string;
+	currentTermStartLabel?: string;
 	districtLabel?: string;
 	jurisdictionLabel?: string;
 	officialOfficeAddress?: string;
 	officialPhone?: string;
 	referenceLinks?: ExternalLink[];
+	serviceStartLabel?: string;
 }
 
 export interface PersonProfileEnrichmentStatusItem {
@@ -903,6 +935,7 @@ export interface PersonProfile {
 	officeContext?: PersonProfileOfficeContext;
 	enrichmentStatus?: PersonProfileEnrichmentStatus;
 	officialWebsiteUrl?: string;
+	profileImages?: ProfileImage[];
 	provenance: {
 		source: "guide" | "nationwide" | "lookup";
 		label: string;

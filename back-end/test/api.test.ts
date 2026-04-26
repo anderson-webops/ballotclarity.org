@@ -269,6 +269,10 @@ before(async () => {
 						bioguideId,
 						cosponsoredLegislationCount: 780,
 						currentMember: true,
+						depiction: {
+							attribution: "Courtesy U.S. Senate Historical Office",
+							imageUrl: "https://www.congress.gov/img/member/o000174_200.jpg",
+						},
 						directOrderName: "Jon Ossoff",
 						firstName: "Jon",
 						lastName: "Ossoff",
@@ -277,6 +281,24 @@ before(async () => {
 						sponsoredLegislationCount: 216,
 						state: "Georgia",
 						terms: [
+							{
+								chamber: "Senate",
+								congress: 117,
+								endYear: 2023,
+								memberType: "Senator",
+								startYear: 2021,
+								stateCode: "GA",
+								stateName: "Georgia",
+							},
+							{
+								chamber: "Senate",
+								congress: 118,
+								endYear: 2025,
+								memberType: "Senator",
+								startYear: 2023,
+								stateCode: "GA",
+								stateName: "Georgia",
+							},
 							{
 								chamber: "Senate",
 								congress: 119,
@@ -303,6 +325,10 @@ before(async () => {
 						bioguideId,
 						cosponsoredLegislationCount: 506,
 						currentMember: true,
+						depiction: {
+							attribution: "Courtesy U.S. House Office of Photography",
+							imageUrl: "https://www.congress.gov/img/member/m001218_200.jpg",
+						},
 						district: 7,
 						directOrderName: "Richard McCormick",
 						firstName: "Richard",
@@ -312,6 +338,16 @@ before(async () => {
 						sponsoredLegislationCount: 50,
 						state: "Georgia",
 						terms: [
+							{
+								chamber: "House of Representatives",
+								congress: 118,
+								district: 7,
+								endYear: 2025,
+								memberType: "Representative",
+								startYear: 2023,
+								stateCode: "GA",
+								stateName: "Georgia",
+							},
 							{
 								chamber: "House of Representatives",
 								congress: 119,
@@ -1414,6 +1450,7 @@ test("POST /api/location filters former Congress members out of ZIP lookup repre
 		name: string;
 		officeDisplayLabel?: string;
 		officeType?: string;
+		profileImages?: Array<{ sourceKind: string; sourceSystem: string; url: string }>;
 	}>;
 	const findRepresentative = (pattern: RegExp) => representatives.find(item => pattern.test(item.name));
 
@@ -1444,6 +1481,8 @@ test("POST /api/location filters former Congress members out of ZIP lookup repre
 	assert.equal(findRepresentative(/^Scott Hilton$/i)?.officeType, "state_house");
 	assert.equal(findRepresentative(/^Shawn Still$/i)?.governmentLevel, "state");
 	assert.equal(findRepresentative(/^Shawn Still$/i)?.officeType, "state_senate");
+	assert.equal(findRepresentative(/^Shawn Still$/i)?.profileImages?.[0]?.sourceKind, "official");
+	assert.match(findRepresentative(/^Shawn Still$/i)?.profileImages?.[0]?.url ?? "", /still-shawn-5016\.jpg/i);
 	assert.equal(findRepresentative(/^Robb Pitts$/i)?.governmentLevel, "county");
 	assert.equal(findRepresentative(/^Robb Pitts$/i)?.officeType, "county_commission");
 	assert.equal(findRepresentative(/^John Bradberry$/i)?.governmentLevel, "city");
@@ -2029,7 +2068,11 @@ test("direct representative routes return a stable provider-backed identity reco
 	assert.ok((body.person.influence.topRegistrants?.length ?? 0) > 0);
 	assert.ok(body.person.officeContext);
 	assert.match(body.person.officeContext.currentTermLabel ?? "", /Congress/i);
+	assert.equal(body.person.officeContext.currentTermStartLabel, "2025");
+	assert.equal(body.person.officeContext.serviceStartLabel, "2023");
 	assert.ok((body.person.officeContext.referenceLinks?.length ?? 0) >= 2);
+	assert.equal(body.person.profileImages?.[0]?.sourceSystem, "Congress.gov");
+	assert.match(body.person.profileImages?.[0]?.url ?? "", /m001218_200\.jpg/i);
 	assert.equal(body.person.enrichmentStatus?.funding.reasonCode, "attached");
 	assert.equal(body.person.enrichmentStatus?.influence.reasonCode, "attached");
 });
@@ -2064,6 +2107,10 @@ test("direct senator routes attach federal funding, influence, and Congress offi
 	assert.ok(body.person.officeContext);
 	assert.equal(body.person.officeContext.chamberLabel, "Senate");
 	assert.equal(body.person.officeContext.jurisdictionLabel, "Georgia");
+	assert.equal(body.person.officeContext.currentTermStartLabel, "2025");
+	assert.equal(body.person.officeContext.serviceStartLabel, "2021");
+	assert.equal(body.person.profileImages?.[0]?.sourceKind, "official");
+	assert.match(body.person.profileImages?.[0]?.url ?? "", /o000174_200\.jpg/i);
 	assert.ok(body.person.officeContext.referenceLinks.some((item: { label: string }) => ["Congress member record", "Official office website"].includes(item.label)));
 	assert.equal(body.person.enrichmentStatus?.funding.reasonCode, "attached");
 	assert.equal(body.person.enrichmentStatus?.influence.reasonCode, "attached");
@@ -2160,6 +2207,9 @@ test("state representative routes merge reviewed state-officeholder sources into
 	assert.ok(body.person.lobbyingContext.length > 0);
 	assert.ok(body.person.influence);
 	assert.ok(body.person.officeContext.committeeMemberships?.includes("Chairman, Information & Audits"));
+	assert.equal(body.person.officeContext.currentTermStartLabel, "2025");
+	assert.equal(body.person.officeContext.currentTermEndLabel, "2026");
+	assert.match(body.person.profileImages?.[0]?.url ?? "", /hilton-scott-4899\.jpg/i);
 	assert.ok(body.person.biography.some((item: { title: string }) => /reviewed/i.test(item.title)));
 	assert.ok(
 		body.person.provenance.label.toLowerCase().includes("reviewed")

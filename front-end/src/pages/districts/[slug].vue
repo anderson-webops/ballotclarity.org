@@ -190,16 +190,26 @@ usePageSeo({
 					</div>
 					<div v-if="districtPageData.representatives.length" class="mt-6 gap-5 grid lg:grid-cols-2">
 						<article v-for="representative in districtPageData.representatives" :key="representative.slug" class="p-5 border border-app-line/70 rounded-3xl bg-white/80 dark:border-app-line-dark dark:bg-app-panel-dark/70">
-							<div class="flex flex-wrap gap-3 items-center">
-								<p class="text-2xl text-app-ink font-serif dark:text-app-text-dark">
-									{{ representative.name }}
-								</p>
-								<VerificationBadge :label="getRepresentativePresentation(representative).levelLabel" tone="accent" />
-								<IncumbentBadge />
+							<div class="flex gap-4 items-start">
+								<ProfileImageStack
+									v-if="representative.profileImages?.length"
+									:images="representative.profileImages"
+									:name="representative.name"
+									size="md"
+								/>
+								<div class="min-w-0">
+									<div class="flex flex-wrap gap-3 items-center">
+										<p class="text-2xl text-app-ink font-serif dark:text-app-text-dark">
+											{{ representative.name }}
+										</p>
+										<VerificationBadge :label="getRepresentativePresentation(representative).levelLabel" tone="accent" />
+										<IncumbentBadge />
+									</div>
+									<p class="text-sm text-app-muted mt-3 dark:text-app-muted-dark">
+										{{ representative.party }} · {{ getRepresentativePresentation(representative).officeDisplayLabel }}
+									</p>
+								</div>
 							</div>
-							<p class="text-sm text-app-muted mt-3 dark:text-app-muted-dark">
-								{{ representative.party }} · {{ getRepresentativePresentation(representative).officeDisplayLabel }}
-							</p>
 							<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
 								{{ representative.summary }}
 							</p>

@@ -64,6 +64,7 @@ usePageSeo({
 						"@type": "Place",
 						"name": candidate.value.location
 					},
+					"image": candidate.value.profileImages?.[0]?.url,
 					"name": candidate.value.name,
 					"url": `${siteUrl}/candidate/${candidate.value.slug}`
 				},
@@ -229,21 +230,32 @@ function saveToPlan() {
 						<VerificationBadge label="Candidate profile" tone="accent" />
 						<ProvenanceBadge :provenance="candidate.comparison.ballotStatus.provenance" />
 					</div>
-					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold mt-5 uppercase dark:text-app-muted-dark">
-						{{ candidate.location }}
-					</p>
-					<div class="mt-3 flex flex-wrap gap-3 items-center">
-						<h1 class="text-5xl text-app-ink leading-tight font-serif dark:text-app-text-dark">
-							{{ candidate.name }}
-						</h1>
-						<IncumbentBadge v-if="candidate.incumbent" />
+					<div class="mt-5 gap-6 grid md:grid-cols-[minmax(0,1fr)_auto] md:items-start">
+						<div>
+							<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+								{{ candidate.location }}
+							</p>
+							<div class="mt-3 flex flex-wrap gap-3 items-center">
+								<h1 class="text-5xl text-app-ink leading-tight font-serif dark:text-app-text-dark">
+									{{ candidate.name }}
+								</h1>
+								<IncumbentBadge v-if="candidate.incumbent" />
+							</div>
+							<p class="text-lg text-app-muted mt-4 dark:text-app-muted-dark">
+								{{ candidate.officeSought }} · {{ candidate.party }}
+							</p>
+							<p class="text-base text-app-muted leading-8 mt-6 max-w-3xl dark:text-app-muted-dark">
+								{{ candidate.summary }}
+							</p>
+						</div>
+						<ProfileImageStack
+							v-if="candidate.profileImages?.length"
+							:images="candidate.profileImages"
+							:name="candidate.name"
+							show-caption
+							size="lg"
+						/>
 					</div>
-					<p class="text-lg text-app-muted mt-4 dark:text-app-muted-dark">
-						{{ candidate.officeSought }} · {{ candidate.party }}
-					</p>
-					<p class="text-base text-app-muted leading-8 mt-6 max-w-3xl dark:text-app-muted-dark">
-						{{ candidate.summary }}
-					</p>
 					<div class="mt-6 flex flex-wrap gap-3 items-center">
 						<UpdatedAt :value="candidate.freshness.dataLastUpdatedAt ?? candidate.updatedAt" label="Data through" />
 						<span class="text-app-line dark:text-app-line-dark">•</span>

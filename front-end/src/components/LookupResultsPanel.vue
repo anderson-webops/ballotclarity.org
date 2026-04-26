@@ -6,6 +6,7 @@ import type {
 } from "~/types/civic";
 import { buildLookupPresentation, filterLookupActionsForPresentation } from "~/utils/location-lookup";
 import { buildNationwideDistrictHref, buildNationwideRepresentativeHref } from "~/utils/lookup-links";
+import { buildNationwideRouteTarget } from "~/utils/nationwide-route-context";
 import { resolveRepresentativePresentation } from "~/utils/representative-presentation";
 
 const props = defineProps<{
@@ -18,6 +19,7 @@ const emit = defineEmits<{
 	selectOption: [option: LocationLookupSelectionOption];
 }>();
 const { formatDate } = useFormatters();
+const NuxtLinkComponent = resolveComponent("NuxtLink");
 
 const externalHrefPattern = /^https?:\/\//;
 
@@ -55,12 +57,42 @@ const availabilityItems = computed(() => {
 		return [];
 
 	return [
-		props.lookup.availability.nationwideCivicResults,
-		props.lookup.availability.officialLogistics,
-		props.lookup.availability.representatives,
-		props.lookup.availability.ballotCandidates,
-		props.lookup.availability.financeInfluence,
-		props.lookup.availability.fullLocalGuide
+		{
+			actionLabel: "Open results",
+			href: buildLookupAwareTarget("/results"),
+			id: "civic-results",
+			item: props.lookup.availability.nationwideCivicResults,
+		},
+		{
+			actionLabel: "Open logistics",
+			href: buildOfficialLogisticsHref(),
+			id: "official-logistics",
+			item: props.lookup.availability.officialLogistics,
+		},
+		{
+			actionLabel: "Open representatives",
+			href: props.lookup.representativeMatches.length ? buildLookupAwareTarget("/representatives") : undefined,
+			id: "representatives",
+			item: props.lookup.availability.representatives,
+		},
+		{
+			actionLabel: props.lookup.guideContent?.verifiedContestPackage ? "Open candidates" : "Review status",
+			href: buildCandidateDataHref(),
+			id: "ballot-candidates",
+			item: props.lookup.availability.ballotCandidates,
+		},
+		{
+			actionLabel: "Open representative pages",
+			href: props.lookup.representativeMatches.length ? buildLookupAwareTarget("/representatives") : undefined,
+			id: "finance-influence",
+			item: props.lookup.availability.financeInfluence,
+		},
+		{
+			actionLabel: props.lookup.guideContent?.verifiedContestPackage ? "Open guide" : "Open overview",
+			href: buildLocalGuideHref(),
+			id: "local-guide",
+			item: props.lookup.availability.fullLocalGuide,
+		},
 	];
 });
 
@@ -77,6 +109,41 @@ function openGuideAction(action: LocationLookupAction) {
 
 function selectLookupOption(option: LocationLookupSelectionOption) {
 	emit("selectOption", option);
+}
+
+function buildLookupAwareTarget(path: string) {
+	return buildNationwideRouteTarget(path, props.lookup);
+}
+
+function buildElectionOverviewHref() {
+	return props.lookup.electionSlug ? `/elections/${props.lookup.electionSlug}` : undefined;
+}
+
+function buildOfficialLogisticsHref() {
+	if (!props.lookup.electionSlug)
+		return undefined;
+
+	return props.lookup.guideContent?.verifiedContestPackage
+		? `/ballot/${props.lookup.electionSlug}#guide-logistics`
+		: buildElectionOverviewHref();
+}
+
+function buildCandidateDataHref() {
+	if (!props.lookup.electionSlug || props.lookup.availability?.ballotCandidates.status === "unavailable")
+		return undefined;
+
+	return props.lookup.guideContent?.verifiedContestPackage
+		? `/ballot/${props.lookup.electionSlug}#candidate-contests-section`
+		: buildElectionOverviewHref();
+}
+
+function buildLocalGuideHref() {
+	if (!props.lookup.electionSlug)
+		return undefined;
+
+	return props.lookup.guideContent?.verifiedContestPackage
+		? `/ballot/${props.lookup.electionSlug}`
+		: buildElectionOverviewHref();
 }
 
 function buildDistrictHref(match: NationwideLookupResultContext["districtMatches"][number]) {
@@ -160,23 +227,33 @@ function getRepresentativePresentation(match: NationwideLookupResultContext["rep
 		</div>
 		<div
 			v-if="availabilityItems.length"
-			:class="compact ? 'mt-4 grid grid-cols-1 gap-3' : 'mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-5'"
+			:class="compact ? 'mt-4 grid grid-cols-1 gap-3' : 'mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3 items-stretch auto-rows-fr'"
 		>
-			<article
-				v-for="item in availabilityItems"
-				:key="item.label"
-				class="p-4 border border-app-line rounded-2xl bg-white dark:border-app-line-dark dark:bg-app-panel-dark"
+			<component
+				:is="card.href ? NuxtLinkComponent : 'article'"
+				v-for="card in availabilityItems"
+				:key="card.id"
+				v-bind="card.href ? { to: card.href } : {}"
+				class="group p-4 border border-app-line rounded-2xl bg-white h-full transition dark:border-app-line-dark dark:bg-app-panel-dark"
+				:class="card.href ? 'focus-ring hover:border-app-accent hover:shadow-[0_18px_38px_-28px_rgba(16,37,62,0.58)] hover:-translate-y-0.5 dark:hover:border-app-accent' : ''"
 			>
-				<div class="flex flex-wrap gap-2 items-center">
+				<div class="flex flex-wrap gap-2 items-start justify-between">
 					<p class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
-						{{ item.label }}
+						{{ card.item.label }}
 					</p>
-					<VerificationBadge :label="item.status" :tone="availabilityTone(item.status)" />
+					<VerificationBadge :label="card.item.status" :tone="availabilityTone(card.item.status)" />
 				</div>
 				<p class="text-sm text-app-muted leading-6 mt-3 dark:text-app-muted-dark">
-					{{ item.detail }}
+					{{ card.item.detail }}
 				</p>
-			</article>
+				<p
+					v-if="card.href"
+					class="dark:text-app-accent-dark text-xs text-app-accent tracking-[0.14em] font-semibold mt-4 inline-flex gap-2 uppercase items-center"
+				>
+					{{ card.actionLabel }}
+					<span class="i-carbon-arrow-right transition group-hover:translate-x-0.5" />
+				</p>
+			</component>
 		</div>
 		<div v-if="visibleLookupActions.length" class="mt-4 gap-3 grid">
 			<div

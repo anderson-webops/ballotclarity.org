@@ -80,9 +80,29 @@ function resolveGuideLinkTo(path: string) {
 					<p class="bc-measure text-base text-app-muted mt-4 dark:text-app-muted-dark">
 						Ballot Clarity is a nonprofit civic-information site built to help people look up their area, review the public record, and verify details with official sources.
 					</p>
+
+					<div class="mt-7 p-4 border border-app-line/80 rounded-[1.5rem] bg-app-bg/70 max-w-2xl dark:border-app-line-dark dark:bg-app-bg-dark/70">
+						<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+							Contact
+						</p>
+						<div class="text-sm text-app-muted mt-4 space-y-4 dark:text-app-muted-dark">
+							<p>
+								<a :href="`mailto:${contactEmail}`" class="text-app-ink rounded-md transition dark:text-app-text-dark hover:text-app-accent focus-ring dark:hover:text-white">
+									{{ contactEmail }}
+								</a>
+							</p>
+							<p>
+								Questions, corrections, and volunteer help welcome.
+							</p>
+							<NuxtLink to="/contact" prefetch-on="interaction" class="text-app-ink font-semibold rounded-md inline-flex gap-2 transition items-center dark:text-app-text-dark hover:text-app-accent focus-ring dark:hover:text-white">
+								<span>Open contact page</span>
+								<span class="i-carbon-arrow-right" aria-hidden="true" />
+							</NuxtLink>
+						</div>
+					</div>
 				</div>
 
-				<div class="gap-6 grid sm:grid-cols-2">
+				<div class="gap-x-8 gap-y-7 grid sm:grid-cols-2 xl:grid-cols-3">
 					<div>
 						<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
 							{{ primarySectionLabel }}
@@ -120,26 +140,6 @@ function resolveGuideLinkTo(path: string) {
 								</NuxtLink>
 							</li>
 						</ul>
-					</div>
-
-					<div class="p-4 border border-app-line/80 rounded-[1.5rem] bg-app-bg/70 dark:border-app-line-dark dark:bg-app-bg-dark/70 sm:col-span-2">
-						<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-							Contact
-						</p>
-						<div class="text-sm text-app-muted mt-4 space-y-4 dark:text-app-muted-dark">
-							<p>
-								<a :href="`mailto:${contactEmail}`" class="text-app-ink rounded-md transition dark:text-app-text-dark hover:text-app-accent focus-ring dark:hover:text-white">
-									{{ contactEmail }}
-								</a>
-							</p>
-							<p>
-								Questions, corrections, and volunteer help welcome.
-							</p>
-							<NuxtLink to="/contact" prefetch-on="interaction" class="text-app-ink font-semibold rounded-md inline-flex gap-2 transition items-center dark:text-app-text-dark hover:text-app-accent focus-ring dark:hover:text-white">
-								<span>Open contact page</span>
-								<span class="i-carbon-arrow-right" aria-hidden="true" />
-							</NuxtLink>
-						</div>
 					</div>
 				</div>
 			</div>

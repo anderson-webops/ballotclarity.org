@@ -23,7 +23,7 @@ export interface ActiveNationwideLookupContext {
 	detectedFromIp: boolean;
 	districtMatches: LocationDistrictMatch[];
 	electionSlug?: string;
-	guideAvailability: "not-published";
+	guideAvailability: "not-published" | "published";
 	inputKind: "address" | "zip";
 	location: LocationSelection | null;
 	normalizedAddress: string;
@@ -305,7 +305,19 @@ function sanitizeLookupAction(value: unknown): LocationLookupAction | null {
 }
 
 function sanitizeActiveNationwideLookupContext(value: unknown): ActiveNationwideLookupContext | null {
-	if (!isRecord(value) || value.result !== "resolved" || value.guideAvailability !== "not-published")
+	if (!isRecord(value) || value.result !== "resolved")
+		return null;
+
+	const guideAvailability = value.guideAvailability === "published" || value.guideAvailability === "not-published"
+		? value.guideAvailability
+		: null;
+
+	if (!guideAvailability)
+		return null;
+
+	const guideContent = isRecord(value.guideContent) ? value.guideContent : null;
+
+	if (guideAvailability === "published" && guideContent?.verifiedContestPackage === true && value.detectedFromIp !== true)
 		return null;
 
 	const districtMatches = Array.isArray(value.districtMatches)
@@ -326,7 +338,7 @@ function sanitizeActiveNationwideLookupContext(value: unknown): ActiveNationwide
 		districtMatches,
 		electionSlug: typeof value.electionSlug === "string" ? value.electionSlug : undefined,
 		electionLogistics: isRecord(value.electionLogistics) ? value.electionLogistics as unknown as ElectionLogistics : null,
-		guideAvailability: "not-published",
+		guideAvailability,
 		inputKind: value.inputKind === "address" ? "address" : "zip",
 		location: sanitizeLocationSelection(value.location),
 		normalizedAddress: typeof value.normalizedAddress === "string" ? value.normalizedAddress : "",
@@ -339,41 +351,138 @@ function sanitizeActiveNationwideLookupContext(value: unknown): ActiveNationwide
 	};
 }
 
+function readCompactString(tuple: unknown[], index: number) {
+	const value = tuple[index];
+	return typeof value === "string" ? value : "";
+}
+
+function readCompactOptionalString(tuple: unknown[], index: number) {
+	const value = readCompactString(tuple, index);
+	return value || undefined;
+}
+
+function expandCompactCookiePayload(value: unknown) {
+	if (!isRecord(value) || value.v !== 2)
+		return value;
+
+	const locationTuple = Array.isArray(value.l) ? value.l : null;
+
+	return {
+		actions: Array.isArray(value.a)
+			? value.a.map((item) => {
+					if (!Array.isArray(item))
+						return null;
+
+					return {
+						badge: readCompactOptionalString(item, 3),
+						description: readCompactString(item, 4),
+						id: readCompactString(item, 0),
+						kind: "official-verification",
+						title: readCompactString(item, 1),
+						url: readCompactOptionalString(item, 2),
+					};
+				}).filter(isPresent)
+			: [],
+		detectedFromIp: value.d === 1,
+		districtMatches: Array.isArray(value.dm)
+			? value.dm.map((item) => {
+					if (!Array.isArray(item))
+						return null;
+
+					return {
+						districtCode: readCompactString(item, 3),
+						districtType: readCompactString(item, 2),
+						id: readCompactString(item, 0),
+						label: readCompactString(item, 1),
+						sourceSystem: readCompactString(item, 4),
+					};
+				}).filter(isPresent)
+			: [],
+		electionSlug: typeof value.es === "string" ? value.es : undefined,
+		electionLogistics: null,
+		guideAvailability: value.ga === "p" ? "published" : "not-published",
+		inputKind: value.ik === "a" ? "address" : "zip",
+		location: locationTuple
+			? {
+					displayName: readCompactString(locationTuple, 0),
+					lookupMode: readCompactOptionalString(locationTuple, 3),
+					requiresOfficialConfirmation: locationTuple[4] === 1,
+					slug: readCompactString(locationTuple, 1),
+					state: readCompactString(locationTuple, 2),
+				}
+			: null,
+		normalizedAddress: typeof value.q === "string" ? value.q : "",
+		representativeMatches: Array.isArray(value.rm)
+			? value.rm.map((item) => {
+					if (!Array.isArray(item))
+						return null;
+
+					return {
+						districtLabel: readCompactString(item, 2),
+						governmentLevel: readCompactOptionalString(item, 5),
+						id: readCompactString(item, 0),
+						name: readCompactString(item, 1),
+						officeDisplayLabel: readCompactOptionalString(item, 7),
+						officeTitle: readCompactString(item, 3),
+						officeType: readCompactOptionalString(item, 6),
+						party: readCompactOptionalString(item, 4),
+						sourceSystem: readCompactOptionalString(item, 8) ?? "Lookup results representative match",
+					};
+				}).filter(isPresent)
+			: [],
+		resolvedAt: typeof value.t === "string" ? value.t : "",
+		result: "resolved",
+		selectionId: typeof value.s === "string" ? value.s : undefined,
+	};
+}
+
 function buildCookiePayload(context: ActiveNationwideLookupContext) {
 	return {
-		actions: context.actions
+		a: context.actions
 			.filter(action => action.kind === "official-verification")
-			.map(action => ({
-				badge: action.badge,
-				description: action.description,
-				id: action.id,
-				kind: action.kind,
-				title: action.title,
-				url: action.url,
-			})),
-		detectedFromIp: context.detectedFromIp,
-		districtMatches: context.districtMatches,
-		electionSlug: context.electionSlug,
-		electionLogistics: context.electionLogistics,
-		guideAvailability: context.guideAvailability,
-		inputKind: context.inputKind,
-		location: context.location,
-		normalizedAddress: context.normalizedAddress,
-		representativeMatches: context.representativeMatches.map(match => ({
-			districtLabel: match.districtLabel,
-			governmentLevel: match.governmentLevel,
-			id: match.id,
-			name: match.name,
-			officeDisplayLabel: match.officeDisplayLabel,
-			officeTitle: match.officeTitle,
-			officeType: match.officeType,
-			openstatesUrl: match.openstatesUrl,
-			party: match.party,
-			sourceSystem: match.sourceSystem,
-		})),
-		selectionId: context.selectionId,
-		resolvedAt: context.resolvedAt,
-		result: context.result,
+			.map(action => [
+				action.id,
+				action.title,
+				action.url ?? "",
+				action.badge ?? "",
+				action.description,
+			]),
+		d: context.detectedFromIp ? 1 : 0,
+		dm: context.districtMatches.map(match => [
+			match.id,
+			match.label,
+			match.districtType,
+			match.districtCode,
+			match.sourceSystem,
+		]),
+		es: context.electionSlug,
+		ga: context.guideAvailability === "published" ? "p" : "n",
+		ik: context.inputKind === "address" ? "a" : "z",
+		l: context.location
+			? [
+					context.location.displayName,
+					context.location.slug,
+					context.location.state,
+					context.location.lookupMode ?? "",
+					context.location.requiresOfficialConfirmation ? 1 : 0,
+				]
+			: null,
+		q: context.normalizedAddress,
+		r: context.result,
+		rm: context.representativeMatches.map(match => [
+			match.id,
+			match.name,
+			match.districtLabel,
+			match.officeTitle,
+			match.party ?? "",
+			match.governmentLevel ?? "",
+			match.officeType ?? "",
+			match.officeDisplayLabel ?? "",
+			match.sourceSystem,
+		]),
+		s: context.selectionId,
+		t: context.resolvedAt,
+		v: 2,
 	};
 }
 
@@ -833,8 +942,16 @@ function buildFallbackRouteSource(id: string, title: string, updatedAt: string) 
 }
 
 export function buildActiveNationwideLookupContext(response: LocationLookupResponse) {
-	if (response.result !== "resolved" || response.guideAvailability !== "not-published")
+	if (
+		response.result !== "resolved"
+		|| (
+			response.guideAvailability === "published"
+			&& response.guideContent?.verifiedContestPackage
+			&& !response.detectedFromIp
+		)
+	) {
 		return null;
+	}
 
 	return sanitizeActiveNationwideLookupContext({
 		...response,
@@ -859,7 +976,7 @@ export function readActiveNationwideLookupContext(cookieHeader: string | undefin
 		return null;
 
 	try {
-		return sanitizeActiveNationwideLookupContext(JSON.parse(decodeURIComponent(rawValue)));
+		return sanitizeActiveNationwideLookupContext(expandCompactCookiePayload(JSON.parse(decodeURIComponent(rawValue))));
 	}
 	catch {
 		return null;

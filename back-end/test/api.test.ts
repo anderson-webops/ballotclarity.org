@@ -1407,9 +1407,14 @@ test("POST /api/location returns honest shell-only Fulton coverage for ZIPs insi
 		method: "POST"
 	});
 	const body = await response.json();
+	const setCookie = response.headers.get("set-cookie") ?? "";
+	const activeLookupCookieValue = setCookie.match(/ballot-clarity-nationwide-lookup=([^;]+)/)?.[1] ?? "";
 
 	assert.equal(response.status, 200);
 	assert.equal(response.headers.get("cache-control"), "no-store");
+	assert.match(setCookie, /ballot-clarity-nationwide-lookup/);
+	assert.ok(activeLookupCookieValue.length > 0);
+	assert.ok(activeLookupCookieValue.length < 3800);
 	assert.equal(body.result, "resolved");
 	assert.equal(body.guideAvailability, "published");
 	assert.equal(body.inputKind, "zip");
@@ -1425,7 +1430,7 @@ test("POST /api/location returns honest shell-only Fulton coverage for ZIPs insi
 	assert.equal(body.availability.officialLogistics.status, "available");
 	assert.equal(body.availability.representatives.status, "available");
 	assert.equal(body.availability.ballotCandidates.status, "limited");
-	assert.equal(body.availability.financeInfluence.status, "limited");
+	assert.equal(body.availability.financeInfluence.status, "available");
 	assert.equal(body.availability.guideShell.status, "available");
 	assert.equal(body.availability.verifiedContestPackage.status, "unavailable");
 	assert.equal(body.availability.fullLocalGuide.status, "limited");
@@ -1460,7 +1465,7 @@ test("POST /api/location filters former Congress members out of ZIP lookup repre
 	assert.equal(body.guideAvailability, "published");
 	assert.equal(body.guideContent.guideShell.status, "official_logistics_only");
 	assert.equal(body.availability.representatives.status, "available");
-	assert.equal(body.availability.financeInfluence.status, "limited");
+	assert.equal(body.availability.financeInfluence.status, "available");
 	assert.equal(body.availability.ballotCandidates.status, "limited");
 	assert.equal(body.availability.verifiedContestPackage.status, "unavailable");
 	assert.equal(body.representativeMatches.length, 7);
@@ -1606,7 +1611,7 @@ test("POST /api/location returns the current Fulton County launch location for f
 	assert.equal(body.availability.officialLogistics.status, "available");
 	assert.equal(body.availability.representatives.status, "available");
 	assert.equal(body.availability.ballotCandidates.status, "limited");
-	assert.equal(body.availability.financeInfluence.status, "limited");
+	assert.equal(body.availability.financeInfluence.status, "available");
 	assert.equal(body.availability.guideShell.status, "available");
 	assert.equal(body.availability.verifiedContestPackage.status, "unavailable");
 	assert.equal(body.availability.fullLocalGuide.status, "limited");
@@ -1980,6 +1985,50 @@ test("GET /api/representatives stays empty until the verified contest package is
 	assert.deepEqual(body.representatives, []);
 	assert.deepEqual(body.districts, []);
 	assert.match(body.note, /current officials/i);
+});
+
+test("GET /api/representatives uses a shell-only published guide lookup query for current officials", async () => {
+	const response = await fetch(`${baseUrl}/api/representatives?lookup=30022`);
+	const body = await response.json();
+	const setCookie = response.headers.get("set-cookie") ?? "";
+	const activeLookupCookieValue = setCookie.match(/ballot-clarity-nationwide-lookup=([^;]+)/)?.[1] ?? "";
+
+	assert.equal(response.status, 200);
+	assert.equal(body.mode, "nationwide");
+	assert.equal(body.representatives.length, 7);
+	assert.equal(body.districts.length, 5);
+	assert.equal(body.representatives.some((item: { name: string }) => item.name === "Jon Ossoff"), true);
+	assert.equal(body.representatives.some((item: { name: string }) => item.name === "Shawn Still"), true);
+	assert.match(setCookie, /ballot-clarity-nationwide-lookup/);
+	assert.ok(activeLookupCookieValue.length < 3800);
+});
+
+test("active nationwide lookup cookie backs shell-only published guide representatives", async () => {
+	const lookupResponse = await fetch(`${baseUrl}/api/location`, {
+		body: JSON.stringify({ q: "30022" }),
+		headers: {
+			"Content-Type": "application/json"
+		},
+		method: "POST"
+	});
+	const cookie = lookupResponse.headers.get("set-cookie")?.split(";")[0];
+
+	assert.equal(lookupResponse.status, 200);
+	assert.ok(cookie);
+
+	const listResponse = await fetch(`${baseUrl}/api/representatives`, {
+		headers: {
+			cookie: cookie || ""
+		}
+	});
+	const listBody = await listResponse.json();
+
+	assert.equal(listResponse.status, 200);
+	assert.equal(listBody.mode, "nationwide");
+	assert.equal(listBody.representatives.length, 7);
+	assert.equal(listBody.districts.length, 5);
+	assert.equal(listBody.representatives.some((item: { name: string }) => item.name === "Jon Ossoff"), true);
+	assert.equal(listBody.representatives.some((item: { name: string }) => item.name === "Shawn Still"), true);
 });
 
 test("active nationwide lookup cookie backs /api/representatives and /api/representatives/:slug", async () => {

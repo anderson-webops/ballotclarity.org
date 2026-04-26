@@ -5,7 +5,7 @@ import type {
 	NationwideLookupResultContext
 } from "../types/civic";
 import type { LookupContextState } from "./guide-entry";
-import { hasPublishedGuideResult } from "./location-lookup";
+import { hasPublishedGuideResult, hasVerifiedGuideResult } from "./location-lookup";
 import { buildLookupDestinationFromResponse } from "./nationwide-route-context";
 
 export const nationwideResultsPath = "/results";
@@ -68,7 +68,7 @@ export function buildNationwideLookupResultContext(
 	response: LocationLookupResponse,
 	election?: ElectionSummary | null
 ) {
-	if (response.result !== "resolved" || (hasPublishedGuideResult(response) && !response.detectedFromIp))
+	if (response.result !== "resolved" || (hasVerifiedGuideResult(response) && !response.detectedFromIp))
 		return null;
 
 	return normalizeLookupResponseForDisplay(response, election);
@@ -78,12 +78,13 @@ export function deriveCivicLookupStateUpdate(
 	response: LocationLookupResponse,
 	election?: ElectionSummary | null
 ): CivicLookupStateUpdate {
-	const canOpenGuide = hasPublishedGuideResult(response) && !response.detectedFromIp;
+	const canOpenVerifiedGuide = hasVerifiedGuideResult(response) && !response.detectedFromIp;
+	const canOpenPublishedGuideSurface = hasPublishedGuideResult(response) && !response.detectedFromIp;
 
 	return {
 		lookupContext: buildLookupContextState(response),
-		nationwideLookupResult: canOpenGuide ? null : buildNationwideLookupResultContext(response, election),
-		selectedLocation: canOpenGuide ? response.location ?? null : null
+		nationwideLookupResult: canOpenVerifiedGuide ? null : buildNationwideLookupResultContext(response, election),
+		selectedLocation: canOpenPublishedGuideSurface ? response.location ?? null : null
 	};
 }
 
@@ -93,7 +94,7 @@ export function hasActiveNationwideLookupResult(
 	return Boolean(
 		context
 		&& context.result === "resolved"
-		&& (context.detectedFromIp || context.guideAvailability !== "published")
+		&& (context.detectedFromIp || context.guideAvailability !== "published" || !context.guideContent?.verifiedContestPackage)
 	);
 }
 

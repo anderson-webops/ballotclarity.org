@@ -4,6 +4,7 @@ import test from "node:test";
 import {
 	buildHomeExperienceState,
 	deriveCivicLookupStateUpdate,
+	hasActiveNationwideLookupResult,
 	resolveLookupDestination
 } from "../src/utils/nationwide-results.ts";
 
@@ -47,6 +48,33 @@ const stagedGuideContent = {
 	publishedGuideShell: true,
 	summary: "This published local guide includes verified official election links, but some contest, candidate, or measure pages are still under local review.",
 	verifiedContestPackage: false,
+};
+
+const verifiedGuideContent = {
+	...stagedGuideContent,
+	candidates: {
+		...stagedGuideContent.candidates,
+		detail: "Candidate records are verified for this local guide.",
+		status: "verified_local" as const,
+	},
+	contests: {
+		...stagedGuideContent.contests,
+		detail: "Contest records are verified for this local guide.",
+		status: "verified_local" as const,
+	},
+	guideShell: {
+		...stagedGuideContent.guideShell,
+		detail: "This local guide is published with verified contest pages.",
+		status: "verified_local" as const,
+	},
+	measures: {
+		...stagedGuideContent.measures,
+		detail: "Measure records are verified for this local guide.",
+		status: "verified_local" as const,
+	},
+	mixedContent: false,
+	summary: "This published local guide includes verified local contest, candidate, measure, and official logistics records.",
+	verifiedContestPackage: true,
 };
 
 const activeElection: ElectionSummary = {
@@ -197,6 +225,11 @@ const manualPublishedGuideResponse: LocationLookupResponse = {
 	detectedFromIp: false
 };
 
+const manualVerifiedGuideResponse: LocationLookupResponse = {
+	...manualPublishedGuideResponse,
+	guideContent: verifiedGuideContent,
+};
+
 const ambiguousZipResponse: LocationLookupResponse = {
 	...nationwideResponse,
 	location: undefined,
@@ -258,8 +291,19 @@ test("ip-guessed guide availability stays in nationwide context until the user c
 	assert.equal(update.nationwideLookupResult?.guideContent?.publishedGuideShell, true);
 });
 
-test("manual address or ZIP lookup overrides guessed context by activating the published guide location", () => {
+test("manual shell-only guide lookup keeps representative results while activating the election overview location", () => {
 	const update = deriveCivicLookupStateUpdate(manualPublishedGuideResponse, activeElection);
+
+	assert.ok(update.nationwideLookupResult);
+	assert.equal(update.nationwideLookupResult?.guideAvailability, "published");
+	assert.equal(update.nationwideLookupResult?.guideContent?.verifiedContestPackage, false);
+	assert.equal(hasActiveNationwideLookupResult(update.nationwideLookupResult), true);
+	assert.equal(update.selectedLocation?.displayName, "Fulton County, Georgia");
+	assert.equal(update.selectedLocation?.slug, "fulton-county-georgia");
+});
+
+test("manual verified guide lookup activates the guide location without keeping a duplicate representative result", () => {
+	const update = deriveCivicLookupStateUpdate(manualVerifiedGuideResponse, activeElection);
 
 	assert.equal(update.nationwideLookupResult, null);
 	assert.equal(update.selectedLocation?.displayName, "Fulton County, Georgia");
@@ -276,6 +320,8 @@ test("ambiguous ZIP lookups keep their selection options in persisted nationwide
 
 test("nationwide lookups route into the results experience", () => {
 	assert.equal(resolveLookupDestination(nationwideResponse), "/results?lookup=84604");
+	assert.equal(resolveLookupDestination(manualPublishedGuideResponse), "/results?lookup=84604");
+	assert.equal(resolveLookupDestination(manualVerifiedGuideResponse), null);
 });
 
 test("homepage entry state stops promoting the featured guide preview when a nationwide context is active", () => {

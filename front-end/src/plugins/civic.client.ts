@@ -11,10 +11,16 @@ export default defineNuxtPlugin((nuxtApp) => {
 	nuxtApp.hook("app:mounted", () => {
 		civicStore.markHydrated();
 
-		const hasManualLookupContext = Boolean(
+		const shellOnlyGuideSelectionWithoutResults = Boolean(
 			civicStore.selectedLocation
+			&& civicStore.lookupContext?.hasPublishedGuideShell
+			&& !civicStore.lookupContext.hasVerifiedContestPackage
+			&& !civicStore.nationwideLookupResult
+		);
+		const hasManualLookupContext = Boolean(
+			(civicStore.selectedLocation && !shellOnlyGuideSelectionWithoutResults)
 			|| (civicStore.nationwideLookupResult && !civicStore.nationwideLookupResult.detectedFromIp)
-			|| (civicStore.lookupContext && !civicStore.nationwideLookupResult)
+			|| (civicStore.lookupContext && !civicStore.nationwideLookupResult && !shellOnlyGuideSelectionWithoutResults)
 		);
 
 		if (hasManualLookupContext)

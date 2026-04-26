@@ -72,7 +72,7 @@ async function signOut() {
 						:to="link.to"
 						class="text-sm font-medium px-4 py-2 rounded-full whitespace-nowrap transition focus-ring"
 						:class="isActive(link.to)
-							? 'bg-app-ink text-white'
+							? 'bg-app-action text-app-action-text'
 							: 'border border-app-line bg-white text-app-muted hover:text-app-ink dark:border-app-line-dark dark:bg-app-panel-dark dark:text-app-muted-dark dark:hover:text-app-text-dark'"
 					>
 						{{ link.label }}

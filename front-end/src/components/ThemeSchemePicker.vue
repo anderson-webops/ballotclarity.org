@@ -110,11 +110,11 @@ watch(panelAlignment, async () => {
 				</div>
 				<button
 					type="button"
-					class="text-app-ink p-2 border border-app-line rounded-full transition dark:text-app-text-dark dark:border-app-line-dark hover:bg-app-bg focus-ring dark:hover:bg-app-bg-dark"
+					class="text-app-ink border border-app-line rounded-full inline-flex shrink-0 h-11 w-11 transition items-center justify-center dark:text-app-text-dark dark:border-app-line-dark hover:bg-app-bg focus-ring dark:hover:bg-app-bg-dark"
 					aria-label="Close color scheme picker"
 					@click="open = false"
 				>
-					<span class="i-carbon-close text-base" />
+					<span aria-hidden="true" class="text-lg leading-none font-semibold">×</span>
 				</button>
 			</div>
 

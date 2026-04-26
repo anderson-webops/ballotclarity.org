@@ -16,6 +16,8 @@ import {
 const mainCss = readFileSync(new URL("../src/assets/styles/main.css", import.meta.url), "utf8");
 const appVue = readFileSync(new URL("../src/app.vue", import.meta.url), "utf8");
 const appFooter = readFileSync(new URL("../src/components/AppFooter.vue", import.meta.url), "utf8");
+const appHeader = readFileSync(new URL("../src/components/AppHeader.vue", import.meta.url), "utf8");
+const adminLayout = readFileSync(new URL("../src/layouts/admin.vue", import.meta.url), "utf8");
 const themeSchemePicker = readFileSync(new URL("../src/components/ThemeSchemePicker.vue", import.meta.url), "utf8");
 const unoConfig = readFileSync(new URL("../uno.config.ts", import.meta.url), "utf8");
 
@@ -60,7 +62,21 @@ test("app theme system uses semantic CSS tokens and footer picker placement", ()
 	assert.match(appFooter, /<ThemeSchemePicker compact align="end" panel-align="end" \/>/);
 	assert.match(themeSchemePicker, /useThemeScheme\(\)/);
 	assert.match(themeSchemePicker, /aria-label="Color scheme picker"/);
+	assert.match(themeSchemePicker, />×<\/span>/);
 	assert.match(unoConfig, /"accent": "rgb\(var\(--app-accent-rgb\)\)"/);
+	assert.match(unoConfig, /"action": "rgb\(var\(--app-action-rgb\)\)"/);
+	assert.match(unoConfig, /bg-app-action/);
+	assert.match(unoConfig, /text-app-action-text/);
 	assert.match(unoConfig, /"panel-dark": "rgb\(var\(--app-panel-dark-rgb\)\)"/);
 	assert.doesNotMatch(unoConfig, /<alpha-value>/);
+});
+
+test("filled controls use contrast-safe action tokens", () => {
+	assert.match(mainCss, /background: var\(--app-action\);/);
+	assert.match(mainCss, /color: var\(--app-action-text\);/);
+	assert.match(appHeader, /bg-app-action text-app-action-text/);
+	assert.match(adminLayout, /bg-app-action text-app-action-text/);
+	assert.doesNotMatch(unoConfig, /bg-app-ink .*text-white/);
+	assert.doesNotMatch(appHeader, /bg-app-ink text-white/);
+	assert.doesNotMatch(adminLayout, /bg-app-ink text-white/);
 });

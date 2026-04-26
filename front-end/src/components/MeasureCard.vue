@@ -91,7 +91,7 @@ function saveMeasure(decision: "no" | "review" | "yes") {
 					type="button"
 					class="text-xs font-semibold px-3 py-2 border rounded-full transition focus-ring"
 					:class="currentSelection === 'yes'
-						? 'border-app-accent bg-app-accent text-white'
+						? 'border-app-accent bg-app-accent text-app-action-text'
 						: 'border-app-line bg-white text-app-muted hover:border-app-accent hover:text-app-accent dark:border-app-line-dark dark:bg-app-panel-dark dark:text-app-muted-dark'"
 					@click="saveMeasure('yes')"
 				>
@@ -101,7 +101,7 @@ function saveMeasure(decision: "no" | "review" | "yes") {
 					type="button"
 					class="text-xs font-semibold px-3 py-2 border rounded-full transition focus-ring"
 					:class="currentSelection === 'review'
-						? 'border-app-accent bg-app-accent text-white'
+						? 'border-app-accent bg-app-accent text-app-action-text'
 						: 'border-app-line bg-white text-app-muted hover:border-app-accent hover:text-app-accent dark:border-app-line-dark dark:bg-app-panel-dark dark:text-app-muted-dark'"
 					@click="saveMeasure('review')"
 				>
@@ -111,7 +111,7 @@ function saveMeasure(decision: "no" | "review" | "yes") {
 					type="button"
 					class="text-xs font-semibold px-3 py-2 border rounded-full transition focus-ring"
 					:class="currentSelection === 'no'
-						? 'border-app-accent bg-app-accent text-white'
+						? 'border-app-accent bg-app-accent text-app-action-text'
 						: 'border-app-line bg-white text-app-muted hover:border-app-accent hover:text-app-accent dark:border-app-line-dark dark:bg-app-panel-dark dark:text-app-muted-dark'"
 					@click="saveMeasure('no')"
 				>

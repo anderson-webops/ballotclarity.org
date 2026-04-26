@@ -469,7 +469,7 @@ function clearFilters() {
 											<span
 												class="text-[11px] font-semibold px-2.5 py-1 rounded-full inline-flex gap-1 whitespace-nowrap items-center"
 												:class="item.saved
-													? 'bg-app-accent text-white'
+													? 'bg-app-accent text-app-action-text'
 													: 'bg-app-warm/75 text-app-ink dark:bg-app-bg-dark dark:text-app-text-dark'"
 											>
 												<span :class="item.saved ? 'i-carbon-checkmark' : 'i-carbon-time'" aria-hidden="true" />
@@ -615,7 +615,7 @@ function clearFilters() {
 										type="button"
 										class="text-xs font-semibold px-3 py-2 border rounded-full transition focus-ring"
 										:class="effectiveSelectedIssues.includes(issue.slug)
-											? 'border-app-accent bg-app-accent text-white'
+											? 'border-app-accent bg-app-accent text-app-action-text'
 											: 'border-app-line bg-white text-app-muted hover:border-app-accent hover:text-app-accent dark:border-app-line-dark dark:bg-app-panel-dark dark:text-app-muted-dark'"
 										:aria-pressed="effectiveSelectedIssues.includes(issue.slug)"
 										@click="civicStore.toggleIssue(issue.slug)"
@@ -640,7 +640,7 @@ function clearFilters() {
 										type="button"
 										class="text-xs font-semibold px-3 py-2 border rounded-full transition focus-ring"
 										:class="effectiveBallotViewMode === 'quick'
-											? 'border-app-accent bg-app-accent text-white'
+											? 'border-app-accent bg-app-accent text-app-action-text'
 											: 'border-app-line bg-white text-app-muted hover:border-app-accent hover:text-app-accent dark:border-app-line-dark dark:bg-app-panel-dark dark:text-app-muted-dark'"
 										:aria-pressed="effectiveBallotViewMode === 'quick'"
 										@click="civicStore.setBallotViewMode('quick')"
@@ -652,7 +652,7 @@ function clearFilters() {
 										type="button"
 										class="text-xs font-semibold px-3 py-2 border rounded-full transition focus-ring"
 										:class="effectiveBallotViewMode === 'deep'
-											? 'border-app-accent bg-app-accent text-white'
+											? 'border-app-accent bg-app-accent text-app-action-text'
 											: 'border-app-line bg-white text-app-muted hover:border-app-accent hover:text-app-accent dark:border-app-line-dark dark:bg-app-panel-dark dark:text-app-muted-dark'"
 										:aria-pressed="effectiveBallotViewMode === 'deep'"
 										@click="civicStore.setBallotViewMode('deep')"

@@ -269,7 +269,7 @@ usePageSeo({
 								type="button"
 								class="text-xs font-semibold px-3 py-2 border rounded-full transition focus-ring"
 								:class="selectedCategory === null
-									? 'border-app-accent bg-app-accent text-white'
+									? 'border-app-accent bg-app-accent text-app-action-text'
 									: 'border-app-line bg-white text-app-muted hover:border-app-accent hover:text-app-accent dark:border-app-line-dark dark:bg-app-panel-dark dark:text-app-muted-dark'"
 								@click="selectedCategory = null"
 							>
@@ -281,7 +281,7 @@ usePageSeo({
 								type="button"
 								class="text-xs font-semibold px-3 py-2 border rounded-full transition focus-ring"
 								:class="selectedCategory === category
-									? 'border-app-accent bg-app-accent text-white'
+									? 'border-app-accent bg-app-accent text-app-action-text'
 									: 'border-app-line bg-white text-app-muted hover:border-app-accent hover:text-app-accent dark:border-app-line-dark dark:bg-app-panel-dark dark:text-app-muted-dark'"
 								@click="selectedCategory = category"
 							>

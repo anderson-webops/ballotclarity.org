@@ -17,7 +17,7 @@ export default defineConfig({
 		["surface-panel", "rounded-[1.5rem] border border-app-line/80 bg-app-panel/92 p-4 shadow-[0_22px_56px_-42px_rgba(13,37,62,0.42)] backdrop-blur sm:rounded-[1.75rem] sm:p-5 dark:border-app-line-dark dark:bg-app-panel-dark/96"],
 		["focus-ring", "focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-app-accent-strong focus-visible:ring-offset-3 focus-visible:ring-offset-app-bg dark:focus-visible:ring-offset-app-bg-dark"],
 		["primary-link", "inline-flex items-center gap-2 font-medium text-app-accent transition hover:text-app-accent-strong"],
-		["btn-primary", "focus-ring inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-app-ink px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-app-ink-soft disabled:cursor-not-allowed disabled:opacity-60 sm:px-5 sm:py-3"],
+		["btn-primary", "focus-ring inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-app-action px-4 py-2.5 text-sm font-semibold text-app-action-text transition hover:bg-app-action-strong disabled:cursor-not-allowed disabled:opacity-60 sm:px-5 sm:py-3"],
 		["btn-secondary", "focus-ring inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-app-line bg-white px-4 py-2.5 text-sm font-semibold text-app-ink transition hover:border-app-accent hover:text-app-accent dark:border-app-line-dark dark:bg-transparent dark:text-app-text-dark sm:px-5 sm:py-3"],
 	],
 	theme: {
@@ -25,6 +25,9 @@ export default defineConfig({
 			app: {
 				"accent": "rgb(var(--app-accent-rgb))",
 				"accent-strong": "rgb(var(--app-accent-strong-rgb))",
+				"action": "rgb(var(--app-action-rgb))",
+				"action-strong": "rgb(var(--app-action-strong-rgb))",
+				"action-text": "rgb(var(--app-action-text-rgb))",
 				"bg": "rgb(var(--app-bg-rgb))",
 				"bg-dark": "rgb(var(--app-bg-dark-rgb))",
 				"ink": "rgb(var(--app-ink-rgb))",

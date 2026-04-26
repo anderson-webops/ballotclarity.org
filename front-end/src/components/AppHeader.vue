@@ -265,7 +265,7 @@ onBeforeUnmount(() => {
 								:aria-controls="`header-group-panel-${index}`"
 								:aria-expanded="isDesktopGroupOpen(group)"
 								:class="isGroupActive(group) || isDesktopGroupOpen(group)
-									? 'bg-app-ink text-white'
+									? 'bg-app-action text-app-action-text'
 									: 'text-app-muted hover:bg-app-bg hover:text-app-ink dark:text-app-muted-dark dark:hover:bg-app-bg-dark/70 dark:hover:text-app-text-dark'"
 								@click="toggleDesktopGroup(group)"
 							>
@@ -371,7 +371,7 @@ onBeforeUnmount(() => {
 						prefetch-on="interaction"
 						class="text-sm font-medium px-4 py-3 rounded-2xl flex transition items-center justify-between focus-ring"
 						:class="isActive(headerPrimaryAction.to)
-							? 'bg-app-ink text-white'
+							? 'bg-app-action text-app-action-text'
 							: 'bg-white text-app-ink dark:bg-app-panel-dark dark:text-app-text-dark'"
 					>
 						<span>{{ headerPrimaryAction.label }}</span>
@@ -407,7 +407,7 @@ onBeforeUnmount(() => {
 						prefetch-on="interaction"
 						class="px-4 py-3 rounded-2xl flex gap-3 transition items-start justify-between focus-ring"
 						:class="isActive(link.to)
-							? 'bg-app-ink text-white'
+							? 'bg-app-action text-app-action-text'
 							: 'bg-white text-app-ink dark:bg-app-panel-dark dark:text-app-text-dark'"
 					>
 						<span class="min-w-0">

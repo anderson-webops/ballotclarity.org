@@ -90,8 +90,8 @@ h6 {
   z-index: 100;
   padding: 0.75rem 1rem;
   border-radius: 9999px;
-  background: var(--app-ink);
-  color: white;
+  background: var(--app-action);
+  color: var(--app-action-text);
   transform: translateY(calc(-100% - 1rem));
   transition: transform 0.2s ease;
 }

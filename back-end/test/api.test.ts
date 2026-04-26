@@ -1398,6 +1398,97 @@ test("POST /api/location validates incomplete numeric ZIP fragments", async () =
 	assert.match(body.message, /full 5-digit ZIP code/i);
 });
 
+test("POST /api/location records resolved lookups through the ZIP lookup logger hook", async () => {
+	const recordedLookups: Array<{
+		guideAvailability?: string;
+		rawInput: string;
+		result: string;
+		selectionRequired: boolean;
+	}> = [];
+	const isolatedServer = (await createApp({
+		adminDbPath: ":memory:",
+		congressClient: null,
+		coverageRepository: buildTestCoverageRepository(),
+		googleCivicClient: null,
+		ldaClient: null,
+		openFecClient: null,
+		openStatesClient: null,
+		zipLookupLogger: {
+			enabled: true,
+			logPath: ":memory:",
+			async record(rawInput, lookupResponse) {
+				recordedLookups.push({
+					guideAvailability: lookupResponse.guideAvailability,
+					rawInput,
+					result: lookupResponse.result,
+					selectionRequired: Boolean(lookupResponse.selectionOptions?.length)
+				});
+			}
+		},
+		zipLocationService: {
+			async lookupZip(zipCode) {
+				return {
+					matches: [
+						{
+							countyFips: "121",
+							countyName: "Fulton County",
+							districtMatches: [
+								{
+									districtCode: "5",
+									districtType: "congressional",
+									id: "congressional:5",
+									label: "Congressional District 5",
+									sourceSystem: "U.S. Census Geocoder"
+								}
+							],
+							id: `zip:${zipCode}:atlanta-georgia`,
+							latitude: 33.7525,
+							locality: "Atlanta",
+							longitude: -84.3928,
+							postalCode: zipCode,
+							representativeMatches: [],
+							sourceSystem: "Zippopotam.us + U.S. Census Geocoder",
+							stateAbbreviation: "GA",
+							stateName: "Georgia"
+						}
+					],
+					postalCode: zipCode
+				};
+			}
+		}
+	})).listen(0, "127.0.0.1");
+	await once(isolatedServer, "listening");
+	const address = isolatedServer.address() as AddressInfo;
+	const isolatedBaseUrl = `http://127.0.0.1:${address.port}`;
+
+	try {
+		const response = await fetch(`${isolatedBaseUrl}/api/location`, {
+			body: JSON.stringify({ q: "30303" }),
+			headers: {
+				"Content-Type": "application/json"
+			},
+			method: "POST"
+		});
+		const body = await response.json();
+
+		assert.equal(response.status, 200);
+		assert.equal(body.result, "resolved");
+		assert.deepEqual(recordedLookups, [
+			{
+				guideAvailability: body.guideAvailability,
+				rawInput: "30303",
+				result: "resolved",
+				selectionRequired: false
+			}
+		]);
+	}
+	finally {
+		await new Promise<void>((resolve, reject) => {
+			isolatedServer.close(error => error ? reject(error) : resolve());
+		});
+	}
+});
+
 test("POST /api/location returns honest shell-only Fulton coverage for ZIPs inside current coverage", async () => {
 	const response = await fetch(`${baseUrl}/api/location`, {
 		body: JSON.stringify({ q: "30303" }),

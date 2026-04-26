@@ -57,6 +57,7 @@ import type {
 	VoteRecordSummary
 } from "./types/civic.js";
 import type { ZipLocationMatch, ZipLocationService } from "./zip-location.js";
+import type { ZipLookupLogger } from "./zip-lookup-logger.js";
 import { Buffer } from "node:buffer";
 import { timingSafeEqual } from "node:crypto";
 import process from "node:process";
@@ -113,6 +114,7 @@ import {
 	mergeRepresentativeMatchesWithSupplementalRecords,
 } from "./supplemental-officeholders.js";
 import { createZipLocationService } from "./zip-location.js";
+import { createZipLookupLogger } from "./zip-lookup-logger.js";
 
 interface CreateAppOptions {
 	adminApiKey?: string | null;
@@ -134,6 +136,7 @@ interface CreateAppOptions {
 	openStatesClient?: ReturnType<typeof createOpenStatesClient>;
 	sourceMonitorSeed?: AdminSourceMonitorItem[];
 	zipLocationService?: ZipLocationService | null;
+	zipLookupLogger?: ZipLookupLogger;
 }
 
 function isAuthorizedAdminRequest(requestKey: string | undefined, configuredKey: string | null) {
@@ -2683,6 +2686,13 @@ export async function createApp(options: CreateAppOptions = {}) {
 		sourceMonitorSeed: options.sourceMonitorSeed
 	});
 	const logger = createLogger("ballot-clarity-api");
+	const zipLookupLogger = options.zipLookupLogger ?? createZipLookupLogger({
+		onError(error) {
+			logger.warn("zip_lookup_log.write_failed", {
+				message: error instanceof Error ? error.message : "Unknown ZIP lookup log write failure."
+			});
+		}
+	});
 	const sourceAssetStore = createSourceAssetStore();
 	const locationGuessService = createLocationGuessService(options.locationGuessOptions);
 	const adminLoginThrottle = createAdminLoginThrottle();
@@ -4166,6 +4176,9 @@ export async function createApp(options: CreateAppOptions = {}) {
 		}
 
 		const lookupResponse = await resolveLocationLookup(raw, response.locals.requestId, selectionId || undefined);
+
+		await zipLookupLogger.record(raw, lookupResponse);
+
 		const activeLookupCookie = buildActiveNationwideLookupCookie(lookupResponse);
 
 		if (activeLookupCookie)

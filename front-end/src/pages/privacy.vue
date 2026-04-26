@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { analyticsTrackers, appName, contactEmail } from "~/constants";
 
-const effectiveAt = "2026-04-22T12:00:00-04:00";
+const effectiveAt = "2026-04-26T18:00:00-04:00";
 const siteUrl = useSiteUrl();
 const analyticsHosts = analyticsTrackers.map(tracker => tracker.domain).join(" and ");
 
@@ -25,6 +25,7 @@ const collectionSections = [
 		body: [
 			"When you use the ballot lookup, the address or ZIP code is sent with a POST request so the service can determine a location and ballot guide.",
 			"That lookup may also trigger provider-backed district matching, representative attachment, and official election verification in the current runtime.",
+			"If ZIP-only operational logging is enabled, only exact normalized 5-digit ZIP lookups are written to that log. Full street addresses, ZIP+4 entries, city names, and mixed address strings are not added to the ZIP-only log.",
 			"Some hosts may also use coarse geolocation derived from request metadata to make an approximate default location guess before you enter anything manually.",
 			"The application is designed not to publish the raw lookup text in the public archive and not to persist it in browser storage used for saved ballot preferences."
 		],
@@ -124,6 +125,13 @@ const retentionRows = [
 		deletion: "Clear browser cookies or submit a new lookup that replaces or clears the stored context.",
 		retention: "Up to 7 days.",
 		scope: "First-party cookie containing current lookup context such as normalized address or ZIP, matched districts, representative matches, official actions, and lookup timing."
+	},
+	{
+		access: "Operational access only for reliability, coverage planning, and abuse monitoring.",
+		category: "ZIP-only lookup operations log",
+		deletion: "Removed through operational log rotation or retention cleanup; not published as civic content.",
+		retention: "Short-term operational retention, generally days to weeks rather than permanent publication.",
+		scope: "Timestamp, exact 5-digit ZIP, lookup result, guide-availability status, and whether a ZIP area selection was required. It does not include raw lookup text, full street addresses, ZIP+4 entries, IP address, or user agent."
 	},
 	{
 		access: "Stored in your browser on the current device.",

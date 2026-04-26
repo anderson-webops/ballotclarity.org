@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { appDescription, appName } from "~/constants";
+import { themeSchemeStyleContent } from "~/utils/theme-schemes";
 
 const noindexPathPattern = /^\/(?:admin|api|ballot|compare|plan|search)(?:\/|$)/;
 
@@ -47,6 +48,12 @@ useHead(() => ({
 			innerHTML: JSON.stringify(siteSchema),
 			key: "website-jsonld",
 			type: "application/ld+json"
+		}
+	],
+	style: [
+		{
+			innerHTML: themeSchemeStyleContent,
+			key: "ballot-clarity-theme-schemes"
 		}
 	]
 }));

@@ -16,7 +16,7 @@ export function useThemeScheme() {
 			themeSchemeCookie.value = normalizeThemeScheme(value);
 		}
 	});
-	const activeScheme = computed(() => themeSchemeOptions.find(option => option.id === scheme.value) ?? themeSchemeOptions[0]);
+	const activeScheme = computed(() => themeSchemeOptions.find(option => option.id === scheme.value) ?? themeSchemeOptions[0]!);
 
 	return {
 		activeScheme,

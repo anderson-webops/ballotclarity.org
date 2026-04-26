@@ -1,7 +1,17 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
-import { defaultThemeScheme, getThemeTogglePreference, isDarkThemeValue, normalizeThemeScheme, themeSchemeOptions } from "../src/utils/theme-schemes.ts";
+import {
+	defaultThemeScheme,
+	getThemeTogglePreference,
+	isDarkThemeValue,
+	normalizeThemeScheme,
+	themeCssVariableNames,
+	themeModes,
+	themeSchemeDefinitions,
+	themeSchemeOptions,
+	themeSchemeStyleContent
+} from "../src/utils/theme-schemes.ts";
 
 const mainCss = readFileSync(new URL("../src/assets/styles/main.css", import.meta.url), "utf8");
 const appVue = readFileSync(new URL("../src/app.vue", import.meta.url), "utf8");
@@ -26,16 +36,27 @@ test("theme helpers preserve light and dark mode semantics", () => {
 	assert.equal(getThemeTogglePreference("light"), "dark");
 });
 
-test("each registered theme scheme has matching CSS variable blocks", () => {
-	for (const option of themeSchemeOptions) {
-		assert.match(mainCss, new RegExp(`data-theme-scheme="${option.id}"`));
-		assert.match(mainCss, new RegExp(`html\\.dark\\[data-theme-scheme="${option.id}"\\]`));
+test("each registered theme scheme generates matching CSS variable blocks", () => {
+	for (const definition of themeSchemeDefinitions) {
+		assert.match(themeSchemeStyleContent, new RegExp(`data-theme-scheme="${definition.id}"`));
+		assert.match(themeSchemeStyleContent, new RegExp(`html\\.dark\\[data-theme-scheme="${definition.id}"\\]`));
+
+		for (const mode of themeModes) {
+			for (const name of themeCssVariableNames) {
+				const variable = `--${name}`;
+				assert.ok(themeSchemeStyleContent.includes(`${variable}: ${definition.modes[mode][variable]};`));
+			}
+		}
 	}
 });
 
 test("app theme system uses semantic CSS tokens and footer picker placement", () => {
 	assert.match(appVue, /"data-theme-scheme": scheme\.value/);
 	assert.match(appVue, /activeScheme\.value\.swatches\.light\.surface/);
+	assert.match(appVue, /themeSchemeStyleContent/);
+	assert.match(appVue, /key: "ballot-clarity-theme-schemes"/);
+	assert.match(mainCss, /Theme scheme color variables are generated from src\/utils\/theme-schemes\.ts/);
+	assert.doesNotMatch(mainCss, /data-theme-scheme="foundry"/);
 	assert.match(appFooter, /<ThemeSchemePicker compact align="end" panel-align="end" \/>/);
 	assert.match(themeSchemePicker, /useThemeScheme\(\)/);
 	assert.match(themeSchemePicker, /aria-label="Color scheme picker"/);

@@ -161,9 +161,13 @@ async function selectLookupOption(option: LocationLookupSelectionOption) {
 					:aria-describedby="inputDescribedBy"
 				>
 			</div>
-			<button type="submit" class="btn-primary min-w-40" :disabled="isPending">
-				<span :class="isPending ? 'i-carbon-circle-dash animate-spin' : 'i-carbon-arrow-right'" />
-				{{ isPending ? 'Loading results' : 'See civic results' }}
+			<button type="submit" class="lookup-submit-button btn-primary" :disabled="isPending">
+				<span class="lookup-submit-button__icon" aria-hidden="true">
+					<span :class="isPending ? 'i-carbon-circle-dash animate-spin' : 'i-carbon-arrow-right'" />
+				</span>
+				<span class="lookup-submit-button__label">
+					{{ isPending ? 'Loading results' : 'See civic results' }}
+				</span>
 			</button>
 		</div>
 

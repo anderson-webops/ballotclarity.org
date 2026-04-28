@@ -158,6 +158,35 @@ h6 {
   min-width: 0;
 }
 
+.lookup-submit-button {
+  min-width: 13.5rem;
+  overflow: hidden;
+  white-space: nowrap;
+  isolation: isolate;
+}
+
+.lookup-submit-button__icon {
+  display: inline-flex;
+  width: 1.15em;
+  height: 1.15em;
+  flex: 0 0 1.15em;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  line-height: 1;
+}
+
+.lookup-submit-button__icon > span {
+  display: block;
+  width: 1em;
+  height: 1em;
+  flex: 0 0 auto;
+}
+
+.lookup-submit-button__label {
+  min-width: 0;
+}
+
 .home-summary-card-link {
   transition:
     background-color 0.18s ease,

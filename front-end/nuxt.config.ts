@@ -90,6 +90,8 @@ export default defineNuxtConfig({
 		adminApiBase: process.env.ADMIN_API_BASE || process.env.NUXT_PUBLIC_API_BASE || "http://127.0.0.1:3001/api",
 		adminApiKey: process.env.ADMIN_API_KEY || "",
 		adminSessionSecret: process.env.ADMIN_SESSION_SECRET || "",
+		contactAddress: process.env.CONTACT_ADDRESS || process.env.NUXT_CONTACT_ADDRESS || "",
+		contactAddressSessionSecret: process.env.CONTACT_ADDRESS_SESSION_SECRET || process.env.NUXT_CONTACT_ADDRESS_SESSION_SECRET || "",
 		public: {
 			apiBase: process.env.NUXT_PUBLIC_API_BASE || "http://127.0.0.1:3001/api",
 			buildId,

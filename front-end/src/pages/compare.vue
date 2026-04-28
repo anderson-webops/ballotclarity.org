@@ -51,30 +51,6 @@ const compareBreadcrumbs = computed(() => [
 	layerBreadcrumbLink.value,
 	{ label: "Compare" }
 ]);
-const comparisonStats = computed(() => ({
-	candidateCount: sortedCandidates.value.length,
-	categoryCount: questionCategories.value.length,
-	questionCount: sortedCandidates.value.length
-		? new Set(sortedCandidates.value.flatMap(candidate => candidate.comparison.questionnaireResponses.map(response => response.questionId))).size
-		: 0
-}));
-const compareSummaryItems = computed(() => ([
-	{
-		label: "Candidates",
-		note: "Included in the current side-by-side view.",
-		value: comparisonStats.value.candidateCount
-	},
-	{
-		label: "Question categories",
-		note: "Standardized issue areas available here.",
-		value: comparisonStats.value.categoryCount
-	},
-	{
-		label: "Shared questions",
-		note: "Questionnaire prompts shown in the table.",
-		value: comparisonStats.value.questionCount
-	}
-]));
 const hasUnavailableSelection = computed(() => {
 	return selectedSlugs.value.length >= 2 && (data.value?.candidates.length ?? 0) === 0;
 });
@@ -166,16 +142,6 @@ usePageSeo({
 				This page compares verified ballot facts and candidate-provided statements by attribute. It is designed to stay neutral: no polls, no win probabilities, no fundraising leaderboard, and no fit score.
 			</p>
 		</header>
-
-		<section class="surface-panel">
-			<PageSummaryStrip :items="compareSummaryItems" />
-			<p class="text-sm text-app-muted leading-7 mt-5 max-w-4xl dark:text-app-muted-dark">
-				Columns are candidates and rows are shared attributes. Use the differences-only toggle to cut visual noise, then return to the broader results layer or a profile page when you want deeper funding or action context.
-			</p>
-			<InfoCallout class="mt-5" title="Comparison policy">
-				Ballot Clarity does not endorse or rank candidates. The default comparison focuses on ballot status, candidate-verbatim statements, and standardized question responses with visible sources, clear provenance, and missing-data labels. Use compare to eliminate, then save a choice only after checking the deeper profile pages or the surrounding results context.
-			</InfoCallout>
-		</section>
 
 		<div v-if="pending" class="surface-panel bg-white/70 h-96 animate-pulse dark:bg-app-panel-dark/70" />
 

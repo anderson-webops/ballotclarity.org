@@ -75,7 +75,7 @@ function providerStatusTone(status: "active" | "needs_endpoint" | "needs_key" | 
 		</div>
 
 		<div v-else class="reading-page space-y-8">
-			<header class="surface-panel max-w-5xl">
+			<header class="max-w-5xl">
 				<div class="flex flex-wrap gap-2">
 					<TrustBadge label="Official sources first" tone="accent" />
 					<TrustBadge label="Providers when needed" />
@@ -108,7 +108,7 @@ function providerStatusTone(status: "active" | "needs_endpoint" | "needs_key" | 
 				</details>
 			</header>
 
-			<details v-if="data.ballotContentProviders?.length" class="surface-panel">
+			<details v-if="data.ballotContentProviders?.length" class="surface-row">
 				<summary class="collapsible-card-summary cursor-pointer focus-ring">
 					<div class="flex flex-wrap gap-4 items-start justify-between">
 						<div>
@@ -185,7 +185,7 @@ function providerStatusTone(status: "active" | "needs_endpoint" | "needs_key" | 
 				</div>
 			</details>
 
-			<section class="surface-panel">
+			<section class="space-y-5">
 				<div class="flex flex-wrap gap-4 items-start justify-between">
 					<div>
 						<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
@@ -197,10 +197,10 @@ function providerStatusTone(status: "active" | "needs_endpoint" | "needs_key" | 
 					</div>
 					<TrustBadge label="Source hierarchy" tone="accent" />
 				</div>
-				<p class="bc-prose text-app-muted mt-5 dark:text-app-muted-dark">
+				<p class="bc-prose text-app-muted dark:text-app-muted-dark">
 					Most readers only need the rule and the current use case. The provider-by-provider notes remain available here for review and operations.
 				</p>
-				<div class="mt-6 space-y-4">
+				<div class="space-y-4">
 					<details v-for="category in data.categories" :key="category.slug" class="surface-row">
 						<summary class="collapsible-card-summary cursor-pointer focus-ring">
 							<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">

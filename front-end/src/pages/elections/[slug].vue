@@ -8,7 +8,7 @@ const guideStatusTitle = computed(() => "Guide status");
 const guideStatusNote = computed(() => data.value?.guideContent?.verifiedContestPackage
 	? "Contest, candidate, and measure pages are verified for this area."
 	: data.value?.guideContent?.publishedGuideShell
-		? "Official election links are current. Contest, candidate, and measure pages are still under local review."
+		? "Official election links are current. Verified contest pages are still under local review."
 		: "Use this page for key dates and official links, then open the ballot guide for contest-by-contest reading.");
 
 watchEffect(() => {
@@ -25,7 +25,7 @@ watchEffect(() => {
 });
 
 usePageSeo({
-	description: data.value?.election.description ?? "Election overview with key dates, official links, contest index, and change log.",
+	description: data.value?.election.description ?? "Election overview with key dates, official links, and change log.",
 	jsonLd: data.value
 		? {
 				"@context": "https://schema.org",
@@ -166,7 +166,7 @@ usePageSeo({
 				</details>
 			</section>
 
-			<section v-if="data.election.contests.length" class="surface-panel">
+			<section v-if="data.guideContent?.verifiedContestPackage && data.election.contests.length" class="surface-panel">
 				<div class="flex flex-wrap gap-4 items-center justify-between">
 					<div>
 						<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">

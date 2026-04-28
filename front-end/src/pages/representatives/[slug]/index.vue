@@ -404,14 +404,6 @@ usePageSeo({
 									</li>
 								</ul>
 							</details>
-							<div class="text-sm text-app-muted leading-7 mt-5 pt-5 border-t border-app-line/80 space-y-2 dark:text-app-muted-dark dark:border-app-line-dark">
-								<p>
-									<strong class="text-app-ink dark:text-app-text-dark">Profile reviewed:</strong> {{ formatDateTime(person.provenance.asOf) }}
-								</p>
-								<p>
-									<strong class="text-app-ink dark:text-app-text-dark">Data through:</strong> {{ formatDateTime(person.freshness.dataLastUpdatedAt ?? person.updatedAt) }}
-								</p>
-							</div>
 						</div>
 					</div>
 				</section>
@@ -682,25 +674,14 @@ usePageSeo({
 				</section>
 			</div>
 
-			<div class="space-y-6 xl:pt-[4.5rem]">
+			<div class="space-y-6 xl:pt-[4.5rem]" data-representative-sidebar="record-details">
 				<PageSectionNav
 					:breadcrumbs="breadcrumbs"
 					compact
 					:items="sectionLinks"
 					:show-breadcrumbs="false"
 					title="Representative profile"
-				>
-					<template #actions>
-						<div class="flex flex-wrap gap-3">
-							<NuxtLink :to="buildLookupAwareTarget(backToLayerLink.to)" class="btn-secondary">
-								{{ backToLayerLink.label }}
-							</NuxtLink>
-							<NuxtLink :to="buildLookupAwareTarget('/representatives')" class="btn-secondary">
-								Representative directory
-							</NuxtLink>
-						</div>
-					</template>
-				</PageSectionNav>
+				/>
 			</div>
 		</div>
 	</section>

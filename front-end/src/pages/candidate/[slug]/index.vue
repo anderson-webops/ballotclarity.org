@@ -232,15 +232,8 @@ function saveToPlan() {
 						</p>
 					</div>
 					<div class="bc-action-cluster mt-6">
-						<SourceDrawer :sources="candidate.sources" :title="`${candidate.name} evidence and sources`" button-label="Evidence & sources" />
 						<NuxtLink v-if="canOpenHydratedCompare" :to="compareHref" class="btn-secondary">
 							Open compare
-						</NuxtLink>
-						<NuxtLink :to="`/candidate/${candidate.slug}/funding`" class="btn-secondary">
-							Funding page
-						</NuxtLink>
-						<NuxtLink :to="`/candidate/${candidate.slug}/influence`" class="btn-secondary">
-							Influence page
 						</NuxtLink>
 						<button type="button" class="btn-secondary" :disabled="showPersistedCandidateState ? compareLimitReached : false" @click="toggleCompare">
 							<span :class="compareButtonIcon" />
@@ -269,7 +262,6 @@ function saveToPlan() {
 								Ballot context and page coverage
 							</h2>
 						</div>
-						<SourceDrawer :sources="candidate.sources" :title="`${candidate.name} ballot context and coverage`" button-label="See page sources" />
 					</div>
 					<div class="mt-6">
 						<PageSummaryStrip :items="atGlanceStats" />
@@ -342,7 +334,6 @@ function saveToPlan() {
 					eyebrow="Biography"
 					title="Background and public resume"
 					description="This section combines verified public background details with self-described campaign biography so users can see where identity, work history, and public narrative come from."
-					open
 				>
 					<template #meta>
 						<SourceDrawer :sources="candidate.biography.flatMap(block => block.sources)" :title="`${candidate.name} background sources`" />
@@ -470,7 +461,6 @@ function saveToPlan() {
 					id="actions"
 					eyebrow="Votes & actions"
 					title="Selected documented actions"
-					open
 				>
 					<template #meta>
 						<SourceDrawer :sources="candidate.keyActions.flatMap(action => action.sources)" :title="`${candidate.name} key actions`" />
@@ -664,7 +654,6 @@ function saveToPlan() {
 				>
 					<template #actions>
 						<div class="flex flex-wrap gap-3">
-							<SourceDrawer :sources="candidate.sources" :title="`${candidate.name} full source list`" button-label="Sources" />
 							<a :href="reportIssueHref" class="btn-secondary">
 								Report an issue
 							</a>

@@ -186,7 +186,7 @@ usePageSeo({
 						<article
 							v-for="representative in group.representatives"
 							:key="representative.slug"
-							class="surface-panel"
+							class="surface-row"
 						>
 							<div class="flex flex-wrap gap-2 items-center">
 								<VerificationBadge :label="getRepresentativePresentation(representative).levelLabel" tone="accent" />
@@ -200,7 +200,7 @@ usePageSeo({
 									size="md"
 								/>
 								<div class="min-w-0">
-									<h3 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
+									<h3 class="text-2xl text-app-ink font-serif dark:text-app-text-dark">
 										{{ representative.name }}
 									</h3>
 									<p class="text-sm text-app-muted mt-3 dark:text-app-muted-dark">
@@ -208,9 +208,6 @@ usePageSeo({
 									</p>
 								</div>
 							</div>
-							<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-								{{ representative.summary }}
-							</p>
 							<div class="mt-5 flex flex-wrap gap-2">
 								<VerificationBadge :label="representative.districtLabel" />
 								<SourceDrawer
@@ -223,6 +220,7 @@ usePageSeo({
 									variant="badge"
 								/>
 								<VerificationBadge v-else :label="formatSourceCountLabel(representative.sourceCount)" tone="accent" />
+								<VerificationBadge v-if="!representative.fundingAvailable" label="Funding not yet available" />
 							</div>
 							<div class="mt-6 flex flex-wrap gap-3">
 								<NuxtLink v-if="!representativeLinkIsExternal(representative.href)" :to="buildLookupAwareTarget(representative.href)" class="btn-secondary">
@@ -256,14 +254,25 @@ usePageSeo({
 									Influence
 								</NuxtLink>
 							</div>
-							<div v-if="representative.fundingAvailable || representative.influenceAvailable" class="mt-4 space-y-2">
-								<p v-if="representative.fundingAvailable" class="text-sm text-app-muted leading-6 dark:text-app-muted-dark">
-									<strong class="text-app-ink dark:text-app-text-dark">Funding:</strong> {{ representative.fundingSummary }}
-								</p>
-								<p v-if="representative.influenceAvailable" class="text-sm text-app-muted leading-6 dark:text-app-muted-dark">
-									<strong class="text-app-ink dark:text-app-text-dark">Influence:</strong> {{ representative.influenceSummary }}
-								</p>
-							</div>
+							<details
+								v-if="representative.summary || representative.fundingAvailable || representative.influenceAvailable"
+								class="mt-4"
+							>
+								<summary class="text-sm text-app-ink font-semibold cursor-pointer dark:text-app-text-dark focus-ring">
+									More context
+								</summary>
+								<div class="text-sm text-app-muted leading-6 mt-3 space-y-2 dark:text-app-muted-dark">
+									<p v-if="representative.summary">
+										{{ representative.summary }}
+									</p>
+									<p v-if="representative.fundingAvailable">
+										<strong class="text-app-ink dark:text-app-text-dark">Funding:</strong> {{ representative.fundingSummary }}
+									</p>
+									<p v-if="representative.influenceAvailable">
+										<strong class="text-app-ink dark:text-app-text-dark">Influence:</strong> {{ representative.influenceSummary }}
+									</p>
+								</div>
+							</details>
 						</article>
 					</div>
 				</section>

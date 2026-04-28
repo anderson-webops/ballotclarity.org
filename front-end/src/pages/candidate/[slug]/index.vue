@@ -7,7 +7,6 @@ import FinanceBreakdownChart from "~/components/graphics/FinanceBreakdownChart.v
 import OfficeContextCard from "~/components/graphics/OfficeContextCard.vue";
 import SourceProvenanceStrip from "~/components/graphics/SourceProvenanceStrip.vue";
 import TimelineList from "~/components/graphics/TimelineList.vue";
-import { contactEmail } from "~/constants";
 import { buildCompareLaunchSlugs, buildCompareRoute } from "~/stores/civic";
 import {
 	buildCandidateComparisonMatrix,
@@ -153,9 +152,16 @@ const actionCoverageNote = computed(() => {
 		? "This section highlights selected official actions tied to the current project archive. Use the evidence drawer and source rail to inspect the attached records and page limits."
 		: "This section highlights source-backed campaign, policy, or local-government actions available in the current project archive. It does not stand in for a full voting ledger.";
 });
-const reportIssueHref = computed(() => candidate.value
-	? `mailto:${contactEmail}?subject=${encodeURIComponent(`Ballot Clarity candidate review: ${candidate.value.name}`)}`
-	: `mailto:${contactEmail}?subject=${encodeURIComponent("Ballot Clarity candidate review")}`);
+const reportIssueTo = computed(() => ({
+	path: "/contact",
+	query: {
+		pageUrl: `/candidate/${candidate.value?.slug ?? candidateSlug.value}`,
+		subject: candidate.value
+			? `Ballot Clarity candidate review: ${candidate.value.name}`
+			: "Ballot Clarity candidate review",
+		type: "correction"
+	}
+}));
 const candidateProvenanceSummary = computed(() => candidate.value ? buildCandidateProvenanceSummary(candidate.value, formatDate) : null);
 const candidateOfficeContext = computed(() => candidate.value
 	? buildCandidateOfficeContext(candidate.value, formatCurrency, formatCompactNumber, dataThroughLabel.value)
@@ -646,9 +652,9 @@ function saveToPlan() {
 						<a v-if="candidateJsonHref" :href="candidateJsonHref" class="btn-secondary text-xs px-4 py-2" rel="noreferrer" target="_blank">
 							Download JSON
 						</a>
-						<a :href="reportIssueHref" class="btn-secondary text-xs px-4 py-2">
+						<NuxtLink :to="reportIssueTo" class="btn-secondary text-xs px-4 py-2">
 							Report an issue
-						</a>
+						</NuxtLink>
 						<NuxtLink :to="locationHubLink.to" class="btn-secondary text-xs px-4 py-2">
 							{{ locationHubLink.label }}
 						</NuxtLink>

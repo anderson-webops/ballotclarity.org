@@ -83,7 +83,6 @@ const summaryItems = computed(() => {
 	if (!fundingAvailable.value || !funding.value) {
 		return [
 			{ label: "Current office", note: "Current office.", value: person.value.officeDisplayLabel || person.value.officeSought },
-			{ label: "Finance status", note: "Campaign-finance attachment for this page.", value: "Unavailable" },
 			{ label: "Updated", note: "Profile freshness.", value: formatDate(person.value.freshness.dataLastUpdatedAt ?? person.value.updatedAt) }
 		];
 	}
@@ -206,16 +205,11 @@ usePageSeo({
 				</div>
 			</section>
 
-			<section v-else class="surface-panel max-w-4xl">
-				<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
-					Funding unavailable
-				</h2>
-				<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
+			<section v-else class="max-w-4xl">
+				<InfoCallout title="Funding unavailable" tone="warning">
 					{{ person.enrichmentStatus?.funding.summary || fundingUnavailableSummary }}
-				</p>
-				<p class="text-sm text-app-muted leading-7 mt-5 dark:text-app-muted-dark">
-					Last reviewed {{ formatDate(person.freshness.dataLastUpdatedAt ?? person.updatedAt) }}.
-				</p>
+					<span class="mt-2 block">Last reviewed {{ formatDate(person.freshness.dataLastUpdatedAt ?? person.updatedAt) }}.</span>
+				</InfoCallout>
 			</section>
 		</div>
 	</section>

@@ -71,7 +71,6 @@ const summaryItems = computed(() => {
 	if (!influenceAvailable.value) {
 		return [
 			{ label: "Current office", note: "Current office.", value: person.value.officeDisplayLabel || person.value.officeSought },
-			{ label: "Influence status", note: "Lobbying or disclosure attachment for this route.", value: "Unavailable" },
 			{ label: "Updated", note: "Profile freshness.", value: formatDateTime(person.value.updatedAt) }
 		];
 	}
@@ -235,16 +234,11 @@ usePageSeo({
 				</div>
 			</section>
 
-			<section v-else class="surface-panel max-w-4xl">
-				<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
-					Influence unavailable
-				</h2>
-				<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
+			<section v-else class="max-w-4xl">
+				<InfoCallout title="Influence unavailable" tone="warning">
 					{{ person.enrichmentStatus?.influence.summary || influenceUnavailableSummary }}
-				</p>
-				<p class="text-sm text-app-muted leading-7 mt-5 dark:text-app-muted-dark">
-					Last reviewed {{ formatDate(person.freshness.dataLastUpdatedAt ?? person.updatedAt) }}.
-				</p>
+					<span class="mt-2 block">Last reviewed {{ formatDate(person.freshness.dataLastUpdatedAt ?? person.updatedAt) }}.</span>
+				</InfoCallout>
 			</section>
 		</div>
 	</section>

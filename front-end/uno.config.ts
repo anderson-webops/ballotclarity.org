@@ -14,7 +14,10 @@ export default defineConfig({
 	shortcuts: [
 		["app-shell", "mx-auto w-full max-w-[84rem] px-4 sm:px-6 lg:px-8"],
 		["section-gap", "py-8 sm:py-12 lg:py-16"],
-		["surface-panel", "rounded-[1.5rem] border border-app-line/80 bg-app-panel/92 p-4 shadow-[0_22px_56px_-42px_rgba(13,37,62,0.42)] backdrop-blur sm:rounded-[1.75rem] sm:p-5 dark:border-app-line-dark dark:bg-app-panel-dark/96"],
+		["surface-panel", "rounded-[1.35rem] border border-app-line/70 bg-app-panel/90 p-4 shadow-[0_16px_42px_-38px_rgba(13,37,62,0.34)] backdrop-blur sm:rounded-[1.55rem] sm:p-5 dark:border-app-line-dark dark:bg-app-panel-dark/94"],
+		["surface-primary", "rounded-[1.75rem] border border-app-line/80 bg-app-panel/92 p-5 shadow-[0_28px_64px_-50px_rgba(13,37,62,0.52)] backdrop-blur sm:rounded-[2rem] sm:p-7 dark:border-app-line-dark dark:bg-app-panel-dark/96"],
+		["surface-row", "rounded-[1.1rem] border border-app-line/70 bg-white/72 p-3 dark:border-app-line-dark dark:bg-app-bg-dark/60"],
+		["surface-inset", "rounded-[1.25rem] bg-app-bg/72 p-4 dark:bg-app-bg-dark/68"],
 		["focus-ring", "focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-app-accent-strong focus-visible:ring-offset-3 focus-visible:ring-offset-app-bg dark:focus-visible:ring-offset-app-bg-dark"],
 		["primary-link", "inline-flex items-center gap-2 font-medium text-app-accent transition hover:text-app-accent-strong"],
 		["btn-primary", "focus-ring inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-app-action px-4 py-2.5 text-sm font-semibold text-app-action-text transition hover:bg-app-action-strong disabled:cursor-not-allowed disabled:opacity-60 sm:px-5 sm:py-3"],

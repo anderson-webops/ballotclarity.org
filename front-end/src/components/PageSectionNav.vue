@@ -11,15 +11,17 @@ defineProps<{
 		label: string;
 		to?: string;
 	}>;
+	compact?: boolean;
 	description?: string;
 	items: PageSectionNavItem[];
+	showBreadcrumbs?: boolean;
 	title: string;
 }>();
 </script>
 
 <template>
-	<nav class="section-nav surface-panel" aria-label="Page sections">
-		<div v-if="breadcrumbs?.length" class="section-nav__crumbs">
+	<nav class="section-nav surface-panel" :class="{ 'section-nav--compact': compact }" aria-label="Page sections">
+		<div v-if="showBreadcrumbs !== false && breadcrumbs?.length" class="section-nav__crumbs">
 			<AppBreadcrumbs :items="breadcrumbs" compact />
 		</div>
 		<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">

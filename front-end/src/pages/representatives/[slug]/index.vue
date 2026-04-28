@@ -1,19 +1,16 @@
 <script setup lang="ts">
 import { storeToRefs } from "pinia";
 
-import { contactEmail } from "~/constants";
-import { buildActiveLookupSummary } from "~/utils/active-lookup";
 import { activeNationwideLookupCookieName, parseActiveNationwideLookupCookie } from "~/utils/active-nationwide-cookie";
 import { buildNationwidePersonProfileResponse } from "~/utils/nationwide-person-profile";
 import { buildLookupContextFromNationwideResult, buildNationwideLookupRouteQuery, buildNationwideRouteTarget } from "~/utils/nationwide-route-context";
-import { buildPersonSummaryItems, hasPersonFunding, hasPersonInfluence } from "~/utils/person-profile";
+import { hasPersonFunding, hasPersonInfluence } from "~/utils/person-profile";
 import { resolveRepresentativePresentation } from "~/utils/representative-presentation";
 
 const route = useRoute();
-const runtimeConfig = useRuntimeConfig();
 const siteUrl = useSiteUrl();
 const civicStore = useCivicStore();
-const { isHydrated, nationwideLookupResult, selectedLocation } = storeToRefs(civicStore);
+const { isHydrated, nationwideLookupResult } = storeToRefs(civicStore);
 const representativeSlug = computed(() => String(route.params.slug));
 const { backToLayerLink, layerBreadcrumbLink, overviewLink } = useRouteLayerNavigation();
 const { formatCurrency, formatDate, formatDateTime, formatPercent } = useFormatters();
@@ -43,11 +40,6 @@ const profileData = computed(() => {
 });
 const person = computed(() => profileData.value?.person ?? null);
 const pagePending = computed(() => pending.value || (!data.value && !fallbackData.value));
-const activeLookupSummary = computed(() => buildActiveLookupSummary({
-	nationwideLookupResult: activeNationwideLookupResult.value,
-	routeLookupQuery: activeLookupQuery.value?.lookup ?? null,
-	selectedLocation: isHydrated.value ? selectedLocation.value : null
-}));
 const representativePresentation = computed(() => person.value
 	? resolveRepresentativePresentation(person.value, activeNationwideLookupResult.value?.location?.state ?? null)
 	: null);
@@ -60,31 +52,12 @@ const dataThroughLabel = computed(() => {
 function buildLookupAwareTarget(path: string) {
 	return buildNationwideRouteTarget(path, buildLookupContextFromNationwideResult(activeNationwideLookupResult.value), route.query);
 }
-const representativeJsonHref = computed(() => {
-	if (!person.value)
-		return "";
-
-	const target = new URL(`${runtimeConfig.public.apiBase}/representatives/${person.value.slug}`);
-	const query = activeLookupQuery.value;
-
-	if (query?.lookup)
-		target.searchParams.set("lookup", query.lookup);
-
-	if (query?.selection)
-		target.searchParams.set("selection", query.selection);
-
-	return target.toString();
-});
 const campaignLink = computed(() => {
 	if (!person.value?.comparison)
 		return "";
 
 	return person.value.comparison.campaignWebsiteUrl || person.value.comparison.contactChannels[0]?.url || "";
 });
-const fundingStatusSummary = computed(() => person.value?.enrichmentStatus?.funding.summary
-	|| "No source-backed finance summary is attached to this person record yet.");
-const influenceStatusSummary = computed(() => person.value?.enrichmentStatus?.influence.summary
-	|| "No lobbying or public-statement context is attached to this person record yet.");
 const hasFunding = computed(() => person.value ? hasPersonFunding(person.value) : false);
 const hasInfluence = computed(() => person.value ? hasPersonInfluence(person.value) : false);
 const officeContext = computed(() => person.value?.officeContext ?? null);
@@ -101,31 +74,12 @@ const sectionLinks = computed(() => person.value
 	? [
 			{ href: "#at-a-glance", label: "At a glance" },
 			{ href: "#biography", label: "Bio" },
-			{ href: "#actions", label: "Actions", badge: String(person.value.keyActions.length) },
-			{ href: "#funding", label: "Funding", badge: hasFunding.value ? "Live" : "None" },
-			{ href: "#influence", label: "Influence", badge: hasInfluence.value ? "Live" : "None" },
+			...(person.value.keyActions.length ? [{ href: "#actions", label: "Actions", badge: String(person.value.keyActions.length) }] : []),
+			...(hasFunding.value ? [{ href: "#funding", label: "Funding", badge: "Live" }] : []),
+			...(hasInfluence.value ? [{ href: "#influence", label: "Influence", badge: "Live" }] : []),
 			{ href: "#sources", label: "Sources", badge: String(person.value.sources.length) }
 		]
 	: []);
-const summaryItems = computed(() => {
-	if (!person.value)
-		return [];
-
-	return buildPersonSummaryItems({
-		dataThroughLabel: dataThroughLabel.value,
-		formatCurrency,
-		fundingHref: "#funding",
-		fundingStatusSummary: fundingStatusSummary.value,
-		fundingTotalRaised: person.value.funding?.totalRaised ?? null,
-		hasFunding: hasFunding.value,
-		hasInfluence: hasInfluence.value,
-		influenceHref: "#influence",
-		influenceNoteCount: person.value.lobbyingContext.length + person.value.publicStatements.length,
-		influenceStatusSummary: influenceStatusSummary.value,
-		officeDisplayLabel: representativePresentation.value?.officeDisplayLabel ?? person.value.officeSought,
-		officeHref: "#office-context"
-	});
-});
 const officeContextFields = computed(() => {
 	if (!person.value)
 		return [];
@@ -168,6 +122,8 @@ const moduleStatusItems = computed(() => {
 		},
 	];
 });
+const availableModuleStatusItems = computed(() => moduleStatusItems.value.filter(item => item.status === "available"));
+const unavailableModuleStatusItems = computed(() => moduleStatusItems.value.filter(item => item.status !== "available"));
 const pageNotes = computed(() => {
 	if (!person.value)
 		return [];
@@ -222,9 +178,16 @@ const influenceHighlights = computed(() => {
 		typeof influence.value.totalMatched === "number" ? { label: "Total matched", value: formatCurrency(influence.value.totalMatched) } : null,
 	].filter((item): item is { label: string; value: string } => Boolean(item));
 });
-const reportIssueHref = computed(() => person.value
-	? `mailto:${contactEmail}?subject=${encodeURIComponent(`Ballot Clarity representative review: ${person.value.name}`)}`
-	: `mailto:${contactEmail}?subject=${encodeURIComponent("Ballot Clarity representative review")}`);
+const reportIssueTo = computed(() => ({
+	path: "/contact",
+	query: {
+		pageUrl: `/representatives/${person.value?.slug ?? representativeSlug.value}`,
+		subject: person.value
+			? `Ballot Clarity representative review: ${person.value.name}`
+			: "Ballot Clarity representative review",
+		type: "correction"
+	}
+}));
 
 usePageSeo({
 	description: person.value?.summary ?? "Representative profile with office context, funding, influence, and source-backed civic record details.",
@@ -340,33 +303,29 @@ usePageSeo({
 						<NuxtLink :to="buildLookupAwareTarget(overviewLink.to)" class="btn-secondary">
 							{{ overviewLink.label }}
 						</NuxtLink>
-						<a v-if="representativeJsonHref" :href="representativeJsonHref" class="btn-secondary" rel="noreferrer" target="_blank">
-							<span class="i-carbon-download" />
-							Download JSON
-						</a>
-						<NuxtLink :to="buildLookupAwareTarget(backToLayerLink.to)" class="btn-primary">
+						<NuxtLink :to="buildLookupAwareTarget(backToLayerLink.to)" class="btn-secondary">
 							{{ backToLayerLink.label }}
 						</NuxtLink>
 					</div>
 				</header>
 
 				<section id="at-a-glance" class="surface-panel scroll-mt-28">
-					<div class="flex flex-wrap gap-4 items-start justify-between">
-						<div>
-							<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-								At a glance
-							</p>
-							<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-								Person-level civic context
-							</h2>
-						</div>
-						<SourceDrawer :sources="person.sources" :title="`${person.name} profile scope`" button-label="See page sources" />
+					<div>
+						<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+							At a glance
+						</p>
+						<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
+							Person-level civic context
+						</h2>
 					</div>
-					<div class="mt-6">
-						<PageSummaryStrip :items="summaryItems" />
+					<div class="mt-6 flex flex-wrap gap-2">
+						<VerificationBadge :label="representativePresentation?.officeDisplayLabel ?? person.officeSought" tone="accent" />
+						<VerificationBadge v-if="hasFunding" label="Funding available" />
+						<VerificationBadge v-if="hasInfluence" label="Influence context available" />
+						<VerificationBadge :label="`${person.sources.length} source${person.sources.length === 1 ? '' : 's'}`" />
 					</div>
 					<div class="mt-6 gap-4 grid lg:grid-cols-[minmax(0,1.3fr)_minmax(18rem,0.9fr)]">
-						<div id="office-context" class="px-5 py-5 border border-app-line/80 rounded-3xl bg-white/80 scroll-mt-32 dark:border-app-line-dark dark:bg-app-panel-dark/70">
+						<div id="office-context" class="surface-row scroll-mt-32">
 							<div class="flex flex-wrap gap-3 items-center">
 								<h3 class="text-xl text-app-ink font-serif dark:text-app-text-dark">
 									Office and jurisdiction context
@@ -401,17 +360,17 @@ usePageSeo({
 								</div>
 							</div>
 						</div>
-						<div class="px-5 py-5 border border-app-line/80 rounded-3xl bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
+						<div class="surface-inset">
 							<h3 class="text-xl text-app-ink font-serif dark:text-app-text-dark">
-								Available here
+								Record status
 							</h3>
-							<ul class="mt-4 space-y-4">
-								<li v-for="item in moduleStatusItems" :key="item.label" class="pb-4 border-b border-app-line/80 last:pb-0 last:border-b-0 dark:border-app-line-dark">
+							<ul class="mt-4 space-y-3">
+								<li v-for="item in availableModuleStatusItems" :key="item.label" class="pb-3 border-b border-app-line/80 last:pb-0 last:border-b-0 dark:border-app-line-dark">
 									<div class="flex flex-wrap gap-3 items-center justify-between">
 										<p class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
 											{{ item.label }}
 										</p>
-										<VerificationBadge :label="item.status" :tone="item.status === 'available' ? 'accent' : 'warning'" />
+										<VerificationBadge :label="item.status" tone="accent" />
 									</div>
 									<p class="text-sm text-app-muted leading-7 mt-2 dark:text-app-muted-dark">
 										{{ item.summary }}
@@ -421,6 +380,16 @@ usePageSeo({
 									</p>
 								</li>
 							</ul>
+							<details v-if="unavailableModuleStatusItems.length" class="mt-4">
+								<summary class="text-sm text-app-ink font-semibold cursor-pointer dark:text-app-text-dark focus-ring">
+									{{ unavailableModuleStatusItems.length }} module{{ unavailableModuleStatusItems.length === 1 ? "" : "s" }} not available yet
+								</summary>
+								<ul class="text-sm text-app-muted leading-7 mt-3 space-y-3 dark:text-app-muted-dark">
+									<li v-for="item in unavailableModuleStatusItems" :key="item.label">
+										<strong class="text-app-ink dark:text-app-text-dark">{{ item.label }}:</strong> {{ item.reasonCode || item.summary }}
+									</li>
+								</ul>
+							</details>
 						</div>
 					</div>
 				</section>
@@ -459,10 +428,10 @@ usePageSeo({
 									<IssueChip v-for="issue in person.topIssues" :key="issue.slug" :label="issue.label" />
 								</div>
 							</div>
-							<div class="p-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
-								<h3 class="text-xl text-app-ink font-serif dark:text-app-text-dark">
+							<details v-if="person.publicStatements.length" class="p-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
+								<summary class="text-xl text-app-ink font-serif cursor-pointer dark:text-app-text-dark focus-ring">
 									Public statements
-								</h3>
+								</summary>
 								<div class="mt-4 space-y-3">
 									<article v-for="statement in person.publicStatements" :key="statement.id" class="p-4 rounded-2xl bg-white/80 dark:bg-app-panel-dark/70">
 										<h4 class="text-base text-app-ink font-semibold dark:text-app-text-dark">
@@ -472,16 +441,13 @@ usePageSeo({
 											{{ statement.summary }}
 										</p>
 									</article>
-									<p v-if="!person.publicStatements.length" class="text-sm text-app-muted leading-7 dark:text-app-muted-dark">
-										No source-backed public statements are attached to this person record yet.
-									</p>
 								</div>
-							</div>
+							</details>
 						</div>
 					</div>
 				</section>
 
-				<section id="actions" class="surface-panel scroll-mt-28">
+				<section v-if="person.keyActions.length" id="actions" class="surface-panel scroll-mt-28">
 					<div class="flex flex-wrap gap-4 items-center justify-between">
 						<div>
 							<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
@@ -513,17 +479,9 @@ usePageSeo({
 							</p>
 						</article>
 					</div>
-					<div v-else class="mt-6 p-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
-						<h3 class="text-lg text-app-ink font-semibold dark:text-app-text-dark">
-							No action record attached
-						</h3>
-						<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
-							{{ person.enrichmentStatus?.legislativeContext.summary || "No legislative or action feed is attached to this page." }}
-						</p>
-					</div>
 				</section>
 
-				<section id="funding" class="surface-panel scroll-mt-28">
+				<section v-if="hasFunding" id="funding" class="surface-panel scroll-mt-28">
 					<div class="flex flex-wrap gap-4 items-center justify-between">
 						<div>
 							<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
@@ -537,7 +495,7 @@ usePageSeo({
 							Open full funding page
 						</NuxtLink>
 					</div>
-					<div v-if="hasFunding && person.funding" class="mt-6 gap-6 grid xl:grid-cols-[minmax(0,1fr)_minmax(0,0.95fr)]">
+					<div v-if="person.funding" class="mt-6 gap-6 grid xl:grid-cols-[minmax(0,1fr)_minmax(0,0.95fr)]">
 						<div class="space-y-4">
 							<p class="text-sm text-app-muted leading-7 dark:text-app-muted-dark">
 								{{ person.funding.summary }}
@@ -573,24 +531,21 @@ usePageSeo({
 								</li>
 							</ul>
 						</div>
-						<div class="p-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
-							<h3 class="text-xl text-app-ink font-serif dark:text-app-text-dark">
-								Record facts
-							</h3>
+						<details class="p-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
+							<summary class="text-xl text-app-ink font-serif cursor-pointer dark:text-app-text-dark focus-ring">
+								Finance record details
+							</summary>
 							<ul class="text-sm text-app-muted leading-7 mt-4 space-y-2 dark:text-app-muted-dark">
 								<li><strong class="text-app-ink dark:text-app-text-dark">Committee:</strong> {{ person.funding.committeeName || "Current matched committee not published in this summary." }}</li>
 								<li><strong class="text-app-ink dark:text-app-text-dark">Coverage:</strong> {{ person.funding.coverageLabel || person.funding.provenanceLabel || "Source-backed finance summary" }}</li>
 								<li><strong class="text-app-ink dark:text-app-text-dark">Data through:</strong> {{ dataThroughLabel }}</li>
 								<li>{{ person.freshness.statusNote }}</li>
 							</ul>
-						</div>
+						</details>
 					</div>
-					<InfoCallout v-else title="No funding data attached" tone="warning" class="mt-6">
-						{{ fundingStatusSummary }}
-					</InfoCallout>
 				</section>
 
-				<section id="influence" class="surface-panel scroll-mt-28">
+				<section v-if="hasInfluence" id="influence" class="surface-panel scroll-mt-28">
 					<div class="flex flex-wrap gap-4 items-center justify-between">
 						<div>
 							<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
@@ -604,7 +559,7 @@ usePageSeo({
 							Open full influence page
 						</NuxtLink>
 					</div>
-					<div v-if="hasInfluence" class="mt-6 gap-6 grid xl:grid-cols-[minmax(0,1fr)_minmax(0,0.95fr)]">
+					<div class="mt-6 gap-6 grid xl:grid-cols-[minmax(0,1fr)_minmax(0,0.95fr)]">
 						<div class="space-y-4">
 							<div v-if="influenceHighlights.length" class="gap-3 grid sm:grid-cols-2">
 								<div v-for="item in influenceHighlights" :key="item.label" class="p-4 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
@@ -639,109 +594,80 @@ usePageSeo({
 								</ul>
 							</div>
 						</div>
-						<div class="p-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
-							<h3 class="text-xl text-app-ink font-serif dark:text-app-text-dark">
-								Record facts
-							</h3>
+						<details class="p-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
+							<summary class="text-xl text-app-ink font-serif cursor-pointer dark:text-app-text-dark focus-ring">
+								Influence record details
+							</summary>
 							<ul class="text-sm text-app-muted leading-7 mt-4 space-y-2 dark:text-app-muted-dark">
 								<li><strong class="text-app-ink dark:text-app-text-dark">Coverage:</strong> {{ influence?.coverageLabel || "Public disclosures, donor context, and source-backed statements where available." }}</li>
 								<li><strong class="text-app-ink dark:text-app-text-dark">Match mode:</strong> {{ influence?.matchMode ? formatInfluenceMatchMode(influence.matchMode) : "Not published" }}</li>
 								<li><strong class="text-app-ink dark:text-app-text-dark">Data through:</strong> {{ dataThroughLabel }}</li>
 								<li>Context is not proof of causation. {{ person.freshness.statusNote }}</li>
 							</ul>
-						</div>
+						</details>
 					</div>
-					<InfoCallout v-else title="No influence context attached" tone="warning" class="mt-6">
-						{{ influenceStatusSummary }}
-					</InfoCallout>
 				</section>
 
-				<section id="sources" class="scroll-mt-28 space-y-6">
-					<FreshnessStrip :freshness="person.freshness" title="Freshness and coverage status" />
-					<div class="surface-panel">
-						<div class="flex flex-wrap gap-4 items-center justify-between">
-							<div>
-								<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
-									Sources and notes
-								</h2>
-								<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-									Sources attached to this profile.
-								</p>
-							</div>
-							<a :href="reportIssueHref" class="btn-secondary">
-								Report an issue
-							</a>
+				<details id="sources" class="surface-panel scroll-mt-28">
+					<summary class="text-2xl text-app-ink font-serif cursor-pointer dark:text-app-text-dark focus-ring">
+						Sources and review notes
+					</summary>
+					<div class="mt-5 flex flex-wrap gap-4 items-center justify-between">
+						<div>
+							<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
+								Source records, freshness, and any limits attached to this profile.
+							</p>
 						</div>
-						<div class="mt-6 gap-6 grid xl:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)]">
-							<div>
-								<SourceList :sources="person.sources" />
-							</div>
-							<div class="space-y-4">
-								<div class="p-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
-									<h3 class="text-xl text-app-ink font-serif dark:text-app-text-dark">
-										Page notes
-									</h3>
-									<ul class="mt-4 space-y-2">
-										<li v-for="note in pageNotes" :key="note" class="text-sm text-app-muted leading-6 dark:text-app-muted-dark">
-											{{ note }}
-										</li>
-									</ul>
+						<NuxtLink :to="reportIssueTo" class="btn-secondary">
+							Report an issue
+						</NuxtLink>
+					</div>
+					<div class="mt-6 gap-6 grid xl:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)]">
+						<div>
+							<SourceList :sources="person.sources" />
+						</div>
+						<div class="surface-inset">
+							<h3 class="text-xl text-app-ink font-serif dark:text-app-text-dark">
+								Review status
+							</h3>
+							<dl class="text-sm text-app-muted leading-7 mt-4 space-y-2 dark:text-app-muted-dark">
+								<div>
+									<dt class="text-app-ink font-semibold dark:text-app-text-dark">
+										Profile reviewed
+									</dt>
+									<dd>{{ formatDateTime(person.provenance.asOf) }}</dd>
 								</div>
-							</div>
+								<div>
+									<dt class="text-app-ink font-semibold dark:text-app-text-dark">
+										Data through
+									</dt>
+									<dd>{{ formatDateTime(person.freshness.dataLastUpdatedAt ?? person.updatedAt) }}</dd>
+								</div>
+								<div>
+									<dt class="text-app-ink font-semibold dark:text-app-text-dark">
+										Coverage
+									</dt>
+									<dd>{{ person.freshness.statusNote }}</dd>
+								</div>
+							</dl>
+							<ul v-if="pageNotes.length" class="mt-5 space-y-2">
+								<li v-for="note in pageNotes" :key="note" class="text-sm text-app-muted leading-6 dark:text-app-muted-dark">
+									{{ note }}
+								</li>
+							</ul>
 						</div>
 					</div>
-				</section>
+				</details>
 			</div>
 
-			<div class="space-y-6 xl:pt-[4.5rem]">
-				<div class="surface-panel">
-					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-						Current area
-					</p>
-					<h2 class="text-2xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-						{{ activeLookupSummary.label }}
-					</h2>
-					<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-						{{ activeLookupSummary.note }}
-					</p>
-					<div class="mt-5 flex flex-wrap gap-3 items-center">
-						<TrustBadge
-							:label="activeLookupSummary.mode === 'nationwide' ? 'Lookup results' : activeLookupSummary.mode === 'guide' ? 'Local guide' : 'No saved location'"
-							:tone="activeLookupSummary.mode === 'nationwide' ? 'accent' : activeLookupSummary.mode === 'guide' ? undefined : 'warning'"
-						/>
-						<UpdatedAt v-if="activeLookupSummary.resolvedAt" :value="activeLookupSummary.resolvedAt" label="Lookup updated" />
-					</div>
-				</div>
-
+			<div class="space-y-6 xl:pt-[4.5rem]" data-representative-sidebar="record-details">
 				<PageSectionNav
 					:breadcrumbs="breadcrumbs"
-					description="Office, actions, funding, influence, and sources."
+					compact
 					:items="sectionLinks"
+					:show-breadcrumbs="false"
 					title="Representative profile"
-				>
-					<template #actions>
-						<div class="flex flex-wrap gap-3">
-							<NuxtLink :to="buildLookupAwareTarget(backToLayerLink.to)" class="btn-secondary">
-								{{ backToLayerLink.label }}
-							</NuxtLink>
-							<NuxtLink :to="buildLookupAwareTarget('/representatives')" class="btn-secondary">
-								Representative directory
-							</NuxtLink>
-						</div>
-					</template>
-				</PageSectionNav>
-
-				<div class="surface-panel" data-representative-sidebar="record-details">
-					<h2 class="text-2xl text-app-ink font-serif dark:text-app-text-dark">
-						Record dates
-					</h2>
-					<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-						<strong class="text-app-ink dark:text-app-text-dark">Profile reviewed:</strong> {{ formatDateTime(person.provenance.asOf) }}
-					</p>
-					<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
-						<strong class="text-app-ink dark:text-app-text-dark">Data through:</strong> {{ formatDateTime(person.freshness.dataLastUpdatedAt ?? person.updatedAt) }}
-					</p>
-				</div>
+				/>
 			</div>
 		</div>
 	</section>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { appName, contactEmail } from "~/constants";
+import { appName } from "~/constants";
 
 const effectiveAt = "2026-04-26T23:30:00-04:00";
 const runtimeConfig = useRuntimeConfig();
@@ -8,21 +8,6 @@ const currentOperatorName = String(runtimeConfig.public.operatorLegalName || "Ja
 const operatorNoticeAddress = String(runtimeConfig.public.operatorNoticeAddress || "").trim();
 const governingLaw = String(runtimeConfig.public.governingLaw || "").trim();
 const venue = String(runtimeConfig.public.venue || "").trim();
-
-const summaryCards = [
-	{
-		body: "Ballot Clarity is a source-first civic-information product. It is designed to help voters understand a ballot, not to tell them how to vote.",
-		title: "Informational only"
-	},
-	{
-		body: "The site is not an official government election website and is not affiliated with a state or local election office.",
-		title: "Not official"
-	},
-	{
-		body: "Ballot Clarity may publish only limited local coverage or lookup results for some areas in some environments. Time-sensitive election details should be verified with the relevant public authority.",
-		title: "Coverage and verification limits"
-	}
-];
 
 const serviceScope = [
 	"Ballot lookup and location-based ballot guides.",
@@ -39,10 +24,10 @@ const coreTerms = [
 
 const operatorAndNoticeRules = [
 	`Ballot Clarity is currently operated by ${currentOperatorName}.`,
-	`Operational questions, corrections, and formal notices can be sent to ${contactEmail}.`,
+	"Operational questions, corrections, and formal notices can be sent through the public contact page or protected email link below.",
 	...(operatorNoticeAddress
 		? [`Postal notices may also be sent to ${operatorNoticeAddress}.`]
-		: ["A separate postal notice address is not published on this host today, so email is the current notice channel for the release now online."])
+		: ["A separate postal notice address is not published on this host today, so the public contact page and protected email link are the current notice channels for the release now online."])
 ];
 
 const governingLawAndVenueRules = [
@@ -134,7 +119,7 @@ usePageSeo({
 </script>
 
 <template>
-	<section class="app-shell section-gap space-y-8">
+	<section class="legal-page app-shell section-gap space-y-8">
 		<header class="max-w-4xl">
 			<div class="flex flex-wrap gap-2">
 				<TrustBadge label="Current terms" tone="accent" />
@@ -145,7 +130,7 @@ usePageSeo({
 				Terms of Service
 			</h1>
 			<p class="text-base text-app-muted leading-8 mt-5 max-w-3xl dark:text-app-muted-dark">
-				These terms describe how the current {{ appName }} website may be used, what the service is designed to do, and the limits that apply to Ballot Clarity's public build.
+				These terms describe how the current {{ appName }} website may be used, what the service is designed to do, and the limits that apply to the public site.
 			</p>
 			<div class="mt-5">
 				<UpdatedAt label="Effective" :value="effectiveAt" />
@@ -155,20 +140,6 @@ usePageSeo({
 		<InfoCallout title="Current scope">
 			This page is written for the current release now online. It governs the public civic-information site, not separate contracts with upstream providers or any future account, donation, or API products that Ballot Clarity may add later.
 		</InfoCallout>
-
-		<section class="gap-6 grid lg:grid-cols-3">
-			<article v-for="item in summaryCards" :key="item.title" class="surface-panel">
-				<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
-					At a glance
-				</p>
-				<h2 class="text-2xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-					{{ item.title }}
-				</h2>
-				<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-					{{ item.body }}
-				</p>
-			</article>
-		</section>
 
 		<section class="gap-6 grid lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
 			<div class="surface-panel">
@@ -411,10 +382,15 @@ usePageSeo({
 				</h2>
 				<div class="text-sm text-app-muted leading-7 mt-5 space-y-4 dark:text-app-muted-dark">
 					<p>
-						Questions about these terms, corrections, or public-interest collaboration can be sent to
-						<a :href="`mailto:${contactEmail}`" class="underline underline-offset-3">
-							{{ contactEmail }}
-						</a>.
+						Questions about these terms, corrections, or public-interest collaboration can be sent through the public contact page or the protected email link below.
+					</p>
+					<p>
+						<ProtectedEmailLink
+							loading-label="Email link loads in your browser."
+							loading-class="text-app-muted dark:text-app-muted-dark"
+							link-class="underline underline-offset-3 rounded-md focus-ring"
+							subject="Ballot Clarity terms question"
+						/>
 					</p>
 					<p>
 						This section should stay aligned with the operator identity, notice channel, and effective-date process actually used on the public site.

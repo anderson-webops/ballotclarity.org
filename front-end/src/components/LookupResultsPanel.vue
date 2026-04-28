@@ -54,6 +54,7 @@ const hasSelectionOptions = computed(() => selectionOptions.value.length > 0);
 const electionLogistics = computed(() => props.lookup.electionLogistics);
 const ballotContentPreviews = computed(() => props.lookup.ballotContentPreviews ?? []);
 const hasBallotContentPreviews = computed(() => ballotContentPreviews.value.length > 0);
+const primaryAvailabilityIds = new Set(["official-logistics", "representatives", "local-guide"]);
 const hasElectionLogistics = computed(() => Boolean(
 	electionLogistics.value
 	&& (
@@ -78,7 +79,7 @@ const lookupUncertaintyNote = computed(() => {
 	return "District and representative matches are provider-backed, but the election office remains the final authority for precinct and ballot-style questions.";
 });
 
-const availabilityActionCards = computed(() => {
+const availabilityItems = computed(() => {
 	if (!props.lookup.availability)
 		return [];
 
@@ -133,6 +134,15 @@ const availabilityActionCards = computed(() => {
 		},
 	];
 });
+const visibleAvailabilityItems = computed(() => availabilityItems.value.filter((card) => {
+	if (!card.href || card.item.status === "unavailable")
+		return false;
+
+	if (primaryAvailabilityIds.has(card.id))
+		return true;
+
+	return card.item.status === "available";
+}));
 
 function availabilityTone(status: "available" | "partial" | "limited" | "unavailable") {
 	return status === "available" ? "accent" : status === "partial" || status === "limited" ? "warning" : "neutral";
@@ -304,7 +314,7 @@ function getRepresentativePresentation(match: NationwideLookupResultContext["rep
 			</article>
 		</div>
 		<section
-			v-if="availabilityActionCards.length"
+			v-if="visibleAvailabilityItems.length"
 			class="mt-4 p-4 border border-app-line rounded-3xl bg-white dark:border-app-line-dark dark:bg-app-panel-dark"
 		>
 			<div class="flex flex-wrap gap-4 items-start justify-between">
@@ -329,7 +339,7 @@ function getRepresentativePresentation(match: NationwideLookupResultContext["rep
 			>
 				<component
 					:is="card.href ? NuxtLinkComponent : 'article'"
-					v-for="card in availabilityActionCards"
+					v-for="card in visibleAvailabilityItems"
 					:key="card.id"
 					v-bind="card.href ? { to: card.href } : {}"
 					class="group p-4 border border-app-line rounded-2xl bg-app-bg h-full transition dark:border-app-line-dark dark:bg-app-bg-dark/80"

@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { storeToRefs } from "pinia";
-import { contactEmail } from "~/constants";
 import { buildCompareRoute } from "~/stores/civic";
 
 const year = new Date().getFullYear();
@@ -87,12 +86,15 @@ function resolveGuideLinkTo(path: string) {
 						</p>
 						<div class="text-sm text-app-muted mt-4 space-y-4 dark:text-app-muted-dark">
 							<p>
-								<a :href="`mailto:${contactEmail}`" class="text-app-ink rounded-md transition dark:text-app-text-dark hover:text-app-accent focus-ring dark:hover:text-white">
-									{{ contactEmail }}
-								</a>
+								Questions, corrections, and volunteer help welcome.
 							</p>
 							<p>
-								Questions, corrections, and volunteer help welcome.
+								<ProtectedEmailLink
+									loading-label="Email link loads in your browser."
+									loading-class="text-app-muted dark:text-app-muted-dark"
+									link-class="text-app-ink font-semibold rounded-md transition dark:text-app-text-dark hover:text-app-accent focus-ring dark:hover:text-white"
+									subject="Ballot Clarity inquiry"
+								/>
 							</p>
 							<NuxtLink to="/contact" prefetch-on="interaction" class="text-app-ink font-semibold rounded-md inline-flex gap-2 transition items-center dark:text-app-text-dark hover:text-app-accent focus-ring dark:hover:text-white">
 								<span>Open contact page</span>
@@ -161,7 +163,12 @@ function resolveGuideLinkTo(path: string) {
 				</div>
 				<div class="flex flex-col gap-3 items-start lg:items-end">
 					<div class="max-w-[28rem] w-full lg:w-[13rem]">
-						<ThemeSchemePicker compact align="end" panel-align="end" />
+						<ClientOnly>
+							<ThemeSchemePicker compact align="end" panel-align="end" />
+							<template #fallback>
+								<div class="px-4 py-3 border border-app-line rounded-full bg-app-panel h-12 w-full dark:border-app-line-dark dark:bg-app-panel-dark" />
+							</template>
+						</ClientOnly>
 					</div>
 					<p class="text-sm text-app-muted whitespace-nowrap dark:text-app-muted-dark">
 						© {{ year }} Ballot Clarity

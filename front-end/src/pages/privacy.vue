@@ -1,30 +1,15 @@
 <script setup lang="ts">
-import { analyticsTrackers, appName, contactEmail } from "~/constants";
+import { analyticsTrackers, appName } from "~/constants";
 
 const effectiveAt = "2026-04-26T23:30:00-04:00";
 const siteUrl = useSiteUrl();
 const analyticsHosts = analyticsTrackers.map(tracker => tracker.domain).join(" and ");
 
-const summaryCards = [
-	{
-		body: "Lookup input is used only for civic matching, official verification, and route enrichment. The current release does not use it for ad targeting or public publication.",
-		title: "Lookup disclosure is specific"
-	},
-	{
-		body: "The site uses first-party cookies and browser storage for lookup continuity, timezone display, and internal admin sessions. It does not use an advertising-cookie stack.",
-		title: "First-party storage only"
-	},
-	{
-		body: "The public site has no self-service user accounts, but the current release does include internal editorial/admin accounts and a public correction form.",
-		title: "Public and internal flows differ"
-	}
-];
-
 const collectionSections = [
 	{
 		body: [
 			"When you use the ballot lookup, the address or ZIP code is sent with a POST request so the service can determine a location and ballot guide.",
-			"That lookup may also trigger provider-backed district matching, representative attachment, and official election verification in the current runtime.",
+			"That lookup may also trigger district matching, representative attachment, and official election verification using the civic data providers needed for the requested result.",
 			"If ZIP-only operational logging is enabled, Ballot Clarity may record only the normalized 5-digit ZIP associated with a lookup, including a ZIP5 typed by the user, extracted from a typed address, extracted from ZIP+4 input, or returned by an address-normalization provider. Raw lookup text, full street addresses, ZIP+4 entries, city names, IP address, and user agent are not added to that ZIP-only log.",
 			"Some hosts may also use coarse geolocation derived from request metadata to make an approximate default location guess before you enter anything manually.",
 			"The application is designed not to publish the raw lookup text in the public archive and not to persist it in browser storage used for saved ballot preferences."
@@ -207,7 +192,7 @@ usePageSeo({
 </script>
 
 <template>
-	<section class="app-shell section-gap space-y-8">
+	<section class="legal-page app-shell section-gap space-y-8">
 		<header class="max-w-4xl">
 			<div class="flex flex-wrap gap-2">
 				<TrustBadge label="Current policy" tone="accent" />
@@ -228,20 +213,6 @@ usePageSeo({
 		<InfoCallout title="Plain-language summary">
 			The current release uses address or ZIP input, plus any optional approximate location guess configured on a host, only to match ballot coverage and official verification context. It does not create public user accounts, does not run targeted advertising, and is not designed to sell or share personal data. The app does save selected location labels and ballot-plan preferences locally in your browser so the guide remains usable across refreshes.
 		</InfoCallout>
-
-		<section class="gap-6 grid lg:grid-cols-3">
-			<article v-for="item in summaryCards" :key="item.title" class="surface-panel">
-				<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
-					At a glance
-				</p>
-				<h2 class="text-2xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-					{{ item.title }}
-				</h2>
-				<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-					{{ item.body }}
-				</p>
-			</article>
-		</section>
 
 		<section class="surface-panel">
 			<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
@@ -291,7 +262,7 @@ usePageSeo({
 					How we use data
 				</p>
 				<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-					Why the current build uses data
+					Why the site uses data
 				</h2>
 				<ul class="text-sm text-app-muted leading-7 mt-6 space-y-3 dark:text-app-muted-dark">
 					<li v-for="item in useSections" :key="item" class="px-4 py-3 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70">
@@ -321,7 +292,7 @@ usePageSeo({
 					Cookies and tracking
 				</p>
 				<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-					No sale, sharing, or targeted advertising in the current build
+					No sale, sharing, or targeted advertising
 				</h2>
 				<ul class="text-sm text-app-muted leading-7 mt-6 space-y-3 dark:text-app-muted-dark">
 					<li v-for="item in cookieNotes" :key="item" class="px-4 py-3 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70">
@@ -392,7 +363,7 @@ usePageSeo({
 					Your choices and requests
 				</p>
 				<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-					Rights requests and limits in a no-account public build
+					Rights requests and no-account limits
 				</h2>
 				<ul class="text-sm text-app-muted leading-7 mt-6 space-y-3 dark:text-app-muted-dark">
 					<li v-for="item in rightsNotes" :key="item" class="px-4 py-3 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70">
@@ -440,10 +411,15 @@ usePageSeo({
 				</h2>
 				<div class="text-sm text-app-muted leading-7 mt-5 space-y-4 dark:text-app-muted-dark">
 					<p>
-						Questions, privacy concerns, and correction requests can be sent to
-						<a :href="`mailto:${contactEmail}`" class="underline underline-offset-3">
-							{{ contactEmail }}
-						</a>.
+						Questions, privacy concerns, and correction requests can be sent through the contact page or the protected email link below.
+					</p>
+					<p>
+						<ProtectedEmailLink
+							loading-label="Email link loads in your browser."
+							loading-class="text-app-muted dark:text-app-muted-dark"
+							link-class="underline underline-offset-3 rounded-md focus-ring"
+							subject="Ballot Clarity privacy question"
+						/>
 					</p>
 					<p>
 						If Ballot Clarity materially changes how lookup input, browser storage, analytics, vendors, or future account-based features work, this Privacy Policy should be updated before those changes go live.

@@ -107,6 +107,12 @@ const summaryItems = computed(() => {
 		}
 	];
 });
+const directorySummary = computed(() => {
+	const representativeCount = directoryData.value.representatives.length;
+	const districtCount = directoryData.value.districts.length;
+
+	return `${representativeCount} current official${representativeCount === 1 ? "" : "s"} across ${districtCount} district match${districtCount === 1 ? "" : "es"}.`;
+});
 
 const representativeStats = computed(() => {
 	if (!directoryData.value)
@@ -275,6 +281,9 @@ usePageSeo({
 		</div>
 
 		<div v-else class="space-y-6">
+			<p class="text-sm text-app-muted leading-7 dark:text-app-muted-dark">
+				{{ directorySummary }}
+			</p>
 			<PageSummaryStrip :items="summaryItems" />
 			<SourceProvenanceStrip
 				v-if="representativeProvenanceSummary"

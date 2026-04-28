@@ -53,7 +53,7 @@ const faqItems = [
 ];
 
 usePageSeo({
-	description: "Voting help, ballot basics, and trust notes for Ballot Clarity. Clear answers with source-first guidance and links back to official election offices.",
+	description: "Voting help, ballot basics, and trust notes for Ballot Clarity. Clear answers with links back to official election offices.",
 	jsonLd: {
 		"@context": "https://schema.org",
 		"@type": "FAQPage",
@@ -100,53 +100,25 @@ const accordionItems = faqItems.map(item => ({
 
 		<MethodologyAccordion :items="accordionItems" />
 
-		<section class="gap-6 grid lg:grid-cols-3">
-			<div class="surface-panel">
-				<h2 class="text-2xl text-app-ink font-serif dark:text-app-text-dark">
-					Check what is available
-				</h2>
-				<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-					Use the coverage page to see whether your area has a local guide and official election links.
-				</p>
-				<NuxtLink to="/coverage" class="btn-primary mt-6">
-					Open coverage
-				</NuxtLink>
-			</div>
-
-			<div class="surface-panel">
-				<h2 class="text-2xl text-app-ink font-serif dark:text-app-text-dark">
-					Review trust, privacy, and accessibility standards
-				</h2>
-				<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-					Methodology, neutrality, privacy, and accessibility notes explain how Ballot Clarity uses sources, handles lookups, and keeps pages readable.
-				</p>
-				<div class="mt-6 flex flex-wrap gap-3">
-					<NuxtLink to="/methodology" class="btn-secondary">
-						Read methodology
-					</NuxtLink>
-					<NuxtLink to="/neutrality" class="btn-secondary">
-						Read neutrality policy
-					</NuxtLink>
-					<NuxtLink to="/privacy" class="btn-secondary">
-						Read privacy notice
-					</NuxtLink>
-					<NuxtLink to="/accessibility" class="btn-secondary">
-						Read accessibility standards
-					</NuxtLink>
-				</div>
-			</div>
-
-			<div class="surface-panel">
-				<h2 class="text-2xl text-app-ink font-serif dark:text-app-text-dark">
-					Report an issue
-				</h2>
-				<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-					If a ballot, candidate, or measure page looks incomplete or inaccurate, use the public correction path instead of assuming the summary is final.
-				</p>
-				<NuxtLink to="/contact" class="btn-secondary mt-6">
-					Open contact page
-				</NuxtLink>
-			</div>
-		</section>
+		<nav class="flex flex-wrap gap-3" aria-label="Related help links">
+			<NuxtLink to="/coverage" class="btn-primary">
+				Check coverage
+			</NuxtLink>
+			<NuxtLink to="/methodology" class="btn-secondary">
+				Methodology
+			</NuxtLink>
+			<NuxtLink to="/neutrality" class="btn-secondary">
+				Neutrality policy
+			</NuxtLink>
+			<NuxtLink to="/privacy" class="btn-secondary">
+				Privacy
+			</NuxtLink>
+			<NuxtLink to="/accessibility" class="btn-secondary">
+				Accessibility
+			</NuxtLink>
+			<NuxtLink to="/contact" class="btn-secondary">
+				Report an issue
+			</NuxtLink>
+		</nav>
 	</section>
 </template>

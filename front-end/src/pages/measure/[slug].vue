@@ -5,7 +5,6 @@ import BeforeAfterDiff from "~/components/graphics/BeforeAfterDiff.vue";
 import EvidenceCompletenessPanel from "~/components/graphics/EvidenceCompletenessPanel.vue";
 import MeasureImpactDiagram from "~/components/graphics/MeasureImpactDiagram.vue";
 import SourceProvenanceStrip from "~/components/graphics/SourceProvenanceStrip.vue";
-import { contactEmail } from "~/constants";
 import {
 	buildMeasureBeforeAfterData,
 	buildMeasureEvidenceCompleteness,
@@ -124,9 +123,16 @@ const measureProvenanceSummary = computed(() => measure.value ? buildMeasureProv
 const measureBeforeAfterData = computed(() => measure.value ? buildMeasureBeforeAfterData(measure.value) : null);
 const measureImpactData = computed(() => measure.value ? buildMeasureImpact(measure.value) : null);
 const measureEvidenceCompleteness = computed(() => measure.value ? buildMeasureEvidenceCompleteness(measure.value) : null);
-const reportIssueHref = computed(() => measure.value
-	? `mailto:${contactEmail}?subject=${encodeURIComponent(`Ballot Clarity measure review: ${measure.value.title}`)}`
-	: `mailto:${contactEmail}?subject=${encodeURIComponent("Ballot Clarity measure review")}`);
+const reportIssueTo = computed(() => ({
+	path: "/contact",
+	query: {
+		pageUrl: `/measure/${measure.value?.slug ?? measureSlug.value}`,
+		subject: measure.value
+			? `Ballot Clarity measure review: ${measure.value.title}`
+			: "Ballot Clarity measure review",
+		type: "correction"
+	}
+}));
 const currentDecision = computed(() => {
 	if (!measure.value)
 		return null;
@@ -603,9 +609,9 @@ function saveMeasure(decision: "no" | "review" | "yes") {
 						</p>
 					</div>
 					<div class="mt-4 flex flex-wrap gap-3">
-						<a :href="reportIssueHref" class="btn-secondary text-xs px-4 py-2">
+						<NuxtLink :to="reportIssueTo" class="btn-secondary text-xs px-4 py-2">
 							Report an issue
-						</a>
+						</NuxtLink>
 						<NuxtLink :to="locationHubLink.to" class="btn-secondary text-xs px-4 py-2">
 							{{ locationHubLink.label }}
 						</NuxtLink>

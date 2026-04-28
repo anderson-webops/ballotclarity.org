@@ -108,33 +108,10 @@ const trustInterfaceItems = [
 		label: "Uncertainty"
 	}
 ];
-
-const informationTypes = [
-	{
-		label: "Official text",
-		summary: "Ballot language, official voter guides, calendars, and election-office notices."
-	},
-	{
-		label: "Official record data",
-		summary: "Filings, vote records, budget notes, and other public records tied to government or regulated reporting."
-	},
-	{
-		label: "Candidate-supplied",
-		summary: "Questionnaire responses, campaign websites, or other statements attributed directly to a candidate."
-	},
-	{
-		label: "Ballot Clarity summary",
-		summary: "Plain-language explanation written from the attached records and labeled as interpretation rather than official wording."
-	},
-	{
-		label: "Nonpartisan supporting records",
-		summary: "Research briefs or civic compilations used to add context when official material alone is not enough."
-	}
-];
 </script>
 
 <template>
-	<section class="app-shell section-gap space-y-8">
+	<section class="reading-page app-shell section-gap space-y-8">
 		<header class="max-w-4xl">
 			<div class="flex flex-wrap gap-2">
 				<TrustBadge label="Neutrality" tone="accent" />
@@ -155,67 +132,6 @@ const informationTypes = [
 			title="How to read page signals"
 		/>
 
-		<section class="surface-panel">
-			<div class="flex flex-wrap gap-4 items-start justify-between">
-				<div>
-					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-						Content taxonomy
-					</p>
-					<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-						Information types we publish
-					</h2>
-				</div>
-				<TrustBadge label="Clear labels" tone="accent" />
-			</div>
-			<div class="mt-6 gap-4 grid md:grid-cols-2 xl:grid-cols-3">
-				<article v-for="item in informationTypes" :key="item.label" class="px-5 py-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
-					<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
-						{{ item.label }}
-					</p>
-					<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-						{{ item.summary }}
-					</p>
-				</article>
-			</div>
-		</section>
-
 		<MethodologyAccordion :items="items" />
-
-		<section class="gap-6 grid lg:grid-cols-2">
-			<div class="surface-panel">
-				<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
-					Editorial rules
-				</h2>
-				<ul class="text-sm text-app-muted leading-7 mt-6 space-y-4 dark:text-app-muted-dark">
-					<li><strong class="text-app-ink dark:text-app-text-dark">Neutrality:</strong> No rankings, recommendations, or partisan cues.</li>
-					<li><strong class="text-app-ink dark:text-app-text-dark">Sourcing:</strong> Summaries are paired with attached source files and visible counts.</li>
-					<li><strong class="text-app-ink dark:text-app-text-dark">Official-source priority:</strong> Election logistics should point back to official offices and calendars whenever possible.</li>
-					<li><strong class="text-app-ink dark:text-app-text-dark">Data freshness:</strong> Updated timestamps are shown where the data model supports them.</li>
-					<li><strong class="text-app-ink dark:text-app-text-dark">Limitations:</strong> Incomplete records and uncertainty are surfaced directly instead of hidden behind a polished interface.</li>
-				</ul>
-			</div>
-
-			<div class="space-y-4">
-				<InfoCallout title="Neutrality policy">
-					Ballot Clarity is designed to explain what is documented, not to endorse candidates, oppose parties, or tell users how to vote.
-				</InfoCallout>
-				<div class="surface-panel">
-					<h2 class="text-2xl text-app-ink font-serif dark:text-app-text-dark">
-						Related trust pages
-					</h2>
-					<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-						Read the neutrality policy for sourcing and language rules, or use the contact page to report a correction or dispute.
-					</p>
-					<div class="mt-6 flex flex-wrap gap-3">
-						<NuxtLink to="/neutrality" class="btn-secondary">
-							Read neutrality policy
-						</NuxtLink>
-						<NuxtLink to="/contact" class="btn-secondary">
-							Open contact page
-						</NuxtLink>
-					</div>
-				</div>
-			</div>
-		</section>
 	</section>
 </template>

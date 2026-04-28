@@ -11,14 +11,14 @@ import {
 const stagedGuideContent = {
 	candidates: {
 		count: 5,
-		detail: "Candidate records still rely on staged reference material instead of verified local content.",
+		detail: "Candidate records still rely on unverified review material instead of verified local content.",
 		hasContent: true,
 		label: "Candidates",
 		status: "staged_reference" as const,
 	},
 	contests: {
 		count: 4,
-		detail: "Contest records still rely on staged reference material instead of verified local content.",
+		detail: "Contest records still rely on unverified review material instead of verified local content.",
 		hasContent: true,
 		label: "Contests",
 		status: "staged_reference" as const,
@@ -33,7 +33,7 @@ const stagedGuideContent = {
 	mixedContent: true,
 	measures: {
 		count: 2,
-		detail: "Measure records still rely on staged reference material instead of verified local content.",
+		detail: "Measure records still rely on unverified review material instead of verified local content.",
 		hasContent: true,
 		label: "Measures",
 		status: "staged_reference" as const,

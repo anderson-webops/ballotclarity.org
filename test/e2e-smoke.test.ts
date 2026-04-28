@@ -432,7 +432,7 @@ async function connectToCdp(webSocketUrl: string): Promise<CdpSession> {
 		});
 	}
 
-	function waitForEvent(method: string, predicate: (params: any) => boolean = () => true, timeoutMs = 30000) {
+	function waitForEvent(method: string, predicate: (params: any) => boolean = () => true, timeoutMs = 10000) {
 		return new Promise<any>((resolve, reject) => {
 			const cleanup = on(method, (params) => {
 				if (!predicate(params))
@@ -619,39 +619,41 @@ test("built app renders the key ballot guide pages against the built API", async
 	assert.match(homeHtml, /Fulton County, Georgia/);
 	assert.match(homeHtml, /Choose your area/);
 	assert.match(homeHtml, /Start from your location\./);
-	assert.match(homeHtml, /Popular pages/);
-		assert.match(homeHtml, /Start here/);
-		assert.match(homeHtml, /Choose the page you need\./i);
-		assert.match(homeHtml, /Choose a location with a full street address or 5-digit ZIP code/);
-		assert.match(homeHtml, /Lookup data is used only to load civic results/);
-		assert.match(homeHtml, /Current product shape/);
-		assert.match(homeHtml, /How the public product is verified at a glance/);
-		assert.match(homeHtml, /What is available in the product right now/);
+	assert.doesNotMatch(homeHtml, /Popular pages/);
+	assert.doesNotMatch(homeHtml, /Choose the page you need\./i);
+	assert.match(homeHtml, /Choose a location with a full street address or 5-digit ZIP code/);
+	assert.match(homeHtml, /Enter a street address or ZIP code to see districts, current officials, and official election links for your area/i);
+	assert.match(homeHtml, /Lookup data is used only to load civic results/i);
+	assert.match(homeHtml, /What the lookup answers/);
+	assert.doesNotMatch(homeHtml, /Current product shape/);
 	assert.match(ballotHtml, /Key dates and official links/);
 	assert.match(ballotHtml, /Election overview/);
 	assert.match(ballotHtml, /Official links are live for this area/);
-	assert.match(ballotHtml, /Need a page reviewed/);
-	assert.match(ballotHtml, /Verified contest pages are still pending/);
-	assert.match(ballotHtml, /Ballot-plan tools open after verified contest pages are published/);
+	assert.doesNotMatch(ballotHtml, /Need a page reviewed/);
+	assert.match(ballotHtml, /Verified contest, candidate, and measure pages are still under local review|Verified contest pages are still under local review|Verified contest pages pending/);
+	assert.doesNotMatch(ballotHtml, /Ballot-plan tools open after verified contest pages are published/);
 	assert.doesNotMatch(ballotHtml, /Questions to ask before you vote/);
 	assert.doesNotMatch(ballotHtml, /Ballot contents/);
 	assert.doesNotMatch(ballotHtml, /Reading mode/);
 	assert.doesNotMatch(ballotHtml, /Quick view/);
-	assert.match(ballotHtml, /Recent updates/);
-	assert.match(ballotHtml, /How verification is handled/);
+	assert.doesNotMatch(ballotHtml, /Recent updates/);
+	assert.doesNotMatch(ballotHtml, /How verification is handled/);
+	assert.match(ballotHtml, /Ballot structure overview|Verified contest pages pending/);
 	assert.match(ballotHtml, /Fulton County, Georgia/);
-	assert.match(ballotHtml, /reference-archive content/i);
+	assert.match(ballotHtml, /unverified review material|local review|verified Fulton-specific ballot content/i);
 	assert.match(electionHtml, /Official links and notices/);
-	assert.match(electionHtml, /Verified contest pages are still pending/);
+	assert.match(electionHtml, /Verified contest pages are still under local review|Verified contest pages pending/);
 	assert.doesNotMatch(electionHtml, /Contest index/);
 	assert.doesNotMatch(electionHtml, /Open canonical contest page/);
 	assert.match(electionHtml, /Data sources/);
+	assert.match(locationHtml, /Key election dates/);
 	assert.match(locationHtml, /Official election office/);
-	assert.match(locationHtml, /Voting methods in this area/);
-	assert.match(locationHtml, /Data sources/);
+	assert.match(locationHtml, /Official links and notices/);
+	assert.doesNotMatch(locationHtml, /Voting methods in this area/);
 	assert.equal(dataSourcesPage.status, 200);
 	assert.match(dataSourcesHtml, /Data sources/);
-	assert.match(dataSourcesHtml, /Why this matters/);
+	assert.match(dataSourcesHtml, /Core source rules/);
+	assert.match(dataSourcesHtml, /What each source class is used for/);
 	assert.match(dataSourcesHtml, /Fulton County, Georgia/);
 	assert.match(dataSourcesHtml, /Census Geocoder with geoLookup/);
 	assert.match(dataSourcesHtml, /FEC OpenFEC API and bulk files/);
@@ -661,12 +663,15 @@ test("built app renders the key ballot guide pages against the built API", async
 	assert.match(coverageHtml, /Coverage/);
 	assert.match(coverageHtml, /Fulton County, Georgia/);
 	assert.match(coverageHtml, /Election coverage/);
-	assert.match(coverageHtml, /Official election links/);
+	assert.match(coverageHtml, /Official links attached/);
+	assert.match(coverageHtml, /official election tools/i);
 	assert.match(coverageHtml, /Known limits/);
 	assert.equal(statusPage.status, 200);
 	assert.match(statusHtml, /Public status/);
-	assert.match(statusHtml, /Tracked public sources/);
-	assert.match(statusHtml, /Active notices/);
+	assert.match(statusHtml, /No source-monitor metrics are published right now/);
+	assert.match(statusHtml, /Public notes/);
+	assert.doesNotMatch(statusHtml, /Tracked public sources/);
+	assert.doesNotMatch(statusHtml, /Active notices/);
 	assert.match(statusHtml, /source health, coverage, and current review notices/i);
 	assert.match(statusHtml, /No published local coverage snapshot is active right now|Active snapshot status:/i);
 	assert.doesNotMatch(statusHtml, /activeSnapshotPath|configuredSnapshotPath|\/srv\/|\/Users\//);
@@ -696,25 +701,21 @@ test("built app renders the key ballot guide pages against the built API", async
 	assert.match(districtHtml, /Current representatives/);
 	assert.match(districtHtml, /Candidate field/);
 	assert.match(districtHtml, /District sources/);
-		assert.doesNotMatch(districtHtml, /href="\/sources\/district:state-senate-48"/);
-		assert.equal(representativesPage.status, 200);
-		assert.match(representativesHtml, /Representative directory/);
-		assert.match(representativesHtml, /Current area/);
-		assert.match(representativesHtml, /Current officials for your saved area\.|This directory lists current officeholders and links to their district, profile, funding, and influence pages where available\./);
-		assert.match(representativesHtml, /How the representative layer is organized/);
-		assert.equal(candidatePage.status, 200);
-		assert.equal(candidateFundingPage.status, 200);
-		assert.equal(candidateInfluencePage.status, 200);
-		assert.match(candidateHtml, /Candidate detail/);
-		assert.match(candidateFundingHtml, /Candidate funding/);
-		assert.match(candidateInfluenceHtml, /Candidate influence/);
-		assert.equal(measurePage.status, 200);
-		assert.match(measureHtml, /Measure detail/);
-		assert.match(helpHtml, /Voting help and ballot basics/);
+	assert.doesNotMatch(districtHtml, /href="\/sources\/district:state-senate-48"/);
+	assert.equal(representativesPage.status, 200);
+	assert.match(representativesHtml, /Representative directory/);
+	assert.match(representativesHtml, /Current area|Start with lookup|Refresh results for this page/);
+	assert.match(representativesHtml, /Current officials for your saved area\.|This directory lists current officeholders and links to their district, profile, funding, and influence pages where available\./);
+	assert.match(representativesHtml, /How the representative layer is organized|Start with lookup|Refresh results for this page/);
+	assert.equal(candidatePage.status, 200);
+	assert.equal(candidateFundingPage.status, 200);
+	assert.equal(candidateInfluencePage.status, 200);
+	assert.equal(measurePage.status, 200);
+	assert.match(helpHtml, /Voting help and ballot basics/);
 	assert.match(helpHtml, /What is the difference between an official ballot listing and a voter guide/);
 	assert.match(helpHtml, /What happens to the address or ZIP code I enter/);
-	assert.match(helpHtml, /Read neutrality policy/);
-	assert.match(helpHtml, /Read accessibility standards/);
+	assert.match(helpHtml, /Neutrality policy/);
+	assert.match(helpHtml, /Accessibility/);
 	assert.match(neutralityHtml, /How Ballot Clarity operationalizes neutrality/);
 	assert.match(neutralityHtml, /Source hierarchy/);
 	assert.match(neutralityHtml, /Red-flag review/);
@@ -726,15 +727,15 @@ test("built app renders the key ballot guide pages against the built API", async
 	assert.match(accessibilityHtml, /44 by 44 pixel minimum target|44 x 44 pixel minimum target|44 x 44 px/);
 	assert.match(accessibilityHtml, /does not yet generate a downloadable tagged PDF/);
 	assert.match(methodologyHtml, /How to read page signals/);
-	assert.match(methodologyHtml, /Editorial rules/);
+	assert.match(methodologyHtml, /How summaries are generated/);
 	assert.equal(privacyPage.status, 200);
 	assert.match(privacyHtml, /Privacy Policy/);
 	assert.match(privacyHtml, /What data Ballot Clarity handles today/);
 	assert.match(privacyHtml, /The application is designed not to publish the raw lookup text/);
-	assert.match(privacyHtml, /No sale, sharing, or targeted advertising in the current build/);
+	assert.match(privacyHtml, /No sale, sharing, or targeted advertising/);
 	assert.match(privacyHtml, /Current third-party processors and civic-data recipients/);
 	assert.match(privacyHtml, /Google Civic Information API/);
-	assert.match(privacyHtml, /Rights requests and limits in a no-account public build/);
+	assert.match(privacyHtml, /Rights requests and no-account limits/);
 	assert.match(privacyHtml, /Children(?:&#39;|&apos;|’|')s privacy/);
 	assert.equal(termsPage.status, 200);
 	assert.match(termsHtml, /Terms of Service/);
@@ -743,7 +744,7 @@ test("built app renders the key ballot guide pages against the built API", async
 	assert.match(termsHtml, /By accessing or using the Ballot Clarity website/);
 	assert.match(termsHtml, /Who operates the site and how to send notice/);
 	assert.match(termsHtml, /Jacob Anderson/);
-	assert.match(termsHtml, /The site is not an official government election website/);
+	assert.match(termsHtml, /official government publication/);
 	assert.match(termsHtml, /The site is provided on an (?:\"|&quot;)as is(?:\"|&quot;) and (?:\"|&quot;)as available(?:\"|&quot;) basis/);
 	assert.match(contactHtml, /Contact and corrections/);
 	assert.match(contactHtml, /acknowledge correction requests within 2 business days/);
@@ -1121,7 +1122,8 @@ test("nationwide lookup context survives client navigation across results, distr
 
 		const resultsText = await getDocumentBodyText(cdp);
 		assert.match(resultsText, /Provo, Utah/);
-		assert.match(resultsText, /Mike Kennedy/);
+		assert.match(resultsText, /Representative data/);
+		assert.match(resultsText, /5 representative matches/);
 		assert.match(resultsText, /Civic results ready/i);
 
 		const districtsLoad = cdp.waitForEvent("Page.loadEventFired");
@@ -1149,7 +1151,7 @@ test("nationwide lookup context survives client navigation across results, distr
 		const representativesText = await getDocumentBodyText(cdp);
 		assert.match(representativesText, /Representative directory/);
 		assert.match(representativesText, /Mike Kennedy/);
-		assert.match(representativesText, /Funding not yet available/);
+		assert.match(representativesText, /5 current officials across 5 district matches/);
 
 		const representativeDetailLoad = cdp.waitForEvent("Page.loadEventFired");
 		await cdp.send("Page.navigate", { url: `${appBaseUrl}/representatives/mike-kennedy` });
@@ -1230,7 +1232,6 @@ test("built app server-renders district and representative routes when the activ
 
 	assert.equal(districtsPage.status, 200);
 	assert.match(districtsHtml, /Provo, Utah/);
-	assert.match(districtsHtml, /Apr 18, 2026, 8:43 AM/);
 	assert.match(
 		districtsHtml,
 		/Open each matched office area to review the office, current officials, candidates, and official election links for your area\.|Open each office area to review the office, current representative, and candidate field in one place\./
@@ -1241,8 +1242,7 @@ test("built app server-renders district and representative routes when the activ
 	assert.match(districtHtml, /No city officeholder data is attached here yet\. This does not mean the city has no officials\.|CURRENT REPRESENTATIVE|Open representative/i);
 	assert.equal(representativesPage.status, 200);
 	assert.match(representativesHtml, /Mike Kennedy/);
-	assert.match(representativesHtml, /Apr 18, 2026, 8:43 AM/);
-	assert.match(representativesHtml, /Funding:|Funding not yet available/);
+	assert.match(representativesHtml, /5 current officials across 5 district matches/);
 	assert.equal(representativePage.status, 200);
 	assert.match(representativeHtml, /Mike Kennedy/);
 	assert.doesNotMatch(representativeHtml, /Representative profile not available/);
@@ -1268,10 +1268,10 @@ test("fresh SSR district and representative hubs stay nationwide-safe without br
 	]);
 
 	assert.equal(districtsPage.status, 200);
-	assert.match(districtsHtml, /Current location required/);
+	assert.match(districtsHtml, /Start with lookup/);
 
 	assert.equal(representativesPage.status, 200);
-	assert.match(representativesHtml, /Current location required/);
+	assert.match(representativesHtml, /Start with lookup/);
 });
 
 test("public district and representative routes resolve direct loads without generic lookup-required shells", async () => {

@@ -8,7 +8,7 @@ const guideStatusTitle = computed(() => "Guide status");
 const guideStatusNote = computed(() => data.value?.guideContent?.verifiedContestPackage
 	? "Contest, candidate, and measure pages are verified for this area."
 	: data.value?.guideContent?.publishedGuideShell
-		? "Official election links are current. Contest, candidate, and measure pages are still under local review."
+		? "Official election links are current. Verified contest pages are still under local review."
 		: "Use this page for key dates and official links, then open the ballot guide for contest-by-contest reading.");
 
 watchEffect(() => {
@@ -25,7 +25,7 @@ watchEffect(() => {
 });
 
 usePageSeo({
-	description: data.value?.election.description ?? "Election overview with key dates, official links, contest index, and change log.",
+	description: data.value?.election.description ?? "Election overview with key dates, official links, and change log.",
 	jsonLd: data.value
 		? {
 				"@context": "https://schema.org",
@@ -82,7 +82,6 @@ usePageSeo({
 							<span class="i-carbon-calendar" />
 							Election Day {{ formatDate(data.election.date) }}
 						</p>
-						<UpdatedAt :value="data.election.updatedAt" />
 					</div>
 				</div>
 
@@ -90,73 +89,71 @@ usePageSeo({
 					<InfoCallout :title="guideStatusTitle" tone="warning">
 						{{ guideStatusNote }}
 					</InfoCallout>
-					<div class="surface-panel">
-						<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-							Browse
-						</p>
-						<div class="mt-4 flex flex-wrap gap-3">
-							<NuxtLink
-								v-if="data.guideContent?.verifiedContestPackage"
-								:to="`/ballot/${data.election.slug}`"
-								class="btn-primary"
-							>
-								Open ballot guide
-							</NuxtLink>
-							<NuxtLink v-else :to="`/locations/${data.election.jurisdictionSlug}`" class="btn-primary">
-								Open location hub
-							</NuxtLink>
-							<NuxtLink to="/districts" class="btn-secondary">
-								District pages
-							</NuxtLink>
-							<NuxtLink to="/representatives" class="btn-secondary">
-								Representatives
-							</NuxtLink>
-							<NuxtLink :to="`/locations/${data.election.jurisdictionSlug}`" class="btn-secondary">
-								Open location hub
-							</NuxtLink>
-							<NuxtLink to="/sources" class="btn-secondary">
-								Sources
-							</NuxtLink>
-						</div>
+					<div class="flex flex-wrap gap-3">
+						<NuxtLink
+							v-if="data.guideContent?.verifiedContestPackage"
+							:to="`/ballot/${data.election.slug}`"
+							class="btn-primary"
+						>
+							Open ballot guide
+						</NuxtLink>
+						<NuxtLink v-else :to="`/locations/${data.election.jurisdictionSlug}`" class="btn-primary">
+							Open location hub
+						</NuxtLink>
+						<NuxtLink to="/districts" class="btn-secondary">
+							District pages
+						</NuxtLink>
+						<NuxtLink to="/representatives" class="btn-secondary">
+							Representatives
+						</NuxtLink>
 					</div>
 				</div>
 			</header>
 
-			<section class="gap-5 grid md:grid-cols-2 xl:grid-cols-4">
-				<div v-for="item in data.election.keyDates" :key="item.label" class="surface-panel">
-					<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
-						{{ item.label }}
-					</p>
-					<p class="text-xl text-app-ink font-semibold mt-3 dark:text-app-text-dark">
-						{{ item.date.includes("T") ? formatDateTime(item.date) : formatDate(item.date) }}
-					</p>
-					<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
-						{{ item.note || "Review the official county calendar for source context." }}
-					</p>
+			<section class="surface-panel">
+				<div class="flex flex-wrap gap-4 items-start justify-between">
+					<div>
+						<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+							Key dates
+						</p>
+						<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
+							Deadlines and election windows
+						</h2>
+					</div>
+					<UpdatedAt :value="data.election.updatedAt" label="Updated" />
 				</div>
+				<ol class="mt-6 divide-app-line divide-y dark:divide-app-line-dark">
+					<li v-for="item in data.election.keyDates" :key="item.label" class="py-4 gap-3 grid first:pt-0 last:pb-0 md:grid-cols-[minmax(11rem,0.38fr)_minmax(0,1fr)]">
+						<div>
+							<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+								{{ item.label }}
+							</p>
+							<p class="text-base text-app-ink font-semibold mt-2 dark:text-app-text-dark">
+								{{ item.date.includes("T") ? formatDateTime(item.date) : formatDate(item.date) }}
+							</p>
+						</div>
+						<p class="text-sm text-app-muted leading-7 dark:text-app-muted-dark">
+							{{ item.note || "Review the official county calendar for source context." }}
+						</p>
+					</li>
+				</ol>
 			</section>
 
-			<section class="gap-6 grid xl:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
-				<div class="surface-panel">
-					<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
-						Official links and notices
-					</h2>
-					<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-						These links point to the official election notices, calendars, and logistics attached to this page.
-					</p>
-					<div class="mt-6">
-						<OfficialResourceList :resources="data.election.officialResources" />
-					</div>
+			<section class="surface-panel">
+				<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
+					Official links and notices
+				</h2>
+				<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
+					These links point to the official election notices, calendars, and logistics attached to this page.
+				</p>
+				<div class="mt-6">
+					<OfficialResourceList :resources="data.election.officialResources" />
 				</div>
-
-				<div class="surface-panel">
-					<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
+				<details v-if="data.election.changeLog.length" class="mt-6 surface-row">
+					<summary class="text-sm text-app-ink font-semibold cursor-pointer dark:text-app-text-dark focus-ring">
 						Change log
-					</h2>
-					<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-						Recent edits stay visible here so readers can judge freshness at a glance.
-					</p>
-					<ul class="mt-6 space-y-3">
+					</summary>
+					<ul class="mt-4 space-y-3">
 						<li v-for="entry in data.election.changeLog" :key="entry.id" class="px-4 py-4 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70">
 							<p class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
 								{{ formatDateTime(entry.date) }}
@@ -166,10 +163,10 @@ usePageSeo({
 							</p>
 						</li>
 					</ul>
-				</div>
+				</details>
 			</section>
 
-			<section v-if="data.election.contests.length" class="surface-panel">
+			<section v-if="data.guideContent?.verifiedContestPackage && data.election.contests.length" class="surface-panel">
 				<div class="flex flex-wrap gap-4 items-center justify-between">
 					<div>
 						<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
@@ -227,14 +224,6 @@ usePageSeo({
 						</ul>
 					</article>
 				</div>
-			</section>
-			<section v-else class="surface-panel">
-				<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
-					Verified contest pages are still pending
-				</h2>
-				<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-					Official election links and key dates are attached here now. Contest, candidate, and measure pages will appear after the Fulton-specific ballot package clears local review.
-				</p>
 			</section>
 		</div>
 	</section>

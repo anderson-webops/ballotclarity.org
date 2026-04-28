@@ -3,6 +3,7 @@ import { formatSourcePublicationKind, formatSourcePublisherType, groupSourceDire
 
 const searchQuery = ref("");
 const { data, pending } = await useSourceDirectory();
+const isSearching = computed(() => Boolean(searchQuery.value.trim()));
 
 const filteredSources = computed(() => {
 	const query = searchQuery.value.trim().toLowerCase();
@@ -54,7 +55,7 @@ usePageSeo({
 			</p>
 		</header>
 
-		<div class="surface-panel">
+		<div class="surface-row">
 			<label for="source-search" class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
 				Search sources
 			</label>
@@ -98,12 +99,45 @@ usePageSeo({
 					</p>
 				</header>
 
-				<div class="space-y-4">
+				<div v-if="section.kind === 'published-provenance' && !isSearching" class="surface-row">
+					<details>
+						<summary class="collapsible-card-summary cursor-pointer focus-ring">
+							<div class="flex flex-wrap gap-3 items-center justify-between">
+								<div>
+									<p class="text-lg text-app-ink font-semibold dark:text-app-text-dark">
+										{{ section.items.length }} published page source record{{ section.items.length === 1 ? "" : "s" }}
+									</p>
+									<p class="text-sm text-app-muted leading-7 mt-2 dark:text-app-muted-dark">
+										Open this list when you need a specific page-level citation. Use search to filter the full directory.
+									</p>
+								</div>
+								<TrustBadge label="Collapsed by default" />
+							</div>
+						</summary>
+						<div class="mt-5 gap-3 grid md:grid-cols-2">
+							<NuxtLink
+								v-for="source in section.items"
+								:key="source.id"
+								:to="`/sources/${source.id}`"
+								class="p-4 border border-app-line/80 rounded-2xl transition dark:border-app-line-dark hover:border-app-accent focus-ring"
+							>
+								<p class="text-base text-app-ink font-semibold dark:text-app-text-dark">
+									{{ source.title }}
+								</p>
+								<p class="text-xs text-app-muted leading-6 mt-2 dark:text-app-muted-dark">
+									{{ source.publisher }} · {{ source.sourceSystem }}
+								</p>
+							</NuxtLink>
+						</div>
+					</details>
+				</div>
+
+				<div v-else class="space-y-3">
 					<NuxtLink
 						v-for="source in section.items"
 						:key="source.id"
 						:to="`/sources/${source.id}`"
-						class="surface-panel block transition hover:border-app-accent focus-ring"
+						class="surface-row block transition hover:border-app-accent focus-ring"
 					>
 						<div class="flex flex-wrap gap-3 items-start justify-between">
 							<div class="max-w-4xl min-w-0">
@@ -112,27 +146,18 @@ usePageSeo({
 									<TrustBadge :label="formatSourcePublisherType(source.publisherType)" />
 									<TrustBadge :label="formatSourcePublicationKind(source.publicationKind)" tone="accent" />
 								</div>
-								<h3 class="text-2xl text-app-ink font-serif mt-4 dark:text-app-text-dark">
+								<h3 class="text-xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
 									{{ source.title }}
 								</h3>
-								<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
+								<p class="text-sm text-app-muted leading-6 mt-2 dark:text-app-muted-dark">
 									{{ source.summary }}
 								</p>
-								<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
+								<p class="text-xs text-app-muted leading-6 mt-2 dark:text-app-muted-dark">
 									{{ source.publisher }} · {{ source.sourceSystem }}
 								</p>
-								<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
+								<p class="text-sm text-app-muted leading-6 mt-2 dark:text-app-muted-dark">
 									{{ source.usedFor }}
 								</p>
-								<div class="mt-4 flex flex-wrap gap-2">
-									<span
-										v-for="routeFamily in source.routeFamilies"
-										:key="`${source.id}-${routeFamily}`"
-										class="text-[11px] text-app-muted tracking-[0.14em] font-semibold px-2.5 py-1 rounded-full bg-app-bg uppercase dark:text-app-muted-dark dark:bg-app-bg-dark/70"
-									>
-										{{ routeFamily }}
-									</span>
-								</div>
 							</div>
 							<div class="flex flex-col gap-3 items-start sm:items-end">
 								<TrustBadge :label="`${source.citationCount} citation${source.citationCount === 1 ? '' : 's'}`" />

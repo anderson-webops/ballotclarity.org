@@ -218,8 +218,11 @@ function printPlan() {
 			</div>
 		</header>
 
-		<section id="change-location" class="surface-panel print-hidden">
-			<div class="gap-6 grid lg:grid-cols-[minmax(0,0.78fr)_minmax(0,1.22fr)] lg:items-start">
+		<details id="change-location" class="surface-panel print-hidden">
+			<summary class="text-sm text-app-ink font-semibold cursor-pointer dark:text-app-text-dark focus-ring">
+				Change location
+			</summary>
+			<div class="mt-5 gap-6 grid lg:grid-cols-[minmax(0,0.78fr)_minmax(0,1.22fr)] lg:items-start">
 				<div>
 					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
 						Change location
@@ -236,7 +239,7 @@ function printPlan() {
 				</div>
 				<AddressLookupForm compact :election="lookupElection" :framed="false" />
 			</div>
-		</section>
+		</details>
 
 		<div v-if="pending" class="space-y-6">
 			<div class="surface-panel bg-white/70 h-48 animate-pulse dark:bg-app-panel-dark/70" />

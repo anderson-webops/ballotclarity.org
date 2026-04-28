@@ -12,9 +12,9 @@ test("homepage print layout collapses high-level desktop grids", () => {
 	assert.match(mainCss, /\.home-hero-grid,[\s\S]+?grid-template-columns: 1fr !important;/);
 });
 
-test("homepage print layout keeps only compact card grids multi-column", () => {
-	assert.match(mainCss, /\.home-trust-grid,[\s\S]+?\.home-result-grid \{[\s\S]+?display: grid !important;/);
-	assert.match(mainCss, /\.home-trust-grid,[\s\S]+?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\) !important;/);
+test("homepage print layout keeps compact result grids multi-column", () => {
+	assert.match(mainCss, /\.home-result-grid \{[\s\S]+?display: grid !important;/);
+	assert.match(mainCss, /\.home-result-grid \{[\s\S]+?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\) !important;/);
 });
 
 test("homepage lookup results are not rendered inside the hero rail", () => {

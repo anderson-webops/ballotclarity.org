@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { buildProtectedContactHref, getProtectedContactEmail } from "~/utils/protected-contact";
+import { buildProtectedContactHref, requestProtectedContactAddress } from "~/utils/protected-contact";
 
 const props = withDefaults(defineProps<{
 	linkClass?: string;
@@ -15,21 +15,27 @@ const props = withDefaults(defineProps<{
 	subject: ""
 });
 
-const isMounted = ref(false);
-const emailAddress = computed(() => getProtectedContactEmail());
-const href = computed(() => buildProtectedContactHref(props.subject));
+const emailAddress = ref("");
+const hasLoadFailed = ref(false);
+const href = computed(() => emailAddress.value ? buildProtectedContactHref(emailAddress.value, props.subject) : "");
 const visibleLabel = computed(() => props.linkLabel || emailAddress.value);
+const fallbackLabel = computed(() => hasLoadFailed.value ? "Email link unavailable. Use the contact form above." : props.loadingLabel);
 
-onMounted(() => {
-	isMounted.value = true;
+onMounted(async () => {
+	try {
+		emailAddress.value = await requestProtectedContactAddress();
+	}
+	catch {
+		hasLoadFailed.value = true;
+	}
 });
 </script>
 
 <template>
-	<a v-if="isMounted" :href="href" :class="linkClass">
+	<a v-if="emailAddress" :href="href" :class="linkClass">
 		{{ visibleLabel }}
 	</a>
 	<span v-else :class="loadingClass">
-		{{ loadingLabel }}
+		{{ fallbackLabel }}
 	</span>
 </template>

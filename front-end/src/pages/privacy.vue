@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { analyticsTrackers, appName, contactEmail } from "~/constants";
 
-const effectiveAt = "2026-04-22T12:00:00-04:00";
+const effectiveAt = "2026-04-26T23:30:00-04:00";
 const siteUrl = useSiteUrl();
 const analyticsHosts = analyticsTrackers.map(tracker => tracker.domain).join(" and ");
 
@@ -25,6 +25,7 @@ const collectionSections = [
 		body: [
 			"When you use the ballot lookup, the address or ZIP code is sent with a POST request so the service can determine a location and ballot guide.",
 			"That lookup may also trigger provider-backed district matching, representative attachment, and official election verification in the current runtime.",
+			"If ZIP-only operational logging is enabled, Ballot Clarity may record only the normalized 5-digit ZIP associated with a lookup, including a ZIP5 typed by the user, extracted from a typed address, extracted from ZIP+4 input, or returned by an address-normalization provider. Raw lookup text, full street addresses, ZIP+4 entries, city names, IP address, and user agent are not added to that ZIP-only log.",
 			"Some hosts may also use coarse geolocation derived from request metadata to make an approximate default location guess before you enter anything manually.",
 			"The application is designed not to publish the raw lookup text in the public archive and not to persist it in browser storage used for saved ballot preferences."
 		],
@@ -68,7 +69,9 @@ const providerDisclosureSections = [
 	{
 		body: [
 			"Full-address lookups may be sent to the U.S. Census Geocoder and Google Civic Information API to normalize geography, verify address handling, and return official election logistics where available.",
-			"ZIP-only lookups may be resolved through the current ZIP-location service and then enriched with district and official-tool context."
+			"ZIP-only lookups may be resolved through the current ZIP-location service and then enriched with district and official-tool context.",
+			"If optional ballot-content providers such as CTCL BIP, Ballotpedia, BallotReady CivicEngine, or Democracy Works are configured later, full-address or location-derived lookup context may be sent to the configured provider only to return ballot, contest, candidate, measure, or election-logistics data for the requested lookup.",
+			"Provider-returned ballot previews are shown as informational previews until Ballot Clarity completes local review. Users should verify the exact ballot with the linked official state or local voter/ballot tool before relying on provider ballot content."
 		],
 		title: "Lookup and official verification providers"
 	},
@@ -104,7 +107,7 @@ const useSections = [
 
 const sharingSections = [
 	"Ballot Clarity currently discloses lookup or route-derived data only to the service providers and public-interest civic-data systems needed to produce the requested page or official verification result.",
-	`Current third-party recipients in active flows include the U.S. Census Geocoder, Google Civic Information API, Open States, Congress.gov, OpenFEC, LDA.gov, and the analytics services hosted at ${analyticsHosts}, plus hosting, logging, and delivery providers needed to run the service.`,
+	`Current third-party recipients in active flows include the U.S. Census Geocoder, Google Civic Information API, Open States, Congress.gov, OpenFEC, LDA.gov, and the analytics services hosted at ${analyticsHosts}, plus hosting, logging, and delivery providers needed to run the service. Optional ballot-content providers are disclosed on the data-sources page and should be treated as active recipients only when configured.`,
 	"The current release does not disclose address lookup input to advertising networks and is not designed to sell or share personal data for cross-context behavioral advertising.",
 	"When you follow external source links, official agencies, filing systems, campaigns, or other third-party sites operate under their own privacy practices.",
 	"If Ballot Clarity materially changes the current provider stack or starts sharing data for a new purpose, this policy should be updated before that change goes live."
@@ -124,6 +127,13 @@ const retentionRows = [
 		deletion: "Clear browser cookies or submit a new lookup that replaces or clears the stored context.",
 		retention: "Up to 7 days.",
 		scope: "First-party cookie containing current lookup context such as normalized address or ZIP, matched districts, representative matches, official actions, and lookup timing."
+	},
+	{
+		access: "Operational access only for reliability, coverage planning, and abuse monitoring.",
+		category: "ZIP-only lookup operations log",
+		deletion: "Removed through operational log rotation or retention cleanup; not published as civic content.",
+		retention: "Short-term operational retention, generally days to weeks rather than permanent publication.",
+		scope: "Timestamp, normalized 5-digit ZIP, lookup result, guide-availability status, and whether a ZIP area selection was required. The ZIP5 may come from exact ZIP input, ZIP+4 input, the end of a typed address, or provider-normalized address data. The log does not include raw lookup text, full street addresses, ZIP+4 entries, city names, IP address, or user agent."
 	},
 	{
 		access: "Stored in your browser on the current device.",

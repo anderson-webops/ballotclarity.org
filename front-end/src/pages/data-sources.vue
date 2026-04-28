@@ -27,6 +27,23 @@ function statusTone(status: "planned-live" | "reference-pattern" | "research-lay
 
 	return "warning" as const;
 }
+
+function providerStatusLabel(status: "active" | "needs_endpoint" | "needs_key" | "needs_partner_access") {
+	if (status === "active")
+		return "Connected";
+
+	if (status === "needs_endpoint")
+		return "Needs endpoint";
+
+	if (status === "needs_partner_access")
+		return "Needs partner access";
+
+	return "Needs API key";
+}
+
+function providerStatusTone(status: "active" | "needs_endpoint" | "needs_key" | "needs_partner_access") {
+	return status === "active" ? "accent" as const : "warning" as const;
+}
 </script>
 
 <template>
@@ -99,6 +116,79 @@ function statusTone(status: "planned-live" | "reference-pattern" | "research-lay
 					</div>
 				</div>
 			</header>
+
+			<section v-if="data.ballotContentProviders?.length" class="surface-panel">
+				<div class="flex flex-wrap gap-4 items-start justify-between">
+					<div>
+						<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+							Ballot-content provider connections
+						</p>
+						<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
+							Provider ballot data is useful, but still not the final ballot.
+						</h2>
+					</div>
+					<TrustBadge label="Review before publish" tone="warning" />
+				</div>
+				<p class="bc-prose text-app-muted mt-5 dark:text-app-muted-dark">
+					These are the national ballot-content APIs Ballot Clarity can use or prepare for. Connected provider records can help populate ballot previews, but a local guide is not considered verified until official state or county ballot tools and the review workflow confirm it.
+				</p>
+				<div class="mt-6 gap-4 grid lg:grid-cols-2">
+					<article
+						v-for="provider in data.ballotContentProviders"
+						:key="provider.id"
+						class="px-5 py-5 border border-app-line/70 rounded-3xl bg-white/80 dark:border-app-line-dark dark:bg-app-panel-dark/70"
+					>
+						<div class="flex flex-wrap gap-2 items-center">
+							<SourceAuthorityBadge :authority="provider.authority" />
+							<TrustBadge :label="providerStatusLabel(provider.connectionStatus)" :tone="providerStatusTone(provider.connectionStatus)" />
+						</div>
+						<h3 class="text-2xl text-app-ink font-serif mt-4 dark:text-app-text-dark">
+							{{ provider.label }}
+						</h3>
+						<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
+							{{ provider.bestUse }}
+						</p>
+						<div class="mt-5">
+							<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+								Environment
+							</p>
+							<p class="text-sm text-app-ink font-semibold mt-2 dark:text-app-text-dark">
+								{{ provider.envVars.join(', ') }}
+							</p>
+						</div>
+						<div class="mt-5 gap-4 grid md:grid-cols-2">
+							<div>
+								<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+									Capabilities
+								</p>
+								<ul class="readable-list text-sm text-app-muted mt-3 pl-5 dark:text-app-muted-dark">
+									<li v-for="capability in provider.capabilities.slice(0, 4)" :key="capability">
+										{{ capability }}
+									</li>
+								</ul>
+							</div>
+							<div>
+								<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+									Limits
+								</p>
+								<ul class="readable-list text-sm text-app-muted mt-3 pl-5 dark:text-app-muted-dark">
+									<li v-for="limitation in provider.limitations.slice(0, 3)" :key="limitation">
+										{{ limitation }}
+									</li>
+								</ul>
+							</div>
+						</div>
+						<div class="mt-5 flex flex-wrap gap-3">
+							<a :href="provider.setupUrl" target="_blank" rel="noreferrer" class="btn-secondary">
+								Get access
+							</a>
+							<a v-if="provider.docsUrl" :href="provider.docsUrl" target="_blank" rel="noreferrer" class="btn-secondary">
+								Open docs
+							</a>
+						</div>
+					</article>
+				</div>
+			</section>
 
 			<section class="gap-6 grid xl:grid-cols-2">
 				<article v-for="category in data.categories" :key="category.slug" class="surface-panel">

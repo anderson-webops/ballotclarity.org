@@ -63,16 +63,24 @@ function saveToPlan() {
 	<article class="surface-panel flex flex-col h-full justify-between">
 		<div class="space-y-4">
 			<div class="flex flex-wrap gap-3 items-start justify-between">
-				<div class="min-w-0">
-					<div class="flex flex-wrap gap-2 items-center">
-						<h3 class="text-[1.45rem] text-app-ink leading-tight font-serif dark:text-app-text-dark">
-							{{ candidate.name }}
-						</h3>
-						<IncumbentBadge v-if="candidate.incumbent" />
+				<div class="flex gap-3 min-w-0 items-start">
+					<ProfileImageStack
+						v-if="candidate.profileImages?.length"
+						:images="candidate.profileImages"
+						:name="candidate.name"
+						size="sm"
+					/>
+					<div class="min-w-0">
+						<div class="flex flex-wrap gap-2 items-center">
+							<h3 class="text-[1.45rem] text-app-ink leading-tight font-serif dark:text-app-text-dark">
+								{{ candidate.name }}
+							</h3>
+							<IncumbentBadge v-if="candidate.incumbent" />
+						</div>
+						<p class="text-sm text-app-muted mt-1.5 dark:text-app-muted-dark">
+							{{ candidate.party }} · {{ candidate.officeSought }}
+						</p>
 					</div>
-					<p class="text-sm text-app-muted mt-1.5 dark:text-app-muted-dark">
-						{{ candidate.party }} · {{ candidate.officeSought }}
-					</p>
 				</div>
 				<VerificationBadge :label="candidate.comparison.ballotStatus.provenance.label" :title="candidate.comparison.ballotStatus.provenance.detail" :tone="candidate.comparison.ballotStatus.provenance.status === 'verified-official' ? 'accent' : candidate.comparison.ballotStatus.provenance.status === 'unclear' ? 'warning' : 'neutral'" />
 			</div>

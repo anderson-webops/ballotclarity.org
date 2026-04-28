@@ -1,5 +1,6 @@
-import type { LocationRepresentativeMatch } from "./types/civic.js";
+import type { LocationRepresentativeMatch, ProfileImage } from "./types/civic.js";
 import process from "node:process";
+import { uniqueProfileImages } from "./profile-images.js";
 import { classifyRepresentative } from "./representative-classification.js";
 
 interface OpenStatesPersonResponse {
@@ -13,6 +14,7 @@ interface OpenStatesPersonResponse {
 
 interface OpenStatesPerson {
 	id?: string;
+	image?: string;
 	name?: string;
 	party?: string;
 	openstates_url?: string;
@@ -40,6 +42,7 @@ export interface OpenStatesRepresentativeRecord {
 	officeTitle: string;
 	openstatesUrl?: string;
 	updatedAt?: string;
+	profileImages?: ProfileImage[];
 }
 
 export interface OpenStatesClient {
@@ -59,6 +62,20 @@ function mapRepresentative(person: OpenStatesPerson): OpenStatesRepresentativeRe
 		|| (person.current_role?.org_classification === "upper" ? "Senator" : "Representative");
 	const district = person.current_role?.district?.trim() || "Unknown district";
 	const jurisdictionName = person.jurisdiction?.name?.trim();
+	const profileImages = uniqueProfileImages([
+		person.image
+			? {
+					alt: `Portrait of ${person.name?.trim() || "representative"}`,
+					capturedAt: person.updated_at?.trim() || undefined,
+					priority: 20,
+					sourceKind: "provider",
+					sourceLabel: "Open States image",
+					sourceSystem: "Open States",
+					sourceUrl: person.openstates_url?.trim() || undefined,
+					url: person.image,
+				}
+			: null,
+	]);
 
 	return {
 		currentRoleClassification: person.current_role?.org_classification?.trim() || undefined,
@@ -71,6 +88,7 @@ function mapRepresentative(person: OpenStatesPerson): OpenStatesRepresentativeRe
 		officeTitle,
 		openstatesUrl: person.openstates_url?.trim() || undefined,
 		party: person.party?.trim() || undefined,
+		profileImages: profileImages.length ? profileImages : undefined,
 		updatedAt: person.updated_at?.trim() || undefined,
 	};
 }
@@ -92,6 +110,7 @@ function toLocationRepresentative(person: OpenStatesRepresentativeRecord): Locat
 		officeTitle: person.officeTitle,
 		openstatesUrl: person.openstatesUrl,
 		party: person.party,
+		profileImages: person.profileImages,
 		sourceSystem: "Open States"
 	};
 }

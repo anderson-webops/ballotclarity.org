@@ -43,6 +43,7 @@ import type {
 	PersonProfileInfluence,
 	PersonProfileOfficeContext,
 	PersonProfileResponse,
+	ProfileImage,
 	PublicCorrectionsResponse,
 	PublicStatusResponse,
 	QuestionnaireResponse,
@@ -56,6 +57,7 @@ import type {
 	VoteRecordSummary
 } from "./types/civic.js";
 import type { ZipLocationMatch, ZipLocationService } from "./zip-location.js";
+import type { ZipLookupLogger } from "./zip-lookup-logger.js";
 import { Buffer } from "node:buffer";
 import { timingSafeEqual } from "node:crypto";
 import process from "node:process";
@@ -81,6 +83,7 @@ import { createAddressCacheRepository } from "./address-cache-repository.js";
 import { createAddressEnrichmentService } from "./address-enrichment.js";
 import { createAdminLoginThrottle } from "./admin-login-throttle.js";
 import { createAdminRepository } from "./admin-repository.js";
+import { buildBallotContentProviderSummary, getBallotContentProviderOptions } from "./ballot-content-providers.js";
 import { createCensusGeocoderClient } from "./census-geocoder.js";
 import { createCongressClient, isCurrentCongressMemberRecord } from "./congress.js";
 import { createCoverageRepository } from "./coverage-repository.js";
@@ -99,6 +102,7 @@ import { createLogger, createRequestLoggingMiddleware } from "./logger.js";
 import { getOfficialToolsForState, getStateAbbreviationForName, getStateNameForAbbreviation } from "./official-election-tools.js";
 import { createOpenFecClient } from "./openfec.js";
 import { createOpenStatesClient } from "./openstates.js";
+import { buildCongressProfileImages, uniqueProfileImages } from "./profile-images.js";
 import { buildProviderSummary } from "./provider-config.js";
 import { buildCuratedPublicSourceRecords, mapAuthorityToPublisherType } from "./public-source-directory.js";
 import { classifyRepresentative } from "./representative-classification.js";
@@ -111,6 +115,7 @@ import {
 	mergeRepresentativeMatchesWithSupplementalRecords,
 } from "./supplemental-officeholders.js";
 import { createZipLocationService } from "./zip-location.js";
+import { createZipLookupLogger } from "./zip-lookup-logger.js";
 
 interface CreateAppOptions {
 	adminApiKey?: string | null;
@@ -132,6 +137,7 @@ interface CreateAppOptions {
 	openStatesClient?: ReturnType<typeof createOpenStatesClient>;
 	sourceMonitorSeed?: AdminSourceMonitorItem[];
 	zipLocationService?: ZipLocationService | null;
+	zipLookupLogger?: ZipLookupLogger;
 }
 
 function isAuthorizedAdminRequest(requestKey: string | undefined, configuredKey: string | null) {
@@ -442,12 +448,15 @@ function buildSupplementalOfficeContext(
 	const mergedContext: PersonProfileOfficeContext = {
 		chamberLabel: enrichmentOfficeContext?.chamberLabel || inferSupplementalChamberLabel(record, classification),
 		committeeMemberships: uniqueStrings(enrichmentOfficeContext?.committeeMemberships ?? []),
+		currentTermEndLabel: enrichmentOfficeContext?.currentTermEndLabel,
 		currentTermLabel: enrichmentOfficeContext?.currentTermLabel,
+		currentTermStartLabel: enrichmentOfficeContext?.currentTermStartLabel,
 		districtLabel: enrichmentOfficeContext?.districtLabel || record.districtLabel,
 		jurisdictionLabel: enrichmentOfficeContext?.jurisdictionLabel || (record.jurisdiction === "State" ? record.stateName : record.location),
 		officialOfficeAddress: enrichmentOfficeContext?.officialOfficeAddress,
 		officialPhone: enrichmentOfficeContext?.officialPhone,
 		referenceLinks: referenceLinks.length ? referenceLinks : undefined,
+		serviceStartLabel: enrichmentOfficeContext?.serviceStartLabel,
 	};
 
 	return Object.values(mergedContext).some(value => Array.isArray(value) ? value.length > 0 : Boolean(value))
@@ -468,7 +477,9 @@ function mergeOfficeContext(
 			...(baseContext?.committeeMemberships ?? []),
 			...(supplementalContext?.committeeMemberships ?? []),
 		]),
+		currentTermEndLabel: supplementalContext?.currentTermEndLabel || baseContext?.currentTermEndLabel,
 		currentTermLabel: supplementalContext?.currentTermLabel || baseContext?.currentTermLabel,
+		currentTermStartLabel: supplementalContext?.currentTermStartLabel || baseContext?.currentTermStartLabel,
 		districtLabel: supplementalContext?.districtLabel || baseContext?.districtLabel,
 		jurisdictionLabel: supplementalContext?.jurisdictionLabel || baseContext?.jurisdictionLabel,
 		officialOfficeAddress: supplementalContext?.officialOfficeAddress || baseContext?.officialOfficeAddress,
@@ -477,6 +488,7 @@ function mergeOfficeContext(
 			...(baseContext?.referenceLinks ?? []),
 			...(supplementalContext?.referenceLinks ?? []),
 		]),
+		serviceStartLabel: supplementalContext?.serviceStartLabel || baseContext?.serviceStartLabel,
 	};
 
 	return Object.values(mergedContext).some(value => Array.isArray(value) ? value.length > 0 : Boolean(value))
@@ -486,6 +498,12 @@ function mergeOfficeContext(
 				referenceLinks: mergedContext.referenceLinks?.length ? mergedContext.referenceLinks : undefined,
 			}
 		: undefined;
+}
+
+function buildRepresentativeProfileImages(...groups: Array<ProfileImage[] | undefined>) {
+	const images = groups.flatMap(group => group ?? []);
+
+	return uniqueProfileImages(images);
 }
 
 function buildSupplementalEnrichmentStatus(
@@ -927,6 +945,7 @@ function buildRepresentativeSummary(candidate: Candidate): RepresentativeSummary
 		party: candidate.party,
 		slug: candidate.slug,
 		ballotStatusLabel: candidate.comparison.ballotStatus.label,
+		profileImages: candidate.profileImages,
 		provenance: {
 			label: "Source-backed local person record",
 			status: "direct",
@@ -1332,6 +1351,7 @@ function buildRepresentativeLookupContext(record: OpenStatesRepresentativeRecord
 				officeTitle: record.officeTitle,
 				openstatesUrl: record.openstatesUrl,
 				party: record.party,
+				profileImages: record.profileImages,
 				sourceSystem: "Open States",
 			},
 		],
@@ -1361,6 +1381,7 @@ function buildRepresentativeProfileFromSupplementalOfficeholder(record: Suppleme
 	const publicStatements = uniqueById(record.enrichment?.publicStatements ?? []);
 	const topIssues = uniqueBySlug(record.enrichment?.topIssues ?? []);
 	const officeContext = buildSupplementalOfficeContext(record, classification);
+	const profileImages = buildRepresentativeProfileImages(record.profileImages);
 	const enrichmentStatus = buildSupplementalEnrichmentStatus(
 		record,
 		officeContext,
@@ -1431,6 +1452,7 @@ function buildRepresentativeProfileFromSupplementalOfficeholder(record: Suppleme
 			officialWebsiteUrl: record.officialWebsiteUrl,
 			openstatesUrl: record.openstatesUrl,
 			party: record.party || "Unknown",
+			profileImages: profileImages.length ? profileImages : undefined,
 			provenance: {
 				asOf: updatedAt,
 				label: record.provenanceLabel,
@@ -1499,6 +1521,10 @@ function mergeRepresentativeProfileWithSupplementalOfficeholder(
 		...baseProfile.person.topIssues,
 		...(record.enrichment?.topIssues ?? []),
 	]);
+	const profileImages = buildRepresentativeProfileImages(
+		baseProfile.person.profileImages,
+		record.profileImages,
+	);
 	const officeContext = mergeOfficeContext(
 		baseProfile.person.officeContext,
 		buildSupplementalOfficeContext(record, classification),
@@ -1594,6 +1620,7 @@ function mergeRepresentativeProfileWithSupplementalOfficeholder(
 			officeSought: record.officeSought,
 			officeType: classification.officeType,
 			openstatesUrl: baseProfile.person.openstatesUrl || record.openstatesUrl,
+			profileImages: profileImages.length ? profileImages : undefined,
 			provenance: {
 				...baseProfile.person.provenance,
 				asOf: updatedAt,
@@ -1656,9 +1683,17 @@ function mergeRepresentativeMatches(representativeMatches: LocationRepresentativ
 					: match.sourceSystem === "Open States"
 						? match
 						: existingMatch;
+		const profileImages = buildRepresentativeProfileImages(
+			existingMatch.profileImages,
+			match.profileImages,
+		);
+		const mergedMatch = {
+			...preferredMatch,
+			profileImages: profileImages.length ? profileImages : undefined,
+		};
 
 		for (const key of keys)
-			uniqueMatches.set(key, preferredMatch);
+			uniqueMatches.set(key, mergedMatch);
 	}
 
 	return Array.from(new Map(
@@ -1872,6 +1907,7 @@ function buildRepresentativeProfileFromOpenStates(record: OpenStatesRepresentati
 			onCurrentBallot: false,
 			openstatesUrl: record.openstatesUrl,
 			party: record.party || "Unknown",
+			profileImages: record.profileImages,
 			provenance: {
 				asOf: updatedAt,
 				label: "Open States current officeholder record",
@@ -1948,6 +1984,24 @@ function buildRepresentativeOfficeContextFromCongressMember(member: CongressMemb
 	};
 }
 
+function buildCongressTermOfficeContext(member: CongressMemberDetail): PersonProfileOfficeContext {
+	const terms = [...member.terms].sort((left, right) =>
+		right.congress - left.congress
+		|| right.startYear - left.startYear
+	);
+	const latestTerm = terms[0];
+	const earliestTerm = terms
+		.filter(term => typeof term.startYear === "number")
+		.sort((left, right) => left.startYear - right.startYear)[0];
+
+	return {
+		currentTermEndLabel: latestTerm?.endYear ? String(latestTerm.endYear) : latestTerm ? "Present" : undefined,
+		currentTermLabel: latestTerm ? `${latestTerm.congress}th Congress (${latestTerm.startYear}-${latestTerm.endYear || "present"})` : undefined,
+		currentTermStartLabel: latestTerm ? String(latestTerm.startYear) : undefined,
+		serviceStartLabel: earliestTerm ? String(earliestTerm.startYear) : undefined,
+	};
+}
+
 function buildRepresentativeLookupContextFromCongressMember(
 	member: CongressMemberDetail,
 	representativeSlug: string,
@@ -2003,6 +2057,7 @@ function buildRepresentativeLookupContextFromCongressMember(
 				officeType: classification.officeType,
 				officeTitle,
 				party: member.party,
+				profileImages: buildCongressProfileImages(member),
 				sourceSystem: "Congress.gov",
 			},
 		],
@@ -2025,6 +2080,8 @@ function buildRepresentativeProfileFromCongressMember(
 		stateCode: officeContext.stateCode,
 		stateName: officeContext.stateName,
 	});
+	const profileImages = buildCongressProfileImages(member);
+	const termContext = buildCongressTermOfficeContext(member);
 	const sources = [
 		buildRouteSource({
 			authority: "official-government",
@@ -2076,10 +2133,17 @@ function buildRepresentativeProfileFromCongressMember(
 			name: member.directOrderName,
 			officeDisplayLabel: classification.officeDisplayLabel,
 			officeholderLabel: "Current officeholder",
+			officeContext: {
+				...termContext,
+				chamberLabel: officeContext.officeSought === "U.S. Senate" ? "Senate" : "House of Representatives",
+				districtLabel: officeContext.districtLabel,
+				jurisdictionLabel: officeContext.stateName,
+			},
 			officeType: classification.officeType,
 			officeSought: officeContext.officeSought,
 			onCurrentBallot: false,
 			party: member.party || "Unknown",
+			profileImages: profileImages.length ? profileImages : undefined,
 			provenance: {
 				asOf: updatedAt,
 				label: "Congress.gov current officeholder record",
@@ -2488,6 +2552,7 @@ function buildPersonProfileFromCandidate(candidate: Candidate): PersonProfileRes
 			onCurrentBallot: true,
 			openstatesUrl: undefined,
 			party: candidate.party,
+			profileImages: candidate.profileImages,
 			provenance: {
 				asOf: candidate.updatedAt,
 				label: "Source-backed local person record",
@@ -2720,6 +2785,13 @@ export async function createApp(options: CreateAppOptions = {}) {
 		databaseUrl: adminDatabaseUrl,
 		guidePackageSeed,
 		sourceMonitorSeed: options.sourceMonitorSeed
+	});
+	const zipLookupLogger = options.zipLookupLogger ?? createZipLookupLogger({
+		onError(error) {
+			logger.warn("zip_lookup_log.write_failed", {
+				message: error instanceof Error ? error.message : "Unknown ZIP lookup log write failure."
+			});
+		}
 	});
 	const sourceAssetStore = createSourceAssetStore();
 	const locationGuessService = createLocationGuessService(options.locationGuessOptions);
@@ -4088,6 +4160,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 				driver: adminRepository.driver,
 				message: healthySnapshot ? undefined : "Configured live coverage snapshot is missing.",
 				ok: healthySnapshot,
+				ballotContentProviderSummary: buildBallotContentProviderSummary(),
 				providerSummary: buildProviderSummary(),
 				ready: healthySnapshot,
 				snapshotProvenance: healthSnapshotProvenance,
@@ -4102,6 +4175,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 				driver: adminRepository.driver,
 				message: error instanceof Error ? error.message : "Admin repository health check failed.",
 				ok: false,
+				ballotContentProviderSummary: buildBallotContentProviderSummary(),
 				providerSummary: buildProviderSummary(),
 				ready: false,
 				snapshotProvenance: buildCoverageSnapshotProvenance(coverageRepository),
@@ -4204,6 +4278,9 @@ export async function createApp(options: CreateAppOptions = {}) {
 		}
 
 		const lookupResponse = await resolveLocationLookup(raw, response.locals.requestId, selectionId || undefined);
+
+		await zipLookupLogger.record(raw, lookupResponse);
+
 		const activeLookupCookie = buildActiveNationwideLookupCookie(lookupResponse);
 
 		if (activeLookupCookie)
@@ -4291,6 +4368,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 		response.json({
 			...coverageRepository.data.dataSources,
 			assetMode: sourceAssetStore.mode,
+			ballotContentProviders: getBallotContentProviderOptions(),
 			coverageMode: coverageRepository.mode,
 			sourceAssetBaseUrl: sourceAssetStore.baseUrl
 		});

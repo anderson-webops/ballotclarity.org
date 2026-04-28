@@ -170,6 +170,7 @@ export const useCivicStore = defineStore("civic", {
 			this.nationwideLookupResult = snapshot.nationwideLookupResult
 				? {
 						...snapshot.nationwideLookupResult,
+						ballotContentPreviews: snapshot.nationwideLookupResult.ballotContentPreviews ?? [],
 						selectionOptions: snapshot.nationwideLookupResult.selectionOptions ?? []
 					}
 				: null;
@@ -262,9 +263,17 @@ export const useCivicStore = defineStore("civic", {
 			this.persist();
 		},
 		setLocation(location: LocationSelection | null) {
+			const shouldPreserveLookupResult = Boolean(
+				location
+				&& this.nationwideLookupResult?.result === "resolved"
+				&& this.nationwideLookupResult.location?.slug === location.slug
+				&& this.nationwideLookupResult.guideAvailability === "published"
+				&& !this.nationwideLookupResult.guideContent?.verifiedContestPackage
+			);
+
 			this.selectedLocation = location;
 
-			if (location) {
+			if (location && !shouldPreserveLookupResult) {
 				this.nationwideLookupResult = null;
 			}
 
@@ -275,9 +284,17 @@ export const useCivicStore = defineStore("civic", {
 			location: LocationSelection | null,
 			guideContent?: LocationLookupResponse["guideContent"] | null
 		) {
+			const shouldPreserveLookupResult = Boolean(
+				location
+				&& this.nationwideLookupResult?.result === "resolved"
+				&& (this.nationwideLookupResult.location?.slug === location.slug || this.nationwideLookupResult.electionSlug === election?.slug)
+				&& guideContent?.publishedGuideShell
+				&& !guideContent.verifiedContestPackage
+			);
+
 			this.selectedElection = election;
 			this.selectedLocation = sanitizeLocationSelection(location);
-			this.nationwideLookupResult = null;
+			this.nationwideLookupResult = shouldPreserveLookupResult ? this.nationwideLookupResult : null;
 			this.lookupContext = location && election
 				? {
 						guideAvailability: guideContent?.publishedGuideShell ? "published" : "not-published",

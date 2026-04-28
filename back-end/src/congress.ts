@@ -23,6 +23,10 @@ export interface CongressMemberDetail {
 	cosponsoredLegislationCount?: number;
 	cosponsoredLegislationUrl?: string;
 	currentMember: boolean;
+	depiction?: {
+		attribution?: string;
+		imageUrl: string;
+	};
 	district?: number;
 	directOrderName: string;
 	firstName?: string;
@@ -90,6 +94,10 @@ interface CongressMemberDetailResponse {
 			url?: string;
 		};
 		currentMember?: boolean;
+		depiction?: {
+			attribution?: string;
+			imageUrl?: string;
+		};
 		district?: number;
 		directOrderName?: string;
 		firstName?: string;
@@ -220,6 +228,12 @@ export function createCongressClient({
 					: undefined,
 				cosponsoredLegislationUrl: member.cosponsoredLegislation?.url?.trim() || undefined,
 				currentMember: member.currentMember !== false,
+				depiction: member.depiction?.imageUrl?.trim()
+					? {
+							attribution: member.depiction.attribution?.trim() || undefined,
+							imageUrl: member.depiction.imageUrl.trim(),
+						}
+					: undefined,
 				district: member.district,
 				directOrderName: member.directOrderName.trim(),
 				firstName: member.firstName?.trim() || undefined,

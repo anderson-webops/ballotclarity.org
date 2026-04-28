@@ -147,8 +147,73 @@ export interface ElectionLogisticsSite {
 	note?: string;
 }
 
+export interface ElectionLogisticsCandidate {
+	candidateUrl?: string;
+	email?: string;
+	id: string;
+	name: string;
+	office?: string;
+	party?: string;
+	phone?: string;
+	profileImages?: ProfileImage[];
+}
+
+export type BallotContentPreviewStatus = "official_source_unverified" | "provider_unverified";
+
+export interface BallotContentPreviewCandidate {
+	candidateUrl?: string;
+	email?: string;
+	id: string;
+	name: string;
+	orderOnBallot?: number;
+	party?: string;
+	phone?: string;
+	profileImages?: ProfileImage[];
+}
+
+export interface BallotContentPreviewReferendum {
+	brief?: string;
+	effectOfAbstain?: string;
+	passageThreshold?: string;
+	responses: string[];
+	subtitle?: string;
+	text?: string;
+	title?: string;
+	url?: string;
+}
+
+export interface BallotContentPreviewContest {
+	ballotTitle?: string;
+	candidates: BallotContentPreviewCandidate[];
+	districtName?: string;
+	id: string;
+	office?: string;
+	referendum?: BallotContentPreviewReferendum;
+	sourceLabels: string[];
+	title: string;
+	type?: string;
+}
+
+export interface BallotContentPreview {
+	candidateCount: number;
+	contestCount: number;
+	disclaimer: string;
+	generatedAt: string;
+	id: string;
+	measureCount: number;
+	officialOnly: boolean;
+	providerId: string;
+	providerLabel: string;
+	sourceAuthority: SourceAuthority;
+	status: BallotContentPreviewStatus;
+	verificationResource?: OfficialResource;
+	verificationResourceLabel?: string;
+	contests: BallotContentPreviewContest[];
+}
+
 export interface ElectionLogistics {
 	additionalElectionNames: string[];
+	candidatePreviews?: ElectionLogisticsCandidate[];
 	dropOffLocations: ElectionLogisticsSite[];
 	earlyVoteSites: ElectionLogisticsSite[];
 	electionDay?: string;
@@ -466,6 +531,20 @@ export interface CandidateLink {
 	note?: string;
 }
 
+export type ProfileImageSourceKind = "archive" | "campaign" | "official" | "provider";
+
+export interface ProfileImage {
+	alt: string;
+	attribution?: string;
+	capturedAt?: string;
+	priority: number;
+	sourceKind: ProfileImageSourceKind;
+	sourceLabel: string;
+	sourceSystem: string;
+	sourceUrl?: string;
+	url: string;
+}
+
 export interface ComparableStatement {
 	id: string;
 	text: string | null;
@@ -530,6 +609,7 @@ export interface Candidate {
 	comparison: CandidateComparisonProfile;
 	sources: Source[];
 	updatedAt: string;
+	profileImages?: ProfileImage[];
 }
 
 export interface Measure {
@@ -636,6 +716,7 @@ export interface LocationRepresentativeMatch extends RepresentativeCard {
 	officeType: RepresentativeOfficeType | null;
 	sourceSystem: string;
 	openstatesUrl?: string;
+	profileImages?: ProfileImage[];
 }
 
 export type LocationLookupActionKind = "ballot-guide" | "official-verification";
@@ -703,6 +784,7 @@ export interface LocationLookupResponse {
 	result: LocationLookupResult;
 	inputKind: LocationLookupInputKind;
 	note: string;
+	ballotContentPreviews?: BallotContentPreview[];
 	lookupQuery?: string;
 	selectionId?: string;
 	detectedFromIp?: boolean;
@@ -724,6 +806,7 @@ export interface NationwideLookupResultContext {
 	result: LocationLookupResult;
 	inputKind: LocationLookupInputKind;
 	note: string;
+	ballotContentPreviews?: BallotContentPreview[];
 	resolvedAt?: string;
 	lookupQuery?: string;
 	selectionId?: string;
@@ -820,11 +903,28 @@ export interface DataRoadmapMilestone {
 export interface DataSourcesResponse {
 	updatedAt: string;
 	principles: string[];
+	ballotContentProviders?: BallotContentProviderOption[];
 	categories: DataSourceCategory[];
 	architectureStages: DataArchitectureStage[];
 	migrationWatch: DataMigrationWatchItem[];
 	roadmap: DataRoadmapMilestone[];
 	launchTarget?: LaunchTargetProfile;
+}
+
+export type BallotContentProviderConnectionStatus = "active" | "needs_key" | "needs_partner_access" | "needs_endpoint";
+
+export interface BallotContentProviderOption {
+	id: string;
+	label: string;
+	authority: SourceAuthority;
+	connectionStatus: BallotContentProviderConnectionStatus;
+	configured: boolean;
+	envVars: string[];
+	setupUrl: string;
+	docsUrl?: string;
+	capabilities: string[];
+	bestUse: string;
+	limitations: string[];
 }
 
 export type LaunchTargetPhase = "launching" | "planning" | "public-archive";
@@ -1024,6 +1124,7 @@ export interface RepresentativeSummary extends RepresentativeCard {
 	} | null;
 	href: string;
 	openstatesUrl?: string;
+	profileImages?: ProfileImage[];
 	incumbent: boolean;
 	summary: string;
 	fundingAvailable: boolean;
@@ -1061,12 +1162,15 @@ export interface PersonProfileInfluence {
 export interface PersonProfileOfficeContext {
 	chamberLabel?: string;
 	committeeMemberships?: string[];
+	currentTermEndLabel?: string;
 	currentTermLabel?: string;
+	currentTermStartLabel?: string;
 	districtLabel?: string;
 	jurisdictionLabel?: string;
 	officialOfficeAddress?: string;
 	officialPhone?: string;
 	referenceLinks?: ExternalLink[];
+	serviceStartLabel?: string;
 }
 
 export interface PersonProfileEnrichmentStatusItem {
@@ -1134,6 +1238,7 @@ export interface PersonProfile {
 	officeContext?: PersonProfileOfficeContext;
 	enrichmentStatus?: PersonProfileEnrichmentStatus;
 	officialWebsiteUrl?: string;
+	profileImages?: ProfileImage[];
 	provenance: {
 		source: "guide" | "nationwide" | "lookup";
 		label: string;

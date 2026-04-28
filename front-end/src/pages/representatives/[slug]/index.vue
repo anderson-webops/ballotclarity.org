@@ -136,6 +136,9 @@ const officeContextFields = computed(() => {
 		{ label: "Jurisdiction", value: officeContext.value?.jurisdictionLabel || person.value.location },
 		{ label: "Chamber", value: officeContext.value?.chamberLabel },
 		{ label: "Current term", value: officeContext.value?.currentTermLabel },
+		{ label: "Term starts", value: officeContext.value?.currentTermStartLabel },
+		{ label: "Term ends", value: officeContext.value?.currentTermEndLabel },
+		{ label: "Service begins", value: officeContext.value?.serviceStartLabel },
 		{ label: "Official phone", value: officeContext.value?.officialPhone },
 		{ label: "Official office", value: officeContext.value?.officialOfficeAddress },
 		{ label: "Data through", value: dataThroughLabel.value },
@@ -237,6 +240,7 @@ usePageSeo({
 						"@type": "Place",
 						"name": person.value.location
 					},
+					"image": person.value.profileImages?.[0]?.url,
 					"name": person.value.name,
 					"url": `${siteUrl}/representatives/${person.value.slug}`
 				},
@@ -284,21 +288,32 @@ usePageSeo({
 						<VerificationBadge :label="person.officeholderLabel" />
 						<VerificationBadge :label="person.onCurrentBallot ? person.ballotStatusLabel : 'Not on current ballot'" />
 					</div>
-					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold mt-5 uppercase dark:text-app-muted-dark">
-						{{ person.location }}
-					</p>
-					<div class="mt-3 flex flex-wrap gap-3 items-center">
-						<h1 class="text-5xl text-app-ink leading-tight font-serif dark:text-app-text-dark">
-							{{ person.name }}
-						</h1>
-						<IncumbentBadge v-if="person.incumbent" />
+					<div class="mt-5 gap-6 grid md:grid-cols-[minmax(0,1fr)_auto] md:items-start">
+						<div>
+							<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+								{{ person.location }}
+							</p>
+							<div class="mt-3 flex flex-wrap gap-3 items-center">
+								<h1 class="text-5xl text-app-ink leading-tight font-serif dark:text-app-text-dark">
+									{{ person.name }}
+								</h1>
+								<IncumbentBadge v-if="person.incumbent" />
+							</div>
+							<p class="text-lg text-app-muted mt-4 dark:text-app-muted-dark">
+								{{ representativePresentation?.officeDisplayLabel ?? person.officeSought }} · {{ person.party }}
+							</p>
+							<p class="text-base text-app-muted leading-8 mt-6 max-w-3xl dark:text-app-muted-dark">
+								{{ person.summary }}
+							</p>
+						</div>
+						<ProfileImageStack
+							v-if="person.profileImages?.length"
+							:images="person.profileImages"
+							:name="person.name"
+							show-caption
+							size="lg"
+						/>
 					</div>
-					<p class="text-lg text-app-muted mt-4 dark:text-app-muted-dark">
-						{{ representativePresentation?.officeDisplayLabel ?? person.officeSought }} · {{ person.party }}
-					</p>
-					<p class="text-base text-app-muted leading-8 mt-6 max-w-3xl dark:text-app-muted-dark">
-						{{ person.summary }}
-					</p>
 					<div class="mt-6">
 						<UpdatedAt :value="person.freshness.dataLastUpdatedAt ?? person.updatedAt" label="Data through" />
 					</div>

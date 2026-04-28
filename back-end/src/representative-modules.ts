@@ -13,12 +13,14 @@ import type {
 	PersonProfileInfluence,
 	PersonProfileOfficeContext,
 	PersonProfileResponse,
+	ProfileImage,
 	RepresentativeSummary,
 	Source,
 	TrustBullet,
 } from "./types/civic.js";
 import { buildNationwideRepresentativeSlug } from "./active-nationwide-lookup.js";
 import { isCurrentCongressMemberRecord } from "./congress.js";
+import { buildCongressProfileImages, uniqueProfileImages } from "./profile-images.js";
 
 const currencyFormatter = new Intl.NumberFormat("en-US", {
 	currency: "USD",
@@ -170,6 +172,7 @@ interface CongressAttachment {
 	officeContext?: PersonProfileOfficeContext;
 	officialWebsiteUrl?: string;
 	officeContextStatus: PersonProfileEnrichmentStatusItem;
+	profileImages?: ProfileImage[];
 	sources: Source[];
 	whatWeKnow: TrustBullet[];
 }
@@ -188,6 +191,7 @@ interface RepresentativeModuleAttachment {
 	methodologyNotes: string[];
 	officeContext?: PersonProfileOfficeContext;
 	officialWebsiteUrl?: string;
+	profileImages?: ProfileImage[];
 	publicStatements: EvidenceBlock[];
 	sources: Source[];
 	statusNote?: string;
@@ -1088,6 +1092,24 @@ function buildCongressSources(member: CongressMemberDetail): Source[] {
 	return uniqueSources(sources);
 }
 
+function buildCongressTermOfficeContext(member: CongressMemberDetail): PersonProfileOfficeContext {
+	const terms = [...member.terms].sort((left, right) =>
+		right.congress - left.congress
+		|| right.startYear - left.startYear
+	);
+	const term = terms[0];
+	const firstTerm = terms
+		.filter(item => typeof item.startYear === "number")
+		.sort((left, right) => left.startYear - right.startYear)[0];
+
+	return {
+		currentTermEndLabel: term?.endYear ? String(term.endYear) : term ? "Present" : undefined,
+		currentTermLabel: term ? `${term.congress}th Congress (${term.startYear}-${term.endYear || "present"})` : undefined,
+		currentTermStartLabel: term ? String(term.startYear) : undefined,
+		serviceStartLabel: firstTerm ? String(firstTerm.startYear) : undefined,
+	};
+}
+
 async function resolveCongressAttachment(
 	congressClient: CongressClient | null | undefined,
 	target: FederalRepresentativeTarget | null,
@@ -1108,6 +1130,8 @@ async function resolveCongressAttachment(
 
 	const sources = buildCongressSources(detail);
 	const term = [...detail.terms].sort((left, right) => right.congress - left.congress)[0];
+	const termOfficeContext = buildCongressTermOfficeContext(detail);
+	const profileImages = buildCongressProfileImages(detail);
 	const officeTypeLabel = term?.memberType || (target.office === "S" ? "Senator" : "Representative");
 	const districtLabel = target.office === "H" && term?.district
 		? `${term.stateName || detail.state}'s ${formatOrdinal(term.district)} Congressional District`
@@ -1153,8 +1177,8 @@ async function resolveCongressAttachment(
 			"Congress.gov is used on federal representative routes to attach official office context, current term context, and current legislative metadata when the officeholder crosswalk is reliable.",
 		],
 		officeContext: {
+			...termOfficeContext,
 			chamberLabel: term?.chamber || officeTypeLabel,
-			currentTermLabel: term ? `${term.congress}th Congress (${term.startYear}-${term.endYear || "present"})` : undefined,
 			districtLabel: districtLabel || undefined,
 			jurisdictionLabel: term?.stateName || detail.state,
 			officialOfficeAddress: detail.addressInformation?.officeAddress,
@@ -1169,6 +1193,7 @@ async function resolveCongressAttachment(
 			"Congress.gov",
 		),
 		sources,
+		profileImages: profileImages.length ? profileImages : undefined,
 		whatWeKnow: [
 			buildTrustBullet(
 				"congress-office-context",
@@ -1343,6 +1368,9 @@ function buildOfficeContextBlock(
 		officeContext.chamberLabel ? `Chamber: ${officeContext.chamberLabel}.` : "",
 		officeContext.districtLabel ? `District or seat: ${officeContext.districtLabel}.` : "",
 		officeContext.currentTermLabel ? `Current term context: ${officeContext.currentTermLabel}.` : "",
+		officeContext.currentTermStartLabel ? `Current term starts: ${officeContext.currentTermStartLabel}.` : "",
+		officeContext.currentTermEndLabel ? `Current term ends: ${officeContext.currentTermEndLabel}.` : "",
+		officeContext.serviceStartLabel ? `Service history begins: ${officeContext.serviceStartLabel}.` : "",
 		officeContext.officialOfficeAddress ? `Official office address: ${officeContext.officialOfficeAddress}.` : "",
 		officeContext.officialPhone ? `Official phone: ${officeContext.officialPhone}.` : "",
 	].filter(Boolean);
@@ -1498,6 +1526,7 @@ export function createRepresentativeModuleResolver({
 				],
 				officeContext: congressAttachment?.officeContext,
 				officialWebsiteUrl: congressAttachment?.officialWebsiteUrl,
+				profileImages: congressAttachment?.profileImages,
 				publicStatements,
 				sources,
 				statusNote: buildStatusNote({
@@ -1533,6 +1562,10 @@ export function createRepresentativeModuleResolver({
 				...attachment.lobbyingContext.flatMap(block => block.sources),
 				...attachment.publicStatements.flatMap(block => block.sources),
 			]);
+			const profileImages = uniqueProfileImages([
+				...(representative.profileImages ?? []),
+				...(attachment.profileImages ?? []),
+			]);
 
 			return {
 				...representative,
@@ -1540,6 +1573,7 @@ export function createRepresentativeModuleResolver({
 				fundingSummary: attachment.fundingSummary,
 				influenceAvailable: attachment.influenceAvailable,
 				influenceSummary: attachment.influenceSummary,
+				profileImages: profileImages.length ? profileImages : undefined,
 				sourceCount: addedSources.length,
 				sources: addedSources,
 			};
@@ -1572,6 +1606,7 @@ export function createRepresentativeModuleResolver({
 					onCurrentBallot: false,
 					openstatesUrl: match.openstatesUrl,
 					party: match.party ?? "Unknown",
+					profileImages: match.profileImages,
 					provenance: null,
 					slug: personSlug(match),
 					sourceCount: 0,
@@ -1654,6 +1689,11 @@ export function createRepresentativeModuleResolver({
 						)]
 					: []),
 			];
+			const profileImages = uniqueProfileImages([
+				...(response.person.profileImages ?? []),
+				...(match.profileImages ?? []),
+				...(attachment.profileImages ?? []),
+			]);
 
 			return {
 				...response,
@@ -1675,6 +1715,7 @@ export function createRepresentativeModuleResolver({
 					],
 					officeContext: officeContext ?? response.person.officeContext,
 					officialWebsiteUrl: attachment.officialWebsiteUrl || response.person.officialWebsiteUrl,
+					profileImages: profileImages.length ? profileImages : undefined,
 					publicStatements: attachment.publicStatements,
 					sourceCount: addedSources.length,
 					sources: addedSources,

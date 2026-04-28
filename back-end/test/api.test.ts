@@ -232,6 +232,7 @@ before(async () => {
 								url: "https://vote.utah.gov/voter-registration-portal/"
 							}
 						],
+						ballotContentPreviews: [],
 						logistics: null,
 						note: "Google Civic accepted the address as 151 S University Ave, Provo, UT 84601.",
 						verified: true
@@ -247,6 +248,37 @@ before(async () => {
 							kind: "official-verification",
 							title: "Official ballot information",
 							url: "https://example.org/ballot"
+						}
+					],
+					ballotContentPreviews: [
+						{
+							candidateCount: 1,
+							contestCount: 1,
+							contests: [
+								{
+									candidates: [
+										{
+											id: "google-civic:ballot-candidate:0:0",
+											name: "Jane Candidate",
+											orderOnBallot: 1,
+											party: "Nonpartisan"
+										}
+									],
+									id: "google-civic:contest:0",
+									sourceLabels: ["Google Civic"],
+									title: "Mayor"
+								}
+							],
+							disclaimer: "Provider preview; verify your exact ballot with the official ballot tool.",
+							generatedAt: "2026-04-26T00:00:00.000Z",
+							id: "google-civic:voterinfo:ballot-preview",
+							measureCount: 0,
+							officialOnly: true,
+							providerId: "google-civic",
+							providerLabel: "Google Civic Information API",
+							sourceAuthority: "commercial-provider",
+							status: "official_source_unverified",
+							verificationResourceLabel: "Use the official ballot tool."
 						}
 					],
 					logistics: null,
@@ -269,6 +301,10 @@ before(async () => {
 						bioguideId,
 						cosponsoredLegislationCount: 780,
 						currentMember: true,
+						depiction: {
+							attribution: "Courtesy U.S. Senate Historical Office",
+							imageUrl: "https://www.congress.gov/img/member/o000174_200.jpg",
+						},
 						directOrderName: "Jon Ossoff",
 						firstName: "Jon",
 						lastName: "Ossoff",
@@ -277,6 +313,24 @@ before(async () => {
 						sponsoredLegislationCount: 216,
 						state: "Georgia",
 						terms: [
+							{
+								chamber: "Senate",
+								congress: 117,
+								endYear: 2023,
+								memberType: "Senator",
+								startYear: 2021,
+								stateCode: "GA",
+								stateName: "Georgia",
+							},
+							{
+								chamber: "Senate",
+								congress: 118,
+								endYear: 2025,
+								memberType: "Senator",
+								startYear: 2023,
+								stateCode: "GA",
+								stateName: "Georgia",
+							},
 							{
 								chamber: "Senate",
 								congress: 119,
@@ -303,6 +357,10 @@ before(async () => {
 						bioguideId,
 						cosponsoredLegislationCount: 506,
 						currentMember: true,
+						depiction: {
+							attribution: "Courtesy U.S. House Office of Photography",
+							imageUrl: "https://www.congress.gov/img/member/m001218_200.jpg",
+						},
 						district: 7,
 						directOrderName: "Richard McCormick",
 						firstName: "Richard",
@@ -312,6 +370,16 @@ before(async () => {
 						sponsoredLegislationCount: 50,
 						state: "Georgia",
 						terms: [
+							{
+								chamber: "House of Representatives",
+								congress: 118,
+								district: 7,
+								endYear: 2025,
+								memberType: "Representative",
+								startYear: 2023,
+								stateCode: "GA",
+								stateName: "Georgia",
+							},
 							{
 								chamber: "House of Representatives",
 								congress: 119,
@@ -1021,6 +1089,7 @@ test("GET /health returns readiness and coverage metadata", async () => {
 	assert.equal(response.status, 200);
 	assert.equal(body.ok, true);
 	assert.equal(body.ready, true);
+	assert.equal(body.ballotContentProviderSummary.total, 5);
 	assert.equal(body.driver, "sqlite");
 	assert.equal(body.coverageMode, "snapshot");
 	assert.equal(body.assetMode, "public-mirror");
@@ -1115,6 +1184,8 @@ test("default runtime stays empty instead of auto-seeding coverage and public op
 		assert.ok(sourcesBody.sources.length >= 8);
 		assert.ok(sourcesBody.sources.some((item: { id: string; publicationKind: string }) => item.id === "open-states" && item.publicationKind === "curated-global"));
 		assert.ok(sourcesBody.sources.some((item: { id: string }) => item.id === "official-state-voter-portals"));
+		assert.ok(sourcesBody.sources.some((item: { id: string }) => item.id === "ballotpedia"));
+		assert.ok(sourcesBody.sources.some((item: { id: string }) => item.id === "democracy-works"));
 
 		const ballotResponse = await fetch(`${isolatedBaseUrl}/api/ballot?election=2026-fulton-county-general`);
 		const ballotBody = await ballotResponse.json();
@@ -1362,6 +1433,97 @@ test("POST /api/location validates incomplete numeric ZIP fragments", async () =
 	assert.match(body.message, /full 5-digit ZIP code/i);
 });
 
+test("POST /api/location records resolved lookups through the ZIP lookup logger hook", async () => {
+	const recordedLookups: Array<{
+		guideAvailability?: string;
+		rawInput: string;
+		result: string;
+		selectionRequired: boolean;
+	}> = [];
+	const isolatedServer = (await createApp({
+		adminDbPath: ":memory:",
+		congressClient: null,
+		coverageRepository: buildTestCoverageRepository(),
+		googleCivicClient: null,
+		ldaClient: null,
+		openFecClient: null,
+		openStatesClient: null,
+		zipLookupLogger: {
+			enabled: true,
+			logPath: ":memory:",
+			async record(rawInput, lookupResponse) {
+				recordedLookups.push({
+					guideAvailability: lookupResponse.guideAvailability,
+					rawInput,
+					result: lookupResponse.result,
+					selectionRequired: Boolean(lookupResponse.selectionOptions?.length)
+				});
+			}
+		},
+		zipLocationService: {
+			async lookupZip(zipCode) {
+				return {
+					matches: [
+						{
+							countyFips: "121",
+							countyName: "Fulton County",
+							districtMatches: [
+								{
+									districtCode: "5",
+									districtType: "congressional",
+									id: "congressional:5",
+									label: "Congressional District 5",
+									sourceSystem: "U.S. Census Geocoder"
+								}
+							],
+							id: `zip:${zipCode}:atlanta-georgia`,
+							latitude: 33.7525,
+							locality: "Atlanta",
+							longitude: -84.3928,
+							postalCode: zipCode,
+							representativeMatches: [],
+							sourceSystem: "Zippopotam.us + U.S. Census Geocoder",
+							stateAbbreviation: "GA",
+							stateName: "Georgia"
+						}
+					],
+					postalCode: zipCode
+				};
+			}
+		}
+	})).listen(0, "127.0.0.1");
+	await once(isolatedServer, "listening");
+	const address = isolatedServer.address() as AddressInfo;
+	const isolatedBaseUrl = `http://127.0.0.1:${address.port}`;
+
+	try {
+		const response = await fetch(`${isolatedBaseUrl}/api/location`, {
+			body: JSON.stringify({ q: "30303" }),
+			headers: {
+				"Content-Type": "application/json"
+			},
+			method: "POST"
+		});
+		const body = await response.json();
+
+		assert.equal(response.status, 200);
+		assert.equal(body.result, "resolved");
+		assert.deepEqual(recordedLookups, [
+			{
+				guideAvailability: body.guideAvailability,
+				rawInput: "30303",
+				result: "resolved",
+				selectionRequired: false
+			}
+		]);
+	}
+	finally {
+		await new Promise<void>((resolve, reject) => {
+			isolatedServer.close(error => error ? reject(error) : resolve());
+		});
+	}
+});
+
 test("POST /api/location returns honest shell-only Fulton coverage for ZIPs inside current coverage", async () => {
 	const response = await fetch(`${baseUrl}/api/location`, {
 		body: JSON.stringify({ q: "30303" }),
@@ -1371,9 +1533,14 @@ test("POST /api/location returns honest shell-only Fulton coverage for ZIPs insi
 		method: "POST"
 	});
 	const body = await response.json();
+	const setCookie = response.headers.get("set-cookie") ?? "";
+	const activeLookupCookieValue = setCookie.match(/ballot-clarity-nationwide-lookup=([^;]+)/)?.[1] ?? "";
 
 	assert.equal(response.status, 200);
 	assert.equal(response.headers.get("cache-control"), "no-store");
+	assert.match(setCookie, /ballot-clarity-nationwide-lookup/);
+	assert.ok(activeLookupCookieValue.length > 0);
+	assert.ok(activeLookupCookieValue.length < 3800);
 	assert.equal(body.result, "resolved");
 	assert.equal(body.guideAvailability, "published");
 	assert.equal(body.inputKind, "zip");
@@ -1389,7 +1556,7 @@ test("POST /api/location returns honest shell-only Fulton coverage for ZIPs insi
 	assert.equal(body.availability.officialLogistics.status, "available");
 	assert.equal(body.availability.representatives.status, "available");
 	assert.equal(body.availability.ballotCandidates.status, "limited");
-	assert.equal(body.availability.financeInfluence.status, "limited");
+	assert.equal(body.availability.financeInfluence.status, "available");
 	assert.equal(body.availability.guideShell.status, "available");
 	assert.equal(body.availability.verifiedContestPackage.status, "unavailable");
 	assert.equal(body.availability.fullLocalGuide.status, "limited");
@@ -1414,6 +1581,7 @@ test("POST /api/location filters former Congress members out of ZIP lookup repre
 		name: string;
 		officeDisplayLabel?: string;
 		officeType?: string;
+		profileImages?: Array<{ sourceKind: string; sourceSystem: string; url: string }>;
 	}>;
 	const findRepresentative = (pattern: RegExp) => representatives.find(item => pattern.test(item.name));
 
@@ -1423,7 +1591,7 @@ test("POST /api/location filters former Congress members out of ZIP lookup repre
 	assert.equal(body.guideAvailability, "published");
 	assert.equal(body.guideContent.guideShell.status, "official_logistics_only");
 	assert.equal(body.availability.representatives.status, "available");
-	assert.equal(body.availability.financeInfluence.status, "limited");
+	assert.equal(body.availability.financeInfluence.status, "available");
 	assert.equal(body.availability.ballotCandidates.status, "limited");
 	assert.equal(body.availability.verifiedContestPackage.status, "unavailable");
 	assert.equal(body.representativeMatches.length, 7);
@@ -1444,6 +1612,8 @@ test("POST /api/location filters former Congress members out of ZIP lookup repre
 	assert.equal(findRepresentative(/^Scott Hilton$/i)?.officeType, "state_house");
 	assert.equal(findRepresentative(/^Shawn Still$/i)?.governmentLevel, "state");
 	assert.equal(findRepresentative(/^Shawn Still$/i)?.officeType, "state_senate");
+	assert.equal(findRepresentative(/^Shawn Still$/i)?.profileImages?.[0]?.sourceKind, "official");
+	assert.match(findRepresentative(/^Shawn Still$/i)?.profileImages?.[0]?.url ?? "", /still-shawn-5016\.jpg/i);
 	assert.equal(findRepresentative(/^Robb Pitts$/i)?.governmentLevel, "county");
 	assert.equal(findRepresentative(/^Robb Pitts$/i)?.officeType, "county_commission");
 	assert.equal(findRepresentative(/^John Bradberry$/i)?.governmentLevel, "city");
@@ -1567,7 +1737,11 @@ test("POST /api/location returns the current Fulton County launch location for f
 	assert.equal(body.availability.officialLogistics.status, "available");
 	assert.equal(body.availability.representatives.status, "available");
 	assert.equal(body.availability.ballotCandidates.status, "limited");
-	assert.equal(body.availability.financeInfluence.status, "limited");
+	assert.match(body.availability.ballotCandidates.detail, /provider returned 1 ballot preview set/i);
+	assert.equal(body.ballotContentPreviews[0].providerId, "google-civic");
+	assert.equal(body.ballotContentPreviews[0].contests[0].candidates[0].name, "Jane Candidate");
+	assert.equal(body.ballotContentPreviews[0].verificationResource.label, "Official ballot information");
+	assert.equal(body.availability.financeInfluence.status, "available");
 	assert.equal(body.availability.guideShell.status, "available");
 	assert.equal(body.availability.verifiedContestPackage.status, "unavailable");
 	assert.equal(body.availability.fullLocalGuide.status, "limited");
@@ -1705,6 +1879,9 @@ test("GET /api/data-sources returns the live-data roadmap and migration notes", 
 	assert.equal(body.roadmap.length, 6);
 	assert.equal(body.launchTarget.displayName, "Fulton County, Georgia");
 	assert.ok(body.categories[0].options[0].links.length >= 1);
+	assert.equal(body.ballotContentProviders.length, 5);
+	assert.equal(body.ballotContentProviders.some((provider: { id: string; envVars: string[] }) => provider.id === "ballotpedia" && provider.envVars.includes("BALLOTPEDIA_API_KEY")), true);
+	assert.equal(body.ballotContentProviders.some((provider: { id: string; connectionStatus: string }) => provider.id === "ctcl-bip" && provider.connectionStatus === "needs_partner_access"), true);
 	assert.equal(body.coverageMode, "snapshot");
 	assert.equal(body.assetMode, "public-mirror");
 });
@@ -1943,6 +2120,50 @@ test("GET /api/representatives stays empty until the verified contest package is
 	assert.match(body.note, /current officials/i);
 });
 
+test("GET /api/representatives uses a shell-only published guide lookup query for current officials", async () => {
+	const response = await fetch(`${baseUrl}/api/representatives?lookup=30022`);
+	const body = await response.json();
+	const setCookie = response.headers.get("set-cookie") ?? "";
+	const activeLookupCookieValue = setCookie.match(/ballot-clarity-nationwide-lookup=([^;]+)/)?.[1] ?? "";
+
+	assert.equal(response.status, 200);
+	assert.equal(body.mode, "nationwide");
+	assert.equal(body.representatives.length, 7);
+	assert.equal(body.districts.length, 5);
+	assert.equal(body.representatives.some((item: { name: string }) => item.name === "Jon Ossoff"), true);
+	assert.equal(body.representatives.some((item: { name: string }) => item.name === "Shawn Still"), true);
+	assert.match(setCookie, /ballot-clarity-nationwide-lookup/);
+	assert.ok(activeLookupCookieValue.length < 3800);
+});
+
+test("active nationwide lookup cookie backs shell-only published guide representatives", async () => {
+	const lookupResponse = await fetch(`${baseUrl}/api/location`, {
+		body: JSON.stringify({ q: "30022" }),
+		headers: {
+			"Content-Type": "application/json"
+		},
+		method: "POST"
+	});
+	const cookie = lookupResponse.headers.get("set-cookie")?.split(";")[0];
+
+	assert.equal(lookupResponse.status, 200);
+	assert.ok(cookie);
+
+	const listResponse = await fetch(`${baseUrl}/api/representatives`, {
+		headers: {
+			cookie: cookie || ""
+		}
+	});
+	const listBody = await listResponse.json();
+
+	assert.equal(listResponse.status, 200);
+	assert.equal(listBody.mode, "nationwide");
+	assert.equal(listBody.representatives.length, 7);
+	assert.equal(listBody.districts.length, 5);
+	assert.equal(listBody.representatives.some((item: { name: string }) => item.name === "Jon Ossoff"), true);
+	assert.equal(listBody.representatives.some((item: { name: string }) => item.name === "Shawn Still"), true);
+});
+
 test("active nationwide lookup cookie backs /api/representatives and /api/representatives/:slug", async () => {
 	const lookupResponse = await fetch(`${baseUrl}/api/location`, {
 		body: JSON.stringify({ q: "84604" }),
@@ -2029,7 +2250,11 @@ test("direct representative routes return a stable provider-backed identity reco
 	assert.ok((body.person.influence.topRegistrants?.length ?? 0) > 0);
 	assert.ok(body.person.officeContext);
 	assert.match(body.person.officeContext.currentTermLabel ?? "", /Congress/i);
+	assert.equal(body.person.officeContext.currentTermStartLabel, "2025");
+	assert.equal(body.person.officeContext.serviceStartLabel, "2023");
 	assert.ok((body.person.officeContext.referenceLinks?.length ?? 0) >= 2);
+	assert.equal(body.person.profileImages?.[0]?.sourceSystem, "Congress.gov");
+	assert.match(body.person.profileImages?.[0]?.url ?? "", /m001218_200\.jpg/i);
 	assert.equal(body.person.enrichmentStatus?.funding.reasonCode, "attached");
 	assert.equal(body.person.enrichmentStatus?.influence.reasonCode, "attached");
 });
@@ -2064,6 +2289,10 @@ test("direct senator routes attach federal funding, influence, and Congress offi
 	assert.ok(body.person.officeContext);
 	assert.equal(body.person.officeContext.chamberLabel, "Senate");
 	assert.equal(body.person.officeContext.jurisdictionLabel, "Georgia");
+	assert.equal(body.person.officeContext.currentTermStartLabel, "2025");
+	assert.equal(body.person.officeContext.serviceStartLabel, "2021");
+	assert.equal(body.person.profileImages?.[0]?.sourceKind, "official");
+	assert.match(body.person.profileImages?.[0]?.url ?? "", /o000174_200\.jpg/i);
 	assert.ok(body.person.officeContext.referenceLinks.some((item: { label: string }) => ["Congress member record", "Official office website"].includes(item.label)));
 	assert.equal(body.person.enrichmentStatus?.funding.reasonCode, "attached");
 	assert.equal(body.person.enrichmentStatus?.influence.reasonCode, "attached");
@@ -2160,6 +2389,9 @@ test("state representative routes merge reviewed state-officeholder sources into
 	assert.ok(body.person.lobbyingContext.length > 0);
 	assert.ok(body.person.influence);
 	assert.ok(body.person.officeContext.committeeMemberships?.includes("Chairman, Information & Audits"));
+	assert.equal(body.person.officeContext.currentTermStartLabel, "2025");
+	assert.equal(body.person.officeContext.currentTermEndLabel, "2026");
+	assert.match(body.person.profileImages?.[0]?.url ?? "", /hilton-scott-4899\.jpg/i);
 	assert.ok(body.person.biography.some((item: { title: string }) => /reviewed/i.test(item.title)));
 	assert.ok(
 		body.person.provenance.label.toLowerCase().includes("reviewed")
@@ -2574,6 +2806,7 @@ test("guide package workflow gates local guide publication from draft through ro
 			async lookupVoterInfo() {
 				return {
 					actions: [],
+					ballotContentPreviews: [],
 					logistics: null,
 					note: "Google Civic accepted the Fulton County test address.",
 					verified: true

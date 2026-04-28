@@ -7,6 +7,7 @@ import type {
 	PersonProfileFunding,
 	PersonProfileInfluence,
 	PersonProfileOfficeContext,
+	ProfileImage,
 	Source,
 	VoteRecordSummary,
 } from "./types/civic.js";
@@ -37,6 +38,7 @@ export interface SupplementalOfficeholderRecord {
 	officialWebsiteUrl?: string;
 	openstatesUrl?: string;
 	party: string;
+	profileImages?: ProfileImage[];
 	provenanceLabel: string;
 	provenanceNote: string;
 	slug: string;
@@ -66,6 +68,8 @@ const johnBradberryBioReadyDate = "2023-11-01T00:00:00.000Z";
 const marshaJudkinsElectionResultsDate = "2025-11-18T00:00:00.000Z";
 const marshaJudkinsFinanceDate = "2025-12-04T00:00:00.000Z";
 const marshaJudkinsTransparencyDate = "2026-02-03T00:00:00.000Z";
+const shawnStillPortraitUrl = "https://www.legis.ga.gov/api/images/default-source/portraits/still-shawn-5016.jpg";
+const scottHiltonPortraitUrl = "https://www.legis.ga.gov/api/images/default-source/portraits/hilton-scott-4899.jpg";
 
 function toLookupSlug(value: string) {
 	return value
@@ -548,6 +552,8 @@ const supplementalOfficeholders: SupplementalOfficeholderRecord[] = [
 					"Judiciary",
 				],
 				currentTermLabel: "2025-2026 Georgia General Assembly",
+				currentTermStartLabel: "2025",
+				currentTermEndLabel: "2026",
 				districtLabel: "State Senate District 48",
 				jurisdictionLabel: "Georgia",
 				officialOfficeAddress: "421-D CAP, Atlanta, GA 30334",
@@ -572,6 +578,18 @@ const supplementalOfficeholders: SupplementalOfficeholderRecord[] = [
 		officeSought: "State Senate District 48",
 		officeTitle: "Senator",
 		party: "Republican",
+		profileImages: [
+			{
+				alt: "Portrait of Shawn Still",
+				capturedAt: reviewedAt,
+				priority: 10,
+				sourceKind: "official",
+				sourceLabel: "Georgia General Assembly portrait",
+				sourceSystem: "Georgia General Assembly",
+				sourceUrl: shawnStillBioSource.url,
+				url: shawnStillPortraitUrl,
+			},
+		],
 		provenanceLabel: "Georgia General Assembly member bio",
 		provenanceNote: "This route is backed by a reviewed Georgia General Assembly member bio retained as a stable public state-officeholder record.",
 		slug: "shawn-still",
@@ -647,6 +665,8 @@ const supplementalOfficeholders: SupplementalOfficeholderRecord[] = [
 					"Retirement",
 				],
 				currentTermLabel: "2025-2026 Georgia General Assembly",
+				currentTermStartLabel: "2025",
+				currentTermEndLabel: "2026",
 				districtLabel: "State House District 48",
 				jurisdictionLabel: "Georgia",
 				officialOfficeAddress: "504-A CLOB, 18 Capitol Square, Atlanta, GA 30334",
@@ -671,6 +691,18 @@ const supplementalOfficeholders: SupplementalOfficeholderRecord[] = [
 		officeSought: "State House District 48",
 		officeTitle: "Representative",
 		party: "Republican",
+		profileImages: [
+			{
+				alt: "Portrait of Scott Hilton",
+				capturedAt: reviewedAt,
+				priority: 10,
+				sourceKind: "official",
+				sourceLabel: "Georgia General Assembly portrait",
+				sourceSystem: "Georgia General Assembly",
+				sourceUrl: scottHiltonBioSource.url,
+				url: scottHiltonPortraitUrl,
+			},
+		],
 		provenanceLabel: "Georgia House member bio",
 		provenanceNote: "This route is backed by a reviewed Georgia House member bio retained as a stable public state-officeholder record.",
 		slug: "scott-hilton",
@@ -718,6 +750,8 @@ const supplementalOfficeholders: SupplementalOfficeholderRecord[] = [
 			officeContext: {
 				chamberLabel: "County commission",
 				currentTermLabel: "Jan. 1, 2023 to Dec. 31, 2026",
+				currentTermStartLabel: "Jan. 1, 2023",
+				currentTermEndLabel: "Dec. 31, 2026",
 				districtLabel: "Fulton County",
 				jurisdictionLabel: "Fulton County, Georgia",
 				officialOfficeAddress: "141 Pryor Street, 10th Floor, Atlanta, GA 30303",
@@ -900,6 +934,7 @@ const supplementalOfficeholders: SupplementalOfficeholderRecord[] = [
 			officeContext: {
 				chamberLabel: "City government",
 				currentTermLabel: "4-year term beginning January 2026",
+				currentTermStartLabel: "January 2026",
 				districtLabel: "Provo city",
 				jurisdictionLabel: "Provo, Utah",
 				officialOfficeAddress: "445 W Center Street, Suite 500, Provo, UT 84601",
@@ -961,6 +996,7 @@ export function buildSupplementalRepresentativeMatch(record: SupplementalOfficeh
 		officeTitle: record.officeTitle,
 		openstatesUrl: record.openstatesUrl,
 		party: record.party,
+		profileImages: record.profileImages,
 		sourceSystem: record.sourceSystem,
 	};
 }

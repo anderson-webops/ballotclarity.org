@@ -195,6 +195,7 @@ export function buildNationwidePersonProfileResponse(
 			onCurrentBallot: false,
 			openstatesUrl: representative.openstatesUrl,
 			party: representative.party,
+			profileImages: representative.profileImages,
 			provenance: {
 				asOf: updatedAt,
 				label: representative.provenance?.label || "Lookup results representative match",

@@ -87,6 +87,7 @@ function buildRepresentativeSummary(
 		onCurrentBallot: false,
 		ballotStatusLabel: "Published ballot status unavailable in this area",
 		party: match.party ?? "Unknown",
+		profileImages: match.profileImages,
 		provenance: {
 			label: match.sourceSystem ? `${match.sourceSystem} representative match` : "Lookup results representative match",
 			note: "Matched from your current lookup.",

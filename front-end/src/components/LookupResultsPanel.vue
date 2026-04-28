@@ -16,6 +16,7 @@ import {
 import { isExternalHref } from "~/utils/link";
 import { buildLookupPresentation, filterLookupActionsForPresentation } from "~/utils/location-lookup";
 import { buildNationwideDistrictHref, buildNationwideRepresentativeHref } from "~/utils/lookup-links";
+import { buildNationwideRouteTarget } from "~/utils/nationwide-route-context";
 import { resolveRepresentativePresentation } from "~/utils/representative-presentation";
 
 const props = defineProps<{
@@ -28,6 +29,7 @@ const emit = defineEmits<{
 	selectOption: [option: LocationLookupSelectionOption];
 }>();
 const { formatDate } = useFormatters();
+const NuxtLinkComponent = resolveComponent("NuxtLink");
 
 const lookupResolution = computed(() => ({
 	electionSlug: props.lookup.electionSlug,
@@ -51,6 +53,8 @@ const lookupProvenanceSummary = computed(() => buildLookupProvenanceSummary({
 const selectionOptions = computed(() => props.lookup.selectionOptions ?? []);
 const hasSelectionOptions = computed(() => selectionOptions.value.length > 0);
 const electionLogistics = computed(() => props.lookup.electionLogistics);
+const ballotContentPreviews = computed(() => props.lookup.ballotContentPreviews ?? []);
+const hasBallotContentPreviews = computed(() => ballotContentPreviews.value.length > 0);
 const hasElectionLogistics = computed(() => Boolean(
 	electionLogistics.value
 	&& (
@@ -59,6 +63,7 @@ const hasElectionLogistics = computed(() => Boolean(
 		|| electionLogistics.value.pollingLocations.length
 		|| electionLogistics.value.earlyVoteSites.length
 		|| electionLogistics.value.dropOffLocations.length
+		|| electionLogistics.value.candidatePreviews?.length
 		|| electionLogistics.value.additionalElectionNames.length
 		|| electionLogistics.value.mailOnly
 	)
@@ -74,6 +79,54 @@ const lookupUncertaintyNote = computed(() => {
 	return "District and representative matches are provider-backed, but the election office remains the final authority for precinct and ballot-style questions.";
 });
 
+const availabilityActionCards = computed(() => {
+	if (!props.lookup.availability)
+		return [];
+
+	return [
+		{
+			actionLabel: "Open results",
+			href: buildLookupAwareTarget("/results"),
+			id: "civic-results",
+			item: props.lookup.availability.nationwideCivicResults,
+		},
+		{
+			actionLabel: "Open logistics",
+			href: buildOfficialLogisticsHref(),
+			id: "official-logistics",
+			item: props.lookup.availability.officialLogistics,
+		},
+		{
+			actionLabel: "Open representatives",
+			href: props.lookup.representativeMatches.length ? buildLookupAwareTarget("/representatives") : undefined,
+			id: "representatives",
+			item: props.lookup.availability.representatives,
+		},
+		{
+			actionLabel: props.lookup.guideContent?.verifiedContestPackage ? "Open candidates" : "Review status",
+			href: buildCandidateDataHref(),
+			id: "ballot-candidates",
+			item: props.lookup.availability.ballotCandidates,
+		},
+		{
+			actionLabel: "Open representative pages",
+			href: props.lookup.representativeMatches.length ? buildLookupAwareTarget("/representatives") : undefined,
+			id: "finance-influence",
+			item: props.lookup.availability.financeInfluence,
+		},
+		{
+			actionLabel: props.lookup.guideContent?.verifiedContestPackage ? "Open guide" : "Open overview",
+			href: buildLocalGuideHref(),
+			id: "local-guide",
+			item: props.lookup.availability.fullLocalGuide,
+		},
+	];
+});
+
+function availabilityTone(status: "available" | "partial" | "limited" | "unavailable") {
+	return status === "available" ? "accent" : status === "partial" || status === "limited" ? "warning" : "neutral";
+}
+
 function openGuideAction(action: LocationLookupAction) {
 	if (action.kind !== "ballot-guide")
 		return;
@@ -83,6 +136,41 @@ function openGuideAction(action: LocationLookupAction) {
 
 function selectLookupOption(option: LocationLookupSelectionOption) {
 	emit("selectOption", option);
+}
+
+function buildLookupAwareTarget(path: string) {
+	return buildNationwideRouteTarget(path, props.lookup);
+}
+
+function buildElectionOverviewHref() {
+	return props.lookup.electionSlug ? `/elections/${props.lookup.electionSlug}` : undefined;
+}
+
+function buildOfficialLogisticsHref() {
+	if (!props.lookup.electionSlug)
+		return undefined;
+
+	return props.lookup.guideContent?.verifiedContestPackage
+		? `/ballot/${props.lookup.electionSlug}#guide-logistics`
+		: buildElectionOverviewHref();
+}
+
+function buildCandidateDataHref() {
+	if (!props.lookup.electionSlug || props.lookup.availability?.ballotCandidates.status === "unavailable")
+		return undefined;
+
+	return props.lookup.guideContent?.verifiedContestPackage
+		? `/ballot/${props.lookup.electionSlug}#candidate-contests-section`
+		: buildElectionOverviewHref();
+}
+
+function buildLocalGuideHref() {
+	if (!props.lookup.electionSlug)
+		return undefined;
+
+	return props.lookup.guideContent?.verifiedContestPackage
+		? `/ballot/${props.lookup.electionSlug}`
+		: buildElectionOverviewHref();
 }
 
 function buildDistrictHref(match: NationwideLookupResultContext["districtMatches"][number]) {
@@ -189,6 +277,36 @@ function getRepresentativePresentation(match: NationwideLookupResultContext["rep
 			title="What Ballot Clarity can show for this location right now"
 			:uncertainty="lookupUncertaintyNote"
 		/>
+		<div
+			v-if="availabilityActionCards.length"
+			:class="compact ? 'mt-4 grid grid-cols-1 gap-3' : 'mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3 items-stretch auto-rows-fr'"
+		>
+			<component
+				:is="card.href ? NuxtLinkComponent : 'article'"
+				v-for="card in availabilityActionCards"
+				:key="card.id"
+				v-bind="card.href ? { to: card.href } : {}"
+				class="group p-4 border border-app-line rounded-2xl bg-white h-full transition dark:border-app-line-dark dark:bg-app-panel-dark"
+				:class="card.href ? 'focus-ring hover:border-app-accent hover:shadow-[0_18px_38px_-28px_rgba(16,37,62,0.58)] hover:-translate-y-0.5 dark:hover:border-app-accent' : ''"
+			>
+				<div class="flex flex-wrap gap-2 items-start justify-between">
+					<p class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
+						{{ card.item.label }}
+					</p>
+					<VerificationBadge :label="card.item.status" :tone="availabilityTone(card.item.status)" />
+				</div>
+				<p class="text-sm text-app-muted leading-6 mt-3 dark:text-app-muted-dark">
+					{{ card.item.detail }}
+				</p>
+				<p
+					v-if="card.href"
+					class="dark:text-app-accent-dark text-xs text-app-accent tracking-[0.14em] font-semibold mt-4 inline-flex gap-2 uppercase items-center"
+				>
+					{{ card.actionLabel }}
+					<span class="i-carbon-arrow-right transition group-hover:translate-x-0.5" />
+				</p>
+			</component>
+		</div>
 		<div v-if="visibleLookupActions.length" class="mt-4 gap-3 grid">
 			<div
 				v-for="action in visibleLookupActions"
@@ -292,7 +410,131 @@ function getRepresentativePresentation(match: NationwideLookupResultContext["rep
 						</li>
 					</ul>
 				</div>
+				<div v-if="electionLogistics.candidatePreviews?.length && !hasBallotContentPreviews" class="mt-4">
+					<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+						Candidate previews from Google Civic
+					</p>
+					<ul class="mt-3 gap-3 grid sm:grid-cols-2">
+						<li
+							v-for="candidate in electionLogistics.candidatePreviews.slice(0, 4)"
+							:key="candidate.id"
+							class="p-3 rounded-2xl bg-app-bg flex gap-3 items-start dark:bg-app-bg-dark/70"
+						>
+							<ProfileImageStack
+								v-if="candidate.profileImages?.length"
+								:images="candidate.profileImages"
+								:name="candidate.name"
+								size="sm"
+							/>
+							<div class="min-w-0">
+								<p class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
+									{{ candidate.name }}
+								</p>
+								<p class="text-sm text-app-muted leading-6 dark:text-app-muted-dark">
+									{{ [candidate.party, candidate.office].filter(Boolean).join(' · ') }}
+								</p>
+								<a
+									v-if="candidate.candidateUrl"
+									:href="candidate.candidateUrl"
+									target="_blank"
+									rel="noreferrer"
+									class="text-app-accent underline underline-offset-3 inline-flex gap-2 items-center"
+								>
+									Candidate link
+									<span class="i-carbon-launch" />
+								</a>
+							</div>
+						</li>
+					</ul>
+				</div>
 			</div>
+		</div>
+		<div v-if="hasBallotContentPreviews" class="mt-4 gap-4 grid">
+			<article
+				v-for="preview in ballotContentPreviews"
+				:key="preview.id"
+				class="p-4 border border-app-line rounded-2xl bg-white dark:border-app-line-dark dark:bg-app-panel-dark"
+			>
+				<div class="flex flex-wrap gap-2 items-center">
+					<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+						Provider ballot preview
+					</p>
+					<VerificationBadge :label="preview.providerLabel" tone="accent" />
+					<VerificationBadge label="Needs official verification" tone="warning" />
+				</div>
+				<div class="mt-4 flex flex-wrap gap-3 items-center">
+					<p class="text-lg text-app-ink font-semibold dark:text-app-text-dark">
+						{{ preview.contestCount }} contest{{ preview.contestCount === 1 ? '' : 's' }} returned
+					</p>
+					<VerificationBadge :label="`${preview.candidateCount} candidate${preview.candidateCount === 1 ? '' : 's'}`" />
+					<VerificationBadge v-if="preview.measureCount" :label="`${preview.measureCount} measure${preview.measureCount === 1 ? '' : 's'}`" />
+				</div>
+				<p class="text-sm text-app-muted leading-6 mt-3 dark:text-app-muted-dark">
+					{{ preview.disclaimer }}
+				</p>
+				<a
+					v-if="preview.verificationResource"
+					:href="preview.verificationResource.url"
+					target="_blank"
+					rel="noreferrer"
+					class="text-sm text-app-accent mt-3 underline underline-offset-3 inline-flex gap-2 items-center"
+				>
+					{{ preview.verificationResourceLabel || `Verify with ${preview.verificationResource.label}` }}
+					<span class="i-carbon-launch" />
+				</a>
+				<div class="mt-4 gap-3 grid md:grid-cols-2">
+					<article
+						v-for="contest in preview.contests.slice(0, 6)"
+						:key="contest.id"
+						class="p-4 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70"
+					>
+						<div class="flex flex-wrap gap-2 items-center">
+							<h3 class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
+								{{ contest.title }}
+							</h3>
+							<VerificationBadge v-if="contest.type" :label="contest.type" />
+						</div>
+						<p v-if="contest.districtName" class="text-xs text-app-muted leading-5 mt-2 dark:text-app-muted-dark">
+							{{ contest.districtName }}
+						</p>
+						<ul v-if="contest.candidates.length" class="mt-3 space-y-2">
+							<li
+								v-for="candidate in contest.candidates.slice(0, 4)"
+								:key="candidate.id"
+								class="text-sm text-app-muted leading-6 dark:text-app-muted-dark"
+							>
+								<span class="text-app-ink font-semibold dark:text-app-text-dark">{{ candidate.name }}</span>
+								<span v-if="candidate.party"> · {{ candidate.party }}</span>
+								<span v-if="candidate.orderOnBallot"> · ballot order {{ candidate.orderOnBallot }}</span>
+							</li>
+						</ul>
+						<div v-if="contest.referendum" class="text-sm text-app-muted leading-6 mt-3 dark:text-app-muted-dark">
+							<p v-if="contest.referendum.title" class="text-app-ink font-semibold dark:text-app-text-dark">
+								{{ contest.referendum.title }}
+							</p>
+							<p v-if="contest.referendum.brief">
+								{{ contest.referendum.brief }}
+							</p>
+							<p v-if="contest.referendum.responses.length">
+								Responses: {{ contest.referendum.responses.join(', ') }}
+							</p>
+							<a
+								v-if="contest.referendum.url"
+								:href="contest.referendum.url"
+								target="_blank"
+								rel="noreferrer"
+								class="text-app-accent underline underline-offset-3 inline-flex gap-2 items-center"
+							>
+								Open measure record
+								<span class="i-carbon-launch" />
+							</a>
+						</div>
+						<p v-if="contest.sourceLabels.length" class="text-xs text-app-muted leading-5 mt-3 dark:text-app-muted-dark">
+							Source: {{ contest.sourceLabels.join(', ') }}
+						</p>
+					</article>
+				</div>
+			</article>
 		</div>
 		<div v-if="lookup.normalizedAddress || lookup.districtMatches.length || lookup.representativeMatches.length" class="mt-4 gap-4 grid lg:grid-cols-2">
 			<div v-if="lookup.districtMatches.length" class="p-4 border border-app-line rounded-2xl bg-white dark:border-app-line-dark dark:bg-app-panel-dark">
@@ -323,18 +565,28 @@ function getRepresentativePresentation(match: NationwideLookupResultContext["rep
 				</p>
 				<ul class="mt-3 space-y-3">
 					<li v-for="match in lookup.representativeMatches" :key="match.id" class="text-sm text-app-muted leading-6 dark:text-app-muted-dark">
-						<div class="flex flex-wrap gap-2 items-center">
-							<NuxtLink
-								:to="buildRepresentativeHref(match)"
-								class="text-app-ink font-semibold underline decoration-transparent underline-offset-3 transition dark:text-app-text-dark focus-visible:text-app-accent hover:text-app-accent focus-visible:decoration-current hover:decoration-current"
-							>
-								{{ match.name }}
-							</NuxtLink>
-							<VerificationBadge :label="getRepresentativePresentation(match).levelLabel" tone="accent" />
-							<span v-if="match.party" class="text-xs tracking-[0.12em] uppercase">{{ match.party }}</span>
-							<VerificationBadge :label="match.sourceSystem" />
+						<div class="flex gap-3 items-start">
+							<ProfileImageStack
+								v-if="match.profileImages?.length"
+								:images="match.profileImages"
+								:name="match.name"
+								size="sm"
+							/>
+							<div class="min-w-0">
+								<div class="flex flex-wrap gap-2 items-center">
+									<NuxtLink
+										:to="buildRepresentativeHref(match)"
+										class="text-app-ink font-semibold underline decoration-transparent underline-offset-3 transition dark:text-app-text-dark focus-visible:text-app-accent hover:text-app-accent focus-visible:decoration-current hover:decoration-current"
+									>
+										{{ match.name }}
+									</NuxtLink>
+									<VerificationBadge :label="getRepresentativePresentation(match).levelLabel" tone="accent" />
+									<span v-if="match.party" class="text-xs tracking-[0.12em] uppercase">{{ match.party }}</span>
+									<VerificationBadge :label="match.sourceSystem" />
+								</div>
+								<p>{{ getRepresentativePresentation(match).officeDisplayLabel }}</p>
+							</div>
 						</div>
-						<p>{{ getRepresentativePresentation(match).officeDisplayLabel }}</p>
 						<a
 							v-if="match.openstatesUrl"
 							:href="match.openstatesUrl"

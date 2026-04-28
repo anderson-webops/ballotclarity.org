@@ -1,6 +1,7 @@
 import type { AddressEnrichmentResult } from "./address-enrichment.js";
 import type { OfficialAddressMatch } from "./google-civic.js";
 import type {
+	BallotContentPreview,
 	CoverageResponse,
 	GuideContentSummary,
 	Jurisdiction,
@@ -140,6 +141,40 @@ function dedupeActions(actions: Array<LocationLookupAction | undefined>) {
 
 function buildOfficialVerificationActions(resources: OfficialResource[]) {
 	return dedupeActions(resources.map(buildOfficialVerificationAction));
+}
+
+function actionToOfficialResource(action: LocationLookupAction | undefined): OfficialResource | undefined {
+	if (!action?.url)
+		return undefined;
+
+	return {
+		authority: "official-government",
+		label: action.title,
+		note: action.description,
+		sourceLabel: action.badge || "Official election verification",
+		sourceSystem: "Ballot Clarity official verification action",
+		url: action.url,
+	};
+}
+
+function attachOfficialVerificationToBallotPreviews(
+	previews: BallotContentPreview[] | undefined,
+	actions: LocationLookupAction[]
+) {
+	if (!previews?.length)
+		return undefined;
+
+	const verificationAction = actions.find(action => /ballot|voter|registration/i.test(`${action.title} ${action.description}`))
+		?? actions.find(action => action.kind === "official-verification");
+	const verificationResource = actionToOfficialResource(verificationAction);
+
+	return previews.map(preview => preview.verificationResource || !verificationResource
+		? preview
+		: {
+				...preview,
+				verificationResource,
+				verificationResourceLabel: `Verify with ${verificationResource.label}.`,
+			});
 }
 
 export function findSupportedCoverageSummaries(jurisdictionSummaries: JurisdictionSummary[], geoContext: LookupGeoContext | null | undefined) {
@@ -330,6 +365,7 @@ function buildAvailabilitySummary(
 	selectionOptions?: LocationLookupSelectionOption[],
 	guideContent?: GuideContentSummary | null,
 	hasOfficialLogistics = false,
+	providerBallotPreviewCount = 0,
 ) {
 	const representativeCount = addressEnrichment?.representativeMatches?.length ?? 0;
 	const hasRepresentatives = representativeCount > 0;
@@ -340,6 +376,7 @@ function buildAvailabilitySummary(
 	const selectionRequired = inputKind === "zip" && Boolean(selectionOptions?.length);
 	const officialLogisticsAvailable = hasOfficialLogistics
 		|| Boolean(hasGuide && guideContent?.officialLogistics.status === "verified_local");
+	const hasProviderBallotPreview = providerBallotPreviewCount > 0;
 	const financeInfluenceDetail = hasVerifiedContestPackage
 		? "Funding and influence pages are available through the local guide and any linked person profiles for this area."
 		: hasPublishedShellOnly
@@ -378,11 +415,13 @@ function buildAvailabilitySummary(
 				? inputKind === "zip"
 					? "Ballot Clarity has verified local contest and candidate coverage for the matched ZIP area."
 					: "Ballot Clarity has verified local contest and candidate coverage for this area."
-				: hasPublishedShellOnly
-					? guideContent?.candidates.detail ?? "Candidate pages are available for this local guide, but they are still under local review."
-					: "Ballot candidate pages are not published for this area yet.",
+				: hasProviderBallotPreview
+					? `A provider returned ${providerBallotPreviewCount} ballot preview ${providerBallotPreviewCount === 1 ? "set" : "sets"} for this lookup, but Ballot Clarity has not locally reviewed it as the official ballot package. Verify it with the linked state or local voter tool.`
+					: hasPublishedShellOnly
+						? guideContent?.candidates.detail ?? "Candidate pages are available for this local guide, but they are still under local review."
+						: "Ballot candidate pages are not published for this area yet.",
 			label: "Ballot candidate data",
-			status: hasVerifiedContestPackage ? "available" : hasPublishedShellOnly ? "limited" : "unavailable"
+			status: hasVerifiedContestPackage ? "available" : hasProviderBallotPreview || hasPublishedShellOnly ? "limited" : "unavailable"
 		},
 		financeInfluence: {
 			detail: financeInfluenceDetail,
@@ -537,6 +576,10 @@ export function buildLocationLookupResponse(
 			...(officialLookup?.actions ?? []),
 			...stateOfficialActions
 		]);
+		const ballotContentPreviews = attachOfficialVerificationToBallotPreviews(
+			officialLookup?.ballotContentPreviews,
+			officialActions
+		);
 
 		if (geoContext || officialLookup || addressEnrichment?.normalizedAddress || addressEnrichment?.districtMatches?.length || addressEnrichment?.representativeMatches?.length) {
 			return {
@@ -548,7 +591,9 @@ export function buildLocationLookupResponse(
 					undefined,
 					null,
 					Boolean(officialLookup?.logistics || officialActions.length),
+					ballotContentPreviews?.length ?? 0,
 				),
+				ballotContentPreviews,
 				fromCache: addressEnrichment?.fromCache,
 				guideAvailability: "not-published",
 				inputKind,
@@ -577,16 +622,27 @@ export function buildLocationLookupResponse(
 		};
 	}
 
+	const officialActions = dedupeActions([
+		...(officialLookup?.actions ?? []),
+		...stateOfficialActions
+	]);
+	const ballotContentPreviews = attachOfficialVerificationToBallotPreviews(
+		officialLookup?.ballotContentPreviews,
+		officialActions
+	);
+
 	return {
-		actions: officialLookup?.actions?.length ? officialLookup.actions : undefined,
+		actions: officialActions.length ? officialActions : undefined,
 		availability: buildAvailabilitySummary(
 			inputKind,
 			"published",
 			addressEnrichment,
 			undefined,
 			guideContent,
-			Boolean(officialLookup?.logistics || officialLookup?.actions?.length),
+			Boolean(officialLookup?.logistics || officialActions.length),
+			ballotContentPreviews?.length ?? 0,
 		),
+		ballotContentPreviews,
 		electionSlug,
 		electionLogistics: officialLookup?.logistics ?? null,
 		fromCache: addressEnrichment?.fromCache,

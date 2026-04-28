@@ -210,15 +210,6 @@ html.dark .home-summary-card-link:focus-visible {
   height: 100%;
 }
 
-.home-path-list {
-  border-radius: 1.4rem;
-}
-
-.home-path-list > a {
-  border-radius: 1.1rem;
-  padding-inline: clamp(0.25rem, 1.4vw, 1rem);
-}
-
 .home-roadmap-list article {
   break-inside: avoid;
 }
@@ -689,7 +680,6 @@ html.dark .expandable-section__body {
 
   .home-hero-grid,
   .home-preview-grid,
-  .home-split-grid,
   .home-coverage-grid,
   .home-roadmap-grid {
     display: block !important;
@@ -698,7 +688,6 @@ html.dark .expandable-section__body {
 
   .home-hero-grid > *,
   .home-preview-grid > *,
-  .home-split-grid > *,
   .home-coverage-grid > *,
   .home-roadmap-grid > * {
     margin-bottom: 0.75rem !important;

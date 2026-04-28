@@ -12,7 +12,6 @@ const registrationDeadline = computed(() => nextElectionData.value?.election.key
 const earlyVotingDate = computed(() => nextElectionData.value?.election.keyDates.find(item => item.label === "Early voting opens") ?? null);
 const hasVerifiedContestPackage = computed(() => Boolean(nextElectionData.value?.guideContent?.verifiedContestPackage));
 const hasPublishedGuideShell = computed(() => Boolean(nextElectionData.value?.guideContent?.publishedGuideShell));
-const guideStatusTitle = computed(() => "Guide status");
 const guideStatusNote = computed(() => nextElectionData.value?.guideContent?.verifiedContestPackage
 	? "Contest, candidate, and measure pages are verified for this area."
 	: nextElectionData.value?.guideContent?.publishedGuideShell
@@ -49,7 +48,7 @@ watchEffect(() => {
 });
 
 usePageSeo({
-	description: jurisdiction.value?.description ?? "Jurisdiction hub with official election office links, voting methods, upcoming elections, and archive guides.",
+	description: jurisdiction.value?.description ?? "Jurisdiction hub with official election office links, key dates, and current election routes.",
 	jsonLd: jurisdiction.value
 		? {
 				"@context": "https://schema.org",
@@ -122,13 +121,9 @@ usePageSeo({
 				</div>
 
 				<div class="space-y-4">
-					<InfoCallout title="Not an official government site" tone="warning">
-						Use this page to orient yourself, then verify deadlines, polling logistics, and late changes with {{ jurisdiction.officialOffice.name }} and the linked official voter tools.
+					<InfoCallout title="Verify with the election office" tone="warning">
+						{{ guideStatusNote }} Use {{ jurisdiction.officialOffice.name }} and the linked official voter tools for deadlines, polling logistics, and late changes.
 					</InfoCallout>
-					<InfoCallout :title="guideStatusTitle" tone="warning">
-						{{ guideStatusNote }}
-					</InfoCallout>
-					<AddressLookupForm compact :election="jurisdiction.upcomingElections[0] ?? null" />
 				</div>
 			</header>
 
@@ -227,117 +222,6 @@ usePageSeo({
 						title="Official links and notices"
 						note="These links collect the election-office calendars, contact details, and voting instructions attached to this page."
 					/>
-				</div>
-			</section>
-
-			<section class="gap-6 grid xl:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
-				<div class="surface-panel">
-					<div class="flex gap-4 items-center justify-between">
-						<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
-							Upcoming elections
-						</h2>
-						<TrustBadge label="Election-first links" />
-					</div>
-					<ul class="mt-6 space-y-4">
-						<li v-for="election in jurisdiction.upcomingElections" :key="election.slug" class="p-5 border border-app-line/70 rounded-3xl bg-white/80 dark:border-app-line-dark dark:bg-app-panel-dark/70">
-							<div class="flex flex-wrap gap-4 items-start justify-between">
-								<div>
-									<h3 class="text-xl text-app-ink font-semibold dark:text-app-text-dark">
-										{{ election.name }}
-									</h3>
-									<p class="text-sm text-app-muted mt-2 dark:text-app-muted-dark">
-										{{ formatDate(election.date) }}
-									</p>
-								</div>
-								<div class="flex flex-wrap gap-3">
-									<NuxtLink :to="`/elections/${election.slug}`" class="btn-primary">
-										Open election overview
-									</NuxtLink>
-									<NuxtLink
-										v-if="hasVerifiedContestPackage && election.slug === jurisdiction.nextElectionSlug"
-										:to="`/ballot/${election.slug}`"
-										class="btn-secondary"
-									>
-										Open ballot guide
-									</NuxtLink>
-								</div>
-							</div>
-						</li>
-					</ul>
-				</div>
-
-				<div v-if="jurisdiction.archivedGuides.length" class="surface-panel">
-					<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
-						Archive guides
-					</h2>
-					<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-						Archived guides let readers compare the current election with prior cycles.
-					</p>
-					<ul class="mt-6 space-y-3">
-						<li v-for="guide in jurisdiction.archivedGuides" :key="guide.id" class="p-4 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70">
-							<a :href="guide.href" target="_blank" rel="noreferrer" class="text-sm text-app-ink font-semibold rounded-md inline-flex gap-2 items-center dark:text-app-text-dark hover:text-app-accent focus-ring dark:hover:text-white">
-								<span class="i-carbon-launch" />
-								<span>{{ guide.title }}</span>
-							</a>
-							<p class="text-xs text-app-muted mt-2 dark:text-app-muted-dark">
-								{{ formatDate(guide.date) }}
-							</p>
-						</li>
-					</ul>
-				</div>
-			</section>
-
-			<section class="gap-6 grid xl:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]">
-				<div class="surface-panel">
-					<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
-						Voting methods in this area
-					</h2>
-					<div class="mt-6 space-y-4">
-						<article v-for="method in jurisdiction.votingMethods" :key="method.slug" class="p-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
-							<div class="flex flex-wrap gap-3 items-start justify-between">
-								<div>
-									<h3 class="text-lg text-app-ink font-semibold dark:text-app-text-dark">
-										{{ method.title }}
-									</h3>
-									<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
-										{{ method.summary }}
-									</p>
-								</div>
-								<a v-if="method.officialResource" :href="method.officialResource.url" target="_blank" rel="noreferrer" class="btn-secondary text-xs">
-									<span class="i-carbon-launch" />
-									Official note
-								</a>
-							</div>
-							<ul class="text-sm text-app-muted leading-7 mt-4 space-y-2 dark:text-app-muted-dark">
-								<li v-for="detail in method.details" :key="detail" class="flex gap-3">
-									<span class="i-carbon-checkmark text-app-accent mt-1" />
-									<span>{{ detail }}</span>
-								</li>
-							</ul>
-						</article>
-					</div>
-				</div>
-
-				<div class="surface-panel">
-					<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
-						Notes
-					</h2>
-					<ul class="text-sm text-app-muted leading-7 mt-6 space-y-3 dark:text-app-muted-dark">
-						<li v-for="note in jurisdiction.coverageNotes" :key="note" class="px-4 py-3 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70">
-							{{ note }}
-						</li>
-					</ul>
-					<div class="mt-6 flex flex-wrap gap-3">
-						<NuxtLink to="/help" class="btn-secondary">
-							Read voting FAQ
-						</NuxtLink>
-						<NuxtLink to="/methodology" class="btn-secondary">
-							Review methodology
-						</NuxtLink>
-						<NuxtLink to="/data-sources" class="btn-secondary">
-							Data sources
-						</NuxtLink>
-					</div>
 				</div>
 			</section>
 		</div>

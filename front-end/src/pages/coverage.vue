@@ -131,14 +131,12 @@ function capabilityLabel(status: "in-build" | "live-now" | "planned") {
 				<div class="space-y-4">
 					<div class="surface-panel">
 						<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-							What you can use
+							Open next
 						</p>
-						<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-							{{ hasVerifiedContestPackage
-								? "Use the ballot guide, district pages, representative pages, and official election links for this area."
-								: "Use the election overview, district pages, representative pages, and official election links for this area." }}
-						</p>
-						<div class="mt-6 flex flex-wrap gap-3">
+						<div class="mt-4 flex flex-wrap gap-3">
+							<NuxtLink :to="`/locations/${data.launchTarget.slug}`" class="btn-primary">
+								Open location hub
+							</NuxtLink>
 							<NuxtLink to="/results" class="btn-secondary">
 								Open results
 							</NuxtLink>
@@ -149,40 +147,6 @@ function capabilityLabel(status: "in-build" | "live-now" | "planned") {
 					</div>
 				</div>
 			</header>
-
-			<section class="gap-6 grid xl:grid-cols-2">
-				<div class="surface-panel">
-					<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
-						Official election links
-					</h2>
-					<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-						These are the official systems Ballot Clarity points to for this area.
-					</p>
-					<div class="mt-6">
-						<OfficialResourceList :resources="data.launchTarget.officialResources" />
-					</div>
-				</div>
-
-				<div class="surface-panel">
-					<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
-						Key sources
-					</h2>
-					<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-						These links show the main source systems behind this area.
-					</p>
-					<ul class="mt-6 space-y-4">
-						<li v-for="link in data.launchTarget.referenceLinks" :key="link.url" class="px-5 py-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
-							<a :href="link.url" target="_blank" rel="noreferrer" class="text-base text-app-ink font-semibold rounded-lg inline-flex gap-2 items-center dark:text-app-text-dark hover:text-app-accent focus-ring dark:hover:text-white">
-								<span class="i-carbon-launch" />
-								<span>{{ link.label }}</span>
-							</a>
-							<p v-if="link.note" class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
-								{{ link.note }}
-							</p>
-						</li>
-					</ul>
-				</div>
-			</section>
 
 			<section class="surface-panel">
 				<div class="flex flex-wrap gap-4 items-start justify-between">

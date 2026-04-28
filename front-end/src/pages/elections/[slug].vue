@@ -89,31 +89,23 @@ usePageSeo({
 					<InfoCallout :title="guideStatusTitle" tone="warning">
 						{{ guideStatusNote }}
 					</InfoCallout>
-					<div class="surface-panel">
-						<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-							Browse
-						</p>
-						<div class="mt-4 flex flex-wrap gap-3">
-							<NuxtLink
-								v-if="data.guideContent?.verifiedContestPackage"
-								:to="`/ballot/${data.election.slug}`"
-								class="btn-primary"
-							>
-								Open ballot guide
-							</NuxtLink>
-							<NuxtLink v-else :to="`/locations/${data.election.jurisdictionSlug}`" class="btn-primary">
-								Open location hub
-							</NuxtLink>
-							<NuxtLink to="/districts" class="btn-secondary">
-								District pages
-							</NuxtLink>
-							<NuxtLink to="/representatives" class="btn-secondary">
-								Representatives
-							</NuxtLink>
-							<NuxtLink to="/sources" class="btn-secondary">
-								Sources
-							</NuxtLink>
-						</div>
+					<div class="flex flex-wrap gap-3">
+						<NuxtLink
+							v-if="data.guideContent?.verifiedContestPackage"
+							:to="`/ballot/${data.election.slug}`"
+							class="btn-primary"
+						>
+							Open ballot guide
+						</NuxtLink>
+						<NuxtLink v-else :to="`/locations/${data.election.jurisdictionSlug}`" class="btn-primary">
+							Open location hub
+						</NuxtLink>
+						<NuxtLink to="/districts" class="btn-secondary">
+							District pages
+						</NuxtLink>
+						<NuxtLink to="/representatives" class="btn-secondary">
+							Representatives
+						</NuxtLink>
 					</div>
 				</div>
 			</header>
@@ -238,14 +230,6 @@ usePageSeo({
 						</ul>
 					</article>
 				</div>
-			</section>
-			<section v-else class="surface-panel">
-				<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
-					Verified contest pages are still pending
-				</h2>
-				<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-					Official election links and key dates are attached here now. Contest, candidate, and measure pages will appear after the Fulton-specific ballot package clears local review.
-				</p>
 			</section>
 		</div>
 	</section>

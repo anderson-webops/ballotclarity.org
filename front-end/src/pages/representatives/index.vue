@@ -112,7 +112,7 @@ usePageSeo({
 				</p>
 			</div>
 
-			<div class="surface-panel">
+			<div v-if="activeLookupSummary.mode !== 'none'" class="surface-panel">
 				<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
 					Current area
 				</p>
@@ -265,14 +265,12 @@ usePageSeo({
 								>
 									Influence
 								</NuxtLink>
-								<VerificationBadge v-if="!representative.fundingAvailable" label="Funding not yet available" tone="warning" />
-								<VerificationBadge v-if="!representative.influenceAvailable" label="Influence not yet available" tone="warning" />
 							</div>
-							<div class="mt-4 space-y-2">
-								<p class="text-sm text-app-muted leading-6 dark:text-app-muted-dark">
+							<div v-if="representative.fundingAvailable || representative.influenceAvailable" class="mt-4 space-y-2">
+								<p v-if="representative.fundingAvailable" class="text-sm text-app-muted leading-6 dark:text-app-muted-dark">
 									<strong class="text-app-ink dark:text-app-text-dark">Funding:</strong> {{ representative.fundingSummary }}
 								</p>
-								<p class="text-sm text-app-muted leading-6 dark:text-app-muted-dark">
+								<p v-if="representative.influenceAvailable" class="text-sm text-app-muted leading-6 dark:text-app-muted-dark">
 									<strong class="text-app-ink dark:text-app-text-dark">Influence:</strong> {{ representative.influenceSummary }}
 								</p>
 							</div>

@@ -492,11 +492,11 @@ function clearFilters() {
 								: `This page is personalized to ${personalizationLabel}. Official links and key dates are current here, while verified contest, candidate, and measure pages are still under local review.` }}
 						</p>
 
-						<div class="mt-6">
+						<div v-if="hasContestContent" class="mt-6">
 							<PageSummaryStrip :items="guideSummaryItems" />
 						</div>
 
-						<div class="mt-6 gap-5 grid lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
+						<div v-if="hasContestContent" class="mt-6 gap-5 grid lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
 							<div class="p-5 rounded-[1.5rem] bg-app-bg dark:bg-app-bg-dark/70">
 								<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
 									Coverage and certainty
@@ -508,26 +508,19 @@ function clearFilters() {
 								</ul>
 							</div>
 							<div class="space-y-4">
-								<InfoCallout title="Why we ask for your address">
-									A full address helps determine districts and ballot style. ZIP-only lookups can be useful for a quick preview, but they may not reflect every district-specific contest.
-								</InfoCallout>
-								<InfoCallout v-if="hasContestContent" title="Build a booth-ready plan">
+								<InfoCallout title="Build a booth-ready plan">
 									Save one choice per contest as you read. The
 									<NuxtLink :to="planHref" class="underline underline-offset-3">
 										ballot plan page
 									</NuxtLink>
 									keeps your current picks in a print-friendly checklist.
 								</InfoCallout>
-								<InfoCallout v-else title="Verified contest pages pending">
-									Use the official links on this page for logistics and deadline checks. Contest, candidate, and measure pages open after the local package is verified.
-								</InfoCallout>
-								<InfoCallout title="Need a page reviewed?">
-									Use the <NuxtLink to="/contact" class="underline underline-offset-3">
-										contact page
-									</NuxtLink> if a ballot item looks incomplete, inaccurate, or unevenly framed.
-								</InfoCallout>
 							</div>
 						</div>
+
+						<InfoCallout v-else title="Verified contest pages pending" tone="warning" class="mt-6">
+							Use the official links and key dates below for logistics and deadline checks. Contest, candidate, and measure pages open after the local package is verified.
+						</InfoCallout>
 					</section>
 
 					<section id="guide-logistics" class="surface-panel scroll-mt-28">
@@ -550,13 +543,18 @@ function clearFilters() {
 								</p>
 							</div>
 						</div>
-						<div class="mt-6 gap-5 grid lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
+						<div
+							class="mt-6 gap-5 grid"
+							:class="hasContestContent ? 'lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]' : ''"
+						>
 							<OfficialResourceList
 								:resources="data.election.officialResources"
-								title="Official notices linked in this guide"
-								note="The printable ballot guide is useful for reading contests. Use the official notices for time-sensitive logistics."
+								:title="hasContestContent ? 'Official notices linked in this guide' : 'Official notices and voter tools'"
+								:note="hasContestContent
+									? 'The printable ballot guide is useful for reading contests. Use the official notices for time-sensitive logistics.'
+									: 'Use these official notices for deadlines, logistics, and final ballot confirmation.'"
 							/>
-							<div class="space-y-4">
+							<div v-if="hasContestContent" class="space-y-4">
 								<div class="p-5 rounded-[1.5rem] bg-app-bg dark:bg-app-bg-dark/70">
 									<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
 										Recent updates
@@ -569,9 +567,6 @@ function clearFilters() {
 										</li>
 									</ul>
 								</div>
-								<InfoCallout title="How verification is handled">
-									Use the official links for deadlines and logistics, the contest cards for the reading flow, and the footer’s data-verification panel for the site-wide explanation of freshness and review rules.
-								</InfoCallout>
 							</div>
 						</div>
 					</section>

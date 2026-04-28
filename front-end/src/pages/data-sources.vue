@@ -121,7 +121,7 @@ function providerStatusTone(status: "active" | "needs_endpoint" | "needs_key" | 
 				<div class="flex flex-wrap gap-4 items-start justify-between">
 					<div>
 						<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-							Ballot-content provider connections
+							Ballot-content data providers
 						</p>
 						<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
 							Provider ballot data is useful, but still not the final ballot.
@@ -148,14 +148,6 @@ function providerStatusTone(status: "active" | "needs_endpoint" | "needs_key" | 
 						<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
 							{{ provider.bestUse }}
 						</p>
-						<div class="mt-5">
-							<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
-								Environment
-							</p>
-							<p class="text-sm text-app-ink font-semibold mt-2 dark:text-app-text-dark">
-								{{ provider.envVars.join(', ') }}
-							</p>
-						</div>
 						<div class="mt-5 gap-4 grid md:grid-cols-2">
 							<div>
 								<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
@@ -178,14 +170,22 @@ function providerStatusTone(status: "active" | "needs_endpoint" | "needs_key" | 
 								</ul>
 							</div>
 						</div>
-						<div class="mt-5 flex flex-wrap gap-3">
-							<a :href="provider.setupUrl" target="_blank" rel="noreferrer" class="btn-secondary">
-								Get access
-							</a>
-							<a v-if="provider.docsUrl" :href="provider.docsUrl" target="_blank" rel="noreferrer" class="btn-secondary">
-								Open docs
-							</a>
-						</div>
+						<details class="text-sm text-app-muted leading-7 mt-5 dark:text-app-muted-dark">
+							<summary class="text-app-ink font-semibold cursor-pointer dark:text-app-text-dark focus-ring">
+								For operators: access and configuration
+							</summary>
+							<p class="mt-3">
+								Environment placeholders: <span class="text-app-ink font-semibold dark:text-app-text-dark">{{ provider.envVars.join(', ') }}</span>
+							</p>
+							<div class="mt-4 flex flex-wrap gap-3">
+								<a :href="provider.setupUrl" target="_blank" rel="noreferrer" class="btn-secondary">
+									Get access
+								</a>
+								<a v-if="provider.docsUrl" :href="provider.docsUrl" target="_blank" rel="noreferrer" class="btn-secondary">
+									Open docs
+								</a>
+							</div>
+						</details>
 					</article>
 				</div>
 			</section>

@@ -6,15 +6,13 @@ import { activeNationwideLookupCookieName, parseActiveNationwideLookupCookie } f
 import { buildLocationGuessUiContent } from "~/utils/location-guess";
 import { buildPublishedGuideDestination } from "~/utils/location-lookup";
 import { normalizeLookupResponseForDisplay, resolveLookupDestination } from "~/utils/nationwide-results";
-import { buildLookupContextFromNationwideResult, buildNationwideLookupRouteQuery, buildNationwideRouteTarget } from "~/utils/nationwide-route-context";
-import { buildResultsSummaryItems } from "~/utils/results-summary";
+import { buildLookupContextFromNationwideResult, buildNationwideLookupRouteQuery } from "~/utils/nationwide-route-context";
 
 const api = useApiClient();
 const route = useRoute();
 const civicStore = useCivicStore();
 const { data: coverageData } = useCoverage();
 const { isHydrated, nationwideLookupResult } = storeToRefs(civicStore);
-const { hasGuideShellContext, hasVerifiedGuideContext } = useGuideEntryGate();
 const activeNationwideLookupCookie = useCookie<string | null>(activeNationwideLookupCookieName);
 const serverNationwideLookupResult = computed(() => parseActiveNationwideLookupCookie(activeNationwideLookupCookie.value));
 const storedNationwideLookupResult = computed(() => isHydrated.value ? nationwideLookupResult.value : serverNationwideLookupResult.value);
@@ -51,15 +49,6 @@ const activeLookupSummary = computed(() => buildActiveLookupSummary({
 	selectedLocation: null
 }));
 const locationGuessUi = computed(() => buildLocationGuessUiContent(coverageData.value?.locationGuess ?? null));
-const officialToolCount = computed(() => activeResult.value?.actions.filter(action => action.kind === "official-verification").length ?? 0);
-const summaryItems = computed(() => buildResultsSummaryItems(
-	activeResult.value,
-	officialToolCount.value,
-	route.query
-));
-function buildLookupAwareTarget(path: string) {
-	return buildNationwideRouteTarget(path, buildLookupContextFromNationwideResult(activeResult.value), route.query);
-}
 
 async function selectLookupOption(option: LocationLookupSelectionOption) {
 	if (!activeResult.value?.lookupQuery)
@@ -130,7 +119,7 @@ usePageSeo({
 		</div>
 
 		<template v-else>
-			<header class="gap-6 grid xl:grid-cols-[minmax(0,1.1fr)_minmax(22rem,0.9fr)] xl:items-end">
+			<header>
 				<div class="surface-panel">
 					<div class="flex flex-wrap gap-2">
 						<TrustBadge label="Current results" tone="accent" />
@@ -160,47 +149,7 @@ usePageSeo({
 						<UpdatedAt :value="activeLookupSummary.resolvedAt" label="Lookup updated" />
 					</div>
 				</div>
-
-				<div class="surface-panel">
-					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-						Browse
-					</p>
-					<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
-						{{
-							hasVerifiedGuideContext
-								? "Open the ballot guide, ballot plan, districts, or representatives for this area."
-								: hasGuideShellContext
-									? "Open the election overview, districts, representatives, or coverage for this area."
-									: "Open districts, representatives, or coverage for this area."
-						}}
-					</p>
-					<div class="mt-5 flex flex-wrap gap-3">
-						<NuxtLink v-if="hasVerifiedGuideContext" to="/plan" class="btn-secondary">
-							Open ballot plan
-						</NuxtLink>
-						<NuxtLink
-							v-else-if="hasGuideShellContext && activeResult.electionSlug"
-							:to="`/elections/${activeResult.electionSlug}`"
-							class="btn-secondary"
-						>
-							Open election overview
-						</NuxtLink>
-						<NuxtLink v-else :to="buildLookupAwareTarget('/districts')" class="btn-secondary">
-							Open districts
-						</NuxtLink>
-						<NuxtLink v-if="!hasVerifiedGuideContext" :to="buildLookupAwareTarget('/representatives')" class="btn-secondary">
-							Open representatives
-						</NuxtLink>
-						<NuxtLink to="/coverage" class="btn-secondary">
-							Open coverage profile
-						</NuxtLink>
-					</div>
-				</div>
 			</header>
-
-			<section class="surface-panel">
-				<PageSummaryStrip :items="summaryItems" />
-			</section>
 
 			<section class="surface-panel">
 				<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
@@ -209,22 +158,17 @@ usePageSeo({
 				<LookupResultsPanel :lookup="activeResult" @select-option="selectLookupOption" />
 			</section>
 
-			<section id="change-location" class="surface-panel">
-				<div class="gap-6 grid lg:grid-cols-[minmax(0,0.78fr)_minmax(0,1.22fr)] lg:items-start">
-					<div>
-						<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-							Change location
-						</p>
-						<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-							Try another address or ZIP code.
-						</h2>
-						<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-							Enter a full street address for the strongest district match, or use a ZIP code when you only need civic results and official election tools for that area.
-						</p>
-					</div>
+			<details id="change-location" class="surface-row">
+				<summary class="text-sm text-app-ink font-semibold cursor-pointer dark:text-app-text-dark focus-ring">
+					Change location
+				</summary>
+				<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
+					Use a full street address for the strongest district match, or a ZIP code for a broader preview.
+				</p>
+				<div class="mt-4">
 					<AddressLookupForm compact :election="activeResult.election" :framed="false" />
 				</div>
-			</section>
+			</details>
 		</template>
 	</section>
 </template>

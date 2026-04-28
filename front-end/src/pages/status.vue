@@ -45,6 +45,9 @@ const snapshotLabel = computed(() => {
 			return "Unclassified snapshot";
 	}
 });
+const hasSourceMetrics = computed(() => data.value ? Object.values(data.value.sourceSummary).some(value => value > 0) : false);
+const hasPublishedMonitors = computed(() => Boolean(data.value?.sources.length));
+const hasPublicIncidents = computed(() => Boolean(data.value?.incidents.length));
 </script>
 
 <template>
@@ -101,7 +104,7 @@ const snapshotLabel = computed(() => {
 				</div>
 			</header>
 
-			<section class="gap-4 grid md:grid-cols-2 xl:grid-cols-4">
+			<section v-if="hasSourceMetrics" class="gap-4 grid md:grid-cols-2 xl:grid-cols-4">
 				<div class="surface-row">
 					<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
 						Healthy sources
@@ -136,8 +139,21 @@ const snapshotLabel = computed(() => {
 				</div>
 			</section>
 
-			<section class="gap-6 grid xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
-				<div class="surface-panel">
+			<section v-else class="surface-panel">
+				<div class="flex flex-wrap gap-2">
+					<TrustBadge :label="hasPublicIncidents ? 'Active notices published' : 'No open public incidents'" :tone="hasPublicIncidents ? 'warning' : 'accent'" />
+					<TrustBadge :label="snapshotLabel" />
+				</div>
+				<h2 class="text-3xl text-app-ink font-serif mt-4 dark:text-app-text-dark">
+					No source-monitor metrics are published right now
+				</h2>
+				<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
+					The public status page is still showing coverage state and snapshot provenance. Detailed source-monitor counts appear here only when public monitors are active.
+				</p>
+			</section>
+
+			<section v-if="hasPublicIncidents || hasPublishedMonitors" class="gap-6 grid xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
+				<div v-if="hasPublicIncidents" class="surface-panel">
 					<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
 						Active notices
 					</h2>
@@ -150,13 +166,10 @@ const snapshotLabel = computed(() => {
 								{{ notice.summary }}
 							</p>
 						</li>
-						<li v-if="!data.incidents.length" class="text-sm text-app-muted leading-7 dark:text-app-muted-dark">
-							No public-facing incidents are open right now.
-						</li>
 					</ul>
 				</div>
 
-				<div class="surface-panel">
+				<div v-if="hasPublishedMonitors" class="surface-panel">
 					<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
 						Tracked public sources
 					</h2>
@@ -176,9 +189,6 @@ const snapshotLabel = computed(() => {
 								Last checked {{ formatDateTime(source.lastCheckedAt) }} · Next check {{ formatDateTime(source.nextCheckAt) }}
 							</p>
 						</article>
-						<div v-if="!data.sources.length" class="text-sm text-app-muted leading-7 dark:text-app-muted-dark">
-							No public source monitors are published for this environment yet.
-						</div>
 					</div>
 				</div>
 			</section>

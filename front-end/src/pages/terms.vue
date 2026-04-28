@@ -9,21 +9,6 @@ const operatorNoticeAddress = String(runtimeConfig.public.operatorNoticeAddress 
 const governingLaw = String(runtimeConfig.public.governingLaw || "").trim();
 const venue = String(runtimeConfig.public.venue || "").trim();
 
-const summaryCards = [
-	{
-		body: "Ballot Clarity is a source-first civic-information product. It is designed to help voters understand a ballot, not to tell them how to vote.",
-		title: "Informational only"
-	},
-	{
-		body: "The site is not an official government election website and is not affiliated with a state or local election office.",
-		title: "Not official"
-	},
-	{
-		body: "Ballot Clarity may publish only limited local coverage or lookup results for some areas in some environments. Time-sensitive election details should be verified with the relevant public authority.",
-		title: "Coverage and verification limits"
-	}
-];
-
 const serviceScope = [
 	"Ballot lookup and location-based ballot guides.",
 	"Candidate, measure, compare, methodology, neutrality, privacy, accessibility, and help pages.",
@@ -155,20 +140,6 @@ usePageSeo({
 		<InfoCallout title="Current scope">
 			This page is written for the current release now online. It governs the public civic-information site, not separate contracts with upstream providers or any future account, donation, or API products that Ballot Clarity may add later.
 		</InfoCallout>
-
-		<section class="gap-6 grid lg:grid-cols-3">
-			<article v-for="item in summaryCards" :key="item.title" class="surface-panel">
-				<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
-					At a glance
-				</p>
-				<h2 class="text-2xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-					{{ item.title }}
-				</h2>
-				<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-					{{ item.body }}
-				</p>
-			</article>
-		</section>
 
 		<section class="gap-6 grid lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
 			<div class="surface-panel">

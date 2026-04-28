@@ -124,15 +124,6 @@ usePageSeo({
 								<p class="text-sm text-app-muted leading-6 mt-2 dark:text-app-muted-dark">
 									{{ source.usedFor }}
 								</p>
-								<div class="mt-3 flex flex-wrap gap-2">
-									<span
-										v-for="routeFamily in source.routeFamilies"
-										:key="`${source.id}-${routeFamily}`"
-										class="text-[11px] text-app-muted tracking-[0.14em] font-semibold px-2.5 py-1 rounded-full bg-app-bg uppercase dark:text-app-muted-dark dark:bg-app-bg-dark/70"
-									>
-										{{ routeFamily }}
-									</span>
-								</div>
 							</div>
 							<div class="flex flex-col gap-3 items-start sm:items-end">
 								<TrustBadge :label="`${source.citationCount} citation${source.citationCount === 1 ? '' : 's'}`" />

@@ -68,7 +68,9 @@ const sectionLinks = computed(() => (districtPageData.value
 	? [
 			{ href: "#overview", label: "Overview", note: "District and office context" },
 			{ href: "#representatives", label: "Current representatives", badge: String(districtPageData.value.representatives.length) },
-			{ href: "#candidates", label: "Candidate field", badge: String(districtPageData.value.candidates.length) },
+			...(districtPageData.value.candidates.length
+				? [{ href: "#candidates", label: "Candidate field", badge: String(districtPageData.value.candidates.length) }]
+				: []),
 			...(districtPageData.value.officialResources.length
 				? [{ href: "#official-tools", label: "Official tools", badge: String(districtPageData.value.officialResources.length) }]
 				: []),
@@ -80,15 +82,7 @@ const summaryItems = computed(() => {
 	if (!districtPageData.value)
 		return [];
 
-	return [
-		{
-			label: "Candidates",
-			note: districtPageData.value.candidateAvailabilityNote,
-			value: districtPageData.value.mode === "guide" ? districtPageData.value.candidates.length : "Unavailable",
-			href: districtPageData.value.mode === "guide"
-				? buildSummaryHref(buildDistrictCandidateSummaryHref(districtPageData.value.candidates))
-				: undefined
-		},
+	const items = [
 		{
 			label: "Current representatives",
 			note: districtPageData.value.representativeAvailabilityNote,
@@ -96,6 +90,17 @@ const summaryItems = computed(() => {
 			href: buildSummaryHref(buildDistrictRepresentativeSummaryHref(districtPageData.value.representatives))
 		}
 	];
+
+	if (districtPageData.value.candidates.length) {
+		items.push({
+			label: "Candidates",
+			note: districtPageData.value.candidateAvailabilityNote,
+			value: districtPageData.value.candidates.length,
+			href: buildSummaryHref(buildDistrictCandidateSummaryHref(districtPageData.value.candidates))
+		});
+	}
+
+	return items;
 });
 
 const districtContextLink = computed(() => {
@@ -171,6 +176,9 @@ usePageSeo({
 					<div class="mt-6">
 						<PageSummaryStrip :items="summaryItems" />
 					</div>
+					<p v-if="!districtPageData.candidates.length" class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
+						<strong class="text-app-ink dark:text-app-text-dark">Candidate field:</strong> {{ districtPageData.candidateAvailabilityNote }}
+					</p>
 				</header>
 
 				<section id="representatives" class="surface-panel">
@@ -250,14 +258,12 @@ usePageSeo({
 								>
 									Influence
 								</NuxtLink>
-								<VerificationBadge v-if="!representative.fundingAvailable" label="Funding not yet available" tone="warning" />
-								<VerificationBadge v-if="!representative.influenceAvailable" label="Influence not yet available" tone="warning" />
 							</div>
-							<div class="mt-4 space-y-2">
-								<p class="text-sm text-app-muted leading-6 dark:text-app-muted-dark">
+							<div v-if="representative.fundingAvailable || representative.influenceAvailable" class="mt-4 space-y-2">
+								<p v-if="representative.fundingAvailable" class="text-sm text-app-muted leading-6 dark:text-app-muted-dark">
 									<strong class="text-app-ink dark:text-app-text-dark">Funding:</strong> {{ representative.fundingSummary }}
 								</p>
-								<p class="text-sm text-app-muted leading-6 dark:text-app-muted-dark">
+								<p v-if="representative.influenceAvailable" class="text-sm text-app-muted leading-6 dark:text-app-muted-dark">
 									<strong class="text-app-ink dark:text-app-text-dark">Influence:</strong> {{ representative.influenceSummary }}
 								</p>
 							</div>
@@ -273,7 +279,7 @@ usePageSeo({
 					</InfoCallout>
 				</section>
 
-				<section id="candidates" :class="districtPageData.candidates.length ? 'surface-panel' : 'scroll-mt-28'">
+				<section v-if="districtPageData.candidates.length" id="candidates" class="surface-panel">
 					<div class="flex flex-wrap gap-4 items-center justify-between">
 						<div>
 							<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
@@ -294,9 +300,6 @@ usePageSeo({
 							:candidate="candidate"
 						/>
 					</div>
-					<InfoCallout v-else title="Candidate field not available here yet" tone="warning" class="mt-6">
-						{{ districtPageData.candidateAvailabilityNote }}
-					</InfoCallout>
 				</section>
 
 				<section v-if="districtPageData.officialResources.length" id="official-tools" class="surface-panel">
@@ -346,7 +349,7 @@ usePageSeo({
 					</template>
 				</PageSectionNav>
 
-				<div class="surface-row">
+				<div v-if="activeLookupSummary.mode !== 'none'" class="surface-row">
 					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
 						Area
 					</p>
@@ -365,13 +368,10 @@ usePageSeo({
 					</div>
 				</div>
 
-				<div class="surface-panel">
-					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-						Role guide
-					</p>
-					<h2 class="text-2xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
+				<details class="surface-row">
+					<summary class="text-sm text-app-ink font-semibold cursor-pointer dark:text-app-text-dark focus-ring">
 						What this office does
-					</h2>
+					</summary>
 					<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
 						{{ districtPageData.district.roleGuide.summary }}
 					</p>
@@ -383,7 +383,7 @@ usePageSeo({
 							{{ area }}
 						</li>
 					</ul>
-				</div>
+				</details>
 
 				<div v-if="districtPageData.relatedContests.length" class="surface-panel">
 					<h2 class="text-2xl text-app-ink font-serif dark:text-app-text-dark">

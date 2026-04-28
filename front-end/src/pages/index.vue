@@ -7,7 +7,6 @@ import type {
 	LocationLookupSelectionOption,
 	NationwideLookupResultContext
 } from "~/types/civic";
-import { storeToRefs } from "pinia";
 import { defineAsyncComponent } from "vue";
 import { contactEmail } from "~/constants";
 import { buildLocationGuessUiContent } from "~/utils/location-guess";
@@ -17,7 +16,6 @@ import { buildHomeExperienceState, normalizeLookupResponseForDisplay, resolveLoo
 const api = useApiClient();
 const siteUrl = useSiteUrl();
 const civicStore = useCivicStore();
-const { selectedElection } = storeToRefs(civicStore);
 const { activeNationwideResult, hasGuideShellContext, hasNationwideResultContext, hasVerifiedGuideContext } = useGuideEntryGate();
 const AsyncHomeBallotPreviewSection = defineAsyncComponent(() => import("~/components/home/HomeBallotPreviewSection.vue"));
 const AsyncHomeRoadmapSection = defineAsyncComponent(() => import("~/components/home/HomeRoadmapSection.vue"));
@@ -36,16 +34,6 @@ const featuredElection = computed(() => electionsData.value?.elections[0] ?? nul
 const hasFeaturedGuide = computed(() => Boolean(featuredElection.value));
 const locationGuessUi = computed(() => buildLocationGuessUiContent(coverageData.value?.locationGuess ?? null));
 const roadmapPreview = computed(() => dataSources.value?.categories.slice(0, 3) ?? []);
-const guideBallotPath = computed(() => {
-	const activeGuideElection = selectedElection.value ?? featuredElection.value;
-
-	return activeGuideElection ? `/ballot/${activeGuideElection.slug}` : "/ballot";
-});
-const guideOverviewPath = computed(() => {
-	const activeGuideElection = selectedElection.value ?? featuredElection.value;
-
-	return activeGuideElection ? `/elections/${activeGuideElection.slug}` : "/coverage";
-});
 const homeExperience = computed(() => buildHomeExperienceState(
 	hasNationwideResultContext.value,
 	hasGuideShellContext.value,
@@ -122,51 +110,6 @@ usePageSeo({
 	path: "/",
 	title: "Understand Your Ballot"
 });
-
-interface PrimaryPath {
-	description: string;
-	label: string;
-	prefetchOn?: "interaction";
-	to: string;
-}
-
-const primaryPaths = computed<PrimaryPath[]>(() => [
-	...(hasVerifiedGuideContext.value
-		? [{
-				description: "Open the local guide for your current election.",
-				label: "See your ballot",
-				to: guideBallotPath.value
-			}]
-		: hasGuideShellContext.value
-			? [{
-					description: "Open the election overview for official links and current guide status.",
-					label: "Open election overview",
-					to: guideOverviewPath.value
-				}]
-			: [{
-					description: hasNationwideResultContext.value
-						? "Return to the results for your latest lookup."
-						: "Enter a location to load results for your area.",
-					label: hasNationwideResultContext.value ? "Open results" : "Use location lookup",
-					to: hasNationwideResultContext.value ? homeExperience.value.primaryLookupPath : "/#location-lookup"
-				}]),
-	{
-		description: hasNationwideResultContext.value
-			? "Browse district and representative pages for your area."
-			: "Browse district and representative pages.",
-		label: "Browse districts and representatives",
-		prefetchOn: "interaction",
-		to: "/districts"
-	},
-	{
-		description: hasNationwideResultContext.value
-			? "See whether a local guide is available for this area."
-			: "See which public pages are available.",
-		label: "Check coverage",
-		prefetchOn: "interaction",
-		to: "/coverage"
-	}
-]);
 
 const trustFacts = computed(() => [
 	"Nonpartisan nonprofit",
@@ -324,39 +267,6 @@ async function selectHomeLookupOption(option: LocationLookupSelectionOption) {
 				>
 					{{ homeLookupSelectionError }}
 				</p>
-			</div>
-		</section>
-
-		<section class="home-section app-shell">
-			<div class="home-split-grid gap-6 grid lg:grid-cols-[minmax(0,0.52fr)_minmax(0,1fr)] lg:items-start">
-				<div>
-					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-						Start here
-					</p>
-					<h2 class="text-4xl text-app-ink font-serif mt-3 max-w-xl dark:text-app-text-dark">
-						Choose the page you need.
-					</h2>
-				</div>
-
-				<div class="home-path-list divide-app-line divide-y dark:divide-app-line-dark">
-					<NuxtLink
-						v-for="path in primaryPaths"
-						:key="path.label"
-						:to="path.to"
-						:prefetch-on="path.prefetchOn"
-						class="py-5 flex flex-col gap-3 transition hover:text-app-accent focus-ring"
-					>
-						<div class="flex gap-4 items-center justify-between">
-							<h3 class="text-2xl text-app-ink font-serif dark:text-app-text-dark">
-								{{ path.label }}
-							</h3>
-							<span class="i-carbon-arrow-right text-lg text-app-accent" aria-hidden="true" />
-						</div>
-						<p class="text-sm text-app-muted leading-7 max-w-3xl dark:text-app-muted-dark">
-							{{ path.description }}
-						</p>
-					</NuxtLink>
-				</div>
 			</div>
 		</section>
 

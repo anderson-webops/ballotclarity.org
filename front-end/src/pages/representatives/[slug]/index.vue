@@ -101,9 +101,9 @@ const sectionLinks = computed(() => person.value
 	? [
 			{ href: "#at-a-glance", label: "At a glance" },
 			{ href: "#biography", label: "Bio" },
-			{ href: "#actions", label: "Actions", badge: String(person.value.keyActions.length) },
-			{ href: "#funding", label: "Funding", badge: hasFunding.value ? "Live" : "None" },
-			{ href: "#influence", label: "Influence", badge: hasInfluence.value ? "Live" : "None" },
+			...(person.value.keyActions.length ? [{ href: "#actions", label: "Actions", badge: String(person.value.keyActions.length) }] : []),
+			...(hasFunding.value ? [{ href: "#funding", label: "Funding", badge: "Live" }] : []),
+			...(hasInfluence.value ? [{ href: "#influence", label: "Influence", badge: "Live" }] : []),
 			{ href: "#sources", label: "Sources", badge: String(person.value.sources.length) }
 		]
 	: []);
@@ -168,6 +168,8 @@ const moduleStatusItems = computed(() => {
 		},
 	];
 });
+const availableModuleStatusItems = computed(() => moduleStatusItems.value.filter(item => item.status === "available"));
+const unavailableModuleStatusItems = computed(() => moduleStatusItems.value.filter(item => item.status !== "available"));
 const pageNotes = computed(() => {
 	if (!person.value)
 		return [];
@@ -396,15 +398,15 @@ usePageSeo({
 						</div>
 						<div class="surface-inset">
 							<h3 class="text-xl text-app-ink font-serif dark:text-app-text-dark">
-								Available here
+								Record status
 							</h3>
 							<ul class="mt-4 space-y-3">
-								<li v-for="item in moduleStatusItems" :key="item.label" class="pb-3 border-b border-app-line/80 last:pb-0 last:border-b-0 dark:border-app-line-dark">
+								<li v-for="item in availableModuleStatusItems" :key="item.label" class="pb-3 border-b border-app-line/80 last:pb-0 last:border-b-0 dark:border-app-line-dark">
 									<div class="flex flex-wrap gap-3 items-center justify-between">
 										<p class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
 											{{ item.label }}
 										</p>
-										<VerificationBadge :label="item.status" :tone="item.status === 'available' ? 'accent' : 'warning'" />
+										<VerificationBadge :label="item.status" tone="accent" />
 									</div>
 									<p class="text-sm text-app-muted leading-7 mt-2 dark:text-app-muted-dark">
 										{{ item.summary }}
@@ -414,6 +416,16 @@ usePageSeo({
 									</p>
 								</li>
 							</ul>
+							<details v-if="unavailableModuleStatusItems.length" class="mt-4">
+								<summary class="text-sm text-app-ink font-semibold cursor-pointer dark:text-app-text-dark focus-ring">
+									{{ unavailableModuleStatusItems.length }} module{{ unavailableModuleStatusItems.length === 1 ? "" : "s" }} not available yet
+								</summary>
+								<ul class="text-sm text-app-muted leading-7 mt-3 space-y-3 dark:text-app-muted-dark">
+									<li v-for="item in unavailableModuleStatusItems" :key="item.label">
+										<strong class="text-app-ink dark:text-app-text-dark">{{ item.label }}:</strong> {{ item.reasonCode || item.summary }}
+									</li>
+								</ul>
+							</details>
 						</div>
 					</div>
 				</section>
@@ -474,7 +486,7 @@ usePageSeo({
 					</div>
 				</section>
 
-				<section id="actions" class="surface-panel scroll-mt-28">
+				<section v-if="person.keyActions.length" id="actions" class="surface-panel scroll-mt-28">
 					<div class="flex flex-wrap gap-4 items-center justify-between">
 						<div>
 							<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
@@ -506,17 +518,9 @@ usePageSeo({
 							</p>
 						</article>
 					</div>
-					<div v-else class="mt-6 p-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
-						<h3 class="text-lg text-app-ink font-semibold dark:text-app-text-dark">
-							No action record attached
-						</h3>
-						<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
-							{{ person.enrichmentStatus?.legislativeContext.summary || "No legislative or action feed is attached to this page." }}
-						</p>
-					</div>
 				</section>
 
-				<section id="funding" class="surface-panel scroll-mt-28">
+				<section v-if="hasFunding" id="funding" class="surface-panel scroll-mt-28">
 					<div class="flex flex-wrap gap-4 items-center justify-between">
 						<div>
 							<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
@@ -530,7 +534,7 @@ usePageSeo({
 							Open full funding page
 						</NuxtLink>
 					</div>
-					<div v-if="hasFunding && person.funding" class="mt-6 gap-6 grid xl:grid-cols-[minmax(0,1fr)_minmax(0,0.95fr)]">
+					<div v-if="person.funding" class="mt-6 gap-6 grid xl:grid-cols-[minmax(0,1fr)_minmax(0,0.95fr)]">
 						<div class="space-y-4">
 							<p class="text-sm text-app-muted leading-7 dark:text-app-muted-dark">
 								{{ person.funding.summary }}
@@ -578,12 +582,9 @@ usePageSeo({
 							</ul>
 						</div>
 					</div>
-					<InfoCallout v-else title="No funding data attached" tone="warning" class="mt-6">
-						{{ fundingStatusSummary }}
-					</InfoCallout>
 				</section>
 
-				<section id="influence" class="surface-panel scroll-mt-28">
+				<section v-if="hasInfluence" id="influence" class="surface-panel scroll-mt-28">
 					<div class="flex flex-wrap gap-4 items-center justify-between">
 						<div>
 							<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
@@ -597,7 +598,7 @@ usePageSeo({
 							Open full influence page
 						</NuxtLink>
 					</div>
-					<div v-if="hasInfluence" class="mt-6 gap-6 grid xl:grid-cols-[minmax(0,1fr)_minmax(0,0.95fr)]">
+					<div class="mt-6 gap-6 grid xl:grid-cols-[minmax(0,1fr)_minmax(0,0.95fr)]">
 						<div class="space-y-4">
 							<div v-if="influenceHighlights.length" class="gap-3 grid sm:grid-cols-2">
 								<div v-for="item in influenceHighlights" :key="item.label" class="p-4 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
@@ -644,9 +645,6 @@ usePageSeo({
 							</ul>
 						</div>
 					</div>
-					<InfoCallout v-else title="No influence context attached" tone="warning" class="mt-6">
-						{{ influenceStatusSummary }}
-					</InfoCallout>
 				</section>
 
 				<section id="sources" class="scroll-mt-28 space-y-6">
@@ -693,7 +691,7 @@ usePageSeo({
 			</div>
 
 			<div class="space-y-6 xl:pt-[4.5rem]">
-				<div class="surface-panel">
+				<div v-if="activeLookupSummary.mode !== 'none'" class="surface-panel">
 					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
 						Current area
 					</p>

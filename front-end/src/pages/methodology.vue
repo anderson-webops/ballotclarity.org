@@ -155,18 +155,17 @@ const informationTypes = [
 			title="How to read page signals"
 		/>
 
-		<section class="surface-panel">
-			<div class="flex flex-wrap gap-4 items-start justify-between">
+		<details class="surface-panel">
+			<summary class="cursor-pointer focus-ring">
 				<div>
 					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-						Content taxonomy
+						Page labels
 					</p>
 					<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
 						Information types we publish
 					</h2>
 				</div>
-				<TrustBadge label="Clear labels" tone="accent" />
-			</div>
+			</summary>
 			<div class="mt-6 gap-4 grid md:grid-cols-2 xl:grid-cols-3">
 				<article v-for="item in informationTypes" :key="item.label" class="surface-row">
 					<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
@@ -177,7 +176,7 @@ const informationTypes = [
 					</p>
 				</article>
 			</div>
-		</section>
+		</details>
 
 		<MethodologyAccordion :items="items" />
 
@@ -199,21 +198,13 @@ const informationTypes = [
 				<InfoCallout title="Neutrality policy">
 					Ballot Clarity is designed to explain what is documented, not to endorse candidates, oppose parties, or tell users how to vote.
 				</InfoCallout>
-				<div class="surface-panel">
-					<h2 class="text-2xl text-app-ink font-serif dark:text-app-text-dark">
-						Related trust pages
-					</h2>
-					<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-						Read the neutrality policy for sourcing and language rules, or use the contact page to report a correction or dispute.
-					</p>
-					<div class="mt-6 flex flex-wrap gap-3">
-						<NuxtLink to="/neutrality" class="btn-secondary">
-							Read neutrality policy
-						</NuxtLink>
-						<NuxtLink to="/contact" class="btn-secondary">
-							Open contact page
-						</NuxtLink>
-					</div>
+				<div class="flex flex-wrap gap-3">
+					<NuxtLink to="/neutrality" class="btn-secondary">
+						Read neutrality policy
+					</NuxtLink>
+					<NuxtLink to="/contact" class="btn-secondary">
+						Report a correction
+					</NuxtLink>
 				</div>
 			</div>
 		</section>

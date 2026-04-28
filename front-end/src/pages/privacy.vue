@@ -5,21 +5,6 @@ const effectiveAt = "2026-04-26T23:30:00-04:00";
 const siteUrl = useSiteUrl();
 const analyticsHosts = analyticsTrackers.map(tracker => tracker.domain).join(" and ");
 
-const summaryCards = [
-	{
-		body: "Lookup input is used only for civic matching, official verification, and route enrichment. The current release does not use it for ad targeting or public publication.",
-		title: "Lookup disclosure is specific"
-	},
-	{
-		body: "The site uses first-party cookies and browser storage for lookup continuity, timezone display, and internal admin sessions. It does not use an advertising-cookie stack.",
-		title: "First-party storage only"
-	},
-	{
-		body: "The public site has no self-service user accounts, but the current release does include internal editorial/admin accounts and a public correction form.",
-		title: "Public and internal flows differ"
-	}
-];
-
 const collectionSections = [
 	{
 		body: [
@@ -228,20 +213,6 @@ usePageSeo({
 		<InfoCallout title="Plain-language summary">
 			The current release uses address or ZIP input, plus any optional approximate location guess configured on a host, only to match ballot coverage and official verification context. It does not create public user accounts, does not run targeted advertising, and is not designed to sell or share personal data. The app does save selected location labels and ballot-plan preferences locally in your browser so the guide remains usable across refreshes.
 		</InfoCallout>
-
-		<section class="gap-6 grid lg:grid-cols-3">
-			<article v-for="item in summaryCards" :key="item.title" class="surface-panel">
-				<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
-					At a glance
-				</p>
-				<h2 class="text-2xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-					{{ item.title }}
-				</h2>
-				<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-					{{ item.body }}
-				</p>
-			</article>
-		</section>
 
 		<section class="surface-panel">
 			<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">

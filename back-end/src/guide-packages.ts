@@ -203,7 +203,7 @@ function buildGuideContentSummary(
 		{
 			official_logistics_only: "Official election links are attached, but this layer still needs direct local verification.",
 			seeded_demo: "No official election links are attached yet.",
-			staged_reference: "Election links still point to staged reference material instead of current local sources.",
+			staged_reference: "Election links still need current local review before they should be treated as verified logistics.",
 			verified_local: officialLogisticsSourceCount
 				? "Official county and statewide election logistics are attached from current official sources."
 				: "Official election links are not attached yet.",
@@ -228,7 +228,7 @@ function buildGuideContentSummary(
 		{
 			official_logistics_only: "No verified local contest roster is published yet; official election logistics are available.",
 			seeded_demo: "No contest records are attached yet.",
-			staged_reference: "Contest records still rely on staged reference material instead of verified local content.",
+			staged_reference: "Contest records still rely on unverified review material instead of verified local content.",
 			verified_local: "Contest records are attached with verified local source coverage.",
 		},
 		contestSources,
@@ -242,7 +242,7 @@ function buildGuideContentSummary(
 		{
 			official_logistics_only: "No verified local candidate roster is published yet; official election logistics are available.",
 			seeded_demo: "No candidate records are attached yet.",
-			staged_reference: "Candidate records still rely on staged reference material instead of verified local content.",
+			staged_reference: "Candidate records still rely on unverified review material instead of verified local content.",
 			verified_local: "Candidate records are attached with verified local source coverage.",
 		},
 		candidateSources,
@@ -256,7 +256,7 @@ function buildGuideContentSummary(
 		{
 			official_logistics_only: "No verified local measure records are published yet; official election logistics are available.",
 			seeded_demo: "No measure records are attached yet.",
-			staged_reference: "Measure records still rely on staged reference material instead of verified local content.",
+			staged_reference: "Measure records still rely on unverified review material instead of verified local content.",
 			verified_local: "Measure records are attached with verified local source coverage.",
 		},
 		measureSources,
@@ -282,13 +282,13 @@ function buildGuideContentSummary(
 	const guideShellDetailByStatus: Record<GuideContentStatus, string> = {
 		official_logistics_only: "This local guide is published with verified official election links, but the contest pages still need local review.",
 		seeded_demo: "This local guide is published, but its contest pages still read as demo content.",
-		staged_reference: "This local guide is published, but some contest, candidate, or measure pages still rely on staged reference content.",
+		staged_reference: "This local guide is published, but some contest, candidate, or measure pages still need local review before they should be treated as verified.",
 		verified_local: "This local guide is published with verified local contest, candidate, and measure pages.",
 	};
 	const draftGuideShellDetailByStatus: Record<GuideContentStatus, string> = {
 		official_logistics_only: "This draft already has verified official election links, but the contest pages still need local review before publication.",
 		seeded_demo: "This draft still reads as demo content and is not ready for publication.",
-		staged_reference: "This draft still depends on staged reference content and is not ready to represent a verified local guide.",
+		staged_reference: "This draft still depends on unverified review material and is not ready to represent a verified local guide.",
 		verified_local: "This draft carries verified local contest, candidate, and measure pages and can move toward publication review.",
 	};
 
@@ -844,7 +844,7 @@ function buildChecklist(
 			status: candidateSourceCoverage && measureSourceCoverage && !invalidSourceUrlCount ? "pass" : "fail",
 			warningStandard: "Warning is not used here; Ballot Clarity should not publish unsupported core pages.",
 			whatToCheck: "Check whether candidate and measure pages actually carry source records and whether those source links parse.",
-			whyItMatters: "Source coverage is the backbone of a source-first civic guide, especially on the core guide pages.",
+			whyItMatters: "Source coverage is the backbone of a public civic guide, especially on the core guide pages.",
 		}),
 		createChecklistItem({
 			autoSignal: candidateSummaryCoverage && measureSummaryCoverage
@@ -1154,7 +1154,7 @@ export function buildDefaultGuidePackageSeed(coverageRepository: CoverageReposit
 				? [
 						"Guide pages remain explanatory and should not be treated as the official ballot service.",
 						"District confirmation still belongs to official election tools for the final personalized ballot.",
-						"Contest, candidate, and measure pages stay under local review until verified Fulton-specific ballot content replaces the reference archive.",
+						"Contest, candidate, and measure pages stay under local review until verified Fulton-specific ballot content is loaded.",
 					]
 				: [
 						"Guide pages remain explanatory and should not be treated as the official ballot service.",
@@ -1164,7 +1164,7 @@ export function buildDefaultGuidePackageSeed(coverageRepository: CoverageReposit
 			coverageNotes: hasContestRecords
 				? [
 						"The local guide is live so official links and core election pages stay public.",
-						"Contest, candidate, and measure pages still include staged reference material until verified Fulton-specific ballot content is loaded.",
+						"Contest, candidate, and measure pages still include unverified review material until verified Fulton-specific ballot content is loaded.",
 					]
 				: [
 						"The local guide shell is live so official election links and core election pages stay public.",
@@ -1178,7 +1178,7 @@ export function buildDefaultGuidePackageSeed(coverageRepository: CoverageReposit
 			publishedAt,
 			reviewRecommendation: hasContestRecords ? "publish" : "publish_with_warnings",
 			reviewNotes: hasContestRecords
-				? "Imported coverage snapshot published with verified official links and staged contest layers still under local review."
+				? "Imported coverage snapshot published with verified official links and contest layers still under local review."
 				: "Imported coverage snapshot published as an official-logistics-only guide shell. Verified contest, candidate, and measure records are not included.",
 			reviewedAt: publishedAt,
 			reviewer: "Imported snapshot",

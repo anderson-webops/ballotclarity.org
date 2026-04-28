@@ -9,7 +9,7 @@ const collectionSections = [
 	{
 		body: [
 			"When you use the ballot lookup, the address or ZIP code is sent with a POST request so the service can determine a location and ballot guide.",
-			"That lookup may also trigger provider-backed district matching, representative attachment, and official election verification in the current runtime.",
+			"That lookup may also trigger district matching, representative attachment, and official election verification using the civic data providers needed for the requested result.",
 			"If ZIP-only operational logging is enabled, Ballot Clarity may record only the normalized 5-digit ZIP associated with a lookup, including a ZIP5 typed by the user, extracted from a typed address, extracted from ZIP+4 input, or returned by an address-normalization provider. Raw lookup text, full street addresses, ZIP+4 entries, city names, IP address, and user agent are not added to that ZIP-only log.",
 			"Some hosts may also use coarse geolocation derived from request metadata to make an approximate default location guess before you enter anything manually.",
 			"The application is designed not to publish the raw lookup text in the public archive and not to persist it in browser storage used for saved ballot preferences."
@@ -262,7 +262,7 @@ usePageSeo({
 					How we use data
 				</p>
 				<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-					Why the current build uses data
+					Why the site uses data
 				</h2>
 				<ul class="text-sm text-app-muted leading-7 mt-6 space-y-3 dark:text-app-muted-dark">
 					<li v-for="item in useSections" :key="item" class="px-4 py-3 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70">
@@ -292,7 +292,7 @@ usePageSeo({
 					Cookies and tracking
 				</p>
 				<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-					No sale, sharing, or targeted advertising in the current build
+					No sale, sharing, or targeted advertising
 				</h2>
 				<ul class="text-sm text-app-muted leading-7 mt-6 space-y-3 dark:text-app-muted-dark">
 					<li v-for="item in cookieNotes" :key="item" class="px-4 py-3 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70">
@@ -363,7 +363,7 @@ usePageSeo({
 					Your choices and requests
 				</p>
 				<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-					Rights requests and limits in a no-account public build
+					Rights requests and no-account limits
 				</h2>
 				<ul class="text-sm text-app-muted leading-7 mt-6 space-y-3 dark:text-app-muted-dark">
 					<li v-for="item in rightsNotes" :key="item" class="px-4 py-3 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70">

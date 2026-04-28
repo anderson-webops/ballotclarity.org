@@ -53,7 +53,7 @@ const faqItems = [
 ];
 
 usePageSeo({
-	description: "Voting help, ballot basics, and trust notes for Ballot Clarity. Clear answers with source-first guidance and links back to official election offices.",
+	description: "Voting help, ballot basics, and trust notes for Ballot Clarity. Clear answers with links back to official election offices.",
 	jsonLd: {
 		"@context": "https://schema.org",
 		"@type": "FAQPage",

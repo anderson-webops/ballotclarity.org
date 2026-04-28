@@ -15,7 +15,6 @@ import { buildLookupContextFromNationwideResult, buildNationwideLookupRouteQuery
 import { resolveRepresentativePresentation } from "~/utils/representative-presentation";
 
 const route = useRoute();
-const { formatDateTime } = useFormatters();
 const civicStore = useCivicStore();
 const { isHydrated, nationwideLookupResult, selectedLocation } = storeToRefs(civicStore);
 const { hasNationwideResultContext, hasPublishedGuideContext } = useGuideEntryGate();
@@ -120,17 +119,6 @@ function getDistrictRepresentativePopoverLinks(districtSlug: string) {
 	return buildDistrictRepresentativePopoverLinks(getDistrictRepresentatives(districtSlug));
 }
 
-const summaryItems = computed(() => {
-	const isNationwideMode = directoryUsesNationwide.value;
-	const updatedAt = directoryData.value?.districts.updatedAt ?? "";
-
-	return [
-		{ label: "District pages", note: isNationwideMode ? "District matches from your current lookup." : "Candidate-contest areas in the active election.", value: districts.value.length },
-		{ label: "Representative directory", note: isNationwideMode ? "Officials linked to this lookup." : "Currently serving officials on the active ballot.", value: representatives.value.length, href: "/representatives" },
-		{ label: "Updated", note: "Latest district data refresh.", value: formatDateTime(updatedAt) }
-	];
-});
-
 usePageSeo({
 	description: "Browse district-by-district Ballot Clarity pages for office context, current representatives, and the upcoming contest field.",
 	path: "/districts",
@@ -141,6 +129,17 @@ const districtIntroCopy = computed(() => directoryUsesNationwide.value
 	: "Open each office area to review the office, current representative, and candidate field in one place."
 );
 const requiresLookupPrompt = computed(() => !directoryUsesNationwide.value && !showGuideDirectory.value);
+const lookupPrompt = computed(() => activeLookupSummary.value.mode === "none"
+	? {
+			body: "Enter an address or ZIP code first so this page can show the districts and current officials for your area.",
+			title: "Start with lookup"
+		}
+	: {
+			body: "A saved area is present, but this page needs a current lookup result to load exact district and representative matches.",
+			title: "Refresh results for this page"
+		}
+);
+const directorySummary = computed(() => `${districts.value.length} district page${districts.value.length === 1 ? "" : "s"} and ${representatives.value.length} linked official${representatives.value.length === 1 ? "" : "s"} are available for this area.`);
 
 function buildLookupAwareTarget(path: string) {
 	return buildNationwideRouteTarget(path, buildLookupContextFromNationwideResult(activeNationwideLookupResult.value), route.query);
@@ -194,8 +193,8 @@ function buildLookupAwareTarget(path: string) {
 		</div>
 
 		<div v-else-if="requiresLookupPrompt" class="max-w-3xl">
-			<InfoCallout title="Current location required" tone="warning">
-				Open results first so this district hub can show the matched districts and linked officials for your area.
+			<InfoCallout :title="lookupPrompt.title" tone="warning">
+				{{ lookupPrompt.body }}
 			</InfoCallout>
 			<div class="mt-6 flex flex-wrap gap-3">
 				<NuxtLink to="/" class="btn-primary">
@@ -208,18 +207,20 @@ function buildLookupAwareTarget(path: string) {
 		</div>
 
 		<div v-else class="space-y-6">
-			<PageSummaryStrip :items="summaryItems" />
+			<p class="text-sm text-app-muted leading-7 dark:text-app-muted-dark">
+				{{ directorySummary }}
+			</p>
 
 			<section class="gap-6 grid lg:grid-cols-2 xl:grid-cols-3">
 				<article
 					v-for="district in districts"
 					:key="district.slug"
-					class="surface-panel flex flex-col"
+					class="surface-row flex flex-col"
 				>
 					<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
 						{{ district.jurisdiction }}
 					</p>
-					<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
+					<h2 class="text-2xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
 						{{ district.title }}
 					</h2>
 					<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">

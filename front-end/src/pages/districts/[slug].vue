@@ -4,7 +4,6 @@ import { storeToRefs } from "pinia";
 import { buildActiveLookupSummary } from "~/utils/active-lookup";
 import { activeNationwideLookupCookieName, parseActiveNationwideLookupCookie } from "~/utils/active-nationwide-cookie";
 import { buildGuideDistrictPageRecord, buildNationwideDistrictPageRecord } from "~/utils/district-page";
-import { buildDistrictCandidateSummaryHref, buildDistrictRepresentativeSummaryHref } from "~/utils/district-page-links";
 import { isExternalHref } from "~/utils/link";
 import { buildLookupContextFromNationwideResult, buildNationwideLookupRouteQuery, buildNationwideRouteTarget } from "~/utils/nationwide-route-context";
 import { resolveRepresentativePresentation } from "~/utils/representative-presentation";
@@ -47,13 +46,6 @@ function buildLookupAwareTarget(path: string) {
 	return buildNationwideRouteTarget(path, buildLookupContextFromNationwideResult(activeNationwideLookupResult.value), route.query);
 }
 
-function buildSummaryHref(path: string | undefined) {
-	if (!path || path.startsWith("#") || isExternalHref(path))
-		return path;
-
-	return buildLookupAwareTarget(path);
-}
-
 function getRepresentativePresentation(representative: NonNullable<typeof districtPageData.value>["representatives"][number]) {
 	return resolveRepresentativePresentation(representative, activeNationwideLookupResult.value?.location?.state ?? null);
 }
@@ -77,31 +69,6 @@ const sectionLinks = computed(() => (districtPageData.value
 			{ href: "#sources", label: "Sources", badge: String(districtPageData.value.sources.length) }
 		]
 	: []));
-
-const summaryItems = computed(() => {
-	if (!districtPageData.value)
-		return [];
-
-	const items = [
-		{
-			label: "Current representatives",
-			note: districtPageData.value.representativeAvailabilityNote,
-			value: districtPageData.value.representatives.length,
-			href: buildSummaryHref(buildDistrictRepresentativeSummaryHref(districtPageData.value.representatives))
-		}
-	];
-
-	if (districtPageData.value.candidates.length) {
-		items.push({
-			label: "Candidates",
-			note: districtPageData.value.candidateAvailabilityNote,
-			value: districtPageData.value.candidates.length,
-			href: buildSummaryHref(buildDistrictCandidateSummaryHref(districtPageData.value.candidates))
-		});
-	}
-
-	return items;
-});
 
 const districtContextLink = computed(() => {
 	if (districtPageData.value?.mode === "nationwide" || hasNationwideResultContext.value) {
@@ -173,8 +140,10 @@ usePageSeo({
 							Representative directory
 						</NuxtLink>
 					</div>
-					<div class="mt-6">
-						<PageSummaryStrip :items="summaryItems" />
+					<div class="mt-6 flex flex-wrap gap-2">
+						<VerificationBadge :label="`${districtPageData.representatives.length} current representative${districtPageData.representatives.length === 1 ? '' : 's'}`" tone="accent" />
+						<VerificationBadge v-if="districtPageData.candidates.length" :label="`${districtPageData.candidates.length} candidate${districtPageData.candidates.length === 1 ? '' : 's'}`" />
+						<VerificationBadge :label="`${districtPageData.sources.length} source${districtPageData.sources.length === 1 ? '' : 's'}`" />
 					</div>
 					<p v-if="!districtPageData.candidates.length" class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
 						<strong class="text-app-ink dark:text-app-text-dark">Candidate field:</strong> {{ districtPageData.candidateAvailabilityNote }}
@@ -314,10 +283,10 @@ usePageSeo({
 					</div>
 				</section>
 
-				<section id="sources" class="surface-panel">
-					<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
+				<details id="sources" class="surface-panel scroll-mt-28">
+					<summary class="text-2xl text-app-ink font-serif cursor-pointer dark:text-app-text-dark focus-ring">
 						District sources
-					</h2>
+					</summary>
 					<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
 						{{ districtPageData.mode === "guide"
 							? "Sources for the candidate and official information on this page."
@@ -326,7 +295,7 @@ usePageSeo({
 					<div class="mt-6">
 						<SourceList :sources="districtPageData.sources" />
 					</div>
-				</section>
+				</details>
 			</div>
 
 			<div class="space-y-6 xl:pt-[4.5rem]">
@@ -385,10 +354,10 @@ usePageSeo({
 					</ul>
 				</details>
 
-				<div v-if="districtPageData.relatedContests.length" class="surface-panel">
-					<h2 class="text-2xl text-app-ink font-serif dark:text-app-text-dark">
-						Related ballot surfaces
-					</h2>
+				<details v-if="districtPageData.relatedContests.length" class="surface-row">
+					<summary class="text-xl text-app-ink font-serif cursor-pointer dark:text-app-text-dark focus-ring">
+						Related ballot pages
+					</summary>
 					<div class="mt-5 space-y-4">
 						<NuxtLink
 							v-for="contest in districtPageData.relatedContests"
@@ -404,7 +373,7 @@ usePageSeo({
 							</p>
 						</NuxtLink>
 					</div>
-				</div>
+				</details>
 			</div>
 		</div>
 	</section>

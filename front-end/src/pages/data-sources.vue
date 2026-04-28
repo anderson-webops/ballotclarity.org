@@ -88,7 +88,7 @@ function providerStatusTone(status: "active" | "needs_endpoint" | "needs_key" | 
 					Data sources
 				</h1>
 				<p class="bc-prose text-app-muted mt-5 dark:text-app-muted-dark">
-					Ballot Clarity uses official election sources first, then public-interest or provider-backed records when official material needs support. This page explains the source hierarchy without turning the public site into an operator dashboard.
+					Ballot Clarity uses official election sources first, then supporting civic-data systems when official material needs context. This page explains what each source class is used for and where its limits are.
 				</p>
 				<div class="mt-6 flex flex-wrap gap-4 items-center">
 					<UpdatedAt :value="data.updatedAt" label="Updated" />

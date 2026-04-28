@@ -30,11 +30,11 @@ test("location lookup only exposes guide navigation when published guide coverag
 	const response = {
 		electionSlug: "2026-fulton-county-general",
 		guideContent: {
-			candidates: { count: 5, detail: "Candidate records still rely on staged reference material instead of verified local content.", hasContent: true, label: "Candidates", status: "staged_reference" as const },
-			contests: { count: 4, detail: "Contest records still rely on staged reference material instead of verified local content.", hasContent: true, label: "Contests", status: "staged_reference" as const },
+			candidates: { count: 5, detail: "Candidate records still rely on unverified review material instead of verified local content.", hasContent: true, label: "Candidates", status: "staged_reference" as const },
+			contests: { count: 4, detail: "Contest records still rely on unverified review material instead of verified local content.", hasContent: true, label: "Contests", status: "staged_reference" as const },
 			guideShell: { count: 1, detail: "This local guide is published with verified official election links, but the contest pages still need local review.", hasContent: true, label: "Local guide", status: "official_logistics_only" as const },
 			mixedContent: true,
-			measures: { count: 2, detail: "Measure records still rely on staged reference material instead of verified local content.", hasContent: true, label: "Measures", status: "staged_reference" as const },
+			measures: { count: 2, detail: "Measure records still rely on unverified review material instead of verified local content.", hasContent: true, label: "Measures", status: "staged_reference" as const },
 			officialLogistics: { count: 3, detail: "Official county and statewide election logistics are attached from current official sources.", hasContent: true, label: "Official logistics", status: "verified_local" as const },
 			publishedGuideShell: true,
 			summary: "This published local guide includes verified official election links, but some contest, candidate, or measure pages are still under local review.",

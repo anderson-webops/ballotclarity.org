@@ -3445,7 +3445,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 
 		return {
 			candidateAvailabilityNote: contest.candidates?.length
-				? "Candidate records are attached to this district page, but some guide areas may still carry staged contest material until local verification is complete."
+				? "Candidate records are attached to this district page, but some guide areas may still carry unverified contest material until local review is complete."
 				: "No source-backed candidate field is attached to this district page yet.",
 			candidates: contest.candidates ?? [],
 			district: {

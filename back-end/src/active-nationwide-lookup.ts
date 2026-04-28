@@ -1056,8 +1056,8 @@ export function buildRouteFallbackDistrictRecordResponse(districtSlug: string): 
 		election: {
 			date: updatedAt,
 			jurisdictionSlug: "",
-			locationName: "Current location required",
-			name: "Current location required",
+			locationName: "Lookup needed",
+			name: "Lookup needed",
 			slug: "nationwide-lookup",
 			updatedAt,
 		},

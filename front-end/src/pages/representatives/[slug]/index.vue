@@ -5,7 +5,7 @@ import { contactEmail } from "~/constants";
 import { activeNationwideLookupCookieName, parseActiveNationwideLookupCookie } from "~/utils/active-nationwide-cookie";
 import { buildNationwidePersonProfileResponse } from "~/utils/nationwide-person-profile";
 import { buildLookupContextFromNationwideResult, buildNationwideLookupRouteQuery, buildNationwideRouteTarget } from "~/utils/nationwide-route-context";
-import { buildPersonSummaryItems, hasPersonFunding, hasPersonInfluence } from "~/utils/person-profile";
+import { hasPersonFunding, hasPersonInfluence } from "~/utils/person-profile";
 import { resolveRepresentativePresentation } from "~/utils/representative-presentation";
 
 const route = useRoute();
@@ -59,10 +59,6 @@ const campaignLink = computed(() => {
 
 	return person.value.comparison.campaignWebsiteUrl || person.value.comparison.contactChannels[0]?.url || "";
 });
-const fundingStatusSummary = computed(() => person.value?.enrichmentStatus?.funding.summary
-	|| "No source-backed finance summary is attached to this person record yet.");
-const influenceStatusSummary = computed(() => person.value?.enrichmentStatus?.influence.summary
-	|| "No lobbying or public-statement context is attached to this person record yet.");
 const hasFunding = computed(() => person.value ? hasPersonFunding(person.value) : false);
 const hasInfluence = computed(() => person.value ? hasPersonInfluence(person.value) : false);
 const officeContext = computed(() => person.value?.officeContext ?? null);
@@ -85,25 +81,6 @@ const sectionLinks = computed(() => person.value
 			{ href: "#sources", label: "Sources", badge: String(person.value.sources.length) }
 		]
 	: []);
-const summaryItems = computed(() => {
-	if (!person.value)
-		return [];
-
-	return buildPersonSummaryItems({
-		dataThroughLabel: dataThroughLabel.value,
-		formatCurrency,
-		fundingHref: "#funding",
-		fundingStatusSummary: fundingStatusSummary.value,
-		fundingTotalRaised: person.value.funding?.totalRaised ?? null,
-		hasFunding: hasFunding.value,
-		hasInfluence: hasInfluence.value,
-		influenceHref: "#influence",
-		influenceNoteCount: person.value.lobbyingContext.length + person.value.publicStatements.length,
-		influenceStatusSummary: influenceStatusSummary.value,
-		officeDisplayLabel: representativePresentation.value?.officeDisplayLabel ?? person.value.officeSought,
-		officeHref: "#office-context"
-	}).filter(item => item.value !== "Unavailable");
-});
 const officeContextFields = computed(() => {
 	if (!person.value)
 		return [];
@@ -335,8 +312,11 @@ usePageSeo({
 							Person-level civic context
 						</h2>
 					</div>
-					<div class="mt-6">
-						<PageSummaryStrip :items="summaryItems" />
+					<div class="mt-6 flex flex-wrap gap-2">
+						<VerificationBadge :label="representativePresentation?.officeDisplayLabel ?? person.officeSought" tone="accent" />
+						<VerificationBadge v-if="hasFunding" label="Funding available" />
+						<VerificationBadge v-if="hasInfluence" label="Influence context available" />
+						<VerificationBadge :label="`${person.sources.length} source${person.sources.length === 1 ? '' : 's'}`" />
 					</div>
 					<div class="mt-6 gap-4 grid lg:grid-cols-[minmax(0,1.3fr)_minmax(18rem,0.9fr)]">
 						<div id="office-context" class="surface-row scroll-mt-32">
@@ -622,12 +602,12 @@ usePageSeo({
 					</div>
 				</section>
 
-				<section id="sources" class="surface-panel scroll-mt-28">
-					<div class="flex flex-wrap gap-4 items-center justify-between">
+				<details id="sources" class="surface-panel scroll-mt-28">
+					<summary class="text-2xl text-app-ink font-serif cursor-pointer dark:text-app-text-dark focus-ring">
+						Sources and review notes
+					</summary>
+					<div class="mt-5 flex flex-wrap gap-4 items-center justify-between">
 						<div>
-							<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
-								Sources and review notes
-							</h2>
 							<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
 								Source records, freshness, and any limits attached to this profile.
 							</p>
@@ -671,7 +651,7 @@ usePageSeo({
 							</ul>
 						</div>
 					</div>
-				</section>
+				</details>
 			</div>
 
 			<div class="space-y-6 xl:pt-[4.5rem]" data-representative-sidebar="record-details">

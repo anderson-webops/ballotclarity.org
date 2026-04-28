@@ -130,7 +130,7 @@ usePageSeo({
 				Terms of Service
 			</h1>
 			<p class="text-base text-app-muted leading-8 mt-5 max-w-3xl dark:text-app-muted-dark">
-				These terms describe how the current {{ appName }} website may be used, what the service is designed to do, and the limits that apply to Ballot Clarity's public build.
+				These terms describe how the current {{ appName }} website may be used, what the service is designed to do, and the limits that apply to the public site.
 			</p>
 			<div class="mt-5">
 				<UpdatedAt label="Effective" :value="effectiveAt" />

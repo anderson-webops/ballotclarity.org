@@ -99,7 +99,7 @@ usePageSeo({
 			</h2>
 			<details class="mt-6 surface-row" open>
 				<summary class="text-sm text-app-ink font-semibold cursor-pointer dark:text-app-text-dark focus-ring">
-					Readable, keyboard-safe, and source-first by default
+					Readable, keyboard-safe, and source-linked by default
 				</summary>
 				<ul class="readable-list text-sm text-app-muted mt-5 pl-5 dark:text-app-muted-dark">
 					<li v-for="item in designPractices" :key="item">

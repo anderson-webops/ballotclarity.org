@@ -11,7 +11,6 @@ import { groupRepresentativeSummariesByGovernmentLevel, resolveRepresentativePre
 import { formatSourceCountLabel } from "~/utils/source-label";
 
 const route = useRoute();
-const { formatDateTime } = useFormatters();
 const civicStore = useCivicStore();
 const { isHydrated, nationwideLookupResult, selectedLocation } = storeToRefs(civicStore);
 const { hasNationwideResultContext, hasPublishedGuideContext } = useGuideEntryGate();
@@ -64,23 +63,22 @@ const activeLookupSummary = computed(() => buildActiveLookupSummary({
 	selectedLocation: isHydrated.value ? selectedLocation.value : null
 }));
 const representativeLinkIsExternal = (href: string) => isExternalHref(href);
-const summaryItems = computed(() => {
-	if (!directoryData.value)
-		return [];
-
-	const isNationwideContext = directoryUsesNationwide.value;
-	return [
-		{ label: "Current representatives", note: isNationwideContext ? "Current officials from your saved results." : "Current officeholders with person pages and attached records.", value: directoryData.value.representatives.length },
-		{ label: "District pages", note: isNationwideContext ? "Districts matched for your current lookup." : "District hubs with candidate and representative context.", value: directoryData.value.districts.length, href: "/districts" },
-		{ label: "Updated", note: "Directory freshness.", value: formatDateTime(directoryData.value.updatedAt) }
-	];
-});
-
 const introCopy = computed(() => directoryUsesNationwide.value
 	? "Current officials for your saved area."
 	: "This directory lists current officeholders and links to their district, profile, funding, and influence pages where available."
 );
 const requiresLookupPrompt = computed(() => !directoryUsesNationwide.value && !showGuideDirectory.value);
+const lookupPrompt = computed(() => activeLookupSummary.value.mode === "none"
+	? {
+			body: "Enter an address or ZIP code first so this page can show current officials for your area.",
+			title: "Start with lookup"
+		}
+	: {
+			body: "A saved area is present, but this page needs a current lookup result to load the matching officials.",
+			title: "Refresh results for this page"
+		}
+);
+const directorySummary = computed(() => `${directoryData.value.representatives.length} current official${directoryData.value.representatives.length === 1 ? "" : "s"} across ${directoryData.value.districts.length} district match${directoryData.value.districts.length === 1 ? "" : "es"}.`);
 
 function buildLookupAwareTarget(path: string) {
 	return buildNationwideRouteTarget(path, buildLookupContextFromNationwideResult(activeNationwideLookupResult.value), route.query);
@@ -149,8 +147,8 @@ usePageSeo({
 		</div>
 
 		<div v-else-if="requiresLookupPrompt" class="max-w-3xl">
-			<InfoCallout title="Current location required" tone="warning">
-				Open results first so this directory can show the current officials for your area.
+			<InfoCallout :title="lookupPrompt.title" tone="warning">
+				{{ lookupPrompt.body }}
 			</InfoCallout>
 			<div class="mt-6 flex flex-wrap gap-3">
 				<NuxtLink to="/" class="btn-primary">
@@ -163,7 +161,9 @@ usePageSeo({
 		</div>
 
 		<div v-else class="space-y-6">
-			<PageSummaryStrip :items="summaryItems" />
+			<p class="text-sm text-app-muted leading-7 dark:text-app-muted-dark">
+				{{ directorySummary }}
+			</p>
 
 			<div class="space-y-8">
 				<section
@@ -210,17 +210,7 @@ usePageSeo({
 							</div>
 							<div class="mt-5 flex flex-wrap gap-2">
 								<VerificationBadge :label="representative.districtLabel" />
-								<SourceDrawer
-									v-if="representative.sourceCount > 0 && representative.sources.length"
-									:button-label="formatSourceCountLabel(representative.sourceCount)"
-									note="Sources attached to this card."
-									:sources="representative.sources"
-									:title="`${representative.name} directory sources`"
-									tone="accent"
-									variant="badge"
-								/>
-								<VerificationBadge v-else :label="formatSourceCountLabel(representative.sourceCount)" tone="accent" />
-								<VerificationBadge v-if="!representative.fundingAvailable" label="Funding not yet available" />
+								<VerificationBadge :label="formatSourceCountLabel(representative.sourceCount)" tone="accent" />
 							</div>
 							<div class="mt-6 flex flex-wrap gap-3">
 								<NuxtLink v-if="!representativeLinkIsExternal(representative.href)" :to="buildLookupAwareTarget(representative.href)" class="btn-secondary">

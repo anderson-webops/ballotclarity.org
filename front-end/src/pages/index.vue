@@ -9,10 +9,7 @@ import type {
 } from "~/types/civic";
 import { storeToRefs } from "pinia";
 import { defineAsyncComponent } from "vue";
-import AvailabilityStatusPanel from "~/components/graphics/AvailabilityStatusPanel.vue";
 import FactStatCard from "~/components/graphics/FactStatCard.vue";
-import HorizontalBarChart from "~/components/graphics/HorizontalBarChart.vue";
-import SourceProvenanceStrip from "~/components/graphics/SourceProvenanceStrip.vue";
 import { contactEmail } from "~/constants";
 import { buildLocationGuessUiContent } from "~/utils/location-guess";
 import { buildPublishedGuideDestination } from "~/utils/location-lookup";
@@ -21,7 +18,6 @@ import { buildHomeExperienceState, normalizeLookupResponseForDisplay, resolveLoo
 const api = useApiClient();
 const siteUrl = useSiteUrl();
 const civicStore = useCivicStore();
-const { formatDate } = useFormatters();
 const { selectedElection, selectedLocation } = storeToRefs(civicStore);
 const { activeNationwideResult, hasGuideShellContext, hasNationwideResultContext, hasVerifiedGuideContext } = useGuideEntryGate();
 const AsyncHomeBallotPreviewSection = defineAsyncComponent(() => import("~/components/home/HomeBallotPreviewSection.vue"));
@@ -195,124 +191,69 @@ const primaryPaths = computed<PrimaryPath[]>(() => [
 	}
 ]);
 
+const activeDistrictCount = computed(() => activeNationwideResult.value?.districtMatches.length ?? 0);
+const activeRepresentativeCount = computed(() => activeNationwideResult.value?.representativeMatches.length ?? 0);
+const activeOfficialToolCount = computed(() => activeNationwideResult.value?.actions.filter(action => action.kind === "official-verification").length ?? 0);
 const heroFactCards = computed(() => [
 	{
-		label: "Current area",
+		label: "Area",
 		note: activeNationwideResult.value?.location
-			? "Your latest lookup carries through the district, representative, and official-tool pages."
+			? "The current lookup carries through district, representative, and official-tool pages."
 			: "Enter a street address or ZIP code to load area-specific civic results.",
 		value: activeNationwideResult.value?.location?.displayName ?? "Location lookup"
 	},
 	{
-		label: "Guide depth",
-		note: hasVerifiedGuideContext.value
-			? "A verified local ballot guide is available for this context."
-			: hasGuideShellContext.value
-				? "An election overview is available even if the full guide is not."
-				: "Nationwide lookup results remain useful without a full local guide.",
-		value: hasVerifiedGuideContext.value ? "Ballot guide" : hasGuideShellContext.value ? "Election overview" : "Nationwide results"
+		label: "Districts",
+		note: activeNationwideResult.value
+			? "Matched districts determine which offices and ballot questions may apply."
+			: "District matches appear after a lookup.",
+		value: activeNationwideResult.value ? activeDistrictCount.value : "After lookup"
 	},
 	{
-		label: "Source families",
-		note: "Structured source categories documented in the public data roadmap.",
-		value: dataSources.value?.categories.length ?? 0
+		label: "Representatives",
+		note: activeNationwideResult.value
+			? "Current officials are shown when provider-backed representative data is available."
+			: "Current officials appear when the lookup can attach representative data.",
+		value: activeNationwideResult.value ? activeRepresentativeCount.value : "After lookup"
 	},
 	{
 		label: "Official tools",
-		note: featuredLaunchTarget.value
-			? "Official election-office links are attached to the active public guide profile."
+		note: activeNationwideResult.value
+			? "Official election links stay visible so voters can verify logistics with the final authority."
 			: "Official election links are included where provider data returns them.",
-		value: featuredLaunchTarget.value?.officialResources.length ?? "Included"
+		value: activeNationwideResult.value ? activeOfficialToolCount.value : "Included"
 	}
 ]);
-const heroChartItems = computed(() => [
+const lookupFlowSteps = computed(() => [
 	{
-		detail: "Published contest sections currently surfaced in the deepest available local guide layer.",
-		id: "contest-sections",
-		label: "Contest sections",
-		tone: "accent" as const,
-		value: ballotPreview.value?.election.contests.length ?? 0,
-		valueLabel: String(ballotPreview.value?.election.contests.length ?? 0)
+		detail: activeNationwideResult.value?.normalizedAddress
+			? activeNationwideResult.value.normalizedAddress
+			: "Start with a ZIP or full street address.",
+		label: "1. Confirm area",
+		value: activeNationwideResult.value?.location?.state ?? "Lookup"
 	},
 	{
-		detail: "Source families documented in the current public roadmap and data-source inventory.",
-		id: "source-families",
-		label: "Source families",
-		tone: "neutral" as const,
-		value: dataSources.value?.categories.length ?? 0,
-		valueLabel: String(dataSources.value?.categories.length ?? 0)
+		detail: activeNationwideResult.value
+			? "District matches determine which offices and ballot pages are relevant."
+			: "District results appear after the area resolves.",
+		label: "2. Match districts",
+		value: activeNationwideResult.value ? activeDistrictCount.value : "Pending"
 	},
 	{
-		detail: "Capabilities marked live-now in the public coverage profile.",
-		id: "live-capabilities",
-		label: "Live capabilities",
-		tone: "accent" as const,
-		value: coverageData.value?.supportedContentTypes.filter(item => item.status === "live-now").length ?? 0,
-		valueLabel: String(coverageData.value?.supportedContentTypes.filter(item => item.status === "live-now").length ?? 0)
+		detail: activeNationwideResult.value
+			? "Representative records are linked to profile pages where available."
+			: "Current officials appear when provider-backed data is available.",
+		label: "3. Show people",
+		value: activeNationwideResult.value ? activeRepresentativeCount.value : "Pending"
 	},
 	{
-		detail: "Official election-office links attached to the active public guide profile when one is available.",
-		id: "official-links",
-		label: "Official links",
-		tone: "warning" as const,
-		value: featuredLaunchTarget.value?.officialResources.length ?? 0,
-		valueLabel: String(featuredLaunchTarget.value?.officialResources.length ?? 0)
-	}
-]);
-const homepageProvenanceSummary = computed(() => ({
-	badges: [
-		{ label: "Nonpartisan nonprofit", tone: "accent" as const },
-		{ label: "Sources linked visibly", tone: "accent" as const }
-	],
-	items: [
-		{
-			detail: "The number of public source categories documented in the roadmap and data architecture pages.",
-			label: "Source categories",
-			value: dataSources.value?.categories.length ?? 0
-		},
-		{
-			detail: "Official election-office or statewide links attached to the current guide profile when one is available.",
-			label: "Official links",
-			value: featuredLaunchTarget.value?.officialResources.length ?? 0
-		},
-		{
-			detail: "Capabilities currently marked live in the public coverage profile.",
-			label: "Live capabilities",
-			value: coverageData.value?.supportedContentTypes.filter(item => item.status === "live-now").length ?? 0
-		},
-		{
-			detail: "Date of the current public guide target when one is available.",
-			label: "Current election",
-			value: featuredLaunchTarget.value ? formatDate(featuredLaunchTarget.value.currentElectionDate) : "Lookup-driven"
-		}
-	],
-	note: "The homepage should answer what the product can do and why a voter should trust the reading path before opening any deeper page.",
-	sources: [],
-	title: "How the public product is verified at a glance",
-	uncertainty: "The nationwide lookup layer is broader than the deepest published guide layer. Ballot Clarity shows those layers separately instead of pretending every ZIP has the same local depth."
-}));
-const homepageAvailabilityItems = computed(() => [
-	{
-		detail: "ZIP and address lookup can already return district matches, representative matches, and official election tools.",
-		label: "Nationwide lookup",
-		status: "available" as const
-	},
-	{
-		detail: featuredLaunchTarget.value
-			? `The deepest current local guide is ${featuredLaunchTarget.value.displayName}.`
-			: "Full local guide availability is separate from the nationwide lookup layer.",
-		label: "Full local guides",
-		status: featuredLaunchTarget.value ? "available" as const : "limited" as const
-	},
-	{
-		detail: "Candidate, district, contest, representative, and measure surfaces are published where Ballot Clarity has modeled them.",
-		label: "Profile surfaces",
-		status: hasVerifiedGuideContext.value || hasGuideShellContext.value ? "available" as const : "limited" as const
-	},
-	{
-		detail: "Finance and influence context exists where the record is modeled, but it is still uneven across jurisdictions.",
-		label: "Finance / influence",
-		status: "partial" as const
+		detail: hasVerifiedGuideContext.value
+			? "A verified local ballot guide is available for this context."
+			: hasGuideShellContext.value
+				? "An election overview is available even while contest pages remain under review."
+				: "Official tools stay visible even where a full local guide is not published.",
+		label: "4. Verify next steps",
+		value: hasVerifiedGuideContext.value ? "Guide" : hasGuideShellContext.value ? "Overview" : activeOfficialToolCount.value || "Tools"
 	}
 ]);
 
@@ -427,13 +368,29 @@ async function selectHomeLookupOption(option: LocationLookupSelectionOption) {
 							</div>
 							<div class="px-4 py-4 border border-app-line/80 rounded-[1.4rem] bg-app-bg/75 dark:border-app-line-dark dark:bg-app-bg-dark/60">
 								<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
-									Current product shape
+									What the lookup answers
 								</p>
 								<p class="text-sm text-app-muted leading-6 mt-3 dark:text-app-muted-dark">
-									These bars make the current nationwide-first product state visible in the first viewport instead of pushing all of the data graphics further down the page.
+									This path shows the civic questions Ballot Clarity answers from a location before any product-status or methodology pages.
 								</p>
-								<div class="mt-4">
-									<HorizontalBarChart :items="heroChartItems" />
+								<div class="mt-4 gap-3 grid">
+									<article
+										v-for="step in lookupFlowSteps"
+										:key="step.label"
+										class="px-3 py-3 border border-app-line/70 rounded-[1rem] bg-white/85 dark:border-app-line-dark dark:bg-app-panel-dark/80"
+									>
+										<div class="flex flex-wrap gap-3 items-start justify-between">
+											<p class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
+												{{ step.label }}
+											</p>
+											<span class="text-[11px] text-app-muted tracking-[0.14em] font-semibold px-2.5 py-1 rounded-full bg-app-bg uppercase dark:text-app-muted-dark dark:bg-app-bg-dark/70">
+												{{ step.value }}
+											</span>
+										</div>
+										<p class="text-sm text-app-muted leading-6 mt-2 dark:text-app-muted-dark">
+											{{ step.detail }}
+										</p>
+									</article>
 								</div>
 							</div>
 						</div>
@@ -536,16 +493,26 @@ async function selectHomeLookupOption(option: LocationLookupSelectionOption) {
 		</section>
 
 		<section class="app-shell section-gap">
-			<div class="gap-6 grid xl:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
-				<SourceProvenanceStrip
-					:summary="homepageProvenanceSummary"
-				/>
-				<AvailabilityStatusPanel
-					:items="homepageAvailabilityItems"
-					note="Ballot Clarity now behaves as a nationwide civic lookup product first, then adds richer local guide depth where it has been published."
-					title="What is available in the product right now"
-					uncertainty="Availability differs by data type. A nationwide lookup success does not automatically mean a full local contest guide exists for that location yet."
-				/>
+			<div class="surface-panel flex flex-col gap-5 justify-between lg:flex-row lg:items-center">
+				<div class="max-w-3xl">
+					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+						Verify the path
+					</p>
+					<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
+						Sources and product coverage live off the main reading path.
+					</h2>
+					<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
+						The homepage now keeps voter-facing lookup answers first. Open the source directory or coverage profile when you want the full provenance and availability record.
+					</p>
+				</div>
+				<div class="flex flex-wrap gap-3">
+					<NuxtLink to="/sources" class="btn-primary" prefetch-on="interaction">
+						Open sources
+					</NuxtLink>
+					<NuxtLink to="/coverage" class="btn-secondary" prefetch-on="interaction">
+						Open coverage
+					</NuxtLink>
+				</div>
 			</div>
 		</section>
 

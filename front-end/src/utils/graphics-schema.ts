@@ -14,6 +14,7 @@ import type {
 	LocationDataAvailabilitySummary,
 	LocationDistrictMatch,
 	LocationGuideAvailability,
+	LocationLookupAction,
 	LocationLookupInputKind,
 	LocationRepresentativeMatch,
 	Measure,
@@ -33,6 +34,77 @@ type CurrencyFormatter = (value: number) => string;
 
 function uniqueSources(sources: Source[]) {
 	return [...new Map(sources.map(source => [source.id, source])).values()];
+}
+
+function stableSourceId(prefix: string, value: string) {
+	return `${prefix}-${value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}`;
+}
+
+function sourceDate(value: string | undefined) {
+	const normalizedValue = value || new Date().toISOString();
+
+	return normalizedValue.includes("T") ? normalizedValue.slice(0, 10) : normalizedValue;
+}
+
+function buildLookupSources(input: {
+	districtMatches: LocationDistrictMatch[];
+	officialToolActions: LocationLookupAction[];
+	representativeMatches: LocationRepresentativeMatch[];
+	resolvedAt?: string;
+}) {
+	const lookupDate = sourceDate(input.resolvedAt);
+	const sources: Source[] = [];
+	const hasCensusDistrictMatch = input.districtMatches.some(match => /census/i.test(match.sourceSystem));
+
+	if (hasCensusDistrictMatch) {
+		sources.push({
+			authority: "official-government",
+			date: lookupDate,
+			id: "lookup-census-geocoder",
+			note: "Used for geographic lookup and district context where provider data is available.",
+			publisher: "U.S. Census Bureau",
+			sourceSystem: "U.S. Census Geocoder",
+			title: "U.S. Census Geocoder district match",
+			type: "official record",
+			url: "https://geocoding.geo.census.gov/geocoder/"
+		});
+	}
+
+	for (const action of input.officialToolActions) {
+		if (!action.url)
+			continue;
+
+		sources.push({
+			authority: "official-government",
+			date: lookupDate,
+			id: stableSourceId("lookup-official-tool", action.id),
+			note: action.description,
+			publisher: action.badge ?? "Official election tool",
+			sourceSystem: action.badge ?? "Official election tool",
+			title: action.title,
+			type: "official record",
+			url: action.url
+		});
+	}
+
+	for (const match of input.representativeMatches) {
+		if (!match.openstatesUrl)
+			continue;
+
+		sources.push({
+			authority: "open-data",
+			date: sourceDate(match.updatedAt ?? input.resolvedAt),
+			id: stableSourceId("lookup-representative-source", `${match.id}-${match.openstatesUrl}`),
+			note: `Representative source link for ${match.officeTitle}.`,
+			publisher: "Open States",
+			sourceSystem: match.sourceSystem,
+			title: `${match.name} representative record`,
+			type: "official record",
+			url: match.openstatesUrl
+		});
+	}
+
+	return uniqueSources(sources);
 }
 
 function toneFromFreshness(freshness: FreshnessMeta): GraphicsBadge["tone"] {
@@ -56,11 +128,19 @@ const localRepresentativePattern = /county|city|school|commission|board|council|
 export function buildLookupProvenanceSummary(input: {
 	fromCache: boolean;
 	guideAvailability?: LocationGuideAvailability;
-	hasOfficialTools?: boolean;
 	inputKind: LocationLookupInputKind | "";
+	officialToolActions?: LocationLookupAction[];
+	resolvedAt?: string;
 	districtMatches: LocationDistrictMatch[];
 	representativeMatches: LocationRepresentativeMatch[];
 }): ProvenanceSummary {
+	const officialToolActions = input.officialToolActions ?? [];
+	const sources = buildLookupSources({
+		districtMatches: input.districtMatches,
+		officialToolActions,
+		representativeMatches: input.representativeMatches,
+		resolvedAt: input.resolvedAt
+	});
 	const items: FactStat[] = [
 		{
 			detail: input.inputKind === "address"
@@ -96,7 +176,7 @@ export function buildLookupProvenanceSummary(input: {
 	for (const match of input.representativeMatches)
 		badges.set(match.sourceSystem, { label: match.sourceSystem, tone: "accent" });
 
-	if (input.hasOfficialTools)
+	if (officialToolActions.length)
 		badges.set("Official election tools", { label: "Official election tools", tone: "accent" });
 
 	if (input.fromCache)
@@ -106,7 +186,7 @@ export function buildLookupProvenanceSummary(input: {
 		badges: [...badges.values()],
 		items,
 		note: "Ballot Clarity keeps the nationwide result first, then layers in local guide depth where it exists.",
-		sources: [],
+		sources,
 		title: "How this lookup was verified",
 		uncertainty: "District and representative results are the first-class nationwide output. Full local guide availability is a separate layer."
 	};
@@ -119,8 +199,11 @@ export function buildLocationAvailabilityItems(availability: LocationDataAvailab
 	return [
 		availability.nationwideCivicResults,
 		availability.representatives,
+		availability.officialLogistics,
 		availability.ballotCandidates,
 		availability.financeInfluence,
+		availability.guideShell,
+		availability.verifiedContestPackage,
 		availability.fullLocalGuide
 	];
 }

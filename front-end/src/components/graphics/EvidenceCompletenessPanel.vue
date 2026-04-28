@@ -7,9 +7,10 @@ const props = defineProps<{
 }>();
 
 const totalItems = computed(() => props.evidence.known.length + props.evidence.unknown.length);
+const hasChecklistItems = computed(() => totalItems.value > 0);
 const knownShare = computed(() => {
 	if (!totalItems.value)
-		return 50;
+		return 0;
 
 	return Math.round((props.evidence.known.length / totalItems.value) * 100);
 });
@@ -20,13 +21,13 @@ const knownShare = computed(() => {
 		<div class="flex flex-wrap gap-4 items-start justify-between">
 			<div class="max-w-4xl">
 				<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
-					Evidence completeness
+					Evidence checklist
 				</p>
 				<h3 class="text-2xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
 					{{ props.evidence.title || "How complete is this page?" }}
 				</h3>
 				<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
-					{{ props.evidence.note || "This is not a confidence score. It is a reading aid that shows what the current archive documents directly and what still remains open." }}
+					{{ props.evidence.note || "This is not a confidence score. It is a reading aid that shows which explicit evidence checklist items are documented and which remain open." }}
 				</p>
 			</div>
 			<div class="flex flex-wrap gap-2 items-center">
@@ -42,14 +43,17 @@ const knownShare = computed(() => {
 					<FactStatCard label="Still checking" note="Items that remain open or only partially documented." :value="props.evidence.unknown.length" />
 				</div>
 
-				<div class="mt-5">
+				<div v-if="hasChecklistItems" class="mt-5">
 					<div class="rounded-full bg-app-line/80 h-3 overflow-hidden dark:bg-app-line-dark">
 						<div class="rounded-full bg-app-accent h-full" :style="{ width: `${knownShare}%` }" />
 					</div>
 					<p class="text-xs text-app-muted leading-6 mt-3 dark:text-app-muted-dark">
-						{{ knownShare }}% of the explicit completeness bullets on this page are currently in the documented column.
+						{{ knownShare }}% of the explicit checklist items on this page are currently in the documented column. This does not mean {{ knownShare }}% of all possible evidence has been collected.
 					</p>
 				</div>
+				<p v-else class="text-xs text-app-muted leading-6 mt-5 dark:text-app-muted-dark">
+					No explicit evidence checklist items are attached to this page yet.
+				</p>
 
 				<p class="text-xs text-app-muted leading-6 mt-4 dark:text-app-muted-dark">
 					<strong class="text-app-ink dark:text-app-text-dark">Freshness note:</strong>

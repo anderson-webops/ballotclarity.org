@@ -4,12 +4,10 @@ import type {
 	LocationLookupSelectionOption,
 	NationwideLookupResultContext
 } from "~/types/civic";
-import AvailabilityStatusPanel from "~/components/graphics/AvailabilityStatusPanel.vue";
 import DistrictLadder from "~/components/graphics/DistrictLadder.vue";
 import RepresentativeGrid from "~/components/graphics/RepresentativeGrid.vue";
 import SourceProvenanceStrip from "~/components/graphics/SourceProvenanceStrip.vue";
 import {
-	buildLocationAvailabilityItems,
 	buildLookupProvenanceSummary,
 	buildRepresentativeCards
 } from "~/utils/graphics-schema";
@@ -40,15 +38,16 @@ const lookupResolution = computed(() => ({
 }));
 const lookupPresentation = computed(() => buildLookupPresentation(lookupResolution.value));
 const visibleLookupActions = computed(() => filterLookupActionsForPresentation(props.lookup.actions, lookupResolution.value));
-const availabilityItems = computed(() => buildLocationAvailabilityItems(props.lookup.availability));
 const representativeCards = computed(() => buildRepresentativeCards(props.lookup.representativeMatches));
+const officialToolActions = computed(() => props.lookup.actions.filter(action => action.kind === "official-verification"));
 const lookupProvenanceSummary = computed(() => buildLookupProvenanceSummary({
 	districtMatches: props.lookup.districtMatches,
 	fromCache: props.lookup.fromCache,
 	guideAvailability: props.lookup.guideAvailability,
-	hasOfficialTools: props.lookup.actions.some(action => action.kind === "official-verification"),
 	inputKind: props.lookup.inputKind,
-	representativeMatches: props.lookup.representativeMatches
+	officialToolActions: officialToolActions.value,
+	representativeMatches: props.lookup.representativeMatches,
+	resolvedAt: props.lookup.resolvedAt
 }));
 const selectionOptions = computed(() => props.lookup.selectionOptions ?? []);
 const hasSelectionOptions = computed(() => selectionOptions.value.length > 0);
@@ -115,6 +114,18 @@ const availabilityActionCards = computed(() => {
 			item: props.lookup.availability.financeInfluence,
 		},
 		{
+			actionLabel: "Open overview",
+			href: buildElectionOverviewHref(),
+			id: "election-overview",
+			item: props.lookup.availability.guideShell,
+		},
+		{
+			actionLabel: props.lookup.guideContent?.verifiedContestPackage ? "Open contests" : "Review status",
+			href: buildVerifiedContestHref(),
+			id: "verified-contests",
+			item: props.lookup.availability.verifiedContestPackage,
+		},
+		{
 			actionLabel: props.lookup.guideContent?.verifiedContestPackage ? "Open guide" : "Open overview",
 			href: buildLocalGuideHref(),
 			id: "local-guide",
@@ -125,6 +136,19 @@ const availabilityActionCards = computed(() => {
 
 function availabilityTone(status: "available" | "partial" | "limited" | "unavailable") {
 	return status === "available" ? "accent" : status === "partial" || status === "limited" ? "warning" : "neutral";
+}
+
+function availabilityLabel(status: "available" | "partial" | "limited" | "unavailable") {
+	if (status === "partial")
+		return "Partial";
+
+	if (status === "limited")
+		return "Limited";
+
+	if (status === "available")
+		return "Available";
+
+	return "Unavailable";
 }
 
 function openGuideAction(action: LocationLookupAction) {
@@ -162,6 +186,16 @@ function buildCandidateDataHref() {
 	return props.lookup.guideContent?.verifiedContestPackage
 		? `/ballot/${props.lookup.electionSlug}#candidate-contests-section`
 		: buildElectionOverviewHref();
+}
+
+function buildVerifiedContestHref() {
+	if (!props.lookup.electionSlug)
+		return undefined;
+
+	if (props.lookup.guideContent?.verifiedContestPackage)
+		return `/ballot/${props.lookup.electionSlug}#candidate-contests-section`;
+
+	return props.lookup.guideContent?.publishedGuideShell ? buildElectionOverviewHref() : undefined;
 }
 
 function buildLocalGuideHref() {
@@ -269,44 +303,57 @@ function getRepresentativePresentation(match: NationwideLookupResultContext["rep
 				</div>
 			</article>
 		</div>
-		<AvailabilityStatusPanel
-			v-if="availabilityItems.length"
-			class="mt-4"
-			:items="availabilityItems"
-			note="These availability labels separate the nationwide lookup layer from deeper Ballot Clarity local guide depth."
-			title="What Ballot Clarity can show for this location right now"
-			:uncertainty="lookupUncertaintyNote"
-		/>
-		<div
+		<section
 			v-if="availabilityActionCards.length"
-			:class="compact ? 'mt-4 grid grid-cols-1 gap-3' : 'mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3 items-stretch auto-rows-fr'"
+			class="mt-4 p-4 border border-app-line rounded-3xl bg-white dark:border-app-line-dark dark:bg-app-panel-dark"
 		>
-			<component
-				:is="card.href ? NuxtLinkComponent : 'article'"
-				v-for="card in availabilityActionCards"
-				:key="card.id"
-				v-bind="card.href ? { to: card.href } : {}"
-				class="group p-4 border border-app-line rounded-2xl bg-white h-full transition dark:border-app-line-dark dark:bg-app-panel-dark"
-				:class="card.href ? 'focus-ring hover:border-app-accent hover:shadow-[0_18px_38px_-28px_rgba(16,37,62,0.58)] hover:-translate-y-0.5 dark:hover:border-app-accent' : ''"
-			>
-				<div class="flex flex-wrap gap-2 items-start justify-between">
-					<p class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
-						{{ card.item.label }}
+			<div class="flex flex-wrap gap-4 items-start justify-between">
+				<div class="max-w-3xl">
+					<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+						Data availability and next steps
 					</p>
-					<VerificationBadge :label="card.item.status" :tone="availabilityTone(card.item.status)" />
+					<h3 class="text-2xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
+						What you can open from this lookup
+					</h3>
+					<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
+						These labels separate the nationwide lookup result from deeper local guide data without repeating the district and representative graphics above.
+					</p>
 				</div>
-				<p class="text-sm text-app-muted leading-6 mt-3 dark:text-app-muted-dark">
-					{{ card.item.detail }}
-				</p>
-				<p
-					v-if="card.href"
-					class="dark:text-app-accent-dark text-xs text-app-accent tracking-[0.14em] font-semibold mt-4 inline-flex gap-2 uppercase items-center"
+			</div>
+			<p class="text-xs text-app-muted leading-6 mt-3 dark:text-app-muted-dark">
+				<strong class="text-app-ink dark:text-app-text-dark">Caution:</strong>
+				{{ lookupUncertaintyNote }}
+			</p>
+			<div
+				:class="compact ? 'mt-4 grid grid-cols-1 gap-3' : 'mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3 items-stretch auto-rows-fr'"
+			>
+				<component
+					:is="card.href ? NuxtLinkComponent : 'article'"
+					v-for="card in availabilityActionCards"
+					:key="card.id"
+					v-bind="card.href ? { to: card.href } : {}"
+					class="group p-4 border border-app-line rounded-2xl bg-app-bg h-full transition dark:border-app-line-dark dark:bg-app-bg-dark/80"
+					:class="card.href ? 'focus-ring hover:border-app-accent hover:shadow-[0_18px_38px_-28px_rgba(16,37,62,0.58)] hover:-translate-y-0.5 dark:hover:border-app-accent' : ''"
 				>
-					{{ card.actionLabel }}
-					<span class="i-carbon-arrow-right transition group-hover:translate-x-0.5" />
-				</p>
-			</component>
-		</div>
+					<div class="flex flex-wrap gap-2 items-start justify-between">
+						<p class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
+							{{ card.item.label }}
+						</p>
+						<VerificationBadge :label="availabilityLabel(card.item.status)" :tone="availabilityTone(card.item.status)" />
+					</div>
+					<p class="text-sm text-app-muted leading-6 mt-3 dark:text-app-muted-dark">
+						{{ card.item.detail }}
+					</p>
+					<p
+						v-if="card.href"
+						class="dark:text-app-accent-dark text-xs text-app-accent tracking-[0.14em] font-semibold mt-4 inline-flex gap-2 uppercase items-center"
+					>
+						{{ card.actionLabel }}
+						<span class="i-carbon-arrow-right transition group-hover:translate-x-0.5" />
+					</p>
+				</component>
+			</div>
+		</section>
 		<div v-if="visibleLookupActions.length" class="mt-4 gap-3 grid">
 			<div
 				v-for="action in visibleLookupActions"

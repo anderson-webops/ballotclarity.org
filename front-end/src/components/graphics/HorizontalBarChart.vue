@@ -16,7 +16,7 @@ const props = withDefaults(defineProps<{
 	items: HorizontalBarChartItem[];
 	minWidthPercent?: number;
 }>(), {
-	minWidthPercent: 10
+	minWidthPercent: 0
 });
 
 const maxValue = computed(() => {
@@ -37,7 +37,10 @@ function barToneClass(tone: GraphicsTone | undefined) {
 }
 
 function widthPercent(value: number) {
-	const scaled = Math.round((value / maxValue.value) * 100);
+	if (value <= 0)
+		return "0%";
+
+	const scaled = Math.max(1, Math.round((value / maxValue.value) * 100));
 
 	return `${Math.max(props.minWidthPercent, scaled)}%`;
 }
@@ -71,8 +74,13 @@ function widthPercent(value: number) {
 					class="rounded-full h-full transition-[width]"
 					:class="barToneClass(item.tone)"
 					:style="{ width: widthPercent(item.value) }"
+					:aria-label="`${item.label}: ${item.valueLabel ?? item.value}`"
+					role="img"
 				/>
 			</div>
+			<p v-if="item.value <= 0" class="text-xs text-app-muted leading-6 mt-2 dark:text-app-muted-dark">
+				No measured value is available for this item.
+			</p>
 			<p v-if="item.detail" class="text-sm text-app-muted leading-6 mt-3 dark:text-app-muted-dark">
 				{{ item.detail }}
 			</p>

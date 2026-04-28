@@ -211,8 +211,8 @@ usePageSeo({
 					Use this if you want to volunteer, collaborate, or help review public records.
 				</p>
 				<ProtectedEmailLink
-					reveal-label="Reveal volunteer email link"
-					button-class="btn-secondary mt-6"
+					loading-label="Email link loads in your browser."
+					loading-class="text-sm text-app-muted leading-7 mt-6 block dark:text-app-muted-dark"
 					link-class="btn-secondary mt-6"
 					subject="Ballot Clarity volunteer or research inquiry"
 				/>
@@ -223,11 +223,11 @@ usePageSeo({
 					General contact
 				</h2>
 				<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-					For general questions about Ballot Clarity, use the form above or reveal the protected project email link.
+					For general questions about Ballot Clarity, use the form above or the protected project email link.
 				</p>
 				<ProtectedEmailLink
-					reveal-label="Reveal general email link"
-					button-class="btn-secondary mt-6"
+					loading-label="Email link loads in your browser."
+					loading-class="text-sm text-app-muted leading-7 mt-6 block dark:text-app-muted-dark"
 					link-class="btn-secondary mt-6"
 					subject="Ballot Clarity general inquiry"
 				/>

@@ -386,8 +386,8 @@ usePageSeo({
 					</p>
 					<p>
 						<ProtectedEmailLink
-							reveal-label="Reveal protected email link"
-							button-class="underline underline-offset-3 rounded-md focus-ring"
+							loading-label="Email link loads in your browser."
+							loading-class="text-app-muted dark:text-app-muted-dark"
 							link-class="underline underline-offset-3 rounded-md focus-ring"
 							subject="Ballot Clarity terms question"
 						/>

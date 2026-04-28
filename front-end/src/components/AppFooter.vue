@@ -90,8 +90,8 @@ function resolveGuideLinkTo(path: string) {
 							</p>
 							<p>
 								<ProtectedEmailLink
-									reveal-label="Reveal email link"
-									button-class="text-app-ink font-semibold rounded-md transition dark:text-app-text-dark hover:text-app-accent focus-ring dark:hover:text-white"
+									loading-label="Email link loads in your browser."
+									loading-class="text-app-muted dark:text-app-muted-dark"
 									link-class="text-app-ink font-semibold rounded-md transition dark:text-app-text-dark hover:text-app-accent focus-ring dark:hover:text-white"
 									subject="Ballot Clarity inquiry"
 								/>

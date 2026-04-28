@@ -14,7 +14,6 @@ const civicStore = useCivicStore();
 const { isHydrated, nationwideLookupResult, selectedLocation } = storeToRefs(civicStore);
 const { hasNationwideResultContext, hasPublishedGuideContext } = useGuideEntryGate();
 const districtSlug = computed(() => String(route.params.slug));
-const { formatDateTime } = useFormatters();
 const activeNationwideLookupCookie = useCookie<string | null>(activeNationwideLookupCookieName);
 const serverNationwideLookupResult = computed(() => parseActiveNationwideLookupCookie(activeNationwideLookupCookie.value));
 const activeNationwideLookupResult = computed(() => isHydrated.value ? nationwideLookupResult.value : serverNationwideLookupResult.value);
@@ -95,8 +94,7 @@ const summaryItems = computed(() => {
 			note: districtPageData.value.representativeAvailabilityNote,
 			value: districtPageData.value.representatives.length,
 			href: buildSummaryHref(buildDistrictRepresentativeSummaryHref(districtPageData.value.representatives))
-		},
-		{ label: "Updated", note: "District page freshness.", value: formatDateTime(districtPageData.value.updatedAt) }
+		}
 	];
 });
 
@@ -151,6 +149,7 @@ usePageSeo({
 					<div class="flex flex-wrap gap-2">
 						<VerificationBadge label="District page" tone="accent" />
 						<VerificationBadge :label="districtPageData.district.jurisdiction" />
+						<UpdatedAt :value="districtPageData.updatedAt" label="Updated" />
 					</div>
 					<h1 class="text-5xl text-app-ink font-serif mt-5 dark:text-app-text-dark">
 						{{ districtPageData.district.title }}
@@ -274,7 +273,7 @@ usePageSeo({
 					</InfoCallout>
 				</section>
 
-				<section id="candidates" class="surface-panel">
+				<section id="candidates" :class="districtPageData.candidates.length ? 'surface-panel' : 'scroll-mt-28'">
 					<div class="flex flex-wrap gap-4 items-center justify-between">
 						<div>
 							<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
@@ -330,8 +329,9 @@ usePageSeo({
 			<div class="space-y-6 xl:pt-[4.5rem]">
 				<PageSectionNav
 					:breadcrumbs="breadcrumbs"
-					description="District details, current officials, candidates, official tools, and sources."
+					compact
 					:items="sectionLinks"
+					:show-breadcrumbs="false"
 					title="District page"
 				>
 					<template #actions>
@@ -346,7 +346,7 @@ usePageSeo({
 					</template>
 				</PageSectionNav>
 
-				<div class="surface-panel">
+				<div class="surface-row">
 					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
 						Area
 					</p>

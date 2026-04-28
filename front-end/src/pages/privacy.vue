@@ -207,7 +207,7 @@ usePageSeo({
 </script>
 
 <template>
-	<section class="app-shell section-gap space-y-8">
+	<section class="legal-page app-shell section-gap space-y-8">
 		<header class="max-w-4xl">
 			<div class="flex flex-wrap gap-2">
 				<TrustBadge label="Current policy" tone="accent" />

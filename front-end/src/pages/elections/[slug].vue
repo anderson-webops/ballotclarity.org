@@ -82,7 +82,6 @@ usePageSeo({
 							<span class="i-carbon-calendar" />
 							Election Day {{ formatDate(data.election.date) }}
 						</p>
-						<UpdatedAt :value="data.election.updatedAt" />
 					</div>
 				</div>
 
@@ -111,9 +110,6 @@ usePageSeo({
 							<NuxtLink to="/representatives" class="btn-secondary">
 								Representatives
 							</NuxtLink>
-							<NuxtLink :to="`/locations/${data.election.jurisdictionSlug}`" class="btn-secondary">
-								Open location hub
-							</NuxtLink>
 							<NuxtLink to="/sources" class="btn-secondary">
 								Sources
 							</NuxtLink>
@@ -122,18 +118,33 @@ usePageSeo({
 				</div>
 			</header>
 
-			<section class="gap-5 grid md:grid-cols-2 xl:grid-cols-4">
-				<div v-for="item in data.election.keyDates" :key="item.label" class="surface-panel">
-					<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
-						{{ item.label }}
-					</p>
-					<p class="text-xl text-app-ink font-semibold mt-3 dark:text-app-text-dark">
-						{{ item.date.includes("T") ? formatDateTime(item.date) : formatDate(item.date) }}
-					</p>
-					<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
-						{{ item.note || "Review the official county calendar for source context." }}
-					</p>
+			<section class="surface-panel">
+				<div class="flex flex-wrap gap-4 items-start justify-between">
+					<div>
+						<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+							Key dates
+						</p>
+						<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
+							Deadlines and election windows
+						</h2>
+					</div>
+					<UpdatedAt :value="data.election.updatedAt" label="Updated" />
 				</div>
+				<ol class="mt-6 divide-app-line divide-y dark:divide-app-line-dark">
+					<li v-for="item in data.election.keyDates" :key="item.label" class="py-4 gap-3 grid first:pt-0 last:pb-0 md:grid-cols-[minmax(11rem,0.38fr)_minmax(0,1fr)]">
+						<div>
+							<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+								{{ item.label }}
+							</p>
+							<p class="text-base text-app-ink font-semibold mt-2 dark:text-app-text-dark">
+								{{ item.date.includes("T") ? formatDateTime(item.date) : formatDate(item.date) }}
+							</p>
+						</div>
+						<p class="text-sm text-app-muted leading-7 dark:text-app-muted-dark">
+							{{ item.note || "Review the official county calendar for source context." }}
+						</p>
+					</li>
+				</ol>
 			</section>
 
 			<section class="gap-6 grid xl:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">

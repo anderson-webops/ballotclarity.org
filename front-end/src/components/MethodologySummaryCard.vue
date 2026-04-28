@@ -18,7 +18,7 @@ defineProps<{
 			{{ summary }}
 		</p>
 
-		<details class="group mt-5 px-5 py-4 border border-app-line rounded-3xl bg-white/70 dark:border-app-line-dark dark:bg-app-panel-dark/70">
+		<details class="group mt-5 surface-row">
 			<summary class="text-sm text-app-ink font-semibold list-none flex gap-4 cursor-pointer items-center justify-between dark:text-app-text-dark focus-ring">
 				<span>Read about our process</span>
 				<span class="i-carbon-add group-open:i-carbon-subtract text-base text-app-muted dark:text-app-muted-dark" />

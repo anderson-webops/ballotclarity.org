@@ -134,7 +134,7 @@ const informationTypes = [
 </script>
 
 <template>
-	<section class="app-shell section-gap space-y-8">
+	<section class="reading-page app-shell section-gap space-y-8">
 		<header class="max-w-4xl">
 			<div class="flex flex-wrap gap-2">
 				<TrustBadge label="Neutrality" tone="accent" />
@@ -168,7 +168,7 @@ const informationTypes = [
 				<TrustBadge label="Clear labels" tone="accent" />
 			</div>
 			<div class="mt-6 gap-4 grid md:grid-cols-2 xl:grid-cols-3">
-				<article v-for="item in informationTypes" :key="item.label" class="px-5 py-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
+				<article v-for="item in informationTypes" :key="item.label" class="surface-row">
 					<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
 						{{ item.label }}
 					</p>

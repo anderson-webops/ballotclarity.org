@@ -124,7 +124,7 @@ const summaryItems = computed(() => {
 		influenceStatusSummary: influenceStatusSummary.value,
 		officeDisplayLabel: representativePresentation.value?.officeDisplayLabel ?? person.value.officeSought,
 		officeHref: "#office-context"
-	});
+	}).filter(item => item.value !== "Unavailable");
 });
 const officeContextFields = computed(() => {
 	if (!person.value)
@@ -340,33 +340,26 @@ usePageSeo({
 						<NuxtLink :to="buildLookupAwareTarget(overviewLink.to)" class="btn-secondary">
 							{{ overviewLink.label }}
 						</NuxtLink>
-						<a v-if="representativeJsonHref" :href="representativeJsonHref" class="btn-secondary" rel="noreferrer" target="_blank">
-							<span class="i-carbon-download" />
-							Download JSON
-						</a>
-						<NuxtLink :to="buildLookupAwareTarget(backToLayerLink.to)" class="btn-primary">
+						<NuxtLink :to="buildLookupAwareTarget(backToLayerLink.to)" class="btn-secondary">
 							{{ backToLayerLink.label }}
 						</NuxtLink>
 					</div>
 				</header>
 
 				<section id="at-a-glance" class="surface-panel scroll-mt-28">
-					<div class="flex flex-wrap gap-4 items-start justify-between">
-						<div>
-							<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-								At a glance
-							</p>
-							<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-								Person-level civic context
-							</h2>
-						</div>
-						<SourceDrawer :sources="person.sources" :title="`${person.name} profile scope`" button-label="See page sources" />
+					<div>
+						<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+							At a glance
+						</p>
+						<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
+							Person-level civic context
+						</h2>
 					</div>
 					<div class="mt-6">
 						<PageSummaryStrip :items="summaryItems" />
 					</div>
 					<div class="mt-6 gap-4 grid lg:grid-cols-[minmax(0,1.3fr)_minmax(18rem,0.9fr)]">
-						<div id="office-context" class="px-5 py-5 border border-app-line/80 rounded-3xl bg-white/80 scroll-mt-32 dark:border-app-line-dark dark:bg-app-panel-dark/70">
+						<div id="office-context" class="surface-row scroll-mt-32">
 							<div class="flex flex-wrap gap-3 items-center">
 								<h3 class="text-xl text-app-ink font-serif dark:text-app-text-dark">
 									Office and jurisdiction context
@@ -401,12 +394,12 @@ usePageSeo({
 								</div>
 							</div>
 						</div>
-						<div class="px-5 py-5 border border-app-line/80 rounded-3xl bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
+						<div class="surface-inset">
 							<h3 class="text-xl text-app-ink font-serif dark:text-app-text-dark">
 								Available here
 							</h3>
-							<ul class="mt-4 space-y-4">
-								<li v-for="item in moduleStatusItems" :key="item.label" class="pb-4 border-b border-app-line/80 last:pb-0 last:border-b-0 dark:border-app-line-dark">
+							<ul class="mt-4 space-y-3">
+								<li v-for="item in moduleStatusItems" :key="item.label" class="pb-3 border-b border-app-line/80 last:pb-0 last:border-b-0 dark:border-app-line-dark">
 									<div class="flex flex-wrap gap-3 items-center justify-between">
 										<p class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
 											{{ item.label }}
@@ -689,6 +682,12 @@ usePageSeo({
 								</div>
 							</div>
 						</div>
+						<p v-if="representativeJsonHref" class="text-xs text-app-muted leading-6 mt-6 dark:text-app-muted-dark">
+							Need the raw API record?
+							<a :href="representativeJsonHref" class="text-app-accent underline underline-offset-3" rel="noreferrer" target="_blank">
+								Download JSON
+							</a>.
+						</p>
 					</div>
 				</section>
 			</div>
@@ -715,8 +714,9 @@ usePageSeo({
 
 				<PageSectionNav
 					:breadcrumbs="breadcrumbs"
-					description="Office, actions, funding, influence, and sources."
+					compact
 					:items="sectionLinks"
+					:show-breadcrumbs="false"
 					title="Representative profile"
 				>
 					<template #actions>

@@ -17,7 +17,7 @@ import { buildHomeExperienceState, normalizeLookupResponseForDisplay, resolveLoo
 const api = useApiClient();
 const siteUrl = useSiteUrl();
 const civicStore = useCivicStore();
-const { selectedElection, selectedLocation } = storeToRefs(civicStore);
+const { selectedElection } = storeToRefs(civicStore);
 const { activeNationwideResult, hasGuideShellContext, hasNationwideResultContext, hasVerifiedGuideContext } = useGuideEntryGate();
 const AsyncHomeBallotPreviewSection = defineAsyncComponent(() => import("~/components/home/HomeBallotPreviewSection.vue"));
 const AsyncHomeRoadmapSection = defineAsyncComponent(() => import("~/components/home/HomeRoadmapSection.vue"));
@@ -46,7 +46,6 @@ const guideOverviewPath = computed(() => {
 
 	return activeGuideElection ? `/elections/${activeGuideElection.slug}` : "/coverage";
 });
-const guideLocationPath = computed(() => selectedLocation.value?.slug ? `/locations/${selectedLocation.value.slug}` : "/coverage");
 const homeExperience = computed(() => buildHomeExperienceState(
 	hasNationwideResultContext.value,
 	hasGuideShellContext.value,
@@ -68,26 +67,6 @@ const { data: ballotPreview } = await useAsyncData<BallotResponse | null>(
 		watch: [featuredElection, shouldShowFeaturedGuidePreview]
 	}
 );
-const startHerePrimaryPath = computed(() => hasVerifiedGuideContext.value
-	? guideBallotPath.value
-	: hasGuideShellContext.value
-		? guideOverviewPath.value
-		: homeExperience.value.startHerePrimaryPath);
-const startHerePrimaryLabel = computed(() => homeExperience.value.startHerePrimaryLabel);
-const startHereSecondaryPath = computed(() => hasVerifiedGuideContext.value
-	? "/plan"
-	: hasGuideShellContext.value
-		? guideLocationPath.value
-		: hasNationwideResultContext.value
-			? "/coverage"
-			: "/coverage");
-const startHereSecondaryLabel = computed(() => hasVerifiedGuideContext.value
-	? "Open ballot plan"
-	: hasGuideShellContext.value
-		? "Open location hub"
-		: hasNationwideResultContext.value
-			? "Check coverage"
-			: "Check coverage");
 const faqEntries = [
 	{
 		answer: "Start with the location lookup. Ballot Clarity shows districts, representatives, official election links, and a local guide when one is published for your area.",
@@ -268,7 +247,7 @@ async function selectHomeLookupOption(option: LocationLookupSelectionOption) {
 	<div class="home-page pb-10 space-y-12 sm:space-y-16">
 		<section class="home-section app-shell">
 			<div class="home-hero-grid gap-6 grid xl:grid-cols-[minmax(0,1.18fr)_minmax(21rem,0.82fr)] xl:items-start">
-				<div class="home-card border border-app-line rounded-[2.2rem] bg-white shadow-[0_36px_84px_-58px_rgba(16,37,62,0.62)] overflow-hidden dark:border-app-line-dark dark:bg-app-panel-dark">
+				<div class="home-card surface-primary overflow-hidden">
 					<div class="px-6 py-8 lg:px-10 sm:px-8 sm:py-10">
 						<p class="text-xs text-app-muted tracking-[0.26em] font-semibold uppercase dark:text-app-muted-dark">
 							{{ hasVerifiedGuideContext ? "Ballot guide" : hasGuideShellContext ? "Election overview" : hasNationwideResultContext ? "Civic results" : "Location lookup" }}
@@ -291,22 +270,20 @@ async function selectHomeLookupOption(option: LocationLookupSelectionOption) {
 										? "Review districts, current officials, official election links, and any available local guide for this area."
 										: "Enter a street address or ZIP code to see districts, current officials, and official election links for your area." }}
 						</p>
-						<div class="home-trust-grid mt-8 gap-4 grid md:grid-cols-2 xl:grid-cols-4">
-							<div
+						<div class="mt-8 flex flex-wrap gap-2">
+							<span
 								v-for="fact in trustFacts"
 								:key="fact"
-								class="home-mini-card px-4 py-4 border border-app-line/80 rounded-[1.5rem] bg-app-bg/70 dark:border-app-line-dark dark:bg-app-bg-dark/70"
+								class="text-xs text-app-muted tracking-[0.08em] font-semibold px-3 py-2 border border-app-line/75 rounded-full bg-app-bg/72 uppercase dark:text-app-muted-dark dark:border-app-line-dark dark:bg-app-bg-dark/70"
 							>
-								<p class="text-sm text-app-ink leading-6 font-medium dark:text-app-text-dark">
-									{{ fact }}
-								</p>
-							</div>
+								{{ fact }}
+							</span>
 						</div>
 					</div>
 				</div>
 
 				<div class="home-panel-stack space-y-5">
-					<div id="location-lookup" class="home-card surface-panel">
+					<div id="location-lookup" class="home-card surface-primary">
 						<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
 							Choose your area
 						</p>
@@ -325,23 +302,6 @@ async function selectHomeLookupOption(option: LocationLookupSelectionOption) {
 								@lookup-cleared="clearHomeLookupResult"
 								@lookup-resolved="handleHomeLookupResolved"
 							/>
-						</div>
-					</div>
-
-					<div class="home-card surface-panel">
-						<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-							Popular pages
-						</p>
-						<h2 class="text-2xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-							Open the page you need.
-						</h2>
-						<div class="mt-6 flex flex-wrap gap-3">
-							<NuxtLink :to="startHerePrimaryPath" class="btn-primary" prefetch-on="interaction">
-								{{ startHerePrimaryLabel }}
-							</NuxtLink>
-							<NuxtLink :to="startHereSecondaryPath" class="btn-secondary" prefetch-on="interaction">
-								{{ startHereSecondaryLabel }}
-							</NuxtLink>
 						</div>
 					</div>
 				</div>

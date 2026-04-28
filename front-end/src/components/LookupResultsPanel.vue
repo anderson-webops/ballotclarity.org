@@ -236,7 +236,7 @@ function getRepresentativePresentation(match: NationwideLookupResultContext["rep
 				v-for="card in availabilityItems"
 				:key="card.id"
 				v-bind="card.href ? { to: card.href } : {}"
-				class="group p-4 border border-app-line rounded-2xl bg-white h-full transition dark:border-app-line-dark dark:bg-app-panel-dark"
+				class="group surface-row h-full transition"
 				:class="card.href ? 'focus-ring hover:border-app-accent hover:shadow-[0_18px_38px_-28px_rgba(16,37,62,0.58)] hover:-translate-y-0.5 dark:hover:border-app-accent' : ''"
 			>
 				<div class="flex flex-wrap gap-2 items-start justify-between">
@@ -261,7 +261,7 @@ function getRepresentativePresentation(match: NationwideLookupResultContext["rep
 			<div
 				v-for="action in visibleLookupActions"
 				:key="action.id"
-				class="p-4 border border-app-line rounded-2xl bg-white dark:border-app-line-dark dark:bg-app-panel-dark"
+				class="surface-row"
 			>
 				<div class="flex flex-wrap gap-2 items-center">
 					<p class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
@@ -301,7 +301,7 @@ function getRepresentativePresentation(match: NationwideLookupResultContext["rep
 			</div>
 		</div>
 		<div v-if="hasElectionLogistics && electionLogistics" class="mt-4 gap-4 grid">
-			<div class="p-4 border border-app-line rounded-2xl bg-white dark:border-app-line-dark dark:bg-app-panel-dark">
+			<div class="surface-inset">
 				<div class="flex flex-wrap gap-2 items-center">
 					<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
 						Official election logistics
@@ -403,7 +403,7 @@ function getRepresentativePresentation(match: NationwideLookupResultContext["rep
 			<article
 				v-for="preview in ballotContentPreviews"
 				:key="preview.id"
-				class="p-4 border border-app-line rounded-2xl bg-white dark:border-app-line-dark dark:bg-app-panel-dark"
+				class="surface-row"
 			>
 				<div class="flex flex-wrap gap-2 items-center">
 					<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
@@ -487,7 +487,7 @@ function getRepresentativePresentation(match: NationwideLookupResultContext["rep
 			</article>
 		</div>
 		<div v-if="lookup.normalizedAddress || lookup.districtMatches.length || lookup.representativeMatches.length" class="mt-4 gap-4 grid lg:grid-cols-2">
-			<div v-if="lookup.districtMatches.length" class="p-4 border border-app-line rounded-2xl bg-white dark:border-app-line-dark dark:bg-app-panel-dark">
+			<div v-if="lookup.districtMatches.length" class="surface-row">
 				<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
 					Matched districts
 				</p>
@@ -509,7 +509,7 @@ function getRepresentativePresentation(match: NationwideLookupResultContext["rep
 					Loaded from the local lookup cache.
 				</p>
 			</div>
-			<div v-if="lookup.representativeMatches.length" class="p-4 border border-app-line rounded-2xl bg-white dark:border-app-line-dark dark:bg-app-panel-dark">
+			<div v-if="lookup.representativeMatches.length" class="surface-row">
 				<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
 					Current representatives
 				</p>
@@ -551,7 +551,7 @@ function getRepresentativePresentation(match: NationwideLookupResultContext["rep
 				</ul>
 			</div>
 		</div>
-		<div v-if="lookupPresentation.canOpenGuide && lookup.location && lookup.electionSlug" class="mt-4 flex flex-wrap gap-3">
+		<div v-if="lookupPresentation.canOpenGuide && lookup.location && lookup.electionSlug && !availabilityItems.length" class="mt-4 flex flex-wrap gap-3">
 			<button
 				type="button"
 				class="btn-primary"

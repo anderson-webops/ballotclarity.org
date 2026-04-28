@@ -101,16 +101,16 @@ const snapshotLabel = computed(() => {
 				</div>
 			</header>
 
-			<section class="gap-5 grid md:grid-cols-2 xl:grid-cols-4">
-				<div class="surface-panel">
+			<section class="gap-4 grid md:grid-cols-2 xl:grid-cols-4">
+				<div class="surface-row">
 					<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
-						Healthy
+						Healthy sources
 					</p>
 					<p class="text-3xl text-app-ink font-semibold mt-3 dark:text-app-text-dark">
 						{{ data.sourceSummary.healthy }}
 					</p>
 				</div>
-				<div class="surface-panel">
+				<div class="surface-row">
 					<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
 						Review soon
 					</p>
@@ -118,7 +118,7 @@ const snapshotLabel = computed(() => {
 						{{ data.sourceSummary["review-soon"] }}
 					</p>
 				</div>
-				<div class="surface-panel">
+				<div class="surface-row">
 					<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
 						Incidents
 					</p>
@@ -126,7 +126,7 @@ const snapshotLabel = computed(() => {
 						{{ data.sourceSummary.incident }}
 					</p>
 				</div>
-				<div class="surface-panel">
+				<div class="surface-row">
 					<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
 						Stale
 					</p>
@@ -141,8 +141,8 @@ const snapshotLabel = computed(() => {
 					<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
 						Active notices
 					</h2>
-					<ul class="mt-6 space-y-4">
-						<li v-for="notice in data.incidents" :key="notice.id" class="px-5 py-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
+					<ul class="mt-5 space-y-3">
+						<li v-for="notice in data.incidents" :key="notice.id" class="surface-row">
 							<p class="text-lg text-app-ink font-semibold dark:text-app-text-dark">
 								{{ notice.title }}
 							</p>
@@ -150,10 +150,8 @@ const snapshotLabel = computed(() => {
 								{{ notice.summary }}
 							</p>
 						</li>
-						<li v-if="!data.incidents.length" class="px-5 py-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
-							<p class="text-sm text-app-muted leading-7 dark:text-app-muted-dark">
-								No public-facing incidents are open right now.
-							</p>
+						<li v-if="!data.incidents.length" class="text-sm text-app-muted leading-7 dark:text-app-muted-dark">
+							No public-facing incidents are open right now.
 						</li>
 					</ul>
 				</div>
@@ -162,8 +160,8 @@ const snapshotLabel = computed(() => {
 					<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
 						Tracked public sources
 					</h2>
-					<div class="mt-6 space-y-4">
-						<article v-for="source in data.sources" :key="source.id" class="px-5 py-5 border border-app-line/70 rounded-3xl bg-white/80 dark:border-app-line-dark dark:bg-app-panel-dark/70">
+					<div class="mt-5 space-y-3">
+						<article v-for="source in data.sources" :key="source.id" class="surface-row">
 							<div class="flex flex-wrap gap-2 items-center">
 								<SourceAuthorityBadge :authority="source.authority" />
 								<TrustBadge :label="source.health" :tone="source.health === 'healthy' ? 'accent' : source.health === 'incident' ? 'warning' : 'neutral'" />
@@ -178,10 +176,8 @@ const snapshotLabel = computed(() => {
 								Last checked {{ formatDateTime(source.lastCheckedAt) }} · Next check {{ formatDateTime(source.nextCheckAt) }}
 							</p>
 						</article>
-						<div v-if="!data.sources.length" class="px-5 py-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
-							<p class="text-sm text-app-muted leading-7 dark:text-app-muted-dark">
-								No public source monitors are published for this environment yet.
-							</p>
+						<div v-if="!data.sources.length" class="text-sm text-app-muted leading-7 dark:text-app-muted-dark">
+							No public source monitors are published for this environment yet.
 						</div>
 					</div>
 				</div>

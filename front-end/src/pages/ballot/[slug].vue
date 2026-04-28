@@ -138,7 +138,7 @@ const ballotBreadcrumbs = computed(() => {
 	return [
 		{ label: "Home", to: "/" },
 		{ label: "Election overview", to: electionOverviewHref.value },
-		{ label: "Ballot guide" }
+		{ label: hasContestContent.value ? "Ballot guide" : "Official election links" }
 	];
 });
 const ballotCounts = computed(() => {
@@ -208,11 +208,6 @@ const guideSummaryItems = computed(() => {
 					: "No local guide is published for this area yet.",
 				value: hasVerifiedContestPackage.value ? "Verified" : hasPublishedGuideShell.value ? "In review" : "Not yet"
 			},
-			{
-				label: "Saved to plan",
-				note: "Ballot-plan tools open after verified contest pages are published.",
-				value: "—"
-			}
 		];
 	}
 
@@ -299,7 +294,7 @@ const ballotContentsGroups = computed(() => {
 const guideSectionItems = computed(() => ([
 	{
 		href: "#guide-overview",
-		label: "Ballot at a glance",
+		label: hasContestContent.value ? "Ballot at a glance" : "Election overview",
 		note: "Coverage notes and top-level counts."
 	},
 	{
@@ -407,8 +402,8 @@ function clearFilters() {
 		</section>
 
 		<section v-if="data" class="app-shell print-hidden">
-			<div class="gap-6 grid 2xl:grid-cols-[minmax(17rem,0.62fr)_minmax(0,1.38fr)]">
-				<div class="self-start space-y-4 2xl:top-24 2xl:sticky">
+			<div :class="hasContestContent ? 'gap-6 grid 2xl:grid-cols-[minmax(17rem,0.62fr)_minmax(0,1.38fr)]' : 'mx-auto max-w-5xl'">
+				<div v-if="hasContestContent" class="self-start space-y-4 2xl:top-24 2xl:sticky">
 					<PageSectionNav
 						title="Guide map"
 						:description="hasContestContent
@@ -700,25 +695,6 @@ function clearFilters() {
 			</InfoCallout>
 		</section>
 
-		<section v-else-if="data && !hasContestContent" class="app-shell">
-			<div class="surface-panel text-center">
-				<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
-					Verified contest pages are still pending
-				</h2>
-				<p class="text-sm text-app-muted leading-7 mx-auto mt-4 max-w-2xl dark:text-app-muted-dark">
-					{{ shellOnlyGuideNote }}
-				</p>
-				<div class="mt-6 flex flex-wrap gap-3 justify-center">
-					<NuxtLink :to="electionOverviewHref" class="btn-primary">
-						Open election overview
-					</NuxtLink>
-					<NuxtLink :to="jurisdictionHref" class="btn-secondary">
-						Open location hub
-					</NuxtLink>
-				</div>
-			</div>
-		</section>
-
 		<section v-else-if="filteredContests.length" id="contests-section" class="app-shell space-y-10">
 			<div v-if="filteredCandidateContests.length" id="candidate-contests-section" class="scroll-mt-28 space-y-6">
 				<div class="surface-panel">
@@ -763,7 +739,7 @@ function clearFilters() {
 			</div>
 		</section>
 
-		<section v-else class="app-shell">
+		<section v-else-if="hasContestContent" class="app-shell">
 			<div class="surface-panel text-center">
 				<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
 					No ballot items match the current filters.

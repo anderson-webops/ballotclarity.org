@@ -75,7 +75,7 @@ function providerStatusTone(status: "active" | "needs_endpoint" | "needs_key" | 
 			</div>
 		</div>
 
-		<div v-else class="space-y-8">
+		<div v-else class="reading-page space-y-8">
 			<header class="gap-8 grid xl:grid-cols-[minmax(0,1.2fr)_minmax(22rem,0.85fr)]">
 				<div class="surface-panel">
 					<div class="flex flex-wrap gap-2">
@@ -136,7 +136,7 @@ function providerStatusTone(status: "active" | "needs_endpoint" | "needs_key" | 
 					<article
 						v-for="provider in data.ballotContentProviders"
 						:key="provider.id"
-						class="px-5 py-5 border border-app-line/70 rounded-3xl bg-white/80 dark:border-app-line-dark dark:bg-app-panel-dark/70"
+						class="surface-row"
 					>
 						<div class="flex flex-wrap gap-2 items-center">
 							<SourceAuthorityBadge :authority="provider.authority" />
@@ -204,7 +204,7 @@ function providerStatusTone(status: "active" | "needs_endpoint" | "needs_key" | 
 						<TrustBadge label="Source hierarchy" tone="accent" />
 					</div>
 					<div class="mt-6 gap-4 grid md:grid-cols-2">
-						<div class="px-5 py-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
+						<div class="surface-row">
 							<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
 								Authoritative rule
 							</p>
@@ -212,7 +212,7 @@ function providerStatusTone(status: "active" | "needs_endpoint" | "needs_key" | 
 								{{ category.authoritativeRule }}
 							</p>
 						</div>
-						<div class="px-5 py-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
+						<div class="surface-row">
 							<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
 								Live approach
 							</p>
@@ -222,7 +222,7 @@ function providerStatusTone(status: "active" | "needs_endpoint" | "needs_key" | 
 						</div>
 					</div>
 					<div class="mt-6 space-y-4">
-						<article v-for="option in category.options" :key="option.id" class="px-5 py-5 border border-app-line/70 rounded-3xl bg-white/80 dark:border-app-line-dark dark:bg-app-panel-dark/70">
+						<article v-for="option in category.options" :key="option.id" class="surface-row">
 							<div class="flex flex-wrap gap-2 items-center">
 								<SourceAuthorityBadge :authority="option.authority" />
 								<TrustBadge :label="statusLabel(option.status)" :tone="statusTone(option.status)" />

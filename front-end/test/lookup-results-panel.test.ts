@@ -4,10 +4,19 @@ import test from "node:test";
 
 const lookupResultsPanel = readFileSync(new URL("../src/components/LookupResultsPanel.vue", import.meta.url), "utf8");
 
-test("lookup availability cards render as a desktop 3x2 grid", () => {
+test("lookup availability cards render in a balanced desktop grid", () => {
 	assert.match(lookupResultsPanel, /xl:grid-cols-3/);
 	assert.match(lookupResultsPanel, /auto-rows-fr/);
 	assert.doesNotMatch(lookupResultsPanel, /xl:grid-cols-5/);
+});
+
+test("lookup availability cards hide low-value limited cards", () => {
+	assert.match(lookupResultsPanel, /const primaryAvailabilityIds = new Set\(\["official-logistics", "representatives", "local-guide"\]\)/);
+	assert.match(lookupResultsPanel, /const visibleAvailabilityItems = computed\(\(\) => availabilityItems\.value\.filter/);
+	assert.match(lookupResultsPanel, /if \(!card\.href \|\| card\.item\.status === "unavailable"\)/);
+	assert.match(lookupResultsPanel, /primaryAvailabilityIds\.has\(card\.id\)/);
+	assert.match(lookupResultsPanel, /return card\.item\.status === "available"/);
+	assert.match(lookupResultsPanel, /v-for="card in visibleAvailabilityItems"/);
 });
 
 test("lookup availability cards expose page links for actionable categories", () => {

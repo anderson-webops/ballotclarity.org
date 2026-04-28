@@ -74,42 +74,43 @@ usePageSeo({
 			</InfoCallout>
 		</header>
 
-		<section class="gap-6 grid md:grid-cols-3">
-			<article v-for="item in standards" :key="item.label" class="surface-panel">
-				<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-					{{ item.label }}
-				</p>
-				<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-					{{ item.value }}
-				</h2>
-				<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-					{{ item.description }}
-				</p>
-			</article>
+		<section class="surface-panel">
+			<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
+				Standards
+			</h2>
+			<div class="mt-6 gap-4 grid md:grid-cols-3">
+				<div v-for="item in standards" :key="item.label" class="surface-row">
+					<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+						{{ item.label }}
+					</p>
+					<p class="text-2xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
+						{{ item.value }}
+					</p>
+					<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
+						{{ item.description }}
+					</p>
+				</div>
+			</div>
 		</section>
 
-		<section class="gap-6 grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-			<div class="surface-panel">
-				<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-					How the site is designed to work
-				</p>
-				<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
+		<section class="surface-panel">
+			<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
+				How the site is designed to work
+			</h2>
+			<details class="mt-6 surface-row" open>
+				<summary class="text-sm text-app-ink font-semibold cursor-pointer dark:text-app-text-dark focus-ring">
 					Readable, keyboard-safe, and source-first by default
-				</h2>
+				</summary>
 				<ul class="readable-list text-sm text-app-muted mt-5 pl-5 dark:text-app-muted-dark">
 					<li v-for="item in designPractices" :key="item">
 						{{ item }}
 					</li>
 				</ul>
-			</div>
-
-			<div class="surface-panel">
-				<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+			</details>
+			<details class="mt-4 surface-row">
+				<summary class="text-sm text-app-ink font-semibold cursor-pointer dark:text-app-text-dark focus-ring">
 					Print guide standards
-				</p>
-				<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-					Print views should stay useful when a phone is not
-				</h2>
+				</summary>
 				<ul class="readable-list text-sm text-app-muted mt-5 pl-5 dark:text-app-muted-dark">
 					<li v-for="item in printPractices" :key="item">
 						{{ item }}
@@ -133,32 +134,23 @@ usePageSeo({
 						</NuxtLink>
 					</template>
 				</div>
-			</div>
+			</details>
 		</section>
 
-		<section class="gap-6 grid lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
-			<div class="surface-panel">
-				<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-					Known current limits
-				</p>
-				<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-					What is not fully implemented yet
-				</h2>
-				<ul class="readable-list text-sm text-app-muted mt-5 pl-5 dark:text-app-muted-dark">
-					<li v-for="item in knownLimits" :key="item">
-						{{ item }}
-					</li>
-				</ul>
-			</div>
-
-			<div class="surface-panel">
-				<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-					Reporting process
-				</p>
-				<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
+		<section class="surface-panel">
+			<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
+				What is not fully implemented yet
+			</h2>
+			<ul class="readable-list text-sm text-app-muted mt-5 pl-5 dark:text-app-muted-dark">
+				<li v-for="item in knownLimits" :key="item">
+					{{ item }}
+				</li>
+			</ul>
+			<details class="mt-6 surface-row">
+				<summary class="text-sm text-app-ink font-semibold cursor-pointer dark:text-app-text-dark focus-ring">
 					What helps us fix an accessibility issue quickly
-				</h2>
-				<div class="bc-prose text-app-muted mt-5 dark:text-app-muted-dark">
+				</summary>
+				<div class="bc-prose text-app-muted mt-4 dark:text-app-muted-dark">
 					<p>
 						If something is hard to read, navigate, print, or operate, include the exact page, the step that failed, and whether the issue was on mobile, desktop, keyboard-only, screen reader, or zoomed text.
 					</p>
@@ -174,7 +166,7 @@ usePageSeo({
 						Read methodology
 					</NuxtLink>
 				</div>
-			</div>
+			</details>
 		</section>
 	</section>
 </template>

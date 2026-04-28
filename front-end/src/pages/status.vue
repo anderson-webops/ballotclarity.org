@@ -66,41 +66,23 @@ const hasPublicIncidents = computed(() => Boolean(data.value?.incidents.length))
 		</div>
 
 		<div v-else class="space-y-8">
-			<header class="gap-6 grid xl:grid-cols-[minmax(0,1.18fr)_minmax(22rem,0.82fr)]">
-				<div class="surface-panel">
-					<div class="flex flex-wrap gap-2">
-						<TrustBadge :label="statusLabel" :tone="statusTone" />
-						<TrustBadge :label="snapshotLabel" />
-						<TrustBadge label="Public source health" tone="warning" />
-					</div>
-					<h1 class="text-5xl text-app-ink font-serif mt-5 dark:text-app-text-dark">
-						Public status
-					</h1>
-					<p class="text-base text-app-muted leading-8 mt-5 dark:text-app-muted-dark">
-						This page shows whether Ballot Clarity's public data and guide coverage are ready to rely on.
-					</p>
-					<div class="mt-6 flex flex-wrap gap-4 items-center">
-						<UpdatedAt :value="data.updatedAt" label="Status updated" />
-						<p class="text-sm text-app-muted dark:text-app-muted-dark">
-							Coverage data updated {{ formatDateTime(data.coverageUpdatedAt) }}
-						</p>
-					</div>
+			<header class="surface-panel max-w-5xl">
+				<div class="flex flex-wrap gap-2">
+					<TrustBadge :label="statusLabel" :tone="statusTone" />
+					<TrustBadge :label="snapshotLabel" />
+					<TrustBadge label="Public source health" tone="warning" />
 				</div>
-
-				<div>
-					<div class="surface-panel">
-						<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-							Next windows
-						</p>
-						<div class="mt-4 space-y-3">
-							<p class="text-sm text-app-muted dark:text-app-muted-dark">
-								<strong class="text-app-ink dark:text-app-text-dark">Next source review:</strong> {{ data.nextReviewAt ? formatDateTime(data.nextReviewAt) : "Not scheduled" }}
-							</p>
-							<p class="text-sm text-app-muted dark:text-app-muted-dark">
-								<strong class="text-app-ink dark:text-app-text-dark">Next publish window:</strong> {{ data.nextPublishWindow || "Not scheduled" }}
-							</p>
-						</div>
-					</div>
+				<h1 class="text-5xl text-app-ink font-serif mt-5 dark:text-app-text-dark">
+					Public status
+				</h1>
+				<p class="text-base text-app-muted leading-8 mt-5 dark:text-app-muted-dark">
+					This page shows whether Ballot Clarity's public data and guide coverage are ready to rely on.
+				</p>
+				<div class="mt-6 flex flex-wrap gap-4 items-center">
+					<UpdatedAt :value="data.updatedAt" label="Status updated" />
+					<p class="text-sm text-app-muted dark:text-app-muted-dark">
+						Coverage data updated {{ formatDateTime(data.coverageUpdatedAt) }}
+					</p>
 				</div>
 			</header>
 
@@ -202,6 +184,19 @@ const hasPublicIncidents = computed(() => Boolean(data.value?.incidents.length))
 						{{ note }}
 					</li>
 				</ul>
+				<details class="mt-6 surface-row">
+					<summary class="text-sm text-app-ink font-semibold cursor-pointer dark:text-app-text-dark focus-ring">
+						Review and publish timing
+					</summary>
+					<div class="mt-4 space-y-3">
+						<p class="text-sm text-app-muted dark:text-app-muted-dark">
+							<strong class="text-app-ink dark:text-app-text-dark">Next source review:</strong> {{ data.nextReviewAt ? formatDateTime(data.nextReviewAt) : "Not scheduled" }}
+						</p>
+						<p class="text-sm text-app-muted dark:text-app-muted-dark">
+							<strong class="text-app-ink dark:text-app-text-dark">Next publish window:</strong> {{ data.nextPublishWindow || "Not scheduled" }}
+						</p>
+					</div>
+				</details>
 			</section>
 		</div>
 	</section>

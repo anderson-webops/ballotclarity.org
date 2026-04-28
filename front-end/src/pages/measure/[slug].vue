@@ -5,7 +5,6 @@ import { contactEmail } from "~/constants";
 
 const civicStore = useCivicStore();
 const route = useRoute();
-const runtimeConfig = useRuntimeConfig();
 const siteUrl = useSiteUrl();
 const { backToLayerLink, layerBreadcrumbLink, locationHubLink, openLayerLink, overviewLink } = useRouteLayerNavigation();
 const { ballotPlan, isHydrated } = storeToRefs(civicStore);
@@ -43,7 +42,6 @@ function uniqueSources(sources: Source[]) {
 	return [...seen.values()];
 }
 
-const measureJsonHref = computed(() => measure.value ? `${runtimeConfig.public.apiBase}/measures/${measure.value.slug}` : "");
 const measureBreadcrumbs = computed(() => [
 	{ label: "Home", to: "/" },
 	layerBreadcrumbLink.value,
@@ -234,10 +232,6 @@ function saveMeasure(decision: "no" | "review" | "yes") {
 								Mark NO
 							</button>
 						</div>
-						<a v-if="measureJsonHref" :href="measureJsonHref" class="btn-secondary" rel="noreferrer" target="_blank">
-							<span class="i-carbon-download" />
-							Download JSON
-						</a>
 						<NuxtLink :to="overviewLink.to" class="btn-secondary">
 							{{ overviewLink.label }}
 						</NuxtLink>
@@ -632,42 +626,19 @@ function saveMeasure(decision: "no" | "review" | "yes") {
 					description="Read the overview first, then open only the parts of the measure you need."
 					:breadcrumbs="measureBreadcrumbs"
 					:items="sectionLinks.map(section => ({ href: section.href, label: section.label }))"
-				/>
-
-				<div class="mt-4 surface-panel">
-					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-						Evidence rail
-					</p>
-					<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
-						Use this rail for the full source archive, method notes, and official links while you read the measure explanation.
-					</p>
-					<div class="mt-5 space-y-3">
-						<UpdatedAt :value="measure.freshness.dataLastUpdatedAt ?? measure.updatedAt" label="Data through" />
-						<p class="text-sm text-app-muted leading-7 dark:text-app-muted-dark">
-							{{ measure.freshness.statusNote }}
-						</p>
-					</div>
-					<div class="mt-4 flex flex-wrap gap-3">
-						<a :href="reportIssueHref" class="btn-secondary text-xs px-4 py-2">
-							Report an issue
-						</a>
-						<NuxtLink :to="locationHubLink.to" class="btn-secondary text-xs px-4 py-2">
-							{{ locationHubLink.label }}
-						</NuxtLink>
-						<NuxtLink :to="overviewLink.to" class="btn-secondary text-xs px-4 py-2">
-							{{ overviewLink.label }}
-						</NuxtLink>
-					</div>
-					<InfoCallout class="mt-5" title="Source-first reminder">
-						This explainer is a neutral reading aid. Official ballot language, fiscal notes, and election-office notices remain the primary sources.
-					</InfoCallout>
-					<InfoCallout class="mt-6" title="How verification is handled">
-						Use the evidence drawer for section-level records, the source list below for the official trail, and the footer’s data-verification panel for the site-wide explanation of review status and badge meanings.
-					</InfoCallout>
-					<div class="mt-6">
-						<SourceList :sources="measure.sources" compact title="Attached sources" />
-					</div>
-				</div>
+				>
+					<template #actions>
+						<div class="flex flex-wrap gap-3">
+							<SourceDrawer :sources="measure.sources" :title="`${measure.title} full source list`" button-label="Sources" />
+							<a :href="reportIssueHref" class="btn-secondary">
+								Report an issue
+							</a>
+							<NuxtLink :to="locationHubLink.to" class="btn-secondary">
+								{{ locationHubLink.label }}
+							</NuxtLink>
+						</div>
+					</template>
+				</PageSectionNav>
 			</aside>
 		</div>
 	</section>

@@ -127,7 +127,7 @@ usePageSeo({
 				</div>
 			</header>
 
-			<section class="gap-5 grid md:grid-cols-2 xl:grid-cols-4">
+			<section class="gap-5 grid md:grid-cols-3">
 				<div class="surface-panel">
 					<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
 						Next election
@@ -159,14 +159,6 @@ usePageSeo({
 					</p>
 					<p class="text-sm text-app-muted mt-3 dark:text-app-muted-dark">
 						{{ earlyVotingDate?.note || "County schedules may vary by site and day." }}
-					</p>
-				</div>
-				<div class="surface-panel">
-					<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
-						Office hours
-					</p>
-					<p class="text-xl text-app-ink font-semibold mt-3 dark:text-app-text-dark">
-						{{ jurisdiction.officialOffice.hours }}
 					</p>
 				</div>
 			</section>

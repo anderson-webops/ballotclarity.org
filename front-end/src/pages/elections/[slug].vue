@@ -139,27 +139,21 @@ usePageSeo({
 				</ol>
 			</section>
 
-			<section class="gap-6 grid xl:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
-				<div class="surface-panel">
-					<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
-						Official links and notices
-					</h2>
-					<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-						These links point to the official election notices, calendars, and logistics attached to this page.
-					</p>
-					<div class="mt-6">
-						<OfficialResourceList :resources="data.election.officialResources" />
-					</div>
+			<section class="surface-panel">
+				<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
+					Official links and notices
+				</h2>
+				<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
+					These links point to the official election notices, calendars, and logistics attached to this page.
+				</p>
+				<div class="mt-6">
+					<OfficialResourceList :resources="data.election.officialResources" />
 				</div>
-
-				<div class="surface-panel">
-					<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
+				<details v-if="data.election.changeLog.length" class="mt-6 surface-row">
+					<summary class="text-sm text-app-ink font-semibold cursor-pointer dark:text-app-text-dark focus-ring">
 						Change log
-					</h2>
-					<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-						Recent edits stay visible here so readers can judge freshness at a glance.
-					</p>
-					<ul class="mt-6 space-y-3">
+					</summary>
+					<ul class="mt-4 space-y-3">
 						<li v-for="entry in data.election.changeLog" :key="entry.id" class="px-4 py-4 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70">
 							<p class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
 								{{ formatDateTime(entry.date) }}
@@ -169,7 +163,7 @@ usePageSeo({
 							</p>
 						</li>
 					</ul>
-				</div>
+				</details>
 			</section>
 
 			<section v-if="data.election.contests.length" class="surface-panel">

@@ -22,42 +22,26 @@ usePageSeo({
 			</p>
 		</header>
 
-		<section class="gap-6 grid lg:grid-cols-2">
-			<div class="surface-panel">
-				<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
-					Mission
-				</h2>
-				<p class="text-sm text-app-muted leading-7 mt-5 dark:text-app-muted-dark">
-					The mission is to improve voter literacy by turning scattered public records into readable, source-backed guides. The intended user should be able to move from “Who is on my ballot?” to “What is actually documented here?” without reading dozens of disconnected PDFs.
+		<section class="surface-panel max-w-5xl">
+			<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
+				What Ballot Clarity is for
+			</h2>
+			<div class="bc-prose text-app-muted mt-5 dark:text-app-muted-dark">
+				<p>
+					Ballot Clarity turns scattered public records into readable, source-backed election information. A voter should be able to move from “Who represents me?” or “What is on my ballot?” to the supporting records without digging through disconnected PDFs and portals.
+				</p>
+				<p>
+					The site organizes contests by office, attaches sources directly to summaries, and states limits and uncertainty where users read the information. The goal is clarity, not persuasion.
 				</p>
 			</div>
-
-			<div class="surface-panel">
-				<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
-					Why voter literacy matters
-				</h2>
-				<p class="text-sm text-app-muted leading-7 mt-5 dark:text-app-muted-dark">
-					Elections include complex offices, dense measures, and candidates with uneven public records. Many voters want context, but not hype. A clear public-interest interface can reduce confusion without telling people what conclusion to draw.
+			<details class="mt-6 surface-row">
+				<summary class="text-sm text-app-ink font-semibold cursor-pointer dark:text-app-text-dark focus-ring">
+					Why public election data is hard to use
+				</summary>
+				<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
+					Public information is often distributed across filing portals, meeting minutes, clerk notices, ethics forms, and campaign materials. Elections also include complex offices, dense measures, and uneven candidate records, so the usability problem starts before any analysis begins.
 				</p>
-			</div>
-
-			<div class="surface-panel">
-				<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
-					Why public data is hard to use today
-				</h2>
-				<p class="text-sm text-app-muted leading-7 mt-5 dark:text-app-muted-dark">
-					Public information is often distributed across filing portals, meeting minutes, clerk notices, ethics forms, and campaign materials. That creates a usability problem long before it becomes an analysis problem.
-				</p>
-			</div>
-
-			<div class="surface-panel">
-				<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
-					How this product helps
-				</h2>
-				<p class="text-sm text-app-muted leading-7 mt-5 dark:text-app-muted-dark">
-					Ballot Clarity organizes contests by office, attaches sources directly to summaries, and surfaces limits and uncertainty in the same place users read the information. The goal is clarity, not persuasion.
-				</p>
-			</div>
+			</details>
 		</section>
 
 		<section class="surface-panel max-w-4xl">

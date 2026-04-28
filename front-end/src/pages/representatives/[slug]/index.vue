@@ -10,7 +10,6 @@ import { buildPersonSummaryItems, hasPersonFunding, hasPersonInfluence } from "~
 import { resolveRepresentativePresentation } from "~/utils/representative-presentation";
 
 const route = useRoute();
-const runtimeConfig = useRuntimeConfig();
 const siteUrl = useSiteUrl();
 const civicStore = useCivicStore();
 const { isHydrated, nationwideLookupResult, selectedLocation } = storeToRefs(civicStore);
@@ -60,21 +59,6 @@ const dataThroughLabel = computed(() => {
 function buildLookupAwareTarget(path: string) {
 	return buildNationwideRouteTarget(path, buildLookupContextFromNationwideResult(activeNationwideLookupResult.value), route.query);
 }
-const representativeJsonHref = computed(() => {
-	if (!person.value)
-		return "";
-
-	const target = new URL(`${runtimeConfig.public.apiBase}/representatives/${person.value.slug}`);
-	const query = activeLookupQuery.value;
-
-	if (query?.lookup)
-		target.searchParams.set("lookup", query.lookup);
-
-	if (query?.selection)
-		target.searchParams.set("selection", query.selection);
-
-	return target.toString();
-});
 const campaignLink = computed(() => {
 	if (!person.value?.comparison)
 		return "";
@@ -426,6 +410,14 @@ usePageSeo({
 									</li>
 								</ul>
 							</details>
+							<div class="text-sm text-app-muted leading-7 mt-5 pt-5 border-t border-app-line/80 space-y-2 dark:text-app-muted-dark dark:border-app-line-dark">
+								<p>
+									<strong class="text-app-ink dark:text-app-text-dark">Profile reviewed:</strong> {{ formatDateTime(person.provenance.asOf) }}
+								</p>
+								<p>
+									<strong class="text-app-ink dark:text-app-text-dark">Data through:</strong> {{ formatDateTime(person.freshness.dataLastUpdatedAt ?? person.updatedAt) }}
+								</p>
+							</div>
 						</div>
 					</div>
 				</section>
@@ -680,12 +672,6 @@ usePageSeo({
 								</div>
 							</div>
 						</div>
-						<p v-if="representativeJsonHref" class="text-xs text-app-muted leading-6 mt-6 dark:text-app-muted-dark">
-							Need the raw API record?
-							<a :href="representativeJsonHref" class="text-app-accent underline underline-offset-3" rel="noreferrer" target="_blank">
-								Download JSON
-							</a>.
-						</p>
 					</div>
 				</section>
 			</div>
@@ -728,18 +714,6 @@ usePageSeo({
 						</div>
 					</template>
 				</PageSectionNav>
-
-				<div class="surface-panel" data-representative-sidebar="record-details">
-					<h2 class="text-2xl text-app-ink font-serif dark:text-app-text-dark">
-						Record dates
-					</h2>
-					<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-						<strong class="text-app-ink dark:text-app-text-dark">Profile reviewed:</strong> {{ formatDateTime(person.provenance.asOf) }}
-					</p>
-					<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
-						<strong class="text-app-ink dark:text-app-text-dark">Data through:</strong> {{ formatDateTime(person.freshness.dataLastUpdatedAt ?? person.updatedAt) }}
-					</p>
-				</div>
 			</div>
 		</div>
 	</section>

@@ -105,30 +105,25 @@ usePageSeo({
 					</div>
 				</div>
 
-				<div class="space-y-4">
-					<InfoCallout title="What this page is for" tone="warning">
+				<details class="surface-panel">
+					<summary class="text-sm text-app-ink font-semibold cursor-pointer dark:text-app-text-dark focus-ring">
+						What this office or question controls
+					</summary>
+					<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
+						{{ data.contest.roleGuide.summary }}
+					</p>
+					<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
+						<strong class="text-app-ink dark:text-app-text-dark">Why it matters:</strong> {{ data.contest.roleGuide.whyItMatters }}
+					</p>
+					<ul class="readable-list text-sm text-app-muted mt-4 pl-5 dark:text-app-muted-dark">
+						<li v-for="item in data.contest.roleGuide.decisionAreas" :key="item">
+							{{ item }}
+						</li>
+					</ul>
+					<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
 						{{ data.note }}
-					</InfoCallout>
-					<div class="surface-panel">
-						<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-							Role guide
-						</p>
-						<h2 class="text-2xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-							What this office or question controls
-						</h2>
-						<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-							{{ data.contest.roleGuide.summary }}
-						</p>
-						<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-							<strong class="text-app-ink dark:text-app-text-dark">Why it matters:</strong> {{ data.contest.roleGuide.whyItMatters }}
-						</p>
-						<ul class="readable-list text-sm text-app-muted mt-4 pl-5 dark:text-app-muted-dark">
-							<li v-for="item in data.contest.roleGuide.decisionAreas" :key="item">
-								{{ item }}
-							</li>
-						</ul>
-					</div>
-				</div>
+					</p>
+				</details>
 			</header>
 
 			<section v-if="data.contest.type === 'candidate'" class="gap-6 grid xl:grid-cols-2">

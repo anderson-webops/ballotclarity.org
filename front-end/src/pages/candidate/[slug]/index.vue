@@ -6,7 +6,6 @@ import { buildCompareLaunchSlugs, buildCompareRoute } from "~/stores/civic";
 
 const civicStore = useCivicStore();
 const route = useRoute();
-const runtimeConfig = useRuntimeConfig();
 const siteUrl = useSiteUrl();
 const { backToLayerLink, layerBreadcrumbLink, locationHubLink, openLayerLink, overviewLink } = useRouteLayerNavigation();
 const { ballotPlan, compareList, isHydrated } = storeToRefs(civicStore);
@@ -22,25 +21,6 @@ const sectionLinks = [
 	{ href: "#influence", label: "Influence" },
 	{ href: "#sources", label: "Sources" }
 ] as const;
-const contextTerms = [
-	{
-		description: "A candidate currently holding the office they are seeking again.",
-		term: "Incumbent"
-	},
-	{
-		description: "The latest date through which this profile says its structured records were reviewed.",
-		term: "Data through"
-	},
-	{
-		description: "Campaign money not controlled by the candidate committee but reported in related public filing systems.",
-		term: "Outside spending"
-	},
-	{
-		description: "Context about sectors, donors, or public disclosures that may matter for scrutiny, without claiming direct causation.",
-		term: "Influence context"
-	}
-] as const;
-
 function uniqueSources(sources: Source[]) {
 	const seen = new Map<string, Source>();
 
@@ -113,7 +93,6 @@ const dataThroughLabel = computed(() => {
 
 	return formatDate(candidate.value.freshness.dataLastUpdatedAt ?? candidate.value.updatedAt);
 });
-const candidateJsonHref = computed(() => candidate.value ? `${runtimeConfig.public.apiBase}/candidates/${candidate.value.slug}` : "");
 const candidateBreadcrumbs = computed(() => [
 	{ label: "Home", to: "/" },
 	layerBreadcrumbLink.value,
@@ -172,17 +151,6 @@ const actionCoverageNote = computed(() => {
 const reportIssueHref = computed(() => candidate.value
 	? `mailto:${contactEmail}?subject=${encodeURIComponent(`Ballot Clarity candidate review: ${candidate.value.name}`)}`
 	: `mailto:${contactEmail}?subject=${encodeURIComponent("Ballot Clarity candidate review")}`);
-const coverageItems = computed(() => {
-	if (!candidate.value)
-		return [];
-
-	return [
-		"Published campaign materials and questionnaires included in the project archive.",
-		"Source-backed actions selected for relevance to this office and district context.",
-		"Funding summaries tied to the attached campaign-finance records.",
-		"Method notes explaining what is included, what is missing, and when the page was last reviewed."
-	];
-});
 
 function toggleCompare() {
 	if (candidate.value)
@@ -285,10 +253,6 @@ function saveToPlan() {
 						<NuxtLink :to="overviewLink.to" class="btn-secondary">
 							{{ overviewLink.label }}
 						</NuxtLink>
-						<a v-if="candidateJsonHref" :href="candidateJsonHref" class="btn-secondary" rel="noreferrer" target="_blank">
-							<span class="i-carbon-download" />
-							Download JSON
-						</a>
 						<NuxtLink :to="backToLayerLink.to" class="btn-primary">
 							{{ backToLayerLink.label }}
 						</NuxtLink>
@@ -310,7 +274,7 @@ function saveToPlan() {
 					<div class="mt-6">
 						<PageSummaryStrip :items="atGlanceStats" />
 					</div>
-					<div class="mt-6 gap-4 grid lg:grid-cols-[minmax(0,1.3fr)_minmax(18rem,0.9fr)]">
+					<div class="mt-6">
 						<div class="px-5 py-5 border border-app-line/80 rounded-3xl bg-white/80 dark:border-app-line-dark dark:bg-app-panel-dark/70">
 							<div class="flex flex-wrap gap-3 items-center justify-between">
 								<h3 class="text-xl text-app-ink font-serif dark:text-app-text-dark">
@@ -369,27 +333,6 @@ function saveToPlan() {
 									</dd>
 								</div>
 							</dl>
-						</div>
-						<div class="px-5 py-5 border border-app-line/80 rounded-3xl bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
-							<h3 class="text-xl text-app-ink font-serif dark:text-app-text-dark">
-								What this page includes
-							</h3>
-							<ul class="text-sm text-app-muted leading-7 mt-4 space-y-2 dark:text-app-muted-dark">
-								<li v-for="item in coverageItems" :key="item">
-									{{ item }}
-								</li>
-							</ul>
-							<details class="mt-5 px-4 py-3 border border-app-line/80 rounded-2xl dark:border-app-line-dark">
-								<summary class="text-sm text-app-ink font-semibold cursor-pointer dark:text-app-text-dark">
-									Context and terms
-								</summary>
-								<ul class="text-sm text-app-muted leading-7 mt-4 space-y-3 dark:text-app-muted-dark">
-									<li v-for="item in contextTerms" :key="item.term">
-										<span class="text-app-ink font-semibold dark:text-app-text-dark">{{ item.term }}:</span>
-										{{ item.description }}
-									</li>
-								</ul>
-							</details>
 						</div>
 					</div>
 				</section>
@@ -718,47 +661,19 @@ function saveToPlan() {
 					description="Use the summary first, then open only the sections you need."
 					:breadcrumbs="candidateBreadcrumbs"
 					:items="sectionLinks.map(section => ({ href: section.href, label: section.label }))"
-				/>
-
-				<div class="mt-4 surface-panel">
-					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-						Evidence rail
-					</p>
-					<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
-						Every summary on this page is tied to the source set below. Use the evidence drawer for section-level claims, and use this rail for the full archive and page method notes.
-					</p>
-					<div class="mt-5 space-y-3">
-						<UpdatedAt :value="candidate.freshness.dataLastUpdatedAt ?? candidate.updatedAt" label="Data through" />
-						<div class="flex flex-wrap gap-3 items-center">
-							<span class="text-sm text-app-ink dark:text-app-text-dark">{{ candidate.comparison.ballotStatus.label }}</span>
-							<ProvenanceBadge :provenance="candidate.comparison.ballotStatus.provenance" />
+				>
+					<template #actions>
+						<div class="flex flex-wrap gap-3">
+							<SourceDrawer :sources="candidate.sources" :title="`${candidate.name} full source list`" button-label="Sources" />
+							<a :href="reportIssueHref" class="btn-secondary">
+								Report an issue
+							</a>
+							<NuxtLink :to="locationHubLink.to" class="btn-secondary">
+								{{ locationHubLink.label }}
+							</NuxtLink>
 						</div>
-					</div>
-					<div class="mt-4 flex flex-wrap gap-3">
-						<SourceDrawer :sources="candidate.sources" :title="`${candidate.name} full evidence panel`" button-label="Open evidence panel" />
-						<a v-if="candidateJsonHref" :href="candidateJsonHref" class="btn-secondary text-xs px-4 py-2" rel="noreferrer" target="_blank">
-							Download JSON
-						</a>
-						<a :href="reportIssueHref" class="btn-secondary text-xs px-4 py-2">
-							Report an issue
-						</a>
-						<NuxtLink :to="locationHubLink.to" class="btn-secondary text-xs px-4 py-2">
-							{{ locationHubLink.label }}
-						</NuxtLink>
-						<NuxtLink :to="overviewLink.to" class="btn-secondary text-xs px-4 py-2">
-							{{ overviewLink.label }}
-						</NuxtLink>
-					</div>
-					<InfoCallout class="mt-5" title="Neutrality note">
-						This profile is informational only. It does not rank candidates, predict outcomes, or replace official filings and election-office records.
-					</InfoCallout>
-					<InfoCallout class="mt-6" title="How verification is handled">
-						Use the source drawer for record-level evidence, the source list below for the full archive, and the footer’s data-verification panel for the site-wide explanation of badges, freshness, and review rules.
-					</InfoCallout>
-					<div class="mt-6">
-						<SourceList :sources="candidate.sources" compact title="Attached sources" />
-					</div>
-				</div>
+					</template>
+				</PageSectionNav>
 			</aside>
 		</div>
 	</section>

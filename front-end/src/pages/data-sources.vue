@@ -1,5 +1,4 @@
 <script setup lang="ts">
-const { formatDateTime } = useFormatters();
 const { data, error, pending } = await useDataSources();
 
 usePageSeo({
@@ -100,20 +99,20 @@ function providerStatusTone(status: "active" | "needs_endpoint" | "needs_key" | 
 					</div>
 				</div>
 
-				<div class="space-y-4">
-					<InfoCallout title="Why this matters" tone="warning">
-						A civic site can look clear while still hiding weak sourcing. This page is here so readers can see the source hierarchy for themselves.
-					</InfoCallout>
-					<div class="surface-panel">
-						<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-							Core rules
+				<div class="surface-panel">
+					<details>
+						<summary class="text-sm text-app-ink font-semibold cursor-pointer dark:text-app-text-dark focus-ring">
+							Core source rules
+						</summary>
+						<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
+							This page is here so readers can see the source hierarchy behind the public guide.
 						</p>
 						<ul class="readable-list text-sm text-app-muted mt-5 pl-5 dark:text-app-muted-dark">
 							<li v-for="principle in data.principles" :key="principle">
 								{{ principle }}
 							</li>
 						</ul>
-					</div>
+					</details>
 				</div>
 			</header>
 
@@ -148,29 +147,34 @@ function providerStatusTone(status: "active" | "needs_endpoint" | "needs_key" | 
 						<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
 							{{ provider.bestUse }}
 						</p>
-						<div class="mt-5 gap-4 grid md:grid-cols-2">
-							<div>
-								<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
-									Capabilities
-								</p>
-								<ul class="readable-list text-sm text-app-muted mt-3 pl-5 dark:text-app-muted-dark">
-									<li v-for="capability in provider.capabilities.slice(0, 4)" :key="capability">
-										{{ capability }}
-									</li>
-								</ul>
-							</div>
-							<div>
-								<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
-									Limits
-								</p>
-								<ul class="readable-list text-sm text-app-muted mt-3 pl-5 dark:text-app-muted-dark">
-									<li v-for="limitation in provider.limitations.slice(0, 3)" :key="limitation">
-										{{ limitation }}
-									</li>
-								</ul>
-							</div>
-						</div>
 						<details class="text-sm text-app-muted leading-7 mt-5 dark:text-app-muted-dark">
+							<summary class="text-app-ink font-semibold cursor-pointer dark:text-app-text-dark focus-ring">
+								Capabilities and limits
+							</summary>
+							<div class="mt-4 gap-4 grid md:grid-cols-2">
+								<div>
+									<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+										Capabilities
+									</p>
+									<ul class="readable-list text-sm text-app-muted mt-3 pl-5 dark:text-app-muted-dark">
+										<li v-for="capability in provider.capabilities.slice(0, 4)" :key="capability">
+											{{ capability }}
+										</li>
+									</ul>
+								</div>
+								<div>
+									<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+										Limits
+									</p>
+									<ul class="readable-list text-sm text-app-muted mt-3 pl-5 dark:text-app-muted-dark">
+										<li v-for="limitation in provider.limitations.slice(0, 3)" :key="limitation">
+											{{ limitation }}
+										</li>
+									</ul>
+								</div>
+							</div>
+						</details>
+						<details class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
 							<summary class="text-app-ink font-semibold cursor-pointer dark:text-app-text-dark focus-ring">
 								For operators: access and configuration
 							</summary>
@@ -259,14 +263,19 @@ function providerStatusTone(status: "active" | "needs_endpoint" | "needs_key" | 
 									</p>
 								</div>
 							</div>
-							<p class="text-sm text-app-muted leading-7 mt-5 dark:text-app-muted-dark">
-								<strong class="text-app-ink dark:text-app-text-dark">Best use:</strong> {{ option.bestUse }}
-							</p>
-							<ul class="readable-list text-sm text-app-muted mt-4 pl-5 dark:text-app-muted-dark">
-								<li v-for="note in option.notes" :key="note">
-									{{ note }}
-								</li>
-							</ul>
+							<details class="text-sm text-app-muted leading-7 mt-5 dark:text-app-muted-dark">
+								<summary class="text-app-ink font-semibold cursor-pointer dark:text-app-text-dark focus-ring">
+									Best use and notes
+								</summary>
+								<p class="mt-3">
+									<strong class="text-app-ink dark:text-app-text-dark">Best use:</strong> {{ option.bestUse }}
+								</p>
+								<ul class="readable-list text-sm text-app-muted mt-4 pl-5 dark:text-app-muted-dark">
+									<li v-for="note in option.notes" :key="note">
+										{{ note }}
+									</li>
+								</ul>
+							</details>
 							<div v-if="option.links?.length" class="mt-5 flex flex-wrap gap-3">
 								<a
 									v-for="link in option.links"
@@ -282,25 +291,6 @@ function providerStatusTone(status: "active" | "needs_endpoint" | "needs_key" | 
 						</article>
 					</div>
 				</article>
-			</section>
-
-			<section class="surface-panel">
-				<div class="flex flex-wrap gap-4 items-start justify-between">
-					<div>
-						<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-							Trust takeaway
-						</p>
-						<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-							Every important fact should show where it came from.
-						</h2>
-					</div>
-					<p class="text-sm text-app-muted dark:text-app-muted-dark">
-						Last roadmap refresh: {{ formatDateTime(data.updatedAt) }}
-					</p>
-				</div>
-				<p class="bc-prose text-app-muted mt-5 dark:text-app-muted-dark">
-					Ballot Clarity should keep showing source authority, source system, and freshness at the field level. That is what lets a reader tell the difference between an official notice, a provider-normalized record, a candidate statement, and supporting research.
-				</p>
 			</section>
 		</div>
 	</section>

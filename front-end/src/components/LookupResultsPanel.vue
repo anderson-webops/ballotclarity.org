@@ -41,6 +41,7 @@ const hasSelectionOptions = computed(() => selectionOptions.value.length > 0);
 const electionLogistics = computed(() => props.lookup.electionLogistics);
 const ballotContentPreviews = computed(() => props.lookup.ballotContentPreviews ?? []);
 const hasBallotContentPreviews = computed(() => ballotContentPreviews.value.length > 0);
+const primaryAvailabilityIds = new Set(["official-logistics", "representatives", "local-guide"]);
 const hasElectionLogistics = computed(() => Boolean(
 	electionLogistics.value
 	&& (
@@ -97,6 +98,15 @@ const availabilityItems = computed(() => {
 		},
 	];
 });
+const visibleAvailabilityItems = computed(() => availabilityItems.value.filter((card) => {
+	if (!card.href || card.item.status === "unavailable")
+		return false;
+
+	if (primaryAvailabilityIds.has(card.id))
+		return true;
+
+	return card.item.status === "available";
+}));
 
 function availabilityTone(status: "available" | "limited" | "unavailable") {
 	return status === "available" ? "accent" : status === "limited" ? "warning" : "neutral";
@@ -228,12 +238,12 @@ function getRepresentativePresentation(match: NationwideLookupResultContext["rep
 			</article>
 		</div>
 		<div
-			v-if="availabilityItems.length"
+			v-if="visibleAvailabilityItems.length"
 			:class="compact ? 'mt-4 grid grid-cols-1 gap-3' : 'mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3 items-stretch auto-rows-fr'"
 		>
 			<component
 				:is="card.href ? NuxtLinkComponent : 'article'"
-				v-for="card in availabilityItems"
+				v-for="card in visibleAvailabilityItems"
 				:key="card.id"
 				v-bind="card.href ? { to: card.href } : {}"
 				class="group surface-row h-full transition"

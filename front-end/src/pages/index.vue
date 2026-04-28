@@ -1,26 +1,20 @@
 <script setup lang="ts">
 import type {
-	BallotResponse,
 	ElectionsResponse,
 	LocationLookupAction,
 	LocationLookupResponse,
 	LocationLookupSelectionOption,
 	NationwideLookupResultContext
 } from "~/types/civic";
-import { defineAsyncComponent } from "vue";
 import { contactEmail } from "~/constants";
 import { buildLocationGuessUiContent } from "~/utils/location-guess";
 import { buildPublishedGuideDestination } from "~/utils/location-lookup";
-import { buildHomeExperienceState, normalizeLookupResponseForDisplay, resolveLookupDestination } from "~/utils/nationwide-results";
+import { normalizeLookupResponseForDisplay, resolveLookupDestination } from "~/utils/nationwide-results";
 
 const api = useApiClient();
 const siteUrl = useSiteUrl();
 const civicStore = useCivicStore();
 const { activeNationwideResult, hasGuideShellContext, hasNationwideResultContext, hasVerifiedGuideContext } = useGuideEntryGate();
-const AsyncHomeBallotPreviewSection = defineAsyncComponent(() => import("~/components/home/HomeBallotPreviewSection.vue"));
-const AsyncHomeRoadmapSection = defineAsyncComponent(() => import("~/components/home/HomeRoadmapSection.vue"));
-const AsyncHomeCoverageOverviewSection = defineAsyncComponent(() => import("~/components/home/HomeCoverageOverviewSection.vue"));
-const { data: dataSources } = await useDataSources();
 const { data: coverageData } = await useCoverage();
 const homeLookupResult = ref<NationwideLookupResultContext | null>(null);
 const homeLookupSelectionError = ref("");
@@ -31,30 +25,7 @@ const { data: electionsData } = await useAsyncData<ElectionsResponse>(
 	() => api<ElectionsResponse>("/elections")
 );
 const featuredElection = computed(() => electionsData.value?.elections[0] ?? null);
-const hasFeaturedGuide = computed(() => Boolean(featuredElection.value));
 const locationGuessUi = computed(() => buildLocationGuessUiContent(coverageData.value?.locationGuess ?? null));
-const roadmapPreview = computed(() => dataSources.value?.categories.slice(0, 3) ?? []);
-const homeExperience = computed(() => buildHomeExperienceState(
-	hasNationwideResultContext.value,
-	hasGuideShellContext.value,
-	hasVerifiedGuideContext.value
-));
-const shouldShowFeaturedGuidePreview = computed(() => homeExperience.value.showFeaturedGuidePreview && hasFeaturedGuide.value);
-
-const { data: ballotPreview } = await useAsyncData<BallotResponse | null>(
-	"home-preview-ballot",
-	() => shouldShowFeaturedGuidePreview.value && featuredElection.value
-		? api<BallotResponse>("/ballot", {
-				query: {
-					election: featuredElection.value.slug
-				}
-			})
-		: Promise.resolve(null),
-	{
-		default: () => null,
-		watch: [featuredElection, shouldShowFeaturedGuidePreview]
-	}
-);
 const faqEntries = [
 	{
 		answer: "Start with the location lookup. Ballot Clarity shows districts, representatives, official election links, and a local guide when one is published for your area.",
@@ -269,23 +240,5 @@ async function selectHomeLookupOption(option: LocationLookupSelectionOption) {
 				</p>
 			</div>
 		</section>
-
-		<DeferredSection placeholder-class="min-h-[10rem] sm:min-h-[14rem]">
-			<AsyncHomeBallotPreviewSection
-				:allow-guide-entry-points="hasVerifiedGuideContext"
-				:ballot-preview="shouldShowFeaturedGuidePreview ? ballotPreview : null"
-				:featured-election-slug="featuredElection?.slug ?? null"
-				:nationwide-lookup-result="displayedHomeLookupResult ? null : activeNationwideResult"
-				:show-featured-guide-preview="shouldShowFeaturedGuidePreview"
-			/>
-		</DeferredSection>
-
-		<DeferredSection placeholder-class="min-h-[8rem] sm:min-h-[10rem]">
-			<AsyncHomeRoadmapSection :roadmap-preview="roadmapPreview" />
-		</DeferredSection>
-
-		<DeferredSection placeholder-class="min-h-[8rem] sm:min-h-[10rem]">
-			<AsyncHomeCoverageOverviewSection />
-		</DeferredSection>
 	</div>
 </template>

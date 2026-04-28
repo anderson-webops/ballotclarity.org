@@ -152,10 +152,10 @@ function capabilityLabel(status: "in-build" | "live-now" | "planned") {
 				<div class="flex flex-wrap gap-4 items-start justify-between">
 					<div>
 						<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
-							Available now
+							Coverage for this area
 						</h2>
 						<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
-							These are the main public layers currently available for this area.
+							These are the main public layers currently available, plus the limits to verify before relying on the guide.
 						</p>
 					</div>
 					<NuxtLink to="/results" class="btn-secondary">
@@ -175,14 +175,11 @@ function capabilityLabel(status: "in-build" | "live-now" | "planned") {
 						</p>
 					</article>
 				</div>
-			</section>
-
-			<section class="gap-6 grid xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-				<div class="surface-panel">
-					<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
-						Known limits
-					</h2>
-					<ul class="mt-6 space-y-4">
+				<details class="mt-6 surface-row">
+					<summary class="text-sm text-app-ink font-semibold cursor-pointer dark:text-app-text-dark focus-ring">
+						Known limits and final checks
+					</summary>
+					<ul class="mt-5 space-y-4">
 						<li v-for="item in data.limitations" :key="item.id" class="px-5 py-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
 							<p class="text-lg text-app-ink font-semibold dark:text-app-text-dark">
 								{{ item.title }}
@@ -192,11 +189,6 @@ function capabilityLabel(status: "in-build" | "live-now" | "planned") {
 							</p>
 						</li>
 					</ul>
-				</div>
-				<div class="surface-panel">
-					<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
-						Use official tools for final checks
-					</h2>
 					<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
 						Ballot Clarity can organize sources and public records, but official election offices remain the final authority for deadlines, precincts, polling places, and the exact ballot you receive.
 					</p>
@@ -208,7 +200,7 @@ function capabilityLabel(status: "in-build" | "live-now" | "planned") {
 							Open data sources
 						</NuxtLink>
 					</div>
-				</div>
+				</details>
 			</section>
 		</div>
 	</section>

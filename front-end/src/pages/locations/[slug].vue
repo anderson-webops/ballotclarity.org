@@ -127,40 +127,50 @@ usePageSeo({
 				</div>
 			</header>
 
-			<section class="gap-5 grid md:grid-cols-3">
-				<div class="surface-panel">
-					<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
-						Next election
-					</p>
-					<p class="text-xl text-app-ink font-semibold mt-3 dark:text-app-text-dark">
-						{{ nextElectionData?.election.name || jurisdiction.nextElectionName }}
-					</p>
-					<p class="text-sm text-app-muted mt-3 dark:text-app-muted-dark">
-						{{ nextElectionData ? formatDate(nextElectionData.election.date) : "Current published election" }}
-					</p>
+			<section class="surface-panel">
+				<div class="flex flex-wrap gap-4 items-start justify-between">
+					<div>
+						<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+							Key election dates
+						</p>
+						<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
+							{{ nextElectionData?.election.name || jurisdiction.nextElectionName }}
+						</h2>
+					</div>
+					<TrustBadge label="Verify dates" tone="warning" />
 				</div>
-				<div class="surface-panel">
-					<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
-						Registration deadline
-					</p>
-					<p class="text-xl text-app-ink font-semibold mt-3 dark:text-app-text-dark">
-						{{ registrationDeadline ? formatDate(registrationDeadline.date) : "See election calendar" }}
-					</p>
-					<p class="text-sm text-app-muted mt-3 dark:text-app-muted-dark">
-						{{ registrationDeadline?.note || "Review the official calendar for late updates." }}
-					</p>
-				</div>
-				<div class="surface-panel">
-					<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
-						Early voting opens
-					</p>
-					<p class="text-xl text-app-ink font-semibold mt-3 dark:text-app-text-dark">
-						{{ earlyVotingDate ? formatDate(earlyVotingDate.date) : "Check office updates" }}
-					</p>
-					<p class="text-sm text-app-muted mt-3 dark:text-app-muted-dark">
-						{{ earlyVotingDate?.note || "County schedules may vary by site and day." }}
-					</p>
-				</div>
+				<dl class="mt-6 gap-5 grid md:grid-cols-3">
+					<div>
+						<dt class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+							Election day
+						</dt>
+						<dd class="text-xl text-app-ink font-semibold mt-3 dark:text-app-text-dark">
+							{{ nextElectionData ? formatDate(nextElectionData.election.date) : "Current published election" }}
+						</dd>
+					</div>
+					<div>
+						<dt class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+							Registration deadline
+						</dt>
+						<dd class="text-xl text-app-ink font-semibold mt-3 dark:text-app-text-dark">
+							{{ registrationDeadline ? formatDate(registrationDeadline.date) : "See election calendar" }}
+						</dd>
+						<p class="text-sm text-app-muted mt-3 dark:text-app-muted-dark">
+							{{ registrationDeadline?.note || "Review the official calendar for late updates." }}
+						</p>
+					</div>
+					<div>
+						<dt class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+							Early voting opens
+						</dt>
+						<dd class="text-xl text-app-ink font-semibold mt-3 dark:text-app-text-dark">
+							{{ earlyVotingDate ? formatDate(earlyVotingDate.date) : "Check office updates" }}
+						</dd>
+						<p class="text-sm text-app-muted mt-3 dark:text-app-muted-dark">
+							{{ earlyVotingDate?.note || "County schedules may vary by site and day." }}
+						</p>
+					</div>
+				</dl>
 			</section>
 
 			<section class="gap-6 grid xl:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">

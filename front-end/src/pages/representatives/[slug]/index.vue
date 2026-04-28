@@ -2,7 +2,6 @@
 import { storeToRefs } from "pinia";
 
 import { contactEmail } from "~/constants";
-import { buildActiveLookupSummary } from "~/utils/active-lookup";
 import { activeNationwideLookupCookieName, parseActiveNationwideLookupCookie } from "~/utils/active-nationwide-cookie";
 import { buildNationwidePersonProfileResponse } from "~/utils/nationwide-person-profile";
 import { buildLookupContextFromNationwideResult, buildNationwideLookupRouteQuery, buildNationwideRouteTarget } from "~/utils/nationwide-route-context";
@@ -12,7 +11,7 @@ import { resolveRepresentativePresentation } from "~/utils/representative-presen
 const route = useRoute();
 const siteUrl = useSiteUrl();
 const civicStore = useCivicStore();
-const { isHydrated, nationwideLookupResult, selectedLocation } = storeToRefs(civicStore);
+const { isHydrated, nationwideLookupResult } = storeToRefs(civicStore);
 const representativeSlug = computed(() => String(route.params.slug));
 const { backToLayerLink, layerBreadcrumbLink, overviewLink } = useRouteLayerNavigation();
 const { formatCurrency, formatDate, formatDateTime, formatPercent } = useFormatters();
@@ -42,11 +41,6 @@ const profileData = computed(() => {
 });
 const person = computed(() => profileData.value?.person ?? null);
 const pagePending = computed(() => pending.value || (!data.value && !fallbackData.value));
-const activeLookupSummary = computed(() => buildActiveLookupSummary({
-	nationwideLookupResult: activeNationwideLookupResult.value,
-	routeLookupQuery: activeLookupQuery.value?.lookup ?? null,
-	selectedLocation: isHydrated.value ? selectedLocation.value : null
-}));
 const representativePresentation = computed(() => person.value
 	? resolveRepresentativePresentation(person.value, activeNationwideLookupResult.value?.location?.state ?? null)
 	: null);
@@ -456,10 +450,10 @@ usePageSeo({
 									<IssueChip v-for="issue in person.topIssues" :key="issue.slug" :label="issue.label" />
 								</div>
 							</div>
-							<div class="p-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
-								<h3 class="text-xl text-app-ink font-serif dark:text-app-text-dark">
+							<details v-if="person.publicStatements.length" class="p-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
+								<summary class="text-xl text-app-ink font-serif cursor-pointer dark:text-app-text-dark focus-ring">
 									Public statements
-								</h3>
+								</summary>
 								<div class="mt-4 space-y-3">
 									<article v-for="statement in person.publicStatements" :key="statement.id" class="p-4 rounded-2xl bg-white/80 dark:bg-app-panel-dark/70">
 										<h4 class="text-base text-app-ink font-semibold dark:text-app-text-dark">
@@ -469,11 +463,8 @@ usePageSeo({
 											{{ statement.summary }}
 										</p>
 									</article>
-									<p v-if="!person.publicStatements.length" class="text-sm text-app-muted leading-7 dark:text-app-muted-dark">
-										No source-backed public statements are attached to this person record yet.
-									</p>
 								</div>
-							</div>
+							</details>
 						</div>
 					</div>
 				</section>
@@ -562,17 +553,17 @@ usePageSeo({
 								</li>
 							</ul>
 						</div>
-						<div class="p-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
-							<h3 class="text-xl text-app-ink font-serif dark:text-app-text-dark">
-								Record facts
-							</h3>
+						<details class="p-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
+							<summary class="text-xl text-app-ink font-serif cursor-pointer dark:text-app-text-dark focus-ring">
+								Finance record details
+							</summary>
 							<ul class="text-sm text-app-muted leading-7 mt-4 space-y-2 dark:text-app-muted-dark">
 								<li><strong class="text-app-ink dark:text-app-text-dark">Committee:</strong> {{ person.funding.committeeName || "Current matched committee not published in this summary." }}</li>
 								<li><strong class="text-app-ink dark:text-app-text-dark">Coverage:</strong> {{ person.funding.coverageLabel || person.funding.provenanceLabel || "Source-backed finance summary" }}</li>
 								<li><strong class="text-app-ink dark:text-app-text-dark">Data through:</strong> {{ dataThroughLabel }}</li>
 								<li>{{ person.freshness.statusNote }}</li>
 							</ul>
-						</div>
+						</details>
 					</div>
 				</section>
 
@@ -625,77 +616,73 @@ usePageSeo({
 								</ul>
 							</div>
 						</div>
-						<div class="p-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
-							<h3 class="text-xl text-app-ink font-serif dark:text-app-text-dark">
-								Record facts
-							</h3>
+						<details class="p-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
+							<summary class="text-xl text-app-ink font-serif cursor-pointer dark:text-app-text-dark focus-ring">
+								Influence record details
+							</summary>
 							<ul class="text-sm text-app-muted leading-7 mt-4 space-y-2 dark:text-app-muted-dark">
 								<li><strong class="text-app-ink dark:text-app-text-dark">Coverage:</strong> {{ influence?.coverageLabel || "Public disclosures, donor context, and source-backed statements where available." }}</li>
 								<li><strong class="text-app-ink dark:text-app-text-dark">Match mode:</strong> {{ influence?.matchMode ? formatInfluenceMatchMode(influence.matchMode) : "Not published" }}</li>
 								<li><strong class="text-app-ink dark:text-app-text-dark">Data through:</strong> {{ dataThroughLabel }}</li>
 								<li>Context is not proof of causation. {{ person.freshness.statusNote }}</li>
 							</ul>
-						</div>
+						</details>
 					</div>
 				</section>
 
-				<section id="sources" class="scroll-mt-28 space-y-6">
-					<FreshnessStrip :freshness="person.freshness" title="Freshness and coverage status" />
-					<div class="surface-panel">
-						<div class="flex flex-wrap gap-4 items-center justify-between">
-							<div>
-								<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
-									Sources and notes
-								</h2>
-								<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-									Sources attached to this profile.
-								</p>
-							</div>
-							<a :href="reportIssueHref" class="btn-secondary">
-								Report an issue
-							</a>
+				<section id="sources" class="surface-panel scroll-mt-28">
+					<div class="flex flex-wrap gap-4 items-center justify-between">
+						<div>
+							<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
+								Sources and review notes
+							</h2>
+							<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
+								Source records, freshness, and any limits attached to this profile.
+							</p>
 						</div>
-						<div class="mt-6 gap-6 grid xl:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)]">
-							<div>
-								<SourceList :sources="person.sources" />
-							</div>
-							<div class="space-y-4">
-								<div class="p-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
-									<h3 class="text-xl text-app-ink font-serif dark:text-app-text-dark">
-										Page notes
-									</h3>
-									<ul class="mt-4 space-y-2">
-										<li v-for="note in pageNotes" :key="note" class="text-sm text-app-muted leading-6 dark:text-app-muted-dark">
-											{{ note }}
-										</li>
-									</ul>
+						<a :href="reportIssueHref" class="btn-secondary">
+							Report an issue
+						</a>
+					</div>
+					<div class="mt-6 gap-6 grid xl:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)]">
+						<div>
+							<SourceList :sources="person.sources" />
+						</div>
+						<div class="surface-inset">
+							<h3 class="text-xl text-app-ink font-serif dark:text-app-text-dark">
+								Review status
+							</h3>
+							<dl class="text-sm text-app-muted leading-7 mt-4 space-y-2 dark:text-app-muted-dark">
+								<div>
+									<dt class="text-app-ink font-semibold dark:text-app-text-dark">
+										Profile reviewed
+									</dt>
+									<dd>{{ formatDateTime(person.provenance.asOf) }}</dd>
 								</div>
-							</div>
+								<div>
+									<dt class="text-app-ink font-semibold dark:text-app-text-dark">
+										Data through
+									</dt>
+									<dd>{{ formatDateTime(person.freshness.dataLastUpdatedAt ?? person.updatedAt) }}</dd>
+								</div>
+								<div>
+									<dt class="text-app-ink font-semibold dark:text-app-text-dark">
+										Coverage
+									</dt>
+									<dd>{{ person.freshness.statusNote }}</dd>
+								</div>
+							</dl>
+							<ul v-if="pageNotes.length" class="mt-5 space-y-2">
+								<li v-for="note in pageNotes" :key="note" class="text-sm text-app-muted leading-6 dark:text-app-muted-dark">
+									{{ note }}
+								</li>
+							</ul>
 						</div>
 					</div>
 				</section>
 			</div>
 
 			<div class="space-y-6 xl:pt-[4.5rem]">
-				<div v-if="activeLookupSummary.mode !== 'none'" class="surface-panel">
-					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-						Current area
-					</p>
-					<h2 class="text-2xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-						{{ activeLookupSummary.label }}
-					</h2>
-					<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-						{{ activeLookupSummary.note }}
-					</p>
-					<div class="mt-5 flex flex-wrap gap-3 items-center">
-						<TrustBadge
-							:label="activeLookupSummary.mode === 'nationwide' ? 'Lookup results' : activeLookupSummary.mode === 'guide' ? 'Local guide' : 'No saved location'"
-							:tone="activeLookupSummary.mode === 'nationwide' ? 'accent' : activeLookupSummary.mode === 'guide' ? undefined : 'warning'"
-						/>
-						<UpdatedAt v-if="activeLookupSummary.resolvedAt" :value="activeLookupSummary.resolvedAt" label="Lookup updated" />
-					</div>
-				</div>
-
 				<PageSectionNav
 					:breadcrumbs="breadcrumbs"
 					compact

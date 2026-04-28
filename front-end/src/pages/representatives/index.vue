@@ -225,9 +225,6 @@ usePageSeo({
 								<VerificationBadge v-else :label="formatSourceCountLabel(representative.sourceCount)" tone="accent" />
 							</div>
 							<div class="mt-6 flex flex-wrap gap-3">
-								<NuxtLink :to="buildLookupAwareTarget(`/districts/${representative.districtSlug}`)" class="btn-secondary">
-									District page
-								</NuxtLink>
 								<NuxtLink v-if="!representativeLinkIsExternal(representative.href)" :to="buildLookupAwareTarget(representative.href)" class="btn-secondary">
 									Profile
 								</NuxtLink>
@@ -241,16 +238,9 @@ usePageSeo({
 									Open record
 									<span class="i-carbon-launch" />
 								</a>
-								<a
-									v-if="directoryUsesNationwide && representative.openstatesUrl"
-									:href="representative.openstatesUrl"
-									target="_blank"
-									rel="noreferrer"
-									class="btn-secondary inline-flex gap-2 items-center"
-								>
-									Provider record
-									<span class="i-carbon-launch" />
-								</a>
+								<NuxtLink :to="buildLookupAwareTarget(`/districts/${representative.districtSlug}`)" class="btn-secondary">
+									District page
+								</NuxtLink>
 								<NuxtLink
 									v-if="!representativeLinkIsExternal(representative.href) && representative.fundingAvailable"
 									:to="buildLookupAwareTarget(`${representative.href}/funding`)"

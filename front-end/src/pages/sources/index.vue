@@ -3,6 +3,7 @@ import { formatSourcePublicationKind, formatSourcePublisherType, groupSourceDire
 
 const searchQuery = ref("");
 const { data, pending } = await useSourceDirectory();
+const isSearching = computed(() => Boolean(searchQuery.value.trim()));
 
 const filteredSources = computed(() => {
 	const query = searchQuery.value.trim().toLowerCase();
@@ -98,7 +99,40 @@ usePageSeo({
 					</p>
 				</header>
 
-				<div class="space-y-3">
+				<div v-if="section.kind === 'published-provenance' && !isSearching" class="surface-row">
+					<details>
+						<summary class="collapsible-card-summary cursor-pointer focus-ring">
+							<div class="flex flex-wrap gap-3 items-center justify-between">
+								<div>
+									<p class="text-lg text-app-ink font-semibold dark:text-app-text-dark">
+										{{ section.items.length }} published page source record{{ section.items.length === 1 ? "" : "s" }}
+									</p>
+									<p class="text-sm text-app-muted leading-7 mt-2 dark:text-app-muted-dark">
+										Open this list when you need a specific page-level citation. Use search to filter the full directory.
+									</p>
+								</div>
+								<TrustBadge label="Collapsed by default" />
+							</div>
+						</summary>
+						<div class="mt-5 gap-3 grid md:grid-cols-2">
+							<NuxtLink
+								v-for="source in section.items"
+								:key="source.id"
+								:to="`/sources/${source.id}`"
+								class="p-4 border border-app-line/80 rounded-2xl transition dark:border-app-line-dark hover:border-app-accent focus-ring"
+							>
+								<p class="text-base text-app-ink font-semibold dark:text-app-text-dark">
+									{{ source.title }}
+								</p>
+								<p class="text-xs text-app-muted leading-6 mt-2 dark:text-app-muted-dark">
+									{{ source.publisher }} · {{ source.sourceSystem }}
+								</p>
+							</NuxtLink>
+						</div>
+					</details>
+				</div>
+
+				<div v-else class="space-y-3">
 					<NuxtLink
 						v-for="source in section.items"
 						:key="source.id"

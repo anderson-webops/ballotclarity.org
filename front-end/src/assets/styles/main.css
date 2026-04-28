@@ -392,6 +392,57 @@ html.dark .section-nav-link__note {
   box-shadow: none;
 }
 
+.legal-page .surface-panel {
+  border-right: 0;
+  border-bottom: 0;
+  border-left: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: clamp(1.5rem, 2vw, 2.35rem) 0;
+}
+
+.legal-page > .gap-6.grid {
+  gap: 0 clamp(2rem, 4vw, 4rem);
+}
+
+.legal-page .surface-panel h2 {
+  max-width: 42rem;
+}
+
+.collapsible-card-summary {
+  position: relative;
+  padding-right: 5.5rem;
+  list-style: none;
+}
+
+.collapsible-card-summary::-webkit-details-marker {
+  display: none;
+}
+
+.collapsible-card-summary::after {
+  content: 'Open';
+  position: absolute;
+  right: 0;
+  top: 0.05rem;
+  padding: 0.35rem 0.7rem;
+  border: 1px solid rgba(210, 215, 221, 0.85);
+  border-radius: 9999px;
+  color: var(--app-muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+details[open] > .collapsible-card-summary::after {
+  content: 'Close';
+}
+
+html.dark .collapsible-card-summary::after {
+  border-color: rgba(51, 68, 88, 0.9);
+  color: var(--app-muted-dark);
+}
+
 .legal-page .surface-panel li[class*="rounded-2xl"],
 .legal-page .surface-panel article[class*="rounded-3xl"],
 .reading-page .surface-panel li[class*="rounded-2xl"],

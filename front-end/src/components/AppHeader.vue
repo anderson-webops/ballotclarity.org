@@ -89,7 +89,6 @@ const navGroups = computed<HeaderGroup[]>(() => {
 			links: [
 				{ label: "Help", to: "/help" },
 				{ label: "Corrections", to: "/corrections" },
-				{ label: "Status", to: "/status" },
 				{ label: "About", to: "/about" }
 			]
 		}

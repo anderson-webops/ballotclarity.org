@@ -119,43 +119,36 @@ usePageSeo({
 		</div>
 
 		<template v-else>
-			<header>
-				<div class="surface-panel">
-					<div class="flex flex-wrap gap-2">
-						<TrustBadge label="Current results" tone="accent" />
-						<TrustBadge label="Official tools visible" />
-						<TrustBadge
-							:label="activeResult.guideContent?.verifiedContestPackage
-								? 'Verified ballot guide'
-								: activeResult.guideAvailability === 'published'
-									? 'Election overview available'
-									: 'Local guide not published'"
-							:tone="activeResult.guideAvailability === 'published' ? 'accent' : 'warning'"
-						/>
-					</div>
-					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold mt-6 uppercase dark:text-app-muted-dark">
-						Current area
-					</p>
-					<h1 class="text-5xl text-app-ink leading-tight font-serif mt-3 dark:text-app-text-dark">
-						{{ activeLookupSummary.label }}
-					</h1>
-					<p class="text-base text-app-muted leading-8 mt-5 max-w-3xl dark:text-app-muted-dark">
-						Review districts, current officials, official election links, and any available local guide for this area.
-					</p>
-					<p class="text-sm text-app-muted leading-7 mt-4 max-w-3xl dark:text-app-muted-dark">
-						{{ activeLookupSummary.note }}
-					</p>
-					<div v-if="activeLookupSummary.resolvedAt" class="mt-5">
-						<UpdatedAt :value="activeLookupSummary.resolvedAt" label="Lookup updated" />
-					</div>
-				</div>
-			</header>
-
 			<section class="surface-panel">
-				<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-					Results
+				<div class="flex flex-wrap gap-2">
+					<TrustBadge label="Current results" tone="accent" />
+					<TrustBadge label="Official tools visible" />
+					<TrustBadge
+						:label="activeResult.guideContent?.verifiedContestPackage
+							? 'Verified ballot guide'
+							: activeResult.guideAvailability === 'published'
+								? 'Election overview available'
+								: 'Local guide not published'"
+						:tone="activeResult.guideAvailability === 'published' ? 'accent' : 'warning'"
+					/>
+				</div>
+				<div class="mt-6 flex flex-wrap gap-6 items-end justify-between">
+					<div>
+						<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+							Results for
+						</p>
+						<h1 class="text-5xl text-app-ink leading-tight font-serif mt-3 dark:text-app-text-dark">
+							{{ activeLookupSummary.label }}
+						</h1>
+					</div>
+					<UpdatedAt v-if="activeLookupSummary.resolvedAt" :value="activeLookupSummary.resolvedAt" label="Lookup updated" />
+				</div>
+				<p class="text-sm text-app-muted leading-7 mt-5 max-w-3xl dark:text-app-muted-dark">
+					{{ activeLookupSummary.note }}
 				</p>
-				<LookupResultsPanel :lookup="activeResult" @select-option="selectLookupOption" />
+				<div class="mt-8 pt-8 border-t border-app-line/80 dark:border-app-line-dark">
+					<LookupResultsPanel :lookup="activeResult" @select-option="selectLookupOption" />
+				</div>
 			</section>
 
 			<details id="change-location" class="surface-row">

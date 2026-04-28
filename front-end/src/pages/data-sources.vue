@@ -75,61 +75,55 @@ function providerStatusTone(status: "active" | "needs_endpoint" | "needs_key" | 
 		</div>
 
 		<div v-else class="reading-page space-y-8">
-			<header class="gap-8 grid xl:grid-cols-[minmax(0,1.2fr)_minmax(22rem,0.85fr)]">
-				<div class="surface-panel">
-					<div class="flex flex-wrap gap-2">
-						<TrustBadge label="Official sources first" tone="accent" />
-						<TrustBadge label="Providers when needed" />
-						<TrustBadge label="Limits stated" tone="warning" />
-					</div>
-					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold mt-6 uppercase dark:text-app-muted-dark">
-						Data sources
-					</p>
-					<h1 class="text-5xl text-app-ink leading-tight font-serif mt-3 dark:text-app-text-dark">
-						Data sources
-					</h1>
-					<p class="bc-prose text-app-muted mt-5 dark:text-app-muted-dark">
-						This page explains which source systems Ballot Clarity uses, what each one is good for, and where the limits are.
-					</p>
-					<div class="mt-6 flex flex-wrap gap-4 items-center">
-						<UpdatedAt :value="data.updatedAt" label="Updated" />
-						<NuxtLink to="/methodology" class="btn-secondary">
-							Read methodology
-						</NuxtLink>
-					</div>
+			<header class="surface-panel max-w-5xl">
+				<div class="flex flex-wrap gap-2">
+					<TrustBadge label="Official sources first" tone="accent" />
+					<TrustBadge label="Providers when needed" />
+					<TrustBadge label="Limits stated" tone="warning" />
 				</div>
-
-				<div class="surface-panel">
-					<details>
-						<summary class="text-sm text-app-ink font-semibold cursor-pointer dark:text-app-text-dark focus-ring">
-							Core source rules
-						</summary>
-						<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-							This page is here so readers can see the source hierarchy behind the public guide.
-						</p>
-						<ul class="readable-list text-sm text-app-muted mt-5 pl-5 dark:text-app-muted-dark">
-							<li v-for="principle in data.principles" :key="principle">
-								{{ principle }}
-							</li>
-						</ul>
-					</details>
+				<p class="text-xs text-app-muted tracking-[0.24em] font-semibold mt-6 uppercase dark:text-app-muted-dark">
+					Data sources
+				</p>
+				<h1 class="text-5xl text-app-ink leading-tight font-serif mt-3 dark:text-app-text-dark">
+					Data sources
+				</h1>
+				<p class="bc-prose text-app-muted mt-5 dark:text-app-muted-dark">
+					Ballot Clarity uses official election sources first, then public-interest or provider-backed records when official material needs support. This page explains the source hierarchy without turning the public site into an operator dashboard.
+				</p>
+				<div class="mt-6 flex flex-wrap gap-4 items-center">
+					<UpdatedAt :value="data.updatedAt" label="Updated" />
+					<NuxtLink to="/methodology" class="btn-secondary">
+						Read methodology
+					</NuxtLink>
 				</div>
+				<details class="mt-6 surface-row">
+					<summary class="text-sm text-app-ink font-semibold cursor-pointer dark:text-app-text-dark focus-ring">
+						Core source rules
+					</summary>
+					<ul class="readable-list text-sm text-app-muted mt-5 pl-5 dark:text-app-muted-dark">
+						<li v-for="principle in data.principles" :key="principle">
+							{{ principle }}
+						</li>
+					</ul>
+				</details>
 			</header>
 
-			<section v-if="data.ballotContentProviders?.length" class="surface-panel">
-				<div class="flex flex-wrap gap-4 items-start justify-between">
-					<div>
-						<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-							Ballot-content data providers
-						</p>
-						<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-							Provider ballot data is useful, but still not the final ballot.
-						</h2>
+			<details v-if="data.ballotContentProviders?.length" class="surface-panel">
+				<summary class="collapsible-card-summary cursor-pointer focus-ring">
+					<div class="flex flex-wrap gap-4 items-start justify-between">
+						<div>
+							<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+								Ballot-content data providers
+							</p>
+							<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
+								Provider ballot data is useful, but it is not the final ballot.
+							</h2>
+						</div>
+						<TrustBadge label="Review before publish" tone="warning" />
 					</div>
-					<TrustBadge label="Review before publish" tone="warning" />
-				</div>
+				</summary>
 				<p class="bc-prose text-app-muted mt-5 dark:text-app-muted-dark">
-					These are the national ballot-content APIs Ballot Clarity can use or prepare for. Connected provider records can help populate ballot previews, but a local guide is not considered verified until official state or county ballot tools and the review workflow confirm it.
+					Connected provider records can help populate ballot previews, but a local guide is not considered verified until official state or county ballot tools and the review workflow confirm it.
 				</p>
 				<div class="mt-6 gap-4 grid lg:grid-cols-2">
 					<article
@@ -149,7 +143,7 @@ function providerStatusTone(status: "active" | "needs_endpoint" | "needs_key" | 
 						</p>
 						<details class="text-sm text-app-muted leading-7 mt-5 dark:text-app-muted-dark">
 							<summary class="text-app-ink font-semibold cursor-pointer dark:text-app-text-dark focus-ring">
-								Capabilities and limits
+								Capabilities, limits, and access
 							</summary>
 							<div class="mt-4 gap-4 grid md:grid-cols-2">
 								<div>
@@ -173,124 +167,133 @@ function providerStatusTone(status: "active" | "needs_endpoint" | "needs_key" | 
 									</ul>
 								</div>
 							</div>
-						</details>
-						<details class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-							<summary class="text-app-ink font-semibold cursor-pointer dark:text-app-text-dark focus-ring">
-								For operators: access and configuration
-							</summary>
-							<p class="mt-3">
-								Environment placeholders: <span class="text-app-ink font-semibold dark:text-app-text-dark">{{ provider.envVars.join(', ') }}</span>
-							</p>
-							<div class="mt-4 flex flex-wrap gap-3">
-								<a :href="provider.setupUrl" target="_blank" rel="noreferrer" class="btn-secondary">
-									Get access
-								</a>
-								<a v-if="provider.docsUrl" :href="provider.docsUrl" target="_blank" rel="noreferrer" class="btn-secondary">
-									Open docs
-								</a>
+							<div class="mt-5 pt-5 border-t border-app-line/80 dark:border-app-line-dark">
+								<p>
+									Environment placeholders: <span class="text-app-ink font-semibold dark:text-app-text-dark">{{ provider.envVars.join(', ') }}</span>
+								</p>
+								<div class="mt-4 flex flex-wrap gap-3">
+									<a :href="provider.setupUrl" target="_blank" rel="noreferrer" class="btn-secondary">
+										Get access
+									</a>
+									<a v-if="provider.docsUrl" :href="provider.docsUrl" target="_blank" rel="noreferrer" class="btn-secondary">
+										Open docs
+									</a>
+								</div>
 							</div>
 						</details>
 					</article>
 				</div>
-			</section>
+			</details>
 
-			<section class="gap-6 grid xl:grid-cols-2">
-				<article v-for="category in data.categories" :key="category.slug" class="surface-panel">
-					<div class="flex flex-wrap gap-3 items-start justify-between">
-						<div>
-							<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+			<section class="surface-panel">
+				<div class="flex flex-wrap gap-4 items-start justify-between">
+					<div>
+						<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+							Source categories
+						</p>
+						<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
+							What each source class is used for
+						</h2>
+					</div>
+					<TrustBadge label="Source hierarchy" tone="accent" />
+				</div>
+				<p class="bc-prose text-app-muted mt-5 dark:text-app-muted-dark">
+					Most readers only need the rule and the current use case. The provider-by-provider notes remain available here for review and operations.
+				</p>
+				<div class="mt-6 space-y-4">
+					<details v-for="category in data.categories" :key="category.slug" class="surface-row">
+						<summary class="collapsible-card-summary cursor-pointer focus-ring">
+							<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
 								{{ category.title }}
 							</p>
-							<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
+							<h3 class="text-2xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
 								{{ category.summary }}
-							</h2>
-						</div>
-						<TrustBadge label="Source hierarchy" tone="accent" />
-					</div>
-					<div class="mt-6 gap-4 grid md:grid-cols-2">
-						<div class="surface-row">
-							<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
-								Authoritative rule
-							</p>
-							<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-								{{ category.authoritativeRule }}
-							</p>
-						</div>
-						<div class="surface-row">
-							<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
-								Live approach
-							</p>
-							<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-								{{ category.liveApproach }}
-							</p>
-						</div>
-					</div>
-					<div class="mt-6 space-y-4">
-						<article v-for="option in category.options" :key="option.id" class="surface-row">
-							<div class="flex flex-wrap gap-2 items-center">
-								<SourceAuthorityBadge :authority="option.authority" />
-								<TrustBadge :label="statusLabel(option.status)" :tone="statusTone(option.status)" />
-							</div>
-							<h3 class="text-2xl text-app-ink font-serif mt-4 dark:text-app-text-dark">
-								{{ option.name }}
 							</h3>
-							<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
-								{{ option.summary }}
-							</p>
-							<div class="mt-5 gap-4 grid md:grid-cols-3">
-								<div>
-									<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
-										Access
-									</p>
-									<p class="text-sm text-app-ink font-semibold mt-2 dark:text-app-text-dark">
-										{{ option.accessMethod }}
-									</p>
-								</div>
-								<div>
-									<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
-										Coverage
-									</p>
-									<p class="text-sm text-app-ink font-semibold mt-2 dark:text-app-text-dark">
-										{{ option.coverage }}
-									</p>
-								</div>
-								<div>
-									<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
-										Update pattern
-									</p>
-									<p class="text-sm text-app-ink font-semibold mt-2 dark:text-app-text-dark">
-										{{ option.updatePattern }}
-									</p>
-								</div>
-							</div>
-							<details class="text-sm text-app-muted leading-7 mt-5 dark:text-app-muted-dark">
-								<summary class="text-app-ink font-semibold cursor-pointer dark:text-app-text-dark focus-ring">
-									Best use and notes
-								</summary>
-								<p class="mt-3">
-									<strong class="text-app-ink dark:text-app-text-dark">Best use:</strong> {{ option.bestUse }}
+						</summary>
+						<div class="mt-6 gap-4 grid md:grid-cols-2">
+							<div>
+								<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+									Authoritative rule
 								</p>
-								<ul class="readable-list text-sm text-app-muted mt-4 pl-5 dark:text-app-muted-dark">
-									<li v-for="note in option.notes" :key="note">
-										{{ note }}
-									</li>
-								</ul>
-							</details>
-							<div v-if="option.links?.length" class="mt-5 flex flex-wrap gap-3">
-								<a
-									v-for="link in option.links"
-									:key="link.url"
-									:href="link.url"
-									target="_blank"
-									rel="noreferrer"
-									class="btn-secondary"
-								>
-									{{ link.label }}
-								</a>
+								<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
+									{{ category.authoritativeRule }}
+								</p>
 							</div>
-						</article>
-					</div>
-				</article>
+							<div>
+								<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+									Live approach
+								</p>
+								<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
+									{{ category.liveApproach }}
+								</p>
+							</div>
+						</div>
+						<div class="mt-6 space-y-4">
+							<details v-for="option in category.options" :key="option.id" class="surface-row">
+								<summary class="collapsible-card-summary cursor-pointer focus-ring">
+									<div class="flex flex-wrap gap-2 items-center">
+										<SourceAuthorityBadge :authority="option.authority" />
+										<TrustBadge :label="statusLabel(option.status)" :tone="statusTone(option.status)" />
+									</div>
+									<h3 class="text-2xl text-app-ink font-serif mt-4 dark:text-app-text-dark">
+										{{ option.name }}
+									</h3>
+									<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
+										{{ option.summary }}
+									</p>
+								</summary>
+								<div class="mt-5 gap-4 grid md:grid-cols-3">
+									<div>
+										<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+											Access
+										</p>
+										<p class="text-sm text-app-ink font-semibold mt-2 dark:text-app-text-dark">
+											{{ option.accessMethod }}
+										</p>
+									</div>
+									<div>
+										<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+											Coverage
+										</p>
+										<p class="text-sm text-app-ink font-semibold mt-2 dark:text-app-text-dark">
+											{{ option.coverage }}
+										</p>
+									</div>
+									<div>
+										<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+											Update pattern
+										</p>
+										<p class="text-sm text-app-ink font-semibold mt-2 dark:text-app-text-dark">
+											{{ option.updatePattern }}
+										</p>
+									</div>
+								</div>
+								<div class="text-sm text-app-muted leading-7 mt-5 dark:text-app-muted-dark">
+									<p class="mt-3">
+										<strong class="text-app-ink dark:text-app-text-dark">Best use:</strong> {{ option.bestUse }}
+									</p>
+									<ul class="readable-list text-sm text-app-muted mt-4 pl-5 dark:text-app-muted-dark">
+										<li v-for="note in option.notes" :key="note">
+											{{ note }}
+										</li>
+									</ul>
+								</div>
+								<div v-if="option.links?.length" class="mt-5 flex flex-wrap gap-3">
+									<a
+										v-for="link in option.links"
+										:key="link.url"
+										:href="link.url"
+										target="_blank"
+										rel="noreferrer"
+										class="btn-secondary"
+									>
+										{{ link.label }}
+									</a>
+								</div>
+							</details>
+						</div>
+					</details>
+				</div>
 			</section>
 		</div>
 	</section>

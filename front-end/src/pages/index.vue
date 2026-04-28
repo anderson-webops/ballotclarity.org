@@ -6,7 +6,6 @@ import type {
 	LocationLookupSelectionOption,
 	NationwideLookupResultContext
 } from "~/types/civic";
-import { contactEmail } from "~/constants";
 import { buildLocationGuessUiContent } from "~/utils/location-guess";
 import { buildPublishedGuideDestination } from "~/utils/location-lookup";
 import { normalizeLookupResponseForDisplay, resolveLookupDestination } from "~/utils/nationwide-results";
@@ -51,7 +50,7 @@ usePageSeo({
 				{
 					"@type": "ContactPoint",
 					"contactType": "editorial",
-					"email": `mailto:${contactEmail}`
+					"url": `${siteUrl}/contact`
 				}
 			],
 			"description": "A nonprofit, nonpartisan website providing source-cited ballot and voting information for local elections.",

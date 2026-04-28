@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { storeToRefs } from "pinia";
-import { contactEmail } from "~/constants";
 import { buildCompareRoute } from "~/stores/civic";
 
 const year = new Date().getFullYear();
@@ -87,12 +86,15 @@ function resolveGuideLinkTo(path: string) {
 						</p>
 						<div class="text-sm text-app-muted mt-4 space-y-4 dark:text-app-muted-dark">
 							<p>
-								<a :href="`mailto:${contactEmail}`" class="text-app-ink rounded-md transition dark:text-app-text-dark hover:text-app-accent focus-ring dark:hover:text-white">
-									{{ contactEmail }}
-								</a>
+								Questions, corrections, and volunteer help welcome.
 							</p>
 							<p>
-								Questions, corrections, and volunteer help welcome.
+								<ProtectedEmailLink
+									reveal-label="Reveal email link"
+									button-class="text-app-ink font-semibold rounded-md transition dark:text-app-text-dark hover:text-app-accent focus-ring dark:hover:text-white"
+									link-class="text-app-ink font-semibold rounded-md transition dark:text-app-text-dark hover:text-app-accent focus-ring dark:hover:text-white"
+									subject="Ballot Clarity inquiry"
+								/>
 							</p>
 							<NuxtLink to="/contact" prefetch-on="interaction" class="text-app-ink font-semibold rounded-md inline-flex gap-2 transition items-center dark:text-app-text-dark hover:text-app-accent focus-ring dark:hover:text-white">
 								<span>Open contact page</span>

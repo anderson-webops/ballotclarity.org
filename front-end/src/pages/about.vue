@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { contactEmail } from "~/constants";
-
 usePageSeo({
 	description: "Learn about the nonprofit mission behind Ballot Clarity and why voter literacy matters.",
 	path: "/about",
@@ -52,9 +50,9 @@ usePageSeo({
 				Ballot Clarity is in an early public release with limited geographic coverage. People who want to volunteer, collaborate, or ask questions are welcome to get in touch.
 			</p>
 			<div class="mt-6 flex flex-wrap gap-3">
-				<a :href="`mailto:${contactEmail}`" class="btn-primary">
+				<NuxtLink to="/contact" class="btn-primary">
 					Contact the project
-				</a>
+				</NuxtLink>
 				<NuxtLink to="/neutrality" class="btn-secondary">
 					Read neutrality policy
 				</NuxtLink>

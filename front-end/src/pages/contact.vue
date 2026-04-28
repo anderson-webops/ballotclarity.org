@@ -1,19 +1,21 @@
 <script setup lang="ts">
 import { FetchError } from "ofetch";
-import { contactEmail } from "~/constants";
 
 const api = useApiClient();
-const correctionHref = `mailto:${contactEmail}?subject=${encodeURIComponent("Ballot Clarity correction or dispute")}`;
-const volunteerHref = `mailto:${contactEmail}?subject=${encodeURIComponent("Ballot Clarity volunteer or research inquiry")}`;
-const generalHref = `mailto:${contactEmail}?subject=${encodeURIComponent("Ballot Clarity general inquiry")}`;
+const route = useRoute();
+function readQueryValue(key: string) {
+	const value = route.query[key];
+	return typeof value === "string" ? value : "";
+}
+
 const form = reactive({
 	email: "",
 	message: "",
 	name: "",
-	pageUrl: "",
+	pageUrl: readQueryValue("pageUrl"),
 	sourceLinks: "",
-	subject: "",
-	submissionType: "correction" as "correction" | "feedback"
+	subject: readQueryValue("subject"),
+	submissionType: (readQueryValue("type") === "feedback" ? "feedback" : "correction") as "correction" | "feedback"
 });
 const isSubmitting = ref(false);
 const formMessage = ref("");
@@ -81,7 +83,7 @@ usePageSeo({
 			</p>
 		</header>
 
-		<section class="surface-panel">
+		<section id="contact-form" class="surface-panel scroll-mt-28">
 			<div class="gap-6 grid lg:grid-cols-[minmax(0,1fr)_minmax(0,0.95fr)]">
 				<div>
 					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
@@ -196,8 +198,8 @@ usePageSeo({
 				<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
 					Use this when a page appears inaccurate, incomplete, unevenly framed, misquoted, or missing an important public record.
 				</p>
-				<a :href="correctionHref" class="btn-primary mt-6">
-					Email a correction request
+				<a href="#contact-form" class="btn-primary mt-6">
+					Use correction form
 				</a>
 			</div>
 
@@ -208,9 +210,12 @@ usePageSeo({
 				<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
 					Use this if you want to volunteer, collaborate, or help review public records.
 				</p>
-				<a :href="volunteerHref" class="btn-secondary mt-6">
-					Send a volunteer inquiry
-				</a>
+				<ProtectedEmailLink
+					reveal-label="Reveal volunteer email link"
+					button-class="btn-secondary mt-6"
+					link-class="btn-secondary mt-6"
+					subject="Ballot Clarity volunteer or research inquiry"
+				/>
 			</div>
 
 			<div class="surface-panel">
@@ -218,11 +223,14 @@ usePageSeo({
 					General contact
 				</h2>
 				<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-					For general questions about Ballot Clarity, use the direct project inbox.
+					For general questions about Ballot Clarity, use the form above or reveal the protected project email link.
 				</p>
-				<a :href="generalHref" class="btn-secondary mt-6">
-					Email {{ contactEmail }}
-				</a>
+				<ProtectedEmailLink
+					reveal-label="Reveal general email link"
+					button-class="btn-secondary mt-6"
+					link-class="btn-secondary mt-6"
+					subject="Ballot Clarity general inquiry"
+				/>
 			</div>
 		</section>
 

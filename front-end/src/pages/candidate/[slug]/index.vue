@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import type { Source } from "~/types/civic";
 import { storeToRefs } from "pinia";
-import { contactEmail } from "~/constants";
 import { buildCompareLaunchSlugs, buildCompareRoute } from "~/stores/civic";
 
 const civicStore = useCivicStore();
@@ -148,9 +147,16 @@ const actionCoverageNote = computed(() => {
 		? "This section highlights selected official actions tied to the current project archive. Use the evidence drawer and source rail to inspect the attached records and page limits."
 		: "This section highlights source-backed campaign, policy, or local-government actions available in the current project archive. It does not stand in for a full voting ledger.";
 });
-const reportIssueHref = computed(() => candidate.value
-	? `mailto:${contactEmail}?subject=${encodeURIComponent(`Ballot Clarity candidate review: ${candidate.value.name}`)}`
-	: `mailto:${contactEmail}?subject=${encodeURIComponent("Ballot Clarity candidate review")}`);
+const reportIssueTo = computed(() => ({
+	path: "/contact",
+	query: {
+		pageUrl: `/candidate/${candidate.value?.slug ?? candidateSlug.value}`,
+		subject: candidate.value
+			? `Ballot Clarity candidate review: ${candidate.value.name}`
+			: "Ballot Clarity candidate review",
+		type: "correction"
+	}
+}));
 
 function toggleCompare() {
 	if (candidate.value)
@@ -654,9 +660,9 @@ function saveToPlan() {
 				>
 					<template #actions>
 						<div class="flex flex-wrap gap-3">
-							<a :href="reportIssueHref" class="btn-secondary">
+							<NuxtLink :to="reportIssueTo" class="btn-secondary">
 								Report an issue
-							</a>
+							</NuxtLink>
 							<NuxtLink :to="locationHubLink.to" class="btn-secondary">
 								{{ locationHubLink.label }}
 							</NuxtLink>

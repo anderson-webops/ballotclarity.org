@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { analyticsTrackers, appName, contactEmail } from "~/constants";
+import { analyticsTrackers, appName } from "~/constants";
 
 const effectiveAt = "2026-04-26T23:30:00-04:00";
 const siteUrl = useSiteUrl();
@@ -411,10 +411,15 @@ usePageSeo({
 				</h2>
 				<div class="text-sm text-app-muted leading-7 mt-5 space-y-4 dark:text-app-muted-dark">
 					<p>
-						Questions, privacy concerns, and correction requests can be sent to
-						<a :href="`mailto:${contactEmail}`" class="underline underline-offset-3">
-							{{ contactEmail }}
-						</a>.
+						Questions, privacy concerns, and correction requests can be sent through the contact page or the protected email link below.
+					</p>
+					<p>
+						<ProtectedEmailLink
+							reveal-label="Reveal protected email link"
+							button-class="underline underline-offset-3 rounded-md focus-ring"
+							link-class="underline underline-offset-3 rounded-md focus-ring"
+							subject="Ballot Clarity privacy question"
+						/>
 					</p>
 					<p>
 						If Ballot Clarity materially changes how lookup input, browser storage, analytics, vendors, or future account-based features work, this Privacy Policy should be updated before those changes go live.

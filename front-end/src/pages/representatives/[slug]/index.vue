@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { storeToRefs } from "pinia";
 
-import { contactEmail } from "~/constants";
 import { activeNationwideLookupCookieName, parseActiveNationwideLookupCookie } from "~/utils/active-nationwide-cookie";
 import { buildNationwidePersonProfileResponse } from "~/utils/nationwide-person-profile";
 import { buildLookupContextFromNationwideResult, buildNationwideLookupRouteQuery, buildNationwideRouteTarget } from "~/utils/nationwide-route-context";
@@ -179,9 +178,16 @@ const influenceHighlights = computed(() => {
 		typeof influence.value.totalMatched === "number" ? { label: "Total matched", value: formatCurrency(influence.value.totalMatched) } : null,
 	].filter((item): item is { label: string; value: string } => Boolean(item));
 });
-const reportIssueHref = computed(() => person.value
-	? `mailto:${contactEmail}?subject=${encodeURIComponent(`Ballot Clarity representative review: ${person.value.name}`)}`
-	: `mailto:${contactEmail}?subject=${encodeURIComponent("Ballot Clarity representative review")}`);
+const reportIssueTo = computed(() => ({
+	path: "/contact",
+	query: {
+		pageUrl: `/representatives/${person.value?.slug ?? representativeSlug.value}`,
+		subject: person.value
+			? `Ballot Clarity representative review: ${person.value.name}`
+			: "Ballot Clarity representative review",
+		type: "correction"
+	}
+}));
 
 usePageSeo({
 	description: person.value?.summary ?? "Representative profile with office context, funding, influence, and source-backed civic record details.",
@@ -612,9 +618,9 @@ usePageSeo({
 								Source records, freshness, and any limits attached to this profile.
 							</p>
 						</div>
-						<a :href="reportIssueHref" class="btn-secondary">
+						<NuxtLink :to="reportIssueTo" class="btn-secondary">
 							Report an issue
-						</a>
+						</NuxtLink>
 					</div>
 					<div class="mt-6 gap-6 grid xl:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)]">
 						<div>

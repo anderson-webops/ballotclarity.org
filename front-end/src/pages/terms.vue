@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { appName, contactEmail } from "~/constants";
+import { appName } from "~/constants";
 
 const effectiveAt = "2026-04-26T23:30:00-04:00";
 const runtimeConfig = useRuntimeConfig();
@@ -24,10 +24,10 @@ const coreTerms = [
 
 const operatorAndNoticeRules = [
 	`Ballot Clarity is currently operated by ${currentOperatorName}.`,
-	`Operational questions, corrections, and formal notices can be sent to ${contactEmail}.`,
+	"Operational questions, corrections, and formal notices can be sent through the public contact page or protected email link below.",
 	...(operatorNoticeAddress
 		? [`Postal notices may also be sent to ${operatorNoticeAddress}.`]
-		: ["A separate postal notice address is not published on this host today, so email is the current notice channel for the release now online."])
+		: ["A separate postal notice address is not published on this host today, so the public contact page and protected email link are the current notice channels for the release now online."])
 ];
 
 const governingLawAndVenueRules = [
@@ -382,10 +382,15 @@ usePageSeo({
 				</h2>
 				<div class="text-sm text-app-muted leading-7 mt-5 space-y-4 dark:text-app-muted-dark">
 					<p>
-						Questions about these terms, corrections, or public-interest collaboration can be sent to
-						<a :href="`mailto:${contactEmail}`" class="underline underline-offset-3">
-							{{ contactEmail }}
-						</a>.
+						Questions about these terms, corrections, or public-interest collaboration can be sent through the public contact page or the protected email link below.
+					</p>
+					<p>
+						<ProtectedEmailLink
+							reveal-label="Reveal protected email link"
+							button-class="underline underline-offset-3 rounded-md focus-ring"
+							link-class="underline underline-offset-3 rounded-md focus-ring"
+							subject="Ballot Clarity terms question"
+						/>
 					</p>
 					<p>
 						This section should stay aligned with the operator identity, notice channel, and effective-date process actually used on the public site.

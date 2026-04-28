@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { contactEmail } from "~/constants";
-
 const { allowsGuideEntryPoints } = useGuideEntryGate();
 const standards = [
 	{
@@ -66,11 +64,7 @@ usePageSeo({
 			<InfoCallout title="Need help or found a barrier?" tone="warning">
 				Use the <NuxtLink to="/contact" class="underline underline-offset-3">
 					contact page
-				</NuxtLink> or email
-				<a :href="`mailto:${contactEmail}`" class="underline underline-offset-3">
-					{{ contactEmail }}
-				</a>
-				with the page URL, device or browser, assistive technology if relevant, and what blocked you.
+				</NuxtLink>. If the form is unavailable, use the protected email link on that page. Include the page URL, device or browser, assistive technology if relevant, and what blocked you.
 			</InfoCallout>
 		</header>
 

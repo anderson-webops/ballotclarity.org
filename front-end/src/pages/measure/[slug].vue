@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import type { Source, SourceType } from "~/types/civic";
 import { storeToRefs } from "pinia";
-import { contactEmail } from "~/constants";
 
 const civicStore = useCivicStore();
 const route = useRoute();
@@ -108,9 +107,16 @@ const readabilityNotes = [
 	"Current law, proposed changes, implementation timing, and fiscal notes are separated into different blocks instead of one blended summary.",
 	"Argument sections stay clearly attributed so Ballot Clarity does not speak in an advocacy voice."
 ];
-const reportIssueHref = computed(() => measure.value
-	? `mailto:${contactEmail}?subject=${encodeURIComponent(`Ballot Clarity measure review: ${measure.value.title}`)}`
-	: `mailto:${contactEmail}?subject=${encodeURIComponent("Ballot Clarity measure review")}`);
+const reportIssueTo = computed(() => ({
+	path: "/contact",
+	query: {
+		pageUrl: `/measure/${measure.value?.slug ?? measureSlug.value}`,
+		subject: measure.value
+			? `Ballot Clarity measure review: ${measure.value.title}`
+			: "Ballot Clarity measure review",
+		type: "correction"
+	}
+}));
 const currentDecision = computed(() => {
 	if (!measure.value)
 		return null;
@@ -630,9 +636,9 @@ function saveMeasure(decision: "no" | "review" | "yes") {
 					<template #actions>
 						<div class="flex flex-wrap gap-3">
 							<SourceDrawer :sources="measure.sources" :title="`${measure.title} full source list`" button-label="Sources" />
-							<a :href="reportIssueHref" class="btn-secondary">
+							<NuxtLink :to="reportIssueTo" class="btn-secondary">
 								Report an issue
-							</a>
+							</NuxtLink>
 							<NuxtLink :to="locationHubLink.to" class="btn-secondary">
 								{{ locationHubLink.label }}
 							</NuxtLink>

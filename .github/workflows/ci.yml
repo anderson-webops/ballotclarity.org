@@ -94,6 +94,27 @@ jobs:
       - name: End-to-end smoke test
         run: npm run test:e2e
 
+  accessibility:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+          cache: npm
+
+      - name: Pin npm version
+        run: |
+          npm i -g npm@11.7.0
+          npm -v
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Axe accessibility smoke checks
+        run: npm run a11y
+
   build:
     runs-on: ubuntu-latest
     steps:

@@ -34,7 +34,7 @@ const printPractices = [
 const knownLimits = [
 	"Print views are only as current as the published local coverage or lookup results available for that page. Official election tools still remain the final authority for live logistics.",
 	"Ballot Clarity does not generate a downloadable tagged PDF. The accessible print path is the browser print view on supported pages.",
-	"We have not implemented multilingual ballot content or alternative reading modes yet, though the design system is being shaped to support them later."
+	"Multilingual ballot content and alternative reading modes are not available yet. Future support should be added only after the content and review process can support it reliably."
 ];
 
 usePageSeo({
@@ -133,7 +133,7 @@ usePageSeo({
 
 		<section class="surface-panel">
 			<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-				What is not fully implemented yet
+				Current limits
 			</h2>
 			<ul class="readable-list text-sm text-app-muted mt-5 pl-5 dark:text-app-muted-dark">
 				<li v-for="item in knownLimits" :key="item">

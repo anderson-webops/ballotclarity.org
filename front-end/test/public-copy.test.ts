@@ -143,3 +143,12 @@ test("public policy pages disclose private access without admin jargon", () => {
 	assert.match(policyText, /private editorial access/i);
 	assert.match(policyText, /Editorial access accounts/i);
 });
+
+test("accessibility limits use public-facing availability language", () => {
+	const accessibilityPage = readPublicSource("pages/accessibility.vue");
+
+	assert.doesNotMatch(accessibilityPage, /not implemented/i);
+	assert.doesNotMatch(accessibilityPage, /design system/i);
+	assert.match(accessibilityPage, /Current limits/);
+	assert.match(accessibilityPage, /Multilingual ballot content and alternative reading modes are not available yet/);
+});

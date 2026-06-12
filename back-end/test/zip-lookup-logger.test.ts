@@ -83,7 +83,7 @@ test("ZIP lookup logger writes exact normalized 5-digit ZIP lookups", async () =
 	}
 });
 
-test("ZIP lookup logger extracts only ZIP5 from full addresses containing a ZIP", async () => {
+test("ZIP lookup logger stays silent for full addresses containing a ZIP", async () => {
 	const tempDir = mkdtempSync(join(tmpdir(), "ballot-clarity-zip-log-"));
 	const logPath = join(tempDir, "zip-events.jsonl");
 
@@ -99,26 +99,14 @@ test("ZIP lookup logger extracts only ZIP5 from full addresses containing a ZIP"
 			inputKind: "address"
 		});
 
-		const events = readLogEvents(logPath);
-
-		assert.deepEqual(events, [
-			{
-				guideAvailability: "published",
-				result: "resolved",
-				selectionRequired: false,
-				timestamp: "2026-04-26T21:30:00.000Z",
-				zip5: "30303"
-			}
-		]);
-		assert.equal(Object.hasOwn(events[0] ?? {}, "rawInput"), false);
-		assert.equal(Object.hasOwn(events[0] ?? {}, "rawLookupText"), false);
+		assert.deepEqual(readLogEvents(logPath), []);
 	}
 	finally {
 		rmSync(tempDir, { force: true, recursive: true });
 	}
 });
 
-test("ZIP lookup logger extracts ZIP5 from provider-normalized addresses", async () => {
+test("ZIP lookup logger stays silent for provider-normalized address ZIPs", async () => {
 	const tempDir = mkdtempSync(join(tmpdir(), "ballot-clarity-zip-log-"));
 	const logPath = join(tempDir, "zip-events.jsonl");
 
@@ -131,12 +119,7 @@ test("ZIP lookup logger extracts ZIP5 from provider-normalized addresses", async
 			normalizedAddress: "55 TRINITY AVE SW, ATLANTA, GA, 30303"
 		});
 
-		const events = readLogEvents(logPath);
-
-		assert.equal(events.length, 1);
-		assert.equal(events[0]?.zip5, "30303");
-		assert.equal(Object.hasOwn(events[0] ?? {}, "normalizedAddress"), false);
-		assert.equal(Object.hasOwn(events[0] ?? {}, "rawInput"), false);
+		assert.deepEqual(readLogEvents(logPath), []);
 	}
 	finally {
 		rmSync(tempDir, { force: true, recursive: true });
@@ -162,7 +145,7 @@ test("ZIP lookup logger stays silent for full addresses without a ZIP", async ()
 	}
 });
 
-test("ZIP lookup logger normalizes ZIP+4 input to ZIP5", async () => {
+test("ZIP lookup logger stays silent for ZIP+4 input", async () => {
 	const tempDir = mkdtempSync(join(tmpdir(), "ballot-clarity-zip-log-"));
 	const logPath = join(tempDir, "zip-events.jsonl");
 
@@ -171,11 +154,26 @@ test("ZIP lookup logger normalizes ZIP+4 input to ZIP5", async () => {
 
 		await logger.record("30022-1234", resolvedResponse);
 
-		const events = readLogEvents(logPath);
+		assert.deepEqual(readLogEvents(logPath), []);
+		assert.equal(normalizeZipLookupLogInput("30022-1234"), null);
+	}
+	finally {
+		rmSync(tempDir, { force: true, recursive: true });
+	}
+});
 
-		assert.equal(events.length, 1);
-		assert.equal(events[0]?.zip5, "30022");
-		assert.equal(normalizeZipLookupLogInput("30022-1234"), "30022");
+test("ZIP lookup logger stays silent for city names and mixed location strings", async () => {
+	const tempDir = mkdtempSync(join(tmpdir(), "ballot-clarity-zip-log-"));
+	const logPath = join(tempDir, "zip-events.jsonl");
+
+	try {
+		const logger = createZipLookupLogger({ enabled: true, logPath });
+
+		await logger.record("Atlanta", resolvedResponse);
+		await logger.record("Atlanta GA 30303", resolvedResponse);
+		await logger.record("30303 Atlanta", resolvedResponse);
+
+		assert.deepEqual(readLogEvents(logPath), []);
 	}
 	finally {
 		rmSync(tempDir, { force: true, recursive: true });

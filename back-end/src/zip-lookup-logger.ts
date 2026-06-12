@@ -10,8 +10,7 @@ import process from "node:process";
 export const defaultZipLookupLogPath = "/var/lib/ballotclarity/zip-lookup-events.jsonl";
 
 const truthyEnvPattern = /^(?:1|true|yes|on)$/i;
-const exactZipPattern = /^(\d{5})(?:-\d{4})?$/;
-const terminalTrimPattern = /[.,\s]+$/u;
+const exactZip5Pattern = /^\d{5}$/;
 
 export interface ZipLookupLogEvent {
 	timestamp: string;
@@ -41,38 +40,14 @@ export function isZipLookupLoggingEnabled(value = process.env.BALLOTCLARITY_ZIP_
 
 export function normalizeZipLookupLogInput(rawInput: string) {
 	const normalized = rawInput.trim();
-	return normalized.match(exactZipPattern)?.[1] ?? extractTerminalZip5(normalized);
-}
-
-function stripTerminalCountrySuffix(value: string) {
-	const normalized = value.trim().replace(terminalTrimPattern, "");
-	const lower = normalized.toLowerCase();
-
-	for (const suffix of ["united states of america", "united states", "u.s.a", "usa"]) {
-		if (!lower.endsWith(suffix))
-			continue;
-
-		const prefix = normalized.slice(0, -suffix.length).replace(terminalTrimPattern, "");
-
-		return prefix;
-	}
-
-	return normalized;
-}
-
-function extractTerminalZip5(value: string) {
-	const normalized = stripTerminalCountrySuffix(value);
-	const lastToken = normalized.split(/[\s,]+/u).filter(Boolean).at(-1) ?? "";
-
-	return lastToken.match(exactZipPattern)?.[1] ?? null;
+	return exactZip5Pattern.test(normalized) ? normalized : null;
 }
 
 function resolveZip5ForLookupLog(rawInput: string, lookupResponse: LocationLookupResponse) {
-	if (lookupResponse.inputKind === "zip")
-		return rawInput.trim().match(exactZipPattern)?.[1] ?? null;
+	if (lookupResponse.inputKind !== "zip")
+		return null;
 
-	return normalizeZipLookupLogInput(lookupResponse.normalizedAddress ?? "")
-		?? normalizeZipLookupLogInput(rawInput);
+	return normalizeZipLookupLogInput(rawInput);
 }
 
 async function appendJsonLine(logPath: string, line: string) {

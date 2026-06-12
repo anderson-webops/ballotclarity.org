@@ -10,7 +10,7 @@ const collectionSections = [
 		body: [
 			"When you use the ballot lookup, the address or ZIP code is sent with a POST request so the service can determine a location and ballot guide.",
 			"That lookup may also trigger district matching, representative attachment, and official election verification using the civic data providers needed for the requested result.",
-			"If ZIP-only operational logging is enabled, Ballot Clarity may record only the normalized 5-digit ZIP associated with a lookup, including a ZIP5 typed by the user, extracted from a typed address, extracted from ZIP+4 input, or returned by an address-normalization provider. Raw lookup text, full street addresses, ZIP+4 entries, city names, IP address, and user agent are not added to that ZIP-only log.",
+			"If ZIP-only operational logging is enabled, Ballot Clarity may record only an exact 5-digit ZIP entered by itself as the lookup input. Full street addresses, ZIP+4 entries, city names, mixed address strings, provider-normalized ZIPs, raw lookup text, IP address, and user agent are not added to that ZIP-only log.",
 			"Some hosts may also use coarse geolocation derived from request metadata to make an approximate default location guess before you enter anything manually.",
 			"The application is designed not to publish the raw lookup text in the public archive and not to persist it in browser storage used for saved ballot preferences."
 		],
@@ -118,7 +118,7 @@ const retentionRows = [
 		category: "ZIP-only lookup operations log",
 		deletion: "Removed through operational log rotation or retention cleanup; not published as civic content.",
 		retention: "Short-term operational retention, generally days to weeks rather than permanent publication.",
-		scope: "Timestamp, normalized 5-digit ZIP, lookup result, guide-availability status, and whether a ZIP area selection was required. The ZIP5 may come from exact ZIP input, ZIP+4 input, the end of a typed address, or provider-normalized address data. The log does not include raw lookup text, full street addresses, ZIP+4 entries, city names, IP address, or user agent."
+		scope: "Timestamp, exact normalized 5-digit ZIP input, lookup result, guide-availability status, and whether a ZIP area selection was required. The log does not include raw lookup text, full street addresses, ZIP+4 entries, city names, mixed address strings, provider-normalized ZIPs, IP address, or user agent."
 	},
 	{
 		access: "Stored in your browser on the current device.",

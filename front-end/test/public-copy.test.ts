@@ -8,6 +8,7 @@ const publicSourceRoots = [
 	new URL("../src/components", import.meta.url),
 	new URL("../src/pages", import.meta.url)
 ];
+const publicSourceFileRoot = new URL("../public/source-files", import.meta.url);
 
 const referenceArchiveFragments = [
 	"Elena Torres",
@@ -25,8 +26,19 @@ const referenceArchiveFragments = [
 	"marcus-hill",
 	"sandra-patel"
 ];
+const stagedSourceFileFragments = [
+	...referenceArchiveFragments,
+	"League of Metro Voters Demo File",
+	"Reference archive",
+	"reference archive",
+	"reference-archive",
+	"local reference source",
+	"locally hosted reference",
+	"stands in for",
+	"staged reference archive"
+];
 
-function collectPublicVueFiles(root: URL) {
+function collectFiles(root: URL, predicate: (entry: string) => boolean) {
 	const rootPath = fileURLToPath(root);
 	const files: string[] = [];
 	const pending = [rootPath];
@@ -46,12 +58,20 @@ function collectPublicVueFiles(root: URL) {
 				continue;
 			}
 
-			if (entry.endsWith(".vue"))
+			if (predicate(entry))
 				files.push(path);
 		}
 	}
 
 	return files;
+}
+
+function collectPublicVueFiles(root: URL) {
+	return collectFiles(root, entry => entry.endsWith(".vue"));
+}
+
+function collectPublicSourceTextFiles() {
+	return collectFiles(publicSourceFileRoot, entry => entry.endsWith(".txt"));
 }
 
 test("public copy does not expose staged reference-archive candidate names", () => {
@@ -64,6 +84,22 @@ test("public copy does not expose staged reference-archive candidate names", () 
 				if (body.includes(fragment))
 					failures.push(`${relative(process.cwd(), file)} contains ${fragment}`);
 			}
+		}
+	}
+
+	assert.deepEqual(failures, []);
+});
+
+test("public source files do not ship staged reference-archive dossier content", () => {
+	const failures: string[] = [];
+
+	for (const file of collectPublicSourceTextFiles()) {
+		const relativePath = relative(process.cwd(), file);
+		const body = readFileSync(file, "utf8");
+
+		for (const fragment of stagedSourceFileFragments) {
+			if (relativePath.includes(fragment) || body.includes(fragment))
+				failures.push(`${relativePath} contains ${fragment}`);
 		}
 	}
 

@@ -129,3 +129,17 @@ test("public corrections page stays reader-facing instead of admin-facing", () =
 	assert.match(correctionsPage, /private review notes/i);
 	assert.match(correctionsPage, /Private contact details/i);
 });
+
+test("public policy pages disclose private access without admin jargon", () => {
+	const privacyPage = readPublicSource("pages/privacy.vue");
+	const termsPage = readPublicSource("pages/terms.vue");
+	const policyText = `${privacyPage}\n${termsPage}`;
+
+	assert.doesNotMatch(policyText, /internal admin/i);
+	assert.doesNotMatch(policyText, /internal\/admin/i);
+	assert.doesNotMatch(policyText, /admin auth/i);
+	assert.doesNotMatch(policyText, /admin session/i);
+	assert.doesNotMatch(policyText, /admin store/i);
+	assert.match(policyText, /private editorial access/i);
+	assert.match(policyText, /Editorial access accounts/i);
+});

@@ -26,7 +26,7 @@ const collectionSections = [
 	{
 		body: [
 			"The app stores selected location labels, compare selections, saved ballot-plan choices, issue filters, and reading mode in local browser storage so the guide remains usable across refreshes.",
-			"The site also sets first-party cookies for saved lookup context, display timezone, and internal admin sessions.",
+			"The site also sets first-party cookies for saved lookup context, display timezone, and private editorial access sessions.",
 			"This browser-side state is tied to the browser on your device. Ballot Clarity does not maintain a public server-side user account for that state."
 		],
 		title: "Browser storage and cookies"
@@ -36,7 +36,7 @@ const collectionSections = [
 			"Hosting and runtime infrastructure may process technical data such as IP address, user agent, endpoint path, timestamp, and basic error or request metadata needed for security, integrity, and reliability.",
 			`On deployed versions of the site, ${analyticsScriptDisclosure} may receive page usage and technical request metadata needed to understand adoption, performance, and reliability.`,
 			"That operational metadata is different from the election-guide content itself and is handled as infrastructure telemetry rather than published civic data.",
-			"Internal admin authentication also creates limited operational records such as last-login timestamps and failed-login throttling signals."
+			"Private editorial authentication also creates limited operational records such as last-login timestamps and failed-login throttling signals."
 		],
 		title: "Operational metadata"
 	},
@@ -50,10 +50,10 @@ const collectionSections = [
 	},
 	{
 		body: [
-			"The site includes internal editorial and operations accounts used to review corrections, source health, and local-guide publication status.",
-			"Those internal accounts are not public user accounts, but they do use authentication cookies and server-side account records for access control and auditability."
+			"The site includes private editorial and operations accounts used to review corrections, source health, and local-guide publication status.",
+			"Those access accounts are not public user accounts, but they do use authentication cookies and server-side account records for access control and auditability."
 		],
-		title: "Internal admin accounts"
+		title: "Editorial access accounts"
 	}
 ];
 
@@ -83,7 +83,7 @@ const providerDisclosureSections = [
 	},
 	{
 		body: [
-			`Ballot Clarity also relies on hosting, delivery, logging, database providers, and ${analyticsServiceDisclosure} to serve the site, understand usage, process correction submissions, and operate the internal editorial/admin workspace.`,
+			`Ballot Clarity also relies on hosting, delivery, logging, database providers, and ${analyticsServiceDisclosure} to serve the site, understand usage, process correction submissions, and operate the private editorial workspace.`,
 			"When you follow external links, the destination site operates under its own privacy practices."
 		],
 		title: "Infrastructure and external destinations"
@@ -94,7 +94,7 @@ const useSections = [
 	"Provide location-based ballot guides and related civic-information pages.",
 	"Preserve local usability features such as saved ballot-plan choices, compare state, and reading preferences.",
 	"Operate, secure, debug, and improve the website and its reliability.",
-	"Review and respond to correction requests, privacy questions, public-interest inquiries, and internal publication workflow."
+	"Review and respond to correction requests, privacy questions, public-interest inquiries, and publication workflow."
 ];
 
 const sharingSections = [
@@ -142,11 +142,11 @@ const retentionRows = [
 		scope: "Selected location label, compare list, ballot plan, issue filters, reading mode, and related locally saved lookup context."
 	},
 	{
-		access: "Stored in the editor's browser and the admin auth layer.",
-		category: "Internal admin session cookie",
+		access: "Stored in the editor's browser and private access-control layer.",
+		category: "Editorial access session cookie",
 		deletion: "Sign out, clear browser cookies, or allow the session to expire.",
 		retention: "Up to 12 hours per session.",
-		scope: "Internal admin authentication cookie for editorial and operations access."
+		scope: "Private editorial authentication cookie for editorial and operations access."
 	},
 	{
 		access: `Hosting, operations, security tooling, and ${analyticsServiceDisclosure}.`,
@@ -156,7 +156,7 @@ const retentionRows = [
 		scope: "IP address, user agent, endpoint path, referrer, timestamps, pageview metadata, and similar request metadata."
 	},
 	{
-		access: "Project inbox, admin store, and editorial reviewers handling the issue.",
+		access: "Project inbox, review store, and editorial reviewers handling the issue.",
 		category: "Contact and correction submissions",
 		deletion: "Archived or deleted when no longer needed for support, verification, auditability, or the public corrections process.",
 		retention: "Until the issue is resolved and the supporting review record is no longer operationally needed.",
@@ -173,7 +173,7 @@ const rightsNotes = [
 
 const cookieNotes = [
 	"Ballot Clarity does not use an advertising-cookie stack and is not designed for targeted advertising or sale or sharing of personal data.",
-	"The site currently uses first-party cookies for saved lookup continuity, display timezone, and internal admin sessions, and it uses local browser storage for public-facing preference state.",
+	"The site currently uses first-party cookies for saved lookup continuity, display timezone, and private editorial access sessions, and it uses local browser storage for public-facing preference state.",
 	"Infrastructure providers may also use technical cookies or similar mechanisms needed for delivery, security, and basic functionality.",
 	`Deployed versions of the site load ${analyticsScriptDisclosure} to understand usage and performance. This service may receive technical request data and pageview metadata, but it is not used for targeted advertising.`
 ];
@@ -187,7 +187,7 @@ const childrenNotes = [
 const securityNotes = [
 	"Ballot Clarity aims to use reasonable administrative, technical, and organizational safeguards appropriate to the service.",
 	"Those safeguards are intended to reduce unnecessary data collection, limit retention, and protect the integrity of the service and its operational systems.",
-	"The service also uses admin login throttling, signed admin session cookies, and structured request logging for reliability and abuse handling.",
+	"The service also uses staff login throttling, signed editorial-access session cookies, and structured request logging for reliability and abuse handling.",
 	"No internet service can guarantee absolute security. If the project's data practices or incident posture changes materially, this policy should change as well."
 ];
 

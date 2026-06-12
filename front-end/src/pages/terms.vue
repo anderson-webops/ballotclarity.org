@@ -19,7 +19,7 @@ const serviceScope = [
 const coreTerms = [
 	`By accessing or using the Ballot Clarity website at ${siteUrl}, you agree to these Terms of Service and the Privacy Notice.`,
 	"If you do not agree to these terms, do not use the site.",
-	"The public site does not require a public account, although separate internal/admin authentication exists for editorial operations."
+	"The public site does not require a public account, although separate private editorial authentication exists for editorial operations."
 ];
 
 const operatorAndNoticeRules = [
@@ -67,7 +67,7 @@ const ownershipRules = [
 const prohibitedUses = [
 	"Do not overload, probe, attack, reverse engineer, or interfere with the site, its hosting, or its source systems.",
 	"Do not use automated access in a way that bypasses rate limits, harms reliability, or creates misleading bulk republication of the service.",
-	"Do not attempt to access internal editorial, admin, or review routes unless you are explicitly authorized to use them.",
+	"Do not attempt to access private editorial or review routes unless you are explicitly authorized to use them.",
 	"Do not use the site to impersonate an election office, spread voter confusion, or create fraudulent voting materials.",
 	"Do not remove coverage notices, source context, correction notes, or trust signals when redistributing content.",
 	"Do not submit knowingly false correction requests, malicious files, or sensitive personal information that the project does not need."
@@ -75,7 +75,7 @@ const prohibitedUses = [
 
 const suspensionRules = [
 	"Ballot Clarity may suspend, block, or rate-limit access that threatens reliability, security, source integrity, legal compliance, or other users' access to the service.",
-	"Internal editorial/admin access may be disabled when credentials are misused, when an account is no longer authorized, or when an operational incident requires lockdown.",
+	"Private editorial access may be disabled when credentials are misused, when an account is no longer authorized, or when an operational incident requires lockdown.",
 	"Suspension or blocking may occur without advance notice when the risk is security-sensitive or time-critical."
 ];
 

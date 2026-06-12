@@ -1,6 +1,6 @@
 <script setup lang="ts">
 usePageSeo({
-	description: "Learn about the nonprofit mission behind Ballot Clarity and why voter literacy matters.",
+	description: "Learn about Ballot Clarity's nonpartisan civic-information mission and why voter literacy matters.",
 	path: "/about",
 	title: "About",
 });
@@ -13,7 +13,7 @@ usePageSeo({
 				About the project
 			</p>
 			<h1 class="text-5xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-				A nonprofit civic-information platform for voter literacy.
+				A nonpartisan civic-information platform for voter literacy.
 			</h1>
 			<p class="text-base text-app-muted leading-8 mt-5 max-w-3xl dark:text-app-muted-dark">
 				Ballot Clarity is designed to make public election information easier to inspect without making the interface feel like a campaign, a news feed, or a partisan advocacy product.

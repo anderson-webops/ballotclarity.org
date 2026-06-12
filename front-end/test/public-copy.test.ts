@@ -181,3 +181,20 @@ test("accessibility limits use public-facing availability language", () => {
 	assert.match(accessibilityPage, /Current limits/);
 	assert.match(accessibilityPage, /Multilingual ballot content and alternative reading modes are not available yet/);
 });
+
+test("public project identity avoids unverified nonprofit status claims", () => {
+	const aboutPage = readPublicSource("pages/about.vue");
+	const footer = readPublicSource("components/AppFooter.vue");
+	const homePage = readPublicSource("pages/index.vue");
+	const neutralityPage = readPublicSource("pages/neutrality.vue");
+	const identityText = `${aboutPage}\n${footer}\n${homePage}\n${neutralityPage}`;
+
+	assert.doesNotMatch(identityText, /nonprofit mission/i);
+	assert.doesNotMatch(identityText, /nonpartisan nonprofit/i);
+	assert.doesNotMatch(identityText, /A nonprofit civic-information/i);
+	assert.doesNotMatch(identityText, /Ballot Clarity is a nonprofit/i);
+	assert.doesNotMatch(identityText, /501\(c\)\(3\)-style operating model/i);
+	assert.match(identityText, /public-interest civic-information site/);
+	assert.match(identityText, /Nonpartisan public-interest project/);
+	assert.match(identityText, /does not currently claim tax-exempt status/);
+});

@@ -64,7 +64,7 @@ const redFlagChecklist = [
 ];
 
 const boundaryRules = [
-	"Ballot Clarity is designed to support a strict nonpartisan voter-education posture and can be read as compatible with a future 501(c)(3)-style operating model, without claiming that tax status today.",
+	"Ballot Clarity is designed to support a strict nonpartisan voter-education posture. It does not currently claim tax-exempt status.",
 	"Candidate pages should never recommend, rank, or visually privilege one candidate over another in the same contest.",
 	"Ballot-measure pages should separate legal effect, fiscal context, and attributed arguments so explanatory text does not become advocacy copy.",
 	"If the project ever runs paid promotion, fundraising tied to election coverage, or sponsored political communications, that work should be routed through a separate compliance review before launch."

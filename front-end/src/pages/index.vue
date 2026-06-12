@@ -53,14 +53,14 @@ usePageSeo({
 					"url": `${siteUrl}/contact`
 				}
 			],
-			"description": "A nonprofit, nonpartisan website providing source-cited ballot and voting information for local elections.",
+			"description": "A public-interest, nonpartisan website providing source-cited ballot and voting information for local elections.",
 			"name": "Ballot Clarity",
 			"url": `${siteUrl}/`
 		},
 		{
 			"@context": "https://schema.org",
 			"@type": "WebSite",
-			"description": "A nonprofit, nonpartisan website providing source-cited ballot and voting information for local elections.",
+			"description": "A public-interest, nonpartisan website providing source-cited ballot and voting information for local elections.",
 			"name": "Ballot Clarity",
 			"url": `${siteUrl}/`
 		},
@@ -82,7 +82,7 @@ usePageSeo({
 });
 
 const trustFacts = computed(() => [
-	"Nonpartisan nonprofit",
+	"Nonpartisan public-interest project",
 	activeNationwideResult.value?.location
 		? `Current area: ${activeNationwideResult.value.location.displayName}`
 		: "Districts and officials vary by area",

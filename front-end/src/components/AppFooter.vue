@@ -77,7 +77,7 @@ function resolveGuideLinkTo(path: string) {
 						Ballot Clarity
 					</p>
 					<p class="bc-measure text-base text-app-muted mt-4 dark:text-app-muted-dark">
-						Ballot Clarity is a nonprofit civic-information site built to help people look up their area, review the public record, and verify details with official sources.
+						Ballot Clarity is a public-interest civic-information site built to help people look up their area, review the public record, and verify details with official sources.
 					</p>
 
 					<div class="mt-7 p-4 border border-app-line/80 rounded-[1.5rem] bg-app-bg/70 max-w-2xl dark:border-app-line-dark dark:bg-app-bg-dark/70">

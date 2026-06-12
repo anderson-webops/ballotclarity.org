@@ -164,6 +164,12 @@ function summarizeMatchedDistricts(labels: string[]) {
 }
 
 const localCorsOriginPattern = /^https?:\/\/(?:localhost|127(?:\.\d{1,3}){3}|\[::1\])(?::\d+)?$/i;
+const securityHeaders = {
+	"Permissions-Policy": "camera=(), microphone=(), geolocation=(), payment=(), usb=(), browsing-topics=()",
+	"Referrer-Policy": "strict-origin-when-cross-origin",
+	"X-Content-Type-Options": "nosniff",
+	"X-Frame-Options": "DENY"
+};
 
 function normalizeCorsOrigin(value: string | null | undefined) {
 	if (!value)
@@ -4013,6 +4019,13 @@ export async function createApp(options: CreateAppOptions = {}) {
 
 	if (process.env.TRUST_PROXY === "true")
 		app.set("trust proxy", true);
+
+	app.use((_request, response, next) => {
+		for (const [header, value] of Object.entries(securityHeaders))
+			response.setHeader(header, value);
+
+		next();
+	});
 
 	app.use(cors({
 		credentials: true,

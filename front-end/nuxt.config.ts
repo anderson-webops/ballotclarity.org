@@ -13,6 +13,16 @@ const buildId = process.env.NUXT_PUBLIC_BUILD_ID
 	|| process.env.GITHUB_SHA
 	|| process.env.COMMIT_SHA
 	|| `local-${Date.now().toString(36)}`;
+const securityHeaders = {
+	"permissions-policy": "camera=(), microphone=(), geolocation=(), payment=(), usb=(), browsing-topics=()",
+	"referrer-policy": "strict-origin-when-cross-origin",
+	"x-content-type-options": "nosniff",
+	"x-frame-options": "DENY"
+};
+const noIndexHeaders = {
+	...securityHeaders,
+	"X-Robots-Tag": "noindex, nofollow"
+};
 
 export default defineNuxtConfig({
 	modules: [
@@ -121,65 +131,47 @@ export default defineNuxtConfig({
 			}
 		},
 		routeRules: {
+			"/**": {
+				headers: securityHeaders
+			},
 			"/_nuxt/**": {
 				headers: {
+					...securityHeaders,
 					"cache-control": "public, max-age=31536000, immutable"
 				}
 			},
 			"/admin": {
-				headers: {
-					"X-Robots-Tag": "noindex, nofollow"
-				}
+				headers: noIndexHeaders
 			},
 			"/admin/**": {
-				headers: {
-					"X-Robots-Tag": "noindex, nofollow"
-				}
+				headers: noIndexHeaders
 			},
 			"/api/**": {
-				headers: {
-					"X-Robots-Tag": "noindex, nofollow"
-				}
+				headers: noIndexHeaders
 			},
 			"/ballot": {
-				headers: {
-					"X-Robots-Tag": "noindex, nofollow"
-				}
+				headers: noIndexHeaders
 			},
 			"/ballot/**": {
-				headers: {
-					"X-Robots-Tag": "noindex, nofollow"
-				}
+				headers: noIndexHeaders
 			},
 			"/compare": {
-				headers: {
-					"X-Robots-Tag": "noindex, nofollow"
-				}
+				headers: noIndexHeaders
 			},
 			"/compare/**": {
-				headers: {
-					"X-Robots-Tag": "noindex, nofollow"
-				}
+				headers: noIndexHeaders
 			},
 			"/plan": {
-				headers: {
-					"X-Robots-Tag": "noindex, nofollow"
-				}
+				headers: noIndexHeaders
 			},
 			"/plan/**": {
-				headers: {
-					"X-Robots-Tag": "noindex, nofollow"
-				}
+				headers: noIndexHeaders
 			},
 			"/search": {
-				headers: {
-					"X-Robots-Tag": "noindex, nofollow"
-				}
+				headers: noIndexHeaders
 			},
 			"/search/**": {
-				headers: {
-					"X-Robots-Tag": "noindex, nofollow"
-				}
+				headers: noIndexHeaders
 			}
 		},
 		prerender: {

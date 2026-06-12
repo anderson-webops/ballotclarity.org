@@ -647,6 +647,14 @@ test("built app renders the key ballot guide pages against the built API", async
 
 	assert.equal(ballotResponse.status, 200);
 	assert.equal(homePage.status, 200);
+	assert.equal(homePage.headers.get("x-content-type-options"), "nosniff");
+	assert.equal(homePage.headers.get("x-frame-options"), "DENY");
+	assert.equal(homePage.headers.get("referrer-policy"), "strict-origin-when-cross-origin");
+	assert.match(homePage.headers.get("permissions-policy") || "", /camera=\(\)/);
+	assert.equal(ballotResponse.headers.get("x-content-type-options"), "nosniff");
+	assert.equal(ballotResponse.headers.get("x-frame-options"), "DENY");
+	assert.equal(ballotResponse.headers.get("referrer-policy"), "strict-origin-when-cross-origin");
+	assert.match(ballotResponse.headers.get("permissions-policy") || "", /camera=\(\)/);
 	assert.match(homeHtml, /Location lookup|Civic results|Ballot guide/i);
 	assert.match(homeHtml, /Fulton County, Georgia/);
 	assert.match(homeHtml, /Choose your area/);

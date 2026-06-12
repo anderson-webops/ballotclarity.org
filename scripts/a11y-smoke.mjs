@@ -22,12 +22,20 @@ const baseUrl = `http://127.0.0.1:${frontendPort}`;
 const apiUrl = `http://127.0.0.1:${apiPort}/api`;
 const routes = [
 	"/",
+	"/results",
+	"/coverage",
+	"/status",
+	"/sources",
+	"/data-sources",
+	"/districts",
+	"/representatives",
 	"/about",
 	"/accessibility",
 	"/methodology",
 	"/neutrality",
 	"/privacy",
 	"/terms",
+	"/contact",
 	"/search"
 ];
 const colorSchemes = (process.env.A11Y_COLOR_SCHEMES || "light,dark")
@@ -47,6 +55,273 @@ const chromeCandidates = [
 
 const chromePath = chromeCandidates.find(candidate => existsSync(candidate));
 if (chromePath) process.env.PUPPETEER_EXECUTABLE_PATH = chromePath;
+
+const updatedAt = "2026-06-12T12:00:00.000Z";
+
+const mockLaunchTarget = {
+	currentElectionDate: "2026-11-03",
+	currentElectionName: "November 3, 2026 Fulton County election guide",
+	displayName: "Fulton County, Georgia",
+	name: "Fulton County",
+	nextElectionDate: "2026-11-03",
+	nextElectionName: "November 3, 2026 Fulton County election guide",
+	officialResources: [
+		{
+			authority: "official-government",
+			label: "Georgia My Voter Page",
+			sourceLabel: "Georgia Secretary of State",
+			sourceSystem: "Official state voter portal",
+			url: "https://mvp.sos.ga.gov/"
+		}
+	],
+	phase: "launching",
+	phaseLabel: "Election overview available",
+	referenceLinks: [
+		{
+			label: "Fulton County Elections",
+			note: "Official county election office.",
+			url: "https://www.fultoncountyga.gov/inside-fulton-county/fulton-county-departments/registration-and-elections"
+		}
+	],
+	slug: "fulton-county",
+	state: "GA",
+	summary: "Official election links and representative lookup are available while reviewed contest content remains under local review."
+};
+
+function guideLayer(label, status, detail, count = 0) {
+	return {
+		count,
+		detail,
+		hasContent: count > 0 || status === "official_logistics_only" || status === "verified_local",
+		label,
+		status
+	};
+}
+
+const mockGuideContent = {
+	ballotCandidates: guideLayer("Ballot candidate data", "official_logistics_only", "Verified local candidate roster is pending."),
+	candidates: guideLayer("Candidates", "official_logistics_only", "Candidate pages are not published in this mock coverage."),
+	contests: guideLayer("Contests", "official_logistics_only", "Contest pages are still under review."),
+	guideShell: guideLayer("Election overview", "official_logistics_only", "Official logistics and jurisdiction context are available.", 1),
+	measures: guideLayer("Measures", "official_logistics_only", "No verified local measures are published in this mock coverage."),
+	mixedContent: false,
+	officialLogistics: guideLayer("Official logistics", "official_logistics_only", "Official election links are attached.", 2),
+	publishedGuideShell: true,
+	summary: "This mock a11y fixture represents an official-logistics-only election overview.",
+	verifiedContestPackage: false
+};
+
+const mockCoverage = {
+	collections: [
+		{
+			href: "/sources",
+			id: "sources",
+			label: "Source directory",
+			status: "canonical",
+			summary: "Published source records and provider classes."
+		}
+	],
+	coverageMode: "snapshot",
+	coverageUpdatedAt: updatedAt,
+	currentState: "Official election logistics are available; verified contest content is pending review.",
+	guideContent: mockGuideContent,
+	launchTarget: mockLaunchTarget,
+	limitations: [
+		{
+			id: "official-verification",
+			summary: "Use official state and county tools for final ballot, deadline, and polling-place confirmation.",
+			title: "Verify with official election tools"
+		}
+	],
+	locationGuess: {
+		canGuessOnLoad: false,
+		mode: "disabled"
+	},
+	nextSteps: [
+		"Verify official ballot materials before publishing contest pages."
+	],
+	routeFamilies: [
+		{
+			activeSources: ["official-election-verification"],
+			id: "overview",
+			label: "Election overview",
+			note: "Official links are visible.",
+			routes: ["/coverage", "/results"],
+			status: "live-now",
+			summary: "Core election overview routes are available."
+		}
+	],
+	scopeNote: "Mock a11y fixture for public-route rendering.",
+	snapshotProvenance: {
+		configuredSnapshotMissing: false,
+		loadedAt: updatedAt,
+		note: "A11y smoke fixture.",
+		sourceLabel: "A11y smoke fixture",
+		sourceType: "imported",
+		status: "reviewed"
+	},
+	supportedContentTypes: [
+		{
+			id: "official-logistics",
+			label: "Official election logistics",
+			status: "live-now",
+			summary: "Official voter portals and local election-office links are available."
+		},
+		{
+			id: "representatives",
+			label: "Representative data",
+			status: "live-now",
+			summary: "Current representative lookup and district context are available."
+		},
+		{
+			id: "verified-contests",
+			label: "Verified contest package",
+			status: "in-build",
+			summary: "Contest, candidate, and measure pages require local review before publication."
+		}
+	],
+	updatedAt
+};
+
+const mockSource = {
+	authority: "official-government",
+	citationCount: 2,
+	citedBy: [
+		{
+			href: "/coverage",
+			id: "coverage",
+			label: "Coverage profile",
+			type: "page"
+		}
+	],
+	date: "2026-06-12",
+	geographicScope: "United States",
+	id: "official-election-verification",
+	limitations: [
+		"Availability and exact ballot records vary by state and county."
+	],
+	note: "Official election tools remain the final authority.",
+	primarySourceLabel: "Official election tools",
+	publicationKind: "curated-global",
+	publisher: "State and county election offices",
+	publisherType: "official",
+	reviewNote: "Reviewed as a public a11y fixture.",
+	routeFamilies: ["coverage", "results", "official-tools"],
+	sourceSystem: "Official election verification layer",
+	summary: "Official state and county election tools used for voter-facing verification links.",
+	title: "Official election verification layer",
+	type: "official record",
+	url: "https://www.usa.gov/state-election-office",
+	usedFor: "Final ballot, registration, polling-place, and deadline verification."
+};
+
+const mockDataSources = {
+	architectureStages: [
+		{
+			details: ["Provider records are labeled and reviewed before publication."],
+			id: "review",
+			summary: "Provider-backed data is not treated as final ballot content without review.",
+			title: "Review before publication"
+		}
+	],
+	ballotContentProviders: [
+		{
+			authority: "third-party civic infrastructure",
+			bestUse: "Provider ballot previews can help prepare review packages before official verification.",
+			capabilities: ["Address-based ballot lookup", "Candidate records", "Measure records"],
+			configured: false,
+			connectionStatus: "needs_key",
+			docsUrl: "https://developers.google.com/civic-information",
+			envVars: ["GOOGLE_CIVIC_API_KEY"],
+			id: "google-civic",
+			label: "Google Civic Information API",
+			limitations: ["Coverage is election-window dependent.", "Official sources remain final authority."],
+			setupUrl: "https://developers.google.com/civic-information"
+		}
+	],
+	categories: [
+		{
+			authoritativeRule: "Official election offices are the final authority for ballot and logistics details.",
+			liveApproach: "Show official links first and label provider records clearly.",
+			options: [
+				{
+					accessMethod: "Public web and API records",
+					authority: "official-government",
+					bestUse: "Voter portal, ballot, deadline, and polling-place verification.",
+					coverage: "State and local",
+					id: "official-election-tools",
+					links: [
+						{
+							label: "Find state election office",
+							url: "https://www.usa.gov/state-election-office"
+						}
+					],
+					name: "Official election tools",
+					notes: ["Use these records for final confirmation."],
+					status: "planned-live",
+					summary: "Official sources used for final verification.",
+					updatePattern: "Election-office dependent"
+				}
+			],
+			slug: "official-election-tools",
+			summary: "Official ballot and voting logistics records.",
+			title: "Official election tools"
+		}
+	],
+	launchTarget: mockLaunchTarget,
+	migrationWatch: [
+		{
+			id: "ballot-content",
+			implication: "Reviewed contest packages should stay separated from provider previews.",
+			summary: "Provider availability changes by election window.",
+			title: "Ballot data coverage"
+		}
+	],
+	principles: [
+		"Official sources are preferred for final voter-facing decisions.",
+		"Provider records must be labeled and reviewed before publication."
+	],
+	roadmap: [
+		{
+			id: "verified-contests",
+			summary: "Publish reviewed contest packages only after official source checks.",
+			title: "Verified local contest packages"
+		}
+	],
+	updatedAt
+};
+
+const mockStatus = {
+	coverageMode: "snapshot",
+	coverageUpdatedAt: updatedAt,
+	incidents: [],
+	nextPublishWindow: "After official ballot review",
+	nextReviewAt: updatedAt,
+	notes: [
+		"Official election logistics are available in the a11y fixture.",
+		"Verified contest content remains pending review."
+	],
+	overallStatus: "healthy",
+	snapshotProvenance: mockCoverage.snapshotProvenance,
+	sourceSummary: {
+		healthy: 1,
+		incident: 0,
+		"review-soon": 0,
+		stale: 0
+	},
+	sources: [
+		{
+			authority: "official-government",
+			health: "healthy",
+			id: "official-election-verification",
+			label: "Official election verification layer",
+			lastCheckedAt: updatedAt,
+			nextCheckAt: updatedAt,
+			note: "Official election tools are reachable in the mock status fixture."
+		}
+	],
+	updatedAt
+};
 
 function writeServerLine(prefix, data) {
 	const text = data.toString().trim();
@@ -76,28 +351,34 @@ function emptyCollection() {
 
 function responseFor(url) {
 	const pathname = url.pathname.replace(/\/+/g, "/");
-	if (pathname.endsWith("/pageview")) return { pageview: 0, startAt: Date.now() };
-	if (pathname.includes("/session")) return { authenticated: false, user: null, admin: null };
-	if (pathname.includes("/auth") || pathname.includes("/login")) return { authenticated: false, user: null, token: "" };
-	if (pathname.includes("/me") || pathname.includes("/account")) return { user: null, authenticated: false };
-	if (pathname.includes("/quotes")) return [];
-	if (pathname.includes("/availability")) {
+	const apiPathname = pathname.startsWith("/api/") ? pathname.slice(4) : pathname;
+	if (apiPathname === "/coverage") return mockCoverage;
+	if (apiPathname === "/status") return mockStatus;
+	if (apiPathname === "/data-sources") return mockDataSources;
+	if (apiPathname === "/sources") return { sources: [mockSource], updatedAt };
+	if (apiPathname === `/sources/${mockSource.id}`) return { source: mockSource, updatedAt };
+	if (apiPathname.endsWith("/pageview")) return { pageview: 0, startAt: Date.now() };
+	if (apiPathname.includes("/session")) return { authenticated: false, user: null, admin: null };
+	if (apiPathname.includes("/auth") || apiPathname.includes("/login")) return { authenticated: false, user: null, token: "" };
+	if (apiPathname.includes("/me") || apiPathname.includes("/account")) return { user: null, authenticated: false };
+	if (apiPathname.includes("/quotes")) return [];
+	if (apiPathname.includes("/availability")) {
 		const start = new Date(Date.now() + 24 * 60 * 60_000);
 		start.setMinutes(0, 0, 0);
 		const end = new Date(start.getTime() + 60 * 60_000);
 		return [{ id: "a11y-slot", title: "Available", start: start.toISOString(), end: end.toISOString() }];
 	}
-	if (pathname.includes("/topics")) return { topics: [], claims: [], ...emptyCollection() };
-	if (pathname.includes("/claims")) return { claims: [], ...emptyCollection() };
-	if (pathname.includes("/search")) return { query: url.searchParams.get("q") || "", ...emptyCollection() };
-	if (pathname.includes("/submissions") || pathname.includes("/board") || pathname.includes("/items")) return emptyCollection();
-	if (pathname.includes("/service-directory")) return { services: [], categories: [], ...emptyCollection() };
-	if (pathname.includes("/elections")) return { elections: [], ...emptyCollection() };
-	if (pathname.includes("/jurisdictions") || pathname.includes("/locations") || pathname.includes("/districts")) return { jurisdictions: [], locations: [], districts: [], ...emptyCollection() };
-	if (pathname.includes("/representatives") || pathname.includes("/candidate")) return { representatives: [], candidates: [], ...emptyCollection() };
-	if (pathname.includes("/sources")) return { sources: [], ...emptyCollection() };
-	if (pathname.includes("/products")) return [];
-	if (pathname.includes("/contact") || pathname.includes("/cart") || pathname.includes("/orders")) return { ok: true };
+	if (apiPathname.includes("/topics")) return { topics: [], claims: [], ...emptyCollection() };
+	if (apiPathname.includes("/claims")) return { claims: [], ...emptyCollection() };
+	if (apiPathname.includes("/search")) return { query: url.searchParams.get("q") || "", ...emptyCollection() };
+	if (apiPathname.includes("/submissions") || apiPathname.includes("/board") || apiPathname.includes("/items")) return emptyCollection();
+	if (apiPathname.includes("/service-directory")) return { services: [], categories: [], ...emptyCollection() };
+	if (apiPathname.includes("/elections")) return { elections: [], ...emptyCollection() };
+	if (apiPathname.includes("/jurisdictions") || apiPathname.includes("/locations") || apiPathname.includes("/districts")) return { jurisdictions: [], locations: [], districts: [], ...emptyCollection() };
+	if (apiPathname.includes("/representatives") || apiPathname.includes("/candidate")) return { representatives: [], candidates: [], ...emptyCollection() };
+	if (apiPathname.includes("/sources")) return { sources: [], ...emptyCollection() };
+	if (apiPathname.includes("/products")) return [];
+	if (apiPathname.includes("/contact") || apiPathname.includes("/cart") || apiPathname.includes("/orders")) return { ok: true };
 	return { ok: true, ...emptyCollection() };
 }
 
@@ -189,13 +470,24 @@ function closeServer(server) {
 async function analyzePage(browser, route, scheme) {
 	const url = `${baseUrl}${route}`;
 	const page = await browser.newPage();
+	const pageErrors = [];
+	page.on("pageerror", error => pageErrors.push(error.message));
 	page.setDefaultTimeout(30_000);
 	await page.setViewport({ width: 1280, height: 1000, deviceScaleFactor: 1 });
 	if (scheme === "dark" || scheme === "light") {
 		await page.emulateMediaFeatures([{ name: "prefers-color-scheme", value: scheme }]);
 	}
-	await page.goto(url, { waitUntil: "domcontentloaded", timeout: 30_000 });
+	const response = await page.goto(url, { waitUntil: "domcontentloaded", timeout: 30_000 });
+	if (!response?.ok()) {
+		const status = response?.status() ?? "no response";
+		await page.close();
+		throw new Error(`${url} returned ${status}`);
+	}
 	await page.waitForNetworkIdle({ idleTime: 500, timeout: 8_000 }).catch(() => {});
+	if (pageErrors.length) {
+		await page.close();
+		throw new Error(`${url} produced page errors: ${pageErrors.join(" | ")}`);
+	}
 	await page.addScriptTag({ path: axeSourcePath });
 	const result = await page.evaluate(async () => {
 		return await globalThis.axe.run(document, {

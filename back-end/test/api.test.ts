@@ -1880,8 +1880,9 @@ test("GET /api/data-sources returns the live-data roadmap and migration notes", 
 	assert.equal(body.launchTarget.displayName, "Fulton County, Georgia");
 	assert.ok(body.categories[0].options[0].links.length >= 1);
 	assert.equal(body.ballotContentProviders.length, 5);
-	assert.equal(body.ballotContentProviders.some((provider: { id: string; envVars: string[] }) => provider.id === "ballotpedia" && provider.envVars.includes("BALLOTPEDIA_API_KEY")), true);
 	assert.equal(body.ballotContentProviders.some((provider: { id: string; connectionStatus: string }) => provider.id === "ctcl-bip" && provider.connectionStatus === "needs_partner_access"), true);
+	assert.equal(body.ballotContentProviders.some((provider: { envVars?: string[] }) => Object.hasOwn(provider, "envVars")), false);
+	assert.doesNotMatch(JSON.stringify(body.ballotContentProviders), /API_KEY|BASE_URL|CTCL_BIP|BALLOTPEDIA|BALLOTREADY|DEMOCRACY_WORKS/);
 	assert.equal(body.coverageMode, "snapshot");
 	assert.equal(body.assetMode, "public-mirror");
 });

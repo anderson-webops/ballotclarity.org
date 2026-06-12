@@ -2,7 +2,6 @@ import type { ChildProcessWithoutNullStreams } from "node:child_process";
 import assert from "node:assert/strict";
 import { Buffer } from "node:buffer";
 import { spawn } from "node:child_process";
-import { once } from "node:events";
 import { existsSync, mkdtempSync, rmSync } from "node:fs";
 import { createServer } from "node:net";
 import { tmpdir } from "node:os";
@@ -321,8 +320,7 @@ function startChromeProcess(command: string, args: string[]) {
 
 async function stopChromeProcess(processHandle: ChildProcessWithoutNullStreams | null, userDataDir?: string) {
 	if (processHandle && processHandle.exitCode === null) {
-		processHandle.kill("SIGTERM");
-		await once(processHandle, "exit");
+		await stopChildProcess(processHandle, "Chrome");
 	}
 
 	if (userDataDir)
@@ -485,12 +483,46 @@ async function waitForUrl(url: string, label: string) {
 	throw new Error(`Timed out waiting for ${label} at ${url}`);
 }
 
-async function stopProcess(processHandle: ChildProcessWithoutNullStreams | null) {
-	if (!processHandle || processHandle.exitCode !== null)
+function waitForChildExit(processHandle: ChildProcessWithoutNullStreams, timeoutMs: number) {
+	return new Promise<boolean>((resolve) => {
+		const cleanup = () => {
+			clearTimeout(timeout);
+			processHandle.off("exit", handleExit);
+		};
+		const handleExit = () => {
+			cleanup();
+			resolve(true);
+		};
+		const timeout = setTimeout(() => {
+			cleanup();
+			resolve(false);
+		}, timeoutMs);
+
+		timeout.unref();
+		processHandle.once("exit", handleExit);
+	});
+}
+
+async function stopChildProcess(processHandle: ChildProcessWithoutNullStreams, label: string) {
+	if (processHandle.exitCode !== null)
 		return;
 
 	processHandle.kill("SIGTERM");
-	await once(processHandle, "exit");
+
+	if (await waitForChildExit(processHandle, 3000))
+		return;
+
+	processHandle.kill("SIGKILL");
+
+	if (!await waitForChildExit(processHandle, 3000))
+		throw new Error(`${label} process did not exit after SIGKILL.`);
+}
+
+async function stopProcess(processHandle: ChildProcessWithoutNullStreams | null) {
+	if (!processHandle)
+		return;
+
+	await stopChildProcess(processHandle, "child");
 }
 
 before(async () => {

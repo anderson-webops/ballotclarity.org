@@ -83,7 +83,7 @@ import { createAddressCacheRepository } from "./address-cache-repository.js";
 import { createAddressEnrichmentService } from "./address-enrichment.js";
 import { createAdminLoginThrottle } from "./admin-login-throttle.js";
 import { createAdminRepository } from "./admin-repository.js";
-import { buildBallotContentProviderSummary, getBallotContentProviderOptions } from "./ballot-content-providers.js";
+import { buildBallotContentProviderSummary, getPublicBallotContentProviderOptions } from "./ballot-content-providers.js";
 import { createCensusGeocoderClient } from "./census-geocoder.js";
 import { createCongressClient, isCurrentCongressMemberRecord } from "./congress.js";
 import { createCoverageRepository } from "./coverage-repository.js";
@@ -4269,7 +4269,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 		response.json({
 			...coverageRepository.data.dataSources,
 			assetMode: sourceAssetStore.mode,
-			ballotContentProviders: getBallotContentProviderOptions(),
+			ballotContentProviders: getPublicBallotContentProviderOptions(),
 			coverageMode: coverageRepository.mode,
 			sourceAssetBaseUrl: sourceAssetStore.baseUrl
 		});

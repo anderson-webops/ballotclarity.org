@@ -1,4 +1,4 @@
-import type { BallotContentProviderOption } from "./types/civic.js";
+import type { BallotContentProviderInternalOption, BallotContentProviderOption } from "./types/civic.js";
 import process from "node:process";
 
 function hasEnv(name: string) {
@@ -9,7 +9,7 @@ function connectionStatus(configured: boolean, fallback: BallotContentProviderOp
 	return configured ? "active" : fallback;
 }
 
-export function getBallotContentProviderOptions(): BallotContentProviderOption[] {
+export function getBallotContentProviderOptions(): BallotContentProviderInternalOption[] {
 	const ctclConfigured = hasEnv("CTCL_BIP_API_URL");
 	const ballotpediaConfigured = hasEnv("BALLOTPEDIA_API_KEY");
 	const ballotReadyConfigured = hasEnv("BALLOTREADY_API_KEY") && hasEnv("BALLOTREADY_API_URL");
@@ -134,6 +134,21 @@ export function getBallotContentProviderOptions(): BallotContentProviderOption[]
 			setupUrl: "https://www.democracy.works/elections-api"
 		}
 	];
+}
+
+export function getPublicBallotContentProviderOptions(): BallotContentProviderOption[] {
+	return getBallotContentProviderOptions().map(provider => ({
+		authority: provider.authority,
+		bestUse: provider.bestUse,
+		capabilities: provider.capabilities,
+		configured: provider.configured,
+		connectionStatus: provider.connectionStatus,
+		docsUrl: provider.docsUrl,
+		id: provider.id,
+		label: provider.label,
+		limitations: provider.limitations,
+		setupUrl: provider.setupUrl
+	}));
 }
 
 export function buildBallotContentProviderSummary() {

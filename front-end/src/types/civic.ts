@@ -711,7 +711,6 @@ export interface BallotContentProviderOption {
 	authority: SourceAuthority;
 	connectionStatus: BallotContentProviderConnectionStatus;
 	configured: boolean;
-	envVars: string[];
 	setupUrl: string;
 	docsUrl?: string;
 	capabilities: string[];

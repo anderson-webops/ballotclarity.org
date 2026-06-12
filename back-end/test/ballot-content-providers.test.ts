@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { buildBallotContentProviderSummary, getBallotContentProviderOptions } from "../src/ballot-content-providers.js";
+import { buildBallotContentProviderSummary, getBallotContentProviderOptions, getPublicBallotContentProviderOptions } from "../src/ballot-content-providers.js";
 
 const envNames = [
 	"BALLOTPEDIA_API_BASE_URL",
@@ -72,5 +72,16 @@ test("ballot-content provider registry marks configured API paths active", () =>
 			needsAccess: 0,
 			total: 5,
 		});
+	});
+});
+
+test("public ballot-content provider options omit operator environment variable names", () => {
+	withCleanProviderEnv(() => {
+		const providers = getPublicBallotContentProviderOptions();
+		const serialized = JSON.stringify(providers);
+
+		assert.equal(providers.length, 5);
+		assert.equal(providers.some(provider => Object.hasOwn(provider, "envVars")), false);
+		assert.doesNotMatch(serialized, /API_KEY|BASE_URL|CTCL_BIP|BALLOTPEDIA|BALLOTREADY|DEMOCRACY_WORKS/);
 	});
 });

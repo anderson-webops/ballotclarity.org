@@ -71,6 +71,14 @@ test("app theme system uses semantic CSS tokens and footer picker placement", ()
 	assert.doesNotMatch(unoConfig, /<alpha-value>/);
 });
 
+test("font utilities use deterministic fallback stacks without build-time web font fetching", () => {
+	assert.doesNotMatch(unoConfig, /presetWebFonts/);
+	assert.doesNotMatch(unoConfig, /createLocalFontProcessor/);
+	assert.ok(unoConfig.includes("\\\"Public Sans\\\", ui-sans-serif, system-ui"));
+	assert.ok(unoConfig.includes("\\\"Source Serif 4\\\", ui-serif, Georgia"));
+	assert.ok(unoConfig.includes("\\\"IBM Plex Mono\\\", ui-monospace"));
+});
+
 test("filled controls use contrast-safe action tokens", () => {
 	assert.match(mainCss, /background: var\(--app-action\);/);
 	assert.match(mainCss, /color: var\(--app-action-text\);/);

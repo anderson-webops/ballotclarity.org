@@ -1,10 +1,8 @@
-import { createLocalFontProcessor } from "@unocss/preset-web-fonts/local";
 import {
 	defineConfig,
 	presetAttributify,
 	presetIcons,
 	presetTypography,
-	presetWebFonts,
 	presetWind4,
 	transformerDirectives,
 	transformerVariantGroup,
@@ -45,6 +43,11 @@ export default defineConfig({
 				"warm": "rgb(var(--app-warm-rgb))",
 			},
 		},
+		font: {
+			mono: "\"IBM Plex Mono\", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, \"Liberation Mono\", monospace",
+			sans: "\"Public Sans\", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+			serif: "\"Source Serif 4\", ui-serif, Georgia, Cambria, \"Times New Roman\", Times, serif",
+		},
 	},
 	presets: [
 		presetWind4(),
@@ -53,14 +56,6 @@ export default defineConfig({
 			scale: 1.2,
 		}),
 		presetTypography(),
-		presetWebFonts({
-			fonts: {
-				sans: "Public Sans",
-				serif: "Source Serif 4",
-				mono: "IBM Plex Mono",
-			},
-			processors: createLocalFontProcessor(),
-		}),
 	],
 	transformers: [
 		transformerDirectives(),

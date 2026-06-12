@@ -769,7 +769,7 @@ test("built app renders the key ballot guide pages against the built API", async
 	assert.match(methodologyHtml, /How summaries are generated/);
 	assert.equal(privacyPage.status, 200);
 	assert.match(privacyHtml, /Privacy Policy/);
-	assert.match(privacyHtml, /What data Ballot Clarity handles today/);
+	assert.match(privacyHtml, /What data Ballot Clarity currently handles/);
 	assert.match(privacyHtml, /The application is designed not to publish the raw lookup text/);
 	assert.match(privacyHtml, /No sale, sharing, or targeted advertising/);
 	assert.match(privacyHtml, /Current third-party processors and civic-data recipients/);

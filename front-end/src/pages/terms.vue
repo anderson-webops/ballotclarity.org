@@ -27,16 +27,16 @@ const operatorAndNoticeRules = [
 	"Operational questions, corrections, and formal notices can be sent through the public contact page or protected email link below.",
 	...(operatorNoticeAddress
 		? [`Postal notices may also be sent to ${operatorNoticeAddress}.`]
-		: ["A separate postal notice address is not published on this host today, so the public contact page and protected email link are the notice channels for this service."])
+		: ["A separate postal notice address is not currently published for this service, so the public contact page and protected email link are the notice channels for this service."])
 ];
 
 const governingLawAndVenueRules = [
 	...(governingLaw
 		? [`These public site terms are governed by the laws of ${governingLaw}, without regard to conflict-of-law rules that would require a different jurisdiction's law to apply.`]
-		: ["No governing-law clause is published on this host today. Do not assume any unstated jurisdiction rule applies."]),
+		: ["No governing-law clause is currently published for this service. Do not assume any unstated jurisdiction rule applies."]),
 	...(venue
 		? [`Any claim that must be filed in court should be brought in ${venue}, unless a different venue is required by non-waivable law.`]
-		: ["No venue clause is published on this host today. Do not assume any unstated venue term applies."])
+		: ["No venue clause is currently published for this service. Do not assume any unstated venue term applies."])
 ];
 
 const noAdviceRules = [

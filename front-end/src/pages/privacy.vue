@@ -18,7 +18,7 @@ const collectionSections = [
 			"When you use the ballot lookup, the address or ZIP code is sent with a POST request so the service can determine a location and ballot guide.",
 			"That lookup may also trigger district matching, representative attachment, and official election verification using the civic data providers needed for the requested result.",
 			"If ZIP-only operational logging is enabled, Ballot Clarity may record only an exact 5-digit ZIP entered by itself as the lookup input. Full street addresses, ZIP+4 entries, city names, mixed address strings, provider-normalized ZIPs, raw lookup text, IP address, and user agent are not added to that ZIP-only log.",
-			"Some hosts may also use coarse geolocation derived from request metadata to make an approximate default location guess before you enter anything manually.",
+			"The site may also use coarse geolocation derived from request metadata to make an approximate default location guess before you enter anything manually.",
 			"The application is designed not to publish the raw lookup text in the public archive and not to persist it in browser storage used for saved ballot preferences."
 		],
 		title: "Address or ZIP lookup input"
@@ -99,10 +99,10 @@ const useSections = [
 
 const sharingSections = [
 	"Ballot Clarity discloses lookup or route-derived data only to the service providers and public-interest civic-data systems needed to produce the requested page or official verification result.",
-	`Third-party recipients in active flows include the U.S. Census Geocoder, Google Civic Information API, Open States, Congress.gov, OpenFEC, LDA.gov, and ${analyticsServiceDisclosure}, plus hosting, logging, and delivery providers needed to run the service. Optional ballot-content providers are disclosed on the data-sources page and should be treated as active recipients only when configured.`,
+	`Third-party recipients in active flows include the U.S. Census Geocoder, Google Civic Information API, Open States, Congress.gov, OpenFEC, LDA.gov, and ${analyticsServiceDisclosure}, plus hosting, logging, and delivery providers needed to run the service. Optional ballot-content providers are disclosed on the data-sources page and are active recipients only when configured.`,
 	"Ballot Clarity does not disclose address lookup input to advertising networks and is not designed to sell or share personal data for cross-context behavioral advertising.",
 	"When you follow external source links, official agencies, filing systems, campaigns, or other third-party sites operate under their own privacy practices.",
-	"If Ballot Clarity materially changes the current provider stack or starts sharing data for a new purpose, this policy should be updated before that change goes live."
+	"If Ballot Clarity materially changes the current provider stack or starts sharing data for a new purpose, this policy will be updated before that change goes live."
 ];
 
 const retentionRows = [
@@ -151,7 +151,7 @@ const retentionRows = [
 	{
 		access: `Hosting, operations, security tooling, and ${analyticsServiceDisclosure}.`,
 		category: "Operational request metadata",
-		deletion: "Managed through host and operator settings, with longer retention permitted for active abuse handling, incident response, or legal obligations.",
+		deletion: "Managed through service settings, with longer retention permitted for active abuse handling, incident response, or legal obligations.",
 		retention: "Short-term operational retention, generally days to weeks rather than permanent publication.",
 		scope: "IP address, user agent, endpoint path, referrer, timestamps, pageview metadata, and similar request metadata."
 	},
@@ -210,7 +210,7 @@ usePageSeo({
 				Privacy Policy
 			</h1>
 			<p class="text-base text-app-muted leading-8 mt-5 max-w-3xl dark:text-app-muted-dark">
-				This policy describes how {{ appName }} handles address lookup input, any optional approximate location-guessing configured on a host, browser-stored guide preferences, hosted contact or correction submissions, operational metadata, and direct contact messages. It applies to the public site at {{ siteUrl }}, not to any future product that collects more data than the site collects today.
+				This policy describes how {{ appName }} handles address lookup input, any optional approximate location-guessing configured for the site, browser-stored guide preferences, hosted contact or correction submissions, operational metadata, and direct contact messages. It applies to the public site at {{ siteUrl }}, not to any future product that collects more data than the current public site collects.
 			</p>
 			<div class="mt-5">
 				<UpdatedAt label="Effective" :value="effectiveAt" />
@@ -218,7 +218,7 @@ usePageSeo({
 		</header>
 
 		<InfoCallout title="Plain-language summary">
-			Ballot Clarity uses address or ZIP input, plus any optional approximate location guess configured on a host, only to match ballot coverage and official verification context. It does not create public user accounts, does not run targeted advertising, and is not designed to sell or share personal data. The app does save selected location labels and ballot-plan preferences locally in your browser so the guide remains usable across refreshes.
+			Ballot Clarity uses address or ZIP input, plus any optional approximate location guess configured for the site, only to match ballot coverage and official verification context. It does not create public user accounts, does not run targeted advertising, and is not designed to sell or share personal data. The app does save selected location labels and ballot-plan preferences locally in your browser so the guide remains usable across refreshes.
 		</InfoCallout>
 
 		<section class="surface-panel">
@@ -226,7 +226,7 @@ usePageSeo({
 				What data we handle
 			</p>
 			<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-				What data Ballot Clarity handles today
+				What data Ballot Clarity currently handles
 			</h2>
 			<div class="mt-6 gap-4 grid lg:grid-cols-2">
 				<article v-for="item in collectionSections" :key="item.title" class="px-5 py-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
@@ -429,10 +429,10 @@ usePageSeo({
 						/>
 					</p>
 					<p>
-						If Ballot Clarity materially changes how lookup input, browser storage, analytics, vendors, or future account-based features work, this Privacy Policy should be updated before those changes go live.
+						If Ballot Clarity materially changes how lookup input, browser storage, analytics, vendors, or future account-based features work, this Privacy Policy will be updated before those changes go live.
 					</p>
 					<p>
-						This page should be read together with the on-page explanation near the ballot lookup form, the contact and corrections workflow, and the public methodology notes.
+						Read this page together with the on-page explanation near the ballot lookup form, the contact and corrections workflow, and the public methodology notes.
 					</p>
 				</div>
 				<div class="mt-6 flex flex-wrap gap-3">

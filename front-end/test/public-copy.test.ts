@@ -152,6 +152,25 @@ test("terms contact section stays user-facing instead of maintainer-facing", () 
 	assert.match(termsPage, /Formal notices should use the contact options listed here/);
 });
 
+test("public policy pages avoid host-specific maintenance wording", () => {
+	const privacyPage = readPublicSource("pages/privacy.vue");
+	const termsPage = readPublicSource("pages/terms.vue");
+	const policyText = `${privacyPage}\n${termsPage}`;
+
+	assert.doesNotMatch(policyText, /this host today/i);
+	assert.doesNotMatch(policyText, /configured on a host/i);
+	assert.doesNotMatch(policyText, /Some hosts may/i);
+	assert.doesNotMatch(policyText, /host and operator settings/i);
+	assert.doesNotMatch(policyText, /policy should be updated/i);
+	assert.doesNotMatch(policyText, /This page should be read/i);
+	assert.match(policyText, /configured for the site/i);
+	assert.match(policyText, /The site may also use coarse geolocation/i);
+	assert.match(policyText, /Managed through service settings/i);
+	assert.match(policyText, /Privacy Policy will be updated/i);
+	assert.match(policyText, /currently published for this service/i);
+	assert.match(policyText, /What data Ballot Clarity currently handles/);
+});
+
 test("accessibility limits use public-facing availability language", () => {
 	const accessibilityPage = readPublicSource("pages/accessibility.vue");
 

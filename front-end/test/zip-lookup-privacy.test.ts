@@ -20,7 +20,7 @@ test("privacy policy describes ZIP-only log scope and exclusions", () => {
 
 test("privacy policy discloses optional ballot-content provider recipients", () => {
 	assert.match(privacyPage, /CTCL BIP, Ballotpedia, BallotReady CivicEngine, or Democracy Works/);
-	assert.match(privacyPage, /should be treated as active recipients only when configured/);
+	assert.match(privacyPage, /are active recipients only when configured/);
 	assert.match(privacyPage, /verify the exact ballot with the linked official state or local voter\/ballot tool/i);
 });
 

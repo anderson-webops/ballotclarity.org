@@ -1,4 +1,4 @@
-import { appDescription, appName } from "~/constants";
+import { appDescription, appName, appSocialImageAlt, appSocialImagePath } from "~/constants";
 
 interface PageSeoInput {
 	description?: string;
@@ -16,6 +16,7 @@ export function usePageSeo(input: PageSeoInput) {
 	const resolvedPath = input.path ?? input.canonicalPath;
 	const url = resolvedPath ? buildSiteUrl(resolvedPath) : siteUrl;
 	const canonicalUrl = input.canonicalPath ? buildSiteUrl(input.canonicalPath) : url;
+	const socialImageUrl = buildSiteUrl(appSocialImagePath);
 	const jsonLdEntries = (Array.isArray(input.jsonLd) ? input.jsonLd : [input.jsonLd]).filter(
 		(entry): entry is Record<string, unknown> => Boolean(entry)
 	);
@@ -23,6 +24,8 @@ export function usePageSeo(input: PageSeoInput) {
 	useSeoMeta({
 		description,
 		ogDescription: description,
+		ogImage: socialImageUrl,
+		ogImageAlt: appSocialImageAlt,
 		ogSiteName: appName,
 		ogTitle: input.title,
 		ogType: input.ogType ?? "website",
@@ -31,6 +34,8 @@ export function usePageSeo(input: PageSeoInput) {
 		title: input.title,
 		twitterCard: "summary_large_image",
 		twitterDescription: description,
+		twitterImage: socialImageUrl,
+		twitterImageAlt: appSocialImageAlt,
 		twitterTitle: input.title,
 	});
 

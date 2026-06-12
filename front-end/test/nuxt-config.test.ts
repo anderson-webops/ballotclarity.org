@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import test from "node:test";
-import { analyticsTrackers, appDescription, appName } from "../src/constants/index.ts";
+import { analyticsTrackers, appDescription, appName, appSocialImageAlt, appSocialImagePath } from "../src/constants/index.ts";
 import { staleClientBuildStorageKey } from "../src/utils/deploy-recovery.ts";
 import { displayTimeZoneCookieName } from "../src/utils/display-time-zone.ts";
 
@@ -80,4 +80,22 @@ test("web manifest preserves Ballot Clarity branding", () => {
 	assert.equal(manifest.display, "standalone");
 	assert.ok(Array.isArray(manifest.icons));
 	assert.ok(manifest.icons.some(icon => typeof icon.src === "string" && icon.src.startsWith("/maskable-icon.png")));
+});
+
+test("public SEO metadata has an available share image", () => {
+	const seoComposable = readFileSync(new URL("../src/composables/usePageSeo.ts", import.meta.url), "utf8");
+	const socialCardPath = new URL(`../public${appSocialImagePath}`, import.meta.url);
+	const socialCard = readFileSync(socialCardPath, "utf8");
+
+	assert.equal(existsSync(socialCardPath), true);
+	assert.match(appDescription, /current representatives/);
+	assert.match(appDescription, /published ballot records/);
+	assert.doesNotMatch(appDescription, /review ballot choices/);
+	assert.match(seoComposable, /ogImage: socialImageUrl/);
+	assert.match(seoComposable, /twitterImage: socialImageUrl/);
+	assert.match(seoComposable, /ogImageAlt: appSocialImageAlt/);
+	assert.match(seoComposable, /twitterImageAlt: appSocialImageAlt/);
+	assert.match(appSocialImageAlt, /Ballot Clarity preview card/);
+	assert.match(socialCard, /Civic information/);
+	assert.match(socialCard, /ballotclarity\.org/);
 });

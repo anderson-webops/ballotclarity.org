@@ -665,6 +665,9 @@ test("built app renders the key ballot guide pages against the built API", async
 	assert.match(homeHtml, /Choose a location with a full street address or 5-digit ZIP code/);
 	assert.match(homeHtml, /Enter a street address or ZIP code to see districts, current officials, and official election links for your area/i);
 	assert.match(homeHtml, /Lookup data is used only to load civic results/i);
+	assert.match(homeHtml, /og:image/);
+	assert.match(homeHtml, /twitter:image/);
+	assert.match(homeHtml, /social-card\.svg/);
 	assert.match(ballotHtml, /Key dates and official links/);
 	assert.match(ballotHtml, /Election overview/);
 	assert.match(ballotHtml, /Official links are live for this area/);

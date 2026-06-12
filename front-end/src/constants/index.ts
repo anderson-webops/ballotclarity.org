@@ -1,5 +1,7 @@
 export const appName = "Ballot Clarity";
-export const appDescription = "A nonpartisan civic-information platform that helps voters review ballot choices, candidate records, ballot measures, and source material without overload.";
+export const appDescription = "A nonpartisan civic-information site for looking up current representatives, election resources, published ballot records, and source material without overload.";
+export const appSocialImagePath = "/social-card.svg";
+export const appSocialImageAlt = "Ballot Clarity preview card with the site name and a short civic-information summary.";
 export const analyticsTrackers = [
 	{
 		domain: "analytics.ballotclarity.org",

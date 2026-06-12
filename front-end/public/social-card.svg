@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
+	<title id="title">Ballot Clarity</title>
+	<desc id="desc">Nonpartisan civic information for representatives, election resources, published ballot records, and source material.</desc>
+	<defs>
+		<linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
+			<stop offset="0" stop-color="#07111f" />
+			<stop offset="0.58" stop-color="#10243a" />
+			<stop offset="1" stop-color="#0b1728" />
+		</linearGradient>
+		<linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+			<stop offset="0" stop-color="#9ed9ee" />
+			<stop offset="1" stop-color="#edb06c" />
+		</linearGradient>
+		<filter id="shadow" x="-20%" y="-20%" width="140%" height="140%" color-interpolation-filters="sRGB">
+			<feDropShadow dx="0" dy="26" stdDeviation="26" flood-color="#020712" flood-opacity="0.42" />
+		</filter>
+	</defs>
+	<rect width="1200" height="630" fill="#07111f" />
+	<rect x="0" y="0" width="1200" height="630" fill="url(#background)" />
+	<circle cx="1070" cy="70" r="220" fill="#6b86ff" opacity="0.08" />
+	<circle cx="138" cy="560" r="260" fill="#edb06c" opacity="0.09" />
+	<rect x="48" y="52" width="1104" height="526" rx="48" fill="#101f32" stroke="#35475f" stroke-width="2.5" filter="url(#shadow)" />
+	<rect x="92" y="97" width="88" height="88" rx="28" fill="#0b1524" stroke="#465a75" stroke-width="2" />
+	<path d="M116 123h40v40h-40z" fill="none" stroke="#edf4ff" stroke-width="5" stroke-linejoin="round" />
+	<path d="M132 123v40M116 141h40" fill="none" stroke="#edf4ff" stroke-width="4" stroke-linecap="round" />
+	<text x="205" y="151" fill="#f6f8fb" font-family="Georgia, 'Times New Roman', serif" font-size="42" font-weight="700">Ballot Clarity</text>
+	<text x="92" y="292" fill="#f8fafc" font-family="Georgia, 'Times New Roman', serif" font-size="82" font-weight="700" letter-spacing="-1.5">
+		<tspan x="92" dy="0">Civic information</tspan>
+		<tspan x="92" dy="94">with sources.</tspan>
+	</text>
+	<text x="96" y="454" fill="#b7c4d7" font-family="'Public Sans', system-ui, sans-serif" font-size="30" font-weight="600">
+		<tspan x="96" dy="0">Current representatives, election resources,</tspan>
+		<tspan x="96" dy="45">published ballot records, and official links.</tspan>
+	</text>
+	<rect x="95" y="538" width="480" height="4" rx="2" fill="url(#accent)" />
+	<g font-family="'Public Sans', system-ui, sans-serif" font-size="20" font-weight="800" letter-spacing="4" fill="#9ed9ee">
+		<text x="742" y="130">NONPARTISAN</text>
+		<text x="742" y="184">SOURCE-CITED</text>
+		<text x="742" y="238">VERIFY OFFICIAL LINKS</text>
+	</g>
+	<text x="92" y="562" fill="#d7e1ee" font-family="'Public Sans', system-ui, sans-serif" font-size="24" font-weight="700">ballotclarity.org</text>
+</svg>

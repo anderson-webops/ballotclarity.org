@@ -26,9 +26,12 @@ const routes = [
 	"/coverage",
 	"/status",
 	"/sources",
+	"/sources/official-election-verification",
 	"/data-sources",
 	"/districts",
 	"/representatives",
+	"/corrections",
+	"/help",
 	"/about",
 	"/accessibility",
 	"/methodology",
@@ -323,6 +326,25 @@ const mockStatus = {
 	updatedAt
 };
 
+const mockCorrections = {
+	corrections: [
+		{
+			entityLabel: "Coverage profile",
+			entityType: "policy",
+			id: "a11y-correction-coverage-copy",
+			outcome: "Public wording now distinguishes official logistics from reviewed local contest content.",
+			pageLabel: "Coverage profile",
+			pageUrl: "/coverage",
+			priority: "medium",
+			status: "resolved",
+			subject: "Clarified guide coverage wording",
+			submittedAt: updatedAt,
+			summary: "A public copy review identified wording that could overstate local guide completeness."
+		}
+	],
+	updatedAt
+};
+
 function writeServerLine(prefix, data) {
 	const text = data.toString().trim();
 	if (text) process.stderr.write(`[${prefix}] ${text}\n`);
@@ -354,6 +376,7 @@ function responseFor(url) {
 	const apiPathname = pathname.startsWith("/api/") ? pathname.slice(4) : pathname;
 	if (apiPathname === "/coverage") return mockCoverage;
 	if (apiPathname === "/status") return mockStatus;
+	if (apiPathname === "/corrections") return mockCorrections;
 	if (apiPathname === "/data-sources") return mockDataSources;
 	if (apiPathname === "/sources") return { sources: [mockSource], updatedAt };
 	if (apiPathname === `/sources/${mockSource.id}`) return { source: mockSource, updatedAt };

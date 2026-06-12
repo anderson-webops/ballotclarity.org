@@ -555,6 +555,7 @@ before(async () => {
 		ADMIN_API_BASE: `${apiBaseUrl}/api`,
 		ADMIN_API_KEY: adminApiKey,
 		ADMIN_SESSION_SECRET: adminSessionSecret,
+		NUXT_PUBLIC_SITE_URL: appBaseUrl,
 		PORT: String(appPort),
 		NUXT_PUBLIC_API_BASE: `${apiBaseUrl}/api`
 	});
@@ -1363,11 +1364,11 @@ test("sitemap returns 200 and only advertises valid source-backed public routes"
 
 	assert.equal(response.status, 200);
 	assert.match(body, /<urlset[^>]*>/);
-	assert.match(body, new RegExp(`<loc>${appBaseUrl}/ballot/2026-fulton-county-general</loc>`));
 	assert.match(body, new RegExp(`<loc>${appBaseUrl}/elections/2026-fulton-county-general</loc>`));
 	assert.match(body, new RegExp(`<loc>${appBaseUrl}/locations/fulton-county-georgia</loc>`));
 	assert.match(body, new RegExp(`<loc>${appBaseUrl}/sources/open-states</loc>`));
 	assert.match(body, new RegExp(`<loc>${appBaseUrl}/sources/supplemental:shawn-still:bio</loc>`));
+	assert.doesNotMatch(body, /\/ballot\/2026-fulton-county-general/);
 	assert.doesNotMatch(body, /\/candidate\/elena-torres/);
 	assert.doesNotMatch(body, /\/measure\/charter-amendment-a/);
 	assert.doesNotMatch(body, /\/contest\/us-house-district-7/);

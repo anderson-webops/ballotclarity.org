@@ -18,6 +18,8 @@ const siteName = "Ballot Clarity";
 const frontendKind = "nuxt";
 const frontendPort = Number(process.env.A11Y_FRONTEND_PORT || 3346);
 const apiPort = Number(process.env.A11Y_API_PORT || 3046);
+const browserLaunchTimeoutMs = Number(process.env.A11Y_BROWSER_LAUNCH_TIMEOUT_MS || 60_000);
+const pageTimeoutMs = Number(process.env.A11Y_PAGE_TIMEOUT_MS || 45_000);
 const baseUrl = `http://127.0.0.1:${frontendPort}`;
 const apiUrl = `http://127.0.0.1:${apiPort}/api`;
 const routes = [
@@ -495,12 +497,13 @@ async function analyzePage(browser, route, scheme) {
 	const page = await browser.newPage();
 	const pageErrors = [];
 	page.on("pageerror", error => pageErrors.push(error.message));
-	page.setDefaultTimeout(30_000);
+	page.setDefaultNavigationTimeout(pageTimeoutMs);
+	page.setDefaultTimeout(pageTimeoutMs);
 	await page.setViewport({ width: 1280, height: 1000, deviceScaleFactor: 1 });
 	if (scheme === "dark" || scheme === "light") {
 		await page.emulateMediaFeatures([{ name: "prefers-color-scheme", value: scheme }]);
 	}
-	const response = await page.goto(url, { waitUntil: "domcontentloaded", timeout: 30_000 });
+	const response = await page.goto(url, { waitUntil: "domcontentloaded", timeout: pageTimeoutMs });
 	if (!response?.ok()) {
 		const status = response?.status() ?? "no response";
 		await page.close();
@@ -540,6 +543,7 @@ try {
 	browser = await puppeteer.launch({
 		executablePath: chromePath,
 		headless: "new",
+		timeout: browserLaunchTimeoutMs,
 		args: ["--no-sandbox", "--disable-dev-shm-usage"]
 	});
 

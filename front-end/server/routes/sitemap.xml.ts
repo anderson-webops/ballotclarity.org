@@ -59,6 +59,7 @@ export default defineEventHandler(async (event): Promise<string> => {
 	const origin = getRequestURL(event).origin;
 	const runtimeConfig = useRuntimeConfig(event);
 	const apiBase = String(runtimeConfig.public.apiBase || "").replace(trailingSlashesPattern, "");
+	const siteUrl = String(runtimeConfig.public.siteUrl || origin).replace(trailingSlashesPattern, "");
 	const staticRoutes: string[] = [
 		"/",
 		"/about",
@@ -83,7 +84,7 @@ export default defineEventHandler(async (event): Promise<string> => {
 		setHeader(event, "content-type", "application/xml; charset=utf-8");
 		const fallbackBody: string = staticRoutes
 			.map((route) => {
-				const loc = new URL(route, `${origin}/`).toString();
+				const loc = new URL(route, `${siteUrl}/`).toString();
 				return `<url><loc>${xmlEscape(loc)}</loc></url>`;
 			})
 			.join("");
@@ -140,10 +141,8 @@ export default defineEventHandler(async (event): Promise<string> => {
 	const electionRoutes: string[] = electionSummaries.map(({ slug }) => `/elections/${slug}`);
 	const jurisdictionRoutes: string[] = (jurisdictionsResponse?.jurisdictions ?? []).map(({ slug }) => `/locations/${slug}`);
 	const sourceRoutes: string[] = (sourcesResponse?.sources ?? []).map(({ id }) => `/sources/${id}`);
-	const ballotGuideRoutes: string[] = primaryElectionSlug ? [`/ballot/${primaryElectionSlug}`] : [];
 	const routeFamilies: string[] = [
 		...staticRoutes,
-		...ballotGuideRoutes,
 		...electionRoutes,
 		...jurisdictionRoutes,
 		...candidateRoutes,
@@ -158,7 +157,7 @@ export default defineEventHandler(async (event): Promise<string> => {
 
 	const body: string = unique(routeFamilies)
 		.map((route) => {
-			const loc = new URL(route, `${origin}/`).toString();
+			const loc = new URL(route, `${siteUrl}/`).toString();
 			return `<url><loc>${xmlEscape(loc)}</loc></url>`;
 		})
 		.join("");

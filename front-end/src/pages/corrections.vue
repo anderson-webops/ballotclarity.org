@@ -3,7 +3,7 @@ const { formatDateTime } = useFormatters();
 const { data, error, pending } = await useCorrectionsLog();
 
 usePageSeo({
-	description: "Public corrections log for Ballot Clarity. Review substantive public fixes, open investigation items, and current outcomes without exposing reporter identity.",
+	description: "Public corrections log for Ballot Clarity. Review substantive fixes, open review items, and current outcomes without exposing reporter identity.",
 	path: "/corrections",
 	title: "Corrections Log"
 });
@@ -34,7 +34,7 @@ usePageSeo({
 						Corrections log
 					</h1>
 					<p class="text-base text-app-muted leading-8 mt-5 dark:text-app-muted-dark">
-						This log is public on purpose. It shows substantive reader or internal corrections that affect public interpretation, launch status, or trust signals, while keeping reporter identity and internal-only notes out of view.
+						This log is public on purpose. It shows substantive corrections that affect public interpretation, launch status, or trust signals, while keeping reporter identity and private review notes out of view.
 					</p>
 					<div class="mt-6 flex flex-wrap gap-4 items-center">
 						<UpdatedAt :value="data.updatedAt" label="Corrections log updated" />
@@ -44,8 +44,8 @@ usePageSeo({
 					</div>
 				</div>
 
-				<InfoCallout title="How this differs from the admin queue" tone="warning">
-					The internal queue contains reporter identity, source attachments, and operational assignments. This public log keeps only the page affected, a concise summary, and the current outcome or next step.
+				<InfoCallout title="What appears here" tone="warning">
+					This page includes corrections and open review items that could affect how a public page should be understood. Private contact details, unverified attachments, and operational notes are not published here.
 				</InfoCallout>
 			</header>
 

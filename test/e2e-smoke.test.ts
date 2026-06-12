@@ -716,7 +716,9 @@ test("built app renders the key ballot guide pages against the built API", async
 	assert.equal(correctionsPage.status, 200);
 	assert.match(correctionsHtml, /Corrections log/);
 	assert.match(correctionsHtml, /Reporter identity withheld/);
-	assert.match(correctionsHtml, /How this differs from the admin queue/);
+	assert.match(correctionsHtml, /What appears here/);
+	assert.match(correctionsHtml, /Private contact details, unverified attachments, and operational notes are not published here/);
+	assert.doesNotMatch(correctionsHtml, /admin queue|internal queue/i);
 	assert.equal(sourcesDirectoryPage.status, 200);
 	assert.match(sourcesDirectoryHtml, /Source directory/);
 	assert.equal(publishedSourcePage.status, 200);

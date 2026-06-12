@@ -119,3 +119,13 @@ test("public source files do not ship staged reference-archive dossier content",
 
 	assert.deepEqual(failures, []);
 });
+
+test("public corrections page stays reader-facing instead of admin-facing", () => {
+	const correctionsPage = readPublicSource("pages/corrections.vue");
+
+	assert.doesNotMatch(correctionsPage, /internal corrections/i);
+	assert.doesNotMatch(correctionsPage, /internal queue/i);
+	assert.doesNotMatch(correctionsPage, /admin queue/i);
+	assert.match(correctionsPage, /private review notes/i);
+	assert.match(correctionsPage, /Private contact details/i);
+});

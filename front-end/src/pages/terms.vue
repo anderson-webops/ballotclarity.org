@@ -393,7 +393,7 @@ usePageSeo({
 						/>
 					</p>
 					<p>
-						This section should stay aligned with the operator identity, notice channel, and effective-date process actually used on the public site.
+						Formal notices should use the contact options listed here unless a written agreement or non-waivable law requires a different channel.
 					</p>
 				</div>
 			</div>

@@ -144,11 +144,21 @@ test("public policy pages disclose private access without admin jargon", () => {
 	assert.match(policyText, /Editorial access accounts/i);
 });
 
+test("terms contact section stays user-facing instead of maintainer-facing", () => {
+	const termsPage = readPublicSource("pages/terms.vue");
+
+	assert.doesNotMatch(termsPage, /should stay aligned/i);
+	assert.doesNotMatch(termsPage, /operator identity/i);
+	assert.match(termsPage, /Formal notices should use the contact options listed here/);
+});
+
 test("accessibility limits use public-facing availability language", () => {
 	const accessibilityPage = readPublicSource("pages/accessibility.vue");
 
 	assert.doesNotMatch(accessibilityPage, /not implemented/i);
 	assert.doesNotMatch(accessibilityPage, /design system/i);
+	assert.doesNotMatch(accessibilityPage, /internal standards/i);
+	assert.doesNotMatch(accessibilityPage, /internal rules/i);
 	assert.match(accessibilityPage, /Current limits/);
 	assert.match(accessibilityPage, /Multilingual ballot content and alternative reading modes are not available yet/);
 });

@@ -2,7 +2,7 @@
 const { allowsGuideEntryPoints } = useGuideEntryGate();
 const standards = [
 	{
-		description: "Public pages target WCAG 2.2 Level AA, with stricter internal rules for focus visibility, readable ballot copy, and print output.",
+		description: "Public pages target WCAG 2.2 Level AA, with extra review checks for focus visibility, readable ballot copy, and print output.",
 		label: "Baseline standard",
 		value: "WCAG 2.2 AA"
 	},
@@ -57,7 +57,7 @@ usePageSeo({
 					Accessibility and print standards
 				</h1>
 				<p class="bc-prose text-app-muted mt-5 dark:text-app-muted-dark">
-					Ballot Clarity is designed as a public-interest reading tool, so accessibility is treated as a product requirement rather than a later compliance pass. The public site targets WCAG 2.2 Level AA and uses stricter internal standards for focus visibility, readable ballot copy, and print behavior on key pages.
+					Ballot Clarity is designed as a public-interest reading tool, so accessibility is treated as a product requirement rather than a later compliance pass. The public site targets WCAG 2.2 Level AA and uses extra review checks for focus visibility, readable ballot copy, and print behavior on key pages.
 				</p>
 			</div>
 

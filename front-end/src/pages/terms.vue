@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { appName } from "~/constants";
 
-const effectiveAt = "2026-04-26T23:30:00-04:00";
+const effectiveAt = "2026-06-12T00:00:00-04:00";
 const runtimeConfig = useRuntimeConfig();
 const siteUrl = useSiteUrl();
 const currentOperatorName = String(runtimeConfig.public.operatorLegalName || "Jacob Anderson").trim();
@@ -31,12 +31,8 @@ const operatorAndNoticeRules = [
 ];
 
 const governingLawAndVenueRules = [
-	...(governingLaw
-		? [`These public site terms are governed by the laws of ${governingLaw}, without regard to conflict-of-law rules that would require a different jurisdiction's law to apply.`]
-		: ["No governing-law clause is currently published for this service. Do not assume any unstated jurisdiction rule applies."]),
-	...(venue
-		? [`Any claim that must be filed in court should be brought in ${venue}, unless a different venue is required by non-waivable law.`]
-		: ["No venue clause is currently published for this service. Do not assume any unstated venue term applies."])
+	`These public site terms are governed by the laws of ${governingLaw}, without regard to conflict-of-law rules that would require a different jurisdiction's law to apply.`,
+	`Any claim that must be filed in court should be brought in ${venue}, unless a different venue is required by non-waivable law.`
 ];
 
 const noAdviceRules = [
@@ -88,7 +84,7 @@ const correctionsAndFeedback = [
 
 const futureFeatureRules = [
 	"If Ballot Clarity later adds accounts, newsletters, donations, APIs, or user-submission features, additional or revised terms may apply.",
-	"Those features should not go live until the public terms, privacy notice, and operational policies are updated to match them."
+	"If those features are added, the public terms, privacy notice, and operational policies will be updated before or when the features become available."
 ];
 
 const changesToTermsRules = [
@@ -177,7 +173,7 @@ usePageSeo({
 					Governing law and venue
 				</p>
 				<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-					Which legal terms are currently published
+					Which legal terms apply
 				</h2>
 				<ul class="text-sm text-app-muted leading-7 mt-6 space-y-3 dark:text-app-muted-dark">
 					<li v-for="item in governingLawAndVenueRules" :key="item" class="px-4 py-3 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70">

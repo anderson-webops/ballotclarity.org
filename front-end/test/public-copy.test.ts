@@ -151,6 +151,12 @@ test("terms contact section stays user-facing instead of maintainer-facing", () 
 
 	assert.doesNotMatch(termsPage, /should stay aligned/i);
 	assert.doesNotMatch(termsPage, /operator identity/i);
+	assert.doesNotMatch(termsPage, /should not go live/i);
+	assert.doesNotMatch(termsPage, /No governing-law clause is currently published/i);
+	assert.doesNotMatch(termsPage, /No venue clause is currently published/i);
+	assert.match(termsPage, /2026-06-12T00:00:00-04:00/);
+	assert.match(termsPage, /Which legal terms apply/);
+	assert.match(termsPage, /will be updated before or when the features become available/);
 	assert.match(termsPage, /Formal notices should use the contact options listed here/);
 });
 
@@ -171,6 +177,7 @@ test("public policy pages avoid host-specific maintenance wording", () => {
 	assert.match(policyText, /Privacy Policy will be updated/i);
 	assert.match(policyText, /currently published for this service/i);
 	assert.match(policyText, /What data Ballot Clarity currently handles/);
+	assert.match(privacyPage, /2026-06-12T00:00:00-04:00/);
 });
 
 test("accessibility limits use public-facing availability language", () => {

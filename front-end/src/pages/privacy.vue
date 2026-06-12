@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { analyticsTrackers, appName } from "~/constants";
 
-const effectiveAt = "2026-04-26T23:30:00-04:00";
+const effectiveAt = "2026-06-12T00:00:00-04:00";
 const siteUrl = useSiteUrl();
 const analyticsHostList = analyticsTrackers.map(tracker => tracker.domain);
 const analyticsHosts = analyticsHostList.join(" and ");

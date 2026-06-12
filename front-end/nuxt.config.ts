@@ -104,11 +104,11 @@ export default defineNuxtConfig({
 		public: {
 			apiBase: process.env.NUXT_PUBLIC_API_BASE || "http://127.0.0.1:3001/api",
 			buildId,
-			governingLaw: process.env.NUXT_PUBLIC_GOVERNING_LAW || "",
+			governingLaw: process.env.NUXT_PUBLIC_GOVERNING_LAW || "State of Georgia",
 			operatorLegalName: process.env.NUXT_PUBLIC_OPERATOR_LEGAL_NAME || "Jacob Anderson",
 			operatorNoticeAddress: process.env.NUXT_PUBLIC_OPERATOR_NOTICE_ADDRESS || "",
 			siteUrl: process.env.NUXT_PUBLIC_SITE_URL || "https://ballotclarity.org",
-			venue: process.env.NUXT_PUBLIC_VENUE || ""
+			venue: process.env.NUXT_PUBLIC_VENUE || "state or federal courts located in Georgia"
 		}
 	},
 

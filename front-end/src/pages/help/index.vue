@@ -31,7 +31,7 @@ const faqItems = [
 	{
 		answer: [
 			"A location guess or ZIP code can help you get started, but it is still approximate. A full street address is the right input for exact district and ballot matching.",
-			"The lookup is used only to match ballot coverage. The current release does not create user accounts or advertising profiles from that lookup.",
+			"The lookup is used only to match ballot coverage. Ballot Clarity does not create public user accounts or advertising profiles from that lookup.",
 			"The app does save your selected location label, compare list, and ballot-plan choices in your browser so the guide stays usable across refreshes. The privacy page explains that boundary in more detail."
 		],
 		question: "What happens to the address or ZIP code I enter?"

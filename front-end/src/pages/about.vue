@@ -47,7 +47,7 @@ usePageSeo({
 				Volunteer or contact
 			</h2>
 			<p class="text-sm text-app-muted leading-7 mt-5 dark:text-app-muted-dark">
-				Ballot Clarity is in an early public release with limited geographic coverage. People who want to volunteer, collaborate, or ask questions are welcome to get in touch.
+				Ballot Clarity's coverage varies by place and by source availability. People who want to report a correction, volunteer, collaborate, or ask questions are welcome to get in touch.
 			</p>
 			<div class="mt-6 flex flex-wrap gap-3">
 				<NuxtLink to="/contact" class="btn-primary">

@@ -3,7 +3,14 @@ import { analyticsTrackers, appName } from "~/constants";
 
 const effectiveAt = "2026-04-26T23:30:00-04:00";
 const siteUrl = useSiteUrl();
-const analyticsHosts = analyticsTrackers.map(tracker => tracker.domain).join(" and ");
+const analyticsHostList = analyticsTrackers.map(tracker => tracker.domain);
+const analyticsHosts = analyticsHostList.join(" and ");
+const analyticsScriptDisclosure = analyticsHostList.length === 1
+	? `the first-party analytics script loaded from ${analyticsHosts}`
+	: `first-party analytics scripts loaded from ${analyticsHosts}`;
+const analyticsServiceDisclosure = analyticsHostList.length === 1
+	? `the analytics service hosted at ${analyticsHosts}`
+	: `the analytics services hosted at ${analyticsHosts}`;
 
 const collectionSections = [
 	{
@@ -20,14 +27,14 @@ const collectionSections = [
 		body: [
 			"The app stores selected location labels, compare selections, saved ballot-plan choices, issue filters, and reading mode in local browser storage so the guide remains usable across refreshes.",
 			"The site also sets first-party cookies for saved lookup context, display timezone, and internal admin sessions.",
-			"This browser-side state is tied to the browser on your device. Ballot Clarity does not maintain a public server-side user account for that state in the current release."
+			"This browser-side state is tied to the browser on your device. Ballot Clarity does not maintain a public server-side user account for that state."
 		],
 		title: "Browser storage and cookies"
 	},
 	{
 		body: [
 			"Hosting and runtime infrastructure may process technical data such as IP address, user agent, endpoint path, timestamp, and basic error or request metadata needed for security, integrity, and reliability.",
-			`On deployed versions of the site, first-party analytics scripts loaded from ${analyticsHosts} also receive page usage and technical request metadata needed to understand adoption, performance, and reliability.`,
+			`On deployed versions of the site, ${analyticsScriptDisclosure} may receive page usage and technical request metadata needed to understand adoption, performance, and reliability.`,
 			"That operational metadata is different from the election-guide content itself and is handled as infrastructure telemetry rather than published civic data.",
 			"Internal admin authentication also creates limited operational records such as last-login timestamps and failed-login throttling signals."
 		],
@@ -76,7 +83,7 @@ const providerDisclosureSections = [
 	},
 	{
 		body: [
-			`Ballot Clarity also relies on hosting, delivery, logging, database providers, and the analytics services hosted at ${analyticsHosts} to serve the site, understand usage, process correction submissions, and operate the internal editorial/admin workspace.`,
+			`Ballot Clarity also relies on hosting, delivery, logging, database providers, and ${analyticsServiceDisclosure} to serve the site, understand usage, process correction submissions, and operate the internal editorial/admin workspace.`,
 			"When you follow external links, the destination site operates under its own privacy practices."
 		],
 		title: "Infrastructure and external destinations"
@@ -91,9 +98,9 @@ const useSections = [
 ];
 
 const sharingSections = [
-	"Ballot Clarity currently discloses lookup or route-derived data only to the service providers and public-interest civic-data systems needed to produce the requested page or official verification result.",
-	`Current third-party recipients in active flows include the U.S. Census Geocoder, Google Civic Information API, Open States, Congress.gov, OpenFEC, LDA.gov, and the analytics services hosted at ${analyticsHosts}, plus hosting, logging, and delivery providers needed to run the service. Optional ballot-content providers are disclosed on the data-sources page and should be treated as active recipients only when configured.`,
-	"The current release does not disclose address lookup input to advertising networks and is not designed to sell or share personal data for cross-context behavioral advertising.",
+	"Ballot Clarity discloses lookup or route-derived data only to the service providers and public-interest civic-data systems needed to produce the requested page or official verification result.",
+	`Third-party recipients in active flows include the U.S. Census Geocoder, Google Civic Information API, Open States, Congress.gov, OpenFEC, LDA.gov, and ${analyticsServiceDisclosure}, plus hosting, logging, and delivery providers needed to run the service. Optional ballot-content providers are disclosed on the data-sources page and should be treated as active recipients only when configured.`,
+	"Ballot Clarity does not disclose address lookup input to advertising networks and is not designed to sell or share personal data for cross-context behavioral advertising.",
 	"When you follow external source links, official agencies, filing systems, campaigns, or other third-party sites operate under their own privacy practices.",
 	"If Ballot Clarity materially changes the current provider stack or starts sharing data for a new purpose, this policy should be updated before that change goes live."
 ];
@@ -142,7 +149,7 @@ const retentionRows = [
 		scope: "Internal admin authentication cookie for editorial and operations access."
 	},
 	{
-		access: `Hosting, operations, security tooling, and the analytics services at ${analyticsHosts}.`,
+		access: `Hosting, operations, security tooling, and ${analyticsServiceDisclosure}.`,
 		category: "Operational request metadata",
 		deletion: "Managed through host and operator settings, with longer retention permitted for active abuse handling, incident response, or legal obligations.",
 		retention: "Short-term operational retention, generally days to weeks rather than permanent publication.",
@@ -160,32 +167,32 @@ const retentionRows = [
 const rightsNotes = [
 	"You can browse much of the site without using the ballot lookup.",
 	"You can clear browser storage and cookies on your device to remove saved ballot-plan state, selected location labels, timezone state, and active lookup cookies kept locally by the app.",
-	"Because the current release does not create public self-service accounts and is designed to keep some data ephemeral, Ballot Clarity may have limited ability to associate a privacy request with operational logs or transient lookup activity.",
+	"Because Ballot Clarity does not create public self-service accounts and is designed to keep some data ephemeral, the project may have limited ability to associate a privacy request with operational logs or transient lookup activity.",
 	"If applicable law gives you rights to request access, deletion, correction, or appeal, contact the project and describe the data or interaction as specifically as possible."
 ];
 
 const cookieNotes = [
-	"The current release does not use an advertising-cookie stack and is not designed for targeted advertising or sale or sharing of personal data.",
+	"Ballot Clarity does not use an advertising-cookie stack and is not designed for targeted advertising or sale or sharing of personal data.",
 	"The site currently uses first-party cookies for saved lookup continuity, display timezone, and internal admin sessions, and it uses local browser storage for public-facing preference state.",
 	"Infrastructure providers may also use technical cookies or similar mechanisms needed for delivery, security, and basic functionality.",
-	`Deployed versions of the site currently load first-party analytics scripts from ${analyticsHosts} to understand usage and performance. Those services may receive technical request data and pageview metadata, but they are not used for targeted advertising.`
+	`Deployed versions of the site load ${analyticsScriptDisclosure} to understand usage and performance. This service may receive technical request data and pageview metadata, but it is not used for targeted advertising.`
 ];
 
 const childrenNotes = [
 	"Ballot Clarity is a general-audience civic-information site and is not designed for children under 13.",
-	"The current release does not offer child-directed accounts, community posting, or other features intended to collect personal information from children.",
+	"The site does not offer child-directed accounts, community posting, or other features intended to collect personal information from children.",
 	"If you believe a child has sent personal information to the project through email or another channel, contact the project so the issue can be reviewed."
 ];
 
 const securityNotes = [
-	"Ballot Clarity aims to use reasonable administrative, technical, and organizational safeguards appropriate to the current release.",
+	"Ballot Clarity aims to use reasonable administrative, technical, and organizational safeguards appropriate to the service.",
 	"Those safeguards are intended to reduce unnecessary data collection, limit retention, and protect the integrity of the service and its operational systems.",
-	"The current release also uses admin login throttling, signed admin session cookies, and structured request logging for reliability and abuse handling.",
+	"The service also uses admin login throttling, signed admin session cookies, and structured request logging for reliability and abuse handling.",
 	"No internet service can guarantee absolute security. If the project's data practices or incident posture changes materially, this policy should change as well."
 ];
 
 usePageSeo({
-	description: "Privacy Policy for Ballot Clarity, covering address lookup handling, browser storage, operational metadata, third-party disclosures, retention, user choices, and current release limits.",
+	description: "Privacy Policy for Ballot Clarity, covering address lookup handling, browser storage, operational metadata, third-party disclosures, retention, user choices, and service limits.",
 	path: "/privacy",
 	title: "Privacy Policy"
 });
@@ -203,7 +210,7 @@ usePageSeo({
 				Privacy Policy
 			</h1>
 			<p class="text-base text-app-muted leading-8 mt-5 max-w-3xl dark:text-app-muted-dark">
-				This policy describes how {{ appName }} currently handles address lookup input, any optional approximate location-guessing configured on a host, browser-stored guide preferences, hosted contact or correction submissions, operational metadata, and direct contact messages. It is written for the current release at {{ siteUrl }}, not for a future product that collects more data than the site collects today.
+				This policy describes how {{ appName }} handles address lookup input, any optional approximate location-guessing configured on a host, browser-stored guide preferences, hosted contact or correction submissions, operational metadata, and direct contact messages. It applies to the public site at {{ siteUrl }}, not to any future product that collects more data than the site collects today.
 			</p>
 			<div class="mt-5">
 				<UpdatedAt label="Effective" :value="effectiveAt" />
@@ -211,7 +218,7 @@ usePageSeo({
 		</header>
 
 		<InfoCallout title="Plain-language summary">
-			The current release uses address or ZIP input, plus any optional approximate location guess configured on a host, only to match ballot coverage and official verification context. It does not create public user accounts, does not run targeted advertising, and is not designed to sell or share personal data. The app does save selected location labels and ballot-plan preferences locally in your browser so the guide remains usable across refreshes.
+			Ballot Clarity uses address or ZIP input, plus any optional approximate location guess configured on a host, only to match ballot coverage and official verification context. It does not create public user accounts, does not run targeted advertising, and is not designed to sell or share personal data. The app does save selected location labels and ballot-plan preferences locally in your browser so the guide remains usable across refreshes.
 		</InfoCallout>
 
 		<section class="surface-panel">

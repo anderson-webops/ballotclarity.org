@@ -721,7 +721,7 @@ test("built app renders the key ballot guide pages against the built API", async
 	assert.match(accessibilityHtml, /Accessibility and print standards/);
 	assert.match(accessibilityHtml, /WCAG 2\.2 Level AA/);
 	assert.match(accessibilityHtml, /44 by 44 pixel minimum target|44 x 44 pixel minimum target|44 x 44 px/);
-	assert.match(accessibilityHtml, /does not yet generate a downloadable tagged PDF/);
+	assert.match(accessibilityHtml, /does not generate a downloadable tagged PDF/);
 	assert.match(methodologyHtml, /How to read page signals/);
 	assert.match(methodologyHtml, /How summaries are generated/);
 	assert.equal(privacyPage.status, 200);
@@ -733,6 +733,8 @@ test("built app renders the key ballot guide pages against the built API", async
 	assert.match(privacyHtml, /Google Civic Information API/);
 	assert.match(privacyHtml, /Rights requests and no-account limits/);
 	assert.match(privacyHtml, /Children(?:&#39;|&apos;|’|')s privacy/);
+	assert.match(privacyHtml, /analytics\.ballotclarity\.org/);
+	assert.doesNotMatch(privacyHtml, /analytics\.jacobdanderson\.net/);
 	assert.equal(termsPage.status, 200);
 	assert.match(termsHtml, /Terms of Service/);
 	assert.match(termsHtml, /How the service may and may not be used/);

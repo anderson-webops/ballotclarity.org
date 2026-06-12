@@ -8,13 +8,9 @@ const expectedTrackers = [
 		label: "dedicated",
 		src: "https://analytics.ballotclarity.org/script.js",
 		websiteId: "98d97870-5812-4931-9e2d-4ae2f55484cb"
-	},
-	{
-		label: "central",
-		src: "https://analytics.jacobdanderson.net/script.js",
-		websiteId: "98d97870-5812-4931-9e2d-4ae2f55484cb"
 	}
 ];
+const forbiddenTrackerHosts = ["analytics.jacobdanderson.net"];
 const readableExtensions = new Set([".html", ".js", ".json", ".mjs"]);
 
 function collectFiles(directory) {
@@ -40,6 +36,7 @@ const renderedTrackers = expectedTrackers.map(tracker => ({
 	hasWebsiteId: buildText.includes(tracker.websiteId)
 }));
 const missingTrackers = renderedTrackers.filter(tracker => !tracker.hasSrc || !tracker.hasWebsiteId);
+const forbiddenTrackers = forbiddenTrackerHosts.filter(host => buildText.includes(host));
 
 console.log("Ballot Clarity analytics trackers rendered in build output:");
 for (const tracker of renderedTrackers)
@@ -49,5 +46,12 @@ if (missingTrackers.length > 0) {
 	console.error("Missing analytics tracker data:");
 	for (const tracker of missingTrackers)
 		console.error(`- ${tracker.label}: src=${tracker.hasSrc} websiteId=${tracker.hasWebsiteId}`);
+	process.exit(1);
+}
+
+if (forbiddenTrackers.length > 0) {
+	console.error("Forbidden analytics tracker host rendered in build output:");
+	for (const host of forbiddenTrackers)
+		console.error(`- ${host}`);
 	process.exit(1);
 }

@@ -34,6 +34,7 @@ test("nuxt config uses srcDir and expected civic modules", async () => {
 		&& script.innerHTML.includes(staleClientBuildStorageKey)
 		&& script.innerHTML.includes("window.location.reload()")
 	));
+	assert.deepEqual(analyticsTrackers.map(tracker => tracker.domain), ["analytics.ballotclarity.org"]);
 	const analyticsScripts = config.app?.head?.script?.filter(script =>
 		analyticsTrackers.some(tracker => script.src === `https://${tracker.domain}/script.js`)
 	) ?? [];
@@ -49,6 +50,9 @@ test("nuxt config uses srcDir and expected civic modules", async () => {
 			defer: true
 		}))
 	);
+	assert.ok(!config.app?.head?.script?.some(script =>
+		typeof script.src === "string" && script.src.includes("jacobdanderson.net")
+	));
 	assert.ok(config.app?.head?.link?.some(link => link.rel === "manifest" && typeof link.href === "string" && link.href.startsWith("/site.webmanifest")));
 	assert.equal(config.nitro?.routeRules?.["/_nuxt/**"]?.headers?.["cache-control"], "public, max-age=31536000, immutable");
 });

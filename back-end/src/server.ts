@@ -3325,8 +3325,18 @@ export async function createApp(options: CreateAppOptions = {}) {
 
 	function buildGuidePackageRecordResponsePayload(packageRecord: ReturnType<typeof buildGuidePackageRecord>): GuidePackageRecordResponse {
 		return {
-			package: packageRecord,
+			package: resolveGuidePackageRecordAssets(packageRecord),
 			updatedAt: packageRecord.workflow.updatedAt,
+		};
+	}
+
+	function resolveGuidePackageRecordAssets(packageRecord: GuidePackageRecord): GuidePackageRecord {
+		return {
+			...packageRecord,
+			attachedSources: resolveSources(packageRecord.attachedSources),
+			electionRecord: packageRecord.electionRecord ? resolveElection(packageRecord.electionRecord) : null,
+			jurisdictionRecord: packageRecord.jurisdictionRecord ? applyJurisdictionAssets(packageRecord.jurisdictionRecord) : null,
+			officialResources: packageRecord.officialResources.map(resolveOfficialResource),
 		};
 	}
 

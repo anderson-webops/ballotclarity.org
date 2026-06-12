@@ -3,7 +3,7 @@ import type { AddressInfo } from "node:net";
 import type { CoverageRepository } from "../src/coverage-repository.js";
 import assert from "node:assert/strict";
 import { once } from "node:events";
-import { mkdtempSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test, { after, before } from "node:test";
@@ -18,8 +18,14 @@ import { buildGuidePackageId } from "../src/guide-packages.js";
 import { classifyRepresentative } from "../src/representative-classification.js";
 import { createApp } from "../src/server.js";
 
+function findRepoRoot() {
+	const cwd = process.cwd();
+	return existsSync(join(cwd, "front-end")) ? cwd : join(cwd, "..");
+}
+
 let server: Server;
 let baseUrl = "";
+const repoRoot = findRepoRoot();
 const adminApiKey = "test-admin-key";
 const coverageSnapshot = buildSeedCoverageSnapshot();
 const previousAdminStoreDriver = process.env.ADMIN_STORE_DRIVER;
@@ -116,6 +122,29 @@ function assertNoPublicSnapshotPaths(payload: { snapshotProvenance?: Record<stri
 
 	if (rawPath)
 		assert.doesNotMatch(JSON.stringify(payload), new RegExp(rawPath.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+}
+
+function collectUrlFields(value: unknown): string[] {
+	if (!value || typeof value !== "object")
+		return [];
+
+	if (Array.isArray(value))
+		return value.flatMap(collectUrlFields);
+
+	return Object.entries(value).flatMap(([key, child]) => {
+		if (key === "url" && typeof child === "string")
+			return [child];
+
+		return collectUrlFields(child);
+	});
+}
+
+function assertNoMissingPublicSourceFileUrls(payload: unknown) {
+	const missingUrls = collectUrlFields(payload)
+		.filter(url => url.startsWith("/source-files/"))
+		.filter(url => !existsSync(join(repoRoot, "front-end/public", url.slice(1))));
+
+	assert.deepEqual(missingUrls, []);
 }
 
 before(async () => {
@@ -1295,6 +1324,7 @@ test("snapshot runtime exposes the published guide package and its public record
 	assert.equal(publicPackageBody.package.contentStatus.guideShell.status, "official_logistics_only");
 	assert.equal(publicPackageBody.package.contentStatus.candidates.status, "staged_reference");
 	assert.equal(publicPackageBody.package.contentStatus.measures.status, "staged_reference");
+	assertNoMissingPublicSourceFileUrls(publicPackageBody);
 });
 
 test("GET /api/ballot exposes mixed guide provenance honestly for the published Fulton package", async () => {
@@ -1310,6 +1340,7 @@ test("GET /api/ballot exposes mixed guide provenance honestly for the published 
 	assert.equal(body.guideContent.verifiedContestPackage, false);
 	assert.match(body.note, /verified official election links/i);
 	assert.match(body.note, /under local review/i);
+	assertNoMissingPublicSourceFileUrls(body);
 });
 
 test("GET /api/status suppresses launch-specific source monitors when coverage mode is empty", async () => {

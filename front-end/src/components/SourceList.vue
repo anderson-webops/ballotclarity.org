@@ -69,7 +69,7 @@ function getSourceRecordHref(source: Source) {
 				<p v-if="source.note" class="text-xs text-app-muted mt-2 dark:text-app-muted-dark">
 					{{ source.note }}
 				</p>
-				<a :href="source.url" target="_blank" rel="noreferrer" class="text-xs text-app-accent font-semibold mt-3 rounded-lg inline-flex gap-2 items-center focus-ring">
+				<a v-if="source.url" :href="source.url" target="_blank" rel="noreferrer" class="text-xs text-app-accent font-semibold mt-3 rounded-lg inline-flex gap-2 items-center focus-ring">
 					<span class="i-carbon-launch" />
 					Open source file
 				</a>

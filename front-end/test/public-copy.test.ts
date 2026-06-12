@@ -74,6 +74,10 @@ function collectPublicSourceTextFiles() {
 	return collectFiles(publicSourceFileRoot, entry => entry.endsWith(".txt"));
 }
 
+function readPublicSource(relativePath: string) {
+	return readFileSync(fileURLToPath(new URL(`../src/${relativePath}`, import.meta.url)), "utf8");
+}
+
 test("public copy does not expose staged reference-archive candidate names", () => {
 	const failures: string[] = [];
 
@@ -88,6 +92,16 @@ test("public copy does not expose staged reference-archive candidate names", () 
 	}
 
 	assert.deepEqual(failures, []);
+});
+
+test("public source actions only render when a resolved URL is available", () => {
+	const sourceList = readPublicSource("components/SourceList.vue");
+	const officialResourceList = readPublicSource("components/OfficialResourceList.vue");
+	const sourceDetailPage = readPublicSource("pages/sources/[id].vue");
+
+	assert.match(sourceList, /<a v-if="source\.url"/);
+	assert.match(officialResourceList, /<a v-if="resource\.url"/);
+	assert.match(sourceDetailPage, /<a v-if="data\.source\.url"/);
 });
 
 test("public source files do not ship staged reference-archive dossier content", () => {

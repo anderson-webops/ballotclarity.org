@@ -2,7 +2,7 @@
 import { appDescription, appName } from "~/constants";
 import { themeSchemeStyleContent } from "~/utils/theme-schemes";
 
-const noindexPathPattern = /^\/(?:admin|api|ballot|compare|plan|search)(?:\/|$)/;
+const noindexPathPattern = /^\/(?:admin|api|ballot|compare|plan|results|search)(?:\/|$)/;
 
 const route = useRoute();
 const siteUrl = useSiteUrl();

@@ -73,7 +73,6 @@ export default defineEventHandler(async (event): Promise<string> => {
 		"/methodology",
 		"/neutrality",
 		"/privacy",
-		"/results",
 		"/representatives",
 		"/status",
 		"/sources",

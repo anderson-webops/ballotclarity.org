@@ -14,6 +14,7 @@ Disallow: /api
 Disallow: /ballot
 Disallow: /compare
 Disallow: /plan
+Disallow: /results
 Disallow: /search
 
 User-agent: Bingbot
@@ -23,6 +24,7 @@ Disallow: /api
 Disallow: /ballot
 Disallow: /compare
 Disallow: /plan
+Disallow: /results
 Disallow: /search
 
 User-agent: OAI-SearchBot
@@ -32,6 +34,7 @@ Disallow: /api
 Disallow: /ballot
 Disallow: /compare
 Disallow: /plan
+Disallow: /results
 Disallow: /search
 
 User-agent: Claude-SearchBot
@@ -41,6 +44,7 @@ Disallow: /api
 Disallow: /ballot
 Disallow: /compare
 Disallow: /plan
+Disallow: /results
 Disallow: /search
 
 User-agent: PerplexityBot
@@ -50,6 +54,7 @@ Disallow: /api
 Disallow: /ballot
 Disallow: /compare
 Disallow: /plan
+Disallow: /results
 Disallow: /search
 
 User-agent: Perplexity-User
@@ -59,6 +64,7 @@ Disallow: /api
 Disallow: /ballot
 Disallow: /compare
 Disallow: /plan
+Disallow: /results
 Disallow: /search
 
 User-agent: Claude-User
@@ -68,6 +74,7 @@ Disallow: /api
 Disallow: /ballot
 Disallow: /compare
 Disallow: /plan
+Disallow: /results
 Disallow: /search
 
 User-agent: *
@@ -77,6 +84,7 @@ Disallow: /api
 Disallow: /ballot
 Disallow: /compare
 Disallow: /plan
+Disallow: /results
 Disallow: /search
 
 Sitemap: https://ballotclarity.org/sitemap.xml

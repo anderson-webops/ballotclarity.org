@@ -585,6 +585,8 @@ test("built app renders the key ballot guide pages against the built API", async
 	const ballot = await ballotResponse.json();
 	const homePage = await fetch(`${appBaseUrl}/`);
 	const homeHtml = await homePage.text();
+	const resultsPage = await fetch(`${appBaseUrl}/results`);
+	const resultsHtml = await resultsPage.text();
 	const ballotPage = await fetch(`${appBaseUrl}/ballot/2026-fulton-county-general`);
 	const ballotHtml = await ballotPage.text();
 	const electionPage = await fetch(`${appBaseUrl}/elections/2026-fulton-county-general`);
@@ -652,6 +654,10 @@ test("built app renders the key ballot guide pages against the built API", async
 	assert.equal(homePage.headers.get("x-frame-options"), "DENY");
 	assert.equal(homePage.headers.get("referrer-policy"), "strict-origin-when-cross-origin");
 	assert.match(homePage.headers.get("permissions-policy") || "", /camera=\(\)/);
+	assert.equal(resultsPage.status, 200);
+	assert.equal(resultsPage.headers.get("x-robots-tag"), "noindex, nofollow");
+	assert.match(resultsHtml, /Results for your area are not loaded/);
+	assert.match(resultsHtml, /noindex,nofollow/);
 	assert.equal(ballotResponse.headers.get("x-content-type-options"), "nosniff");
 	assert.equal(ballotResponse.headers.get("x-frame-options"), "DENY");
 	assert.equal(ballotResponse.headers.get("referrer-policy"), "strict-origin-when-cross-origin");
@@ -1374,6 +1380,7 @@ test("sitemap returns 200 and only advertises valid source-backed public routes"
 	assert.match(body, new RegExp(`<loc>${appBaseUrl}/locations/fulton-county-georgia</loc>`));
 	assert.match(body, new RegExp(`<loc>${appBaseUrl}/sources/open-states</loc>`));
 	assert.match(body, new RegExp(`<loc>${appBaseUrl}/sources/supplemental:shawn-still:bio</loc>`));
+	assert.doesNotMatch(body, /\/results/);
 	assert.doesNotMatch(body, /\/ballot\/2026-fulton-county-general/);
 	assert.doesNotMatch(body, /\/candidate\/elena-torres/);
 	assert.doesNotMatch(body, /\/measure\/charter-amendment-a/);

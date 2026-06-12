@@ -83,6 +83,7 @@ async function selectLookupOption(option: LocationLookupSelectionOption) {
 usePageSeo({
 	description: "Results for your area from the active lookup, including district matches, representative records, and official election tools.",
 	path: "/results",
+	robots: "noindex,nofollow",
 	title: "Results for Your Area"
 });
 </script>

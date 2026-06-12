@@ -167,6 +167,12 @@ export default defineNuxtConfig({
 			"/plan/**": {
 				headers: noIndexHeaders
 			},
+			"/results": {
+				headers: noIndexHeaders
+			},
+			"/results/**": {
+				headers: noIndexHeaders
+			},
 			"/search": {
 				headers: noIndexHeaders
 			},

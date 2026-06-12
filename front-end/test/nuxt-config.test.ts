@@ -67,6 +67,8 @@ test("nuxt config uses srcDir and expected civic modules", async () => {
 	assert.equal(config.nitro?.routeRules?.["/_nuxt/**"]?.headers?.["x-content-type-options"], "nosniff");
 	assert.equal(config.nitro?.routeRules?.["/admin/**"]?.headers?.["X-Robots-Tag"], "noindex, nofollow");
 	assert.equal(config.nitro?.routeRules?.["/admin/**"]?.headers?.["x-frame-options"], "DENY");
+	assert.equal(config.nitro?.routeRules?.["/results"]?.headers?.["X-Robots-Tag"], "noindex, nofollow");
+	assert.equal(config.nitro?.routeRules?.["/results/**"]?.headers?.["X-Robots-Tag"], "noindex, nofollow");
 });
 
 test("web manifest preserves Ballot Clarity branding", () => {
@@ -98,4 +100,16 @@ test("public SEO metadata has an available share image", () => {
 	assert.match(appSocialImageAlt, /Ballot Clarity preview card/);
 	assert.match(socialCard, /Civic information/);
 	assert.match(socialCard, /ballotclarity\.org/);
+});
+
+test("lookup-dependent results route stays out of public search indexes", () => {
+	const appVue = readFileSync(new URL("../src/app.vue", import.meta.url), "utf8");
+	const resultsPage = readFileSync(new URL("../src/pages/results.vue", import.meta.url), "utf8");
+	const robotsTxt = readFileSync(new URL("../public/robots.txt", import.meta.url), "utf8");
+	const sitemapRoute = readFileSync(new URL("../server/routes/sitemap.xml.ts", import.meta.url), "utf8");
+
+	assert.ok(appVue.includes("const noindexPathPattern = /^\\/(?:admin|api|ballot|compare|plan|results|search)(?:\\/|$)/;"));
+	assert.match(resultsPage, /robots: "noindex,nofollow"/);
+	assert.match(robotsTxt, /Disallow: \/results/);
+	assert.doesNotMatch(sitemapRoute, /"\/results"/);
 });

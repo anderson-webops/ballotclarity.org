@@ -31,13 +31,10 @@ function providerStatusLabel(status: "active" | "needs_endpoint" | "needs_key" |
 	if (status === "active")
 		return "Connected";
 
-	if (status === "needs_endpoint")
-		return "Needs endpoint";
-
 	if (status === "needs_partner_access")
 		return "Needs partner access";
 
-	return "Needs API key";
+	return "Not connected";
 }
 
 function providerStatusTone(status: "active" | "needs_endpoint" | "needs_key" | "needs_partner_access") {
@@ -169,14 +166,15 @@ function providerStatusTone(status: "active" | "needs_endpoint" | "needs_key" | 
 							</div>
 							<div class="mt-5 pt-5 border-t border-app-line/80 dark:border-app-line-dark">
 								<p>
-									Environment placeholders: <span class="text-app-ink font-semibold dark:text-app-text-dark">{{ provider.envVars.join(', ') }}</span>
+									<strong class="text-app-ink dark:text-app-text-dark">Access status:</strong>
+									{{ provider.configured ? "Ballot Clarity can use this provider when its data is relevant." : "Ballot Clarity is not currently using this provider for live ballot data." }}
 								</p>
 								<div class="mt-4 flex flex-wrap gap-3">
 									<a :href="provider.setupUrl" target="_blank" rel="noreferrer" class="btn-secondary">
-										Get access
+										Provider site
 									</a>
 									<a v-if="provider.docsUrl" :href="provider.docsUrl" target="_blank" rel="noreferrer" class="btn-secondary">
-										Open docs
+										Technical docs
 									</a>
 								</div>
 							</div>

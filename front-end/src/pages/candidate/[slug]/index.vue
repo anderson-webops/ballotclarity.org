@@ -4,11 +4,10 @@ import { storeToRefs } from "pinia";
 import { buildCompareLaunchSlugs, buildCompareRoute } from "~/stores/civic";
 
 const civicStore = useCivicStore();
-const route = useRoute();
 const siteUrl = useSiteUrl();
 const { backToLayerLink, layerBreadcrumbLink, locationHubLink, openLayerLink, overviewLink } = useRouteLayerNavigation();
 const { ballotPlan, compareList, isHydrated } = storeToRefs(civicStore);
-const candidateSlug = computed(() => String(route.params.slug));
+const candidateSlug = useRouteStringParam("slug");
 const { formatCompactNumber, formatCurrency, formatDate, formatDateTime, formatPercent } = useFormatters();
 const { data: candidate, error, pending } = await useCandidate(candidateSlug);
 const sectionLinks = [

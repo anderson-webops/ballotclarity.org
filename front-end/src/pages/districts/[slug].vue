@@ -12,7 +12,7 @@ const route = useRoute();
 const civicStore = useCivicStore();
 const { isHydrated, nationwideLookupResult, selectedLocation } = storeToRefs(civicStore);
 const { hasNationwideResultContext, hasPublishedGuideContext } = useGuideEntryGate();
-const districtSlug = computed(() => String(route.params.slug));
+const districtSlug = useRouteStringParam("slug");
 const activeNationwideLookupCookie = useCookie<string | null>(activeNationwideLookupCookieName);
 const serverNationwideLookupResult = computed(() => parseActiveNationwideLookupCookie(activeNationwideLookupCookie.value));
 const activeNationwideLookupResult = computed(() => isHydrated.value ? nationwideLookupResult.value : serverNationwideLookupResult.value);

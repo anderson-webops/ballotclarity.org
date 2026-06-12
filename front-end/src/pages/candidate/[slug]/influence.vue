@@ -1,7 +1,6 @@
 <script setup lang="ts">
-const route = useRoute();
 const { openLayerLink, overviewLink } = useRouteLayerNavigation();
-const candidateSlug = computed(() => String(route.params.slug));
+const candidateSlug = useRouteStringParam("slug");
 const { formatDateTime } = useFormatters();
 const { data: candidate, error, pending } = await useCandidate(candidateSlug);
 

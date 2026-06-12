@@ -2,8 +2,8 @@ import type { H3Event } from "h3";
 import { Buffer } from "node:buffer";
 import { createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import process from "node:process";
-import { useRuntimeConfig } from "#imports";
 import { createError, getCookie, getRequestHeader, getRequestURL, setCookie, setHeader, setResponseStatus } from "h3";
+import { useRuntimeConfig } from "#imports";
 
 export const contactAddressNonceCookieName = "ballot_clarity_contact_nonce";
 export const contactAddressNonceHeaderName = "x-ballot-clarity-contact-nonce";

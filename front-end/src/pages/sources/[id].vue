@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import { formatSourceCitationType, formatSourcePublicationKind, formatSourcePublisherType } from "~/utils/source-directory";
 
-const route = useRoute();
 const siteUrl = useSiteUrl();
-const sourceId = computed(() => String(route.params.id));
+const sourceId = useRouteStringParam("id");
 const { formatDate } = useFormatters();
 const { data, pending, error } = await useSourceRecord(sourceId);
 const errorStatusCode = computed(() => {

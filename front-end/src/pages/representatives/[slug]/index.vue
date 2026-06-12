@@ -11,7 +11,7 @@ const route = useRoute();
 const siteUrl = useSiteUrl();
 const civicStore = useCivicStore();
 const { isHydrated, nationwideLookupResult } = storeToRefs(civicStore);
-const representativeSlug = computed(() => String(route.params.slug));
+const representativeSlug = useRouteStringParam("slug");
 const { backToLayerLink, layerBreadcrumbLink, overviewLink } = useRouteLayerNavigation();
 const { formatCurrency, formatDate, formatDateTime, formatPercent } = useFormatters();
 const activeNationwideLookupCookie = useCookie<string | null>(activeNationwideLookupCookieName);

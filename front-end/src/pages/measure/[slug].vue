@@ -3,12 +3,11 @@ import type { Source, SourceType } from "~/types/civic";
 import { storeToRefs } from "pinia";
 
 const civicStore = useCivicStore();
-const route = useRoute();
 const siteUrl = useSiteUrl();
 const { backToLayerLink, layerBreadcrumbLink, locationHubLink, openLayerLink, overviewLink } = useRouteLayerNavigation();
 const { ballotPlan, isHydrated } = storeToRefs(civicStore);
 const { formatDateTime } = useFormatters();
-const measureSlug = computed(() => String(route.params.slug));
+const measureSlug = useRouteStringParam("slug");
 const { data: measure, error, pending } = await useMeasure(measureSlug);
 const effectiveBallotPlan = computed(() => isHydrated.value ? ballotPlan.value : {});
 const sectionLinks = [

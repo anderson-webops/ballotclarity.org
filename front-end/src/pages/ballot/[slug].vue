@@ -8,7 +8,7 @@ const route = useRoute();
 const { formatDate, formatDateTime } = useFormatters();
 const { ballotPlan, ballotPlanCount, ballotViewMode, compareList, isHydrated, selectedIssues } = storeToRefs(civicStore);
 
-const ballotSlug = computed(() => String(route.params.slug));
+const ballotSlug = useRouteStringParam("slug");
 const locationSlug = computed(() => typeof route.query.location === "string" ? route.query.location : undefined);
 
 const { data, error, pending } = await useBallot(ballotSlug, locationSlug);

@@ -1,7 +1,6 @@
 <script setup lang="ts">
-const route = useRoute();
 const { openLayerLink, overviewLink } = useRouteLayerNavigation();
-const contestSlug = computed(() => String(route.params.slug));
+const contestSlug = useRouteStringParam("slug");
 const { data, error, pending } = await useContest(contestSlug);
 
 const compareHref = computed(() => {

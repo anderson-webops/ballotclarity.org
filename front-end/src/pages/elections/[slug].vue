@@ -1,8 +1,7 @@
 <script setup lang="ts">
 const civicStore = useCivicStore();
-const route = useRoute();
 const { formatDate, formatDateTime } = useFormatters();
-const electionSlug = computed(() => String(route.params.slug));
+const electionSlug = useRouteStringParam("slug");
 const { data, error, pending } = await useBallot(electionSlug);
 const guideStatusTitle = computed(() => "Guide status");
 const guideStatusNote = computed(() => data.value?.guideContent?.verifiedContestPackage

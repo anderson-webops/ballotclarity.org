@@ -1,9 +1,8 @@
 <script setup lang="ts">
 const civicStore = useCivicStore();
-const route = useRoute();
 const siteUrl = useSiteUrl();
 const { formatDate } = useFormatters();
-const jurisdictionSlug = computed(() => String(route.params.slug));
+const jurisdictionSlug = useRouteStringParam("slug");
 const { data: jurisdiction, error, pending } = await useJurisdiction(jurisdictionSlug);
 const nextElectionSlug = computed(() => jurisdiction.value?.nextElectionSlug);
 const { data: nextElectionData } = await useBallot(nextElectionSlug);

@@ -629,6 +629,10 @@ function isPublishedRouteSource(source: Source) {
 		|| sourceId.startsWith("supplemental:");
 }
 
+function hasPublishedSourceUrl(source: Source) {
+	return Boolean(source.url.trim());
+}
+
 function inferPublishedSourceGeographicScope(
 	source: Source,
 	citations: SourceDirectoryItem["citedBy"],
@@ -791,7 +795,7 @@ function buildSourceDirectory(
 			summary: inferPublishedSourceSummary(source),
 			usedFor: inferPublishedSourceUsage(source, citations.get(source.id) ?? []),
 		}))
-		.filter(source => source.citationCount > 0)
+		.filter(source => source.citationCount > 0 && hasPublishedSourceUrl(source))
 		.sort((left, right) => right.date.localeCompare(left.date) || left.title.localeCompare(right.title));
 
 	return [...curatedSources, ...publishedProvenanceSources]
@@ -3541,9 +3545,12 @@ export async function createApp(options: CreateAppOptions = {}) {
 		citation: SourceDirectoryItem["citedBy"][number],
 	) {
 		for (const source of sources) {
+			if (!isPublishedRouteSource(source) || !hasPublishedSourceUrl(source))
+				continue;
+
 			const existing = sourceIndex.get(source.id);
 
-			if (isPublishedRouteSource(source) && (!existing || existing.date.localeCompare(source.date) < 0))
+			if (!existing || existing.date.localeCompare(source.date) < 0)
 				sourceIndex.set(source.id, source);
 
 			addSourceCitation(citations, source.id, citation);

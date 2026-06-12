@@ -64,7 +64,7 @@ usePageSeo({
 						id="site-search"
 						v-model="searchInput"
 						type="search"
-						placeholder="Example: District 7, Sandra Patel, transit bond, public records"
+						placeholder="Example: District 7, voter portal, OpenFEC, public records"
 						class="text-sm text-app-ink pl-11 pr-4 border border-app-line rounded-full bg-white h-13 w-full shadow-sm dark:text-app-text-dark placeholder:text-app-muted dark:border-app-line-dark dark:bg-app-panel-dark focus-ring dark:placeholder:text-app-muted-dark"
 					>
 				</div>

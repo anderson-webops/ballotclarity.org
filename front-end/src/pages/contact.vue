@@ -148,7 +148,7 @@ usePageSeo({
 						<input
 							v-model="form.pageUrl"
 							type="text"
-							placeholder="/candidate/elena-torres"
+							placeholder="/representatives/jon-ossoff"
 							class="text-sm text-app-ink mt-2 px-4 border border-app-line rounded-2xl bg-white h-13 w-full shadow-sm dark:text-app-text-dark dark:border-app-line-dark dark:bg-app-panel-dark focus-ring"
 						>
 					</label>

@@ -1,7 +1,7 @@
-import { defineEventHandler, readBody } from "h3";
-import { createAdminGuidePackage } from "../../utils/admin-auth";
+import { defineEventHandler } from "h3";
+import { createAdminGuidePackage, readAdminRequestBody } from "../../utils/admin-auth";
 
 export default defineEventHandler(async (event) => {
-	const body = await readBody<Record<string, unknown>>(event);
+	const body = await readAdminRequestBody(event);
 	return await createAdminGuidePackage(event, body);
 });

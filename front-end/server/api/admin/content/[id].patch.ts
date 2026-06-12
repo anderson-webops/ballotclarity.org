@@ -1,5 +1,5 @@
-import { createError, defineEventHandler, readBody } from "h3";
-import { updateAdminContent } from "../../../utils/admin-auth";
+import { createError, defineEventHandler } from "h3";
+import { readAdminRequestBody, updateAdminContent } from "../../../utils/admin-auth";
 
 export default defineEventHandler(async (event) => {
 	const id = event.context.params?.id;
@@ -11,7 +11,7 @@ export default defineEventHandler(async (event) => {
 		});
 	}
 
-	const body = await readBody<Record<string, unknown>>(event);
+	const body = await readAdminRequestBody(event);
 
 	return await updateAdminContent(event, id, body);
 });

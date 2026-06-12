@@ -15,7 +15,7 @@ import type {
 import { Buffer } from "node:buffer";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import process from "node:process";
-import { createError, deleteCookie, getCookie, setCookie } from "h3";
+import { createError, deleteCookie, getCookie, readBody, setCookie } from "h3";
 import { $fetch, FetchError } from "ofetch";
 import { useRuntimeConfig } from "#imports";
 
@@ -71,11 +71,16 @@ function normalizeHeaderValue(value: string | string[] | undefined) {
 	return Array.isArray(value) ? value.join(", ") : value;
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+	return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
 function getForwardHeaders(event: H3Event, extraHeaders: Record<string, string> = {}) {
-	const forwardedFor = normalizeHeaderValue(event.node.req.headers["x-forwarded-for"]);
-	const remoteAddress = event.node.req.socket.remoteAddress;
-	const userAgent = normalizeHeaderValue(event.node.req.headers["user-agent"]);
-	const requestId = normalizeHeaderValue(event.node.req.headers["x-request-id"]);
+	const request = event.node?.req;
+	const forwardedFor = normalizeHeaderValue(request?.headers["x-forwarded-for"]);
+	const remoteAddress = request?.socket.remoteAddress;
+	const userAgent = normalizeHeaderValue(request?.headers["user-agent"]);
+	const requestId = normalizeHeaderValue(request?.headers["x-request-id"]);
 
 	return {
 		...(forwardedFor ? { "x-forwarded-for": forwardedFor } : remoteAddress ? { "x-forwarded-for": remoteAddress } : {}),
@@ -83,6 +88,19 @@ function getForwardHeaders(event: H3Event, extraHeaders: Record<string, string> 
 		...(userAgent ? { "user-agent": userAgent } : {}),
 		...extraHeaders
 	};
+}
+
+export async function readAdminRequestBody(event: H3Event) {
+	const body = await readBody<unknown>(event);
+
+	if (!isRecord(body)) {
+		throw createError({
+			statusCode: 400,
+			statusMessage: "JSON request body is required."
+		});
+	}
+
+	return body;
 }
 
 function signPayload(payload: string, sessionSecret: string) {

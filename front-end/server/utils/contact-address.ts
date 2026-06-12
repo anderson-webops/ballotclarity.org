@@ -153,7 +153,7 @@ function getClientRateLimitKey(event: H3Event) {
 	const forwardedFor = getRequestHeader(event, "x-forwarded-for")?.split(",")[0]?.trim();
 	const realIp = getRequestHeader(event, "x-real-ip")?.trim();
 
-	return forwardedFor || realIp || event.node.req.socket.remoteAddress || "unknown";
+	return forwardedFor || realIp || event.node?.req.socket.remoteAddress || "unknown";
 }
 
 function enforceSameOrigin(event: H3Event) {

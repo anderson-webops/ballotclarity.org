@@ -128,6 +128,8 @@ test("public corrections page stays reader-facing instead of admin-facing", () =
 	assert.doesNotMatch(correctionsPage, /admin queue/i);
 	assert.match(correctionsPage, /private review notes/i);
 	assert.match(correctionsPage, /Private contact details/i);
+	assert.match(correctionsPage, /No public corrections have been posted/i);
+	assert.match(correctionsPage, /When there are public correction records/i);
 });
 
 test("public policy pages disclose private access without admin jargon", () => {

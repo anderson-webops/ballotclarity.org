@@ -45,11 +45,24 @@ usePageSeo({
 				</div>
 
 				<InfoCallout title="What appears here" tone="warning">
-					This page includes corrections and open review items that could affect how a public page should be understood. Private contact details, unverified attachments, and operational notes are not published here.
+					When there are public correction records, this page includes corrections and open review items that could affect how a public page should be understood. Private contact details, unverified attachments, and operational notes are not published here.
 				</InfoCallout>
 			</header>
 
-			<div class="space-y-4">
+			<div v-if="!data.corrections.length" class="surface-panel max-w-3xl">
+				<TrustBadge label="No public corrections posted" tone="accent" />
+				<h2 class="text-3xl text-app-ink font-serif mt-5 dark:text-app-text-dark">
+					No public corrections have been posted.
+				</h2>
+				<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
+					Ballot Clarity will use this page for substantive public corrections when a source-backed issue affects how a page should be read. To report a possible error, use the contact page.
+				</p>
+				<NuxtLink to="/contact" class="btn-secondary mt-5">
+					Report an issue
+				</NuxtLink>
+			</div>
+
+			<div v-else class="space-y-4">
 				<article v-for="item in data.corrections" :key="item.id" class="surface-panel">
 					<div class="flex flex-wrap gap-3 items-center">
 						<TrustBadge :label="item.status" :tone="item.status === 'resolved' ? 'accent' : item.status === 'new' ? 'warning' : 'neutral'" />

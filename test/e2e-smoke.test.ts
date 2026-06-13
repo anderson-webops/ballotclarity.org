@@ -1415,3 +1415,25 @@ test("sitemap returns 200 and only advertises valid source-backed public routes"
 	assert.doesNotMatch(body, /\/contest\/us-house-district-7/);
 	assert.doesNotMatch(body, new RegExp(`<loc>${appBaseUrl}/sources/district:state-senate-48</loc>`));
 });
+
+test("security.txt returns a current responsible-disclosure contact policy", async () => {
+	const beforeRequest = Date.now();
+	const response = await fetch(`${appBaseUrl}/.well-known/security.txt`);
+	const body = await response.text();
+	const expiresMatch = body.match(/^Expires: (.+)$/m);
+
+	assert.equal(response.status, 200);
+	assert.match(response.headers.get("content-type") ?? "", /text\/plain/);
+	assert.match(response.headers.get("cache-control") ?? "", /max-age=86400/);
+	assert.match(body, /^Contact: https:\/\/ballotclarity\.org\/contact$/m);
+	assert.match(body, /^Preferred-Languages: en$/m);
+	assert.match(body, /^Canonical: https:\/\/ballotclarity\.org\/\.well-known\/security\.txt$/m);
+	assert.match(body, /^Policy: https:\/\/ballotclarity\.org\/terms$/m);
+	assert.doesNotMatch(body, /mailto:|hello@|jacob@|gmail\.com/i);
+	assert.ok(expiresMatch);
+
+	const expiresAt = Date.parse(expiresMatch[1]);
+	assert.ok(Number.isFinite(expiresAt));
+	assert.ok(expiresAt > beforeRequest);
+	assert.ok(expiresAt <= beforeRequest + 181 * 24 * 60 * 60 * 1000);
+});

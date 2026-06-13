@@ -149,6 +149,20 @@ test("lookup-dependent results route stays out of public search indexes", () => 
 	assert.doesNotMatch(sitemapRoute, /"\/results"/);
 });
 
+test("security.txt exposes a protected disclosure contact without publishing a raw mailbox", () => {
+	const securityTxtRoute = readFileSync(new URL("../server/routes/.well-known/security.txt.ts", import.meta.url), "utf8");
+	const robotsTxt = readFileSync(new URL("../public/robots.txt", import.meta.url), "utf8");
+
+	assert.match(securityTxtRoute, /Contact: \$\{contactUrl\}/);
+	assert.match(securityTxtRoute, /Expires: \$\{expires\}/);
+	assert.match(securityTxtRoute, /Canonical: \$\{canonicalUrl\}/);
+	assert.match(securityTxtRoute, /Policy: \$\{termsUrl\}/);
+	assert.match(securityTxtRoute, /securityTxtTtlMs = 180 \* 24 \* 60 \* 60 \* 1000/);
+	assert.match(robotsTxt, /Allow: \/\.well-known\/security\.txt/);
+	assert.doesNotMatch(securityTxtRoute, /mailto:/i);
+	assert.doesNotMatch(securityTxtRoute, /hello@|jacob@|gmail\.com/i);
+});
+
 test("page components declare explicit SEO metadata", () => {
 	const pagesDirectory = fileURLToPath(new URL("../src/pages", import.meta.url));
 	const missingSeo = collectVueFiles(pagesDirectory)

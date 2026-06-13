@@ -9,6 +9,7 @@ Disallow: /
 
 User-agent: Googlebot
 Allow: /
+Allow: /.well-known/security.txt
 Disallow: /admin
 Disallow: /api
 Disallow: /ballot
@@ -19,6 +20,7 @@ Disallow: /search
 
 User-agent: Bingbot
 Allow: /
+Allow: /.well-known/security.txt
 Disallow: /admin
 Disallow: /api
 Disallow: /ballot
@@ -29,6 +31,7 @@ Disallow: /search
 
 User-agent: OAI-SearchBot
 Allow: /
+Allow: /.well-known/security.txt
 Disallow: /admin
 Disallow: /api
 Disallow: /ballot
@@ -39,6 +42,7 @@ Disallow: /search
 
 User-agent: Claude-SearchBot
 Allow: /
+Allow: /.well-known/security.txt
 Disallow: /admin
 Disallow: /api
 Disallow: /ballot
@@ -49,6 +53,7 @@ Disallow: /search
 
 User-agent: PerplexityBot
 Allow: /
+Allow: /.well-known/security.txt
 Disallow: /admin
 Disallow: /api
 Disallow: /ballot
@@ -59,6 +64,7 @@ Disallow: /search
 
 User-agent: Perplexity-User
 Allow: /
+Allow: /.well-known/security.txt
 Disallow: /admin
 Disallow: /api
 Disallow: /ballot
@@ -69,6 +75,7 @@ Disallow: /search
 
 User-agent: Claude-User
 Allow: /
+Allow: /.well-known/security.txt
 Disallow: /admin
 Disallow: /api
 Disallow: /ballot
@@ -79,6 +86,7 @@ Disallow: /search
 
 User-agent: *
 Allow: /
+Allow: /.well-known/security.txt
 Disallow: /admin
 Disallow: /api
 Disallow: /ballot

@@ -144,7 +144,7 @@ export function buildCoverageResponse(
 					id: "data-sources",
 					label: "Data sources",
 					status: "canonical",
-					summary: "Review the published data-source roadmap when one is available."
+					summary: "Review the public source directory and current provider notes."
 				}
 			],
 			coverageMode,
@@ -152,7 +152,7 @@ export function buildCoverageResponse(
 			locationGuess,
 			snapshotProvenance,
 			guideContent: null,
-			currentState: "No local guide is active in this environment right now.",
+			currentState: "No local guide is active right now.",
 			routeFamilies: [
 				{
 					activeSources: [
@@ -165,7 +165,7 @@ export function buildCoverageResponse(
 					note: "District, representative, and person pages stay useful here even when a local guide is not active.",
 					routes: ["/results", "/districts", "/districts/<slug>", "/representatives", "/representatives/<slug>"],
 					status: "live-now",
-					summary: "These routes are the main public product in an empty-coverage environment and run from the saved lookup in the browser."
+					summary: "These routes are the main public product when no local guide is active and use the saved lookup in the browser."
 				},
 				{
 					activeSources: [
@@ -194,7 +194,7 @@ export function buildCoverageResponse(
 					activeSources: [
 						"Published coverage profile",
 						"Public source status and coverage notes",
-						"Public data-source roadmap and methodology pages"
+						"Public source directory and methodology pages"
 					],
 					id: "public-reference",
 					label: "Public reference routes",
@@ -214,7 +214,7 @@ export function buildCoverageResponse(
 				"Use lookup results and official election tools when they are available for a location.",
 				"Publish a verified local guide before exposing ballot, candidate, measure, or election routes as current coverage."
 			],
-			scopeNote: `Until a verified local guide is published, Ballot Clarity should present missing local coverage honestly instead of falling back to fixture or archive content. ${snapshotScopeNote}`.trim(),
+			scopeNote: `Until a verified local guide is published, Ballot Clarity presents local guide coverage as unavailable instead of filling the gap with fixture or archive content. ${snapshotScopeNote}`.trim(),
 			supportedContentTypes: [],
 			updatedAt: new Date().toISOString()
 		};
@@ -236,7 +236,7 @@ export function buildCoverageResponse(
 		launchTarget,
 		guideContent: guideContent ?? null,
 		snapshotProvenance,
-		scopeNote: `${launchTarget.displayName} is the current published election area in this environment. Active snapshot status: ${(snapshotProvenance?.status || "unknown").replaceAll("_", " ")}${snapshotProvenance?.sourceLabel ? ` (${snapshotProvenance.sourceLabel})` : ""}. Official election tools should remain the final authority for deadlines, precincts, polling places, and ballot confirmation.`,
+		scopeNote: `${launchTarget.displayName} is the currently published election area. Active snapshot status: ${(snapshotProvenance?.status || "unknown").replaceAll("_", " ")}${snapshotProvenance?.sourceLabel ? ` (${snapshotProvenance.sourceLabel})` : ""}. Official election tools remain the final authority for deadlines, precincts, polling places, and ballot confirmation.`,
 		currentState: publishedGuideSummary,
 		routeFamilies: [
 			{
@@ -290,13 +290,13 @@ export function buildCoverageResponse(
 				activeSources: [
 					"Published coverage profile",
 					"Public source status and coverage notes",
-					"Public data-source roadmap and methodology pages"
+					"Public source directory and methodology pages"
 				],
 				id: "public-reference",
 				label: "Public reference routes",
 				routes: ["/coverage", "/status", "/data-sources", "/corrections", "/help", "/methodology"],
 				status: "live-now",
-				summary: "These routes explain the active launch profile, public source health, and the broader data-source roadmap."
+				summary: "These routes explain what is available, what source checks are active, and what still needs verification."
 			}
 		],
 		supportedContentTypes: [
@@ -318,45 +318,45 @@ export function buildCoverageResponse(
 			},
 			{
 				id: "editorial-ops",
-				label: "Editorial review and publish controls",
+				label: "Review and correction workflow",
 				status: "live-now",
-				summary: "Postgres-backed publishing, corrections, source monitoring, and admin workflows are supported on the code path."
+				summary: "Private review workflows support corrections, source checks, and publication controls before local guide content expands."
 			},
 			{
 				id: "district-lookup",
 				label: "Address-to-district matching",
 				status: "planned",
-				summary: `Published local coverage depends on defensible geocoding and district geography before personalized ballots for ${launchTarget.displayName} can be considered live.`
+				summary: `Published local coverage depends on defensible address matching and district geography before personalized ballot pages for ${launchTarget.displayName} can be considered ready.`
 			},
 			{
 				id: "local-contest-data",
 				label: "Verified local candidate and measure records",
 				status: "in-build",
-				summary: "Official filing lists, ballot text, and jurisdiction records should replace placeholder or unpublished local contest data before guide promotion."
+				summary: "Official filing lists, ballot text, and jurisdiction records should replace unpublished local contest data before full guide publication."
 			}
 		],
 		limitations: [
 			{
 				id: "no-certified-personalized-ballot",
-				title: "Personalized ballots should remain verification-first",
-				summary: "Published local guides should not be mistaken for an official ballot service. Final ballot confirmation still belongs to official election tools."
+				title: "Personalized ballots require official confirmation",
+				summary: "Published local guides are informational and do not replace official ballot tools."
 			},
 			{
 				id: "district-crosswalk-pending",
-				title: "District matching still needs official geography crosswalks",
-				summary: `A defensible local launch for ${launchTarget.displayName} still requires benchmarked geocoding, district layers, and auditable address-to-ballot joins.`
+				title: "District matching needs official geography checks",
+				summary: `A fuller launch for ${launchTarget.displayName} still requires benchmarked geocoding, district layers, and auditable address-to-ballot matching.`
 			},
 			{
 				id: "local-format-variation",
-				title: "Local candidate and ballot-text ingestion still needs connector hardening",
-				summary: "Local and statewide filing formats vary enough that the launch needs parser monitoring, source snapshots, and manual fallback procedures."
+				title: "Local candidate and ballot-text sources vary",
+				summary: "Local and statewide filing formats vary enough that candidate and measure data needs reviewed source records before broader publication."
 			}
 		],
 		nextSteps: [
-			"Stand up the managed Postgres environment and move the admin and editorial store off local SQLite.",
-			`Implement local logistics connectors first for ${launchTarget.displayName}: election office notices, statewide voter-tool verification, and election-calendar sync.`,
+			"Keep review, corrections, and source-status records durable before expanding coverage.",
+			`Add reviewed local logistics sources for ${launchTarget.displayName}: election office notices, statewide voter-tool verification, and election-calendar sync.`,
 			"Add district lookup using geocoding and official geography before enabling live address-to-ballot matching.",
-			"Load verified local contest packages from official filing lists and certified ballot text before promoting the jurisdiction to live voter-facing coverage."
+			"Load verified local contest records from official filing lists and certified ballot text before promoting the jurisdiction to full local guide coverage."
 		],
 		collections: [
 			{
@@ -370,7 +370,7 @@ export function buildCoverageResponse(
 				id: "status",
 				label: "Public status and source health",
 				status: "canonical",
-				summary: "Operational view of source checks, incidents, review windows, and current coverage mode.",
+				summary: "Public view of source checks, incidents, review windows, and current coverage status.",
 				href: "/status"
 			},
 			{

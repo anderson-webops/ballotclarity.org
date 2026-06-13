@@ -124,6 +124,40 @@ function assertNoPublicSnapshotPaths(payload: { snapshotProvenance?: Record<stri
 		assert.doesNotMatch(JSON.stringify(payload), new RegExp(rawPath.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
 }
 
+function collectStringValues(value: unknown, output: string[] = []): string[] {
+	if (typeof value === "string") {
+		output.push(value);
+		return output;
+	}
+
+	if (Array.isArray(value)) {
+		for (const item of value)
+			collectStringValues(item, output);
+
+		return output;
+	}
+
+	if (value && typeof value === "object") {
+		for (const item of Object.values(value as Record<string, unknown>))
+			collectStringValues(item, output);
+	}
+
+	return output;
+}
+
+function assertNoPublicOperatorCopy(payload: unknown) {
+	const publicText = collectStringValues(payload).join("\n");
+
+	assert.doesNotMatch(publicText, /\bthis environment\b/i);
+	assert.doesNotMatch(publicText, /empty-coverage environment/i);
+	assert.doesNotMatch(publicText, /\bPostgres\b/i);
+	assert.doesNotMatch(publicText, /code path/i);
+	assert.doesNotMatch(publicText, /managed Postgres|local SQLite/i);
+	assert.doesNotMatch(publicText, /connector hardening|parser monitoring|manual fallback procedures/i);
+	assert.doesNotMatch(publicText, /data-source roadmap/i);
+	assert.doesNotMatch(publicText, /current coverage mode/i);
+}
+
 function collectUrlFields(value: unknown): string[] {
 	if (!value || typeof value !== "object")
 		return [];
@@ -1197,14 +1231,16 @@ test("default runtime stays empty instead of auto-seeding coverage and public op
 			canGuessOnLoad: false,
 			mode: "disabled"
 		});
-		assert.match(coverageBody.currentState, /No local guide is active in this environment right now/i);
+		assert.match(coverageBody.currentState, /No local guide is active right now/i);
 		assert.equal(coverageBody.snapshotProvenance.status, "unknown");
 		assert.equal(coverageBody.snapshotProvenance.configuredSnapshotMissing, false);
 		assertNoPublicSnapshotPaths(coverageBody);
+		assertNoPublicOperatorCopy(coverageBody);
 		assert.equal(statusBody.coverageMode, "empty");
 		assert.equal(statusBody.overallStatus, "reviewing");
 		assert.equal(statusBody.snapshotProvenance.status, "unknown");
 		assertNoPublicSnapshotPaths(statusBody);
+		assertNoPublicOperatorCopy(statusBody);
 		assert.deepEqual(statusBody.sourceSummary, {
 			"healthy": 0,
 			"incident": 0,
@@ -1947,6 +1983,7 @@ test("GET /api/coverage returns the public launch profile for Fulton County, Geo
 	assert.equal(body.snapshotProvenance.status, "seed");
 	assert.equal(body.snapshotProvenance.sourceType, "seed");
 	assertNoPublicSnapshotPaths(body);
+	assertNoPublicOperatorCopy(body);
 	assert.equal(body.guideContent.publishedGuideShell, true);
 	assert.equal(body.guideContent.verifiedContestPackage, false);
 	assert.equal(body.supportedContentTypes.find((item: { id: string }) => item.id === "logistics")?.status, "live-now");
@@ -1964,6 +2001,7 @@ test("GET /api/status returns public source-health and launch notices", async ()
 	assert.equal(body.coverageMode, "snapshot");
 	assert.equal(body.snapshotProvenance.status, "seed");
 	assertNoPublicSnapshotPaths(body);
+	assertNoPublicOperatorCopy(body);
 	assert.equal(body.sourceSummary.healthy, 1);
 	assert.equal(body.sourceSummary.incident, 1);
 	assert.ok(body.notes.length >= 2);

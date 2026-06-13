@@ -35,6 +35,7 @@ test("nuxt config uses srcDir and expected civic modules", async () => {
 	assert.equal(config.runtimeConfig?.public?.governingLaw, "State of Georgia");
 	assert.equal(config.runtimeConfig?.public?.venue, "state or federal courts located in Georgia");
 	assert.equal(config.colorMode?.preference, "system");
+	assert.equal(config.devtools?.enabled, false);
 	assert.equal(config.experimental?.typedPages, true);
 	assert.deepEqual(config.vite?.build?.modulePreload, { polyfill: false });
 	assert.equal(config.app?.head?.htmlAttrs?.lang, "en");

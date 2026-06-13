@@ -55,6 +55,10 @@ const noIndexHeaders = {
 	...securityHeaders,
 	"X-Robots-Tag": "noindex, nofollow"
 };
+const noIndexFollowHeaders = {
+	...securityHeaders,
+	"X-Robots-Tag": "noindex, follow"
+};
 
 export default defineNuxtConfig({
 	modules: [
@@ -182,10 +186,10 @@ export default defineNuxtConfig({
 				headers: noIndexHeaders
 			},
 			"/ballot": {
-				headers: noIndexHeaders
+				headers: noIndexFollowHeaders
 			},
 			"/ballot/**": {
-				headers: noIndexHeaders
+				headers: noIndexFollowHeaders
 			},
 			"/compare": {
 				headers: noIndexHeaders

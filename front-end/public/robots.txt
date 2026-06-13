@@ -12,7 +12,6 @@ Allow: /
 Allow: /.well-known/security.txt
 Disallow: /admin
 Disallow: /api
-Disallow: /ballot
 Disallow: /compare
 Disallow: /plan
 Disallow: /results
@@ -23,7 +22,6 @@ Allow: /
 Allow: /.well-known/security.txt
 Disallow: /admin
 Disallow: /api
-Disallow: /ballot
 Disallow: /compare
 Disallow: /plan
 Disallow: /results
@@ -34,7 +32,6 @@ Allow: /
 Allow: /.well-known/security.txt
 Disallow: /admin
 Disallow: /api
-Disallow: /ballot
 Disallow: /compare
 Disallow: /plan
 Disallow: /results
@@ -45,7 +42,6 @@ Allow: /
 Allow: /.well-known/security.txt
 Disallow: /admin
 Disallow: /api
-Disallow: /ballot
 Disallow: /compare
 Disallow: /plan
 Disallow: /results
@@ -56,7 +52,6 @@ Allow: /
 Allow: /.well-known/security.txt
 Disallow: /admin
 Disallow: /api
-Disallow: /ballot
 Disallow: /compare
 Disallow: /plan
 Disallow: /results
@@ -67,7 +62,6 @@ Allow: /
 Allow: /.well-known/security.txt
 Disallow: /admin
 Disallow: /api
-Disallow: /ballot
 Disallow: /compare
 Disallow: /plan
 Disallow: /results
@@ -78,7 +72,6 @@ Allow: /
 Allow: /.well-known/security.txt
 Disallow: /admin
 Disallow: /api
-Disallow: /ballot
 Disallow: /compare
 Disallow: /plan
 Disallow: /results
@@ -89,7 +82,6 @@ Allow: /
 Allow: /.well-known/security.txt
 Disallow: /admin
 Disallow: /api
-Disallow: /ballot
 Disallow: /compare
 Disallow: /plan
 Disallow: /results

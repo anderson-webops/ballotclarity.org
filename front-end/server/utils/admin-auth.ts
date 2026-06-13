@@ -39,6 +39,13 @@ interface BackendLoginResponse {
 
 type BackendSessionResponse = BackendLoginResponse;
 
+interface CompleteBackendSessionResponse extends BackendLoginResponse {
+	credentialsUpdatedAt: string;
+	displayName: string;
+	role: AdminUserRole;
+	username: string;
+}
+
 interface AdminSessionPayload {
 	credentialsUpdatedAt: string;
 	displayName: string;
@@ -116,6 +123,34 @@ function serializeSession(payload: AdminSessionPayload, sessionSecret: string) {
 	const signature = signPayload(encodedPayload, sessionSecret);
 
 	return `${encodedPayload}.${signature}`;
+}
+
+function isCompleteBackendSession(response: BackendLoginResponse): response is CompleteBackendSessionResponse {
+	return Boolean(
+		response.authenticated
+		&& response.username
+		&& response.displayName
+		&& response.role
+		&& response.credentialsUpdatedAt
+	);
+}
+
+function setAdminSessionCookie(event: H3Event, sessionResponse: CompleteBackendSessionResponse, sessionSecret: string) {
+	const serializedSession = serializeSession({
+		credentialsUpdatedAt: sessionResponse.credentialsUpdatedAt,
+		displayName: sessionResponse.displayName,
+		expiresAt: Date.now() + (adminSessionMaxAge * 1000),
+		role: sessionResponse.role,
+		username: sessionResponse.username
+	}, sessionSecret);
+
+	setCookie(event, adminCookieName, serializedSession, {
+		httpOnly: true,
+		maxAge: adminSessionMaxAge,
+		path: "/",
+		sameSite: "lax",
+		secure: process.env.NODE_ENV === "production"
+	});
 }
 
 function parseSession(rawValue: string | undefined, sessionSecret: string) {
@@ -315,28 +350,14 @@ export async function createAdminSession(event: H3Event, username: string, passw
 		throw error;
 	}
 
-	if (!loginResponse.authenticated || !loginResponse.username || !loginResponse.displayName || !loginResponse.role || !loginResponse.credentialsUpdatedAt) {
+	if (!isCompleteBackendSession(loginResponse)) {
 		throw createError({
 			statusCode: 401,
 			statusMessage: "Invalid admin credentials."
 		});
 	}
 
-	const serializedSession = serializeSession({
-		credentialsUpdatedAt: loginResponse.credentialsUpdatedAt,
-		displayName: loginResponse.displayName,
-		expiresAt: Date.now() + (adminSessionMaxAge * 1000),
-		role: loginResponse.role,
-		username: loginResponse.username
-	}, config.sessionSecret);
-
-	setCookie(event, adminCookieName, serializedSession, {
-		httpOnly: true,
-		maxAge: adminSessionMaxAge,
-		path: "/",
-		sameSite: "lax",
-		secure: process.env.NODE_ENV === "production"
-	});
+	setAdminSessionCookie(event, loginResponse, config.sessionSecret);
 
 	return {
 		authenticated: true,
@@ -345,6 +366,64 @@ export async function createAdminSession(event: H3Event, username: string, passw
 		displayName: loginResponse.displayName,
 		role: loginResponse.role,
 		username: loginResponse.username
+	} satisfies AdminSessionResponse;
+}
+
+export async function changeAdminPassword(event: H3Event, body: Record<string, unknown>) {
+	const session = await requireActiveAdminSession(event);
+	const config = getAdminConfig(event);
+	const currentPassword = typeof body.currentPassword === "string" ? body.currentPassword : "";
+	const newPassword = typeof body.newPassword === "string" ? body.newPassword : "";
+
+	if (!session.username || !currentPassword || !newPassword) {
+		throw createError({
+			statusCode: 400,
+			statusMessage: "Current password and new password are required."
+		});
+	}
+
+	let passwordResponse: BackendLoginResponse;
+
+	try {
+		passwordResponse = await $fetch<BackendLoginResponse>(`${config.apiBase}/admin/auth/password`, {
+			body: {
+				currentPassword,
+				newPassword,
+				username: session.username
+			},
+			headers: getForwardHeaders(event, {
+				"x-admin-api-key": config.apiKey
+			}),
+			method: "POST"
+		});
+	}
+	catch (error) {
+		if (error instanceof FetchError) {
+			throw createError({
+				statusCode: error.statusCode || 500,
+				statusMessage: error.data?.message || error.statusMessage || "Unable to change admin password."
+			});
+		}
+
+		throw error;
+	}
+
+	if (!isCompleteBackendSession(passwordResponse)) {
+		throw createError({
+			statusCode: 500,
+			statusMessage: "Password changed, but the updated admin session could not be created."
+		});
+	}
+
+	setAdminSessionCookie(event, passwordResponse, config.sessionSecret);
+
+	return {
+		authenticated: true,
+		configured: true,
+		credentialsUpdatedAt: passwordResponse.credentialsUpdatedAt,
+		displayName: passwordResponse.displayName,
+		role: passwordResponse.role,
+		username: passwordResponse.username
 	} satisfies AdminSessionResponse;
 }
 

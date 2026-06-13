@@ -24,7 +24,8 @@ const adminApiKey = "smoke-admin-key";
 const adminPassword = "smoke-password";
 const adminSessionSecret = "smoke-session-secret";
 const adminUsername = "smoke-admin";
-const adminDbPath = join(repoRoot, "back-end/data/e2e-smoke.sqlite");
+const e2eTempDir = mkdtempSync(join(tmpdir(), "ballot-clarity-e2e-"));
+const adminDbPath = join(e2eTempDir, "e2e-smoke.sqlite");
 const localCoverageFile = join(repoRoot, "back-end/data/live-coverage.local.json");
 const displayTimeZoneCookieName = "ballot-clarity-display-time-zone";
 const activeNationwideLookupCookieName = "ballot-clarity-nationwide-lookup";
@@ -609,6 +610,7 @@ after(async () => {
 		stopProcess(appProcess),
 		stopProcess(apiProcess)
 	]);
+	rmSync(e2eTempDir, { force: true, recursive: true });
 });
 
 test("built app renders the key ballot guide pages against the built API", async () => {
@@ -885,6 +887,7 @@ test("built app exposes a protected admin portal when admin env is configured", 
 		},
 		method: "POST"
 	});
+	const loginBody = await loginResponse.json();
 	const sessionCookie = loginResponse.headers.get("set-cookie")?.split(";")[0];
 	const dashboardPage = await fetch(`${appBaseUrl}/admin`, {
 		headers: {
@@ -892,6 +895,12 @@ test("built app exposes a protected admin portal when admin env is configured", 
 		}
 	});
 	const dashboardHtml = await dashboardPage.text();
+	const accountPage = await fetch(`${appBaseUrl}/admin/account`, {
+		headers: {
+			cookie: sessionCookie || ""
+		}
+	});
+	const accountHtml = await accountPage.text();
 	const correctionsPage = await fetch(`${appBaseUrl}/admin/corrections`, {
 		headers: {
 			cookie: sessionCookie || ""
@@ -916,12 +925,47 @@ test("built app exposes a protected admin portal when admin env is configured", 
 	assert.match(dashboardHtml, /Current operational priorities/);
 	assert.match(dashboardHtml, /Latest queue and publish events/);
 	assert.match(dashboardHtml, /Open corrections/);
+	assert.equal(accountPage.status, 200);
+	assert.match(accountHtml, /Change password/);
+	assert.match(accountHtml, /Account security/);
+	assert.match(accountHtml, /Ballot Clarity Admin/);
 	assert.equal(correctionsPage.status, 200);
 	assert.match(correctionsHtml, /Reported issues and next steps/);
 	assert.match(correctionsHtml, /Reader and internal reports/);
 	assert.equal(adminOverviewResponse.status, 200);
 	assert.equal(adminOverview.metrics[0].label, "Open corrections");
 	assert.ok(Array.isArray(adminOverview.recentActivity));
+
+	const passwordChangeResponse = await fetch(`${appBaseUrl}/api/admin/session/password`, {
+		body: JSON.stringify({
+			currentPassword: adminPassword,
+			newPassword: "changed-smoke-password"
+		}),
+		headers: {
+			"Content-Type": "application/json",
+			cookie: sessionCookie || ""
+		},
+		method: "POST"
+	});
+	const changedSessionCookie = passwordChangeResponse.headers.get("set-cookie")?.split(";")[0];
+	const passwordChangeBody = await passwordChangeResponse.json();
+	const staleOverviewResponse = await fetch(`${appBaseUrl}/api/admin/overview`, {
+		headers: {
+			cookie: sessionCookie || ""
+		}
+	});
+	const freshOverviewResponse = await fetch(`${appBaseUrl}/api/admin/overview`, {
+		headers: {
+			cookie: changedSessionCookie || ""
+		}
+	});
+
+	assert.equal(passwordChangeResponse.status, 200);
+	assert.ok(changedSessionCookie);
+	assert.equal(passwordChangeBody.authenticated, true);
+	assert.notEqual(passwordChangeBody.credentialsUpdatedAt, loginBody.credentialsUpdatedAt);
+	assert.equal(staleOverviewResponse.status, 401);
+	assert.equal(freshOverviewResponse.status, 200);
 });
 
 test("built app does not log a hydration mismatch when dark mode is stored before first load", async (t) => {

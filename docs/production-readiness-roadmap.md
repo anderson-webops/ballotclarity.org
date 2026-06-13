@@ -86,7 +86,7 @@ Work:
 - add content history, diff views, and rollback
 - add structured editing for more than summary fields
 - add assignment, review notes, publish approvals, and correction-to-content linkage
-- add self-service password change and MFA for admins; login throttling, admin password reset, session invalidation, and account disable/restore controls are implemented and should be monitored in production
+- add MFA for admins; login throttling, self-service password change, admin password reset, session invalidation, and account disable/restore controls are implemented and should be monitored in production
 - add immutable audit logs for publish and user-management actions
 
 Exit criteria:

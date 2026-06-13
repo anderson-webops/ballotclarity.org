@@ -135,6 +135,7 @@ export interface CreateUserInput {
 export interface UserPatch {
 	disabled?: boolean;
 	password?: string;
+	passwordChangeMode?: "admin-reset" | "self-service";
 }
 
 export interface AdminRepository {
@@ -937,10 +938,14 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 		}
 
 		if (patch.password !== undefined) {
+			const isSelfService = patch.passwordChangeMode === "self-service";
+
 			logActivity(
 				"review",
-				"Reset admin password",
-				`${current.display_name} received a new temporary password. Existing sessions for this account are no longer valid.`
+				isSelfService ? "Changed admin password" : "Reset admin password",
+				isSelfService
+					? `${current.display_name} changed their own password. Existing sessions for this account are no longer valid.`
+					: `${current.display_name} received a new temporary password. Existing sessions for this account are no longer valid.`
 			);
 		}
 

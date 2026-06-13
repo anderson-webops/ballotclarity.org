@@ -3391,6 +3391,86 @@ test("admin user lifecycle blocks disabled accounts and invalidates reset creden
 
 		assert.equal(freshCredentialSessionResponse.status, 200);
 		assert.equal(freshCredentialSessionBody.authenticated, true);
+
+		const wrongCurrentPasswordChangeResponse = await fetch(`${isolatedBaseUrl}/api/admin/auth/password`, {
+			body: JSON.stringify({
+				currentPassword: "wrong-current-password",
+				newPassword: "self-service-editor-password",
+				username: "review-editor"
+			}),
+			headers: adminHeaders,
+			method: "POST"
+		});
+
+		assert.equal(wrongCurrentPasswordChangeResponse.status, 401);
+
+		const shortSelfChangeResponse = await fetch(`${isolatedBaseUrl}/api/admin/auth/password`, {
+			body: JSON.stringify({
+				currentPassword: "new-review-editor-password",
+				newPassword: "short",
+				username: "review-editor"
+			}),
+			headers: adminHeaders,
+			method: "POST"
+		});
+		const shortSelfChangeBody = await shortSelfChangeResponse.json();
+
+		assert.equal(shortSelfChangeResponse.status, 400);
+		assert.match(shortSelfChangeBody.message, /at least 12 characters/i);
+
+		const selfChangeResponse = await fetch(`${isolatedBaseUrl}/api/admin/auth/password`, {
+			body: JSON.stringify({
+				currentPassword: "new-review-editor-password",
+				newPassword: "self-service-editor-password",
+				username: "review-editor"
+			}),
+			headers: adminHeaders,
+			method: "POST"
+		});
+		const selfChangeBody = await selfChangeResponse.json();
+
+		assert.equal(selfChangeResponse.status, 200);
+		assert.equal(selfChangeBody.authenticated, true);
+		assert.equal(selfChangeBody.username, "review-editor");
+		assert.notEqual(selfChangeBody.credentialsUpdatedAt, resetEditor.credentialsUpdatedAt);
+
+		const resetCredentialSessionResponse = await fetch(`${isolatedBaseUrl}/api/admin/auth/session/review-editor?credentialsUpdatedAt=${encodeURIComponent(resetEditor.credentialsUpdatedAt)}`, {
+			headers: {
+				"x-admin-api-key": adminApiKey
+			}
+		});
+
+		assert.equal(resetCredentialSessionResponse.status, 401);
+
+		const resetPasswordLoginResponse = await fetch(`${isolatedBaseUrl}/api/admin/auth/login`, {
+			body: JSON.stringify({
+				password: "new-review-editor-password",
+				username: "review-editor"
+			}),
+			headers: {
+				"Content-Type": "application/json",
+				"x-forwarded-for": "203.0.113.25"
+			},
+			method: "POST"
+		});
+
+		assert.equal(resetPasswordLoginResponse.status, 401);
+
+		const selfChangedLoginResponse = await fetch(`${isolatedBaseUrl}/api/admin/auth/login`, {
+			body: JSON.stringify({
+				password: "self-service-editor-password",
+				username: "review-editor"
+			}),
+			headers: {
+				"Content-Type": "application/json",
+				"x-forwarded-for": "203.0.113.26"
+			},
+			method: "POST"
+		});
+		const selfChangedLoginBody = await selfChangedLoginResponse.json();
+
+		assert.equal(selfChangedLoginResponse.status, 200);
+		assert.equal(selfChangedLoginBody.credentialsUpdatedAt, selfChangeBody.credentialsUpdatedAt);
 	}
 	finally {
 		await new Promise<void>((resolve, reject) => {

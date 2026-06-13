@@ -821,10 +821,14 @@ export async function createPostgresAdminRepository(options: AdminRepositoryOpti
 			}
 
 			if (patch.password !== undefined) {
+				const isSelfService = patch.passwordChangeMode === "self-service";
+
 				await logActivity(
 					"review",
-					"Reset admin password",
-					`${current.display_name} received a new temporary password. Existing sessions for this account are no longer valid.`
+					isSelfService ? "Changed admin password" : "Reset admin password",
+					isSelfService
+						? `${current.display_name} changed their own password. Existing sessions for this account are no longer valid.`
+						: `${current.display_name} received a new temporary password. Existing sessions for this account are no longer valid.`
 				);
 			}
 

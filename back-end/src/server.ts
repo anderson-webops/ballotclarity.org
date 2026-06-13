@@ -4332,6 +4332,57 @@ export async function createApp(options: CreateAppOptions = {}) {
 		});
 	});
 
+	app.post("/api/admin/auth/password", async (request, response) => {
+		const username = typeof request.body?.username === "string" ? request.body.username.trim().toLowerCase() : "";
+		const currentPassword = typeof request.body?.currentPassword === "string" ? request.body.currentPassword : "";
+		const newPassword = typeof request.body?.newPassword === "string" ? request.body.newPassword : "";
+
+		if (!username || !currentPassword || !newPassword) {
+			response.status(400).json({
+				message: "Username, current password, and new password are required."
+			});
+			return;
+		}
+
+		const user = await adminRepository.authenticateUser(username, currentPassword);
+
+		if (!user) {
+			response.status(401).json({
+				message: "Current password was not accepted."
+			});
+			return;
+		}
+
+		try {
+			const users = await adminRepository.updateUser(user.id, {
+				password: newPassword,
+				passwordChangeMode: "self-service"
+			});
+			const updatedUser = users.users.find(item => item.id === user.id);
+
+			if (!updatedUser?.credentialsUpdatedAt) {
+				response.status(500).json({
+					message: "Password changed, but the updated session metadata could not be loaded."
+				});
+				return;
+			}
+
+			response.json({
+				authenticated: true,
+				configured: true,
+				credentialsUpdatedAt: updatedUser.credentialsUpdatedAt,
+				displayName: updatedUser.displayName,
+				role: updatedUser.role,
+				username: updatedUser.username
+			});
+		}
+		catch (error) {
+			response.status(400).json({
+				message: error instanceof Error ? error.message : "Unable to change admin password."
+			});
+		}
+	});
+
 	app.post("/api/location", async (request, response) => {
 		const raw = typeof request.body?.q === "string" ? request.body.q.trim() : "";
 		const selectionId = typeof request.body?.selectionId === "string" ? request.body.selectionId.trim() : "";

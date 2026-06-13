@@ -8,7 +8,8 @@ const baseLinks = [
 	{ label: "Content", to: "/admin/content" },
 	{ label: "Review queue", to: "/admin/review" },
 	{ label: "Corrections", to: "/admin/corrections" },
-	{ label: "Source health", to: "/admin/sources" }
+	{ label: "Source health", to: "/admin/sources" },
+	{ label: "Account", to: "/admin/account" }
 ];
 
 const navLinks = computed(() => {
@@ -53,9 +54,9 @@ async function signOut() {
 					</div>
 
 					<div class="flex gap-2 items-center sm:gap-3">
-						<div class="text-xs text-app-muted px-3 py-2 border border-app-line rounded-full bg-white hidden dark:text-app-muted-dark dark:border-app-line-dark dark:bg-app-panel-dark xl:block">
+						<NuxtLink to="/admin/account" class="text-xs text-app-muted px-3 py-2 border border-app-line rounded-full bg-white hidden dark:text-app-muted-dark hover:text-app-ink dark:border-app-line-dark dark:bg-app-panel-dark xl:block focus-ring dark:hover:text-app-text-dark">
 							{{ session?.displayName || session?.username || "Admin" }} · {{ session?.role || "admin" }}
-						</div>
+						</NuxtLink>
 						<NuxtLink to="/" class="btn-secondary text-xs sm:text-sm !px-3 !py-2 sm:!px-4">
 							Public site
 						</NuxtLink>

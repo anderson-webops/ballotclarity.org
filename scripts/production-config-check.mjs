@@ -1,0 +1,372 @@
+import { existsSync, readFileSync } from "node:fs";
+import process from "node:process";
+
+const envLinePattern = /^\s*([\w.-]+)\s*=\s*(.*)?\s*$/;
+const quotedValuePattern = /^(['"])(.*)\1$/;
+const localHostnames = new Set(["localhost", "127.0.0.1", "0.0.0.0", "::1"]);
+const weakSecretValues = new Set([
+	"admin",
+	"ballotclarity",
+	"changeme",
+	"dev",
+	"development",
+	"local",
+	"password",
+	"secret",
+	"test",
+]);
+
+function normalize(value) {
+	return String(value ?? "").trim();
+}
+
+function parseEnvContent(content) {
+	const parsed = {};
+
+	for (const rawLine of content.split(/\r?\n/u)) {
+		const line = rawLine.trim();
+
+		if (!line || line.startsWith("#"))
+			continue;
+
+		const match = rawLine.match(envLinePattern);
+
+		if (!match)
+			continue;
+
+		const [, key, rawValue = ""] = match;
+		const quotedMatch = rawValue.match(quotedValuePattern);
+		parsed[key] = quotedMatch ? quotedMatch[2] : rawValue.trim();
+	}
+
+	return parsed;
+}
+
+function parseUrl(value) {
+	try {
+		return new URL(value);
+	}
+	catch {
+		return null;
+	}
+}
+
+function isLocalUrl(url) {
+	return Boolean(url && localHostnames.has(url.hostname));
+}
+
+function hasTruthyValue(value) {
+	return ["1", "true", "yes", "on"].includes(normalize(value).toLowerCase());
+}
+
+function issue(severity, id, message) {
+	return {
+		id,
+		message,
+		severity,
+	};
+}
+
+function checkPublicUrl({ errors, key, pathRequired, value }) {
+	const raw = normalize(value);
+
+	if (!raw) {
+		errors.push(issue("error", `${key.toLowerCase()}.missing`, `${key} is required for production.`));
+		return null;
+	}
+
+	const url = parseUrl(raw);
+
+	if (!url) {
+		errors.push(issue("error", `${key.toLowerCase()}.invalid`, `${key} must be a valid absolute URL.`));
+		return null;
+	}
+
+	if (url.protocol !== "https:")
+		errors.push(issue("error", `${key.toLowerCase()}.https`, `${key} must use https in production.`));
+
+	if (isLocalUrl(url))
+		errors.push(issue("error", `${key.toLowerCase()}.local`, `${key} must not point at localhost in production.`));
+
+	if (pathRequired && !url.pathname.replace(/\/+$/u, "").endsWith(pathRequired)) {
+		errors.push(issue(
+			"error",
+			`${key.toLowerCase()}.path`,
+			`${key} must point at the public ${pathRequired} API path.`,
+		));
+	}
+
+	return url;
+}
+
+function checkSecret({ errors, key, minLength = 32, value }) {
+	const raw = normalize(value);
+
+	if (!raw) {
+		errors.push(issue("error", `${key.toLowerCase()}.missing`, `${key} is required for production.`));
+		return;
+	}
+
+	if (raw.length < minLength)
+		errors.push(issue("error", `${key.toLowerCase()}.short`, `${key} must be at least ${minLength} characters.`));
+
+	if (weakSecretValues.has(raw.toLowerCase()))
+		errors.push(issue("error", `${key.toLowerCase()}.weak`, `${key} appears to use a placeholder value.`));
+}
+
+function readSnapshotMetadata({ errors, fs, snapshotPath }) {
+	const metadataPath = `${snapshotPath}.meta.json`;
+
+	if (!fs.existsSync(metadataPath)) {
+		errors.push(issue(
+			"error",
+			"live_coverage.metadata_missing",
+			"LIVE_COVERAGE_FILE must have a matching .meta.json sidecar.",
+		));
+		return null;
+	}
+
+	try {
+		return JSON.parse(fs.readFileSync(metadataPath, "utf8"));
+	}
+	catch {
+		errors.push(issue(
+			"error",
+			"live_coverage.metadata_invalid",
+			"LIVE_COVERAGE_FILE metadata sidecar must be valid JSON.",
+		));
+		return null;
+	}
+}
+
+function checkSnapshotMetadata({ errors, metadata, warnings }) {
+	const status = normalize(metadata?.status);
+	const sourceType = normalize(metadata?.sourceType);
+
+	if (status !== "reviewed" && status !== "production_approved") {
+		errors.push(issue(
+			"error",
+			"live_coverage.status",
+			"Production coverage snapshot status must be reviewed or production_approved.",
+		));
+	}
+
+	if (sourceType !== "imported") {
+		errors.push(issue(
+			"error",
+			"live_coverage.source_type",
+			"Production coverage snapshot sourceType must be imported.",
+		));
+	}
+
+	if (!normalize(metadata?.sourceLabel)) {
+		errors.push(issue(
+			"error",
+			"live_coverage.source_label",
+			"Production coverage snapshot metadata must include sourceLabel.",
+		));
+	}
+
+	if (!normalize(metadata?.reviewedAt)) {
+		errors.push(issue(
+			"error",
+			"live_coverage.reviewed_at",
+			"Reviewed or production-approved coverage snapshot metadata must include reviewedAt.",
+		));
+	}
+
+	if (status === "production_approved" && !normalize(metadata?.approvedAt)) {
+		errors.push(issue(
+			"error",
+			"live_coverage.approved_at",
+			"Production-approved coverage snapshot metadata must include approvedAt.",
+		));
+	}
+
+	if (status === "reviewed") {
+		warnings.push(issue(
+			"warning",
+			"live_coverage.reviewed_not_approved",
+			"Coverage snapshot is reviewed but not production-approved; public copy must keep that editorial state visible.",
+		));
+	}
+}
+
+export function evaluateProductionConfig({
+	env = process.env,
+	fs = { existsSync, readFileSync },
+} = {}) {
+	const errors = [];
+	const warnings = [];
+	const publicSiteUrl = checkPublicUrl({
+		errors,
+		key: "NUXT_PUBLIC_SITE_URL",
+		value: env.NUXT_PUBLIC_SITE_URL,
+	});
+	const publicApiBase = checkPublicUrl({
+		errors,
+		key: "NUXT_PUBLIC_API_BASE",
+		pathRequired: "/api",
+		value: env.NUXT_PUBLIC_API_BASE,
+	});
+	const adminApiBaseRaw = normalize(env.ADMIN_API_BASE);
+
+	if (!adminApiBaseRaw) {
+		errors.push(issue("error", "admin_api_base.missing", "ADMIN_API_BASE is required for production."));
+	}
+	else {
+		const adminApiBase = parseUrl(adminApiBaseRaw);
+
+		if (!adminApiBase) {
+			errors.push(issue("error", "admin_api_base.invalid", "ADMIN_API_BASE must be a valid absolute URL."));
+		}
+		else if (publicApiBase && adminApiBase.href === publicApiBase.href) {
+			errors.push(issue(
+				"error",
+				"admin_api_base.public_target",
+				"ADMIN_API_BASE must be a private server-side target, not the public browser API base.",
+			));
+		}
+	}
+
+	if (publicSiteUrl && publicApiBase && publicSiteUrl.hostname !== publicApiBase.hostname) {
+		warnings.push(issue(
+			"warning",
+			"public_origin.split",
+			"NUXT_PUBLIC_SITE_URL and NUXT_PUBLIC_API_BASE use different hosts; confirm CORS and cookie behavior intentionally support this.",
+		));
+	}
+
+	checkSecret({ errors, key: "ADMIN_API_KEY", value: env.ADMIN_API_KEY });
+	checkSecret({ errors, key: "ADMIN_SESSION_SECRET", value: env.ADMIN_SESSION_SECRET });
+
+	const adminStoreDriver = normalize(env.ADMIN_STORE_DRIVER).toLowerCase();
+	const adminDatabaseUrl = normalize(env.ADMIN_DATABASE_URL || env.DATABASE_URL);
+
+	if (adminStoreDriver !== "postgres") {
+		errors.push(issue(
+			"error",
+			"admin_store.driver",
+			"ADMIN_STORE_DRIVER must be postgres for production.",
+		));
+	}
+
+	if (!adminDatabaseUrl) {
+		errors.push(issue(
+			"error",
+			"admin_store.database_url_missing",
+			"ADMIN_DATABASE_URL or DATABASE_URL is required for production admin/editor persistence.",
+		));
+	}
+	else if (!/^postgres(?:ql)?:\/\//iu.test(adminDatabaseUrl)) {
+		errors.push(issue(
+			"error",
+			"admin_store.database_url_scheme",
+			"ADMIN_DATABASE_URL or DATABASE_URL must use a postgres:// or postgresql:// URL.",
+		));
+	}
+
+	if (!hasTruthyValue(env.LIVE_COVERAGE_REQUIRED)) {
+		errors.push(issue(
+			"error",
+			"live_coverage.required",
+			"LIVE_COVERAGE_REQUIRED must be true so production fails closed when the active snapshot is missing.",
+		));
+	}
+
+	const liveCoverageFile = normalize(env.LIVE_COVERAGE_FILE);
+
+	if (!liveCoverageFile) {
+		errors.push(issue("error", "live_coverage.file_missing", "LIVE_COVERAGE_FILE is required for production."));
+	}
+	else if (!fs.existsSync(liveCoverageFile)) {
+		errors.push(issue("error", "live_coverage.file_not_found", "LIVE_COVERAGE_FILE does not exist."));
+	}
+	else {
+		const metadata = readSnapshotMetadata({ errors, fs, snapshotPath: liveCoverageFile });
+
+		if (metadata)
+			checkSnapshotMetadata({ errors, metadata, warnings });
+	}
+
+	if (!normalize(env.SOURCE_ASSET_BASE_URL)) {
+		warnings.push(issue(
+			"warning",
+			"source_asset_base_url.missing",
+			"SOURCE_ASSET_BASE_URL is not set; mirrored source files will rely on bundled static assets.",
+		));
+	}
+
+	if (!hasTruthyValue(env.TRUST_PROXY)) {
+		warnings.push(issue(
+			"warning",
+			"trust_proxy.disabled",
+			"TRUST_PROXY is not true; enable it when Express runs behind a production reverse proxy.",
+		));
+	}
+
+	if (hasTruthyValue(env.BALLOTCLARITY_ZIP_LOOKUP_LOG_ENABLED) && !normalize(env.BALLOTCLARITY_ZIP_LOOKUP_LOG_PATH)) {
+		warnings.push(issue(
+			"warning",
+			"zip_lookup_log.default_path",
+			"ZIP-only lookup logging is enabled without an explicit path; the backend will use its default JSONL path.",
+		));
+	}
+
+	return {
+		errors,
+		ok: errors.length === 0,
+		warnings,
+	};
+}
+
+export function formatProductionConfigEvaluation(evaluation) {
+	const lines = [
+		evaluation.ok ? "Production config check: pass" : "Production config check: fail",
+		`Errors: ${evaluation.errors.length}`,
+		`Warnings: ${evaluation.warnings.length}`,
+	];
+
+	for (const error of evaluation.errors)
+		lines.push(`Error [${error.id}]: ${error.message}`);
+
+	for (const warning of evaluation.warnings)
+		lines.push(`Warning [${warning.id}]: ${warning.message}`);
+
+	return lines.join("\n");
+}
+
+function readFlag(flag, argv = process.argv.slice(2)) {
+	const index = argv.indexOf(flag);
+
+	if (index === -1)
+		return undefined;
+
+	return argv[index + 1];
+}
+
+function buildCliEnv() {
+	const envPath = readFlag("--env-file");
+
+	if (!envPath)
+		return process.env;
+
+	return {
+		...process.env,
+		...parseEnvContent(readFileSync(envPath, "utf8")),
+	};
+}
+
+const isDirectRun = process.argv[1] && process.argv[1].endsWith("production-config-check.mjs");
+
+if (isDirectRun) {
+	const evaluation = evaluateProductionConfig({ env: buildCliEnv() });
+
+	if (process.argv.includes("--json"))
+		console.log(JSON.stringify(evaluation, null, 2));
+	else
+		console.log(formatProductionConfigEvaluation(evaluation));
+
+	if (!evaluation.ok)
+		process.exit(1);
+}

@@ -265,6 +265,7 @@ npm run ingest:coverage -- --from-file ./ops/live-coverage.json
 npm run -w back-end manage:coverage -- promote --from ./ops/reviewed-coverage.json --target "$LIVE_COVERAGE_FILE"
 npm run launch-directory:sync
 npm run providers:test
+npm run verify:production
 npm run lint
 npm run typecheck
 npm run test
@@ -405,6 +406,7 @@ These endpoints live on the Express service, but they are intended to be reached
 - Set `SOURCE_ASSET_BASE_URL` when mirrored source documents should resolve to object storage or a CDN instead of files bundled under `front-end/public/source-files/`.
 - Import or promote a vetted snapshot with `npm run ingest:coverage` or `npm run -w back-end manage:coverage -- promote`. Set `LIVE_COVERAGE_FILE` to the active snapshot path and `LIVE_COVERAGE_REQUIRED=true` once production should refuse to start without current snapshot data.
 - Do not promote a seed snapshot to production. Use `npm run coverage:fulton-reviewed` for the current reviewed Fulton official-logistics-only artifact, or promote a separately reviewed production-approved snapshot with a matching `.meta.json` sidecar.
+- Run `npm run verify:production` against the active server environment before treating a deploy as production-ready. See `docs/production-config-check.md`.
 - Run `npm run bootstrap-admin` once on the server, then remove the bootstrap password from routine shell history and secrets tooling if a different operational process is preferred.
 - Keep the public reverse proxy pointed at Nuxt for `/api/admin/*`; do not route those browser requests straight to the Express backend.
 
@@ -454,6 +456,7 @@ Local stack notes:
 7. Put the API behind HTTPS and a reverse proxy or platform ingress that sends public `/api/admin/*` traffic to Nuxt, while the Nuxt server reaches the Express admin API over `ADMIN_API_BASE`.
 8. Ensure the backend deploy artifact includes `dist/admin-schema.sql` and `dist/admin-schema.postgres.sql`; the build now copies both automatically, but the deployed runtime should still be checked once after merge.
 9. Configure log drains, alerts, and request-ID propagation in the platform so structured backend logs are actually usable during incidents.
+10. Run `npm run verify:production` in the active environment and resolve every error before marking the deploy ready.
 
 ## Notes
 

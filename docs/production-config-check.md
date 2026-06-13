@@ -1,0 +1,45 @@
+# Production Configuration Check
+
+`npm run verify:production` is the deploy-time guardrail for Ballot Clarity's production environment.
+
+It checks the environment values and active coverage snapshot that determine whether the public site is operating as a real civic-information service rather than a local or seeded development runtime.
+
+## What It Checks
+
+- Public origins use HTTPS and do not point at localhost.
+- `NUXT_PUBLIC_API_BASE` points at the public `/api` path.
+- `ADMIN_API_BASE` is configured as a private server-side target, not the same public API base used by browsers.
+- `ADMIN_API_KEY` and `ADMIN_SESSION_SECRET` are present, long enough, and not obvious placeholder values.
+- `ADMIN_STORE_DRIVER=postgres` and a Postgres `ADMIN_DATABASE_URL` or `DATABASE_URL` is configured.
+- `LIVE_COVERAGE_REQUIRED=true` is enabled.
+- `LIVE_COVERAGE_FILE` exists and has a matching `.meta.json` sidecar.
+- Snapshot metadata is `reviewed` or `production_approved`, uses `sourceType: "imported"`, and includes the required review timestamps.
+- `production_approved` snapshots include `approvedAt`.
+
+Reviewed-but-not-approved snapshots pass with a warning because Ballot Clarity may intentionally run an official-logistics-only reviewed package while public copy keeps that state visible. Seed, unknown, missing, or unreviewed snapshots fail.
+
+## Usage
+
+Use the active server environment:
+
+```bash
+npm run verify:production
+```
+
+Use a specific environment file during handoff review:
+
+```bash
+npm run verify:production -- --env-file /path/to/production.env
+```
+
+Emit machine-readable output:
+
+```bash
+npm run verify:production -- --json
+```
+
+## Scope
+
+This check does not replace content validation. Production-approved snapshot content still needs the backend snapshot publication validator to reject staged/reference candidates, mixed guide content, or staged guide layers.
+
+This check verifies the runtime contract around that content: public origins, admin persistence, secret posture, live snapshot requirement, and snapshot provenance.

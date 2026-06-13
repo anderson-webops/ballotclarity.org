@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS admin_users (
 	role TEXT NOT NULL CHECK (role IN ('admin', 'editor')),
 	password_hash TEXT NOT NULL,
 	created_at TEXT NOT NULL,
+	credentials_updated_at TEXT NOT NULL,
 	updated_at TEXT NOT NULL,
 	disabled_at TEXT,
 	last_login_at TEXT

@@ -337,7 +337,7 @@ How the admin model works:
 - The browser authenticates against Nuxt server routes, which issue a same-origin session cookie.
 - Nuxt proxies protected admin requests to the Express API using `ADMIN_API_KEY`, so the backend key never reaches the browser.
 - Browser traffic for `/api/admin/*` is expected to terminate at Nuxt. The Express admin endpoints are internal API surfaces behind `ADMIN_API_BASE`, not public browser routes.
-- Admins can create, disable, and restore admin/editor accounts. Disabled accounts cannot start new sessions, and the Nuxt admin bridge clears an existing cookie when the backing account is no longer active.
+- Admins can create, disable, restore, and reset temporary passwords for admin/editor accounts. Disabled accounts cannot start new sessions, and password resets invalidate existing sessions by rotating the account credential timestamp checked by the Nuxt admin bridge.
 - Admin data includes content publish state, persisted public-summary overrides, correction intake, source-health monitoring, activity logs, and user management.
 
 ## API surface

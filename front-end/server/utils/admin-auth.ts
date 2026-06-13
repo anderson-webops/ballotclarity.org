@@ -31,6 +31,7 @@ interface AdminConfig {
 interface BackendLoginResponse {
 	authenticated: boolean;
 	configured: boolean;
+	credentialsUpdatedAt?: string;
 	displayName: string | null;
 	role: AdminUserRole | null;
 	username: string | null;
@@ -39,6 +40,7 @@ interface BackendLoginResponse {
 type BackendSessionResponse = BackendLoginResponse;
 
 interface AdminSessionPayload {
+	credentialsUpdatedAt: string;
 	displayName: string;
 	expiresAt: number;
 	role: AdminUserRole;
@@ -133,7 +135,7 @@ function parseSession(rawValue: string | undefined, sessionSecret: string) {
 	try {
 		const payload = JSON.parse(Buffer.from(encodedPayload, "base64url").toString("utf8")) as Partial<AdminSessionPayload>;
 
-		if (!payload.username || !payload.displayName || !payload.role || typeof payload.expiresAt !== "number")
+		if (!payload.username || !payload.displayName || !payload.role || !payload.credentialsUpdatedAt || typeof payload.expiresAt !== "number")
 			return null;
 
 		if (payload.expiresAt <= Date.now())
@@ -175,6 +177,7 @@ export function getAdminSession(event: H3Event): AdminSessionResponse {
 	return {
 		authenticated: true,
 		configured: true,
+		credentialsUpdatedAt: session.credentialsUpdatedAt,
 		displayName: session.displayName,
 		role: session.role,
 		username: session.username
@@ -208,10 +211,13 @@ export async function getValidatedAdminSession(event: H3Event): Promise<AdminSes
 		return session;
 
 	const config = getAdminConfig(event);
+	const searchParams = new URLSearchParams({
+		credentialsUpdatedAt: session.credentialsUpdatedAt || ""
+	});
 
 	try {
 		const backendSession = await $fetch<BackendSessionResponse>(
-			`${config.apiBase}/admin/auth/session/${encodeURIComponent(session.username)}`,
+			`${config.apiBase}/admin/auth/session/${encodeURIComponent(session.username)}?${searchParams.toString()}`,
 			{
 				headers: getForwardHeaders(event, {
 					"x-admin-api-key": config.apiKey
@@ -219,7 +225,7 @@ export async function getValidatedAdminSession(event: H3Event): Promise<AdminSes
 			}
 		);
 
-		if (backendSession.authenticated)
+		if (backendSession.authenticated && backendSession.credentialsUpdatedAt)
 			return backendSession;
 	}
 	catch (error) {
@@ -309,7 +315,7 @@ export async function createAdminSession(event: H3Event, username: string, passw
 		throw error;
 	}
 
-	if (!loginResponse.authenticated || !loginResponse.username || !loginResponse.displayName || !loginResponse.role) {
+	if (!loginResponse.authenticated || !loginResponse.username || !loginResponse.displayName || !loginResponse.role || !loginResponse.credentialsUpdatedAt) {
 		throw createError({
 			statusCode: 401,
 			statusMessage: "Invalid admin credentials."
@@ -317,6 +323,7 @@ export async function createAdminSession(event: H3Event, username: string, passw
 	}
 
 	const serializedSession = serializeSession({
+		credentialsUpdatedAt: loginResponse.credentialsUpdatedAt,
 		displayName: loginResponse.displayName,
 		expiresAt: Date.now() + (adminSessionMaxAge * 1000),
 		role: loginResponse.role,
@@ -334,6 +341,7 @@ export async function createAdminSession(event: H3Event, username: string, passw
 	return {
 		authenticated: true,
 		configured: true,
+		credentialsUpdatedAt: loginResponse.credentialsUpdatedAt,
 		displayName: loginResponse.displayName,
 		role: loginResponse.role,
 		username: loginResponse.username

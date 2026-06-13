@@ -25,6 +25,8 @@ import { Pool } from "pg";
 import {
 	getLegacyDemoAdminIds,
 	hashPassword,
+	nextAdminCredentialTimestamp,
+	normalizeAdminPassword,
 	shouldPurgeLegacyDemoAdminData,
 	verifyPassword,
 } from "./admin-store.js";
@@ -39,6 +41,7 @@ interface UserRow {
 	display_name: string;
 	role: AdminUserRole;
 	created_at: string;
+	credentials_updated_at: string | null;
 	disabled_at: string | null;
 	last_login_at: string | null;
 	password_hash: string;
@@ -130,6 +133,7 @@ function resolvePostgresSchemaPath() {
 function rowToUser(row: UserRow): AdminUser {
 	return {
 		createdAt: row.created_at,
+		credentialsUpdatedAt: row.credentials_updated_at || row.created_at,
 		disabledAt: row.disabled_at || undefined,
 		displayName: row.display_name,
 		id: row.id,
@@ -242,10 +246,16 @@ async function seedPostgresDatabase(pool: Pool, options: AdminRepositoryOptions)
 	const activitySeed = options.activitySeed ?? [];
 	const guidePackageSeed = options.guidePackageSeed ?? [];
 	await pool.query(schema);
+	await pool.query("ALTER TABLE admin_users ADD COLUMN IF NOT EXISTS credentials_updated_at TEXT");
 	await pool.query("ALTER TABLE admin_users ADD COLUMN IF NOT EXISTS disabled_at TEXT");
 	await pool.query("ALTER TABLE admin_content ADD COLUMN IF NOT EXISTS public_summary TEXT");
 	await pool.query("ALTER TABLE admin_content ADD COLUMN IF NOT EXISTS ballot_summary TEXT");
 	await pool.query("ALTER TABLE admin_guide_packages ADD COLUMN IF NOT EXISTS review_recommendation TEXT");
+	await pool.query(`
+		UPDATE admin_users
+		SET credentials_updated_at = COALESCE(credentials_updated_at, created_at, updated_at)
+		WHERE credentials_updated_at IS NULL
+	`);
 
 	if (shouldPurgeLegacyDemoAdminData(options)) {
 		const legacyIds = getLegacyDemoAdminIds();
@@ -416,14 +426,15 @@ async function seedPostgresDatabase(pool: Pool, options: AdminRepositoryOptions)
 
 		await pool.query(`
 			INSERT INTO admin_users (
-				id, username, display_name, role, password_hash, created_at, updated_at, disabled_at, last_login_at
-			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+				id, username, display_name, role, password_hash, created_at, credentials_updated_at, updated_at, disabled_at, last_login_at
+			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 		`, [
 			`user-${bootstrapUsername}`,
 			bootstrapUsername.trim(),
 			bootstrapDisplayName,
 			bootstrapRole,
 			hashPassword(bootstrapPassword),
+			now,
 			now,
 			now,
 			null,
@@ -468,7 +479,7 @@ export async function createPostgresAdminRepository(options: AdminRepositoryOpti
 		async authenticateUser(username, password) {
 			const normalized = username.trim().toLowerCase();
 			const result = await pool.query<UserRow>(`
-				SELECT id, username, display_name, role, created_at, disabled_at, last_login_at, password_hash, updated_at
+				SELECT id, username, display_name, role, created_at, credentials_updated_at, disabled_at, last_login_at, password_hash, updated_at
 				FROM admin_users
 				WHERE username = $1
 			`, [normalized]);
@@ -534,12 +545,13 @@ export async function createPostgresAdminRepository(options: AdminRepositoryOpti
 		async createUser(input) {
 			const username = input.username.trim().toLowerCase();
 			const displayName = input.displayName.trim();
+			const password = normalizeAdminPassword(input.password);
 
-			if (!username || !displayName || !input.password.trim())
+			if (!username || !displayName)
 				throw new Error("Display name, username, role, and password are required.");
 
 			const existing = await pool.query<UserRow>(`
-				SELECT id, username, display_name, role, created_at, disabled_at, last_login_at, password_hash, updated_at
+				SELECT id, username, display_name, role, created_at, credentials_updated_at, disabled_at, last_login_at, password_hash, updated_at
 				FROM admin_users
 				WHERE username = $1
 			`, [username]);
@@ -552,14 +564,15 @@ export async function createPostgresAdminRepository(options: AdminRepositoryOpti
 
 			await pool.query(`
 				INSERT INTO admin_users (
-					id, username, display_name, role, password_hash, created_at, updated_at, disabled_at, last_login_at
-				) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+					id, username, display_name, role, password_hash, created_at, credentials_updated_at, updated_at, disabled_at, last_login_at
+				) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 			`, [
 				id,
 				username,
 				displayName,
 				input.role,
-				hashPassword(input.password),
+				hashPassword(password),
+				now,
 				now,
 				now,
 				null,
@@ -570,6 +583,7 @@ export async function createPostgresAdminRepository(options: AdminRepositoryOpti
 
 			return {
 				createdAt: now,
+				credentialsUpdatedAt: now,
 				displayName,
 				id,
 				role: input.role,
@@ -749,7 +763,7 @@ export async function createPostgresAdminRepository(options: AdminRepositoryOpti
 		},
 		async listUsers() {
 			const result = await pool.query<UserRow>(`
-				SELECT id, username, display_name, role, created_at, disabled_at, last_login_at, password_hash, updated_at
+				SELECT id, username, display_name, role, created_at, credentials_updated_at, disabled_at, last_login_at, password_hash, updated_at
 				FROM admin_users
 				ORDER BY CASE WHEN disabled_at IS NULL THEN 0 ELSE 1 END, CASE role WHEN 'admin' THEN 0 ELSE 1 END, username
 			`);
@@ -758,7 +772,7 @@ export async function createPostgresAdminRepository(options: AdminRepositoryOpti
 		},
 		async updateUser(id, patch) {
 			const currentResult = await pool.query<UserRow>(`
-				SELECT id, username, display_name, role, created_at, disabled_at, last_login_at, password_hash, updated_at
+				SELECT id, username, display_name, role, created_at, credentials_updated_at, disabled_at, last_login_at, password_hash, updated_at
 				FROM admin_users
 				WHERE id = $1
 			`, [id]);
@@ -773,6 +787,13 @@ export async function createPostgresAdminRepository(options: AdminRepositoryOpti
 				: patch.disabled
 					? current.disabled_at || now
 					: null;
+			const nextPasswordHash = patch.password === undefined
+				? current.password_hash
+				: hashPassword(normalizeAdminPassword(patch.password));
+			const nextCredentialsUpdatedAt = patch.password === undefined
+				? current.credentials_updated_at || current.created_at
+				: nextAdminCredentialTimestamp(current.credentials_updated_at || current.created_at);
+			const nextUpdatedAt = patch.password === undefined ? now : nextCredentialsUpdatedAt;
 
 			if (patch.disabled && !current.disabled_at && current.role === "admin") {
 				const remainingAdmins = await pool.query<CountRow>(`
@@ -787,15 +808,23 @@ export async function createPostgresAdminRepository(options: AdminRepositoryOpti
 
 			await pool.query(`
 				UPDATE admin_users
-				SET disabled_at = $1, updated_at = $2
-				WHERE id = $3
-			`, [nextDisabledAt, now, id]);
+				SET disabled_at = $1, password_hash = $2, credentials_updated_at = $3, updated_at = $4
+				WHERE id = $5
+			`, [nextDisabledAt, nextPasswordHash, nextCredentialsUpdatedAt, nextUpdatedAt, id]);
 
 			if (patch.disabled !== undefined && nextDisabledAt !== current.disabled_at) {
 				await logActivity(
 					"review",
 					patch.disabled ? "Disabled admin user" : "Restored admin user",
 					`${current.display_name} ${patch.disabled ? "can no longer sign in" : "can sign in again"}.`
+				);
+			}
+
+			if (patch.password !== undefined) {
+				await logActivity(
+					"review",
+					"Reset admin password",
+					`${current.display_name} received a new temporary password. Existing sessions for this account are no longer valid.`
 				);
 			}
 

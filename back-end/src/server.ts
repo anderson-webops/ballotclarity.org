@@ -4268,6 +4268,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 		response.json({
 			authenticated: true,
 			configured: true,
+			credentialsUpdatedAt: user.credentialsUpdatedAt,
 			displayName: user.displayName,
 			role: user.role,
 			username: user.username
@@ -4296,6 +4297,9 @@ export async function createApp(options: CreateAppOptions = {}) {
 
 	app.get("/api/admin/auth/session/:username", async (request, response) => {
 		const username = request.params.username.trim().toLowerCase();
+		const credentialsUpdatedAt = typeof request.query.credentialsUpdatedAt === "string"
+			? request.query.credentialsUpdatedAt
+			: "";
 
 		if (!username) {
 			response.status(400).json({
@@ -4307,7 +4311,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 		const users = await adminRepository.listUsers();
 		const user = users.users.find(item => item.username === username);
 
-		if (!user || user.disabledAt) {
+		if (!user || user.disabledAt || !user.credentialsUpdatedAt || user.credentialsUpdatedAt !== credentialsUpdatedAt) {
 			response.status(401).json({
 				authenticated: false,
 				configured: true,
@@ -4321,6 +4325,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 		response.json({
 			authenticated: true,
 			configured: true,
+			credentialsUpdatedAt: user.credentialsUpdatedAt,
 			displayName: user.displayName,
 			role: user.role,
 			username: user.username
@@ -5110,7 +5115,8 @@ export async function createApp(options: CreateAppOptions = {}) {
 	app.patch("/api/admin/users/:id", async (request, response) => {
 		try {
 			response.json(await adminRepository.updateUser(request.params.id, {
-				disabled: typeof request.body?.disabled === "boolean" ? request.body.disabled : undefined
+				disabled: typeof request.body?.disabled === "boolean" ? request.body.disabled : undefined,
+				password: typeof request.body?.password === "string" ? request.body.password : undefined
 			}));
 		}
 		catch (error) {

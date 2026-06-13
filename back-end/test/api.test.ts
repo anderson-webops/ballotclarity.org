@@ -3177,7 +3177,7 @@ test("POST /api/admin/auth/login authenticates a configured user and throttles r
 	}
 });
 
-test("admin user disablement blocks login and protects the last active admin", async () => {
+test("admin user lifecycle blocks disabled accounts and invalidates reset credentials", async () => {
 	const isolatedServer = (await createApp({
 		adminApiKey,
 		adminDbPath: ":memory:",
@@ -3231,6 +3231,7 @@ test("admin user disablement blocks login and protects the last active admin", a
 
 		assert.equal(createEditorResponse.status, 201);
 		assert.ok(editor?.id);
+		assert.ok(editor.credentialsUpdatedAt);
 		assert.equal(editor.disabledAt, undefined);
 
 		const editorLoginResponse = await fetch(`${isolatedBaseUrl}/api/admin/auth/login`, {
@@ -3247,7 +3248,7 @@ test("admin user disablement blocks login and protects the last active admin", a
 
 		assert.equal(editorLoginResponse.status, 200);
 
-		const activeSessionResponse = await fetch(`${isolatedBaseUrl}/api/admin/auth/session/review-editor`, {
+		const activeSessionResponse = await fetch(`${isolatedBaseUrl}/api/admin/auth/session/review-editor?credentialsUpdatedAt=${encodeURIComponent(editor.credentialsUpdatedAt)}`, {
 			headers: {
 				"x-admin-api-key": adminApiKey
 			}
@@ -3283,7 +3284,7 @@ test("admin user disablement blocks login and protects the last active admin", a
 
 		assert.equal(blockedEditorLoginResponse.status, 401);
 
-		const disabledSessionResponse = await fetch(`${isolatedBaseUrl}/api/admin/auth/session/review-editor`, {
+		const disabledSessionResponse = await fetch(`${isolatedBaseUrl}/api/admin/auth/session/review-editor?credentialsUpdatedAt=${encodeURIComponent(editor.credentialsUpdatedAt)}`, {
 			headers: {
 				"x-admin-api-key": adminApiKey
 			}
@@ -3303,6 +3304,7 @@ test("admin user disablement blocks login and protects the last active admin", a
 
 		assert.equal(restoreEditorResponse.status, 200);
 		assert.equal(restoredEditor.disabledAt, undefined);
+		assert.equal(restoredEditor.credentialsUpdatedAt, editor.credentialsUpdatedAt);
 
 		const restoredEditorLoginResponse = await fetch(`${isolatedBaseUrl}/api/admin/auth/login`, {
 			body: JSON.stringify({
@@ -3317,6 +3319,78 @@ test("admin user disablement blocks login and protects the last active admin", a
 		});
 
 		assert.equal(restoredEditorLoginResponse.status, 200);
+
+		const shortPasswordResetResponse = await fetch(`${isolatedBaseUrl}/api/admin/users/${editor.id}`, {
+			body: JSON.stringify({ password: "short" }),
+			headers: adminHeaders,
+			method: "PATCH"
+		});
+		const shortPasswordResetBody = await shortPasswordResetResponse.json();
+
+		assert.equal(shortPasswordResetResponse.status, 400);
+		assert.match(shortPasswordResetBody.message, /at least 12 characters/i);
+
+		const resetPasswordResponse = await fetch(`${isolatedBaseUrl}/api/admin/users/${editor.id}`, {
+			body: JSON.stringify({ password: "new-review-editor-password" }),
+			headers: adminHeaders,
+			method: "PATCH"
+		});
+		const resetPasswordBody = await resetPasswordResponse.json();
+		const resetEditor = resetPasswordBody.users.find((user: { username: string }) => user.username === "review-editor");
+
+		assert.equal(resetPasswordResponse.status, 200);
+		assert.ok(resetEditor.credentialsUpdatedAt);
+		assert.notEqual(resetEditor.credentialsUpdatedAt, editor.credentialsUpdatedAt);
+
+		const staleCredentialSessionResponse = await fetch(`${isolatedBaseUrl}/api/admin/auth/session/review-editor?credentialsUpdatedAt=${encodeURIComponent(editor.credentialsUpdatedAt)}`, {
+			headers: {
+				"x-admin-api-key": adminApiKey
+			}
+		});
+		const staleCredentialSessionBody = await staleCredentialSessionResponse.json();
+
+		assert.equal(staleCredentialSessionResponse.status, 401);
+		assert.equal(staleCredentialSessionBody.authenticated, false);
+
+		const oldPasswordLoginResponse = await fetch(`${isolatedBaseUrl}/api/admin/auth/login`, {
+			body: JSON.stringify({
+				password: "review-editor-password",
+				username: "review-editor"
+			}),
+			headers: {
+				"Content-Type": "application/json",
+				"x-forwarded-for": "203.0.113.23"
+			},
+			method: "POST"
+		});
+
+		assert.equal(oldPasswordLoginResponse.status, 401);
+
+		const newPasswordLoginResponse = await fetch(`${isolatedBaseUrl}/api/admin/auth/login`, {
+			body: JSON.stringify({
+				password: "new-review-editor-password",
+				username: "review-editor"
+			}),
+			headers: {
+				"Content-Type": "application/json",
+				"x-forwarded-for": "203.0.113.24"
+			},
+			method: "POST"
+		});
+		const newPasswordLoginBody = await newPasswordLoginResponse.json();
+
+		assert.equal(newPasswordLoginResponse.status, 200);
+		assert.equal(newPasswordLoginBody.credentialsUpdatedAt, resetEditor.credentialsUpdatedAt);
+
+		const freshCredentialSessionResponse = await fetch(`${isolatedBaseUrl}/api/admin/auth/session/review-editor?credentialsUpdatedAt=${encodeURIComponent(resetEditor.credentialsUpdatedAt)}`, {
+			headers: {
+				"x-admin-api-key": adminApiKey
+			}
+		});
+		const freshCredentialSessionBody = await freshCredentialSessionResponse.json();
+
+		assert.equal(freshCredentialSessionResponse.status, 200);
+		assert.equal(freshCredentialSessionBody.authenticated, true);
 	}
 	finally {
 		await new Promise<void>((resolve, reject) => {

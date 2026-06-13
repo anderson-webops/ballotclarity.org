@@ -1425,6 +1425,7 @@ export interface AdminUser {
 	displayName: string;
 	role: AdminUserRole;
 	createdAt: string;
+	credentialsUpdatedAt?: string;
 	disabledAt?: string;
 	lastLoginAt?: string;
 }
@@ -1458,6 +1459,7 @@ export interface AdminUsersResponse {
 export interface AdminSessionResponse {
 	authenticated: boolean;
 	configured: boolean;
+	credentialsUpdatedAt?: string;
 	displayName: string | null;
 	role: AdminUserRole | null;
 	username: string | null;

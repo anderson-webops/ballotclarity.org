@@ -16,6 +16,7 @@ const form = reactive({
 	role: "editor" as AdminUserRole,
 	username: ""
 });
+const resetPasswords = reactive<Record<string, string>>({});
 
 const isSubmitting = ref(false);
 const updatingId = ref("");
@@ -67,6 +68,32 @@ async function setUserDisabled(userId: string, disabled: boolean) {
 		feedbackMessage.value = error instanceof FetchError
 			? error.data?.message || error.statusMessage || "Unable to update admin user."
 			: "Unable to update admin user.";
+		feedbackTone.value = "error";
+	}
+	finally {
+		updatingId.value = "";
+	}
+}
+
+async function resetUserPassword(userId: string) {
+	const password = resetPasswords[userId] || "";
+	updatingId.value = userId;
+	feedbackMessage.value = "";
+
+	try {
+		await $fetch(`/api/admin/users/${userId}`, {
+			body: { password },
+			method: "PATCH"
+		});
+		feedbackMessage.value = "Temporary password set. Existing sessions for that account were invalidated.";
+		feedbackTone.value = "success";
+		resetPasswords[userId] = "";
+		await refresh();
+	}
+	catch (error) {
+		feedbackMessage.value = error instanceof FetchError
+			? error.data?.message || error.statusMessage || "Unable to reset admin password."
+			: "Unable to reset admin password.";
 		feedbackTone.value = "error";
 	}
 	finally {
@@ -145,6 +172,7 @@ usePageSeo({
 								<span class="text-app-ink font-semibold dark:text-app-text-dark">Last login:</span>
 								{{ user.lastLoginAt || "No recorded login yet" }}
 							</p>
+							<UpdatedAt v-if="user.credentialsUpdatedAt" :value="user.credentialsUpdatedAt" label="Credentials" />
 							<UpdatedAt v-if="user.disabledAt" :value="user.disabledAt" label="Disabled" />
 						</div>
 						<div class="mt-5 flex flex-wrap gap-3">
@@ -170,6 +198,29 @@ usePageSeo({
 								Current session
 							</p>
 						</div>
+						<form class="mt-4 gap-3 grid lg:grid-cols-[minmax(0,1fr)_auto]" @submit.prevent="resetUserPassword(user.id)">
+							<label class="block">
+								<span class="sr-only">Temporary password for {{ user.username }}</span>
+								<input
+									v-model="resetPasswords[user.id]"
+									:disabled="session?.role !== 'admin' || session?.username === user.username || updatingId === user.id"
+									type="password"
+									autocomplete="new-password"
+									placeholder="New temporary password"
+									class="text-sm text-app-ink px-4 border border-app-line rounded-2xl bg-white h-12 w-full shadow-sm dark:text-app-text-dark dark:border-app-line-dark dark:bg-app-panel-dark focus-ring"
+								>
+							</label>
+							<button
+								type="submit"
+								class="btn-secondary"
+								:disabled="session?.role !== 'admin' || session?.username === user.username || updatingId === user.id || !(resetPasswords[user.id] || '').trim()"
+							>
+								{{ updatingId === user.id ? "Updating..." : "Reset password" }}
+							</button>
+						</form>
+						<p class="text-xs text-app-muted mt-2 dark:text-app-muted-dark">
+							Temporary passwords must be at least 12 characters. Resetting a password invalidates existing sessions for that account.
+						</p>
 					</li>
 				</ul>
 			</div>

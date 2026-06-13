@@ -1,9 +1,24 @@
 import assert from "node:assert/strict";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
+import { join, relative } from "node:path";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 import { analyticsTrackers, appDescription, appName, appSocialImageAlt, appSocialImagePath } from "../src/constants/index.ts";
 import { staleClientBuildStorageKey } from "../src/utils/deploy-recovery.ts";
 import { displayTimeZoneCookieName } from "../src/utils/display-time-zone.ts";
+
+function collectVueFiles(directory: string): string[] {
+	return readdirSync(directory)
+		.flatMap((entry) => {
+			const path = join(directory, entry);
+			const stats = statSync(path);
+
+			if (stats.isDirectory())
+				return collectVueFiles(path);
+
+			return entry.endsWith(".vue") ? [path] : [];
+		});
+}
 
 test("nuxt config uses srcDir and expected civic modules", async () => {
 	const { default: config } = await import("../nuxt.config.ts");
@@ -112,4 +127,17 @@ test("lookup-dependent results route stays out of public search indexes", () => 
 	assert.match(resultsPage, /robots: "noindex,nofollow"/);
 	assert.match(robotsTxt, /Disallow: \/results/);
 	assert.doesNotMatch(sitemapRoute, /"\/results"/);
+});
+
+test("page components declare explicit SEO metadata", () => {
+	const pagesDirectory = fileURLToPath(new URL("../src/pages", import.meta.url));
+	const missingSeo = collectVueFiles(pagesDirectory)
+		.filter((path) => {
+			const source = readFileSync(path, "utf8");
+
+			return !/\busePageSeo\s*\(/.test(source) && !/\buseSeoMeta\s*\(/.test(source);
+		})
+		.map(path => relative(pagesDirectory, path));
+
+	assert.deepEqual(missingSeo, []);
 });

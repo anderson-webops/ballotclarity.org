@@ -247,3 +247,19 @@ test("public source copy avoids implementation and archive jargon", () => {
 
 	assert.deepEqual(failures, []);
 });
+
+test("public status page uses reader-facing coverage package language", () => {
+	const statusPage = readPublicSource("pages/status.vue");
+
+	assert.doesNotMatch(statusPage, /Snapshot missing/);
+	assert.doesNotMatch(statusPage, /No local snapshot/);
+	assert.doesNotMatch(statusPage, /Production-approved snapshot/);
+	assert.doesNotMatch(statusPage, /Reviewed snapshot/);
+	assert.doesNotMatch(statusPage, /Seed snapshot/);
+	assert.doesNotMatch(statusPage, /Unclassified snapshot/);
+	assert.doesNotMatch(statusPage, /snapshot provenance/i);
+	assert.match(statusPage, /Coverage package missing/);
+	assert.match(statusPage, /No local guide package/);
+	assert.match(statusPage, /Production-approved package/);
+	assert.match(statusPage, /local guide package status/);
+});

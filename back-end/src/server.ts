@@ -3741,6 +3741,14 @@ export async function createApp(options: CreateAppOptions = {}) {
 		};
 	}
 
+	function formatPublicCoveragePackageText(value: string | undefined) {
+		return value
+			?.replaceAll(/live coverage snapshot/gi, "live coverage package")
+			.replaceAll(/local snapshot/gi, "local guide package")
+			.replaceAll(/coverage snapshot/gi, "coverage package")
+			.replaceAll(/\bsnapshot\b/gi, "package");
+	}
+
 	function buildSnapshotStatusNotes(
 		snapshotProvenance: CoverageSnapshotProvenance,
 		coverageMode: CoverageRepository["mode"]
@@ -3748,15 +3756,15 @@ export async function createApp(options: CreateAppOptions = {}) {
 		if (coverageMode === "empty") {
 			return uniqueStrings([
 				snapshotProvenance.configuredSnapshotMissing
-					? "Configured live coverage snapshot is missing, so Ballot Clarity is serving lookup results without a published local guide snapshot."
-					: "No published local coverage snapshot is active right now.",
-				snapshotProvenance.note
+					? "Configured live coverage package is missing, so Ballot Clarity is serving lookup results without a published local guide package."
+					: "No published local guide package is active right now.",
+				formatPublicCoveragePackageText(snapshotProvenance.note)
 			]);
 		}
 
 		return uniqueStrings([
-			`Active snapshot status: ${snapshotProvenance.status.replaceAll("_", " ")} (${snapshotProvenance.sourceLabel}).`,
-			snapshotProvenance.note
+			`Active coverage package status: ${snapshotProvenance.status.replaceAll("_", " ")} (${formatPublicCoveragePackageText(snapshotProvenance.sourceLabel)}).`,
+			formatPublicCoveragePackageText(snapshotProvenance.note)
 		]);
 	}
 
@@ -3774,7 +3782,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 				notes: uniqueStrings([
 					...buildSnapshotStatusNotes(snapshotProvenance, coverageRepository.mode),
 					"Lookup results are available across the public site.",
-					"Local guide publication status remains generic until a verified local snapshot is published."
+					"Local guide publication status remains generic until a verified local guide package is published."
 				]),
 				overallStatus: "reviewing",
 				snapshotProvenance,
@@ -3801,14 +3809,15 @@ export async function createApp(options: CreateAppOptions = {}) {
 			overallStatus = "degraded";
 		else if (sourceSummary["review-soon"] || sourceSummary.stale)
 			overallStatus = "reviewing";
+
 		const nextPublishWindow = overview.metrics.find(metric => metric.id === "next-publish")?.value;
 		const snapshotSummaryNote = snapshotProvenance.status === "production_approved"
-			? "Public pages are serving a production-approved coverage snapshot."
+			? "Public pages are serving a production-approved coverage package."
 			: snapshotProvenance.status === "reviewed"
-				? "Public pages are serving a reviewed coverage snapshot that is not yet marked production-approved."
+				? "Public pages are serving a reviewed coverage package that is not yet marked production-approved."
 				: snapshotProvenance.status === "seed"
-					? "Public pages are serving a seed coverage snapshot. Treat guide pages as staged until a reviewed local snapshot replaces it."
-					: "Public pages are serving an unclassified coverage snapshot.";
+					? "Public pages are serving a seed coverage package. Treat guide pages as staged until a reviewed local guide package replaces it."
+					: "Public pages are serving an unclassified coverage package.";
 		const notes = uniqueStrings([
 			...buildSnapshotStatusNotes(snapshotProvenance, coverageRepository.mode),
 			...overview.needsAttention,
@@ -4102,7 +4111,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 				coverageMode: coverageRepository.mode,
 				coverageUpdatedAt: coverageRepository.data.updatedAt,
 				driver: adminRepository.driver,
-				message: healthySnapshot ? undefined : "Configured live coverage snapshot is missing.",
+				message: healthySnapshot ? undefined : "Configured live coverage package is missing.",
 				ok: healthySnapshot,
 				ballotContentProviderSummary: buildBallotContentProviderSummary(),
 				providerSummary: buildProviderSummary(),
@@ -4574,7 +4583,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 			},
 			note: guidePackage?.contentStatus
 				? `${guidePackage.contentStatus.summary} Verify official election logistics with the linked election office.`
-				: "Current public coverage is running from the latest imported civic-data snapshot. Verify official election logistics with the linked election office.",
+				: "Current public coverage is running from the latest imported civic-data package. Verify official election logistics with the linked election office.",
 			updatedAt: election.updatedAt
 		});
 	});

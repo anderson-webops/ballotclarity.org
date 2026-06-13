@@ -1267,10 +1267,10 @@ test("default runtime stays empty instead of auto-seeding coverage and public op
 		assert.deepEqual(statusBody.incidents, []);
 		assert.deepEqual(statusBody.sources, []);
 		assert.deepEqual(statusBody.notes, [
-			"No published local coverage snapshot is active right now.",
-			"No imported live coverage snapshot is active. Ballot Clarity is running without a published local guide package.",
+			"No published local guide package is active right now.",
+			"No imported live coverage package is active. Ballot Clarity is running without a published local guide package.",
 			"Lookup results are available across the public site.",
-			"Local guide publication status remains generic until a verified local snapshot is published."
+			"Local guide publication status remains generic until a verified local guide package is published."
 		]);
 		assert.equal(sourcesResponse.status, 200);
 		assert.ok(Array.isArray(sourcesBody.sources));
@@ -1335,7 +1335,7 @@ test("configured missing snapshot path fails health and surfaces missing provena
 		assert.equal(statusResponse.status, 200);
 		assert.equal(statusBody.snapshotProvenance.configuredSnapshotMissing, true);
 		assertNoPublicSnapshotPaths(statusBody, missingSnapshotPath);
-		assert.ok(statusBody.notes.some((note: string) => /Configured live coverage snapshot is missing/i.test(note)));
+		assert.ok(statusBody.notes.some((note: string) => /Configured live coverage package is missing/i.test(note)));
 	}
 	finally {
 		await new Promise<void>((resolve, reject) => {
@@ -2006,7 +2006,7 @@ test("GET /api/coverage returns the public launch profile for Fulton County, Geo
 	assert.equal(body.supportedContentTypes.find((item: { id: string }) => item.id === "logistics")?.status, "live-now");
 	assert.equal(body.supportedContentTypes.find((item: { id: string }) => item.id === "contest-packages")?.status, "in-build");
 	assert.equal(body.routeFamilies.find((item: { id: string }) => item.id === "published-guides")?.status, "limited");
-	assert.match(body.scopeNote, /Active snapshot status: seed/i);
+	assert.match(body.scopeNote, /Active local guide package status: seed/i);
 });
 
 test("GET /api/status returns public source-health and launch notices", async () => {
@@ -2022,8 +2022,8 @@ test("GET /api/status returns public source-health and launch notices", async ()
 	assert.equal(body.sourceSummary.healthy, 1);
 	assert.equal(body.sourceSummary.incident, 1);
 	assert.ok(body.notes.length >= 2);
-	assert.ok(body.notes.some((note: string) => /Active snapshot status: seed/i.test(note)));
-	assert.ok(body.notes.some((note: string) => /seed coverage snapshot/i.test(note)));
+	assert.ok(body.notes.some((note: string) => /Active coverage package status: seed/i.test(note)));
+	assert.ok(body.notes.some((note: string) => /seed coverage package/i.test(note)));
 	assert.ok(body.notes.some((note: string) => /Fulton County elections office|Georgia legislative crosswalk/i.test(note)));
 	assert.ok(body.sources.some((item: { label: string }) => item.label === "Fulton County Registration and Elections site"));
 });

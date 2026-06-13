@@ -30,19 +30,19 @@ const statusLabel = computed(() => {
 	}
 });
 
-const snapshotLabel = computed(() => {
+const coveragePackageLabel = computed(() => {
 	if (data.value?.coverageMode !== "snapshot")
-		return data.value?.snapshotProvenance?.configuredSnapshotMissing ? "Snapshot missing" : "No local snapshot";
+		return data.value?.snapshotProvenance?.configuredSnapshotMissing ? "Coverage package missing" : "No local guide package";
 
 	switch (data.value?.snapshotProvenance?.status) {
 		case "production_approved":
-			return "Production-approved snapshot";
+			return "Production-approved package";
 		case "reviewed":
-			return "Reviewed snapshot";
+			return "Reviewed package";
 		case "seed":
-			return "Seed snapshot";
+			return "Seed package";
 		default:
-			return "Unclassified snapshot";
+			return "Unclassified package";
 	}
 });
 const hasSourceMetrics = computed(() => data.value ? Object.values(data.value.sourceSummary).some(value => value > 0) : false);
@@ -69,7 +69,7 @@ const hasPublicIncidents = computed(() => Boolean(data.value?.incidents.length))
 			<header class="surface-panel max-w-5xl">
 				<div class="flex flex-wrap gap-2">
 					<TrustBadge :label="statusLabel" :tone="statusTone" />
-					<TrustBadge :label="snapshotLabel" />
+					<TrustBadge :label="coveragePackageLabel" />
 					<TrustBadge label="Public source health" tone="warning" />
 				</div>
 				<h1 class="text-5xl text-app-ink font-serif mt-5 dark:text-app-text-dark">
@@ -124,13 +124,13 @@ const hasPublicIncidents = computed(() => Boolean(data.value?.incidents.length))
 			<section v-else class="surface-panel">
 				<div class="flex flex-wrap gap-2">
 					<TrustBadge :label="hasPublicIncidents ? 'Active notices published' : 'No open public incidents'" :tone="hasPublicIncidents ? 'warning' : 'accent'" />
-					<TrustBadge :label="snapshotLabel" />
+					<TrustBadge :label="coveragePackageLabel" />
 				</div>
 				<h2 class="text-3xl text-app-ink font-serif mt-4 dark:text-app-text-dark">
 					No source-monitor metrics are published right now
 				</h2>
 				<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-					The public status page is still showing coverage state and snapshot provenance. Detailed source-monitor counts appear here only when public monitors are active.
+					The public status page is still showing coverage state and local guide package status. Detailed source-monitor counts appear here only when public monitors are active.
 				</p>
 			</section>
 

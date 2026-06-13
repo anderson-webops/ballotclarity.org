@@ -748,7 +748,7 @@ test("built app renders the key ballot guide pages against the built API", async
 	assert.doesNotMatch(statusHtml, /Tracked public sources/);
 	assert.doesNotMatch(statusHtml, /Active notices/);
 	assert.match(statusHtml, /source health, coverage, and current review notices/i);
-	assert.match(statusHtml, /No published local coverage snapshot is active right now|Active snapshot status:/i);
+	assert.match(statusHtml, /No published local guide package is active right now|Active coverage package status:/i);
 	assert.doesNotMatch(statusHtml, /activeSnapshotPath|configuredSnapshotPath|\/srv\/|\/Users\//);
 	assert.equal(correctionsPage.status, 200);
 	assert.match(correctionsHtml, /Corrections log/);

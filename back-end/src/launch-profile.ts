@@ -119,9 +119,9 @@ export function buildCoverageResponse(
 	snapshotProvenance?: CoverageSnapshotProvenance
 ): CoverageResponse {
 	if (!launchTarget || coverageMode === "empty") {
-		const snapshotScopeNote = snapshotProvenance?.configuredSnapshotMissing
-			? "The configured live coverage snapshot is missing, so Ballot Clarity is serving lookup results without a published local guide snapshot."
-			: "Snapshot provenance remains unavailable until an imported reviewed or approved local snapshot is loaded.";
+		const coveragePackageScopeNote = snapshotProvenance?.configuredSnapshotMissing
+			? "The configured live coverage package is missing, so Ballot Clarity is serving lookup results without a published local guide package."
+			: "Local guide package status remains unavailable until a reviewed or approved package is loaded.";
 
 		return {
 			collections: [
@@ -137,7 +137,7 @@ export function buildCoverageResponse(
 					id: "status",
 					label: "Public status",
 					status: "canonical",
-					summary: "Check whether any public source monitors or imported coverage snapshots are active."
+					summary: "Check whether any public source monitors or local guide packages are active."
 				},
 				{
 					href: "/data-sources",
@@ -169,7 +169,7 @@ export function buildCoverageResponse(
 				},
 				{
 					activeSources: [
-						"Published local coverage snapshot only when one is verified and active"
+						"Published local guide package only when one is verified and active"
 					],
 					id: "published-guides",
 					label: "Published local guide pages",
@@ -214,7 +214,7 @@ export function buildCoverageResponse(
 				"Use lookup results and official election tools when they are available for a location.",
 				"Publish a verified local guide before presenting ballot, candidate, measure, or election pages as current coverage."
 			],
-			scopeNote: `Until a verified local guide is published, Ballot Clarity presents local guide coverage as unavailable instead of filling the gap with fixture or archive content. ${snapshotScopeNote}`.trim(),
+			scopeNote: `Until a verified local guide is published, Ballot Clarity presents local guide coverage as unavailable instead of filling the gap with unreviewed ballot content. ${coveragePackageScopeNote}`.trim(),
 			supportedContentTypes: [],
 			updatedAt: new Date().toISOString()
 		};
@@ -236,7 +236,7 @@ export function buildCoverageResponse(
 		launchTarget,
 		guideContent: guideContent ?? null,
 		snapshotProvenance,
-		scopeNote: `${launchTarget.displayName} is the currently published election area. Active snapshot status: ${(snapshotProvenance?.status || "unknown").replaceAll("_", " ")}${snapshotProvenance?.sourceLabel ? ` (${snapshotProvenance.sourceLabel})` : ""}. Official election tools remain the final authority for deadlines, precincts, polling places, and ballot confirmation.`,
+		scopeNote: `${launchTarget.displayName} is the currently published election area. Active local guide package status: ${(snapshotProvenance?.status || "unknown").replaceAll("_", " ")}${snapshotProvenance?.sourceLabel ? ` (${snapshotProvenance.sourceLabel.replaceAll(/snapshot/gi, "package")})` : ""}. Official election tools remain the final authority for deadlines, precincts, polling places, and ballot confirmation.`,
 		currentState: publishedGuideSummary,
 		routeFamilies: [
 			{
@@ -254,7 +254,7 @@ export function buildCoverageResponse(
 			},
 			{
 				activeSources: [
-					`Published local coverage snapshot for ${launchTarget.displayName}`,
+					`Published local guide package for ${launchTarget.displayName}`,
 					...(hasVerifiedContestPackage
 						? ["Verified local contest, candidate, and measure records"]
 						: ["Official local election links and election overview pages"]),
@@ -263,7 +263,7 @@ export function buildCoverageResponse(
 				id: "published-guides",
 				label: "Published local guide pages",
 				note: hasVerifiedContestPackage
-					? "Guide pages are deeper reading layers when a verified local snapshot is active."
+					? "Guide pages are deeper reading layers when a verified local guide package is active."
 					: "Election overview and location hub pages are active now. Contest, candidate, measure, compare, and plan pages wait for verified local packaging.",
 				routes: hasVerifiedContestPackage
 					? ["/ballot", "/contest", "/candidate", "/measure", "/plan", "/compare"]
@@ -384,7 +384,7 @@ export function buildCoverageResponse(
 				id: "archive",
 				label: "Current public guide collection",
 				status: "reference",
-				summary: "Published guide surfaces remain readable here only where Ballot Clarity has a verified local coverage snapshot.",
+				summary: "Published guide pages remain readable here only where Ballot Clarity has a verified local guide package.",
 				href: "/ballot"
 			}
 		]

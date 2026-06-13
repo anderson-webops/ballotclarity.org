@@ -21,3 +21,22 @@ Current mitigation:
 
 - Keep `npm audit --workspaces` in the validation notes as a known upstream limitation until Nuxt's supported Vite line resolves the advisory.
 - Continue running `npm ci`, lint, typecheck, build, unit tests, e2e smoke, and accessibility checks before release.
+
+## 2026-06-13 verification
+
+The current supported dependency graph remains blocked on the same upstream chain:
+
+- `nuxt@4.4.8` is the latest Nuxt release available to this repo.
+- `@nuxt/vite-builder@4.4.8` declares `vite@^7.3.3`.
+- `vite@7.3.5` is the latest Vite 7 release and still declares `esbuild@^0.27.0`.
+- `vite@8.0.16` removes the vulnerable `esbuild` edge, but Nuxt's builder has not moved its declared dependency range to Vite 8.
+
+Attempted remediation on this date:
+
+- A root `esbuild@0.28.1` override did not change the Vite dependency edge.
+- A nested `vite -> esbuild@0.28.1` override did not change the Vite dependency edge.
+- A root `vite@8.0.16` override did not change Nuxt's locked Vite 7 edge in the workspace lockfile.
+
+Safe change made:
+
+- Updated `vue-tsc` from `3.3.4` to `3.3.5`, the current wanted/latest release, so the non-audit dependency freshness check is clean.

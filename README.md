@@ -1,6 +1,6 @@
 # Ballot Clarity
 
-Ballot Clarity is a nonpartisan civic-information platform built as an npm workspace monorepo. Fulton County, Georgia is the first real production launch jurisdiction, while the existing public ballot and dossier surfaces remain available as a reference archive until live county integrations and verified contest packaging are ready.
+Ballot Clarity is a nonpartisan civic-information platform built as an npm workspace monorepo. It provides address-based civic lookup, current representative context, official election resources, source transparency, and a reviewed local-guide publishing path. Fulton County, Georgia is the first launch jurisdiction; its current production-safe package is official-logistics-only until verified local contest, candidate, and measure records are available.
 
 ## Workspace layout
 
@@ -8,9 +8,10 @@ Ballot Clarity is a nonpartisan civic-information platform built as an npm works
 - `front-end/src/`: public pages, admin pages, layouts, components, composables, stores, and shared front-end types
 - `front-end/public/source-files/`: reference source files that power the public source directory and evidence links
 - `back-end/`: Express API for ballot content, public search, source records, and admin operations
-- `back-end/src/coverage-data.ts`: seeded Ballot Clarity coverage data that can later be replaced with live providers or database reads
-- `back-end/src/coverage-repository.ts`: runtime coverage loader that falls back to seeds or reads an imported live snapshot file
+- `back-end/src/coverage-data.ts`: seed fixture data used for local verification and route-contract tests, not as a production default
+- `back-end/src/coverage-repository.ts`: runtime coverage loader that starts in empty mode unless an imported live snapshot file is configured
 - `back-end/src/import-live-coverage.ts`: operator CLI that imports a vetted coverage snapshot from a file or URL
+- `back-end/src/export-fulton-reviewed-coverage.ts`: operator CLI that exports the reviewed Fulton official-logistics-only snapshot and metadata sidecar
 - `back-end/src/census-geocoder.ts`, `back-end/src/openstates.ts`, and `back-end/src/address-enrichment.ts`: address-to-district enrichment path using Census geographies plus Open States representative matching
 - `back-end/src/launch-directory.ts` and `back-end/src/sync-launch-directory.ts`: provider-fed launch-directory ingestion scaffold for elections and representative records
 - `back-end/live-data-schema.sql`: draft Postgres schema scaffold for the future live-data read model
@@ -62,7 +63,7 @@ That path:
 - forces the admin store to sqlite for local use
 - disables the Postgres-backed address cache for that run
 - serves source files from Nuxt's built-in public mirror instead of MinIO
-- writes the local coverage snapshot and provider-fed launch-directory snapshot
+- writes a local seed coverage snapshot and provider-fed launch-directory snapshot for development only
 
 After that, run the API in one terminal:
 
@@ -88,16 +89,18 @@ That command:
 
 - discovers the current worktree `.env` or the shared repo-root fallback automatically
 - forces the API and front-end base URLs onto localhost for that run
-- writes a fresh local coverage snapshot
+- writes a fresh local seed coverage snapshot
 - runs provider credential probes without printing secrets
 - starts the API locally
 - probes `/health` and a real ZIP lookup (`84604`) to confirm districts and representatives populate
 
-Write a local coverage snapshot so the API can run in snapshot mode instead of raw in-memory seed mode:
+Write a local seed snapshot so the API can run in snapshot mode for route and UI verification:
 
 ```bash
 npm run coverage:seed-local
 ```
+
+Seed snapshots are not production coverage. For a reviewed Fulton handoff, use the reviewed export path described in `back-end/docs/live-coverage-ops.md`.
 
 Bootstrap the first admin user before using `/admin`:
 
@@ -256,8 +259,10 @@ npm run db:up
 npm run env:local
 npm run stack:up
 npm run coverage:seed-local
+npm run coverage:fulton-reviewed
 npm run bootstrap-admin
 npm run ingest:coverage -- --from-file ./ops/live-coverage.json
+npm run -w back-end manage:coverage -- promote --from ./ops/reviewed-coverage.json --target "$LIVE_COVERAGE_FILE"
 npm run launch-directory:sync
 npm run providers:test
 npm run lint
@@ -381,12 +386,13 @@ These endpoints live on the Express service, but they are intended to be reached
 - Search and sourcing: every major reading surface links to the source directory and source detail pages
 - Trust layer: freshness, methodology, corrections, neutrality, and source authority are modeled explicitly in the data layer and rendered in the UI
 - Admin model: persisted users, content status, correction queue, and source-health tracking all live behind a protected internal surface
-- Coverage runtime: the public API serves the seed dataset by default, but can switch to an imported live snapshot file without changing route contracts
-- Launch strategy: Fulton County, Georgia is the first real production jurisdiction, and the public site now exposes explicit coverage, status, corrections, and contest-level canonical pages around that rollout
+- Coverage runtime: the public API starts in empty coverage mode by default and only serves local-guide data from an intentionally imported snapshot
+- Snapshot provenance: public health, coverage, and status responses expose whether the active snapshot is seed, reviewed, production-approved, or unknown without exposing server filesystem paths
+- Launch strategy: Fulton County, Georgia is the first production jurisdiction, currently published as an official-logistics-only guide shell until verified local contest packaging is ready
 - Asset delivery: mirrored source-document URLs can be rewritten to object storage or a CDN via `SOURCE_ASSET_BASE_URL`
 - Observability: the backend emits structured request logs, health metadata, and admin-auth throttle events
-- Production roadmap: see `docs/production-readiness-roadmap.md` for the staged path from seeded coverage to a real operated civic-information service
-- Live-data sequence: see `docs/live-data-implementation-sequence.md` for the concrete schema, env, provider, and rollout order for replacing seeded coverage with real civic data
+- Production roadmap: see `docs/production-readiness-roadmap.md` for the staged path from fixture-backed development data to a real operated civic-information service
+- Live-data sequence: see `docs/live-data-implementation-sequence.md` for the concrete schema, env, provider, and rollout order for replacing fixture coverage with reviewed civic data
 - Launch brief: see `docs/fulton-county-ga-launch.md` for the selected official systems and provider stack
 
 ## Production mode
@@ -397,7 +403,8 @@ These endpoints live on the Express service, but they are intended to be reached
 - Set `ADMIN_API_KEY` and `ADMIN_SESSION_SECRET` in the server environments only.
 - Use `ADMIN_STORE_DRIVER=postgres` together with `ADMIN_DATABASE_URL` for production. SQLite should only be used as a fallback for constrained local or temporary environments.
 - Set `SOURCE_ASSET_BASE_URL` when mirrored source documents should resolve to object storage or a CDN instead of files bundled under `front-end/public/source-files/`.
-- Import a vetted snapshot with `npm run ingest:coverage` and set `LIVE_COVERAGE_REQUIRED=true` once production should refuse to start without current snapshot data.
+- Import or promote a vetted snapshot with `npm run ingest:coverage` or `npm run -w back-end manage:coverage -- promote`. Set `LIVE_COVERAGE_FILE` to the active snapshot path and `LIVE_COVERAGE_REQUIRED=true` once production should refuse to start without current snapshot data.
+- Do not promote a seed snapshot to production. Use `npm run coverage:fulton-reviewed` for the current reviewed Fulton official-logistics-only artifact, or promote a separately reviewed production-approved snapshot with a matching `.meta.json` sidecar.
 - Run `npm run bootstrap-admin` once on the server, then remove the bootstrap password from routine shell history and secrets tooling if a different operational process is preferred.
 - Keep the public reverse proxy pointed at Nuxt for `/api/admin/*`; do not route those browser requests straight to the Express backend.
 
@@ -424,13 +431,16 @@ Local stack notes:
 - MinIO is only needed when you want to test `SOURCE_ASSET_BASE_URL` against object-storage-style URLs. If you leave `SOURCE_ASSET_BASE_URL` blank, the app will continue using bundled static files under `front-end/public/source-files/`.
 - Monitoring and scheduled imports are not separate local services yet because the current repo does not have a runtime monitor/worker subsystem to stand up. Health and provider readiness are exposed through `/health`, and coverage imports are still operator-triggered CLI commands.
 
-## Swapping seeded coverage for live civic data later
+## Publishing reviewed coverage snapshots
 
 1. Normalize upstream civic data into the snapshot shape used by `back-end/src/coverage-repository.ts`.
-2. Run `npm run ingest:coverage -- --from-file <path>` or `--from-url <url>` from a trusted operator environment to write `LIVE_COVERAGE_FILE`.
-3. Keep the public response contracts stable in the backend so the Nuxt composables and pages do not need to change.
-4. Replace bundled source files with object storage or CDN delivery behind `SOURCE_ASSET_BASE_URL`.
-5. Keep the admin store as the operational layer for publish status, corrections, source monitoring, and editorial overrides even after the read-side data becomes live.
+2. Attach a metadata sidecar at `<snapshot>.meta.json` with `status`, `sourceType`, `sourceLabel`, and review or approval timestamps.
+3. Validate that production-approved snapshots do not contain seeded, staged-reference, or mixed guide content.
+4. Promote the candidate snapshot with `npm run -w back-end manage:coverage -- promote --from <candidate-snapshot.json> --target "$LIVE_COVERAGE_FILE"`.
+5. Verify `/health`, `/api/coverage`, `/api/status`, `/api/elections`, `/api/guide-packages/:id`, `/ballot/:slug`, and a representative lookup after restart or reload.
+6. Keep the public response contracts stable in the backend so the Nuxt composables and pages do not need to change.
+7. Replace bundled source files with object storage or CDN delivery behind `SOURCE_ASSET_BASE_URL` when source-file scale requires it.
+8. Keep the admin store as the operational layer for publish status, corrections, source monitoring, and editorial overrides even after the read-side data becomes fully provider-fed.
 
 ## Server-side provisioning after merge
 
@@ -439,7 +449,7 @@ Local stack notes:
 3. Choose the admin store mode:
    Set `ADMIN_STORE_DRIVER=postgres` plus `ADMIN_DATABASE_URL` for managed Postgres. Use SQLite only if there is a deliberate single-instance fallback reason, and then create the directory that will hold the SQLite file referenced by `ADMIN_DB_PATH`, with backup and restore procedures in place.
 4. Run `npm run bootstrap-admin` once to create the first persisted admin account.
-5. Import the first vetted coverage snapshot with `npm run ingest:coverage`, then enable `LIVE_COVERAGE_REQUIRED=true` when the environment should fail closed without current snapshot data.
+5. Import or promote the first vetted coverage snapshot, then enable `LIVE_COVERAGE_REQUIRED=true` when the environment should fail closed without current snapshot data.
 6. Configure `SOURCE_ASSET_BASE_URL` when source files should resolve to object storage or a CDN instead of bundled static files.
 7. Put the API behind HTTPS and a reverse proxy or platform ingress that sends public `/api/admin/*` traffic to Nuxt, while the Nuxt server reaches the Express admin API over `ADMIN_API_BASE`.
 8. Ensure the backend deploy artifact includes `dist/admin-schema.sql` and `dist/admin-schema.postgres.sql`; the build now copies both automatically, but the deployed runtime should still be checked once after merge.
@@ -448,6 +458,6 @@ Local stack notes:
 ## Notes
 
 - Ballot Clarity is informational only. It does not recommend candidates, measures, or voting choices.
-- Fulton County, Georgia is the current launch jurisdiction. The existing public archive should still be treated as reference coverage until verified Fulton contest packaging and district lookup are live.
+- Fulton County, Georgia is the current launch jurisdiction. Official election resources and representative lookup are active; verified Fulton contest, candidate, and measure packaging remains unavailable until reviewed local records are loaded.
 - Time-sensitive election logistics should always be checked against official election-office notices.
 - Light mode is the default, dark mode is supported, and ballot pages are designed to print cleanly.

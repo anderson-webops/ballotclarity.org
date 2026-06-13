@@ -209,6 +209,36 @@ const nationwideLookupSnapshot = {
 	selectedLocation: null
 };
 
+const guideShellOnlySnapshot = {
+	ballotPlan: {},
+	ballotViewMode: "quick",
+	compareList: [],
+	lookupContext: {
+		guideAvailability: "published",
+		hasPublishedGuideShell: true,
+		hasVerifiedContestPackage: false,
+		result: "resolved"
+	},
+	nationwideLookupResult: null,
+	selectedElection: {
+		date: "2026-11-03",
+		jurisdictionSlug: "fulton-county-georgia",
+		locationName: "Fulton County, Georgia",
+		name: "2026 Fulton County General Election",
+		slug: "2026-fulton-county-general",
+		updatedAt: "2026-03-30T18:00:00.000Z"
+	},
+	selectedIssues: [],
+	selectedLocation: {
+		coverageLabel: "Current area: Fulton County, Georgia",
+		displayName: "Fulton County, Georgia",
+		lookupMode: "address-verified",
+		requiresOfficialConfirmation: true,
+		slug: "fulton-county-georgia",
+		state: "Georgia"
+	}
+};
+
 const activeNationwideLookupCookie = `${activeNationwideLookupCookieName}=${encodeURIComponent(JSON.stringify({
 	actions: nationwideLookupSnapshot.nationwideLookupResult.actions,
 	availability: nationwideLookupSnapshot.nationwideLookupResult.availability,
@@ -1259,6 +1289,91 @@ test("nationwide lookup context survives client navigation across results, distr
 		const influenceText = await getDocumentBodyText(cdp);
 		assert.match(influenceText, /Mike Kennedy influence/);
 		assert.match(influenceText, /Influence unavailable|No lobbying or disclosure summary is attached to this officeholder yet/);
+
+		await cdp.close();
+		cdp = null;
+	}
+	catch (error) {
+		throw new Error(`${String(error)}\n\nChrome output:\n${chrome.getOutput()}`);
+	}
+	finally {
+		if (cdp)
+			await cdp.close().catch(() => {});
+
+		await stopChromeProcess(chrome.child, chromeUserDataDir);
+	}
+});
+
+test("saved guide shell context loads district and representative hubs without a fresh lookup result", async (t) => {
+	const chromeExecutable = findChromeExecutable();
+
+	if (!chromeExecutable) {
+		t.skip("Chrome is not available for the guide-shell route coverage test.");
+		return;
+	}
+
+	const chromePort = await getFreePort();
+	const chromeUserDataDir = mkdtempSync(join(tmpdir(), "ballot-clarity-chrome-"));
+	const chrome = startChromeProcess(chromeExecutable, [
+		`--remote-debugging-port=${chromePort}`,
+		`--user-data-dir=${chromeUserDataDir}`,
+		"--headless=new",
+		"--disable-background-networking",
+		"--disable-default-apps",
+		"--disable-gpu",
+		"--disable-sync",
+		"--metrics-recording-only",
+		"--no-first-run",
+		"--no-default-browser-check",
+		"about:blank"
+	]);
+
+	let cdp: CdpSession | null = null;
+
+	try {
+		const targets = await waitForJson(`http://127.0.0.1:${chromePort}/json/list`, "Chrome DevTools targets") as Array<{
+			type?: string;
+			webSocketDebuggerUrl?: string;
+		}>;
+		const pageTarget = targets.find(target => target.type === "page" && target.webSocketDebuggerUrl);
+
+		assert.ok(pageTarget?.webSocketDebuggerUrl);
+		cdp = await connectToCdp(pageTarget.webSocketDebuggerUrl as string);
+		await cdp.send("Page.enable");
+		await cdp.send("Runtime.enable");
+
+		const initialLoad = cdp.waitForEvent("Page.loadEventFired");
+		await cdp.send("Page.navigate", { url: appBaseUrl });
+		await initialLoad;
+		await delay(500);
+
+		const seedAndNavigate = cdp.waitForEvent("Page.loadEventFired");
+		await cdp.send("Runtime.evaluate", {
+			awaitPromise: false,
+			expression: `document.cookie = ${JSON.stringify(`${activeNationwideLookupCookieName}=; Max-Age=0; path=/`)}; localStorage.setItem('ballot-clarity:civic-store', ${JSON.stringify(JSON.stringify(guideShellOnlySnapshot))}); location.assign('${appBaseUrl}/representatives');`,
+			returnByValue: true
+		});
+		await seedAndNavigate;
+		await delay(1200);
+
+		const representativesText = await getDocumentBodyText(cdp);
+		assert.match(representativesText, /Fulton County, Georgia/);
+		assert.match(representativesText, /Using the saved guide area in this browser/);
+		assert.match(representativesText, /Representative directory/);
+		assert.match(representativesText, /4 current officials across 4 district matches/);
+		assert.match(representativesText, /Robb Pitts|Shawn Still/);
+		assert.doesNotMatch(representativesText, /Start with lookup|Refresh results for this page/);
+
+		const districtsLoad = cdp.waitForEvent("Page.loadEventFired");
+		await cdp.send("Page.navigate", { url: `${appBaseUrl}/districts` });
+		await districtsLoad;
+		await delay(800);
+
+		const districtsText = await getDocumentBodyText(cdp);
+		assert.match(districtsText, /Fulton County, Georgia/);
+		assert.match(districtsText, /District pages/);
+		assert.match(districtsText, /Fulton County|State Senate District 48|Johns Creek city/);
+		assert.doesNotMatch(districtsText, /Start with lookup|Refresh results for this page/);
 
 		await cdp.close();
 		cdp = null;

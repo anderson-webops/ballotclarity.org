@@ -885,6 +885,61 @@ function buildRepresentativeSummary(candidate: Candidate): RepresentativeSummary
 	};
 }
 
+function buildSupplementalRepresentativeSummary(record: SupplementalOfficeholderRecord): RepresentativeSummary {
+	const classification = classifyRepresentative({
+		districtLabel: record.districtLabel,
+		districtType: record.districtType,
+		officeSought: record.officeSought,
+		officeTitle: record.officeTitle,
+		stateCode: record.stateCode,
+		stateName: record.stateName,
+	});
+	const funding = record.enrichment?.funding ?? null;
+	const influence = record.enrichment?.influence ?? null;
+	const lobbyingContext = record.enrichment?.lobbyingContext ?? [];
+	const publicStatements = record.enrichment?.publicStatements ?? [];
+	const hasInfluenceContext = Boolean(influence || lobbyingContext.length || publicStatements.length);
+
+	return {
+		ballotStatusLabel: "Current officeholder record",
+		districtLabel: record.districtLabel,
+		districtSlug: record.districtSlug,
+		fundingAvailable: Boolean(funding),
+		fundingSummary: funding?.summary ?? (record.jurisdiction === "State"
+			? `No reviewed state finance source is configured yet for ${record.stateName} officeholders.`
+			: "No reviewed local finance source is configured yet for this officeholder."),
+		governmentLevel: classification.governmentLevel,
+		href: `/representatives/${record.slug}`,
+		incumbent: true,
+		influenceAvailable: hasInfluenceContext,
+		influenceSummary: influence
+			? `${influence.reportCount} reviewed disclosure report${influence.reportCount === 1 ? "" : "s"} with ${influence.contributionCount} contribution record${influence.contributionCount === 1 ? "" : "s"} attached.`
+			: lobbyingContext[0]?.summary ?? publicStatements[0]?.summary ?? (record.jurisdiction === "State"
+				? `No reviewed state disclosure or lobbying source is configured yet for ${record.stateName} officeholders.`
+				: "No reviewed local disclosure or lobbying source is configured yet for this officeholder."),
+		location: record.location,
+		name: record.name,
+		officeDisplayLabel: classification.officeDisplayLabel,
+		officeSought: record.officeSought,
+		officeholderLabel: "Current officeholder",
+		officeType: classification.officeType,
+		onCurrentBallot: false,
+		openstatesUrl: record.openstatesUrl,
+		party: record.party,
+		profileImages: record.profileImages,
+		provenance: {
+			label: record.provenanceLabel,
+			note: `${record.provenanceNote} This directory entry is a current officeholder record, not a verified current-ballot candidate claim.`,
+			status: record.sourceSystem.toLowerCase().includes("official") ? "direct" : "crosswalked",
+		},
+		slug: record.slug,
+		sourceCount: record.sources.length,
+		sources: record.sources,
+		summary: record.summary,
+		updatedAt: record.updatedAt,
+	};
+}
+
 const cityRoutePattern = /^([a-z0-9-]+)-city$/i;
 const congressionalDistrictCodePattern = /^([A-Z]{2})-(\d+)$/i;
 const congressionalDivisionPattern = /\/cd:(\d+)(?:\/|$)/i;
@@ -2319,52 +2374,7 @@ function buildPublicDistrictRecordFromSlug(slug: string): DistrictRecordResponse
 	const resolvedOfficialResources = supplementalOfficeholders[0]?.stateCode
 		? getOfficialToolsForState(supplementalOfficeholders[0].stateCode)
 		: districtIdentity.officialResources;
-	const representatives = supplementalOfficeholders.map((record) => {
-		const classification = classifyRepresentative({
-			districtLabel: record.districtLabel,
-			districtType: record.districtType,
-			officeSought: record.officeSought,
-			officeTitle: record.officeTitle,
-			stateCode: record.stateCode,
-			stateName: record.stateName,
-		});
-
-		return {
-			ballotStatusLabel: "Published ballot status unavailable in this area",
-			districtLabel: record.districtLabel,
-			districtSlug: record.districtSlug,
-			fundingAvailable: false,
-			fundingSummary: record.jurisdiction === "State"
-				? `No reviewed state finance source is configured yet for ${record.stateName} officeholders.`
-				: "No reviewed local finance source is configured yet for this officeholder.",
-			governmentLevel: classification.governmentLevel,
-			href: `/representatives/${record.slug}`,
-			incumbent: true,
-			influenceAvailable: false,
-			influenceSummary: record.jurisdiction === "State"
-				? `No reviewed state disclosure or lobbying source is configured yet for ${record.stateName} officeholders.`
-				: "No reviewed local disclosure or lobbying source is configured yet for this officeholder.",
-			location: record.location,
-			name: record.name,
-			officeDisplayLabel: classification.officeDisplayLabel,
-			officeSought: record.officeSought,
-			officeholderLabel: "Current officeholder",
-			officeType: classification.officeType,
-			onCurrentBallot: false,
-			openstatesUrl: record.openstatesUrl,
-			party: record.party,
-			provenance: {
-				label: record.provenanceLabel,
-				note: record.provenanceNote,
-				status: record.sourceSystem.toLowerCase().includes("official") ? "direct" : "crosswalked",
-			},
-			slug: record.slug,
-			sourceCount: record.sources.length,
-			sources: record.sources,
-			summary: record.summary,
-			updatedAt: record.updatedAt,
-		} satisfies RepresentativeSummary;
-	});
+	const representatives = supplementalOfficeholders.map(buildSupplementalRepresentativeSummary);
 	const sources = [
 		buildRouteSource({
 			authority: "open-data",
@@ -3150,20 +3160,82 @@ export async function createApp(options: CreateAppOptions = {}) {
 		return election?.contests ?? [];
 	}
 
-	async function listPublicDistricts() {
+	function normalizeDirectoryAreaQuery(value: unknown) {
+		const rawValue = Array.isArray(value) ? value[0] : value;
+
+		if (typeof rawValue !== "string")
+			return null;
+
+		const normalized = toLookupSlug(rawValue);
+		return normalized || null;
+	}
+
+	function directoryAreaMatchesLaunchTarget(areaSlug: string) {
+		const launchTarget = coverageRepository.data.dataSources.launchTarget;
+		const location = coverageRepository.data.location;
+		const launchTargetValues = [
+			launchTarget?.slug,
+			launchTarget?.displayName,
+			launchTarget?.name,
+			location?.slug,
+			location?.displayName,
+		].map(value => value ? toLookupSlug(value) : "").filter(Boolean);
+
+		return launchTargetValues.includes(areaSlug);
+	}
+
+	function supplementalOfficeholderMatchesDirectoryArea(record: SupplementalOfficeholderRecord, areaSlug: string | null) {
+		if (!areaSlug)
+			return false;
+
+		const launchTarget = coverageRepository.data.dataSources.launchTarget;
+		const normalizedLocation = toLookupSlug(record.location);
+		const normalizedStateName = toLookupSlug(record.stateName);
+		const normalizedStateCode = toLookupSlug(record.stateCode);
+
+		if (directoryAreaMatchesLaunchTarget(areaSlug) && (!launchTarget?.state || toLookupSlug(launchTarget.state) === normalizedStateName))
+			return true;
+
+		if (normalizedLocation === areaSlug || normalizedLocation.includes(areaSlug) || areaSlug.includes(normalizedLocation))
+			return true;
+
+		return areaSlug === normalizedStateName
+			|| areaSlug.endsWith(`-${normalizedStateName}`)
+			|| areaSlug === normalizedStateCode
+			|| areaSlug.endsWith(`-${normalizedStateCode}`);
+	}
+
+	function listSupplementalOfficeholdersForDirectory(areaSlug: string | null) {
+		return listSupplementalOfficeholders()
+			.filter(record => supplementalOfficeholderMatchesDirectoryArea(record, areaSlug));
+	}
+
+	function buildSupplementalDistrictSummariesForDirectory(areaSlug: string | null) {
+		return listSupplementalOfficeholdersForDirectory(areaSlug)
+			.map(record => buildPublicDistrictRecordFromSlug(record.districtSlug)?.district ?? null)
+			.filter((district): district is DistrictRecordResponse["district"] => Boolean(district));
+	}
+
+	async function listPublicDistricts(areaSlug: string | null = null) {
 		const primaryElectionSlug = getPrimaryElectionSlug();
+		const supplementalDistricts = buildSupplementalDistrictSummariesForDirectory(areaSlug);
 
 		if (!primaryElectionSlug)
-			return [];
+			return uniqueBySlug(supplementalDistricts);
 
 		const election = await getPublicElection(primaryElectionSlug);
 
 		if (!election)
-			return [];
+			return uniqueBySlug(supplementalDistricts);
 
-		return election.contests
+		const guideDistricts = election.contests
 			.filter(contest => contest.type === "candidate")
 			.map(contest => buildDistrictSummary(contest, election));
+
+		return uniqueBySlug([
+			...guideDistricts,
+			...supplementalDistricts,
+		]);
 	}
 
 	async function getPublicDistrict(slug: string) {
@@ -3259,18 +3331,20 @@ export async function createApp(options: CreateAppOptions = {}) {
 		return await pending;
 	}
 
-	async function listPublicRepresentatives() {
+	async function listPublicRepresentatives(areaSlug: string | null = null) {
 		const primaryElectionSlug = getPrimaryElectionSlug();
+		const supplementalRepresentatives = listSupplementalOfficeholdersForDirectory(areaSlug)
+			.map(buildSupplementalRepresentativeSummary);
 
 		if (!primaryElectionSlug)
-			return [];
+			return uniqueBySlug(supplementalRepresentatives);
 
 		const election = await getPublicElection(primaryElectionSlug);
 
 		if (!election)
-			return [];
+			return uniqueBySlug(supplementalRepresentatives);
 
-		return election.contests
+		const guideRepresentatives = election.contests
 			.filter(contest => contest.type === "candidate")
 			.flatMap(contest => (contest.candidates ?? [])
 				.filter(candidate => candidate.incumbent)
@@ -3278,6 +3352,11 @@ export async function createApp(options: CreateAppOptions = {}) {
 					...buildRepresentativeSummary(candidate),
 					districtLabel: contest.office
 				})));
+
+		return uniqueBySlug([
+			...guideRepresentatives,
+			...supplementalRepresentatives,
+		]);
 	}
 
 	async function getPublicRepresentative(slug: string) {
@@ -4442,7 +4521,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 			return;
 		}
 
-		response.json(buildDistrictsResponse(await listPublicDistricts()));
+		response.json(buildDistrictsResponse(await listPublicDistricts(normalizeDirectoryAreaQuery(request.query.area))));
 	});
 
 	app.get("/api/districts/:slug", async (request, response) => {
@@ -4489,8 +4568,8 @@ export async function createApp(options: CreateAppOptions = {}) {
 		}
 
 		const [districts, representatives] = await Promise.all([
-			listPublicDistricts(),
-			listPublicRepresentatives()
+			listPublicDistricts(normalizeDirectoryAreaQuery(request.query.area)),
+			listPublicRepresentatives(normalizeDirectoryAreaQuery(request.query.area))
 		]);
 
 		response.json(buildRepresentativesResponse(representatives, districts));

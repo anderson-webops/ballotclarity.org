@@ -11,7 +11,7 @@ import { resolveRepresentativePresentation } from "~/utils/representative-presen
 const route = useRoute();
 const civicStore = useCivicStore();
 const { isHydrated, nationwideLookupResult, selectedLocation } = storeToRefs(civicStore);
-const { hasNationwideResultContext, hasPublishedGuideContext } = useGuideEntryGate();
+const { hasGuideShellContext, hasNationwideResultContext } = useGuideEntryGate();
 const districtSlug = useRouteStringParam("slug");
 const activeNationwideLookupCookie = useCookie<string | null>(activeNationwideLookupCookieName);
 const serverNationwideLookupResult = computed(() => parseActiveNationwideLookupCookie(activeNationwideLookupCookie.value));
@@ -78,7 +78,7 @@ const districtContextLink = computed(() => {
 		};
 	}
 
-	if (hasPublishedGuideContext.value && districtPageData.value) {
+	if (hasGuideShellContext.value && districtPageData.value) {
 		return {
 			label: "Open current election coverage",
 			to: `/elections/${districtPageData.value.election.slug}`

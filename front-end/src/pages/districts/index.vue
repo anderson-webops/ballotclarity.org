@@ -17,7 +17,7 @@ import { resolveRepresentativePresentation } from "~/utils/representative-presen
 const route = useRoute();
 const civicStore = useCivicStore();
 const { isHydrated, nationwideLookupResult, selectedLocation } = storeToRefs(civicStore);
-const { hasNationwideResultContext, hasPublishedGuideContext } = useGuideEntryGate();
+const { hasGuideShellContext, hasNationwideResultContext } = useGuideEntryGate();
 const activeNationwideLookupCookie = useCookie<string | null>(activeNationwideLookupCookieName);
 const serverNationwideLookupResult = computed(() => parseActiveNationwideLookupCookie(activeNationwideLookupCookie.value));
 const activeNationwideLookupResult = computed(() => isHydrated.value ? nationwideLookupResult.value : serverNationwideLookupResult.value);
@@ -25,20 +25,35 @@ const activeLookupQuery = computed(() => buildNationwideLookupRouteQuery(
 	buildLookupContextFromNationwideResult(activeNationwideLookupResult.value),
 	route.query
 ));
-const { data: guideDistrictData, error: guideDistrictError, pending: guideDistrictPending } = await useDistricts(activeLookupQuery);
-const { data: guideRepresentativesData } = await useRepresentatives(activeLookupQuery);
+const activeGuideAreaQuery = computed(() => isHydrated.value && hasGuideShellContext.value && selectedLocation.value?.slug
+	? { area: selectedLocation.value.slug }
+	: null
+);
+const directoryApiQuery = computed(() => activeLookupQuery.value ?? activeGuideAreaQuery.value);
+const { data: guideDistrictData, error: guideDistrictError, pending: guideDistrictPending, refresh: refreshGuideDistrictData } = await useDistricts(directoryApiQuery);
+const { data: guideRepresentativesData, refresh: refreshGuideRepresentativesData } = await useRepresentatives(directoryApiQuery);
+
+if (import.meta.client) {
+	watch(activeGuideAreaQuery, (query, previousQuery) => {
+		if (!query?.area || query.area === previousQuery?.area || activeLookupQuery.value)
+			return;
+
+		void refreshGuideDistrictData();
+		void refreshGuideRepresentativesData();
+	}, { immediate: true });
+}
 const emptyNationwideDistrictsResponse: DistrictsResponse = { districts: [], mode: "nationwide", note: "", updatedAt: "" };
 const emptyNationwideRepresentativesResponse: RepresentativesResponse = { districts: [], mode: "nationwide", note: "", representatives: [], updatedAt: "" };
 const emptyGuideDistrictsResponse: DistrictsResponse = { districts: [], mode: "guide", note: "", updatedAt: "" };
 const emptyGuideRepresentativesResponse: RepresentativesResponse = { districts: [], mode: "guide", note: "", representatives: [], updatedAt: "" };
 const apiUsesNationwide = computed(() => guideDistrictData.value?.mode === "nationwide" || guideRepresentativesData.value?.mode === "nationwide");
-const showGuideDirectory = computed(() => hasPublishedGuideContext.value);
+const showGuideDirectory = computed(() => hasGuideShellContext.value);
 const storeUsesNationwide = computed(() => {
 	if (!activeNationwideLookupResult.value || activeNationwideLookupResult.value.result !== "resolved")
 		return false;
 
 	return isHydrated.value
-		? hasNationwideResultContext.value && !hasPublishedGuideContext.value
+		? hasNationwideResultContext.value && !hasGuideShellContext.value
 		: activeNationwideLookupResult.value.guideAvailability !== "published";
 });
 const directoryUsesNationwide = computed(() => apiUsesNationwide.value || storeUsesNationwide.value);

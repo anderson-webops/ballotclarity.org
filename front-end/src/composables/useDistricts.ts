@@ -1,7 +1,8 @@
 import type { DistrictRecordResponse, DistrictsResponse } from "~/types/civic";
 
 interface NationwideLookupApiQuery {
-	lookup: string;
+	area?: string;
+	lookup?: string;
 	selection?: string;
 }
 
@@ -16,13 +17,17 @@ export function useDistricts(activeLookupQuery?: MaybeRefOrGetter<NationwideLook
 	};
 
 	return useAsyncData<DistrictsResponse>(
-		() => `districts:${lookupQuery.value?.lookup ?? "none"}:${lookupQuery.value?.selection ?? "none"}`,
+		() => `districts:${lookupQuery.value?.lookup ?? "none"}:${lookupQuery.value?.selection ?? "none"}:${lookupQuery.value?.area ?? "none"}`,
 		() => api<DistrictsResponse>("/districts", {
 			query: lookupQuery.value ?? undefined
 		}),
 		{
 			default: () => emptyDistrictsResponse,
-			watch: [lookupQuery]
+			watch: [
+				() => lookupQuery.value?.area,
+				() => lookupQuery.value?.lookup,
+				() => lookupQuery.value?.selection
+			]
 		}
 	);
 }
@@ -36,7 +41,7 @@ export function useDistrict(
 	const lookupQuery = computed(() => toValue(activeLookupQuery) ?? null);
 
 	return useAsyncData<DistrictRecordResponse | null>(
-		() => `district:${slug.value ?? "unknown"}:${lookupQuery.value?.lookup ?? "none"}:${lookupQuery.value?.selection ?? "none"}`,
+		() => `district:${slug.value ?? "unknown"}:${lookupQuery.value?.lookup ?? "none"}:${lookupQuery.value?.selection ?? "none"}:${lookupQuery.value?.area ?? "none"}`,
 		async () => {
 			if (!slug.value)
 				return null;
@@ -47,7 +52,12 @@ export function useDistrict(
 		},
 		{
 			default: () => null,
-			watch: [slug, lookupQuery]
+			watch: [
+				slug,
+				() => lookupQuery.value?.area,
+				() => lookupQuery.value?.lookup,
+				() => lookupQuery.value?.selection
+			]
 		}
 	);
 }

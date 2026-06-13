@@ -1,7 +1,8 @@
 import type { RepresentativesResponse } from "~/types/civic";
 
 interface NationwideLookupApiQuery {
-	lookup: string;
+	area?: string;
+	lookup?: string;
 	selection?: string;
 }
 
@@ -17,13 +18,17 @@ export function useRepresentatives(activeLookupQuery?: MaybeRefOrGetter<Nationwi
 	};
 
 	return useAsyncData<RepresentativesResponse>(
-		() => `representatives:${lookupQuery.value?.lookup ?? "none"}:${lookupQuery.value?.selection ?? "none"}`,
+		() => `representatives:${lookupQuery.value?.lookup ?? "none"}:${lookupQuery.value?.selection ?? "none"}:${lookupQuery.value?.area ?? "none"}`,
 		() => api<RepresentativesResponse>("/representatives", {
 			query: lookupQuery.value ?? undefined
 		}),
 		{
 			default: () => emptyRepresentativesResponse,
-			watch: [lookupQuery]
+			watch: [
+				() => lookupQuery.value?.area,
+				() => lookupQuery.value?.lookup,
+				() => lookupQuery.value?.selection
+			]
 		}
 	);
 }

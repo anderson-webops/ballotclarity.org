@@ -658,8 +658,10 @@ test("built app renders the key ballot guide pages against the built API", async
 	assert.equal(ballotResponse.status, 200);
 	assert.equal(homePage.status, 200);
 	assert.equal(homePage.headers.get("cross-origin-opener-policy"), "same-origin");
+	assert.equal(homePage.headers.get("cross-origin-resource-policy"), "same-origin");
 	assert.equal(homePage.headers.get("origin-agent-cluster"), "?1");
 	assert.equal(homePage.headers.get("x-content-type-options"), "nosniff");
+	assert.equal(homePage.headers.get("x-permitted-cross-domain-policies"), "none");
 	assert.equal(homePage.headers.get("x-frame-options"), "DENY");
 	assert.equal(homePage.headers.get("referrer-policy"), "strict-origin-when-cross-origin");
 	assert.equal(homePage.headers.get("strict-transport-security"), "max-age=31536000");
@@ -673,8 +675,10 @@ test("built app renders the key ballot guide pages against the built API", async
 	assert.match(missingHtml, /This page could not be found/);
 	assert.match(missingHtml, /noindex,nofollow/);
 	assert.equal(ballotResponse.headers.get("cross-origin-opener-policy"), "same-origin");
+	assert.equal(ballotResponse.headers.get("cross-origin-resource-policy"), "same-origin");
 	assert.equal(ballotResponse.headers.get("origin-agent-cluster"), "?1");
 	assert.equal(ballotResponse.headers.get("x-content-type-options"), "nosniff");
+	assert.equal(ballotResponse.headers.get("x-permitted-cross-domain-policies"), "none");
 	assert.equal(ballotResponse.headers.get("x-frame-options"), "DENY");
 	assert.equal(ballotResponse.headers.get("referrer-policy"), "strict-origin-when-cross-origin");
 	assert.equal(ballotResponse.headers.get("strict-transport-security"), "max-age=31536000");

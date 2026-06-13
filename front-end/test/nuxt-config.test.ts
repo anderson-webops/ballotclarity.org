@@ -75,18 +75,22 @@ test("nuxt config uses srcDir and expected civic modules", async () => {
 	assert.ok(config.app?.head?.link?.some(link => link.rel === "manifest" && typeof link.href === "string" && link.href.startsWith("/site.webmanifest")));
 	assert.deepEqual(config.nitro?.routeRules?.["/**"]?.headers, {
 		"cross-origin-opener-policy": "same-origin",
+		"cross-origin-resource-policy": "same-origin",
 		"origin-agent-cluster": "?1",
 		"permissions-policy": "camera=(), microphone=(), geolocation=(), payment=(), usb=(), browsing-topics=()",
 		"referrer-policy": "strict-origin-when-cross-origin",
 		"strict-transport-security": "max-age=31536000",
 		"x-content-type-options": "nosniff",
+		"x-permitted-cross-domain-policies": "none",
 		"x-frame-options": "DENY"
 	});
 	assert.equal(config.nitro?.routeRules?.["/_nuxt/**"]?.headers?.["cache-control"], "public, max-age=31536000, immutable");
 	assert.equal(config.nitro?.routeRules?.["/_nuxt/**"]?.headers?.["cross-origin-opener-policy"], "same-origin");
+	assert.equal(config.nitro?.routeRules?.["/_nuxt/**"]?.headers?.["cross-origin-resource-policy"], "same-origin");
 	assert.equal(config.nitro?.routeRules?.["/_nuxt/**"]?.headers?.["origin-agent-cluster"], "?1");
 	assert.equal(config.nitro?.routeRules?.["/_nuxt/**"]?.headers?.["strict-transport-security"], "max-age=31536000");
 	assert.equal(config.nitro?.routeRules?.["/_nuxt/**"]?.headers?.["x-content-type-options"], "nosniff");
+	assert.equal(config.nitro?.routeRules?.["/_nuxt/**"]?.headers?.["x-permitted-cross-domain-policies"], "none");
 	assert.equal(config.nitro?.routeRules?.["/admin/**"]?.headers?.["X-Robots-Tag"], "noindex, nofollow");
 	assert.equal(config.nitro?.routeRules?.["/admin/**"]?.headers?.["x-frame-options"], "DENY");
 	assert.equal(config.nitro?.routeRules?.["/results"]?.headers?.["X-Robots-Tag"], "noindex, nofollow");

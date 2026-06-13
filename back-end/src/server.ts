@@ -166,11 +166,13 @@ function summarizeMatchedDistricts(labels: string[]) {
 const localCorsOriginPattern = /^https?:\/\/(?:localhost|127(?:\.\d{1,3}){3}|\[::1\])(?::\d+)?$/i;
 const securityHeaders = {
 	"Cross-Origin-Opener-Policy": "same-origin",
+	"Cross-Origin-Resource-Policy": "same-origin",
 	"Origin-Agent-Cluster": "?1",
 	"Permissions-Policy": "camera=(), microphone=(), geolocation=(), payment=(), usb=(), browsing-topics=()",
 	"Referrer-Policy": "strict-origin-when-cross-origin",
 	"Strict-Transport-Security": "max-age=31536000",
 	"X-Content-Type-Options": "nosniff",
+	"X-Permitted-Cross-Domain-Policies": "none",
 	"X-Frame-Options": "DENY"
 };
 

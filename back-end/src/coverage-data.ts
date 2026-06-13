@@ -27,7 +27,7 @@ import type {
 } from "./types/civic.js";
 import { launchTargetProfile } from "./launch-profile.js";
 
-const demoSourceNote = "Reference file mirrored in the current Ballot Clarity archive. Review the original public record before relying on election information.";
+const demoSourceNote = "Reference file maintained by Ballot Clarity for staged review. Review the original public record before relying on election information.";
 
 function source(
 	id: string,
@@ -43,7 +43,7 @@ function source(
 	}
 ): Source {
 	return {
-		authority: options?.authority ?? "ballot-clarity-archive",
+		authority: options?.authority ?? "ballot-clarity-source-record",
 		date,
 		id,
 		note: options?.note ?? demoSourceNote,
@@ -144,13 +144,13 @@ function trustBullet(id: string, text: string, sources: Source[], note?: string)
 	};
 }
 
-const metroGuide = source("metro-guide-2026", "Current election guide reference archive", "Ballot Clarity reference archive", "voter guide", "2026-03-30", "reference-archive-election-guide.txt", {
-	authority: "ballot-clarity-archive",
-	sourceSystem: "Ballot Clarity reference archive"
+const metroGuide = source("metro-guide-2026", "Current election guide staged review file", "Ballot Clarity staged review records", "voter guide", "2026-03-30", "reference-archive-election-guide.txt", {
+	authority: "ballot-clarity-source-record",
+	sourceSystem: "Ballot Clarity staged review records"
 });
-const methodologyBrief = source("methodology-brief", "Ballot Clarity Methodology Notes", "Ballot Clarity Research Archive", "research brief", "2026-03-30", "methodology-notes.txt", {
-	authority: "ballot-clarity-archive",
-	sourceSystem: "Ballot Clarity research archive"
+const methodologyBrief = source("methodology-brief", "Ballot Clarity Methodology Notes", "Ballot Clarity", "research brief", "2026-03-30", "methodology-notes.txt", {
+	authority: "ballot-clarity-source-record",
+	sourceSystem: "Ballot Clarity methodology records"
 });
 
 const torresFec = source("torres-fec-q1", "Elena Torres Q1 2026 FEC Filing", "Federal Election Commission filing record", "campaign filing", "2026-03-28", "federal-d7-fec-torres-q1-2026.txt", {

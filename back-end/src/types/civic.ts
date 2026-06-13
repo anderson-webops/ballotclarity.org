@@ -10,6 +10,7 @@ export type SourceType
 
 export type SourceAuthority
 	= | "ballot-clarity-archive"
+		| "ballot-clarity-source-record"
 		| "candidate-campaign"
 		| "commercial-provider"
 		| "nonprofit-provider"

@@ -63,7 +63,7 @@ const ownershipRules = [
 const prohibitedUses = [
 	"Do not overload, probe, attack, reverse engineer, or interfere with the site, its hosting, or its source systems.",
 	"Do not use automated access in a way that bypasses rate limits, harms reliability, or creates misleading bulk republication of the service.",
-	"Do not attempt to access private editorial or review routes unless you are explicitly authorized to use them.",
+	"Do not attempt to access private editorial or review pages unless you are explicitly authorized to use them.",
 	"Do not use the site to impersonate an election office, spread voter confusion, or create fraudulent voting materials.",
 	"Do not remove coverage notices, source context, correction notes, or trust signals when redistributing content.",
 	"Do not submit knowingly false correction requests, malicious files, or sensitive personal information that the project does not need."
@@ -76,7 +76,7 @@ const suspensionRules = [
 ];
 
 const correctionsAndFeedback = [
-	"Correction and dispute requests should go through the public contact route so the project can review the claim against sources.",
+	"Correction and dispute requests should go through the public contact page so the project can review the claim against sources.",
 	"If you send feedback, supporting documents, or correction materials, you represent that you have the right to share them and that they are accurate to the best of your knowledge.",
 	"Ballot Clarity may use submitted feedback and source suggestions to review, improve, and correct the service, while you keep any rights you already own in your original material.",
 	"Accurate, well-sourced information may remain published even when it is unfavorable to a candidate, committee, or other subject."

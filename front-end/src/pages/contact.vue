@@ -22,7 +22,7 @@ const formMessage = ref("");
 const formTone = ref<"error" | "success">("success");
 
 const correctionChecklist = [
-	"The page URL or route where you found the issue.",
+	"The page URL or site path where you found the issue.",
 	"The specific sentence, claim, quote, or label that needs review.",
 	"A short explanation of what seems incorrect, incomplete, or unevenly framed.",
 	"Supporting documentation or links, preferably primary sources such as filings, official records, transcripts, or public notices.",
@@ -144,7 +144,7 @@ usePageSeo({
 					</label>
 
 					<label class="block">
-						<span class="text-sm text-app-ink font-semibold dark:text-app-text-dark">Page URL or route</span>
+						<span class="text-sm text-app-ink font-semibold dark:text-app-text-dark">Page URL or site path</span>
 						<input
 							v-model="form.pageUrl"
 							type="text"

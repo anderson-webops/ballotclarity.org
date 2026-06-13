@@ -2691,12 +2691,15 @@ test("GET /api/sources/:id returns 404 for unpublished district provenance ids",
 test("GET /api/sources only lists ids that resolve as public source records", async () => {
 	const directoryResponse = await fetch(`${baseUrl}/api/sources`);
 	const directoryBody = await directoryResponse.json();
+	const methodologySource = directoryBody.sources.find((item: { id: string }) => item.id === "ballot-clarity-methodology");
 
 	assert.equal(directoryResponse.status, 200);
 	assert.ok(Array.isArray(directoryBody.sources));
 	assert.ok(directoryBody.sources.some((item: { id: string }) => item.id === "census-geocoder"));
+	assert.equal(methodologySource?.authority, "ballot-clarity-source-record");
 	assert.ok(!directoryBody.sources.some((item: { id: string }) => item.id === "district:state-senate-48"));
 	assert.ok(!JSON.stringify(directoryBody).includes("ballot-clarity archive"));
+	assert.ok(!JSON.stringify(directoryBody).includes("ballot-clarity-archive"));
 
 	for (const item of directoryBody.sources as Array<{ id: string; url?: string }>) {
 		assert.ok(item.url, `expected published source ${item.id} to expose a usable URL`);
@@ -2706,6 +2709,7 @@ test("GET /api/sources only lists ids that resolve as public source records", as
 
 		assert.equal(recordResponse.status, 200, `expected published source ${item.id} to resolve`);
 		assert.ok(!JSON.stringify(recordBody).includes("ballot-clarity archive"));
+		assert.ok(!JSON.stringify(recordBody).includes("ballot-clarity-archive"));
 	}
 });
 

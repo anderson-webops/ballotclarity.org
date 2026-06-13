@@ -18,8 +18,9 @@ const config = computed(() => {
 				tone: "warning" as const
 			};
 		case "ballot-clarity-archive":
+		case "ballot-clarity-source-record":
 			return {
-				label: "Supporting record",
+				label: "Ballot Clarity source",
 				tone: "warning" as const
 			};
 		case "commercial-provider":

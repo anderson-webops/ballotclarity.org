@@ -314,7 +314,7 @@ const curatedSourceDefinitions: CuratedSourceDefinition[] = [
 		usedFor: "Official tool panels, election verification routing, and place-specific authority links carried across results pages."
 	},
 	{
-		authority: "ballot-clarity-archive",
+		authority: "ballot-clarity-source-record",
 		geographicScope: "Ballot Clarity public product layer",
 		id: "ballot-clarity-methodology",
 		limitations: [
@@ -351,6 +351,7 @@ export function mapAuthorityToPublisherType(authority: SourceAuthority): SourceP
 		case "candidate-campaign":
 			return "campaign";
 		case "ballot-clarity-archive":
+		case "ballot-clarity-source-record":
 			return "ballot-clarity source record";
 		case "open-data":
 		default:

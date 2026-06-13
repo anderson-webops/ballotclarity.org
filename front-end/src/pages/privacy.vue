@@ -70,13 +70,13 @@ const providerDisclosureSections = [
 	{
 		body: [
 			"District and representative attachment may use Open States together with Ballot Clarity's reviewed local-officeholder records.",
-			"These calls support district matching, officeholder identity, chamber or jurisdiction context, and direct representative routes."
+			"These requests support district matching, officeholder identity, chamber or jurisdiction context, and representative pages."
 		],
 		title: "Representative and district matching providers"
 	},
 	{
 		body: [
-			"Representative profile enrichment may query Congress.gov, OpenFEC, and LDA.gov once a route or lookup has already resolved a person or officeholder record.",
+			"Representative profile enrichment may query Congress.gov, OpenFEC, and LDA.gov once a page or lookup has already resolved a person or officeholder record.",
 			"Those requests are used for federal office context, campaign-finance detail, and lobbying or disclosure context. They are not used for advertising or profiling."
 		],
 		title: "Federal office, finance, and disclosure providers"
@@ -98,7 +98,7 @@ const useSections = [
 ];
 
 const sharingSections = [
-	"Ballot Clarity discloses lookup or route-derived data only to the service providers and public-interest civic-data systems needed to produce the requested page or official verification result.",
+	"Ballot Clarity discloses lookup or page-derived data only to the service providers and public-interest civic-data systems needed to produce the requested page or official verification result.",
 	`Third-party recipients in active flows include the U.S. Census Geocoder, Google Civic Information API, Open States, Congress.gov, OpenFEC, LDA.gov, and ${analyticsServiceDisclosure}, plus hosting, logging, and delivery providers needed to run the service. Optional ballot-content providers are disclosed on the data-sources page and are active recipients only when configured.`,
 	"Ballot Clarity does not disclose address lookup input to advertising networks and is not designed to sell or share personal data for cross-context behavioral advertising.",
 	"When you follow external source links, official agencies, filing systems, campaigns, or other third-party sites operate under their own privacy practices.",

@@ -930,12 +930,12 @@ function buildRepresentativeSources(context: ActiveNationwideLookupContext, repr
 
 function buildFallbackRouteSource(id: string, title: string, updatedAt: string) {
 	return toSource({
-		authority: "ballot-clarity-archive",
+		authority: "ballot-clarity-source-record",
 		date: updatedAt,
 		id,
-		note: "This public route is available, but it still needs a current lookup or local guide to attach fuller detail.",
-		publisher: "Ballot Clarity route model",
-		sourceSystem: "Ballot Clarity results layer",
+		note: "This public page is available, but it still needs a current lookup or local guide to attach fuller detail.",
+		publisher: "Ballot Clarity page model",
+		sourceSystem: "Ballot Clarity results pages",
 		title,
 		url: "/coverage",
 	});

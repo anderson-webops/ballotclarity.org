@@ -141,6 +141,7 @@ function collectElectionSources(election: Election | null, jurisdiction: Jurisdi
 const ballotClarityArchivePattern = /ballot clarity.*archive/i;
 const demoPattern = /\bdemo\b/i;
 const referenceArchivePattern = /reference[-\s]archive/i;
+const stagedReviewPattern = /staged[-\s]review/i;
 
 function isReferenceArchiveSource(source: Source) {
 	return source.authority === "ballot-clarity-archive"
@@ -148,6 +149,9 @@ function isReferenceArchiveSource(source: Source) {
 		|| referenceArchivePattern.test(source.publisher)
 		|| referenceArchivePattern.test(source.title)
 		|| referenceArchivePattern.test(source.url)
+		|| stagedReviewPattern.test(source.sourceSystem)
+		|| stagedReviewPattern.test(source.publisher)
+		|| stagedReviewPattern.test(source.title)
 		|| ballotClarityArchivePattern.test(source.sourceSystem)
 		|| ballotClarityArchivePattern.test(source.publisher);
 }

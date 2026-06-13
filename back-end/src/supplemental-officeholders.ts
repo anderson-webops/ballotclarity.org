@@ -151,7 +151,7 @@ const tylerClancyOpenStatesSource: Source = {
 	authority: "nonprofit-provider",
 	date: reviewedAt,
 	id: "supplemental:tyler-clancy:openstates",
-	note: "Reviewed state officeholder snapshot retained so this public route can stay available even when live Open States route lookup is unavailable.",
+	note: "Reviewed state officeholder snapshot retained so this public page can stay available even when live Open States lookup is unavailable.",
 	publisher: "Open States",
 	sourceSystem: "Open States officeholder snapshot",
 	title: "Tyler Clancy current officeholder record",
@@ -163,7 +163,7 @@ const kevenStrattonOpenStatesSource: Source = {
 	authority: "nonprofit-provider",
 	date: reviewedAt,
 	id: "supplemental:keven-stratton:openstates",
-	note: "Reviewed state officeholder snapshot retained so this public route can stay available even when live Open States route lookup is unavailable.",
+	note: "Reviewed state officeholder snapshot retained so this public page can stay available even when live Open States lookup is unavailable.",
 	publisher: "Open States",
 	sourceSystem: "Open States officeholder snapshot",
 	title: "Keven Stratton current officeholder record",
@@ -175,7 +175,7 @@ const shawnStillBioSource: Source = {
 	authority: "official-government",
 	date: reviewedAt,
 	id: "supplemental:shawn-still:bio",
-	note: "Reviewed Georgia Senate member bio retained so this public route can stay source-backed even when live provider lookup is unavailable.",
+	note: "Reviewed Georgia Senate member bio retained so this public page can stay source-backed even when live provider lookup is unavailable.",
 	publisher: "Georgia General Assembly",
 	sourceSystem: "Georgia General Assembly member bio",
 	title: "Senator Shawn Still bio",
@@ -199,7 +199,7 @@ const shawnStillCommitteeSource: Source = {
 	authority: "official-government",
 	date: shawnStillCommitteeListDate,
 	id: "supplemental:shawn-still:committee-list",
-	note: "Current Georgia Senate committee list reviewed for committee membership context on this route.",
+	note: "Current Georgia Senate committee list reviewed for committee membership context on this page.",
 	publisher: "Georgia General Assembly",
 	sourceSystem: "Georgia Senate committee list",
 	title: "2025 Georgia Senate committee list",
@@ -235,7 +235,7 @@ const scottHiltonBioSource: Source = {
 	authority: "official-government",
 	date: reviewedAt,
 	id: "supplemental:scott-hilton:bio",
-	note: "Reviewed Georgia House member bio retained so this public route can stay source-backed even when live provider lookup is unavailable.",
+	note: "Reviewed Georgia House member bio retained so this public page can stay source-backed even when live provider lookup is unavailable.",
 	publisher: "Georgia General Assembly",
 	sourceSystem: "Georgia House member bio",
 	title: "Rep. Scott Hilton bio",
@@ -455,14 +455,14 @@ const supplementalOfficeholders: SupplementalOfficeholderRecord[] = [
 		districtType: "state-house",
 		enrichment: {
 			methodologyNotes: [
-				"Ballot Clarity is still relying on a reviewed Open States officeholder snapshot for this route, so legislative-action, finance, and disclosure depth remains limited until a reviewed Utah-specific source is attached.",
+				"Ballot Clarity is still relying on a reviewed Open States officeholder snapshot for this page, so legislative-action, finance, and disclosure depth remains limited until a reviewed Utah-specific source is attached.",
 			],
 			officeContext: {
 				chamberLabel: "State House",
 				districtLabel: "State House District 60",
 				jurisdictionLabel: "Utah",
 				referenceLinks: [
-					buildExternalLink("Open States officeholder record", tylerClancyOpenStatesSource.url, "Provider-backed public officeholder record retained for route stability."),
+					buildExternalLink("Open States officeholder record", tylerClancyOpenStatesSource.url, "Provider-backed public officeholder record retained for page stability."),
 				],
 			},
 		},
@@ -490,14 +490,14 @@ const supplementalOfficeholders: SupplementalOfficeholderRecord[] = [
 		districtType: "state-senate",
 		enrichment: {
 			methodologyNotes: [
-				"Ballot Clarity is still relying on a reviewed Open States officeholder snapshot for this route, so legislative-action, finance, and disclosure depth remains limited until a reviewed Utah-specific source is attached.",
+				"Ballot Clarity is still relying on a reviewed Open States officeholder snapshot for this page, so legislative-action, finance, and disclosure depth remains limited until a reviewed Utah-specific source is attached.",
 			],
 			officeContext: {
 				chamberLabel: "State Senate",
 				districtLabel: "State Senate District 24",
 				jurisdictionLabel: "Utah",
 				referenceLinks: [
-					buildExternalLink("Open States officeholder record", kevenStrattonOpenStatesSource.url, "Provider-backed public officeholder record retained for route stability."),
+					buildExternalLink("Open States officeholder record", kevenStrattonOpenStatesSource.url, "Provider-backed public officeholder record retained for page stability."),
 				],
 			},
 		},
@@ -537,13 +537,13 @@ const supplementalOfficeholders: SupplementalOfficeholderRecord[] = [
 					"supplemental:shawn-still:action:absenteeism-study",
 					"Served on Senate absenteeism study committee",
 					shawnStillAbsenteeismReportDate,
-					"An official Georgia Senate study-committee report lists Shawn Still as a member of the committee on combatting chronic absenteeism in schools, attaching education and attendance-policy context to this route.",
+					"An official Georgia Senate study-committee report lists Shawn Still as a member of the committee on combatting chronic absenteeism in schools, attaching education and attendance-policy context to this page.",
 					"Reviewed Georgia Senate report attaches school-attendance policy work to Still's public person page.",
 					[shawnStillAbsenteeismSource],
 				),
 			],
 			methodologyNotes: [
-				"Georgia Senate office assignments, committee lists, and study-committee reports are attached on this route when Ballot Clarity has reviewed them as stable official state-legislative sources.",
+				"Georgia Senate office assignments, committee lists, and study-committee reports are attached on this page when Ballot Clarity has reviewed them as stable official state-legislative sources.",
 			],
 			officeContext: {
 				chamberLabel: "State Senate",
@@ -559,8 +559,8 @@ const supplementalOfficeholders: SupplementalOfficeholderRecord[] = [
 				officialOfficeAddress: "421-D CAP, Atlanta, GA 30334",
 				officialPhone: "(404) 656-7127",
 				referenceLinks: [
-					buildExternalLink("Georgia Senate member bio", shawnStillBioSource.url, "Official Georgia General Assembly biography retained for this public route."),
-					buildExternalLink("Georgia Senate office assignments", shawnStillOfficeAssignmentsSource.url, "Current office location and phone for the Georgia Senate member route."),
+					buildExternalLink("Georgia Senate member bio", shawnStillBioSource.url, "Official Georgia General Assembly biography retained for this public page."),
+					buildExternalLink("Georgia Senate office assignments", shawnStillOfficeAssignmentsSource.url, "Current office location and phone for the Georgia Senate member page."),
 					buildExternalLink("Georgia Senate committee list", shawnStillCommitteeSource.url, "Current committee membership list for the Georgia Senate."),
 					buildExternalLink("AI and child online safety study report", shawnStillAiReportSource.url, "Official study-committee report listing Shawn Still as co-chair."),
 					buildExternalLink("Absenteeism study report", shawnStillAbsenteeismSource.url, "Official study-committee report listing Shawn Still as a member."),
@@ -591,7 +591,7 @@ const supplementalOfficeholders: SupplementalOfficeholderRecord[] = [
 			},
 		],
 		provenanceLabel: "Georgia General Assembly member bio",
-		provenanceNote: "This route is backed by a reviewed Georgia General Assembly member bio retained as a stable public state-officeholder record.",
+		provenanceNote: "This page is backed by a reviewed Georgia General Assembly member bio retained as a stable public state-officeholder record.",
 		slug: "shawn-still",
 		sourceSystem: "Georgia General Assembly member bio",
 		sources: [
@@ -631,7 +631,7 @@ const supplementalOfficeholders: SupplementalOfficeholderRecord[] = [
 					"Advanced the Distraction-Free Education Act",
 					scottHiltonHb340Date,
 					"Georgia House daily reporting shows Scott Hilton as the author of HB 340, the Distraction-Free Education Act, which advanced with Education Committee action and a House floor vote in 2025.",
-					"Official Georgia House legislative reporting attaches current education-policy action to Hilton's public route.",
+					"Official Georgia House legislative reporting attaches current education-policy action to Hilton's public page.",
 					[scottHiltonHb340Source, scottHiltonEndOfSessionSource],
 				),
 				buildAction(
@@ -639,7 +639,7 @@ const supplementalOfficeholders: SupplementalOfficeholderRecord[] = [
 					"Moved a historic-structure tax credit bill through committee",
 					scottHiltonHb376Date,
 					"Georgia House daily reporting lists Scott Hilton as the author of HB 376, a tax-credit bill on rehabilitation of certified structures that received committee action in 2025.",
-					"Official Georgia House legislative reporting attaches fiscal and tax-policy work to Hilton's public route.",
+					"Official Georgia House legislative reporting attaches fiscal and tax-policy work to Hilton's public page.",
 					[scottHiltonHb376Source],
 				),
 			],
@@ -652,7 +652,7 @@ const supplementalOfficeholders: SupplementalOfficeholderRecord[] = [
 				),
 			],
 			methodologyNotes: [
-				"Georgia House member directories and legislative daily reports are attached on this route where Ballot Clarity has reviewed stable official legislative records.",
+				"Georgia House member directories and legislative daily reports are attached on this page where Ballot Clarity has reviewed stable official legislative records.",
 				"Georgia state lobbying and disclosure context is attached only when Ballot Clarity can tie a reviewed public filing directly to the officeholder identity record.",
 			],
 			officeContext: {
@@ -672,8 +672,8 @@ const supplementalOfficeholders: SupplementalOfficeholderRecord[] = [
 				officialOfficeAddress: "504-A CLOB, 18 Capitol Square, Atlanta, GA 30334",
 				officialPhone: "(404) 656-0188",
 				referenceLinks: [
-					buildExternalLink("Georgia House member bio", scottHiltonBioSource.url, "Official Georgia General Assembly biography retained for this public route."),
-					buildExternalLink("Georgia House member directory", scottHiltonDirectorySource.url, "Current office, phone, email, and committee assignments for the Georgia House member route."),
+					buildExternalLink("Georgia House member bio", scottHiltonBioSource.url, "Official Georgia General Assembly biography retained for this public page."),
+					buildExternalLink("Georgia House member directory", scottHiltonDirectorySource.url, "Current office, phone, email, and committee assignments for the Georgia House member page."),
 					buildExternalLink("HB 340 daily report", scottHiltonHb340Source.url, "Official Georgia House daily report for Hilton's education bill."),
 					buildExternalLink("HB 376 daily report", scottHiltonHb376Source.url, "Official Georgia House daily report for Hilton's tax-credit legislation."),
 					buildExternalLink("Georgia lobbyist expenditure filing", scottHiltonLobbyingSource.url, "Reviewed state disclosure record naming Scott Hilton."),
@@ -704,7 +704,7 @@ const supplementalOfficeholders: SupplementalOfficeholderRecord[] = [
 			},
 		],
 		provenanceLabel: "Georgia House member bio",
-		provenanceNote: "This route is backed by a reviewed Georgia House member bio retained as a stable public state-officeholder record.",
+		provenanceNote: "This page is backed by a reviewed Georgia House member bio retained as a stable public state-officeholder record.",
 		slug: "scott-hilton",
 		sourceSystem: "Georgia House member bio",
 		sources: [
@@ -732,7 +732,7 @@ const supplementalOfficeholders: SupplementalOfficeholderRecord[] = [
 					"Marked a major Renew the District redevelopment milestone",
 					robbPittsRenewDistrictDate,
 					"An official Fulton County news release says Chairman Robb Pitts joined county leaders to mark a major milestone in the $180 million-plus Renew the District initiative, framing the work around safety, redevelopment, airport modernization, and long-term economic growth.",
-					"Official county reporting attaches redevelopment and economic-growth action context to Pitts' public route.",
+					"Official county reporting attaches redevelopment and economic-growth action context to Pitts' public page.",
 					[robbPittsRenewDistrictSource],
 				),
 				buildAction(
@@ -740,12 +740,12 @@ const supplementalOfficeholders: SupplementalOfficeholderRecord[] = [
 					"Directed county hiring priority for displaced federal workers",
 					robbPittsHiringDate,
 					"An official Fulton County news release says Pitts directed the county to prioritize interviews for federal workers affected by job cuts and urged local governments and employers to do the same.",
-					"Official county reporting attaches workforce and public-employment action context to Pitts' public route.",
+					"Official county reporting attaches workforce and public-employment action context to Pitts' public page.",
 					[robbPittsHiringSource],
 				),
 			],
 			methodologyNotes: [
-				"County officeholder routes can attach reviewed official county news and profile pages when Ballot Clarity has verified them as stable public records.",
+				"County officeholder pages can attach reviewed official county news and profile pages when Ballot Clarity has verified them as stable public records.",
 			],
 			officeContext: {
 				chamberLabel: "County commission",
@@ -776,7 +776,7 @@ const supplementalOfficeholders: SupplementalOfficeholderRecord[] = [
 		officialWebsiteUrl: "https://www.fultoncountyga.gov/commissioners/robb-pitts",
 		party: "Nonpartisan",
 		provenanceLabel: "Official county commissioner directory",
-		provenanceNote: "This route is backed by the official county commissioner directory rather than a generalized provider snapshot.",
+		provenanceNote: "This page is backed by the official county commissioner directory rather than a generalized provider snapshot.",
 		slug: "robb-pitts",
 		sourceSystem: "Official county commissioner directory",
 		sources: [
@@ -801,7 +801,7 @@ const supplementalOfficeholders: SupplementalOfficeholderRecord[] = [
 					"Backed Johns Creek Town Center redevelopment at Medley groundbreaking",
 					johnBradberryMedleyDate,
 					"An official Johns Creek news release quotes Mayor John Bradberry describing the Medley groundbreaking as a major step toward delivering the city's long-planned town center vision.",
-					"Official city reporting attaches redevelopment and town-center action context to Bradberry's public route.",
+					"Official city reporting attaches redevelopment and town-center action context to Bradberry's public page.",
 					[johnBradberryMedleySource],
 				),
 				buildAction(
@@ -809,12 +809,12 @@ const supplementalOfficeholders: SupplementalOfficeholderRecord[] = [
 					"Joined groundbreaking for McGinnis Ferry Road widening",
 					johnBradberryRoadDate,
 					"An official Johns Creek news release quotes Bradberry on the McGinnis Ferry Road widening project and the city partnership behind the transportation build-out.",
-					"Official city reporting attaches transportation and intergovernmental project context to Bradberry's public route.",
+					"Official city reporting attaches transportation and intergovernmental project context to Bradberry's public page.",
 					[johnBradberryRoadSource],
 				),
 			],
 			methodologyNotes: [
-				"City officeholder routes can attach reviewed official city profile pages and city news updates when Ballot Clarity has verified them as stable public records.",
+				"City officeholder pages can attach reviewed official city profile pages and city news updates when Ballot Clarity has verified them as stable public records.",
 			],
 			officeContext: {
 				chamberLabel: "City government",
@@ -843,7 +843,7 @@ const supplementalOfficeholders: SupplementalOfficeholderRecord[] = [
 		officialWebsiteUrl: "https://johnscreekga.gov/government/city-council/mayor-john-bradberry/",
 		party: "Nonpartisan",
 		provenanceLabel: "Official city mayor page",
-		provenanceNote: "This route is backed by the official mayor page Ballot Clarity reviewed for the current city officeholder record.",
+		provenanceNote: "This page is backed by the official mayor page Ballot Clarity reviewed for the current city officeholder record.",
 		slug: "john-bradberry",
 		sourceSystem: "Official city mayor page",
 		sources: [
@@ -864,14 +864,14 @@ const supplementalOfficeholders: SupplementalOfficeholderRecord[] = [
 		districtType: "county",
 		enrichment: {
 			methodologyNotes: [
-				"Ballot Clarity currently has reviewed county identity and office context for this route, but not a reviewed Utah County finance, disclosure, or issue feed yet.",
+				"Ballot Clarity currently has reviewed county identity and office context for this page, but not a reviewed Utah County finance, disclosure, or issue feed yet.",
 			],
 			officeContext: {
 				chamberLabel: "County commission",
 				districtLabel: "Utah County",
 				jurisdictionLabel: "Utah County, Utah",
 				referenceLinks: [
-					buildExternalLink("Utah County Commission", skylerBeltranSource.url, "Official county commission page reviewed for this officeholder route."),
+					buildExternalLink("Utah County Commission", skylerBeltranSource.url, "Official county commission page reviewed for this officeholder record."),
 				],
 			},
 		},
@@ -883,7 +883,7 @@ const supplementalOfficeholders: SupplementalOfficeholderRecord[] = [
 		officialWebsiteUrl: "https://commission.utahcounty.gov/",
 		party: "Nonpartisan",
 		provenanceLabel: "Official county commission page",
-		provenanceNote: "This route is backed by the official county commission page Ballot Clarity reviewed for the current county chair record.",
+		provenanceNote: "This page is backed by the official county commission page Ballot Clarity reviewed for the current county chair record.",
 		slug: "skyler-beltran",
 		sourceSystem: "Official county commission page",
 		sources: [skylerBeltranSource],
@@ -924,12 +924,12 @@ const supplementalOfficeholders: SupplementalOfficeholderRecord[] = [
 					"Launched Provo's new Transparency Portal",
 					marshaJudkinsTransparencyDate,
 					"An official Provo City article says the new Transparency Portal was launched under Mayor Judkins to make commonly requested public information easier for residents and businesses to access in one place.",
-					"Official city reporting attaches transparency and public-information action context to Judkins' public route.",
+					"Official city reporting attaches transparency and public-information action context to Judkins' public page.",
 					[marshaJudkinsTransparencySource],
 				),
 			],
 			methodologyNotes: [
-				"City officeholder routes can attach reviewed official city finance disclosures when Ballot Clarity can tie the filing directly to the current officeholder record.",
+				"City officeholder pages can attach reviewed official city finance disclosures when Ballot Clarity can tie the filing directly to the current officeholder record.",
 			],
 			officeContext: {
 				chamberLabel: "City government",
@@ -960,7 +960,7 @@ const supplementalOfficeholders: SupplementalOfficeholderRecord[] = [
 		officialWebsiteUrl: "https://www.provo.gov/433/Mayors-Office",
 		party: "Nonpartisan",
 		provenanceLabel: "Official mayor's office page",
-		provenanceNote: "This route is backed by the official mayor's office page Ballot Clarity reviewed for the current city officeholder record.",
+		provenanceNote: "This page is backed by the official mayor's office page Ballot Clarity reviewed for the current city officeholder record.",
 		slug: "marsha-judkins",
 		sourceSystem: "Official mayor's office page",
 		sources: [

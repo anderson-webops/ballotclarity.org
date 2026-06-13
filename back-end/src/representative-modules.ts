@@ -628,7 +628,7 @@ async function resolveFundingAttachment(
 				status: buildEnrichmentStatus(
 					"unavailable",
 					"no_state_finance_source",
-					`No reviewed state campaign-finance source is configured for ${stateName || "this state"} legislative routes yet.`,
+					`No reviewed state campaign-finance source is configured for ${stateName || "this state"} legislative officeholders yet.`,
 					"State finance source",
 				),
 			};
@@ -640,7 +640,7 @@ async function resolveFundingAttachment(
 				status: buildEnrichmentStatus(
 					"unavailable",
 					"no_local_finance_source",
-					"No reviewed local campaign-finance source is configured for this county or city officeholder route yet.",
+					"No reviewed local campaign-finance source is configured for this county or city officeholder yet.",
 					"Local finance source",
 				),
 			};
@@ -663,7 +663,7 @@ async function resolveFundingAttachment(
 			status: buildEnrichmentStatus(
 				"unavailable",
 				"provider_unconfigured",
-				"OpenFEC finance data is not available for this route right now.",
+				"OpenFEC finance data is not available for this officeholder right now.",
 				"OpenFEC",
 			),
 		};
@@ -827,7 +827,7 @@ async function resolveInfluenceAttachment(
 				status: buildEnrichmentStatus(
 					"unavailable",
 					"no_state_disclosure_source",
-					`No reviewed state lobbying or disclosure source is configured for ${stateName || "this"} legislative route yet.`,
+					`No reviewed state lobbying or disclosure source is configured for this ${stateName || "state"} legislative officeholder yet.`,
 					"State disclosure source",
 				),
 			};
@@ -839,7 +839,7 @@ async function resolveInfluenceAttachment(
 				status: buildEnrichmentStatus(
 					"unavailable",
 					"no_local_disclosure_source",
-					"No reviewed local lobbying, ethics, or disclosure source is configured for this county or city officeholder route yet.",
+					"No reviewed local lobbying, ethics, or disclosure source is configured for this county or city officeholder yet.",
 					"Local disclosure source",
 				),
 			};
@@ -862,7 +862,7 @@ async function resolveInfluenceAttachment(
 			status: buildEnrichmentStatus(
 				"unavailable",
 				"provider_unconfigured",
-				"LDA.gov disclosure data is not available for this route right now.",
+				"LDA.gov disclosure data is not available for this officeholder right now.",
 				"LDA.gov",
 			),
 		};
@@ -956,7 +956,7 @@ async function resolveInfluenceAttachment(
 			status: buildEnrichmentStatus(
 				"unavailable",
 				"provider_returned_no_records",
-				"LDA.gov returned reports for this route, but none of the contribution items survived Ballot Clarity's committee or officeholder matching rules.",
+				"LDA.gov returned reports for this officeholder, but none of the contribution items survived Ballot Clarity's committee or officeholder matching rules.",
 				"LDA.gov",
 			),
 		};
@@ -1065,7 +1065,7 @@ function buildCongressSources(member: CongressMemberDetail): Source[] {
 			authority: "official-government",
 			date: sourceDate,
 			id: `congress:member:${member.bioguideId}`,
-			note: "Congress.gov current member record matched to this officeholder route.",
+			note: "Congress.gov current member record matched to this officeholder profile.",
 			publisher: "Congress.gov",
 			sourceSystem: "Congress.gov member detail",
 			title: member.directOrderName,
@@ -1168,12 +1168,12 @@ async function resolveCongressAttachment(
 			"available",
 			"attached",
 			typeof detail.sponsoredLegislationCount === "number" || typeof detail.cosponsoredLegislationCount === "number"
-				? `Congress.gov attached current legislative context for this route, including sponsorship counts${term ? ` from the ${term.congress}th Congress` : ""}.`
-				: "Congress.gov attached the current federal member record for this route.",
+				? `Congress.gov attached current legislative context for this officeholder, including sponsorship counts${term ? ` from the ${term.congress}th Congress` : ""}.`
+				: "Congress.gov attached the current federal member record for this officeholder.",
 			"Congress.gov",
 		),
 		methodologyNotes: [
-			"Congress.gov is used on federal representative routes to attach official office context, current term context, and current legislative metadata when the officeholder crosswalk is reliable.",
+			"Congress.gov is used on federal representative pages to attach official office context, current term context, and current legislative metadata when the officeholder crosswalk is reliable.",
 		],
 		officeContext: {
 			...termOfficeContext,
@@ -1188,7 +1188,7 @@ async function resolveCongressAttachment(
 		officeContextStatus: buildEnrichmentStatus(
 			"available",
 			"attached",
-			"Congress.gov confirmed the current federal office context for this route and attached the official office website when available.",
+			"Congress.gov confirmed the current federal office context for this officeholder and attached the official office website when available.",
 			"Congress.gov",
 		),
 		sources,
@@ -1227,7 +1227,7 @@ function buildStatusNote({
 	if (layer === "local")
 		return "This profile reflects a current county or city officeholder record with reviewed official-source context. Local finance, disclosure, and issue modules still attach only where Ballot Clarity has a reviewed local source.";
 
-	return "This profile reflects the current officeholder record Ballot Clarity could verify for this route. Verify critical details against the attached provider record and official election tools.";
+	return "This profile reflects the current officeholder record Ballot Clarity could verify for this page. Verify critical details against the attached provider record and official election tools.";
 }
 
 function inferOfficeContextChamberLabel(match: LocationRepresentativeMatch) {
@@ -1265,7 +1265,7 @@ function buildOfficeContextStatus(
 		return buildEnrichmentStatus(
 			"available",
 			"attached",
-			`${match.sourceSystem || "The current state officeholder source"} supplied the current chamber, district, party, and jurisdiction context for this state legislator route.`,
+			`${match.sourceSystem || "The current state officeholder source"} supplied the current chamber, district, party, and jurisdiction context for this state legislator.`,
 			match.sourceSystem || "State officeholder record",
 		);
 	}
@@ -1274,7 +1274,7 @@ function buildOfficeContextStatus(
 		return buildEnrichmentStatus(
 			"available",
 			"attached",
-			`${match.sourceSystem || "The current local officeholder source"} supplied the current office title, jurisdiction, and official public-record context for this county or city officeholder route.`,
+			`${match.sourceSystem || "The current local officeholder source"} supplied the current office title, jurisdiction, and official public-record context for this county or city officeholder.`,
 			match.sourceSystem || "Local officeholder record",
 		);
 	}
@@ -1282,7 +1282,7 @@ function buildOfficeContextStatus(
 	return buildEnrichmentStatus(
 		"available",
 		"attached",
-		`${match.sourceSystem || "Ballot Clarity"} supplied the current office, party, and district context for this representative route.`,
+		`${match.sourceSystem || "Ballot Clarity"} supplied the current office, party, and district context for this representative.`,
 		match.sourceSystem || undefined,
 	);
 }
@@ -1308,8 +1308,8 @@ function buildLegislativeContextStatus(
 			"unavailable",
 			isIdentityOnlyProvider ? "identity_only_provider" : "no_state_legislative_source",
 			isIdentityOnlyProvider
-				? `${sourceLabel} currently supports identity, chamber, party, and district context for this route, but Ballot Clarity does not yet have a reviewed ${contextStateName} legislative-activity, vote, or statements feed attached here.`
-				: `${sourceLabel} supports this route's state officeholding identity and public record context, but Ballot Clarity does not yet have a reviewed ${contextStateName} legislative-activity, vote, or public-statements feed attached here.`,
+				? `${sourceLabel} currently supports identity, chamber, party, and district context for this officeholder, but Ballot Clarity does not yet have a reviewed ${contextStateName} legislative-activity, vote, or statements feed attached here.`
+				: `${sourceLabel} supports this state officeholding identity and public record context, but Ballot Clarity does not yet have a reviewed ${contextStateName} legislative-activity, vote, or public-statements feed attached here.`,
 			sourceLabel,
 		);
 	}
@@ -1318,7 +1318,7 @@ function buildLegislativeContextStatus(
 		return buildEnrichmentStatus(
 			"unavailable",
 			"no_local_legislative_source",
-			"The current county or city officeholder record for this route resolves identity and office context, but Ballot Clarity does not yet have a reviewed local issue, action, or disclosure feed attached here.",
+			"The current county or city officeholder record resolves identity and office context, but Ballot Clarity does not yet have a reviewed local issue, action, or disclosure feed attached here.",
 			match.sourceSystem || "Local officeholder record",
 		);
 	}
@@ -1327,7 +1327,7 @@ function buildLegislativeContextStatus(
 		"unavailable",
 		target ? "no_provider_match" : "federal_only_provider",
 		target
-			? "Ballot Clarity could not verify an additional Congress.gov member record for this route, so legislative context remains limited to the current officeholder identity record."
+			? "Ballot Clarity could not verify an additional Congress.gov member record for this officeholder, so legislative context remains limited to the current officeholder identity record."
 			: "Detailed Congress.gov activity is currently available only for federal officeholders. This page still shows the current office context.",
 		"Congress.gov",
 	);
@@ -1340,7 +1340,7 @@ function buildDerivedOfficeContext(
 ): PersonProfileOfficeContext | undefined {
 	const referenceLinks = [
 		...(attachment.officeContext?.referenceLinks ?? []),
-		buildReferenceLink("Official office website", response.officialWebsiteUrl, "Official website carried on this public officeholder route."),
+		buildReferenceLink("Official office website", response.officialWebsiteUrl, "Official website carried on this public officeholder page."),
 		buildReferenceLink("Provider record", response.openstatesUrl, "Provider-backed public record for this officeholder."),
 	].filter((link): link is ExternalLink => Boolean(link));
 	const mergedContext: PersonProfileOfficeContext = {
@@ -1416,7 +1416,7 @@ export function createRepresentativeModuleResolver({
 			catch (error) {
 				congressErrorStatus = buildProviderErrorStatus(
 					"Congress.gov",
-					"Ballot Clarity could not attach additional Congress.gov office or legislative context for this route because the provider request failed.",
+					"Ballot Clarity could not attach additional Congress.gov office or legislative context for this officeholder because the provider request failed.",
 					error,
 				);
 			}
@@ -1429,7 +1429,7 @@ export function createRepresentativeModuleResolver({
 					attachment: null,
 					status: buildProviderErrorStatus(
 						"OpenFEC",
-						"Ballot Clarity could not attach campaign-finance records for this route because the OpenFEC request failed.",
+						"Ballot Clarity could not attach campaign-finance records for this officeholder because the OpenFEC request failed.",
 						error,
 					),
 				};
@@ -1450,7 +1450,7 @@ export function createRepresentativeModuleResolver({
 					attachment: null,
 					status: buildProviderErrorStatus(
 						"LDA.gov",
-						"Ballot Clarity could not attach lobbying or disclosure context for this route because the LDA.gov request failed.",
+						"Ballot Clarity could not attach lobbying or disclosure context for this officeholder because the LDA.gov request failed.",
 						error,
 					),
 				};
@@ -1517,10 +1517,10 @@ export function createRepresentativeModuleResolver({
 						? ["Influence context is attached through LD-203 contribution reports matched to the officeholder's current federal campaign committee."]
 						: []),
 					...(officeholderLayer === "state"
-						? ["State officeholder routes attach reviewed identity and district context even when Ballot Clarity does not yet have a state-specific finance, disclosure, or legislative-activity feed for that jurisdiction."]
+						? ["State officeholder pages attach reviewed identity and district context even when Ballot Clarity does not yet have a state-specific finance, disclosure, or legislative-activity feed for that jurisdiction."]
 						: []),
 					...(officeholderLayer === "local"
-						? ["County and city officeholder routes attach reviewed official-source identity and office context even when Ballot Clarity does not yet have a local finance, disclosure, or issue feed for that jurisdiction."]
+						? ["County and city officeholder pages attach reviewed official-source identity and office context even when Ballot Clarity does not yet have a local finance, disclosure, or issue feed for that jurisdiction."]
 						: []),
 				],
 				officeContext: congressAttachment?.officeContext,

@@ -1030,7 +1030,7 @@ export function buildRouteFallbackDistrictRecordResponse(districtSlug: string): 
 	const updatedAt = new Date().toISOString();
 	const district = {
 		candidateCount: 0,
-		description: "This district route is available, but it still needs a current lookup or local guide to attach representatives, official links, and contest details.",
+		description: "This district page is available, but it still needs a current lookup or local guide to attach representatives, official links, and contest details.",
 		electionSlug: "nationwide-lookup",
 		href: `/districts/${districtSlug}`,
 		jurisdiction: deriveNationwideDistrictJurisdiction(districtSlug),
@@ -1067,7 +1067,7 @@ export function buildRouteFallbackDistrictRecordResponse(districtSlug: string): 
 		relatedContests: [],
 		representativeAvailabilityNote: buildDistrictRepresentativeAvailabilityNote(district, 0),
 		representatives: [],
-		sources: [buildFallbackRouteSource(`district:${districtSlug}:fallback`, `${inferDistrictTitleFromSlug(districtSlug)} route availability`, updatedAt)],
+		sources: [buildFallbackRouteSource(`district:${districtSlug}:fallback`, `${inferDistrictTitleFromSlug(districtSlug)} page availability`, updatedAt)],
 		updatedAt,
 	};
 }
@@ -1075,18 +1075,18 @@ export function buildRouteFallbackDistrictRecordResponse(districtSlug: string): 
 export function buildRouteFallbackPersonProfileResponse(representativeSlug: string): PersonProfileResponse {
 	const updatedAt = new Date().toISOString();
 	const name = inferRepresentativeNameFromSlug(representativeSlug);
-	const sources = [buildFallbackRouteSource(`representative:${representativeSlug}:fallback`, `${name} route availability`, updatedAt)];
+	const sources = [buildFallbackRouteSource(`representative:${representativeSlug}:fallback`, `${name} page availability`, updatedAt)];
 
 	return {
-		note: "This representative route is public, even when fuller office details are not attached yet.",
+		note: "This representative page is public, even when fuller office details are not attached yet.",
 		person: {
 			ballotStatusLabel: "Current ballot status not yet attached",
 			biography: [
 				{
-					id: `route:${representativeSlug}`,
+					id: `profile:${representativeSlug}`,
 					sources,
-					summary: "This public person route is available, but fuller office details are not attached yet.",
-					title: "Public route identity",
+					summary: "This public person page is available, but fuller office details are not attached yet.",
+					title: "Public page identity",
 				},
 			],
 			comparison: null,
@@ -1098,30 +1098,30 @@ export function buildRouteFallbackPersonProfileResponse(representativeSlug: stri
 				dataLastUpdatedAt: updatedAt,
 				nextReviewAt: updatedAt,
 				status: "up-to-date",
-				statusLabel: "Public route",
-				statusNote: "This route is available, but a current office record is not attached yet.",
+				statusLabel: "Public page",
+				statusNote: "This page is available, but a current office record is not attached yet.",
 			},
 			funding: null,
 			governmentLevel: null,
 			incumbent: true,
 			keyActions: [],
 			lobbyingContext: [],
-			location: "Public representative route",
+			location: "Public representative page",
 			methodologyNotes: [
-				"Representative routes stay public even when fuller office records are not attached yet.",
+				"Representative pages stay public even when fuller office records are not attached yet.",
 				"A current lookup can still add district confirmation and official election links.",
 			],
 			name,
 			officeDisplayLabel: "Office record pending provider crosswalk",
-			officeholderLabel: "Current officeholder route",
+			officeholderLabel: "Current officeholder page",
 			officeType: null,
 			officeSought: "Office record pending provider crosswalk",
 			onCurrentBallot: false,
 			party: "Unknown",
 			provenance: {
 				asOf: updatedAt,
-				label: "Representative route identity",
-				note: "This route is live, but a current officeholder record was not attached on this request.",
+				label: "Representative page identity",
+				note: "This page is live, but a current officeholder record was not attached on this request.",
 				source: "nationwide",
 				status: "inferred",
 			},
@@ -1135,14 +1135,14 @@ export function buildRouteFallbackPersonProfileResponse(representativeSlug: stri
 			whatWeDoNotKnow: [
 				buildTrustBullet(
 					"provider-crosswalk-pending",
-					"Current office, district confirmation, and person-level finance or influence records are not attached to this route yet.",
+					"Current office, district confirmation, and person-level finance or influence records are not attached to this page yet.",
 					sources,
 				),
 			],
 			whatWeKnow: [
 				buildTrustBullet(
-					"route-available",
-					"This public route is live and shows an honest unavailable state instead of failing.",
+					"profile-available",
+					"This public page is live and shows an honest unavailable state instead of failing.",
 					sources,
 				),
 			],

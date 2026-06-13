@@ -19,7 +19,7 @@ const electionOverviewTarget = selectedElection.value?.slug
 		: "/coverage";
 
 usePageSeo({
-	description: "Ballot Clarity routes users to the active election overview or reviewed ballot guide when one is available.",
+	description: "Ballot Clarity directs users to the active election overview or reviewed ballot guide when one is available.",
 	path: "/ballot",
 	robots: "noindex,follow",
 	title: "Ballot Guide"

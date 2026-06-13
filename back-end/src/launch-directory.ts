@@ -227,7 +227,7 @@ export async function buildLaunchDirectorySnapshot({
 			state: launchTargetProfile.state
 		},
 		notes: [
-			"The launch directory snapshot is an ingestion artifact for future district and representative routes. It is not yet the public read model.",
+			"The launch directory snapshot is an ingestion artifact for future district and representative pages. It is not yet the public read model.",
 			"OpenFEC and LDA remain pending because candidate-to-finance and influence crosswalks still need deliberate editorial mapping before they should drive public pages."
 		],
 		providerStatus: {
@@ -241,7 +241,7 @@ export async function buildLaunchDirectorySnapshot({
 				: createSkippedStatus("CONGRESS_API_KEY or DATA_API_KEY is not configured for launch-directory sync."),
 			googleCivic: googleCivic.status,
 			lda: {
-				detail: "LDA.gov is configured for diagnostics, but public influence pages still need a curated candidate-to-filing crosswalk before this source should flow into public route models.",
+				detail: "LDA.gov is configured for diagnostics, but public influence pages still need a curated candidate-to-filing crosswalk before this source should flow into public page models.",
 				recordCount: 0,
 				status: process.env.LDA_API_KEY?.trim() ? "pending-crosswalk" : "skipped",
 				updatedAt

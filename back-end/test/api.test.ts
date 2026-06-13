@@ -76,6 +76,23 @@ function buildRepresentativeMatch({
 	};
 }
 
+function assertNoReaderRouteWording(payload: unknown) {
+	const body = JSON.stringify(payload);
+	const blockedPhrases = [
+		/for this route/i,
+		/this route is/i,
+		/route availability/i,
+		/route identity/i,
+		/representative route/i,
+		/officeholder route/i,
+		/representative routes/i,
+		/officeholder routes/i,
+	];
+
+	for (const phrase of blockedPhrases)
+		assert.doesNotMatch(body, phrase);
+}
+
 function buildTestCoverageRepository(overrides: Partial<CoverageRepository> = {}): CoverageRepository {
 	return {
 		configuredSnapshotMissing: false,
@@ -2165,26 +2182,26 @@ test("lookup query backs /api/districts/:slug without relying on a saved cookie"
 	assert.match(body.note, /keeps district context, linked officials, and official election links visible for the current lookup/i);
 });
 
-test("direct district routes return a canonical public record instead of a lookup-required placeholder", async () => {
+test("direct district pages return a canonical public record instead of a lookup-required placeholder", async () => {
 	const response = await fetch(`${baseUrl}/api/districts/congressional-7`);
 	const body = await response.json();
 
 	assert.equal(response.status, 200);
 	assert.equal(body.mode, "nationwide");
 	assert.equal(body.district.slug, "congressional-7");
-	assert.equal(body.districtOriginLabel, "Canonical district route");
+	assert.equal(body.districtOriginLabel, "Canonical district page");
 	assert.match(body.district.title, /Congressional District 7/i);
 	assert.doesNotMatch(body.districtOriginNote, /lookup context required/i);
 });
 
-test("provider-style statewide district routes return a public district identity instead of a lookup-required placeholder", async () => {
+test("provider-style statewide district pages return a public district identity instead of a lookup-required placeholder", async () => {
 	const response = await fetch(`${baseUrl}/api/districts/senator-utah`);
 	const body = await response.json();
 
 	assert.equal(response.status, 200);
 	assert.equal(body.mode, "nationwide");
 	assert.equal(body.district.slug, "senator-utah");
-	assert.equal(body.districtOriginLabel, "Provider-qualified district route");
+	assert.equal(body.districtOriginLabel, "Provider-qualified district page");
 	assert.match(body.district.title, /Utah statewide Senate seat/i);
 	assert.equal(body.election.locationName, "Utah");
 	assert.equal(body.officialResources.length, 2);
@@ -2338,6 +2355,7 @@ test("direct representative routes return a stable provider-backed identity reco
 	assert.match(body.person.profileImages?.[0]?.url ?? "", /m001218_200\.jpg/i);
 	assert.equal(body.person.enrichmentStatus?.funding.reasonCode, "attached");
 	assert.equal(body.person.enrichmentStatus?.influence.reasonCode, "attached");
+	assertNoReaderRouteWording(body);
 });
 
 test("direct representative routes can resolve from federal providers even when Open States name lookup does not return a route match", async () => {
@@ -2378,6 +2396,7 @@ test("direct senator routes attach federal funding, influence, and Congress offi
 	assert.equal(body.person.enrichmentStatus?.funding.reasonCode, "attached");
 	assert.equal(body.person.enrichmentStatus?.influence.reasonCode, "attached");
 	assert.equal(body.person.enrichmentStatus?.legislativeContext.reasonCode, "attached");
+	assertNoReaderRouteWording(body);
 });
 
 test("state legislators expose a precise unavailable reason when federal finance and influence providers do not apply", async () => {
@@ -2400,6 +2419,7 @@ test("state legislators expose a precise unavailable reason when federal finance
 	assert.equal(body.person.enrichmentStatus?.officeContext.reasonCode, "attached");
 	assert.match(body.person.enrichmentStatus?.funding.summary ?? "", /state campaign-finance source configured/i);
 	assert.match(body.person.enrichmentStatus?.legislativeContext.summary ?? "", /identity, chamber, party, and district context/i);
+	assertNoReaderRouteWording(body);
 });
 
 test("supplemental state and local officeholder routes resolve as stable public person records with precise unavailable-state reasons", async () => {
@@ -2503,6 +2523,7 @@ test("state senator routes merge reviewed official state sources without driftin
 	assert.ok(body.person.biography.some((item: { title: string }) => /reviewed/i.test(item.title)));
 	assert.ok(body.person.sources.some((item: { sourceSystem?: string }) => /Georgia General Assembly member bio/i.test(item.sourceSystem ?? "")));
 	assert.doesNotMatch(body.person.officeSought, /U\.S\. Senate/i);
+	assertNoReaderRouteWording(body);
 });
 
 test("county and city officeholder routes expose normalized office context and precise local unavailable reasons", async () => {
@@ -2551,6 +2572,7 @@ test("direct representative routes degrade to a public fallback instead of 500 w
 	assert.equal(body.person.provenance.status, "inferred");
 	assert.match(body.person.summary, /representative page is public, but office, district, finance, and influence details are not attached yet/i);
 	assert.match(body.person.whatWeKnow[0]?.text ?? "", /honest unavailable state instead of failing/i);
+	assertNoReaderRouteWording(body);
 });
 
 test("GET /api/representatives/:slug returns a public fallback record when the contest package is still pending", async () => {
@@ -2559,11 +2581,12 @@ test("GET /api/representatives/:slug returns a public fallback record when the c
 
 	assert.equal(response.status, 200);
 	assert.equal(body.person.slug, "daniel-brooks");
-	assert.equal(body.person.officeholderLabel, "Current officeholder route");
+	assert.equal(body.person.officeholderLabel, "Current officeholder page");
 	assert.equal(body.person.provenance.status, "inferred");
 	assert.equal(body.person.funding, null);
 	assert.deepEqual(body.person.lobbyingContext, []);
 	assert.match(body.person.summary, /public, but office, district, finance, and influence details are not attached yet/i);
+	assertNoReaderRouteWording(body);
 });
 
 test("GET /api/ballot returns 404 for unknown elections", async () => {

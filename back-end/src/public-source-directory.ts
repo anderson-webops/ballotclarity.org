@@ -62,7 +62,7 @@ const curatedSourceDefinitions: CuratedSourceDefinition[] = [
 		publisher: "Open States / Plural",
 		publisherType: "public-interest",
 		primarySourceLabel: "Open Open States",
-		reviewNote: "Ballot Clarity reviews provider matching and public route attachment when representative identity or district crosswalk logic changes.",
+		reviewNote: "Ballot Clarity reviews provider matching and public page attachment when representative identity or district crosswalk logic changes.",
 		routeCitations: [
 			{ href: "/results", id: "results", label: "Results", type: "page" },
 			{ href: "/districts", id: "districts", label: "District pages", type: "page" },
@@ -80,10 +80,10 @@ const curatedSourceDefinitions: CuratedSourceDefinition[] = [
 		geographicScope: "United States federal offices",
 		id: "congress-gov",
 		limitations: [
-			"Applies only to federal congressional routes.",
+			"Applies only to federal congressional pages.",
 			"Congress context does not replace official election authorities for ballot verification.",
 		],
-		note: "Official federal legislative metadata used when a congressional route can be matched confidently.",
+		note: "Official federal legislative metadata used when a congressional page can be matched confidently.",
 		publisher: "Library of Congress",
 		publisherType: "official",
 		primarySourceLabel: "Open Congress.gov API",

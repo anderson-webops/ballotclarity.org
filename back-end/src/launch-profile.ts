@@ -161,22 +161,22 @@ export function buildCoverageResponse(
 						"Official state and county election tools returned by the active lookup"
 					],
 					id: "nationwide-results",
-					label: "Lookup and results routes",
+					label: "Lookup and results pages",
 					note: "District, representative, and person pages stay useful here even when a local guide is not active.",
 					routes: ["/results", "/districts", "/districts/<slug>", "/representatives", "/representatives/<slug>"],
 					status: "live-now",
-					summary: "These routes are the main public product when no local guide is active and use the saved lookup in the browser."
+					summary: "These pages are the main public product when no local guide is active and use the saved lookup in the browser."
 				},
 				{
 					activeSources: [
 						"Published local coverage snapshot only when one is verified and active"
 					],
 					id: "published-guides",
-					label: "Published local guide routes",
-					note: "These routes stay secondary until a verified local guide is active.",
+					label: "Published local guide pages",
+					note: "These pages stay secondary until a verified local guide is active.",
 					routes: ["/ballot", "/contest", "/candidate", "/measure", "/plan"],
 					status: "guide-dependent",
-					summary: "Ballot guide, contest, candidate, measure, and plan routes remain optional deeper layers rather than the default experience."
+					summary: "Ballot guide, contest, candidate, measure, and plan pages remain optional deeper layers rather than the default experience."
 				},
 				{
 					activeSources: [
@@ -184,7 +184,7 @@ export function buildCoverageResponse(
 						"Lookup-based representative records when a full local guide is not published"
 					],
 					id: "person-modules",
-					label: "Person, funding, and influence routes",
+					label: "Person, funding, and influence pages",
 					note: "Funding and influence modules remain conditional on reliable person-level linkage and should not be presented as universal coverage yet.",
 					routes: ["/representatives/<slug>", "/representatives/<slug>/funding", "/representatives/<slug>/influence", "/candidate/<slug>", "/candidate/<slug>/funding", "/candidate/<slug>/influence"],
 					status: "limited",
@@ -197,7 +197,7 @@ export function buildCoverageResponse(
 						"Public source directory and methodology pages"
 					],
 					id: "public-reference",
-					label: "Public reference routes",
+					label: "Public reference pages",
 					routes: ["/coverage", "/status", "/data-sources", "/corrections", "/help", "/methodology"],
 					status: "live-now",
 					summary: "These pages explain what is available and which public source layers are active."
@@ -212,7 +212,7 @@ export function buildCoverageResponse(
 			],
 			nextSteps: [
 				"Use lookup results and official election tools when they are available for a location.",
-				"Publish a verified local guide before exposing ballot, candidate, measure, or election routes as current coverage."
+				"Publish a verified local guide before presenting ballot, candidate, measure, or election pages as current coverage."
 			],
 			scopeNote: `Until a verified local guide is published, Ballot Clarity presents local guide coverage as unavailable instead of filling the gap with fixture or archive content. ${snapshotScopeNote}`.trim(),
 			supportedContentTypes: [],
@@ -246,8 +246,8 @@ export function buildCoverageResponse(
 					"Official state and county election tools returned by the active lookup"
 				],
 				id: "nationwide-results",
-				label: "Lookup and results routes",
-				note: "These routes should remain useful even outside the current published guide area.",
+				label: "Lookup and results pages",
+				note: "These pages should remain useful even outside the current published guide area.",
 				routes: ["/results", "/districts", "/districts/<slug>", "/representatives", "/representatives/<slug>"],
 				status: "live-now",
 				summary: "Lookup results remain the cross-page context layer for district matches, representative records, and official tools."
@@ -261,16 +261,16 @@ export function buildCoverageResponse(
 					"Official local election links tied to the active published guide"
 				],
 				id: "published-guides",
-				label: "Published local guide routes",
+				label: "Published local guide pages",
 				note: hasVerifiedContestPackage
-					? "Guide routes are deeper reading layers when a verified local snapshot is active."
-					: "Election overview and location hub routes are active now. Contest, candidate, measure, compare, and plan routes wait for verified local packaging.",
+					? "Guide pages are deeper reading layers when a verified local snapshot is active."
+					: "Election overview and location hub pages are active now. Contest, candidate, measure, compare, and plan pages wait for verified local packaging.",
 				routes: hasVerifiedContestPackage
 					? ["/ballot", "/contest", "/candidate", "/measure", "/plan", "/compare"]
 					: ["/elections", "/locations", "/ballot"],
 				status: hasVerifiedContestPackage ? "live-now" : "limited",
 				summary: hasVerifiedContestPackage
-					? "Ballot guide, contest, candidate, measure, compare, and plan routes are active here because a verified local package is published."
+					? "Ballot guide, contest, candidate, measure, compare, and plan pages are active here because a verified local package is published."
 					: "Election overview and location pages are active here because official local election links are published, but verified contest pages are still pending."
 			},
 			{
@@ -280,11 +280,11 @@ export function buildCoverageResponse(
 					"Lookup-based representative records when a full local guide is not published"
 				],
 				id: "person-modules",
-				label: "Person, funding, and influence routes",
+				label: "Person, funding, and influence pages",
 				note: "Richer funding and influence coverage still depends on the underlying person/entity linkage rather than existing for every official automatically.",
 				routes: ["/representatives/<slug>", "/representatives/<slug>/funding", "/representatives/<slug>/influence", "/candidate/<slug>", "/candidate/<slug>/funding", "/candidate/<slug>/influence"],
 				status: "limited",
-				summary: "Person pages are first-class public routes, but module depth varies by what finance, influence, and officeholder data is actually attached."
+				summary: "Person pages are public records, but page depth varies by what finance, influence, and officeholder data is actually attached."
 			},
 			{
 				activeSources: [
@@ -293,10 +293,10 @@ export function buildCoverageResponse(
 					"Public source directory and methodology pages"
 				],
 				id: "public-reference",
-				label: "Public reference routes",
+				label: "Public reference pages",
 				routes: ["/coverage", "/status", "/data-sources", "/corrections", "/help", "/methodology"],
 				status: "live-now",
-				summary: "These routes explain what is available, what source checks are active, and what still needs verification."
+				summary: "These pages explain what is available, what source checks are active, and what still needs verification."
 			}
 		],
 		supportedContentTypes: [

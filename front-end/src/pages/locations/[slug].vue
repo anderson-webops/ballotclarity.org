@@ -47,7 +47,7 @@ watchEffect(() => {
 });
 
 usePageSeo({
-	description: jurisdiction.value?.description ?? "Jurisdiction hub with official election office links, key dates, and current election routes.",
+	description: jurisdiction.value?.description ?? "Jurisdiction hub with official election office links, key dates, and current election pages.",
 	jsonLd: jurisdiction.value
 		? {
 				"@context": "https://schema.org",

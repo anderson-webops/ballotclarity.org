@@ -88,7 +88,7 @@ const items = [
 const trustInterfaceItems = [
 	{
 		body: [
-			"The evidence drawer keeps full source lists one click away from the page header and major claim blocks.",
+			"Source panels keep full source lists one click away from the page header and major claim blocks.",
 			"Claim-level summaries use evidence buttons so a user can inspect supporting records without losing context."
 		],
 		label: "Evidence access"

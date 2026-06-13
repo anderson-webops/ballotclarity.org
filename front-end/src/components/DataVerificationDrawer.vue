@@ -13,8 +13,8 @@ const panelRef = ref<HTMLElement | null>(null);
 const verificationSections = [
 	{
 		body: [
-			"Verification badges summarize whether a statement comes from official election material, attached public records, or clearly labeled campaign or archive material.",
-			"Badges are meant to reduce page clutter, not replace evidence. The source drawer and source directory remain available when you want the record itself."
+			"Verification badges summarize whether a statement comes from official election material, attached public records, or clearly labeled campaign or supporting material.",
+			"Badges are meant to reduce page clutter, not replace evidence. Source panels and the source directory remain available when you want the record itself."
 		],
 		title: "How badges work"
 	},

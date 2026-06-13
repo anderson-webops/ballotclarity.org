@@ -96,7 +96,7 @@ const authorshipNotes = computed(() => {
 		return [];
 
 	return [
-		"Official ballot summary: comes from the attached official record and voter-guide style sources in the project archive.",
+		"Official ballot summary: comes from the attached official record and supporting voter-guide sources.",
 		"Ballot Clarity summary: rewrites the source material into plain language without recommending a vote.",
 		"Arguments and tradeoffs: presented as attributed positions or documented considerations, not as endorsements."
 	];
@@ -312,7 +312,7 @@ function saveMeasure(decision: "no" | "review" | "yes") {
 								/>
 							</div>
 							<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-								These labels help separate official text from Ballot Clarity interpretation and other supporting records in the project archive.
+								These labels help separate official text from Ballot Clarity interpretation and other supporting records attached to this page.
 							</p>
 						</div>
 					</div>

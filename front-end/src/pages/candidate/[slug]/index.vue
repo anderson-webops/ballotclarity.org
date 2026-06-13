@@ -113,8 +113,8 @@ const atGlanceStats = computed(() => {
 
 	const activityLabel = candidate.value.incumbent ? "Documented votes and actions" : "Documented campaign actions";
 	const activityNote = candidate.value.incumbent
-		? "Selected official actions in the current project archive. This page is not a full legislative ledger."
-		: "Published policy releases, local-government actions, and other source-backed items included in the current project archive.";
+		? "Selected official actions from the attached source records. This page is not a full legislative ledger."
+		: "Published policy releases, local-government actions, and other source-backed items included in the attached source records.";
 	const influenceSectors = [...new Set(candidate.value.funding.topFunders.map(funder => funder.category))].slice(0, 2);
 	const influenceNote = influenceSectors.length
 		? `Context draws on ${influenceSectors.join(" and ")}. This is context only, not proof of influence.`
@@ -143,8 +143,8 @@ const actionCoverageNote = computed(() => {
 		return "";
 
 	return candidate.value.incumbent
-		? "This section highlights selected official actions tied to the current project archive. Use the evidence drawer and source rail to inspect the attached records and page limits."
-		: "This section highlights source-backed campaign, policy, or local-government actions available in the current project archive. It does not stand in for a full voting ledger.";
+		? "This section highlights selected official actions tied to attached source records. Use the source panels and page notes to inspect the records and limits."
+		: "This section highlights source-backed campaign, policy, or local-government actions available in the attached source records. It does not stand in for a full voting ledger.";
 });
 const reportIssueTo = computed(() => ({
 	path: "/contact",
@@ -415,7 +415,7 @@ function saveToPlan() {
 							<div class="flex flex-wrap gap-3 items-start justify-between">
 								<div>
 									<h3 class="text-lg text-app-ink font-semibold dark:text-app-text-dark">
-										Questionnaire responses in the project archive
+										Questionnaire responses in attached records
 									</h3>
 									<p class="text-sm text-app-muted mt-2 dark:text-app-muted-dark">
 										Responses are shown as submitted, with provenance labels and attached evidence.
@@ -437,7 +437,7 @@ function saveToPlan() {
 										<ProvenanceBadge :provenance="response.provenance" />
 									</div>
 									<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-										{{ response.answerText ?? "No response submitted in the current project archive." }}
+										{{ response.answerText ?? "No response submitted in the attached records." }}
 									</p>
 									<div class="mt-4 flex flex-wrap gap-3 items-center justify-between">
 										<UpdatedAt v-if="response.answerReceivedAt" :value="response.answerReceivedAt" label="Received" />

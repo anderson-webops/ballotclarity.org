@@ -82,7 +82,7 @@ usePageSeo({
 						Top funders
 					</h2>
 					<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-						This section surfaces the largest named or categorized funders in the current finance summary. Open the source drawer for the underlying filings.
+						This section surfaces the largest named or categorized funders in the current finance summary. Open the sources list for the underlying filings.
 					</p>
 					<ul class="mt-6 space-y-3">
 						<li v-for="funder in candidate.funding.topFunders" :key="`${funder.name}-${funder.category}`" class="p-4 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">

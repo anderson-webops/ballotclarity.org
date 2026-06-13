@@ -208,3 +208,26 @@ test("public project identity avoids unverified nonprofit status claims", () => 
 	assert.match(identityText, /Nonpartisan public-interest project/);
 	assert.match(identityText, /does not currently claim tax-exempt status/);
 });
+
+test("public evidence copy avoids implementation and archive jargon", () => {
+	const failures: string[] = [];
+	const blockedPhrases = [
+		/project archive/i,
+		/source drawers?/i,
+		/evidence drawer/i,
+		/source rail/i,
+		/archive materials?/i
+	];
+
+	for (const root of publicSourceRoots) {
+		for (const file of collectPublicVueFiles(root)) {
+			const body = readFileSync(file, "utf8");
+			for (const phrase of blockedPhrases) {
+				if (phrase.test(body))
+					failures.push(`${relative(process.cwd(), file)} contains ${phrase}`);
+			}
+		}
+	}
+
+	assert.deepEqual(failures, []);
+});

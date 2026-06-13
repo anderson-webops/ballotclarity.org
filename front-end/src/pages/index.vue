@@ -35,7 +35,7 @@ const faqEntries = [
 		question: "Does Ballot Clarity endorse candidates or measures?"
 	},
 	{
-		answer: "Each major page links back to source files, official records, or clearly labeled archive materials so readers can verify the underlying evidence directly.",
+		answer: "Each major page links back to source files, official records, or clearly labeled supporting materials so readers can verify the underlying evidence directly.",
 		question: "Where does the site get its ballot information?"
 	}
 ];

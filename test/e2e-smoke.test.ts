@@ -657,6 +657,9 @@ test("built app renders the key ballot guide pages against the built API", async
 
 	assert.equal(ballotResponse.status, 200);
 	assert.equal(homePage.status, 200);
+	assert.match(homePage.headers.get("content-security-policy-report-only") ?? "", /default-src 'self'/);
+	assert.match(homePage.headers.get("content-security-policy-report-only") ?? "", /frame-ancestors 'none'/);
+	assert.match(homePage.headers.get("content-security-policy-report-only") ?? "", /script-src 'self' 'unsafe-inline'/);
 	assert.equal(homePage.headers.get("cross-origin-opener-policy"), "same-origin");
 	assert.equal(homePage.headers.get("cross-origin-resource-policy"), "same-origin");
 	assert.equal(homePage.headers.get("origin-agent-cluster"), "?1");
@@ -674,6 +677,8 @@ test("built app renders the key ballot guide pages against the built API", async
 	assert.equal(missingPage.headers.get("x-robots-tag"), "noindex, nofollow");
 	assert.match(missingHtml, /This page could not be found/);
 	assert.match(missingHtml, /noindex,nofollow/);
+	assert.match(ballotResponse.headers.get("content-security-policy-report-only") ?? "", /default-src 'none'/);
+	assert.match(ballotResponse.headers.get("content-security-policy-report-only") ?? "", /frame-ancestors 'none'/);
 	assert.equal(ballotResponse.headers.get("cross-origin-opener-policy"), "same-origin");
 	assert.equal(ballotResponse.headers.get("cross-origin-resource-policy"), "same-origin");
 	assert.equal(ballotResponse.headers.get("origin-agent-cluster"), "?1");
@@ -695,6 +700,8 @@ test("built app renders the key ballot guide pages against the built API", async
 	assert.match(homeHtml, /og:image/);
 	assert.match(homeHtml, /twitter:image/);
 	assert.match(homeHtml, /social-card\.svg/);
+	assert.match(ballotPage.headers.get("content-security-policy-report-only") ?? "", /default-src 'self'/);
+	assert.match(ballotPage.headers.get("content-security-policy-report-only") ?? "", /frame-ancestors 'none'/);
 	assert.match(ballotHtml, /Key dates and official links/);
 	assert.match(ballotHtml, /Election overview/);
 	assert.match(ballotHtml, /Official links are live for this area/);

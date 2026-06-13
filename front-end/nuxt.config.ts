@@ -13,7 +13,34 @@ const buildId = process.env.NUXT_PUBLIC_BUILD_ID
 	|| process.env.GITHUB_SHA
 	|| process.env.COMMIT_SHA
 	|| `local-${Date.now().toString(36)}`;
+const publicApiBase = process.env.NUXT_PUBLIC_API_BASE || "http://127.0.0.1:3001/api";
+const publicApiOrigin = (() => {
+	try {
+		return new URL(publicApiBase).origin;
+	}
+	catch {
+		return "";
+	}
+})();
+const analyticsOrigins = analyticsTrackers.map(tracker => `https://${tracker.domain}`);
+const uniqueSourceList = (...sources: string[]) => Array.from(new Set(sources.filter(Boolean))).join(" ");
+const contentSecurityPolicyReportOnly = [
+	"base-uri 'self'",
+	`connect-src ${uniqueSourceList("'self'", publicApiOrigin, ...analyticsOrigins)}`,
+	"default-src 'self'",
+	"font-src 'self' data:",
+	"form-action 'self'",
+	"frame-ancestors 'none'",
+	"frame-src 'none'",
+	"img-src 'self' data: blob: https:",
+	"manifest-src 'self'",
+	"object-src 'none'",
+	`script-src ${uniqueSourceList("'self'", "'unsafe-inline'", ...analyticsOrigins)}`,
+	"style-src 'self' 'unsafe-inline'",
+	"worker-src 'self' blob:"
+].join("; ");
 const securityHeaders = {
+	"content-security-policy-report-only": contentSecurityPolicyReportOnly,
 	"cross-origin-opener-policy": "same-origin",
 	"cross-origin-resource-policy": "same-origin",
 	"origin-agent-cluster": "?1",
@@ -107,7 +134,7 @@ export default defineNuxtConfig({
 		contactAddress: process.env.CONTACT_ADDRESS || process.env.NUXT_CONTACT_ADDRESS || "",
 		contactAddressSessionSecret: process.env.CONTACT_ADDRESS_SESSION_SECRET || process.env.NUXT_CONTACT_ADDRESS_SESSION_SECRET || "",
 		public: {
-			apiBase: process.env.NUXT_PUBLIC_API_BASE || "http://127.0.0.1:3001/api",
+			apiBase: publicApiBase,
 			buildId,
 			governingLaw: process.env.NUXT_PUBLIC_GOVERNING_LAW || "State of Georgia",
 			operatorLegalName: process.env.NUXT_PUBLIC_OPERATOR_LEGAL_NAME || "Jacob Anderson",

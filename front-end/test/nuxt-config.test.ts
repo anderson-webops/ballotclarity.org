@@ -73,7 +73,15 @@ test("nuxt config uses srcDir and expected civic modules", async () => {
 		typeof script.src === "string" && script.src.includes("jacobdanderson.net")
 	));
 	assert.ok(config.app?.head?.link?.some(link => link.rel === "manifest" && typeof link.href === "string" && link.href.startsWith("/site.webmanifest")));
+	const contentSecurityPolicyReportOnly = config.nitro?.routeRules?.["/**"]?.headers?.["content-security-policy-report-only"];
+	assert.match(contentSecurityPolicyReportOnly ?? "", /default-src 'self'/);
+	assert.match(contentSecurityPolicyReportOnly ?? "", /base-uri 'self'/);
+	assert.match(contentSecurityPolicyReportOnly ?? "", /frame-ancestors 'none'/);
+	assert.match(contentSecurityPolicyReportOnly ?? "", /object-src 'none'/);
+	assert.match(contentSecurityPolicyReportOnly ?? "", /script-src 'self' 'unsafe-inline' https:\/\/analytics\.ballotclarity\.org/);
+	assert.match(contentSecurityPolicyReportOnly ?? "", /connect-src 'self' http:\/\/127\.0\.0\.1:3001 https:\/\/analytics\.ballotclarity\.org/);
 	assert.deepEqual(config.nitro?.routeRules?.["/**"]?.headers, {
+		"content-security-policy-report-only": contentSecurityPolicyReportOnly,
 		"cross-origin-opener-policy": "same-origin",
 		"cross-origin-resource-policy": "same-origin",
 		"origin-agent-cluster": "?1",
@@ -85,6 +93,7 @@ test("nuxt config uses srcDir and expected civic modules", async () => {
 		"x-frame-options": "DENY"
 	});
 	assert.equal(config.nitro?.routeRules?.["/_nuxt/**"]?.headers?.["cache-control"], "public, max-age=31536000, immutable");
+	assert.equal(config.nitro?.routeRules?.["/_nuxt/**"]?.headers?.["content-security-policy-report-only"], contentSecurityPolicyReportOnly);
 	assert.equal(config.nitro?.routeRules?.["/_nuxt/**"]?.headers?.["cross-origin-opener-policy"], "same-origin");
 	assert.equal(config.nitro?.routeRules?.["/_nuxt/**"]?.headers?.["cross-origin-resource-policy"], "same-origin");
 	assert.equal(config.nitro?.routeRules?.["/_nuxt/**"]?.headers?.["origin-agent-cluster"], "?1");

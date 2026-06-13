@@ -1116,6 +1116,8 @@ test("GET /health returns readiness and coverage metadata", async () => {
 	const body = await response.json();
 
 	assert.equal(response.status, 200);
+	assert.match(response.headers.get("content-security-policy-report-only") ?? "", /default-src 'none'/);
+	assert.match(response.headers.get("content-security-policy-report-only") ?? "", /frame-ancestors 'none'/);
 	assert.equal(response.headers.get("cross-origin-opener-policy"), "same-origin");
 	assert.equal(response.headers.get("cross-origin-resource-policy"), "same-origin");
 	assert.equal(response.headers.get("origin-agent-cluster"), "?1");

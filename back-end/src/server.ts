@@ -164,7 +164,15 @@ function summarizeMatchedDistricts(labels: string[]) {
 }
 
 const localCorsOriginPattern = /^https?:\/\/(?:localhost|127(?:\.\d{1,3}){3}|\[::1\])(?::\d+)?$/i;
+const contentSecurityPolicyReportOnly = [
+	"base-uri 'none'",
+	"default-src 'none'",
+	"form-action 'none'",
+	"frame-ancestors 'none'",
+	"object-src 'none'"
+].join("; ");
 const securityHeaders = {
+	"Content-Security-Policy-Report-Only": contentSecurityPolicyReportOnly,
 	"Cross-Origin-Opener-Policy": "same-origin",
 	"Cross-Origin-Resource-Policy": "same-origin",
 	"Origin-Agent-Cluster": "?1",

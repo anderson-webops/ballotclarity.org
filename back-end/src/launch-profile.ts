@@ -181,7 +181,7 @@ export function buildCoverageResponse(
 				{
 					activeSources: [
 						"Source-backed local person records where Ballot Clarity has publishable finance or influence data",
-						"Provider-backed representative fallback records when only lookup context is available"
+						"Lookup-based representative records when a full local guide is not published"
 					],
 					id: "person-modules",
 					label: "Person, funding, and influence routes",
@@ -193,11 +193,11 @@ export function buildCoverageResponse(
 				{
 					activeSources: [
 						"Published coverage profile",
-						"Public source-monitor and status payloads for the current environment",
+						"Public source status and coverage notes",
 						"Public data-source roadmap and methodology pages"
 					],
 					id: "public-reference",
-					label: "Public reference and operations routes",
+					label: "Public reference routes",
 					routes: ["/coverage", "/status", "/data-sources", "/corrections", "/help", "/methodology"],
 					status: "live-now",
 					summary: "These pages explain what is available and which public source layers are active."
@@ -270,14 +270,14 @@ export function buildCoverageResponse(
 					: ["/elections", "/locations", "/ballot"],
 				status: hasVerifiedContestPackage ? "live-now" : "limited",
 				summary: hasVerifiedContestPackage
-					? "Ballot guide, contest, candidate, measure, compare, and plan routes are active here because this environment has a verified local package."
-					: "Election overview and location pages are active here because this environment has a published guide shell with official links, but verified contest pages are still pending."
+					? "Ballot guide, contest, candidate, measure, compare, and plan routes are active here because a verified local package is published."
+					: "Election overview and location pages are active here because official local election links are published, but verified contest pages are still pending."
 			},
 			{
 				activeSources: [
 					"Source-backed local person records",
 					"Published finance summaries and influence context where Ballot Clarity has reliable linkage",
-					"Provider-backed fallback records when no local person page exists"
+					"Lookup-based representative records when a full local guide is not published"
 				],
 				id: "person-modules",
 				label: "Person, funding, and influence routes",
@@ -289,11 +289,11 @@ export function buildCoverageResponse(
 			{
 				activeSources: [
 					"Published coverage profile",
-					"Public source-monitor payloads for the active launch environment",
+					"Public source status and coverage notes",
 					"Public data-source roadmap and methodology pages"
 				],
 				id: "public-reference",
-				label: "Public reference and operations routes",
+				label: "Public reference routes",
 				routes: ["/coverage", "/status", "/data-sources", "/corrections", "/help", "/methodology"],
 				status: "live-now",
 				summary: "These routes explain the active launch profile, public source health, and the broader data-source roadmap."

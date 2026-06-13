@@ -1211,7 +1211,7 @@ test("nationwide lookup context survives client navigation across results, distr
 		await delay(800);
 		const districtsText = await getDocumentBodyText(cdp);
 		assert.match(districtsText, /Provo, Utah/);
-		assert.match(districtsText, /Officeholder pipeline pending/);
+		assert.match(districtsText, /Local officials not attached yet/);
 		assert.match(districtsText, /Mike Kennedy/);
 
 		const districtDetailLoad = cdp.waitForEvent("Page.loadEventFired");

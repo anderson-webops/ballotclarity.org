@@ -2279,10 +2279,10 @@ function buildPublicDistrictRouteIdentity(slug: string): PublicDistrictRouteIden
 			office: title,
 			officialResources: [],
 			originLabel: "Canonical district route",
-			originNote: "This local government route identifies the county geography itself, even when Ballot Clarity does not yet have a county officeholder pipeline attached for it.",
+			originNote: "This local government route identifies the county geography itself, even when reviewed county officeholder records are not attached yet.",
 			representativeAvailabilityNote: "No county officeholder data is connected for this area yet. This does not mean the county has no officials, only that Ballot Clarity does not yet have a county officeholder source attached here.",
 			slug: updatedSlug,
-			summary: "This county route stays public so users can orient around the government area even when Ballot Clarity does not yet have a county officeholder pipeline for it.",
+			summary: "This county route stays public so users can orient around the government area even when county officeholder records are not attached yet.",
 			title,
 		};
 	}
@@ -2296,10 +2296,10 @@ function buildPublicDistrictRouteIdentity(slug: string): PublicDistrictRouteIden
 			office: title,
 			officialResources: [],
 			originLabel: "Canonical district route",
-			originNote: "This local government route identifies the city geography itself, even when Ballot Clarity does not yet have a city officeholder pipeline attached for it.",
+			originNote: "This local government route identifies the city geography itself, even when reviewed city officeholder records are not attached yet.",
 			representativeAvailabilityNote: "City officeholder data is not yet available from the current provider set. This does not mean the city has no officials, only that Ballot Clarity cannot yet attach them here.",
 			slug: updatedSlug,
-			summary: "This city route stays public so users can orient around the government area even when Ballot Clarity does not yet have a city officeholder pipeline for it.",
+			summary: "This city route stays public so users can orient around the government area even when city officeholder records are not attached yet.",
 			title,
 		};
 	}
@@ -2383,7 +2383,7 @@ function buildPublicDistrictRecordFromSlug(slug: string): DistrictRecordResponse
 	];
 	const representativeAvailabilityNote = supplementalOfficeholders.length
 		? districtIdentity.jurisdiction === "Local"
-			? `${supplementalOfficeholders.length} reviewed local officeholder record${supplementalOfficeholders.length === 1 ? "" : "s"} ${supplementalOfficeholders.length === 1 ? "is" : "are"} attached to this district route. This is Ballot Clarity's current local officeholder pipeline for this area, not a claim that all local offices are covered yet.`
+			? `${supplementalOfficeholders.length} reviewed local officeholder record${supplementalOfficeholders.length === 1 ? "" : "s"} ${supplementalOfficeholders.length === 1 ? "is" : "are"} attached to this district route. This is the current reviewed local officeholder data attached here, not a claim that all local offices are covered yet.`
 			: `${supplementalOfficeholders.length} reviewed state officeholder record${supplementalOfficeholders.length === 1 ? "" : "s"} ${supplementalOfficeholders.length === 1 ? "is" : "are"} attached to this district route from the current public officeholder layer.`
 		: districtIdentity.representativeAvailabilityNote;
 	const districtOriginLabel = supplementalOfficeholders.length

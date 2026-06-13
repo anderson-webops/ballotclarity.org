@@ -629,7 +629,7 @@ async function resolveFundingAttachment(
 					"unavailable",
 					"no_state_finance_source",
 					`No reviewed state campaign-finance source is configured for ${stateName || "this state"} legislative routes yet.`,
-					"State finance pipeline",
+					"State finance source",
 				),
 			};
 		}
@@ -641,7 +641,7 @@ async function resolveFundingAttachment(
 					"unavailable",
 					"no_local_finance_source",
 					"No reviewed local campaign-finance source is configured for this county or city officeholder route yet.",
-					"Local officeholder pipeline",
+					"Local finance source",
 				),
 			};
 		}
@@ -663,7 +663,7 @@ async function resolveFundingAttachment(
 			status: buildEnrichmentStatus(
 				"unavailable",
 				"provider_unconfigured",
-				"Ballot Clarity could not query OpenFEC for this route because the OpenFEC client is not configured in the current environment.",
+				"OpenFEC finance data is not available for this route right now.",
 				"OpenFEC",
 			),
 		};
@@ -828,7 +828,7 @@ async function resolveInfluenceAttachment(
 					"unavailable",
 					"no_state_disclosure_source",
 					`No reviewed state lobbying or disclosure source is configured for ${stateName || "this"} legislative route yet.`,
-					"State disclosure pipeline",
+					"State disclosure source",
 				),
 			};
 		}
@@ -840,7 +840,7 @@ async function resolveInfluenceAttachment(
 					"unavailable",
 					"no_local_disclosure_source",
 					"No reviewed local lobbying, ethics, or disclosure source is configured for this county or city officeholder route yet.",
-					"Local officeholder pipeline",
+					"Local disclosure source",
 				),
 			};
 		}
@@ -862,7 +862,7 @@ async function resolveInfluenceAttachment(
 			status: buildEnrichmentStatus(
 				"unavailable",
 				"provider_unconfigured",
-				"Ballot Clarity could not query LDA.gov for this route because the LDA client is not configured in the current environment.",
+				"LDA.gov disclosure data is not available for this route right now.",
 				"LDA.gov",
 			),
 		};

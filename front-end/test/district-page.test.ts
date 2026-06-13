@@ -1,7 +1,7 @@
 import type { NationwideLookupResultContext } from "../src/types/civic.ts";
 import assert from "node:assert/strict";
 import test from "node:test";
-import { buildDistrictRepresentativeAvailabilityNote } from "../src/utils/district-availability.ts";
+import { buildDistrictRepresentativeAvailabilityNote, buildDistrictRepresentativeCountLabel } from "../src/utils/district-availability.ts";
 import { buildDistrictCandidateSummaryHref, buildDistrictRepresentativeSummaryHref } from "../src/utils/district-page-links.ts";
 import { buildNationwideDistrictPageRecord } from "../src/utils/district-page.ts";
 
@@ -95,11 +95,12 @@ test("nationwide district fallback builds a usable detail page for routed distri
 	assert.ok(districtPage.sources.some(source => /Open States|U\.S\. Census Geocoder/.test(source.publisher)));
 });
 
-test("nationwide district fallback is honest about missing city officeholder pipelines", () => {
+test("nationwide district fallback is honest about missing city officeholder data", () => {
 	const districtPage = buildNationwideDistrictPageRecord(nationwideLookupResult, "provo-city");
 
 	assert.ok(districtPage);
 	assert.equal(districtPage.representatives.length, 0);
+	assert.equal(buildDistrictRepresentativeCountLabel(districtPage.district, 0), "Local officials not attached yet");
 	assert.match(districtPage.representativeAvailabilityNote, /No city officeholder data is attached here yet/i);
 	assert.match(buildDistrictRepresentativeAvailabilityNote(districtPage.district, 0), /No city officeholder data is attached here yet/i);
 });

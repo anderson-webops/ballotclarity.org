@@ -700,13 +700,13 @@ function buildDistrictRepresentativeAvailabilityNote(district: DistrictDescripto
 	const kind = deriveDistrictPipelineKind(district);
 
 	if (kind === "county")
-		return "No county officeholder data is connected for this area yet. This does not mean the county has no officials, only that the current provider set does not yet publish a county officeholder pipeline here.";
+		return "No county officeholder data is connected for this area yet. This does not mean the county has no officials; it means Ballot Clarity has not attached a reviewed county officeholder source here yet.";
 
 	if (kind === "city")
 		return "City officeholder data is not yet available from the current provider set. This does not mean the city has no officials, only that Ballot Clarity cannot yet attach them here.";
 
 	if (kind === "other-local")
-		return "Local officeholder data is not yet fully connected for this area. Official local election tools remain the verification path until a local officeholder pipeline is attached.";
+		return "Local officeholder data is not yet attached for this area. Use official local election tools to verify offices and current officials.";
 
 	return "No current official record is linked from the current provider set for this district yet.";
 }
@@ -751,7 +751,7 @@ export function buildNationwideDistrictRoleGuide(district: DistrictDescriptor) {
 				"County services and local implementation",
 				"Local verification through county election offices",
 			],
-			summary: "This county geography is attached as a lookup orientation layer, even when Ballot Clarity does not yet have a county officeholder pipeline for it.",
+			summary: "This county geography is attached for lookup orientation even when county officeholder records are not attached yet.",
 			whyItMatters: "County matches still help users reach the right official county election tools and verify which local government area a lookup resolved into.",
 		};
 	}

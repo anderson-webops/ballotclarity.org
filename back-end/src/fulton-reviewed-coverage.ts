@@ -23,7 +23,7 @@ function buildOfficialLogisticsElection(updatedAt: string): Election {
 			{
 				date: updatedAt,
 				id: "reviewed-official-logistics-only",
-				summary: "Published a reviewed official-logistics-only Fulton guide shell and removed staged reference contest, candidate, and measure content."
+				summary: "Published a reviewed official-logistics-only Fulton election overview and removed staged reference contest, candidate, and measure content."
 			},
 			...election.changeLog.filter(entry => !stagedChangeLogPattern.test(entry.summary)),
 		],

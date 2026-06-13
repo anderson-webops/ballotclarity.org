@@ -1167,7 +1167,7 @@ export function buildDefaultGuidePackageSeed(coverageRepository: CoverageReposit
 						"Contest, candidate, and measure pages still include unverified review material until verified Fulton-specific ballot content is loaded.",
 					]
 				: [
-						"The local guide shell is live so official election links and core election pages stay public.",
+						"The official-logistics-only election overview is live so official election links and core election pages stay public.",
 						"Verified Fulton-specific contest, candidate, and measure records are still pending and are not included in this package.",
 					],
 			createdAt: election.updatedAt,
@@ -1179,7 +1179,7 @@ export function buildDefaultGuidePackageSeed(coverageRepository: CoverageReposit
 			reviewRecommendation: hasContestRecords ? "publish" : "publish_with_warnings",
 			reviewNotes: hasContestRecords
 				? "Imported coverage snapshot published with verified official links and contest layers still under local review."
-				: "Imported coverage snapshot published as an official-logistics-only guide shell. Verified contest, candidate, and measure records are not included.",
+				: "Imported coverage snapshot published as an official-logistics-only election overview. Verified contest, candidate, and measure records are not included.",
 			reviewedAt: publishedAt,
 			reviewer: "Imported snapshot",
 			status: "published",

@@ -45,7 +45,7 @@ export function buildDistrictRepresentativeCountLabel(
 	const kind = deriveDistrictPipelineKind(district);
 
 	if (kind === "city" || kind === "county")
-		return "Officeholder pipeline pending";
+		return "Local officials not attached yet";
 
 	return "No linked official yet";
 }

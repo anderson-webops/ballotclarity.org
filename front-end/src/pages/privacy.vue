@@ -77,7 +77,7 @@ const providerDisclosureSections = [
 	{
 		body: [
 			"Representative profile enrichment may query Congress.gov, OpenFEC, and LDA.gov once a route or lookup has already resolved a person or officeholder record.",
-			"Those module calls are used for federal office context, campaign-finance detail, and lobbying or disclosure context. They are not used for advertising or profiling."
+			"Those requests are used for federal office context, campaign-finance detail, and lobbying or disclosure context. They are not used for advertising or profiling."
 		],
 		title: "Federal office, finance, and disclosure providers"
 	},

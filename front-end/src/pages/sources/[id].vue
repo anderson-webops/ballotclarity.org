@@ -138,7 +138,7 @@ usePageSeo({
 						Cited by
 					</p>
 					<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-						Pages and route layers that use this record
+						Pages that use this record
 					</h2>
 					<div class="mt-6 space-y-4">
 						<NuxtLink

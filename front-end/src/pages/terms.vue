@@ -322,7 +322,7 @@ usePageSeo({
 
 			<div class="surface-panel">
 				<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-					Changes and future modules
+					Changes to the service
 				</p>
 				<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
 					How the terms change as the product changes

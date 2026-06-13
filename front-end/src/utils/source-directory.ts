@@ -47,7 +47,7 @@ export function formatSourceCitationType(type: SourceDirectoryItem["citedBy"][nu
 			return "Measure page";
 		case "page":
 		default:
-			return "Route layer";
+			return "Public page";
 	}
 }
 

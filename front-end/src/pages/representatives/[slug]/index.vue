@@ -382,7 +382,7 @@ usePageSeo({
 							</ul>
 							<details v-if="unavailableModuleStatusItems.length" class="mt-4">
 								<summary class="text-sm text-app-ink font-semibold cursor-pointer dark:text-app-text-dark focus-ring">
-									{{ unavailableModuleStatusItems.length }} module{{ unavailableModuleStatusItems.length === 1 ? "" : "s" }} not available yet
+									{{ unavailableModuleStatusItems.length }} section{{ unavailableModuleStatusItems.length === 1 ? "" : "s" }} not available yet
 								</summary>
 								<ul class="text-sm text-app-muted leading-7 mt-3 space-y-3 dark:text-app-muted-dark">
 									<li v-for="item in unavailableModuleStatusItems" :key="item.label">

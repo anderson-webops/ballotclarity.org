@@ -760,7 +760,7 @@ test("built app renders the key ballot guide pages against the built API", async
 	assert.equal(sourcesDirectoryPage.status, 200);
 	assert.match(sourcesDirectoryHtml, /Source directory/);
 	assert.equal(publishedSourcePage.status, 200);
-	assert.match(publishedSourceHtml, /Pages and route layers that use this record/);
+	assert.match(publishedSourceHtml, /Pages that use this record/);
 	assert.match(publishedSourceHtml, /What Ballot Clarity uses it for/);
 	assert.equal(publishedRouteSourcePage.status, 200);
 	assert.match(publishedRouteSourceHtml, /Shawn Still/);

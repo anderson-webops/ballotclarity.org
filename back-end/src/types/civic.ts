@@ -17,7 +17,7 @@ export type SourceAuthority
 		| "open-data";
 
 export type SourcePublisherType
-	= | "ballot-clarity archive"
+	= | "ballot-clarity source record"
 		| "campaign"
 		| "nonprofit"
 		| "official"

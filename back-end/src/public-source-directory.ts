@@ -351,7 +351,7 @@ export function mapAuthorityToPublisherType(authority: SourceAuthority): SourceP
 		case "candidate-campaign":
 			return "campaign";
 		case "ballot-clarity-archive":
-			return "ballot-clarity archive";
+			return "ballot-clarity source record";
 		case "open-data":
 		default:
 			return "public-interest";

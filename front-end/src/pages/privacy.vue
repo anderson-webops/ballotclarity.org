@@ -19,7 +19,7 @@ const collectionSections = [
 			"That lookup may also trigger district matching, representative attachment, and official election verification using the civic data providers needed for the requested result.",
 			"If ZIP-only operational logging is enabled, Ballot Clarity may record only an exact 5-digit ZIP entered by itself as the lookup input. Full street addresses, ZIP+4 entries, city names, mixed address strings, provider-normalized ZIPs, raw lookup text, IP address, and user agent are not added to that ZIP-only log.",
 			"The site may also use coarse geolocation derived from request metadata to make an approximate default location guess before you enter anything manually.",
-			"The application is designed not to publish the raw lookup text in the public archive and not to persist it in browser storage used for saved ballot preferences."
+			"The application is designed not to publish the raw lookup text in public content records and not to persist it in browser storage used for saved ballot preferences."
 		],
 		title: "Address or ZIP lookup input"
 	},

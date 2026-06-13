@@ -140,7 +140,7 @@ async function selectLookupOption(option: LocationLookupSelectionOption) {
 			</NuxtLink>.
 		</p>
 		<p v-else :id="privacyId" class="text-sm text-app-muted leading-6 mt-3 dark:text-app-muted-dark">
-			Data use: your lookup is sent only to match ballot coverage. If you enter only a 5-digit ZIP code, that ZIP may be counted in a ZIP-only operations log, but raw lookup text, full street addresses, ZIP+4 entries, IP address, and user agent are not added to that log. The raw lookup is not added to the public content archive or used for advertising, and the app saves only your selected location label and ballot-plan preferences locally in your browser. Read the
+			Data use: your lookup is sent only to match ballot coverage. If you enter only a 5-digit ZIP code, that ZIP may be counted in a ZIP-only operations log, but raw lookup text, full street addresses, ZIP+4 entries, IP address, and user agent are not added to that log. The raw lookup is not added to public content records or used for advertising, and the app saves only your selected location label and ballot-plan preferences locally in your browser. Read the
 			<NuxtLink to="/privacy" class="underline underline-offset-3" prefetch-on="interaction">
 				privacy notice
 			</NuxtLink>.

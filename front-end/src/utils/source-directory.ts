@@ -17,7 +17,7 @@ export function formatSourcePublicationKind(kind: SourcePublicationKind) {
 
 export function formatSourcePublisherType(type: SourcePublisherType) {
 	switch (type) {
-		case "ballot-clarity archive":
+		case "ballot-clarity source record":
 			return "Ballot Clarity source record";
 		case "campaign":
 			return "Campaign source";

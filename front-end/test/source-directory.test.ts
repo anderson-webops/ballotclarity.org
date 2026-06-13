@@ -10,6 +10,7 @@ import {
 test("source directory helpers format source metadata for the public directory", () => {
 	assert.equal(formatSourcePublicationKind("curated-global"), "Curated global record");
 	assert.equal(formatSourcePublicationKind("published-provenance"), "Published page record");
+	assert.equal(formatSourcePublisherType("ballot-clarity source record"), "Ballot Clarity source record");
 	assert.equal(formatSourcePublisherType("official"), "Official");
 	assert.equal(formatSourcePublisherType("third-party civic infrastructure"), "Third-party civic infrastructure");
 	assert.equal(formatSourceCitationType("page"), "Route layer");

@@ -6,7 +6,8 @@ import { fileURLToPath } from "node:url";
 
 const publicSourceRoots = [
 	new URL("../src/components", import.meta.url),
-	new URL("../src/pages", import.meta.url)
+	new URL("../src/pages", import.meta.url),
+	new URL("../src/utils", import.meta.url)
 ];
 const publicSourceFileRoot = new URL("../public/source-files", import.meta.url);
 
@@ -213,6 +214,9 @@ test("public source copy avoids implementation and archive jargon", () => {
 	const failures: string[] = [];
 	const blockedPhrases = [
 		/project archive/i,
+		/public archive/i,
+		/content archive/i,
+		/ballot-clarity archive/i,
 		/\bevidence\b/i,
 		/source drawers?/i,
 		/evidence drawer/i,

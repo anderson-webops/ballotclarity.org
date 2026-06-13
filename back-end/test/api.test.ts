@@ -2696,13 +2696,16 @@ test("GET /api/sources only lists ids that resolve as public source records", as
 	assert.ok(Array.isArray(directoryBody.sources));
 	assert.ok(directoryBody.sources.some((item: { id: string }) => item.id === "census-geocoder"));
 	assert.ok(!directoryBody.sources.some((item: { id: string }) => item.id === "district:state-senate-48"));
+	assert.ok(!JSON.stringify(directoryBody).includes("ballot-clarity archive"));
 
 	for (const item of directoryBody.sources as Array<{ id: string; url?: string }>) {
 		assert.ok(item.url, `expected published source ${item.id} to expose a usable URL`);
 
 		const recordResponse = await fetch(`${baseUrl}/api/sources/${item.id}`);
+		const recordBody = await recordResponse.json();
 
 		assert.equal(recordResponse.status, 200, `expected published source ${item.id} to resolve`);
+		assert.ok(!JSON.stringify(recordBody).includes("ballot-clarity archive"));
 	}
 });
 

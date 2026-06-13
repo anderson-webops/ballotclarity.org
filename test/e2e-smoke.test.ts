@@ -647,6 +647,8 @@ test("built app renders the key ballot guide pages against the built API", async
 	const compareEmptyHtml = await compareEmptyPage.text();
 	const comparePage = await fetch(`${appBaseUrl}/compare?slugs=elena-torres,daniel-brooks`);
 	const compareHtml = await comparePage.text();
+	const missingPage = await fetch(`${appBaseUrl}/missing-public-page`);
+	const missingHtml = await missingPage.text();
 
 	assert.equal(ballotResponse.status, 200);
 	assert.equal(homePage.status, 200);
@@ -658,6 +660,10 @@ test("built app renders the key ballot guide pages against the built API", async
 	assert.equal(resultsPage.headers.get("x-robots-tag"), "noindex, nofollow");
 	assert.match(resultsHtml, /Results for your area are not loaded/);
 	assert.match(resultsHtml, /noindex,nofollow/);
+	assert.equal(missingPage.status, 404);
+	assert.equal(missingPage.headers.get("x-robots-tag"), "noindex, nofollow");
+	assert.match(missingHtml, /This page could not be found/);
+	assert.match(missingHtml, /noindex,nofollow/);
 	assert.equal(ballotResponse.headers.get("x-content-type-options"), "nosniff");
 	assert.equal(ballotResponse.headers.get("x-frame-options"), "DENY");
 	assert.equal(ballotResponse.headers.get("referrer-policy"), "strict-origin-when-cross-origin");

@@ -1,7 +1,13 @@
 <script setup lang="ts">
+if (import.meta.server) {
+	setResponseStatus(404);
+	useResponseHeader("X-Robots-Tag").value = "noindex, nofollow";
+}
+
 usePageSeo({
 	description: "The page you requested could not be found on Ballot Clarity.",
 	path: "/404",
+	robots: "noindex,nofollow",
 	title: "Page Not Found",
 });
 </script>

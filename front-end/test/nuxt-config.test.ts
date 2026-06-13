@@ -141,3 +141,11 @@ test("page components declare explicit SEO metadata", () => {
 
 	assert.deepEqual(missingSeo, []);
 });
+
+test("catch-all page returns a non-indexable 404", () => {
+	const catchAllPage = readFileSync(new URL("../src/pages/[...all].vue", import.meta.url), "utf8");
+
+	assert.match(catchAllPage, /setResponseStatus\(404\)/);
+	assert.match(catchAllPage, /X-Robots-Tag/);
+	assert.match(catchAllPage, /robots: "noindex,nofollow"/);
+});

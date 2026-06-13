@@ -58,8 +58,8 @@ function providerStatusTone(status: "active" | "needs_endpoint" | "needs_key" | 
 		</div>
 
 		<div v-else-if="!data.launchTarget && !data.categories.length && !data.roadmap.length" class="max-w-4xl space-y-6">
-			<InfoCallout title="No local source plan published" tone="info">
-				No local source plan is published in this environment. Ballot Clarity should still keep lookup results and official election links available.
+			<InfoCallout title="No local source plan published right now" tone="info">
+				No local source plan is published right now. You can still use lookup results and official election links when they are available.
 			</InfoCallout>
 			<div class="flex flex-wrap gap-3">
 				<NuxtLink to="/coverage" class="btn-primary">
@@ -196,7 +196,7 @@ function providerStatusTone(status: "active" | "needs_endpoint" | "needs_key" | 
 					<TrustBadge label="Source hierarchy" tone="accent" />
 				</div>
 				<p class="bc-prose text-app-muted dark:text-app-muted-dark">
-					Most readers only need the rule and the current use case. The provider-by-provider notes remain available here for review and operations.
+					Most readers only need the rule and the current use case. Expand a source class if you want provider details, limits, and links.
 				</p>
 				<div class="space-y-4">
 					<details v-for="category in data.categories" :key="category.slug" class="surface-row">

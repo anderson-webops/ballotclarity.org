@@ -170,6 +170,7 @@ test("public policy pages avoid host-specific maintenance wording", () => {
 	assert.doesNotMatch(policyText, /Some hosts may/i);
 	assert.doesNotMatch(policyText, /host and operator settings/i);
 	assert.doesNotMatch(policyText, /policy should be updated/i);
+	assert.doesNotMatch(policyText, /policy should change/i);
 	assert.doesNotMatch(policyText, /This page should be read/i);
 	assert.match(policyText, /configured for the site/i);
 	assert.match(policyText, /The site may also use coarse geolocation/i);

@@ -188,7 +188,7 @@ const securityNotes = [
 	"Ballot Clarity aims to use reasonable administrative, technical, and organizational safeguards appropriate to the service.",
 	"Those safeguards are intended to reduce unnecessary data collection, limit retention, and protect the integrity of the service and its operational systems.",
 	"The service also uses staff login throttling, signed editorial-access session cookies, and structured request logging for reliability and abuse handling.",
-	"No internet service can guarantee absolute security. If the project's data practices or incident posture changes materially, this policy should change as well."
+	"No internet service can guarantee absolute security. If the project's data practices or incident posture changes materially, this policy will be updated as well."
 ];
 
 usePageSeo({

@@ -190,7 +190,7 @@ usePageSeo({
 						<NuxtLink :to="`/candidate/${candidate.slug}`" class="btn-secondary">
 							Open profile
 						</NuxtLink>
-						<a :href="candidate.comparison.campaignWebsiteUrl" target="_blank" rel="noreferrer" class="btn-secondary">
+						<a :href="candidate.comparison.campaignWebsiteUrl" target="_blank" rel="noopener noreferrer" class="btn-secondary">
 							Campaign website
 						</a>
 					</div>
@@ -307,7 +307,7 @@ usePageSeo({
 								</p>
 								<ul class="mt-3 space-y-2">
 									<li v-for="item in candidate.comparison.contactChannels" :key="item.url">
-										<a :href="item.url" target="_blank" rel="noreferrer" class="text-sm text-app-accent rounded-md inline-flex gap-2 items-center hover:text-app-ink focus-ring dark:hover:text-white">
+										<a :href="item.url" target="_blank" rel="noopener noreferrer" class="text-sm text-app-accent rounded-md inline-flex gap-2 items-center hover:text-app-ink focus-ring dark:hover:text-white">
 											<span class="i-carbon-launch" />
 											<span>{{ item.label }}</span>
 										</a>

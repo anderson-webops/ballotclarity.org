@@ -220,7 +220,7 @@ usePageSeo({
 									v-else
 									:href="representative.href"
 									target="_blank"
-									rel="noreferrer"
+									rel="noopener noreferrer"
 									class="btn-secondary inline-flex gap-2 items-center"
 								>
 									Open record

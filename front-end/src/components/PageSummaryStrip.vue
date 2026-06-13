@@ -22,7 +22,7 @@ function isExternalHref(href: string) {
 				v-if="item.href && isExternalHref(item.href)"
 				:href="item.href"
 				class="summary-strip__item summary-strip__item--interactive focus-ring"
-				rel="noreferrer"
+				rel="noopener noreferrer"
 				target="_blank"
 			>
 				<p class="summary-strip__label">

@@ -194,7 +194,7 @@ usePageSeo({
 									v-if="isExternalHref(representative.href)"
 									:href="representative.href"
 									target="_blank"
-									rel="noreferrer"
+									rel="noopener noreferrer"
 									class="btn-secondary inline-flex gap-2 items-center"
 								>
 									Open record
@@ -207,7 +207,7 @@ usePageSeo({
 									v-if="representative.openstatesUrl"
 									:href="representative.openstatesUrl"
 									target="_blank"
-									rel="noreferrer"
+									rel="noopener noreferrer"
 									class="btn-secondary inline-flex gap-2 items-center"
 								>
 									Provider record

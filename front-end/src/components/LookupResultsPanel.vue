@@ -308,7 +308,7 @@ function getRepresentativePresentation(match: NationwideLookupResultContext["rep
 						v-else-if="action.url"
 						:href="action.url"
 						target="_blank"
-						rel="noreferrer"
+						rel="noopener noreferrer"
 						class="btn-secondary"
 					>
 						<span class="i-carbon-launch" />
@@ -412,7 +412,7 @@ function getRepresentativePresentation(match: NationwideLookupResultContext["rep
 										v-if="candidate.candidateUrl"
 										:href="candidate.candidateUrl"
 										target="_blank"
-										rel="noreferrer"
+										rel="noopener noreferrer"
 										class="text-app-accent underline underline-offset-3 inline-flex gap-2 items-center"
 									>
 										Candidate link
@@ -451,7 +451,7 @@ function getRepresentativePresentation(match: NationwideLookupResultContext["rep
 						v-if="preview.verificationResource"
 						:href="preview.verificationResource.url"
 						target="_blank"
-						rel="noreferrer"
+						rel="noopener noreferrer"
 						class="text-sm text-app-accent mt-3 underline underline-offset-3 inline-flex gap-2 items-center"
 					>
 						{{ preview.verificationResourceLabel || `Verify with ${preview.verificationResource.label}` }}
@@ -497,7 +497,7 @@ function getRepresentativePresentation(match: NationwideLookupResultContext["rep
 									v-if="contest.referendum.url"
 									:href="contest.referendum.url"
 									target="_blank"
-									rel="noreferrer"
+									rel="noopener noreferrer"
 									class="text-app-accent underline underline-offset-3 inline-flex gap-2 items-center"
 								>
 									Open measure record
@@ -566,7 +566,7 @@ function getRepresentativePresentation(match: NationwideLookupResultContext["rep
 								v-if="match.openstatesUrl"
 								:href="match.openstatesUrl"
 								target="_blank"
-								rel="noreferrer"
+								rel="noopener noreferrer"
 								class="text-app-accent underline underline-offset-3 inline-flex gap-2 items-center"
 							>
 								Open record

@@ -149,3 +149,25 @@ test("catch-all page returns a non-indexable 404", () => {
 	assert.match(catchAllPage, /X-Robots-Tag/);
 	assert.match(catchAllPage, /robots: "noindex,nofollow"/);
 });
+
+test("new-tab links include opener isolation", () => {
+	const srcDirectory = fileURLToPath(new URL("../src", import.meta.url));
+	const anchorPattern = /<a\b[^>]*>/g;
+	const relPattern = /\brel=(["'])([^"']*)\1/;
+	const unsafeLinks = collectVueFiles(srcDirectory).flatMap((path) => {
+		const source = readFileSync(path, "utf8");
+		const matches = [...source.matchAll(anchorPattern)]
+			.filter(match => match[0].includes("target=\"_blank\"") || match[0].includes("target='_blank'"));
+
+		return matches.flatMap((match) => {
+			const rel = match[0].match(relPattern);
+			const relTokens = new Set((rel?.[2] ?? "").split(/\s+/).filter(Boolean));
+
+			return relTokens.has("noopener") && relTokens.has("noreferrer")
+				? []
+				: [`${relative(srcDirectory, path)}: ${match[0]}`];
+		});
+	});
+
+	assert.deepEqual(unsafeLinks, []);
+});

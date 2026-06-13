@@ -162,7 +162,7 @@ const mobileSections = computed(() => {
 								</p>
 								<div class="flex flex-wrap gap-2 items-center">
 									<ProvenanceBadge :provenance="candidate.comparison.ballotStatus.provenance" />
-									<a :href="candidate.comparison.campaignWebsiteUrl" target="_blank" rel="noreferrer" class="text-xs text-app-accent rounded-md hover:text-app-ink focus-ring dark:hover:text-white">
+									<a :href="candidate.comparison.campaignWebsiteUrl" target="_blank" rel="noopener noreferrer" class="text-xs text-app-accent rounded-md hover:text-app-ink focus-ring dark:hover:text-white">
 										Campaign website
 									</a>
 								</div>

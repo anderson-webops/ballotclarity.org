@@ -170,10 +170,10 @@ function providerStatusTone(status: "active" | "needs_endpoint" | "needs_key" | 
 									{{ provider.configured ? "Ballot Clarity can use this provider when its data is relevant." : "Ballot Clarity is not currently using this provider for live ballot data." }}
 								</p>
 								<div class="mt-4 flex flex-wrap gap-3">
-									<a :href="provider.setupUrl" target="_blank" rel="noreferrer" class="btn-secondary">
+									<a :href="provider.setupUrl" target="_blank" rel="noopener noreferrer" class="btn-secondary">
 										Provider site
 									</a>
-									<a v-if="provider.docsUrl" :href="provider.docsUrl" target="_blank" rel="noreferrer" class="btn-secondary">
+									<a v-if="provider.docsUrl" :href="provider.docsUrl" target="_blank" rel="noopener noreferrer" class="btn-secondary">
 										Technical docs
 									</a>
 								</div>
@@ -282,7 +282,7 @@ function providerStatusTone(status: "active" | "needs_endpoint" | "needs_key" | 
 										:key="link.url"
 										:href="link.url"
 										target="_blank"
-										rel="noreferrer"
+										rel="noopener noreferrer"
 										class="btn-secondary"
 									>
 										{{ link.label }}

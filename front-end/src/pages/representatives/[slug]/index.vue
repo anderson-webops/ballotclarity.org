@@ -282,15 +282,15 @@ usePageSeo({
 					</div>
 					<div class="bc-action-cluster mt-6">
 						<SourceDrawer :sources="person.sources" :title="`${person.name} evidence and sources`" button-label="Evidence & sources" />
-						<a v-if="campaignLink" :href="campaignLink" target="_blank" rel="noreferrer" class="btn-secondary">
+						<a v-if="campaignLink" :href="campaignLink" target="_blank" rel="noopener noreferrer" class="btn-secondary">
 							<span class="i-carbon-launch" />
 							Open campaign site
 						</a>
-						<a v-if="person.officialWebsiteUrl" :href="person.officialWebsiteUrl" target="_blank" rel="noreferrer" class="btn-secondary inline-flex gap-2 items-center">
+						<a v-if="person.officialWebsiteUrl" :href="person.officialWebsiteUrl" target="_blank" rel="noopener noreferrer" class="btn-secondary inline-flex gap-2 items-center">
 							Official office site
 							<span class="i-carbon-launch" />
 						</a>
-						<a v-if="person.openstatesUrl" :href="person.openstatesUrl" target="_blank" rel="noreferrer" class="btn-secondary inline-flex gap-2 items-center">
+						<a v-if="person.openstatesUrl" :href="person.openstatesUrl" target="_blank" rel="noopener noreferrer" class="btn-secondary inline-flex gap-2 items-center">
 							Provider record
 							<span class="i-carbon-launch" />
 						</a>
@@ -351,7 +351,7 @@ usePageSeo({
 										:key="`${link.label}-${link.url}`"
 										:href="link.url"
 										target="_blank"
-										rel="noreferrer"
+										rel="noopener noreferrer"
 										class="btn-secondary"
 									>
 										{{ link.label }}

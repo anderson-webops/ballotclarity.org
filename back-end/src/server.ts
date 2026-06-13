@@ -4294,6 +4294,39 @@ export async function createApp(options: CreateAppOptions = {}) {
 		next();
 	});
 
+	app.get("/api/admin/auth/session/:username", async (request, response) => {
+		const username = request.params.username.trim().toLowerCase();
+
+		if (!username) {
+			response.status(400).json({
+				message: "Admin username is required."
+			});
+			return;
+		}
+
+		const users = await adminRepository.listUsers();
+		const user = users.users.find(item => item.username === username);
+
+		if (!user || user.disabledAt) {
+			response.status(401).json({
+				authenticated: false,
+				configured: true,
+				displayName: null,
+				role: null,
+				username: null
+			});
+			return;
+		}
+
+		response.json({
+			authenticated: true,
+			configured: true,
+			displayName: user.displayName,
+			role: user.role,
+			username: user.username
+		});
+	});
+
 	app.post("/api/location", async (request, response) => {
 		const raw = typeof request.body?.q === "string" ? request.body.q.trim() : "";
 		const selectionId = typeof request.body?.selectionId === "string" ? request.body.selectionId.trim() : "";
@@ -5070,6 +5103,19 @@ export async function createApp(options: CreateAppOptions = {}) {
 		catch (error) {
 			response.status(400).json({
 				message: error instanceof Error ? error.message : "Unable to create admin user."
+			});
+		}
+	});
+
+	app.patch("/api/admin/users/:id", async (request, response) => {
+		try {
+			response.json(await adminRepository.updateUser(request.params.id, {
+				disabled: typeof request.body?.disabled === "boolean" ? request.body.disabled : undefined
+			}));
+		}
+		catch (error) {
+			response.status(400).json({
+				message: error instanceof Error ? error.message : "Unable to update admin user."
 			});
 		}
 	});

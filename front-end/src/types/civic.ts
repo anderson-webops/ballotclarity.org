@@ -1425,6 +1425,7 @@ export interface AdminUser {
 	displayName: string;
 	role: AdminUserRole;
 	createdAt: string;
+	disabledAt?: string;
 	lastLoginAt?: string;
 }
 

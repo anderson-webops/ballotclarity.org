@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS admin_users (
 	password_hash TEXT NOT NULL,
 	created_at TEXT NOT NULL,
 	updated_at TEXT NOT NULL,
+	disabled_at TEXT,
 	last_login_at TEXT
 );
 

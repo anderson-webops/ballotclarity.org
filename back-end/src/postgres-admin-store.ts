@@ -39,6 +39,7 @@ interface UserRow {
 	display_name: string;
 	role: AdminUserRole;
 	created_at: string;
+	disabled_at: string | null;
 	last_login_at: string | null;
 	password_hash: string;
 	updated_at: string;
@@ -129,6 +130,7 @@ function resolvePostgresSchemaPath() {
 function rowToUser(row: UserRow): AdminUser {
 	return {
 		createdAt: row.created_at,
+		disabledAt: row.disabled_at || undefined,
 		displayName: row.display_name,
 		id: row.id,
 		lastLoginAt: row.last_login_at || undefined,
@@ -240,6 +242,7 @@ async function seedPostgresDatabase(pool: Pool, options: AdminRepositoryOptions)
 	const activitySeed = options.activitySeed ?? [];
 	const guidePackageSeed = options.guidePackageSeed ?? [];
 	await pool.query(schema);
+	await pool.query("ALTER TABLE admin_users ADD COLUMN IF NOT EXISTS disabled_at TEXT");
 	await pool.query("ALTER TABLE admin_content ADD COLUMN IF NOT EXISTS public_summary TEXT");
 	await pool.query("ALTER TABLE admin_content ADD COLUMN IF NOT EXISTS ballot_summary TEXT");
 	await pool.query("ALTER TABLE admin_guide_packages ADD COLUMN IF NOT EXISTS review_recommendation TEXT");
@@ -413,8 +416,8 @@ async function seedPostgresDatabase(pool: Pool, options: AdminRepositoryOptions)
 
 		await pool.query(`
 			INSERT INTO admin_users (
-				id, username, display_name, role, password_hash, created_at, updated_at, last_login_at
-			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+				id, username, display_name, role, password_hash, created_at, updated_at, disabled_at, last_login_at
+			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 		`, [
 			`user-${bootstrapUsername}`,
 			bootstrapUsername.trim(),
@@ -423,6 +426,7 @@ async function seedPostgresDatabase(pool: Pool, options: AdminRepositoryOptions)
 			hashPassword(bootstrapPassword),
 			now,
 			now,
+			null,
 			null
 		]);
 	}
@@ -464,13 +468,13 @@ export async function createPostgresAdminRepository(options: AdminRepositoryOpti
 		async authenticateUser(username, password) {
 			const normalized = username.trim().toLowerCase();
 			const result = await pool.query<UserRow>(`
-				SELECT id, username, display_name, role, created_at, last_login_at, password_hash, updated_at
+				SELECT id, username, display_name, role, created_at, disabled_at, last_login_at, password_hash, updated_at
 				FROM admin_users
 				WHERE username = $1
 			`, [normalized]);
 			const row = result.rows[0];
 
-			if (!row || !verifyPassword(password, row.password_hash))
+			if (!row || row.disabled_at || !verifyPassword(password, row.password_hash))
 				return null;
 
 			const now = new Date().toISOString();
@@ -535,7 +539,7 @@ export async function createPostgresAdminRepository(options: AdminRepositoryOpti
 				throw new Error("Display name, username, role, and password are required.");
 
 			const existing = await pool.query<UserRow>(`
-				SELECT id, username, display_name, role, created_at, last_login_at, password_hash, updated_at
+				SELECT id, username, display_name, role, created_at, disabled_at, last_login_at, password_hash, updated_at
 				FROM admin_users
 				WHERE username = $1
 			`, [username]);
@@ -548,8 +552,8 @@ export async function createPostgresAdminRepository(options: AdminRepositoryOpti
 
 			await pool.query(`
 				INSERT INTO admin_users (
-					id, username, display_name, role, password_hash, created_at, updated_at, last_login_at
-				) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+					id, username, display_name, role, password_hash, created_at, updated_at, disabled_at, last_login_at
+				) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 			`, [
 				id,
 				username,
@@ -558,6 +562,7 @@ export async function createPostgresAdminRepository(options: AdminRepositoryOpti
 				hashPassword(input.password),
 				now,
 				now,
+				null,
 				null
 			]);
 
@@ -744,12 +749,57 @@ export async function createPostgresAdminRepository(options: AdminRepositoryOpti
 		},
 		async listUsers() {
 			const result = await pool.query<UserRow>(`
-				SELECT id, username, display_name, role, created_at, last_login_at, password_hash, updated_at
+				SELECT id, username, display_name, role, created_at, disabled_at, last_login_at, password_hash, updated_at
 				FROM admin_users
-				ORDER BY CASE role WHEN 'admin' THEN 0 ELSE 1 END, username
+				ORDER BY CASE WHEN disabled_at IS NULL THEN 0 ELSE 1 END, CASE role WHEN 'admin' THEN 0 ELSE 1 END, username
 			`);
 
 			return { users: result.rows.map(rowToUser) };
+		},
+		async updateUser(id, patch) {
+			const currentResult = await pool.query<UserRow>(`
+				SELECT id, username, display_name, role, created_at, disabled_at, last_login_at, password_hash, updated_at
+				FROM admin_users
+				WHERE id = $1
+			`, [id]);
+			const current = currentResult.rows[0];
+
+			if (!current)
+				throw new Error("Admin user not found.");
+
+			const now = new Date().toISOString();
+			const nextDisabledAt = patch.disabled === undefined
+				? current.disabled_at
+				: patch.disabled
+					? current.disabled_at || now
+					: null;
+
+			if (patch.disabled && !current.disabled_at && current.role === "admin") {
+				const remainingAdmins = await pool.query<CountRow>(`
+					SELECT COUNT(*)::int AS count
+					FROM admin_users
+					WHERE role = 'admin' AND disabled_at IS NULL AND id <> $1
+				`, [id]);
+
+				if (Number(remainingAdmins.rows[0]?.count ?? 0) < 1)
+					throw new Error("Cannot disable the last active admin user.");
+			}
+
+			await pool.query(`
+				UPDATE admin_users
+				SET disabled_at = $1, updated_at = $2
+				WHERE id = $3
+			`, [nextDisabledAt, now, id]);
+
+			if (patch.disabled !== undefined && nextDisabledAt !== current.disabled_at) {
+				await logActivity(
+					"review",
+					patch.disabled ? "Disabled admin user" : "Restored admin user",
+					`${current.display_name} ${patch.disabled ? "can no longer sign in" : "can sign in again"}.`
+				);
+			}
+
+			return await repository.listUsers();
 		},
 		async updateContent(id, patch) {
 			const currentResult = await pool.query<ContentRow>(`

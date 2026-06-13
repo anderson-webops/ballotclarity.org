@@ -1,6 +1,6 @@
 import { defineEventHandler } from "h3";
-import { getAdminSession } from "../../utils/admin-auth";
+import { getValidatedAdminSession } from "../../utils/admin-auth";
 
-export default defineEventHandler((event) => {
-	return getAdminSession(event);
+export default defineEventHandler(async (event) => {
+	return await getValidatedAdminSession(event);
 });

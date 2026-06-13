@@ -132,6 +132,10 @@ export interface CreateUserInput {
 	username: string;
 }
 
+export interface UserPatch {
+	disabled?: boolean;
+}
+
 export interface AdminRepository {
 	driver: "postgres" | "sqlite";
 	authenticateUser: (username: string, password: string) => AdminUser | null | Promise<AdminUser | null>;
@@ -153,6 +157,7 @@ export interface AdminRepository {
 	updateCorrection: (id: string, patch: CorrectionPatch) => AdminCorrectionsResponse | Promise<AdminCorrectionsResponse>;
 	updateGuidePackage: (id: string, patch: GuidePackagePatch) => GuidePackageWorkflowListResponse | Promise<GuidePackageWorkflowListResponse>;
 	updateSource: (id: string, patch: SourcePatch) => AdminSourceMonitorResponse | Promise<AdminSourceMonitorResponse>;
+	updateUser: (id: string, patch: UserPatch) => AdminUsersResponse | Promise<AdminUsersResponse>;
 }
 
 interface DatabaseCountRow {
@@ -165,6 +170,7 @@ interface UserRow {
 	display_name: string;
 	role: AdminUserRole;
 	created_at: string;
+	disabled_at: string | null;
 	last_login_at: string | null;
 	password_hash: string;
 	updated_at: string;
@@ -278,6 +284,7 @@ export function verifyPassword(password: string, storedHash: string) {
 function rowToUser(row: UserRow): AdminUser {
 	return {
 		createdAt: row.created_at,
+		disabledAt: row.disabled_at || undefined,
 		displayName: row.display_name,
 		id: row.id,
 		lastLoginAt: row.last_login_at || undefined,
@@ -503,6 +510,7 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 	const guidePackageSeed = options.guidePackageSeed ?? [];
 
 	database.exec(schema);
+	ensureColumn(database, "admin_users", "disabled_at", "TEXT");
 	ensureColumn(database, "admin_content", "public_summary", "TEXT");
 	ensureColumn(database, "admin_content", "ballot_summary", "TEXT");
 	ensureColumn(database, "admin_guide_packages", "review_recommendation", "TEXT");
@@ -737,8 +745,9 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 				password_hash,
 				created_at,
 				updated_at,
+				disabled_at,
 				last_login_at
-			) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+			) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 		`).run(
 			`user-${bootstrapUsername}`,
 			bootstrapUsername.trim(),
@@ -747,15 +756,16 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 			hashPassword(bootstrapPassword),
 			now,
 			now,
+			null,
 			null
 		);
 	}
 
 	function listUsers(): AdminUsersResponse {
 		const rows = database.prepare(`
-			SELECT id, username, display_name, role, created_at, last_login_at, password_hash, updated_at
+			SELECT id, username, display_name, role, created_at, disabled_at, last_login_at, password_hash, updated_at
 			FROM admin_users
-			ORDER BY CASE role WHEN 'admin' THEN 0 ELSE 1 END, username
+			ORDER BY CASE WHEN disabled_at IS NULL THEN 0 ELSE 1 END, CASE role WHEN 'admin' THEN 0 ELSE 1 END, username
 		`).all() as unknown as UserRow[];
 
 		return {
@@ -771,7 +781,7 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 			throw new Error("Display name, username, role, and password are required.");
 
 		const existing = database.prepare(`
-			SELECT id, username, display_name, role, created_at, last_login_at, password_hash, updated_at
+			SELECT id, username, display_name, role, created_at, disabled_at, last_login_at, password_hash, updated_at
 			FROM admin_users
 			WHERE username = ?
 		`).get(username) as UserRow | undefined;
@@ -791,8 +801,9 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 				password_hash,
 				created_at,
 				updated_at,
+				disabled_at,
 				last_login_at
-			) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+			) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 		`).run(
 			id,
 			username,
@@ -801,6 +812,7 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 			hashPassword(input.password),
 			now,
 			now,
+			null,
 			null
 		);
 
@@ -818,12 +830,12 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 	function authenticateUser(username: string, password: string) {
 		const normalized = username.trim().toLowerCase();
 		const row = database.prepare(`
-			SELECT id, username, display_name, role, created_at, last_login_at, password_hash, updated_at
+			SELECT id, username, display_name, role, created_at, disabled_at, last_login_at, password_hash, updated_at
 			FROM admin_users
 			WHERE username = ?
 		`).get(normalized) as UserRow | undefined;
 
-		if (!row || !verifyPassword(password, row.password_hash))
+		if (!row || row.disabled_at || !verifyPassword(password, row.password_hash))
 			return null;
 
 		const now = new Date().toISOString();
@@ -833,6 +845,51 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 			...rowToUser({ ...row, last_login_at: now }),
 			lastLoginAt: now
 		};
+	}
+
+	function updateUser(id: string, patch: UserPatch): AdminUsersResponse {
+		const current = database.prepare(`
+			SELECT id, username, display_name, role, created_at, disabled_at, last_login_at, password_hash, updated_at
+			FROM admin_users
+			WHERE id = ?
+		`).get(id) as UserRow | undefined;
+
+		if (!current)
+			throw new Error("Admin user not found.");
+
+		const now = new Date().toISOString();
+		const nextDisabledAt = patch.disabled === undefined
+			? current.disabled_at
+			: patch.disabled
+				? current.disabled_at || now
+				: null;
+
+		if (patch.disabled && !current.disabled_at && current.role === "admin") {
+			const remainingAdmins = database.prepare(`
+				SELECT COUNT(*) AS count
+				FROM admin_users
+				WHERE role = 'admin' AND disabled_at IS NULL AND id <> ?
+			`).get(id) as unknown as DatabaseCountRow;
+
+			if (Number(remainingAdmins.count) < 1)
+				throw new Error("Cannot disable the last active admin user.");
+		}
+
+		database.prepare(`
+			UPDATE admin_users
+			SET disabled_at = ?, updated_at = ?
+			WHERE id = ?
+		`).run(nextDisabledAt, now, id);
+
+		if (patch.disabled !== undefined && nextDisabledAt !== current.disabled_at) {
+			logActivity(
+				"review",
+				patch.disabled ? "Disabled admin user" : "Restored admin user",
+				`${current.display_name} ${patch.disabled ? "can no longer sign in" : "can sign in again"}.`
+			);
+		}
+
+		return listUsers();
 	}
 
 	function logActivity(type: AdminActivityItem["type"], label: string, summary: string) {
@@ -1338,6 +1395,7 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 		updateContent,
 		updateCorrection,
 		updateGuidePackage,
-		updateSource
+		updateSource,
+		updateUser
 	};
 }

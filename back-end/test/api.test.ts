@@ -3176,3 +3176,151 @@ test("POST /api/admin/auth/login authenticates a configured user and throttles r
 		});
 	}
 });
+
+test("admin user disablement blocks login and protects the last active admin", async () => {
+	const isolatedServer = (await createApp({
+		adminApiKey,
+		adminDbPath: ":memory:",
+		bootstrapDisplayName: "Operations Admin",
+		bootstrapPassword: "correct-horse-battery-staple",
+		bootstrapUsername: "ops-admin"
+	})).listen(0, "127.0.0.1");
+
+	await once(isolatedServer, "listening");
+	const isolatedAddress = isolatedServer.address() as AddressInfo;
+	const isolatedBaseUrl = `http://127.0.0.1:${isolatedAddress.port}`;
+	const adminHeaders = {
+		"Content-Type": "application/json",
+		"x-admin-api-key": adminApiKey
+	};
+
+	try {
+		const usersResponse = await fetch(`${isolatedBaseUrl}/api/admin/users`, {
+			headers: {
+				"x-admin-api-key": adminApiKey
+			}
+		});
+		const usersBody = await usersResponse.json();
+		const bootstrapAdmin = usersBody.users.find((user: { username: string }) => user.username === "ops-admin");
+
+		assert.equal(usersResponse.status, 200);
+		assert.ok(bootstrapAdmin?.id);
+
+		const disableLastAdminResponse = await fetch(`${isolatedBaseUrl}/api/admin/users/${bootstrapAdmin.id}`, {
+			body: JSON.stringify({ disabled: true }),
+			headers: adminHeaders,
+			method: "PATCH"
+		});
+		const disableLastAdminBody = await disableLastAdminResponse.json();
+
+		assert.equal(disableLastAdminResponse.status, 400);
+		assert.match(disableLastAdminBody.message, /last active admin/i);
+
+		const createEditorResponse = await fetch(`${isolatedBaseUrl}/api/admin/users`, {
+			body: JSON.stringify({
+				displayName: "Review Editor",
+				password: "review-editor-password",
+				role: "editor",
+				username: "review-editor"
+			}),
+			headers: adminHeaders,
+			method: "POST"
+		});
+		const createEditorBody = await createEditorResponse.json();
+		const editor = createEditorBody.users.find((user: { username: string }) => user.username === "review-editor");
+
+		assert.equal(createEditorResponse.status, 201);
+		assert.ok(editor?.id);
+		assert.equal(editor.disabledAt, undefined);
+
+		const editorLoginResponse = await fetch(`${isolatedBaseUrl}/api/admin/auth/login`, {
+			body: JSON.stringify({
+				password: "review-editor-password",
+				username: "review-editor"
+			}),
+			headers: {
+				"Content-Type": "application/json",
+				"x-forwarded-for": "203.0.113.20"
+			},
+			method: "POST"
+		});
+
+		assert.equal(editorLoginResponse.status, 200);
+
+		const activeSessionResponse = await fetch(`${isolatedBaseUrl}/api/admin/auth/session/review-editor`, {
+			headers: {
+				"x-admin-api-key": adminApiKey
+			}
+		});
+		const activeSessionBody = await activeSessionResponse.json();
+
+		assert.equal(activeSessionResponse.status, 200);
+		assert.equal(activeSessionBody.authenticated, true);
+		assert.equal(activeSessionBody.username, "review-editor");
+
+		const disableEditorResponse = await fetch(`${isolatedBaseUrl}/api/admin/users/${editor.id}`, {
+			body: JSON.stringify({ disabled: true }),
+			headers: adminHeaders,
+			method: "PATCH"
+		});
+		const disableEditorBody = await disableEditorResponse.json();
+		const disabledEditor = disableEditorBody.users.find((user: { username: string }) => user.username === "review-editor");
+
+		assert.equal(disableEditorResponse.status, 200);
+		assert.ok(disabledEditor.disabledAt);
+
+		const blockedEditorLoginResponse = await fetch(`${isolatedBaseUrl}/api/admin/auth/login`, {
+			body: JSON.stringify({
+				password: "review-editor-password",
+				username: "review-editor"
+			}),
+			headers: {
+				"Content-Type": "application/json",
+				"x-forwarded-for": "203.0.113.21"
+			},
+			method: "POST"
+		});
+
+		assert.equal(blockedEditorLoginResponse.status, 401);
+
+		const disabledSessionResponse = await fetch(`${isolatedBaseUrl}/api/admin/auth/session/review-editor`, {
+			headers: {
+				"x-admin-api-key": adminApiKey
+			}
+		});
+		const disabledSessionBody = await disabledSessionResponse.json();
+
+		assert.equal(disabledSessionResponse.status, 401);
+		assert.equal(disabledSessionBody.authenticated, false);
+
+		const restoreEditorResponse = await fetch(`${isolatedBaseUrl}/api/admin/users/${editor.id}`, {
+			body: JSON.stringify({ disabled: false }),
+			headers: adminHeaders,
+			method: "PATCH"
+		});
+		const restoreEditorBody = await restoreEditorResponse.json();
+		const restoredEditor = restoreEditorBody.users.find((user: { username: string }) => user.username === "review-editor");
+
+		assert.equal(restoreEditorResponse.status, 200);
+		assert.equal(restoredEditor.disabledAt, undefined);
+
+		const restoredEditorLoginResponse = await fetch(`${isolatedBaseUrl}/api/admin/auth/login`, {
+			body: JSON.stringify({
+				password: "review-editor-password",
+				username: "review-editor"
+			}),
+			headers: {
+				"Content-Type": "application/json",
+				"x-forwarded-for": "203.0.113.22"
+			},
+			method: "POST"
+		});
+
+		assert.equal(restoredEditorLoginResponse.status, 200);
+	}
+	finally {
+		await new Promise<void>((resolve, reject) => {
+			isolatedServer.close(error => error ? reject(error) : resolve());
+		});
+	}
+});

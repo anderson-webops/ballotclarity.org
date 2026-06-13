@@ -18,6 +18,7 @@ const form = reactive({
 });
 
 const isSubmitting = ref(false);
+const updatingId = ref("");
 const feedbackMessage = ref("");
 const feedbackTone = ref<"error" | "success">("success");
 
@@ -46,6 +47,30 @@ async function createUser() {
 	}
 	finally {
 		isSubmitting.value = false;
+	}
+}
+
+async function setUserDisabled(userId: string, disabled: boolean) {
+	updatingId.value = userId;
+	feedbackMessage.value = "";
+
+	try {
+		await $fetch(`/api/admin/users/${userId}`, {
+			body: { disabled },
+			method: "PATCH"
+		});
+		feedbackMessage.value = disabled ? "Admin user disabled." : "Admin user restored.";
+		feedbackTone.value = "success";
+		await refresh();
+	}
+	catch (error) {
+		feedbackMessage.value = error instanceof FetchError
+			? error.data?.message || error.statusMessage || "Unable to update admin user."
+			: "Unable to update admin user.";
+		feedbackTone.value = "error";
+	}
+	finally {
+		updatingId.value = "";
 	}
 }
 
@@ -106,13 +131,43 @@ usePageSeo({
 									{{ user.username }}
 								</p>
 							</div>
-							<TrustBadge :label="user.role" :tone="user.role === 'admin' ? 'accent' : 'neutral'" />
+							<div class="flex flex-wrap gap-2 justify-end">
+								<TrustBadge :label="user.role" :tone="user.role === 'admin' ? 'accent' : 'neutral'" />
+								<TrustBadge
+									:label="user.disabledAt ? 'disabled' : 'active'"
+									:tone="user.disabledAt ? 'warning' : 'neutral'"
+								/>
+							</div>
 						</div>
 						<div class="mt-4 gap-4 grid sm:grid-cols-2">
 							<UpdatedAt :value="user.createdAt" label="Created" />
 							<p class="text-sm text-app-muted dark:text-app-muted-dark">
 								<span class="text-app-ink font-semibold dark:text-app-text-dark">Last login:</span>
 								{{ user.lastLoginAt || "No recorded login yet" }}
+							</p>
+							<UpdatedAt v-if="user.disabledAt" :value="user.disabledAt" label="Disabled" />
+						</div>
+						<div class="mt-5 flex flex-wrap gap-3">
+							<button
+								v-if="!user.disabledAt"
+								type="button"
+								class="btn-secondary"
+								:disabled="session?.role !== 'admin' || session?.username === user.username || updatingId === user.id"
+								@click="setUserDisabled(user.id, true)"
+							>
+								{{ updatingId === user.id ? "Updating..." : "Disable sign-in" }}
+							</button>
+							<button
+								v-else
+								type="button"
+								class="btn-secondary"
+								:disabled="session?.role !== 'admin' || updatingId === user.id"
+								@click="setUserDisabled(user.id, false)"
+							>
+								{{ updatingId === user.id ? "Updating..." : "Restore sign-in" }}
+							</button>
+							<p v-if="session?.username === user.username" class="text-xs text-app-muted self-center dark:text-app-muted-dark">
+								Current session
 							</p>
 						</div>
 					</li>

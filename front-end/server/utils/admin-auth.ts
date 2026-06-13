@@ -36,6 +36,8 @@ interface BackendLoginResponse {
 	username: string | null;
 }
 
+type BackendSessionResponse = BackendLoginResponse;
+
 interface AdminSessionPayload {
 	displayName: string;
 	expiresAt: number;
@@ -199,6 +201,65 @@ export function requireAdminSession(event: H3Event) {
 	return session;
 }
 
+export async function getValidatedAdminSession(event: H3Event): Promise<AdminSessionResponse> {
+	const session = getAdminSession(event);
+
+	if (!session.configured || !session.authenticated || !session.username)
+		return session;
+
+	const config = getAdminConfig(event);
+
+	try {
+		const backendSession = await $fetch<BackendSessionResponse>(
+			`${config.apiBase}/admin/auth/session/${encodeURIComponent(session.username)}`,
+			{
+				headers: getForwardHeaders(event, {
+					"x-admin-api-key": config.apiKey
+				})
+			}
+		);
+
+		if (backendSession.authenticated)
+			return backendSession;
+	}
+	catch (error) {
+		if (!(error instanceof FetchError) || error.statusCode !== 401)
+			throw error;
+	}
+
+	deleteCookie(event, adminCookieName, {
+		path: "/"
+	});
+
+	return {
+		authenticated: false,
+		configured: true,
+		displayName: null,
+		role: null,
+		username: null
+	};
+}
+
+export async function requireActiveAdminSession(event: H3Event) {
+	const session = await getValidatedAdminSession(event);
+
+	if (!session.configured) {
+		throw createError({
+			statusCode: 503,
+			statusMessage: "Admin portal is not configured."
+		});
+	}
+
+	if (!session.authenticated) {
+		throw createError({
+			statusCode: 401,
+			statusMessage: "Admin authentication required."
+		});
+	}
+
+	return session;
+}
+
 export function clearAdminSession(event: H3Event): AdminSessionResponse {
 	const currentSession = getAdminSession(event);
 
@@ -302,17 +363,17 @@ async function fetchAdminApi<T>(event: H3Event, path: string, options?: {
 }
 
 export async function getAdminOverview(event: H3Event) {
-	requireAdminSession(event);
+	await requireActiveAdminSession(event);
 	return await fetchAdminApi<AdminOverviewResponse>(event, "/admin/overview");
 }
 
 export async function getAdminCorrections(event: H3Event) {
-	requireAdminSession(event);
+	await requireActiveAdminSession(event);
 	return await fetchAdminApi<AdminCorrectionsResponse>(event, "/admin/corrections");
 }
 
 export async function updateAdminCorrection(event: H3Event, id: string, body: Record<string, unknown>) {
-	requireAdminSession(event);
+	await requireActiveAdminSession(event);
 	return await fetchAdminApi<AdminCorrectionsResponse>(event, `/admin/corrections/${id}`, {
 		body,
 		method: "PATCH"
@@ -320,17 +381,17 @@ export async function updateAdminCorrection(event: H3Event, id: string, body: Re
 }
 
 export async function getAdminReview(event: H3Event) {
-	requireAdminSession(event);
+	await requireActiveAdminSession(event);
 	return await fetchAdminApi<AdminReviewResponse>(event, "/admin/review");
 }
 
 export async function getAdminContent(event: H3Event) {
-	requireAdminSession(event);
+	await requireActiveAdminSession(event);
 	return await fetchAdminApi<AdminContentResponse>(event, "/admin/content");
 }
 
 export async function updateAdminContent(event: H3Event, id: string, body: Record<string, unknown>) {
-	requireAdminSession(event);
+	await requireActiveAdminSession(event);
 	return await fetchAdminApi<AdminContentResponse>(event, `/admin/content/${id}`, {
 		body,
 		method: "PATCH"
@@ -338,22 +399,22 @@ export async function updateAdminContent(event: H3Event, id: string, body: Recor
 }
 
 export async function getAdminGuidePackages(event: H3Event) {
-	requireAdminSession(event);
+	await requireActiveAdminSession(event);
 	return await fetchAdminApi<GuidePackageListResponse>(event, "/admin/packages");
 }
 
 export async function getAdminGuidePackage(event: H3Event, id: string) {
-	requireAdminSession(event);
+	await requireActiveAdminSession(event);
 	return await fetchAdminApi<GuidePackageRecordResponse>(event, `/admin/packages/${id}`);
 }
 
 export async function getAdminGuidePackageDiagnostics(event: H3Event, id: string) {
-	requireAdminSession(event);
+	await requireActiveAdminSession(event);
 	return await fetchAdminApi<GuidePackageDiagnosticsResponse>(event, `/admin/packages/${id}/diagnostics`);
 }
 
 export async function createAdminGuidePackage(event: H3Event, body: Record<string, unknown>) {
-	requireAdminSession(event);
+	await requireActiveAdminSession(event);
 	return await fetchAdminApi<GuidePackageRecordResponse>(event, "/admin/packages", {
 		body,
 		method: "POST"
@@ -361,7 +422,7 @@ export async function createAdminGuidePackage(event: H3Event, body: Record<strin
 }
 
 export async function updateAdminGuidePackage(event: H3Event, id: string, body: Record<string, unknown>) {
-	requireAdminSession(event);
+	await requireActiveAdminSession(event);
 	return await fetchAdminApi<GuidePackageRecordResponse>(event, `/admin/packages/${id}`, {
 		body,
 		method: "PATCH"
@@ -369,7 +430,7 @@ export async function updateAdminGuidePackage(event: H3Event, id: string, body: 
 }
 
 export async function publishAdminGuidePackage(event: H3Event, id: string, body: Record<string, unknown>) {
-	requireAdminSession(event);
+	await requireActiveAdminSession(event);
 	return await fetchAdminApi<GuidePackageRecordResponse>(event, `/admin/packages/${id}/publish`, {
 		body,
 		method: "POST"
@@ -377,7 +438,7 @@ export async function publishAdminGuidePackage(event: H3Event, id: string, body:
 }
 
 export async function unpublishAdminGuidePackage(event: H3Event, id: string, body: Record<string, unknown>) {
-	requireAdminSession(event);
+	await requireActiveAdminSession(event);
 	return await fetchAdminApi<GuidePackageRecordResponse>(event, `/admin/packages/${id}/unpublish`, {
 		body,
 		method: "POST"
@@ -385,12 +446,12 @@ export async function unpublishAdminGuidePackage(event: H3Event, id: string, bod
 }
 
 export async function getAdminSourceMonitor(event: H3Event) {
-	requireAdminSession(event);
+	await requireActiveAdminSession(event);
 	return await fetchAdminApi<AdminSourceMonitorResponse>(event, "/admin/sources");
 }
 
 export async function updateAdminSource(event: H3Event, id: string, body: Record<string, unknown>) {
-	requireAdminSession(event);
+	await requireActiveAdminSession(event);
 	return await fetchAdminApi<AdminSourceMonitorResponse>(event, `/admin/sources/${id}`, {
 		body,
 		method: "PATCH"
@@ -398,7 +459,7 @@ export async function updateAdminSource(event: H3Event, id: string, body: Record
 }
 
 export async function getAdminUsers(event: H3Event) {
-	const session = requireAdminSession(event);
+	const session = await requireActiveAdminSession(event);
 
 	if (session.role !== "admin") {
 		throw createError({
@@ -411,7 +472,7 @@ export async function getAdminUsers(event: H3Event) {
 }
 
 export async function createAdminUser(event: H3Event, body: Record<string, unknown>) {
-	const session = requireAdminSession(event);
+	const session = await requireActiveAdminSession(event);
 
 	if (session.role !== "admin") {
 		throw createError({
@@ -423,5 +484,21 @@ export async function createAdminUser(event: H3Event, body: Record<string, unkno
 	return await fetchAdminApi<AdminUsersResponse>(event, "/admin/users", {
 		body,
 		method: "POST"
+	});
+}
+
+export async function updateAdminUser(event: H3Event, id: string, body: Record<string, unknown>) {
+	const session = await requireActiveAdminSession(event);
+
+	if (session.role !== "admin") {
+		throw createError({
+			statusCode: 403,
+			statusMessage: "Only admin users can manage accounts."
+		});
+	}
+
+	return await fetchAdminApi<AdminUsersResponse>(event, `/admin/users/${id}`, {
+		body,
+		method: "PATCH"
 	});
 }

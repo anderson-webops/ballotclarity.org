@@ -16,6 +16,7 @@ const buildId = process.env.NUXT_PUBLIC_BUILD_ID
 const securityHeaders = {
 	"permissions-policy": "camera=(), microphone=(), geolocation=(), payment=(), usb=(), browsing-topics=()",
 	"referrer-policy": "strict-origin-when-cross-origin",
+	"strict-transport-security": "max-age=31536000",
 	"x-content-type-options": "nosniff",
 	"x-frame-options": "DENY"
 };

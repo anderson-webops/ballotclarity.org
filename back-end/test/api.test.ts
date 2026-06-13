@@ -1119,6 +1119,7 @@ test("GET /health returns readiness and coverage metadata", async () => {
 	assert.equal(response.headers.get("x-content-type-options"), "nosniff");
 	assert.equal(response.headers.get("x-frame-options"), "DENY");
 	assert.equal(response.headers.get("referrer-policy"), "strict-origin-when-cross-origin");
+	assert.equal(response.headers.get("strict-transport-security"), "max-age=31536000");
 	assert.match(response.headers.get("permissions-policy") || "", /camera=\(\)/);
 	assert.equal(body.ok, true);
 	assert.equal(body.ready, true);

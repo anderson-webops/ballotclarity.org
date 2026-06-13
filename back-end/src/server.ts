@@ -167,6 +167,7 @@ const localCorsOriginPattern = /^https?:\/\/(?:localhost|127(?:\.\d{1,3}){3}|\[:
 const securityHeaders = {
 	"Permissions-Policy": "camera=(), microphone=(), geolocation=(), payment=(), usb=(), browsing-topics=()",
 	"Referrer-Policy": "strict-origin-when-cross-origin",
+	"Strict-Transport-Security": "max-age=31536000",
 	"X-Content-Type-Options": "nosniff",
 	"X-Frame-Options": "DENY"
 };

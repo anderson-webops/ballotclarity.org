@@ -76,10 +76,12 @@ test("nuxt config uses srcDir and expected civic modules", async () => {
 	assert.deepEqual(config.nitro?.routeRules?.["/**"]?.headers, {
 		"permissions-policy": "camera=(), microphone=(), geolocation=(), payment=(), usb=(), browsing-topics=()",
 		"referrer-policy": "strict-origin-when-cross-origin",
+		"strict-transport-security": "max-age=31536000",
 		"x-content-type-options": "nosniff",
 		"x-frame-options": "DENY"
 	});
 	assert.equal(config.nitro?.routeRules?.["/_nuxt/**"]?.headers?.["cache-control"], "public, max-age=31536000, immutable");
+	assert.equal(config.nitro?.routeRules?.["/_nuxt/**"]?.headers?.["strict-transport-security"], "max-age=31536000");
 	assert.equal(config.nitro?.routeRules?.["/_nuxt/**"]?.headers?.["x-content-type-options"], "nosniff");
 	assert.equal(config.nitro?.routeRules?.["/admin/**"]?.headers?.["X-Robots-Tag"], "noindex, nofollow");
 	assert.equal(config.nitro?.routeRules?.["/admin/**"]?.headers?.["x-frame-options"], "DENY");

@@ -324,7 +324,12 @@ async function stopChromeProcess(processHandle: ChildProcessWithoutNullStreams |
 	}
 
 	if (userDataDir)
-		rmSync(userDataDir, { force: true, recursive: true });
+		rmSync(userDataDir, {
+			force: true,
+			maxRetries: 5,
+			recursive: true,
+			retryDelay: 100
+		});
 }
 
 async function getDocumentBodyText(cdp: CdpSession) {
@@ -655,6 +660,7 @@ test("built app renders the key ballot guide pages against the built API", async
 	assert.equal(homePage.headers.get("x-content-type-options"), "nosniff");
 	assert.equal(homePage.headers.get("x-frame-options"), "DENY");
 	assert.equal(homePage.headers.get("referrer-policy"), "strict-origin-when-cross-origin");
+	assert.equal(homePage.headers.get("strict-transport-security"), "max-age=31536000");
 	assert.match(homePage.headers.get("permissions-policy") || "", /camera=\(\)/);
 	assert.equal(resultsPage.status, 200);
 	assert.equal(resultsPage.headers.get("x-robots-tag"), "noindex, nofollow");
@@ -667,6 +673,7 @@ test("built app renders the key ballot guide pages against the built API", async
 	assert.equal(ballotResponse.headers.get("x-content-type-options"), "nosniff");
 	assert.equal(ballotResponse.headers.get("x-frame-options"), "DENY");
 	assert.equal(ballotResponse.headers.get("referrer-policy"), "strict-origin-when-cross-origin");
+	assert.equal(ballotResponse.headers.get("strict-transport-security"), "max-age=31536000");
 	assert.match(ballotResponse.headers.get("permissions-policy") || "", /camera=\(\)/);
 	assert.match(homeHtml, /Location lookup|Civic results|Ballot guide/i);
 	assert.match(homeHtml, /Fulton County, Georgia/);

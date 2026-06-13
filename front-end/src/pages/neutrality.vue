@@ -46,7 +46,7 @@ const workflowSteps = [
 		title: "Risk review"
 	},
 	{
-		description: "Publish with timestamps, source panels, and stated limits so users can inspect the evidence trail.",
+		description: "Publish with timestamps, source panels, and stated limits so users can inspect the source trail.",
 		title: "Publish"
 	},
 	{

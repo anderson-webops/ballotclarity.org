@@ -281,7 +281,7 @@ usePageSeo({
 						<UpdatedAt :value="person.freshness.dataLastUpdatedAt ?? person.updatedAt" label="Data through" />
 					</div>
 					<div class="bc-action-cluster mt-6">
-						<SourceDrawer :sources="person.sources" :title="`${person.name} evidence and sources`" button-label="Evidence & sources" />
+						<SourceDrawer :sources="person.sources" :title="`${person.name} sources and supporting records`" button-label="Sources & records" />
 						<a v-if="campaignLink" :href="campaignLink" target="_blank" rel="noopener noreferrer" class="btn-secondary">
 							<span class="i-carbon-launch" />
 							Open campaign site

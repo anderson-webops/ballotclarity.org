@@ -418,7 +418,7 @@ function saveToPlan() {
 										Questionnaire responses in attached records
 									</h3>
 									<p class="text-sm text-app-muted mt-2 dark:text-app-muted-dark">
-										Responses are shown as submitted, with provenance labels and attached evidence.
+										Responses are shown as submitted, with provenance labels and attached sources.
 									</p>
 								</div>
 								<SourceDrawer :sources="candidate.comparison.questionnaireResponses.flatMap(response => response.sources)" :title="`${candidate.name} questionnaire responses`" button-label="Sources" />
@@ -589,7 +589,7 @@ function saveToPlan() {
 					id="sources"
 					eyebrow="Sources & methods"
 					title="Sources and methodology notes"
-					description="Use this section to inspect how the profile was assembled, where the attached evidence came from, and what records remain outside the current published source set."
+					description="Use this section to inspect how the profile was assembled, where the attached source records came from, and what records remain outside the current published source set."
 				>
 					<template #meta>
 						<SourceDrawer :sources="candidate.sources" :title="`${candidate.name} full source list`" />

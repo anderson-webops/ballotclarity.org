@@ -209,14 +209,19 @@ test("public project identity avoids unverified nonprofit status claims", () => 
 	assert.match(identityText, /does not currently claim tax-exempt status/);
 });
 
-test("public evidence copy avoids implementation and archive jargon", () => {
+test("public source copy avoids implementation and archive jargon", () => {
 	const failures: string[] = [];
 	const blockedPhrases = [
 		/project archive/i,
+		/\bevidence\b/i,
 		/source drawers?/i,
 		/evidence drawer/i,
+		/evidence links?/i,
+		/evidence buttons?/i,
 		/source rail/i,
-		/archive materials?/i
+		/archive materials?/i,
+		/Evidence & sources/,
+		/button-label="Evidence"/
 	];
 
 	for (const root of publicSourceRoots) {

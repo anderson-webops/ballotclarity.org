@@ -32,7 +32,7 @@ withDefaults(defineProps<{
 								</p>
 							</div>
 						</div>
-						<SourceDrawer :sources="item.sources" :title="item.text" button-label="Evidence" />
+						<SourceDrawer :sources="item.sources" :title="item.text" button-label="Sources" />
 					</div>
 				</li>
 			</ul>
@@ -56,7 +56,7 @@ withDefaults(defineProps<{
 								</p>
 							</div>
 						</div>
-						<SourceDrawer :sources="item.sources" :title="item.text" button-label="Evidence" />
+						<SourceDrawer :sources="item.sources" :title="item.text" button-label="Sources" />
 					</div>
 				</li>
 			</ul>

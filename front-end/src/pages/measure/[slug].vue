@@ -204,7 +204,7 @@ function saveMeasure(decision: "no" | "review" | "yes") {
 						</p>
 					</div>
 					<div class="bc-action-cluster mt-6">
-						<SourceDrawer :sources="measure.sources" :title="`${measure.title} evidence and sources`" button-label="Evidence & sources" />
+						<SourceDrawer :sources="measure.sources" :title="`${measure.title} sources and supporting records`" button-label="Sources & records" />
 						<div class="flex flex-wrap gap-2">
 							<button
 								type="button"

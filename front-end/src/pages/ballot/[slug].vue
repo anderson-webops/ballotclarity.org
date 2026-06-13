@@ -248,7 +248,7 @@ const coverageNotes = computed(() => {
 		`This ballot is personalized to ${personalizationLabel.value}. ${personalizationNote.value}`,
 		...(data.value.guideContent ? [data.value.guideContent.summary] : []),
 		`${data.value.election.officialResources.length} official links are attached for election logistics, notices, and office contact details.`,
-		`${ballotCounts.value.sourceLinkedItems} contest items in this guide link to attached source records or evidence notes.`,
+		`${ballotCounts.value.sourceLinkedItems} contest items in this guide link to attached source records or supporting notes.`,
 		`${effectiveBallotPlanCount.value} contest${effectiveBallotPlanCount.value === 1 ? "" : "s"} saved to your ballot plan so far.`,
 		"Time-sensitive deadlines, polling logistics, and late campaign activity should still be verified in official election-office notices."
 	];

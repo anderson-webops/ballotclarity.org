@@ -14,7 +14,7 @@ const verificationSections = [
 	{
 		body: [
 			"Verification badges summarize whether a statement comes from official election material, attached public records, or clearly labeled campaign or supporting material.",
-			"Badges are meant to reduce page clutter, not replace evidence. Source panels and the source directory remain available when you want the record itself."
+			"Badges are meant to reduce page clutter, not replace source records. Source panels and the source directory remain available when you want the record itself."
 		],
 		title: "How badges work"
 	},

@@ -15,7 +15,7 @@ const items = [
 	},
 	{
 		body: [
-			"Major summaries and evidence blocks link back to source records.",
+			"Major summaries and source-backed blocks link back to source records.",
 			"Source counts and drawers are meant to help readers verify a page without losing their place.",
 		],
 		title: "How sources are attached",
@@ -89,9 +89,9 @@ const trustInterfaceItems = [
 	{
 		body: [
 			"Source panels keep full source lists one click away from the page header and major claim blocks.",
-			"Claim-level summaries use evidence buttons so a user can inspect supporting records without losing context."
+			"Claim-level summaries use source buttons so a user can inspect supporting records without losing context."
 		],
-		label: "Evidence access"
+		label: "Source access"
 	},
 	{
 		body: [
@@ -128,7 +128,7 @@ const trustInterfaceItems = [
 
 		<MethodologySummaryCard
 			:items="trustInterfaceItems"
-			summary="Page signals are meant to keep evidence, freshness, and uncertainty visible where a voter is already reading."
+			summary="Page signals are meant to keep sources, freshness, and uncertainty visible where a voter is already reading."
 			title="How to read page signals"
 		/>
 

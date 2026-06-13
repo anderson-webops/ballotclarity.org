@@ -14,6 +14,8 @@ const buildId = process.env.NUXT_PUBLIC_BUILD_ID
 	|| process.env.COMMIT_SHA
 	|| `local-${Date.now().toString(36)}`;
 const securityHeaders = {
+	"cross-origin-opener-policy": "same-origin",
+	"origin-agent-cluster": "?1",
 	"permissions-policy": "camera=(), microphone=(), geolocation=(), payment=(), usb=(), browsing-topics=()",
 	"referrer-policy": "strict-origin-when-cross-origin",
 	"strict-transport-security": "max-age=31536000",

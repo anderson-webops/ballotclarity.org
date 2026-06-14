@@ -1,4 +1,5 @@
 import type {
+	AdminAuditActor,
 	AdminRepository,
 	AdminRepositoryOptions,
 	ContentHistoryRow,
@@ -8,6 +9,9 @@ import type {
 } from "./admin-store.js";
 import type {
 	AdminActivityItem,
+	AdminAuditEvent,
+	AdminAuditEventType,
+	AdminAuditResponse,
 	AdminContentHistoryResponse,
 	AdminContentItem,
 	AdminContentSnapshot,
@@ -20,7 +24,7 @@ import type {
 	GuidePackageStatus,
 	GuidePackageWorkflow,
 } from "./types/civic.js";
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
@@ -114,6 +118,23 @@ interface ActivityRow {
 	type: AdminActivityItem["type"];
 	timestamp: string;
 	summary: string;
+}
+
+interface AuditRow {
+	actor_display_name: string;
+	actor_role: AdminUserRole | null;
+	actor_username: string | null;
+	event_hash: string;
+	event_type: AdminAuditEventType;
+	id: string;
+	metadata: string;
+	previous_hash: string | null;
+	sequence: number;
+	summary: string;
+	target_id: string;
+	target_label: string;
+	target_type: string;
+	timestamp: string;
 }
 
 interface GuidePackageRow {
@@ -222,6 +243,107 @@ function rowToActivity(row: ActivityRow): AdminActivityItem {
 		timestamp: row.timestamp,
 		type: row.type
 	};
+}
+
+function parseAuditMetadata(raw: string): Record<string, unknown> {
+	try {
+		const parsed = JSON.parse(raw) as unknown;
+
+		return typeof parsed === "object" && parsed !== null && !Array.isArray(parsed)
+			? parsed as Record<string, unknown>
+			: {};
+	}
+	catch {
+		return {};
+	}
+}
+
+function rowToAuditEvent(row: AuditRow): AdminAuditEvent {
+	return {
+		actorDisplayName: row.actor_display_name,
+		actorRole: row.actor_role || undefined,
+		actorUsername: row.actor_username || undefined,
+		eventHash: row.event_hash,
+		eventType: row.event_type,
+		id: row.id,
+		metadata: parseAuditMetadata(row.metadata),
+		previousHash: row.previous_hash || undefined,
+		sequence: row.sequence,
+		summary: row.summary,
+		targetId: row.target_id,
+		targetLabel: row.target_label,
+		targetType: row.target_type,
+		timestamp: row.timestamp
+	};
+}
+
+function stableStringify(value: unknown): string {
+	if (Array.isArray(value))
+		return `[${value.map(item => stableStringify(item)).join(",")}]`;
+
+	if (value && typeof value === "object") {
+		return `{${Object.entries(value as Record<string, unknown>)
+			.sort(([left], [right]) => left.localeCompare(right))
+			.map(([key, item]) => `${JSON.stringify(key)}:${stableStringify(item)}`)
+			.join(",")}}`;
+	}
+
+	return JSON.stringify(value);
+}
+
+function hashAuditEvent(input: Omit<AuditRow, "event_hash">) {
+	return createHash("sha256").update(stableStringify(input)).digest("hex");
+}
+
+function auditRowWithoutHash(row: AuditRow): Omit<AuditRow, "event_hash"> {
+	return {
+		actor_display_name: row.actor_display_name,
+		actor_role: row.actor_role,
+		actor_username: row.actor_username,
+		event_type: row.event_type,
+		id: row.id,
+		metadata: row.metadata,
+		previous_hash: row.previous_hash || null,
+		sequence: row.sequence,
+		summary: row.summary,
+		target_id: row.target_id,
+		target_label: row.target_label,
+		target_type: row.target_type,
+		timestamp: row.timestamp
+	};
+}
+
+function normalizeAuditActor(actor: AdminAuditActor | undefined) {
+	const username = actor?.username?.trim().toLowerCase() || null;
+	const displayName = actor?.displayName?.trim() || username || "Admin API";
+	const role = actor?.role === "admin" || actor?.role === "editor" ? actor.role : null;
+
+	return {
+		displayName,
+		role,
+		username
+	};
+}
+
+function verifyAuditChain(rows: AuditRow[]) {
+	let previousHash: string | null = null;
+	let previousSequence = 0;
+
+	for (const row of rows) {
+		if (row.sequence !== previousSequence + 1)
+			return false;
+
+		if ((row.previous_hash || null) !== previousHash)
+			return false;
+
+		if (hashAuditEvent(auditRowWithoutHash(row)) !== row.event_hash)
+			return false;
+
+		previousHash = row.event_hash;
+		previousSequence = row.sequence;
+	}
+
+	return true;
 }
 
 function parseStoredStringArray(raw: string | null | undefined) {
@@ -526,6 +648,111 @@ export async function createPostgresAdminRepository(options: AdminRepositoryOpti
 		return result.rows.map(rowToActivity);
 	}
 
+	async function recordAuditEvent(input: {
+		actor?: AdminAuditActor;
+		eventType: AdminAuditEventType;
+		metadata?: Record<string, unknown>;
+		summary: string;
+		targetId: string;
+		targetLabel: string;
+		targetType: string;
+		timestamp?: string;
+	}) {
+		const actor = normalizeAuditActor(input.actor);
+		const metadata = stableStringify(input.metadata ?? {});
+		const timestamp = input.timestamp || new Date().toISOString();
+		const client = await pool.connect();
+
+		try {
+			await client.query("BEGIN");
+			await client.query("LOCK TABLE admin_audit_events IN EXCLUSIVE MODE");
+			const lastResult = await client.query<Pick<AuditRow, "event_hash" | "sequence">>(`
+				SELECT sequence, event_hash
+				FROM admin_audit_events
+				ORDER BY sequence DESC
+				LIMIT 1
+			`);
+			const last = lastResult.rows[0];
+			const previousHash = last?.event_hash || null;
+			const sequence = Number(last?.sequence ?? 0) + 1;
+			const eventWithoutHash: Omit<AuditRow, "event_hash"> = {
+				actor_display_name: actor.displayName,
+				actor_role: actor.role,
+				actor_username: actor.username,
+				event_type: input.eventType,
+				id: `audit-${randomUUID()}`,
+				metadata,
+				previous_hash: previousHash,
+				sequence,
+				summary: input.summary,
+				target_id: input.targetId,
+				target_label: input.targetLabel,
+				target_type: input.targetType,
+				timestamp
+			};
+			const eventHash = hashAuditEvent(eventWithoutHash);
+
+			await client.query(`
+				INSERT INTO admin_audit_events (
+					id,
+					sequence,
+					timestamp,
+					event_type,
+					actor_username,
+					actor_display_name,
+					actor_role,
+					target_type,
+					target_id,
+					target_label,
+					summary,
+					metadata,
+					previous_hash,
+					event_hash
+				) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+			`, [
+				eventWithoutHash.id,
+				eventWithoutHash.sequence,
+				eventWithoutHash.timestamp,
+				eventWithoutHash.event_type,
+				eventWithoutHash.actor_username,
+				eventWithoutHash.actor_display_name,
+				eventWithoutHash.actor_role,
+				eventWithoutHash.target_type,
+				eventWithoutHash.target_id,
+				eventWithoutHash.target_label,
+				eventWithoutHash.summary,
+				eventWithoutHash.metadata,
+				eventWithoutHash.previous_hash,
+				eventHash
+			]);
+			await client.query("COMMIT");
+		}
+		catch (error) {
+			await client.query("ROLLBACK");
+			throw error;
+		}
+		finally {
+			client.release();
+		}
+	}
+
+	async function buildAuditEventResponse(): Promise<AdminAuditResponse> {
+		const result = await pool.query<AuditRow>(`
+			SELECT id, sequence, timestamp, event_type, actor_username, actor_display_name, actor_role, target_type, target_id, target_label, summary, metadata, previous_hash, event_hash
+			FROM admin_audit_events
+			ORDER BY sequence ASC
+		`);
+		const latestHash = result.rows.at(-1)?.event_hash;
+		const rows = result.rows.slice(-100).reverse();
+
+		return {
+			events: rows.map(rowToAuditEvent),
+			integrityVerified: verifyAuditChain(result.rows),
+			latestHash,
+			updatedAt: result.rows.at(-1)?.timestamp ?? new Date().toISOString()
+		};
+	}
+
 	async function getContentRow(id: string) {
 		const result = await pool.query<ContentRow>(`
 				SELECT id, title, entity_type, entity_slug, status, priority, updated_at, assigned_to, blocker, summary, public_summary, ballot_summary, source_coverage, published, published_at, publish_approved_by, publish_approved_at, publish_approval_note
@@ -711,6 +938,19 @@ export async function createPostgresAdminRepository(options: AdminRepositoryOpti
 			]);
 
 			await logActivity("review", `Created ${input.role} user`, `${displayName} can now access the internal editorial workspace.`);
+			await recordAuditEvent({
+				actor: input.auditActor,
+				eventType: "admin_user_create",
+				metadata: {
+					role: input.role,
+					username
+				},
+				summary: `${displayName} was created as an ${input.role} account.`,
+				targetId: id,
+				targetLabel: displayName,
+				targetType: "admin_user",
+				timestamp: now
+			});
 
 			return {
 				createdAt: now,
@@ -824,6 +1064,9 @@ export async function createPostgresAdminRepository(options: AdminRepositoryOpti
 			`);
 
 			return { items: result.rows.map(rowToContent) };
+		},
+		async listAuditEvents() {
+			return await buildAuditEventResponse();
 		},
 		async listCorrections() {
 			const result = await pool.query<CorrectionRow>(`
@@ -982,6 +1225,19 @@ export async function createPostgresAdminRepository(options: AdminRepositoryOpti
 					patch.disabled ? "Disabled admin user" : "Restored admin user",
 					`${current.display_name} ${patch.disabled ? "can no longer sign in" : "can sign in again"}.`
 				);
+				await recordAuditEvent({
+					actor: patch.auditActor,
+					eventType: patch.disabled ? "admin_user_disable" : "admin_user_restore",
+					metadata: {
+						disabledAt: nextDisabledAt,
+						username: current.username
+					},
+					summary: `${current.display_name} ${patch.disabled ? "was disabled" : "was restored"}.`,
+					targetId: current.id,
+					targetLabel: current.display_name,
+					targetType: "admin_user",
+					timestamp: now
+				});
 			}
 
 			if (patch.password !== undefined) {
@@ -994,6 +1250,22 @@ export async function createPostgresAdminRepository(options: AdminRepositoryOpti
 						? `${current.display_name} changed their own password. Existing sessions for this account are no longer valid.`
 						: `${current.display_name} received a new temporary password. Existing sessions for this account are no longer valid.`
 				);
+				await recordAuditEvent({
+					actor: patch.auditActor,
+					eventType: isSelfService ? "admin_user_password_change" : "admin_user_password_reset",
+					metadata: {
+						credentialsUpdatedAt: nextCredentialsUpdatedAt,
+						selfService: isSelfService,
+						username: current.username
+					},
+					summary: isSelfService
+						? `${current.display_name} changed their own password.`
+						: `${current.display_name} received an admin password reset.`,
+					targetId: current.id,
+					targetLabel: current.display_name,
+					targetType: "admin_user",
+					timestamp: nextCredentialsUpdatedAt
+				});
 			}
 
 			return await repository.listUsers();
@@ -1097,9 +1369,35 @@ export async function createPostgresAdminRepository(options: AdminRepositoryOpti
 					: `${current.title} moved to ${nextStatus}.`
 			);
 
+			if (
+				changedFields.includes("published")
+				|| changedFields.includes("publishApprovedAt")
+				|| changedFields.includes("publishApprovedBy")
+				|| changedFields.includes("publishApprovalNote")
+			) {
+				await recordAuditEvent({
+					actor: patch.auditActor,
+					eventType: nextPublished ? "content_publish" : "content_unpublish",
+					metadata: {
+						changedFields,
+						entitySlug: current.entity_slug,
+						entityType: current.entity_type,
+						publishApprovedAt: nextSnapshot.publishApprovedAt ?? null,
+						publishApprovedBy: nextSnapshot.publishApprovedBy ?? null
+					},
+					summary: nextPublished
+						? `${current.title} was published with reviewer approval.`
+						: `${current.title} was unpublished and approval metadata was cleared.`,
+					targetId: current.id,
+					targetLabel: current.title,
+					targetType: "admin_content",
+					timestamp: now
+				});
+			}
+
 			return await repository.listContent();
 		},
-		async rollbackContent(id, historyId) {
+		async rollbackContent(id, historyId, auditActor) {
 			const current = await getContentRow(id);
 
 			if (!current)
@@ -1181,6 +1479,20 @@ export async function createPostgresAdminRepository(options: AdminRepositoryOpti
 				`Rolled back ${current.title} to the version from ${historyRow.changed_at}.`
 			);
 			await logActivity("review", `${current.title} rolled back`, `Restored public content fields from the ${historyRow.changed_at} revision.`);
+			await recordAuditEvent({
+				actor: auditActor,
+				eventType: "content_rollback",
+				metadata: {
+					changedFields,
+					restoredFromHistoryId: historyRow.id,
+					restoredFromTimestamp: historyRow.changed_at
+				},
+				summary: `${current.title} was rolled back to the ${historyRow.changed_at} revision.`,
+				targetId: current.id,
+				targetLabel: current.title,
+				targetType: "admin_content",
+				timestamp: now
+			});
 
 			return await repository.listContent();
 		},
@@ -1235,6 +1547,43 @@ export async function createPostgresAdminRepository(options: AdminRepositoryOpti
 				`Guide package ${current.electionSlug} updated`,
 				`Guide package moved to ${nextStatus.replaceAll("_", " ")}.`
 			);
+
+			if (current.status !== "published" && nextStatus === "published") {
+				await recordAuditEvent({
+					actor: patch.auditActor,
+					eventType: "guide_package_publish",
+					metadata: {
+						electionSlug: current.electionSlug,
+						jurisdictionSlug: current.jurisdictionSlug,
+						publishedAt: nextPublishedAt,
+						reviewRecommendation: nextReviewRecommendation,
+						reviewer: nextReviewer
+					},
+					summary: `${current.electionSlug} guide package was published.`,
+					targetId: current.id,
+					targetLabel: current.electionSlug,
+					targetType: "guide_package",
+					timestamp: now
+				});
+			}
+			else if (current.status === "published" && nextStatus !== "published") {
+				await recordAuditEvent({
+					actor: patch.auditActor,
+					eventType: "guide_package_unpublish",
+					metadata: {
+						electionSlug: current.electionSlug,
+						jurisdictionSlug: current.jurisdictionSlug,
+						nextStatus,
+						reviewRecommendation: nextReviewRecommendation,
+						reviewer: nextReviewer
+					},
+					summary: `${current.electionSlug} guide package was unpublished.`,
+					targetId: current.id,
+					targetLabel: current.electionSlug,
+					targetType: "guide_package",
+					timestamp: now
+				});
+			}
 
 			return await repository.listGuidePackages();
 		},

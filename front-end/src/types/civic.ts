@@ -1343,6 +1343,18 @@ export type AdminEntityType = "candidate" | "election" | "measure" | "policy";
 
 export type AdminActivityType = "correction" | "publish" | "review" | "source-check";
 
+export type AdminAuditEventType
+	= | "admin_user_create"
+		| "admin_user_disable"
+		| "admin_user_password_change"
+		| "admin_user_password_reset"
+		| "admin_user_restore"
+		| "content_publish"
+		| "content_rollback"
+		| "content_unpublish"
+		| "guide_package_publish"
+		| "guide_package_unpublish";
+
 export type AdminSubmissionType = "correction" | "feedback";
 
 export interface AdminDashboardMetric {
@@ -1449,6 +1461,23 @@ export interface AdminActivityItem {
 	summary: string;
 }
 
+export interface AdminAuditEvent {
+	actorDisplayName: string;
+	actorRole?: AdminUserRole;
+	actorUsername?: string;
+	eventHash: string;
+	eventType: AdminAuditEventType;
+	id: string;
+	metadata: Record<string, unknown>;
+	previousHash?: string;
+	sequence: number;
+	summary: string;
+	targetId: string;
+	targetLabel: string;
+	targetType: string;
+	timestamp: string;
+}
+
 export interface AdminUser {
 	id: string;
 	username: string;
@@ -1464,6 +1493,13 @@ export interface AdminOverviewResponse {
 	metrics: AdminDashboardMetric[];
 	needsAttention: string[];
 	recentActivity: AdminActivityItem[];
+}
+
+export interface AdminAuditResponse {
+	events: AdminAuditEvent[];
+	integrityVerified: boolean;
+	latestHash?: string;
+	updatedAt: string;
 }
 
 export interface AdminCorrectionsResponse {

@@ -13,6 +13,7 @@ The repo already has:
 - content history, diff views, and rollback for public-summary edits
 - content publish approvals with reviewer, note, and timestamp metadata
 - correction-to-content linkage for editorial follow-up from reported issues to content records
+- an append-only, hash-chained admin audit trail for content publication, rollback, guide publication, and account-management actions
 - a public launch profile centered on Fulton County, Georgia as the first real jurisdiction
 - public coverage, status, corrections, and contest-level canonical pages
 - structured backend request logging, health metadata, and admin login throttling
@@ -90,11 +91,11 @@ Work:
 - add structured editing for more than summary fields
 - add assignment and review notes across more workflow surfaces; content publish approvals and correction-to-content linkage are implemented and should be monitored in production
 - add MFA for admins; login throttling, self-service password change, admin password reset, session invalidation, and account disable/restore controls are implemented and should be monitored in production
-- add immutable audit logs for publish and user-management actions
+- keep immutable audit logs for publish and user-management actions monitored in production; append-only SQLite/Postgres storage and the `/admin/audit` viewer are implemented
 
 Exit criteria:
 
-- editorial public-summary changes are reversible and reviewable, content publishing requires reviewer signoff metadata, and corrections can link to the content records they should drive; broader structured content still needs the same treatment
+- editorial public-summary changes are reversible and reviewable, content publishing requires reviewer signoff metadata, corrections can link to the content records they should drive, and critical publish/user-management actions are recorded in an append-only audit trail; broader structured content still needs the same treatment
 - account lifecycle is no longer dependent on bootstrap credentials alone
 
 ## Phase 5: Production infrastructure and operations
@@ -139,6 +140,7 @@ These changes can be shipped directly from code:
 - persisted public content editing
 - publish gating in the public API
 - stronger admin workflow, including content history, rollback, content publish approval, and correction-to-content linkage
+- immutable admin audit logging for critical publication and user-management actions
 - database abstractions that prepare for Postgres
 - optional Postgres-backed admin persistence
 - imported live-coverage snapshots without changing public API routes
@@ -162,4 +164,4 @@ These items need infrastructure or external service decisions:
 2. Introduce a database-backed read model behind the existing API contracts.
 3. Add one live jurisdiction ingestion pipeline.
 4. Replace SQLite with managed Postgres for admin and content storage.
-5. Add observability, MFA, broader structured editing, and immutable audit logging.
+5. Add observability, MFA, and broader structured editing while monitoring the implemented immutable audit trail.

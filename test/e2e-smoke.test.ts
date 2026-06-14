@@ -13,6 +13,7 @@ import {
 	staleClientBuildStorageKey,
 	staleClientReloadKeyPrefix,
 } from "../front-end/src/utils/deploy-recovery.ts";
+import { buildActiveNationwideLookupCookieValue } from "../front-end/src/utils/active-nationwide-cookie.ts";
 
 const repoRoot = process.cwd();
 
@@ -240,21 +241,7 @@ const guideShellOnlySnapshot = {
 	}
 };
 
-const activeNationwideLookupCookie = `${activeNationwideLookupCookieName}=${encodeURIComponent(JSON.stringify({
-	actions: nationwideLookupSnapshot.nationwideLookupResult.actions,
-	availability: nationwideLookupSnapshot.nationwideLookupResult.availability,
-	detectedFromIp: nationwideLookupSnapshot.nationwideLookupResult.detectedFromIp,
-	districtMatches: nationwideLookupSnapshot.nationwideLookupResult.districtMatches,
-	electionSlug: nationwideLookupSnapshot.nationwideLookupResult.electionSlug,
-	guideAvailability: nationwideLookupSnapshot.nationwideLookupResult.guideAvailability,
-	inputKind: nationwideLookupSnapshot.nationwideLookupResult.inputKind,
-	location: nationwideLookupSnapshot.nationwideLookupResult.location,
-	normalizedAddress: nationwideLookupSnapshot.nationwideLookupResult.normalizedAddress,
-	note: nationwideLookupSnapshot.nationwideLookupResult.note,
-	representativeMatches: nationwideLookupSnapshot.nationwideLookupResult.representativeMatches,
-	resolvedAt: nationwideLookupSnapshot.nationwideLookupResult.resolvedAt,
-	result: nationwideLookupSnapshot.nationwideLookupResult.result
-}))}`;
+const activeNationwideLookupCookie = `${activeNationwideLookupCookieName}=${buildActiveNationwideLookupCookieValue(nationwideLookupSnapshot.nationwideLookupResult)}`;
 const easternDisplayTimeZoneCookie = `${displayTimeZoneCookieName}=America%2FNew_York`;
 
 async function getFreePort() {

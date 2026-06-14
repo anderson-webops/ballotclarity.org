@@ -3,6 +3,10 @@ import { classifyRepresentative } from "./representative-classification";
 
 export const activeNationwideLookupCookieName = "ballot-clarity-nationwide-lookup";
 
+function compactOptionalString(value: string | null | undefined) {
+	return value || "";
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
 	return Boolean(value) && typeof value === "object";
 }
@@ -81,7 +85,20 @@ function expandCompactCookiePayload(value: unknown) {
 						officeDisplayLabel: readCompactOptionalString(item, 7),
 						officeTitle: readCompactString(item, 3),
 						officeType: readCompactOptionalString(item, 6),
+						openstatesUrl: readCompactOptionalString(item, 9),
 						party: readCompactOptionalString(item, 4),
+						profileImages: readCompactOptionalString(item, 10)
+							? [
+									{
+										alt: `Portrait of ${readCompactString(item, 1)}`,
+										priority: 20,
+										sourceKind: "provider",
+										sourceLabel: "Provider image",
+										sourceSystem: readCompactOptionalString(item, 8) ?? "Lookup results representative match",
+										url: readCompactString(item, 10),
+									}
+								]
+							: undefined,
 						sourceSystem: readCompactOptionalString(item, 8) ?? "Lookup results representative match",
 					};
 				}).filter(Boolean)
@@ -90,6 +107,55 @@ function expandCompactCookiePayload(value: unknown) {
 		result: "resolved",
 		selectionId: typeof value.s === "string" ? value.s : undefined,
 	};
+}
+
+export function buildActiveNationwideLookupCookieValue(result: NationwideLookupResultContext) {
+	return encodeURIComponent(JSON.stringify({
+		a: result.actions.map(action => [
+			action.id,
+			action.title,
+			compactOptionalString(action.url),
+			compactOptionalString(action.badge),
+			action.description
+		]),
+		d: result.detectedFromIp ? 1 : 0,
+		dm: result.districtMatches.map(district => [
+			district.id,
+			district.label,
+			district.districtType,
+			district.districtCode,
+			district.sourceSystem
+		]),
+		es: result.electionSlug,
+		ga: result.guideAvailability === "published" ? "p" : "n",
+		ik: result.inputKind === "address" ? "a" : "z",
+		l: result.location
+			? [
+					result.location.displayName,
+					result.location.slug,
+					result.location.state,
+					compactOptionalString(result.location.lookupMode),
+					result.location.requiresOfficialConfirmation ? 1 : 0
+				]
+			: null,
+		q: result.normalizedAddress || result.lookupQuery || "",
+		rm: result.representativeMatches.map(representative => [
+			representative.id,
+			representative.name,
+			representative.districtLabel,
+			representative.officeTitle,
+			compactOptionalString(representative.party),
+			compactOptionalString(representative.governmentLevel),
+			compactOptionalString(representative.officeType),
+			compactOptionalString(representative.officeDisplayLabel),
+			compactOptionalString(representative.sourceSystem),
+			compactOptionalString(representative.openstatesUrl),
+			compactOptionalString(representative.profileImages?.[0]?.url)
+		]),
+		s: result.selectionId,
+		t: result.resolvedAt,
+		v: 2
+	}));
 }
 
 function normalizeRepresentativeMatch(

@@ -96,9 +96,45 @@ CREATE TABLE IF NOT EXISTS admin_activity (
 	summary TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS admin_audit_events (
+	id TEXT PRIMARY KEY,
+	sequence INTEGER NOT NULL UNIQUE,
+	timestamp TEXT NOT NULL,
+	event_type TEXT NOT NULL,
+	actor_username TEXT,
+	actor_display_name TEXT NOT NULL,
+	actor_role TEXT,
+	target_type TEXT NOT NULL,
+	target_id TEXT NOT NULL,
+	target_label TEXT NOT NULL,
+	summary TEXT NOT NULL,
+	metadata TEXT NOT NULL,
+	previous_hash TEXT,
+	event_hash TEXT NOT NULL
+);
+
 CREATE INDEX IF NOT EXISTS idx_admin_content_status ON admin_content (status, published);
 CREATE INDEX IF NOT EXISTS idx_admin_content_history_content ON admin_content_history (content_id, changed_at DESC);
 CREATE INDEX IF NOT EXISTS idx_admin_guide_packages_status ON admin_guide_packages (status, updated_at DESC);
 CREATE INDEX IF NOT EXISTS idx_admin_corrections_status ON admin_corrections (status, priority);
 CREATE INDEX IF NOT EXISTS idx_admin_sources_health ON admin_source_monitors (health);
 CREATE INDEX IF NOT EXISTS idx_admin_activity_timestamp ON admin_activity (timestamp DESC);
+CREATE INDEX IF NOT EXISTS idx_admin_audit_events_sequence ON admin_audit_events (sequence DESC);
+CREATE INDEX IF NOT EXISTS idx_admin_audit_events_target ON admin_audit_events (target_type, target_id, sequence DESC);
+
+CREATE OR REPLACE FUNCTION prevent_admin_audit_event_mutation()
+RETURNS trigger AS $$
+BEGIN
+	RAISE EXCEPTION 'admin_audit_events are append-only';
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS prevent_admin_audit_events_update ON admin_audit_events;
+CREATE TRIGGER prevent_admin_audit_events_update
+BEFORE UPDATE ON admin_audit_events
+FOR EACH ROW EXECUTE FUNCTION prevent_admin_audit_event_mutation();
+
+DROP TRIGGER IF EXISTS prevent_admin_audit_events_delete ON admin_audit_events;
+CREATE TRIGGER prevent_admin_audit_events_delete
+BEFORE DELETE ON admin_audit_events
+FOR EACH ROW EXECUTE FUNCTION prevent_admin_audit_event_mutation();

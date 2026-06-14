@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { PersonProfileResponse, Source } from "~/types/civic";
 import { storeToRefs } from "pinia";
 
 import { activeNationwideLookupCookieName, parseActiveNationwideLookupCookie } from "~/utils/active-nationwide-cookie";
@@ -23,6 +24,53 @@ const activeLookupQuery = computed(() => buildNationwideLookupRouteQuery(
 ));
 const { data, error, pending } = await useRepresentative(representativeSlug, activeLookupQuery);
 
+function mergeSources(primarySources: Source[], fallbackSources: Source[]) {
+	const sourceKeys = new Set(primarySources.map(source => source.url || source.id));
+	const additionalSources = fallbackSources.filter((source) => {
+		const sourceKey = source.url || source.id;
+
+		if (sourceKeys.has(sourceKey))
+			return false;
+
+		sourceKeys.add(sourceKey);
+		return true;
+	});
+
+	return [...primarySources, ...additionalSources];
+}
+
+function normalizePersonIdentity(value: string) {
+	return value
+		.toLowerCase()
+		.trim()
+		.replace(/[^a-z0-9]+/g, "-")
+		.replace(/^-+|-+$/g, "");
+}
+
+function mergeLookupProfileData(primary: PersonProfileResponse, fallback: PersonProfileResponse | null) {
+	const sameRepresentative = fallback
+		&& (
+			primary.person.slug === fallback.person.slug
+			|| normalizePersonIdentity(primary.person.name) === normalizePersonIdentity(fallback.person.name)
+		);
+
+	if (!fallback || !sameRepresentative)
+		return primary;
+
+	const sources = mergeSources(primary.person.sources, fallback.person.sources);
+
+	return {
+		...primary,
+		person: {
+			...primary.person,
+			openstatesUrl: primary.person.openstatesUrl || fallback.person.openstatesUrl,
+			profileImages: primary.person.profileImages?.length ? primary.person.profileImages : fallback.person.profileImages,
+			sourceCount: sources.length,
+			sources
+		}
+	} satisfies PersonProfileResponse;
+}
+
 const fallbackData = computed(() => buildNationwidePersonProfileResponse(activeNationwideLookupResult.value, representativeSlug.value));
 const profileData = computed(() => {
 	if (!data.value)
@@ -36,7 +84,7 @@ const profileData = computed(() => {
 		return fallbackData.value;
 	}
 
-	return data.value;
+	return mergeLookupProfileData(data.value, fallbackData.value);
 });
 const person = computed(() => profileData.value?.person ?? null);
 const pagePending = computed(() => pending.value || (!data.value && !fallbackData.value));

@@ -425,7 +425,20 @@ function expandCompactCookiePayload(value: unknown) {
 						officeDisplayLabel: readCompactOptionalString(item, 7),
 						officeTitle: readCompactString(item, 3),
 						officeType: readCompactOptionalString(item, 6),
+						openstatesUrl: readCompactOptionalString(item, 9),
 						party: readCompactOptionalString(item, 4),
+						profileImages: readCompactOptionalString(item, 10)
+							? [
+									{
+										alt: `Portrait of ${readCompactString(item, 1)}`,
+										priority: 20,
+										sourceKind: "provider",
+										sourceLabel: "Provider image",
+										sourceSystem: readCompactOptionalString(item, 8) ?? "Lookup results representative match",
+										url: readCompactString(item, 10),
+									},
+								]
+							: undefined,
 						sourceSystem: readCompactOptionalString(item, 8) ?? "Lookup results representative match",
 					};
 				}).filter(isPresent)
@@ -479,6 +492,8 @@ function buildCookiePayload(context: ActiveNationwideLookupContext) {
 			match.officeType ?? "",
 			match.officeDisplayLabel ?? "",
 			match.sourceSystem,
+			match.openstatesUrl ?? "",
+			match.profileImages?.[0]?.url ?? "",
 		]),
 		s: context.selectionId,
 		t: context.resolvedAt,

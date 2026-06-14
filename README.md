@@ -330,6 +330,7 @@ Internal operations routes:
 - `/admin/content/:id`
 - `/admin/corrections`
 - `/admin/sources`
+- `/admin/audit`
 - `/admin/users`
 
 How the admin model works:
@@ -339,7 +340,7 @@ How the admin model works:
 - Nuxt proxies protected admin requests to the Express API using `ADMIN_API_KEY`, so the backend key never reaches the browser.
 - Browser traffic for `/api/admin/*` is expected to terminate at Nuxt. The Express admin endpoints are internal API surfaces behind `ADMIN_API_BASE`, not public browser routes.
 - Admins can create, disable, restore, and reset temporary passwords for admin/editor accounts. Signed-in admins and editors can also change their own passwords from the Account page. Disabled accounts cannot start new sessions, and password changes invalidate existing sessions by rotating the account credential timestamp checked by the Nuxt admin bridge.
-- Admin data includes content publish state, reviewer approval metadata, persisted public-summary overrides, content history and rollback points, correction intake with content-record linkage, source-health monitoring, activity logs, and user management.
+- Admin data includes content publish state, reviewer approval metadata, persisted public-summary overrides, content history and rollback points, correction intake with content-record linkage, source-health monitoring, activity logs, user management, and a hash-chained append-only audit trail for critical publish/account actions.
 
 ## API surface
 
@@ -369,7 +370,9 @@ These endpoints live on the Express service, but they are intended to be reached
 
 - `POST /api/admin/auth/login`
 - `GET /api/admin/auth/session/:username`
+- `POST /api/admin/auth/password`
 - `GET /api/admin/overview`
+- `GET /api/admin/audit`
 - `GET /api/admin/review`
 - `GET /api/admin/content`
 - `GET /api/admin/content/:id/history`
@@ -392,7 +395,7 @@ These endpoints live on the Express service, but they are intended to be reached
 - Content flow: public pages consume the Express API instead of embedding content directly in page files
 - Search and sourcing: every major reading surface links to the source directory and source detail pages
 - Trust layer: freshness, methodology, corrections, neutrality, and source authority are modeled explicitly in the data layer and rendered in the UI
-- Admin model: persisted users, content status/history/rollback, correction queue with content-record linkage, and source-health tracking all live behind a protected internal surface
+- Admin model: persisted users, content status/history/rollback, correction queue with content-record linkage, source-health tracking, and immutable audit events all live behind a protected internal surface
 - Coverage runtime: the public API starts in empty coverage mode by default and only serves local-guide data from an intentionally imported snapshot
 - Snapshot provenance: public health, coverage, and status responses expose whether the active snapshot is seed, reviewed, production-approved, or unknown without exposing server filesystem paths
 - Launch strategy: Fulton County, Georgia is the first production jurisdiction, currently published as an official-logistics-only guide shell until verified local contest packaging is ready

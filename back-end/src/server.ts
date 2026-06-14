@@ -1,5 +1,6 @@
-import type { ErrorRequestHandler } from "express";
+import type { ErrorRequestHandler, Request } from "express";
 import type { AddressEnrichmentService } from "./address-enrichment.js";
+import type { AdminAuditActor } from "./admin-store.js";
 import type { CongressClient, CongressMemberDetail, CongressMemberRecord } from "./congress.js";
 import type { CoverageRepository } from "./coverage-repository.js";
 import type { OpenStatesRepresentativeRecord } from "./openstates.js";
@@ -341,6 +342,22 @@ function inferSupplementalChamberLabel(
 		return "City government";
 
 	return undefined;
+}
+
+function buildAdminAuditActor(request: Request): AdminAuditActor | undefined {
+	const username = request.header("x-admin-actor-username")?.trim().toLowerCase();
+	const displayName = request.header("x-admin-actor-display-name")?.trim();
+	const roleHeader = request.header("x-admin-actor-role")?.trim();
+	const role = roleHeader === "admin" || roleHeader === "editor" ? roleHeader : undefined;
+
+	if (!username && !displayName && !role)
+		return undefined;
+
+	return {
+		displayName,
+		role,
+		username
+	};
 }
 
 function buildSupplementalOfficeContext(
@@ -4355,6 +4372,11 @@ export async function createApp(options: CreateAppOptions = {}) {
 
 		try {
 			const users = await adminRepository.updateUser(user.id, {
+				auditActor: buildAdminAuditActor(request) || {
+					displayName: user.displayName,
+					role: user.role,
+					username: user.username
+				},
 				password: newPassword,
 				passwordChangeMode: "self-service"
 			});
@@ -4830,6 +4852,10 @@ export async function createApp(options: CreateAppOptions = {}) {
 		response.json(await adminRepository.getOverview());
 	});
 
+	app.get("/api/admin/audit", async (_request, response) => {
+		response.json(await adminRepository.listAuditEvents());
+	});
+
 	app.get("/api/admin/corrections", async (_request, response) => {
 		response.json(await adminRepository.listCorrections());
 	});
@@ -4882,7 +4908,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 				return;
 			}
 
-			response.json(await adminRepository.rollbackContent(request.params.id, historyId));
+			response.json(await adminRepository.rollbackContent(request.params.id, historyId, buildAdminAuditActor(request)));
 		}
 		catch (error) {
 			response.status(400).json({
@@ -4894,6 +4920,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 	app.patch("/api/admin/content/:id", async (request, response) => {
 		try {
 			response.json(await adminRepository.updateContent(request.params.id, {
+				auditActor: buildAdminAuditActor(request),
 				assignedTo: typeof request.body?.assignedTo === "string" ? request.body.assignedTo : undefined,
 				blocker: request.body?.blocker === null
 					? null
@@ -5016,6 +5043,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 			}
 
 			await adminRepository.updateGuidePackage(request.params.id, {
+				auditActor: buildAdminAuditActor(request),
 				coverageLimits: parseStringArray(request.body?.coverageLimits),
 				coverageNotes: parseStringArray(request.body?.coverageNotes),
 				draftedAt: typeof request.body?.draftedAt === "string" ? request.body.draftedAt : undefined,
@@ -5096,6 +5124,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 			const now = new Date().toISOString();
 
 			await adminRepository.updateGuidePackage(request.params.id, {
+				auditActor: buildAdminAuditActor(request),
 				publishedAt: now,
 				reviewRecommendation,
 				reviewNotes: request.body?.reviewNotes === null
@@ -5134,6 +5163,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 			}
 
 			await adminRepository.updateGuidePackage(request.params.id, {
+				auditActor: buildAdminAuditActor(request),
 				publishedAt: null,
 				reviewRecommendation: request.body?.reviewRecommendation === null
 					? null
@@ -5192,6 +5222,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 	app.post("/api/admin/users", async (request, response) => {
 		try {
 			await adminRepository.createUser({
+				auditActor: buildAdminAuditActor(request),
 				displayName: typeof request.body?.displayName === "string" ? request.body.displayName : "",
 				password: typeof request.body?.password === "string" ? request.body.password : "",
 				role: request.body?.role === "editor" ? "editor" : "admin",
@@ -5210,6 +5241,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 	app.patch("/api/admin/users/:id", async (request, response) => {
 		try {
 			response.json(await adminRepository.updateUser(request.params.id, {
+				auditActor: buildAdminAuditActor(request),
 				disabled: typeof request.body?.disabled === "boolean" ? request.body.disabled : undefined,
 				password: typeof request.body?.password === "string" ? request.body.password : undefined
 			}));

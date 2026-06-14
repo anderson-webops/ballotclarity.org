@@ -13,8 +13,13 @@ const baseLinks = [
 ];
 
 const navLinks = computed(() => {
-	if (session.value?.role === "admin")
-		return [...baseLinks, { label: "Users", to: "/admin/users" }];
+	if (session.value?.role === "admin") {
+		return [
+			...baseLinks,
+			{ label: "Audit trail", to: "/admin/audit" },
+			{ label: "Users", to: "/admin/users" }
+		];
+	}
 
 	return baseLinks;
 });

@@ -1,4 +1,5 @@
 import type {
+	AdminAuditResponse,
 	AdminContentHistoryResponse,
 	AdminContentResponse,
 	AdminCorrectionsResponse,
@@ -24,6 +25,12 @@ export function useAdminSession(key = "admin-session") {
 
 export function useAdminOverview() {
 	return useFetch<AdminOverviewResponse>("/api/admin/overview", {
+		headers: adminRequestHeaders()
+	});
+}
+
+export function useAdminAudit() {
+	return useFetch<AdminAuditResponse>("/api/admin/audit", {
 		headers: adminRequestHeaders()
 	});
 }

@@ -1,5 +1,6 @@
 import type { H3Event } from "h3";
 import type {
+	AdminAuditResponse,
 	AdminContentHistoryResponse,
 	AdminContentResponse,
 	AdminCorrectionsResponse,
@@ -99,6 +100,19 @@ function getForwardHeaders(event: H3Event, extraHeaders: Record<string, string> 
 		...(requestId ? { "x-request-id": requestId } : {}),
 		...(userAgent ? { "user-agent": userAgent } : {}),
 		...extraHeaders
+	};
+}
+
+function getAdminActorHeaders(event: H3Event) {
+	const session = getAdminSession(event);
+
+	if (!session.authenticated)
+		return {};
+
+	return {
+		...(session.displayName ? { "x-admin-actor-display-name": session.displayName } : {}),
+		...(session.role ? { "x-admin-actor-role": session.role } : {}),
+		...(session.username ? { "x-admin-actor-username": session.username } : {})
 	};
 }
 
@@ -393,6 +407,7 @@ export async function changeAdminPassword(event: H3Event, body: Record<string, u
 				username: session.username
 			},
 			headers: getForwardHeaders(event, {
+				...getAdminActorHeaders(event),
 				"x-admin-api-key": config.apiKey
 			}),
 			method: "POST"
@@ -444,6 +459,7 @@ async function fetchAdminApi<T>(event: H3Event, path: string, options?: {
 	return await $fetch<T>(`${config.apiBase}${path}`, {
 		body: options?.body,
 		headers: getForwardHeaders(event, {
+			...getAdminActorHeaders(event),
 			"x-admin-api-key": config.apiKey
 		}),
 		method: options?.method
@@ -453,6 +469,19 @@ async function fetchAdminApi<T>(event: H3Event, path: string, options?: {
 export async function getAdminOverview(event: H3Event) {
 	await requireActiveAdminSession(event);
 	return await fetchAdminApi<AdminOverviewResponse>(event, "/admin/overview");
+}
+
+export async function getAdminAudit(event: H3Event) {
+	const session = await requireActiveAdminSession(event);
+
+	if (session.role !== "admin") {
+		throw createError({
+			statusCode: 403,
+			statusMessage: "Only admin users can view the immutable audit trail."
+		});
+	}
+
+	return await fetchAdminApi<AdminAuditResponse>(event, "/admin/audit");
 }
 
 export async function getAdminCorrections(event: H3Event) {

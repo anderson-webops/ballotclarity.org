@@ -2914,6 +2914,13 @@ test("PATCH /api/admin/content updates public content fields and publish gating"
 	await once(isolatedServer, "listening");
 	const isolatedAddress = isolatedServer.address() as AddressInfo;
 	const isolatedBaseUrl = `http://127.0.0.1:${isolatedAddress.port}`;
+	const adminActorHeaders = {
+		"Content-Type": "application/json",
+		"x-admin-actor-display-name": "Ops Admin",
+		"x-admin-actor-role": "admin",
+		"x-admin-actor-username": "ops-admin",
+		"x-admin-api-key": adminApiKey
+	};
 
 	try {
 		const contentResponse = await fetch(`${isolatedBaseUrl}/api/admin/content`, {
@@ -2942,10 +2949,7 @@ test("PATCH /api/admin/content updates public content fields and publish gating"
 				published: true,
 				status: "published"
 			}),
-			headers: {
-				"Content-Type": "application/json",
-				"x-admin-api-key": adminApiKey
-			},
+			headers: adminActorHeaders,
 			method: "PATCH"
 		});
 
@@ -2995,10 +2999,7 @@ test("PATCH /api/admin/content updates public content fields and publish gating"
 				published: false,
 				status: "draft"
 			}),
-			headers: {
-				"Content-Type": "application/json",
-				"x-admin-api-key": adminApiKey
-			},
+			headers: adminActorHeaders,
 			method: "PATCH"
 		});
 
@@ -3049,10 +3050,7 @@ test("PATCH /api/admin/content updates public content fields and publish gating"
 			body: JSON.stringify({
 				historyId: unpublishHistoryItem.id
 			}),
-			headers: {
-				"Content-Type": "application/json",
-				"x-admin-api-key": adminApiKey
-			},
+			headers: adminActorHeaders,
 			method: "POST"
 		});
 
@@ -3078,6 +3076,24 @@ test("PATCH /api/admin/content updates public content fields and publish gating"
 		assert.equal(rolledBackElenaRecord?.publishApprovedBy, publishApprovedBy);
 		assert.equal(historyAfterRollbackResponse.status, 200);
 		assert.match(historyAfterRollbackBody.history[0].summary, /Rolled back/i);
+
+		const auditResponse = await fetch(`${isolatedBaseUrl}/api/admin/audit`, {
+			headers: {
+				"x-admin-api-key": adminApiKey
+			}
+		});
+		const auditBody = await auditResponse.json();
+		const auditEventTypes = auditBody.events.map((event: { eventType: string }) => event.eventType);
+		const contentPublishEvent = auditBody.events.find((event: { eventType: string }) => event.eventType === "content_publish");
+
+		assert.equal(auditResponse.status, 200);
+		assert.equal(auditBody.integrityVerified, true);
+		assert.ok(auditBody.latestHash);
+		assert.ok(auditEventTypes.includes("content_publish"));
+		assert.ok(auditEventTypes.includes("content_unpublish"));
+		assert.ok(auditEventTypes.includes("content_rollback"));
+		assert.equal(contentPublishEvent?.actorUsername, "ops-admin");
+		assert.equal(contentPublishEvent?.actorDisplayName, "Ops Admin");
 	}
 	finally {
 		await new Promise<void>((resolve, reject) => {
@@ -3137,6 +3153,13 @@ test("guide package workflow gates local guide publication from draft through ro
 	const isolatedAddress = isolatedServer.address() as AddressInfo;
 	const isolatedBaseUrl = `http://127.0.0.1:${isolatedAddress.port}`;
 	const packageId = buildGuidePackageId("2026-fulton-county-general");
+	const adminActorHeaders = {
+		"Content-Type": "application/json",
+		"x-admin-actor-display-name": "Guide Admin",
+		"x-admin-actor-role": "admin",
+		"x-admin-actor-username": "guide-admin",
+		"x-admin-api-key": adminApiKey
+	};
 
 	try {
 		const lookupBeforeResponse = await fetch(`${isolatedBaseUrl}/api/location`, {
@@ -3196,10 +3219,7 @@ test("guide package workflow gates local guide publication from draft through ro
 				reviewer: "Smoke Reviewer",
 				status: "ready_to_publish"
 			}),
-			headers: {
-				"Content-Type": "application/json",
-				"x-admin-api-key": adminApiKey
-			},
+			headers: adminActorHeaders,
 			method: "PATCH"
 		});
 		const readyBeforeReviewBody = await readyBeforeReviewResponse.json();
@@ -3214,10 +3234,7 @@ test("guide package workflow gates local guide publication from draft through ro
 				reviewer: "Smoke Reviewer",
 				status: "in_review"
 			}),
-			headers: {
-				"Content-Type": "application/json",
-				"x-admin-api-key": adminApiKey
-			},
+			headers: adminActorHeaders,
 			method: "PATCH"
 		});
 		const inReviewBody = await inReviewResponse.json();
@@ -3232,10 +3249,7 @@ test("guide package workflow gates local guide publication from draft through ro
 				reviewer: "Smoke Reviewer",
 				status: "ready_to_publish"
 			}),
-			headers: {
-				"Content-Type": "application/json",
-				"x-admin-api-key": adminApiKey
-			},
+			headers: adminActorHeaders,
 			method: "PATCH"
 		});
 
@@ -3247,10 +3261,7 @@ test("guide package workflow gates local guide publication from draft through ro
 				reviewRecommendation: "publish_with_warnings",
 				reviewer: "Smoke Reviewer"
 			}),
-			headers: {
-				"Content-Type": "application/json",
-				"x-admin-api-key": adminApiKey
-			},
+			headers: adminActorHeaders,
 			method: "POST"
 		});
 		const publishBody = await publishResponse.json();
@@ -3289,10 +3300,7 @@ test("guide package workflow gates local guide publication from draft through ro
 				reviewRecommendation: "needs_revision",
 				reviewer: "Smoke Reviewer"
 			}),
-			headers: {
-				"Content-Type": "application/json",
-				"x-admin-api-key": adminApiKey
-			},
+			headers: adminActorHeaders,
 			method: "POST"
 		});
 		const ballotAfterRollbackResponse = await fetch(`${isolatedBaseUrl}/api/ballot?election=2026-fulton-county-general`);
@@ -3301,6 +3309,21 @@ test("guide package workflow gates local guide publication from draft through ro
 		assert.equal(unpublishResponse.status, 200);
 		assert.equal(ballotAfterRollbackResponse.status, 404);
 		assert.equal(publicPackageAfterRollbackResponse.status, 404);
+
+		const auditResponse = await fetch(`${isolatedBaseUrl}/api/admin/audit`, {
+			headers: {
+				"x-admin-api-key": adminApiKey
+			}
+		});
+		const auditBody = await auditResponse.json();
+		const auditEventTypes = auditBody.events.map((event: { eventType: string }) => event.eventType);
+		const guidePublishEvent = auditBody.events.find((event: { eventType: string }) => event.eventType === "guide_package_publish");
+
+		assert.equal(auditResponse.status, 200);
+		assert.equal(auditBody.integrityVerified, true);
+		assert.ok(auditEventTypes.includes("guide_package_publish"));
+		assert.ok(auditEventTypes.includes("guide_package_unpublish"));
+		assert.equal(guidePublishEvent?.actorUsername, "guide-admin");
 	}
 	finally {
 		await new Promise<void>((resolve, reject) => {
@@ -3394,6 +3417,9 @@ test("admin user lifecycle blocks disabled accounts and invalidates reset creden
 	const isolatedBaseUrl = `http://127.0.0.1:${isolatedAddress.port}`;
 	const adminHeaders = {
 		"Content-Type": "application/json",
+		"x-admin-actor-display-name": "Operations Admin",
+		"x-admin-actor-role": "admin",
+		"x-admin-actor-username": "ops-admin",
 		"x-admin-api-key": adminApiKey
 	};
 
@@ -3674,6 +3700,27 @@ test("admin user lifecycle blocks disabled accounts and invalidates reset creden
 
 		assert.equal(selfChangedLoginResponse.status, 200);
 		assert.equal(selfChangedLoginBody.credentialsUpdatedAt, selfChangeBody.credentialsUpdatedAt);
+
+		const auditResponse = await fetch(`${isolatedBaseUrl}/api/admin/audit`, {
+			headers: {
+				"x-admin-api-key": adminApiKey
+			}
+		});
+		const auditBody = await auditResponse.json();
+		const auditEventTypes = auditBody.events.map((event: { eventType: string }) => event.eventType);
+		const auditPayload = JSON.stringify(auditBody);
+
+		assert.equal(auditResponse.status, 200);
+		assert.equal(auditBody.integrityVerified, true);
+		assert.ok(auditBody.latestHash);
+		assert.ok(auditEventTypes.includes("admin_user_create"));
+		assert.ok(auditEventTypes.includes("admin_user_disable"));
+		assert.ok(auditEventTypes.includes("admin_user_restore"));
+		assert.ok(auditEventTypes.includes("admin_user_password_reset"));
+		assert.ok(auditEventTypes.includes("admin_user_password_change"));
+		assert.doesNotMatch(auditPayload, /review-editor-password/);
+		assert.doesNotMatch(auditPayload, /new-review-editor-password/);
+		assert.doesNotMatch(auditPayload, /self-service-editor-password/);
 	}
 	finally {
 		await new Promise<void>((resolve, reject) => {

@@ -1,5 +1,8 @@
 import type {
 	AdminActivityItem,
+	AdminAuditEvent,
+	AdminAuditEventType,
+	AdminAuditResponse,
 	AdminContentHistoryItem,
 	AdminContentHistoryResponse,
 	AdminContentItem,
@@ -25,7 +28,7 @@ import type {
 	GuidePackageWorkflow,
 } from "./types/civic.js";
 import { Buffer } from "node:buffer";
-import { randomUUID, scryptSync, timingSafeEqual } from "node:crypto";
+import { createHash, randomUUID, scryptSync, timingSafeEqual } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync } from "node:fs";
 import { dirname } from "node:path";
 import process from "node:process";
@@ -54,6 +57,12 @@ export interface AdminRepositoryOptions {
 	guidePackageSeed?: GuidePackageWorkflow[];
 }
 
+export interface AdminAuditActor {
+	displayName?: string | null;
+	role?: AdminUserRole | null;
+	username?: string | null;
+}
+
 export interface LegacyDemoAdminIds {
 	activityIds: string[];
 	contentIds: string[];
@@ -77,6 +86,7 @@ export interface CorrectionSubmissionInput {
 }
 
 export interface ContentPatch {
+	auditActor?: AdminAuditActor;
 	assignedTo?: string;
 	blocker?: string | null;
 	priority?: AdminPriority;
@@ -103,6 +113,7 @@ export interface SourcePatch {
 }
 
 export interface CreateGuidePackageInput {
+	auditActor?: AdminAuditActor;
 	coverageLimits?: string[];
 	coverageNotes?: string[];
 	createdAt?: string;
@@ -120,6 +131,7 @@ export interface CreateGuidePackageInput {
 }
 
 export interface GuidePackagePatch {
+	auditActor?: AdminAuditActor;
 	coverageLimits?: string[] | null;
 	coverageNotes?: string[] | null;
 	draftedAt?: string;
@@ -132,6 +144,7 @@ export interface GuidePackagePatch {
 }
 
 export interface CreateUserInput {
+	auditActor?: AdminAuditActor;
 	displayName: string;
 	password: string;
 	role: AdminUserRole;
@@ -139,6 +152,7 @@ export interface CreateUserInput {
 }
 
 export interface UserPatch {
+	auditActor?: AdminAuditActor;
 	disabled?: boolean;
 	password?: string;
 	passwordChangeMode?: "admin-reset" | "self-service";
@@ -162,7 +176,8 @@ export interface AdminRepository {
 	listUsers: () => AdminUsersResponse | Promise<AdminUsersResponse>;
 	createGuidePackage: (input: CreateGuidePackageInput) => GuidePackageWorkflowListResponse | Promise<GuidePackageWorkflowListResponse>;
 	getGuidePackage: (id: string) => GuidePackageWorkflow | null | Promise<GuidePackageWorkflow | null>;
-	rollbackContent: (id: string, historyId: string) => AdminContentResponse | Promise<AdminContentResponse>;
+	listAuditEvents: () => AdminAuditResponse | Promise<AdminAuditResponse>;
+	rollbackContent: (id: string, historyId: string, auditActor?: AdminAuditActor) => AdminContentResponse | Promise<AdminContentResponse>;
 	updateContent: (id: string, patch: ContentPatch) => AdminContentResponse | Promise<AdminContentResponse>;
 	updateCorrection: (id: string, patch: CorrectionPatch) => AdminCorrectionsResponse | Promise<AdminCorrectionsResponse>;
 	updateGuidePackage: (id: string, patch: GuidePackagePatch) => GuidePackageWorkflowListResponse | Promise<GuidePackageWorkflowListResponse>;
@@ -268,6 +283,23 @@ interface ActivityRow {
 	type: AdminActivityItem["type"];
 	timestamp: string;
 	summary: string;
+}
+
+interface AuditRow {
+	actor_display_name: string;
+	actor_role: AdminUserRole | null;
+	actor_username: string | null;
+	event_hash: string;
+	event_type: AdminAuditEventType;
+	id: string;
+	metadata: string;
+	previous_hash: string | null;
+	sequence: number;
+	summary: string;
+	target_id: string;
+	target_label: string;
+	target_type: string;
+	timestamp: string;
 }
 
 interface GuidePackageRow {
@@ -548,6 +580,107 @@ function rowToActivity(row: ActivityRow): AdminActivityItem {
 		timestamp: row.timestamp,
 		type: row.type
 	};
+}
+
+function parseAuditMetadata(raw: string): Record<string, unknown> {
+	try {
+		const parsed = JSON.parse(raw) as unknown;
+
+		return typeof parsed === "object" && parsed !== null && !Array.isArray(parsed)
+			? parsed as Record<string, unknown>
+			: {};
+	}
+	catch {
+		return {};
+	}
+}
+
+function rowToAuditEvent(row: AuditRow): AdminAuditEvent {
+	return {
+		actorDisplayName: row.actor_display_name,
+		actorRole: row.actor_role || undefined,
+		actorUsername: row.actor_username || undefined,
+		eventHash: row.event_hash,
+		eventType: row.event_type,
+		id: row.id,
+		metadata: parseAuditMetadata(row.metadata),
+		previousHash: row.previous_hash || undefined,
+		sequence: row.sequence,
+		summary: row.summary,
+		targetId: row.target_id,
+		targetLabel: row.target_label,
+		targetType: row.target_type,
+		timestamp: row.timestamp
+	};
+}
+
+function stableStringify(value: unknown): string {
+	if (Array.isArray(value))
+		return `[${value.map(item => stableStringify(item)).join(",")}]`;
+
+	if (value && typeof value === "object") {
+		return `{${Object.entries(value as Record<string, unknown>)
+			.sort(([left], [right]) => left.localeCompare(right))
+			.map(([key, item]) => `${JSON.stringify(key)}:${stableStringify(item)}`)
+			.join(",")}}`;
+	}
+
+	return JSON.stringify(value);
+}
+
+function hashAuditEvent(input: Omit<AuditRow, "event_hash">) {
+	return createHash("sha256").update(stableStringify(input)).digest("hex");
+}
+
+function auditRowWithoutHash(row: AuditRow): Omit<AuditRow, "event_hash"> {
+	return {
+		actor_display_name: row.actor_display_name,
+		actor_role: row.actor_role,
+		actor_username: row.actor_username,
+		event_type: row.event_type,
+		id: row.id,
+		metadata: row.metadata,
+		previous_hash: row.previous_hash || null,
+		sequence: row.sequence,
+		summary: row.summary,
+		target_id: row.target_id,
+		target_label: row.target_label,
+		target_type: row.target_type,
+		timestamp: row.timestamp
+	};
+}
+
+function normalizeAuditActor(actor: AdminAuditActor | undefined) {
+	const username = actor?.username?.trim().toLowerCase() || null;
+	const displayName = actor?.displayName?.trim() || username || "Admin API";
+	const role = actor?.role === "admin" || actor?.role === "editor" ? actor.role : null;
+
+	return {
+		displayName,
+		role,
+		username
+	};
+}
+
+function verifyAuditChain(rows: AuditRow[]) {
+	let previousHash: string | null = null;
+	let previousSequence = 0;
+
+	for (const row of rows) {
+		if (row.sequence !== previousSequence + 1)
+			return false;
+
+		if ((row.previous_hash || null) !== previousHash)
+			return false;
+
+		if (hashAuditEvent(auditRowWithoutHash(row)) !== row.event_hash)
+			return false;
+
+		previousHash = row.event_hash;
+		previousSequence = row.sequence;
+	}
+
+	return true;
 }
 
 function parseStoredStringArray(raw: string | null | undefined) {
@@ -1071,6 +1204,19 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 		);
 
 		logActivity("review", `Created ${input.role} user`, `${displayName} can now access the internal editorial workspace.`);
+		recordAuditEvent({
+			actor: input.auditActor,
+			eventType: "admin_user_create",
+			metadata: {
+				role: input.role,
+				username
+			},
+			summary: `${displayName} was created as an ${input.role} account.`,
+			targetId: id,
+			targetLabel: displayName,
+			targetType: "admin_user",
+			timestamp: now
+		});
 
 		return {
 			createdAt: now,
@@ -1149,6 +1295,19 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 				patch.disabled ? "Disabled admin user" : "Restored admin user",
 				`${current.display_name} ${patch.disabled ? "can no longer sign in" : "can sign in again"}.`
 			);
+			recordAuditEvent({
+				actor: patch.auditActor,
+				eventType: patch.disabled ? "admin_user_disable" : "admin_user_restore",
+				metadata: {
+					disabledAt: nextDisabledAt,
+					username: current.username
+				},
+				summary: `${current.display_name} ${patch.disabled ? "was disabled" : "was restored"}.`,
+				targetId: current.id,
+				targetLabel: current.display_name,
+				targetType: "admin_user",
+				timestamp: now
+			});
 		}
 
 		if (patch.password !== undefined) {
@@ -1161,6 +1320,22 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 					? `${current.display_name} changed their own password. Existing sessions for this account are no longer valid.`
 					: `${current.display_name} received a new temporary password. Existing sessions for this account are no longer valid.`
 			);
+			recordAuditEvent({
+				actor: patch.auditActor,
+				eventType: isSelfService ? "admin_user_password_change" : "admin_user_password_reset",
+				metadata: {
+					credentialsUpdatedAt: nextCredentialsUpdatedAt,
+					selfService: isSelfService,
+					username: current.username
+				},
+				summary: isSelfService
+					? `${current.display_name} changed their own password.`
+					: `${current.display_name} received an admin password reset.`,
+				targetId: current.id,
+				targetLabel: current.display_name,
+				targetType: "admin_user",
+				timestamp: nextCredentialsUpdatedAt
+			});
 		}
 
 		return listUsers();
@@ -1175,6 +1350,90 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 		`).run(`activity-${randomUUID()}`, label, type, timestamp, summary);
 	}
 
+	function recordAuditEvent(input: {
+		actor?: AdminAuditActor;
+		eventType: AdminAuditEventType;
+		metadata?: Record<string, unknown>;
+		summary: string;
+		targetId: string;
+		targetLabel: string;
+		targetType: string;
+		timestamp?: string;
+	}) {
+		const actor = normalizeAuditActor(input.actor);
+		const metadata = stableStringify(input.metadata ?? {});
+		const timestamp = input.timestamp || new Date().toISOString();
+
+		database.exec("BEGIN IMMEDIATE");
+
+		try {
+			const last = database.prepare(`
+				SELECT sequence, event_hash
+				FROM admin_audit_events
+				ORDER BY sequence DESC
+				LIMIT 1
+			`).get() as Pick<AuditRow, "event_hash" | "sequence"> | undefined;
+			const previousHash = last?.event_hash || null;
+			const sequence = Number(last?.sequence ?? 0) + 1;
+			const eventWithoutHash: Omit<AuditRow, "event_hash"> = {
+				actor_display_name: actor.displayName,
+				actor_role: actor.role,
+				actor_username: actor.username,
+				event_type: input.eventType,
+				id: `audit-${randomUUID()}`,
+				metadata,
+				previous_hash: previousHash,
+				sequence,
+				summary: input.summary,
+				target_id: input.targetId,
+				target_label: input.targetLabel,
+				target_type: input.targetType,
+				timestamp
+			};
+			const eventHash = hashAuditEvent(eventWithoutHash);
+
+			database.prepare(`
+				INSERT INTO admin_audit_events (
+					id,
+					sequence,
+					timestamp,
+					event_type,
+					actor_username,
+					actor_display_name,
+					actor_role,
+					target_type,
+					target_id,
+					target_label,
+					summary,
+					metadata,
+					previous_hash,
+					event_hash
+				) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			`).run(
+				eventWithoutHash.id,
+				eventWithoutHash.sequence,
+				eventWithoutHash.timestamp,
+				eventWithoutHash.event_type,
+				eventWithoutHash.actor_username,
+				eventWithoutHash.actor_display_name,
+				eventWithoutHash.actor_role,
+				eventWithoutHash.target_type,
+				eventWithoutHash.target_id,
+				eventWithoutHash.target_label,
+				eventWithoutHash.summary,
+				eventWithoutHash.metadata,
+				eventWithoutHash.previous_hash,
+				eventHash
+			);
+
+			database.exec("COMMIT");
+		}
+		catch (error) {
+			database.exec("ROLLBACK");
+			throw error;
+		}
+	}
+
 	function listActivity(limit = 8) {
 		const rows = database.prepare(`
 			SELECT id, label, type, timestamp, summary
@@ -1184,6 +1443,23 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 		`).all(limit) as unknown as ActivityRow[];
 
 		return rows.map(rowToActivity);
+	}
+
+	function listAuditEvents(): AdminAuditResponse {
+		const allRows = database.prepare(`
+			SELECT id, sequence, timestamp, event_type, actor_username, actor_display_name, actor_role, target_type, target_id, target_label, summary, metadata, previous_hash, event_hash
+			FROM admin_audit_events
+			ORDER BY sequence ASC
+		`).all() as unknown as AuditRow[];
+		const latestHash = allRows.at(-1)?.event_hash;
+		const rows = allRows.slice(-100).reverse();
+
+		return {
+			events: rows.map(rowToAuditEvent),
+			integrityVerified: verifyAuditChain(allRows),
+			latestHash,
+			updatedAt: allRows.at(-1)?.timestamp ?? new Date().toISOString()
+		};
 	}
 
 	function listContent(): AdminContentResponse {
@@ -1463,10 +1739,36 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 				: `${current.title} moved to ${nextStatus}.`
 		);
 
+		if (
+			changedFields.includes("published")
+			|| changedFields.includes("publishApprovedAt")
+			|| changedFields.includes("publishApprovedBy")
+			|| changedFields.includes("publishApprovalNote")
+		) {
+			recordAuditEvent({
+				actor: patch.auditActor,
+				eventType: nextPublished ? "content_publish" : "content_unpublish",
+				metadata: {
+					changedFields,
+					entitySlug: current.entity_slug,
+					entityType: current.entity_type,
+					publishApprovedAt: nextSnapshot.publishApprovedAt ?? null,
+					publishApprovedBy: nextSnapshot.publishApprovedBy ?? null
+				},
+				summary: nextPublished
+					? `${current.title} was published with reviewer approval.`
+					: `${current.title} was unpublished and approval metadata was cleared.`,
+				targetId: current.id,
+				targetLabel: current.title,
+				targetType: "admin_content",
+				timestamp: now
+			});
+		}
+
 		return listContent();
 	}
 
-	function rollbackContent(id: string, historyId: string) {
+	function rollbackContent(id: string, historyId: string, auditActor?: AdminAuditActor) {
 		const current = getContentRow(id);
 
 		if (!current)
@@ -1547,6 +1849,20 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 			`Rolled back ${current.title} to the version from ${historyRow.changed_at}.`
 		);
 		logActivity("review", `${current.title} rolled back`, `Restored public content fields from the ${historyRow.changed_at} revision.`);
+		recordAuditEvent({
+			actor: auditActor,
+			eventType: "content_rollback",
+			metadata: {
+				changedFields,
+				restoredFromHistoryId: historyRow.id,
+				restoredFromTimestamp: historyRow.changed_at
+			},
+			summary: `${current.title} was rolled back to the ${historyRow.changed_at} revision.`,
+			targetId: current.id,
+			targetLabel: current.title,
+			targetType: "admin_content",
+			timestamp: now
+		});
 
 		return listContent();
 	}
@@ -1618,6 +1934,43 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 			`Guide package ${current.election_slug} updated`,
 			`Guide package moved to ${nextStatus.replaceAll("_", " ")}.`
 		);
+
+		if (current.status !== "published" && nextStatus === "published") {
+			recordAuditEvent({
+				actor: patch.auditActor,
+				eventType: "guide_package_publish",
+				metadata: {
+					electionSlug: current.election_slug,
+					jurisdictionSlug: current.jurisdiction_slug,
+					publishedAt: nextPublishedAt,
+					reviewRecommendation: nextReviewRecommendation,
+					reviewer: nextReviewer
+				},
+				summary: `${current.election_slug} guide package was published.`,
+				targetId: current.id,
+				targetLabel: current.election_slug,
+				targetType: "guide_package",
+				timestamp: now
+			});
+		}
+		else if (current.status === "published" && nextStatus !== "published") {
+			recordAuditEvent({
+				actor: patch.auditActor,
+				eventType: "guide_package_unpublish",
+				metadata: {
+					electionSlug: current.election_slug,
+					jurisdictionSlug: current.jurisdiction_slug,
+					nextStatus,
+					reviewRecommendation: nextReviewRecommendation,
+					reviewer: nextReviewer
+				},
+				summary: `${current.election_slug} guide package was unpublished.`,
+				targetId: current.id,
+				targetLabel: current.election_slug,
+				targetType: "guide_package",
+				timestamp: now
+			});
+		}
 
 		return listGuidePackages();
 	}
@@ -1948,6 +2301,7 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 		getOverview,
 		hasUsers,
 		listContent,
+		listAuditEvents,
 		listCorrections,
 		listGuidePackages,
 		listReview,

@@ -18,6 +18,8 @@ const reviewPreview = computed(() => review.value?.items.slice(0, 3) ?? []);
 const correctionPreview = computed(() => corrections.value?.corrections.slice(0, 3) ?? []);
 const sourcePreview = computed(() => sources.value?.sources.slice(0, 3) ?? []);
 const packagePreview = computed(() => guidePackages.value?.packages.slice(0, 2) ?? []);
+const security = computed(() => overview.value?.security);
+const securityTone = computed(() => security.value?.status === "healthy" ? "accent" as const : "warning" as const);
 
 function packageContentLabel(item: GuidePackageRecord) {
 	if (item.contentStatus.verifiedContestPackage)
@@ -82,6 +84,67 @@ usePageSeo({
 					{{ metric.helpText }}
 				</p>
 			</article>
+		</section>
+
+		<section v-if="security" class="surface-panel">
+			<div class="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+				<div class="max-w-3xl">
+					<div class="flex flex-wrap gap-3 items-center">
+						<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+							Account security
+						</p>
+						<TrustBadge :label="security.status === 'healthy' ? 'MFA complete' : 'MFA action needed'" :tone="securityTone" />
+					</div>
+					<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
+						Admin MFA coverage
+					</h2>
+					<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
+						{{ security.summary }}
+					</p>
+				</div>
+				<NuxtLink to="/admin/users" class="btn-secondary">
+					Manage users
+				</NuxtLink>
+			</div>
+
+			<div class="mt-6 gap-4 grid md:grid-cols-3">
+				<div class="px-4 py-4 border border-app-line/80 rounded-[1.4rem] bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
+					<p class="text-xs text-app-muted tracking-[0.16em] font-semibold uppercase dark:text-app-muted-dark">
+						Active users
+					</p>
+					<p class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
+						{{ security.activeUserCount }}
+					</p>
+				</div>
+				<div class="px-4 py-4 border border-app-line/80 rounded-[1.4rem] bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
+					<p class="text-xs text-app-muted tracking-[0.16em] font-semibold uppercase dark:text-app-muted-dark">
+						MFA enabled
+					</p>
+					<p class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
+						{{ security.mfaEnabledUserCount }}/{{ security.activeUserCount }}
+					</p>
+				</div>
+				<div class="px-4 py-4 border border-app-line/80 rounded-[1.4rem] bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
+					<p class="text-xs text-app-muted tracking-[0.16em] font-semibold uppercase dark:text-app-muted-dark">
+						Active admins
+					</p>
+					<p class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
+						{{ security.activeAdminCount }}
+					</p>
+				</div>
+			</div>
+
+			<div v-if="security.usersWithoutMfa.length" class="mt-6">
+				<p class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
+					Accounts missing MFA
+				</p>
+				<ul class="mt-3 gap-3 grid md:grid-cols-2">
+					<li v-for="user in security.usersWithoutMfa" :key="user.id" class="text-sm text-app-muted px-4 py-3 border border-app-warm/40 rounded-[1.2rem] bg-app-warm/10 dark:text-app-muted-dark">
+						<span class="text-app-ink font-semibold dark:text-app-text-dark">{{ user.displayName }}</span>
+						<span class="mt-1 block">{{ user.username }} · {{ user.role }}</span>
+					</li>
+				</ul>
+			</div>
 		</section>
 
 		<section class="gap-6 grid xl:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">

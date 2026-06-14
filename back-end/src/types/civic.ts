@@ -1473,10 +1473,27 @@ export interface AdminUser {
 	mfaEnabledAt?: string;
 }
 
+export interface AdminSecurityUser {
+	id: string;
+	username: string;
+	displayName: string;
+	role: AdminUserRole;
+}
+
+export interface AdminSecurityStatus {
+	activeAdminCount: number;
+	activeUserCount: number;
+	mfaEnabledUserCount: number;
+	status: "healthy" | "needs_attention";
+	summary: string;
+	usersWithoutMfa: AdminSecurityUser[];
+}
+
 export interface AdminOverviewResponse {
 	metrics: AdminDashboardMetric[];
 	needsAttention: string[];
 	recentActivity: AdminActivityItem[];
+	security: AdminSecurityStatus;
 }
 
 export interface AdminAuditResponse {

@@ -35,6 +35,7 @@ import {
 	createAdminMfaSecret,
 	verifyAdminMfaCode
 } from "./admin-mfa.js";
+import { buildAdminSecurityStatus } from "./admin-security.js";
 import {
 	buildContentSnapshot,
 	changedContentFields,
@@ -1170,12 +1171,14 @@ export async function createPostgresAdminRepository(options: AdminRepositoryOpti
 			const corrections = (await repository.listCorrections()).corrections;
 			const guidePackages = (await repository.listGuidePackages()).packages;
 			const sources = (await repository.listSourceMonitor()).sources;
+			const security = buildAdminSecurityStatus((await repository.listUsers()).users);
 			const healthySourceCount = sources.filter(item => item.health === "healthy").length;
 			const openCorrections = corrections.filter(item => item.status !== "resolved");
 			const reviewQueue = content.filter(item => item.status !== "published" || !item.published);
 			const packageQueue = guidePackages.filter(item => item.status !== "published");
 			const dueChecks = sources.filter(item => new Date(item.nextCheckAt).getTime() <= Date.now());
 			const needsAttention = [
+				...(security.status === "needs_attention" ? [security.summary] : []),
 				...openCorrections.filter(item => item.priority === "high").slice(0, 2).map(item => `${item.subject}: ${item.nextStep}`),
 				...packageQueue.slice(0, 2).map(item => `${item.electionSlug}: package is ${item.status.replaceAll("_", " ")}.`),
 				...content.filter(item => item.status === "needs-sources").slice(0, 2).map(item => `${item.title}: ${item.blocker || "Waiting on source coverage."}`),
@@ -1214,7 +1217,8 @@ export async function createPostgresAdminRepository(options: AdminRepositoryOpti
 					}
 				],
 				needsAttention: needsAttention.length ? needsAttention : ["No urgent blockers are currently open."],
-				recentActivity: await listActivity()
+				recentActivity: await listActivity(),
+				security
 			};
 		},
 		async hasUsers() {

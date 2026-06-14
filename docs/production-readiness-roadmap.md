@@ -14,6 +14,7 @@ The repo already has:
 - content publish approvals with reviewer, note, and timestamp metadata
 - correction-to-content linkage for editorial follow-up from reported issues to content records
 - an append-only, hash-chained admin audit trail for content publication, rollback, guide publication, and account-management actions
+- admin MFA coverage monitoring in the protected dashboard and overview API
 - a public launch profile centered on Fulton County, Georgia as the first real jurisdiction
 - public coverage, status, corrections, and contest-level canonical pages
 - structured backend request logging, health metadata, and admin login throttling
@@ -90,7 +91,7 @@ Work:
 - keep content history, diff views, and rollback monitored in production; baseline support is implemented for public-summary fields
 - add structured editing for more than summary fields
 - add assignment and review notes across more workflow surfaces; content publish approvals and correction-to-content linkage are implemented and should be monitored in production
-- keep admin MFA monitored in production; app-based TOTP setup, login challenge, self-disable, admin reset, login throttling, self-service password change, admin password reset, session invalidation, and account disable/restore controls are implemented
+- keep admin MFA monitored in production; app-based TOTP setup, login challenge, self-disable, admin reset, dashboard coverage visibility, login throttling, self-service password change, admin password reset, session invalidation, and account disable/restore controls are implemented
 - keep immutable audit logs for publish and user-management actions monitored in production; append-only SQLite/Postgres storage and the `/admin/audit` viewer are implemented
 
 Exit criteria:
@@ -141,6 +142,7 @@ These changes can be shipped directly from code:
 - publish gating in the public API
 - stronger admin workflow, including content history, rollback, content publish approval, and correction-to-content linkage
 - immutable admin audit logging for critical publication and user-management actions
+- admin MFA coverage status in the protected dashboard
 - database abstractions that prepare for Postgres
 - optional Postgres-backed admin persistence
 - imported live-coverage snapshots without changing public API routes

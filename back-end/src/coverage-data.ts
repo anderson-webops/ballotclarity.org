@@ -2731,7 +2731,22 @@ export const demoAdminOverview: AdminOverviewResponse = {
 			timestamp: "2026-04-09T18:45:00.000Z",
 			summary: "Queued the Fulton County launch coverage package for editorial verification and public-status QA."
 		}
-	]
+	],
+	security: {
+		activeAdminCount: 1,
+		activeUserCount: 1,
+		mfaEnabledUserCount: 0,
+		status: "needs_attention",
+		summary: "1 active admin-portal account still needs MFA.",
+		usersWithoutMfa: [
+			{
+				displayName: "Ballot Clarity Admin",
+				id: "user-demo-admin",
+				role: "admin",
+				username: "admin"
+			}
+		]
+	}
 };
 
 export const demoJurisdictionSummaries: JurisdictionSummary[] = [

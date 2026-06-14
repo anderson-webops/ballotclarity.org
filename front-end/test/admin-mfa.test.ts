@@ -6,6 +6,7 @@ import test from "node:test";
 const loginPage = readFileSync(resolve("src/pages/admin/login.vue"), "utf8");
 const accountPage = readFileSync(resolve("src/pages/admin/account.vue"), "utf8");
 const usersPage = readFileSync(resolve("src/pages/admin/users.vue"), "utf8");
+const dashboardPage = readFileSync(resolve("src/pages/admin/index.vue"), "utf8");
 const adminAuth = readFileSync(resolve("server/utils/admin-auth.ts"), "utf8");
 const sessionPostRoute = readFileSync(resolve("server/api/admin/session.post.ts"), "utf8");
 const mfaSetupRoute = readFileSync(resolve("server/api/admin/session/mfa/setup.post.ts"), "utf8");
@@ -42,4 +43,13 @@ test("admin users page exposes MFA state and admin reset", () => {
 	assert.match(adminAuth, /\/admin\/auth\/mfa\/enable/);
 	assert.match(adminAuth, /\/admin\/auth\/mfa\/disable/);
 	assert.match(adminAuth, /currentPassword/);
+});
+
+test("admin dashboard exposes MFA coverage from the protected overview", () => {
+	assert.match(dashboardPage, /overview\.value\?\.security/);
+	assert.match(dashboardPage, /Account security/);
+	assert.match(dashboardPage, /Admin MFA coverage/);
+	assert.match(dashboardPage, /security\.mfaEnabledUserCount/);
+	assert.match(dashboardPage, /security\.usersWithoutMfa/);
+	assert.match(dashboardPage, /Manage users/);
 });

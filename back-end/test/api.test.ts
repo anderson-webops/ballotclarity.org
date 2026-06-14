@@ -2758,6 +2758,12 @@ test("GET /api/admin/overview returns operational metrics for authorized request
 	assert.equal(body.metrics[0].label, "Open corrections");
 	assert.ok(body.needsAttention.length >= 2);
 	assert.equal(body.recentActivity[0].type, "publish");
+	assert.equal(body.security.status, "needs_attention");
+	assert.equal(body.security.activeUserCount, 0);
+	assert.equal(body.security.mfaEnabledUserCount, 0);
+	assert.ok(body.needsAttention.includes(body.security.summary));
+	assert.deepEqual(body.security.usersWithoutMfa, []);
+	assert.doesNotMatch(JSON.stringify(body), /mfa_secret/i);
 });
 
 test("GET /api/admin/review and /api/admin/sources return protected operational queues", async () => {
@@ -3438,6 +3444,21 @@ test("admin MFA setup enforces verification codes and supports disable and reset
 		assert.ok(adminUser.credentialsUpdatedAt);
 		assert.equal(adminUser.mfaEnabledAt, undefined);
 
+		const initialOverviewResponse = await fetch(`${isolatedBaseUrl}/api/admin/overview`, {
+			headers: {
+				"x-admin-api-key": adminApiKey
+			}
+		});
+		const initialOverviewBody = await initialOverviewResponse.json();
+
+		assert.equal(initialOverviewResponse.status, 200);
+		assert.equal(initialOverviewBody.security.status, "needs_attention");
+		assert.equal(initialOverviewBody.security.activeUserCount, 1);
+		assert.equal(initialOverviewBody.security.mfaEnabledUserCount, 0);
+		assert.equal(initialOverviewBody.security.usersWithoutMfa[0].username, "ops-admin");
+		assert.ok(initialOverviewBody.needsAttention.includes(initialOverviewBody.security.summary));
+		assert.doesNotMatch(JSON.stringify(initialOverviewBody), /mfa_secret/i);
+
 		const setupResponse = await fetch(`${isolatedBaseUrl}/api/admin/auth/mfa/setup`, {
 			body: JSON.stringify({ username: "ops-admin" }),
 			headers: adminHeaders,
@@ -3538,6 +3559,20 @@ test("admin MFA setup enforces verification codes and supports disable and reset
 		assert.equal(validMfaLoginBody.authenticated, true);
 		assert.equal(validMfaLoginBody.mfaEnabledAt, enableBody.mfaEnabledAt);
 
+		const securedOverviewResponse = await fetch(`${isolatedBaseUrl}/api/admin/overview`, {
+			headers: {
+				"x-admin-api-key": adminApiKey
+			}
+		});
+		const securedOverviewBody = await securedOverviewResponse.json();
+
+		assert.equal(securedOverviewResponse.status, 200);
+		assert.equal(securedOverviewBody.security.status, "healthy");
+		assert.equal(securedOverviewBody.security.activeUserCount, 1);
+		assert.equal(securedOverviewBody.security.mfaEnabledUserCount, 1);
+		assert.deepEqual(securedOverviewBody.security.usersWithoutMfa, []);
+		assert.ok(!securedOverviewBody.needsAttention.includes(initialOverviewBody.security.summary));
+
 		const disableResponse = await fetch(`${isolatedBaseUrl}/api/admin/auth/mfa/disable`, {
 			body: JSON.stringify({
 				currentPassword: "correct-horse-battery-staple",
@@ -3586,6 +3621,18 @@ test("admin MFA setup enforces verification codes and supports disable and reset
 		assert.equal(resetMfaResponse.status, 200);
 		assert.equal(resetAdmin.mfaEnabledAt, undefined);
 		assert.notEqual(resetAdmin.credentialsUpdatedAt, secondEnableBody.credentialsUpdatedAt);
+
+		const resetOverviewResponse = await fetch(`${isolatedBaseUrl}/api/admin/overview`, {
+			headers: {
+				"x-admin-api-key": adminApiKey
+			}
+		});
+		const resetOverviewBody = await resetOverviewResponse.json();
+
+		assert.equal(resetOverviewResponse.status, 200);
+		assert.equal(resetOverviewBody.security.status, "needs_attention");
+		assert.equal(resetOverviewBody.security.mfaEnabledUserCount, 0);
+		assert.equal(resetOverviewBody.security.usersWithoutMfa[0].username, "ops-admin");
 
 		const resetLoginResponse = await fetch(`${isolatedBaseUrl}/api/admin/auth/login`, {
 			body: JSON.stringify({

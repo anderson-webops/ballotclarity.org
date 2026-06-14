@@ -341,6 +341,7 @@ How the admin model works:
 - Nuxt proxies protected admin requests to the Express API using `ADMIN_API_KEY`, so the backend key never reaches the browser.
 - Browser traffic for `/api/admin/*` is expected to terminate at Nuxt. The Express admin endpoints are internal API surfaces behind `ADMIN_API_BASE`, not public browser routes.
 - Admins can create, disable, restore, reset temporary passwords, and reset MFA enrollment for admin/editor accounts. Signed-in admins and editors can enable or disable app-based TOTP MFA and change their own passwords from the Account page. Disabled accounts cannot start new sessions, and password/MFA changes invalidate existing sessions by rotating the account credential timestamp checked by the Nuxt admin bridge.
+- The admin dashboard includes an account-security summary from `/api/admin/overview`, showing active admin-portal users, MFA-enabled users, and active accounts that still need MFA. The summary never exposes stored TOTP secrets.
 - Admin data includes content publish state, reviewer approval metadata, persisted public-summary overrides, content history and rollback points, correction intake with content-record linkage, source-health monitoring, activity logs, user management, and a hash-chained append-only audit trail for critical publish/account actions.
 
 ## API surface

@@ -40,6 +40,7 @@ import {
 	createAdminMfaSecret,
 	verifyAdminMfaCode
 } from "./admin-mfa.js";
+import { buildAdminSecurityStatus } from "./admin-security.js";
 import {
 	demoAdminCorrections,
 	demoAdminOverview,
@@ -2424,6 +2425,7 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 		const corrections = listCorrections().corrections;
 		const guidePackages = listGuidePackages().packages;
 		const sources = listSourceMonitor().sources;
+		const security = buildAdminSecurityStatus(listUsers().users);
 
 		const healthySourceCount = sources.filter(item => item.health === "healthy").length;
 		const openCorrections = corrections.filter(item => item.status !== "resolved");
@@ -2431,6 +2433,9 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 		const packageQueue = guidePackages.filter(item => item.status !== "published");
 		const dueChecks = sources.filter(item => new Date(item.nextCheckAt).getTime() <= Date.now());
 		const needsAttention = [
+			...(security.status === "needs_attention"
+				? [security.summary]
+				: []),
 			...openCorrections
 				.filter(item => item.priority === "high")
 				.slice(0, 2)
@@ -2480,7 +2485,8 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 				}
 			],
 			needsAttention: needsAttention.length ? needsAttention : ["No urgent blockers are currently open."],
-			recentActivity: listActivity()
+			recentActivity: listActivity(),
+			security
 		};
 	}
 

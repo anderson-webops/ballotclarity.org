@@ -80,6 +80,8 @@ export interface ContentPatch {
 	assignedTo?: string;
 	blocker?: string | null;
 	priority?: AdminPriority;
+	publishApprovedBy?: string | null;
+	publishApprovalNote?: string | null;
 	publicBallotSummary?: string | null;
 	publicSummary?: string;
 	published?: boolean;
@@ -201,6 +203,9 @@ interface ContentRow {
 	source_coverage: string;
 	published: number;
 	published_at: string | null;
+	publish_approved_at: string | null;
+	publish_approved_by: string | null;
+	publish_approval_note: string | null;
 }
 
 export interface ContentHistoryRow {
@@ -221,6 +226,9 @@ interface ContentSnapshotSource {
 	ballot_summary: string | null;
 	published: boolean | number;
 	published_at: string | null;
+	publish_approved_at: string | null;
+	publish_approved_by: string | null;
+	publish_approval_note: string | null;
 	status: AdminReviewStatus;
 	updated_at: string;
 }
@@ -363,6 +371,9 @@ function rowToContent(row: ContentRow): AdminContentItem {
 		publicSummary: row.public_summary || "",
 		published: Boolean(row.published),
 		publishedAt: row.published_at || undefined,
+		publishApprovedAt: row.publish_approved_at || undefined,
+		publishApprovedBy: row.publish_approved_by || undefined,
+		publishApprovalNote: row.publish_approval_note || undefined,
 		sourceCoverage: row.source_coverage,
 		status: row.status,
 		summary: row.summary,
@@ -380,6 +391,9 @@ export function buildContentSnapshot(row: ContentSnapshotSource, updatedAt = row
 		publicSummary: row.public_summary || "",
 		published: Boolean(row.published),
 		publishedAt: row.published_at || undefined,
+		publishApprovedAt: row.publish_approved_at || undefined,
+		publishApprovedBy: row.publish_approved_by || undefined,
+		publishApprovalNote: row.publish_approval_note || undefined,
 		status: row.status,
 		updatedAt
 	};
@@ -396,6 +410,9 @@ export function parseContentSnapshot(raw: string): AdminContentSnapshot {
 		|| typeof parsed.publicSummary !== "string"
 		|| typeof parsed.published !== "boolean"
 		|| (parsed.publishedAt !== undefined && typeof parsed.publishedAt !== "string")
+		|| (parsed.publishApprovedAt !== undefined && typeof parsed.publishApprovedAt !== "string")
+		|| (parsed.publishApprovedBy !== undefined && typeof parsed.publishApprovedBy !== "string")
+		|| (parsed.publishApprovalNote !== undefined && typeof parsed.publishApprovalNote !== "string")
 		|| typeof parsed.status !== "string"
 		|| typeof parsed.updatedAt !== "string"
 	) {
@@ -428,6 +445,9 @@ export function changedContentFields(previous: AdminContentSnapshot, next: Admin
 		"publicSummary",
 		"published",
 		"publishedAt",
+		"publishApprovedAt",
+		"publishApprovedBy",
+		"publishApprovalNote",
 		"status"
 	];
 
@@ -447,6 +467,9 @@ export function snapshotToContentUpdateValues(snapshot: AdminContentSnapshot) {
 		publicSummary: snapshot.publicSummary.trim(),
 		published: snapshot.published,
 		publishedAt: snapshot.published ? snapshot.publishedAt || null : null,
+		publishApprovedAt: snapshot.published ? snapshot.publishApprovedAt || null : null,
+		publishApprovedBy: snapshot.published ? snapshot.publishApprovedBy?.trim() || null : null,
+		publishApprovalNote: snapshot.published ? snapshot.publishApprovalNote?.trim() || null : null,
 		status: snapshot.status
 	};
 }
@@ -580,6 +603,11 @@ export function defaultContentSeed(): AdminContentItem[] {
 			publicSummary: candidate.summary,
 			published: true,
 			publishedAt: candidate.updatedAt,
+			publishApprovedAt: candidate.updatedAt,
+			publishApprovedBy: candidate.slug === "sandra-patel" ? "Research queue" : "Editorial review",
+			publishApprovalNote: candidate.slug === "sandra-patel"
+				? "Legacy published seed state retained until source review is completed."
+				: "Legacy seed content approved for launch baseline.",
 			sourceCoverage,
 			status,
 			summary: candidate.summary,
@@ -599,6 +627,9 @@ export function defaultContentSeed(): AdminContentItem[] {
 		publicSummary: measure.summary,
 		published: true,
 		publishedAt: measure.updatedAt,
+		publishApprovedAt: measure.updatedAt,
+		publishApprovedBy: index === 0 ? "Managing editor" : "Editorial review",
+		publishApprovalNote: "Legacy seed content approved for launch baseline.",
 		sourceCoverage: `${measure.sources.length} attached source${measure.sources.length === 1 ? "" : "s"} with yes/no impact sections and fiscal notes.`,
 		status: index === 0 ? "in-review" as const : "published" as const,
 		summary: measure.summary,
@@ -617,6 +648,9 @@ export function defaultContentSeed(): AdminContentItem[] {
 			publicSummary: demoElection.description,
 			published: true,
 			publishedAt: demoElection.updatedAt,
+			publishApprovedAt: demoElection.updatedAt,
+			publishApprovedBy: "Editorial review",
+			publishApprovalNote: "Legacy launch coverage content approved for the seeded baseline.",
 			sourceCoverage: `${demoElection.contests.length} contest sections with official notices and guide freshness metadata attached.`,
 			status: "in-review",
 			summary: "Cross-checking the Fulton County launch profile, official office links, and public-status language before the next public refresh.",
@@ -687,6 +721,9 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 	ensureColumn(database, "admin_users", "disabled_at", "TEXT");
 	ensureColumn(database, "admin_content", "public_summary", "TEXT");
 	ensureColumn(database, "admin_content", "ballot_summary", "TEXT");
+	ensureColumn(database, "admin_content", "publish_approved_by", "TEXT");
+	ensureColumn(database, "admin_content", "publish_approved_at", "TEXT");
+	ensureColumn(database, "admin_content", "publish_approval_note", "TEXT");
 	ensureColumn(database, "admin_corrections", "content_id", "TEXT");
 	ensureColumn(database, "admin_guide_packages", "review_recommendation", "TEXT");
 	database.exec("CREATE INDEX IF NOT EXISTS idx_admin_corrections_content ON admin_corrections (content_id)");
@@ -694,6 +731,13 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 		UPDATE admin_users
 		SET credentials_updated_at = COALESCE(credentials_updated_at, created_at, updated_at)
 		WHERE credentials_updated_at IS NULL
+	`).run();
+	database.prepare(`
+		UPDATE admin_content
+		SET publish_approved_by = COALESCE(publish_approved_by, 'Legacy publish state'),
+			publish_approved_at = COALESCE(publish_approved_at, published_at, updated_at),
+			publish_approval_note = COALESCE(publish_approval_note, 'Published before approval metadata was added; retained as a legacy approved record.')
+		WHERE published = 1 AND publish_approved_by IS NULL
 	`).run();
 
 	if (shouldPurgeLegacyDemoAdminData(options)) {
@@ -731,8 +775,11 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 				source_coverage,
 				published,
 				published_at,
+				publish_approved_by,
+				publish_approved_at,
+				publish_approval_note,
 				updated_at
-			) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		`);
 
 		for (const item of contentSeed) {
@@ -751,6 +798,9 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 				item.sourceCoverage,
 				item.published ? 1 : 0,
 				item.publishedAt || null,
+				item.publishApprovedBy || null,
+				item.publishApprovedAt || null,
+				item.publishApprovalNote || null,
 				item.updatedAt
 			);
 		}
@@ -773,6 +823,18 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 			published_at = CASE
 				WHEN public_summary IS NULL OR trim(public_summary) = '' THEN COALESCE(published_at, ?)
 				ELSE published_at
+			END,
+			publish_approved_by = CASE
+				WHEN public_summary IS NULL OR trim(public_summary) = '' THEN COALESCE(publish_approved_by, ?)
+				ELSE publish_approved_by
+			END,
+			publish_approved_at = CASE
+				WHEN public_summary IS NULL OR trim(public_summary) = '' THEN COALESCE(publish_approved_at, ?)
+				ELSE publish_approved_at
+			END,
+			publish_approval_note = CASE
+				WHEN public_summary IS NULL OR trim(public_summary) = '' THEN COALESCE(publish_approval_note, ?)
+				ELSE publish_approval_note
 			END
 		WHERE entity_type = ? AND entity_slug = ?
 	`);
@@ -783,6 +845,9 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 			item.publicBallotSummary || null,
 			item.published ? 1 : 0,
 			item.publishedAt || null,
+			item.publishApprovedBy || null,
+			item.publishApprovedAt || null,
+			item.publishApprovalNote || null,
 			item.entityType,
 			item.entitySlug
 		);
@@ -1123,7 +1188,7 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 
 	function listContent(): AdminContentResponse {
 		const rows = database.prepare(`
-			SELECT id, title, entity_type, entity_slug, status, priority, updated_at, assigned_to, blocker, summary, public_summary, ballot_summary, source_coverage, published, published_at
+			SELECT id, title, entity_type, entity_slug, status, priority, updated_at, assigned_to, blocker, summary, public_summary, ballot_summary, source_coverage, published, published_at, publish_approved_by, publish_approved_at, publish_approval_note
 			FROM admin_content
 			ORDER BY published ASC, priority DESC, updated_at DESC
 		`).all() as unknown as ContentRow[];
@@ -1215,7 +1280,7 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 
 	function getContentRecord(entityType: AdminEntityType, entitySlug: string) {
 		const row = database.prepare(`
-			SELECT id, title, entity_type, entity_slug, status, priority, updated_at, assigned_to, blocker, summary, public_summary, ballot_summary, source_coverage, published, published_at
+			SELECT id, title, entity_type, entity_slug, status, priority, updated_at, assigned_to, blocker, summary, public_summary, ballot_summary, source_coverage, published, published_at, publish_approved_by, publish_approved_at, publish_approval_note
 			FROM admin_content
 			WHERE entity_type = ? AND entity_slug = ?
 		`).get(entityType, entitySlug) as ContentRow | undefined;
@@ -1225,7 +1290,7 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 
 	function getContentRow(id: string) {
 		return database.prepare(`
-			SELECT id, title, entity_type, entity_slug, status, priority, updated_at, assigned_to, blocker, summary, public_summary, ballot_summary, source_coverage, published, published_at
+			SELECT id, title, entity_type, entity_slug, status, priority, updated_at, assigned_to, blocker, summary, public_summary, ballot_summary, source_coverage, published, published_at, publish_approved_by, publish_approved_at, publish_approval_note
 			FROM admin_content
 			WHERE id = ?
 		`).get(id) as ContentRow | undefined;
@@ -1278,6 +1343,36 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 		);
 	}
 
+	function resolvePublishApproval(current: ContentRow, patch: ContentPatch, nextPublished: boolean, now: string) {
+		if (!nextPublished) {
+			return {
+				publishApprovedAt: null,
+				publishApprovedBy: null,
+				publishApprovalNote: null
+			};
+		}
+
+		const nextPublishApprovedBy = patch.publishApprovedBy === undefined
+			? current.publish_approved_by
+			: patch.publishApprovedBy?.trim() || null;
+		const nextPublishApprovalNote = patch.publishApprovalNote === undefined
+			? current.publish_approval_note
+			: patch.publishApprovalNote?.trim() || null;
+		const approvalChanged = patch.publishApprovedBy !== undefined || patch.publishApprovalNote !== undefined;
+		const nextPublishApprovedAt = nextPublishApprovedBy
+			? approvalChanged ? now : current.publish_approved_at || now
+			: null;
+
+		if (!nextPublishApprovedBy)
+			throw new Error("Publish approval reviewer is required before content can be published.");
+
+		return {
+			publishApprovedAt: nextPublishApprovedAt,
+			publishApprovedBy: nextPublishApprovedBy,
+			publishApprovalNote: nextPublishApprovalNote
+		};
+	}
+
 	function updateContent(id: string, patch: ContentPatch) {
 		const current = getContentRow(id);
 
@@ -1289,6 +1384,7 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 		const nextStatus = patch.status
 			|| (nextPublished ? "published" : current.status === "published" ? "in-review" : current.status);
 		const nextPublishedAt = nextPublished ? current.published_at || now : null;
+		const publishApproval = resolvePublishApproval(current, patch, nextPublished, now);
 		const nextPublicSummary = patch.publicSummary === undefined
 			? current.public_summary || ""
 			: patch.publicSummary.trim();
@@ -1307,6 +1403,9 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 			publicSummary: nextPublicSummary,
 			published: nextPublished,
 			publishedAt: nextPublishedAt || undefined,
+			publishApprovedAt: publishApproval.publishApprovedAt || undefined,
+			publishApprovedBy: publishApproval.publishApprovedBy || undefined,
+			publishApprovalNote: publishApproval.publishApprovalNote || undefined,
 			status: nextStatus,
 			updatedAt: now
 		};
@@ -1326,6 +1425,9 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 				ballot_summary = ?,
 				published = ?,
 				published_at = ?,
+				publish_approved_by = ?,
+				publish_approved_at = ?,
+				publish_approval_note = ?,
 				updated_at = ?
 			WHERE id = ?
 		`).run(
@@ -1337,6 +1439,9 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 			nextSnapshot.publicBallotSummary || null,
 			nextSnapshot.published ? 1 : 0,
 			nextSnapshot.publishedAt || null,
+			nextSnapshot.publishApprovedBy || null,
+			nextSnapshot.publishApprovedAt || null,
+			nextSnapshot.publishApprovalNote || null,
 			now,
 			id
 		);
@@ -1354,7 +1459,7 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 			nextPublished ? "publish" : "review",
 			`${current.title} updated`,
 			nextPublished
-				? `${current.title} is marked published and available for the public site.`
+				? `${current.title} is marked published and approved by ${nextSnapshot.publishApprovedBy}.`
 				: `${current.title} moved to ${nextStatus}.`
 		);
 
@@ -1391,6 +1496,9 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 			publicSummary: rollbackValues.publicSummary,
 			published: rollbackValues.published,
 			publishedAt: rollbackValues.publishedAt || undefined,
+			publishApprovedAt: rollbackValues.publishApprovedAt || undefined,
+			publishApprovedBy: rollbackValues.publishApprovedBy || undefined,
+			publishApprovalNote: rollbackValues.publishApprovalNote || undefined,
 			status: rollbackValues.status,
 			updatedAt: now
 		};
@@ -1409,6 +1517,9 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 				ballot_summary = ?,
 				published = ?,
 				published_at = ?,
+				publish_approved_by = ?,
+				publish_approved_at = ?,
+				publish_approval_note = ?,
 				updated_at = ?
 			WHERE id = ?
 		`).run(
@@ -1420,6 +1531,9 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 			nextSnapshot.publicBallotSummary || null,
 			nextSnapshot.published ? 1 : 0,
 			nextSnapshot.publishedAt || null,
+			nextSnapshot.publishApprovedBy || null,
+			nextSnapshot.publishApprovedAt || null,
+			nextSnapshot.publishApprovalNote || null,
 			now,
 			id
 		);

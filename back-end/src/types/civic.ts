@@ -1380,6 +1380,9 @@ export interface AdminContentItem {
 	sourceCoverage: string;
 	published: boolean;
 	publishedAt?: string;
+	publishApprovedAt?: string;
+	publishApprovedBy?: string;
+	publishApprovalNote?: string;
 }
 
 export interface AdminContentSnapshot {
@@ -1390,6 +1393,9 @@ export interface AdminContentSnapshot {
 	publicSummary: string;
 	published: boolean;
 	publishedAt?: string;
+	publishApprovedAt?: string;
+	publishApprovedBy?: string;
+	publishApprovalNote?: string;
 	status: AdminReviewStatus;
 	updatedAt: string;
 }

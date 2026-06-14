@@ -27,6 +27,9 @@ const snapshotFields: Array<{
 	{ key: "priority", label: "Priority" },
 	{ key: "assignedTo", label: "Assigned to" },
 	{ key: "blocker", label: "Blocker" },
+	{ key: "publishApprovedBy", label: "Publish approved by" },
+	{ key: "publishApprovedAt", label: "Publish approved at" },
+	{ key: "publishApprovalNote", label: "Publish approval note" },
 	{ key: "publicSummary", label: "Public page summary" },
 	{ key: "publicBallotSummary", label: "Ballot card summary" },
 	{ key: "publishedAt", label: "Published at" }

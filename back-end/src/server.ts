@@ -4901,6 +4901,16 @@ export async function createApp(options: CreateAppOptions = {}) {
 						? request.body.blocker
 						: undefined,
 				priority: request.body?.priority,
+				publishApprovedBy: request.body?.publishApprovedBy === null
+					? null
+					: typeof request.body?.publishApprovedBy === "string"
+						? request.body.publishApprovedBy
+						: undefined,
+				publishApprovalNote: request.body?.publishApprovalNote === null
+					? null
+					: typeof request.body?.publishApprovalNote === "string"
+						? request.body.publishApprovalNote
+						: undefined,
 				publicBallotSummary: request.body?.publicBallotSummary === null
 					? null
 					: typeof request.body?.publicBallotSummary === "string"

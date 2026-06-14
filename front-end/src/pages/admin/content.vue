@@ -16,10 +16,19 @@ const savingId = ref<string | null>(null);
 const feedbackMessage = ref("");
 const feedbackTone = ref<"error" | "success">("success");
 
+function formatDate(value: string) {
+	return new Intl.DateTimeFormat("en-US", {
+		dateStyle: "medium",
+		timeStyle: "short"
+	}).format(new Date(value));
+}
+
 async function saveItem(id: string, payload: {
 	assignedTo?: string;
 	blocker?: string | null;
 	priority?: AdminPriority;
+	publishApprovedBy?: string | null;
+	publishApprovalNote?: string | null;
 	publicBallotSummary?: string | null;
 	publicSummary?: string;
 	published?: boolean;
@@ -99,6 +108,11 @@ usePageSeo({
 							<TrustBadge :label="item.entityType" />
 							<TrustBadge :label="item.status" :tone="item.status === 'published' ? 'accent' : item.status === 'needs-sources' ? 'warning' : 'neutral'" />
 							<TrustBadge :label="item.published ? 'Published' : 'Internal only'" :tone="item.published ? 'accent' : 'warning'" />
+							<TrustBadge
+								v-if="item.published"
+								:label="item.publishApprovedBy ? `Approved by ${item.publishApprovedBy}` : 'Approval required'"
+								:tone="item.publishApprovedBy ? 'accent' : 'warning'"
+							/>
 						</div>
 						<h2 class="text-3xl text-app-ink font-serif mt-4 dark:text-app-text-dark">
 							{{ item.title }}
@@ -225,6 +239,38 @@ usePageSeo({
 							<input v-model="item.published" type="checkbox" class="accent-app-accent h-4 w-4">
 							Published on the public site
 						</label>
+
+						<div class="p-4 border border-app-line rounded-3xl bg-white/70 space-y-4 dark:border-app-line-dark dark:bg-app-panel-dark/70">
+							<div>
+								<p class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
+									Publish approval
+								</p>
+								<p class="text-xs text-app-muted leading-5 mt-1 dark:text-app-muted-dark">
+									Publishing requires a named reviewer. Unpublishing clears the approval so a future publish needs fresh signoff.
+								</p>
+							</div>
+							<label class="block">
+								<span class="text-sm text-app-ink font-semibold dark:text-app-text-dark">Approved by</span>
+								<input
+									v-model="item.publishApprovedBy"
+									type="text"
+									class="text-sm text-app-ink mt-2 px-4 border border-app-line rounded-2xl bg-white h-13 w-full shadow-sm dark:text-app-text-dark dark:border-app-line-dark dark:bg-app-panel-dark focus-ring"
+									placeholder="Reviewer name or role"
+								>
+							</label>
+							<label class="block">
+								<span class="text-sm text-app-ink font-semibold dark:text-app-text-dark">Approval note</span>
+								<textarea
+									v-model="item.publishApprovalNote"
+									rows="3"
+									class="text-sm text-app-ink mt-2 px-4 py-3 border border-app-line rounded-2xl bg-white min-h-24 w-full shadow-sm dark:text-app-text-dark dark:border-app-line-dark dark:bg-app-panel-dark focus-ring"
+									placeholder="Short signoff context, source check, or limitation note."
+								/>
+							</label>
+							<p v-if="item.publishApprovedAt" class="text-xs text-app-muted leading-5 dark:text-app-muted-dark">
+								Approval recorded {{ formatDate(item.publishApprovedAt) }}.
+							</p>
+						</div>
 
 						<button type="submit" class="btn-primary w-full" :disabled="savingId === item.id">
 							{{ savingId === item.id ? "Saving..." : "Save changes" }}

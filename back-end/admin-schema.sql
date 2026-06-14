@@ -28,6 +28,9 @@ CREATE TABLE IF NOT EXISTS admin_content (
 	source_coverage TEXT NOT NULL,
 	published INTEGER NOT NULL DEFAULT 0,
 	published_at TEXT,
+	publish_approved_by TEXT,
+	publish_approved_at TEXT,
+	publish_approval_note TEXT,
 	updated_at TEXT NOT NULL,
 	UNIQUE (entity_type, entity_slug)
 );

@@ -74,6 +74,9 @@ interface ContentRow {
 	source_coverage: string;
 	published: boolean;
 	published_at: string | null;
+	publish_approved_at: string | null;
+	publish_approved_by: string | null;
+	publish_approval_note: string | null;
 }
 
 interface CorrectionRow {
@@ -167,6 +170,9 @@ function rowToContent(row: ContentRow): AdminContentItem {
 		publicSummary: row.public_summary || "",
 		published: row.published,
 		publishedAt: row.published_at || undefined,
+		publishApprovedAt: row.publish_approved_at || undefined,
+		publishApprovedBy: row.publish_approved_by || undefined,
+		publishApprovalNote: row.publish_approval_note || undefined,
 		sourceCoverage: row.source_coverage,
 		status: row.status,
 		summary: row.summary,
@@ -264,6 +270,9 @@ async function seedPostgresDatabase(pool: Pool, options: AdminRepositoryOptions)
 	await pool.query("ALTER TABLE admin_users ADD COLUMN IF NOT EXISTS disabled_at TEXT");
 	await pool.query("ALTER TABLE admin_content ADD COLUMN IF NOT EXISTS public_summary TEXT");
 	await pool.query("ALTER TABLE admin_content ADD COLUMN IF NOT EXISTS ballot_summary TEXT");
+	await pool.query("ALTER TABLE admin_content ADD COLUMN IF NOT EXISTS publish_approved_by TEXT");
+	await pool.query("ALTER TABLE admin_content ADD COLUMN IF NOT EXISTS publish_approved_at TEXT");
+	await pool.query("ALTER TABLE admin_content ADD COLUMN IF NOT EXISTS publish_approval_note TEXT");
 	await pool.query("ALTER TABLE admin_corrections ADD COLUMN IF NOT EXISTS content_id TEXT");
 	await pool.query("ALTER TABLE admin_guide_packages ADD COLUMN IF NOT EXISTS review_recommendation TEXT");
 	await pool.query("CREATE INDEX IF NOT EXISTS idx_admin_corrections_content ON admin_corrections (content_id)");
@@ -271,6 +280,13 @@ async function seedPostgresDatabase(pool: Pool, options: AdminRepositoryOptions)
 		UPDATE admin_users
 		SET credentials_updated_at = COALESCE(credentials_updated_at, created_at, updated_at)
 		WHERE credentials_updated_at IS NULL
+	`);
+	await pool.query(`
+		UPDATE admin_content
+		SET publish_approved_by = COALESCE(publish_approved_by, 'Legacy publish state'),
+			publish_approved_at = COALESCE(publish_approved_at, published_at, updated_at),
+			publish_approval_note = COALESCE(publish_approval_note, 'Published before approval metadata was added; retained as a legacy approved record.')
+		WHERE published = TRUE AND publish_approved_by IS NULL
 	`);
 
 	if (shouldPurgeLegacyDemoAdminData(options)) {
@@ -301,8 +317,9 @@ async function seedPostgresDatabase(pool: Pool, options: AdminRepositoryOptions)
 			await pool.query(`
 				INSERT INTO admin_content (
 					id, entity_type, entity_slug, title, status, priority, assigned_to, blocker, summary,
-					public_summary, ballot_summary, source_coverage, published, published_at, updated_at
-				) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+					public_summary, ballot_summary, source_coverage, published, published_at, publish_approved_by,
+					publish_approved_at, publish_approval_note, updated_at
+				) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
 			`, [
 				item.id,
 				item.entityType,
@@ -318,6 +335,9 @@ async function seedPostgresDatabase(pool: Pool, options: AdminRepositoryOptions)
 				item.sourceCoverage,
 				item.published,
 				item.publishedAt || null,
+				item.publishApprovedBy || null,
+				item.publishApprovedAt || null,
+				item.publishApprovalNote || null,
 				item.updatedAt
 			]);
 		}
@@ -341,13 +361,28 @@ async function seedPostgresDatabase(pool: Pool, options: AdminRepositoryOptions)
 				published_at = CASE
 					WHEN public_summary IS NULL OR btrim(public_summary) = '' THEN COALESCE(published_at, $4)
 					ELSE published_at
+				END,
+				publish_approved_by = CASE
+					WHEN public_summary IS NULL OR btrim(public_summary) = '' THEN COALESCE(publish_approved_by, $5)
+					ELSE publish_approved_by
+				END,
+				publish_approved_at = CASE
+					WHEN public_summary IS NULL OR btrim(public_summary) = '' THEN COALESCE(publish_approved_at, $6)
+					ELSE publish_approved_at
+				END,
+				publish_approval_note = CASE
+					WHEN public_summary IS NULL OR btrim(public_summary) = '' THEN COALESCE(publish_approval_note, $7)
+					ELSE publish_approval_note
 				END
-			WHERE entity_type = $5 AND entity_slug = $6
+			WHERE entity_type = $8 AND entity_slug = $9
 		`, [
 			item.publicSummary,
 			item.publicBallotSummary || null,
 			item.published,
 			item.publishedAt || null,
+			item.publishApprovedBy || null,
+			item.publishApprovedAt || null,
+			item.publishApprovalNote || null,
 			item.entityType,
 			item.entitySlug
 		]);
@@ -493,7 +528,7 @@ export async function createPostgresAdminRepository(options: AdminRepositoryOpti
 
 	async function getContentRow(id: string) {
 		const result = await pool.query<ContentRow>(`
-				SELECT id, title, entity_type, entity_slug, status, priority, updated_at, assigned_to, blocker, summary, public_summary, ballot_summary, source_coverage, published, published_at
+				SELECT id, title, entity_type, entity_slug, status, priority, updated_at, assigned_to, blocker, summary, public_summary, ballot_summary, source_coverage, published, published_at, publish_approved_by, publish_approved_at, publish_approval_note
 				FROM admin_content
 				WHERE id = $1
 		`, [id]);
@@ -688,7 +723,7 @@ export async function createPostgresAdminRepository(options: AdminRepositoryOpti
 		},
 		async getContentRecord(entityType, entitySlug) {
 			const result = await pool.query<ContentRow>(`
-				SELECT id, title, entity_type, entity_slug, status, priority, updated_at, assigned_to, blocker, summary, public_summary, ballot_summary, source_coverage, published, published_at
+				SELECT id, title, entity_type, entity_slug, status, priority, updated_at, assigned_to, blocker, summary, public_summary, ballot_summary, source_coverage, published, published_at, publish_approved_by, publish_approved_at, publish_approval_note
 				FROM admin_content
 				WHERE entity_type = $1 AND entity_slug = $2
 			`, [entityType, entitySlug]);
@@ -783,7 +818,7 @@ export async function createPostgresAdminRepository(options: AdminRepositoryOpti
 		},
 		async listContent() {
 			const result = await pool.query<ContentRow>(`
-				SELECT id, title, entity_type, entity_slug, status, priority, updated_at, assigned_to, blocker, summary, public_summary, ballot_summary, source_coverage, published, published_at
+				SELECT id, title, entity_type, entity_slug, status, priority, updated_at, assigned_to, blocker, summary, public_summary, ballot_summary, source_coverage, published, published_at, publish_approved_by, publish_approved_at, publish_approval_note
 				FROM admin_content
 				ORDER BY published ASC, priority DESC, updated_at DESC
 			`);
@@ -973,10 +1008,23 @@ export async function createPostgresAdminRepository(options: AdminRepositoryOpti
 			const nextPublished = patch.published ?? current.published;
 			const nextStatus = patch.status || (nextPublished ? "published" : current.status === "published" ? "in-review" : current.status);
 			const nextPublishedAt = nextPublished ? current.published_at || now : null;
+			const nextPublishApprovedBy = nextPublished
+				? patch.publishApprovedBy === undefined ? current.publish_approved_by : patch.publishApprovedBy?.trim() || null
+				: null;
+			const nextPublishApprovalNote = nextPublished
+				? patch.publishApprovalNote === undefined ? current.publish_approval_note : patch.publishApprovalNote?.trim() || null
+				: null;
+			const approvalChanged = patch.publishApprovedBy !== undefined || patch.publishApprovalNote !== undefined;
+			const nextPublishApprovedAt = nextPublishApprovedBy
+				? approvalChanged ? now : current.publish_approved_at || now
+				: null;
 			const nextPublicSummary = patch.publicSummary === undefined ? current.public_summary || "" : patch.publicSummary.trim();
 
 			if (!nextPublicSummary)
 				throw new Error("Public page summary is required.");
+
+			if (nextPublished && !nextPublishApprovedBy)
+				throw new Error("Publish approval reviewer is required before content can be published.");
 
 			const nextBallotSummary = patch.publicBallotSummary === undefined
 				? current.ballot_summary
@@ -989,6 +1037,9 @@ export async function createPostgresAdminRepository(options: AdminRepositoryOpti
 				publicSummary: nextPublicSummary,
 				published: nextPublished,
 				publishedAt: nextPublishedAt || undefined,
+				publishApprovedAt: nextPublishApprovedAt || undefined,
+				publishApprovedBy: nextPublishApprovedBy || undefined,
+				publishApprovalNote: nextPublishApprovalNote || undefined,
 				status: nextStatus,
 				updatedAt: now
 			};
@@ -1008,8 +1059,11 @@ export async function createPostgresAdminRepository(options: AdminRepositoryOpti
 					ballot_summary = $6,
 					published = $7,
 					published_at = $8,
-					updated_at = $9
-				WHERE id = $10
+					publish_approved_by = $9,
+					publish_approved_at = $10,
+					publish_approval_note = $11,
+					updated_at = $12
+				WHERE id = $13
 			`, [
 				nextSnapshot.status,
 				nextSnapshot.priority,
@@ -1019,6 +1073,9 @@ export async function createPostgresAdminRepository(options: AdminRepositoryOpti
 				nextSnapshot.publicBallotSummary || null,
 				nextSnapshot.published,
 				nextSnapshot.publishedAt || null,
+				nextSnapshot.publishApprovedBy || null,
+				nextSnapshot.publishApprovedAt || null,
+				nextSnapshot.publishApprovalNote || null,
 				now,
 				id
 			]);
@@ -1036,7 +1093,7 @@ export async function createPostgresAdminRepository(options: AdminRepositoryOpti
 				nextPublished ? "publish" : "review",
 				`${current.title} updated`,
 				nextPublished
-					? `${current.title} is marked published and available for the public site.`
+					? `${current.title} is marked published and approved by ${nextSnapshot.publishApprovedBy}.`
 					: `${current.title} moved to ${nextStatus}.`
 			);
 
@@ -1073,6 +1130,9 @@ export async function createPostgresAdminRepository(options: AdminRepositoryOpti
 				publicSummary: rollbackValues.publicSummary,
 				published: rollbackValues.published,
 				publishedAt: rollbackValues.publishedAt || undefined,
+				publishApprovedAt: rollbackValues.publishApprovedAt || undefined,
+				publishApprovedBy: rollbackValues.publishApprovedBy || undefined,
+				publishApprovalNote: rollbackValues.publishApprovalNote || undefined,
 				status: rollbackValues.status,
 				updatedAt: now
 			};
@@ -1091,8 +1151,11 @@ export async function createPostgresAdminRepository(options: AdminRepositoryOpti
 					ballot_summary = $6,
 					published = $7,
 					published_at = $8,
-					updated_at = $9
-				WHERE id = $10
+					publish_approved_by = $9,
+					publish_approved_at = $10,
+					publish_approval_note = $11,
+					updated_at = $12
+				WHERE id = $13
 			`, [
 				nextSnapshot.status,
 				nextSnapshot.priority,
@@ -1102,6 +1165,9 @@ export async function createPostgresAdminRepository(options: AdminRepositoryOpti
 				nextSnapshot.publicBallotSummary || null,
 				nextSnapshot.published,
 				nextSnapshot.publishedAt || null,
+				nextSnapshot.publishApprovedBy || null,
+				nextSnapshot.publishApprovedAt || null,
+				nextSnapshot.publishApprovalNote || null,
 				now,
 				id
 			]);

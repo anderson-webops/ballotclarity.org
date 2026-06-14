@@ -2930,9 +2930,13 @@ test("PATCH /api/admin/content updates public content fields and publish gating"
 
 		const updatedSummary = "Updated public summary for production editorial testing.";
 		const updatedBallotSummary = "Updated short ballot summary for editorial control.";
+		const publishApprovedBy = "QA reviewer";
+		const publishApprovalNote = "Verified source-backed summary and ballot-card copy before publish.";
 
 		const patchResponse = await fetch(`${isolatedBaseUrl}/api/admin/content/content-elena-torres`, {
 			body: JSON.stringify({
+				publishApprovedBy,
+				publishApprovalNote,
 				publicBallotSummary: updatedBallotSummary,
 				publicSummary: updatedSummary,
 				published: true,
@@ -2958,6 +2962,9 @@ test("PATCH /api/admin/content updates public content fields and publish gating"
 		assert.equal(updatedContentResponse.status, 200);
 		assert.equal(updatedElenaRecord?.publicSummary, updatedSummary);
 		assert.equal(updatedElenaRecord?.publicBallotSummary, updatedBallotSummary);
+		assert.equal(updatedElenaRecord?.publishApprovedBy, publishApprovedBy);
+		assert.equal(updatedElenaRecord?.publishApprovalNote, publishApprovalNote);
+		assert.equal(typeof updatedElenaRecord?.publishApprovedAt, "string");
 
 		const historyResponse = await fetch(`${isolatedBaseUrl}/api/admin/content/content-elena-torres/history`, {
 			headers: {
@@ -2971,8 +2978,11 @@ test("PATCH /api/admin/content updates public content fields and publish gating"
 		assert.equal(historyBody.contentId, "content-elena-torres");
 		assert.ok(firstHistoryItem.changedFields.includes("publicSummary"));
 		assert.ok(firstHistoryItem.changedFields.includes("publicBallotSummary"));
+		assert.ok(firstHistoryItem.changedFields.includes("publishApprovedBy"));
+		assert.ok(firstHistoryItem.changedFields.includes("publishApprovalNote"));
 		assert.equal(firstHistoryItem.previous.publicSummary, elenaRecord.publicSummary);
 		assert.equal(firstHistoryItem.next.publicSummary, updatedSummary);
+		assert.equal(firstHistoryItem.next.publishApprovedBy, publishApprovedBy);
 
 		const candidateResponse = await fetch(`${isolatedBaseUrl}/api/candidates/elena-torres`);
 		const candidateBody = await candidateResponse.json();
@@ -2993,6 +3003,27 @@ test("PATCH /api/admin/content updates public content fields and publish gating"
 		});
 
 		assert.equal(unpublishResponse.status, 200);
+		const unpublishBody = await unpublishResponse.json();
+		const unpublishedElenaRecord = unpublishBody.items.find((item: { entitySlug: string }) => item.entitySlug === "elena-torres");
+
+		assert.equal(unpublishedElenaRecord?.published, false);
+		assert.equal(unpublishedElenaRecord?.publishApprovedBy, undefined);
+
+		const republishWithoutApprovalResponse = await fetch(`${isolatedBaseUrl}/api/admin/content/content-elena-torres`, {
+			body: JSON.stringify({
+				published: true,
+				status: "published"
+			}),
+			headers: {
+				"Content-Type": "application/json",
+				"x-admin-api-key": adminApiKey
+			},
+			method: "PATCH"
+		});
+		const republishWithoutApprovalBody = await republishWithoutApprovalResponse.json();
+
+		assert.equal(republishWithoutApprovalResponse.status, 400);
+		assert.match(republishWithoutApprovalBody.message, /Publish approval reviewer is required/i);
 
 		const hiddenCandidateResponse = await fetch(`${isolatedBaseUrl}/api/candidates/elena-torres`);
 		const ballotResponse = await fetch(`${isolatedBaseUrl}/api/ballot?election=2026-fulton-county-general`);
@@ -3012,6 +3043,7 @@ test("PATCH /api/admin/content updates public content fields and publish gating"
 
 		assert.equal(historyAfterUnpublishResponse.status, 200);
 		assert.ok(unpublishHistoryItem.changedFields.includes("published"));
+		assert.ok(unpublishHistoryItem.changedFields.includes("publishApprovedBy"));
 
 		const rollbackResponse = await fetch(`${isolatedBaseUrl}/api/admin/content/content-elena-torres/rollback`, {
 			body: JSON.stringify({
@@ -3043,6 +3075,7 @@ test("PATCH /api/admin/content updates public content fields and publish gating"
 		assert.equal(rolledBackContentResponse.status, 200);
 		assert.equal(rolledBackElenaRecord?.published, true);
 		assert.equal(rolledBackElenaRecord?.publicSummary, updatedSummary);
+		assert.equal(rolledBackElenaRecord?.publishApprovedBy, publishApprovedBy);
 		assert.equal(historyAfterRollbackResponse.status, 200);
 		assert.match(historyAfterRollbackBody.history[0].summary, /Rolled back/i);
 	}

@@ -163,6 +163,13 @@ const retentionRows = [
 		scope: "Connection-derived rate-limit key, request count, and reset time for repeated contact or correction form submissions."
 	},
 	{
+		access: "Backend memory only, for lookup abuse prevention.",
+		category: "Civic lookup rate-limit metadata",
+		deletion: "Cleared automatically when the short rate-limit window expires or the server process restarts.",
+		retention: "Short-lived in-memory retention, defaulting to about 10 minutes unless the operator changes the rate-limit window.",
+		scope: "Connection-derived rate-limit key, request count, and reset time for repeated civic lookup requests. This does not add raw addresses to the ZIP-only operational lookup log."
+	},
+	{
 		access: "Project inbox, review store, and editorial reviewers handling the issue.",
 		category: "Contact and correction submissions",
 		deletion: "Archived or deleted when no longer needed for support, verification, auditability, or the public corrections process.",

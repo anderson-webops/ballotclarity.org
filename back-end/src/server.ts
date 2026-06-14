@@ -4,7 +4,7 @@ import type { AdminAuditActor } from "./admin-store.js";
 import type { CongressClient, CongressMemberDetail, CongressMemberRecord } from "./congress.js";
 import type { CoverageRepository } from "./coverage-repository.js";
 import type { OpenStatesRepresentativeRecord } from "./openstates.js";
-import type { PublicSubmissionThrottle } from "./public-submission-throttle.js";
+import type { PublicRequestThrottle } from "./public-request-throttle.js";
 import type { SupplementalOfficeholderRecord } from "./supplemental-officeholders.js";
 import type {
 	AdminActivityItem,
@@ -107,8 +107,8 @@ import { createOpenFecClient } from "./openfec.js";
 import { createOpenStatesClient } from "./openstates.js";
 import { buildCongressProfileImages, uniqueProfileImages } from "./profile-images.js";
 import { buildProviderSummary } from "./provider-config.js";
+import { createPublicRequestThrottle } from "./public-request-throttle.js";
 import { buildCuratedPublicSourceRecords, mapAuthorityToPublisherType } from "./public-source-directory.js";
-import { createPublicSubmissionThrottle } from "./public-submission-throttle.js";
 import { classifyRepresentative } from "./representative-classification.js";
 import { createRepresentativeModuleResolver } from "./representative-modules.js";
 import { createSourceAssetStore } from "./source-asset-store.js";
@@ -139,7 +139,8 @@ interface CreateAppOptions {
 	locationGuessOptions?: Parameters<typeof createLocationGuessService>[0];
 	openFecClient?: ReturnType<typeof createOpenFecClient>;
 	openStatesClient?: ReturnType<typeof createOpenStatesClient>;
-	publicSubmissionThrottle?: PublicSubmissionThrottle;
+	publicFeedbackThrottle?: PublicRequestThrottle;
+	publicLookupThrottle?: PublicRequestThrottle;
 	sourceMonitorSeed?: AdminSourceMonitorItem[];
 	zipLocationService?: ZipLocationService | null;
 	zipLookupLogger?: ZipLookupLogger;
@@ -248,7 +249,7 @@ function createCorsOriginResolver() {
 	};
 }
 
-function buildPublicSubmissionThrottleKey(request: express.Request) {
+function buildPublicThrottleKey(request: express.Request) {
 	return request.ip
 		|| request.socket.remoteAddress
 		|| request.header("x-real-ip")
@@ -2760,7 +2761,18 @@ export async function createApp(options: CreateAppOptions = {}) {
 		sourceMonitorSeed: options.sourceMonitorSeed
 	});
 	const logger = createLogger("ballot-clarity-api");
-	const publicSubmissionThrottle = options.publicSubmissionThrottle ?? createPublicSubmissionThrottle();
+	const publicFeedbackThrottle = options.publicFeedbackThrottle ?? createPublicRequestThrottle({
+		fallbackMaxRequests: 5,
+		fallbackWindowMs: 10 * 60 * 1000,
+		maxRequestsEnvName: "PUBLIC_FEEDBACK_RATE_LIMIT_MAX",
+		windowMsEnvName: "PUBLIC_FEEDBACK_RATE_LIMIT_WINDOW_MS"
+	});
+	const publicLookupThrottle = options.publicLookupThrottle ?? createPublicRequestThrottle({
+		fallbackMaxRequests: 60,
+		fallbackWindowMs: 10 * 60 * 1000,
+		maxRequestsEnvName: "PUBLIC_LOOKUP_RATE_LIMIT_MAX",
+		windowMsEnvName: "PUBLIC_LOOKUP_RATE_LIMIT_WINDOW_MS"
+	});
 	const zipLookupLogger = options.zipLookupLogger ?? createZipLookupLogger({
 		onError(error) {
 			logger.warn("zip_lookup_log.write_failed", {
@@ -4163,6 +4175,30 @@ export async function createApp(options: CreateAppOptions = {}) {
 		const routeSelectionId = typeof request.query.selection === "string" ? request.query.selection.trim() : "";
 
 		if (routeLookup) {
+			const validationError = validateLookupInput(routeLookup);
+
+			if (validationError) {
+				response.status(400).json({
+					message: validationError
+				});
+				return null;
+			}
+
+			const throttleState = publicLookupThrottle.attempt(buildPublicThrottleKey(request));
+
+			if (!throttleState.allowed) {
+				logger.warn("location.route_lookup.throttled", {
+					requestId: response.locals.requestId,
+					retryAfterSeconds: throttleState.retryAfterSeconds
+				});
+				response.setHeader("Retry-After", String(throttleState.retryAfterSeconds));
+				response.status(429).json({
+					message: "Too many civic lookup requests from this connection. Try again later.",
+					retryAfterSeconds: throttleState.retryAfterSeconds
+				});
+				return null;
+			}
+
 			const lookupResponse = await resolveLocationLookup(routeLookup, response.locals.requestId, routeSelectionId || undefined);
 			const activeLookupContext = buildActiveNationwideLookupContext(lookupResponse);
 			const activeLookupCookie = buildActiveNationwideLookupCookie(lookupResponse);
@@ -4502,6 +4538,21 @@ export async function createApp(options: CreateAppOptions = {}) {
 			return;
 		}
 
+		const throttleState = publicLookupThrottle.attempt(buildPublicThrottleKey(request));
+
+		if (!throttleState.allowed) {
+			logger.warn("location.lookup.throttled", {
+				requestId: response.locals.requestId,
+				retryAfterSeconds: throttleState.retryAfterSeconds
+			});
+			response.setHeader("Retry-After", String(throttleState.retryAfterSeconds));
+			response.status(429).json({
+				message: "Too many civic lookup requests from this connection. Try again later.",
+				retryAfterSeconds: throttleState.retryAfterSeconds
+			});
+			return;
+		}
+
 		const lookupResponse = await resolveLocationLookup(raw, response.locals.requestId, selectionId || undefined);
 
 		await zipLookupLogger.record(raw, lookupResponse);
@@ -4532,6 +4583,21 @@ export async function createApp(options: CreateAppOptions = {}) {
 			return;
 		}
 
+		const throttleState = publicLookupThrottle.attempt(buildPublicThrottleKey(request));
+
+		if (!throttleState.allowed) {
+			logger.warn("location.guess.throttled", {
+				requestId: response.locals.requestId,
+				retryAfterSeconds: throttleState.retryAfterSeconds
+			});
+			response.setHeader("Retry-After", String(throttleState.retryAfterSeconds));
+			response.status(429).json({
+				message: "Too many civic lookup requests from this connection. Try again later.",
+				retryAfterSeconds: throttleState.retryAfterSeconds
+			});
+			return;
+		}
+
 		const lookupResponse = await resolveLocationLookup(guess.rawQuery, response.locals.requestId);
 
 		if (lookupResponse.result !== "resolved") {
@@ -4558,7 +4624,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 
 	app.post("/api/feedback", async (request, response) => {
 		try {
-			const throttleState = publicSubmissionThrottle.attempt(buildPublicSubmissionThrottleKey(request));
+			const throttleState = publicFeedbackThrottle.attempt(buildPublicThrottleKey(request));
 
 			if (!throttleState.allowed) {
 				logger.warn("feedback.submission.throttled", {
@@ -4724,6 +4790,9 @@ export async function createApp(options: CreateAppOptions = {}) {
 	app.get("/api/districts", async (request, response) => {
 		const activeNationwideLookup = await resolveActiveNationwideLookup(request, response);
 
+		if (response.headersSent)
+			return;
+
 		if (activeNationwideLookup) {
 			response.json(buildNationwideDistrictsResponse(activeNationwideLookup));
 			return;
@@ -4734,6 +4803,9 @@ export async function createApp(options: CreateAppOptions = {}) {
 
 	app.get("/api/districts/:slug", async (request, response) => {
 		const activeNationwideLookup = await resolveActiveNationwideLookup(request, response);
+
+		if (response.headersSent)
+			return;
 
 		if (activeNationwideLookup) {
 			const nationwideDistrict = buildNationwideDistrictRecordResponse(activeNationwideLookup, request.params.slug);
@@ -4763,6 +4835,9 @@ export async function createApp(options: CreateAppOptions = {}) {
 	app.get("/api/representatives", async (request, response) => {
 		const activeNationwideLookup = await resolveActiveNationwideLookup(request, response);
 
+		if (response.headersSent)
+			return;
+
 		if (activeNationwideLookup) {
 			const nationwideRepresentatives = buildNationwideRepresentativesResponse(activeNationwideLookup);
 			response.json({
@@ -4785,6 +4860,9 @@ export async function createApp(options: CreateAppOptions = {}) {
 
 	app.get("/api/representatives/:slug", async (request, response) => {
 		const activeNationwideLookup = await resolveActiveNationwideLookup(request, response);
+
+		if (response.headersSent)
+			return;
 
 		if (activeNationwideLookup) {
 			const representativeFromLookup = buildNationwidePersonProfileResponse(activeNationwideLookup, request.params.slug);

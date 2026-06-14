@@ -1,25 +1,32 @@
 import process from "node:process";
 
-interface PublicSubmissionThrottleState {
+interface PublicRequestThrottleState {
 	count: number;
 	resetAt: number;
 }
 
-export interface PublicSubmissionThrottleResult {
+export interface PublicRequestThrottleResult {
 	allowed: boolean;
 	retryAfterSeconds: number;
 }
 
-export interface PublicSubmissionThrottle {
-	attempt: (key: string) => PublicSubmissionThrottleResult;
+export interface PublicRequestThrottle {
+	attempt: (key: string) => PublicRequestThrottleResult;
 }
 
-interface PublicSubmissionThrottleOptions {
-	maxSubmissions?: number;
+interface PublicRequestThrottleOptions {
+	fallbackMaxRequests?: number;
+	fallbackWindowMs?: number;
+	maxRequests?: number;
+	maxRequestsEnvName?: string;
 	windowMs?: number;
+	windowMsEnvName?: string;
 }
 
-function getNumberEnv(name: string, fallback: number) {
+function getNumberEnv(name: string | undefined, fallback: number) {
+	if (!name)
+		return fallback;
+
 	const raw = Number(process.env[name]);
 	return Number.isFinite(raw) && raw > 0 ? raw : fallback;
 }
@@ -28,10 +35,12 @@ function normalizeThrottleKey(key: string) {
 	return key.trim().toLowerCase() || "unknown";
 }
 
-export function createPublicSubmissionThrottle(options: PublicSubmissionThrottleOptions = {}): PublicSubmissionThrottle {
-	const attempts = new Map<string, PublicSubmissionThrottleState>();
-	const windowMs = options.windowMs ?? getNumberEnv("PUBLIC_FEEDBACK_RATE_LIMIT_WINDOW_MS", 10 * 60 * 1000);
-	const maxSubmissions = options.maxSubmissions ?? getNumberEnv("PUBLIC_FEEDBACK_RATE_LIMIT_MAX", 5);
+export function createPublicRequestThrottle(options: PublicRequestThrottleOptions = {}): PublicRequestThrottle {
+	const attempts = new Map<string, PublicRequestThrottleState>();
+	const fallbackWindowMs = options.fallbackWindowMs ?? 10 * 60 * 1000;
+	const fallbackMaxRequests = options.fallbackMaxRequests ?? 5;
+	const windowMs = options.windowMs ?? getNumberEnv(options.windowMsEnvName, fallbackWindowMs);
+	const maxRequests = options.maxRequests ?? getNumberEnv(options.maxRequestsEnvName, fallbackMaxRequests);
 
 	function prune(now: number) {
 		for (const [key, state] of attempts.entries()) {
@@ -60,7 +69,7 @@ export function createPublicSubmissionThrottle(options: PublicSubmissionThrottle
 				};
 			}
 
-			if (current.count >= maxSubmissions) {
+			if (current.count >= maxRequests) {
 				return {
 					allowed: false,
 					retryAfterSeconds: Math.max(1, Math.ceil((current.resetAt - now) / 1000))

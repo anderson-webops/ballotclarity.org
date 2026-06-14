@@ -16,7 +16,7 @@ import {
 } from "../src/coverage-data.js";
 import { buildSeedCoverageSnapshot } from "../src/coverage-repository.js";
 import { buildGuidePackageId } from "../src/guide-packages.js";
-import { createPublicSubmissionThrottle } from "../src/public-submission-throttle.js";
+import { createPublicRequestThrottle } from "../src/public-request-throttle.js";
 import { classifyRepresentative } from "../src/representative-classification.js";
 import { createApp } from "../src/server.js";
 
@@ -75,6 +75,40 @@ function buildRepresentativeMatch({
 		openstatesUrl,
 		party,
 		sourceSystem,
+	};
+}
+
+function buildSingleZipLocationService() {
+	return {
+		async lookupZip(zipCode: string) {
+			return {
+				matches: [
+					{
+						countyFips: "121",
+						countyName: "Fulton County",
+						districtMatches: [
+							{
+								districtCode: "5",
+								districtType: "congressional",
+								id: "congressional:5",
+								label: "Congressional District 5",
+								sourceSystem: "U.S. Census Geocoder"
+							}
+						],
+						id: `zip:${zipCode}:atlanta-georgia`,
+						latitude: 33.7525,
+						locality: "Atlanta",
+						longitude: -84.3928,
+						postalCode: zipCode,
+						representativeMatches: [],
+						sourceSystem: "Zippopotam.us + U.S. Census Geocoder",
+						stateAbbreviation: "GA",
+						stateName: "Georgia"
+					}
+				],
+				postalCode: zipCode
+			};
+		}
 	};
 }
 
@@ -1621,6 +1655,90 @@ test("POST /api/location records resolved lookups through the ZIP lookup logger 
 	}
 });
 
+test("POST /api/location throttles repeated public lookup requests", async () => {
+	const isolatedServer = (await createApp({
+		adminDbPath: ":memory:",
+		congressClient: null,
+		coverageRepository: buildTestCoverageRepository(),
+		googleCivicClient: null,
+		ldaClient: null,
+		openFecClient: null,
+		openStatesClient: null,
+		publicLookupThrottle: createPublicRequestThrottle({
+			maxRequests: 1,
+			windowMs: 60_000
+		}),
+		zipLocationService: buildSingleZipLocationService()
+	})).listen(0, "127.0.0.1");
+	await once(isolatedServer, "listening");
+	const address = isolatedServer.address() as AddressInfo;
+	const isolatedBaseUrl = `http://127.0.0.1:${address.port}`;
+
+	try {
+		const acceptedResponse = await fetch(`${isolatedBaseUrl}/api/location`, {
+			body: JSON.stringify({ q: "30303" }),
+			headers: {
+				"Content-Type": "application/json"
+			},
+			method: "POST"
+		});
+		const throttledResponse = await fetch(`${isolatedBaseUrl}/api/location`, {
+			body: JSON.stringify({ q: "30304" }),
+			headers: {
+				"Content-Type": "application/json"
+			},
+			method: "POST"
+		});
+		const throttledBody = await throttledResponse.json();
+
+		assert.equal(acceptedResponse.status, 200);
+		assert.equal(throttledResponse.status, 429);
+		assert.match(throttledBody.message, /too many civic lookup requests/i);
+		assert.ok(Number(throttledResponse.headers.get("retry-after")) > 0);
+	}
+	finally {
+		await new Promise<void>((resolve, reject) => {
+			isolatedServer.close(error => error ? reject(error) : resolve());
+		});
+	}
+});
+
+test("route lookup query enrichment shares the public lookup throttle", async () => {
+	const isolatedServer = (await createApp({
+		adminDbPath: ":memory:",
+		congressClient: null,
+		coverageRepository: buildTestCoverageRepository(),
+		googleCivicClient: null,
+		ldaClient: null,
+		openFecClient: null,
+		openStatesClient: null,
+		publicLookupThrottle: createPublicRequestThrottle({
+			maxRequests: 1,
+			windowMs: 60_000
+		}),
+		zipLocationService: buildSingleZipLocationService()
+	})).listen(0, "127.0.0.1");
+	await once(isolatedServer, "listening");
+	const address = isolatedServer.address() as AddressInfo;
+	const isolatedBaseUrl = `http://127.0.0.1:${address.port}`;
+
+	try {
+		const acceptedResponse = await fetch(`${isolatedBaseUrl}/api/districts?lookup=30303`);
+		const throttledResponse = await fetch(`${isolatedBaseUrl}/api/representatives?lookup=30304`);
+		const throttledBody = await throttledResponse.json();
+
+		assert.equal(acceptedResponse.status, 200);
+		assert.equal(throttledResponse.status, 429);
+		assert.match(throttledBody.message, /too many civic lookup requests/i);
+		assert.ok(Number(throttledResponse.headers.get("retry-after")) > 0);
+	}
+	finally {
+		await new Promise<void>((resolve, reject) => {
+			isolatedServer.close(error => error ? reject(error) : resolve());
+		});
+	}
+});
+
 test("POST /api/location returns honest shell-only Fulton coverage for ZIPs inside current coverage", async () => {
 	const response = await fetch(`${baseUrl}/api/location`, {
 		body: JSON.stringify({ q: "30303" }),
@@ -1900,6 +2018,57 @@ test("GET /api/location/guess uses configured proxy geo headers to load an IP-ba
 	assert.equal(body.inputKind, "zip");
 	assert.match(body.note, /best-effort location guess from your IP address/i);
 	assert.equal(body.actions.some((item: { title: string }) => /Utah voter registration portal/i.test(item.title)), true);
+});
+
+test("GET /api/location/guess shares the public lookup throttle", async () => {
+	const isolatedServer = (await createApp({
+		adminDbPath: ":memory:",
+		congressClient: null,
+		coverageRepository: buildTestCoverageRepository(),
+		googleCivicClient: null,
+		ldaClient: null,
+		locationGuessOptions: {
+			mode: "proxy_headers",
+			proxyHeaders: {
+				cityHeaders: ["x-test-geo-city"],
+				countryHeaders: ["x-test-geo-country"],
+				postalCodeHeaders: ["x-test-geo-postal-code"],
+				regionHeaders: ["x-test-geo-region"]
+			}
+		},
+		openFecClient: null,
+		openStatesClient: null,
+		publicLookupThrottle: createPublicRequestThrottle({
+			maxRequests: 1,
+			windowMs: 60_000
+		}),
+		zipLocationService: buildSingleZipLocationService()
+	})).listen(0, "127.0.0.1");
+	await once(isolatedServer, "listening");
+	const isolatedAddress = isolatedServer.address() as AddressInfo;
+	const isolatedBaseUrl = `http://127.0.0.1:${isolatedAddress.port}`;
+	const headers = {
+		"x-test-geo-city": "Atlanta",
+		"x-test-geo-country": "US",
+		"x-test-geo-postal-code": "30303",
+		"x-test-geo-region": "GA"
+	};
+
+	try {
+		const acceptedResponse = await fetch(`${isolatedBaseUrl}/api/location/guess`, { headers });
+		const throttledResponse = await fetch(`${isolatedBaseUrl}/api/location/guess`, { headers });
+		const throttledBody = await throttledResponse.json();
+
+		assert.equal(acceptedResponse.status, 200);
+		assert.equal(throttledResponse.status, 429);
+		assert.match(throttledBody.message, /too many civic lookup requests/i);
+		assert.ok(Number(throttledResponse.headers.get("retry-after")) > 0);
+	}
+	finally {
+		await new Promise<void>((resolve, reject) => {
+			isolatedServer.close(error => error ? reject(error) : resolve());
+		});
+	}
 });
 
 test("GET /api/location/guess returns 404 when configured proxy geo headers are unavailable", async () => {
@@ -2915,8 +3084,8 @@ test("POST /api/feedback throttles repeated public submissions", async () => {
 		contentSeed,
 		coverageRepository: buildTestCoverageRepository(),
 		correctionSeed: [],
-		publicSubmissionThrottle: createPublicSubmissionThrottle({
-			maxSubmissions: 1,
+		publicFeedbackThrottle: createPublicRequestThrottle({
+			maxRequests: 1,
 			windowMs: 60_000
 		}),
 		sourceMonitorSeed

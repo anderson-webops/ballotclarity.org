@@ -34,6 +34,8 @@ function buildProductionEnv(overrides: Record<string, string | undefined> = {}) 
 		ADMIN_DATABASE_URL: "postgres://ballotclarity:secret@db.internal:5432/ballotclarity",
 		ADMIN_SESSION_SECRET: "b".repeat(48),
 		ADMIN_STORE_DRIVER: "postgres",
+		CONTACT_ADDRESS: "hello@ballotclarity.org",
+		CONTACT_ADDRESS_SESSION_SECRET: "c".repeat(48),
 		LIVE_COVERAGE_FILE: writeSnapshot(),
 		LIVE_COVERAGE_REQUIRED: "true",
 		NUXT_PUBLIC_API_BASE: "https://ballotclarity.org/api/",
@@ -77,7 +79,7 @@ test("production config check fails local public origins and public admin API ta
 test("production config check fails sqlite admin persistence and weak secrets", () => {
 	const evaluation = evaluateProductionConfig({
 		env: buildProductionEnv({
-			ADMIN_API_KEY: "secret",
+			ADMIN_API_KEY: "replace-with-a-long-random-internal-key",
 			ADMIN_DATABASE_URL: "",
 			ADMIN_SESSION_SECRET: "short",
 			ADMIN_STORE_DRIVER: "sqlite",
@@ -85,11 +87,34 @@ test("production config check fails sqlite admin persistence and weak secrets", 
 	});
 
 	assert.equal(evaluation.ok, false);
-	assert.ok(issueIds(evaluation, "errors").includes("admin_api_key.short"));
 	assert.ok(issueIds(evaluation, "errors").includes("admin_api_key.weak"));
 	assert.ok(issueIds(evaluation, "errors").includes("admin_session_secret.short"));
 	assert.ok(issueIds(evaluation, "errors").includes("admin_store.driver"));
 	assert.ok(issueIds(evaluation, "errors").includes("admin_store.database_url_missing"));
+});
+
+test("production config check fails missing or weak protected contact configuration", () => {
+	const missingEvaluation = evaluateProductionConfig({
+		env: buildProductionEnv({
+			CONTACT_ADDRESS: "",
+			CONTACT_ADDRESS_SESSION_SECRET: "",
+		}),
+	});
+
+	assert.equal(missingEvaluation.ok, false);
+	assert.ok(issueIds(missingEvaluation, "errors").includes("contact_address.missing"));
+	assert.ok(issueIds(missingEvaluation, "errors").includes("contact_address_session_secret.missing"));
+
+	const invalidEvaluation = evaluateProductionConfig({
+		env: buildProductionEnv({
+			CONTACT_ADDRESS: "hello at ballotclarity dot org",
+			CONTACT_ADDRESS_SESSION_SECRET: "replace-with-a-long-random-contact-session-secret",
+		}),
+	});
+
+	assert.equal(invalidEvaluation.ok, false);
+	assert.ok(issueIds(invalidEvaluation, "errors").includes("contact_address.invalid"));
+	assert.ok(issueIds(invalidEvaluation, "errors").includes("contact_address_session_secret.weak"));
 });
 
 test("production config check fails missing live coverage and seed metadata", () => {

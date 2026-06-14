@@ -15,6 +15,8 @@ const weakSecretValues = new Set([
 	"secret",
 	"test",
 ]);
+const emailAddressPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/u;
+const weakSecretPattern = /(?:example|placeholder|replace[-_ ]?with)/iu;
 
 function normalize(value) {
 	return String(value ?? "").trim();
@@ -110,8 +112,29 @@ function checkSecret({ errors, key, minLength = 32, value }) {
 	if (raw.length < minLength)
 		errors.push(issue("error", `${key.toLowerCase()}.short`, `${key} must be at least ${minLength} characters.`));
 
-	if (weakSecretValues.has(raw.toLowerCase()))
+	if (weakSecretValues.has(raw.toLowerCase()) || weakSecretPattern.test(raw))
 		errors.push(issue("error", `${key.toLowerCase()}.weak`, `${key} appears to use a placeholder value.`));
+}
+
+function checkContactAddress({ errors, value }) {
+	const raw = normalize(value);
+
+	if (!raw) {
+		errors.push(issue(
+			"error",
+			"contact_address.missing",
+			"CONTACT_ADDRESS or NUXT_CONTACT_ADDRESS is required for the protected public contact email route.",
+		));
+		return;
+	}
+
+	if (!emailAddressPattern.test(raw)) {
+		errors.push(issue(
+			"error",
+			"contact_address.invalid",
+			"CONTACT_ADDRESS or NUXT_CONTACT_ADDRESS must be a single valid email address.",
+		));
+	}
 }
 
 function readSnapshotMetadata({ errors, fs, snapshotPath }) {
@@ -239,6 +262,15 @@ export function evaluateProductionConfig({
 
 	checkSecret({ errors, key: "ADMIN_API_KEY", value: env.ADMIN_API_KEY });
 	checkSecret({ errors, key: "ADMIN_SESSION_SECRET", value: env.ADMIN_SESSION_SECRET });
+	checkSecret({
+		errors,
+		key: "CONTACT_ADDRESS_SESSION_SECRET",
+		value: env.CONTACT_ADDRESS_SESSION_SECRET || env.NUXT_CONTACT_ADDRESS_SESSION_SECRET,
+	});
+	checkContactAddress({
+		errors,
+		value: env.CONTACT_ADDRESS || env.NUXT_CONTACT_ADDRESS,
+	});
 
 	const adminStoreDriver = normalize(env.ADMIN_STORE_DRIVER).toLowerCase();
 	const adminDatabaseUrl = normalize(env.ADMIN_DATABASE_URL || env.DATABASE_URL);

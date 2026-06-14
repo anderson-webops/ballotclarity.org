@@ -49,6 +49,10 @@ ADMIN_SESSION_SECRET=${randomSecret(24)}
 ADMIN_STORE_DRIVER=postgres
 ADMIN_DATABASE_URL=postgres://${postgresUser}:${postgresPassword}@127.0.0.1:${postgresPort}/${postgresDb}
 
+# Server-only protected contact email values
+CONTACT_ADDRESS=hello@ballotclarity.org
+CONTACT_ADDRESS_SESSION_SECRET=${randomSecret(24)}
+
 # Public source-asset delivery
 SOURCE_ASSET_BASE_URL=http://127.0.0.1:${minioPort}/${minioBucket}
 

@@ -10,6 +10,8 @@ It checks the environment values and active coverage snapshot that determine whe
 - `NUXT_PUBLIC_API_BASE` points at the public `/api` path.
 - `ADMIN_API_BASE` is configured as a private server-side target, not the same public API base used by browsers.
 - `ADMIN_API_KEY` and `ADMIN_SESSION_SECRET` are present, long enough, and not obvious placeholder values.
+- `CONTACT_ADDRESS` or `NUXT_CONTACT_ADDRESS` is configured as a valid support email for the protected public contact route.
+- `CONTACT_ADDRESS_SESSION_SECRET` or `NUXT_CONTACT_ADDRESS_SESSION_SECRET` is present, long enough, and not an obvious placeholder value.
 - `ADMIN_STORE_DRIVER=postgres` and a Postgres `ADMIN_DATABASE_URL` or `DATABASE_URL` is configured.
 - `LIVE_COVERAGE_REQUIRED=true` is enabled.
 - `LIVE_COVERAGE_FILE` exists and has a matching `.meta.json` sidecar.
@@ -42,4 +44,4 @@ npm run verify:production -- --json
 
 This check does not replace content validation. Production-approved snapshot content still needs the backend snapshot publication validator to reject staged/reference candidates, mixed guide content, or staged guide layers.
 
-This check verifies the runtime contract around that content: public origins, admin persistence, secret posture, live snapshot requirement, and snapshot provenance.
+This check verifies the runtime contract around that content: public origins, admin persistence, protected contact configuration, secret posture, live snapshot requirement, and snapshot provenance.

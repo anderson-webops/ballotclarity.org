@@ -203,6 +203,8 @@ Server-only variables:
 - `ADMIN_STORE_DRIVER`: `postgres` for production, or `sqlite` only as a fallback for single-instance local/dev use; when omitted, the backend will auto-select Postgres if `ADMIN_DATABASE_URL` or `DATABASE_URL` is present
 - `ADMIN_DB_PATH`: SQLite database path for fallback persisted admin users and editorial operations data
 - `ADMIN_DATABASE_URL`: Postgres connection string for the admin and editorial operations store
+- `CONTACT_ADDRESS`: support email address returned by the protected `/api/contact-address` route after the same-origin nonce challenge succeeds
+- `CONTACT_ADDRESS_SESSION_SECRET`: server-only secret that signs short-lived protected-contact nonce sessions; use a dedicated value in production rather than reusing admin session secrets
 - `SOURCE_ASSET_BASE_URL`: optional public object-storage or CDN base URL for mirrored source files
 - `LIVE_COVERAGE_FILE`: path to the imported coverage snapshot consumed by the public API
 - `LIVE_COVERAGE_REQUIRED`: when `true`, fail startup if `LIVE_COVERAGE_FILE` is missing
@@ -232,7 +234,7 @@ One-time or scheduled ingestion variables:
 - `LAUNCH_DIRECTORY_FILE`: local JSON file written by `npm run launch-directory:sync`
 - `LAUNCH_PROFILE_LATITUDE`, `LAUNCH_PROFILE_LONGITUDE`: optional probe point used for launch-area Open States geo matching in the launch-directory snapshot
 
-For production, use unique random values for `ADMIN_API_KEY`, `ADMIN_BOOTSTRAP_PASSWORD`, and `ADMIN_SESSION_SECRET`. The front-end and back-end must share the same `ADMIN_API_KEY`. Keep every `ADMIN_*` variable in the server environment only. Admin MFA TOTP secrets are stored in the admin database, so protect database files, snapshots, and backups as sensitive operational secrets.
+For production, use unique random values for `ADMIN_API_KEY`, `ADMIN_BOOTSTRAP_PASSWORD`, `ADMIN_SESSION_SECRET`, and `CONTACT_ADDRESS_SESSION_SECRET`. The front-end and back-end must share the same `ADMIN_API_KEY`. Keep every `ADMIN_*` variable and protected-contact variable in the server environment only. Admin MFA TOTP secrets are stored in the admin database, so protect database files, snapshots, and backups as sensitive operational secrets.
 The public browser should call `/api/admin/*` on the Nuxt origin only. Those requests must terminate at the Nuxt server so the session cookie and server-held `ADMIN_API_KEY` stay inside the bridge layer.
 
 ## Deploy-time stale-client recovery
@@ -416,6 +418,7 @@ These endpoints live on the Express service, but they are intended to be reached
 - Set `NUXT_PUBLIC_API_BASE` to the public API origin used by the browser.
 - Set `ADMIN_API_BASE` to the server-side admin API origin the Nuxt server can reach privately.
 - Set `ADMIN_API_KEY` and `ADMIN_SESSION_SECRET` in the server environments only.
+- Set `CONTACT_ADDRESS` and `CONTACT_ADDRESS_SESSION_SECRET` so the public contact route does not fall back to built-in local-development defaults.
 - Use `ADMIN_STORE_DRIVER=postgres` together with `ADMIN_DATABASE_URL` for production. SQLite should only be used as a fallback for constrained local or temporary environments.
 - Set `SOURCE_ASSET_BASE_URL` when mirrored source documents should resolve to object storage or a CDN instead of files bundled under `front-end/public/source-files/`.
 - Import or promote a vetted snapshot with `npm run ingest:coverage` or `npm run -w back-end manage:coverage -- promote`. Set `LIVE_COVERAGE_FILE` to the active snapshot path and `LIVE_COVERAGE_REQUIRED=true` once production should refuse to start without current snapshot data.
@@ -461,7 +464,7 @@ Local stack notes:
 ## Server-side provisioning after merge
 
 1. Provision separate public and admin-capable server environments for the Nuxt front end and Express API.
-2. Set `NUXT_PUBLIC_SITE_URL`, `NUXT_PUBLIC_API_BASE`, `ADMIN_API_BASE`, `ADMIN_API_KEY`, `ADMIN_SESSION_SECRET`, and either `ADMIN_DATABASE_URL` or `ADMIN_DB_PATH`.
+2. Set `NUXT_PUBLIC_SITE_URL`, `NUXT_PUBLIC_API_BASE`, `ADMIN_API_BASE`, `ADMIN_API_KEY`, `ADMIN_SESSION_SECRET`, `CONTACT_ADDRESS`, `CONTACT_ADDRESS_SESSION_SECRET`, and either `ADMIN_DATABASE_URL` or `ADMIN_DB_PATH`.
 3. Choose the admin store mode:
    Set `ADMIN_STORE_DRIVER=postgres` plus `ADMIN_DATABASE_URL` for managed Postgres. Use SQLite only if there is a deliberate single-instance fallback reason, and then create the directory that will hold the SQLite file referenced by `ADMIN_DB_PATH`, with backup and restore procedures in place.
 4. Run `npm run bootstrap-admin` once to create the first persisted admin account.

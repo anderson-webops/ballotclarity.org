@@ -73,7 +73,9 @@ CREATE TABLE IF NOT EXISTS admin_corrections (
 	summary TEXT NOT NULL,
 	next_step TEXT NOT NULL,
 	source_count INTEGER NOT NULL DEFAULT 0,
-	page_url TEXT
+	page_url TEXT,
+	content_id TEXT,
+	FOREIGN KEY (content_id) REFERENCES admin_content(id) ON DELETE SET NULL
 );
 
 CREATE TABLE IF NOT EXISTS admin_source_monitors (

@@ -11,6 +11,7 @@ The repo already has:
 - persisted admin/editor accounts and operational state in the backend store
 - an optional Postgres-backed admin repository for production deployments
 - content history, diff views, and rollback for public-summary edits
+- correction-to-content linkage for editorial follow-up from reported issues to content records
 - a public launch profile centered on Fulton County, Georgia as the first real jurisdiction
 - public coverage, status, corrections, and contest-level canonical pages
 - structured backend request logging, health metadata, and admin login throttling
@@ -86,13 +87,13 @@ Work:
 
 - keep content history, diff views, and rollback monitored in production; baseline support is implemented for public-summary fields
 - add structured editing for more than summary fields
-- add assignment, review notes, publish approvals, and correction-to-content linkage
+- add assignment, review notes, and publish approvals; correction-to-content linkage is implemented and should be monitored in production
 - add MFA for admins; login throttling, self-service password change, admin password reset, session invalidation, and account disable/restore controls are implemented and should be monitored in production
 - add immutable audit logs for publish and user-management actions
 
 Exit criteria:
 
-- editorial public-summary changes are reversible and reviewable; broader structured content still needs the same treatment
+- editorial public-summary changes are reversible and reviewable, and corrections can link to the content records they should drive; broader structured content still needs the same treatment
 - account lifecycle is no longer dependent on bootstrap credentials alone
 
 ## Phase 5: Production infrastructure and operations
@@ -136,7 +137,7 @@ These changes can be shipped directly from code:
 
 - persisted public content editing
 - publish gating in the public API
-- stronger admin workflow, including content history and rollback
+- stronger admin workflow, including content history, rollback, and correction-to-content linkage
 - database abstractions that prepare for Postgres
 - optional Postgres-backed admin persistence
 - imported live-coverage snapshots without changing public API routes

@@ -35,6 +35,7 @@ import {
 	normalizeAdminPassword,
 	parseContentHistoryRow,
 	parseContentSnapshot,
+	resolveContentLookupFromPageUrl,
 	shouldPurgeLegacyDemoAdminData,
 	snapshotToContentUpdateValues,
 	verifyPassword
@@ -76,6 +77,8 @@ interface ContentRow {
 }
 
 interface CorrectionRow {
+	content_id: string | null;
+	content_title: string | null;
 	id: string;
 	submission_type: AdminCorrectionRequest["submissionType"];
 	subject: string;
@@ -174,6 +177,8 @@ function rowToContent(row: ContentRow): AdminContentItem {
 
 function rowToCorrection(row: CorrectionRow): AdminCorrectionRequest {
 	return {
+		contentId: row.content_id || undefined,
+		contentTitle: row.content_title || undefined,
 		entityLabel: row.entity_label,
 		entityType: row.entity_type,
 		id: row.id,
@@ -259,7 +264,9 @@ async function seedPostgresDatabase(pool: Pool, options: AdminRepositoryOptions)
 	await pool.query("ALTER TABLE admin_users ADD COLUMN IF NOT EXISTS disabled_at TEXT");
 	await pool.query("ALTER TABLE admin_content ADD COLUMN IF NOT EXISTS public_summary TEXT");
 	await pool.query("ALTER TABLE admin_content ADD COLUMN IF NOT EXISTS ballot_summary TEXT");
+	await pool.query("ALTER TABLE admin_corrections ADD COLUMN IF NOT EXISTS content_id TEXT");
 	await pool.query("ALTER TABLE admin_guide_packages ADD COLUMN IF NOT EXISTS review_recommendation TEXT");
+	await pool.query("CREATE INDEX IF NOT EXISTS idx_admin_corrections_content ON admin_corrections (content_id)");
 	await pool.query(`
 		UPDATE admin_users
 		SET credentials_updated_at = COALESCE(credentials_updated_at, created_at, updated_at)
@@ -349,11 +356,11 @@ async function seedPostgresDatabase(pool: Pool, options: AdminRepositoryOptions)
 	if (!correctionsCount) {
 		for (const item of correctionSeed) {
 			await pool.query(`
-				INSERT INTO admin_corrections (
-					id, submission_type, subject, entity_type, entity_label, status, priority, submitted_at,
-					reported_by, summary, next_step, source_count, page_url
-				) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
-			`, [
+					INSERT INTO admin_corrections (
+						id, submission_type, subject, entity_type, entity_label, status, priority, submitted_at,
+						reported_by, summary, next_step, source_count, page_url, content_id
+					) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+				`, [
 				item.id,
 				item.submissionType ?? "correction",
 				item.subject,
@@ -366,7 +373,8 @@ async function seedPostgresDatabase(pool: Pool, options: AdminRepositoryOptions)
 				item.summary,
 				item.nextStep,
 				item.sourceCount,
-				item.pageUrl || null
+				item.pageUrl || null,
+				item.contentId || null
 			]);
 		}
 	}
@@ -485,12 +493,50 @@ export async function createPostgresAdminRepository(options: AdminRepositoryOpti
 
 	async function getContentRow(id: string) {
 		const result = await pool.query<ContentRow>(`
-			SELECT id, title, entity_type, entity_slug, status, priority, updated_at, assigned_to, blocker, summary, public_summary, ballot_summary, source_coverage, published, published_at
-			FROM admin_content
-			WHERE id = $1
+				SELECT id, title, entity_type, entity_slug, status, priority, updated_at, assigned_to, blocker, summary, public_summary, ballot_summary, source_coverage, published, published_at
+				FROM admin_content
+				WHERE id = $1
 		`, [id]);
 
 		return result.rows[0];
+	}
+
+	async function resolveContentIdForPageUrl(pageUrl: string | undefined) {
+		const lookup = resolveContentLookupFromPageUrl(pageUrl);
+
+		if (!lookup)
+			return null;
+
+		const result = await pool.query<{ id: string }>(`
+				SELECT id
+				FROM admin_content
+				WHERE entity_type = $1 AND entity_slug = $2
+			`, [lookup.entityType, lookup.entitySlug]);
+
+		return result.rows[0]?.id ?? null;
+	}
+
+	async function resolvePatchContentId(contentId: string | null | undefined) {
+		if (contentId === null)
+			return null;
+
+		const normalized = contentId?.trim();
+
+		if (!normalized)
+			return null;
+
+		const result = await pool.query<{ id: string }>(`
+				SELECT id
+				FROM admin_content
+				WHERE id = $1
+			`, [normalized]);
+
+		const row = result.rows[0];
+
+		if (!row)
+			throw new Error("Linked content record not found.");
+
+		return row.id;
 	}
 
 	async function writeContentHistory(
@@ -558,13 +604,14 @@ export async function createPostgresAdminRepository(options: AdminRepositoryOpti
 			const summary = input.sourceLinks?.trim()
 				? `${message}\n\nSupporting links:\n${input.sourceLinks.trim()}`
 				: message;
+			const contentId = await resolveContentIdForPageUrl(input.pageUrl);
 
 			await pool.query(`
-				INSERT INTO admin_corrections (
-					id, submission_type, subject, entity_type, entity_label, status, priority, submitted_at,
-					reported_by, summary, next_step, source_count, page_url
-				) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
-			`, [
+					INSERT INTO admin_corrections (
+						id, submission_type, subject, entity_type, entity_label, status, priority, submitted_at,
+						reported_by, summary, next_step, source_count, page_url, content_id
+					) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+				`, [
 				id,
 				input.submissionType,
 				subject,
@@ -579,7 +626,8 @@ export async function createPostgresAdminRepository(options: AdminRepositoryOpti
 					? "Verify the cited claim, source trail, and page framing."
 					: "Triage the feedback and determine whether it belongs in product, content, or operations review.",
 				input.sourceLinks?.trim() ? input.sourceLinks.split("\n").filter(Boolean).length : 0,
-				input.pageUrl?.trim() || null
+				input.pageUrl?.trim() || null,
+				contentId
 			]);
 
 			await logActivity(
@@ -744,10 +792,26 @@ export async function createPostgresAdminRepository(options: AdminRepositoryOpti
 		},
 		async listCorrections() {
 			const result = await pool.query<CorrectionRow>(`
-				SELECT id, submission_type, subject, entity_type, entity_label, status, priority, submitted_at, reported_by, summary, next_step, source_count, page_url
-				FROM admin_corrections
-				ORDER BY CASE status WHEN 'new' THEN 0 WHEN 'triaged' THEN 1 WHEN 'researching' THEN 2 ELSE 3 END, submitted_at DESC
-			`);
+					SELECT
+						c.id,
+						c.submission_type,
+						c.subject,
+						c.entity_type,
+						c.entity_label,
+						c.status,
+						c.priority,
+						c.submitted_at,
+						c.reported_by,
+						c.summary,
+						c.next_step,
+						c.source_count,
+						c.page_url,
+						c.content_id,
+						content.title AS content_title
+					FROM admin_corrections c
+					LEFT JOIN admin_content content ON content.id = c.content_id
+					ORDER BY CASE c.status WHEN 'new' THEN 0 WHEN 'triaged' THEN 1 WHEN 'researching' THEN 2 ELSE 3 END, c.submitted_at DESC
+				`);
 
 			return { corrections: result.rows.map(rowToCorrection) };
 		},
@@ -1110,27 +1174,57 @@ export async function createPostgresAdminRepository(options: AdminRepositoryOpti
 		},
 		async updateCorrection(id, patch) {
 			const currentResult = await pool.query<CorrectionRow>(`
-				SELECT id, submission_type, subject, entity_type, entity_label, status, priority, submitted_at, reported_by, summary, next_step, source_count, page_url
-				FROM admin_corrections
-				WHERE id = $1
-			`, [id]);
+					SELECT
+						c.id,
+						c.submission_type,
+						c.subject,
+						c.entity_type,
+						c.entity_label,
+						c.status,
+						c.priority,
+						c.submitted_at,
+						c.reported_by,
+						c.summary,
+						c.next_step,
+						c.source_count,
+						c.page_url,
+						c.content_id,
+						content.title AS content_title
+					FROM admin_corrections c
+					LEFT JOIN admin_content content ON content.id = c.content_id
+					WHERE c.id = $1
+				`, [id]);
 			const current = currentResult.rows[0];
 
 			if (!current)
 				throw new Error("Correction record not found.");
 
+			const contentId = patch.contentId === undefined
+				? current.content_id
+				: await resolvePatchContentId(patch.contentId);
+
 			await pool.query(`
-				UPDATE admin_corrections
-				SET status = $1, priority = $2, next_step = $3
-				WHERE id = $4
-			`, [
+					UPDATE admin_corrections
+					SET status = $1, priority = $2, next_step = $3, content_id = $4
+					WHERE id = $5
+				`, [
 				patch.status ?? current.status,
 				patch.priority ?? current.priority,
 				patch.nextStep?.trim() || current.next_step,
+				contentId,
 				id
 			]);
 
-			await logActivity("correction", `${current.subject} updated`, `Correction item moved to ${patch.status ?? current.status}.`);
+			const linkageSummary = contentId === current.content_id
+				? ""
+				: contentId
+					? " Linked to a content record."
+					: " Removed linked content record.";
+			await logActivity(
+				"correction",
+				`${current.subject} updated`,
+				`Correction item moved to ${patch.status ?? current.status}.${linkageSummary}`
+			);
 
 			return await repository.listCorrections();
 		},

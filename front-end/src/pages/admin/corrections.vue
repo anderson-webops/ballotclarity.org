@@ -7,14 +7,19 @@ definePageMeta({
 	middleware: "admin"
 });
 
-const { data, refresh } = await useAdminCorrections();
+const [{ data, refresh }, { data: contentData }] = await Promise.all([
+	useAdminCorrections(),
+	useAdminContent()
+]);
 const statusOptions: AdminCorrectionStatus[] = ["new", "triaged", "researching", "resolved"];
 const priorityOptions: AdminPriority[] = ["high", "medium", "low"];
+const contentOptions = computed(() => [...(contentData.value?.items ?? [])].sort((left, right) => left.title.localeCompare(right.title)));
 const savingId = ref<string | null>(null);
 const feedbackMessage = ref("");
 const feedbackTone = ref<"error" | "success">("success");
 
 async function saveCorrection(id: string, payload: {
+	contentId?: string | null;
 	nextStep?: string;
 	priority?: AdminPriority;
 	status?: AdminCorrectionStatus;
@@ -122,6 +127,27 @@ usePageSeo({
 						</div>
 						<div class="px-4 py-4 border border-app-line/80 rounded-[1.4rem] bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
 							<p class="text-xs text-app-muted tracking-[0.16em] font-semibold uppercase dark:text-app-muted-dark">
+								Linked content record
+							</p>
+							<div v-if="item.contentId" class="mt-2 space-y-2">
+								<p class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
+									{{ item.contentTitle || item.contentId }}
+								</p>
+								<div class="flex flex-wrap gap-2">
+									<NuxtLink :to="`/admin/content/${item.contentId}`" class="text-sm text-app-accent font-semibold rounded-md focus-ring">
+										Review history
+									</NuxtLink>
+									<NuxtLink to="/admin/content" class="text-sm text-app-muted font-semibold rounded-md dark:text-app-muted-dark focus-ring">
+										Content queue
+									</NuxtLink>
+								</div>
+							</div>
+							<p v-else class="text-sm text-app-muted leading-6 mt-2 dark:text-app-muted-dark">
+								No public-content record is linked yet.
+							</p>
+						</div>
+						<div class="px-4 py-4 border border-app-line/80 rounded-[1.4rem] bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
+							<p class="text-xs text-app-muted tracking-[0.16em] font-semibold uppercase dark:text-app-muted-dark">
 								Reported by
 							</p>
 							<p class="text-sm text-app-ink font-semibold mt-2 break-all dark:text-app-text-dark">
@@ -168,6 +194,20 @@ usePageSeo({
 								rows="4"
 								class="text-sm text-app-ink mt-2 px-4 py-3 border border-app-line rounded-2xl bg-white min-h-28 w-full shadow-sm dark:text-app-text-dark dark:border-app-line-dark dark:bg-app-panel-dark focus-ring"
 							/>
+						</label>
+						<label class="block">
+							<span class="text-sm text-app-ink font-semibold dark:text-app-text-dark">Link to content record</span>
+							<select
+								v-model="item.contentId"
+								class="text-sm text-app-ink mt-2 px-4 border border-app-line rounded-2xl bg-white h-13 w-full shadow-sm dark:text-app-text-dark dark:border-app-line-dark dark:bg-app-panel-dark focus-ring"
+							>
+								<option value="">
+									No linked content
+								</option>
+								<option v-for="contentItem in contentOptions" :key="contentItem.id" :value="contentItem.id">
+									{{ contentItem.title }}
+								</option>
+							</select>
 						</label>
 						<button type="submit" class="btn-primary w-full" :disabled="savingId === item.id">
 							{{ savingId === item.id ? "Saving..." : "Save correction" }}

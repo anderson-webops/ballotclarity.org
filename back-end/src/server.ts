@@ -4837,6 +4837,9 @@ export async function createApp(options: CreateAppOptions = {}) {
 	app.patch("/api/admin/corrections/:id", async (request, response) => {
 		try {
 			response.json(await adminRepository.updateCorrection(request.params.id, {
+				contentId: typeof request.body?.contentId === "string"
+					? request.body.contentId
+					: request.body?.contentId === null ? null : undefined,
 				nextStep: typeof request.body?.nextStep === "string" ? request.body.nextStep : undefined,
 				priority: request.body?.priority,
 				status: request.body?.status

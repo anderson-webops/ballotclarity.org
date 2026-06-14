@@ -2789,6 +2789,117 @@ test("GET /api/admin/review and /api/admin/sources return protected operational 
 	assert.equal(incidentSource?.health, "incident");
 });
 
+test("admin corrections can link to content records and auto-link page submissions", async () => {
+	const isolatedServer = (await createApp({
+		adminApiKey,
+		activitySeed,
+		adminDbPath: ":memory:",
+		contentSeed,
+		coverageRepository: buildTestCoverageRepository(),
+		correctionSeed,
+		sourceMonitorSeed
+	})).listen(0, "127.0.0.1");
+
+	await once(isolatedServer, "listening");
+	const isolatedAddress = isolatedServer.address() as AddressInfo;
+	const isolatedBaseUrl = `http://127.0.0.1:${isolatedAddress.port}`;
+
+	try {
+		const correctionsResponse = await fetch(`${isolatedBaseUrl}/api/admin/corrections`, {
+			headers: {
+				"x-admin-api-key": adminApiKey
+			}
+		});
+		const correctionsBody = await correctionsResponse.json();
+		const launchCorrection = correctionsBody.corrections.find((item: { id: string }) => item.id === "corr-001");
+
+		assert.equal(correctionsResponse.status, 200);
+		assert.equal(launchCorrection?.contentId, "content-2026-fulton-county-general");
+		assert.equal(launchCorrection?.contentTitle, "Fulton County launch coverage profile");
+
+		const linkResponse = await fetch(`${isolatedBaseUrl}/api/admin/corrections/corr-003`, {
+			body: JSON.stringify({
+				contentId: "content-elena-torres",
+				nextStep: "Review Elena Torres public copy against the reported issue.",
+				status: "triaged"
+			}),
+			headers: {
+				"Content-Type": "application/json",
+				"x-admin-api-key": adminApiKey
+			},
+			method: "PATCH"
+		});
+		const linkBody = await linkResponse.json();
+		const linkedCorrection = linkBody.corrections.find((item: { id: string }) => item.id === "corr-003");
+
+		assert.equal(linkResponse.status, 200);
+		assert.equal(linkedCorrection?.contentId, "content-elena-torres");
+		assert.equal(linkedCorrection?.contentTitle, "Elena Torres profile");
+
+		const invalidLinkResponse = await fetch(`${isolatedBaseUrl}/api/admin/corrections/corr-003`, {
+			body: JSON.stringify({
+				contentId: "content-does-not-exist"
+			}),
+			headers: {
+				"Content-Type": "application/json",
+				"x-admin-api-key": adminApiKey
+			},
+			method: "PATCH"
+		});
+		const invalidLinkBody = await invalidLinkResponse.json();
+
+		assert.equal(invalidLinkResponse.status, 400);
+		assert.match(invalidLinkBody.message, /Linked content record not found/i);
+
+		const unlinkResponse = await fetch(`${isolatedBaseUrl}/api/admin/corrections/corr-003`, {
+			body: JSON.stringify({
+				contentId: null
+			}),
+			headers: {
+				"Content-Type": "application/json",
+				"x-admin-api-key": adminApiKey
+			},
+			method: "PATCH"
+		});
+		const unlinkBody = await unlinkResponse.json();
+		const unlinkedCorrection = unlinkBody.corrections.find((item: { id: string }) => item.id === "corr-003");
+
+		assert.equal(unlinkResponse.status, 200);
+		assert.equal(unlinkedCorrection?.contentId, undefined);
+
+		const submissionResponse = await fetch(`${isolatedBaseUrl}/api/feedback`, {
+			body: JSON.stringify({
+				email: "reader@example.com",
+				message: "The candidate profile needs a source check.",
+				pageUrl: "/candidate/elena-torres",
+				subject: "Candidate profile correction",
+				submissionType: "correction"
+			}),
+			headers: {
+				"Content-Type": "application/json"
+			},
+			method: "POST"
+		});
+		const correctionsAfterSubmissionResponse = await fetch(`${isolatedBaseUrl}/api/admin/corrections`, {
+			headers: {
+				"x-admin-api-key": adminApiKey
+			}
+		});
+		const correctionsAfterSubmissionBody = await correctionsAfterSubmissionResponse.json();
+		const submittedCorrection = correctionsAfterSubmissionBody.corrections.find((item: { subject: string }) => item.subject === "Candidate profile correction");
+
+		assert.equal(submissionResponse.status, 201);
+		assert.equal(correctionsAfterSubmissionResponse.status, 200);
+		assert.equal(submittedCorrection?.contentId, "content-elena-torres");
+		assert.equal(submittedCorrection?.contentTitle, "Elena Torres profile");
+	}
+	finally {
+		await new Promise<void>((resolve, reject) => {
+			isolatedServer.close(error => error ? reject(error) : resolve());
+		});
+	}
+});
+
 test("PATCH /api/admin/content updates public content fields and publish gating", async () => {
 	const isolatedServer = (await createApp({
 		adminApiKey,

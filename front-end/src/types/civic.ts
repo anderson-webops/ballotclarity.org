@@ -1354,6 +1354,8 @@ export interface AdminDashboardMetric {
 }
 
 export interface AdminCorrectionRequest {
+	contentId?: string;
+	contentTitle?: string;
 	id: string;
 	submissionType: AdminSubmissionType;
 	subject: string;

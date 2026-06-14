@@ -87,6 +87,7 @@ export interface ContentPatch {
 }
 
 export interface CorrectionPatch {
+	contentId?: string | null;
 	nextStep?: string;
 	priority?: AdminPriority;
 	status?: AdminCorrectionStatus;
@@ -225,6 +226,8 @@ interface ContentSnapshotSource {
 }
 
 interface CorrectionRow {
+	content_id: string | null;
+	content_title: string | null;
 	id: string;
 	submission_type: AdminSubmissionType;
 	subject: string;
@@ -448,8 +451,43 @@ export function snapshotToContentUpdateValues(snapshot: AdminContentSnapshot) {
 	};
 }
 
+export function resolveContentLookupFromPageUrl(pageUrl: string | null | undefined) {
+	const raw = pageUrl?.trim();
+
+	if (!raw)
+		return null;
+
+	let pathname: string;
+
+	try {
+		pathname = new URL(raw, "https://ballotclarity.org").pathname;
+	}
+	catch {
+		return null;
+	}
+
+	const segments = pathname.replace(/^\/+|\/+$/gu, "").split("/").filter(Boolean);
+	const [section, slug, extra] = segments;
+
+	if (!section || !slug || extra)
+		return null;
+
+	if (section === "candidate" || section === "candidates")
+		return { entitySlug: slug, entityType: "candidate" as const };
+
+	if (section === "measure" || section === "measures")
+		return { entitySlug: slug, entityType: "measure" as const };
+
+	if (section === "ballot" || section === "election" || section === "elections")
+		return { entitySlug: slug, entityType: "election" as const };
+
+	return null;
+}
+
 function rowToCorrection(row: CorrectionRow): AdminCorrectionRequest {
 	return {
+		contentId: row.content_id || undefined,
+		contentTitle: row.content_title || undefined,
 		entityLabel: row.entity_label,
 		entityType: row.entity_type,
 		id: row.id,
@@ -649,7 +687,9 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 	ensureColumn(database, "admin_users", "disabled_at", "TEXT");
 	ensureColumn(database, "admin_content", "public_summary", "TEXT");
 	ensureColumn(database, "admin_content", "ballot_summary", "TEXT");
+	ensureColumn(database, "admin_corrections", "content_id", "TEXT");
 	ensureColumn(database, "admin_guide_packages", "review_recommendation", "TEXT");
+	database.exec("CREATE INDEX IF NOT EXISTS idx_admin_corrections_content ON admin_corrections (content_id)");
 	database.prepare(`
 		UPDATE admin_users
 		SET credentials_updated_at = COALESCE(credentials_updated_at, created_at, updated_at)
@@ -763,8 +803,9 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 				summary,
 				next_step,
 				source_count,
-				page_url
-			) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+				page_url,
+				content_id
+			) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		`);
 
 		for (const item of correctionSeed) {
@@ -781,7 +822,8 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 				item.summary,
 				item.nextStep,
 				item.sourceCount,
-				item.pageUrl || null
+				item.pageUrl || null,
+				item.contentId || null
 			);
 		}
 	}
@@ -1485,14 +1527,66 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 
 	function listCorrections(): AdminCorrectionsResponse {
 		const rows = database.prepare(`
-			SELECT id, submission_type, subject, entity_type, entity_label, status, priority, submitted_at, reported_by, summary, next_step, source_count, page_url
-			FROM admin_corrections
-			ORDER BY CASE status WHEN 'new' THEN 0 WHEN 'triaged' THEN 1 WHEN 'researching' THEN 2 ELSE 3 END, submitted_at DESC
+			SELECT
+				c.id,
+				c.submission_type,
+				c.subject,
+				c.entity_type,
+				c.entity_label,
+				c.status,
+				c.priority,
+				c.submitted_at,
+				c.reported_by,
+				c.summary,
+				c.next_step,
+				c.source_count,
+				c.page_url,
+				c.content_id,
+				content.title AS content_title
+			FROM admin_corrections c
+			LEFT JOIN admin_content content ON content.id = c.content_id
+			ORDER BY CASE c.status WHEN 'new' THEN 0 WHEN 'triaged' THEN 1 WHEN 'researching' THEN 2 ELSE 3 END, c.submitted_at DESC
 		`).all() as unknown as CorrectionRow[];
 
 		return {
 			corrections: rows.map(rowToCorrection)
 		};
+	}
+
+	function resolveContentIdForPageUrl(pageUrl: string | undefined) {
+		const lookup = resolveContentLookupFromPageUrl(pageUrl);
+
+		if (!lookup)
+			return null;
+
+		const row = database.prepare(`
+			SELECT id
+			FROM admin_content
+			WHERE entity_type = ? AND entity_slug = ?
+		`).get(lookup.entityType, lookup.entitySlug) as { id: string } | undefined;
+
+		return row?.id ?? null;
+	}
+
+	function resolvePatchContentId(contentId: string | null | undefined) {
+		if (contentId === null)
+			return null;
+
+		const normalized = contentId?.trim();
+
+		if (!normalized)
+			return null;
+
+		const row = database.prepare(`
+			SELECT id
+			FROM admin_content
+			WHERE id = ?
+		`).get(normalized) as { id: string } | undefined;
+
+		if (!row)
+			throw new Error("Linked content record not found.");
+
+		return row.id;
 	}
 
 	function createCorrectionSubmission(input: CorrectionSubmissionInput) {
@@ -1509,6 +1603,7 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 		const summary = input.sourceLinks?.trim()
 			? `${message}\n\nSupporting links:\n${input.sourceLinks.trim()}`
 			: message;
+		const contentId = resolveContentIdForPageUrl(input.pageUrl);
 
 		database.prepare(`
 			INSERT INTO admin_corrections (
@@ -1524,8 +1619,9 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 				summary,
 				next_step,
 				source_count,
-				page_url
-			) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+				page_url,
+				content_id
+			) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		`).run(
 			id,
 			input.submissionType,
@@ -1541,7 +1637,8 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 				? "Verify the cited claim, source trail, and page framing."
 				: "Triage the feedback and determine whether it belongs in product, content, or operations review.",
 			input.sourceLinks?.trim() ? input.sourceLinks.split("\n").filter(Boolean).length : 0,
-			input.pageUrl?.trim() || null
+			input.pageUrl?.trim() || null,
+			contentId
 		);
 
 		logActivity(
@@ -1558,26 +1655,56 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 
 	function updateCorrection(id: string, patch: CorrectionPatch) {
 		const current = database.prepare(`
-			SELECT id, submission_type, subject, entity_type, entity_label, status, priority, submitted_at, reported_by, summary, next_step, source_count, page_url
-			FROM admin_corrections
-			WHERE id = ?
+			SELECT
+				c.id,
+				c.submission_type,
+				c.subject,
+				c.entity_type,
+				c.entity_label,
+				c.status,
+				c.priority,
+				c.submitted_at,
+				c.reported_by,
+				c.summary,
+				c.next_step,
+				c.source_count,
+				c.page_url,
+				c.content_id,
+				content.title AS content_title
+			FROM admin_corrections c
+			LEFT JOIN admin_content content ON content.id = c.content_id
+			WHERE c.id = ?
 		`).get(id) as CorrectionRow | undefined;
 
 		if (!current)
 			throw new Error("Correction record not found.");
 
+		const contentId = patch.contentId === undefined
+			? current.content_id
+			: resolvePatchContentId(patch.contentId);
+
 		database.prepare(`
 			UPDATE admin_corrections
-			SET status = ?, priority = ?, next_step = ?
+			SET status = ?, priority = ?, next_step = ?, content_id = ?
 			WHERE id = ?
 		`).run(
 			patch.status ?? current.status,
 			patch.priority ?? current.priority,
 			patch.nextStep?.trim() || current.next_step,
+			contentId,
 			id
 		);
 
-		logActivity("correction", `${current.subject} updated`, `Correction item moved to ${patch.status ?? current.status}.`);
+		const linkageSummary = contentId === current.content_id
+			? ""
+			: contentId
+				? " Linked to a content record."
+				: " Removed linked content record.";
+		logActivity(
+			"correction",
+			`${current.subject} updated`,
+			`Correction item moved to ${patch.status ?? current.status}.${linkageSummary}`
+		);
 
 		return listCorrections();
 	}

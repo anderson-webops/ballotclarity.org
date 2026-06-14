@@ -2537,6 +2537,7 @@ export const demoDataSources: DataSourcesResponse = {
 
 const adminCorrections: AdminCorrectionRequest[] = [
 	{
+		contentId: `content-${demoElection.slug}`,
 		id: "corr-001",
 		submissionType: "correction",
 		subject: "Fulton launch page should cite the county election office directly",
@@ -2552,6 +2553,7 @@ const adminCorrections: AdminCorrectionRequest[] = [
 		pageUrl: "/coverage"
 	},
 	{
+		contentId: `content-${demoElection.slug}`,
 		id: "corr-002",
 		submissionType: "correction",
 		subject: "Public status page should explain that Fulton ballot lookup is not yet live",

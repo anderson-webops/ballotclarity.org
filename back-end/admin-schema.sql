@@ -10,7 +10,9 @@ CREATE TABLE IF NOT EXISTS admin_users (
 	credentials_updated_at TEXT NOT NULL,
 	updated_at TEXT NOT NULL,
 	disabled_at TEXT,
-	last_login_at TEXT
+	last_login_at TEXT,
+	mfa_secret TEXT,
+	mfa_enabled_at TEXT
 );
 
 CREATE TABLE IF NOT EXISTS admin_content (

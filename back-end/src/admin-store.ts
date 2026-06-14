@@ -12,6 +12,7 @@ import type {
 	AdminCorrectionsResponse,
 	AdminCorrectionStatus,
 	AdminEntityType,
+	AdminMfaSetupResponse,
 	AdminOverviewResponse,
 	AdminPriority,
 	AdminReviewResponse,
@@ -34,6 +35,11 @@ import { dirname } from "node:path";
 import process from "node:process";
 import { DatabaseSync } from "node:sqlite";
 import { fileURLToPath } from "node:url";
+import {
+	buildAdminMfaOtpAuthUrl,
+	createAdminMfaSecret,
+	verifyAdminMfaCode
+} from "./admin-mfa.js";
 import {
 	demoAdminCorrections,
 	demoAdminOverview,
@@ -154,6 +160,7 @@ export interface CreateUserInput {
 export interface UserPatch {
 	auditActor?: AdminAuditActor;
 	disabled?: boolean;
+	mfaReset?: boolean;
 	password?: string;
 	passwordChangeMode?: "admin-reset" | "self-service";
 }
@@ -162,7 +169,10 @@ export interface AdminRepository {
 	driver: "postgres" | "sqlite";
 	authenticateUser: (username: string, password: string) => AdminUser | null | Promise<AdminUser | null>;
 	createCorrectionSubmission: (input: CorrectionSubmissionInput) => { ok: true; submittedAt: string } | Promise<{ ok: true; submittedAt: string }>;
+	createMfaSetup: (username: string) => AdminMfaSetupResponse | Promise<AdminMfaSetupResponse>;
 	createUser: (input: CreateUserInput) => AdminUser | Promise<AdminUser>;
+	disableMfa: (username: string, currentPassword: string, mfaCode: string, auditActor?: AdminAuditActor) => AdminUser | Promise<AdminUser>;
+	enableMfa: (username: string, currentPassword: string, secret: string, mfaCode: string, auditActor?: AdminAuditActor) => AdminUser | Promise<AdminUser>;
 	getContentRecord: (entityType: AdminEntityType, entitySlug: string) => AdminContentItem | null | Promise<AdminContentItem | null>;
 	getContentHistory: (id: string) => AdminContentHistoryResponse | Promise<AdminContentHistoryResponse>;
 	getOverview: () => AdminOverviewResponse | Promise<AdminOverviewResponse>;
@@ -183,6 +193,7 @@ export interface AdminRepository {
 	updateGuidePackage: (id: string, patch: GuidePackagePatch) => GuidePackageWorkflowListResponse | Promise<GuidePackageWorkflowListResponse>;
 	updateSource: (id: string, patch: SourcePatch) => AdminSourceMonitorResponse | Promise<AdminSourceMonitorResponse>;
 	updateUser: (id: string, patch: UserPatch) => AdminUsersResponse | Promise<AdminUsersResponse>;
+	verifyUserMfaCode: (userId: string, mfaCode: string) => boolean | Promise<boolean>;
 }
 
 interface DatabaseCountRow {
@@ -198,9 +209,13 @@ interface UserRow {
 	credentials_updated_at: string | null;
 	disabled_at: string | null;
 	last_login_at: string | null;
+	mfa_enabled_at: string | null;
+	mfa_secret: string | null;
 	password_hash: string;
 	updated_at: string;
 }
+
+const adminUserSelectColumns = "id, username, display_name, role, created_at, credentials_updated_at, disabled_at, last_login_at, mfa_secret, mfa_enabled_at, password_hash, updated_at";
 
 interface ContentRow {
 	id: string;
@@ -386,9 +401,19 @@ function rowToUser(row: UserRow): AdminUser {
 		displayName: row.display_name,
 		id: row.id,
 		lastLoginAt: row.last_login_at || undefined,
+		mfaEnabledAt: row.mfa_enabled_at || undefined,
 		role: row.role,
 		username: row.username
 	};
+}
+
+function verifyAdminMfaCodeSafely(secret: string, code: string) {
+	try {
+		return verifyAdminMfaCode({ code, secret });
+	}
+	catch {
+		return false;
+	}
 }
 
 function rowToContent(row: ContentRow): AdminContentItem {
@@ -852,6 +877,8 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 	database.exec(schema);
 	ensureColumn(database, "admin_users", "credentials_updated_at", "TEXT");
 	ensureColumn(database, "admin_users", "disabled_at", "TEXT");
+	ensureColumn(database, "admin_users", "mfa_secret", "TEXT");
+	ensureColumn(database, "admin_users", "mfa_enabled_at", "TEXT");
 	ensureColumn(database, "admin_content", "public_summary", "TEXT");
 	ensureColumn(database, "admin_content", "ballot_summary", "TEXT");
 	ensureColumn(database, "admin_content", "publish_approved_by", "TEXT");
@@ -1126,10 +1153,12 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 				password_hash,
 				created_at,
 				credentials_updated_at,
+				mfa_secret,
+				mfa_enabled_at,
 				updated_at,
 				disabled_at,
 				last_login_at
-			) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		`).run(
 			`user-${bootstrapUsername}`,
 			bootstrapUsername.trim(),
@@ -1138,6 +1167,8 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 			hashPassword(bootstrapPassword),
 			now,
 			now,
+			null,
+			null,
 			now,
 			null,
 			null
@@ -1146,7 +1177,7 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 
 	function listUsers(): AdminUsersResponse {
 		const rows = database.prepare(`
-			SELECT id, username, display_name, role, created_at, credentials_updated_at, disabled_at, last_login_at, password_hash, updated_at
+			SELECT ${adminUserSelectColumns}
 			FROM admin_users
 			ORDER BY CASE WHEN disabled_at IS NULL THEN 0 ELSE 1 END, CASE role WHEN 'admin' THEN 0 ELSE 1 END, username
 		`).all() as unknown as UserRow[];
@@ -1166,7 +1197,7 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 			throw new Error("Display name, username, role, and password are required.");
 
 		const existing = database.prepare(`
-			SELECT id, username, display_name, role, created_at, credentials_updated_at, disabled_at, last_login_at, password_hash, updated_at
+			SELECT ${adminUserSelectColumns}
 			FROM admin_users
 			WHERE username = ?
 		`).get(username) as UserRow | undefined;
@@ -1186,10 +1217,12 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 				password_hash,
 				created_at,
 				credentials_updated_at,
+				mfa_secret,
+				mfa_enabled_at,
 				updated_at,
 				disabled_at,
 				last_login_at
-			) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		`).run(
 			id,
 			username,
@@ -1198,6 +1231,8 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 			hashPassword(password),
 			now,
 			now,
+			null,
+			null,
 			now,
 			null,
 			null
@@ -1228,10 +1263,151 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 		};
 	}
 
+	function createMfaSetup(username: string): AdminMfaSetupResponse {
+		const normalized = username.trim().toLowerCase();
+		const row = database.prepare(`
+			SELECT ${adminUserSelectColumns}
+			FROM admin_users
+			WHERE username = ?
+		`).get(normalized) as UserRow | undefined;
+
+		if (!row || row.disabled_at)
+			throw new Error("Admin user not found.");
+
+		if (row.mfa_enabled_at)
+			throw new Error("Multi-factor authentication is already enabled for this account.");
+
+		const issuer = "Ballot Clarity";
+		const secret = createAdminMfaSecret();
+
+		return {
+			issuer,
+			otpauthUrl: buildAdminMfaOtpAuthUrl({
+				issuer,
+				secret,
+				username: row.username
+			}),
+			secret,
+			username: row.username
+		};
+	}
+
+	function verifyUserMfaCode(userId: string, mfaCode: string) {
+		const row = database.prepare(`
+			SELECT ${adminUserSelectColumns}
+			FROM admin_users
+			WHERE id = ?
+		`).get(userId) as UserRow | undefined;
+
+		return Boolean(row?.mfa_secret && row.mfa_enabled_at && verifyAdminMfaCodeSafely(row.mfa_secret, mfaCode));
+	}
+
+	function enableMfa(username: string, currentPassword: string, secret: string, mfaCode: string, auditActor?: AdminAuditActor): AdminUser {
+		const normalized = username.trim().toLowerCase();
+		const row = database.prepare(`
+			SELECT ${adminUserSelectColumns}
+			FROM admin_users
+			WHERE username = ?
+		`).get(normalized) as UserRow | undefined;
+
+		if (!row || row.disabled_at)
+			throw new Error("Admin user not found.");
+
+		if (row.mfa_enabled_at)
+			throw new Error("Multi-factor authentication is already enabled for this account.");
+
+		if (!verifyPassword(currentPassword, row.password_hash))
+			throw new Error("Current password was not accepted.");
+
+		if (!verifyAdminMfaCodeSafely(secret, mfaCode))
+			throw new Error("The verification code was not accepted.");
+
+		const nextCredentialsUpdatedAt = nextAdminCredentialTimestamp(row.credentials_updated_at || row.created_at);
+
+		database.prepare(`
+			UPDATE admin_users
+			SET mfa_secret = ?, mfa_enabled_at = ?, credentials_updated_at = ?, updated_at = ?
+			WHERE id = ?
+		`).run(secret, nextCredentialsUpdatedAt, nextCredentialsUpdatedAt, nextCredentialsUpdatedAt, row.id);
+
+		logActivity("review", "Enabled admin MFA", `${row.display_name} enabled multi-factor authentication.`);
+		recordAuditEvent({
+			actor: auditActor,
+			eventType: "admin_user_mfa_enable",
+			metadata: {
+				credentialsUpdatedAt: nextCredentialsUpdatedAt,
+				mfaEnabledAt: nextCredentialsUpdatedAt,
+				username: row.username
+			},
+			summary: `${row.display_name} enabled multi-factor authentication.`,
+			targetId: row.id,
+			targetLabel: row.display_name,
+			targetType: "admin_user",
+			timestamp: nextCredentialsUpdatedAt
+		});
+
+		return rowToUser({
+			...row,
+			credentials_updated_at: nextCredentialsUpdatedAt,
+			mfa_enabled_at: nextCredentialsUpdatedAt,
+			mfa_secret: secret,
+			updated_at: nextCredentialsUpdatedAt
+		});
+	}
+
+	function disableMfa(username: string, currentPassword: string, mfaCode: string, auditActor?: AdminAuditActor): AdminUser {
+		const normalized = username.trim().toLowerCase();
+		const row = database.prepare(`
+			SELECT ${adminUserSelectColumns}
+			FROM admin_users
+			WHERE username = ?
+		`).get(normalized) as UserRow | undefined;
+
+		if (!row || row.disabled_at || !verifyPassword(currentPassword, row.password_hash))
+			throw new Error("Current password was not accepted.");
+
+		if (!row.mfa_secret || !row.mfa_enabled_at)
+			throw new Error("Multi-factor authentication is not enabled for this account.");
+
+		if (!verifyAdminMfaCodeSafely(row.mfa_secret, mfaCode))
+			throw new Error("The verification code was not accepted.");
+
+		const nextCredentialsUpdatedAt = nextAdminCredentialTimestamp(row.credentials_updated_at || row.created_at);
+
+		database.prepare(`
+			UPDATE admin_users
+			SET mfa_secret = NULL, mfa_enabled_at = NULL, credentials_updated_at = ?, updated_at = ?
+			WHERE id = ?
+		`).run(nextCredentialsUpdatedAt, nextCredentialsUpdatedAt, row.id);
+
+		logActivity("review", "Disabled admin MFA", `${row.display_name} disabled multi-factor authentication.`);
+		recordAuditEvent({
+			actor: auditActor,
+			eventType: "admin_user_mfa_disable",
+			metadata: {
+				credentialsUpdatedAt: nextCredentialsUpdatedAt,
+				username: row.username
+			},
+			summary: `${row.display_name} disabled multi-factor authentication.`,
+			targetId: row.id,
+			targetLabel: row.display_name,
+			targetType: "admin_user",
+			timestamp: nextCredentialsUpdatedAt
+		});
+
+		return rowToUser({
+			...row,
+			credentials_updated_at: nextCredentialsUpdatedAt,
+			mfa_enabled_at: null,
+			mfa_secret: null,
+			updated_at: nextCredentialsUpdatedAt
+		});
+	}
+
 	function authenticateUser(username: string, password: string) {
 		const normalized = username.trim().toLowerCase();
 		const row = database.prepare(`
-			SELECT id, username, display_name, role, created_at, credentials_updated_at, disabled_at, last_login_at, password_hash, updated_at
+			SELECT ${adminUserSelectColumns}
 			FROM admin_users
 			WHERE username = ?
 		`).get(normalized) as UserRow | undefined;
@@ -1250,7 +1426,7 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 
 	function updateUser(id: string, patch: UserPatch): AdminUsersResponse {
 		const current = database.prepare(`
-			SELECT id, username, display_name, role, created_at, credentials_updated_at, disabled_at, last_login_at, password_hash, updated_at
+			SELECT ${adminUserSelectColumns}
 			FROM admin_users
 			WHERE id = ?
 		`).get(id) as UserRow | undefined;
@@ -1267,10 +1443,14 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 		const nextPasswordHash = patch.password === undefined
 			? current.password_hash
 			: hashPassword(normalizeAdminPassword(patch.password));
-		const nextCredentialsUpdatedAt = patch.password === undefined
-			? current.credentials_updated_at || current.created_at
-			: nextAdminCredentialTimestamp(current.credentials_updated_at || current.created_at);
-		const nextUpdatedAt = patch.password === undefined ? now : nextCredentialsUpdatedAt;
+		const shouldResetMfa = patch.mfaReset === true && Boolean(current.mfa_secret || current.mfa_enabled_at);
+		const shouldRotateCredentials = patch.password !== undefined || shouldResetMfa;
+		const nextCredentialsUpdatedAt = shouldRotateCredentials
+			? nextAdminCredentialTimestamp(current.credentials_updated_at || current.created_at)
+			: current.credentials_updated_at || current.created_at;
+		const nextUpdatedAt = shouldRotateCredentials ? nextCredentialsUpdatedAt : now;
+		const nextMfaSecret = patch.mfaReset === true ? null : current.mfa_secret;
+		const nextMfaEnabledAt = patch.mfaReset === true ? null : current.mfa_enabled_at;
 
 		if (patch.disabled && !current.disabled_at && current.role === "admin") {
 			const remainingAdmins = database.prepare(`
@@ -1285,9 +1465,9 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 
 		database.prepare(`
 			UPDATE admin_users
-			SET disabled_at = ?, password_hash = ?, credentials_updated_at = ?, updated_at = ?
+			SET disabled_at = ?, password_hash = ?, mfa_secret = ?, mfa_enabled_at = ?, credentials_updated_at = ?, updated_at = ?
 			WHERE id = ?
-		`).run(nextDisabledAt, nextPasswordHash, nextCredentialsUpdatedAt, nextUpdatedAt, id);
+		`).run(nextDisabledAt, nextPasswordHash, nextMfaSecret, nextMfaEnabledAt, nextCredentialsUpdatedAt, nextUpdatedAt, id);
 
 		if (patch.disabled !== undefined && nextDisabledAt !== current.disabled_at) {
 			logActivity(
@@ -1331,6 +1511,27 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 				summary: isSelfService
 					? `${current.display_name} changed their own password.`
 					: `${current.display_name} received an admin password reset.`,
+				targetId: current.id,
+				targetLabel: current.display_name,
+				targetType: "admin_user",
+				timestamp: nextCredentialsUpdatedAt
+			});
+		}
+
+		if (shouldResetMfa) {
+			logActivity(
+				"review",
+				"Reset admin MFA",
+				`${current.display_name} must enroll multi-factor authentication again before MFA is required. Existing sessions for this account are no longer valid.`
+			);
+			recordAuditEvent({
+				actor: patch.auditActor,
+				eventType: "admin_user_mfa_reset",
+				metadata: {
+					credentialsUpdatedAt: nextCredentialsUpdatedAt,
+					username: current.username
+				},
+				summary: `${current.display_name} had multi-factor authentication reset by an administrator.`,
 				targetId: current.id,
 				targetLabel: current.display_name,
 				targetType: "admin_user",
@@ -2293,7 +2494,10 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 		authenticateUser,
 		createCorrectionSubmission,
 		createGuidePackage,
+		createMfaSetup,
 		createUser,
+		disableMfa,
+		enableMfa,
 		getContentHistory,
 		getContentRecord,
 		getGuidePackage,
@@ -2312,6 +2516,7 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 		updateCorrection,
 		updateGuidePackage,
 		updateSource,
-		updateUser
+		updateUser,
+		verifyUserMfaCode
 	};
 }

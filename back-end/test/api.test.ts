@@ -7,6 +7,7 @@ import { existsSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test, { after, before } from "node:test";
+import { createAdminMfaCode } from "../src/admin-mfa.js";
 import { defaultContentSeed } from "../src/admin-store.js";
 import {
 	demoAdminCorrections,
@@ -3395,6 +3396,230 @@ test("POST /api/admin/auth/login authenticates a configured user and throttles r
 		assert.equal(throttledResponse.status, 429);
 		assert.match(throttledBody.message, /Too many failed admin login attempts/i);
 		assert.ok(Number(throttledResponse.headers.get("retry-after")) >= 1);
+	}
+	finally {
+		await new Promise<void>((resolve, reject) => {
+			isolatedServer.close(error => error ? reject(error) : resolve());
+		});
+	}
+});
+
+test("admin MFA setup enforces verification codes and supports disable and reset", async () => {
+	const isolatedServer = (await createApp({
+		adminApiKey,
+		adminDbPath: ":memory:",
+		bootstrapDisplayName: "Operations Admin",
+		bootstrapPassword: "correct-horse-battery-staple",
+		bootstrapUsername: "ops-admin"
+	})).listen(0, "127.0.0.1");
+
+	await once(isolatedServer, "listening");
+	const isolatedAddress = isolatedServer.address() as AddressInfo;
+	const isolatedBaseUrl = `http://127.0.0.1:${isolatedAddress.port}`;
+	const adminHeaders = {
+		"Content-Type": "application/json",
+		"x-admin-actor-display-name": "Operations Admin",
+		"x-admin-actor-role": "admin",
+		"x-admin-actor-username": "ops-admin",
+		"x-admin-api-key": adminApiKey
+	};
+
+	try {
+		const usersResponse = await fetch(`${isolatedBaseUrl}/api/admin/users`, {
+			headers: {
+				"x-admin-api-key": adminApiKey
+			}
+		});
+		const usersBody = await usersResponse.json();
+		const adminUser = usersBody.users.find((user: { username: string }) => user.username === "ops-admin");
+
+		assert.equal(usersResponse.status, 200);
+		assert.ok(adminUser?.id);
+		assert.ok(adminUser.credentialsUpdatedAt);
+		assert.equal(adminUser.mfaEnabledAt, undefined);
+
+		const setupResponse = await fetch(`${isolatedBaseUrl}/api/admin/auth/mfa/setup`, {
+			body: JSON.stringify({ username: "ops-admin" }),
+			headers: adminHeaders,
+			method: "POST"
+		});
+		const setupBody = await setupResponse.json();
+		const firstCode = createAdminMfaCode(setupBody.secret);
+
+		assert.equal(setupResponse.status, 200);
+		assert.equal(setupBody.username, "ops-admin");
+		assert.match(setupBody.otpauthUrl, /^otpauth:\/\/totp\//);
+
+		const wrongPasswordEnableResponse = await fetch(`${isolatedBaseUrl}/api/admin/auth/mfa/enable`, {
+			body: JSON.stringify({
+				currentPassword: "wrong-password",
+				mfaCode: firstCode,
+				secret: setupBody.secret,
+				username: "ops-admin"
+			}),
+			headers: adminHeaders,
+			method: "POST"
+		});
+
+		assert.equal(wrongPasswordEnableResponse.status, 400);
+
+		const enableResponse = await fetch(`${isolatedBaseUrl}/api/admin/auth/mfa/enable`, {
+			body: JSON.stringify({
+				currentPassword: "correct-horse-battery-staple",
+				mfaCode: firstCode,
+				secret: setupBody.secret,
+				username: "ops-admin"
+			}),
+			headers: adminHeaders,
+			method: "POST"
+		});
+		const enableBody = await enableResponse.json();
+
+		assert.equal(enableResponse.status, 200);
+		assert.equal(enableBody.authenticated, true);
+		assert.ok(enableBody.mfaEnabledAt);
+		assert.notEqual(enableBody.credentialsUpdatedAt, adminUser.credentialsUpdatedAt);
+
+		const staleSessionResponse = await fetch(`${isolatedBaseUrl}/api/admin/auth/session/ops-admin?credentialsUpdatedAt=${encodeURIComponent(adminUser.credentialsUpdatedAt)}`, {
+			headers: {
+				"x-admin-api-key": adminApiKey
+			}
+		});
+
+		assert.equal(staleSessionResponse.status, 401);
+
+		const challengeResponse = await fetch(`${isolatedBaseUrl}/api/admin/auth/login`, {
+			body: JSON.stringify({
+				password: "correct-horse-battery-staple",
+				username: "ops-admin"
+			}),
+			headers: {
+				"Content-Type": "application/json",
+				"x-forwarded-for": "203.0.113.40"
+			},
+			method: "POST"
+		});
+		const challengeBody = await challengeResponse.json();
+
+		assert.equal(challengeResponse.status, 200);
+		assert.equal(challengeBody.authenticated, false);
+		assert.equal(challengeBody.mfaRequired, true);
+
+		const invalidCodeResponse = await fetch(`${isolatedBaseUrl}/api/admin/auth/login`, {
+			body: JSON.stringify({
+				mfaCode: "000000",
+				password: "correct-horse-battery-staple",
+				username: "ops-admin"
+			}),
+			headers: {
+				"Content-Type": "application/json",
+				"x-forwarded-for": "203.0.113.41"
+			},
+			method: "POST"
+		});
+
+		assert.equal(invalidCodeResponse.status, 401);
+
+		const validMfaLoginResponse = await fetch(`${isolatedBaseUrl}/api/admin/auth/login`, {
+			body: JSON.stringify({
+				mfaCode: createAdminMfaCode(setupBody.secret),
+				password: "correct-horse-battery-staple",
+				username: "ops-admin"
+			}),
+			headers: {
+				"Content-Type": "application/json",
+				"x-forwarded-for": "203.0.113.42"
+			},
+			method: "POST"
+		});
+		const validMfaLoginBody = await validMfaLoginResponse.json();
+
+		assert.equal(validMfaLoginResponse.status, 200);
+		assert.equal(validMfaLoginBody.authenticated, true);
+		assert.equal(validMfaLoginBody.mfaEnabledAt, enableBody.mfaEnabledAt);
+
+		const disableResponse = await fetch(`${isolatedBaseUrl}/api/admin/auth/mfa/disable`, {
+			body: JSON.stringify({
+				currentPassword: "correct-horse-battery-staple",
+				mfaCode: createAdminMfaCode(setupBody.secret),
+				username: "ops-admin"
+			}),
+			headers: adminHeaders,
+			method: "POST"
+		});
+		const disableBody = await disableResponse.json();
+
+		assert.equal(disableResponse.status, 200);
+		assert.equal(disableBody.authenticated, true);
+		assert.equal(disableBody.mfaEnabledAt, undefined);
+		assert.notEqual(disableBody.credentialsUpdatedAt, enableBody.credentialsUpdatedAt);
+
+		const secondSetupResponse = await fetch(`${isolatedBaseUrl}/api/admin/auth/mfa/setup`, {
+			body: JSON.stringify({ username: "ops-admin" }),
+			headers: adminHeaders,
+			method: "POST"
+		});
+		const secondSetupBody = await secondSetupResponse.json();
+		const secondEnableResponse = await fetch(`${isolatedBaseUrl}/api/admin/auth/mfa/enable`, {
+			body: JSON.stringify({
+				currentPassword: "correct-horse-battery-staple",
+				mfaCode: createAdminMfaCode(secondSetupBody.secret),
+				secret: secondSetupBody.secret,
+				username: "ops-admin"
+			}),
+			headers: adminHeaders,
+			method: "POST"
+		});
+		const secondEnableBody = await secondEnableResponse.json();
+
+		assert.equal(secondEnableResponse.status, 200);
+		assert.ok(secondEnableBody.mfaEnabledAt);
+
+		const resetMfaResponse = await fetch(`${isolatedBaseUrl}/api/admin/users/${adminUser.id}`, {
+			body: JSON.stringify({ mfaReset: true }),
+			headers: adminHeaders,
+			method: "PATCH"
+		});
+		const resetMfaBody = await resetMfaResponse.json();
+		const resetAdmin = resetMfaBody.users.find((user: { username: string }) => user.username === "ops-admin");
+
+		assert.equal(resetMfaResponse.status, 200);
+		assert.equal(resetAdmin.mfaEnabledAt, undefined);
+		assert.notEqual(resetAdmin.credentialsUpdatedAt, secondEnableBody.credentialsUpdatedAt);
+
+		const resetLoginResponse = await fetch(`${isolatedBaseUrl}/api/admin/auth/login`, {
+			body: JSON.stringify({
+				password: "correct-horse-battery-staple",
+				username: "ops-admin"
+			}),
+			headers: {
+				"Content-Type": "application/json",
+				"x-forwarded-for": "203.0.113.43"
+			},
+			method: "POST"
+		});
+		const resetLoginBody = await resetLoginResponse.json();
+
+		assert.equal(resetLoginResponse.status, 200);
+		assert.equal(resetLoginBody.authenticated, true);
+		assert.equal(resetLoginBody.mfaRequired, undefined);
+
+		const auditResponse = await fetch(`${isolatedBaseUrl}/api/admin/audit`, {
+			headers: {
+				"x-admin-api-key": adminApiKey
+			}
+		});
+		const auditBody = await auditResponse.json();
+		const auditEventTypes = auditBody.events.map((event: { eventType: string }) => event.eventType);
+		const auditPayload = JSON.stringify(auditBody);
+
+		assert.equal(auditResponse.status, 200);
+		assert.equal(auditBody.integrityVerified, true);
+		assert.ok(auditEventTypes.includes("admin_user_mfa_enable"));
+		assert.ok(auditEventTypes.includes("admin_user_mfa_disable"));
+		assert.ok(auditEventTypes.includes("admin_user_mfa_reset"));
+		assert.doesNotMatch(auditPayload, new RegExp(setupBody.secret));
+		assert.doesNotMatch(auditPayload, new RegExp(secondSetupBody.secret));
 	}
 	finally {
 		await new Promise<void>((resolve, reject) => {

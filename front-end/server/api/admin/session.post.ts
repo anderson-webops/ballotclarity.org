@@ -2,6 +2,7 @@ import { createError, defineEventHandler, readBody } from "h3";
 import { createAdminSession } from "../../utils/admin-auth";
 
 interface AdminLoginBody {
+	mfaCode?: string;
 	password?: string;
 	username?: string;
 }
@@ -10,6 +11,7 @@ export default defineEventHandler(async (event) => {
 	const body = await readBody<AdminLoginBody>(event);
 	const username = typeof body?.username === "string" ? body.username.trim() : "";
 	const password = typeof body?.password === "string" ? body.password : "";
+	const mfaCode = typeof body?.mfaCode === "string" ? body.mfaCode.trim() : undefined;
 
 	if (!username || !password) {
 		throw createError({
@@ -18,5 +20,5 @@ export default defineEventHandler(async (event) => {
 		});
 	}
 
-	return await createAdminSession(event, username, password);
+	return await createAdminSession(event, username, password, mfaCode);
 });

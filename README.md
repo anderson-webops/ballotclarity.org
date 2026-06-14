@@ -12,6 +12,7 @@ Ballot Clarity is a nonpartisan civic-information platform built as an npm works
 - `back-end/src/coverage-repository.ts`: runtime coverage loader that starts in empty mode unless an imported live snapshot file is configured
 - `back-end/src/import-live-coverage.ts`: operator CLI that imports a vetted coverage snapshot from a file or URL
 - `back-end/src/export-fulton-reviewed-coverage.ts`: operator CLI that exports the reviewed Fulton official-logistics-only snapshot and metadata sidecar
+- `back-end/src/admin-mfa.ts`: TOTP helper for admin multi-factor authentication setup and verification
 - `back-end/src/census-geocoder.ts`, `back-end/src/openstates.ts`, and `back-end/src/address-enrichment.ts`: address-to-district enrichment path using Census geographies plus Open States representative matching
 - `back-end/src/launch-directory.ts` and `back-end/src/sync-launch-directory.ts`: provider-fed launch-directory ingestion scaffold for elections and representative records
 - `back-end/live-data-schema.sql`: draft Postgres schema scaffold for the future live-data read model
@@ -231,7 +232,7 @@ One-time or scheduled ingestion variables:
 - `LAUNCH_DIRECTORY_FILE`: local JSON file written by `npm run launch-directory:sync`
 - `LAUNCH_PROFILE_LATITUDE`, `LAUNCH_PROFILE_LONGITUDE`: optional probe point used for launch-area Open States geo matching in the launch-directory snapshot
 
-For production, use unique random values for `ADMIN_API_KEY`, `ADMIN_BOOTSTRAP_PASSWORD`, and `ADMIN_SESSION_SECRET`. The front-end and back-end must share the same `ADMIN_API_KEY`. Keep every `ADMIN_*` variable in the server environment only.
+For production, use unique random values for `ADMIN_API_KEY`, `ADMIN_BOOTSTRAP_PASSWORD`, and `ADMIN_SESSION_SECRET`. The front-end and back-end must share the same `ADMIN_API_KEY`. Keep every `ADMIN_*` variable in the server environment only. Admin MFA TOTP secrets are stored in the admin database, so protect database files, snapshots, and backups as sensitive operational secrets.
 The public browser should call `/api/admin/*` on the Nuxt origin only. Those requests must terminate at the Nuxt server so the session cookie and server-held `ADMIN_API_KEY` stay inside the bridge layer.
 
 ## Deploy-time stale-client recovery
@@ -339,7 +340,7 @@ How the admin model works:
 - The browser authenticates against Nuxt server routes, which issue a same-origin session cookie.
 - Nuxt proxies protected admin requests to the Express API using `ADMIN_API_KEY`, so the backend key never reaches the browser.
 - Browser traffic for `/api/admin/*` is expected to terminate at Nuxt. The Express admin endpoints are internal API surfaces behind `ADMIN_API_BASE`, not public browser routes.
-- Admins can create, disable, restore, and reset temporary passwords for admin/editor accounts. Signed-in admins and editors can also change their own passwords from the Account page. Disabled accounts cannot start new sessions, and password changes invalidate existing sessions by rotating the account credential timestamp checked by the Nuxt admin bridge.
+- Admins can create, disable, restore, reset temporary passwords, and reset MFA enrollment for admin/editor accounts. Signed-in admins and editors can enable or disable app-based TOTP MFA and change their own passwords from the Account page. Disabled accounts cannot start new sessions, and password/MFA changes invalidate existing sessions by rotating the account credential timestamp checked by the Nuxt admin bridge.
 - Admin data includes content publish state, reviewer approval metadata, persisted public-summary overrides, content history and rollback points, correction intake with content-record linkage, source-health monitoring, activity logs, user management, and a hash-chained append-only audit trail for critical publish/account actions.
 
 ## API surface
@@ -371,6 +372,9 @@ These endpoints live on the Express service, but they are intended to be reached
 - `POST /api/admin/auth/login`
 - `GET /api/admin/auth/session/:username`
 - `POST /api/admin/auth/password`
+- `POST /api/admin/auth/mfa/setup`
+- `POST /api/admin/auth/mfa/enable`
+- `POST /api/admin/auth/mfa/disable`
 - `GET /api/admin/overview`
 - `GET /api/admin/audit`
 - `GET /api/admin/review`

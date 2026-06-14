@@ -10,6 +10,7 @@ import type {
 	AdminContentItem,
 	AdminCorrectionRequest,
 	AdminSourceMonitorItem,
+	AdminUser,
 	Candidate,
 	Contest,
 	ContestLinkSummary,
@@ -357,6 +358,18 @@ function buildAdminAuditActor(request: Request): AdminAuditActor | undefined {
 		displayName,
 		role,
 		username
+	};
+}
+
+function buildAdminSessionResponse(user: AdminUser) {
+	return {
+		authenticated: true,
+		configured: true,
+		credentialsUpdatedAt: user.credentialsUpdatedAt,
+		displayName: user.displayName,
+		mfaEnabledAt: user.mfaEnabledAt,
+		role: user.role,
+		username: user.username
 	};
 }
 
@@ -4236,6 +4249,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 	app.post("/api/admin/auth/login", async (request, response) => {
 		const username = typeof request.body?.username === "string" ? request.body.username : "";
 		const password = typeof request.body?.password === "string" ? request.body.password : "";
+		const mfaCode = typeof request.body?.mfaCode === "string" ? request.body.mfaCode : "";
 		const throttleState = adminLoginThrottle.check(username, request.header("x-forwarded-for") || request.ip || "");
 
 		if (!await adminRepository.hasUsers()) {
@@ -4275,6 +4289,30 @@ export async function createApp(options: CreateAppOptions = {}) {
 			return;
 		}
 
+		if (user.mfaEnabledAt && !mfaCode) {
+			response.json({
+				authenticated: false,
+				configured: true,
+				displayName: null,
+				mfaRequired: true,
+				role: null,
+				username: null
+			});
+			return;
+		}
+
+		if (user.mfaEnabledAt && !await adminRepository.verifyUserMfaCode(user.id, mfaCode)) {
+			adminLoginThrottle.recordFailure(throttleState.key);
+			logger.warn("admin.login.mfa_failed", {
+				requestId: response.locals.requestId,
+				username: user.username
+			});
+			response.status(401).json({
+				message: "Invalid admin verification code."
+			});
+			return;
+		}
+
 		adminLoginThrottle.clear(throttleState.key);
 		logger.info("admin.login.succeeded", {
 			requestId: response.locals.requestId,
@@ -4282,14 +4320,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 			username: user.username
 		});
 
-		response.json({
-			authenticated: true,
-			configured: true,
-			credentialsUpdatedAt: user.credentialsUpdatedAt,
-			displayName: user.displayName,
-			role: user.role,
-			username: user.username
-		});
+		response.json(buildAdminSessionResponse(user));
 	});
 
 	app.use("/api/admin", (request, response, next) => {
@@ -4344,6 +4375,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 			configured: true,
 			credentialsUpdatedAt: user.credentialsUpdatedAt,
 			displayName: user.displayName,
+			mfaEnabledAt: user.mfaEnabledAt,
 			role: user.role,
 			username: user.username
 		});
@@ -4389,18 +4421,57 @@ export async function createApp(options: CreateAppOptions = {}) {
 				return;
 			}
 
-			response.json({
-				authenticated: true,
-				configured: true,
-				credentialsUpdatedAt: updatedUser.credentialsUpdatedAt,
-				displayName: updatedUser.displayName,
-				role: updatedUser.role,
-				username: updatedUser.username
-			});
+			response.json(buildAdminSessionResponse(updatedUser));
 		}
 		catch (error) {
 			response.status(400).json({
 				message: error instanceof Error ? error.message : "Unable to change admin password."
+			});
+		}
+	});
+
+	app.post("/api/admin/auth/mfa/setup", async (request, response) => {
+		try {
+			const username = typeof request.body?.username === "string" ? request.body.username : "";
+
+			response.json(await adminRepository.createMfaSetup(username));
+		}
+		catch (error) {
+			response.status(400).json({
+				message: error instanceof Error ? error.message : "Unable to start admin MFA setup."
+			});
+		}
+	});
+
+	app.post("/api/admin/auth/mfa/enable", async (request, response) => {
+		try {
+			const username = typeof request.body?.username === "string" ? request.body.username : "";
+			const currentPassword = typeof request.body?.currentPassword === "string" ? request.body.currentPassword : "";
+			const secret = typeof request.body?.secret === "string" ? request.body.secret : "";
+			const mfaCode = typeof request.body?.mfaCode === "string" ? request.body.mfaCode : "";
+			const user = await adminRepository.enableMfa(username, currentPassword, secret, mfaCode, buildAdminAuditActor(request));
+
+			response.json(buildAdminSessionResponse(user));
+		}
+		catch (error) {
+			response.status(400).json({
+				message: error instanceof Error ? error.message : "Unable to enable admin MFA."
+			});
+		}
+	});
+
+	app.post("/api/admin/auth/mfa/disable", async (request, response) => {
+		try {
+			const username = typeof request.body?.username === "string" ? request.body.username : "";
+			const currentPassword = typeof request.body?.currentPassword === "string" ? request.body.currentPassword : "";
+			const mfaCode = typeof request.body?.mfaCode === "string" ? request.body.mfaCode : "";
+			const user = await adminRepository.disableMfa(username, currentPassword, mfaCode, buildAdminAuditActor(request));
+
+			response.json(buildAdminSessionResponse(user));
+		}
+		catch (error) {
+			response.status(400).json({
+				message: error instanceof Error ? error.message : "Unable to disable admin MFA."
 			});
 		}
 	});
@@ -5243,6 +5314,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 			response.json(await adminRepository.updateUser(request.params.id, {
 				auditActor: buildAdminAuditActor(request),
 				disabled: typeof request.body?.disabled === "boolean" ? request.body.disabled : undefined,
+				mfaReset: request.body?.mfaReset === true ? true : undefined,
 				password: typeof request.body?.password === "string" ? request.body.password : undefined
 			}));
 		}

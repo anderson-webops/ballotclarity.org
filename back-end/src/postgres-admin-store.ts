@@ -17,6 +17,7 @@ import type {
 	AdminContentSnapshot,
 	AdminCorrectionRequest,
 	AdminEntityType,
+	AdminMfaSetupResponse,
 	AdminSourceMonitorItem,
 	AdminUser,
 	AdminUserRole,
@@ -29,6 +30,11 @@ import { existsSync, readFileSync } from "node:fs";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
 import { Pool } from "pg";
+import {
+	buildAdminMfaOtpAuthUrl,
+	createAdminMfaSecret,
+	verifyAdminMfaCode
+} from "./admin-mfa.js";
 import {
 	buildContentSnapshot,
 	changedContentFields,
@@ -58,9 +64,13 @@ interface UserRow {
 	credentials_updated_at: string | null;
 	disabled_at: string | null;
 	last_login_at: string | null;
+	mfa_enabled_at: string | null;
+	mfa_secret: string | null;
 	password_hash: string;
 	updated_at: string;
 }
+
+const adminUserSelectColumns = "id, username, display_name, role, created_at, credentials_updated_at, disabled_at, last_login_at, mfa_secret, mfa_enabled_at, password_hash, updated_at";
 
 interface ContentRow {
 	id: string;
@@ -174,9 +184,19 @@ function rowToUser(row: UserRow): AdminUser {
 		displayName: row.display_name,
 		id: row.id,
 		lastLoginAt: row.last_login_at || undefined,
+		mfaEnabledAt: row.mfa_enabled_at || undefined,
 		role: row.role,
 		username: row.username
 	};
+}
+
+function verifyAdminMfaCodeSafely(secret: string, code: string) {
+	try {
+		return verifyAdminMfaCode({ code, secret });
+	}
+	catch {
+		return false;
+	}
 }
 
 function rowToContent(row: ContentRow): AdminContentItem {
@@ -600,8 +620,8 @@ async function seedPostgresDatabase(pool: Pool, options: AdminRepositoryOptions)
 
 		await pool.query(`
 			INSERT INTO admin_users (
-				id, username, display_name, role, password_hash, created_at, credentials_updated_at, updated_at, disabled_at, last_login_at
-			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+				id, username, display_name, role, password_hash, created_at, credentials_updated_at, mfa_secret, mfa_enabled_at, updated_at, disabled_at, last_login_at
+			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
 		`, [
 			`user-${bootstrapUsername}`,
 			bootstrapUsername.trim(),
@@ -610,6 +630,8 @@ async function seedPostgresDatabase(pool: Pool, options: AdminRepositoryOptions)
 			hashPassword(bootstrapPassword),
 			now,
 			now,
+			null,
+			null,
 			now,
 			null,
 			null
@@ -835,7 +857,7 @@ export async function createPostgresAdminRepository(options: AdminRepositoryOpti
 		async authenticateUser(username, password) {
 			const normalized = username.trim().toLowerCase();
 			const result = await pool.query<UserRow>(`
-				SELECT id, username, display_name, role, created_at, credentials_updated_at, disabled_at, last_login_at, password_hash, updated_at
+				SELECT ${adminUserSelectColumns}
 				FROM admin_users
 				WHERE username = $1
 			`, [normalized]);
@@ -909,7 +931,7 @@ export async function createPostgresAdminRepository(options: AdminRepositoryOpti
 				throw new Error("Display name, username, role, and password are required.");
 
 			const existing = await pool.query<UserRow>(`
-				SELECT id, username, display_name, role, created_at, credentials_updated_at, disabled_at, last_login_at, password_hash, updated_at
+				SELECT ${adminUserSelectColumns}
 				FROM admin_users
 				WHERE username = $1
 			`, [username]);
@@ -922,8 +944,8 @@ export async function createPostgresAdminRepository(options: AdminRepositoryOpti
 
 			await pool.query(`
 				INSERT INTO admin_users (
-					id, username, display_name, role, password_hash, created_at, credentials_updated_at, updated_at, disabled_at, last_login_at
-				) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+					id, username, display_name, role, password_hash, created_at, credentials_updated_at, mfa_secret, mfa_enabled_at, updated_at, disabled_at, last_login_at
+				) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
 			`, [
 				id,
 				username,
@@ -932,6 +954,8 @@ export async function createPostgresAdminRepository(options: AdminRepositoryOpti
 				hashPassword(password),
 				now,
 				now,
+				null,
+				null,
 				now,
 				null,
 				null
@@ -960,6 +984,147 @@ export async function createPostgresAdminRepository(options: AdminRepositoryOpti
 				role: input.role,
 				username
 			};
+		},
+		async createMfaSetup(username): Promise<AdminMfaSetupResponse> {
+			const normalized = username.trim().toLowerCase();
+			const result = await pool.query<UserRow>(`
+				SELECT ${adminUserSelectColumns}
+				FROM admin_users
+				WHERE username = $1
+			`, [normalized]);
+			const row = result.rows[0];
+
+			if (!row || row.disabled_at)
+				throw new Error("Admin user not found.");
+
+			if (row.mfa_enabled_at)
+				throw new Error("Multi-factor authentication is already enabled for this account.");
+
+			const issuer = "Ballot Clarity";
+			const secret = createAdminMfaSecret();
+
+			return {
+				issuer,
+				otpauthUrl: buildAdminMfaOtpAuthUrl({
+					issuer,
+					secret,
+					username: row.username
+				}),
+				secret,
+				username: row.username
+			};
+		},
+		async verifyUserMfaCode(userId, mfaCode) {
+			const result = await pool.query<UserRow>(`
+				SELECT ${adminUserSelectColumns}
+				FROM admin_users
+				WHERE id = $1
+			`, [userId]);
+			const row = result.rows[0];
+
+			return Boolean(row?.mfa_secret && row.mfa_enabled_at && verifyAdminMfaCodeSafely(row.mfa_secret, mfaCode));
+		},
+		async enableMfa(username, currentPassword, secret, mfaCode, auditActor): Promise<AdminUser> {
+			const normalized = username.trim().toLowerCase();
+			const result = await pool.query<UserRow>(`
+				SELECT ${adminUserSelectColumns}
+				FROM admin_users
+				WHERE username = $1
+			`, [normalized]);
+			const row = result.rows[0];
+
+			if (!row || row.disabled_at)
+				throw new Error("Admin user not found.");
+
+			if (row.mfa_enabled_at)
+				throw new Error("Multi-factor authentication is already enabled for this account.");
+
+			if (!verifyPassword(currentPassword, row.password_hash))
+				throw new Error("Current password was not accepted.");
+
+			if (!verifyAdminMfaCodeSafely(secret, mfaCode))
+				throw new Error("The verification code was not accepted.");
+
+			const nextCredentialsUpdatedAt = nextAdminCredentialTimestamp(row.credentials_updated_at || row.created_at);
+
+			await pool.query(`
+				UPDATE admin_users
+				SET mfa_secret = $1, mfa_enabled_at = $2, credentials_updated_at = $3, updated_at = $4
+				WHERE id = $5
+			`, [secret, nextCredentialsUpdatedAt, nextCredentialsUpdatedAt, nextCredentialsUpdatedAt, row.id]);
+
+			await logActivity("review", "Enabled admin MFA", `${row.display_name} enabled multi-factor authentication.`);
+			await recordAuditEvent({
+				actor: auditActor,
+				eventType: "admin_user_mfa_enable",
+				metadata: {
+					credentialsUpdatedAt: nextCredentialsUpdatedAt,
+					mfaEnabledAt: nextCredentialsUpdatedAt,
+					username: row.username
+				},
+				summary: `${row.display_name} enabled multi-factor authentication.`,
+				targetId: row.id,
+				targetLabel: row.display_name,
+				targetType: "admin_user",
+				timestamp: nextCredentialsUpdatedAt
+			});
+
+			return rowToUser({
+				...row,
+				credentials_updated_at: nextCredentialsUpdatedAt,
+				mfa_enabled_at: nextCredentialsUpdatedAt,
+				mfa_secret: secret,
+				updated_at: nextCredentialsUpdatedAt
+			});
+		},
+		async disableMfa(username, currentPassword, mfaCode, auditActor): Promise<AdminUser> {
+			const normalized = username.trim().toLowerCase();
+			const result = await pool.query<UserRow>(`
+				SELECT ${adminUserSelectColumns}
+				FROM admin_users
+				WHERE username = $1
+			`, [normalized]);
+			const row = result.rows[0];
+
+			if (!row || row.disabled_at || !verifyPassword(currentPassword, row.password_hash))
+				throw new Error("Current password was not accepted.");
+
+			if (!row.mfa_secret || !row.mfa_enabled_at)
+				throw new Error("Multi-factor authentication is not enabled for this account.");
+
+			if (!verifyAdminMfaCodeSafely(row.mfa_secret, mfaCode))
+				throw new Error("The verification code was not accepted.");
+
+			const nextCredentialsUpdatedAt = nextAdminCredentialTimestamp(row.credentials_updated_at || row.created_at);
+
+			await pool.query(`
+				UPDATE admin_users
+				SET mfa_secret = NULL, mfa_enabled_at = NULL, credentials_updated_at = $1, updated_at = $2
+				WHERE id = $3
+			`, [nextCredentialsUpdatedAt, nextCredentialsUpdatedAt, row.id]);
+
+			await logActivity("review", "Disabled admin MFA", `${row.display_name} disabled multi-factor authentication.`);
+			await recordAuditEvent({
+				actor: auditActor,
+				eventType: "admin_user_mfa_disable",
+				metadata: {
+					credentialsUpdatedAt: nextCredentialsUpdatedAt,
+					username: row.username
+				},
+				summary: `${row.display_name} disabled multi-factor authentication.`,
+				targetId: row.id,
+				targetLabel: row.display_name,
+				targetType: "admin_user",
+				timestamp: nextCredentialsUpdatedAt
+			});
+
+			return rowToUser({
+				...row,
+				credentials_updated_at: nextCredentialsUpdatedAt,
+				mfa_enabled_at: null,
+				mfa_secret: null,
+				updated_at: nextCredentialsUpdatedAt
+			});
 		},
 		async getContentRecord(entityType, entitySlug) {
 			const result = await pool.query<ContentRow>(`
@@ -1170,7 +1335,7 @@ export async function createPostgresAdminRepository(options: AdminRepositoryOpti
 		},
 		async listUsers() {
 			const result = await pool.query<UserRow>(`
-				SELECT id, username, display_name, role, created_at, credentials_updated_at, disabled_at, last_login_at, password_hash, updated_at
+				SELECT ${adminUserSelectColumns}
 				FROM admin_users
 				ORDER BY CASE WHEN disabled_at IS NULL THEN 0 ELSE 1 END, CASE role WHEN 'admin' THEN 0 ELSE 1 END, username
 			`);
@@ -1179,7 +1344,7 @@ export async function createPostgresAdminRepository(options: AdminRepositoryOpti
 		},
 		async updateUser(id, patch) {
 			const currentResult = await pool.query<UserRow>(`
-				SELECT id, username, display_name, role, created_at, credentials_updated_at, disabled_at, last_login_at, password_hash, updated_at
+				SELECT ${adminUserSelectColumns}
 				FROM admin_users
 				WHERE id = $1
 			`, [id]);
@@ -1197,10 +1362,14 @@ export async function createPostgresAdminRepository(options: AdminRepositoryOpti
 			const nextPasswordHash = patch.password === undefined
 				? current.password_hash
 				: hashPassword(normalizeAdminPassword(patch.password));
-			const nextCredentialsUpdatedAt = patch.password === undefined
-				? current.credentials_updated_at || current.created_at
-				: nextAdminCredentialTimestamp(current.credentials_updated_at || current.created_at);
-			const nextUpdatedAt = patch.password === undefined ? now : nextCredentialsUpdatedAt;
+			const shouldResetMfa = patch.mfaReset === true && Boolean(current.mfa_secret || current.mfa_enabled_at);
+			const shouldRotateCredentials = patch.password !== undefined || shouldResetMfa;
+			const nextCredentialsUpdatedAt = shouldRotateCredentials
+				? nextAdminCredentialTimestamp(current.credentials_updated_at || current.created_at)
+				: current.credentials_updated_at || current.created_at;
+			const nextUpdatedAt = shouldRotateCredentials ? nextCredentialsUpdatedAt : now;
+			const nextMfaSecret = patch.mfaReset === true ? null : current.mfa_secret;
+			const nextMfaEnabledAt = patch.mfaReset === true ? null : current.mfa_enabled_at;
 
 			if (patch.disabled && !current.disabled_at && current.role === "admin") {
 				const remainingAdmins = await pool.query<CountRow>(`
@@ -1215,9 +1384,9 @@ export async function createPostgresAdminRepository(options: AdminRepositoryOpti
 
 			await pool.query(`
 				UPDATE admin_users
-				SET disabled_at = $1, password_hash = $2, credentials_updated_at = $3, updated_at = $4
-				WHERE id = $5
-			`, [nextDisabledAt, nextPasswordHash, nextCredentialsUpdatedAt, nextUpdatedAt, id]);
+				SET disabled_at = $1, password_hash = $2, mfa_secret = $3, mfa_enabled_at = $4, credentials_updated_at = $5, updated_at = $6
+				WHERE id = $7
+			`, [nextDisabledAt, nextPasswordHash, nextMfaSecret, nextMfaEnabledAt, nextCredentialsUpdatedAt, nextUpdatedAt, id]);
 
 			if (patch.disabled !== undefined && nextDisabledAt !== current.disabled_at) {
 				await logActivity(
@@ -1261,6 +1430,27 @@ export async function createPostgresAdminRepository(options: AdminRepositoryOpti
 					summary: isSelfService
 						? `${current.display_name} changed their own password.`
 						: `${current.display_name} received an admin password reset.`,
+					targetId: current.id,
+					targetLabel: current.display_name,
+					targetType: "admin_user",
+					timestamp: nextCredentialsUpdatedAt
+				});
+			}
+
+			if (shouldResetMfa) {
+				await logActivity(
+					"review",
+					"Reset admin MFA",
+					`${current.display_name} must enroll multi-factor authentication again before MFA is required. Existing sessions for this account are no longer valid.`
+				);
+				await recordAuditEvent({
+					actor: patch.auditActor,
+					eventType: "admin_user_mfa_reset",
+					metadata: {
+						credentialsUpdatedAt: nextCredentialsUpdatedAt,
+						username: current.username
+					},
+					summary: `${current.display_name} had multi-factor authentication reset by an administrator.`,
 					targetId: current.id,
 					targetLabel: current.display_name,
 					targetType: "admin_user",

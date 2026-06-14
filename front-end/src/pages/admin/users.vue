@@ -101,6 +101,34 @@ async function resetUserPassword(userId: string) {
 	}
 }
 
+async function resetUserMfa(userId: string) {
+	updatingId.value = userId;
+	feedbackMessage.value = "";
+
+	try {
+		await $fetch(`/api/admin/users/${userId}`, {
+			body: { mfaReset: true },
+			method: "PATCH"
+		});
+		feedbackMessage.value = "MFA reset. Existing sessions for that account were invalidated.";
+		feedbackTone.value = "success";
+		await refresh();
+	}
+	catch (error) {
+		feedbackMessage.value = error instanceof FetchError
+			? error.data?.message || error.statusMessage || "Unable to reset admin MFA."
+			: "Unable to reset admin MFA.";
+		feedbackTone.value = "error";
+	}
+	finally {
+		updatingId.value = "";
+	}
+}
+
+function canAdminEditUser(user: { username: string }) {
+	return session.value?.role === "admin" && session.value.username !== user.username;
+}
+
 usePageSeo({
 	description: "Internal Ballot Clarity admin account management.",
 	path: "/admin/users",
@@ -164,6 +192,10 @@ usePageSeo({
 									:label="user.disabledAt ? 'disabled' : 'active'"
 									:tone="user.disabledAt ? 'warning' : 'neutral'"
 								/>
+								<TrustBadge
+									:label="user.mfaEnabledAt ? 'MFA enabled' : 'MFA not enabled'"
+									:tone="user.mfaEnabledAt ? 'accent' : 'warning'"
+								/>
 							</div>
 						</div>
 						<div class="mt-4 gap-4 grid sm:grid-cols-2">
@@ -173,6 +205,7 @@ usePageSeo({
 								{{ user.lastLoginAt || "No recorded login yet" }}
 							</p>
 							<UpdatedAt v-if="user.credentialsUpdatedAt" :value="user.credentialsUpdatedAt" label="Credentials" />
+							<UpdatedAt v-if="user.mfaEnabledAt" :value="user.mfaEnabledAt" label="MFA enabled" />
 							<UpdatedAt v-if="user.disabledAt" :value="user.disabledAt" label="Disabled" />
 						</div>
 						<div class="mt-5 flex flex-wrap gap-3">
@@ -197,6 +230,15 @@ usePageSeo({
 							<p v-if="session?.username === user.username" class="text-xs text-app-muted self-center dark:text-app-muted-dark">
 								Current session
 							</p>
+							<button
+								v-if="user.mfaEnabledAt"
+								type="button"
+								class="btn-secondary"
+								:disabled="!canAdminEditUser(user) || updatingId === user.id"
+								@click="resetUserMfa(user.id)"
+							>
+								{{ updatingId === user.id ? "Updating..." : "Reset MFA" }}
+							</button>
 						</div>
 						<form class="mt-4 gap-3 grid lg:grid-cols-[minmax(0,1fr)_auto]" @submit.prevent="resetUserPassword(user.id)">
 							<label class="block">

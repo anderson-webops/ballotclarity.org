@@ -4,6 +4,7 @@ import type {
 	AdminContentHistoryResponse,
 	AdminContentResponse,
 	AdminCorrectionsResponse,
+	AdminMfaSetupResponse,
 	AdminOverviewResponse,
 	AdminReviewResponse,
 	AdminSessionResponse,
@@ -35,6 +36,8 @@ interface BackendLoginResponse {
 	configured: boolean;
 	credentialsUpdatedAt?: string;
 	displayName: string | null;
+	mfaEnabledAt?: string;
+	mfaRequired?: boolean;
 	role: AdminUserRole | null;
 	username: string | null;
 }
@@ -44,6 +47,7 @@ type BackendSessionResponse = BackendLoginResponse;
 interface CompleteBackendSessionResponse extends BackendLoginResponse {
 	credentialsUpdatedAt: string;
 	displayName: string;
+	mfaEnabledAt?: string;
 	role: AdminUserRole;
 	username: string;
 }
@@ -52,6 +56,7 @@ interface AdminSessionPayload {
 	credentialsUpdatedAt: string;
 	displayName: string;
 	expiresAt: number;
+	mfaEnabledAt?: string;
 	role: AdminUserRole;
 	username: string;
 }
@@ -155,6 +160,7 @@ function setAdminSessionCookie(event: H3Event, sessionResponse: CompleteBackendS
 		credentialsUpdatedAt: sessionResponse.credentialsUpdatedAt,
 		displayName: sessionResponse.displayName,
 		expiresAt: Date.now() + (adminSessionMaxAge * 1000),
+		mfaEnabledAt: sessionResponse.mfaEnabledAt,
 		role: sessionResponse.role,
 		username: sessionResponse.username
 	}, sessionSecret);
@@ -229,8 +235,21 @@ export function getAdminSession(event: H3Event): AdminSessionResponse {
 		configured: true,
 		credentialsUpdatedAt: session.credentialsUpdatedAt,
 		displayName: session.displayName,
+		mfaEnabledAt: session.mfaEnabledAt,
 		role: session.role,
 		username: session.username
+	};
+}
+
+function buildAdminSessionResponse(response: CompleteBackendSessionResponse): AdminSessionResponse {
+	return {
+		authenticated: true,
+		configured: true,
+		credentialsUpdatedAt: response.credentialsUpdatedAt,
+		displayName: response.displayName,
+		mfaEnabledAt: response.mfaEnabledAt,
+		role: response.role,
+		username: response.username
 	};
 }
 
@@ -332,7 +351,7 @@ export function clearAdminSession(event: H3Event): AdminSessionResponse {
 	};
 }
 
-export async function createAdminSession(event: H3Event, username: string, password: string) {
+export async function createAdminSession(event: H3Event, username: string, password: string, mfaCode?: string) {
 	const config = getAdminConfig(event);
 
 	if (!isAdminConfigured(config)) {
@@ -347,6 +366,7 @@ export async function createAdminSession(event: H3Event, username: string, passw
 	try {
 		loginResponse = await $fetch<BackendLoginResponse>(`${config.apiBase}/admin/auth/login`, {
 			body: {
+				...(mfaCode ? { mfaCode } : {}),
 				password,
 				username
 			},
@@ -365,6 +385,17 @@ export async function createAdminSession(event: H3Event, username: string, passw
 		throw error;
 	}
 
+	if (loginResponse.mfaRequired) {
+		return {
+			authenticated: false,
+			configured: true,
+			displayName: null,
+			mfaRequired: true,
+			role: null,
+			username: null
+		} satisfies AdminSessionResponse;
+	}
+
 	if (!isCompleteBackendSession(loginResponse)) {
 		throw createError({
 			statusCode: 401,
@@ -374,14 +405,7 @@ export async function createAdminSession(event: H3Event, username: string, passw
 
 	setAdminSessionCookie(event, loginResponse, config.sessionSecret);
 
-	return {
-		authenticated: true,
-		configured: true,
-		credentialsUpdatedAt: loginResponse.credentialsUpdatedAt,
-		displayName: loginResponse.displayName,
-		role: loginResponse.role,
-		username: loginResponse.username
-	} satisfies AdminSessionResponse;
+	return buildAdminSessionResponse(loginResponse);
 }
 
 export async function changeAdminPassword(event: H3Event, body: Record<string, unknown>) {
@@ -433,14 +457,95 @@ export async function changeAdminPassword(event: H3Event, body: Record<string, u
 
 	setAdminSessionCookie(event, passwordResponse, config.sessionSecret);
 
-	return {
-		authenticated: true,
-		configured: true,
-		credentialsUpdatedAt: passwordResponse.credentialsUpdatedAt,
-		displayName: passwordResponse.displayName,
-		role: passwordResponse.role,
-		username: passwordResponse.username
-	} satisfies AdminSessionResponse;
+	return buildAdminSessionResponse(passwordResponse);
+}
+
+export async function createAdminMfaSetup(event: H3Event) {
+	const session = await requireActiveAdminSession(event);
+
+	if (!session.username) {
+		throw createError({
+			statusCode: 400,
+			statusMessage: "Admin username is required."
+		});
+	}
+
+	return await fetchAdminApi<AdminMfaSetupResponse>(event, "/admin/auth/mfa/setup", {
+		body: {
+			username: session.username
+		},
+		method: "POST"
+	});
+}
+
+export async function enableAdminMfa(event: H3Event, body: Record<string, unknown>) {
+	const session = await requireActiveAdminSession(event);
+	const config = getAdminConfig(event);
+	const currentPassword = typeof body.currentPassword === "string" ? body.currentPassword : "";
+	const secret = typeof body.secret === "string" ? body.secret : "";
+	const mfaCode = typeof body.mfaCode === "string" ? body.mfaCode : "";
+
+	if (!session.username || !currentPassword || !secret || !mfaCode) {
+		throw createError({
+			statusCode: 400,
+			statusMessage: "Current password, MFA secret, and verification code are required."
+		});
+	}
+
+	const mfaResponse = await fetchAdminApi<BackendLoginResponse>(event, "/admin/auth/mfa/enable", {
+		body: {
+			currentPassword,
+			mfaCode,
+			secret,
+			username: session.username
+		},
+		method: "POST"
+	});
+
+	if (!isCompleteBackendSession(mfaResponse)) {
+		throw createError({
+			statusCode: 500,
+			statusMessage: "MFA was enabled, but the updated admin session could not be created."
+		});
+	}
+
+	setAdminSessionCookie(event, mfaResponse, config.sessionSecret);
+
+	return buildAdminSessionResponse(mfaResponse);
+}
+
+export async function disableAdminMfa(event: H3Event, body: Record<string, unknown>) {
+	const session = await requireActiveAdminSession(event);
+	const config = getAdminConfig(event);
+	const currentPassword = typeof body.currentPassword === "string" ? body.currentPassword : "";
+	const mfaCode = typeof body.mfaCode === "string" ? body.mfaCode : "";
+
+	if (!session.username || !currentPassword || !mfaCode) {
+		throw createError({
+			statusCode: 400,
+			statusMessage: "Current password and MFA code are required."
+		});
+	}
+
+	const mfaResponse = await fetchAdminApi<BackendLoginResponse>(event, "/admin/auth/mfa/disable", {
+		body: {
+			currentPassword,
+			mfaCode,
+			username: session.username
+		},
+		method: "POST"
+	});
+
+	if (!isCompleteBackendSession(mfaResponse)) {
+		throw createError({
+			statusCode: 500,
+			statusMessage: "MFA was disabled, but the updated admin session could not be created."
+		});
+	}
+
+	setAdminSessionCookie(event, mfaResponse, config.sessionSecret);
+
+	return buildAdminSessionResponse(mfaResponse);
 }
 
 async function fetchAdminApi<T>(event: H3Event, path: string, options?: {

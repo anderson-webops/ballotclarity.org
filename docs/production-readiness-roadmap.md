@@ -90,7 +90,7 @@ Work:
 - keep content history, diff views, and rollback monitored in production; baseline support is implemented for public-summary fields
 - add structured editing for more than summary fields
 - add assignment and review notes across more workflow surfaces; content publish approvals and correction-to-content linkage are implemented and should be monitored in production
-- add MFA for admins; login throttling, self-service password change, admin password reset, session invalidation, and account disable/restore controls are implemented and should be monitored in production
+- keep admin MFA monitored in production; app-based TOTP setup, login challenge, self-disable, admin reset, login throttling, self-service password change, admin password reset, session invalidation, and account disable/restore controls are implemented
 - keep immutable audit logs for publish and user-management actions monitored in production; append-only SQLite/Postgres storage and the `/admin/audit` viewer are implemented
 
 Exit criteria:
@@ -164,4 +164,4 @@ These items need infrastructure or external service decisions:
 2. Introduce a database-backed read model behind the existing API contracts.
 3. Add one live jurisdiction ingestion pipeline.
 4. Replace SQLite with managed Postgres for admin and content storage.
-5. Add observability, MFA, and broader structured editing while monitoring the implemented immutable audit trail.
+5. Add observability and broader structured editing while monitoring the implemented immutable audit trail and admin MFA flow.

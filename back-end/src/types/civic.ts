@@ -1326,6 +1326,9 @@ export type AdminActivityType = "correction" | "publish" | "review" | "source-ch
 export type AdminAuditEventType
 	= | "admin_user_create"
 		| "admin_user_disable"
+		| "admin_user_mfa_disable"
+		| "admin_user_mfa_enable"
+		| "admin_user_mfa_reset"
 		| "admin_user_password_change"
 		| "admin_user_password_reset"
 		| "admin_user_restore"
@@ -1467,6 +1470,7 @@ export interface AdminUser {
 	credentialsUpdatedAt?: string;
 	disabledAt?: string;
 	lastLoginAt?: string;
+	mfaEnabledAt?: string;
 }
 
 export interface AdminOverviewResponse {
@@ -1508,11 +1512,20 @@ export interface AdminUsersResponse {
 	users: AdminUser[];
 }
 
+export interface AdminMfaSetupResponse {
+	issuer: string;
+	otpauthUrl: string;
+	secret: string;
+	username: string;
+}
+
 export interface AdminSessionResponse {
 	authenticated: boolean;
 	configured: boolean;
 	credentialsUpdatedAt?: string;
 	displayName: string | null;
+	mfaEnabledAt?: string;
+	mfaRequired?: boolean;
 	role: AdminUserRole | null;
 	username: string | null;
 }

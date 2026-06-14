@@ -4857,6 +4857,37 @@ export async function createApp(options: CreateAppOptions = {}) {
 		response.json(await adminRepository.listContent());
 	});
 
+	app.get("/api/admin/content/:id/history", async (request, response) => {
+		try {
+			response.json(await adminRepository.getContentHistory(request.params.id));
+		}
+		catch (error) {
+			response.status(404).json({
+				message: error instanceof Error ? error.message : "Unable to load content history."
+			});
+		}
+	});
+
+	app.post("/api/admin/content/:id/rollback", async (request, response) => {
+		try {
+			const historyId = typeof request.body?.historyId === "string" ? request.body.historyId : "";
+
+			if (!historyId) {
+				response.status(400).json({
+					message: "Content history id is required."
+				});
+				return;
+			}
+
+			response.json(await adminRepository.rollbackContent(request.params.id, historyId));
+		}
+		catch (error) {
+			response.status(400).json({
+				message: error instanceof Error ? error.message : "Unable to roll back content."
+			});
+		}
+	});
+
 	app.patch("/api/admin/content/:id", async (request, response) => {
 		try {
 			response.json(await adminRepository.updateContent(request.params.id, {

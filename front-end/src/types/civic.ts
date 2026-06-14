@@ -1400,6 +1400,28 @@ export interface AdminContentItem {
 	publishedAt?: string;
 }
 
+export interface AdminContentSnapshot {
+	assignedTo: string;
+	blocker?: string;
+	priority: AdminPriority;
+	publicBallotSummary?: string;
+	publicSummary: string;
+	published: boolean;
+	publishedAt?: string;
+	status: AdminReviewStatus;
+	updatedAt: string;
+}
+
+export interface AdminContentHistoryItem {
+	id: string;
+	contentId: string;
+	changedAt: string;
+	changedFields: string[];
+	previous: AdminContentSnapshot;
+	next: AdminContentSnapshot;
+	summary: string;
+}
+
 export interface AdminSourceMonitorItem {
 	id: string;
 	label: string;
@@ -1446,6 +1468,12 @@ export interface AdminReviewResponse {
 
 export interface AdminContentResponse {
 	items: AdminContentItem[];
+}
+
+export interface AdminContentHistoryResponse {
+	contentId: string;
+	history: AdminContentHistoryItem[];
+	updatedAt: string;
 }
 
 export interface AdminSourceMonitorResponse {

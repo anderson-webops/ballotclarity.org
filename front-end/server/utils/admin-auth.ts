@@ -1,5 +1,6 @@
 import type { H3Event } from "h3";
 import type {
+	AdminContentHistoryResponse,
 	AdminContentResponse,
 	AdminCorrectionsResponse,
 	AdminOverviewResponse,
@@ -482,6 +483,19 @@ export async function updateAdminContent(event: H3Event, id: string, body: Recor
 	return await fetchAdminApi<AdminContentResponse>(event, `/admin/content/${id}`, {
 		body,
 		method: "PATCH"
+	});
+}
+
+export async function getAdminContentHistory(event: H3Event, id: string) {
+	await requireActiveAdminSession(event);
+	return await fetchAdminApi<AdminContentHistoryResponse>(event, `/admin/content/${id}/history`);
+}
+
+export async function rollbackAdminContent(event: H3Event, id: string, body: Record<string, unknown>) {
+	await requireActiveAdminSession(event);
+	return await fetchAdminApi<AdminContentResponse>(event, `/admin/content/${id}/rollback`, {
+		body,
+		method: "POST"
 	});
 }
 

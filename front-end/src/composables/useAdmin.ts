@@ -1,4 +1,5 @@
 import type {
+	AdminContentHistoryResponse,
 	AdminContentResponse,
 	AdminCorrectionsResponse,
 	AdminOverviewResponse,
@@ -43,6 +44,23 @@ export function useAdminContent() {
 	return useFetch<AdminContentResponse>("/api/admin/content", {
 		headers: adminRequestHeaders()
 	});
+}
+
+export function useAdminContentHistory(id: MaybeRefOrGetter<string | undefined>) {
+	const contentId = computed(() => toValue(id));
+
+	return useAsyncData<AdminContentHistoryResponse | null>(
+		() => `admin-content-history:${contentId.value ?? "missing"}`,
+		() => contentId.value
+			? $fetch(`/api/admin/content/${contentId.value}/history`, {
+					headers: adminRequestHeaders(),
+				})
+			: Promise.resolve(null),
+		{
+			default: () => null,
+			watch: [contentId],
+		}
+	);
 }
 
 export function useAdminGuidePackages() {

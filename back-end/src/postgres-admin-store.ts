@@ -1,13 +1,16 @@
 import type {
 	AdminRepository,
 	AdminRepositoryOptions,
+	ContentHistoryRow,
 	CreateGuidePackageInput,
 	GuidePackagePatch,
 	GuidePackageWorkflowListResponse,
 } from "./admin-store.js";
 import type {
 	AdminActivityItem,
+	AdminContentHistoryResponse,
 	AdminContentItem,
+	AdminContentSnapshot,
 	AdminCorrectionRequest,
 	AdminEntityType,
 	AdminSourceMonitorItem,
@@ -23,12 +26,18 @@ import process from "node:process";
 import { fileURLToPath } from "node:url";
 import { Pool } from "pg";
 import {
+	buildContentSnapshot,
+	changedContentFields,
+	describeContentHistoryChange,
 	getLegacyDemoAdminIds,
 	hashPassword,
 	nextAdminCredentialTimestamp,
 	normalizeAdminPassword,
+	parseContentHistoryRow,
+	parseContentSnapshot,
 	shouldPurgeLegacyDemoAdminData,
-	verifyPassword,
+	snapshotToContentUpdateValues,
+	verifyPassword
 } from "./admin-store.js";
 
 interface CountRow {
@@ -474,6 +483,45 @@ export async function createPostgresAdminRepository(options: AdminRepositoryOpti
 		return result.rows.map(rowToActivity);
 	}
 
+	async function getContentRow(id: string) {
+		const result = await pool.query<ContentRow>(`
+			SELECT id, title, entity_type, entity_slug, status, priority, updated_at, assigned_to, blocker, summary, public_summary, ballot_summary, source_coverage, published, published_at
+			FROM admin_content
+			WHERE id = $1
+		`, [id]);
+
+		return result.rows[0];
+	}
+
+	async function writeContentHistory(
+		contentId: string,
+		changedAt: string,
+		changedFields: string[],
+		previous: AdminContentSnapshot,
+		next: AdminContentSnapshot,
+		summary: string
+	) {
+		await pool.query(`
+			INSERT INTO admin_content_history (
+				id,
+				content_id,
+				changed_at,
+				changed_fields,
+				previous_snapshot,
+				next_snapshot,
+				summary
+			) VALUES ($1, $2, $3, $4, $5, $6, $7)
+		`, [
+			`content-history-${randomUUID()}`,
+			contentId,
+			changedAt,
+			JSON.stringify(changedFields),
+			JSON.stringify(previous),
+			JSON.stringify(next),
+			summary
+		]);
+	}
+
 	const repository: AdminRepository = {
 		driver: "postgres",
 		async authenticateUser(username, password) {
@@ -598,6 +646,23 @@ export async function createPostgresAdminRepository(options: AdminRepositoryOpti
 			`, [entityType, entitySlug]);
 
 			return result.rows[0] ? rowToContent(result.rows[0]) : null;
+		},
+		async getContentHistory(id): Promise<AdminContentHistoryResponse> {
+			if (!await getContentRow(id))
+				throw new Error("Content record not found.");
+
+			const result = await pool.query<ContentHistoryRow>(`
+				SELECT id, content_id, changed_at, changed_fields, previous_snapshot, next_snapshot, summary
+				FROM admin_content_history
+				WHERE content_id = $1
+				ORDER BY changed_at DESC
+			`, [id]);
+
+			return {
+				contentId: id,
+				history: result.rows.map(parseContentHistoryRow),
+				updatedAt: result.rows[0]?.changed_at || new Date().toISOString()
+			};
 		},
 		async getGuidePackage(id) {
 			const result = await pool.query<GuidePackageRow>(`
@@ -835,12 +900,7 @@ export async function createPostgresAdminRepository(options: AdminRepositoryOpti
 			return await repository.listUsers();
 		},
 		async updateContent(id, patch) {
-			const currentResult = await pool.query<ContentRow>(`
-				SELECT id, title, entity_type, entity_slug, status, priority, updated_at, assigned_to, blocker, summary, public_summary, ballot_summary, source_coverage, published, published_at
-				FROM admin_content
-				WHERE id = $1
-			`, [id]);
-			const current = currentResult.rows[0];
+			const current = await getContentRow(id);
 
 			if (!current)
 				throw new Error("Content record not found.");
@@ -857,6 +917,22 @@ export async function createPostgresAdminRepository(options: AdminRepositoryOpti
 			const nextBallotSummary = patch.publicBallotSummary === undefined
 				? current.ballot_summary
 				: patch.publicBallotSummary?.trim() || null;
+			const nextSnapshot: AdminContentSnapshot = {
+				assignedTo: patch.assignedTo?.trim() || current.assigned_to,
+				blocker: patch.blocker === undefined ? current.blocker || undefined : patch.blocker?.trim() || undefined,
+				priority: patch.priority ?? current.priority,
+				publicBallotSummary: nextBallotSummary || undefined,
+				publicSummary: nextPublicSummary,
+				published: nextPublished,
+				publishedAt: nextPublishedAt || undefined,
+				status: nextStatus,
+				updatedAt: now
+			};
+			const previousSnapshot = buildContentSnapshot(current);
+			const changedFields = changedContentFields(previousSnapshot, nextSnapshot);
+
+			if (!changedFields.length)
+				return await repository.listContent();
 
 			await pool.query(`
 				UPDATE admin_content
@@ -871,17 +947,26 @@ export async function createPostgresAdminRepository(options: AdminRepositoryOpti
 					updated_at = $9
 				WHERE id = $10
 			`, [
-				nextStatus,
-				patch.priority ?? current.priority,
-				patch.assignedTo?.trim() || current.assigned_to,
-				patch.blocker === undefined ? current.blocker : patch.blocker?.trim() || null,
-				nextPublicSummary,
-				nextBallotSummary,
-				nextPublished,
-				nextPublishedAt,
+				nextSnapshot.status,
+				nextSnapshot.priority,
+				nextSnapshot.assignedTo,
+				nextSnapshot.blocker || null,
+				nextSnapshot.publicSummary,
+				nextSnapshot.publicBallotSummary || null,
+				nextSnapshot.published,
+				nextSnapshot.publishedAt || null,
 				now,
 				id
 			]);
+
+			await writeContentHistory(
+				id,
+				now,
+				changedFields,
+				previousSnapshot,
+				nextSnapshot,
+				describeContentHistoryChange(current.title, changedFields)
+			);
 
 			await logActivity(
 				nextPublished ? "publish" : "review",
@@ -890,6 +975,82 @@ export async function createPostgresAdminRepository(options: AdminRepositoryOpti
 					? `${current.title} is marked published and available for the public site.`
 					: `${current.title} moved to ${nextStatus}.`
 			);
+
+			return await repository.listContent();
+		},
+		async rollbackContent(id, historyId) {
+			const current = await getContentRow(id);
+
+			if (!current)
+				throw new Error("Content record not found.");
+
+			const historyResult = await pool.query<ContentHistoryRow>(`
+				SELECT id, content_id, changed_at, changed_fields, previous_snapshot, next_snapshot, summary
+				FROM admin_content_history
+				WHERE id = $1 AND content_id = $2
+			`, [historyId, id]);
+			const historyRow = historyResult.rows[0];
+
+			if (!historyRow)
+				throw new Error("Content history record not found.");
+
+			const now = new Date().toISOString();
+			const previousSnapshot = buildContentSnapshot(current);
+			const rollbackValues = snapshotToContentUpdateValues(parseContentSnapshot(historyRow.previous_snapshot));
+
+			if (!rollbackValues.publicSummary)
+				throw new Error("Rollback target has no public page summary.");
+
+			const nextSnapshot: AdminContentSnapshot = {
+				assignedTo: rollbackValues.assignedTo,
+				blocker: rollbackValues.blocker || undefined,
+				priority: rollbackValues.priority,
+				publicBallotSummary: rollbackValues.publicBallotSummary || undefined,
+				publicSummary: rollbackValues.publicSummary,
+				published: rollbackValues.published,
+				publishedAt: rollbackValues.publishedAt || undefined,
+				status: rollbackValues.status,
+				updatedAt: now
+			};
+			const changedFields = changedContentFields(previousSnapshot, nextSnapshot);
+
+			if (!changedFields.length)
+				return await repository.listContent();
+
+			await pool.query(`
+				UPDATE admin_content
+				SET status = $1,
+					priority = $2,
+					assigned_to = $3,
+					blocker = $4,
+					public_summary = $5,
+					ballot_summary = $6,
+					published = $7,
+					published_at = $8,
+					updated_at = $9
+				WHERE id = $10
+			`, [
+				nextSnapshot.status,
+				nextSnapshot.priority,
+				nextSnapshot.assignedTo,
+				nextSnapshot.blocker || null,
+				nextSnapshot.publicSummary,
+				nextSnapshot.publicBallotSummary || null,
+				nextSnapshot.published,
+				nextSnapshot.publishedAt || null,
+				now,
+				id
+			]);
+
+			await writeContentHistory(
+				id,
+				now,
+				changedFields,
+				previousSnapshot,
+				nextSnapshot,
+				`Rolled back ${current.title} to the version from ${historyRow.changed_at}.`
+			);
+			await logActivity("review", `${current.title} rolled back`, `Restored public content fields from the ${historyRow.changed_at} revision.`);
 
 			return await repository.listContent();
 		},

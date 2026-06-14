@@ -2848,6 +2848,21 @@ test("PATCH /api/admin/content updates public content fields and publish gating"
 		assert.equal(updatedElenaRecord?.publicSummary, updatedSummary);
 		assert.equal(updatedElenaRecord?.publicBallotSummary, updatedBallotSummary);
 
+		const historyResponse = await fetch(`${isolatedBaseUrl}/api/admin/content/content-elena-torres/history`, {
+			headers: {
+				"x-admin-api-key": adminApiKey
+			}
+		});
+		const historyBody = await historyResponse.json();
+		const firstHistoryItem = historyBody.history[0];
+
+		assert.equal(historyResponse.status, 200);
+		assert.equal(historyBody.contentId, "content-elena-torres");
+		assert.ok(firstHistoryItem.changedFields.includes("publicSummary"));
+		assert.ok(firstHistoryItem.changedFields.includes("publicBallotSummary"));
+		assert.equal(firstHistoryItem.previous.publicSummary, elenaRecord.publicSummary);
+		assert.equal(firstHistoryItem.next.publicSummary, updatedSummary);
+
 		const candidateResponse = await fetch(`${isolatedBaseUrl}/api/candidates/elena-torres`);
 		const candidateBody = await candidateResponse.json();
 
@@ -2875,6 +2890,50 @@ test("PATCH /api/admin/content updates public content fields and publish gating"
 		assert.equal(hiddenCandidateResponse.status, 404);
 		assert.equal(ballotResponse.status, 200);
 		assert.equal(ballotBody.election.contests.length, 0);
+
+		const historyAfterUnpublishResponse = await fetch(`${isolatedBaseUrl}/api/admin/content/content-elena-torres/history`, {
+			headers: {
+				"x-admin-api-key": adminApiKey
+			}
+		});
+		const historyAfterUnpublishBody = await historyAfterUnpublishResponse.json();
+		const unpublishHistoryItem = historyAfterUnpublishBody.history[0];
+
+		assert.equal(historyAfterUnpublishResponse.status, 200);
+		assert.ok(unpublishHistoryItem.changedFields.includes("published"));
+
+		const rollbackResponse = await fetch(`${isolatedBaseUrl}/api/admin/content/content-elena-torres/rollback`, {
+			body: JSON.stringify({
+				historyId: unpublishHistoryItem.id
+			}),
+			headers: {
+				"Content-Type": "application/json",
+				"x-admin-api-key": adminApiKey
+			},
+			method: "POST"
+		});
+
+		assert.equal(rollbackResponse.status, 200);
+
+		const rolledBackContentResponse = await fetch(`${isolatedBaseUrl}/api/admin/content`, {
+			headers: {
+				"x-admin-api-key": adminApiKey
+			}
+		});
+		const rolledBackContentBody = await rolledBackContentResponse.json();
+		const rolledBackElenaRecord = rolledBackContentBody.items.find((item: { entitySlug: string }) => item.entitySlug === "elena-torres");
+		const historyAfterRollbackResponse = await fetch(`${isolatedBaseUrl}/api/admin/content/content-elena-torres/history`, {
+			headers: {
+				"x-admin-api-key": adminApiKey
+			}
+		});
+		const historyAfterRollbackBody = await historyAfterRollbackResponse.json();
+
+		assert.equal(rolledBackContentResponse.status, 200);
+		assert.equal(rolledBackElenaRecord?.published, true);
+		assert.equal(rolledBackElenaRecord?.publicSummary, updatedSummary);
+		assert.equal(historyAfterRollbackResponse.status, 200);
+		assert.match(historyAfterRollbackBody.history[0].summary, /Rolled back/i);
 	}
 	finally {
 		await new Promise<void>((resolve, reject) => {

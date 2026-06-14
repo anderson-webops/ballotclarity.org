@@ -1,7 +1,10 @@
 import type {
 	AdminActivityItem,
+	AdminContentHistoryItem,
+	AdminContentHistoryResponse,
 	AdminContentItem,
 	AdminContentResponse,
+	AdminContentSnapshot,
 	AdminCorrectionRequest,
 	AdminCorrectionsResponse,
 	AdminCorrectionStatus,
@@ -144,6 +147,7 @@ export interface AdminRepository {
 	createCorrectionSubmission: (input: CorrectionSubmissionInput) => { ok: true; submittedAt: string } | Promise<{ ok: true; submittedAt: string }>;
 	createUser: (input: CreateUserInput) => AdminUser | Promise<AdminUser>;
 	getContentRecord: (entityType: AdminEntityType, entitySlug: string) => AdminContentItem | null | Promise<AdminContentItem | null>;
+	getContentHistory: (id: string) => AdminContentHistoryResponse | Promise<AdminContentHistoryResponse>;
 	getOverview: () => AdminOverviewResponse | Promise<AdminOverviewResponse>;
 	getHealth: () => { ok: true } | Promise<{ ok: true }>;
 	hasUsers: () => boolean | Promise<boolean>;
@@ -155,6 +159,7 @@ export interface AdminRepository {
 	listUsers: () => AdminUsersResponse | Promise<AdminUsersResponse>;
 	createGuidePackage: (input: CreateGuidePackageInput) => GuidePackageWorkflowListResponse | Promise<GuidePackageWorkflowListResponse>;
 	getGuidePackage: (id: string) => GuidePackageWorkflow | null | Promise<GuidePackageWorkflow | null>;
+	rollbackContent: (id: string, historyId: string) => AdminContentResponse | Promise<AdminContentResponse>;
 	updateContent: (id: string, patch: ContentPatch) => AdminContentResponse | Promise<AdminContentResponse>;
 	updateCorrection: (id: string, patch: CorrectionPatch) => AdminCorrectionsResponse | Promise<AdminCorrectionsResponse>;
 	updateGuidePackage: (id: string, patch: GuidePackagePatch) => GuidePackageWorkflowListResponse | Promise<GuidePackageWorkflowListResponse>;
@@ -195,6 +200,28 @@ interface ContentRow {
 	source_coverage: string;
 	published: number;
 	published_at: string | null;
+}
+
+export interface ContentHistoryRow {
+	id: string;
+	content_id: string;
+	changed_at: string;
+	changed_fields: string;
+	previous_snapshot: string;
+	next_snapshot: string;
+	summary: string;
+}
+
+interface ContentSnapshotSource {
+	assigned_to: string;
+	blocker: string | null;
+	priority: AdminPriority;
+	public_summary: string | null;
+	ballot_summary: string | null;
+	published: boolean | number;
+	published_at: string | null;
+	status: AdminReviewStatus;
+	updated_at: string;
 }
 
 interface CorrectionRow {
@@ -338,6 +365,86 @@ function rowToContent(row: ContentRow): AdminContentItem {
 		summary: row.summary,
 		title: row.title,
 		updatedAt: row.updated_at
+	};
+}
+
+export function buildContentSnapshot(row: ContentSnapshotSource, updatedAt = row.updated_at): AdminContentSnapshot {
+	return {
+		assignedTo: row.assigned_to,
+		blocker: row.blocker || undefined,
+		priority: row.priority,
+		publicBallotSummary: row.ballot_summary || undefined,
+		publicSummary: row.public_summary || "",
+		published: Boolean(row.published),
+		publishedAt: row.published_at || undefined,
+		status: row.status,
+		updatedAt
+	};
+}
+
+export function parseContentSnapshot(raw: string): AdminContentSnapshot {
+	const parsed = JSON.parse(raw) as Partial<AdminContentSnapshot>;
+
+	if (
+		typeof parsed.assignedTo !== "string"
+		|| (parsed.blocker !== undefined && typeof parsed.blocker !== "string")
+		|| (parsed.priority !== "high" && parsed.priority !== "medium" && parsed.priority !== "low")
+		|| (parsed.publicBallotSummary !== undefined && typeof parsed.publicBallotSummary !== "string")
+		|| typeof parsed.publicSummary !== "string"
+		|| typeof parsed.published !== "boolean"
+		|| (parsed.publishedAt !== undefined && typeof parsed.publishedAt !== "string")
+		|| typeof parsed.status !== "string"
+		|| typeof parsed.updatedAt !== "string"
+	) {
+		throw new Error("Stored content history snapshot is invalid.");
+	}
+
+	return parsed as AdminContentSnapshot;
+}
+
+export function parseContentHistoryRow(row: ContentHistoryRow): AdminContentHistoryItem {
+	const changedFields = JSON.parse(row.changed_fields) as unknown;
+
+	return {
+		changedAt: row.changed_at,
+		changedFields: Array.isArray(changedFields) ? changedFields.map(String) : [],
+		contentId: row.content_id,
+		id: row.id,
+		next: parseContentSnapshot(row.next_snapshot),
+		previous: parseContentSnapshot(row.previous_snapshot),
+		summary: row.summary
+	};
+}
+
+export function changedContentFields(previous: AdminContentSnapshot, next: AdminContentSnapshot) {
+	const fields: Array<keyof AdminContentSnapshot> = [
+		"assignedTo",
+		"blocker",
+		"priority",
+		"publicBallotSummary",
+		"publicSummary",
+		"published",
+		"publishedAt",
+		"status"
+	];
+
+	return fields.filter(field => (previous[field] ?? null) !== (next[field] ?? null));
+}
+
+export function describeContentHistoryChange(title: string, changedFields: string[]) {
+	return `${title} changed: ${changedFields.join(", ")}.`;
+}
+
+export function snapshotToContentUpdateValues(snapshot: AdminContentSnapshot) {
+	return {
+		assignedTo: snapshot.assignedTo.trim(),
+		blocker: snapshot.blocker?.trim() || null,
+		priority: snapshot.priority,
+		publicBallotSummary: snapshot.publicBallotSummary?.trim() || null,
+		publicSummary: snapshot.publicSummary.trim(),
+		published: snapshot.published,
+		publishedAt: snapshot.published ? snapshot.publishedAt || null : null,
+		status: snapshot.status
 	};
 }
 
@@ -1074,12 +1181,63 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 		return row ? rowToContent(row) : null;
 	}
 
-	function updateContent(id: string, patch: ContentPatch) {
-		const current = database.prepare(`
+	function getContentRow(id: string) {
+		return database.prepare(`
 			SELECT id, title, entity_type, entity_slug, status, priority, updated_at, assigned_to, blocker, summary, public_summary, ballot_summary, source_coverage, published, published_at
 			FROM admin_content
 			WHERE id = ?
 		`).get(id) as ContentRow | undefined;
+	}
+
+	function getContentHistory(id: string): AdminContentHistoryResponse {
+		if (!getContentRow(id))
+			throw new Error("Content record not found.");
+
+		const rows = database.prepare(`
+			SELECT id, content_id, changed_at, changed_fields, previous_snapshot, next_snapshot, summary
+			FROM admin_content_history
+			WHERE content_id = ?
+			ORDER BY changed_at DESC
+		`).all(id) as unknown as ContentHistoryRow[];
+
+		return {
+			contentId: id,
+			history: rows.map(parseContentHistoryRow),
+			updatedAt: rows[0]?.changed_at || new Date().toISOString()
+		};
+	}
+
+	function writeContentHistory(
+		contentId: string,
+		changedAt: string,
+		changedFields: string[],
+		previous: AdminContentSnapshot,
+		next: AdminContentSnapshot,
+		summary: string
+	) {
+		database.prepare(`
+			INSERT INTO admin_content_history (
+				id,
+				content_id,
+				changed_at,
+				changed_fields,
+				previous_snapshot,
+				next_snapshot,
+				summary
+			) VALUES (?, ?, ?, ?, ?, ?, ?)
+		`).run(
+			`content-history-${randomUUID()}`,
+			contentId,
+			changedAt,
+			JSON.stringify(changedFields),
+			JSON.stringify(previous),
+			JSON.stringify(next),
+			summary
+		);
+	}
+
+	function updateContent(id: string, patch: ContentPatch) {
+		const current = getContentRow(id);
 
 		if (!current)
 			throw new Error("Content record not found.");
@@ -1099,6 +1257,22 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 		const nextBallotSummary = patch.publicBallotSummary === undefined
 			? current.ballot_summary
 			: patch.publicBallotSummary?.trim() || null;
+		const nextSnapshot: AdminContentSnapshot = {
+			assignedTo: patch.assignedTo?.trim() || current.assigned_to,
+			blocker: patch.blocker === undefined ? current.blocker || undefined : patch.blocker?.trim() || undefined,
+			priority: patch.priority ?? current.priority,
+			publicBallotSummary: nextBallotSummary || undefined,
+			publicSummary: nextPublicSummary,
+			published: nextPublished,
+			publishedAt: nextPublishedAt || undefined,
+			status: nextStatus,
+			updatedAt: now
+		};
+		const previousSnapshot = buildContentSnapshot(current);
+		const changedFields = changedContentFields(previousSnapshot, nextSnapshot);
+
+		if (!changedFields.length)
+			return listContent();
 
 		database.prepare(`
 			UPDATE admin_content
@@ -1113,16 +1287,25 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 				updated_at = ?
 			WHERE id = ?
 		`).run(
-			nextStatus,
-			patch.priority ?? current.priority,
-			patch.assignedTo?.trim() || current.assigned_to,
-			patch.blocker === undefined ? current.blocker : patch.blocker?.trim() || null,
-			nextPublicSummary,
-			nextBallotSummary,
-			nextPublished ? 1 : 0,
-			nextPublishedAt,
+			nextSnapshot.status,
+			nextSnapshot.priority,
+			nextSnapshot.assignedTo,
+			nextSnapshot.blocker || null,
+			nextSnapshot.publicSummary,
+			nextSnapshot.publicBallotSummary || null,
+			nextSnapshot.published ? 1 : 0,
+			nextSnapshot.publishedAt || null,
 			now,
 			id
+		);
+
+		writeContentHistory(
+			id,
+			now,
+			changedFields,
+			previousSnapshot,
+			nextSnapshot,
+			describeContentHistoryChange(current.title, changedFields)
 		);
 
 		logActivity(
@@ -1132,6 +1315,82 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 				? `${current.title} is marked published and available for the public site.`
 				: `${current.title} moved to ${nextStatus}.`
 		);
+
+		return listContent();
+	}
+
+	function rollbackContent(id: string, historyId: string) {
+		const current = getContentRow(id);
+
+		if (!current)
+			throw new Error("Content record not found.");
+
+		const historyRow = database.prepare(`
+			SELECT id, content_id, changed_at, changed_fields, previous_snapshot, next_snapshot, summary
+			FROM admin_content_history
+			WHERE id = ? AND content_id = ?
+		`).get(historyId, id) as ContentHistoryRow | undefined;
+
+		if (!historyRow)
+			throw new Error("Content history record not found.");
+
+		const now = new Date().toISOString();
+		const previousSnapshot = buildContentSnapshot(current);
+		const rollbackValues = snapshotToContentUpdateValues(parseContentSnapshot(historyRow.previous_snapshot));
+
+		if (!rollbackValues.publicSummary)
+			throw new Error("Rollback target has no public page summary.");
+
+		const nextSnapshot: AdminContentSnapshot = {
+			assignedTo: rollbackValues.assignedTo,
+			blocker: rollbackValues.blocker || undefined,
+			priority: rollbackValues.priority,
+			publicBallotSummary: rollbackValues.publicBallotSummary || undefined,
+			publicSummary: rollbackValues.publicSummary,
+			published: rollbackValues.published,
+			publishedAt: rollbackValues.publishedAt || undefined,
+			status: rollbackValues.status,
+			updatedAt: now
+		};
+		const changedFields = changedContentFields(previousSnapshot, nextSnapshot);
+
+		if (!changedFields.length)
+			return listContent();
+
+		database.prepare(`
+			UPDATE admin_content
+			SET status = ?,
+				priority = ?,
+				assigned_to = ?,
+				blocker = ?,
+				public_summary = ?,
+				ballot_summary = ?,
+				published = ?,
+				published_at = ?,
+				updated_at = ?
+			WHERE id = ?
+		`).run(
+			nextSnapshot.status,
+			nextSnapshot.priority,
+			nextSnapshot.assignedTo,
+			nextSnapshot.blocker || null,
+			nextSnapshot.publicSummary,
+			nextSnapshot.publicBallotSummary || null,
+			nextSnapshot.published ? 1 : 0,
+			nextSnapshot.publishedAt || null,
+			now,
+			id
+		);
+
+		writeContentHistory(
+			id,
+			now,
+			changedFields,
+			previousSnapshot,
+			nextSnapshot,
+			`Rolled back ${current.title} to the version from ${historyRow.changed_at}.`
+		);
+		logActivity("review", `${current.title} rolled back`, `Restored public content fields from the ${historyRow.changed_at} revision.`);
 
 		return listContent();
 	}
@@ -1441,6 +1700,7 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 		createCorrectionSubmission,
 		createGuidePackage,
 		createUser,
+		getContentHistory,
 		getContentRecord,
 		getGuidePackage,
 		getHealth: () => ({ ok: true }),
@@ -1452,6 +1712,7 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 		listReview,
 		listSourceMonitor,
 		listUsers,
+		rollbackContent,
 		updateContent,
 		updateCorrection,
 		updateGuidePackage,

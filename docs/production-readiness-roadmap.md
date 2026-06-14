@@ -10,6 +10,7 @@ The repo already has:
 - a protected admin bridge where browser requests to `/api/admin/*` terminate at Nuxt
 - persisted admin/editor accounts and operational state in the backend store
 - an optional Postgres-backed admin repository for production deployments
+- content history, diff views, and rollback for public-summary edits
 - a public launch profile centered on Fulton County, Georgia as the first real jurisdiction
 - public coverage, status, corrections, and contest-level canonical pages
 - structured backend request logging, health metadata, and admin login throttling
@@ -83,7 +84,7 @@ Goal: make the admin system safe for real editorial use.
 
 Work:
 
-- add content history, diff views, and rollback
+- keep content history, diff views, and rollback monitored in production; baseline support is implemented for public-summary fields
 - add structured editing for more than summary fields
 - add assignment, review notes, publish approvals, and correction-to-content linkage
 - add MFA for admins; login throttling, self-service password change, admin password reset, session invalidation, and account disable/restore controls are implemented and should be monitored in production
@@ -91,7 +92,7 @@ Work:
 
 Exit criteria:
 
-- editorial changes are attributable, reversible, and reviewable
+- editorial public-summary changes are reversible and reviewable; broader structured content still needs the same treatment
 - account lifecycle is no longer dependent on bootstrap credentials alone
 
 ## Phase 5: Production infrastructure and operations
@@ -135,7 +136,7 @@ These changes can be shipped directly from code:
 
 - persisted public content editing
 - publish gating in the public API
-- stronger admin workflow
+- stronger admin workflow, including content history and rollback
 - database abstractions that prepare for Postgres
 - optional Postgres-backed admin persistence
 - imported live-coverage snapshots without changing public API routes
@@ -159,4 +160,4 @@ These items need infrastructure or external service decisions:
 2. Introduce a database-backed read model behind the existing API contracts.
 3. Add one live jurisdiction ingestion pipeline.
 4. Replace SQLite with managed Postgres for admin and content storage.
-5. Add observability, auth hardening, and editorial version history.
+5. Add observability, MFA, broader structured editing, and immutable audit logging.

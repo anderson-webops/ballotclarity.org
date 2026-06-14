@@ -30,6 +30,16 @@ CREATE TABLE IF NOT EXISTS admin_content (
 	UNIQUE (entity_type, entity_slug)
 );
 
+CREATE TABLE IF NOT EXISTS admin_content_history (
+	id TEXT PRIMARY KEY,
+	content_id TEXT NOT NULL REFERENCES admin_content(id) ON DELETE CASCADE,
+	changed_at TEXT NOT NULL,
+	changed_fields TEXT NOT NULL,
+	previous_snapshot TEXT NOT NULL,
+	next_snapshot TEXT NOT NULL,
+	summary TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS admin_guide_packages (
 	id TEXT PRIMARY KEY,
 	election_slug TEXT NOT NULL UNIQUE,
@@ -83,6 +93,7 @@ CREATE TABLE IF NOT EXISTS admin_activity (
 );
 
 CREATE INDEX IF NOT EXISTS idx_admin_content_status ON admin_content (status, published);
+CREATE INDEX IF NOT EXISTS idx_admin_content_history_content ON admin_content_history (content_id, changed_at DESC);
 CREATE INDEX IF NOT EXISTS idx_admin_guide_packages_status ON admin_guide_packages (status, updated_at DESC);
 CREATE INDEX IF NOT EXISTS idx_admin_corrections_status ON admin_corrections (status, priority);
 CREATE INDEX IF NOT EXISTS idx_admin_sources_health ON admin_source_monitors (health);

@@ -128,6 +128,12 @@ usePageSeo({
 						</p>
 						<div class="mt-5 flex flex-wrap gap-3">
 							<NuxtLink
+								:to="`/admin/content/${item.id}`"
+								class="btn-secondary"
+							>
+								Review history
+							</NuxtLink>
+							<NuxtLink
 								v-if="item.entityType === 'candidate'"
 								:to="`/candidate/${item.entitySlug}`"
 								class="btn-secondary"

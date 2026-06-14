@@ -16,6 +16,7 @@ import {
 } from "../src/coverage-data.js";
 import { buildSeedCoverageSnapshot } from "../src/coverage-repository.js";
 import { buildGuidePackageId } from "../src/guide-packages.js";
+import { createPublicSubmissionThrottle } from "../src/public-submission-throttle.js";
 import { classifyRepresentative } from "../src/representative-classification.js";
 import { createApp } from "../src/server.js";
 
@@ -2899,6 +2900,72 @@ test("admin corrections can link to content records and auto-link page submissio
 		assert.equal(correctionsAfterSubmissionResponse.status, 200);
 		assert.equal(submittedCorrection?.contentId, "content-elena-torres");
 		assert.equal(submittedCorrection?.contentTitle, "Elena Torres profile");
+	}
+	finally {
+		await new Promise<void>((resolve, reject) => {
+			isolatedServer.close(error => error ? reject(error) : resolve());
+		});
+	}
+});
+
+test("POST /api/feedback throttles repeated public submissions", async () => {
+	const isolatedServer = (await createApp({
+		adminApiKey,
+		adminDbPath: ":memory:",
+		contentSeed,
+		coverageRepository: buildTestCoverageRepository(),
+		correctionSeed: [],
+		publicSubmissionThrottle: createPublicSubmissionThrottle({
+			maxSubmissions: 1,
+			windowMs: 60_000
+		}),
+		sourceMonitorSeed
+	})).listen(0, "127.0.0.1");
+
+	await once(isolatedServer, "listening");
+	const isolatedAddress = isolatedServer.address() as AddressInfo;
+	const isolatedBaseUrl = `http://127.0.0.1:${isolatedAddress.port}`;
+	const submissionPayload = {
+		email: "reader@example.com",
+		message: "Please check this public page before election day.",
+		pageUrl: "/coverage",
+		subject: "Feedback throttle probe",
+		submissionType: "feedback"
+	};
+
+	try {
+		const acceptedResponse = await fetch(`${isolatedBaseUrl}/api/feedback`, {
+			body: JSON.stringify(submissionPayload),
+			headers: {
+				"Content-Type": "application/json"
+			},
+			method: "POST"
+		});
+		const throttledResponse = await fetch(`${isolatedBaseUrl}/api/feedback`, {
+			body: JSON.stringify({
+				...submissionPayload,
+				message: "Second submission should be throttled."
+			}),
+			headers: {
+				"Content-Type": "application/json"
+			},
+			method: "POST"
+		});
+		const throttledBody = await throttledResponse.json();
+		const correctionsResponse = await fetch(`${isolatedBaseUrl}/api/admin/corrections`, {
+			headers: {
+				"x-admin-api-key": adminApiKey
+			}
+		});
+		const correctionsBody = await correctionsResponse.json();
+		const throttleProbeCorrections = correctionsBody.corrections.filter((item: { subject: string }) => item.subject === "Feedback throttle probe");
+
+		assert.equal(acceptedResponse.status, 201);
+		assert.equal(throttledResponse.status, 429);
+		assert.match(throttledBody.message, /too many public contact submissions/i);
+		assert.ok(Number(throttledResponse.headers.get("retry-after")) > 0);
+		assert.equal(correctionsResponse.status, 200);
+		assert.equal(throttleProbeCorrections.length, 1);
 	}
 	finally {
 		await new Promise<void>((resolve, reject) => {

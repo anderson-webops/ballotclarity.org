@@ -4,6 +4,7 @@ import type { AdminAuditActor } from "./admin-store.js";
 import type { CongressClient, CongressMemberDetail, CongressMemberRecord } from "./congress.js";
 import type { CoverageRepository } from "./coverage-repository.js";
 import type { OpenStatesRepresentativeRecord } from "./openstates.js";
+import type { PublicSubmissionThrottle } from "./public-submission-throttle.js";
 import type { SupplementalOfficeholderRecord } from "./supplemental-officeholders.js";
 import type {
 	AdminActivityItem,
@@ -107,6 +108,7 @@ import { createOpenStatesClient } from "./openstates.js";
 import { buildCongressProfileImages, uniqueProfileImages } from "./profile-images.js";
 import { buildProviderSummary } from "./provider-config.js";
 import { buildCuratedPublicSourceRecords, mapAuthorityToPublisherType } from "./public-source-directory.js";
+import { createPublicSubmissionThrottle } from "./public-submission-throttle.js";
 import { classifyRepresentative } from "./representative-classification.js";
 import { createRepresentativeModuleResolver } from "./representative-modules.js";
 import { createSourceAssetStore } from "./source-asset-store.js";
@@ -137,6 +139,7 @@ interface CreateAppOptions {
 	locationGuessOptions?: Parameters<typeof createLocationGuessService>[0];
 	openFecClient?: ReturnType<typeof createOpenFecClient>;
 	openStatesClient?: ReturnType<typeof createOpenStatesClient>;
+	publicSubmissionThrottle?: PublicSubmissionThrottle;
 	sourceMonitorSeed?: AdminSourceMonitorItem[];
 	zipLocationService?: ZipLocationService | null;
 	zipLookupLogger?: ZipLookupLogger;
@@ -243,6 +246,13 @@ function createCorsOriginResolver() {
 
 		return callback(null, false);
 	};
+}
+
+function buildPublicSubmissionThrottleKey(request: express.Request) {
+	return request.ip
+		|| request.socket.remoteAddress
+		|| request.header("x-real-ip")
+		|| "unknown";
 }
 
 function buildZipSelectionOption(
@@ -2750,6 +2760,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 		sourceMonitorSeed: options.sourceMonitorSeed
 	});
 	const logger = createLogger("ballot-clarity-api");
+	const publicSubmissionThrottle = options.publicSubmissionThrottle ?? createPublicSubmissionThrottle();
 	const zipLookupLogger = options.zipLookupLogger ?? createZipLookupLogger({
 		onError(error) {
 			logger.warn("zip_lookup_log.write_failed", {
@@ -4547,6 +4558,21 @@ export async function createApp(options: CreateAppOptions = {}) {
 
 	app.post("/api/feedback", async (request, response) => {
 		try {
+			const throttleState = publicSubmissionThrottle.attempt(buildPublicSubmissionThrottleKey(request));
+
+			if (!throttleState.allowed) {
+				logger.warn("feedback.submission.throttled", {
+					requestId: response.locals.requestId,
+					retryAfterSeconds: throttleState.retryAfterSeconds
+				});
+				response.setHeader("Retry-After", String(throttleState.retryAfterSeconds));
+				response.status(429).json({
+					message: "Too many public contact submissions from this connection. Try again later.",
+					retryAfterSeconds: throttleState.retryAfterSeconds
+				});
+				return;
+			}
+
 			const result = await adminRepository.createCorrectionSubmission({
 				email: typeof request.body?.email === "string" ? request.body.email : "",
 				message: typeof request.body?.message === "string" ? request.body.message : "",

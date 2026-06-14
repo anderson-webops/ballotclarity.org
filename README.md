@@ -205,6 +205,7 @@ Server-only variables:
 - `ADMIN_DATABASE_URL`: Postgres connection string for the admin and editorial operations store
 - `CONTACT_ADDRESS`: support email address returned by the protected `/api/contact-address` route after the same-origin nonce challenge succeeds
 - `CONTACT_ADDRESS_SESSION_SECRET`: server-only secret that signs short-lived protected-contact nonce sessions; use a dedicated value in production rather than reusing admin session secrets
+- `PUBLIC_FEEDBACK_RATE_LIMIT_WINDOW_MS`, `PUBLIC_FEEDBACK_RATE_LIMIT_MAX`: optional in-memory abuse controls for repeated public contact/correction form submissions from the same connection
 - `SOURCE_ASSET_BASE_URL`: optional public object-storage or CDN base URL for mirrored source files
 - `LIVE_COVERAGE_FILE`: path to the imported coverage snapshot consumed by the public API
 - `LIVE_COVERAGE_REQUIRED`: when `true`, fail startup if `LIVE_COVERAGE_FILE` is missing

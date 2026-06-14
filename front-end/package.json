@@ -4,7 +4,7 @@
 	"description": "Nuxt front-end for the Ballot Clarity civic-information MVP",
 	"author": "Jacob Anderson",
 	"keywords": [],
-	"license": "ISC",
+	"license": "MIT",
 	"type": "module",
 	"private": true,
 	"main": ".output/server/index.mjs",

@@ -6,7 +6,7 @@
 	"packageManager": "npm@11.7.0",
 	"description": "Monorepo for the Ballot Clarity civic-information MVP",
 	"author": "Jacob Anderson",
-	"license": "ISC",
+	"license": "MIT",
 	"keywords": [],
 	"workspaces": [
 		"front-end",

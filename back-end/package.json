@@ -3,6 +3,7 @@
 	"version": "1.0.0",
 	"private": true,
 	"description": "Express API for the Ballot Clarity civic-information MVP",
+	"license": "MIT",
 	"type": "module",
 	"main": "dist/server.js",
 	"scripts": {

@@ -1,6 +1,20 @@
+# Notices
+
+Ballot Clarity originally used the Vitesse Nuxt starter as a project foundation.
+
+## Vitesse Nuxt
+
+- Project: Vitesse Nuxt
+- Author: Anthony Fu
+- Source: https://github.com/antfu/vitesse-nuxt
+- License: MIT
+
+The original Vitesse Nuxt license notice is retained here for attribution:
+
+```text
 MIT License
 
-Copyright (c) 2026 Jacob Anderson
+Copyright (c) 2021-PRESENT Anthony Fu<https://github.com/antfu>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -19,3 +33,4 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+```

@@ -4,7 +4,7 @@ Ballot Clarity is a nonpartisan civic-information platform built as an npm works
 
 ## Workspace layout
 
-- `front-end/`: Nuxt 4 application based on the `antfu/vitesse-nuxt` stack and conventions
+- `front-end/`: Nuxt 4 application for the public civic-information site and protected admin review tools
 - `front-end/src/`: public pages, admin pages, layouts, components, composables, stores, and shared front-end types
 - `front-end/public/source-files/`: reference source files that power the public source directory and evidence links
 - `back-end/`: Express API for ballot content, public search, source records, and admin operations
@@ -483,3 +483,7 @@ Local stack notes:
 - Fulton County, Georgia is the current launch jurisdiction. Official election resources and representative lookup are active; verified Fulton contest, candidate, and measure packaging remains unavailable until reviewed local records are loaded.
 - Time-sensitive election logistics should always be checked against official election-office notices.
 - Light mode is the default, dark mode is supported, and ballot pages are designed to print cleanly.
+
+## License and attribution
+
+Ballot Clarity source code is distributed under the MIT license in `LICENSE`. The project originally used the Vitesse Nuxt starter as a foundation; retained third-party attribution is documented in `NOTICE.md`.

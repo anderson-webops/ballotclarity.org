@@ -20,7 +20,7 @@ It checks the environment values and active coverage snapshot that determine whe
 - `LIVE_COVERAGE_FILE` exists and has a matching `.meta.json` sidecar.
 - Snapshot metadata is `reviewed` or `production_approved`, uses `sourceType: "imported"`, and includes the required review timestamps.
 - `production_approved` snapshots include `approvedAt`.
-- `production_approved` snapshot payloads do not contain known staged/reference candidate names, `seeded_demo` or `staged_reference` content markers, or `mixedContent: true`.
+- `reviewed` and `production_approved` snapshot payloads do not contain known staged/reference candidate names, `seeded_demo` or `staged_reference` content markers, or `mixedContent: true`.
 
 Reviewed-but-not-approved snapshots pass with a warning because Ballot Clarity may intentionally run an official-logistics-only reviewed package while public copy keeps that state visible. Seed, unknown, missing, or unreviewed snapshots fail.
 
@@ -46,6 +46,6 @@ npm run verify:production -- --json
 
 ## Scope
 
-This check does not replace full editorial content validation. It does provide a deploy-time backstop for the most dangerous snapshot states: production-approved packages that still carry reference-archive candidates, staged guide markers, or mixed-content flags.
+This check does not replace full editorial content validation. It does provide a deploy-time backstop for the most dangerous snapshot states: production-eligible packages that still carry reference-archive candidates, staged guide markers, or mixed-content flags.
 
 This check verifies the runtime contract around that content: public origins, admin persistence, protected contact configuration, secret posture, throttle configuration, optional ballot-content provider endpoint safety, live snapshot requirement, and snapshot provenance.

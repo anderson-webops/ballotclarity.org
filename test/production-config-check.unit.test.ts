@@ -295,3 +295,31 @@ test("production config check rejects approved snapshots with reference or stage
 	assert.ok(issueIds(evaluation, "errors").includes("live_coverage.snapshot_staged_content"));
 	assert.ok(issueIds(evaluation, "errors").includes("live_coverage.snapshot_mixed_content"));
 });
+
+test("production config check rejects reviewed snapshots with reference or staged guide content", () => {
+	const evaluation = evaluateProductionConfig({
+		env: buildProductionEnv({
+			LIVE_COVERAGE_FILE: writeSnapshot("reviewed", {}, {
+				contentStatus: {
+					candidates: {
+						hasContent: true,
+						status: "seeded_demo",
+					},
+					mixedContent: true,
+				},
+				candidates: [
+					{
+						name: "Daniel Brooks",
+					},
+				],
+				updatedAt: "2026-04-19T19:36:50.252Z",
+			}),
+		}),
+	});
+
+	assert.equal(evaluation.ok, false);
+	assert.ok(issueIds(evaluation, "warnings").includes("live_coverage.reviewed_not_approved"));
+	assert.ok(issueIds(evaluation, "errors").includes("live_coverage.snapshot_reference_content"));
+	assert.ok(issueIds(evaluation, "errors").includes("live_coverage.snapshot_staged_content"));
+	assert.ok(issueIds(evaluation, "errors").includes("live_coverage.snapshot_mixed_content"));
+});

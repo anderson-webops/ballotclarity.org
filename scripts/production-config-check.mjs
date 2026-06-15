@@ -347,7 +347,9 @@ function checkSnapshotMetadata({ errors, metadata, warnings }) {
 }
 
 function checkSnapshotPayload({ errors, metadata, snapshot }) {
-	if (metadata?.status !== "production_approved" || !snapshot)
+	const status = normalize(metadata?.status);
+
+	if ((status !== "reviewed" && status !== "production_approved") || !snapshot)
 		return;
 
 	const issues = findSnapshotContentIssues(snapshot);
@@ -357,7 +359,7 @@ function checkSnapshotPayload({ errors, metadata, snapshot }) {
 		errors.push(issue(
 			"error",
 			"live_coverage.snapshot_reference_content",
-			`Production-approved coverage snapshot still contains staged/reference candidate names: ${matchedNames}.`,
+			`Production coverage snapshot still contains staged/reference candidate names: ${matchedNames}.`,
 		));
 	}
 
@@ -365,7 +367,7 @@ function checkSnapshotPayload({ errors, metadata, snapshot }) {
 		errors.push(issue(
 			"error",
 			"live_coverage.snapshot_staged_content",
-			"Production-approved coverage snapshot cannot include seeded_demo or staged_reference content markers.",
+			"Production coverage snapshot cannot include seeded_demo or staged_reference content markers.",
 		));
 	}
 
@@ -373,7 +375,7 @@ function checkSnapshotPayload({ errors, metadata, snapshot }) {
 		errors.push(issue(
 			"error",
 			"live_coverage.snapshot_mixed_content",
-			"Production-approved coverage snapshot cannot include guide content marked mixedContent=true.",
+			"Production coverage snapshot cannot include guide content marked mixedContent=true.",
 		));
 	}
 }

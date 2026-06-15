@@ -39,6 +39,17 @@ test("accessibility smoke serves reviewed route fixture data for dynamic pages",
 	assert.match(smokeScript, /representatives: \[mockRepresentativeSummary\]/);
 });
 
+test("accessibility smoke shuts down Nuxt deterministically in CI", () => {
+	const smokeScript = readText("scripts/a11y-smoke.mjs");
+	const workflow = readText(".github/workflows/ci.yml");
+
+	assert.match(smokeScript, /detached: process\.platform !== "win32"/);
+	assert.match(smokeScript, /async function stopFrontend/);
+	assert.match(smokeScript, /process\.kill\(-child\.pid, signal\)/);
+	assert.match(smokeScript, /await stopFrontend\(frontendProcess\)/);
+	assert.match(workflow, /^\s{2}accessibility:\n\s{4}runs-on: ubuntu-latest\n\s{4}timeout-minutes: 10/m);
+});
+
 test("location key-date notes remain definition-list descriptions", () => {
 	const locationPage = readText("front-end/src/pages/locations/[slug].vue");
 	const keyDatesSection = locationPage.slice(

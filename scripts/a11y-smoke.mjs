@@ -533,6 +533,7 @@ function startFrontend() {
 
 	const child = spawn("npm", args, {
 		cwd: projectRoot,
+		detached: process.platform !== "win32",
 		env: {
 			...process.env,
 			BROWSER: "none",
@@ -569,6 +570,52 @@ function startFrontend() {
 	child.stdout.on("data", data => writeServerLine(isNuxt ? "nuxt" : "vite", data));
 	child.stderr.on("data", data => writeServerLine(isNuxt ? "nuxt" : "vite", data));
 	return child;
+}
+
+function waitForChildExit(child, timeoutMs) {
+	if (child.exitCode !== null || child.signalCode !== null)
+		return Promise.resolve(true);
+
+	return new Promise(resolveExit => {
+		const timeout = setTimeout(() => {
+			child.off("exit", onExit);
+			resolveExit(false);
+		}, timeoutMs);
+
+		function onExit() {
+			clearTimeout(timeout);
+			resolveExit(true);
+		}
+
+		child.once("exit", onExit);
+	});
+}
+
+async function stopFrontend(child) {
+	if (child.exitCode !== null || child.signalCode !== null)
+		return;
+
+	function signalChild(signal) {
+		if (process.platform !== "win32" && child.pid) {
+			try {
+				process.kill(-child.pid, signal);
+				return;
+			}
+			catch {
+				// Fall back to the direct child if process-group signaling is unavailable.
+			}
+		}
+
+		child.kill(signal);
+	}
+
+	signalChild("SIGTERM");
+
+	if (await waitForChildExit(child, 5_000))
+		return;
+
+	signalChild("SIGKILL");
+	await waitForChildExit(child, 2_000);
 }
 
 function closeServer(server) {
@@ -658,6 +705,6 @@ try {
 }
 finally {
 	if (browser) await browser.close();
-	frontendProcess.kill("SIGTERM");
+	await stopFrontend(frontendProcess);
 	await closeServer(apiServer);
 }

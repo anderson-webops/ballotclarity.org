@@ -54,10 +54,10 @@ Generated artifacts:
 - `back-end/data/reviewed/fulton-county-2026-general.official-logistics-only.json`
 - `back-end/data/reviewed/fulton-county-2026-general.official-logistics-only.json.meta.json`
 
-The export validates that no staged/reference candidate names remain in the reviewed artifact and that production-approved
-metadata cannot be paired with mixed or staged guide content. The reviewed Fulton export intentionally keeps the guide in
-official-logistics-only mode: official election resources are published, while verified contest, candidate, and measure
-records remain unavailable.
+The export validates that no staged/reference candidate names remain in the reviewed artifact and that reviewed or
+production-approved metadata cannot be paired with mixed, seeded, or staged guide content. The reviewed Fulton export
+intentionally keeps the guide in official-logistics-only mode: official election resources are published, while verified
+contest, candidate, and measure records remain unavailable.
 
 Ops handoff:
 

@@ -128,6 +128,39 @@ test("production-approved validation rejects mixed or staged guide content", () 
 	assert.ok(validation.errors.some(error => /staged_reference guide layers/i.test(error)));
 });
 
+test("reviewed validation rejects reference archive names even when staged content is allowed for diagnostics", () => {
+	const validation = validateCoverageSnapshotForPublication(
+		buildSeedCoverageSnapshot(),
+		approvedMetadata({
+			approvedAt: undefined,
+			status: "reviewed",
+		}),
+		{
+			allowStagedReferenceContent: true,
+		},
+	);
+
+	assert.equal(validation.ok, false);
+	assert.ok(validation.referenceArchiveMatches.some(match => match.name === "Elena Torres"));
+	assert.ok(validation.errors.some(error => /staged\/reference candidate names/i.test(error)));
+	assert.equal(validation.warnings.some(warning => /staged\/reference candidate names/i.test(warning)), false);
+});
+
+test("reviewed validation rejects mixed or staged guide content", () => {
+	const validation = validateCoverageSnapshotForPublication(
+		buildSeedCoverageSnapshot(),
+		approvedMetadata({
+			approvedAt: undefined,
+			status: "reviewed",
+		}),
+	);
+
+	assert.equal(validation.ok, false);
+	assert.ok(validation.guideContent.some(content => content.mixedContent));
+	assert.ok(validation.errors.some(error => /mixedContent=true/i.test(error)));
+	assert.ok(validation.errors.some(error => /seeded_demo or staged_reference guide layers/i.test(error)));
+});
+
 test("production-approved validation permits an approved official-logistics-only package with no staged content", () => {
 	const snapshot = buildFultonOfficialLogisticsOnlySnapshot();
 	const validation = validateCoverageSnapshotForPublication(snapshot, approvedMetadata());

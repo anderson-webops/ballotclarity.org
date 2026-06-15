@@ -461,7 +461,7 @@ Local stack notes:
 
 1. Normalize upstream civic data into the snapshot shape used by `back-end/src/coverage-repository.ts`.
 2. Attach a metadata sidecar at `<snapshot>.meta.json` with `status`, `sourceType`, `sourceLabel`, and review or approval timestamps.
-3. Validate that production-approved snapshots do not contain seeded, staged-reference, or mixed guide content.
+3. Validate that reviewed and production-approved snapshots do not contain seeded, staged-reference, or mixed guide content.
 4. Promote the candidate snapshot with `npm run -w back-end manage:coverage -- promote --from <candidate-snapshot.json> --target "$LIVE_COVERAGE_FILE"`.
 5. Verify `/health`, `/api/coverage`, `/api/status`, `/api/elections`, `/api/guide-packages/:id`, `/ballot/:slug`, and a representative lookup after restart or reload.
 6. Keep the public response contracts stable in the backend so the Nuxt composables and pages do not need to change.

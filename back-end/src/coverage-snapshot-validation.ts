@@ -133,25 +133,25 @@ export function validateCoverageSnapshotForPublication(
 		const matchedNames = Array.from(new Set(referenceArchiveMatches.map(match => match.name))).join(", ");
 		const message = `Snapshot contains staged/reference candidate names: ${matchedNames}.`;
 
-		if (metadata.status === "production_approved" || !options.allowStagedReferenceContent)
+		if (isReviewedOrApproved || !options.allowStagedReferenceContent)
 			errors.push(message);
 		else
 			warnings.push(message);
 	}
 
 	for (const content of guideContent) {
-		if (metadata.status !== "production_approved")
+		if (!isReviewedOrApproved)
 			continue;
 
 		if (content.mixedContent)
-			errors.push("production_approved snapshots cannot have guideContent.mixedContent=true.");
+			errors.push(`${metadata.status} snapshots cannot have guideContent.mixedContent=true.`);
 
 		const stagedLayers = layerStatuses(content)
-			.filter(layer => layer.hasContent && layer.status === "staged_reference")
-			.map(layer => layer.label);
+			.filter(layer => layer.hasContent && (layer.status === "seeded_demo" || layer.status === "staged_reference"))
+			.map(layer => `${layer.label} (${layer.status})`);
 
 		if (stagedLayers.length)
-			errors.push(`production_approved snapshots cannot include staged_reference guide layers: ${stagedLayers.join(", ")}.`);
+			errors.push(`${metadata.status} snapshots cannot include seeded_demo or staged_reference guide layers: ${stagedLayers.join(", ")}.`);
 	}
 
 	return {

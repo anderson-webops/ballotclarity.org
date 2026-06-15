@@ -507,6 +507,9 @@ async function waitForUrl(url: string, label: string) {
 }
 
 function waitForChildExit(processHandle: ChildProcessWithoutNullStreams, timeoutMs: number) {
+	if (processHandle.exitCode !== null || processHandle.signalCode !== null)
+		return Promise.resolve(true);
+
 	return new Promise<boolean>((resolve) => {
 		const cleanup = () => {
 			clearTimeout(timeout);
@@ -518,7 +521,7 @@ function waitForChildExit(processHandle: ChildProcessWithoutNullStreams, timeout
 		};
 		const timeout = setTimeout(() => {
 			cleanup();
-			resolve(false);
+			resolve(processHandle.exitCode !== null || processHandle.signalCode !== null);
 		}, timeoutMs);
 
 		timeout.unref();

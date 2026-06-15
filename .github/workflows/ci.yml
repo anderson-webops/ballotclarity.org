@@ -157,3 +157,6 @@ jobs:
 
       - name: Build
         run: npm run build
+
+      - name: Analytics bundle verification
+        run: npm run verify:analytics

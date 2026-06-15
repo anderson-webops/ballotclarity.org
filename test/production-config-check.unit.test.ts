@@ -127,7 +127,10 @@ function buildProductionEnv(overrides: Record<string, string | undefined> = {}) 
 		LIVE_COVERAGE_FILE: writeSnapshot(),
 		LIVE_COVERAGE_REQUIRED: "true",
 		NUXT_PUBLIC_API_BASE: "https://ballotclarity.org/api/",
+		NUXT_PUBLIC_GOVERNING_LAW: "State of Georgia",
+		NUXT_PUBLIC_OPERATOR_LEGAL_NAME: "Jacob Anderson",
 		NUXT_PUBLIC_SITE_URL: "https://ballotclarity.org",
+		NUXT_PUBLIC_VENUE: "state or federal courts located in Georgia",
 		PUBLIC_FEEDBACK_RATE_LIMIT_MAX: "5",
 		PUBLIC_FEEDBACK_RATE_LIMIT_WINDOW_MS: "600000",
 		PUBLIC_LOOKUP_RATE_LIMIT_MAX: "60",
@@ -220,6 +223,43 @@ test("production config check fails missing or weak protected contact configurat
 	assert.equal(invalidEvaluation.ok, false);
 	assert.ok(issueIds(invalidEvaluation, "errors").includes("contact_address.invalid"));
 	assert.ok(issueIds(invalidEvaluation, "errors").includes("contact_address_session_secret.weak"));
+
+	const placeholderEvaluation = evaluateProductionConfig({
+		env: buildProductionEnv({
+			CONTACT_ADDRESS: "reader@example.com",
+		}),
+	});
+
+	assert.equal(placeholderEvaluation.ok, false);
+	assert.ok(issueIds(placeholderEvaluation, "errors").includes("contact_address.placeholder"));
+});
+
+test("production config check fails missing or placeholder public legal policy configuration", () => {
+	const missingEvaluation = evaluateProductionConfig({
+		env: buildProductionEnv({
+			NUXT_PUBLIC_GOVERNING_LAW: "",
+			NUXT_PUBLIC_OPERATOR_LEGAL_NAME: "",
+			NUXT_PUBLIC_VENUE: "",
+		}),
+	});
+
+	assert.equal(missingEvaluation.ok, false);
+	assert.ok(issueIds(missingEvaluation, "errors").includes("nuxt_public_operator_legal_name.missing"));
+	assert.ok(issueIds(missingEvaluation, "errors").includes("nuxt_public_governing_law.missing"));
+	assert.ok(issueIds(missingEvaluation, "errors").includes("nuxt_public_venue.missing"));
+
+	const placeholderEvaluation = evaluateProductionConfig({
+		env: buildProductionEnv({
+			NUXT_PUBLIC_GOVERNING_LAW: "TBD",
+			NUXT_PUBLIC_OPERATOR_LEGAL_NAME: "Example Operator",
+			NUXT_PUBLIC_VENUE: "replace with venue",
+		}),
+	});
+
+	assert.equal(placeholderEvaluation.ok, false);
+	assert.ok(issueIds(placeholderEvaluation, "errors").includes("nuxt_public_operator_legal_name.placeholder"));
+	assert.ok(issueIds(placeholderEvaluation, "errors").includes("nuxt_public_governing_law.placeholder"));
+	assert.ok(issueIds(placeholderEvaluation, "errors").includes("nuxt_public_venue.placeholder"));
 });
 
 test("production config check fails invalid throttle values", () => {

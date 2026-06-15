@@ -17,6 +17,7 @@ const weakSecretValues = new Set([
 ]);
 const emailAddressPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/u;
 const weakSecretPattern = /(?:example|placeholder|replace[-_ ]?with)/iu;
+const weakPublicTextPattern = /(?:example|placeholder|replace[-_ ]?with|tbd|todo|coming soon)/iu;
 const referenceArchiveCandidateNames = [
 	"Elena Torres",
 	"Daniel Brooks",
@@ -183,6 +184,39 @@ function checkContactAddress({ errors, value }) {
 			"error",
 			"contact_address.invalid",
 			"CONTACT_ADDRESS or NUXT_CONTACT_ADDRESS must be a single valid email address.",
+		));
+		return;
+	}
+
+	const domain = raw.split("@").pop() || "";
+
+	if (isPlaceholderOrInternalHostname(domain)) {
+		errors.push(issue(
+			"error",
+			"contact_address.placeholder",
+			"CONTACT_ADDRESS or NUXT_CONTACT_ADDRESS must not use a placeholder or internal email domain.",
+		));
+	}
+}
+
+function checkRequiredPublicText({ errors, key, label, value }) {
+	const raw = normalize(value);
+	const normalizedKey = key.toLowerCase();
+
+	if (!raw) {
+		errors.push(issue(
+			"error",
+			`${normalizedKey}.missing`,
+			`${key} is required for production ${label}.`,
+		));
+		return;
+	}
+
+	if (weakPublicTextPattern.test(raw)) {
+		errors.push(issue(
+			"error",
+			`${normalizedKey}.placeholder`,
+			`${key} must not use placeholder public policy text in production.`,
 		));
 	}
 }
@@ -631,6 +665,24 @@ export function evaluateProductionConfig({
 	checkContactAddress({
 		errors,
 		value: env.CONTACT_ADDRESS || env.NUXT_CONTACT_ADDRESS,
+	});
+	checkRequiredPublicText({
+		errors,
+		key: "NUXT_PUBLIC_OPERATOR_LEGAL_NAME",
+		label: "Terms and Privacy operator-name copy",
+		value: env.NUXT_PUBLIC_OPERATOR_LEGAL_NAME,
+	});
+	checkRequiredPublicText({
+		errors,
+		key: "NUXT_PUBLIC_GOVERNING_LAW",
+		label: "Terms governing-law copy",
+		value: env.NUXT_PUBLIC_GOVERNING_LAW,
+	});
+	checkRequiredPublicText({
+		errors,
+		key: "NUXT_PUBLIC_VENUE",
+		label: "Terms venue copy",
+		value: env.NUXT_PUBLIC_VENUE,
 	});
 	checkPositiveInteger({
 		errors,

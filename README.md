@@ -423,6 +423,7 @@ These endpoints live on the Express service, but they are intended to be reached
 
 - Set `NUXT_PUBLIC_SITE_URL` to the final public origin so metadata, schema, and canonical URLs match the deployed domain.
 - Set `NUXT_PUBLIC_API_BASE` to the public API origin used by the browser.
+- Set `NUXT_PUBLIC_OPERATOR_LEGAL_NAME`, `NUXT_PUBLIC_GOVERNING_LAW`, and `NUXT_PUBLIC_VENUE` so the public Terms and Privacy pages publish explicit production policy details instead of relying on defaults.
 - Set `ADMIN_API_BASE` to the server-side admin API origin the Nuxt server can reach privately.
 - Set `ADMIN_API_KEY` and `ADMIN_SESSION_SECRET` in the server environments only.
 - Set `CONTACT_ADDRESS` and `CONTACT_ADDRESS_SESSION_SECRET` so the public contact route does not fall back to built-in local-development defaults.
@@ -471,7 +472,7 @@ Local stack notes:
 ## Server-side provisioning after merge
 
 1. Provision separate public and admin-capable server environments for the Nuxt front end and Express API.
-2. Set `NUXT_PUBLIC_SITE_URL`, `NUXT_PUBLIC_API_BASE`, `ADMIN_API_BASE`, `ADMIN_API_KEY`, `ADMIN_SESSION_SECRET`, `CONTACT_ADDRESS`, `CONTACT_ADDRESS_SESSION_SECRET`, and either `ADMIN_DATABASE_URL` or `ADMIN_DB_PATH`.
+2. Set `NUXT_PUBLIC_SITE_URL`, `NUXT_PUBLIC_API_BASE`, `NUXT_PUBLIC_OPERATOR_LEGAL_NAME`, `NUXT_PUBLIC_GOVERNING_LAW`, `NUXT_PUBLIC_VENUE`, `ADMIN_API_BASE`, `ADMIN_API_KEY`, `ADMIN_SESSION_SECRET`, `CONTACT_ADDRESS`, `CONTACT_ADDRESS_SESSION_SECRET`, and either `ADMIN_DATABASE_URL` or `ADMIN_DB_PATH`.
 3. Choose the admin store mode:
    Set `ADMIN_STORE_DRIVER=postgres` plus `ADMIN_DATABASE_URL` for managed Postgres. Use SQLite only if there is a deliberate single-instance fallback reason, and then create the directory that will hold the SQLite file referenced by `ADMIN_DB_PATH`, with backup and restore procedures in place.
 4. Run `npm run bootstrap-admin` once to create the first persisted admin account.

@@ -2,7 +2,9 @@
 import { analyticsTrackers, appName } from "~/constants";
 
 const effectiveAt = "2026-06-12T00:00:00-04:00";
+const runtimeConfig = useRuntimeConfig();
 const siteUrl = useSiteUrl();
+const currentOperatorName = String(runtimeConfig.public.operatorLegalName || "Jacob Anderson").trim();
 const analyticsHostList = analyticsTrackers.map(tracker => tracker.domain);
 const analyticsHosts = analyticsHostList.join(" and ");
 const analyticsScriptDisclosure = analyticsHostList.length === 1
@@ -224,7 +226,7 @@ usePageSeo({
 				Privacy Policy
 			</h1>
 			<p class="text-base text-app-muted leading-8 mt-5 max-w-3xl dark:text-app-muted-dark">
-				This policy describes how {{ appName }} handles address lookup input, any optional approximate location-guessing configured for the site, browser-stored guide preferences, hosted contact or correction submissions, operational metadata, and direct contact messages. It applies to the public site at {{ siteUrl }}, not to any future product that collects more data than the current public site collects.
+				This policy describes how {{ appName }}, currently operated by {{ currentOperatorName }}, handles address lookup input, any optional approximate location-guessing configured for the site, browser-stored guide preferences, hosted contact or correction submissions, operational metadata, and direct contact messages. It applies to the public site at {{ siteUrl }}, not to any future product that collects more data than the current public site collects.
 			</p>
 			<div class="mt-5">
 				<UpdatedAt label="Effective" :value="effectiveAt" />

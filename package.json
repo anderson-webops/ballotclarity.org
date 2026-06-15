@@ -59,7 +59,7 @@
 		"lint-fix": "npm run -w front-end lint-fix && npm run -w back-end lint-fix",
 		"typecheck": "npm run -w front-end typecheck && npm run -w back-end typecheck",
 		"clean": "rm -rf node_modules package-lock.json front-end/.nuxt front-end/.output front-end/node_modules front-end/package-lock.json back-end/dist back-end/node_modules back-end/package-lock.json",
-		"a11y": "node scripts/a11y-smoke.mjs"
+		"a11y": "tsx scripts/a11y-smoke.mjs"
 	},
 	"devDependencies": {
 		"@antfu/eslint-config": "^8.3.0",

@@ -6,6 +6,7 @@ import { dirname, resolve } from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
 import puppeteer from "puppeteer";
+import { buildFultonOfficialLogisticsOnlySnapshot } from "../back-end/src/fulton-reviewed-coverage.js";
 
 const require = createRequire(import.meta.url);
 const axeSourcePath = require.resolve("axe-core/axe.min.js");
@@ -24,6 +25,9 @@ const baseUrl = `http://127.0.0.1:${frontendPort}`;
 const apiUrl = `http://127.0.0.1:${apiPort}/api`;
 const routes = [
 	"/",
+	"/ballot/2026-fulton-county-general",
+	"/elections/2026-fulton-county-general",
+	"/locations/fulton-county-georgia",
 	"/results",
 	"/coverage",
 	"/status",
@@ -41,6 +45,8 @@ const routes = [
 	"/privacy",
 	"/terms",
 	"/contact",
+	"/plan",
+	"/compare",
 	"/search"
 ];
 const colorSchemes = (process.env.A11Y_COLOR_SCHEMES || "light,dark")
@@ -62,6 +68,10 @@ const chromePath = chromeCandidates.find(candidate => existsSync(candidate));
 if (chromePath) process.env.PUPPETEER_EXECUTABLE_PATH = chromePath;
 
 const updatedAt = "2026-06-12T12:00:00.000Z";
+const reviewedSnapshot = buildFultonOfficialLogisticsOnlySnapshot(updatedAt);
+const reviewedElection = reviewedSnapshot.election;
+const reviewedJurisdiction = reviewedSnapshot.jurisdiction;
+const reviewedLocation = reviewedSnapshot.location;
 
 const mockLaunchTarget = {
 	currentElectionDate: "2026-11-03",
@@ -220,6 +230,50 @@ const mockSource = {
 	usedFor: "Final ballot, registration, polling-place, and deadline verification."
 };
 
+const mockDistrictSummary = {
+	candidateCount: 0,
+	href: "/districts/us-house-district-7",
+	jurisdiction: "Federal",
+	office: "U.S. Representative",
+	representativeCount: 1,
+	slug: "us-house-district-7",
+	summary: "U.S. House district context for the a11y smoke fixture.",
+	title: "U.S. House District 7",
+	updatedAt
+};
+
+const mockRepresentativeSummary = {
+	ballotStatusLabel: "Incumbent",
+	districtLabel: "Georgia's 7th Congressional District",
+	districtSlug: mockDistrictSummary.slug,
+	fundingAvailable: true,
+	fundingSummary: "Federal campaign-finance context is available where provider matching succeeds.",
+	governmentLevel: "federal",
+	href: "/representatives/jon-ossoff",
+	incumbent: true,
+	influenceAvailable: true,
+	influenceSummary: "Federal disclosure context is available where provider matching succeeds.",
+	location: "Georgia",
+	name: "Jon Ossoff",
+	officeDisplayLabel: "U.S. Senator for Georgia",
+	officeSought: "U.S. Senator",
+	officeType: "us_senate",
+	officeholderLabel: "Senator",
+	onCurrentBallot: false,
+	openstatesUrl: "https://openstates.org/person/jon-ossoff/",
+	party: "Democratic",
+	provenance: {
+		label: "Matched from public official records",
+		note: "A11y fixture representative record.",
+		status: "direct"
+	},
+	slug: "jon-ossoff",
+	sourceCount: 1,
+	sources: [mockSource],
+	summary: "Current federal representative context shown for accessibility validation.",
+	updatedAt
+};
+
 const mockDataSources = {
 	architectureStages: [
 		{
@@ -376,12 +430,41 @@ function emptyCollection() {
 function responseFor(url) {
 	const pathname = url.pathname.replace(/\/+/g, "/");
 	const apiPathname = pathname.startsWith("/api/") ? pathname.slice(4) : pathname;
+	if (apiPathname === "/ballot" && reviewedElection && reviewedLocation) {
+		return {
+			election: reviewedElection,
+			guideContent: mockGuideContent,
+			location: reviewedLocation,
+			note: `${mockGuideContent.summary} Verify official election logistics with the linked election office.`,
+			updatedAt: reviewedElection.updatedAt
+		};
+	}
 	if (apiPathname === "/coverage") return mockCoverage;
 	if (apiPathname === "/status") return mockStatus;
 	if (apiPathname === "/corrections") return mockCorrections;
 	if (apiPathname === "/data-sources") return mockDataSources;
 	if (apiPathname === "/sources") return { sources: [mockSource], updatedAt };
 	if (apiPathname === `/sources/${mockSource.id}`) return { source: mockSource, updatedAt };
+	if (apiPathname === "/elections") return { elections: reviewedSnapshot.electionSummaries };
+	if (apiPathname === "/jurisdictions") return { jurisdictions: reviewedSnapshot.jurisdictionSummaries };
+	if (reviewedJurisdiction && apiPathname === `/jurisdictions/${reviewedJurisdiction.slug}`) return reviewedJurisdiction;
+	if (apiPathname === "/districts") {
+		return {
+			districts: [mockDistrictSummary],
+			mode: "guide",
+			note: "A11y smoke fixture district directory.",
+			updatedAt
+		};
+	}
+	if (apiPathname === "/representatives") {
+		return {
+			districts: [mockDistrictSummary],
+			mode: "guide",
+			note: "A11y smoke fixture representative directory.",
+			representatives: [mockRepresentativeSummary],
+			updatedAt
+		};
+	}
 	if (apiPathname.endsWith("/pageview")) return { pageview: 0, startAt: Date.now() };
 	if (apiPathname.includes("/session")) return { authenticated: false, user: null, admin: null };
 	if (apiPathname.includes("/auth") || apiPathname.includes("/login")) return { authenticated: false, user: null, token: "" };
@@ -400,7 +483,7 @@ function responseFor(url) {
 	if (apiPathname.includes("/service-directory")) return { services: [], categories: [], ...emptyCollection() };
 	if (apiPathname.includes("/elections")) return { elections: [], ...emptyCollection() };
 	if (apiPathname.includes("/jurisdictions") || apiPathname.includes("/locations") || apiPathname.includes("/districts")) return { jurisdictions: [], locations: [], districts: [], ...emptyCollection() };
-	if (apiPathname.includes("/representatives") || apiPathname.includes("/candidate")) return { representatives: [], candidates: [], ...emptyCollection() };
+	if (apiPathname.includes("/representatives") || apiPathname.includes("/candidate")) return { representatives: [], candidates: [], districts: [], ...emptyCollection() };
 	if (apiPathname.includes("/sources")) return { sources: [], ...emptyCollection() };
 	if (apiPathname.includes("/products")) return [];
 	if (apiPathname.includes("/contact") || apiPathname.includes("/cart") || apiPathname.includes("/orders")) return { ok: true };

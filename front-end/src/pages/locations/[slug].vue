@@ -154,9 +154,9 @@ usePageSeo({
 						<dd class="text-xl text-app-ink font-semibold mt-3 dark:text-app-text-dark">
 							{{ registrationDeadline ? formatDate(registrationDeadline.date) : "See election calendar" }}
 						</dd>
-						<p class="text-sm text-app-muted mt-3 dark:text-app-muted-dark">
+						<dd class="text-sm text-app-muted mt-3 dark:text-app-muted-dark">
 							{{ registrationDeadline?.note || "Review the official calendar for late updates." }}
-						</p>
+						</dd>
 					</div>
 					<div>
 						<dt class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
@@ -165,9 +165,9 @@ usePageSeo({
 						<dd class="text-xl text-app-ink font-semibold mt-3 dark:text-app-text-dark">
 							{{ earlyVotingDate ? formatDate(earlyVotingDate.date) : "Check office updates" }}
 						</dd>
-						<p class="text-sm text-app-muted mt-3 dark:text-app-muted-dark">
+						<dd class="text-sm text-app-muted mt-3 dark:text-app-muted-dark">
 							{{ earlyVotingDate?.note || "County schedules may vary by site and day." }}
-						</p>
+						</dd>
 					</div>
 				</dl>
 			</section>

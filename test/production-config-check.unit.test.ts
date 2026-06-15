@@ -10,10 +10,91 @@ import {
 	formatProductionConfigEvaluation,
 } from "../scripts/production-config-check.mjs";
 
+function buildMinimalCoverageSnapshot(overrides: Record<string, unknown> = {}) {
+	const updatedAt = "2026-04-19T19:36:50.252Z";
+	const electionSlug = "2026-fulton-county-general";
+	const jurisdictionSlug = "fulton-county-georgia";
+	const officialResources = [
+		{
+			label: "Georgia My Voter Page",
+			url: "https://mvp.sos.ga.gov/s/",
+		},
+	];
+
+	return {
+		candidates: [],
+		dataSources: {
+			categories: [
+				{
+					slug: "official-election-resources",
+					summary: "Official election resources attached for public verification.",
+					title: "Official election resources",
+				},
+			],
+			launchTarget: {
+				displayName: "Fulton County, Georgia",
+				name: "Fulton County",
+				officialResources,
+				slug: jurisdictionSlug,
+				state: "Georgia",
+			},
+			updatedAt,
+		},
+		election: {
+			contests: [],
+			date: "2026-11-03",
+			jurisdictionSlug,
+			locationName: "Fulton County, Georgia",
+			name: "November 3, 2026 Fulton County election guide",
+			officialResources,
+			slug: electionSlug,
+			updatedAt,
+		},
+		electionSummaries: [
+			{
+				date: "2026-11-03",
+				jurisdictionSlug,
+				locationName: "Fulton County, Georgia",
+				name: "November 3, 2026 Fulton County election guide",
+				slug: electionSlug,
+				updatedAt,
+			},
+		],
+		jurisdiction: {
+			displayName: "Fulton County, Georgia",
+			jurisdictionType: "County",
+			officialResources,
+			slug: jurisdictionSlug,
+			state: "Georgia",
+			updatedAt,
+		},
+		jurisdictionSummaries: [
+			{
+				displayName: "Fulton County, Georgia",
+				jurisdictionType: "County",
+				name: "Fulton County",
+				slug: jurisdictionSlug,
+				state: "Georgia",
+				updatedAt,
+			},
+		],
+		location: {
+			displayName: "Fulton County, Georgia",
+			lookupMode: "address-verified",
+			slug: jurisdictionSlug,
+			state: "Georgia",
+		},
+		measures: [],
+		sources: [],
+		updatedAt,
+		...overrides,
+	};
+}
+
 function writeSnapshot(
 	status = "production_approved",
 	overrides: Record<string, unknown> = {},
-	payload: Record<string, unknown> = { updatedAt: "2026-04-19T19:36:50.252Z" },
+	payload: Record<string, unknown> = buildMinimalCoverageSnapshot(),
 ) {
 	const root = join(tmpdir(), `ballot-clarity-prod-check-${randomUUID()}`);
 	const snapshotPath = join(root, "live-coverage.active.json");
@@ -269,10 +350,23 @@ test("production config check requires approvedAt for production-approved snapsh
 	assert.ok(issueIds(evaluation, "errors").includes("live_coverage.approved_at"));
 });
 
-test("production config check rejects approved snapshots with reference or staged guide content", () => {
+test("production config check rejects skeletal production snapshots without public coverage shape", () => {
 	const evaluation = evaluateProductionConfig({
 		env: buildProductionEnv({
 			LIVE_COVERAGE_FILE: writeSnapshot("production_approved", {}, {
+				updatedAt: "2026-04-19T19:36:50.252Z",
+			}),
+		}),
+	});
+
+	assert.equal(evaluation.ok, false);
+	assert.ok(issueIds(evaluation, "errors").includes("live_coverage.snapshot_public_shape"));
+});
+
+test("production config check rejects approved snapshots with reference or staged guide content", () => {
+	const evaluation = evaluateProductionConfig({
+		env: buildProductionEnv({
+			LIVE_COVERAGE_FILE: writeSnapshot("production_approved", {}, buildMinimalCoverageSnapshot({
 				contentStatus: {
 					contests: {
 						hasContent: true,
@@ -286,7 +380,7 @@ test("production config check rejects approved snapshots with reference or stage
 					},
 				],
 				updatedAt: "2026-04-19T19:36:50.252Z",
-			}),
+			})),
 		}),
 	});
 
@@ -299,7 +393,7 @@ test("production config check rejects approved snapshots with reference or stage
 test("production config check rejects reviewed snapshots with reference or staged guide content", () => {
 	const evaluation = evaluateProductionConfig({
 		env: buildProductionEnv({
-			LIVE_COVERAGE_FILE: writeSnapshot("reviewed", {}, {
+			LIVE_COVERAGE_FILE: writeSnapshot("reviewed", {}, buildMinimalCoverageSnapshot({
 				contentStatus: {
 					candidates: {
 						hasContent: true,
@@ -313,7 +407,7 @@ test("production config check rejects reviewed snapshots with reference or stage
 					},
 				],
 				updatedAt: "2026-04-19T19:36:50.252Z",
-			}),
+			})),
 		}),
 	});
 

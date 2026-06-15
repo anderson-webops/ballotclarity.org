@@ -1,6 +1,6 @@
 import { spawnSync } from "node:child_process";
 import { randomBytes, randomUUID } from "node:crypto";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -28,9 +28,14 @@ const snapshotPath = join(root, "live-coverage.active.json");
 const envPath = join(root, "production.env");
 
 try {
-	writeJson(snapshotPath, {
-		updatedAt: "2026-04-19T19:36:50.252Z",
-	});
+	const reviewedSnapshotPath = join(
+		repoRoot,
+		"back-end",
+		"data",
+		"reviewed",
+		"fulton-county-2026-general.official-logistics-only.json",
+	);
+	writeJson(snapshotPath, JSON.parse(readFileSync(reviewedSnapshotPath, "utf8")));
 	writeJson(`${snapshotPath}.meta.json`, {
 		approvedAt: "2026-04-19T19:36:50.252Z",
 		importedAt: "2026-04-19T19:36:50.252Z",

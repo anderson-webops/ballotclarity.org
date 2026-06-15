@@ -209,6 +209,14 @@ function warnWhenSetWithoutPair({ key, pairKey, value, pairValue, warnings }) {
 	));
 }
 
+function isRecord(value) {
+	return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function hasText(value) {
+	return normalize(value).length > 0;
+}
+
 function readSnapshotMetadata({ errors, fs, snapshotPath }) {
 	const metadataPath = `${snapshotPath}.meta.json`;
 
@@ -293,6 +301,116 @@ function findSnapshotContentIssues(value, path = "$") {
 	};
 }
 
+function hasOfficialResource(value) {
+	return Array.isArray(value) && value.some((item) => {
+		return isRecord(item) && hasText(item.url) && hasText(item.label || item.title || item.name);
+	});
+}
+
+function checkRequiredTextFields({ missingFields, object, path, fields }) {
+	for (const field of fields) {
+		if (!hasText(object?.[field]))
+			missingFields.push(`${path}.${field}`);
+	}
+}
+
+function checkSnapshotPublicShape({ errors, snapshot }) {
+	const missingFields = [];
+
+	if (!isRecord(snapshot)) {
+		errors.push(issue(
+			"error",
+			"live_coverage.snapshot_public_shape",
+			"Production coverage snapshot must be a JSON object with public coverage fields.",
+		));
+		return;
+	}
+
+	for (const field of ["candidates", "measures", "sources", "electionSummaries", "jurisdictionSummaries"]) {
+		if (!Array.isArray(snapshot[field]))
+			missingFields.push(`${field}[]`);
+	}
+
+	if (Array.isArray(snapshot.electionSummaries) && snapshot.electionSummaries.length === 0)
+		missingFields.push("electionSummaries[0]");
+
+	if (Array.isArray(snapshot.jurisdictionSummaries) && snapshot.jurisdictionSummaries.length === 0)
+		missingFields.push("jurisdictionSummaries[0]");
+
+	if (!hasText(snapshot.updatedAt))
+		missingFields.push("updatedAt");
+
+	if (!isRecord(snapshot.dataSources)) {
+		missingFields.push("dataSources");
+	}
+	else {
+		if (!Array.isArray(snapshot.dataSources.categories))
+			missingFields.push("dataSources.categories[]");
+		else if (snapshot.dataSources.categories.length === 0)
+			missingFields.push("dataSources.categories[0]");
+
+		if (!hasText(snapshot.dataSources.updatedAt))
+			missingFields.push("dataSources.updatedAt");
+	}
+
+	const election = snapshot.election;
+	if (!isRecord(election)) {
+		missingFields.push("election");
+	}
+	else {
+		checkRequiredTextFields({
+			fields: ["slug", "name", "date", "jurisdictionSlug", "locationName", "updatedAt"],
+			missingFields,
+			object: election,
+			path: "election",
+		});
+
+		if (!Array.isArray(election.contests))
+			missingFields.push("election.contests[]");
+	}
+
+	const jurisdiction = snapshot.jurisdiction;
+	if (!isRecord(jurisdiction)) {
+		missingFields.push("jurisdiction");
+	}
+	else {
+		checkRequiredTextFields({
+			fields: ["slug", "displayName", "state", "jurisdictionType", "updatedAt"],
+			missingFields,
+			object: jurisdiction,
+			path: "jurisdiction",
+		});
+	}
+
+	const location = snapshot.location;
+	if (!isRecord(location)) {
+		missingFields.push("location");
+	}
+	else {
+		checkRequiredTextFields({
+			fields: ["slug", "displayName", "state", "lookupMode"],
+			missingFields,
+			object: location,
+			path: "location",
+		});
+	}
+
+	const officialResourcesAvailable = hasOfficialResource(election?.officialResources)
+		|| hasOfficialResource(jurisdiction?.officialResources)
+		|| hasOfficialResource(snapshot.dataSources?.launchTarget?.officialResources);
+
+	if (!officialResourcesAvailable)
+		missingFields.push("officialResources");
+
+	if (missingFields.length) {
+		errors.push(issue(
+			"error",
+			"live_coverage.snapshot_public_shape",
+			`Production coverage snapshot is missing required public coverage fields: ${Array.from(new Set(missingFields)).join(", ")}.`,
+		));
+	}
+}
+
 function checkSnapshotMetadata({ errors, metadata, warnings }) {
 	const status = normalize(metadata?.status);
 	const sourceType = normalize(metadata?.sourceType);
@@ -351,6 +469,8 @@ function checkSnapshotPayload({ errors, metadata, snapshot }) {
 
 	if ((status !== "reviewed" && status !== "production_approved") || !snapshot)
 		return;
+
+	checkSnapshotPublicShape({ errors, snapshot });
 
 	const issues = findSnapshotContentIssues(snapshot);
 

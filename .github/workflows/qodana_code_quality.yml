@@ -21,7 +21,7 @@ jobs:
         if: env.QODANA_TOKEN == ''
         run: echo "QODANA_TOKEN is not configured; skipping Qodana."
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         if: env.QODANA_TOKEN != ''
         with:
           fetch-depth: 0

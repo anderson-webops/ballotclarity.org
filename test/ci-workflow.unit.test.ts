@@ -20,6 +20,18 @@ test("GitHub workflows cancel stale runs for the same branch or pull request", (
 	assertWorkflowCancelsStaleRuns(".github/workflows/qodana_code_quality.yml");
 });
 
+test("GitHub workflows use Node 24-compatible action majors", () => {
+	const workflows = [
+		readText(".github/workflows/ci.yml"),
+		readText(".github/workflows/qodana_code_quality.yml"),
+	].join("\n");
+
+	assert.doesNotMatch(workflows, /actions\/checkout@v4/);
+	assert.doesNotMatch(workflows, /actions\/setup-node@v4/);
+	assert.match(workflows, /actions\/checkout@v6/);
+	assert.match(workflows, /actions\/setup-node@v6/);
+});
+
 test("CI runs the repository security audit policy", () => {
 	const workflow = readText(".github/workflows/ci.yml");
 

@@ -9,6 +9,17 @@ function readText(path: string) {
 	return readFileSync(join(repoRoot, path), "utf8");
 }
 
+function assertWorkflowCancelsStaleRuns(path: string) {
+	const workflow = readText(path);
+
+	assert.match(workflow, /^concurrency:\n\s{2}group: \$\{\{ github\.workflow \}\}-\$\{\{ github\.event\.pull_request\.number \|\| github\.ref \}\}\n\s{2}cancel-in-progress: true/m);
+}
+
+test("GitHub workflows cancel stale runs for the same branch or pull request", () => {
+	assertWorkflowCancelsStaleRuns(".github/workflows/ci.yml");
+	assertWorkflowCancelsStaleRuns(".github/workflows/qodana_code_quality.yml");
+});
+
 test("CI runs the repository security audit policy", () => {
 	const workflow = readText(".github/workflows/ci.yml");
 

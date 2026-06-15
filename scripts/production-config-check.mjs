@@ -137,6 +137,21 @@ function checkContactAddress({ errors, value }) {
 	}
 }
 
+function checkPositiveInteger({ errors, key, value }) {
+	const raw = normalize(value);
+
+	if (!raw)
+		return;
+
+	if (!/^\d+$/u.test(raw) || Number(raw) < 1) {
+		errors.push(issue(
+			"error",
+			`${key.toLowerCase()}.invalid`,
+			`${key} must be a positive integer when set.`,
+		));
+	}
+}
+
 function readSnapshotMetadata({ errors, fs, snapshotPath }) {
 	const metadataPath = `${snapshotPath}.meta.json`;
 
@@ -270,6 +285,41 @@ export function evaluateProductionConfig({
 	checkContactAddress({
 		errors,
 		value: env.CONTACT_ADDRESS || env.NUXT_CONTACT_ADDRESS,
+	});
+	checkPositiveInteger({
+		errors,
+		key: "PUBLIC_FEEDBACK_RATE_LIMIT_WINDOW_MS",
+		value: env.PUBLIC_FEEDBACK_RATE_LIMIT_WINDOW_MS,
+	});
+	checkPositiveInteger({
+		errors,
+		key: "PUBLIC_FEEDBACK_RATE_LIMIT_MAX",
+		value: env.PUBLIC_FEEDBACK_RATE_LIMIT_MAX,
+	});
+	checkPositiveInteger({
+		errors,
+		key: "PUBLIC_LOOKUP_RATE_LIMIT_WINDOW_MS",
+		value: env.PUBLIC_LOOKUP_RATE_LIMIT_WINDOW_MS,
+	});
+	checkPositiveInteger({
+		errors,
+		key: "PUBLIC_LOOKUP_RATE_LIMIT_MAX",
+		value: env.PUBLIC_LOOKUP_RATE_LIMIT_MAX,
+	});
+	checkPositiveInteger({
+		errors,
+		key: "ADMIN_LOGIN_WINDOW_MS",
+		value: env.ADMIN_LOGIN_WINDOW_MS,
+	});
+	checkPositiveInteger({
+		errors,
+		key: "ADMIN_LOGIN_MAX_ATTEMPTS",
+		value: env.ADMIN_LOGIN_MAX_ATTEMPTS,
+	});
+	checkPositiveInteger({
+		errors,
+		key: "ADMIN_LOGIN_LOCKOUT_MS",
+		value: env.ADMIN_LOGIN_LOCKOUT_MS,
 	});
 
 	const adminStoreDriver = normalize(env.ADMIN_STORE_DRIVER).toLowerCase();

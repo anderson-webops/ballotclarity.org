@@ -205,14 +205,14 @@ Server-only variables:
 - `ADMIN_DATABASE_URL`: Postgres connection string for the admin and editorial operations store
 - `CONTACT_ADDRESS`: support email address returned by the protected `/api/contact-address` route after the same-origin nonce challenge succeeds
 - `CONTACT_ADDRESS_SESSION_SECRET`: server-only secret that signs short-lived protected-contact nonce sessions; use a dedicated value in production rather than reusing admin session secrets
-- `PUBLIC_FEEDBACK_RATE_LIMIT_WINDOW_MS`, `PUBLIC_FEEDBACK_RATE_LIMIT_MAX`: optional in-memory abuse controls for repeated public contact/correction form submissions from the same connection
-- `PUBLIC_LOOKUP_RATE_LIMIT_WINDOW_MS`, `PUBLIC_LOOKUP_RATE_LIMIT_MAX`: optional in-memory abuse controls for repeated public civic lookup requests from the same connection
+- `PUBLIC_FEEDBACK_RATE_LIMIT_WINDOW_MS`, `PUBLIC_FEEDBACK_RATE_LIMIT_MAX`: optional in-memory abuse controls for repeated public contact/correction form submissions from the same connection; values must be positive integers when set
+- `PUBLIC_LOOKUP_RATE_LIMIT_WINDOW_MS`, `PUBLIC_LOOKUP_RATE_LIMIT_MAX`: optional in-memory abuse controls for repeated public civic lookup requests from the same connection; values must be positive integers when set
 - `SOURCE_ASSET_BASE_URL`: optional public object-storage or CDN base URL for mirrored source files
 - `LIVE_COVERAGE_FILE`: path to the imported coverage snapshot consumed by the public API
 - `LIVE_COVERAGE_REQUIRED`: when `true`, fail startup if `LIVE_COVERAGE_FILE` is missing
 - `TRUST_PROXY`: set to `true` when Express is behind a reverse proxy so request IP and forwarded headers are trusted
 - `LOG_LEVEL`: structured backend log level, such as `info`, `warn`, or `error`
-- `ADMIN_LOGIN_WINDOW_MS`, `ADMIN_LOGIN_MAX_ATTEMPTS`, `ADMIN_LOGIN_LOCKOUT_MS`: admin login-throttle controls for the backend auth endpoint
+- `ADMIN_LOGIN_WINDOW_MS`, `ADMIN_LOGIN_MAX_ATTEMPTS`, `ADMIN_LOGIN_LOCKOUT_MS`: admin login-throttle controls for the backend auth endpoint; values must be positive integers when set
 - `GOOGLE_CIVIC_FORCE_IPV4`: when `true`, Google Civic requests prefer IPv4 egress so IPv4-restricted API keys work on hosts that otherwise default to IPv6
 - `OPENSTATES_FETCH_TIMEOUT_MS`: optional Open States request timeout in milliseconds for scheduled provider syncs
 - `CENSUS_GEOCODER_BENCHMARK`, `CENSUS_GEOCODER_VINTAGE`: optional overrides for reproducible Census geocoder lookups

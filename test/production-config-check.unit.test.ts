@@ -32,6 +32,9 @@ function buildProductionEnv(overrides: Record<string, string | undefined> = {}) 
 		ADMIN_API_BASE: "http://127.0.0.1:3001/api",
 		ADMIN_API_KEY: "a".repeat(48),
 		ADMIN_DATABASE_URL: "postgres://ballotclarity:secret@db.internal:5432/ballotclarity",
+		ADMIN_LOGIN_LOCKOUT_MS: "1800000",
+		ADMIN_LOGIN_MAX_ATTEMPTS: "5",
+		ADMIN_LOGIN_WINDOW_MS: "900000",
 		ADMIN_SESSION_SECRET: "b".repeat(48),
 		ADMIN_STORE_DRIVER: "postgres",
 		CONTACT_ADDRESS: "hello@ballotclarity.org",
@@ -40,6 +43,10 @@ function buildProductionEnv(overrides: Record<string, string | undefined> = {}) 
 		LIVE_COVERAGE_REQUIRED: "true",
 		NUXT_PUBLIC_API_BASE: "https://ballotclarity.org/api/",
 		NUXT_PUBLIC_SITE_URL: "https://ballotclarity.org",
+		PUBLIC_FEEDBACK_RATE_LIMIT_MAX: "5",
+		PUBLIC_FEEDBACK_RATE_LIMIT_WINDOW_MS: "600000",
+		PUBLIC_LOOKUP_RATE_LIMIT_MAX: "60",
+		PUBLIC_LOOKUP_RATE_LIMIT_WINDOW_MS: "600000",
 		SOURCE_ASSET_BASE_URL: "https://assets.ballotclarity.org/source-files",
 		TRUST_PROXY: "true",
 		...overrides,
@@ -115,6 +122,29 @@ test("production config check fails missing or weak protected contact configurat
 	assert.equal(invalidEvaluation.ok, false);
 	assert.ok(issueIds(invalidEvaluation, "errors").includes("contact_address.invalid"));
 	assert.ok(issueIds(invalidEvaluation, "errors").includes("contact_address_session_secret.weak"));
+});
+
+test("production config check fails invalid throttle values", () => {
+	const evaluation = evaluateProductionConfig({
+		env: buildProductionEnv({
+			ADMIN_LOGIN_LOCKOUT_MS: "-1000",
+			ADMIN_LOGIN_MAX_ATTEMPTS: "many",
+			ADMIN_LOGIN_WINDOW_MS: "0",
+			PUBLIC_FEEDBACK_RATE_LIMIT_MAX: "0",
+			PUBLIC_FEEDBACK_RATE_LIMIT_WINDOW_MS: "ten-minutes",
+			PUBLIC_LOOKUP_RATE_LIMIT_MAX: "60.5",
+			PUBLIC_LOOKUP_RATE_LIMIT_WINDOW_MS: "-1",
+		}),
+	});
+
+	assert.equal(evaluation.ok, false);
+	assert.ok(issueIds(evaluation, "errors").includes("admin_login_lockout_ms.invalid"));
+	assert.ok(issueIds(evaluation, "errors").includes("admin_login_max_attempts.invalid"));
+	assert.ok(issueIds(evaluation, "errors").includes("admin_login_window_ms.invalid"));
+	assert.ok(issueIds(evaluation, "errors").includes("public_feedback_rate_limit_max.invalid"));
+	assert.ok(issueIds(evaluation, "errors").includes("public_feedback_rate_limit_window_ms.invalid"));
+	assert.ok(issueIds(evaluation, "errors").includes("public_lookup_rate_limit_max.invalid"));
+	assert.ok(issueIds(evaluation, "errors").includes("public_lookup_rate_limit_window_ms.invalid"));
 });
 
 test("production config check fails missing live coverage and seed metadata", () => {

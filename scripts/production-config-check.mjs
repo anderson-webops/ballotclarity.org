@@ -132,6 +132,14 @@ function checkPublicUrl({ errors, key, pathRequired, value }) {
 	if (isLocalUrl(url))
 		errors.push(issue("error", `${key.toLowerCase()}.local`, `${key} must not point at localhost in production.`));
 
+	if (isPlaceholderOrInternalHostname(url.hostname)) {
+		errors.push(issue(
+			"error",
+			`${key.toLowerCase()}.placeholder`,
+			`${key} must not point at a placeholder or internal hostname in production.`,
+		));
+	}
+
 	if (pathRequired && !url.pathname.replace(/\/+$/u, "").endsWith(pathRequired)) {
 		errors.push(issue(
 			"error",
@@ -224,6 +232,14 @@ function checkOptionalHttpsUrl({ errors, key, value }) {
 			"error",
 			`${key.toLowerCase()}.local`,
 			`${key} must not point at localhost in production when set.`,
+		));
+	}
+
+	if (isPlaceholderOrInternalHostname(url.hostname)) {
+		errors.push(issue(
+			"error",
+			`${key.toLowerCase()}.placeholder`,
+			`${key} must not point at a placeholder or internal hostname in production when set.`,
 		));
 	}
 
@@ -765,6 +781,13 @@ export function evaluateProductionConfig({
 			"source_asset_base_url.missing",
 			"SOURCE_ASSET_BASE_URL is not set; mirrored source files will rely on bundled static assets.",
 		));
+	}
+	else {
+		checkOptionalHttpsUrl({
+			errors,
+			key: "SOURCE_ASSET_BASE_URL",
+			value: env.SOURCE_ASSET_BASE_URL,
+		});
 	}
 
 	if (!hasTruthyValue(env.TRUST_PROXY)) {

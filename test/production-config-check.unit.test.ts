@@ -168,6 +168,19 @@ test("production config check fails local public origins and public admin API ta
 	assert.ok(issueIds(evaluation, "errors").includes("admin_api_base.public_target"));
 });
 
+test("production config check fails placeholder public origins", () => {
+	const evaluation = evaluateProductionConfig({
+		env: buildProductionEnv({
+			NUXT_PUBLIC_API_BASE: "https://api.example.com/api",
+			NUXT_PUBLIC_SITE_URL: "https://example.com",
+		}),
+	});
+
+	assert.equal(evaluation.ok, false);
+	assert.ok(issueIds(evaluation, "errors").includes("nuxt_public_site_url.placeholder"));
+	assert.ok(issueIds(evaluation, "errors").includes("nuxt_public_api_base.placeholder"));
+});
+
 test("production config check fails sqlite admin persistence and weak secrets", () => {
 	const evaluation = evaluateProductionConfig({
 		env: buildProductionEnv({
@@ -240,7 +253,7 @@ test("production config check allows valid optional ballot-content provider endp
 			BALLOTREADY_API_KEY: "ballotready-key",
 			BALLOTREADY_API_URL: "https://bpi.civicengine.com/graphql",
 			CTCL_BIP_API_KEY: "ctcl-key",
-			CTCL_BIP_API_URL: "https://ctcl.example.org/bip",
+			CTCL_BIP_API_URL: "https://bip.techandciviclife.org/api",
 			DEMOCRACY_WORKS_API_BASE_URL: "https://api.democracy.works/v2",
 			DEMOCRACY_WORKS_API_KEY: "democracy-key",
 		}),
@@ -257,7 +270,8 @@ test("production config check fails unsafe optional ballot-content provider endp
 			BALLOTPEDIA_API_BASE_URL: "http://api4.ballotpedia.org/data",
 			BALLOTREADY_API_URL: "https://localhost:4000/graphql",
 			CTCL_BIP_API_URL: "not a url",
-			DEMOCRACY_WORKS_API_BASE_URL: "ftp://api.democracy.works/v2",
+			DEMOCRACY_WORKS_API_BASE_URL: "https://api.example.net/v2",
+			SOURCE_ASSET_BASE_URL: "https://assets.example.com/source-files",
 		}),
 	});
 
@@ -265,7 +279,9 @@ test("production config check fails unsafe optional ballot-content provider endp
 	assert.ok(issueIds(evaluation, "errors").includes("ctcl_bip_api_url.invalid"));
 	assert.ok(issueIds(evaluation, "errors").includes("ballotpedia_api_base_url.https"));
 	assert.ok(issueIds(evaluation, "errors").includes("ballotready_api_url.local"));
-	assert.ok(issueIds(evaluation, "errors").includes("democracy_works_api_base_url.https"));
+	assert.ok(issueIds(evaluation, "errors").includes("ballotready_api_url.placeholder"));
+	assert.ok(issueIds(evaluation, "errors").includes("democracy_works_api_base_url.placeholder"));
+	assert.ok(issueIds(evaluation, "errors").includes("source_asset_base_url.placeholder"));
 });
 
 test("production config check warns for one-sided ballot-content provider configuration", () => {

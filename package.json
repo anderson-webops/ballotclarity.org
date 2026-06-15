@@ -4,7 +4,7 @@
 	"version": "1.0.0",
 	"private": true,
 	"packageManager": "npm@11.7.0",
-	"description": "Monorepo for the Ballot Clarity civic-information MVP",
+	"description": "Monorepo for the Ballot Clarity civic-information service",
 	"author": "Jacob Anderson",
 	"license": "MIT",
 	"keywords": [],

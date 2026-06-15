@@ -40,3 +40,17 @@ test("repository public identity no longer reads as the starter template", () =>
 	assert.match(notice, /Vitesse Nuxt/);
 	assert.match(notice, /Anthony Fu/);
 });
+
+test("repository package descriptions no longer use pre-launch MVP framing", () => {
+	const packages = [
+		readJson("package.json"),
+		readJson("front-end/package.json"),
+		readJson("back-end/package.json"),
+	];
+
+	for (const pkg of packages) {
+		assert.equal(typeof pkg.description, "string");
+		assert.doesNotMatch(pkg.description, /\bMVP\b/i);
+		assert.match(pkg.description, /Ballot Clarity civic-information service/);
+	}
+});

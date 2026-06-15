@@ -2,7 +2,7 @@
 	"name": "back-end",
 	"version": "1.0.0",
 	"private": true,
-	"description": "Express API for the Ballot Clarity civic-information MVP",
+	"description": "Express API for the Ballot Clarity civic-information service",
 	"license": "MIT",
 	"type": "module",
 	"main": "dist/server.js",

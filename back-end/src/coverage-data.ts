@@ -2640,7 +2640,7 @@ const adminSourceMonitor: AdminSourceMonitorItem[] = [
 		lastCheckedAt: "2026-04-11T11:15:00.000Z",
 		nextCheckAt: "2026-04-11T23:15:00.000Z",
 		owner: "Election ops",
-		note: "Statewide pages are healthy, but the launch copy still needs final verification against the 2026 calendar summary and MVP flows."
+		note: "Statewide pages are healthy, but the launch copy still needs final verification against the 2026 calendar summary and Georgia My Voter Page flows."
 	},
 	{
 		id: "source-003",

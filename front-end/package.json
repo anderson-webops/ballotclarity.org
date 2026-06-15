@@ -1,7 +1,7 @@
 {
 	"name": "front-end",
 	"version": "1.0.0",
-	"description": "Nuxt front-end for the Ballot Clarity civic-information MVP",
+	"description": "Nuxt front-end for the Ballot Clarity civic-information service",
 	"author": "Jacob Anderson",
 	"keywords": [],
 	"license": "MIT",

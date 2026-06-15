@@ -10,11 +10,15 @@ import {
 	formatProductionConfigEvaluation,
 } from "../scripts/production-config-check.mjs";
 
-function writeSnapshot(status = "production_approved", overrides: Record<string, unknown> = {}) {
+function writeSnapshot(
+	status = "production_approved",
+	overrides: Record<string, unknown> = {},
+	payload: Record<string, unknown> = { updatedAt: "2026-04-19T19:36:50.252Z" },
+) {
 	const root = join(tmpdir(), `ballot-clarity-prod-check-${randomUUID()}`);
 	const snapshotPath = join(root, "live-coverage.active.json");
 	mkdirSync(root, { recursive: true });
-	writeFileSync(snapshotPath, JSON.stringify({ updatedAt: "2026-04-19T19:36:50.252Z" }), "utf8");
+	writeFileSync(snapshotPath, JSON.stringify(payload), "utf8");
 	writeFileSync(`${snapshotPath}.meta.json`, JSON.stringify({
 		approvedAt: status === "production_approved" ? "2026-04-19T19:36:50.252Z" : undefined,
 		importedAt: "2026-04-19T19:36:50.252Z",
@@ -263,4 +267,31 @@ test("production config check requires approvedAt for production-approved snapsh
 
 	assert.equal(evaluation.ok, false);
 	assert.ok(issueIds(evaluation, "errors").includes("live_coverage.approved_at"));
+});
+
+test("production config check rejects approved snapshots with reference or staged guide content", () => {
+	const evaluation = evaluateProductionConfig({
+		env: buildProductionEnv({
+			LIVE_COVERAGE_FILE: writeSnapshot("production_approved", {}, {
+				contentStatus: {
+					contests: {
+						hasContent: true,
+						status: "staged_reference",
+					},
+					mixedContent: true,
+				},
+				candidates: [
+					{
+						name: "Elena Torres",
+					},
+				],
+				updatedAt: "2026-04-19T19:36:50.252Z",
+			}),
+		}),
+	});
+
+	assert.equal(evaluation.ok, false);
+	assert.ok(issueIds(evaluation, "errors").includes("live_coverage.snapshot_reference_content"));
+	assert.ok(issueIds(evaluation, "errors").includes("live_coverage.snapshot_staged_content"));
+	assert.ok(issueIds(evaluation, "errors").includes("live_coverage.snapshot_mixed_content"));
 });

@@ -17,6 +17,16 @@ const weakSecretValues = new Set([
 ]);
 const emailAddressPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/u;
 const weakSecretPattern = /(?:example|placeholder|replace[-_ ]?with)/iu;
+const referenceArchiveCandidateNames = [
+	"Elena Torres",
+	"Daniel Brooks",
+	"Naomi Park",
+	"Thomas Bell",
+	"Alicia Greene",
+	"Marcus Hill",
+	"Sandra Patel",
+];
+const stagedGuideStatusValues = new Set(["seeded_demo", "staged_reference"]);
 
 function normalize(value) {
 	return String(value ?? "").trim();
@@ -224,6 +234,65 @@ function readSnapshotMetadata({ errors, fs, snapshotPath }) {
 	}
 }
 
+function readSnapshotPayload({ errors, fs, snapshotPath }) {
+	try {
+		return JSON.parse(fs.readFileSync(snapshotPath, "utf8"));
+	}
+	catch {
+		errors.push(issue(
+			"error",
+			"live_coverage.snapshot_invalid",
+			"LIVE_COVERAGE_FILE must be valid JSON.",
+		));
+		return null;
+	}
+}
+
+function findSnapshotContentIssues(value, path = "$") {
+	const referenceMatches = [];
+	const stagedStatusPaths = [];
+	const mixedContentPaths = [];
+
+	function visit(current, currentPath) {
+		if (typeof current === "string") {
+			for (const name of referenceArchiveCandidateNames) {
+				if (current.includes(name))
+					referenceMatches.push({ name, path: currentPath });
+			}
+
+			if (stagedGuideStatusValues.has(current))
+				stagedStatusPaths.push(currentPath);
+
+			return;
+		}
+
+		if (Array.isArray(current)) {
+			current.forEach((item, index) => visit(item, `${currentPath}[${index}]`));
+			return;
+		}
+
+		if (!current || typeof current !== "object")
+			return;
+
+		for (const [key, child] of Object.entries(current)) {
+			const childPath = `${currentPath}.${key}`;
+
+			if (key === "mixedContent" && child === true)
+				mixedContentPaths.push(childPath);
+
+			visit(child, childPath);
+		}
+	}
+
+	visit(value, path);
+
+	return {
+		mixedContentPaths,
+		referenceMatches,
+		stagedStatusPaths,
+	};
+}
+
 function checkSnapshotMetadata({ errors, metadata, warnings }) {
 	const status = normalize(metadata?.status);
 	const sourceType = normalize(metadata?.sourceType);
@@ -273,6 +342,38 @@ function checkSnapshotMetadata({ errors, metadata, warnings }) {
 			"warning",
 			"live_coverage.reviewed_not_approved",
 			"Coverage snapshot is reviewed but not production-approved; public copy must keep that editorial state visible.",
+		));
+	}
+}
+
+function checkSnapshotPayload({ errors, metadata, snapshot }) {
+	if (metadata?.status !== "production_approved" || !snapshot)
+		return;
+
+	const issues = findSnapshotContentIssues(snapshot);
+
+	if (issues.referenceMatches.length) {
+		const matchedNames = Array.from(new Set(issues.referenceMatches.map(match => match.name))).join(", ");
+		errors.push(issue(
+			"error",
+			"live_coverage.snapshot_reference_content",
+			`Production-approved coverage snapshot still contains staged/reference candidate names: ${matchedNames}.`,
+		));
+	}
+
+	if (issues.stagedStatusPaths.length) {
+		errors.push(issue(
+			"error",
+			"live_coverage.snapshot_staged_content",
+			"Production-approved coverage snapshot cannot include seeded_demo or staged_reference content markers.",
+		));
+	}
+
+	if (issues.mixedContentPaths.length) {
+		errors.push(issue(
+			"error",
+			"live_coverage.snapshot_mixed_content",
+			"Production-approved coverage snapshot cannot include guide content marked mixedContent=true.",
 		));
 	}
 }
@@ -468,9 +569,12 @@ export function evaluateProductionConfig({
 	}
 	else {
 		const metadata = readSnapshotMetadata({ errors, fs, snapshotPath: liveCoverageFile });
+		const snapshot = readSnapshotPayload({ errors, fs, snapshotPath: liveCoverageFile });
 
-		if (metadata)
+		if (metadata) {
 			checkSnapshotMetadata({ errors, metadata, warnings });
+			checkSnapshotPayload({ errors, metadata, snapshot });
+		}
 	}
 
 	if (!normalize(env.SOURCE_ASSET_BASE_URL)) {

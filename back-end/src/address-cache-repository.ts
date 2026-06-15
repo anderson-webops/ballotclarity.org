@@ -37,12 +37,12 @@ interface DistrictAssignmentRow {
 const packagedSchemaPath = new URL("./live-data-schema.sql", import.meta.url);
 const sourceSchemaPath = new URL("../live-data-schema.sql", import.meta.url);
 
-function normalizeLookupInput(input: string) {
+export function normalizeAddressCacheInput(input: string) {
 	return input.trim().replace(/\s+/g, " ").toLowerCase();
 }
 
-function hashLookupInput(input: string) {
-	return createHash("sha256").update(normalizeLookupInput(input)).digest("hex");
+export function hashAddressCacheInput(input: string) {
+	return createHash("sha256").update(normalizeAddressCacheInput(input)).digest("hex");
 }
 
 function resolveSchemaPath() {
@@ -90,7 +90,7 @@ async function createPostgresAddressCacheRepository(databaseUrl: string): Promis
 	return {
 		driver: "postgres",
 		async getByInput(input) {
-			const inputHash = hashLookupInput(input);
+			const inputHash = hashAddressCacheInput(input);
 			const lookupResult = await pool.query<AddressLookupRow>(`
 				SELECT id, normalized_address, zip5, state, county_fips, latitude, longitude, census_benchmark, census_vintage
 				FROM address_lookups
@@ -111,7 +111,7 @@ async function createPostgresAddressCacheRepository(databaseUrl: string): Promis
 			return mapCachedLookup(row, districtResult.rows);
 		},
 		async save(input, lookup) {
-			const inputHash = hashLookupInput(input);
+			const inputHash = hashAddressCacheInput(input);
 			const connection = await pool.connect();
 
 			try {

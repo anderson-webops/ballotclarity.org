@@ -54,3 +54,17 @@ test("repository package descriptions no longer use pre-launch MVP framing", () 
 		assert.match(pkg.description, /Ballot Clarity civic-information service/);
 	}
 });
+
+test("repository install-script approvals are explicit and version-scoped", () => {
+	const rootPackage = readJson("package.json");
+	const allowScripts = rootPackage.allowScripts as Record<string, boolean> | undefined;
+
+	assert.deepEqual(allowScripts, {
+		"@parcel/watcher@2.5.6": true,
+		"esbuild@0.27.7": true,
+		"esbuild@0.28.1": true,
+		"fsevents@2.3.3": true,
+		"puppeteer": false,
+		"unrs-resolver@1.12.2": true,
+	});
+});

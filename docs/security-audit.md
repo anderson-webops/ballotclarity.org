@@ -31,6 +31,18 @@ The underlying actionable advisory is Vite's dependency on `esbuild@0.27.x`. The
 
 `npm run audit:raw` remains available for the unfiltered npm report.
 
+## Install-Script Approvals
+
+The root `package.json` uses npm's `allowScripts` policy so install-time scripts are reviewed explicitly. Build/runtime helper packages that require native or platform-specific setup are approved by pinned version. Puppeteer's install script is denied because Ballot Clarity's browser smoke checks use an explicit or system Chrome path instead of downloading a browser during dependency install.
+
+After dependency updates, run:
+
+```bash
+npm approve-scripts --allow-scripts-pending --json
+```
+
+Any pending package should be reviewed and either pinned-approved with `npm approve-scripts <pkg>` or denied with `npm deny-scripts <pkg>`.
+
 ## Revisit Trigger
 
 Remove this exception when Nuxt publishes a release that supports a Vite version without the affected esbuild dependency, or when npm publishes a valid fix path that does not downgrade this Nuxt 4 app to Nuxt 2.

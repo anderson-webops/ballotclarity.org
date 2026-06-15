@@ -42,6 +42,7 @@
 		"local:setup": "node ./scripts/setup-local-provider.mjs",
 		"verify:local": "node ./scripts/verify-local-runtime.mjs",
 		"verify:production": "node ./scripts/production-config-check.mjs",
+		"verify:production:fixture": "node ./scripts/verify-production-config-fixture.mjs",
 		"verify:analytics": "npm run -w front-end verify:analytics",
 		"serve": "npm run -w front-end serve",
 		"preview": "npm run -w front-end preview",

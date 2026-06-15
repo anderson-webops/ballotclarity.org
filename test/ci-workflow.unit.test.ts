@@ -17,6 +17,13 @@ test("CI runs the repository security audit policy", () => {
 	assert.match(workflow, /name: Security audit policy\s+run: npm run audit/);
 });
 
+test("CI runs the production configuration policy", () => {
+	const workflow = readText(".github/workflows/ci.yml");
+
+	assert.match(workflow, /^\s{2}production-config:/m);
+	assert.match(workflow, /name: Production configuration policy\s+run: npm run verify:production:fixture/);
+});
+
 test("CI verifies production analytics after the Nuxt build", () => {
 	const workflow = readText(".github/workflows/ci.yml");
 	const buildJob = workflow.slice(workflow.indexOf("  build:"));

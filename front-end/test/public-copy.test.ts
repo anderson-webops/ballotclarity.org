@@ -210,6 +210,21 @@ test("public project identity avoids unverified nonprofit status claims", () => 
 	assert.match(identityText, /does not currently claim tax-exempt status/);
 });
 
+test("public contact copy stays aligned with the protected email route", () => {
+	const accessibilityPage = readPublicSource("pages/accessibility.vue");
+	const contactPage = readPublicSource("pages/contact.vue");
+	const footer = readPublicSource("components/AppFooter.vue");
+	const neutralityPage = readPublicSource("pages/neutrality.vue");
+	const privacyPage = readPublicSource("pages/privacy.vue");
+	const termsPage = readPublicSource("pages/terms.vue");
+	const contactText = `${accessibilityPage}\n${contactPage}\n${footer}\n${neutralityPage}\n${privacyPage}\n${termsPage}`;
+
+	assert.doesNotMatch(contactText, /listed email address/i);
+	assert.doesNotMatch(contactText, /direct email links?/i);
+	assert.doesNotMatch(contactText, /mailto:hello@/i);
+	assert.match(contactText, /protected email link/);
+});
+
 test("public source copy avoids implementation and archive jargon", () => {
 	const failures: string[] = [];
 	const blockedPhrases = [

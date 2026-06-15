@@ -71,7 +71,7 @@ const boundaryRules = [
 ];
 
 const disputeProcess = [
-	"Users can report an error, omission, or framing concern through the public contact page or the listed email address.",
+	"Users can report an error, omission, or framing concern through the public contact page or protected email link.",
 	"Target response standard for this policy model: acknowledge within 2 business days and resolve straightforward factual issues within 7 business days.",
 	"Substantive changes should create a visible update note or changelog entry rather than silently replacing earlier wording.",
 	"Campaigns, researchers, or members of the public should be expected to provide source links or specific record references when challenging a claim."

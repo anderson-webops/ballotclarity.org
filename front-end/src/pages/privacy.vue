@@ -42,7 +42,7 @@ const collectionSections = [
 	},
 	{
 		body: [
-			"The public site now offers a hosted contact and correction form in addition to direct email links.",
+			"The public site now offers a hosted contact and correction form in addition to protected email links.",
 			"If you submit the form, the project receives your name, email address, subject, page URL, message, and any supporting links you provide so the issue can be reviewed and answered.",
 			"If you email the project directly, the message, attachments, and any source links you send may be handled in the project inbox so the team can review, verify, and respond."
 		],

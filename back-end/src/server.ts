@@ -716,9 +716,9 @@ function inferPublishedSourceGeographicScope(
 	}
 
 	if (sourceId.startsWith("official:"))
-		return "Official verification page layer";
+		return "Official verification source";
 
-	return coverageLocationName ?? "Published public page layer";
+	return coverageLocationName ?? "Published public record";
 }
 
 function inferPublishedSourceReviewNote(source: Source) {
@@ -755,10 +755,10 @@ function inferPublishedSourceSummary(source: Source) {
 	const sourceId = String(source.id || "").toLowerCase();
 
 	if (sourceId.startsWith("district:"))
-		return "Stable district-page provenance record published from Ballot Clarity's public page layer.";
+		return "Stable district provenance record published from Ballot Clarity public records.";
 
 	if (sourceId.startsWith("representative:"))
-		return "Stable representative-page provenance record published from Ballot Clarity's public page layer.";
+		return "Stable representative provenance record published from Ballot Clarity public records.";
 
 	if (sourceId.startsWith("official:"))
 		return "Official verification record published because it is linked from a public Ballot Clarity page.";
@@ -1434,7 +1434,7 @@ function buildRepresentativeProfileFromSupplementalOfficeholder(record: Suppleme
 	return {
 		note: "Representative profile assembled from reviewed officeholder records for this public page.",
 		person: {
-			ballotStatusLabel: "Current ballot status requires active lookup confirmation",
+			ballotStatusLabel: "Current ballot status requires address or ZIP confirmation",
 			biography: [
 				{
 					id: `provider:${record.slug}`,
@@ -1496,7 +1496,7 @@ function buildRepresentativeProfileFromSupplementalOfficeholder(record: Suppleme
 					id: "lookup-confirmation",
 					note: "An address or ZIP lookup is still required for exact district confirmation.",
 					sources,
-					text: "This page identifies the officeholder, but a current lookup is still needed to confirm whether this is your exact district and locality.",
+					text: "This page identifies the officeholder, but an address or ZIP lookup is still needed to confirm whether this is your exact district and locality.",
 				},
 			],
 			whatWeKnow: [
@@ -1891,12 +1891,12 @@ function buildRepresentativeProfileFromOpenStates(record: OpenStatesRepresentati
 	return {
 		note: "Representative profile assembled from current officeholder records for this public page.",
 		person: {
-			ballotStatusLabel: "Current ballot status requires active lookup confirmation",
+			ballotStatusLabel: "Current ballot status requires address or ZIP confirmation",
 			biography: [
 				{
 					id: `provider:${toLookupSlug(record.name)}`,
 					sources,
-					summary: `${record.name} is attached here from a current Open States officeholder record. This profile can render a stable public identity even before Ballot Clarity has a user-specific lookup context for district confirmation.`,
+					summary: `${record.name} is attached here from a current Open States officeholder record. Entering an address or ZIP can still confirm whether this officeholder matches your exact district and locality.`,
 					title: "Provider-backed officeholder record",
 				},
 			],
@@ -1919,7 +1919,7 @@ function buildRepresentativeProfileFromOpenStates(record: OpenStatesRepresentati
 			lobbyingContext: [],
 			location: officeContext.location,
 			methodologyNotes: [
-				"This page resolves a stable public person record from the representative-page identifier.",
+				"This page is based on a current public officeholder record.",
 				"An address or ZIP lookup can still confirm whether this officeholder matches your exact area.",
 			],
 			name: record.name,
@@ -1934,7 +1934,7 @@ function buildRepresentativeProfileFromOpenStates(record: OpenStatesRepresentati
 			provenance: {
 				asOf: updatedAt,
 				label: "Open States current officeholder record",
-				note: "Matched from the representative-page identifier to the current Open States officeholder record.",
+				note: "Matched to the current Open States officeholder record.",
 				source: "nationwide",
 				status: "crosswalked",
 			},
@@ -1950,7 +1950,7 @@ function buildRepresentativeProfileFromOpenStates(record: OpenStatesRepresentati
 					id: "lookup-confirmation",
 					note: "An address or ZIP lookup is still required for exact district confirmation.",
 					sources,
-					text: "This page identifies the officeholder, but a current lookup is still needed to confirm whether this is your exact district and locality.",
+					text: "This page identifies the officeholder, but an address or ZIP lookup is still needed to confirm whether this is your exact district and locality.",
 				},
 			],
 			whatWeKnow: [
@@ -2122,12 +2122,12 @@ function buildRepresentativeProfileFromCongressMember(
 	return {
 		note: "Representative profile assembled from current federal officeholder records for this public page.",
 		person: {
-			ballotStatusLabel: "Current ballot status requires active lookup confirmation",
+			ballotStatusLabel: "Current ballot status requires address or ZIP confirmation",
 			biography: [
 				{
 					id: `provider:${representativeSlug}`,
 					sources,
-					summary: `${member.directOrderName} is attached here from a current Congress.gov officeholder record. This profile can render a stable public identity even before Ballot Clarity has a user-specific lookup context for district confirmation.`,
+					summary: `${member.directOrderName} is attached here from a current Congress.gov officeholder record. Entering an address or ZIP can still confirm whether this officeholder matches your exact district and locality.`,
 					title: "Provider-backed officeholder record",
 				},
 			],
@@ -2150,7 +2150,7 @@ function buildRepresentativeProfileFromCongressMember(
 			lobbyingContext: [],
 			location: officeContext.location,
 			methodologyNotes: [
-				"This page resolves a stable public person identity from the representative-page identifier before any browser-held lookup context is restored.",
+				"This page is based on a current federal officeholder record.",
 				"When Open States representative lookup is unavailable, Ballot Clarity can still build a federal officeholder base record from Congress.gov and then attach finance and lobbying modules through the federal provider crosswalk.",
 			],
 			name: member.directOrderName,
@@ -2170,7 +2170,7 @@ function buildRepresentativeProfileFromCongressMember(
 			provenance: {
 				asOf: updatedAt,
 				label: "Congress.gov current officeholder record",
-				note: "Matched from the representative-page identifier to a current federal officeholder record.",
+				note: "Matched to a current federal officeholder record.",
 				source: "nationwide",
 				status: "crosswalked",
 			},
@@ -2186,7 +2186,7 @@ function buildRepresentativeProfileFromCongressMember(
 					id: "lookup-confirmation",
 					note: "An address or ZIP lookup is still required for exact district confirmation.",
 					sources,
-					text: "This page identifies the officeholder, but a current lookup is still needed to confirm whether this is your exact district and locality.",
+					text: "This page identifies the officeholder, but an address or ZIP lookup is still needed to confirm whether this is your exact district and locality.",
 				},
 			],
 			whatWeKnow: [
@@ -2239,10 +2239,10 @@ function buildPublicDistrictRouteIdentity(slug: string): PublicDistrictRouteIden
 			office: `Congressional District ${districtNumber}`,
 			officialResources: stateIdentity?.officialResources ?? [],
 			originLabel: "Provider-qualified district page",
-			originNote: "This district page carries a state-qualified congressional district identifier, so Ballot Clarity can resolve the district identity and attach configured state-level official election tools without a saved lookup.",
-			representativeAvailabilityNote: "This district page identifies the correct congressional district and state from the page identifier itself. A current lookup can still confirm whether it matches your exact area.",
+			originNote: "This district page identifies a congressional district and state, so Ballot Clarity can attach configured state-level official election tools.",
+			representativeAvailabilityNote: "This page identifies the congressional district and state. Entering an address or ZIP can confirm whether it matches your exact area.",
 			slug: updatedSlug,
-			summary: "This public district page identifies a state-qualified congressional district on its own.",
+			summary: "This public district page identifies a state-qualified congressional district.",
 			title: `${stateIdentity?.stateName || representativeStateMatch[1].toUpperCase()} Congressional District ${districtNumber}`,
 		};
 	}
@@ -2256,10 +2256,10 @@ function buildPublicDistrictRouteIdentity(slug: string): PublicDistrictRouteIden
 			office: `Congressional District ${districtNumber}`,
 			officialResources: [],
 			originLabel: "Canonical district page",
-			originNote: "This district page identifies a congressional district number, but a state-qualified page identifier or active lookup is still required before Ballot Clarity can attach the exact officeholder and state election tools for it.",
-			representativeAvailabilityNote: "Ballot Clarity can identify this district page, but the current officeholder cannot be confirmed from the district number alone without a state-qualified page identifier or active lookup context.",
+			originNote: "This district page identifies a congressional district number. Entering an address or ZIP can attach the exact state and officeholder.",
+			representativeAvailabilityNote: "The current officeholder cannot be confirmed from the district number alone. Enter an address or ZIP to attach the right state and representative.",
 			slug: updatedSlug,
-			summary: "This public district page is stable and identifies a congressional district number on its own.",
+			summary: "This public district page identifies a congressional district number.",
 			title: `Congressional District ${districtNumber}`,
 		};
 	}
@@ -2273,10 +2273,10 @@ function buildPublicDistrictRouteIdentity(slug: string): PublicDistrictRouteIden
 			office: "U.S. Senate",
 			officialResources: stateIdentity?.officialResources ?? [],
 			originLabel: "Provider-qualified district page",
-			originNote: "This district page identifies a statewide U.S. Senate office area from the page identifier itself, so Ballot Clarity can render a stable public district identity without a saved lookup.",
-			representativeAvailabilityNote: "This district page identifies the statewide Senate office area for the state in the page identifier. A current lookup can still confirm whether it matches your exact area.",
+			originNote: "This district page identifies a statewide U.S. Senate office area for the named state.",
+			representativeAvailabilityNote: "This page identifies the statewide Senate office area. Entering an address or ZIP can confirm whether it matches your exact area.",
 			slug: updatedSlug,
-			summary: "This public district page identifies a statewide U.S. Senate office area on its own.",
+			summary: "This public district page identifies a statewide U.S. Senate office area.",
 			title: `${stateIdentity?.stateName || senatorStatewideCodeMatch[1].toUpperCase()} statewide Senate seat`,
 		};
 	}
@@ -2290,10 +2290,10 @@ function buildPublicDistrictRouteIdentity(slug: string): PublicDistrictRouteIden
 			office: "U.S. Senate",
 			officialResources: stateIdentity?.officialResources ?? [],
 			originLabel: "Provider-qualified district page",
-			originNote: "This district page identifies a statewide U.S. Senate office area from the state name in the page identifier, so Ballot Clarity can render a stable public district identity without a saved lookup.",
-			representativeAvailabilityNote: "This district page identifies the statewide Senate office area for the state in the page identifier. A current lookup can still confirm whether it matches your exact area.",
+			originNote: "This district page identifies a statewide U.S. Senate office area for the named state.",
+			representativeAvailabilityNote: "This page identifies the statewide Senate office area. Entering an address or ZIP can confirm whether it matches your exact area.",
 			slug: updatedSlug,
-			summary: "This public district page identifies a statewide U.S. Senate office area on its own.",
+			summary: "This public district page identifies a statewide U.S. Senate office area.",
 			title: `${stateIdentity?.stateName || titleCaseToken(senatorStatewideNameMatch[1])} statewide Senate seat`,
 		};
 	}
@@ -2307,10 +2307,10 @@ function buildPublicDistrictRouteIdentity(slug: string): PublicDistrictRouteIden
 			office: `State Senate District ${districtNumber}`,
 			officialResources: [],
 			originLabel: "Canonical district page",
-			originNote: "This district page identifies a state senate district number from a provider-style page identifier, even when the state-qualified officeholder and official-tool attachments still require an active lookup or more specific page context.",
-			representativeAvailabilityNote: "Ballot Clarity can identify this state senate district page from the page identifier itself, but the exact state-specific officeholder still requires an active lookup or a more specific page context.",
+			originNote: "This district page identifies a state senate district number. State-specific officeholder details and official election links require a more precise area match.",
+			representativeAvailabilityNote: "The exact state-specific officeholder cannot be confirmed from the district number alone. Enter an address or ZIP to attach the right officeholder.",
 			slug: updatedSlug,
-			summary: "This public district page resolves a state senate district identity even when user-specific lookup context is not yet available on the server.",
+			summary: "This public district page identifies a state senate district number.",
 			title: `State Senate District ${districtNumber}`,
 		};
 	}
@@ -2324,10 +2324,10 @@ function buildPublicDistrictRouteIdentity(slug: string): PublicDistrictRouteIden
 			office: `State Senate District ${districtNumber}`,
 			officialResources: [],
 			originLabel: "Canonical district page",
-			originNote: "This district page identifies a state senate district number, but the state-specific officeholder and election-tool attachments still require an active lookup or a state-qualified page identifier.",
-			representativeAvailabilityNote: "Ballot Clarity can identify this state senate district page, but the current officeholder cannot be confirmed from the district number alone without a state-qualified page identifier or active lookup context.",
+			originNote: "This district page identifies a state senate district number. State-specific officeholder details and election tools require a more precise area match.",
+			representativeAvailabilityNote: "The current officeholder cannot be confirmed from the district number alone. Enter an address or ZIP to attach the right state and officeholder.",
 			slug: updatedSlug,
-			summary: "This public district page resolves the district identity even when the user-specific lookup context is not available on the server.",
+			summary: "This public district page identifies a state senate district number.",
 			title: `State Senate District ${districtNumber}`,
 		};
 	}
@@ -2341,10 +2341,10 @@ function buildPublicDistrictRouteIdentity(slug: string): PublicDistrictRouteIden
 			office: `State House District ${districtNumber}`,
 			officialResources: [],
 			originLabel: "Canonical district page",
-			originNote: "This district page identifies a state house district number from a provider-style page identifier, even when the state-qualified officeholder and official-tool attachments still require an active lookup or more specific page context.",
-			representativeAvailabilityNote: "Ballot Clarity can identify this state house district page from the page identifier itself, but the exact state-specific officeholder still requires an active lookup or a more specific page context.",
+			originNote: "This district page identifies a state house district number. State-specific officeholder details and official election links require a more precise area match.",
+			representativeAvailabilityNote: "The exact state-specific officeholder cannot be confirmed from the district number alone. Enter an address or ZIP to attach the right officeholder.",
 			slug: updatedSlug,
-			summary: "This public district page resolves a state house district identity even when user-specific lookup context is not yet available on the server.",
+			summary: "This public district page identifies a state house district number.",
 			title: `State House District ${districtNumber}`,
 		};
 	}
@@ -2358,10 +2358,10 @@ function buildPublicDistrictRouteIdentity(slug: string): PublicDistrictRouteIden
 			office: `State House District ${districtNumber}`,
 			officialResources: [],
 			originLabel: "Canonical district page",
-			originNote: "This district page identifies a state house district number, but the state-specific officeholder and election-tool attachments still require an active lookup or a state-qualified page identifier.",
-			representativeAvailabilityNote: "Ballot Clarity can identify this state house district page, but the current officeholder cannot be confirmed from the district number alone without a state-qualified page identifier or active lookup context.",
+			originNote: "This district page identifies a state house district number. State-specific officeholder details and election tools require a more precise area match.",
+			representativeAvailabilityNote: "The current officeholder cannot be confirmed from the district number alone. Enter an address or ZIP to attach the right state and officeholder.",
 			slug: updatedSlug,
-			summary: "This public district page resolves the district identity even when the user-specific lookup context is not available on the server.",
+			summary: "This public district page identifies a state house district number.",
 			title: `State House District ${districtNumber}`,
 		};
 	}
@@ -2422,10 +2422,10 @@ function buildPublicDistrictRecordFromSlug(slug: string): DistrictRecordResponse
 			date: resolvedUpdatedAt,
 			id: `district:${districtIdentity.slug}:identity`,
 			note: supplementalOfficeholders.length
-				? "This public district page resolves a stable district identity and reviewed officeholder records from Ballot Clarity's public page layer even when no active browser lookup context is attached to the request."
-				: "This public district page resolves a stable district identity from the page identifier itself even when no active browser lookup context is attached to the request.",
-			publisher: "Ballot Clarity results layer",
-			sourceSystem: "Ballot Clarity results layer",
+				? "This district record includes a stable district identity and reviewed officeholder records from Ballot Clarity's public officeholder sources."
+				: "This district record includes a stable district identity that can be refined by entering an address or ZIP.",
+			publisher: "Ballot Clarity public district records",
+			sourceSystem: "Ballot Clarity public district records",
 			title: `${districtIdentity.title} page identity`,
 			url: "/coverage",
 		}),
@@ -2443,11 +2443,11 @@ function buildPublicDistrictRecordFromSlug(slug: string): DistrictRecordResponse
 			: "Reviewed state officeholder record"
 		: districtIdentity.originLabel;
 	const districtOriginNote = supplementalOfficeholders.length
-		? `${supplementalOfficeholders[0]?.provenanceNote || districtIdentity.originNote} Active lookup context can still add exact user-specific district confirmation and any stronger locality-specific election tools.`
+		? `${supplementalOfficeholders[0]?.provenanceNote || districtIdentity.originNote} Entering an address or ZIP can still add exact district confirmation and stronger locality-specific election tools.`
 		: districtIdentity.originNote;
 	const note = supplementalOfficeholders.length
-		? "This district page resolves with reviewed officeholder records attached from Ballot Clarity's officeholder layer. Your saved lookup results can still enrich it further with user-specific district confirmation and locality-specific official tools."
-		: "This district page resolves even without browser lookup state. Your saved lookup results can still enrich it further with user-specific district confirmation and official tools.";
+		? "This district page includes reviewed officeholder records. Entering an address or ZIP can still add exact district confirmation and locality-specific official tools."
+		: "This district page is available without a saved location. Entering an address or ZIP can refine it with exact district confirmation and official tools.";
 
 	return {
 		candidateAvailabilityNote: "Candidate and contest pages are not attached to this district yet, but official links and district details can still appear here.",

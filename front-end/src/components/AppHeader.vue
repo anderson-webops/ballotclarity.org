@@ -383,7 +383,7 @@ onBeforeUnmount(() => {
 					<div class="text-sm px-4 py-3 border border-app-line rounded-2xl bg-white flex items-center justify-between dark:border-app-line-dark dark:bg-app-panel-dark">
 						<div class="min-w-0">
 							<p class="text-app-muted truncate dark:text-app-muted-dark">
-								{{ showPersistedCivicState ? (effectiveSelectedLocation?.displayName || "No active lookup context yet") : "Lookup context syncs after page load" }}
+								{{ showPersistedCivicState ? (effectiveSelectedLocation?.displayName || "No saved location yet") : "Location status loads after page load" }}
 							</p>
 							<NuxtLink :to="locationLookupHref" prefetch-on="interaction" class="text-xs text-app-accent font-semibold mt-1 inline-flex dark:text-[#9ed4e3] focus-ring">
 								Change location

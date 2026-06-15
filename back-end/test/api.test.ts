@@ -123,6 +123,19 @@ function assertNoReaderRouteWording(payload: unknown) {
 		/officeholder route/i,
 		/representative routes/i,
 		/officeholder routes/i,
+		/lookup context/i,
+		/browser lookup/i,
+		/browser-held/i,
+		/page identifier/i,
+		/on the server/i,
+		/attached to the request/i,
+		/public page layer/i,
+		/results layer/i,
+		/active lookup/i,
+		/user-specific/i,
+		/current lookup/i,
+		/saved lookup/i,
+		/lookup response/i,
 	];
 
 	for (const phrase of blockedPhrases)
@@ -2251,7 +2264,7 @@ test("GET /api/contests/:slug returns 404 while verified contest pages are still
 	assert.match(body.message, /Contest not found/i);
 });
 
-test("GET /api/districts stays empty and guide-backed district slugs fall back to lookup-required records while contest pages are pending", async () => {
+test("GET /api/districts stays empty and guide-backed district slugs fall back to address-or-ZIP-needed records while contest pages are pending", async () => {
 	const listResponse = await fetch(`${baseUrl}/api/districts`);
 	const listBody = await listResponse.json();
 
@@ -2263,10 +2276,11 @@ test("GET /api/districts stays empty and guide-backed district slugs fall back t
 
 	assert.equal(districtResponse.status, 200);
 	assert.equal(districtBody.district.slug, "us-house-district-7");
-	assert.equal(districtBody.districtOriginLabel, "Lookup context required");
+	assert.equal(districtBody.districtOriginLabel, "Address or ZIP needed");
 	assert.deepEqual(districtBody.candidates, []);
 	assert.deepEqual(districtBody.representatives, []);
 	assert.match(districtBody.districtOriginNote, /attach the exact geography/i);
+	assertNoReaderRouteWording(districtBody);
 });
 
 test("active nationwide lookup cookie backs /api/districts and /api/districts/:slug", async () => {
@@ -2314,7 +2328,8 @@ test("active nationwide lookup cookie backs /api/districts and /api/districts/:s
 	assert.equal(districtBody.representatives[0].fundingAvailable, true);
 	assert.equal(districtBody.representatives[0].influenceAvailable, true);
 	assert.ok(districtBody.officialResources.length >= 1);
-	assert.match(districtBody.note, /keeps district context, linked officials, and official election links visible for the current lookup/i);
+	assert.match(districtBody.note, /keeps district context, linked officials, and official election links visible for this address or ZIP result/i);
+	assertNoReaderRouteWording(districtBody);
 });
 
 test("direct state and local district routes attach reviewed officeholder records instead of generic zero-state placeholders", async () => {
@@ -2333,6 +2348,7 @@ test("direct state and local district routes attach reviewed officeholder record
 	assert.equal(stateDistrictBody.representatives[0]?.slug, "tyler-clancy");
 	assert.match(stateDistrictBody.representativeAvailabilityNote, /reviewed state officeholder record/i);
 	assert.ok(stateDistrictBody.officialResources.length >= 1);
+	assertNoReaderRouteWording(stateDistrictBody);
 
 	assert.equal(localDistrictResponse.status, 200);
 	assert.equal(localDistrictBody.district.slug, "provo-city");
@@ -2340,6 +2356,7 @@ test("direct state and local district routes attach reviewed officeholder record
 	assert.equal(localDistrictBody.representatives[0]?.slug, "marsha-judkins");
 	assert.match(localDistrictBody.representativeAvailabilityNote, /reviewed local officeholder record/i);
 	assert.ok(localDistrictBody.officialResources.length >= 1);
+	assertNoReaderRouteWording(localDistrictBody);
 });
 
 test("lookup query backs /api/districts/:slug without relying on a saved cookie", async () => {
@@ -2350,7 +2367,8 @@ test("lookup query backs /api/districts/:slug without relying on a saved cookie"
 	assert.equal(body.mode, "nationwide");
 	assert.equal(body.district.slug, "congressional-3");
 	assert.equal(body.representatives[0].slug, "mike-kennedy");
-	assert.match(body.note, /keeps district context, linked officials, and official election links visible for the current lookup/i);
+	assert.match(body.note, /keeps district context, linked officials, and official election links visible for this address or ZIP result/i);
+	assertNoReaderRouteWording(body);
 });
 
 test("direct district pages return a canonical public record instead of a lookup-required placeholder", async () => {
@@ -2363,6 +2381,7 @@ test("direct district pages return a canonical public record instead of a lookup
 	assert.equal(body.districtOriginLabel, "Canonical district page");
 	assert.match(body.district.title, /Congressional District 7/i);
 	assert.doesNotMatch(body.districtOriginNote, /lookup context required/i);
+	assertNoReaderRouteWording(body);
 });
 
 test("provider-style statewide district pages return a public district identity instead of a lookup-required placeholder", async () => {
@@ -2377,6 +2396,7 @@ test("provider-style statewide district pages return a public district identity 
 	assert.equal(body.election.locationName, "Utah");
 	assert.equal(body.officialResources.length, 2);
 	assert.doesNotMatch(body.districtOriginNote, /lookup context required/i);
+	assertNoReaderRouteWording(body);
 });
 
 test("GET /api/representatives stays empty until the verified contest package is published", async () => {
@@ -2470,7 +2490,8 @@ test("active nationwide lookup cookie backs /api/representatives and /api/repres
 	assert.ok(representativeBody.person.funding);
 	assert.match(representativeBody.person.funding.summary, /MIKE KENNEDY FOR UTAH/i);
 	assert.ok(representativeBody.person.lobbyingContext.length >= 1);
-	assert.match(representativeBody.note, /current saved lookup/i);
+	assert.match(representativeBody.note, /current area results/i);
+	assertNoReaderRouteWording(representativeBody);
 });
 
 test("lookup query backs /api/representatives/:slug without relying on a saved cookie", async () => {
@@ -2482,7 +2503,8 @@ test("lookup query backs /api/representatives/:slug without relying on a saved c
 	assert.equal(body.person.provenance.source, "lookup");
 	assert.ok(body.person.funding);
 	assert.ok(body.person.lobbyingContext.length >= 1);
-	assert.match(body.note, /current saved lookup/i);
+	assert.match(body.note, /current area results/i);
+	assertNoReaderRouteWording(body);
 });
 
 test("representatives without a reliable finance or influence crosswalk still return an honest unavailable profile state", async () => {

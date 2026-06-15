@@ -28,7 +28,7 @@ const collectionSections = [
 	{
 		body: [
 			"The app stores selected location labels, compare selections, saved ballot-plan choices, issue filters, and reading mode in local browser storage so the guide remains usable across refreshes.",
-			"The site also sets first-party cookies for saved lookup context, display timezone, and private editorial access sessions.",
+			"The site also sets first-party cookies for saved area results, display timezone, and private editorial access sessions.",
 			"This browser-side state is tied to the browser on your device. Ballot Clarity does not maintain a public server-side user account for that state."
 		],
 		title: "Browser storage and cookies"
@@ -64,7 +64,7 @@ const providerDisclosureSections = [
 		body: [
 			"Full-address lookups may be sent to the U.S. Census Geocoder and Google Civic Information API to normalize geography, verify address handling, and return official election logistics where available.",
 			"ZIP-only lookups may be resolved through the current ZIP-location service and then enriched with district and official-tool context.",
-			"If optional ballot-content providers such as CTCL BIP, Ballotpedia, BallotReady CivicEngine, or Democracy Works are configured later, full-address or location-derived lookup context may be sent to the configured provider only to return ballot, contest, candidate, measure, or election-logistics data for the requested lookup.",
+			"If optional ballot-content providers such as CTCL BIP, Ballotpedia, BallotReady CivicEngine, or Democracy Works are configured later, full-address or location-derived area details may be sent to the configured provider only to return ballot, contest, candidate, measure, or election-logistics data for the requested lookup.",
 			"Provider-returned ballot previews are shown as informational previews until Ballot Clarity completes local review. Users should verify the exact ballot with the linked official state or local voter/ballot tool before relying on provider ballot content."
 		],
 		title: "Lookup and official verification providers"
@@ -109,7 +109,7 @@ const sharingSections = [
 
 const retentionRows = [
 	{
-		access: "Runtime handling only during the request, plus transient processing by the current lookup or verification provider that receives it.",
+		access: "Runtime handling only during the request, plus transient processing by the lookup or verification provider that receives it.",
 		category: "Raw ballot lookup input",
 		deletion: "The current app flow is designed to avoid adding the raw lookup string to published source records or saved browser state. Provider-side retention depends on the recipient's system and policy.",
 		retention: "Request-time processing in Ballot Clarity.",
@@ -120,7 +120,7 @@ const retentionRows = [
 		category: "Saved lookup cookie",
 		deletion: "Clear browser cookies or submit a new lookup that replaces or clears the stored context.",
 		retention: "Up to 7 days.",
-		scope: "First-party cookie containing current lookup context such as normalized address or ZIP, matched districts, representative matches, official actions, and lookup timing."
+		scope: "First-party cookie containing current area-result details such as normalized address or ZIP, matched districts, representative matches, official actions, and lookup timing."
 	},
 	{
 		access: "Operational access only for reliability, coverage planning, and abuse monitoring.",
@@ -141,7 +141,7 @@ const retentionRows = [
 		category: "Saved guide preferences",
 		deletion: "Clear browser storage, use a private session, or overwrite the saved state.",
 		retention: "Until you clear it or replace it on your device.",
-		scope: "Selected location label, compare list, ballot plan, issue filters, reading mode, and related locally saved lookup context."
+		scope: "Selected location label, compare list, ballot plan, issue filters, reading mode, and related locally saved area-result details."
 	},
 	{
 		access: "Stored in the editor's browser and private access-control layer.",
@@ -182,14 +182,14 @@ const retentionRows = [
 
 const rightsNotes = [
 	"You can browse much of the site without using the ballot lookup.",
-	"You can clear browser storage and cookies on your device to remove saved ballot-plan state, selected location labels, timezone state, and active lookup cookies kept locally by the app.",
+	"You can clear browser storage and cookies on your device to remove saved ballot-plan state, selected location labels, timezone state, and area-result cookies kept locally by the app.",
 	"Because Ballot Clarity does not create public self-service accounts and is designed to keep some data ephemeral, the project may have limited ability to associate a privacy request with operational logs or transient lookup activity.",
 	"If applicable law gives you rights to request access, deletion, correction, or appeal, contact the project and describe the data or interaction as specifically as possible."
 ];
 
 const cookieNotes = [
 	"Ballot Clarity does not use an advertising-cookie stack and is not designed for targeted advertising or sale or sharing of personal data.",
-	"The site currently uses first-party cookies for saved lookup continuity, display timezone, and private editorial access sessions, and it uses local browser storage for public-facing preference state.",
+	"The site currently uses first-party cookies for saved area-result continuity, display timezone, and private editorial access sessions, and it uses local browser storage for public-facing preference state.",
 	"Infrastructure providers may also use technical cookies or similar mechanisms needed for delivery, security, and basic functionality.",
 	`Deployed versions of the site load ${analyticsScriptDisclosure} to understand usage and performance. This service may receive technical request data and pageview metadata, but it is not used for targeted advertising.`
 ];

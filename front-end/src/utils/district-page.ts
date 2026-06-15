@@ -80,7 +80,7 @@ function buildNationwideSources(
 			authority: districtMatch.sourceSystem.toLowerCase().includes("census") ? "official-government" : "open-data",
 			date: updatedAt,
 			id: `district:${district.slug}:match`,
-			note: "District match attached from your current lookup.",
+			note: "District match attached from current area results.",
 			publisher: districtMatch.sourceSystem,
 			sourceSystem: districtMatch.sourceSystem,
 			title: `${district.title} district match`,
@@ -93,7 +93,7 @@ function buildNationwideSources(
 			authority: representative.sourceSystem.toLowerCase().includes("open states") ? "nonprofit-provider" : "open-data",
 			date: updatedAt,
 			id: `representative:${representative.id}`,
-			note: "Representative record linked to this district from your current lookup.",
+			note: "Representative record linked to this district from current area results.",
 			publisher: representative.sourceSystem,
 			sourceSystem: representative.sourceSystem,
 			title: representative.name,
@@ -171,8 +171,8 @@ export function buildNationwideDistrictPageRecord(
 		},
 		districtOriginLabel: "Lookup-based district page",
 		districtOriginNote: context.inputKind === "zip"
-			? "Built from your current ZIP lookup. A full street address gives a more precise match when local layers overlap."
-			: "Built from your current lookup because no local guide is published for this district.",
+			? "Built from this ZIP result. A full street address gives a more precise match when local layers overlap."
+			: "Built from current area results because no local guide is published for this district.",
 		election: context.election ?? {
 			date: updatedAt,
 			jurisdictionSlug: "",

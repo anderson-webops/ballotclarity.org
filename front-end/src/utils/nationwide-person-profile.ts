@@ -20,8 +20,8 @@ function buildFreshness(updatedAt: string): FreshnessMeta {
 		dataLastUpdatedAt: updatedAt,
 		nextReviewAt: updatedAt,
 		status: "up-to-date",
-		statusLabel: "Lookup-backed",
-		statusNote: "This profile reflects the latest lookup results currently saved in this browser. Verify critical details against the attached provider record and official election tools."
+		statusLabel: "Area-result backed",
+		statusNote: "This profile reflects the latest area results for this address or ZIP. Verify critical details against the attached provider record and official election tools."
 	};
 }
 
@@ -107,7 +107,7 @@ export function buildNationwidePersonProfileResponse(
 			authority: representative.openstatesUrl ? "nonprofit-provider" : "open-data",
 			date: updatedAt,
 			id: `representative:${representative.slug}`,
-			note: "Representative record matched from your saved lookup.",
+			note: "Representative record matched from current area results.",
 			publisher: representative.openstatesUrl ? "Open States" : "Lookup results provider",
 			sourceSystem: representative.provenance?.label || "Lookup results representative match",
 			title: representative.name,
@@ -120,7 +120,7 @@ export function buildNationwidePersonProfileResponse(
 			authority: "official-government",
 			date: updatedAt,
 			id: `district:${district.slug}`,
-			note: "District match attached from your saved lookup.",
+			note: "District match attached from current area results.",
 			publisher: "U.S. Census Geocoder",
 			sourceSystem: "U.S. Census Geocoder",
 			title: district.title,
@@ -137,8 +137,8 @@ export function buildNationwidePersonProfileResponse(
 			id: `provider:${representative.slug}`,
 			sources,
 			summary: representative.openstatesUrl
-				? `${representative.name} is listed here as a current official from your saved lookup.`
-				: `${representative.name} is listed here from your saved lookup.`,
+				? `${representative.name} is listed here as a current official from current area results.`
+				: `${representative.name} is listed here from current area results.`,
 			title: "Office record"
 		}
 	];
@@ -168,7 +168,7 @@ export function buildNationwidePersonProfileResponse(
 	];
 
 	return {
-		note: "Person page built from your saved lookup.",
+		note: "Person page built from current area results.",
 		updatedAt,
 		person: {
 			ballotStatusLabel: "Published ballot status unavailable in this area",
@@ -184,7 +184,7 @@ export function buildNationwidePersonProfileResponse(
 			lobbyingContext: [],
 			location: representative.location,
 			methodologyNotes: [
-				"This page is based on your saved lookup.",
+				"This page is based on current area results.",
 				"ZIP-based lookups can be broader than a full street-address match."
 			],
 			name: representative.name,
@@ -199,7 +199,7 @@ export function buildNationwidePersonProfileResponse(
 			provenance: {
 				asOf: updatedAt,
 				label: representative.provenance?.label || "Lookup results representative match",
-				note: representative.provenance?.note || "Matched from your saved lookup.",
+				note: representative.provenance?.note || "Matched from current area results.",
 				source: "lookup",
 				status: representative.provenance?.status || "crosswalked"
 			},

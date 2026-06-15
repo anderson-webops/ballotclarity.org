@@ -91,7 +91,8 @@ test("nationwide district fallback builds a usable detail page for routed distri
 	assert.equal(districtPage.representatives[0]?.href, "/representatives/mike-kennedy");
 	assert.equal(districtPage.officialResources.length, 1);
 	assert.match(districtPage.candidateAvailabilityNote, /local guide pages are not published/i);
-	assert.match(districtPage.districtOriginNote, /current ZIP lookup/i);
+	assert.match(districtPage.districtOriginNote, /this ZIP result/i);
+	assert.doesNotMatch(JSON.stringify(districtPage), /current ZIP lookup|saved lookup/i);
 	assert.ok(districtPage.sources.some(source => /Open States|U\.S\. Census Geocoder/.test(source.publisher)));
 });
 

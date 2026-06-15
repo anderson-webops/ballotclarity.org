@@ -280,7 +280,7 @@ usePageSeo({
 
 		<div v-else-if="(error && !fallbackData) || !person" class="max-w-3xl">
 			<InfoCallout title="Representative profile not available" tone="warning">
-				This representative page could not be loaded. Return to the representative directory or the broader results layer and try again.
+				This representative page could not be loaded. Return to the representative directory or your area results and try again.
 			</InfoCallout>
 		</div>
 

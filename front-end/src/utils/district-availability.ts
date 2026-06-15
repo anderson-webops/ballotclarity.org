@@ -91,7 +91,7 @@ export function buildNationwideDistrictRoleGuide(district: DistrictDescriptorInp
 				"Appropriations and district project advocacy",
 				"Constituent casework with federal agencies"
 			],
-			summary: "This district identifies the federal office area for this lookup.",
+			summary: "This district identifies the federal office area for these results.",
 			whyItMatters: "Federal district matches help confirm the current U.S. House officeholder and the official election links for that geography."
 		};
 	}
@@ -103,7 +103,7 @@ export function buildNationwideDistrictRoleGuide(district: DistrictDescriptorInp
 				"State statutory changes",
 				"Committee oversight and constituent services"
 			],
-			summary: "This district identifies the state legislative office area for this lookup.",
+			summary: "This district identifies the state legislative office area for these results.",
 			whyItMatters: "State legislative district matches help orient voters to the current officeholder, district geography, and official election links for that area."
 		};
 	}
@@ -115,8 +115,8 @@ export function buildNationwideDistrictRoleGuide(district: DistrictDescriptorInp
 				"County services and local implementation",
 				"Local verification through county election offices"
 			],
-			summary: "This county geography helps orient the lookup even when county officeholder records are still limited.",
-			whyItMatters: "County matches still help users reach the right official county election tools and verify which local government area a lookup resolved into."
+			summary: "This county geography helps orient the results even when county officeholder records are still limited.",
+			whyItMatters: "County matches help users reach the right official county election tools and verify the local government area for these results."
 		};
 	}
 
@@ -127,8 +127,8 @@ export function buildNationwideDistrictRoleGuide(district: DistrictDescriptorInp
 				"Council, mayoral, and local administrative context",
 				"Official local verification through municipal or county election tools"
 			],
-			summary: "This city geography helps orient the lookup even when city officeholder records are still limited.",
-			whyItMatters: "City matches still help users verify locality, official tools, and the local jurisdiction tied to the current lookup."
+			summary: "This city geography helps orient the results even when city officeholder records are still limited.",
+			whyItMatters: "City matches help users verify locality, official tools, and the local jurisdiction tied to this area."
 		};
 	}
 
@@ -138,7 +138,7 @@ export function buildNationwideDistrictRoleGuide(district: DistrictDescriptorInp
 			"District and office matching",
 			"Official election tool discovery"
 		],
-		summary: "This district is part of the current lookup for this location.",
+		summary: "This district is part of the results for this location.",
 		whyItMatters: "Even when a local guide is not published, this district layer helps orient users around geography, offices, and official election links."
 	};
 }

@@ -29,7 +29,7 @@ export function buildResultsSummaryItems(
 		{
 			href: buildNationwideRouteTarget("/districts", lookupContext, routeQuery),
 			label: "District matches",
-			note: "Matched from your current lookup.",
+			note: "Matched from current area results.",
 			value: activeResult?.districtMatches.length ?? 0
 		},
 		{

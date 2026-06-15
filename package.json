@@ -80,6 +80,8 @@
 		"typescript-eslint": "^8.61.0"
 	},
 	"overrides": {
+		"js-yaml": "4.2.0",
+		"launch-editor": "2.14.1",
 		"nitropack": "2.13.4",
 		"simple-git": "3.36.0"
 	},

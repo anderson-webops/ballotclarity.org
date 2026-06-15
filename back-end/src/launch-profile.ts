@@ -158,14 +158,14 @@ export function buildCoverageResponse(
 					activeSources: [
 						"U.S. Census Geocoder district matches",
 						"Open States representative matches when provider linkage succeeds",
-						"Official state and county election tools returned by the active lookup"
+						"Official state and county election tools returned for the selected area"
 					],
 					id: "nationwide-results",
 					label: "Lookup and results pages",
 					note: "District, representative, and person pages stay useful here even when a local guide is not active.",
 					routes: ["/results", "/districts", "/districts/<slug>", "/representatives", "/representatives/<slug>"],
 					status: "live-now",
-					summary: "These pages are the main public product when no local guide is active and use the saved lookup in the browser."
+					summary: "These pages are the main public product when no local guide is active and use the selected area results."
 				},
 				{
 					activeSources: [
@@ -243,7 +243,7 @@ export function buildCoverageResponse(
 				activeSources: [
 					"U.S. Census Geocoder district matches",
 					"Open States representative matches where provider linkage succeeds",
-					"Official state and county election tools returned by the active lookup"
+					"Official state and county election tools returned for the selected area"
 				],
 				id: "nationwide-results",
 				label: "Lookup and results pages",

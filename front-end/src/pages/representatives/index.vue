@@ -88,7 +88,7 @@ const lookupPrompt = computed(() => activeLookupSummary.value.mode === "none"
 			title: "Start with lookup"
 		}
 	: {
-			body: "A saved area is present, but this page needs a current lookup result to load the matching officials.",
+			body: "A saved area is present, but this page needs a current address or ZIP result to load the matching officials.",
 			title: "Refresh results for this page"
 		}
 );

@@ -38,7 +38,7 @@ const oremLookupResponse: LocationLookupResponse = {
 	note: "Lookup results for Orem, Utah."
 };
 
-test("active lookup summary follows the latest successful lookup context used by districts and results", () => {
+test("area summary follows the latest successful address or ZIP result used by districts and results", () => {
 	const firstLookupContext = normalizeLookupResponseForDisplay(provoLookupResponse, null);
 	const secondLookupContext = normalizeLookupResponseForDisplay(oremLookupResponse, null);
 

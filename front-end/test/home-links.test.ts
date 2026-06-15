@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { buildHomeNationwideSummaryHref } from "../src/utils/home-links.ts";
 
-test("homepage nationwide summary links keep the active lookup context", () => {
+test("homepage area summary links keep the selected area result", () => {
 	const context = {
 		lookupQuery: "84604",
 		selectionId: "zip:84604:provo-utah"
@@ -18,7 +18,7 @@ test("homepage nationwide summary links keep the active lookup context", () => {
 	);
 });
 
-test("homepage nationwide summary links still work without an active lookup context", () => {
+test("homepage area summary links still work without a selected area result", () => {
 	assert.equal(buildHomeNationwideSummaryHref("/districts", null), "/districts");
 	assert.equal(buildHomeNationwideSummaryHref("/representatives", null), "/representatives");
 });

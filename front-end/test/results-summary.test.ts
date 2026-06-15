@@ -35,7 +35,7 @@ test("results summary cards keep lookup-aware links for district and representat
 	assert.equal(items[3]?.href, undefined);
 });
 
-test("results summary cards still fall back to route roots without an active lookup context", () => {
+test("results summary cards still fall back to route roots without a selected area result", () => {
 	const items = buildResultsSummaryItems(null, 0, null);
 
 	assert.equal(items[0]?.href, "/districts");

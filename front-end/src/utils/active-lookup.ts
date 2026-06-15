@@ -24,7 +24,7 @@ export function buildActiveLookupSummary({
 			mode: "nationwide",
 			note: nationwideLookupResult.detectedFromIp
 				? "Using an approximate saved location. Enter an address or ZIP code if you need a more exact match."
-				: "Using your latest saved lookup.",
+				: "Using your latest area result.",
 			resolvedAt: nationwideLookupResult.resolvedAt ?? ""
 		};
 	}
@@ -48,7 +48,7 @@ export function buildActiveLookupSummary({
 	}
 
 	return {
-		label: "No active lookup",
+		label: "No saved location",
 		mode: "none",
 		note: "No saved area is active in this browser right now.",
 		resolvedAt: ""

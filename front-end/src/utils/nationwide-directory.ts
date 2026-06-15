@@ -63,7 +63,7 @@ function buildRepresentativeSummary(
 					authority: "nonprofit-provider",
 					date: updatedAt,
 					id: `representative:${buildNationwideRepresentativeSlug(match)}`,
-					note: "Representative record attached from your current lookup.",
+					note: "Representative record attached from current area results.",
 					publisher: "Open States",
 					sourceSystem: match.sourceSystem || "Open States",
 					title: match.name,
@@ -88,11 +88,11 @@ function buildRepresentativeSummary(
 		profileImages: match.profileImages,
 		provenance: {
 			label: match.sourceSystem ? `${match.sourceSystem} representative match` : "Lookup results representative match",
-			note: "Matched from your current lookup.",
+			note: "Matched from current area results.",
 			status: "crosswalked"
 		},
 		slug: buildNationwideRepresentativeSlug(match),
-		summary: match.sourceSystem ? `Matched from ${match.sourceSystem}` : "Matched from your current lookup",
+		summary: match.sourceSystem ? `Matched from ${match.sourceSystem}` : "Matched from current area results",
 		districtLabel: match.districtLabel,
 		districtSlug: toLookupSlug(match.districtLabel),
 		fundingAvailable: false,
@@ -165,13 +165,13 @@ export function buildNationwideDirectoryResponses(
 		districts: {
 			mode: "nationwide",
 			updatedAt,
-			note: "Matched from your current lookup.",
+			note: "Matched from current area results.",
 			districts
 		},
 		representatives: {
 			districts,
 			mode: "nationwide",
-			note: "Matched from your current lookup.",
+			note: "Matched from current area results.",
 			representatives,
 			updatedAt
 		}

@@ -48,7 +48,7 @@ const curatedSourceDefinitions: CuratedSourceDefinition[] = [
 		title: "U.S. Census Geocoder",
 		type: "official record",
 		url: "https://geocoding.geo.census.gov/geocoder/Geocoding_Services_API.html",
-		usedFor: "District matches across the United States, canonical district routing, and geography-backed lookup context."
+		usedFor: "District matches across the United States, canonical district routing, and geography-backed area results."
 	},
 	{
 		authority: "nonprofit-provider",

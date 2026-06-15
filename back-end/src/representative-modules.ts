@@ -1219,7 +1219,7 @@ function buildStatusNote({
 	}
 
 	if (hasCongress)
-		return "This profile reflects the current officeholder record plus attached Congress.gov office context. Verify district-specific questions against your active lookup and the official tools linked here.";
+		return "This profile reflects the current officeholder record plus attached Congress.gov office context. Verify district-specific questions against your address or ZIP result and the official tools linked here.";
 
 	if (layer === "state")
 		return "This profile reflects a current state officeholder record with reviewed office and district context. State finance, disclosure, and legislative-activity modules still attach only where Ballot Clarity has a reviewed jurisdiction-specific source.";
@@ -1657,7 +1657,7 @@ export function createRepresentativeModuleResolver({
 								{
 									id: `federal-crosswalk:${response.person.slug}`,
 									sources: attachment.sources,
-									summary: "Ballot Clarity attached federal finance or disclosure records to this officeholder through a structured crosswalk from your saved lookup results.",
+									summary: "Ballot Clarity attached federal finance or disclosure records to this officeholder through a structured crosswalk from area results.",
 									title: "Federal finance and disclosure crosswalk",
 								} satisfies EvidenceBlock,
 						]

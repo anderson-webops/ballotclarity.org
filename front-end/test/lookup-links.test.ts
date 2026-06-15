@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { buildNationwideDistrictHref, buildNationwideRepresentativeHref } from "../src/utils/lookup-links.ts";
 
-test("lookup links keep the active lookup context on district and representative routes", () => {
+test("area links keep the selected address or ZIP result on district and representative routes", () => {
 	const lookup = {
 		lookupQuery: "30022",
 		selectionId: "zip:30022:johns-creek-georgia"
@@ -24,7 +24,7 @@ test("lookup links keep the active lookup context on district and representative
 	);
 });
 
-test("lookup links still resolve without an attached lookup context", () => {
+test("area links still resolve without a selected address or ZIP result", () => {
 	assert.equal(
 		buildNationwideDistrictHref({
 			id: "ga-state-house-48",

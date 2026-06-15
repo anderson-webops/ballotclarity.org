@@ -81,7 +81,7 @@ async function selectLookupOption(option: LocationLookupSelectionOption) {
 }
 
 usePageSeo({
-	description: "Results for your area from the active lookup, including district matches, representative records, and official election tools.",
+	description: "Results for your area, including district matches, representative records, and official election tools.",
 	path: "/results",
 	robots: "noindex,nofollow",
 	title: "Results for Your Area"
@@ -97,7 +97,7 @@ usePageSeo({
 
 		<div v-else-if="!activeResult" class="surface-panel max-w-4xl">
 			<div class="flex flex-wrap gap-2">
-				<TrustBadge label="No active lookup" tone="warning" />
+				<TrustBadge label="No saved location" tone="warning" />
 				<TrustBadge label="Start with an address or ZIP" />
 			</div>
 			<p class="text-xs text-app-muted tracking-[0.24em] font-semibold mt-6 uppercase dark:text-app-muted-dark">

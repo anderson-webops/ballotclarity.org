@@ -1,6 +1,11 @@
 import process from "node:process";
 import { fetchGoogleCivic } from "./google-civic.js";
 import { resolveProviderCredential } from "./provider-config.js";
+import {
+	summarizeGoogleCivicProviderFailure,
+	summarizeProviderBody,
+	summarizeProviderProbeError,
+} from "./provider-diagnostic-messages.js";
 
 type DiagnosticStatus = "fail" | "pass" | "skip";
 
@@ -10,6 +15,30 @@ interface DiagnosticResult {
 	label: string;
 	source?: string;
 	status: DiagnosticStatus;
+}
+
+const defaultProviderProbeTimeoutMs = 15000;
+
+function providerProbeTimeoutMs() {
+	const value = Number.parseInt(process.env.PROVIDER_TEST_TIMEOUT_MS || "", 10);
+	return Number.isFinite(value) && value > 0 ? value : defaultProviderProbeTimeoutMs;
+}
+
+async function withProviderTimeout<T>(operation: (signal: AbortSignal) => Promise<T>) {
+	const timeoutMs = providerProbeTimeoutMs();
+	const controller = new AbortController();
+	const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+	try {
+		return await operation(controller.signal);
+	}
+	finally {
+		clearTimeout(timeout);
+	}
+}
+
+function formatProbeError(error: unknown) {
+	return summarizeProviderProbeError(error, providerProbeTimeoutMs());
 }
 
 async function readJson(response: Response) {
@@ -29,19 +58,15 @@ async function readJson(response: Response) {
 	}
 }
 
-function summarizeBody(text: string) {
-	return text.replace(/\s+/g, " ").trim().slice(0, 220);
-}
-
 function buildGoogleCivicVoterInfoNote(response: Response, body: string) {
 	if (response.ok)
 		return "Sample voterinfo probe also succeeded.";
 
 	if (response.status === 400 || response.status === 404) {
-		return `Sample voterinfo probe returned ${response.status}; this usually means the sample address/election context is not currently valid, not that the credential was rejected. Detail: ${summarizeBody(body)}`;
+		return `Sample voterinfo probe returned ${response.status}; this usually means the sample address/election context is not currently valid, not that the credential was rejected. Detail: ${summarizeProviderBody(body)}`;
 	}
 
-	return `Sample voterinfo probe returned ${response.status}. This does not change the credential-acceptance result from the elections endpoint. Detail: ${summarizeBody(body)}`;
+	return `Sample voterinfo probe returned ${response.status}. This does not change the credential-acceptance result from the elections endpoint. Detail: ${summarizeProviderBody(body)}`;
 }
 
 async function checkDataGov() {
@@ -62,16 +87,17 @@ async function checkDataGov() {
 		url.searchParams.set("format", "json");
 		url.searchParams.set("limit", "1");
 
-		const response = await fetch(url, {
+		const response = await withProviderTimeout(signal => fetch(url, {
 			headers: {
 				Accept: "application/json"
-			}
-		});
+			},
+			signal
+		}));
 		const { payload, text } = await readJson(response);
 
 		if (!response.ok) {
 			return {
-				detail: `Congress.gov probe rejected the shared key with ${response.status}: ${summarizeBody(text)}`,
+				detail: `Congress.gov probe rejected the shared key with ${response.status}: ${summarizeProviderBody(text)}`,
 				id: "data-gov",
 				label: "api.data.gov shared key",
 				source: credential.source,
@@ -93,7 +119,7 @@ async function checkDataGov() {
 	}
 	catch (error) {
 		return {
-			detail: `Probe failed: ${error instanceof Error ? error.message : String(error)}`,
+			detail: formatProbeError(error),
 			id: "data-gov",
 			label: "api.data.gov shared key",
 			source: credential.source,
@@ -118,12 +144,12 @@ async function checkGoogleCivic() {
 		const electionsUrl = new URL("https://www.googleapis.com/civicinfo/v2/elections");
 		electionsUrl.searchParams.set("key", credential.value);
 
-		const electionsResponse = await fetchGoogleCivic(electionsUrl);
+		const electionsResponse = await withProviderTimeout(signal => fetchGoogleCivic(electionsUrl, { signal }));
 		const { payload, text } = await readJson(electionsResponse);
 
 		if (!electionsResponse.ok) {
 			return {
-				detail: `Elections probe failed with ${electionsResponse.status}: ${summarizeBody(text)}`,
+				detail: summarizeGoogleCivicProviderFailure(electionsResponse.status, text),
 				id: "google-civic",
 				label: "Google Civic Information API",
 				source: credential.source,
@@ -140,13 +166,13 @@ async function checkGoogleCivic() {
 			voterInfoUrl.searchParams.set("officialOnly", "true");
 			voterInfoUrl.searchParams.set("returnAllAvailableData", "true");
 			voterInfoUrl.searchParams.set("key", credential.value);
-			const voterInfoResponse = await fetchGoogleCivic(voterInfoUrl);
+			const voterInfoResponse = await withProviderTimeout(signal => fetchGoogleCivic(voterInfoUrl, { signal }));
 			const voterInfoBody = await voterInfoResponse.text();
 
 			voterInfoNote = buildGoogleCivicVoterInfoNote(voterInfoResponse, voterInfoBody);
 		}
 		catch (error) {
-			voterInfoNote = `Sample voterinfo probe could not be completed. This does not change the credential-acceptance result from the elections endpoint. Detail: ${error instanceof Error ? error.message : String(error)}`;
+			voterInfoNote = `Sample voterinfo probe could not be completed. This does not change the credential-acceptance result from the elections endpoint. Detail: ${formatProbeError(error)}`;
 		}
 
 		return {
@@ -159,7 +185,7 @@ async function checkGoogleCivic() {
 	}
 	catch (error) {
 		return {
-			detail: `Probe failed: ${error instanceof Error ? error.message : String(error)}`,
+			detail: formatProbeError(error),
 			id: "google-civic",
 			label: "Google Civic Information API",
 			source: credential.source,
@@ -185,16 +211,17 @@ async function checkCongress() {
 		url.searchParams.set("api_key", credential.value);
 		url.searchParams.set("format", "json");
 		url.searchParams.set("limit", "1");
-		const response = await fetch(url, {
+		const response = await withProviderTimeout(signal => fetch(url, {
 			headers: {
 				Accept: "application/json"
-			}
-		});
+			},
+			signal
+		}));
 		const { payload, text } = await readJson(response);
 
 		if (!response.ok) {
 			return {
-				detail: `Congress.gov probe failed with ${response.status}: ${summarizeBody(text)}`,
+				detail: `Congress.gov probe failed with ${response.status}: ${summarizeProviderBody(text)}`,
 				id: "congress",
 				label: "Congress.gov API",
 				source: credential.source,
@@ -216,7 +243,7 @@ async function checkCongress() {
 	}
 	catch (error) {
 		return {
-			detail: `Probe failed: ${error instanceof Error ? error.message : String(error)}`,
+			detail: formatProbeError(error),
 			id: "congress",
 			label: "Congress.gov API",
 			source: credential.source,
@@ -242,16 +269,17 @@ async function checkOpenFec() {
 		url.searchParams.set("api_key", credential.value);
 		url.searchParams.set("per_page", "1");
 		url.searchParams.set("q", "Warnock");
-		const response = await fetch(url, {
+		const response = await withProviderTimeout(signal => fetch(url, {
 			headers: {
 				Accept: "application/json"
-			}
-		});
+			},
+			signal
+		}));
 		const { payload, text } = await readJson(response);
 
 		if (!response.ok) {
 			return {
-				detail: `OpenFEC probe failed with ${response.status}: ${summarizeBody(text)}`,
+				detail: `OpenFEC probe failed with ${response.status}: ${summarizeProviderBody(text)}`,
 				id: "openfec",
 				label: "OpenFEC",
 				source: credential.source,
@@ -273,7 +301,7 @@ async function checkOpenFec() {
 	}
 	catch (error) {
 		return {
-			detail: `Probe failed: ${error instanceof Error ? error.message : String(error)}`,
+			detail: formatProbeError(error),
 			id: "openfec",
 			label: "OpenFEC",
 			source: credential.source,
@@ -297,17 +325,18 @@ async function checkOpenStates() {
 	try {
 		const url = new URL("https://v3.openstates.org/jurisdictions");
 		url.searchParams.set("apikey", credential.value);
-		const response = await fetch(url, {
+		const response = await withProviderTimeout(signal => fetch(url, {
 			headers: {
 				Accept: "application/json"
-			}
-		});
+			},
+			signal
+		}));
 		const { payload, text } = await readJson(response);
 
 		if (!response.ok) {
 			if (response.status === 429) {
 				return {
-					detail: `Open States probe hit the current API rate limit (${response.status}): ${summarizeBody(text)}. Ballot Clarity should continue validating route behavior from locally saved provider data instead of treating this as a missing-credential failure.`,
+					detail: `Open States probe hit the current API rate limit (${response.status}): ${summarizeProviderBody(text)}. Ballot Clarity should continue validating route behavior from locally saved provider data instead of treating this as a missing-credential failure.`,
 					id: "openstates",
 					label: "Open States API",
 					source: credential.source,
@@ -316,7 +345,7 @@ async function checkOpenStates() {
 			}
 
 			return {
-				detail: `Open States probe failed with ${response.status}: ${summarizeBody(text)}`,
+				detail: `Open States probe failed with ${response.status}: ${summarizeProviderBody(text)}`,
 				id: "openstates",
 				label: "Open States API",
 				source: credential.source,
@@ -338,7 +367,7 @@ async function checkOpenStates() {
 	}
 	catch (error) {
 		return {
-			detail: `Probe failed: ${error instanceof Error ? error.message : String(error)}`,
+			detail: formatProbeError(error),
 			id: "openstates",
 			label: "Open States API",
 			source: credential.source,
@@ -364,17 +393,18 @@ async function checkLda() {
 		url.searchParams.set("client_name", "OpenAI");
 		url.searchParams.set("page", "1");
 		url.searchParams.set("page_size", "1");
-		const response = await fetch(url, {
+		const response = await withProviderTimeout(signal => fetch(url, {
 			headers: {
 				Accept: "application/json",
 				Authorization: `Token ${credential.value}`
-			}
-		});
+			},
+			signal
+		}));
 		const { payload, text } = await readJson(response);
 
 		if (!response.ok) {
 			return {
-				detail: `LDA probe failed with ${response.status}: ${summarizeBody(text)}`,
+				detail: `LDA probe failed with ${response.status}: ${summarizeProviderBody(text)}`,
 				id: "lda",
 				label: "LDA.gov API",
 				source: credential.source,
@@ -394,7 +424,7 @@ async function checkLda() {
 	}
 	catch (error) {
 		return {
-			detail: `Probe failed: ${error instanceof Error ? error.message : String(error)}`,
+			detail: formatProbeError(error),
 			id: "lda",
 			label: "LDA.gov API",
 			source: credential.source,

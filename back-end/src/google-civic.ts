@@ -590,13 +590,19 @@ export function createGoogleCivicLookup(lookupImpl: DnsLookupFn = dnsLookup as D
 	};
 }
 
-async function fetchGoogleCivicWithPreferredIpv4(resource: URL, headers: Record<string, string>) {
+async function fetchGoogleCivicWithPreferredIpv4(resource: URL, headers: Record<string, string>, signal?: AbortSignal) {
 	const response = await new Promise<{
 		headers: Record<string, string | string[] | undefined>;
 		statusCode: number;
 		statusMessage: string;
 		text: string;
 	}>((resolve, reject) => {
+		if (signal?.aborted) {
+			reject(new DOMException("The operation was aborted.", "AbortError"));
+			return;
+		}
+
+		let cleanupAbortListener = () => {};
 		const request = httpsRequest(resource, {
 			family: 4,
 			headers,
@@ -607,6 +613,7 @@ async function fetchGoogleCivicWithPreferredIpv4(resource: URL, headers: Record<
 				chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
 			});
 			response.on("end", () => {
+				cleanupAbortListener();
 				resolve({
 					headers: response.headers,
 					statusCode: response.statusCode ?? 500,
@@ -617,7 +624,16 @@ async function fetchGoogleCivicWithPreferredIpv4(resource: URL, headers: Record<
 			response.on("error", reject);
 		});
 
-		request.on("error", reject);
+		const abortRequest = () => {
+			request.destroy(new DOMException("The operation was aborted.", "AbortError"));
+		};
+
+		signal?.addEventListener("abort", abortRequest, { once: true });
+		cleanupAbortListener = () => signal?.removeEventListener("abort", abortRequest);
+		request.on("error", (error) => {
+			cleanupAbortListener();
+			reject(error);
+		});
 		request.end();
 	});
 
@@ -653,20 +669,23 @@ export async function fetchGoogleCivic(
 		forceIPv4 = shouldForceGoogleCivicIpv4(),
 		headers = {
 			Accept: "application/json"
-		}
+		},
+		signal
 	}: {
 		fetchImpl?: typeof fetch;
 		forceIPv4?: boolean;
 		headers?: Record<string, string>;
+		signal?: AbortSignal;
 	} = {}
 ) {
 	if (!forceIPv4 || fetchImpl !== fetch) {
 		return fetchImpl(resource, {
-			headers
+			headers,
+			signal
 		});
 	}
 
-	return fetchGoogleCivicWithPreferredIpv4(resource, headers);
+	return fetchGoogleCivicWithPreferredIpv4(resource, headers, signal);
 }
 
 export function createGoogleCivicClient(

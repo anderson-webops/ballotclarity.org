@@ -745,9 +745,9 @@ function rowToGuidePackage(row: GuidePackageRow): GuidePackageWorkflow {
 
 export function defaultContentSeed(): AdminContentItem[] {
 	const candidateItems = demoCandidates.map((candidate) => {
-		const sourceCoverage = `${candidate.sources.length} attached source${candidate.sources.length === 1 ? "" : "s"} with ${candidate.whatWeKnow.length} documented knowledge checks.`;
+		const sourceCoverage = `${candidate.sources.length} attached staged source${candidate.sources.length === 1 ? "" : "s"} with ${candidate.whatWeKnow.length} documented knowledge checks; not approved for public candidate publication.`;
 		const priority: AdminPriority = candidate.slug === "sandra-patel" ? "medium" : "low";
-		const status: AdminReviewStatus = candidate.slug === "sandra-patel" ? "needs-sources" : "published";
+		const status: AdminReviewStatus = candidate.slug === "sandra-patel" ? "needs-sources" : "in-review";
 
 		return {
 			assignedTo: candidate.slug === "sandra-patel" ? "Research queue" : "Editorial review",
@@ -760,13 +760,7 @@ export function defaultContentSeed(): AdminContentItem[] {
 			priority,
 			publicBallotSummary: candidate.ballotSummary,
 			publicSummary: candidate.summary,
-			published: true,
-			publishedAt: candidate.updatedAt,
-			publishApprovedAt: candidate.updatedAt,
-			publishApprovedBy: candidate.slug === "sandra-patel" ? "Research queue" : "Editorial review",
-			publishApprovalNote: candidate.slug === "sandra-patel"
-				? "Legacy published seed state retained until source review is completed."
-				: "Legacy seed content approved for launch baseline.",
+			published: false,
 			sourceCoverage,
 			status,
 			summary: candidate.summary,
@@ -784,13 +778,9 @@ export function defaultContentSeed(): AdminContentItem[] {
 		priority: index === 0 ? "medium" as const : "low" as const,
 		publicBallotSummary: measure.ballotSummary,
 		publicSummary: measure.summary,
-		published: true,
-		publishedAt: measure.updatedAt,
-		publishApprovedAt: measure.updatedAt,
-		publishApprovedBy: index === 0 ? "Managing editor" : "Editorial review",
-		publishApprovalNote: "Legacy seed content approved for launch baseline.",
-		sourceCoverage: `${measure.sources.length} attached source${measure.sources.length === 1 ? "" : "s"} with yes/no impact sections and fiscal notes.`,
-		status: index === 0 ? "in-review" as const : "published" as const,
+		published: false,
+		sourceCoverage: `${measure.sources.length} attached staged source${measure.sources.length === 1 ? "" : "s"} with yes/no impact sections and fiscal notes; not approved for public measure publication.`,
+		status: "in-review" as const,
 		summary: measure.summary,
 		title: measure.title,
 		updatedAt: measure.updatedAt
@@ -809,7 +799,7 @@ export function defaultContentSeed(): AdminContentItem[] {
 			publishedAt: demoElection.updatedAt,
 			publishApprovedAt: demoElection.updatedAt,
 			publishApprovedBy: "Editorial review",
-			publishApprovalNote: "Legacy launch coverage content approved for the seeded baseline.",
+			publishApprovalNote: "Approved only for the official-logistics guide shell; contest, candidate, and measure content remains unpublished until locally verified.",
 			sourceCoverage: `${demoElection.contests.length} contest sections with official notices and guide freshness metadata attached.`,
 			status: "in-review",
 			summary: "Cross-checking the Fulton County launch profile, official office links, and public-status language before the next public refresh.",

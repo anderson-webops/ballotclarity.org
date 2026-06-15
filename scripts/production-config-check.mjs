@@ -152,6 +152,53 @@ function checkPositiveInteger({ errors, key, value }) {
 	}
 }
 
+function checkOptionalHttpsUrl({ errors, key, value }) {
+	const raw = normalize(value);
+
+	if (!raw)
+		return null;
+
+	const url = parseUrl(raw);
+
+	if (!url) {
+		errors.push(issue(
+			"error",
+			`${key.toLowerCase()}.invalid`,
+			`${key} must be a valid absolute URL when set.`,
+		));
+		return null;
+	}
+
+	if (url.protocol !== "https:") {
+		errors.push(issue(
+			"error",
+			`${key.toLowerCase()}.https`,
+			`${key} must use https in production when set.`,
+		));
+	}
+
+	if (isLocalUrl(url)) {
+		errors.push(issue(
+			"error",
+			`${key.toLowerCase()}.local`,
+			`${key} must not point at localhost in production when set.`,
+		));
+	}
+
+	return url;
+}
+
+function warnWhenSetWithoutPair({ key, pairKey, value, pairValue, warnings }) {
+	if (!normalize(value) || normalize(pairValue))
+		return;
+
+	warnings.push(issue(
+		"warning",
+		`${key.toLowerCase()}.${pairKey.toLowerCase()}_missing`,
+		`${key} is set but ${pairKey} is not; confirm this ballot-content provider is intentionally inactive or pending access.`,
+	));
+}
+
 function readSnapshotMetadata({ errors, fs, snapshotPath }) {
 	const metadataPath = `${snapshotPath}.meta.json`;
 
@@ -320,6 +367,61 @@ export function evaluateProductionConfig({
 		errors,
 		key: "ADMIN_LOGIN_LOCKOUT_MS",
 		value: env.ADMIN_LOGIN_LOCKOUT_MS,
+	});
+	checkOptionalHttpsUrl({
+		errors,
+		key: "CTCL_BIP_API_URL",
+		value: env.CTCL_BIP_API_URL,
+	});
+	checkOptionalHttpsUrl({
+		errors,
+		key: "BALLOTPEDIA_API_BASE_URL",
+		value: env.BALLOTPEDIA_API_BASE_URL,
+	});
+	checkOptionalHttpsUrl({
+		errors,
+		key: "BALLOTREADY_API_URL",
+		value: env.BALLOTREADY_API_URL,
+	});
+	checkOptionalHttpsUrl({
+		errors,
+		key: "DEMOCRACY_WORKS_API_BASE_URL",
+		value: env.DEMOCRACY_WORKS_API_BASE_URL,
+	});
+	warnWhenSetWithoutPair({
+		key: "CTCL_BIP_API_KEY",
+		pairKey: "CTCL_BIP_API_URL",
+		pairValue: env.CTCL_BIP_API_URL,
+		value: env.CTCL_BIP_API_KEY,
+		warnings,
+	});
+	warnWhenSetWithoutPair({
+		key: "BALLOTPEDIA_API_BASE_URL",
+		pairKey: "BALLOTPEDIA_API_KEY",
+		pairValue: env.BALLOTPEDIA_API_KEY,
+		value: env.BALLOTPEDIA_API_BASE_URL,
+		warnings,
+	});
+	warnWhenSetWithoutPair({
+		key: "BALLOTREADY_API_KEY",
+		pairKey: "BALLOTREADY_API_URL",
+		pairValue: env.BALLOTREADY_API_URL,
+		value: env.BALLOTREADY_API_KEY,
+		warnings,
+	});
+	warnWhenSetWithoutPair({
+		key: "BALLOTREADY_API_URL",
+		pairKey: "BALLOTREADY_API_KEY",
+		pairValue: env.BALLOTREADY_API_KEY,
+		value: env.BALLOTREADY_API_URL,
+		warnings,
+	});
+	warnWhenSetWithoutPair({
+		key: "DEMOCRACY_WORKS_API_BASE_URL",
+		pairKey: "DEMOCRACY_WORKS_API_KEY",
+		pairValue: env.DEMOCRACY_WORKS_API_KEY,
+		value: env.DEMOCRACY_WORKS_API_BASE_URL,
+		warnings,
 	});
 
 	const adminStoreDriver = normalize(env.ADMIN_STORE_DRIVER).toLowerCase();

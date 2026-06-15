@@ -216,6 +216,10 @@ Server-only variables:
 - `GOOGLE_CIVIC_FORCE_IPV4`: when `true`, Google Civic requests prefer IPv4 egress so IPv4-restricted API keys work on hosts that otherwise default to IPv6
 - `OPENSTATES_FETCH_TIMEOUT_MS`: optional Open States request timeout in milliseconds for scheduled provider syncs
 - `CENSUS_GEOCODER_BENCHMARK`, `CENSUS_GEOCODER_VINTAGE`: optional overrides for reproducible Census geocoder lookups
+- `CTCL_BIP_API_URL`, `CTCL_BIP_API_KEY`: optional Center for Tech and Civic Life Ballot Information Project endpoint and access key once direct access is granted
+- `BALLOTPEDIA_API_KEY`, `BALLOTPEDIA_API_BASE_URL`: optional Ballotpedia API credentials and base URL override for future race, candidate, and measure ingestion
+- `BALLOTREADY_API_URL`, `BALLOTREADY_API_KEY`: optional BallotReady CivicEngine GraphQL endpoint and access key
+- `DEMOCRACY_WORKS_API_KEY`, `DEMOCRACY_WORKS_API_BASE_URL`: optional Democracy Works Elections API credentials and base URL override
 
 One-time bootstrap variables:
 
@@ -238,6 +242,7 @@ One-time or scheduled ingestion variables:
 
 For production, use unique random values for `ADMIN_API_KEY`, `ADMIN_BOOTSTRAP_PASSWORD`, `ADMIN_SESSION_SECRET`, and `CONTACT_ADDRESS_SESSION_SECRET`. The front-end and back-end must share the same `ADMIN_API_KEY`. Keep every `ADMIN_*` variable and protected-contact variable in the server environment only. Admin MFA TOTP secrets are stored in the admin database, so protect database files, snapshots, and backups as sensitive operational secrets.
 The public browser should call `/api/admin/*` on the Nuxt origin only. Those requests must terminate at the Nuxt server so the session cookie and server-held `ADMIN_API_KEY` stay inside the bridge layer.
+Optional ballot-content provider URLs must be valid HTTPS URLs in production when set. Missing optional providers are allowed, but one-sided key/endpoint setups are flagged by `npm run verify:production` so pending paid or partner integrations do not look active by accident.
 
 ## Deploy-time stale-client recovery
 

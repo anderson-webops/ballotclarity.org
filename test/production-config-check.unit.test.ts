@@ -147,6 +147,72 @@ test("production config check fails invalid throttle values", () => {
 	assert.ok(issueIds(evaluation, "errors").includes("public_lookup_rate_limit_window_ms.invalid"));
 });
 
+test("production config check allows valid optional ballot-content provider endpoints", () => {
+	const evaluation = evaluateProductionConfig({
+		env: buildProductionEnv({
+			BALLOTPEDIA_API_BASE_URL: "https://api4.ballotpedia.org/data",
+			BALLOTPEDIA_API_KEY: "ballotpedia-key",
+			BALLOTREADY_API_KEY: "ballotready-key",
+			BALLOTREADY_API_URL: "https://bpi.civicengine.com/graphql",
+			CTCL_BIP_API_KEY: "ctcl-key",
+			CTCL_BIP_API_URL: "https://ctcl.example.org/bip",
+			DEMOCRACY_WORKS_API_BASE_URL: "https://api.democracy.works/v2",
+			DEMOCRACY_WORKS_API_KEY: "democracy-key",
+		}),
+	});
+
+	assert.equal(evaluation.ok, true);
+	assert.deepEqual(evaluation.errors, []);
+	assert.deepEqual(evaluation.warnings, []);
+});
+
+test("production config check fails unsafe optional ballot-content provider endpoint URLs", () => {
+	const evaluation = evaluateProductionConfig({
+		env: buildProductionEnv({
+			BALLOTPEDIA_API_BASE_URL: "http://api4.ballotpedia.org/data",
+			BALLOTREADY_API_URL: "https://localhost:4000/graphql",
+			CTCL_BIP_API_URL: "not a url",
+			DEMOCRACY_WORKS_API_BASE_URL: "ftp://api.democracy.works/v2",
+		}),
+	});
+
+	assert.equal(evaluation.ok, false);
+	assert.ok(issueIds(evaluation, "errors").includes("ctcl_bip_api_url.invalid"));
+	assert.ok(issueIds(evaluation, "errors").includes("ballotpedia_api_base_url.https"));
+	assert.ok(issueIds(evaluation, "errors").includes("ballotready_api_url.local"));
+	assert.ok(issueIds(evaluation, "errors").includes("democracy_works_api_base_url.https"));
+});
+
+test("production config check warns for one-sided ballot-content provider configuration", () => {
+	const evaluation = evaluateProductionConfig({
+		env: buildProductionEnv({
+			BALLOTPEDIA_API_BASE_URL: "https://api4.ballotpedia.org/data",
+			BALLOTREADY_API_KEY: "ballotready-key",
+			CTCL_BIP_API_KEY: "ctcl-key",
+			DEMOCRACY_WORKS_API_BASE_URL: "https://api.democracy.works/v2",
+		}),
+	});
+
+	assert.equal(evaluation.ok, true);
+	assert.deepEqual(issueIds(evaluation, "warnings"), [
+		"ctcl_bip_api_key.ctcl_bip_api_url_missing",
+		"ballotpedia_api_base_url.ballotpedia_api_key_missing",
+		"ballotready_api_key.ballotready_api_url_missing",
+		"democracy_works_api_base_url.democracy_works_api_key_missing",
+	]);
+
+	const ballotReadyEndpointOnlyEvaluation = evaluateProductionConfig({
+		env: buildProductionEnv({
+			BALLOTREADY_API_URL: "https://bpi.civicengine.com/graphql",
+		}),
+	});
+
+	assert.equal(ballotReadyEndpointOnlyEvaluation.ok, true);
+	assert.deepEqual(issueIds(ballotReadyEndpointOnlyEvaluation, "warnings"), [
+		"ballotready_api_url.ballotready_api_key_missing",
+	]);
+});
+
 test("production config check fails missing live coverage and seed metadata", () => {
 	const missingEvaluation = evaluateProductionConfig({
 		env: buildProductionEnv({

@@ -13,6 +13,8 @@ It checks the environment values and active coverage snapshot that determine whe
 - `CONTACT_ADDRESS` or `NUXT_CONTACT_ADDRESS` is configured as a valid support email for the protected public contact route.
 - `CONTACT_ADDRESS_SESSION_SECRET` or `NUXT_CONTACT_ADDRESS_SESSION_SECRET` is present, long enough, and not an obvious placeholder value.
 - Optional public feedback, public lookup, and admin login throttle values are positive integers when set.
+- Optional ballot-content provider endpoint URLs use HTTPS, are valid absolute URLs, and do not point at localhost when set.
+- Optional ballot-content provider keys and endpoints are paired where the connector would otherwise be ignored or incomplete.
 - `ADMIN_STORE_DRIVER=postgres` and a Postgres `ADMIN_DATABASE_URL` or `DATABASE_URL` is configured.
 - `LIVE_COVERAGE_REQUIRED=true` is enabled.
 - `LIVE_COVERAGE_FILE` exists and has a matching `.meta.json` sidecar.
@@ -45,4 +47,4 @@ npm run verify:production -- --json
 
 This check does not replace content validation. Production-approved snapshot content still needs the backend snapshot publication validator to reject staged/reference candidates, mixed guide content, or staged guide layers.
 
-This check verifies the runtime contract around that content: public origins, admin persistence, protected contact configuration, secret posture, throttle configuration, live snapshot requirement, and snapshot provenance.
+This check verifies the runtime contract around that content: public origins, admin persistence, protected contact configuration, secret posture, throttle configuration, optional ballot-content provider endpoint safety, live snapshot requirement, and snapshot provenance.

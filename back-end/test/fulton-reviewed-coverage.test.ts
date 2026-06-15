@@ -113,6 +113,20 @@ test("production-approved validation rejects snapshots containing reference arch
 	assert.ok(validation.errors.some(error => /staged\/reference candidate names/i.test(error)));
 });
 
+test("production-approved validation rejects placeholder and internal public URLs", () => {
+	const snapshot = buildFultonOfficialLogisticsOnlySnapshot();
+	assert.ok(snapshot.jurisdiction);
+	assert.ok(snapshot.jurisdiction.officialResources[0]);
+	snapshot.jurisdiction.officialResources[0].url = "https://torresfordistrict7.example";
+
+	const validation = validateCoverageSnapshotForPublication(snapshot, approvedMetadata());
+
+	assert.equal(validation.ok, false);
+	assert.equal(validation.placeholderUrlMatches.length, 1);
+	assert.equal(validation.placeholderUrlMatches[0]?.hostname, "torresfordistrict7.example");
+	assert.ok(validation.errors.some(error => /placeholder or internal public URLs/i.test(error)));
+});
+
 test("production-approved validation rejects mixed or staged guide content", () => {
 	const validation = validateCoverageSnapshotForPublication(
 		buildSeedCoverageSnapshot(),

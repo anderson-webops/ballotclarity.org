@@ -27,6 +27,7 @@ const referenceArchiveCandidateNames = [
 	"Sandra Patel",
 ];
 const stagedGuideStatusValues = new Set(["seeded_demo", "staged_reference"]);
+const blockedSnapshotHostnameSuffixes = [".example", ".test", ".invalid", ".localhost", ".local", ".internal"];
 
 function normalize(value) {
 	return String(value ?? "").trim();
@@ -65,6 +66,37 @@ function parseUrl(value) {
 
 function isLocalUrl(url) {
 	return Boolean(url && localHostnames.has(url.hostname));
+}
+
+function isPrivateIpv4(hostname) {
+	const parts = hostname.split(".").map(part => Number(part));
+
+	if (parts.length !== 4 || parts.some(part => !Number.isInteger(part) || part < 0 || part > 255))
+		return false;
+
+	const [first, second] = parts;
+
+	return first === 10
+		|| first === 127
+		|| (first === 172 && second >= 16 && second <= 31)
+		|| (first === 192 && second === 168)
+		|| (first === 169 && second === 254)
+		|| (first === 0 && second === 0);
+}
+
+function isPlaceholderOrInternalHostname(rawHostname) {
+	const hostname = rawHostname.toLowerCase().replace(/^\[/u, "").replace(/\]$/u, "");
+
+	if (hostname === "localhost" || hostname === "::1" || isPrivateIpv4(hostname))
+		return true;
+
+	if (hostname === "example.com" || hostname === "example.org" || hostname === "example.net")
+		return true;
+
+	if (hostname.endsWith(".example.com") || hostname.endsWith(".example.org") || hostname.endsWith(".example.net"))
+		return true;
+
+	return blockedSnapshotHostnameSuffixes.some(suffix => hostname.endsWith(suffix));
 }
 
 function hasTruthyValue(value) {
@@ -260,6 +292,7 @@ function findSnapshotContentIssues(value, path = "$") {
 	const referenceMatches = [];
 	const stagedStatusPaths = [];
 	const mixedContentPaths = [];
+	const placeholderUrlMatches = [];
 
 	function visit(current, currentPath) {
 		if (typeof current === "string") {
@@ -270,6 +303,23 @@ function findSnapshotContentIssues(value, path = "$") {
 
 			if (stagedGuideStatusValues.has(current))
 				stagedStatusPaths.push(currentPath);
+
+			if (/^https?:\/\//iu.test(current)) {
+				try {
+					const url = new URL(current);
+
+					if (isPlaceholderOrInternalHostname(url.hostname)) {
+						placeholderUrlMatches.push({
+							hostname: url.hostname,
+							path: currentPath,
+							url: current,
+						});
+					}
+				}
+				catch {
+					// Invalid URLs are handled by field-specific checks where applicable.
+				}
+			}
 
 			return;
 		}
@@ -296,6 +346,7 @@ function findSnapshotContentIssues(value, path = "$") {
 
 	return {
 		mixedContentPaths,
+		placeholderUrlMatches,
 		referenceMatches,
 		stagedStatusPaths,
 	};
@@ -496,6 +547,15 @@ function checkSnapshotPayload({ errors, metadata, snapshot }) {
 			"error",
 			"live_coverage.snapshot_mixed_content",
 			"Production coverage snapshot cannot include guide content marked mixedContent=true.",
+		));
+	}
+
+	if (issues.placeholderUrlMatches.length) {
+		const matchedHosts = Array.from(new Set(issues.placeholderUrlMatches.map(match => match.hostname))).join(", ");
+		errors.push(issue(
+			"error",
+			"live_coverage.snapshot_placeholder_url",
+			`Production coverage snapshot cannot include placeholder or internal public URLs: ${matchedHosts}.`,
 		));
 	}
 }

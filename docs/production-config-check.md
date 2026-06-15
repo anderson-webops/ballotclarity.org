@@ -21,7 +21,7 @@ It checks the environment values and active coverage snapshot that determine whe
 - Snapshot metadata is `reviewed` or `production_approved`, uses `sourceType: "imported"`, and includes the required review timestamps.
 - `production_approved` snapshots include `approvedAt`.
 - `reviewed` and `production_approved` snapshot payloads include the minimum public coverage shape: election, jurisdiction, location, summaries, source context, and official resources.
-- `reviewed` and `production_approved` snapshot payloads do not contain known staged/reference candidate names, `seeded_demo` or `staged_reference` content markers, or `mixedContent: true`.
+- `reviewed` and `production_approved` snapshot payloads do not contain known staged/reference candidate names, placeholder or internal public URLs, `seeded_demo` or `staged_reference` content markers, or `mixedContent: true`.
 
 Reviewed-but-not-approved snapshots pass with a warning because Ballot Clarity may intentionally run an official-logistics-only reviewed package while public copy keeps that state visible. Seed, unknown, missing, or unreviewed snapshots fail.
 
@@ -47,6 +47,6 @@ npm run verify:production -- --json
 
 ## Scope
 
-This check does not replace full editorial content validation. It does provide a deploy-time backstop for the most dangerous snapshot states: production-eligible packages that are only empty shells, still carry reference-archive candidates, contain staged guide markers, or expose mixed-content flags.
+This check does not replace full editorial content validation. It does provide a deploy-time backstop for the most dangerous snapshot states: production-eligible packages that are only empty shells, still carry reference-archive candidates, contain placeholder or internal URLs, contain staged guide markers, or expose mixed-content flags.
 
 This check verifies the runtime contract around that content: public origins, admin persistence, protected contact configuration, secret posture, throttle configuration, optional ballot-content provider endpoint safety, live snapshot requirement, and snapshot provenance.

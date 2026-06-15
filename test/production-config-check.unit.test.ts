@@ -363,6 +363,22 @@ test("production config check rejects skeletal production snapshots without publ
 	assert.ok(issueIds(evaluation, "errors").includes("live_coverage.snapshot_public_shape"));
 });
 
+test("production config check rejects reviewed snapshots with placeholder public URLs", () => {
+	const snapshot = buildMinimalCoverageSnapshot();
+	const jurisdiction = snapshot.jurisdiction as { officialResources: Array<{ url: string }> };
+	jurisdiction.officialResources[0].url = "https://sample-ballot.example";
+
+	const evaluation = evaluateProductionConfig({
+		env: buildProductionEnv({
+			LIVE_COVERAGE_FILE: writeSnapshot("reviewed", {}, snapshot),
+		}),
+	});
+
+	assert.equal(evaluation.ok, false);
+	assert.ok(issueIds(evaluation, "warnings").includes("live_coverage.reviewed_not_approved"));
+	assert.ok(issueIds(evaluation, "errors").includes("live_coverage.snapshot_placeholder_url"));
+});
+
 test("production config check rejects approved snapshots with reference or staged guide content", () => {
 	const evaluation = evaluateProductionConfig({
 		env: buildProductionEnv({

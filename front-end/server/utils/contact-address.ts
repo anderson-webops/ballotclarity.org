@@ -205,7 +205,7 @@ function enforceRateLimit(event: H3Event) {
 	bucket.count += 1;
 
 	if (bucket.count > contactAddressRateLimitMax) {
-		setHeader(event, "Retry-After", Math.ceil((bucket.resetAt - now) / 1000));
+		setHeader(event, "Retry-After", String(Math.ceil((bucket.resetAt - now) / 1000)));
 		throw createError({
 			statusCode: 429,
 			statusMessage: "Too many contact address requests."

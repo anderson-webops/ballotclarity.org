@@ -2,7 +2,7 @@ import type { H3Event } from "h3";
 import { Buffer } from "node:buffer";
 import { createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import process from "node:process";
-import { createError, getCookie, getRequestHeader, getRequestURL, setCookie, setHeader, setResponseStatus } from "h3";
+import { createError } from "h3";
 import { useRuntimeConfig } from "#imports";
 
 export const contactAddressNonceCookieName = "ballot_clarity_contact_nonce";
@@ -45,6 +45,14 @@ interface ContactAddressSessionPayload {
 	expiresAt: number;
 	nonceHash: string;
 	version: typeof contactAddressSessionVersion;
+}
+
+interface CookieOptions {
+	httpOnly?: boolean;
+	maxAge?: number;
+	path?: string;
+	sameSite?: "lax" | "strict" | "none";
+	secure?: boolean;
 }
 
 function decodeCharacterCodes(codes: readonly number[]) {
@@ -106,6 +114,110 @@ function parseSession(rawValue: string | undefined, sessionSecret: string) {
 	}
 }
 
+function getNodeRequestHeader(event: H3Event, name: string) {
+	const value = event.node?.req.headers[name.toLowerCase()];
+
+	if (Array.isArray(value))
+		return value.join(", ");
+
+	return value;
+}
+
+function getFirstHeaderValue(value: string | undefined) {
+	return value?.split(",")[0]?.trim() || "";
+}
+
+function getNodeRequestURL(event: H3Event) {
+	const host = getFirstHeaderValue(getNodeRequestHeader(event, "x-forwarded-host"))
+		|| getFirstHeaderValue(getNodeRequestHeader(event, "host"))
+		|| "localhost";
+	const forwardedProto = getFirstHeaderValue(getNodeRequestHeader(event, "x-forwarded-proto"));
+	const protocol = forwardedProto || (event.node?.req.socket.encrypted ? "https" : "http");
+	const rawUrl = event.node?.req.url || "/";
+
+	try {
+		return new URL(rawUrl, `${protocol}://${host}`);
+	}
+	catch {
+		return new URL("/", `${protocol}://${host}`);
+	}
+}
+
+function setNodeResponseHeader(event: H3Event, name: string, value: string) {
+	event.node?.res.setHeader(name, value);
+}
+
+function setNodeResponseStatus(event: H3Event, statusCode: number, statusMessage: string) {
+	if (!event.node?.res)
+		return;
+
+	event.node.res.statusCode = statusCode;
+	event.node.res.statusMessage = statusMessage;
+}
+
+function getNodeCookie(event: H3Event, name: string) {
+	const cookieHeader = getNodeRequestHeader(event, "cookie");
+
+	if (!cookieHeader)
+		return undefined;
+
+	for (const part of cookieHeader.split(";")) {
+		const [rawName, ...rawValueParts] = part.trim().split("=");
+
+		if (rawName !== name)
+			continue;
+
+		const rawValue = rawValueParts.join("=");
+
+		try {
+			return decodeURIComponent(rawValue);
+		}
+		catch {
+			return rawValue;
+		}
+	}
+
+	return undefined;
+}
+
+function serializeCookie(name: string, value: string, options: CookieOptions) {
+	const parts = [`${name}=${encodeURIComponent(value)}`];
+
+	if (typeof options.maxAge === "number")
+		parts.push(`Max-Age=${Math.max(0, Math.floor(options.maxAge))}`);
+
+	if (options.path)
+		parts.push(`Path=${options.path}`);
+
+	if (options.sameSite)
+		parts.push(`SameSite=${options.sameSite.charAt(0).toUpperCase()}${options.sameSite.slice(1)}`);
+
+	if (options.httpOnly)
+		parts.push("HttpOnly");
+
+	if (options.secure)
+		parts.push("Secure");
+
+	return parts.join("; ");
+}
+
+function setNodeCookie(event: H3Event, name: string, value: string, options: CookieOptions) {
+	const response = event.node?.res;
+
+	if (!response)
+		return;
+
+	const serialized = serializeCookie(name, value, options);
+	const existing = response.getHeader("Set-Cookie");
+	const cookies = Array.isArray(existing)
+		? existing.map(String)
+		: existing
+			? [String(existing)]
+			: [];
+
+	response.setHeader("Set-Cookie", [...cookies, serialized]);
+}
+
 function getContactAddressSessionSecret(event: H3Event) {
 	const runtimeConfig = useRuntimeConfig(event);
 	const configuredSecret = process.env.NUXT_CONTACT_ADDRESS_SESSION_SECRET
@@ -128,10 +240,10 @@ function getConfiguredContactAddress(event: H3Event) {
 }
 
 function getRequestOrigin(event: H3Event) {
-	const requestUrl = getRequestURL(event);
-	const forwardedHost = getRequestHeader(event, "x-forwarded-host");
-	const forwardedProto = getRequestHeader(event, "x-forwarded-proto");
-	const host = forwardedHost || getRequestHeader(event, "host") || requestUrl.host;
+	const requestUrl = getNodeRequestURL(event);
+	const forwardedHost = getFirstHeaderValue(getNodeRequestHeader(event, "x-forwarded-host"));
+	const forwardedProto = getFirstHeaderValue(getNodeRequestHeader(event, "x-forwarded-proto"));
+	const host = forwardedHost || getFirstHeaderValue(getNodeRequestHeader(event, "host")) || requestUrl.host;
 	const protocol = forwardedProto || requestUrl.protocol.replace(/:$/, "") || "https";
 
 	return `${protocol}://${host}`;
@@ -150,17 +262,17 @@ function readOriginHeader(value: string | undefined) {
 }
 
 function getClientRateLimitKey(event: H3Event) {
-	const forwardedFor = getRequestHeader(event, "x-forwarded-for")?.split(",")[0]?.trim();
-	const realIp = getRequestHeader(event, "x-real-ip")?.trim();
+	const forwardedFor = getNodeRequestHeader(event, "x-forwarded-for")?.split(",")[0]?.trim();
+	const realIp = getNodeRequestHeader(event, "x-real-ip")?.trim();
 
 	return forwardedFor || realIp || event.node?.req.socket.remoteAddress || "unknown";
 }
 
 function enforceSameOrigin(event: H3Event) {
 	const expectedOrigin = getRequestOrigin(event);
-	const requestOrigin = readOriginHeader(getRequestHeader(event, "origin"));
-	const referrerOrigin = readOriginHeader(getRequestHeader(event, "referer"));
-	const fetchSite = getRequestHeader(event, "sec-fetch-site")?.toLowerCase();
+	const requestOrigin = readOriginHeader(getNodeRequestHeader(event, "origin"));
+	const referrerOrigin = readOriginHeader(getNodeRequestHeader(event, "referer"));
+	const fetchSite = getNodeRequestHeader(event, "sec-fetch-site")?.toLowerCase();
 
 	if (fetchSite && !["none", "same-origin"].includes(fetchSite)) {
 		throw createError({
@@ -205,7 +317,7 @@ function enforceRateLimit(event: H3Event) {
 	bucket.count += 1;
 
 	if (bucket.count > contactAddressRateLimitMax) {
-		setHeader(event, "Retry-After", String(Math.ceil((bucket.resetAt - now) / 1000)));
+		setNodeResponseHeader(event, "Retry-After", String(Math.ceil((bucket.resetAt - now) / 1000)));
 		throw createError({
 			statusCode: 429,
 			statusMessage: "Too many contact address requests."
@@ -214,8 +326,8 @@ function enforceRateLimit(event: H3Event) {
 }
 
 function isSecureRequest(event: H3Event) {
-	const forwardedProto = getRequestHeader(event, "x-forwarded-proto")?.toLowerCase();
-	const requestUrl = getRequestURL(event);
+	const forwardedProto = getFirstHeaderValue(getNodeRequestHeader(event, "x-forwarded-proto")).toLowerCase();
+	const requestUrl = getNodeRequestURL(event);
 
 	return forwardedProto === "https" || requestUrl.protocol === "https:";
 }
@@ -230,14 +342,14 @@ function issueContactAddressChallenge(event: H3Event, sessionSecret: string) {
 	}, sessionSecret);
 	const secure = isSecureRequest(event);
 
-	setCookie(event, contactAddressSessionCookieName, session, {
+	setNodeCookie(event, contactAddressSessionCookieName, session, {
 		httpOnly: true,
 		maxAge: contactAddressSessionMaxAgeSeconds,
 		path: "/",
 		sameSite: "lax",
 		secure
 	});
-	setCookie(event, contactAddressNonceCookieName, nonce, {
+	setNodeCookie(event, contactAddressNonceCookieName, nonce, {
 		httpOnly: false,
 		maxAge: contactAddressSessionMaxAgeSeconds,
 		path: "/",
@@ -247,8 +359,8 @@ function issueContactAddressChallenge(event: H3Event, sessionSecret: string) {
 }
 
 function isVerifiedContactAddressRequest(event: H3Event, sessionSecret: string) {
-	const submittedNonce = getRequestHeader(event, contactAddressNonceHeaderName)?.trim();
-	const session = parseSession(getCookie(event, contactAddressSessionCookieName), sessionSecret);
+	const submittedNonce = getNodeRequestHeader(event, contactAddressNonceHeaderName)?.trim();
+	const session = parseSession(getNodeCookie(event, contactAddressSessionCookieName), sessionSecret);
 
 	if (!submittedNonce || !session)
 		return false;
@@ -257,8 +369,8 @@ function isVerifiedContactAddressRequest(event: H3Event, sessionSecret: string) 
 }
 
 export function getProtectedContactAddress(event: H3Event) {
-	setHeader(event, "Cache-Control", "no-store, private");
-	setHeader(event, "Vary", "Cookie, Origin, Referer, Sec-Fetch-Site, X-Ballot-Clarity-Contact-Nonce");
+	setNodeResponseHeader(event, "Cache-Control", "no-store, private");
+	setNodeResponseHeader(event, "Vary", "Cookie, Origin, Referer, Sec-Fetch-Site, X-Ballot-Clarity-Contact-Nonce");
 
 	enforceSameOrigin(event);
 	enforceRateLimit(event);
@@ -267,7 +379,7 @@ export function getProtectedContactAddress(event: H3Event) {
 
 	if (!isVerifiedContactAddressRequest(event, sessionSecret)) {
 		issueContactAddressChallenge(event, sessionSecret);
-		setResponseStatus(event, 202, "Contact address challenge issued.");
+		setNodeResponseStatus(event, 202, "Contact address challenge issued.");
 		return {
 			address: null,
 			challenge: "contact_nonce_required"

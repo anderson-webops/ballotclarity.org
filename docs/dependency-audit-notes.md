@@ -1,5 +1,22 @@
 # Dependency Audit Notes
 
+## 2026-09-11 security refresh
+
+The audit begun September 10 found seven flagged packages in the previously committed root dependency tree. The findings trace to four dependencies, now pinned to patched releases:
+
+| Dependency | Previous | Patched | Advisory evidence |
+| --- | --- | --- | --- |
+| `fast-uri` | 3.1.5 | 3.1.6 | [URI normalization](https://github.com/advisories/GHSA-f65p-4m7j-42xc) |
+| `js-yaml` | 4.3.1 | 4.3.2 | [Merge-source resource exhaustion](https://github.com/advisories/GHSA-2883-xcg3-v3hh) |
+| `qs` | 6.15.3 | 6.16.0 | [Query parsing denial of service](https://github.com/advisories/GHSA-4mjr-xmp4-gh2g) |
+| `svgo` | 4.0.2 | 4.1.0 | [SVG sanitization bypass](https://github.com/advisories/GHSA-w27v-7q3p-w38r) |
+
+Root and standalone backend lockfiles retain registry integrity metadata and independently pass clean installation. Full, production-only, and standalone backend dependency audits report zero known vulnerabilities. The root refresh uses `npm update fast-uri js-yaml qs svgo --package-lock-only --ignore-scripts --no-fund --no-audit`: regenerating the lockfile alone did not advance the old overrides under npm 12. Both installed versions and the resulting lockfile were checked.
+
+Production and development dependency freshness was reviewed with `npm outdated --workspaces --include-workspace-root --long`. Compatible non-security updates remain available; this change narrowly updates the four affected dependencies and SVGO's required selector dependencies. It does not claim all packages are the latest releases. Node 24.18.1 and npm 12.0.2 remain the tested project toolchain.
+
+The workflow regression check now tests that all action references, including shorthand `- uses:` steps, are immutable 40-character commit hashes. It retains checks for required actions without rejecting future legitimate Dependabot SHA updates merely because they differ from a previously copied hash.
+
 ## 2026-07-30 supported dependency state
 
 The earlier Nuxt/Vite/esbuild advisory chain is resolved on the supported Nuxt 4 dependency line.

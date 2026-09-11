@@ -94,7 +94,7 @@
 	"overrides": {
 		"@bomb.sh/tab": "0.0.22",
 		"esbuild": "^0.28.1",
-		"js-yaml": "4.3.1",
+		"js-yaml": "4.3.2",
 		"launch-editor": "2.14.1",
 		"vite": {
 			".": "^8.2.0",
@@ -105,10 +105,11 @@
 			"archiver": "$archiver"
 		},
 		"simple-git": "3.36.0",
-		"fast-uri": "3.1.5",
+		"fast-uri": "3.1.6",
 		"postcss": "8.5.26",
 		"shell-quote": "1.10.0",
-		"svgo": "4.0.2",
+		"qs": "6.16.0",
+		"svgo": "4.1.0",
 		"tar": "7.5.22",
 		"valibot": "1.4.2"
 	},

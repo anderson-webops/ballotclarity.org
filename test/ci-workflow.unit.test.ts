@@ -9,6 +9,10 @@ function readText(path: string) {
 	return readFileSync(join(repoRoot, path), "utf8");
 }
 
+function actionReferences(workflow: string) {
+	return [...workflow.matchAll(/^\s*(?:-\s*)?uses:\s+([^@\s]+)@([^\s#]+)/gmu)];
+}
+
 function assertWorkflowCancelsStaleRuns(path: string) {
 	const workflow = readText(path);
 
@@ -27,20 +31,27 @@ test("GitHub workflows pin every third-party action to a commit", () => {
 		readText(".github/workflows/codeql.yml"),
 		readText(".github/workflows/qodana_code_quality.yml"),
 	].join("\n");
-	const actionReferences = [...workflows.matchAll(/^\s*uses:\s+([^@\s]+)@([^\s#]+)/gmu)];
+	const references = actionReferences(workflows);
 
-	assert.ok(actionReferences.length > 0);
-	for (const [, action, reference] of actionReferences)
+	assert.ok(references.length > 0);
+	for (const [, action, reference] of references)
 		assert.match(reference, /^[a-f\d]{40}$/u, `${action} must use a full commit SHA`);
 	assert.equal(
 		workflows.match(/persist-credentials: false/gu)?.length,
 		workflows.match(/uses:\s+actions\/checkout@/gu)?.length,
 	);
 
-	assert.match(workflows, /actions\/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1/);
-	assert.match(workflows, /actions\/setup-node@820762786026740c76f36085b0efc47a31fe5020/);
-	assert.match(workflows, /github\/codeql-action\/analyze@f205ea1c3313d32999d8d6a48b4f6530d4437b38/);
-	assert.match(workflows, /JetBrains\/qodana-action@b588768b6e7e6da579e518bc584f79de0d243692/);
+	for (const action of ["actions/checkout", "actions/setup-node", "github/codeql-action/analyze", "JetBrains/qodana-action"])
+		assert.ok(references.some(([, name]) => name === action), `${action} remains configured`);
+});
+
+test("the action pin check includes shorthand steps as well as named steps", () => {
+	const references = actionReferences("  - uses: actions/checkout@main\n  - name: Build\n    uses: example/build@v1");
+	assert.deepEqual(references.map(([, name, ref]) => [name, ref]), [
+		["actions/checkout", "main"], ["example/build", "v1"]
+	]);
+	for (const [, , reference] of references)
+		assert.doesNotMatch(reference, /^[a-f\d]{40}$/u);
 });
 
 test("CI runs the repository security audit policy", () => {

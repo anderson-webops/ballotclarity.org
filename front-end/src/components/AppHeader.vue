@@ -24,6 +24,8 @@ const isHeaderVisible = ref(true);
 const lastScrollY = ref(0);
 const activeDesktopGroup = ref<string | null>(null);
 const desktopNavRef = ref<ComponentPublicInstance<HTMLElement> | HTMLElement | null>(null);
+const mobileMenuTrigger = shallowRef<HTMLButtonElement | null>(null);
+const mobileNavigationId = `mobile-navigation-${useId()}`;
 
 const headerTopRevealOffset = 24;
 const headerDirectionThreshold = 12;
@@ -212,9 +214,27 @@ function handleDocumentPointerDown(event: PointerEvent) {
 	closeDesktopGroups();
 }
 
+function toggleMobileMenu(event: MouseEvent) {
+	mobileMenuTrigger.value = event.currentTarget as HTMLButtonElement;
+	isMenuOpen.value = !isMenuOpen.value;
+}
+
 function handleDocumentKeydown(event: KeyboardEvent) {
-	if (event.key === "Escape")
-		closeDesktopGroups();
+	if (event.key !== "Escape" || event.defaultPrevented)
+		return;
+
+	const desktopNavElement: HTMLElement | null | undefined = desktopNavRef.value instanceof HTMLElement
+		? desktopNavRef.value
+		: desktopNavRef.value?.$el;
+	const returnFocus = isMenuOpen.value
+		? mobileMenuTrigger.value
+		: desktopNavElement?.querySelector<HTMLButtonElement>("button[aria-expanded=\"true\"]");
+	isMenuOpen.value = false;
+	closeDesktopGroups();
+	if (returnFocus) {
+		event.preventDefault();
+		returnFocus.focus();
+	}
 }
 
 onMounted(() => {
@@ -343,8 +363,9 @@ onBeforeUnmount(() => {
 						type="button"
 						class="text-app-ink border border-app-line rounded-full bg-white inline-flex shrink-0 h-10 w-10 shadow-sm transition items-center justify-center dark:text-app-text-dark hover:text-app-accent dark:border-app-line-dark hover:border-app-accent dark:bg-app-panel-dark xl:hidden focus-ring"
 						:aria-expanded="isMenuOpen"
+						:aria-controls="mobileNavigationId"
 						aria-label="Toggle navigation"
-						@click="isMenuOpen = !isMenuOpen"
+						@click="toggleMobileMenu"
 					>
 						<span :class="isMenuOpen ? 'i-carbon-close' : 'i-carbon-menu'" class="text-lg" />
 					</button>
@@ -354,15 +375,16 @@ onBeforeUnmount(() => {
 					type="button"
 					class="text-app-ink border border-app-line rounded-full bg-white inline-flex shrink-0 h-10 w-10 shadow-sm transition items-center justify-center dark:text-app-text-dark hover:text-app-accent dark:border-app-line-dark hover:border-app-accent dark:bg-app-panel-dark md:hidden focus-ring"
 					:aria-expanded="isMenuOpen"
+					:aria-controls="mobileNavigationId"
 					aria-label="Toggle navigation"
-					@click="isMenuOpen = !isMenuOpen"
+					@click="toggleMobileMenu"
 				>
 					<span :class="isMenuOpen ? 'i-carbon-close' : 'i-carbon-menu'" class="text-lg" />
 				</button>
 			</div>
 		</div>
 
-		<div v-if="isMenuOpen" class="px-4 pb-4 pt-2.5 border-t border-app-line/80 bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark xl:hidden">
+		<div v-if="isMenuOpen" :id="mobileNavigationId" class="px-4 pb-4 pt-2.5 border-t border-app-line/80 bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark xl:hidden">
 			<nav class="space-y-5" aria-label="Mobile navigation">
 				<div class="space-y-2">
 					<NuxtLink

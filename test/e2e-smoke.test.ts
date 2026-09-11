@@ -7,7 +7,7 @@ import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import process from "node:process";
-import test, { after, before } from "node:test";
+import test, { after, before, type TestContext } from "node:test";
 import { setTimeout as delay } from "node:timers/promises";
 import { buildActiveNationwideLookupCookieFromContext } from "../back-end/src/active-nationwide-lookup.ts";
 import { mergeRepresentativeMatchesWithSupplementalRecords } from "../back-end/src/supplemental-officeholders.ts";
@@ -583,6 +583,181 @@ async function navigateAndWait(cdp: CdpSession, url: string, label: string) {
 	await waitForDocumentReady(cdp, url, label);
 }
 
+async function withResilienceBrowser(t: TestContext, run: (cdp: CdpSession) => Promise<void>) {
+	const chromeExecutable = findChromeExecutable();
+	if (!chromeExecutable) {
+		t.skip("Chrome is required for voter-flow resilience checks.");
+		return;
+	}
+	const port = await getFreePort();
+	const userDataDir = mkdtempSync(join(e2eTempDir, "resilience-browser-"));
+	const chrome = startChromeProcess(chromeExecutable, [
+		`--remote-debugging-port=${port}`, `--user-data-dir=${userDataDir}`,
+		"--headless=new", "--disable-gpu", "--no-first-run", "--no-default-browser-check", "about:blank"
+	]);
+	let cdp: CdpSession | undefined;
+	try {
+		const targets = await waitForJson(`http://127.0.0.1:${port}/json/list`, "resilience browser");
+		const target = targets.find((entry: { type: string }) => entry.type === "page");
+		cdp = await connectToCdp(target.webSocketDebuggerUrl);
+		await cdp.send("Page.enable");
+		await cdp.send("Runtime.enable");
+		await run(cdp);
+	}
+	finally {
+		await cdp?.close();
+		await stopChromeProcess(chrome.child, userDataDir);
+	}
+}
+
+const hydratedCivicState = "document.querySelector('#__nuxt')?.__vue_app__?.config.globalProperties.$pinia?.state.value.civic?.isHydrated === true";
+
+test("voter resilience: Escape closes navigation and returns focus on mobile and desktop", async (t) => {
+	await withResilienceBrowser(t, async (cdp) => {
+		await navigateAndWait(cdp, appBaseUrl, "keyboard navigation home");
+		await waitForRuntimeCondition(cdp, hydratedCivicState, Boolean, "keyboard navigation hydration");
+		for (const width of [390, 1280]) {
+			await cdp.send("Emulation.setDeviceMetricsOverride", { width, height: 844, deviceScaleFactor: 1, mobile: false });
+			const selector = width === 390 ? 'button[aria-label="Toggle navigation"]' : 'nav[aria-label="Primary"] button';
+			await cdp.send("Runtime.evaluate", { expression: `
+				window.navTrigger = Array.from(document.querySelectorAll(${JSON.stringify(selector)})).find(button => button.getClientRects().length);
+				window.navTrigger.click();
+			` });
+			await waitForRuntimeCondition(cdp, "window.navTrigger.getAttribute('aria-expanded')", value => value === "true", "navigation opens");
+			await cdp.send("Runtime.evaluate", { expression: "document.getElementById(window.navTrigger.getAttribute('aria-controls')).querySelector('a').focus()" });
+			await cdp.send("Input.dispatchKeyEvent", { type: "keyDown", key: "Escape", code: "Escape", windowsVirtualKeyCode: 27 });
+			await cdp.send("Input.dispatchKeyEvent", { type: "keyUp", key: "Escape", code: "Escape", windowsVirtualKeyCode: 27 });
+			await waitForRuntimeCondition(cdp, "window.navTrigger.getAttribute('aria-expanded') === 'false' && document.activeElement === window.navTrigger", Boolean, "navigation closes and focus returns");
+		}
+	});
+});
+
+test("voter resilience: blocked storage does not prevent hydration or a successful lookup", async (t) => {
+	await withResilienceBrowser(t, async (cdp) => {
+		await cdp.send("Page.addScriptToEvaluateOnNewDocument", { source: `
+			const originalSetItem = Storage.prototype.setItem;
+			Storage.prototype.setItem = function (key, value) {
+				if (key === 'ballot-clarity:civic-store') throw new DOMException('Storage is full', 'QuotaExceededError');
+				return originalSetItem.call(this, key, value);
+			};
+		` });
+		await navigateAndWait(cdp, appBaseUrl, "blocked-storage home");
+		await waitForRuntimeCondition(cdp, hydratedCivicState, Boolean, "blocked-storage hydration");
+		await waitForBodyText(cdp, /Changes will last only while this page is open/u, "memory-only notice");
+		await cdp.send("Runtime.evaluate", { expression: `
+			const input = document.querySelector('input[id^="address-lookup-"]');
+			input.value = '30022'; input.dispatchEvent(new Event('input', { bubbles: true }));
+			input.form.requestSubmit();
+		` });
+		await waitForRuntimeCondition(cdp, "location.pathname", value => value !== "/", "lookup navigation despite storage failure");
+		assert.doesNotMatch(await getDocumentBodyText(cdp), /QuotaExceededError|Storage is full/u);
+	});
+});
+
+test("voter resilience: malformed saved preferences cannot strand hydration", async (t) => {
+	await withResilienceBrowser(t, async (cdp) => {
+		await cdp.send("Page.addScriptToEvaluateOnNewDocument", { source: `
+			localStorage.setItem('ballot-clarity:civic-store', JSON.stringify({
+				compareList: [null, 42, ' candidate-a ', 'candidate-a'],
+				selectedIssues: false, ballotPlan: { invalid: null }, ballotViewMode: 'invalid'
+			}));
+		` });
+		await navigateAndWait(cdp, appBaseUrl, "malformed-storage home");
+		await waitForRuntimeCondition(cdp, hydratedCivicState, Boolean, "malformed-storage hydration");
+		const saved = await cdp.send("Runtime.evaluate", {
+			expression: "JSON.parse(localStorage.getItem('ballot-clarity:civic-store'))", returnByValue: true
+		});
+		assert.deepEqual(saved.result.value.compareList, ["candidate-a"]);
+		assert.deepEqual(saved.result.value.selectedIssues, []);
+		assert.deepEqual(saved.result.value.ballotPlan, {});
+		assert.equal(saved.result.value.ballotViewMode, "quick");
+	});
+});
+
+test("voter resilience: editing a pending lookup ignores its late response", async (t) => {
+	await withResilienceBrowser(t, async (cdp) => {
+		await navigateAndWait(cdp, appBaseUrl, "pending-lookup home");
+		await waitForRuntimeCondition(cdp, hydratedCivicState, Boolean, "pending-lookup hydration");
+		await cdp.send("Runtime.evaluate", { expression: `
+			const originalFetch = window.fetch;
+			window.fetch = (input, options) => String(input).endsWith('/location')
+				? new Promise(resolve => window.completeOldLookup = () => resolve(new Response(${JSON.stringify(JSON.stringify(nationwideLookupSnapshot.nationwideLookupResult))}, { headers: { 'content-type': 'application/json' } })))
+				: originalFetch(input, options);
+			const field = document.querySelector('input[id^="address-lookup-"]');
+			field.value = '84604'; field.dispatchEvent(new Event('input', { bubbles: true }));
+			field.form.requestSubmit();
+		` });
+		await waitForRuntimeCondition(cdp, "typeof window.completeOldLookup === 'function'", Boolean, "pending request started");
+		await cdp.send("Runtime.evaluate", { expression: `
+			field.value = '30022'; field.dispatchEvent(new Event('input', { bubbles: true }));
+		` });
+		await cdp.send("Runtime.evaluate", { expression: "window.completeOldLookup()" });
+		await delay(400);
+		const state = await cdp.send("Runtime.evaluate", { expression: `({
+			path: location.pathname,
+			input: document.querySelector('input[id^="address-lookup-"]')?.value,
+			pending: document.querySelector('form[aria-busy]')?.getAttribute('aria-busy')
+		})`, returnByValue: true });
+		assert.equal(state.result.value.path, "/");
+		assert.equal(state.result.value.input, "30022");
+		assert.equal(state.result.value.pending, "false");
+	});
+});
+
+test("voter resilience: search failures offer a retry and retain the query", async (t) => {
+	await withResilienceBrowser(t, async (cdp) => {
+		await navigateAndWait(cdp, `${appBaseUrl}/search?q=Fulton`, "search initial results");
+		await waitForRuntimeCondition(cdp, hydratedCivicState, Boolean, "search hydration");
+		await cdp.send("Runtime.evaluate", { expression: `
+			const originalFetch = window.fetch;
+			window.fetch = (input, options) => window.failSearch !== false && String(input).includes('/search?')
+				? Promise.resolve(new Response('{}', { status: 503, headers: { 'content-type': 'application/json' } }))
+				: originalFetch(input, options);
+			const field = document.getElementById('site-search');
+			field.value = 'Georgia'; field.dispatchEvent(new Event('input', { bubbles: true }));
+			field.form.requestSubmit();
+		` });
+		await waitForBodyText(cdp, /Search is temporarily unavailable/u, "search failure message");
+		assert.doesNotMatch(await getDocumentBodyText(cdp), /No results for/u);
+		await cdp.send("Runtime.evaluate", { expression: `
+			window.failSearch = false;
+			Array.from(document.querySelectorAll('button')).find(button => button.textContent.trim() === 'Try again').click();
+		` });
+		await waitForRuntimeCondition(cdp, "document.querySelector('main')?.innerText", value => typeof value === "string" && /Fulton County/u.test(value) && !/temporarily unavailable/u.test(value), "search retry results");
+		const title = await cdp.send("Runtime.evaluate", { expression: "document.title", returnByValue: true });
+		assert.match(title.result.value, /Search: Georgia/u);
+	});
+});
+
+test("voter resilience: a manual lookup cancels a slower automatic location guess", async (t) => {
+	await withResilienceBrowser(t, async (cdp) => {
+		await cdp.send("Page.addScriptToEvaluateOnNewDocument", { source: `
+			const originalFetch = window.fetch;
+			window.fetch = (input, options) => {
+				if (!String(input).endsWith('/location/guess')) return originalFetch(input, options);
+				options.signal.addEventListener('abort', () => window.guessWasAborted = true);
+				return new Promise(resolve => window.completeGuess = () => resolve(new Response(${JSON.stringify(JSON.stringify({ ...nationwideLookupSnapshot.nationwideLookupResult, detectedFromIp: true }))}, { headers: { 'content-type': 'application/json' } })));
+			};
+		` });
+		await navigateAndWait(cdp, appBaseUrl, "automatic-guess home");
+		await waitForRuntimeCondition(cdp, "typeof window.completeGuess === 'function'", Boolean, "automatic guess pending");
+		await cdp.send("Runtime.evaluate", { expression: `
+			const field = document.querySelector('input[id^="address-lookup-"]');
+			field.value = '30022'; field.dispatchEvent(new Event('input', { bubbles: true }));
+			field.form.requestSubmit();
+		` });
+		await waitForRuntimeCondition(cdp, "location.pathname", value => value !== "/", "manual lookup navigation");
+		await cdp.send("Runtime.evaluate", { expression: "window.completeGuess()" });
+		await delay(200);
+		const result = await cdp.send("Runtime.evaluate", { expression: `({
+			aborted: window.guessWasAborted,
+			detectedFromIp: document.querySelector('#__nuxt').__vue_app__.config.globalProperties.$pinia.state.value.civic.nationwideLookupResult?.detectedFromIp ?? false
+		})`, returnByValue: true });
+		assert.equal(result.result.value.aborted, true);
+		assert.equal(result.result.value.detectedFromIp, false);
+	});
+});
+
 async function waitForUrl(url: string, label: string) {
 	for (let attempt = 0; attempt < 60; attempt += 1) {
 		try {
@@ -667,6 +842,9 @@ before(async () => {
 		ACTIVE_LOOKUP_COOKIE_SECRET: activeLookupCookieSecret,
 		DATABASE_URL: "",
 		LIVE_COVERAGE_FILE: localCoverageFile,
+		LOCATION_GUESS_MODE: "proxy_headers",
+		LOCATION_GUESS_PROXY_POSTAL_CODE_HEADERS: "x-audit-postal-code",
+		LOCATION_GUESS_PROXY_HEADERS_TRUSTED: "true",
 		PORT: String(apiPort)
 	});
 	apiProcess = api.child;

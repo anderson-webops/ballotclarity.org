@@ -11,16 +11,18 @@ interface PageSeoInput {
 	title: string;
 }
 
-export function usePageSeo(input: PageSeoInput) {
+export function usePageSeo(input: MaybeRefOrGetter<PageSeoInput>) {
 	const siteUrl = useSiteUrl();
-	const description = input.description ?? appDescription;
-	const resolvedPath = input.path ?? input.canonicalPath;
-	const url = resolvedPath ? buildSiteUrl(resolvedPath) : siteUrl;
-	const canonicalUrl = input.canonicalPath ? buildSiteUrl(input.canonicalPath) : url;
+	const page = computed(() => toValue(input));
+	const description = computed(() => page.value.description ?? appDescription);
+	const canonicalUrl = computed(() => {
+		const path = page.value.canonicalPath ?? page.value.path;
+		return path ? `${siteUrl}${path.startsWith("/") ? path : `/${path}`}` : siteUrl;
+	});
 	const socialImageUrl = buildSiteUrl(appSocialImagePath);
-	const jsonLdEntries = (Array.isArray(input.jsonLd) ? input.jsonLd : [input.jsonLd]).filter(
+	const jsonLdEntries = computed(() => (Array.isArray(page.value.jsonLd) ? page.value.jsonLd : [page.value.jsonLd]).filter(
 		(entry): entry is Record<string, unknown> => Boolean(entry)
-	);
+	));
 
 	useSeoMeta({
 		description,
@@ -28,29 +30,29 @@ export function usePageSeo(input: PageSeoInput) {
 		ogImage: socialImageUrl,
 		ogImageAlt: appSocialImageAlt,
 		ogSiteName: appName,
-		ogTitle: input.title,
-		ogType: input.ogType ?? "website",
+		ogTitle: () => page.value.title,
+		ogType: () => page.value.ogType ?? "website",
 		ogUrl: canonicalUrl,
-		robots: input.robots,
-		title: input.title,
+		robots: () => page.value.robots,
+		title: () => page.value.title,
 		twitterCard: "summary_large_image",
 		twitterDescription: description,
 		twitterImage: socialImageUrl,
 		twitterImageAlt: appSocialImageAlt,
-		twitterTitle: input.title,
+		twitterTitle: () => page.value.title,
 	});
 
-	useHead({
+	useHead(() => ({
 		link: [
 			{
-				href: canonicalUrl,
+				href: canonicalUrl.value,
 				rel: "canonical"
 			}
 		],
-		script: jsonLdEntries.map((entry, index) => ({
+		script: jsonLdEntries.value.map((entry, index) => ({
 			innerHTML: serializeJsonLd(entry),
 			key: `jsonld-${index}`,
 			type: "application/ld+json"
 		}))
-	});
+	}));
 }

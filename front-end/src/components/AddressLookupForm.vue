@@ -37,6 +37,7 @@ const privacyId = `${inputId}-privacy`;
 const errorId = `${inputId}-error`;
 const actionsId = `${inputId}-actions`;
 const lookupInput = ref<HTMLInputElement | null>(null);
+let activeRequest: AbortController | null = null;
 const locationGuessUi = computed(() => buildLocationGuessUiContent(coverageData.value?.locationGuess ?? null));
 const shouldShowInlineResults = computed(() => props.showInlineResults !== false);
 const inputDescribedBy = computed(() => [
@@ -48,11 +49,21 @@ const inputDescribedBy = computed(() => [
 ].filter(Boolean).join(" "));
 
 watch(query, () => {
+	cancelLookup();
+	errorMessage.value = "";
 	if (lookupResult.value) {
 		lookupResult.value = null;
 		emit("lookupCleared");
 	}
-});
+}, { flush: "sync" });
+
+function cancelLookup() {
+	activeRequest?.abort();
+	activeRequest = null;
+	isPending.value = false;
+}
+
+onBeforeUnmount(cancelLookup);
 
 async function openLookupAction(action: LocationLookupAction) {
 	if (action.kind !== "ballot-guide" || !action.location || !action.electionSlug)
@@ -73,6 +84,7 @@ async function openLookupAction(action: LocationLookupAction) {
 }
 
 async function applyLookup(queryValue: string, selectionId?: string) {
+	cancelLookup();
 	errorMessage.value = "";
 	lookupResult.value = null;
 
@@ -84,6 +96,9 @@ async function applyLookup(queryValue: string, selectionId?: string) {
 	}
 
 	isPending.value = true;
+	civicStore.beginManualLookup();
+	const request = new AbortController();
+	activeRequest = request;
 
 	try {
 		const response = await api<LocationLookupResponse>("/location", {
@@ -91,8 +106,11 @@ async function applyLookup(queryValue: string, selectionId?: string) {
 				q: queryValue,
 				...(selectionId ? { selectionId } : {})
 			},
-			method: "POST"
+			method: "POST",
+			signal: request.signal
 		});
+		if (activeRequest !== request || request.signal.aborted)
+			return;
 		civicStore.setLookupResponse(response, props.election ?? null);
 		const normalizedResult = normalizeLookupResponseForDisplay(response, props.election ?? null);
 		lookupResult.value = normalizedResult;
@@ -105,11 +123,15 @@ async function applyLookup(queryValue: string, selectionId?: string) {
 		else if (selectionId && response.location && response.electionSlug)
 			await navigateTo(buildPublishedGuideDestination(response) ?? `/elections/${response.electionSlug}`);
 	}
-	catch (error) {
-		errorMessage.value = error instanceof Error ? error.message : "Unable to load civic results right now.";
+	catch {
+		if (activeRequest === request && !request.signal.aborted)
+			errorMessage.value = "We could not load civic results. Check your connection and try again in a moment.";
 	}
 	finally {
-		isPending.value = false;
+		if (activeRequest === request) {
+			activeRequest = null;
+			isPending.value = false;
+		}
 	}
 }
 

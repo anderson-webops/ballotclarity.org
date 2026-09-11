@@ -16,33 +16,38 @@ export default defineNuxtPlugin((nuxtApp) => {
 		civicStore.markHydrated();
 
 		const hasManualLookupContext = Boolean(
-			civicStore.selectedLocation
+			civicStore.lookupRevision > 0
+			|| civicStore.selectedLocation
 			|| (civicStore.nationwideLookupResult && !civicStore.nationwideLookupResult.detectedFromIp)
 			|| (civicStore.lookupContext && !civicStore.nationwideLookupResult)
 		);
 
 		if (hasManualLookupContext)
 			return;
+		const lookupRevision = civicStore.lookupRevision;
+		const guessRequest = new AbortController();
+		const stopWatching = watch(() => civicStore.lookupRevision, () => guessRequest.abort(), { flush: "sync" });
 
 		void (coverageState.data.value
 			? Promise.resolve(coverageState.data.value)
-			: api<CoverageResponse>("/coverage")
+			: api<CoverageResponse>("/coverage", { signal: guessRequest.signal })
 					.then((coverage) => {
 						coverageState.data.value = coverage;
 						return coverage;
 					}))
 			.then((coverage) => {
-				if (!canGuessLocationOnLoad(coverage?.locationGuess ?? null))
+				if (civicStore.lookupRevision !== lookupRevision || !canGuessLocationOnLoad(coverage?.locationGuess ?? null))
 					return null;
 
-				return api<LocationLookupResponse>("/location/guess");
+				return api<LocationLookupResponse>("/location/guess", { signal: guessRequest.signal });
 			})
 			.then((response) => {
-				if (!response || response.result !== "resolved")
+				if (!response || response.result !== "resolved" || civicStore.lookupRevision !== lookupRevision)
 					return;
 
 				civicStore.setLookupResponse(response, null);
 			})
-			.catch(() => {});
+			.catch(() => {})
+			.finally(stopWatching);
 	});
 });

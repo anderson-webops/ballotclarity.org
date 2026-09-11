@@ -9,6 +9,7 @@ import type {
 } from "~/types/civic";
 import type { LookupContextState } from "~/utils/guide-entry";
 import { defineStore } from "pinia";
+import { normalizeStoredBallotPlan, normalizeStoredStrings } from "~/utils/civic-preferences";
 import {
 	sanitizeLocationSelectionForStorage,
 	sanitizeNationwideLookupResultForStorage
@@ -42,11 +43,7 @@ function defaultSnapshot(): CivicStoreSnapshot {
 }
 
 export function normalizeCompareSlugs(slugs: readonly string[]) {
-	return Array.from(new Set(
-		slugs
-			.map(slug => slug.trim())
-			.filter(Boolean)
-	)).slice(0, 3);
+	return normalizeStoredStrings(slugs).slice(0, 3);
 }
 
 export function parseCompareQuerySlugs(value: string | readonly (string | null)[] | null | undefined) {
@@ -112,7 +109,10 @@ function readSnapshot(): CivicStoreSnapshot {
 		return {
 			...defaultSnapshot(),
 			...parsed,
-			ballotPlan: parsed.ballotPlan ?? {},
+			ballotPlan: normalizeStoredBallotPlan(parsed.ballotPlan),
+			ballotViewMode: parsed.ballotViewMode === "deep" ? "deep" : "quick",
+			compareList: normalizeCompareSlugs(parsed.compareList ?? []),
+			selectedIssues: normalizeStoredStrings(parsed.selectedIssues),
 			nationwideLookupResult: sanitizeNationwideLookupResultForStorage(parsed.nationwideLookupResult),
 			selectedLocation: sanitizeLocationSelectionForStorage(parsed.selectedLocation)
 		};
@@ -128,17 +128,22 @@ export const useCivicStore = defineStore("civic", {
 		ballotViewMode: "quick" as BallotViewMode,
 		compareList: [] as string[],
 		isHydrated: false,
+		lookupRevision: 0,
 		lookupContext: null as LookupContextState | null,
 		nationwideLookupResult: null as NationwideLookupResultContext | null,
 		selectedElection: null as ElectionSummary | null,
 		selectedIssues: [] as string[],
 		selectedLocation: null as LocationSelection | null,
+		storageUnavailable: false,
 	}),
 	getters: {
 		ballotPlanCount: state => Object.keys(state.ballotPlan).length,
 		compareCount: state => state.compareList.length,
 	},
 	actions: {
+		beginManualLookup() {
+			this.lookupRevision += 1;
+		},
 		clearBallotPlan() {
 			this.ballotPlan = {};
 			this.persist();
@@ -183,16 +188,22 @@ export const useCivicStore = defineStore("civic", {
 			if (!import.meta.client)
 				return;
 
-			window.localStorage.setItem(civicStorageKey, JSON.stringify({
-				ballotPlan: this.ballotPlan,
-				ballotViewMode: this.ballotViewMode,
-				compareList: this.compareList,
-				lookupContext: this.lookupContext,
-				nationwideLookupResult: sanitizeNationwideLookupResultForStorage(this.nationwideLookupResult),
-				selectedElection: this.selectedElection,
-				selectedIssues: this.selectedIssues,
-				selectedLocation: sanitizeLocationSelectionForStorage(this.selectedLocation)
-			} satisfies CivicStoreSnapshot));
+			try {
+				window.localStorage.setItem(civicStorageKey, JSON.stringify({
+					ballotPlan: this.ballotPlan,
+					ballotViewMode: this.ballotViewMode,
+					compareList: this.compareList,
+					lookupContext: this.lookupContext,
+					nationwideLookupResult: sanitizeNationwideLookupResultForStorage(this.nationwideLookupResult),
+					selectedElection: this.selectedElection,
+					selectedIssues: this.selectedIssues,
+					selectedLocation: sanitizeLocationSelectionForStorage(this.selectedLocation)
+				} satisfies CivicStoreSnapshot));
+				this.storageUnavailable = false;
+			}
+			catch {
+				this.storageUnavailable = true;
+			}
 		},
 		removeFromCompare(slug: string) {
 			this.compareList = this.compareList.filter(item => item !== slug);

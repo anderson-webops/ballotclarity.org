@@ -5,7 +5,7 @@ const route = useRoute();
 const siteUrl = useSiteUrl();
 const searchInput = ref(typeof route.query.q === "string" ? route.query.q : "");
 const activeQuery = computed(() => typeof route.query.q === "string" ? route.query.q : "");
-const { data, pending } = await useSearchResults(activeQuery);
+const { data, error, pending, refresh } = await useSearchResults(activeQuery);
 
 watch(() => route.query.q, (value) => {
 	searchInput.value = typeof value === "string" ? value : "";
@@ -13,6 +13,10 @@ watch(() => route.query.q, (value) => {
 
 async function submitSearch() {
 	const nextQuery = searchInput.value.trim();
+	if (nextQuery === activeQuery.value) {
+		await refresh();
+		return;
+	}
 
 	await navigateTo({
 		path: "/search",
@@ -20,7 +24,7 @@ async function submitSearch() {
 	});
 }
 
-usePageSeo({
+usePageSeo(() => ({
 	description: activeQuery.value
 		? `Search Ballot Clarity for ${activeQuery.value}.`
 		: "Search Ballot Clarity across districts, contests, elections, candidates, measures, and source records.",
@@ -34,7 +38,7 @@ usePageSeo({
 		: undefined,
 	path: "/search",
 	title: activeQuery.value ? `Search: ${activeQuery.value}` : "Search"
-});
+}));
 </script>
 
 <template>
@@ -74,9 +78,21 @@ usePageSeo({
 			</div>
 		</form>
 
-		<div v-if="pending" class="space-y-6">
+		<div v-if="pending" class="space-y-6" role="status" aria-label="Searching public records">
 			<div class="surface-panel bg-white/70 h-56 animate-pulse dark:bg-app-panel-dark/70" />
 			<div class="surface-panel bg-white/70 h-56 animate-pulse dark:bg-app-panel-dark/70" />
+		</div>
+
+		<div v-else-if="error" class="surface-panel" role="alert">
+			<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
+				Search is temporarily unavailable
+			</h2>
+			<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
+				We could not check the public records right now. Your search is still here. Check your connection and try again in a moment.
+			</p>
+			<button type="button" class="btn-primary mt-6" @click="refresh()">
+				Try again
+			</button>
 		</div>
 
 		<div v-else-if="!activeQuery" class="surface-panel">

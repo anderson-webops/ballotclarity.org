@@ -26,74 +26,57 @@ Ballot Clarity is a nonpartisan civic-information platform built as an npm works
 
 ## Install and run
 
-Install dependencies from the repo root:
+Use the repository's Node LTS version and install the exact locked dependencies:
 
 ```bash
-npm install
+nvm use
+npm ci
+npm run start:local
 ```
 
-Copy the environment template:
+Open `http://127.0.0.1:3333`. One command starts the API and Nuxt with live reload; Ctrl+C stops both. If either service exits, the other is stopped too. Port conflicts are reported before starting anything. Docker and provider credentials are not required to preview the interface.
+
+The local launcher binds both services to loopback, aligns the API and website URLs, uses an isolated `back-end/data/local-development.sqlite` admin store, and disables the Postgres cache and remote asset storage. It loads existing `.env`/`.env.local` files, including shared-checkout fallback in a worktree; shell environment values take precedence for this launcher. It never rewrites those files, bootstraps an account, or overwrites a coverage snapshot.
+
+If `LIVE_COVERAGE_FILE` is explicitly configured, that file must exist. Otherwise, the launcher uses an existing local coverage snapshot or the bundled reviewed official-logistics-only snapshot. That bundled snapshot is preview content, not a certification of current election coverage.
+
+Check setup without starting services, or select ports for another checkout:
+
+```bash
+npm run doctor:local
+npm run start:local -- --api-port 3047 --web-port 3347
+```
+
+`LOCAL_API_PORT` and `LOCAL_WEB_PORT` provide the same defaults through the environment. CLI flags take precedence. A missing dependency, unsupported Node version, missing configured snapshot, or occupied port produces an actionable error. No credential values are printed by the setup check.
+
+### Connect real providers
+
+Create a private environment file if needed:
 
 ```bash
 npm run env:local
 ```
 
-Bring up the local service stack:
+Add the provider keys you intend to use, then restart `start:local`. Existing environment files are preserved. Real address/ZIP results and optional enrichment depend on those configured sources; a successful preview alone does not verify providers.
 
 ```bash
-npm run stack:up
-```
-
-This starts:
-
-- local Postgres on `127.0.0.1:5432`
-- local MinIO object storage on `127.0.0.1:9000`
-- local MinIO console on `127.0.0.1:9001`
-
-If you do not want to run Docker locally, use the provider-local path instead:
-
-```bash
-npm run local:setup
-```
-
-That path:
-
-- loads `.env` and `.env.local` from the current checkout, or falls back to the shared repo root when you are running inside a git worktree
-- keeps Google Civic, `api.data.gov`, Open States, and LDA wired from your local provider keys
-- prefers IPv4 for Google Civic in provider-local mode unless you explicitly override `GOOGLE_CIVIC_FORCE_IPV4`
-- forces the admin store to sqlite for local use
-- disables the Postgres-backed address cache for that run
-- serves source files from Nuxt's built-in public mirror instead of MinIO
-- writes a local seed coverage snapshot and provider-fed launch-directory snapshot for development only
-
-After that, run the API in one terminal:
-
-```bash
-npm run server:local:watch
-```
-
-Then run the Nuxt front-end in another terminal:
-
-```bash
-npm run dev:local
-```
-
-Use the Docker stack only when you want local Postgres address caching and MinIO parity with the fuller infrastructure path.
-
-To verify the real local runtime with your configured provider keys, run:
-
-```bash
+npm run providers:test:local
 npm run verify:local
 ```
 
-That command:
+`verify:local` exercises the provider-backed runtime using a development seed snapshot and requires the relevant provider configuration. `local:setup` remains available for the explicit seed/bootstrap/provider-sync workflow; it is not required to start the interface. The advanced two-terminal commands remain `server:local:watch` and `dev:local`.
 
-- discovers the current worktree `.env` or the shared repo-root fallback automatically
-- forces the API and front-end base URLs onto localhost for that run
-- writes a fresh local seed coverage snapshot
-- runs provider credential probes without printing secrets
-- starts the API locally
-- probes `/health` and a real ZIP lookup (`84604`) to confirm districts and representatives populate
+To use the new launcher's isolated admin store, configure `ADMIN_BOOTSTRAP_USERNAME` and `ADMIN_BOOTSTRAP_PASSWORD` in your private environment file, then explicitly bootstrap that store:
+
+```bash
+npm run bootstrap-admin:local -- --db-path "$(pwd)/back-end/data/local-development.sqlite"
+```
+
+No administrator account is created by `start:local`.
+
+### Optional development services
+
+Use `npm run stack:up` only when you need Postgres caching and MinIO integration locally. It starts Postgres on `127.0.0.1:5432`, MinIO on `127.0.0.1:9000`, and its console on `127.0.0.1:9001`. The single-command local launcher uses SQLite and Nuxt's public source-file mirror instead. Production remains a separate direct Node/Nginx deployment flow.
 
 For production monitoring, use the minimal `GET`/`HEAD` probes documented in
 [`HEALTHCHECKS.md`](HEALTHCHECKS.md). `/health` remains a compatibility alias for

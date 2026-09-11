@@ -65,6 +65,8 @@ function cancelLookup() {
 
 onBeforeUnmount(cancelLookup);
 
+defineExpose({ focusInput: () => lookupInput.value?.focus({ preventScroll: true }) });
+
 async function openLookupAction(action: LocationLookupAction) {
 	if (action.kind !== "ballot-guide" || !action.location || !action.electionSlug)
 		return;
@@ -145,9 +147,9 @@ async function selectLookupOption(option: LocationLookupSelectionOption) {
 </script>
 
 <template>
-	<form :class="[props.framed === false ? '' : 'surface-panel', compact ? 'p-5' : 'p-6 sm:p-7']" :aria-busy="isPending" @submit.prevent="handleSubmit">
+	<form class="lookup-form" :class="props.framed === false ? '' : 'surface-panel'" :aria-busy="isPending" @submit.prevent="handleSubmit">
 		<label :for="inputId" class="text-sm text-app-ink font-semibold block dark:text-app-text-dark">
-			Choose a location with a full street address or 5-digit ZIP code
+			Street address or ZIP code
 		</label>
 		<p :id="descriptionId" class="text-sm text-app-muted mt-2 dark:text-app-muted-dark">
 			{{ locationGuessUi.lookupForm }}
@@ -155,21 +157,9 @@ async function selectLookupOption(option: LocationLookupSelectionOption) {
 		<p v-if="!compact" :id="usageId" class="text-sm text-app-muted leading-6 mt-3 dark:text-app-muted-dark">
 			Ballot Clarity can match many U.S. addresses and ZIP codes to districts, current officials, and official election links. A full street address is the strongest input. A ZIP code can be broader and may ask you to choose between more than one matched area.
 		</p>
-		<p v-if="compact" :id="privacyId" class="text-xs text-app-muted leading-6 mt-3 dark:text-app-muted-dark">
-			Lookup data is used only to load civic results. If you enter only a 5-digit ZIP code, that ZIP may be counted in a ZIP-only operations log; street addresses and ZIP+4 entries are not added to that log.
-			<NuxtLink to="/privacy" class="underline underline-offset-3" prefetch-on="interaction">
-				Privacy notice
-			</NuxtLink>.
-		</p>
-		<p v-else :id="privacyId" class="text-sm text-app-muted leading-6 mt-3 dark:text-app-muted-dark">
-			Data use: your lookup is sent only to match ballot coverage. If you enter only a 5-digit ZIP code, that ZIP may be counted in a ZIP-only operations log, but raw lookup text, full street addresses, ZIP+4 entries, IP address, and user agent are not added to that log. The raw lookup is not added to public content records or used for advertising, and the app saves only your selected location label and ballot-plan preferences locally in your browser. Read the
-			<NuxtLink to="/privacy" class="underline underline-offset-3" prefetch-on="interaction">
-				privacy notice
-			</NuxtLink>.
-		</p>
 
-		<div class="mt-5 flex flex-col gap-3 sm:flex-row">
-			<div class="flex-1 relative">
+		<div class="lookup-form__fields mt-4">
+			<div class="min-w-0 relative">
 				<span class="i-carbon-search text-app-muted pointer-events-none left-4 top-1/2 absolute dark:text-app-muted-dark -translate-y-1/2" />
 				<input
 					:id="inputId"
@@ -177,8 +167,10 @@ async function selectLookupOption(option: LocationLookupSelectionOption) {
 					v-model="query"
 					type="text"
 					autocomplete="street-address"
-					placeholder="Example: 5600 Campbellton Fairburn Rd or 30303"
-					class="text-sm text-app-ink pl-11 pr-4 border border-app-line rounded-full bg-white h-13 w-full shadow-sm dark:text-app-text-dark placeholder:text-app-muted/80 dark:border-app-line-dark dark:bg-app-panel-dark focus-ring dark:placeholder:text-app-muted-dark"
+					placeholder="Street, city, state, ZIP"
+					enterkeyhint="search"
+					:spellcheck="false"
+					class="text-base text-app-ink pl-11 pr-4 border border-app-line rounded-full bg-white h-13 w-full shadow-sm dark:text-app-text-dark placeholder:text-app-muted/80 dark:border-app-line-dark dark:bg-app-panel-dark focus-ring dark:placeholder:text-app-muted-dark"
 					:aria-invalid="Boolean(errorMessage)"
 					:aria-describedby="inputDescribedBy"
 				>
@@ -192,6 +184,18 @@ async function selectLookupOption(option: LocationLookupSelectionOption) {
 				</span>
 			</button>
 		</div>
+		<p v-if="compact" :id="privacyId" class="text-xs text-app-muted leading-6 mt-3 dark:text-app-muted-dark">
+			Lookup data is used only to load civic results. If you enter only a 5-digit ZIP code, that ZIP may be counted in a ZIP-only operations log; street addresses and ZIP+4 entries are not added to that log.
+			<NuxtLink to="/privacy" class="underline underline-offset-3" prefetch-on="interaction">
+				Privacy notice
+			</NuxtLink>.
+		</p>
+		<p v-else :id="privacyId" class="text-sm text-app-muted leading-6 mt-3 dark:text-app-muted-dark">
+			Data use: your lookup is sent only to match ballot coverage. If you enter only a 5-digit ZIP code, that ZIP may be counted in a ZIP-only operations log, but raw lookup text, full street addresses, ZIP+4 entries, IP address, and user agent are not added to that log. The raw lookup is not added to public content records or used for advertising, and the app saves only your selected location label and ballot-plan preferences locally in your browser. Read the
+			<NuxtLink to="/privacy" class="underline underline-offset-3" prefetch-on="interaction">
+				privacy notice
+			</NuxtLink>.
+		</p>
 
 		<p
 			v-if="errorMessage"

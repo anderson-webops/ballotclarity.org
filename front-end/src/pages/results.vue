@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import type { LocationLookupResponse, LocationLookupSelectionOption } from "~/types/civic";
+import type { LocationLookupAction, LocationLookupResponse, LocationLookupSelectionOption } from "~/types/civic";
 import { storeToRefs } from "pinia";
 import { buildActiveLookupSummary } from "~/utils/active-lookup";
 import { buildLocationGuessUiContent } from "~/utils/location-guess";
-import { buildPublishedGuideDestination } from "~/utils/location-lookup";
+import { buildPublishedGuideDestination, filterLookupActionsForPresentation } from "~/utils/location-lookup";
 import { normalizeLookupResponseForDisplay, resolveLookupDestination } from "~/utils/nationwide-results";
-import { buildLookupContextFromNationwideResult, buildNationwideLookupRouteQuery } from "~/utils/nationwide-route-context";
+import { buildLookupContextFromNationwideResult, buildNationwideLookupRouteQuery, buildNationwideRouteTarget } from "~/utils/nationwide-route-context";
 
 const api = useApiClient();
 const route = useRoute();
@@ -64,6 +64,24 @@ const activeLookupSummary = computed(() => buildActiveLookupSummary({
 	selectedLocation: null
 }));
 const locationGuessUi = computed(() => buildLocationGuessUiContent(coverageData.value?.locationGuess ?? null));
+const hasVisibleActions = computed(() => activeResult.value
+	? filterLookupActionsForPresentation(activeResult.value.actions, {
+		...activeResult.value,
+		location: activeResult.value.location ?? undefined,
+	}).length > 0
+	: false);
+
+async function openResultGuide(action: LocationLookupAction) {
+	if (!activeResult.value || !action.electionSlug || !action.location)
+		return;
+	const destination = buildPublishedGuideDestination({
+		...activeResult.value,
+		electionSlug: action.electionSlug,
+		location: action.location,
+	});
+	if (destination)
+		await navigateTo(destination);
+}
 
 async function selectLookupOption(option: LocationLookupSelectionOption) {
 	if (!activeResult.value?.lookupQuery)
@@ -135,10 +153,10 @@ usePageSeo({
 		</div>
 
 		<template v-else>
-			<section class="surface-panel">
+			<section class="results-overview">
 				<div class="flex flex-wrap gap-2">
 					<TrustBadge label="Current results" tone="accent" />
-					<TrustBadge label="Official tools visible" />
+					<TrustBadge v-if="hasVisibleActions" label="Official tools visible" />
 					<TrustBadge
 						:label="activeResult.guideContent?.verifiedContestPackage
 							? 'Verified ballot guide'
@@ -153,7 +171,7 @@ usePageSeo({
 						<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
 							Results for
 						</p>
-						<h1 class="text-5xl text-app-ink leading-tight font-serif mt-3 dark:text-app-text-dark">
+						<h1 class="text-4xl text-app-ink leading-tight font-serif mt-3 sm:text-5xl dark:text-app-text-dark">
 							{{ activeLookupSummary.label }}
 						</h1>
 					</div>
@@ -162,22 +180,18 @@ usePageSeo({
 				<p class="text-sm text-app-muted leading-7 mt-5 max-w-3xl dark:text-app-muted-dark">
 					{{ activeLookupSummary.note }}
 				</p>
-				<div class="mt-8 pt-8 border-t border-app-line/80 dark:border-app-line-dark">
-					<LookupResultsPanel :lookup="activeResult" @select-option="selectLookupOption" />
-				</div>
+				<nav class="results-shortcuts mt-5" aria-label="Explore results">
+					<NuxtLink v-if="activeResult.districtMatches.length" :to="buildNationwideRouteTarget('/districts', activeResult)" class="btn-secondary">
+						Districts <span class="text-xs">{{ activeResult.districtMatches.length }}</span>
+					</NuxtLink>
+					<NuxtLink v-if="activeResult.representativeMatches.length" :to="buildNationwideRouteTarget('/representatives', activeResult)" class="btn-secondary">
+						Representatives <span class="text-xs">{{ activeResult.representativeMatches.length }}</span>
+					</NuxtLink>
+					<a v-if="hasVisibleActions" href="#official-tools" class="btn-secondary">Official tools <span class="i-carbon-arrow-down" aria-hidden="true" /></a>
+				</nav>
 			</section>
-
-			<details id="change-location" class="surface-row">
-				<summary class="text-sm text-app-ink font-semibold cursor-pointer dark:text-app-text-dark focus-ring">
-					Change location
-				</summary>
-				<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
-					Use a full street address for the strongest district match, or a ZIP code for a broader preview.
-				</p>
-				<div class="mt-4">
-					<AddressLookupForm compact :election="activeResult.election" :framed="false" />
-				</div>
-			</details>
+			<LocationChangePanel :election="activeResult.election" />
+			<LookupResultsPanel :lookup="activeResult" results-page @open-guide="openResultGuide" @select-option="selectLookupOption" />
 		</template>
 	</section>
 </template>

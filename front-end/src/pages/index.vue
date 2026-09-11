@@ -6,15 +6,14 @@ import type {
 	LocationLookupSelectionOption,
 	NationwideLookupResultContext
 } from "~/types/civic";
-import { buildLocationGuessUiContent } from "~/utils/location-guess";
 import { buildPublishedGuideDestination } from "~/utils/location-lookup";
 import { normalizeLookupResponseForDisplay, resolveLookupDestination } from "~/utils/nationwide-results";
+import { buildNationwideRouteTarget } from "~/utils/nationwide-route-context";
 
 const api = useApiClient();
 const siteUrl = useSiteUrl();
 const civicStore = useCivicStore();
 const { activeNationwideResult, hasGuideShellContext, hasNationwideResultContext, hasVerifiedGuideContext } = useGuideEntryGate();
-const { data: coverageData } = await useCoverage();
 const homeLookupResult = ref<NationwideLookupResultContext | null>(null);
 const homeLookupSelectionError = ref("");
 const displayedHomeLookupResult = computed(() => homeLookupResult.value);
@@ -24,7 +23,6 @@ const { data: electionsData } = await useAsyncData<ElectionsResponse>(
 	() => api<ElectionsResponse>("/elections")
 );
 const featuredElection = computed(() => electionsData.value?.elections[0] ?? null);
-const locationGuessUi = computed(() => buildLocationGuessUiContent(coverageData.value?.locationGuess ?? null));
 const faqEntries = [
 	{
 		answer: "Start with the location lookup. Ballot Clarity shows districts, representatives, official election links, and a local guide when one is published for your area.",
@@ -81,18 +79,11 @@ usePageSeo({
 	title: "Understand Your Ballot"
 });
 
-const trustFacts = computed(() => [
-	"Nonpartisan public-interest project",
-	activeNationwideResult.value?.location
-		? `Current area: ${activeNationwideResult.value.location.displayName}`
-		: "Districts and officials vary by area",
-	"Sources linked on every major reading page",
-	hasVerifiedGuideContext.value
-		? "Ballot plan available"
-		: hasGuideShellContext.value
-			? "Election overview available"
-			: "Official election links included where available"
-]);
+const resumeTarget = computed(() => hasVerifiedGuideContext.value
+	? "/ballot"
+	: hasGuideShellContext.value && civicStore.selectedElection?.slug
+		? `/elections/${civicStore.selectedElection.slug}`
+		: buildNationwideRouteTarget("/results", activeNationwideResult.value));
 
 function clearHomeLookupResult() {
 	homeLookupSelectionError.value = "";
@@ -157,67 +148,46 @@ async function selectHomeLookupOption(option: LocationLookupSelectionOption) {
 </script>
 
 <template>
-	<div class="home-page pb-10 space-y-12 sm:space-y-16">
+	<div class="home-page pb-8 space-y-10 sm:space-y-14">
 		<section class="home-section app-shell">
-			<div class="home-hero-grid gap-6 grid xl:grid-cols-[minmax(0,1.18fr)_minmax(21rem,0.82fr)] xl:items-start">
-				<div class="home-card surface-primary overflow-hidden">
-					<div class="px-6 py-8 lg:px-10 sm:px-8 sm:py-10">
-						<p class="text-xs text-app-muted tracking-[0.26em] font-semibold uppercase dark:text-app-muted-dark">
-							{{ hasVerifiedGuideContext ? "Ballot guide" : hasGuideShellContext ? "Election overview" : hasNationwideResultContext ? "Civic results" : "Location lookup" }}
+			<div class="home-entry-grid">
+				<div class="home-intro">
+					<p class="text-xs text-app-muted tracking-[0.2em] font-semibold uppercase dark:text-app-muted-dark">
+						Ballot Clarity · Public records, explained
+					</p>
+					<h1 class="home-title text-app-ink font-serif dark:text-app-text-dark">
+						Look up your area.
+					</h1>
+					<p class="home-description text-app-muted dark:text-app-muted-dark">
+						Find your districts, explore representative records, and reach official election resources. Start with a street address or ZIP code.
+					</p>
+					<div v-if="hasNationwideResultContext || hasGuideShellContext || hasVerifiedGuideContext" class="home-resume">
+						<p class="text-sm text-app-muted dark:text-app-muted-dark">
+							Your saved area<span v-if="activeNationwideResult?.location">: <strong class="text-app-ink dark:text-app-text-dark">{{ activeNationwideResult.location.displayName }}</strong></span>
 						</p>
-						<h1 class="text-5xl text-app-ink leading-tight font-serif mt-4 max-w-4xl sm:text-6xl dark:text-app-text-dark">
-							{{ hasVerifiedGuideContext
-								? "Your ballot guide is ready."
-								: hasGuideShellContext
-									? "Your election overview is ready."
-									: hasNationwideResultContext
-										? "Your civic results are ready."
-										: "Look up your area." }}
-						</h1>
-						<p class="bc-measure text-lg text-app-muted leading-8 mt-6 dark:text-app-muted-dark">
-							{{ hasVerifiedGuideContext
-								? "Open your ballot, districts, representatives, and official election links from one place."
-								: hasGuideShellContext
-									? "Open the election overview, districts, representatives, and official election links for this area."
-									: hasNationwideResultContext
-										? "Review districts, current officials, official election links, and any available local guide for this area."
-										: "Enter a street address or ZIP code to see districts, current officials, and official election links for your area." }}
-						</p>
-						<div class="mt-8 flex flex-wrap gap-2">
-							<span
-								v-for="fact in trustFacts"
-								:key="fact"
-								class="text-xs text-app-muted tracking-[0.08em] font-semibold px-3 py-2 border border-app-line/75 rounded-full bg-app-bg/72 uppercase dark:text-app-muted-dark dark:border-app-line-dark dark:bg-app-bg-dark/70"
-							>
-								{{ fact }}
-							</span>
-						</div>
+						<NuxtLink :to="resumeTarget" class="btn-secondary mt-3" prefetch-on="interaction">
+							{{ hasVerifiedGuideContext ? 'Continue to your ballot guide' : hasGuideShellContext ? 'Continue to your election overview' : 'Continue to your results' }}
+							<span class="i-carbon-arrow-right" aria-hidden="true" />
+						</NuxtLink>
 					</div>
 				</div>
-
-				<div class="home-panel-stack space-y-5">
-					<div id="location-lookup" class="home-card surface-primary">
-						<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-							Choose your area
-						</p>
-						<h2 class="text-2xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-							Start from your location.
-						</h2>
-						<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-							{{ locationGuessUi.home }}
-						</p>
-						<div class="mt-5">
-							<AddressLookupForm
-								compact
-								:election="featuredElection"
-								:framed="false"
-								:show-inline-results="false"
-								@lookup-cleared="clearHomeLookupResult"
-								@lookup-resolved="handleHomeLookupResolved"
-							/>
-						</div>
-					</div>
+				<div id="location-lookup" class="home-lookup-card surface-primary">
+					<AddressLookupForm
+						compact
+						:election="featuredElection"
+						:framed="false"
+						:show-inline-results="false"
+						@lookup-cleared="clearHomeLookupResult"
+						@lookup-resolved="handleHomeLookupResolved"
+					/>
 				</div>
+			</div>
+			<div class="home-trust-row text-sm text-app-muted dark:text-app-muted-dark">
+				<span class="inline-flex gap-2 items-center"><span class="i-carbon-document" aria-hidden="true" /> Source links on every major reading page</span>
+				<span>Nonpartisan public-interest project</span>
+				<NuxtLink to="/coverage" class="underline underline-offset-4 focus-ring">
+					Check coverage
+				</NuxtLink>
 			</div>
 		</section>
 
@@ -237,6 +207,34 @@ async function selectHomeLookupOption(option: LocationLookupSelectionOption) {
 				>
 					{{ homeLookupSelectionError }}
 				</p>
+			</div>
+		</section>
+		<section class="home-help app-shell" aria-labelledby="home-help-title">
+			<div>
+				<h2 id="home-help-title" class="text-2xl text-app-ink font-serif dark:text-app-text-dark">
+					A little context before you explore
+				</h2>
+				<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
+					Local guide coverage varies. You can also explore the public record without entering a location.
+				</p>
+				<div class="mt-4 flex flex-wrap gap-3">
+					<NuxtLink to="/search" class="btn-secondary">
+						Search records <span class="i-carbon-search" aria-hidden="true" />
+					</NuxtLink>
+					<NuxtLink to="/sources" class="btn-secondary">
+						Browse sources
+					</NuxtLink>
+				</div>
+			</div>
+			<div>
+				<details v-for="entry in faqEntries" :key="entry.question" class="home-faq">
+					<summary class="text-sm text-app-ink font-semibold dark:text-app-text-dark focus-ring">
+						{{ entry.question }}
+					</summary>
+					<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
+						{{ entry.answer }}
+					</p>
+				</details>
 			</div>
 		</section>
 	</div>

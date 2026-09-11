@@ -187,6 +187,116 @@ h6 {
   min-width: 0;
 }
 
+/* Size the lookup controls to their container, including narrow desktop panels. */
+.lookup-form {
+  container-type: inline-size;
+}
+
+.lookup-form__fields {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.lookup-form__fields .lookup-submit-button {
+  min-width: 0;
+  width: 100%;
+}
+
+@container (min-width: 38rem) {
+  .lookup-form__fields {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .lookup-form__fields .lookup-submit-button {
+    min-width: 13.5rem;
+  }
+}
+
+.home-entry-grid {
+  display: grid;
+  gap: 1.5rem;
+  align-items: center;
+}
+
+.home-title {
+  font-size: clamp(2.25rem, 4.6vw, 4.25rem);
+  line-height: 1.12;
+  margin: 0.75rem 0 0;
+}
+
+.home-description {
+  font-size: clamp(1rem, 1.5vw, 1.125rem);
+  line-height: 1.7;
+  max-width: 48ch;
+  margin-top: 1rem;
+}
+
+.home-resume {
+  border-left: 2px solid var(--app-accent);
+  padding-left: 1rem;
+  margin-top: 1.5rem;
+}
+
+.home-trust-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.5rem;
+  align-items: center;
+  padding: 1.5rem 0;
+  border-bottom: 1px solid var(--app-line);
+}
+
+.home-help {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.home-faq {
+  border-bottom: 1px solid var(--app-line);
+  padding: 0.75rem 0;
+}
+
+.home-faq summary {
+  cursor: pointer;
+  padding: 0.5rem 0;
+}
+
+.mobile-navigation-panel {
+  max-height: calc(100dvh - 4.5rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.mobile-navigation-group {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.results-shortcuts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.location-change-panel,
+#official-tools {
+  scroll-margin-top: 5rem;
+}
+
+@media (min-width: 900px) {
+  .home-entry-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(24rem, 0.9fr);
+    gap: 3rem;
+    padding-block: 1.5rem;
+  }
+
+  .home-help {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 3rem;
+  }
+}
+
 .home-summary-card-link {
   transition:
     background-color 0.18s ease,

@@ -12,6 +12,7 @@ import { resolveRepresentativePresentation } from "~/utils/representative-presen
 const props = defineProps<{
 	compact?: boolean;
 	lookup: NationwideLookupResultContext;
+	resultsPage?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -99,6 +100,8 @@ const availabilityItems = computed(() => {
 	];
 });
 const visibleAvailabilityItems = computed(() => availabilityItems.value.filter((card) => {
+	if (props.resultsPage && card.id === "civic-results")
+		return false;
 	if (!card.href || card.item.status === "unavailable")
 		return false;
 
@@ -179,11 +182,11 @@ function getRepresentativePresentation(match: NationwideLookupResultContext["rep
 </script>
 
 <template>
-	<div class="mt-5 p-4 border border-app-line rounded-3xl bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/60">
-		<p class="text-xs text-app-muted tracking-[0.2em] font-semibold uppercase dark:text-app-muted-dark">
+	<div :class="resultsPage ? 'lookup-results-page' : 'mt-5 p-4 border border-app-line rounded-3xl bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/60'">
+		<p v-if="!resultsPage" class="text-xs text-app-muted tracking-[0.2em] font-semibold uppercase dark:text-app-muted-dark">
 			{{ lookupPresentation.heading }}
 		</p>
-		<p class="text-sm text-app-muted leading-6 mt-3 dark:text-app-muted-dark">
+		<p v-if="!resultsPage || lookup.result !== 'resolved' || !hasLookupDetails" class="text-sm text-app-muted leading-6 mt-3 dark:text-app-muted-dark">
 			{{ lookup.note }}
 		</p>
 		<div v-if="lookup.result === 'resolved'" class="mt-4 flex flex-wrap gap-2">
@@ -274,7 +277,10 @@ function getRepresentativePresentation(match: NationwideLookupResultContext["rep
 				</p>
 			</component>
 		</div>
-		<div v-if="visibleLookupActions.length" class="mt-4 gap-3 grid">
+		<div v-if="visibleLookupActions.length" :id="resultsPage ? 'official-tools' : undefined" class="mt-6 gap-3 grid">
+			<h2 v-if="resultsPage" class="text-2xl text-app-ink font-serif dark:text-app-text-dark">
+				Official election tools
+			</h2>
 			<div
 				v-for="action in visibleLookupActions"
 				:key="action.id"
@@ -319,6 +325,9 @@ function getRepresentativePresentation(match: NationwideLookupResultContext["rep
 			<summary class="text-sm text-app-ink font-semibold cursor-pointer dark:text-app-text-dark focus-ring">
 				Show districts, representatives, and provider details
 			</summary>
+			<p v-if="resultsPage && lookup.result === 'resolved'" class="text-sm text-app-muted leading-6 mt-3 dark:text-app-muted-dark">
+				{{ lookup.note }}
+			</p>
 			<p class="text-sm text-app-muted leading-6 mt-3 dark:text-app-muted-dark">
 				These details are useful for verification, but the action cards above are the fastest path to the next page.
 			</p>

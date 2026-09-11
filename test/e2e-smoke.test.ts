@@ -612,6 +612,62 @@ async function withResilienceBrowser(t: TestContext, run: (cdp: CdpSession) => P
 
 const hydratedCivicState = "document.querySelector('#__nuxt')?.__vue_app__?.config.globalProperties.$pinia?.state.value.civic?.isHydrated === true";
 
+test("layout: lookup stays visible and usable across narrow and wide screens", async (t) => {
+	await withResilienceBrowser(t, async (cdp) => {
+		await navigateAndWait(cdp, appBaseUrl, "responsive lookup home");
+		await waitForRuntimeCondition(cdp, hydratedCivicState, Boolean, "responsive home hydration");
+		for (const width of [320, 390, 768, 1280]) {
+			await cdp.send("Emulation.setDeviceMetricsOverride", { width, height: 844, deviceScaleFactor: 1, mobile: false });
+			const geometry = await cdp.send("Runtime.evaluate", { expression: `(() => {
+				const field = document.querySelector('input[id^="address-lookup-"]');
+				const input = field.getBoundingClientRect();
+				const button = field.form.querySelector('button[type="submit"]').getBoundingClientRect();
+				return { inputWidth: input.width, left: input.left, right: input.right, bottom: button.bottom, overflow: document.documentElement.scrollWidth > innerWidth };
+			})()`, returnByValue: true });
+			assert.ok(geometry.result.value.inputWidth >= 240, `Lookup input remains useful at ${width}px`);
+			assert.ok(geometry.result.value.left >= 0 && geometry.result.value.right <= width);
+			assert.ok(geometry.result.value.bottom <= 844, `Primary action stays in the first viewport at ${width}px`);
+			assert.equal(geometry.result.value.overflow, false);
+		}
+	});
+});
+
+test("layout: saved results have a direct home action and location links open the form", async (t) => {
+	await withResilienceBrowser(t, async (cdp) => {
+		await cdp.send("Page.addScriptToEvaluateOnNewDocument", { source: `localStorage.setItem('ballot-clarity:civic-store', ${JSON.stringify(JSON.stringify(nationwideLookupSnapshot))});` });
+		await navigateAndWait(cdp, appBaseUrl, "returning visitor home");
+		await waitForBodyText(cdp, /Continue to your results/u, "resume saved result");
+		await cdp.send("Runtime.evaluate", { expression: "Array.from(document.querySelectorAll('main a')).find(link => link.textContent.includes('Continue to your results')).click()" });
+		await waitForRuntimeCondition(cdp, "location.pathname === '/results' && location.search.includes('lookup=84604')", Boolean, "resume preserves lookup context");
+		for (const path of ["/results?lookup=84604#change-location", "/plan#change-location"]) {
+			await navigateAndWait(cdp, `${appBaseUrl}${path}`, "change location entry");
+			await waitForRuntimeCondition(cdp, "document.querySelector('#change-location')?.open && document.activeElement?.id.startsWith('address-lookup-')", Boolean, "change location opens and focuses input");
+		}
+	});
+});
+
+test("layout: results keep unavailable-data explanations visible without dead shortcuts", async (t) => {
+	await withResilienceBrowser(t, async (cdp) => {
+		const snapshot = structuredClone(nationwideLookupSnapshot);
+		Object.assign(snapshot.nationwideLookupResult, {
+			actions: [{ id: "unpublished-guide", kind: "ballot-guide", title: "Unavailable guide" }],
+			districtMatches: [],
+			representativeMatches: [],
+			note: "No district details are available for this lookup. Try a full street address.",
+			result: "unsupported",
+		});
+		await cdp.send("Page.addScriptToEvaluateOnNewDocument", { source: `localStorage.setItem('ballot-clarity:civic-store', ${JSON.stringify(JSON.stringify(snapshot))});` });
+		await navigateAndWait(cdp, `${appBaseUrl}/results`, "unavailable results");
+		await waitForBodyText(cdp, /No district details are available for this lookup/u, "visible lookup explanation");
+		const state = await cdp.send("Runtime.evaluate", { expression: `({
+			noteVisible: [...document.querySelectorAll('main p')].some(node => node.textContent.includes('No district details') && node.getBoundingClientRect().height > 0),
+			deadShortcut: Boolean(document.querySelector('a[href="#official-tools"]'))
+		})`, returnByValue: true });
+		assert.equal(state.result.value.noteVisible, true);
+		assert.equal(state.result.value.deadShortcut, false);
+	});
+});
+
 test("voter resilience: Escape closes navigation and returns focus on mobile and desktop", async (t) => {
 	await withResilienceBrowser(t, async (cdp) => {
 		await navigateAndWait(cdp, appBaseUrl, "keyboard navigation home");
@@ -993,14 +1049,14 @@ test("built app renders the key ballot guide pages against the built API", async
 	assert.equal(ballotResponse.headers.get("referrer-policy"), "strict-origin-when-cross-origin");
 	assert.equal(ballotResponse.headers.get("strict-transport-security"), "max-age=31536000");
 	assert.match(ballotResponse.headers.get("permissions-policy") || "", /camera=\(\)/);
-	assert.match(homeHtml, /Location lookup|Civic results|Ballot guide/i);
+	assert.match(homeHtml, /Look up your area/i);
 	assert.match(homeHtml, /Fulton County, Georgia/);
-	assert.match(homeHtml, /Choose your area/);
-	assert.match(homeHtml, /Start from your location\./);
+	assert.match(homeHtml, /Street address or ZIP code/);
+	assert.match(homeHtml, /Search records/);
 	assert.doesNotMatch(homeHtml, /Popular pages/);
 	assert.doesNotMatch(homeHtml, /Choose the page you need\./i);
-	assert.match(homeHtml, /Choose a location with a full street address or 5-digit ZIP code/);
-	assert.match(homeHtml, /Enter a street address or ZIP code to see districts, current officials, and official election links for your area/i);
+	assert.match(homeHtml, /autocomplete="street-address"/);
+	assert.match(homeHtml, /Find your districts, explore representative records, and reach official election resources/i);
 	assert.match(homeHtml, /Lookup data is used only to load civic results/i);
 	assert.match(homeHtml, /og:image/);
 	assert.match(homeHtml, /twitter:image/);
@@ -1135,7 +1191,8 @@ test("built app renders the key ballot guide pages against the built API", async
 	assert.match(contactHtml, /acknowledge correction requests within 2 business days/);
 	assert.match(contactHtml, /What to include in a correction request/);
 	assert.match(planHtml, /My ballot plan/);
-	assert.match(planHtml, /Not the right location\? Select a new district\./);
+	assert.match(planHtml, /id="change-location"/);
+	assert.match(planHtml, /Street address or ZIP code/);
 	assert.match(planHtml, /The ballot plan opens after Ballot Clarity publishes a local guide for this area\./);
 	assert.equal(compareEmptyPage.status, 200);
 	assert.match(compareEmptyHtml, /No compare candidates selected/);
@@ -1587,7 +1644,7 @@ test("nationwide lookup context survives client navigation across results, distr
 		assert.match(resultsText, /Provo, Utah/);
 		assert.match(resultsText, /Representative data/);
 		assert.match(resultsText, /7 representative matches/);
-		assert.match(resultsText, /Civic results ready/i);
+		assert.match(resultsText, /Current results/i);
 
 		await navigateAndWait(cdp, `${appBaseUrl}/districts`, "nationwide-context districts navigation");
 		await waitForBodyText(cdp, /Marsha Judkins/, "nationwide-context districts hydration");

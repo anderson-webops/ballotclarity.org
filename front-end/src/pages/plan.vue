@@ -2,7 +2,6 @@
 import type { BallotPlanSelection, Contest, PlannedMeasureDecision } from "~/types/civic";
 import { storeToRefs } from "pinia";
 import { buildCompareRoute } from "~/stores/civic";
-import { buildLocationGuessUiContent } from "~/utils/location-guess";
 import { buildPlanUnavailableMessaging } from "~/utils/plan-messaging";
 import { formatSourceCountLabel } from "~/utils/source-label";
 
@@ -11,7 +10,6 @@ const route = useRoute();
 const { ballotPlan, ballotPlanCount, compareCount, compareList, isHydrated, selectedElection, selectedLocation } = storeToRefs(civicStore);
 const { formatDate, formatDateTime } = useFormatters();
 const { activeLookupContext, activeNationwideResult, allowsGuideEntryPoints } = useGuideEntryGate();
-const { data: coverageData } = useCoverage();
 
 const effectiveBallotPlan = computed(() => isHydrated.value ? ballotPlan.value : {});
 const effectiveBallotPlanCount = computed(() => isHydrated.value ? ballotPlanCount.value : 0);
@@ -30,9 +28,6 @@ const { data, error, pending } = await useBallot(electionSlug, locationSlug);
 const lookupElection = computed(() => showPersistedPlanState.value
 	? (selectedElection.value ?? activeNationwideResult.value?.election ?? data.value?.election ?? null)
 	: (data.value?.election ?? null));
-const locationGuessUi = computed(() => buildLocationGuessUiContent(coverageData.value?.locationGuess ?? null));
-const activeLocationLabel = computed(() => data.value?.location.displayName
-	?? (isHydrated.value ? (selectedLocation.value?.displayName ?? activeNationwideResult.value?.location?.displayName ?? null) : null));
 const planUnavailableMessaging = computed(() => buildPlanUnavailableMessaging(activeLookupContext.value));
 
 usePageSeo({
@@ -218,28 +213,7 @@ function printPlan() {
 			</div>
 		</header>
 
-		<details id="change-location" class="surface-panel print-hidden">
-			<summary class="text-sm text-app-ink font-semibold cursor-pointer dark:text-app-text-dark focus-ring">
-				Change location
-			</summary>
-			<div class="mt-5 gap-6 grid lg:grid-cols-[minmax(0,0.78fr)_minmax(0,1.22fr)] lg:items-start">
-				<div>
-					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-						Change location
-					</p>
-					<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-						Not the right location? Select a new district.
-					</h2>
-					<p v-if="showPersistedPlanState && activeLocationLabel" class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-						You are currently viewing {{ activeLocationLabel }}.
-					</p>
-					<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-						{{ locationGuessUi.plan }}
-					</p>
-				</div>
-				<AddressLookupForm compact :election="lookupElection" :framed="false" />
-			</div>
-		</details>
+		<LocationChangePanel :election="lookupElection" />
 
 		<div v-if="pending" class="space-y-6">
 			<div class="surface-panel bg-white/70 h-48 animate-pulse dark:bg-app-panel-dark/70" />

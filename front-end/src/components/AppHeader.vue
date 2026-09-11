@@ -304,6 +304,7 @@ onBeforeUnmount(() => {
 												v-for="link in group.links"
 												:key="link.to"
 												:to="resolveLinkTo(link.to)"
+												:aria-current="isActive(link.to) ? 'page' : undefined"
 												prefetch-on="interaction"
 												class="px-3 py-2.5 rounded-[0.95rem] transition hover:bg-app-bg focus-ring dark:hover:bg-app-bg-dark/70"
 												@click="closeDesktopGroups"
@@ -371,6 +372,10 @@ onBeforeUnmount(() => {
 					</button>
 				</div>
 
+				<NuxtLink to="/search" aria-label="Search public records" class="header-search-shortcut text-app-ink ml-auto rounded-full flex h-10 w-10 items-center justify-center dark:text-app-text-dark md:hidden focus-ring">
+					<span class="i-carbon-search text-lg" aria-hidden="true" />
+				</NuxtLink>
+
 				<button
 					type="button"
 					class="text-app-ink border border-app-line rounded-full bg-white inline-flex shrink-0 h-10 w-10 shadow-sm transition items-center justify-center dark:text-app-text-dark hover:text-app-accent dark:border-app-line-dark hover:border-app-accent dark:bg-app-panel-dark md:hidden focus-ring"
@@ -384,24 +389,9 @@ onBeforeUnmount(() => {
 			</div>
 		</div>
 
-		<div v-if="isMenuOpen" :id="mobileNavigationId" class="px-4 pb-4 pt-2.5 border-t border-app-line/80 bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark xl:hidden">
+		<div v-if="isMenuOpen" :id="mobileNavigationId" class="mobile-navigation-panel px-4 pb-4 pt-2.5 border-t border-app-line/80 bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark xl:hidden">
 			<nav class="space-y-5" aria-label="Mobile navigation">
 				<div class="space-y-2">
-					<NuxtLink
-						:to="resolveLinkTo(headerPrimaryAction.to)"
-						prefetch-on="interaction"
-						class="text-sm font-medium px-4 py-3 rounded-2xl flex transition items-center justify-between focus-ring"
-						:class="isActive(headerPrimaryAction.to)
-							? 'bg-app-action text-app-action-text'
-							: 'bg-white text-app-ink dark:bg-app-panel-dark dark:text-app-text-dark'"
-					>
-						<span>{{ headerPrimaryAction.label }}</span>
-						<ClientOnly>
-							<span v-if="headerPrimaryAction.badge === 'plan' && showPersistedCivicState && effectiveBallotPlanCount" class="text-[11px] text-app-ink font-bold ml-2 px-2 py-0.5 rounded-full bg-app-warm">
-								{{ effectiveBallotPlanCount }}
-							</span>
-						</ClientOnly>
-					</NuxtLink>
 					<div class="text-sm px-4 py-3 border border-app-line rounded-2xl bg-white flex items-center justify-between dark:border-app-line-dark dark:bg-app-panel-dark">
 						<div class="min-w-0">
 							<p class="text-app-muted truncate dark:text-app-muted-dark">
@@ -415,8 +405,8 @@ onBeforeUnmount(() => {
 					</div>
 				</div>
 
-				<section v-for="group in navGroups" :key="group.label" class="space-y-2">
-					<div class="px-1">
+				<section v-for="group in navGroups" :key="group.label" class="mobile-navigation-group">
+					<div class="px-1 col-span-full">
 						<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
 							{{ group.label }}
 						</p>
@@ -425,6 +415,7 @@ onBeforeUnmount(() => {
 						v-for="link in group.links"
 						:key="link.to"
 						:to="resolveLinkTo(link.to)"
+						:aria-current="isActive(link.to) ? 'page' : undefined"
 						prefetch-on="interaction"
 						class="px-4 py-3 rounded-2xl flex gap-3 transition items-start justify-between focus-ring"
 						:class="isActive(link.to)

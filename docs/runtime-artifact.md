@@ -8,9 +8,10 @@ After `npm run build`, run:
 npm run verify:runtime-artifact
 ```
 
-The verifier builds the artifact in a clean temporary directory, installs only the backend's locked production dependencies, writes SHA-256 hashes for every file, copies the artifact again to model unpacking, and verifies the copied inventory. It then:
+The verifier refuses a dirty source checkout, creates a detached temporary Git worktree at the exact source commit, performs a clean locked install and both production builds there, and packages only those newly built outputs. The manifest binds both the commit and Git tree identity to SHA-256 hashes for every runtime file. It then copies the artifact again to model unpacking and verifies the copied inventory. It also:
 
 - rejects a deliberately removed backend runtime asset;
+- rejects a compiled service entrypoint modified after the isolated build;
 - starts the compiled Express and Nuxt entrypoints without access to the source checkout or development dependencies;
 - checks the minimal `GET` and `HEAD` health/readiness contract and a rendered public page;
 - uses only synthetic local fixtures and does not contact real providers;

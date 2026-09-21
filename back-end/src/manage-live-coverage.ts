@@ -9,9 +9,9 @@ import {
 	readCoverageSnapshotMetadata,
 } from "./coverage-repository.js";
 import {
-
 	recoverPendingCoveragePromotion,
-	replaceCoverageSnapshotPair
+	replaceCoverageSnapshotPair,
+	verifyCoverageSnapshotMetadataDigest,
 } from "./coverage-snapshot-integrity.js";
 import {
 	summarizeCoverageSnapshotValidation,
@@ -89,6 +89,12 @@ function assertPromotableSnapshot(snapshotPath: string) {
 			`Coverage snapshot status must be reviewed or production_approved before activation; received ${metadata.status}.`
 		);
 	}
+
+	verifyCoverageSnapshotMetadataDigest(
+		metadata as unknown as Record<string, unknown>,
+		snapshotPath,
+		{ required: true },
+	);
 
 	const validation = validateCoverageSnapshotForPublication(snapshot, metadata);
 

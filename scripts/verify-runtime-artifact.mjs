@@ -98,7 +98,21 @@ try {
 	cpSync(artifactRoot, unpackedRoot, { recursive: true });
 	const manifest = verifyRuntimeArtifact(unpackedRoot);
 	assert.equal(manifest.source.commit.length, 40);
+	assert.equal(manifest.source.dirty, false);
+	assert.equal(manifest.source.tree.length, 40);
 	assert.ok(manifest.files.length > 0);
+	const compiledEntrypoint = resolve(unpackedRoot, "front-end/.output/server/index.mjs");
+	const compiledEntrypointBytes = readFileSync(compiledEntrypoint);
+	writeFileSync(compiledEntrypoint, Buffer.concat([
+		compiledEntrypointBytes,
+		Buffer.from("\n// tampered after isolated build\n"),
+	]));
+	assert.throws(
+		() => verifyRuntimeArtifact(unpackedRoot),
+		/hash mismatch/u,
+	);
+	writeFileSync(compiledEntrypoint, compiledEntrypointBytes);
+	verifyRuntimeArtifact(unpackedRoot);
 
 	const requiredModule = resolve(unpackedRoot, "back-end/dist/live-data-schema.sql");
 	const requiredModuleBytes = readFileSync(requiredModule);

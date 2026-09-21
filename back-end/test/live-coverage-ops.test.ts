@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -156,6 +156,42 @@ test("coverage metadata rejects a digest that does not match the snapshot", () =
 			() => readCoverageSnapshotMetadata(snapshotPath),
 			/does not match its approval metadata digest/i
 		);
+	}
+	finally {
+		workspace.dispose();
+	}
+});
+
+test("promotion rejects reviewed legacy metadata that does not bind the candidate bytes", () => {
+	const workspace = createWorkspace();
+
+	try {
+		const activeSnapshotPath = join(workspace.root, "active.json");
+		const candidatePath = join(workspace.root, "legacy-reviewed.json");
+		const candidateSnapshot = buildFultonOfficialLogisticsOnlySnapshot();
+
+		writeCoverageSnapshot(buildSeedCoverageSnapshot(), activeSnapshotPath);
+		writeCoverageSnapshotMetadata(buildSeedCoverageSnapshotMetadata(), activeSnapshotPath);
+		writeCoverageSnapshot(candidateSnapshot, candidatePath);
+		writeFileSync(
+			`${candidatePath}.meta.json`,
+			`${JSON.stringify(buildFultonReviewedCoverageSnapshotMetadata({
+				importedAt: "2026-04-20T12:00:00.000Z",
+				reviewedAt: "2026-04-21T12:00:00.000Z",
+				status: "reviewed",
+			}), null, 2)}\n`,
+			"utf8",
+		);
+		writeCoverageSnapshot({
+			...candidateSnapshot,
+			updatedAt: "2026-04-22T12:00:00.000Z",
+		}, candidatePath);
+
+		assert.throws(
+			() => promoteSnapshot(candidatePath, activeSnapshotPath),
+			/must include contentSha256/i,
+		);
+		assert.equal(readCoverageSnapshotMetadata(activeSnapshotPath).status, "seed");
 	}
 	finally {
 		workspace.dispose();

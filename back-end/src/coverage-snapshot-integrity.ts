@@ -257,14 +257,19 @@ export function bindCoverageSnapshotMetadata(
 
 export function verifyCoverageSnapshotMetadataDigest(
 	metadata: Record<string, unknown>,
-	snapshotPath: string
+	snapshotPath: string,
+	options: { required?: boolean } = {}
 ) {
 	const expectedDigest = metadataDigest(metadata);
 
 	// Legacy sidecars remain readable so an older release can still be rolled
-	// back. Every new write and promotion adds the binding automatically.
-	if (expectedDigest === undefined)
+	// back. Promotion is stricter because approval must bind the exact bytes.
+	if (expectedDigest === undefined) {
+		if (options.required)
+			throw new Error("Coverage snapshot approval metadata must include contentSha256.");
+
 		return;
+	}
 
 	const actualDigest = coverageSnapshotDigest(snapshotPath);
 

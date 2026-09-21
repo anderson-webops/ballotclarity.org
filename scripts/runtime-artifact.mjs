@@ -2,14 +2,17 @@ import { createHash } from "node:crypto";
 import {
 	cpSync,
 	existsSync,
+	mkdtempSync,
 	mkdirSync,
 	readFileSync,
 	readdirSync,
+	realpathSync,
 	rmSync,
 	statSync,
 	writeFileSync,
 } from "node:fs";
-import { basename, dirname, extname, relative, resolve, sep } from "node:path";
+import { tmpdir } from "node:os";
+import { basename, dirname, extname, join, relative, resolve, sep } from "node:path";
 import process from "node:process";
 import { spawnSync } from "node:child_process";
 import { pathToFileURL } from "node:url";
@@ -130,26 +133,42 @@ function assertBuildInputs() {
 	}
 }
 
-function getSourceIdentity() {
-	const commit = run("git", ["rev-parse", "HEAD"], { capture: true, cwd: projectRoot });
-	const status = run("git", ["status", "--porcelain", "--untracked-files=no"], {
+function getSourceIdentity(root = projectRoot) {
+	const commit = run("git", ["rev-parse", "HEAD"], { capture: true, cwd: root });
+	const tree = run("git", ["rev-parse", "HEAD^{tree}"], { capture: true, cwd: root });
+	const status = run("git", ["status", "--porcelain=v1", "--untracked-files=all"], {
 		capture: true,
-		cwd: projectRoot,
+		cwd: root,
 	});
 
 	return {
 		commit,
 		dirty: Boolean(status),
+		status,
+		tree,
 	};
 }
 
-function buildManifest(outputRoot, contract) {
+export function assertCleanSourceCheckout(root = projectRoot) {
+	const source = getSourceIdentity(root);
+
+	if (source.dirty)
+		throw new Error(`Runtime artifact source checkout must be clean:\n${source.status}`);
+
+	return {
+		commit: source.commit,
+		dirty: false,
+		tree: source.tree,
+	};
+}
+
+function buildManifest(outputRoot, contract, source) {
 	const files = listArtifactFiles(outputRoot);
 	assertNoPrivateOrWritableContent(outputRoot, files);
 
 	return {
 		schemaVersion: 1,
-		source: getSourceIdentity(),
+		source,
 		toolchain: {
 			node: process.version,
 			npm: runNpm(["--version"], { capture: true, cwd: projectRoot }),
@@ -201,10 +220,10 @@ export function verifyRuntimeArtifact(outputRoot) {
 	return manifest;
 }
 
-export function buildRuntimeArtifact(outputRoot = resolve(projectRoot, "dist/ballot-clarity-runtime")) {
+function buildRuntimeArtifactFromCurrentCheckout(outputRoot) {
 	const resolvedRoot = resolve(outputRoot);
 	assertSafeOutputPath(resolvedRoot);
-	const sourceContract = readContract();
+	const source = assertCleanSourceCheckout();
 	assertBuildInputs();
 	rmSync(resolvedRoot, { force: true, recursive: true });
 	mkdirSync(resolvedRoot, { recursive: true });
@@ -228,14 +247,63 @@ export function buildRuntimeArtifact(outputRoot = resolve(projectRoot, "dist/bal
 
 	const contract = readContract(resolvedRoot);
 	assertRequiredPaths(resolvedRoot, contract);
-	const manifest = buildManifest(resolvedRoot, contract);
+	const manifest = buildManifest(resolvedRoot, contract, source);
 	writeFileSync(resolve(resolvedRoot, manifestFileName), `${JSON.stringify(manifest, null, 2)}\n`, { mode: 0o644 });
 	verifyRuntimeArtifact(resolvedRoot);
 	return { manifest, outputRoot: resolvedRoot };
 }
 
+export function buildRuntimeArtifact(outputRoot = resolve(projectRoot, "dist/ballot-clarity-runtime")) {
+	const resolvedRoot = resolve(outputRoot);
+	assertSafeOutputPath(resolvedRoot);
+	const source = assertCleanSourceCheckout();
+	const temporaryRoot = mkdtempSync(join(tmpdir(), "ballot-clarity-artifact-source-"));
+	const isolatedRoot = join(temporaryRoot, "source");
+	let registeredWorktree = false;
+
+	try {
+		run("git", ["worktree", "add", "--detach", isolatedRoot, source.commit], { cwd: projectRoot });
+		registeredWorktree = true;
+		runNpm([
+			"ci",
+			"--include=optional",
+			"--strict-allow-scripts",
+			"--no-audit",
+			"--no-fund",
+		], { cwd: isolatedRoot });
+		runNpm(["run", "build"], { cwd: isolatedRoot });
+		run(process.execPath, [
+			resolve(isolatedRoot, "scripts/runtime-artifact.mjs"),
+			"build-current",
+			resolvedRoot,
+		], {
+			cwd: isolatedRoot,
+			env: {
+				...process.env,
+				BALLOT_CLARITY_ARTIFACT_ISOLATED_BUILD: "1",
+			},
+		});
+
+		const manifest = verifyRuntimeArtifact(resolvedRoot);
+
+		if (manifest.source.commit !== source.commit || manifest.source.tree !== source.tree || manifest.source.dirty)
+			throw new Error("Runtime artifact source identity does not match the clean source checkout.");
+
+		return { manifest, outputRoot: resolvedRoot };
+	}
+	finally {
+		try {
+			if (registeredWorktree)
+				run("git", ["worktree", "remove", "--force", isolatedRoot], { cwd: projectRoot });
+		}
+		finally {
+			rmSync(temporaryRoot, { force: true, recursive: true });
+		}
+	}
+}
+
 function isDirectExecution(metaUrl) {
-	return Boolean(process.argv[1]) && pathToFileURL(process.argv[1]).href === metaUrl;
+	return Boolean(process.argv[1]) && pathToFileURL(realpathSync(process.argv[1])).href === metaUrl;
 }
 
 if (isDirectExecution(import.meta.url)) {
@@ -245,6 +313,16 @@ if (isDirectExecution(import.meta.url)) {
 	if (command === "build") {
 		const result = buildRuntimeArtifact(outputRoot);
 		console.log(`Built and verified ${result.manifest.files.length} runtime files at ${result.outputRoot}.`);
+	}
+	else if (command === "build-current") {
+		if (process.env.BALLOT_CLARITY_ARTIFACT_ISOLATED_BUILD !== "1")
+			throw new Error("build-current is reserved for the isolated artifact builder.");
+
+		if (!outputRoot)
+			throw new Error("build-current requires an explicit output path.");
+
+		const result = buildRuntimeArtifactFromCurrentCheckout(outputRoot);
+		console.log(`Built and verified ${result.manifest.files.length} isolated runtime files at ${result.outputRoot}.`);
 	}
 	else if (command === "verify") {
 		const manifest = verifyRuntimeArtifact(outputRoot ?? resolve(projectRoot, "dist/ballot-clarity-runtime"));

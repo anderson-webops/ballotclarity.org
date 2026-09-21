@@ -1,11 +1,12 @@
+import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import {
 	cpSync,
 	existsSync,
-	mkdtempSync,
 	mkdirSync,
-	readFileSync,
+	mkdtempSync,
 	readdirSync,
+	readFileSync,
 	realpathSync,
 	rmSync,
 	statSync,
@@ -14,7 +15,6 @@ import {
 import { tmpdir } from "node:os";
 import { basename, dirname, extname, join, relative, resolve, sep } from "node:path";
 import process from "node:process";
-import { spawnSync } from "node:child_process";
 import { pathToFileURL } from "node:url";
 
 const projectRoot = resolve(import.meta.dirname, "..");
@@ -126,9 +126,9 @@ function assertRequiredPaths(root, contract) {
 	}
 }
 
-function assertBuildInputs() {
+function assertBuildInputs(sourceRoot = projectRoot) {
 	for (const [source] of copiedPaths) {
-		if (!existsSync(resolve(projectRoot, source)))
+		if (!existsSync(resolve(sourceRoot, source)))
 			throw new Error(`Runtime artifact build input is missing: ${source}`);
 	}
 }
@@ -162,7 +162,7 @@ export function assertCleanSourceCheckout(root = projectRoot) {
 	};
 }
 
-function buildManifest(outputRoot, contract, source) {
+function buildManifest(outputRoot, contract, source, sourceRoot = projectRoot) {
 	const files = listArtifactFiles(outputRoot);
 	assertNoPrivateOrWritableContent(outputRoot, files);
 
@@ -171,7 +171,7 @@ function buildManifest(outputRoot, contract, source) {
 		source,
 		toolchain: {
 			node: process.version,
-			npm: runNpm(["--version"], { capture: true, cwd: projectRoot }),
+			npm: runNpm(["--version"], { capture: true, cwd: sourceRoot }),
 		},
 		services: contract.services,
 		externalWritableState: contract.externalWritableState,
@@ -213,23 +213,29 @@ export function verifyRuntimeArtifact(outputRoot) {
 			stats.size !== expected.size
 			|| (stats.mode & 0o777) !== expected.mode
 			|| hashFile(path) !== expected.sha256
-		)
+		) {
 			throw new Error(`Runtime artifact hash mismatch: ${expected.path}`);
+		}
 	}
 
 	return manifest;
 }
 
-function buildRuntimeArtifactFromCurrentCheckout(outputRoot) {
+function buildRuntimeArtifactFromCheckout(sourceRoot, outputRoot, expectedSource) {
+	const resolvedSourceRoot = realpathSync(resolve(sourceRoot));
 	const resolvedRoot = resolve(outputRoot);
 	assertSafeOutputPath(resolvedRoot);
-	const source = assertCleanSourceCheckout();
-	assertBuildInputs();
+	const source = assertCleanSourceCheckout(resolvedSourceRoot);
+
+	if (source.commit !== expectedSource.commit || source.tree !== expectedSource.tree)
+		throw new Error("Isolated artifact source identity does not match the requested source checkout.");
+
+	assertBuildInputs(resolvedSourceRoot);
 	rmSync(resolvedRoot, { force: true, recursive: true });
 	mkdirSync(resolvedRoot, { recursive: true });
 
 	for (const [source, target] of copiedPaths) {
-		const sourcePath = resolve(projectRoot, source);
+		const sourcePath = resolve(resolvedSourceRoot, source);
 		const targetPath = resolve(resolvedRoot, target);
 		mkdirSync(dirname(targetPath), { recursive: true });
 		cpSync(sourcePath, targetPath, { recursive: true });
@@ -247,7 +253,7 @@ function buildRuntimeArtifactFromCurrentCheckout(outputRoot) {
 
 	const contract = readContract(resolvedRoot);
 	assertRequiredPaths(resolvedRoot, contract);
-	const manifest = buildManifest(resolvedRoot, contract, source);
+	const manifest = buildManifest(resolvedRoot, contract, source, resolvedSourceRoot);
 	writeFileSync(resolve(resolvedRoot, manifestFileName), `${JSON.stringify(manifest, null, 2)}\n`, { mode: 0o644 });
 	verifyRuntimeArtifact(resolvedRoot);
 	return { manifest, outputRoot: resolvedRoot };
@@ -272,17 +278,7 @@ export function buildRuntimeArtifact(outputRoot = resolve(projectRoot, "dist/bal
 			"--no-fund",
 		], { cwd: isolatedRoot });
 		runNpm(["run", "build"], { cwd: isolatedRoot });
-		run(process.execPath, [
-			resolve(isolatedRoot, "scripts/runtime-artifact.mjs"),
-			"build-current",
-			resolvedRoot,
-		], {
-			cwd: isolatedRoot,
-			env: {
-				...process.env,
-				BALLOT_CLARITY_ARTIFACT_ISOLATED_BUILD: "1",
-			},
-		});
+		buildRuntimeArtifactFromCheckout(isolatedRoot, resolvedRoot, source);
 
 		const manifest = verifyRuntimeArtifact(resolvedRoot);
 
@@ -313,16 +309,6 @@ if (isDirectExecution(import.meta.url)) {
 	if (command === "build") {
 		const result = buildRuntimeArtifact(outputRoot);
 		console.log(`Built and verified ${result.manifest.files.length} runtime files at ${result.outputRoot}.`);
-	}
-	else if (command === "build-current") {
-		if (process.env.BALLOT_CLARITY_ARTIFACT_ISOLATED_BUILD !== "1")
-			throw new Error("build-current is reserved for the isolated artifact builder.");
-
-		if (!outputRoot)
-			throw new Error("build-current requires an explicit output path.");
-
-		const result = buildRuntimeArtifactFromCurrentCheckout(outputRoot);
-		console.log(`Built and verified ${result.manifest.files.length} isolated runtime files at ${result.outputRoot}.`);
 	}
 	else if (command === "verify") {
 		const manifest = verifyRuntimeArtifact(outputRoot ?? resolve(projectRoot, "dist/ballot-clarity-runtime"));

@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
-import { spawn } from "node:child_process";
+import { Buffer } from "node:buffer";
+import { spawn, spawnSync } from "node:child_process";
+import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { createServer } from "node:net";
-import { cpSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import process from "node:process";
@@ -60,11 +61,12 @@ function waitForExit(child, timeoutMs) {
 		return Promise.resolve(true);
 
 	return new Promise((resolveExit) => {
+		let timeout;
 		const handleExit = () => {
 			clearTimeout(timeout);
 			resolveExit(true);
 		};
-		const timeout = setTimeout(() => {
+		timeout = setTimeout(() => {
 			child.off("exit", handleExit);
 			resolveExit(false);
 		}, timeoutMs);
@@ -93,6 +95,21 @@ let apiProcess;
 let frontendProcess;
 
 try {
+	const bypassAttempt = spawnSync(process.execPath, [
+		resolve(import.meta.dirname, "runtime-artifact.mjs"),
+		"build-current",
+		artifactRoot,
+	], {
+		encoding: "utf8",
+		env: {
+			...process.env,
+			BALLOT_CLARITY_ARTIFACT_ISOLATED_BUILD: "1",
+		},
+	});
+	assert.notEqual(bypassAttempt.status, 0);
+	assert.match(`${bypassAttempt.stdout}${bypassAttempt.stderr}`, /Unknown runtime artifact command: build-current/u);
+	assert.equal(readFileSync(resolve(import.meta.dirname, "runtime-artifact.mjs"), "utf8").includes("BALLOT_CLARITY_ARTIFACT_ISOLATED_BUILD"), false);
+
 	buildRuntimeArtifact(artifactRoot);
 	mkdirSync(dirname(unpackedRoot), { recursive: true });
 	cpSync(artifactRoot, unpackedRoot, { recursive: true });

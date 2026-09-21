@@ -24,6 +24,12 @@ import {
 	demoMeasures,
 	demoSources,
 } from "./coverage-data.js";
+import {
+	bindCoverageSnapshotMetadata,
+	coverageSnapshotMetadataPath,
+	recoverPendingCoveragePromotion,
+	verifyCoverageSnapshotMetadataDigest,
+} from "./coverage-snapshot-integrity.js";
 
 export interface CoverageSnapshot {
 	candidates: Candidate[];
@@ -55,6 +61,7 @@ export interface CoverageRepository {
 }
 
 export interface CoverageSnapshotMetadata {
+	contentSha256?: string;
 	status: CoverageSnapshotStatus;
 	sourceLabel: string;
 	sourceType: CoverageSnapshotSourceType;
@@ -73,9 +80,7 @@ function defaultCoverageFilePath() {
 	return resolve(dirname(new URL(import.meta.url).pathname), "..", "data", "live-coverage.local.json");
 }
 
-export function coverageSnapshotMetadataPath(snapshotPath: string) {
-	return `${snapshotPath}.meta.json`;
-}
+export { coverageSnapshotMetadataPath } from "./coverage-snapshot-integrity.js";
 
 function buildEmptySnapshotMetadata(configuredSnapshotPath?: string): CoverageSnapshotMetadata {
 	if (configuredSnapshotPath) {
@@ -164,8 +169,12 @@ export function parseCoverageSnapshotMetadata(raw: unknown): CoverageSnapshotMet
 	if (sourceType !== "imported" && sourceType !== "seed" && sourceType !== "unknown")
 		throw new Error("Coverage snapshot metadata must include a valid sourceType.");
 
+	if (raw.contentSha256 !== undefined && (typeof raw.contentSha256 !== "string" || !/^[a-f0-9]{64}$/.test(raw.contentSha256)))
+		throw new Error("Coverage snapshot metadata contentSha256 must be a lowercase SHA-256 digest.");
+
 	return {
 		approvedAt: typeof raw.approvedAt === "string" ? raw.approvedAt : undefined,
+		contentSha256: typeof raw.contentSha256 === "string" ? raw.contentSha256 : undefined,
 		importedAt: typeof raw.importedAt === "string" ? raw.importedAt : undefined,
 		note: typeof raw.note === "string" ? raw.note : undefined,
 		reviewedAt: typeof raw.reviewedAt === "string" ? raw.reviewedAt : undefined,
@@ -207,16 +216,21 @@ export function parseCoverageSnapshot(raw: unknown): CoverageSnapshot {
 }
 
 export function readCoverageSnapshot(snapshotPath = defaultCoverageFilePath()) {
+	recoverPendingCoveragePromotion(snapshotPath);
 	const raw = readFileSync(snapshotPath, "utf8");
 	return parseCoverageSnapshot(JSON.parse(raw));
 }
 
 export function readCoverageSnapshotMetadata(snapshotPath = defaultCoverageFilePath()) {
+	recoverPendingCoveragePromotion(snapshotPath);
 	const raw = readFileSync(coverageSnapshotMetadataPath(snapshotPath), "utf8");
-	return parseCoverageSnapshotMetadata(JSON.parse(raw));
+	const metadata = parseCoverageSnapshotMetadata(JSON.parse(raw));
+	verifyCoverageSnapshotMetadataDigest(metadata as unknown as Record<string, unknown>, snapshotPath);
+	return metadata;
 }
 
 export function writeCoverageSnapshot(snapshot: CoverageSnapshot, snapshotPath = defaultCoverageFilePath()) {
+	recoverPendingCoveragePromotion(snapshotPath);
 	mkdirSync(dirname(snapshotPath), { recursive: true });
 	writeFileSync(snapshotPath, `${JSON.stringify(snapshot, null, 2)}\n`, "utf8");
 	return snapshotPath;
@@ -226,9 +240,11 @@ export function writeCoverageSnapshotMetadata(
 	metadata: CoverageSnapshotMetadata,
 	snapshotPath = defaultCoverageFilePath()
 ) {
+	recoverPendingCoveragePromotion(snapshotPath);
 	const metadataPath = coverageSnapshotMetadataPath(snapshotPath);
 	mkdirSync(dirname(metadataPath), { recursive: true });
-	writeFileSync(metadataPath, `${JSON.stringify(metadata, null, 2)}\n`, "utf8");
+	const boundMetadata = bindCoverageSnapshotMetadata(metadata as unknown as Record<string, unknown>, snapshotPath);
+	writeFileSync(metadataPath, `${JSON.stringify(boundMetadata, null, 2)}\n`, "utf8");
 	return metadataPath;
 }
 
@@ -237,6 +253,7 @@ export async function createCoverageRepository(): Promise<CoverageRepository> {
 	const configuredSnapshotPath = environment?.LIVE_COVERAGE_FILE?.trim() || undefined;
 	const snapshotPath = configuredSnapshotPath || defaultCoverageFilePath();
 	const requireLiveCoverage = environment?.LIVE_COVERAGE_REQUIRED === "true";
+	recoverPendingCoveragePromotion(snapshotPath);
 	const hasSnapshot = Boolean(configuredSnapshotPath) && existsSync(snapshotPath);
 	const configuredSnapshotMissing = Boolean(configuredSnapshotPath) && !hasSnapshot;
 	const loadedAt = new Date().toISOString();

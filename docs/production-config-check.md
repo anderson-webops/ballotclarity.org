@@ -8,7 +8,8 @@ It checks the environment values and active coverage snapshot that determine whe
 
 - Public origins use HTTPS and do not point at localhost, reserved placeholder domains, private IP ranges, or internal-only hostnames.
 - `NUXT_PUBLIC_API_BASE` points at the public `/api` path.
-- `ADMIN_API_BASE` is configured as a private server-side target, not the same public API base used by browsers.
+- `ADMIN_API_BASE` is the sole admin proxy target, uses the private `/api` path on a loopback or private address, and is not overridden by deprecated `NUXT_ADMIN_*` aliases.
+- Bootstrap account settings are absent during routine production startup; they are accepted only by the explicit one-time bootstrap command.
 - `ADMIN_API_KEY`, `ADMIN_SESSION_SECRET`, `ADMIN_MFA_ENCRYPTION_KEY`, `ACTIVE_LOOKUP_COOKIE_SECRET`, and `ADDRESS_CACHE_ENCRYPTION_KEY` are present, long enough, and not obvious placeholder values.
 - `CONTACT_ADDRESS` or `NUXT_CONTACT_ADDRESS` is configured as a valid, non-placeholder support email for the protected public contact route.
 - `CONTACT_ADDRESS_SESSION_SECRET` or `NUXT_CONTACT_ADDRESS_SESSION_SECRET` is present, long enough, and not an obvious placeholder value.
@@ -20,7 +21,7 @@ It checks the environment values and active coverage snapshot that determine whe
 - Optional ballot-content provider keys and endpoints are paired where the connector would otherwise be ignored or incomplete.
 - `ADMIN_STORE_DRIVER=postgres` and a Postgres `ADMIN_DATABASE_URL` or `DATABASE_URL` is configured.
 - `LIVE_COVERAGE_REQUIRED=true` is enabled.
-- `LIVE_COVERAGE_FILE` exists and has a matching `.meta.json` sidecar.
+- `LIVE_COVERAGE_FILE` exists, has a `.meta.json` sidecar, and exactly matches the sidecar's SHA-256 content binding.
 - Snapshot metadata is `reviewed` or `production_approved`, uses `sourceType: "imported"`, and includes the required review timestamps.
 - `production_approved` snapshots include `approvedAt`.
 - `reviewed` and `production_approved` snapshot payloads include the minimum public coverage shape: election, jurisdiction, location, summaries, source context, and official resources.

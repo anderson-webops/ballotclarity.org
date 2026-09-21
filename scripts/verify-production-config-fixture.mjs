@@ -1,5 +1,5 @@
 import { spawnSync } from "node:child_process";
-import { randomBytes, randomUUID } from "node:crypto";
+import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
@@ -39,6 +39,7 @@ try {
 	writeJson(snapshotPath, JSON.parse(readFileSync(reviewedSnapshotPath, "utf8")));
 	writeJson(`${snapshotPath}.meta.json`, {
 		approvedAt: "2026-04-19T19:36:50.252Z",
+		contentSha256: createHash("sha256").update(readFileSync(snapshotPath)).digest("hex"),
 		importedAt: "2026-04-19T19:36:50.252Z",
 		reviewedAt: "2026-04-19T19:36:50.252Z",
 		sourceLabel: "CI production configuration fixture",

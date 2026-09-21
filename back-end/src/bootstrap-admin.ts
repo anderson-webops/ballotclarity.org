@@ -22,12 +22,14 @@ if (!username || !password) {
 }
 
 async function main() {
+	let repository: Awaited<ReturnType<typeof createAdminRepository>> | null = null;
+
 	try {
 		if (!username || !password) {
 			throw new Error("Username and password are required.");
 		}
 
-		const repository = await createAdminRepository({
+		repository = await createAdminRepository({
 			databaseUrl: process.env.ADMIN_DATABASE_URL || process.env.DATABASE_URL || null,
 			dbPath
 		});
@@ -42,7 +44,10 @@ async function main() {
 	}
 	catch (error) {
 		console.error(error instanceof Error ? error.message : "Unable to create admin user.");
-		process.exit(1);
+		process.exitCode = 1;
+	}
+	finally {
+		await repository?.close?.();
 	}
 }
 

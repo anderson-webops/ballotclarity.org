@@ -86,12 +86,12 @@ function getAdminConfig(event: H3Event): AdminConfig {
 	const runtimeConfig = useRuntimeConfig(event);
 
 	return {
-		apiBase: process.env.NUXT_ADMIN_API_BASE || process.env.ADMIN_API_BASE || String(runtimeConfig.adminApiBase || ""),
-		apiKey: process.env.NUXT_ADMIN_API_KEY || process.env.ADMIN_API_KEY || String(runtimeConfig.adminApiKey || ""),
+		apiBase: process.env.ADMIN_API_BASE || "",
+		apiKey: process.env.ADMIN_API_KEY || "",
 		requestTimeoutMs: resolveRequestTimeoutMs(
 			process.env.ADMIN_API_FETCH_TIMEOUT_MS || Number(runtimeConfig.adminApiFetchTimeoutMs)
 		),
-		sessionSecret: process.env.NUXT_ADMIN_SESSION_SECRET || process.env.ADMIN_SESSION_SECRET || String(runtimeConfig.adminSessionSecret || "")
+		sessionSecret: process.env.ADMIN_SESSION_SECRET || ""
 	};
 }
 

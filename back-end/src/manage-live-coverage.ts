@@ -1,5 +1,5 @@
-import { randomUUID } from "node:crypto";
-import { copyFileSync, existsSync, mkdirSync, readdirSync, renameSync, rmSync } from "node:fs";
+import type { CoverageSnapshotReplacementOptions } from "./coverage-snapshot-integrity.js";
+import { copyFileSync, existsSync, mkdirSync, readdirSync } from "node:fs";
 import { basename, dirname, join, resolve } from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
@@ -8,6 +8,11 @@ import {
 	readCoverageSnapshot,
 	readCoverageSnapshotMetadata,
 } from "./coverage-repository.js";
+import {
+
+	recoverPendingCoveragePromotion,
+	replaceCoverageSnapshotPair
+} from "./coverage-snapshot-integrity.js";
 import {
 	summarizeCoverageSnapshotValidation,
 	validateCoverageSnapshotForPublication,
@@ -44,6 +49,8 @@ function timestamp() {
 }
 
 export function backupSnapshot(snapshotPath: string) {
+	recoverPendingCoveragePromotion(snapshotPath);
+
 	if (!existsSync(snapshotPath))
 		return null;
 
@@ -93,84 +100,22 @@ function assertPromotableSnapshot(snapshotPath: string) {
 	}
 }
 
-function temporarySiblingPath(targetPath: string, purpose: string) {
-	return join(
-		dirname(targetPath),
-		`.${basename(targetPath)}.${purpose}.${process.pid}.${randomUUID()}.tmp`
-	);
-}
-
-function replaceSnapshotPair(sourcePath: string, targetPath: string) {
-	const sourceMetadataPath = coverageSnapshotMetadataPath(sourcePath);
-	const targetMetadataPath = coverageSnapshotMetadataPath(targetPath);
-	const stagedSnapshotPath = temporarySiblingPath(targetPath, "staged");
-	const stagedMetadataPath = temporarySiblingPath(targetMetadataPath, "staged");
-	const previousSnapshotPath = existsSync(targetPath)
-		? temporarySiblingPath(targetPath, "previous")
-		: null;
-	const previousMetadataPath = existsSync(targetMetadataPath)
-		? temporarySiblingPath(targetMetadataPath, "previous")
-		: null;
-	let snapshotReplaced = false;
-	let metadataReplaced = false;
-
-	mkdirSync(dirname(targetPath), { recursive: true });
-
-	try {
-		copyFileSync(sourcePath, stagedSnapshotPath);
-		copyFileSync(sourceMetadataPath, stagedMetadataPath);
-
-		if (previousSnapshotPath)
-			copyFileSync(targetPath, previousSnapshotPath);
-
-		if (previousMetadataPath)
-			copyFileSync(targetMetadataPath, previousMetadataPath);
-
-		// Replace data before its approval sidecar. An interrupted process therefore
-		// cannot apply newer approval metadata to older snapshot content.
-		renameSync(stagedSnapshotPath, targetPath);
-		snapshotReplaced = true;
-		renameSync(stagedMetadataPath, targetMetadataPath);
-		metadataReplaced = true;
-	}
-	catch (error) {
-		if (snapshotReplaced) {
-			if (previousSnapshotPath && existsSync(previousSnapshotPath))
-				renameSync(previousSnapshotPath, targetPath);
-			else
-				rmSync(targetPath, { force: true });
-		}
-
-		if (metadataReplaced) {
-			if (previousMetadataPath && existsSync(previousMetadataPath))
-				renameSync(previousMetadataPath, targetMetadataPath);
-			else
-				rmSync(targetMetadataPath, { force: true });
-		}
-
-		throw error;
-	}
-	finally {
-		for (const path of [
-			stagedSnapshotPath,
-			stagedMetadataPath,
-			previousSnapshotPath,
-			previousMetadataPath,
-		]) {
-			if (path)
-				rmSync(path, { force: true });
-		}
-	}
-}
-
-export function promoteSnapshot(candidatePath: string, targetPath: string) {
+export function promoteSnapshot(
+	candidatePath: string,
+	targetPath: string,
+	options: CoverageSnapshotReplacementOptions = {}
+) {
 	assertPromotableSnapshot(candidatePath);
-	replaceSnapshotPair(candidatePath, targetPath);
+	replaceCoverageSnapshotPair(candidatePath, targetPath, options);
 }
 
-export function rollbackSnapshot(targetPath: string, backupPath: string) {
+export function rollbackSnapshot(
+	targetPath: string,
+	backupPath: string,
+	options: CoverageSnapshotReplacementOptions = {}
+) {
 	assertPromotableSnapshot(backupPath);
-	replaceSnapshotPair(backupPath, targetPath);
+	replaceCoverageSnapshotPair(backupPath, targetPath, options);
 }
 
 export function listBackups(targetPath: string) {

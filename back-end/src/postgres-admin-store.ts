@@ -66,6 +66,7 @@ import {
 	verifyPassword
 } from "./admin-store.js";
 import { normalizeCorrectionSubmission } from "./feedback-submission.js";
+import { createPostgresPoolConfig } from "./postgres-pool-config.js";
 
 interface CountRow {
 	count: number;
@@ -682,10 +683,10 @@ async function seedPostgresDatabase(pool: Pool, options: AdminRepositoryOptions)
 		}
 	}
 
-	const bootstrapUsername = options.bootstrapUsername || process.env.ADMIN_BOOTSTRAP_USERNAME || process.env.ADMIN_USERNAME || null;
-	const bootstrapPassword = options.bootstrapPassword || process.env.ADMIN_BOOTSTRAP_PASSWORD || process.env.ADMIN_PASSWORD || null;
-	const bootstrapDisplayName = options.bootstrapDisplayName || process.env.ADMIN_BOOTSTRAP_DISPLAY_NAME || "Ballot Clarity Admin";
-	const bootstrapRole = options.bootstrapRole || (process.env.ADMIN_BOOTSTRAP_ROLE as AdminUserRole | undefined) || "admin";
+	const bootstrapUsername = options.bootstrapUsername || null;
+	const bootstrapPassword = options.bootstrapPassword || null;
+	const bootstrapDisplayName = options.bootstrapDisplayName || "Ballot Clarity Admin";
+	const bootstrapRole = options.bootstrapRole || "admin";
 
 	if (!usersCount && bootstrapUsername && bootstrapPassword) {
 		const now = new Date().toISOString();
@@ -725,10 +726,11 @@ export async function createPostgresAdminRepository(options: AdminRepositoryOpti
 	if (!connectionString)
 		throw new Error("Postgres admin store requires ADMIN_DATABASE_URL or DATABASE_URL.");
 
-	const pool = new Pool({
-		allowExitOnIdle: true,
-		connectionString
-	});
+	const pool = new Pool(createPostgresPoolConfig({
+		connectionString,
+		defaultMax: 4,
+		maxEnvName: "ADMIN_DATABASE_POOL_MAX",
+	}));
 
 	await seedPostgresDatabase(pool, options);
 
@@ -963,6 +965,7 @@ export async function createPostgresAdminRepository(options: AdminRepositoryOpti
 	}
 
 	const repository: AdminRepository = {
+		close: async () => await pool.end(),
 		driver: "postgres",
 		async authenticateUser(username, password) {
 			const normalized = username.trim().toLowerCase();

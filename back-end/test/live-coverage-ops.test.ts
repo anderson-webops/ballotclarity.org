@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { existsSync, mkdtempSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -10,6 +10,12 @@ import {
 	writeCoverageSnapshot,
 	writeCoverageSnapshotMetadata,
 } from "../src/coverage-repository.js";
+import {
+	CoveragePromotionInterruptedError,
+	coveragePromotionJournalPath,
+	coverageSnapshotDigest,
+	recoverPendingCoveragePromotion,
+} from "../src/coverage-snapshot-integrity.js";
 import {
 	buildFultonOfficialLogisticsOnlySnapshot,
 	buildFultonReviewedCoverageSnapshotMetadata,
@@ -52,7 +58,10 @@ test("coverage snapshot metadata sidecars round-trip with reviewed and seed prov
 		writeCoverageSnapshot(buildSeedCoverageSnapshot(), snapshotPath);
 		writeCoverageSnapshotMetadata(metadata, snapshotPath);
 
-		assert.deepEqual(readCoverageSnapshotMetadata(snapshotPath), metadata);
+		assert.deepEqual(readCoverageSnapshotMetadata(snapshotPath), {
+			...metadata,
+			contentSha256: coverageSnapshotDigest(snapshotPath),
+		});
 
 		const seedSnapshotPath = join(workspace.root, "seed-fulton.json");
 		writeCoverageSnapshot(buildSeedCoverageSnapshot(), seedSnapshotPath);
@@ -60,6 +69,93 @@ test("coverage snapshot metadata sidecars round-trip with reviewed and seed prov
 
 		assert.equal(readCoverageSnapshotMetadata(seedSnapshotPath).status, "seed");
 		assert.equal(readCoverageSnapshotMetadata(seedSnapshotPath).sourceType, "seed");
+	}
+	finally {
+		workspace.dispose();
+	}
+});
+
+test("interrupted promotion restores the prior complete snapshot pair", () => {
+	const workspace = createWorkspace();
+
+	try {
+		const activeSnapshotPath = join(workspace.root, "active.json");
+		const candidatePath = join(workspace.root, "candidate.json");
+		const priorSnapshot = buildSeedCoverageSnapshot();
+		const candidateSnapshot = buildFultonOfficialLogisticsOnlySnapshot();
+
+		writeCoverageSnapshot(priorSnapshot, activeSnapshotPath);
+		writeCoverageSnapshotMetadata(buildSeedCoverageSnapshotMetadata("2026-04-19T10:00:00.000Z"), activeSnapshotPath);
+		const priorSnapshotBytes = readFileSync(activeSnapshotPath, "utf8");
+		writeCoverageSnapshot(candidateSnapshot, candidatePath);
+		writeCoverageSnapshotMetadata(buildFultonReviewedCoverageSnapshotMetadata({
+			importedAt: "2026-04-20T12:00:00.000Z",
+			reviewedAt: "2026-04-21T12:00:00.000Z",
+			status: "reviewed",
+		}), candidatePath);
+
+		assert.throws(
+			() => promoteSnapshot(candidatePath, activeSnapshotPath, { simulateCrashAfter: "snapshot" }),
+			CoveragePromotionInterruptedError
+		);
+		assert.equal(existsSync(coveragePromotionJournalPath(activeSnapshotPath)), true);
+		assert.equal(recoverPendingCoveragePromotion(activeSnapshotPath), "previous");
+		assert.equal(readFileSync(activeSnapshotPath, "utf8"), priorSnapshotBytes);
+		assert.equal(readCoverageSnapshotMetadata(activeSnapshotPath).status, "seed");
+		assert.equal(existsSync(coveragePromotionJournalPath(activeSnapshotPath)), false);
+	}
+	finally {
+		workspace.dispose();
+	}
+});
+
+test("interrupted promotion retains a fully replaced digest-bound pair", () => {
+	const workspace = createWorkspace();
+
+	try {
+		const activeSnapshotPath = join(workspace.root, "active.json");
+		const candidatePath = join(workspace.root, "candidate.json");
+		const candidateSnapshot = buildFultonOfficialLogisticsOnlySnapshot();
+
+		writeCoverageSnapshot(buildSeedCoverageSnapshot(), activeSnapshotPath);
+		writeCoverageSnapshotMetadata(buildSeedCoverageSnapshotMetadata("2026-04-19T10:00:00.000Z"), activeSnapshotPath);
+		writeCoverageSnapshot(candidateSnapshot, candidatePath);
+		writeCoverageSnapshotMetadata(buildFultonReviewedCoverageSnapshotMetadata({
+			importedAt: "2026-04-20T12:00:00.000Z",
+			reviewedAt: "2026-04-21T12:00:00.000Z",
+			status: "reviewed",
+		}), candidatePath);
+		const candidateSnapshotBytes = readFileSync(candidatePath, "utf8");
+
+		assert.throws(
+			() => promoteSnapshot(candidatePath, activeSnapshotPath, { simulateCrashAfter: "metadata" }),
+			CoveragePromotionInterruptedError
+		);
+		assert.equal(recoverPendingCoveragePromotion(activeSnapshotPath), "new");
+		assert.equal(readFileSync(activeSnapshotPath, "utf8"), candidateSnapshotBytes);
+		const metadata = readCoverageSnapshotMetadata(activeSnapshotPath);
+		assert.equal(metadata.status, "reviewed");
+		assert.equal(metadata.contentSha256, coverageSnapshotDigest(activeSnapshotPath));
+		assert.equal(existsSync(coveragePromotionJournalPath(activeSnapshotPath)), false);
+	}
+	finally {
+		workspace.dispose();
+	}
+});
+
+test("coverage metadata rejects a digest that does not match the snapshot", () => {
+	const workspace = createWorkspace();
+
+	try {
+		const snapshotPath = join(workspace.root, "active.json");
+		writeCoverageSnapshot(buildSeedCoverageSnapshot(), snapshotPath);
+		writeCoverageSnapshotMetadata(buildSeedCoverageSnapshotMetadata(), snapshotPath);
+		writeCoverageSnapshot(buildFultonOfficialLogisticsOnlySnapshot(), snapshotPath);
+
+		assert.throws(
+			() => readCoverageSnapshotMetadata(snapshotPath),
+			/does not match its approval metadata digest/i
+		);
 	}
 	finally {
 		workspace.dispose();

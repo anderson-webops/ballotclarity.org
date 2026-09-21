@@ -1,5 +1,13 @@
 # Dependency Audit Notes
 
+## 2026-09-21 compatible upstream refresh
+
+The Vitesse upstream dependency refresh was reviewed package by package instead of importing its package-manager and prerelease-tooling changes. Ballot Clarity retains its supported Node 24.18.1/npm 12.0.2 production baseline and npm lockfiles. The upstream move to Node 26 types, pnpm 12 self-management, moving GitHub Action tags, and the Nuxt DevTools 4 alpha was not compatible with those repository policies.
+
+Compatible stable updates were incorporated into the npm graph. The clean install resolves `@vueuse/core@14.4.0`, `@vueuse/nuxt@14.4.0`, `vite@8.3.0`, `esbuild@0.28.2`, `rolldown@1.2.9`, and `rollup@4.63.4`. The separately installable backend lockfile also resolves `esbuild@0.28.2`. Both lockfiles retain the reviewed Linux ARM64 native optional packages.
+
+The refreshed root graph passes a clean strict-script install, full and production-only audits with zero findings, repository metadata tests, and the normal release validation suite. Unsupported next-major updates remain intentionally deferred: VueUse 15, Node 26 types, TypeScript 7, dotenv 18, and H3 2 release candidates.
+
 ## 2026-09-11 security refresh
 
 The audit begun September 10 found seven flagged packages in the previously committed root dependency tree. The findings trace to four dependencies, now pinned to patched releases:

@@ -9,6 +9,7 @@ import { resolveRequestTimeoutMs } from "./src/utils/request-timeout";
 
 const assetVersion = "20260417";
 const isDev = process.env.NODE_ENV === "development";
+const devtoolsEnabled = isDev && process.env.NUXT_DEVTOOLS_ENABLED !== "false";
 const buildId = process.env.NUXT_PUBLIC_BUILD_ID
 	|| process.env.SOURCE_REVISION
 	|| process.env.COMMIT_REF
@@ -70,7 +71,7 @@ export default defineNuxtConfig({
 	srcDir: "src",
 
 	devtools: {
-		enabled: isDev
+		enabled: devtoolsEnabled
 	},
 
 	app: {
@@ -130,10 +131,7 @@ export default defineNuxtConfig({
 	},
 
 	runtimeConfig: {
-		adminApiBase: process.env.ADMIN_API_BASE || process.env.NUXT_PUBLIC_API_BASE || "http://127.0.0.1:3001/api",
 		adminApiFetchTimeoutMs: resolveRequestTimeoutMs(process.env.ADMIN_API_FETCH_TIMEOUT_MS),
-		adminApiKey: process.env.ADMIN_API_KEY || "",
-		adminSessionSecret: process.env.ADMIN_SESSION_SECRET || "",
 		contactAddress: process.env.CONTACT_ADDRESS || process.env.NUXT_CONTACT_ADDRESS || "",
 		contactAddressSessionSecret: process.env.CONTACT_ADDRESS_SESSION_SECRET || process.env.NUXT_CONTACT_ADDRESS_SESSION_SECRET || "",
 		public: {

@@ -1,4 +1,5 @@
-import type { ErrorRequestHandler, Request, RequestHandler, Response } from "express";
+import type { ErrorRequestHandler, Express, Request, RequestHandler, Response } from "express";
+import type { AddressInfo } from "node:net";
 import type { AddressEnrichmentService } from "./address-enrichment.js";
 import type { AdminAuditActor } from "./admin-store.js";
 import type { CongressClient, CongressMemberDetail, CongressMemberRecord } from "./congress.js";
@@ -69,6 +70,7 @@ import type { ZipLocationMatch, ZipLocationService } from "./zip-location.js";
 import type { ZipLookupLogger } from "./zip-lookup-logger.js";
 import { Buffer } from "node:buffer";
 import { timingSafeEqual } from "node:crypto";
+import { createServer } from "node:http";
 import process from "node:process";
 import { pathToFileURL } from "node:url";
 import cors from "cors";
@@ -168,11 +170,37 @@ interface CreateAppOptions {
 	zipLookupLogger?: ZipLookupLogger;
 }
 
+export interface BallotClarityApplication extends Express {
+	closeResources: () => Promise<void>;
+}
+
+interface StartServerOptions {
+	installSignalHandlers?: boolean;
+	shutdownGraceMs?: number;
+}
+
 type AdminLoginThrottleState = ReturnType<ReturnType<typeof createAdminLoginThrottle>["check"]>;
 
 function resolvePositiveIntegerEnv(name: string, fallback: number) {
 	const parsed = Number(process.env[name]);
 	return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+function resolveBoundedPositiveIntegerEnv(name: string, fallback: number, maximum: number) {
+	const value = resolvePositiveIntegerEnv(name, fallback);
+	return value <= maximum ? value : fallback;
+}
+
+async function closeManagedResources(closers: Array<(() => void | Promise<void>) | undefined>) {
+	const results = await Promise.allSettled(
+		closers.filter((closer): closer is () => void | Promise<void> => Boolean(closer)).map(closer => closer()),
+	);
+	const failures = results
+		.filter((result): result is PromiseRejectedResult => result.status === "rejected")
+		.map(result => result.reason);
+
+	if (failures.length)
+		throw new AggregateError(failures, "One or more backend resources failed to close.");
 }
 
 function isAuthorizedAdminRequest(requestKey: string | undefined, configuredKey: string | null) {
@@ -2936,7 +2964,7 @@ function buildSearchResponse(
 }
 
 export async function createApp(options: CreateAppOptions = {}) {
-	const app = express();
+	const app = express() as BallotClarityApplication;
 	const activeLookupCookieSecret = options.activeLookupCookieSecret ?? process.env.ACTIVE_LOOKUP_COOKIE_SECRET ?? "";
 	const adminApiKey = options.adminApiKey ?? process.env.ADMIN_API_KEY ?? null;
 	const adminSessionSecret = options.adminSessionSecret ?? process.env.ADMIN_SESSION_SECRET ?? null;
@@ -3068,16 +3096,27 @@ export async function createApp(options: CreateAppOptions = {}) {
 	const zipLocationService = options.zipLocationService === undefined
 		? createZipLocationService({ openStatesClient })
 		: options.zipLocationService;
+	const addressCacheRepository = options.addressEnrichmentService === undefined
+		? await createAddressCacheRepository(
+				process.env.ADMIN_DATABASE_URL || process.env.DATABASE_URL || "",
+				options.addressCacheEncryptionKey ?? process.env.ADDRESS_CACHE_ENCRYPTION_KEY ?? "",
+			)
+		: null;
 	const addressEnrichmentService = options.addressEnrichmentService === undefined
 		? createAddressEnrichmentService(
 				createCensusGeocoderClient(),
 				openStatesClient,
-				await createAddressCacheRepository(
-					process.env.ADMIN_DATABASE_URL || process.env.DATABASE_URL || "",
-					options.addressCacheEncryptionKey ?? process.env.ADDRESS_CACHE_ENCRYPTION_KEY ?? ""
-				)
+				addressCacheRepository!,
 			)
 		: options.addressEnrichmentService;
+	let closeResourcesPromise: Promise<void> | null = null;
+	app.closeResources = () => {
+		closeResourcesPromise ??= closeManagedResources([
+			adminRepository.close,
+			addressEnrichmentService?.close,
+		]);
+		return closeResourcesPromise;
+	};
 	const resolvedSourceInventory = resolveSources(coverageRepository.data.sources);
 
 	function maxUpdatedAt(...values: Array<string | undefined>) {
@@ -6105,19 +6144,95 @@ export async function createApp(options: CreateAppOptions = {}) {
 
 export async function startServer(
 	port = Number(process.env.PORT || 3001),
-	host = process.env.HOST?.trim() || "127.0.0.1"
+	host = process.env.HOST?.trim() || "127.0.0.1",
+	options: StartServerOptions = {},
 ) {
 	const app = await createApp();
-	const server = app.listen(port, host, () => {
-		console.log(`Ballot Clarity API listening on http://${host}:${port}`);
-	});
+	const server = createServer(app);
+	const requestTimeout = resolveBoundedPositiveIntegerEnv("HTTP_REQUEST_TIMEOUT_MS", 30_000, 120_000);
+	server.requestTimeout = requestTimeout;
+	server.headersTimeout = Math.min(
+		resolveBoundedPositiveIntegerEnv("HTTP_HEADERS_TIMEOUT_MS", 10_000, 60_000),
+		requestTimeout,
+	);
+	server.keepAliveTimeout = resolveBoundedPositiveIntegerEnv("HTTP_KEEP_ALIVE_TIMEOUT_MS", 5_000, 30_000);
+	server.maxRequestsPerSocket = resolveBoundedPositiveIntegerEnv("HTTP_MAX_REQUESTS_PER_SOCKET", 1_000, 10_000);
+	server.maxConnections = resolveBoundedPositiveIntegerEnv("HTTP_MAX_CONNECTIONS", 128, 1_000);
 
-	return { app, host, port, server };
+	try {
+		await new Promise<void>((resolve, reject) => {
+			const handleError = (error: Error) => {
+				reject(error);
+			};
+
+			server.once("error", handleError);
+			server.listen(port, host, () => {
+				server.off("error", handleError);
+				resolve();
+			});
+		});
+	}
+	catch (error) {
+		await app.closeResources();
+		throw error;
+	}
+
+	const boundAddress = server.address() as AddressInfo;
+	const boundPort = boundAddress.port;
+	console.log(`Ballot Clarity API listening on http://${host}:${boundPort}`);
+	const shutdownGraceMs = options.shutdownGraceMs
+		?? resolveBoundedPositiveIntegerEnv("SHUTDOWN_GRACE_MS", 10_000, 60_000);
+	let shutdownPromise: Promise<void> | null = null;
+	const signalHandlers = new Map<NodeJS.Signals, () => void>();
+	const removeSignalHandlers = () => {
+		for (const [signal, handler] of signalHandlers)
+			process.off(signal, handler);
+		signalHandlers.clear();
+	};
+	const shutdown = () => {
+		shutdownPromise ??= (async () => {
+			removeSignalHandlers();
+			await new Promise<void>((resolve, reject) => {
+				const forceCloseTimer = setTimeout(() => server.closeAllConnections(), shutdownGraceMs);
+				forceCloseTimer.unref();
+				server.close((error) => {
+					clearTimeout(forceCloseTimer);
+					if (error)
+						reject(error);
+					else
+						resolve();
+				});
+				server.closeIdleConnections();
+			});
+			await app.closeResources();
+		})();
+
+		return shutdownPromise;
+	};
+
+	if (options.installSignalHandlers) {
+		for (const signal of ["SIGINT", "SIGTERM"] as const) {
+			const handler = () => {
+				void shutdown().catch((error) => {
+					console.error(error instanceof Error ? error.message : "Backend shutdown failed.");
+					process.exitCode = 1;
+				});
+			};
+			signalHandlers.set(signal, handler);
+			process.once(signal, handler);
+		}
+	}
+
+	return { app, host, port: boundPort, server, shutdown };
 }
 
 function isDirectExecution(metaUrl: string) {
 	return Boolean(process.argv[1]) && pathToFileURL(process.argv[1]).href === metaUrl;
 }
 
-if (isDirectExecution(import.meta.url))
-	void startServer();
+if (isDirectExecution(import.meta.url)) {
+	void startServer(undefined, undefined, { installSignalHandlers: true }).catch((error) => {
+		console.error(error instanceof Error ? error.message : "Backend startup failed.");
+		process.exitCode = 1;
+	});
+}

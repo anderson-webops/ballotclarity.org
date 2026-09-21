@@ -66,7 +66,7 @@ npm run verify:local
 
 `verify:local` exercises the provider-backed runtime using a development seed snapshot and requires the relevant provider configuration. `local:setup` remains available for the explicit seed/bootstrap/provider-sync workflow; it is not required to start the interface. The advanced two-terminal commands remain `server:local:watch` and `dev:local`.
 
-To use the new launcher's isolated admin store, configure `ADMIN_BOOTSTRAP_USERNAME` and `ADMIN_BOOTSTRAP_PASSWORD` in your private environment file, then explicitly bootstrap that store:
+To use the new launcher's isolated admin store, set `ADMIN_BOOTSTRAP_USERNAME` and `ADMIN_BOOTSTRAP_PASSWORD` only for the explicit bootstrap command, then remove both values immediately afterward:
 
 ```bash
 npm run bootstrap-admin:local -- --db-path "$(pwd)/back-end/data/local-development.sqlite"
@@ -187,7 +187,7 @@ The Compose stack is development-only. It pins container images by immutable dig
 
 Server-only variables:
 
-- `ADMIN_API_BASE`: server-side Nuxt proxy target for admin-only API requests; this should be private to the Nuxt server and never exposed as the browser's direct `/api/admin/*` target
+- `ADMIN_API_BASE`: the canonical server-side Nuxt proxy target for admin-only API requests; it must use the private `/api` path on loopback or a private address and must never be exposed as the browser's direct `/api/admin/*` target
 - `ADMIN_API_FETCH_TIMEOUT_MS`: positive server-to-server admin API request timeout in milliseconds; defaults to 15 seconds
 - `ADMIN_API_KEY`: shared secret between the Nuxt admin proxy and the Express admin endpoints
 - `ADMIN_API_RATE_LIMIT_WINDOW_MS`, `ADMIN_API_RATE_LIMIT_MAX`, `ADMIN_API_RATE_LIMIT_MAX_BUCKETS`: coarse per-connection limit across all private admin API requests; the bounded in-memory store defaults to 1,000 requests per 15 minutes and fails closed for unseen connections when its 10,000-bucket cap is full
@@ -198,6 +198,8 @@ Server-only variables:
 - `ADMIN_STORE_DRIVER`: `postgres` for production, or `sqlite` only as a fallback for single-instance local/dev use; when omitted, the backend will auto-select Postgres if `ADMIN_DATABASE_URL` or `DATABASE_URL` is present
 - `ADMIN_DB_PATH`: SQLite database path for fallback persisted admin users and editorial operations data
 - `ADMIN_DATABASE_URL`: Postgres connection string for the admin and editorial operations store
+- `ADMIN_DATABASE_POOL_MAX`, `ADDRESS_CACHE_DATABASE_POOL_MAX`: per-process connection ceilings for the admin/editorial and encrypted address-cache pools; defaults are 4 and 2 so idle services do not reserve an unbounded database footprint
+- `DATABASE_POOL_CONNECTION_TIMEOUT_MS`, `DATABASE_POOL_IDLE_TIMEOUT_MS`: shared Postgres connection-acquisition and idle-connection timeouts; defaults are 5 and 10 seconds
 - `CONTACT_ADDRESS`: support email address returned by the protected `/api/contact-address` route after the same-origin nonce challenge succeeds
 - `CONTACT_ADDRESS_SESSION_SECRET`: server-only secret that signs short-lived protected-contact nonce sessions; use a dedicated value in production rather than reusing admin session secrets
 - `CONTACT_ADDRESS_RATE_LIMIT_WINDOW_MS`, `CONTACT_ADDRESS_RATE_LIMIT_MAX`, `CONTACT_ADDRESS_RATE_LIMIT_MAX_BUCKETS`: optional in-memory abuse controls for the protected contact endpoint; the bucket cap defaults to 10,000 and fails closed for unseen connections when full
@@ -208,6 +210,8 @@ Server-only variables:
 - `LIVE_COVERAGE_FILE`: path to the imported coverage snapshot consumed by the public API
 - `LIVE_COVERAGE_REQUIRED`: when `true`, fail startup if `LIVE_COVERAGE_FILE` is missing
 - `HOST`: Express API bind address; defaults to loopback (`127.0.0.1`) and should only use a broader interface when a private container or platform network requires it
+- `HTTP_MAX_CONNECTIONS`, `HTTP_MAX_REQUESTS_PER_SOCKET`, `HTTP_HEADERS_TIMEOUT_MS`, `HTTP_REQUEST_TIMEOUT_MS`, `HTTP_KEEP_ALIVE_TIMEOUT_MS`: bounded API connection and timeout controls; defaults are 128 connections, 1,000 requests per socket, and 10/30/5 seconds respectively
+- `SHUTDOWN_GRACE_MS`: maximum drain window before lingering API connections are closed; defaults to 10 seconds, after which database resources are released
 - `TRUST_PROXY`: explicit trusted reverse-proxy IPs, CIDR ranges, or named ranges; use `loopback` for same-host Nginx and never use broad `true` trust
 - `LOG_LEVEL`: structured backend log level, such as `info`, `warn`, or `error`
 - `ADMIN_LOGIN_WINDOW_MS`, `ADMIN_LOGIN_MAX_ATTEMPTS`, `ADMIN_LOGIN_IP_MAX_ATTEMPTS`, `ADMIN_LOGIN_LOCKOUT_MS`, `ADMIN_LOGIN_MAX_BUCKETS`: independent account and source-IP verification throttles shared by login, password-change, and MFA workflows; the bucket cap bounds memory and fails closed for previously unseen account/address pairs when full; values must be positive integers when set
@@ -226,8 +230,8 @@ Server-only variables:
 
 One-time bootstrap variables:
 
-- `ADMIN_BOOTSTRAP_USERNAME`: username used by `npm run bootstrap-admin`
-- `ADMIN_BOOTSTRAP_PASSWORD`: password used by `npm run bootstrap-admin`
+- `ADMIN_BOOTSTRAP_USERNAME`: one-time username consumed only by `npm run bootstrap-admin`; remove it from the routine service environment immediately afterward
+- `ADMIN_BOOTSTRAP_PASSWORD`: one-time password consumed only by `npm run bootstrap-admin`; the new account must replace it at first login, then enroll MFA before privileged work
 - `ADMIN_BOOTSTRAP_DISPLAY_NAME`: display label for the initial admin user
 - `ADMIN_BOOTSTRAP_ROLE`: initial role, usually `admin`
 
@@ -245,7 +249,7 @@ One-time or scheduled ingestion variables:
 - `LAUNCH_DIRECTORY_FILE`: local JSON file written by `npm run launch-directory:sync`
 - `LAUNCH_PROFILE_LATITUDE`, `LAUNCH_PROFILE_LONGITUDE`: optional probe point used for launch-area Open States geo matching in the launch-directory snapshot
 
-For production, use unique random values for `ADMIN_API_KEY`, `ADMIN_BOOTSTRAP_PASSWORD`, `ADMIN_SESSION_SECRET`, `ADMIN_MFA_ENCRYPTION_KEY`, `ACTIVE_LOOKUP_COOKIE_SECRET`, `ADDRESS_CACHE_ENCRYPTION_KEY`, and `CONTACT_ADDRESS_SESSION_SECRET`. The front-end and back-end must share the same `ADMIN_API_KEY`. Keep every secret in the server environment only and do not reuse values across purposes. Admin MFA TOTP secrets are stored as per-account authenticated ciphertext in the admin database; keep the encryption key separate from database files, snapshots, and backups.
+For production, use unique random values for `ADMIN_API_KEY`, the one-time `ADMIN_BOOTSTRAP_PASSWORD`, `ADMIN_SESSION_SECRET`, `ADMIN_MFA_ENCRYPTION_KEY`, `ACTIVE_LOOKUP_COOKIE_SECRET`, `ADDRESS_CACHE_ENCRYPTION_KEY`, and `CONTACT_ADDRESS_SESSION_SECRET`. The front-end and back-end must share the same `ADMIN_API_KEY`. Keep every secret outside version control and do not reuse values across purposes. Do not retain any bootstrap setting in the routine service environment. Admin MFA TOTP secrets are stored as per-account authenticated ciphertext in the admin database; keep the encryption key separate from database files, snapshots, and backups.
 The public browser should call `/api/admin/*` on the Nuxt origin only. Those requests must terminate at the Nuxt server so the session cookie and server-held `ADMIN_API_KEY` stay inside the bridge layer.
 Optional ballot-content provider URLs must be valid HTTPS URLs in production when set. Missing optional providers are allowed, but one-sided key/endpoint setups are flagged by `npm run verify:production` so pending paid or partner integrations do not look active by accident.
 
@@ -425,6 +429,7 @@ These endpoints live on the Express service, but they are intended to be reached
 - Asset delivery: mirrored source-document URLs can be rewritten to object storage or a CDN via `SOURCE_ASSET_BASE_URL`
 - Observability: the backend emits structured request logs, health metadata, and admin-auth throttle events
 - Production roadmap: see `docs/production-readiness-roadmap.md` for the staged path from fixture-backed development data to a real operated civic-information service
+- Runtime artifact contract: see `docs/runtime-artifact.md` for the hashed two-service bundle, clean-directory acceptance test, external writable-state declarations, and promotion/rollback boundary
 - Live-data sequence: see `docs/live-data-implementation-sequence.md` for the concrete schema, env, provider, and rollout order for replacing fixture coverage with reviewed civic data
 - Launch brief: see `docs/fulton-county-ga-launch.md` for the selected official systems and provider stack
 
@@ -473,7 +478,7 @@ Local stack notes:
 1. Normalize upstream civic data into the snapshot shape used by `back-end/src/coverage-repository.ts`.
 2. Attach a metadata sidecar at `<snapshot>.meta.json` with `status`, `sourceType`, `sourceLabel`, and review or approval timestamps.
 3. Validate that reviewed and production-approved snapshots do not contain seeded, staged-reference, or mixed guide content.
-4. Promote the candidate snapshot with `npm run -w back-end manage:coverage -- promote --from <candidate-snapshot.json> --target "$LIVE_COVERAGE_FILE"`. Promotion re-validates publication eligibility, stages the snapshot and metadata sidecar together, and replaces the data before the approval metadata so older content is never paired with newer approval state.
+4. Promote the candidate snapshot with `npm run -w back-end manage:coverage -- promote --from <candidate-snapshot.json> --target "$LIVE_COVERAGE_FILE"`. Promotion re-validates publication eligibility, binds the approval metadata to the exact snapshot SHA-256, and records a durable transaction before replacing either file. If the process stops between replacements, the next startup keeps the complete new pair or restores the complete prior pair before serving coverage.
 5. Verify `/health`, `/api/coverage`, `/api/status`, `/api/elections`, `/api/guide-packages/:id`, `/ballot/:slug`, and a representative lookup after restart or reload.
 6. Keep the public response contracts stable in the backend so the Nuxt composables and pages do not need to change.
 7. Replace bundled source files with object storage or CDN delivery behind `SOURCE_ASSET_BASE_URL` when source-file scale requires it.

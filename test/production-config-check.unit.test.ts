@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -98,9 +98,11 @@ function writeSnapshot(
 ) {
 	const root = mkdtempSync(join(tmpdir(), "ballot-clarity-prod-check-"));
 	const snapshotPath = join(root, "live-coverage.active.json");
-	writeFileSync(snapshotPath, JSON.stringify(payload), "utf8");
+	const snapshotContent = JSON.stringify(payload);
+	writeFileSync(snapshotPath, snapshotContent, "utf8");
 	writeFileSync(`${snapshotPath}.meta.json`, JSON.stringify({
 		approvedAt: status === "production_approved" ? "2026-04-19T19:36:50.252Z" : undefined,
+		contentSha256: createHash("sha256").update(snapshotContent).digest("hex"),
 		importedAt: "2026-04-19T19:36:50.252Z",
 		reviewedAt: "2026-04-19T19:36:50.252Z",
 		sourceLabel: "Reviewed Fulton coverage package",
@@ -182,6 +184,39 @@ test("production config check passes a hardened production environment", () => {
 	assert.deepEqual(evaluation.errors, []);
 	assert.deepEqual(evaluation.warnings, []);
 	assert.match(formatProductionConfigEvaluation(evaluation), /Production config check: pass/);
+});
+
+test("production config check validates the effective private admin target", () => {
+	const publicTarget = evaluateProductionConfig({
+		env: buildProductionEnv({
+			ADMIN_API_BASE: "https://admin-gateway.example.net/api",
+		}),
+	});
+	const deprecatedOverride = evaluateProductionConfig({
+		env: buildProductionEnv({
+			NUXT_ADMIN_API_BASE: "https://admin-gateway.example.net/api",
+		}),
+	});
+	const wrongPath = evaluateProductionConfig({
+		env: buildProductionEnv({
+			ADMIN_API_BASE: "http://127.0.0.1:3001/internal",
+		}),
+	});
+
+	assert.ok(issueIds(publicTarget, "errors").includes("admin_api_base.private_target"));
+	assert.ok(issueIds(deprecatedOverride, "errors").includes("admin_config.deprecated_alias"));
+	assert.ok(issueIds(wrongPath, "errors").includes("admin_api_base.path"));
+});
+
+test("production config check rejects retained bootstrap account settings", () => {
+	const evaluation = evaluateProductionConfig({
+		env: buildProductionEnv({
+			ADMIN_BOOTSTRAP_PASSWORD: "retained-bootstrap-password",
+			ADMIN_BOOTSTRAP_USERNAME: "retained-admin",
+		}),
+	});
+
+	assert.ok(issueIds(evaluation, "errors").includes("admin_bootstrap.retained"));
 });
 
 test("production config check fails local public origins and public admin API target", () => {
@@ -306,6 +341,8 @@ test("production config check fails invalid throttle values", () => {
 			ADMIN_API_RATE_LIMIT_MAX_BUCKETS: "0",
 			ADMIN_API_RATE_LIMIT_WINDOW_MS: "-1",
 			ADDRESS_CACHE_MAX_ROWS: "unbounded",
+			ADDRESS_CACHE_DATABASE_POOL_MAX: "0",
+			ADMIN_DATABASE_POOL_MAX: "unbounded",
 			ADMIN_LOGIN_LOCKOUT_MS: "-1000",
 			ADMIN_LOGIN_IP_MAX_ATTEMPTS: "none",
 			ADMIN_LOGIN_MAX_ATTEMPTS: "many",
@@ -313,10 +350,17 @@ test("production config check fails invalid throttle values", () => {
 			ADMIN_LOGIN_WINDOW_MS: "0",
 			CENSUS_GEOCODER_FETCH_TIMEOUT_MS: "0",
 			CONGRESS_FETCH_TIMEOUT_MS: "none",
+			DATABASE_POOL_CONNECTION_TIMEOUT_MS: "forever",
+			DATABASE_POOL_IDLE_TIMEOUT_MS: "0",
 			CONTACT_ADDRESS_RATE_LIMIT_MAX: "0",
 			CONTACT_ADDRESS_RATE_LIMIT_MAX_BUCKETS: "unbounded",
 			CONTACT_ADDRESS_RATE_LIMIT_WINDOW_MS: "-1",
 			GOOGLE_CIVIC_FETCH_TIMEOUT_MS: "-1",
+			HTTP_HEADERS_TIMEOUT_MS: "forever",
+			HTTP_KEEP_ALIVE_TIMEOUT_MS: "0",
+			HTTP_MAX_CONNECTIONS: "unbounded",
+			HTTP_MAX_REQUESTS_PER_SOCKET: "-1",
+			HTTP_REQUEST_TIMEOUT_MS: "0",
 			LDA_FETCH_TIMEOUT_MS: "none",
 			LIVE_COVERAGE_FETCH_MAX_BYTES: "unbounded",
 			LIVE_COVERAGE_FETCH_TIMEOUT_MS: "-1",
@@ -334,6 +378,7 @@ test("production config check fails invalid throttle values", () => {
 			PUBLIC_REPRESENTATIVE_CACHE_TTL_MS: "forever",
 			REPRESENTATIVE_MODULE_CACHE_MAX_ENTRIES: "unbounded",
 			REPRESENTATIVE_MODULE_CACHE_TTL_MS: "forever",
+			SHUTDOWN_GRACE_MS: "never",
 			BALLOTCLARITY_ZIP_LOOKUP_LOG_MAX_BYTES: "forever",
 			ZIP_LOCATION_FETCH_TIMEOUT_MS: "none",
 		}),
@@ -341,6 +386,8 @@ test("production config check fails invalid throttle values", () => {
 
 	assert.equal(evaluation.ok, false);
 	assert.ok(issueIds(evaluation, "errors").includes("address_cache_max_rows.invalid"));
+	assert.ok(issueIds(evaluation, "errors").includes("address_cache_database_pool_max.invalid"));
+	assert.ok(issueIds(evaluation, "errors").includes("admin_database_pool_max.invalid"));
 	assert.ok(issueIds(evaluation, "errors").includes("admin_login_lockout_ms.invalid"));
 	assert.ok(issueIds(evaluation, "errors").includes("admin_login_max_attempts.invalid"));
 	assert.ok(issueIds(evaluation, "errors").includes("admin_login_ip_max_attempts.invalid"));
@@ -355,7 +402,14 @@ test("production config check fails invalid throttle values", () => {
 	assert.ok(issueIds(evaluation, "errors").includes("contact_address_rate_limit_window_ms.invalid"));
 	assert.ok(issueIds(evaluation, "errors").includes("census_geocoder_fetch_timeout_ms.invalid"));
 	assert.ok(issueIds(evaluation, "errors").includes("congress_fetch_timeout_ms.invalid"));
+	assert.ok(issueIds(evaluation, "errors").includes("database_pool_connection_timeout_ms.invalid"));
+	assert.ok(issueIds(evaluation, "errors").includes("database_pool_idle_timeout_ms.invalid"));
 	assert.ok(issueIds(evaluation, "errors").includes("google_civic_fetch_timeout_ms.invalid"));
+	assert.ok(issueIds(evaluation, "errors").includes("http_headers_timeout_ms.invalid"));
+	assert.ok(issueIds(evaluation, "errors").includes("http_keep_alive_timeout_ms.invalid"));
+	assert.ok(issueIds(evaluation, "errors").includes("http_max_connections.invalid"));
+	assert.ok(issueIds(evaluation, "errors").includes("http_max_requests_per_socket.invalid"));
+	assert.ok(issueIds(evaluation, "errors").includes("http_request_timeout_ms.invalid"));
 	assert.ok(issueIds(evaluation, "errors").includes("lda_fetch_timeout_ms.invalid"));
 	assert.ok(issueIds(evaluation, "errors").includes("live_coverage_fetch_max_bytes.invalid"));
 	assert.ok(issueIds(evaluation, "errors").includes("live_coverage_fetch_timeout_ms.invalid"));
@@ -373,6 +427,7 @@ test("production config check fails invalid throttle values", () => {
 	assert.ok(issueIds(evaluation, "errors").includes("public_representative_cache_ttl_ms.invalid"));
 	assert.ok(issueIds(evaluation, "errors").includes("representative_module_cache_max_entries.invalid"));
 	assert.ok(issueIds(evaluation, "errors").includes("representative_module_cache_ttl_ms.invalid"));
+	assert.ok(issueIds(evaluation, "errors").includes("shutdown_grace_ms.invalid"));
 	assert.ok(issueIds(evaluation, "errors").includes("ballotclarity_zip_lookup_log_max_bytes.invalid"));
 	assert.ok(issueIds(evaluation, "errors").includes("zip_location_fetch_timeout_ms.invalid"));
 });
@@ -531,6 +586,20 @@ test("production config check fails missing live coverage and seed metadata", ()
 	assert.ok(issueIds(seedEvaluation, "errors").includes("live_coverage.status"));
 	assert.ok(issueIds(seedEvaluation, "errors").includes("live_coverage.source_type"));
 	assert.ok(issueIds(seedEvaluation, "errors").includes("live_coverage.reviewed_at"));
+});
+
+test("production config check rejects missing or mismatched snapshot content bindings", () => {
+	const missingDigestPath = writeSnapshot("production_approved", { contentSha256: undefined });
+	const mismatchedDigestPath = writeSnapshot("production_approved", { contentSha256: "0".repeat(64) });
+	const missingDigest = evaluateProductionConfig({
+		env: buildProductionEnv({ LIVE_COVERAGE_FILE: missingDigestPath }),
+	});
+	const mismatchedDigest = evaluateProductionConfig({
+		env: buildProductionEnv({ LIVE_COVERAGE_FILE: mismatchedDigestPath }),
+	});
+
+	assert.ok(missingDigest.errors.some(error => error.id === "live_coverage.content_digest"));
+	assert.ok(mismatchedDigest.errors.some(error => error.id === "live_coverage.content_digest_mismatch"));
 });
 
 test("production config check allows reviewed snapshots with an explicit warning", () => {

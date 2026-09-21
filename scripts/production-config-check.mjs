@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 import { validateHeaderName } from "node:http";
 import { isIP } from "node:net";
@@ -85,6 +86,18 @@ function isPrivateIpv4(hostname) {
 		|| (first === 192 && second === 168)
 		|| (first === 169 && second === 254)
 		|| (first === 0 && second === 0);
+}
+
+function isPrivateOrLoopbackHostname(rawHostname) {
+	const hostname = rawHostname.toLowerCase().replace(/^\[/u, "").replace(/\]$/u, "");
+
+	if (hostname === "localhost" || hostname === "::1" || isPrivateIpv4(hostname))
+		return true;
+
+	if (isIP(hostname) !== 6)
+		return false;
+
+	return /^(?:fc|fd)/u.test(hostname) || /^fe[89ab]/u.test(hostname);
 }
 
 function isPlaceholderOrInternalHostname(rawHostname) {
@@ -671,9 +684,29 @@ function checkSnapshotPublicShape({ errors, snapshot }) {
 	}
 }
 
-function checkSnapshotMetadata({ errors, metadata, warnings }) {
+function checkSnapshotMetadata({ errors, fs, metadata, snapshotPath, warnings }) {
 	const status = normalize(metadata?.status);
 	const sourceType = normalize(metadata?.sourceType);
+	const contentSha256 = normalize(metadata?.contentSha256);
+
+	if (!/^[a-f0-9]{64}$/u.test(contentSha256)) {
+		errors.push(issue(
+			"error",
+			"live_coverage.content_digest",
+			"Production coverage snapshot metadata must include a lowercase SHA-256 contentSha256 binding.",
+		));
+	}
+	else {
+		const actualDigest = createHash("sha256").update(fs.readFileSync(snapshotPath)).digest("hex");
+
+		if (actualDigest !== contentSha256) {
+			errors.push(issue(
+				"error",
+				"live_coverage.content_digest_mismatch",
+				"LIVE_COVERAGE_FILE does not match the SHA-256 digest in its approval metadata.",
+			));
+		}
+	}
 
 	if (status !== "reviewed" && status !== "production_approved") {
 		errors.push(issue(
@@ -787,6 +820,19 @@ export function evaluateProductionConfig({
 		value: env.NUXT_PUBLIC_API_BASE,
 	});
 	const adminApiBaseRaw = normalize(env.ADMIN_API_BASE);
+	const deprecatedAdminAliases = [
+		"NUXT_ADMIN_API_BASE",
+		"NUXT_ADMIN_API_KEY",
+		"NUXT_ADMIN_SESSION_SECRET",
+	].filter(key => normalize(env[key]));
+
+	if (deprecatedAdminAliases.length) {
+		errors.push(issue(
+			"error",
+			"admin_config.deprecated_alias",
+			`Remove deprecated admin aliases from the production environment: ${deprecatedAdminAliases.join(", ")}. Use only the canonical ADMIN_* settings validated by this check.`,
+		));
+	}
 
 	if (!adminApiBaseRaw) {
 		errors.push(issue("error", "admin_api_base.missing", "ADMIN_API_BASE is required for production."));
@@ -797,6 +843,34 @@ export function evaluateProductionConfig({
 		if (!adminApiBase) {
 			errors.push(issue("error", "admin_api_base.invalid", "ADMIN_API_BASE must be a valid absolute URL."));
 		}
+		else if (adminApiBase.protocol !== "http:" && adminApiBase.protocol !== "https:") {
+			errors.push(issue(
+				"error",
+				"admin_api_base.protocol",
+				"ADMIN_API_BASE must use http or https.",
+			));
+		}
+		else if (!isPrivateOrLoopbackHostname(adminApiBase.hostname)) {
+			errors.push(issue(
+				"error",
+				"admin_api_base.private_target",
+				"ADMIN_API_BASE must use a loopback or private network address.",
+			));
+		}
+		else if (adminApiBase.username || adminApiBase.password || adminApiBase.search || adminApiBase.hash) {
+			errors.push(issue(
+				"error",
+				"admin_api_base.components",
+				"ADMIN_API_BASE must not contain credentials, query parameters, or a fragment.",
+			));
+		}
+		else if (adminApiBase.pathname.replace(/\/+$/u, "") !== "/api") {
+			errors.push(issue(
+				"error",
+				"admin_api_base.path",
+				"ADMIN_API_BASE must point at the private /api path.",
+			));
+		}
 		else if (publicApiBase && adminApiBase.href === publicApiBase.href) {
 			errors.push(issue(
 				"error",
@@ -804,6 +878,23 @@ export function evaluateProductionConfig({
 				"ADMIN_API_BASE must be a private server-side target, not the public browser API base.",
 			));
 		}
+	}
+
+	const bootstrapVariables = [
+		"ADMIN_BOOTSTRAP_USERNAME",
+		"ADMIN_BOOTSTRAP_PASSWORD",
+		"ADMIN_BOOTSTRAP_DISPLAY_NAME",
+		"ADMIN_BOOTSTRAP_ROLE",
+		"ADMIN_USERNAME",
+		"ADMIN_PASSWORD",
+	].filter(key => normalize(env[key]));
+
+	if (bootstrapVariables.length) {
+		errors.push(issue(
+			"error",
+			"admin_bootstrap.retained",
+			`Routine production startup must not retain bootstrap account settings: ${bootstrapVariables.join(", ")}. Run the explicit bootstrap command once, then remove them.`,
+		));
 	}
 
 	if (publicSiteUrl && publicApiBase && publicSiteUrl.hostname !== publicApiBase.hostname) {
@@ -974,6 +1065,16 @@ export function evaluateProductionConfig({
 		"ZIP_LOCATION_FETCH_TIMEOUT_MS",
 		"PROVIDER_RESPONSE_MAX_BYTES",
 		"ADDRESS_CACHE_MAX_ROWS",
+		"ADMIN_DATABASE_POOL_MAX",
+		"ADDRESS_CACHE_DATABASE_POOL_MAX",
+		"DATABASE_POOL_CONNECTION_TIMEOUT_MS",
+		"DATABASE_POOL_IDLE_TIMEOUT_MS",
+		"HTTP_MAX_CONNECTIONS",
+		"HTTP_MAX_REQUESTS_PER_SOCKET",
+		"HTTP_HEADERS_TIMEOUT_MS",
+		"HTTP_REQUEST_TIMEOUT_MS",
+		"HTTP_KEEP_ALIVE_TIMEOUT_MS",
+		"SHUTDOWN_GRACE_MS",
 		"REPRESENTATIVE_MODULE_CACHE_MAX_ENTRIES",
 		"REPRESENTATIVE_MODULE_CACHE_TTL_MS",
 		"PUBLIC_REPRESENTATIVE_CACHE_MAX_ENTRIES",
@@ -1091,7 +1192,7 @@ export function evaluateProductionConfig({
 		const snapshot = readSnapshotPayload({ errors, fs, snapshotPath: liveCoverageFile });
 
 		if (metadata) {
-			checkSnapshotMetadata({ errors, metadata, warnings });
+			checkSnapshotMetadata({ errors, fs, metadata, snapshotPath: liveCoverageFile, warnings });
 			checkSnapshotPayload({ errors, metadata, snapshot });
 		}
 	}

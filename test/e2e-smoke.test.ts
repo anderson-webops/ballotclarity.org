@@ -1,7 +1,7 @@
 import type { ChildProcessWithoutNullStreams } from "node:child_process";
 import assert from "node:assert/strict";
 import { Buffer } from "node:buffer";
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { existsSync, mkdtempSync, rmSync } from "node:fs";
 import { createServer } from "node:net";
 import { tmpdir } from "node:os";
@@ -883,14 +883,30 @@ before(async () => {
 
 	apiBaseUrl = `http://127.0.0.1:${apiPort}`;
 	appBaseUrl = `http://127.0.0.1:${appPort}`;
+	const bootstrapResult = spawnSync(process.execPath, ["back-end/dist/bootstrap-admin.js"], {
+		cwd: repoRoot,
+		encoding: "utf8",
+		env: {
+			...process.env,
+			ADMIN_BOOTSTRAP_DISPLAY_NAME: "Smoke Admin",
+			ADMIN_BOOTSTRAP_PASSWORD: adminPassword,
+			ADMIN_BOOTSTRAP_ROLE: "admin",
+			ADMIN_BOOTSTRAP_USERNAME: adminUsername,
+			ADMIN_DATABASE_URL: "",
+			ADMIN_DB_PATH: adminDbPath,
+			ADMIN_STORE_DRIVER: "sqlite",
+			DATABASE_URL: "",
+		},
+	});
+	assert.equal(
+		bootstrapResult.status,
+		0,
+		`Explicit test admin bootstrap failed.\n${bootstrapResult.stderr || bootstrapResult.stdout}`
+	);
 
 	const api = startProcess(process.execPath, ["back-end/dist/server.js"], {
 		...process.env,
 		ADMIN_API_KEY: adminApiKey,
-		ADMIN_BOOTSTRAP_DISPLAY_NAME: "Smoke Admin",
-		ADMIN_BOOTSTRAP_PASSWORD: adminPassword,
-		ADMIN_BOOTSTRAP_ROLE: "admin",
-		ADMIN_BOOTSTRAP_USERNAME: adminUsername,
 		ADMIN_DB_PATH: adminDbPath,
 		ADMIN_DATABASE_URL: "",
 		ADMIN_SESSION_SECRET: adminSessionSecret,
@@ -1221,30 +1237,12 @@ test("built app exposes a protected admin portal when admin env is configured", 
 	});
 	const loginBody = await loginResponse.json();
 	const sessionCookie = loginResponse.headers.get("set-cookie")?.split(";")[0];
-	const dashboardPage = await fetch(`${appBaseUrl}/admin`, {
+	const temporaryDashboardPage = await fetch(`${appBaseUrl}/admin`, {
 		headers: {
 			cookie: sessionCookie || ""
 		}
 	});
-	const dashboardHtml = await dashboardPage.text();
-	const accountPage = await fetch(`${appBaseUrl}/admin/account`, {
-		headers: {
-			cookie: sessionCookie || ""
-		}
-	});
-	const accountHtml = await accountPage.text();
-	const correctionsPage = await fetch(`${appBaseUrl}/admin/corrections`, {
-		headers: {
-			cookie: sessionCookie || ""
-		}
-	});
-	const correctionsHtml = await correctionsPage.text();
-	const adminOverviewResponse = await fetch(`${appBaseUrl}/api/admin/overview`, {
-		headers: {
-			cookie: sessionCookie || ""
-		}
-	});
-	const adminOverview = await adminOverviewResponse.json();
+	const temporaryDashboardHtml = await temporaryDashboardPage.text();
 
 	assert.equal(loginPage.status, 200);
 	assert.match(loginHtml, /Editorial and source operations/);
@@ -1252,21 +1250,10 @@ test("built app exposes a protected admin portal when admin env is configured", 
 	assert.equal(unauthorizedOverview.status, 401);
 	assert.equal(loginResponse.status, 200);
 	assert.ok(sessionCookie);
-	assert.equal(dashboardPage.status, 200);
-	assert.match(dashboardHtml, /Internal editorial control room/);
-	assert.match(dashboardHtml, /Current operational priorities/);
-	assert.match(dashboardHtml, /Latest queue and publish events/);
-	assert.match(dashboardHtml, /Open corrections/);
-	assert.equal(accountPage.status, 200);
-	assert.match(accountHtml, /Change password/);
-	assert.match(accountHtml, /Account security/);
-	assert.match(accountHtml, /Ballot Clarity Admin/);
-	assert.equal(correctionsPage.status, 200);
-	assert.match(correctionsHtml, /Reported issues and next steps/);
-	assert.match(correctionsHtml, /Reader and internal reports/);
-	assert.equal(adminOverviewResponse.status, 200);
-	assert.equal(adminOverview.metrics[0].label, "Open corrections");
-	assert.ok(Array.isArray(adminOverview.recentActivity));
+	assert.ok(loginBody.passwordChangeRequiredAt);
+	assert.equal(temporaryDashboardPage.status, 200);
+	assert.match(temporaryDashboardHtml, /Password change required/);
+	assert.doesNotMatch(temporaryDashboardHtml, /Internal editorial control room/);
 
 	const passwordChangeResponse = await fetch(`${appBaseUrl}/api/admin/session/password`, {
 		body: JSON.stringify({
@@ -1287,18 +1274,52 @@ test("built app exposes a protected admin portal when admin env is configured", 
 			cookie: sessionCookie || ""
 		}
 	});
-	const freshOverviewResponse = await fetch(`${appBaseUrl}/api/admin/overview`, {
+	const dashboardPage = await fetch(`${appBaseUrl}/admin`, {
 		headers: {
 			cookie: changedSessionCookie || ""
 		}
 	});
+	const dashboardHtml = await dashboardPage.text();
+	const accountPage = await fetch(`${appBaseUrl}/admin/account`, {
+		headers: {
+			cookie: changedSessionCookie || ""
+		}
+	});
+	const accountHtml = await accountPage.text();
+	const correctionsPage = await fetch(`${appBaseUrl}/admin/corrections`, {
+		headers: {
+			cookie: changedSessionCookie || ""
+		}
+	});
+	const correctionsHtml = await correctionsPage.text();
+	const adminOverviewResponse = await fetch(`${appBaseUrl}/api/admin/overview`, {
+		headers: {
+			cookie: changedSessionCookie || ""
+		}
+	});
+	const adminOverview = await adminOverviewResponse.json();
 
 	assert.equal(passwordChangeResponse.status, 200);
 	assert.ok(changedSessionCookie);
 	assert.equal(passwordChangeBody.authenticated, true);
+	assert.equal(passwordChangeBody.passwordChangeRequiredAt, undefined);
 	assert.notEqual(passwordChangeBody.credentialsUpdatedAt, loginBody.credentialsUpdatedAt);
 	assert.equal(staleOverviewResponse.status, 401);
-	assert.equal(freshOverviewResponse.status, 200);
+	assert.equal(dashboardPage.status, 200);
+	assert.match(dashboardHtml, /Internal editorial control room/);
+	assert.match(dashboardHtml, /Current operational priorities/);
+	assert.match(dashboardHtml, /Latest queue and publish events/);
+	assert.match(dashboardHtml, /Open corrections/);
+	assert.equal(accountPage.status, 200);
+	assert.match(accountHtml, /Change password/);
+	assert.match(accountHtml, /Account security/);
+	assert.match(accountHtml, /Ballot Clarity Admin/);
+	assert.equal(correctionsPage.status, 200);
+	assert.match(correctionsHtml, /Reported issues and next steps/);
+	assert.match(correctionsHtml, /Reader and internal reports/);
+	assert.equal(adminOverviewResponse.status, 200);
+	assert.equal(adminOverview.metrics[0].label, "Open corrections");
+	assert.ok(Array.isArray(adminOverview.recentActivity));
 });
 
 test("built app does not log a hydration mismatch when dark mode is stored before first load", async (t) => {

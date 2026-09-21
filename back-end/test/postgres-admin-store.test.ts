@@ -8,6 +8,49 @@ import { createPostgresAdminRepository } from "../src/postgres-admin-store.js";
 
 const testDatabaseUrl = process.env.TEST_ADMIN_DATABASE_URL;
 
+test("routine Postgres repository startup ignores retained bootstrap environment values", {
+	skip: !testDatabaseUrl,
+}, async () => {
+	if (!testDatabaseUrl)
+		return;
+
+	const schema = `ballot_clarity_bootstrap_${randomUUID().replaceAll("-", "")}`;
+	const adminPool = new Pool({ connectionString: testDatabaseUrl });
+	const scopedUrl = new URL(testDatabaseUrl);
+	const previousUsername = process.env.ADMIN_BOOTSTRAP_USERNAME;
+	const previousPassword = process.env.ADMIN_BOOTSTRAP_PASSWORD;
+	let repository: Awaited<ReturnType<typeof createPostgresAdminRepository>> | null = null;
+
+	await adminPool.query(`CREATE SCHEMA ${schema}`);
+	scopedUrl.searchParams.set("options", `-c search_path=${schema}`);
+	process.env.ADMIN_BOOTSTRAP_USERNAME = "stale-bootstrap-admin";
+	process.env.ADMIN_BOOTSTRAP_PASSWORD = "stale-bootstrap-password";
+
+	try {
+		repository = await createPostgresAdminRepository({
+			databaseUrl: scopedUrl.toString(),
+			mfaEncryptionKey: "test-admin-mfa-encryption-key-that-is-long-enough",
+		});
+		assert.equal(await repository.hasUsers(), false);
+	}
+	finally {
+		await repository?.close?.();
+
+		if (previousUsername === undefined)
+			delete process.env.ADMIN_BOOTSTRAP_USERNAME;
+		else
+			process.env.ADMIN_BOOTSTRAP_USERNAME = previousUsername;
+
+		if (previousPassword === undefined)
+			delete process.env.ADMIN_BOOTSTRAP_PASSWORD;
+		else
+			process.env.ADMIN_BOOTSTRAP_PASSWORD = previousPassword;
+
+		await adminPool.query(`DROP SCHEMA ${schema} CASCADE`);
+		await adminPool.end();
+	}
+});
+
 test("Postgres preserves workflow invariants and rolls back unaudited mutations", {
 	skip: !testDatabaseUrl,
 }, async () => {

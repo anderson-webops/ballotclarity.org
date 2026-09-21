@@ -22,30 +22,30 @@
 		"verify:analytics": "node scripts/verify-analytics-output.mjs"
 	},
 	"dependencies": {
-		"@eslint/config-inspector": "3.1.1",
-		"@iconify-json/carbon": "^1.2.23",
+		"@eslint/config-inspector": "^3.5.0",
+		"@iconify-json/carbon": "^1.2.27",
 		"@iconify-json/twemoji": "^1.2.5",
-		"@nuxt/eslint": "^1.16.0",
-		"@nuxt/eslint-config": "1.16.0",
-		"@nuxt/eslint-plugin": "1.16.0",
+		"@nuxt/eslint": "^1.17.0",
+		"@nuxt/eslint-config": "^1.17.0",
+		"@nuxt/eslint-plugin": "^1.17.0",
 		"@nuxtjs/color-mode": "^4.0.1",
-		"@pinia/nuxt": "^1.0.1",
-		"@unocss/nuxt": "^66.7.2",
-		"@vueuse/core": "^14.3.0",
-		"@vueuse/nuxt": "^14.3.0",
+		"@pinia/nuxt": "^1.0.2",
+		"@unocss/nuxt": "^66.10.5",
+		"@vueuse/core": "^14.4.0",
+		"@vueuse/nuxt": "^14.4.0",
 		"eslint-typegen": "2.3.1",
 		"h3": "1.15.11",
-		"nuxt": "^4.4.8",
-		"pinia": "^4.0.2",
-		"unocss": "^66.7.2",
-		"vue": "^3.5.38",
-		"vue-router": "^5.1.0"
+		"nuxt": "^4.5.2",
+		"pinia": "^4.0.3",
+		"unocss": "^66.10.5",
+		"vue": "^3.5.43",
+		"vue-router": "^5.3.1"
 	},
 	"devDependencies": {
-		"@types/node": "^24.13.3",
+		"@types/node": "^24.13.6",
 		"eslint-plugin-format": "^2.0.1",
-		"tsx": "^4.23.4",
+		"tsx": "^4.23.15",
 		"typescript": "^6.0.3",
-		"vue-tsc": "^3.3.5"
+		"vue-tsc": "^3.3.11"
 	}
 }

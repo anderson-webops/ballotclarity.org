@@ -57,13 +57,13 @@ test("repository install-script approvals are explicit and version-scoped", () =
 
 	assert.deepEqual(rootAllowScripts, {
 		"@parcel/watcher@2.5.6": true,
-		"esbuild@0.28.1": true,
+		"esbuild@0.28.2": true,
 		"fsevents@2.3.3": true,
-		"puppeteer@25.4.0": false,
+		"puppeteer@25.11.0": false,
 		"unrs-resolver@1.12.2": true
 	});
 	assert.match(readText(".npmrc"), /^strict-allow-scripts=true$/mu);
-	assert.match(readText("back-end/.npmrc"), /^allow-scripts=esbuild@0\.28\.1,fsevents@2\.3\.3$/mu);
+	assert.match(readText("back-end/.npmrc"), /^allow-scripts=esbuild@0\.28\.2,fsevents@2\.3\.3$/mu);
 	assert.match(readText("back-end/.npmrc"), /^strict-allow-scripts=true$/mu);
 	assert.match(
 		rootPackage.scripts["verify:backend-lockfile"],

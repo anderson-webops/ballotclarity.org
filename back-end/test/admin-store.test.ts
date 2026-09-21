@@ -35,6 +35,31 @@ test("default content seed scopes the published election shell approval to offic
 	assert.match(electionRecord.publishApprovalNote ?? "", /contest, candidate, and measure content remains unpublished/i);
 });
 
+test("routine SQLite repository startup ignores retained bootstrap environment values", async () => {
+	const previousUsername = process.env.ADMIN_BOOTSTRAP_USERNAME;
+	const previousPassword = process.env.ADMIN_BOOTSTRAP_PASSWORD;
+	process.env.ADMIN_BOOTSTRAP_USERNAME = "stale-bootstrap-admin";
+	process.env.ADMIN_BOOTSTRAP_PASSWORD = "stale-bootstrap-password";
+	const repository = createSqliteAdminRepository({ dbPath: ":memory:" });
+
+	try {
+		assert.equal(await repository.hasUsers(), false);
+	}
+	finally {
+		await repository.close?.();
+
+		if (previousUsername === undefined)
+			delete process.env.ADMIN_BOOTSTRAP_USERNAME;
+		else
+			process.env.ADMIN_BOOTSTRAP_USERNAME = previousUsername;
+
+		if (previousPassword === undefined)
+			delete process.env.ADMIN_BOOTSTRAP_PASSWORD;
+		else
+			process.env.ADMIN_BOOTSTRAP_PASSWORD = previousPassword;
+	}
+});
+
 test("SQLite admin storage persists MFA seeds only as account-bound ciphertext", async () => {
 	const root = mkdtempSync(join(tmpdir(), "ballot-clarity-admin-mfa-"));
 	const dbPath = join(root, "admin.sqlite");

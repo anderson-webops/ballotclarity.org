@@ -9,6 +9,7 @@ export interface AddressEnrichmentResult extends CensusAddressLookupResult {
 }
 
 export interface AddressEnrichmentService {
+	close?: () => void | Promise<void>;
 	lookupAddress: (address: string) => Promise<AddressEnrichmentResult | null>;
 }
 
@@ -56,6 +57,7 @@ export function createAddressEnrichmentService(
 	addressCacheRepository: AddressCacheRepository
 ): AddressEnrichmentService {
 	return {
+		close: async () => await addressCacheRepository.close?.(),
 		async lookupAddress(address: string) {
 			let cached = null;
 

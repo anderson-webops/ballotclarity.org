@@ -167,6 +167,7 @@ export interface UserPatch {
 }
 
 export interface AdminRepository {
+	close?: () => void | Promise<void>;
 	driver: "postgres" | "sqlite";
 	authenticateUser: (username: string, password: string) => AdminUser | null | Promise<AdminUser | null>;
 	createCorrectionSubmission: (input: CorrectionSubmissionInput) => { ok: true; submittedAt: string } | Promise<{ ok: true; submittedAt: string }>;
@@ -1396,10 +1397,10 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 		}
 	}
 
-	const bootstrapUsername = options.bootstrapUsername || process.env.ADMIN_BOOTSTRAP_USERNAME || process.env.ADMIN_USERNAME || null;
-	const bootstrapPassword = options.bootstrapPassword || process.env.ADMIN_BOOTSTRAP_PASSWORD || process.env.ADMIN_PASSWORD || null;
-	const bootstrapDisplayName = options.bootstrapDisplayName || process.env.ADMIN_BOOTSTRAP_DISPLAY_NAME || "Ballot Clarity Admin";
-	const bootstrapRole = options.bootstrapRole || (process.env.ADMIN_BOOTSTRAP_ROLE as AdminUserRole | undefined) || "admin";
+	const bootstrapUsername = options.bootstrapUsername || null;
+	const bootstrapPassword = options.bootstrapPassword || null;
+	const bootstrapDisplayName = options.bootstrapDisplayName || "Ballot Clarity Admin";
+	const bootstrapRole = options.bootstrapRole || "admin";
 
 	if (!usersCount && bootstrapUsername && bootstrapPassword) {
 		const now = new Date().toISOString();
@@ -2907,6 +2908,7 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 	}
 
 	return {
+		close: () => database.close(),
 		driver: "sqlite",
 		authenticateUser,
 		createCorrectionSubmission,

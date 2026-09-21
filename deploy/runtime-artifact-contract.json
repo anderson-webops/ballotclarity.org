@@ -1,0 +1,51 @@
+{
+	"schemaVersion": 1,
+	"services": [
+		{
+			"name": "frontend",
+			"entrypoint": "front-end/.output/server/index.mjs",
+			"requiredPaths": [
+				"front-end/.output/nitro.json",
+				"front-end/.output/public",
+				"front-end/.output/server"
+			]
+		},
+		{
+			"name": "backend",
+			"entrypoint": "back-end/dist/server.js",
+			"requiredPaths": [
+				"back-end/dist/admin-schema.postgres.sql",
+				"back-end/dist/admin-schema.sql",
+				"back-end/dist/live-data-schema.sql",
+				"back-end/dist/server.js",
+				"back-end/node_modules",
+				"back-end/package-lock.json",
+				"back-end/package.json"
+			]
+		}
+	],
+	"externalWritableState": [
+		{
+			"configuration": "ADMIN_DB_PATH",
+			"purpose": "SQLite fallback database when a deliberate single-instance deployment does not use Postgres",
+			"preservation": "Keep outside immutable releases and preserve across promotion and rollback"
+		},
+		{
+			"configuration": "LIVE_COVERAGE_FILE",
+			"purpose": "Reviewed coverage snapshot and matching metadata sidecar",
+			"preservation": "Keep outside immutable releases and promote the snapshot pair atomically"
+		},
+		{
+			"configuration": "BALLOTCLARITY_ZIP_LOOKUP_LOG_PATH",
+			"purpose": "Optional privacy-minimized rotating ZIP lookup log",
+			"preservation": "Keep outside immutable releases and never synchronize it during promotion or rollback"
+		}
+	],
+	"excludedContent": [
+		"credentials",
+		"environment files",
+		"private configuration",
+		"database files",
+		"logs and writable queues"
+	]
+}

@@ -229,6 +229,9 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Verify exact runtime artifact
+        run: npm run verify:runtime-artifact
+
       - name: Analytics bundle verification
         run: npm run verify:analytics
 

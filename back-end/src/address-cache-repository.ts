@@ -4,6 +4,7 @@ import { existsSync, readFileSync } from "node:fs";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
 import { Pool } from "pg";
+import { createPostgresPoolConfig } from "./postgres-pool-config.js";
 import { openSecretJson, sealSecretJson } from "./secret-envelope.js";
 
 export interface CachedAddressLookup extends CensusAddressLookupResult {
@@ -11,6 +12,7 @@ export interface CachedAddressLookup extends CensusAddressLookupResult {
 }
 
 export interface AddressCacheRepository {
+	close?: () => void | Promise<void>;
 	driver: "none" | "postgres";
 	getByInput: (input: string) => Promise<CachedAddressLookup | null>;
 	save: (input: string, lookup: CensusAddressLookupResult) => Promise<void>;
@@ -93,9 +95,11 @@ async function createPostgresAddressCacheRepository(
 	encryptionKey: string,
 	maxRows: number,
 ): Promise<AddressCacheRepository> {
-	const pool = new Pool({
-		connectionString: databaseUrl
-	});
+	const pool = new Pool(createPostgresPoolConfig({
+		connectionString: databaseUrl,
+		defaultMax: 2,
+		maxEnvName: "ADDRESS_CACHE_DATABASE_POOL_MAX",
+	}));
 
 	await pool.query(readFileSync(resolveSchemaPath(), "utf8"));
 	await pool.query(`
@@ -110,6 +114,7 @@ async function createPostgresAddressCacheRepository(
 	`);
 
 	return {
+		close: async () => await pool.end(),
 		driver: "postgres",
 		async getByInput(input) {
 			const inputHash = hashAddressCacheInput(input, encryptionKey);

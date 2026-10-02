@@ -1,5 +1,13 @@
 # Dependency Audit Notes
 
+## 2026-10-01 registry advisory refresh
+
+The current root and standalone back-end locks now resolve `fast-uri@3.1.8`, `serialize-javascript@7.1.2`, `brace-expansion@5.0.12`, and `ip-address@10.7.3` where applicable. This clears five package-level findings, and the standalone back-end full and production audits return zero findings.
+
+The root full and production audits still report seven high-severity package findings. They form one transitive chain through Nuxt 4, Nitro, `listhen`, and `node-forge@1.4.0`. [GHSA-86w9-cpqp-85rv](https://github.com/advisories/GHSA-86w9-cpqp-85rv) affects every published `node-forge` version through 1.4.0 and lists no patched version as of this review. npm suggests downgrading Nuxt to 3.15.1, which is not a compatible security update for this Nuxt 4 application. The package advisory does not by itself prove that the vulnerable signature-verification path is reachable from a public route.
+
+Do not publish a new deployment-ready tag or relax the zero-finding audit gate on the strength of this partial refresh. Recheck the upstream advisory and supported dependency graph, then complete full and production audits and runtime-artifact acceptance before the next release. The previously published v1.8.73 tag remains unchanged.
+
 ## 2026-09-21 compatible upstream refresh
 
 The Vitesse upstream dependency refresh was reviewed package by package instead of importing its package-manager and prerelease-tooling changes. Ballot Clarity retains its supported Node 24.18.1/npm 12.0.2 production baseline and npm lockfiles. The upstream move to Node 26 types, pnpm 12 self-management, moving GitHub Action tags, and the Nuxt DevTools 4 alpha was not compatible with those repository policies.

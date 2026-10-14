@@ -114,7 +114,7 @@
 		"listhen": "$listhen",
 		"fast-uri": "3.1.8",
 		"postcss": "8.5.26",
-		"shell-quote": "1.10.0",
+		"shell-quote": "1.12.0",
 		"qs": "6.16.0",
 		"svgo": "4.1.0",
 		"tar": "7.5.22",

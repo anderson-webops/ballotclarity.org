@@ -356,7 +356,7 @@ jobs:
           gh release create "$GITHUB_REF_NAME" release-assets/* \
             --repo "$GITHUB_REPOSITORY" --verify-tag --draft \
             --title "Ballot Clarity $GITHUB_REF_NAME" \
-            --notes 'Validated Linux ARM64 runtime artifact. Production activation remains server-owned.'
+            --notes-from-tag
           mkdir "$RUNNER_TEMP/asset-check"
           gh release download "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" \
             --dir "$RUNNER_TEMP/asset-check"

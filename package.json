@@ -109,16 +109,22 @@
 			".": "2.13.4",
 			"archiver": "$archiver"
 		},
-		"simple-git": "3.36.0",
+		"simple-git": "4.0.2",
 		"braces": "$braces",
 		"listhen": "$listhen",
 		"fast-uri": "3.1.8",
 		"postcss": "8.5.26",
-		"shell-quote": "1.10.0",
+		"shell-quote": "1.12.0",
 		"qs": "6.16.0",
 		"svgo": "4.1.0",
 		"tar": "7.5.22",
-		"valibot": "1.4.2"
+		"valibot": "1.4.2",
+		"proxy-addr": "2.0.8",
+		"source-map-js": "1.2.2",
+		"tinypool": "2.2.0",
+		"katex": "0.18.2",
+		"@modelcontextprotocol/client": "2.3.1",
+		"@simple-git/argv-parser": "2.0.1"
 	},
 	"allowScripts": {
 		"esbuild@0.28.2": true,

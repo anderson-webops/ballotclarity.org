@@ -3,6 +3,7 @@ name: CI
 on:
   push:
     branches: [main]
+    tags: ["v*.*.*"]
   pull_request:
     branches: [main]
 
@@ -100,6 +101,9 @@ jobs:
 
       - name: Unit tests
         run: npm run test
+
+      - name: Runtime release receipt tests
+        run: node --test scripts/test-runtime-release-receipt.mjs
 
   security-audit:
     runs-on: ubuntu-latest
@@ -237,9 +241,12 @@ jobs:
 
   native-arm64:
     runs-on: ubuntu-24.04-arm
+    outputs:
+      archive_sha256: ${{ steps.package.outputs.archive_sha256 }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          fetch-depth: 0
           persist-credentials: false
 
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
@@ -258,5 +265,102 @@ jobs:
       - name: Verify ARM64 native bindings
         run: npm run verify:native-bindings
 
-      - name: Build on ARM64
-        run: npm run build
+      - name: Build and accept the exact ARM64 runtime
+        id: package
+        run: |
+          set -euo pipefail
+          printf '/.ai-work/\n' >> "$(git rev-parse --git-path info/exclude)"
+          mkdir -p .ai-work/runs/arm64-release/release-assets
+          git check-ignore -q .ai-work/runs/arm64-release
+          npm run artifact:build -- "$PWD/.ai-work/runs/arm64-release/ballot-clarity-runtime"
+          node scripts/verify-runtime-artifact.mjs "$PWD/.ai-work/runs/arm64-release/ballot-clarity-runtime"
+          tar --format=posix --sort=name --mtime=@0 --owner=0 --group=0 --numeric-owner \
+            -C .ai-work/runs/arm64-release -czf \
+            ".ai-work/runs/arm64-release/release-assets/ballot-clarity-${GITHUB_SHA}-linux-arm64.tar.gz" \
+            ballot-clarity-runtime
+          mkdir -p .ai-work/runs/arm64-release/unpacked
+          tar -C .ai-work/runs/arm64-release/unpacked -xzf \
+            ".ai-work/runs/arm64-release/release-assets/ballot-clarity-${GITHUB_SHA}-linux-arm64.tar.gz"
+          node scripts/verify-runtime-artifact.mjs \
+            "$PWD/.ai-work/runs/arm64-release/unpacked/ballot-clarity-runtime"
+          cp .ai-work/runs/arm64-release/ballot-clarity-runtime/runtime-manifest.json \
+            .ai-work/runs/arm64-release/release-assets/runtime-manifest.json
+          node scripts/runtime-release-receipt.mjs write \
+            "$PWD/.ai-work/runs/arm64-release/release-assets"
+          archive=".ai-work/runs/arm64-release/release-assets/ballot-clarity-${GITHUB_SHA}-linux-arm64.tar.gz"
+          printf 'archive_sha256=%s\n' "$(sha256sum "$archive" | cut -d ' ' -f 1)" >> "$GITHUB_OUTPUT"
+
+      - name: Retain exact ARM64 release assets
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: accepted-ballot-clarity-linux-arm64
+          path: .ai-work/runs/arm64-release/release-assets/
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 7
+
+  publish-runtime:
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: [lint, typecheck, test, security-audit, production-config, test-e2e, accessibility, build, native-arm64]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+      actions: read
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          name: accepted-ballot-clarity-linux-arm64
+          path: release-assets
+
+      - name: Verify tag and downloaded assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$GITHUB_REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          test "$(git cat-file -t "refs/tags/${GITHUB_REF_NAME}")" = tag
+          test "$(git rev-parse "refs/tags/${GITHUB_REF_NAME}^{commit}")" = "$GITHUB_SHA"
+          git fetch --no-tags origin +refs/heads/main:refs/remotes/origin/main
+          git merge-base --is-ancestor "$GITHUB_SHA" refs/remotes/origin/main
+          (cd release-assets && sha256sum --check SHA256SUMS)
+          archive="release-assets/ballot-clarity-${GITHUB_SHA}-linux-arm64.tar.gz"
+          test "$(sha256sum "$archive" | cut -d ' ' -f 1)" = \
+            "${{ needs.native-arm64.outputs.archive_sha256 }}"
+          node scripts/runtime-release-receipt.mjs verify "$PWD/release-assets" "$GITHUB_SHA"
+
+      - name: Attest downloaded release assets
+        id: attest
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6
+        with:
+          subject-path: release-assets/*
+
+      - name: Publish only the complete immutable bundle
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo 'Release already exists; never replace immutable assets.' >&2
+            exit 1
+          fi
+          cp "${{ steps.attest.outputs.bundle-path }}" release-assets/attestation-bundle.jsonl
+          test "$(find release-assets -maxdepth 1 -type f | wc -l)" -eq 5
+          gh release create "$GITHUB_REF_NAME" release-assets/* \
+            --repo "$GITHUB_REPOSITORY" --verify-tag --draft \
+            --title "Ballot Clarity $GITHUB_REF_NAME" \
+            --notes 'Validated Linux ARM64 runtime artifact. Production activation remains server-owned.'
+          mkdir "$RUNNER_TEMP/asset-check"
+          gh release download "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" \
+            --dir "$RUNNER_TEMP/asset-check"
+          for asset in release-assets/*; do
+            cmp "$asset" "$RUNNER_TEMP/asset-check/$(basename "$asset")"
+          done
+          gh release edit "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --draft=false

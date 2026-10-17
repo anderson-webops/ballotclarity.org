@@ -21,3 +21,9 @@ The verifier refuses a dirty source checkout, creates a detached temporary Git w
 The artifact never contains environment files, credentials, databases, logs, queues, or live coverage state. `ADMIN_DB_PATH`, `LIVE_COVERAGE_FILE`, and `BALLOTCLARITY_ZIP_LOOKUP_LOG_PATH` must resolve outside immutable releases and be preserved independently during both promotion and rollback. Production Postgres state likewise remains external.
 
 This contract does not prescribe server paths, ports, users, reverse-proxy settings, or deployment topology. The existing direct Node and Nginx topology remains authoritative, and the local Compose stack remains development-only.
+
+## Off-server release preparation
+
+The tag-triggered CI workflow builds the same contract on Linux ARM64, exercises the exact unpacked artifact and both compiled services, then publishes the verified archive, `runtime-manifest.json`, `acceptance-receipt.json`, `SHA256SUMS`, and a GitHub Actions attestation bundle as one immutable release. It accepts only an annotated `vX.Y.Z` tag whose commit belongs to `main`; all CI jobs must pass before the draft release becomes public. The runtime archive is not rebuilt after acceptance or replaced to retry a failure.
+
+This GitHub-attested path is an alternative to a Mac-signed builder for this repository. It does not change the production adapter by itself. The protected server operator must verify the exact tag, archive checksum, attestation, complete runtime inventory, source contract, native Linux ARM64 identity, configuration and retained-runtime rollback compatibility before opting into artifact-only promotion. The server must preserve its existing environment, Nginx/systemd policy, database and external writable state, and must not silently fall back to compilation if an archive or host capability is missing. No source agent connects to or deploys on the server.

@@ -4,9 +4,9 @@ import { spawn, spawnSync } from "node:child_process";
 import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { createServer } from "node:net";
 import { tmpdir } from "node:os";
-import { dirname, join, resolve } from "node:path";
+import { basename, dirname, join, resolve } from "node:path";
 import process from "node:process";
-import { buildRuntimeArtifact, verifyRuntimeArtifact } from "./runtime-artifact.mjs";
+import { assertCleanSourceCheckout, buildRuntimeArtifact, verifyRuntimeArtifact } from "./runtime-artifact.mjs";
 
 const maximumCapturedOutput = 32_000;
 
@@ -88,7 +88,8 @@ async function stopProcess(processHandle, label) {
 }
 
 const temporaryRoot = mkdtempSync(join(tmpdir(), "ballot-clarity-runtime-acceptance-"));
-const artifactRoot = join(temporaryRoot, "ballot-clarity-runtime");
+const suppliedArtifactRoot = process.argv[2] ? resolve(process.argv[2]) : undefined;
+const artifactRoot = suppliedArtifactRoot ?? join(temporaryRoot, "ballot-clarity-runtime");
 const unpackedRoot = join(temporaryRoot, "unpacked", "ballot-clarity-runtime");
 const stateRoot = join(temporaryRoot, "state");
 let apiProcess;
@@ -110,7 +111,15 @@ try {
 	assert.match(`${bypassAttempt.stdout}${bypassAttempt.stderr}`, /Unknown runtime artifact command: build-current/u);
 	assert.equal(readFileSync(resolve(import.meta.dirname, "runtime-artifact.mjs"), "utf8").includes("BALLOT_CLARITY_ARTIFACT_ISOLATED_BUILD"), false);
 
-	buildRuntimeArtifact(artifactRoot);
+	if (suppliedArtifactRoot) {
+		assert.equal(basename(artifactRoot), "ballot-clarity-runtime");
+		const source = assertCleanSourceCheckout();
+		const suppliedManifest = verifyRuntimeArtifact(artifactRoot);
+		assert.deepEqual(suppliedManifest.source, source);
+	}
+	else {
+		buildRuntimeArtifact(artifactRoot);
+	}
 	mkdirSync(dirname(unpackedRoot), { recursive: true });
 	cpSync(artifactRoot, unpackedRoot, { recursive: true });
 	const manifest = verifyRuntimeArtifact(unpackedRoot);

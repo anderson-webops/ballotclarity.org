@@ -945,7 +945,7 @@ html.dark .expandable-section__body {
 
 /* ------------------------------------------------------------------
    Readability layer (2026-10 UX redesign, phase 1)
-   See docs/redesign/2026-10-ux-readability-redesign.md.
+   See docs/audits/2026-10-20-ux-readability-redesign.md.
    These rules set reading floors on top of the utility classes so long-form
    copy stays legible without rewriting every template at once.
    ------------------------------------------------------------------ */

@@ -117,12 +117,7 @@ usePageSeo({
 <template>
 	<section class="legal-page app-shell section-gap space-y-8">
 		<header class="max-w-4xl">
-			<div class="flex flex-wrap gap-2">
-				<TrustBadge label="Current terms" tone="accent" />
-				<TrustBadge label="Public-interest use" />
-				<TrustBadge label="No endorsement" tone="warning" />
-			</div>
-			<h1 class="text-5xl text-app-ink font-serif mt-5 dark:text-app-text-dark">
+			<h1 class="text-5xl text-app-ink font-serif dark:text-app-text-dark">
 				Terms of Service
 			</h1>
 			<p class="text-base text-app-muted leading-8 mt-5 max-w-3xl dark:text-app-muted-dark">
@@ -133,10 +128,6 @@ usePageSeo({
 			</div>
 		</header>
 
-		<InfoCallout title="Current scope">
-			These terms govern the public civic-information site at {{ siteUrl }}. They do not govern separate contracts with upstream providers or any future account, donation, or API products that Ballot Clarity may add later.
-		</InfoCallout>
-
 		<section class="gap-6 grid lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
 			<div class="surface-panel">
 				<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
@@ -146,7 +137,7 @@ usePageSeo({
 					Who these terms apply to
 				</h2>
 				<ul class="text-sm text-app-muted leading-7 mt-6 space-y-3 dark:text-app-muted-dark">
-					<li v-for="item in coreTerms" :key="item" class="px-4 py-3 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70">
+					<li v-for="item in coreTerms" :key="item" class="content-block">
 						{{ item }}
 					</li>
 				</ul>
@@ -160,7 +151,7 @@ usePageSeo({
 					Who operates the site and how to send notice
 				</h2>
 				<ul class="text-sm text-app-muted leading-7 mt-6 space-y-3 dark:text-app-muted-dark">
-					<li v-for="item in operatorAndNoticeRules" :key="item" class="px-4 py-3 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70">
+					<li v-for="item in operatorAndNoticeRules" :key="item" class="content-block">
 						{{ item }}
 					</li>
 				</ul>
@@ -176,7 +167,7 @@ usePageSeo({
 					Which legal terms apply
 				</h2>
 				<ul class="text-sm text-app-muted leading-7 mt-6 space-y-3 dark:text-app-muted-dark">
-					<li v-for="item in governingLawAndVenueRules" :key="item" class="px-4 py-3 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70">
+					<li v-for="item in governingLawAndVenueRules" :key="item" class="content-block">
 						{{ item }}
 					</li>
 				</ul>
@@ -192,7 +183,7 @@ usePageSeo({
 					What the service includes today
 				</h2>
 				<ul class="text-sm text-app-muted leading-7 mt-6 space-y-3 dark:text-app-muted-dark">
-					<li v-for="item in serviceScope" :key="item" class="px-4 py-3 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70">
+					<li v-for="item in serviceScope" :key="item" class="content-block">
 						{{ item }}
 					</li>
 				</ul>
@@ -208,7 +199,7 @@ usePageSeo({
 					What the service is not
 				</h2>
 				<ul class="text-sm text-app-muted leading-7 mt-6 space-y-3 dark:text-app-muted-dark">
-					<li v-for="item in noAdviceRules" :key="item" class="px-4 py-3 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70">
+					<li v-for="item in noAdviceRules" :key="item" class="content-block">
 						{{ item }}
 					</li>
 				</ul>
@@ -222,7 +213,7 @@ usePageSeo({
 					How to use source-backed information responsibly
 				</h2>
 				<ul class="text-sm text-app-muted leading-7 mt-6 space-y-3 dark:text-app-muted-dark">
-					<li v-for="item in sourceAndTimelinessRules" :key="item" class="px-4 py-3 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70">
+					<li v-for="item in sourceAndTimelinessRules" :key="item" class="content-block">
 						{{ item }}
 					</li>
 				</ul>
@@ -246,7 +237,7 @@ usePageSeo({
 					How you may use Ballot Clarity content
 				</h2>
 				<ul class="text-sm text-app-muted leading-7 mt-6 space-y-3 dark:text-app-muted-dark">
-					<li v-for="item in licenseRules" :key="item" class="px-4 py-3 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70">
+					<li v-for="item in licenseRules" :key="item" class="content-block">
 						{{ item }}
 					</li>
 				</ul>
@@ -260,7 +251,7 @@ usePageSeo({
 					Who owns what on the site
 				</h2>
 				<ul class="text-sm text-app-muted leading-7 mt-6 space-y-3 dark:text-app-muted-dark">
-					<li v-for="item in ownershipRules" :key="item" class="px-4 py-3 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70">
+					<li v-for="item in ownershipRules" :key="item" class="content-block">
 						{{ item }}
 					</li>
 				</ul>
@@ -276,7 +267,7 @@ usePageSeo({
 					How the service may and may not be used
 				</h2>
 				<ul class="text-sm text-app-muted leading-7 mt-6 space-y-3 dark:text-app-muted-dark">
-					<li v-for="item in prohibitedUses" :key="item" class="px-4 py-3 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70">
+					<li v-for="item in prohibitedUses" :key="item" class="content-block">
 						{{ item }}
 					</li>
 				</ul>
@@ -290,7 +281,7 @@ usePageSeo({
 					When access can be restricted
 				</h2>
 				<ul class="text-sm text-app-muted leading-7 mt-6 space-y-3 dark:text-app-muted-dark">
-					<li v-for="item in suspensionRules" :key="item" class="px-4 py-3 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70">
+					<li v-for="item in suspensionRules" :key="item" class="content-block">
 						{{ item }}
 					</li>
 				</ul>
@@ -306,7 +297,7 @@ usePageSeo({
 					What happens when you send information to the project
 				</h2>
 				<ul class="text-sm text-app-muted leading-7 mt-6 space-y-3 dark:text-app-muted-dark">
-					<li v-for="item in correctionsAndFeedback" :key="item" class="px-4 py-3 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70">
+					<li v-for="item in correctionsAndFeedback" :key="item" class="content-block">
 						{{ item }}
 					</li>
 				</ul>
@@ -328,7 +319,7 @@ usePageSeo({
 					How the terms change as the product changes
 				</h2>
 				<ul class="text-sm text-app-muted leading-7 mt-6 space-y-3 dark:text-app-muted-dark">
-					<li v-for="item in [...changesToTermsRules, ...futureFeatureRules]" :key="item" class="px-4 py-3 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70">
+					<li v-for="item in [...changesToTermsRules, ...futureFeatureRules]" :key="item" class="content-block">
 						{{ item }}
 					</li>
 				</ul>
@@ -343,7 +334,7 @@ usePageSeo({
 				Service limits and liability posture
 			</h2>
 			<div class="mt-6 gap-4 grid lg:grid-cols-2">
-				<article v-for="item in legalLimits" :key="item" class="px-5 py-5 rounded-xl bg-app-bg dark:bg-app-bg-dark/70">
+				<article v-for="item in legalLimits" :key="item" class="content-block">
 					<p class="text-sm text-app-muted leading-7 dark:text-app-muted-dark">
 						{{ item }}
 					</p>
@@ -363,7 +354,7 @@ usePageSeo({
 					How legal and formal issues should be raised today
 				</h2>
 				<ul class="text-sm text-app-muted leading-7 mt-6 space-y-3 dark:text-app-muted-dark">
-					<li v-for="item in disputeNotes" :key="item" class="px-4 py-3 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70">
+					<li v-for="item in disputeNotes" :key="item" class="content-block">
 						{{ item }}
 					</li>
 				</ul>

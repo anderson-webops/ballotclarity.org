@@ -12,29 +12,24 @@ usePageSeo({
 <template>
 	<section class="app-shell section-gap space-y-8">
 		<div v-if="pending" class="space-y-6">
-			<div class="surface-panel bg-app-panel h-64 animate-pulse dark:bg-app-panel-dark/70" />
-			<div v-for="index in 3" :key="index" class="surface-panel bg-app-panel h-44 animate-pulse dark:bg-app-panel-dark/70" />
+			<div class="rounded-lg bg-app-bg h-64 animate-pulse dark:bg-app-bg-dark" />
+			<div v-for="index in 3" :key="index" class="rounded-lg bg-app-bg h-44 animate-pulse dark:bg-app-bg-dark" />
 		</div>
 
 		<div v-else-if="error || !data" class="max-w-3xl">
 			<InfoCallout title="Corrections log unavailable" tone="warning">
-				The public corrections log could not be loaded. Refresh the page or use the contact page to report an issue directly.
+				Try again later.
 			</InfoCallout>
 		</div>
 
 		<div v-else class="space-y-8">
 			<header class="gap-6 grid xl:grid-cols-[minmax(0,1.15fr)_minmax(22rem,0.85fr)]">
 				<div class="surface-panel">
-					<div class="flex flex-wrap gap-2">
-						<TrustBadge label="Public corrections log" tone="accent" />
-						<TrustBadge label="Reporter identity withheld" />
-						<TrustBadge label="Substantive updates only" tone="warning" />
-					</div>
-					<h1 class="text-5xl text-app-ink font-serif mt-5 dark:text-app-text-dark">
+					<h1 class="text-5xl text-app-ink font-serif dark:text-app-text-dark">
 						Corrections log
 					</h1>
 					<p class="text-base text-app-muted leading-8 mt-5 dark:text-app-muted-dark">
-						This log is public on purpose. New submissions remain private until an authenticated editor and MFA-enabled admin review them for publication. Published entries show substantive corrections that affect public interpretation, launch status, or trust signals while keeping reporter identity and private review notes out of view.
+						Substantive corrections to published pages. Reporter identity withheld; private review notes are not published.
 					</p>
 					<div class="mt-6 flex flex-wrap gap-4 items-center">
 						<UpdatedAt :value="data.updatedAt" label="Corrections log updated" />
@@ -49,7 +44,7 @@ usePageSeo({
 				</InfoCallout>
 			</header>
 
-			<div v-if="!data.corrections.length" class="surface-panel max-w-3xl">
+			<div v-if="!data.corrections.length" class="max-w-3xl surface-panel">
 				<TrustBadge label="No public corrections posted" tone="accent" />
 				<h2 class="text-3xl text-app-ink font-serif mt-5 dark:text-app-text-dark">
 					No public corrections have been posted.
@@ -82,7 +77,7 @@ usePageSeo({
 							</p>
 						</div>
 
-						<div class="px-5 py-5 rounded-xl bg-app-bg dark:bg-app-bg-dark/70">
+						<div class="content-block">
 							<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 								Affected page
 							</p>

@@ -11,7 +11,7 @@ import {
 
 const civicStore = useCivicStore();
 const siteUrl = useSiteUrl();
-const { backToLayerLink, layerBreadcrumbLink, locationHubLink, openLayerLink, overviewLink } = useRouteLayerNavigation();
+const { backToLayerLink, layerBreadcrumbLink, openLayerLink } = useRouteLayerNavigation();
 const { ballotPlan, compareList, isHydrated } = storeToRefs(civicStore);
 const candidateSlug = useRouteStringParam("slug");
 const { formatCompactNumber, formatCurrency, formatDate, formatDateTime, formatPercent } = useFormatters();
@@ -19,7 +19,6 @@ const { data: candidate, error, pending } = await useCandidate(candidateSlug);
 const candidateTimeline = computed(() => candidate.value ? buildCandidateTimeline(candidate.value) : []);
 const financeBreakdown = computed(() => candidate.value ? buildCandidateFinanceCategoryBreakdown(candidate.value, formatDate) : null);
 const sectionLinks = [
-	{ href: "#at-a-glance", label: "At a glance" },
 	{ href: "#biography", label: "Bio" },
 	{ href: "#issues", label: "Issues" },
 	{ href: "#actions", label: "Votes & actions" },
@@ -84,7 +83,6 @@ const isPlanned = computed(() => {
 
 	return selection?.type === "candidate" && selection.candidateSlug === candidate.value.slug;
 });
-const compareButtonIcon = computed(() => showPersistedCandidateState.value && isCompared.value ? "i-carbon-checkmark" : "i-carbon-compare");
 const compareButtonLabel = computed(() => {
 	if (!showPersistedCandidateState.value)
 		return "Compare candidate";
@@ -151,8 +149,8 @@ const actionCoverageNote = computed(() => {
 		return "";
 
 	return candidate.value.incumbent
-		? "This section highlights selected official actions tied to attached source records. Use the source panels and page notes to inspect the records and limits."
-		: "This section highlights source-backed campaign, policy, or local-government actions available in the attached source records. It does not stand in for a full voting ledger.";
+		? "Selected official actions. Not a full voting record."
+		: "Selected campaign, policy, or public-office actions. Not a full record.";
 });
 const reportIssueTo = computed(() => ({
 	path: "/contact",
@@ -186,18 +184,17 @@ function saveToPlan() {
 					<div class="mt-4 rounded-full bg-app-line/60 h-4 w-full dark:bg-app-line-dark" />
 					<div class="mt-2 rounded-full bg-app-line/60 h-4 w-2/3 dark:bg-app-line-dark" />
 				</div>
-				<div v-for="index in 4" :key="index" class="surface-panel bg-app-panel h-48 animate-pulse dark:bg-app-panel-dark/70" />
+				<div v-for="index in 4" :key="index" class="rounded-lg bg-app-bg h-48 animate-pulse dark:bg-app-bg-dark" />
 			</div>
-			<div class="surface-panel bg-app-panel h-96 animate-pulse dark:bg-app-panel-dark/70" />
+			<div class="rounded-lg bg-app-bg h-96 animate-pulse dark:bg-app-bg-dark" />
 		</div>
 
 		<GuideUnavailableState
 			v-else-if="error || !candidate"
-			eyebrow="Candidate detail"
-			message="This candidate dossier is not published as a verified local guide record yet. You can still use the current election overview, official tools, and coverage profile while candidate-level review is pending."
+			message="This candidate's profile isn't published yet."
 			:primary-label="openLayerLink.label"
 			:primary-to="openLayerLink.to"
-			secondary-label="Open coverage profile"
+			secondary-label="Coverage"
 			secondary-to="/coverage"
 			tertiary-label="Report missing information"
 			tertiary-to="/contact"
@@ -207,11 +204,7 @@ function saveToPlan() {
 		<div v-else class="detail-layout">
 			<div class="space-y-6">
 				<header class="surface-panel">
-					<div class="flex flex-wrap gap-2 items-center">
-						<VerificationBadge label="Candidate profile" tone="accent" />
-						<ProvenanceBadge :provenance="candidate.comparison.ballotStatus.provenance" />
-					</div>
-					<div class="mt-5 gap-6 grid md:grid-cols-[minmax(0,1fr)_auto] md:items-start">
+					<div class="gap-6 grid md:grid-cols-[minmax(0,1fr)_auto] md:items-start">
 						<div>
 							<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 								{{ candidate.location }}
@@ -225,7 +218,7 @@ function saveToPlan() {
 							<p class="text-lg text-app-muted mt-4 dark:text-app-muted-dark">
 								{{ candidate.officeSought }} · {{ candidate.party }}
 							</p>
-							<p class="text-base text-app-muted leading-8 mt-6 max-w-3xl dark:text-app-muted-dark">
+							<p class="text-lg text-app-ink leading-8 mt-5 max-w-3xl dark:text-app-text-dark">
 								{{ candidate.summary }}
 							</p>
 						</div>
@@ -243,123 +236,46 @@ function saveToPlan() {
 						<p class="text-sm text-app-muted dark:text-app-muted-dark">
 							{{ candidate.comparison.ballotStatus.label }}
 						</p>
+						<SourceDrawer :sources="candidate.comparison.ballotStatus.sources" :title="`${candidate.name} ballot status`" button-label="Sources" />
 					</div>
-					<div class="bc-action-cluster mt-6">
+					<div class="mt-6 flex flex-wrap gap-x-6 gap-y-3 items-center">
+						<button type="button" class="btn-primary" @click="saveToPlan">
+							<span :class="planButtonIcon" aria-hidden="true" />
+							{{ planButtonLabel }}
+						</button>
+						<button type="button" class="btn-secondary" :disabled="showPersistedCandidateState ? compareLimitReached : false" @click="toggleCompare">
+							{{ compareButtonLabel }}
+						</button>
 						<NuxtLink v-if="canOpenHydratedCompare" :to="compareHref" class="btn-secondary">
 							Open compare
 						</NuxtLink>
-						<button type="button" class="btn-secondary" :disabled="showPersistedCandidateState ? compareLimitReached : false" @click="toggleCompare">
-							<span :class="compareButtonIcon" />
-							{{ compareButtonLabel }}
-						</button>
-						<button type="button" class="btn-secondary" @click="saveToPlan">
-							<span :class="planButtonIcon" />
-							{{ planButtonLabel }}
-						</button>
-						<NuxtLink :to="overviewLink.to" class="btn-secondary">
-							{{ overviewLink.label }}
-						</NuxtLink>
-						<NuxtLink :to="backToLayerLink.to" class="btn-primary">
+						<NuxtLink :to="backToLayerLink.to" class="btn-secondary">
 							{{ backToLayerLink.label }}
 						</NuxtLink>
 					</div>
 				</header>
 
-				<section id="at-a-glance" class="surface-panel scroll-mt-28">
-					<div class="flex flex-wrap gap-4 items-start justify-between">
-						<div>
-							<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
-								At a glance
-							</p>
-							<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-								Ballot context and page coverage
-							</h2>
-						</div>
-					</div>
-					<div class="mt-6">
-						<PageSummaryStrip :items="atGlanceStats" />
-					</div>
-					<div class="mt-6">
-						<div class="px-5 py-5 border border-app-line/80 rounded-xl bg-app-panel dark:border-app-line-dark dark:bg-app-panel-dark/70">
-							<div class="flex flex-wrap gap-3 items-center justify-between">
-								<h3 class="text-xl text-app-ink font-serif dark:text-app-text-dark">
-									Identity and ballot context
-								</h3>
-								<ProvenanceBadge :provenance="candidate.comparison.ballotStatus.provenance" />
-							</div>
-							<dl class="mt-5 gap-4 grid sm:grid-cols-2">
-								<div>
-									<dt class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
-										Office
-									</dt>
-									<dd class="text-sm text-app-ink mt-2 dark:text-app-text-dark">
-										{{ candidate.officeSought }}
-									</dd>
-								</div>
-								<div>
-									<dt class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
-										Status
-									</dt>
-									<dd class="text-sm text-app-ink mt-2 dark:text-app-text-dark">
-										{{ candidate.incumbent ? "Incumbent" : "Challenger or open-seat candidate" }}
-									</dd>
-								</div>
-								<div>
-									<dt class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
-										Ballot status
-									</dt>
-									<dd class="mt-2 flex flex-wrap gap-3 items-center">
-										<span class="text-sm text-app-ink dark:text-app-text-dark">{{ candidate.comparison.ballotStatus.label }}</span>
-										<SourceDrawer :sources="candidate.comparison.ballotStatus.sources" :title="`${candidate.name} ballot status`" button-label="Sources" />
-									</dd>
-								</div>
-								<div>
-									<dt class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
-										Data through
-									</dt>
-									<dd class="text-sm text-app-ink mt-2 dark:text-app-text-dark">
-										{{ dataThroughLabel }}
-									</dd>
-								</div>
-								<div>
-									<dt class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
-										Sources attached
-									</dt>
-									<dd class="text-sm text-app-ink mt-2 dark:text-app-text-dark">
-										{{ candidate.sources.length }} source records in this profile
-									</dd>
-								</div>
-								<div>
-									<dt class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
-										Location
-									</dt>
-									<dd class="text-sm text-app-ink mt-2 dark:text-app-text-dark">
-										{{ candidate.location }}
-									</dd>
-								</div>
-							</dl>
-						</div>
-					</div>
+				<section id="at-a-glance" class="scroll-mt-28" aria-label="At a glance">
+					<PageSummaryStrip :items="atGlanceStats" />
 				</section>
 
 				<ExpandableSection
 					id="biography"
 					eyebrow="Biography"
-					title="Background and public resume"
-					description="This section combines verified public background details with self-described campaign biography so users can see where identity, work history, and public narrative come from."
+					title="Background"
 				>
 					<template #meta>
 						<SourceDrawer :sources="candidate.biography.flatMap(block => block.sources)" :title="`${candidate.name} background sources`" />
 					</template>
 					<div class="mt-6 space-y-4">
-						<article v-for="block in candidate.biography" :key="block.id" class="p-5 rounded-xl bg-app-bg dark:bg-app-bg-dark/70">
+						<article v-for="block in candidate.biography" :key="block.id" class="content-block">
 							<div class="flex flex-wrap gap-3 items-start justify-between">
 								<h3 class="text-lg text-app-ink font-semibold dark:text-app-text-dark">
 									{{ block.title }}
 								</h3>
 								<SourceDrawer :sources="block.sources" :title="block.title" button-label="Sources" />
 							</div>
-							<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
+							<p class="text-base text-app-ink leading-7 mt-2 dark:text-app-text-dark">
 								{{ block.summary }}
 							</p>
 						</article>
@@ -369,8 +285,7 @@ function saveToPlan() {
 				<ExpandableSection
 					id="issues"
 					eyebrow="Issue positions"
-					title="What this candidate says and emphasizes"
-					description="This section separates candidate-submitted responses, public issue statements, and the source documents attached to them so users can inspect both the claim and its provenance."
+					title="Positions"
 					open
 				>
 					<template #meta>
@@ -379,8 +294,8 @@ function saveToPlan() {
 					<div class="mt-5 flex flex-wrap gap-2">
 						<IssueChip v-for="issue in candidate.topIssues" :key="issue.slug" :label="issue.label" />
 					</div>
-					<div class="mt-6 gap-4 grid">
-						<article class="px-5 py-5 rounded-xl bg-app-bg dark:bg-app-bg-dark/70">
+					<div class="mt-6 gap-8 grid">
+						<article>
 							<div class="flex flex-wrap gap-3 items-start justify-between">
 								<div>
 									<h3 class="text-lg text-app-ink font-semibold dark:text-app-text-dark">
@@ -397,19 +312,19 @@ function saveToPlan() {
 									<SourceDrawer :sources="candidate.comparison.whyRunning.sources" title="Why the candidate says they are running" button-label="Sources" />
 								</div>
 							</div>
-							<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
+							<p class="text-base text-app-ink leading-7 mt-3 dark:text-app-text-dark">
 								{{ candidate.comparison.whyRunning.text }}
 							</p>
 						</article>
-						<article class="px-5 py-5 rounded-xl bg-app-bg dark:bg-app-bg-dark/70">
+						<article>
 							<div class="flex flex-wrap gap-3 items-start justify-between">
 								<h3 class="text-lg text-app-ink font-semibold dark:text-app-text-dark">
-									Top stated priorities
+									Priorities
 								</h3>
 								<SourceDrawer :sources="candidate.comparison.topPriorities.flatMap(priority => priority.sources)" :title="`${candidate.name} stated priorities`" button-label="Sources" />
 							</div>
 							<ul class="mt-4 space-y-3">
-								<li v-for="priority in candidate.comparison.topPriorities" :key="priority.id" class="px-4 py-4 border border-app-line/80 rounded-2xl bg-app-panel dark:border-app-line-dark dark:bg-app-panel-dark/70">
+								<li v-for="priority in candidate.comparison.topPriorities" :key="priority.id">
 									<div class="flex flex-wrap gap-3 items-start justify-between">
 										<p class="text-sm text-app-ink font-medium max-w-2xl dark:text-app-text-dark">
 											{{ priority.text }}
@@ -419,20 +334,17 @@ function saveToPlan() {
 								</li>
 							</ul>
 						</article>
-						<article class="px-5 py-5 rounded-xl bg-app-bg dark:bg-app-bg-dark/70">
+						<article>
 							<div class="flex flex-wrap gap-3 items-start justify-between">
 								<div>
 									<h3 class="text-lg text-app-ink font-semibold dark:text-app-text-dark">
-										Questionnaire responses in attached records
+										Questionnaire
 									</h3>
-									<p class="text-sm text-app-muted mt-2 dark:text-app-muted-dark">
-										Responses are shown as submitted, with provenance labels and attached sources.
-									</p>
 								</div>
 								<SourceDrawer :sources="candidate.comparison.questionnaireResponses.flatMap(response => response.sources)" :title="`${candidate.name} questionnaire responses`" button-label="Sources" />
 							</div>
 							<div class="mt-4 space-y-4">
-								<article v-for="response in candidate.comparison.questionnaireResponses" :key="response.questionId" class="px-4 py-4 border border-app-line/80 rounded-2xl bg-app-panel dark:border-app-line-dark dark:bg-app-panel-dark/70">
+								<article v-for="response in candidate.comparison.questionnaireResponses" :key="response.questionId" class="content-block">
 									<div class="flex flex-wrap gap-3 items-start justify-between">
 										<div>
 											<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
@@ -444,8 +356,8 @@ function saveToPlan() {
 										</div>
 										<ProvenanceBadge :provenance="response.provenance" />
 									</div>
-									<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-										{{ response.answerText ?? "No response submitted in the attached records." }}
+									<p class="text-base text-app-ink leading-7 mt-3 dark:text-app-text-dark">
+										{{ response.answerText ?? "No response submitted." }}
 									</p>
 									<div class="mt-4 flex flex-wrap gap-3 items-center justify-between">
 										<UpdatedAt v-if="response.answerReceivedAt" :value="response.answerReceivedAt" label="Received" />
@@ -454,7 +366,7 @@ function saveToPlan() {
 								</article>
 							</div>
 						</article>
-						<article v-for="statement in candidate.publicStatements" :key="statement.id" class="px-5 py-5 rounded-xl bg-app-bg dark:bg-app-bg-dark/70">
+						<article v-for="statement in candidate.publicStatements" :key="statement.id" class="content-block">
 							<div class="flex flex-wrap gap-3 items-start justify-between">
 								<div>
 									<h3 class="text-lg text-app-ink font-semibold dark:text-app-text-dark">
@@ -463,7 +375,7 @@ function saveToPlan() {
 								</div>
 								<SourceDrawer :sources="statement.sources" :title="statement.title" button-label="Sources" />
 							</div>
-							<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
+							<p class="text-base text-app-ink leading-7 mt-3 dark:text-app-text-dark">
 								{{ statement.summary }}
 							</p>
 						</article>
@@ -473,40 +385,34 @@ function saveToPlan() {
 				<ExpandableSection
 					id="actions"
 					eyebrow="Votes & actions"
-					title="Selected documented actions"
+					title="Votes and actions"
 				>
 					<template #meta>
 						<SourceDrawer :sources="candidate.keyActions.flatMap(action => action.sources)" :title="`${candidate.name} key actions`" />
 					</template>
-					<InfoCallout class="mt-5" title="How selected actions work">
+					<p class="text-sm text-app-muted mt-3 dark:text-app-muted-dark">
 						{{ actionCoverageNote }}
-					</InfoCallout>
+					</p>
 					<div class="mt-6">
-						<TimelineList
-							:items="candidateTimeline"
-							:badge-label="`${candidate.keyActions.length} documented action${candidate.keyActions.length === 1 ? '' : 's'}`"
-							eyebrow="Newest first"
-							title="Documented actions over time"
-						/>
+						<TimelineList :items="candidateTimeline" eyebrow="Newest first" />
 					</div>
 				</ExpandableSection>
 
 				<ExpandableSection
 					id="funding"
 					eyebrow="Funding"
-					title="Campaign funding overview"
-					description="Reported fundraising in this profile is shown with the current filing window and attached source documents. Review original filings for late amendments or newly reported independent spending."
+					title="Funding"
 				>
 					<template #meta>
 						<div class="flex flex-wrap gap-3 items-center">
 							<SourceDrawer :sources="candidate.funding.sources" title="Campaign funding sources" />
 							<NuxtLink :to="`/candidate/${candidate.slug}/funding`" class="btn-secondary">
-								Open dedicated funding page
+								Full funding details
 							</NuxtLink>
 						</div>
 					</template>
 					<div class="mt-6 gap-4 grid md:grid-cols-3">
-						<div class="p-5 rounded-xl bg-app-bg dark:bg-app-bg-dark/70">
+						<div class="content-block">
 							<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 								Raised
 							</p>
@@ -514,7 +420,7 @@ function saveToPlan() {
 								{{ formatCurrency(candidate.funding.totalRaised) }}
 							</p>
 						</div>
-						<div class="p-5 rounded-xl bg-app-bg dark:bg-app-bg-dark/70">
+						<div class="content-block">
 							<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 								Cash on hand
 							</p>
@@ -522,7 +428,7 @@ function saveToPlan() {
 								{{ formatCurrency(candidate.funding.cashOnHand) }}
 							</p>
 						</div>
-						<div class="p-5 rounded-xl bg-app-bg dark:bg-app-bg-dark/70">
+						<div class="content-block">
 							<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 								Small donors
 							</p>
@@ -534,11 +440,11 @@ function saveToPlan() {
 					<div v-if="financeBreakdown?.categories.length" class="mt-6">
 						<FinanceBreakdownChart :breakdown="financeBreakdown" />
 					</div>
-					<p class="text-sm text-app-muted leading-7 mt-6 dark:text-app-muted-dark">
+					<p class="text-base text-app-ink leading-7 mt-6 dark:text-app-text-dark">
 						{{ candidate.funding.summary }}
 					</p>
-					<ul class="mt-5 space-y-3">
-						<li v-for="funder in candidate.funding.topFunders" :key="funder.name" class="text-sm px-4 py-3 border border-app-line/80 rounded-2xl bg-app-panel flex gap-4 items-start justify-between dark:border-app-line-dark dark:bg-app-panel-dark/70">
+					<ul class="mt-5">
+						<li v-for="funder in candidate.funding.topFunders" :key="funder.name" class="text-sm py-3 border-b border-app-line flex gap-4 items-start justify-between dark:border-app-line-dark last:border-b-0">
 							<div>
 								<p class="text-app-ink font-semibold dark:text-app-text-dark">
 									{{ funder.name }}
@@ -557,28 +463,28 @@ function saveToPlan() {
 				<ExpandableSection
 					id="influence"
 					eyebrow="Lobbying & influence context"
-					title="Public context around funding and policy exposure"
+					title="Influence"
 				>
 					<template #meta>
 						<div class="flex flex-wrap gap-3 items-center">
 							<SourceDrawer :sources="candidate.lobbyingContext.flatMap(block => block.sources)" :title="`${candidate.name} influence context`" />
 							<NuxtLink :to="`/candidate/${candidate.slug}/influence`" class="btn-secondary">
-								Open dedicated influence page
+								Full influence details
 							</NuxtLink>
 						</div>
 					</template>
-					<InfoCallout class="mt-5" title="Read this section carefully">
-						Influence context is presented to help users inspect relevant sectors, donors, and public disclosures. It should not be read as proof that any donor or organization controlled a candidate action.
-					</InfoCallout>
+					<p class="text-sm text-app-muted mt-3 dark:text-app-muted-dark">
+						Context only. Not proof that any donor or organization influenced a decision.
+					</p>
 					<div class="mt-6 space-y-4">
-						<article v-for="block in candidate.lobbyingContext" :key="block.id" class="p-5 rounded-xl bg-app-bg dark:bg-app-bg-dark/70">
+						<article v-for="block in candidate.lobbyingContext" :key="block.id" class="content-block">
 							<div class="flex flex-wrap gap-3 items-start justify-between">
 								<h3 class="text-lg text-app-ink font-semibold dark:text-app-text-dark">
 									{{ block.title }}
 								</h3>
 								<SourceDrawer :sources="block.sources" :title="block.title" button-label="Sources" />
 							</div>
-							<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
+							<p class="text-base text-app-ink leading-7 mt-2 dark:text-app-text-dark">
 								{{ block.summary }}
 							</p>
 						</article>
@@ -588,14 +494,13 @@ function saveToPlan() {
 				<ExpandableSection
 					id="sources"
 					eyebrow="Sources & methods"
-					title="Sources and methodology notes"
-					description="Use this section to inspect how the profile was assembled, where the attached source records came from, and what records remain outside the current published source set."
+					title="Sources and review status"
 				>
 					<template #meta>
 						<SourceDrawer :sources="candidate.sources" :title="`${candidate.name} full source list`" />
 					</template>
 					<div class="mt-6 gap-4 grid lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
-						<div class="p-4 rounded-xl bg-app-bg dark:bg-app-bg-dark/70">
+						<div class="content-block">
 							<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 								Review timing
 							</p>
@@ -614,7 +519,7 @@ function saveToPlan() {
 								</p>
 							</div>
 						</div>
-						<div class="p-4 rounded-xl bg-app-bg dark:bg-app-bg-dark/70">
+						<div class="content-block">
 							<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 								Verification scope
 							</p>
@@ -643,7 +548,7 @@ function saveToPlan() {
 						</div>
 					</div>
 					<ul class="text-sm text-app-muted leading-7 mt-6 space-y-3 dark:text-app-muted-dark">
-						<li v-for="note in candidate.methodologyNotes" :key="note" class="px-4 py-3 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70">
+						<li v-for="note in candidate.methodologyNotes" :key="note" class="content-block">
 							{{ note }}
 						</li>
 					</ul>
@@ -657,14 +562,9 @@ function saveToPlan() {
 					:items="sectionLinks.map(section => ({ href: section.href, label: section.label }))"
 				>
 					<template #actions>
-						<div class="flex flex-wrap gap-3">
-							<NuxtLink :to="reportIssueTo" class="btn-secondary">
-								Report an issue
-							</NuxtLink>
-							<NuxtLink :to="locationHubLink.to" class="btn-secondary">
-								{{ locationHubLink.label }}
-							</NuxtLink>
-						</div>
+						<NuxtLink :to="reportIssueTo" class="text-sm btn-secondary">
+							Report an issue
+						</NuxtLink>
 					</template>
 				</PageSectionNav>
 			</aside>

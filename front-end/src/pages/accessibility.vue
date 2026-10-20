@@ -48,16 +48,11 @@ usePageSeo({
 	<section class="app-shell section-gap space-y-8">
 		<header class="gap-6 grid lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
 			<div>
-				<div class="flex flex-wrap gap-2">
-					<TrustBadge label="WCAG 2.2 AA target" tone="accent" />
-					<TrustBadge label="Print-friendly ballot guides" />
-					<TrustBadge label="Known limits visible" tone="warning" />
-				</div>
-				<h1 class="text-5xl text-app-ink font-serif mt-5 dark:text-app-text-dark">
+				<h1 class="text-5xl text-app-ink font-serif dark:text-app-text-dark">
 					Accessibility and print standards
 				</h1>
 				<p class="bc-prose text-app-muted mt-5 dark:text-app-muted-dark">
-					Ballot Clarity is designed as a public-interest reading tool, so accessibility is treated as a product requirement rather than a later compliance pass. The public site targets WCAG 2.2 Level AA and uses extra review checks for focus visibility, readable ballot copy, and print behavior on key pages.
+					The public site targets WCAG 2.2 Level AA and uses extra review checks for focus visibility, readable ballot copy, and print behavior on key pages.
 				</p>
 			</div>
 

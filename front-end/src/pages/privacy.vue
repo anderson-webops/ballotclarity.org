@@ -224,12 +224,7 @@ usePageSeo({
 <template>
 	<section class="legal-page app-shell section-gap space-y-8">
 		<header class="max-w-4xl">
-			<div class="flex flex-wrap gap-2">
-				<TrustBadge label="Current policy" tone="accent" />
-				<TrustBadge label="Lookup handling disclosed" />
-				<TrustBadge label="No targeted advertising" tone="warning" />
-			</div>
-			<h1 class="text-5xl text-app-ink font-serif mt-5 dark:text-app-text-dark">
+			<h1 class="text-5xl text-app-ink font-serif dark:text-app-text-dark">
 				Privacy Policy
 			</h1>
 			<p class="text-base text-app-muted leading-8 mt-5 max-w-3xl dark:text-app-muted-dark">
@@ -252,7 +247,7 @@ usePageSeo({
 				What data Ballot Clarity currently handles
 			</h2>
 			<div class="mt-6 gap-4 grid lg:grid-cols-2">
-				<article v-for="item in collectionSections" :key="item.title" class="px-5 py-5 rounded-xl bg-app-bg dark:bg-app-bg-dark/70">
+				<article v-for="item in collectionSections" :key="item.title" class="content-block">
 					<h3 class="text-xl text-app-ink font-serif dark:text-app-text-dark">
 						{{ item.title }}
 					</h3>
@@ -273,7 +268,7 @@ usePageSeo({
 				Current third-party processors and civic-data recipients
 			</h2>
 			<div class="mt-6 gap-4 grid lg:grid-cols-2">
-				<article v-for="item in providerDisclosureSections" :key="item.title" class="px-5 py-5 rounded-xl bg-app-bg dark:bg-app-bg-dark/70">
+				<article v-for="item in providerDisclosureSections" :key="item.title" class="content-block">
 					<h3 class="text-xl text-app-ink font-serif dark:text-app-text-dark">
 						{{ item.title }}
 					</h3>
@@ -295,7 +290,7 @@ usePageSeo({
 					Why the site uses data
 				</h2>
 				<ul class="text-sm text-app-muted leading-7 mt-6 space-y-3 dark:text-app-muted-dark">
-					<li v-for="item in useSections" :key="item" class="px-4 py-3 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70">
+					<li v-for="item in useSections" :key="item" class="content-block">
 						{{ item }}
 					</li>
 				</ul>
@@ -309,7 +304,7 @@ usePageSeo({
 					Service providers, external links, and current limits
 				</h2>
 				<ul class="text-sm text-app-muted leading-7 mt-6 space-y-3 dark:text-app-muted-dark">
-					<li v-for="item in sharingSections" :key="item" class="px-4 py-3 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70">
+					<li v-for="item in sharingSections" :key="item" class="content-block">
 						{{ item }}
 					</li>
 				</ul>
@@ -325,7 +320,7 @@ usePageSeo({
 					No sale, sharing, or targeted advertising
 				</h2>
 				<ul class="text-sm text-app-muted leading-7 mt-6 space-y-3 dark:text-app-muted-dark">
-					<li v-for="item in cookieNotes" :key="item" class="px-4 py-3 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70">
+					<li v-for="item in cookieNotes" :key="item" class="content-block">
 						{{ item }}
 					</li>
 				</ul>
@@ -396,7 +391,7 @@ usePageSeo({
 					Rights requests and no-account limits
 				</h2>
 				<ul class="text-sm text-app-muted leading-7 mt-6 space-y-3 dark:text-app-muted-dark">
-					<li v-for="item in rightsNotes" :key="item" class="px-4 py-3 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70">
+					<li v-for="item in rightsNotes" :key="item" class="content-block">
 						{{ item }}
 					</li>
 				</ul>
@@ -410,7 +405,7 @@ usePageSeo({
 					Children's privacy
 				</h2>
 				<ul class="text-sm text-app-muted leading-7 mt-6 space-y-3 dark:text-app-muted-dark">
-					<li v-for="item in childrenNotes" :key="item" class="px-4 py-3 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70">
+					<li v-for="item in childrenNotes" :key="item" class="content-block">
 						{{ item }}
 					</li>
 				</ul>
@@ -426,7 +421,7 @@ usePageSeo({
 					How Ballot Clarity approaches privacy and security controls
 				</h2>
 				<ul class="text-sm text-app-muted leading-7 mt-6 space-y-3 dark:text-app-muted-dark">
-					<li v-for="item in securityNotes" :key="item" class="px-4 py-3 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70">
+					<li v-for="item in securityNotes" :key="item" class="content-block">
 						{{ item }}
 					</li>
 				</ul>

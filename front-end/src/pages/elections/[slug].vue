@@ -5,12 +5,10 @@ const civicStore = useCivicStore();
 const { displayTimeZone, formatDate, formatDateTime } = useFormatters();
 const electionSlug = useRouteStringParam("slug");
 const { data, error, pending } = await useBallot(electionSlug);
-const guideStatusTitle = computed(() => "Guide status");
-const guideStatusNote = computed(() => data.value?.guideContent?.verifiedContestPackage
-	? "Contest, candidate, and measure pages are verified for this area."
-	: data.value?.guideContent?.publishedGuideShell
-		? "Official election links are current. Verified contest pages are still under local review."
-		: "Use this page for key dates and official links, then open the ballot guide for contest-by-contest reading.");
+// Only a guide that is still under review needs a status line; a verified guide speaks for itself.
+const guideStatusNote = computed(() => !data.value?.guideContent?.verifiedContestPackage && data.value?.guideContent?.publishedGuideShell
+	? "Contest pages are still under local review."
+	: "");
 
 const keyDateTimeline = computed(() => data.value ? buildKeyDateTimeline(data.value.election.keyDates, new Date(), displayTimeZone.value) : []);
 const nextKeyDate = computed(() => keyDateTimeline.value.find(entry => entry.isNext) ?? null);
@@ -64,15 +62,15 @@ usePageSeo({
 <template>
 	<section class="app-shell section-gap">
 		<div v-if="pending" class="space-y-6">
-			<div class="surface-panel bg-app-panel h-72 animate-pulse dark:bg-app-panel-dark/70" />
+			<div class="rounded-lg bg-app-bg h-72 animate-pulse dark:bg-app-bg-dark" />
 			<div class="gap-6 grid lg:grid-cols-3">
-				<div v-for="index in 3" :key="index" class="surface-panel bg-app-panel h-48 animate-pulse dark:bg-app-panel-dark/70" />
+				<div v-for="index in 3" :key="index" class="rounded-lg bg-app-bg h-48 animate-pulse dark:bg-app-bg-dark" />
 			</div>
 		</div>
 
 		<div v-else-if="error || !data" class="max-w-3xl">
 			<InfoCallout title="Election overview not available" tone="warning">
-				This election overview could not be loaded. Return to the location hub or the home page and try again.
+				Try again later.
 			</InfoCallout>
 		</div>
 
@@ -90,10 +88,11 @@ usePageSeo({
 						Election Day {{ formatDate(data.election.date) }}
 						<span v-if="electionDayLabel" class="text-sm text-app-accent font-semibold px-2 py-0.5 rounded-md bg-app-accent/10">{{ electionDayLabel }}</span>
 					</p>
-					<p class="text-base text-app-muted leading-7 mt-4 max-w-3xl dark:text-app-muted-dark">
-						{{ data.election.description }}
+					<p v-if="guideStatusNote" class="text-sm text-[#8a5b0a] font-semibold mt-3 inline-flex gap-1.5 items-center dark:text-[#efc77b]">
+						<span class="i-carbon-warning-alt" aria-hidden="true" />
+						{{ guideStatusNote }}
 					</p>
-					<div class="mt-6 flex flex-wrap gap-3">
+					<div class="mt-5 flex flex-wrap gap-x-6 gap-y-3 items-center">
 						<NuxtLink
 							v-if="data.guideContent?.verifiedContestPackage"
 							:to="`/ballot/${data.election.slug}`"
@@ -103,12 +102,6 @@ usePageSeo({
 						</NuxtLink>
 						<NuxtLink v-else :to="`/locations/${data.election.jurisdictionSlug}`" class="btn-primary">
 							Open location hub
-						</NuxtLink>
-						<NuxtLink to="/districts" class="btn-secondary">
-							District pages
-						</NuxtLink>
-						<NuxtLink to="/representatives" class="btn-secondary">
-							Representatives
 						</NuxtLink>
 					</div>
 				</div>
@@ -129,9 +122,6 @@ usePageSeo({
 							{{ nextKeyDate.note }}
 						</p>
 					</a>
-					<InfoCallout :title="guideStatusTitle" tone="warning">
-						{{ guideStatusNote }}
-					</InfoCallout>
 				</div>
 			</header>
 
@@ -141,9 +131,6 @@ usePageSeo({
 						<h2 class="text-2xl text-app-ink font-serif sm:text-3xl dark:text-app-text-dark">
 							Key dates and deadlines
 						</h2>
-						<p class="text-sm text-app-muted mt-2 dark:text-app-muted-dark">
-							In date order. Confirm deadlines with your county election office.
-						</p>
 					</div>
 					<UpdatedAt :value="data.election.updatedAt" label="Updated" />
 				</div>
@@ -181,9 +168,6 @@ usePageSeo({
 				<h2 class="text-2xl text-app-ink font-serif sm:text-3xl dark:text-app-text-dark">
 					Official links and notices
 				</h2>
-				<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-					These links point to the official election notices, calendars, and logistics attached to this page.
-				</p>
 				<div class="mt-6">
 					<OfficialResourceList :resources="data.election.officialResources" />
 				</div>
@@ -192,7 +176,7 @@ usePageSeo({
 						Change log
 					</summary>
 					<ul class="mt-4 space-y-3">
-						<li v-for="entry in data.election.changeLog" :key="entry.id" class="px-4 py-4 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70">
+						<li v-for="entry in data.election.changeLog" :key="entry.id" class="content-block">
 							<p class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
 								{{ formatDateTime(entry.date) }}
 							</p>
@@ -210,9 +194,6 @@ usePageSeo({
 						<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
 							Contest index
 						</h2>
-						<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
-							See the contests on the ballot before opening the full guide.
-						</p>
 					</div>
 					<NuxtLink :to="`/ballot/${data.election.slug}`" class="btn-secondary">
 						Read the full ballot guide
@@ -220,7 +201,7 @@ usePageSeo({
 				</div>
 
 				<div class="mt-6 gap-5 grid xl:grid-cols-2">
-					<article v-for="contest in data.election.contests" :key="contest.slug" class="p-5 border border-app-line/70 rounded-xl bg-app-panel dark:border-app-line-dark dark:bg-app-panel-dark/70">
+					<article v-for="contest in data.election.contests" :key="contest.slug" class="content-block">
 						<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 							{{ contest.jurisdiction }}
 						</p>
@@ -231,7 +212,7 @@ usePageSeo({
 							{{ contest.description }}
 						</p>
 						<NuxtLink :to="`/contest/${contest.slug}`" class="text-sm text-app-accent font-semibold mt-4 rounded-lg inline-flex gap-2 items-center focus-ring">
-							<span>Open canonical contest page</span>
+							<span>Contest page</span>
 							<span class="i-carbon-arrow-right" />
 						</NuxtLink>
 						<NuxtLink
@@ -239,7 +220,7 @@ usePageSeo({
 							:to="`/districts/${contest.slug}`"
 							class="text-sm text-app-accent font-semibold mt-3 rounded-lg inline-flex gap-2 items-center focus-ring"
 						>
-							<span>Open district page</span>
+							<span>District page</span>
 							<span class="i-carbon-arrow-right" />
 						</NuxtLink>
 						<ul class="text-sm text-app-muted leading-7 mt-4 space-y-2 dark:text-app-muted-dark">

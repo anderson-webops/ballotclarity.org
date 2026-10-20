@@ -71,16 +71,9 @@ usePageSeo({
 <template>
 	<section class="app-shell section-gap space-y-8">
 		<header class="max-w-4xl">
-			<div class="flex flex-wrap gap-2">
-				<TrustBadge label="Contact" tone="accent" />
-				<TrustBadge label="Corrections path" />
-			</div>
-			<h1 class="text-5xl text-app-ink font-serif mt-5 dark:text-app-text-dark">
+			<h1 class="text-5xl text-app-ink font-serif dark:text-app-text-dark">
 				Contact and corrections
 			</h1>
-			<p class="text-base text-app-muted leading-8 mt-5 max-w-3xl dark:text-app-muted-dark">
-				Use this page to report an error, request a correction, ask a question, or volunteer.
-			</p>
 		</header>
 
 		<section id="contact-form" class="surface-panel scroll-mt-28">
@@ -92,9 +85,6 @@ usePageSeo({
 					<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
 						Send a correction request or feedback
 					</h2>
-					<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-						Use this form when a page appears inaccurate, incomplete, unevenly framed, or hard to use.
-					</p>
 				</div>
 
 				<form class="space-y-4" @submit.prevent="submitForm">
@@ -102,7 +92,7 @@ usePageSeo({
 						<span class="text-sm text-app-ink font-semibold dark:text-app-text-dark">Request type</span>
 						<select
 							v-model="form.submissionType"
-							class="text-sm text-app-ink mt-2 px-4 border border-app-line rounded-2xl bg-white h-13 w-full shadow-sm dark:text-app-text-dark dark:border-app-line-dark dark:bg-app-panel-dark focus-ring"
+							class="text-sm text-app-ink mt-2 px-4 border border-app-line rounded-md bg-app-panel h-12 w-full dark:text-app-text-dark dark:border-app-line-dark dark:bg-app-panel-dark focus-ring"
 						>
 							<option value="correction">
 								correction
@@ -121,7 +111,7 @@ usePageSeo({
 								autocomplete="name"
 								maxlength="120"
 								type="text"
-								class="text-sm text-app-ink mt-2 px-4 border border-app-line rounded-2xl bg-white h-13 w-full shadow-sm dark:text-app-text-dark dark:border-app-line-dark dark:bg-app-panel-dark focus-ring"
+								class="text-sm text-app-ink mt-2 px-4 border border-app-line rounded-md bg-app-panel h-12 w-full dark:text-app-text-dark dark:border-app-line-dark dark:bg-app-panel-dark focus-ring"
 							>
 						</label>
 						<label class="block">
@@ -132,7 +122,7 @@ usePageSeo({
 								maxlength="254"
 								type="email"
 								required
-								class="text-sm text-app-ink mt-2 px-4 border border-app-line rounded-2xl bg-white h-13 w-full shadow-sm dark:text-app-text-dark dark:border-app-line-dark dark:bg-app-panel-dark focus-ring"
+								class="text-sm text-app-ink mt-2 px-4 border border-app-line rounded-md bg-app-panel h-12 w-full dark:text-app-text-dark dark:border-app-line-dark dark:bg-app-panel-dark focus-ring"
 							>
 						</label>
 					</div>
@@ -144,7 +134,7 @@ usePageSeo({
 							maxlength="160"
 							type="text"
 							required
-							class="text-sm text-app-ink mt-2 px-4 border border-app-line rounded-2xl bg-white h-13 w-full shadow-sm dark:text-app-text-dark dark:border-app-line-dark dark:bg-app-panel-dark focus-ring"
+							class="text-sm text-app-ink mt-2 px-4 border border-app-line rounded-md bg-app-panel h-12 w-full dark:text-app-text-dark dark:border-app-line-dark dark:bg-app-panel-dark focus-ring"
 						>
 					</label>
 
@@ -155,7 +145,7 @@ usePageSeo({
 							maxlength="1024"
 							type="text"
 							placeholder="/representatives/jon-ossoff"
-							class="text-sm text-app-ink mt-2 px-4 border border-app-line rounded-2xl bg-white h-13 w-full shadow-sm dark:text-app-text-dark dark:border-app-line-dark dark:bg-app-panel-dark focus-ring"
+							class="text-sm text-app-ink mt-2 px-4 border border-app-line rounded-md bg-app-panel h-12 w-full dark:text-app-text-dark dark:border-app-line-dark dark:bg-app-panel-dark focus-ring"
 						>
 					</label>
 
@@ -166,7 +156,7 @@ usePageSeo({
 							maxlength="5000"
 							required
 							rows="5"
-							class="text-sm text-app-ink mt-2 px-4 py-3 border border-app-line rounded-2xl bg-white min-h-32 w-full shadow-sm dark:text-app-text-dark dark:border-app-line-dark dark:bg-app-panel-dark focus-ring"
+							class="text-sm text-app-ink mt-2 px-4 py-3 border border-app-line rounded-md bg-app-panel min-h-32 w-full dark:text-app-text-dark dark:border-app-line-dark dark:bg-app-panel-dark focus-ring"
 						/>
 					</label>
 
@@ -177,7 +167,7 @@ usePageSeo({
 							maxlength="20489"
 							rows="3"
 							placeholder="One link per line"
-							class="text-sm text-app-ink mt-2 px-4 py-3 border border-app-line rounded-2xl bg-white min-h-24 w-full shadow-sm dark:text-app-text-dark dark:border-app-line-dark dark:bg-app-panel-dark focus-ring"
+							class="text-sm text-app-ink mt-2 px-4 py-3 border border-app-line rounded-md bg-app-panel min-h-24 w-full dark:text-app-text-dark dark:border-app-line-dark dark:bg-app-panel-dark focus-ring"
 						/>
 					</label>
 
@@ -248,7 +238,7 @@ usePageSeo({
 					What to include in a correction request
 				</h2>
 				<ul class="text-sm text-app-muted leading-7 mt-6 space-y-3 dark:text-app-muted-dark">
-					<li v-for="item in correctionChecklist" :key="item" class="px-4 py-3 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70">
+					<li v-for="item in correctionChecklist" :key="item" class="content-block">
 						{{ item }}
 					</li>
 				</ul>
@@ -260,15 +250,6 @@ usePageSeo({
 				</InfoCallout>
 				<InfoCallout title="Good-faith standard" tone="warning">
 					Ballot Clarity will not remove accurate, well-sourced information solely because it is unfavorable. The purpose of the correction path is accuracy and fairness, not reputation management.
-				</InfoCallout>
-				<InfoCallout title="Related pages">
-					Read the <NuxtLink to="/neutrality" class="underline underline-offset-3">
-						neutrality policy
-					</NuxtLink>, <NuxtLink to="/methodology" class="underline underline-offset-3">
-						methodology notes
-					</NuxtLink>, and <NuxtLink to="/privacy" class="underline underline-offset-3">
-						privacy notice
-					</NuxtLink> to see how source review, dispute handling, and contact data are handled together.
 				</InfoCallout>
 			</div>
 		</section>

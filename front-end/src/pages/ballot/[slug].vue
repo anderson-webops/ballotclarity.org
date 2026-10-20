@@ -18,8 +18,6 @@ const effectiveBallotViewMode = computed(() => isHydrated.value ? ballotViewMode
 const effectiveCompareList = computed(() => isHydrated.value ? compareList.value : []);
 const effectiveSelectedIssues = computed(() => isHydrated.value ? selectedIssues.value : []);
 const hasContestContent = computed(() => Boolean(data.value?.election.contests.length));
-const shellOnlyGuideNote = computed(() => data.value?.guideContent?.summary
-	?? "Official election links are current for this area. Verified contest, candidate, and measure pages are still under local review.");
 
 watchEffect(() => {
 	if (data.value) {
@@ -122,69 +120,6 @@ const planHref = computed(() => ({
 	}
 }));
 
-const ballotCounts = computed(() => {
-	if (!data.value) {
-		return {
-			candidateCount: 0,
-			contestCount: 0,
-			measureCount: 0,
-			sourceLinkedItems: 0
-		};
-	}
-
-	return data.value.election.contests.reduce((counts, contest) => ({
-		candidateCount: counts.candidateCount + (contest.candidates?.length ?? 0),
-		contestCount: counts.contestCount + 1,
-		measureCount: counts.measureCount + (contest.measures?.length ?? 0),
-		sourceLinkedItems: counts.sourceLinkedItems
-			+ (contest.candidates?.length ?? 0)
-			+ (contest.measures?.length ?? 0)
-	}), {
-		candidateCount: 0,
-		contestCount: 0,
-		measureCount: 0,
-		sourceLinkedItems: 0
-	});
-});
-const personalizationLabel = computed(() => data.value?.location.lookupInput ?? data.value?.location.displayName ?? "");
-const personalizationNote = computed(() => {
-	if (!data.value)
-		return "Use a full address for the most specific district match.";
-
-	if (data.value.location.lookupMode === "zip-preview")
-		return "ZIP-only preview. Confirm district-specific contests in the official election tools.";
-
-	if (data.value.location.lookupMode === "address-verified")
-		return "Official provider accepted this address. Ballot Clarity still opens the current guide surface until exact contest packaging is live.";
-
-	if (data.value.location.lookupMode === "address-submitted")
-		return "Full address submitted. Official verification is still recommended until exact ballot matching is live.";
-
-	return "Use a full address for the most specific district match.";
-});
-const coverageNotes = computed(() => {
-	if (!data.value)
-		return [];
-
-	if (!hasContestContent.value) {
-		return [
-			`This overview is personalized to ${personalizationLabel.value}. ${personalizationNote.value}`,
-			shellOnlyGuideNote.value,
-			`${data.value.election.officialResources.length} official link${data.value.election.officialResources.length === 1 ? "" : "s"} are attached for election logistics, notices, and office contact details.`,
-			`${data.value.election.keyDates.length} key date${data.value.election.keyDates.length === 1 ? "" : "s"} are attached for deadlines and election logistics.`,
-			"Verified contest, candidate, and measure pages will appear here after the local review clears."
-		];
-	}
-
-	return [
-		`This ballot is personalized to ${personalizationLabel.value}. ${personalizationNote.value}`,
-		...(data.value.guideContent ? [data.value.guideContent.summary] : []),
-		`${data.value.election.officialResources.length} official links are attached for election logistics, notices, and office contact details.`,
-		`${ballotCounts.value.sourceLinkedItems} contest items in this guide link to attached source records or supporting notes.`,
-		`${effectiveBallotPlanCount.value} contest${effectiveBallotPlanCount.value === 1 ? "" : "s"} saved to your ballot plan so far.`,
-		"Time-sensitive deadlines, polling logistics, and late campaign activity should still be verified in official election-office notices."
-	];
-});
 const ballotContentsGroups = computed(() => {
 	const contests = filteredContests.value.map(contest => ({
 		countLabel: contest.type === "candidate"
@@ -241,9 +176,6 @@ function clearFilters() {
 					<p class="text-sm mt-3">
 						{{ data.location.displayName }} · {{ formatDate(data.election.date) }}
 					</p>
-					<p class="text-sm mt-4">
-						What appears on this ballot? This print view keeps each contest in a short, source-aware guide. Use official election office notices for final deadlines, locations, and ballot-return rules.
-					</p>
 				</header>
 
 				<div class="print-guide-grid mt-6">
@@ -291,21 +223,6 @@ function clearFilters() {
 
 		<section v-if="data && !hasContestContent" class="app-shell print-hidden">
 			<div class="mx-auto max-w-5xl space-y-6">
-				<section id="guide-overview" class="surface-panel scroll-mt-28">
-					<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
-						Election overview
-					</p>
-					<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-						Official links are live for this area
-					</h2>
-					<p class="text-sm text-app-muted leading-7 mt-4 max-w-3xl dark:text-app-muted-dark">
-						This page is personalized to {{ personalizationLabel }}. Official links and key dates are current here, while verified contest, candidate, and measure pages are still under local review.
-					</p>
-					<InfoCallout title="Verified contest pages pending" tone="warning" class="mt-6">
-						Use the official links and key dates below for logistics and deadline checks. Contest, candidate, and measure pages open after the local package is verified.
-					</InfoCallout>
-				</section>
-
 				<BallotLogisticsPanel
 					:election="data.election"
 					:has-contest-content="false"
@@ -344,8 +261,8 @@ function clearFilters() {
 							</ol>
 						</div>
 						<div class="ballot-toc__footer">
-							<NuxtLink :to="planHref" class="btn-primary">
-								Open my ballot plan
+							<NuxtLink :to="planHref" class="btn-secondary">
+								My ballot plan
 							</NuxtLink>
 							<a href="#guide-logistics" class="primary-link focus-ring">Key dates and official links</a>
 						</div>
@@ -409,7 +326,7 @@ function clearFilters() {
 					</div>
 
 					<InfoCallout v-else-if="error" title="Unable to load ballot" tone="warning">
-						The ballot guide could not be loaded. Refresh the page or return to the home page and try again.
+						Try again later.
 					</InfoCallout>
 
 					<div v-else-if="filteredContests.length" id="contests-section" class="space-y-10">
@@ -442,13 +359,10 @@ function clearFilters() {
 						</div>
 					</div>
 
-					<div v-else class="surface-panel text-center">
+					<div v-else class="text-center surface-panel">
 						<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
 							No ballot items match the current filters.
 						</h2>
-						<p class="text-sm text-app-muted leading-7 mx-auto mt-4 max-w-2xl dark:text-app-muted-dark">
-							Try clearing the search field or removing selected issues to restore the full ballot guide.
-						</p>
 						<button type="button" class="btn-primary mt-6" @click="clearFilters">
 							Clear filters
 						</button>
@@ -458,17 +372,6 @@ function clearFilters() {
 						:election="data.election"
 						:has-contest-content="true"
 					/>
-
-					<details class="surface-row">
-						<summary class="text-sm text-app-ink font-semibold cursor-pointer dark:text-app-text-dark focus-ring">
-							Coverage notes and limits
-						</summary>
-						<ul class="text-sm text-app-muted leading-7 mt-4 space-y-2 dark:text-app-muted-dark">
-							<li v-for="item in coverageNotes" :key="item">
-								{{ item }}
-							</li>
-						</ul>
-					</details>
 				</div>
 			</div>
 		</section>
@@ -483,7 +386,7 @@ function clearFilters() {
 
 		<section v-else-if="!data && error" class="app-shell">
 			<InfoCallout title="Unable to load ballot" tone="warning">
-				The ballot guide could not be loaded. Refresh the page or return to the home page and try again.
+				Try again later.
 			</InfoCallout>
 		</section>
 
@@ -491,25 +394,17 @@ function clearFilters() {
 			v-if="effectiveCompareList.length || effectiveBallotPlanCount"
 			class="px-4 bottom-4 left-0 right-0 fixed z-30 print-hidden"
 		>
-			<div class="mx-auto px-5 py-4 border border-app-line rounded-xl bg-white flex flex-col gap-3 max-w-4xl w-full shadow-[0_24px_50px_-36px_rgba(16,37,62,0.7)] dark:border-app-line-dark dark:bg-app-panel-dark sm:flex-row sm:items-center sm:justify-between">
-				<div>
-					<p class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
-						{{ effectiveBallotPlanCount }} contest{{ effectiveBallotPlanCount === 1 ? "" : "s" }} saved · {{ effectiveCompareList.length }} candidate{{ effectiveCompareList.length === 1 ? "" : "s" }} in compare
-					</p>
-					<p class="text-xs text-app-muted mt-1 dark:text-app-muted-dark">
-						Save a choice to your plan as you go, or compare 2 to 3 candidates from the same contest before deciding.
-					</p>
-				</div>
-				<div class="flex flex-wrap gap-3">
+			<div class="ballot-tray mx-auto max-w-3xl">
+				<p class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
+					{{ effectiveBallotPlanCount }} saved · {{ effectiveCompareList.length }} in compare
+				</p>
+				<div class="flex flex-wrap gap-x-5 gap-y-2 items-center">
 					<NuxtLink :to="planHref" class="btn-secondary">
-						Open ballot plan
+						My plan
 					</NuxtLink>
-					<NuxtLink :to="compareHref" class="btn-primary" :class="{ 'opacity-60 pointer-events-none': effectiveCompareList.length < 2 }">
-						Compare selected candidates
+					<NuxtLink v-if="effectiveCompareList.length >= 2" :to="compareHref" class="btn-primary">
+						Compare
 					</NuxtLink>
-					<button type="button" class="btn-secondary" @click="civicStore.clearCompare()">
-						Clear compare list
-					</button>
 				</div>
 			</div>
 		</section>

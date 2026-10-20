@@ -10,17 +10,6 @@ usePageSeo({
 	title: "Public Status"
 });
 
-const statusTone = computed(() => {
-	switch (data.value?.overallStatus) {
-		case "healthy":
-			return "accent" as const;
-		case "degraded":
-			return "warning" as const;
-		default:
-			return "neutral" as const;
-	}
-});
-
 const statusLabel = computed(() => {
 	switch (data.value?.overallStatus) {
 		case "healthy":
@@ -55,32 +44,27 @@ const hasPublicIncidents = computed(() => Boolean(data.value?.incidents.length))
 <template>
 	<section class="app-shell section-gap space-y-8">
 		<div v-if="pending" class="space-y-6">
-			<div class="surface-panel bg-app-panel h-64 animate-pulse dark:bg-app-panel-dark/70" />
+			<div class="rounded-lg bg-app-bg h-64 animate-pulse dark:bg-app-bg-dark" />
 			<div class="gap-6 grid xl:grid-cols-2">
-				<div v-for="index in 4" :key="index" class="surface-panel bg-app-panel h-48 animate-pulse dark:bg-app-panel-dark/70" />
+				<div v-for="index in 4" :key="index" class="rounded-lg bg-app-bg h-48 animate-pulse dark:bg-app-bg-dark" />
 			</div>
 		</div>
 
 		<div v-else-if="error || !data" class="max-w-3xl">
 			<InfoCallout title="Public status unavailable" tone="warning">
-				The status page could not be loaded. Refresh the page or return to the coverage page and try again.
+				Try again later.
 			</InfoCallout>
 		</div>
 
 		<div v-else class="space-y-8">
-			<header class="surface-panel max-w-5xl">
-				<div class="flex flex-wrap gap-2">
-					<TrustBadge :label="statusLabel" :tone="statusTone" />
-					<TrustBadge :label="coveragePackageLabel" />
-					<TrustBadge label="Public source health" tone="warning" />
-				</div>
-				<h1 class="text-5xl text-app-ink font-serif mt-5 dark:text-app-text-dark">
+			<header class="max-w-5xl surface-panel">
+				<h1 class="text-5xl text-app-ink font-serif dark:text-app-text-dark">
 					Public status
 				</h1>
-				<p class="text-base text-app-muted leading-8 mt-5 dark:text-app-muted-dark">
-					This page shows whether Ballot Clarity's public data and guide coverage are ready to rely on.
+				<p class="text-lg text-app-ink font-semibold mt-3 dark:text-app-text-dark">
+					{{ statusLabel }} · {{ coveragePackageLabel }}
 				</p>
-				<div class="mt-6 flex flex-wrap gap-4 items-center">
+				<div class="mt-3 flex flex-wrap gap-4 items-center">
 					<UpdatedAt :value="data.updatedAt" label="Status updated" />
 					<p class="text-sm text-app-muted dark:text-app-muted-dark">
 						Coverage data updated {{ formatDateTime(data.coverageUpdatedAt) }}

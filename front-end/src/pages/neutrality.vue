@@ -114,17 +114,9 @@ usePageSeo({
 <template>
 	<section class="app-shell section-gap space-y-8">
 		<header class="max-w-4xl">
-			<div class="flex flex-wrap gap-2">
-				<TrustBadge label="Neutrality policy" tone="accent" />
-				<TrustBadge label="Red-flag review" />
-				<TrustBadge label="Corrections required" tone="warning" />
-			</div>
-			<h1 class="text-5xl text-app-ink font-serif mt-5 dark:text-app-text-dark">
-				How Ballot Clarity operationalizes neutrality
+			<h1 class="text-5xl text-app-ink font-serif dark:text-app-text-dark">
+				Neutrality policy
 			</h1>
-			<p class="text-base text-app-muted leading-8 mt-5 max-w-3xl dark:text-app-muted-dark">
-				Ballot Clarity treats neutrality as a set of operating constraints, not a slogan. That means visible sourcing, constrained language, equal treatment, explicit uncertainty, and a public corrections path that can withstand legal and editorial scrutiny.
-			</p>
 		</header>
 
 		<section class="gap-6 grid lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
@@ -139,10 +131,6 @@ usePageSeo({
 					The product is designed to help voters inspect what is documented on their ballot without telling them what conclusion to reach. Neutrality here means no endorsements, no partisan framing, no scorecards, and no attempt to hide tradeoffs behind a single fit metric.
 				</p>
 			</div>
-
-			<InfoCallout title="Why this page exists">
-				This policy is written to support a strict nonpartisan voter-education posture. It explains how Ballot Clarity tries to reduce editorial drift, quote distortion, and legal-risk exposure while remaining readable to voters.
-			</InfoCallout>
 		</section>
 
 		<section class="surface-panel">
@@ -153,7 +141,7 @@ usePageSeo({
 				What kinds of sources come first
 			</h2>
 			<div class="mt-6 gap-4 grid md:grid-cols-2">
-				<article v-for="item in sourceHierarchy" :key="item.label" class="px-5 py-5 rounded-xl bg-app-bg dark:bg-app-bg-dark/70">
+				<article v-for="item in sourceHierarchy" :key="item.label" class="content-block">
 					<p class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
 						{{ item.label }}
 					</p>
@@ -173,7 +161,7 @@ usePageSeo({
 					How wording is constrained
 				</h2>
 				<ul class="text-sm text-app-muted leading-7 mt-6 space-y-3 dark:text-app-muted-dark">
-					<li v-for="rule in languageRules" :key="rule" class="px-4 py-3 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70">
+					<li v-for="rule in languageRules" :key="rule" class="content-block">
 						{{ rule }}
 					</li>
 				</ul>
@@ -187,7 +175,7 @@ usePageSeo({
 					Guardrails around candidate and measure coverage
 				</h2>
 				<ul class="text-sm text-app-muted leading-7 mt-6 space-y-3 dark:text-app-muted-dark">
-					<li v-for="rule in boundaryRules" :key="rule" class="px-4 py-3 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70">
+					<li v-for="rule in boundaryRules" :key="rule" class="content-block">
 						{{ rule }}
 					</li>
 				</ul>
@@ -202,7 +190,7 @@ usePageSeo({
 				The editorial and review path
 			</h2>
 			<div class="mt-6 gap-4 grid lg:grid-cols-3">
-				<article v-for="step in workflowSteps" :key="step.title" class="px-5 py-5 border border-app-line/80 rounded-xl bg-app-panel dark:border-app-line-dark dark:bg-app-panel-dark/70">
+				<article v-for="step in workflowSteps" :key="step.title" class="content-block">
 					<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 						{{ step.title }}
 					</p>
@@ -222,7 +210,7 @@ usePageSeo({
 					Claims that need extra scrutiny
 				</h2>
 				<ul class="text-sm text-app-muted leading-7 mt-6 space-y-3 dark:text-app-muted-dark">
-					<li v-for="item in redFlagChecklist" :key="item" class="px-4 py-3 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70">
+					<li v-for="item in redFlagChecklist" :key="item" class="content-block">
 						{{ item }}
 					</li>
 				</ul>
@@ -239,7 +227,7 @@ usePageSeo({
 					How issues should be reported and resolved
 				</h2>
 				<ul class="text-sm text-app-muted leading-7 mt-6 space-y-3 dark:text-app-muted-dark">
-					<li v-for="item in disputeProcess" :key="item" class="px-4 py-3 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70">
+					<li v-for="item in disputeProcess" :key="item" class="content-block">
 						{{ item }}
 					</li>
 				</ul>
@@ -262,7 +250,7 @@ usePageSeo({
 				Signals worth monitoring
 			</h2>
 			<div class="mt-6 gap-4 grid md:grid-cols-2 xl:grid-cols-3">
-				<article v-for="item in auditMetrics" :key="item.label" class="px-4 py-4 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70">
+				<article v-for="item in auditMetrics" :key="item.label" class="content-block">
 					<p class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
 						{{ item.label }}
 					</p>

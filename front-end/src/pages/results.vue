@@ -141,11 +141,11 @@ usePageSeo({
 <template>
 	<section class="app-shell section-gap space-y-6">
 		<div v-if="shouldShowResultsSkeleton" class="space-y-6">
-			<div class="surface-panel bg-app-panel h-56 animate-pulse dark:bg-app-panel-dark/70" />
-			<div class="surface-panel bg-app-panel h-[34rem] animate-pulse dark:bg-app-panel-dark/70" />
+			<div class="rounded-lg bg-app-bg h-56 animate-pulse dark:bg-app-bg-dark" />
+			<div class="rounded-lg bg-app-bg h-[34rem] animate-pulse dark:bg-app-bg-dark" />
 		</div>
 
-		<div v-else-if="!activeResult" class="surface-panel max-w-4xl">
+		<div v-else-if="!activeResult" class="max-w-4xl surface-panel">
 			<p class="eyebrow">
 				Results
 			</p>
@@ -158,9 +158,6 @@ usePageSeo({
 			<div class="mt-6 flex flex-wrap gap-3">
 				<NuxtLink to="/" class="btn-primary">
 					Enter your address
-				</NuxtLink>
-				<NuxtLink to="/coverage" class="btn-secondary">
-					See what is covered
 				</NuxtLink>
 			</div>
 		</div>

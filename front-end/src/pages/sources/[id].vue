@@ -37,7 +37,7 @@ usePageSeo({
 
 <template>
 	<section class="app-shell section-gap space-y-8">
-		<div v-if="pending" class="surface-panel bg-app-panel h-96 animate-pulse dark:bg-app-panel-dark/70" />
+		<div v-if="pending" class="rounded-lg bg-app-bg h-96 animate-pulse dark:bg-app-bg-dark" />
 
 		<div v-else-if="data" class="space-y-8">
 			<header class="surface-panel">
@@ -72,7 +72,7 @@ usePageSeo({
 						Source metadata
 					</p>
 					<div class="mt-6 space-y-4">
-						<div class="px-5 py-5 rounded-xl bg-app-bg dark:bg-app-bg-dark/70">
+						<div class="content-block">
 							<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 								Publisher
 							</p>
@@ -80,7 +80,7 @@ usePageSeo({
 								{{ data.source.publisher }}
 							</p>
 						</div>
-						<div class="px-5 py-5 rounded-xl bg-app-bg dark:bg-app-bg-dark/70">
+						<div class="content-block">
 							<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 								Directory updated
 							</p>
@@ -88,7 +88,7 @@ usePageSeo({
 								{{ formatDate(data.source.date) }}
 							</p>
 						</div>
-						<div class="px-5 py-5 rounded-xl bg-app-bg dark:bg-app-bg-dark/70">
+						<div class="content-block">
 							<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 								What Ballot Clarity uses it for
 							</p>
@@ -96,7 +96,7 @@ usePageSeo({
 								{{ data.source.usedFor }}
 							</p>
 						</div>
-						<div class="px-5 py-5 rounded-xl bg-app-bg dark:bg-app-bg-dark/70">
+						<div class="content-block">
 							<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 								Geographic scope
 							</p>
@@ -104,7 +104,7 @@ usePageSeo({
 								{{ data.source.geographicScope }}
 							</p>
 						</div>
-						<div class="px-5 py-5 rounded-xl bg-app-bg dark:bg-app-bg-dark/70">
+						<div class="content-block">
 							<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 								Review note
 							</p>
@@ -112,7 +112,7 @@ usePageSeo({
 								{{ data.source.reviewNote }}
 							</p>
 						</div>
-						<div class="px-5 py-5 rounded-xl bg-app-bg dark:bg-app-bg-dark/70">
+						<div class="content-block">
 							<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 								Key limitations
 							</p>
@@ -122,7 +122,7 @@ usePageSeo({
 								</li>
 							</ul>
 						</div>
-						<div v-if="data.source.note" class="px-5 py-5 rounded-xl bg-app-bg dark:bg-app-bg-dark/70">
+						<div v-if="data.source.note" class="content-block">
 							<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 								Attached note
 							</p>
@@ -145,7 +145,7 @@ usePageSeo({
 							v-for="citation in data.source.citedBy"
 							:key="citation.href"
 							:to="citation.href"
-							class="px-5 py-5 border border-app-line/80 rounded-xl bg-app-panel block transition dark:border-app-line-dark hover:border-app-accent dark:bg-app-panel-dark/70 focus-ring"
+							class="content-block-link"
 						>
 							<div class="flex flex-wrap gap-3 items-center justify-between">
 								<div>

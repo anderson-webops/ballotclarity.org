@@ -12,7 +12,7 @@ const siteUrl = useSiteUrl();
 const civicStore = useCivicStore();
 const { isHydrated, nationwideLookupResult } = storeToRefs(civicStore);
 const representativeSlug = useRouteStringParam("slug");
-const { backToLayerLink, layerBreadcrumbLink, overviewLink } = useRouteLayerNavigation();
+const { backToLayerLink, layerBreadcrumbLink } = useRouteLayerNavigation();
 const { formatCurrency, formatDate, formatDateTime, formatPercent } = useFormatters();
 const activeNationwideLookupResult = computed(() => isHydrated.value ? nationwideLookupResult.value : null);
 const activeLookupQuery = computed(() => buildNationwideLookupRouteQuery(
@@ -270,14 +270,14 @@ usePageSeo({
 					<div class="mt-4 rounded-xl bg-app-line/60 h-14 w-2/3 dark:bg-app-line-dark" />
 					<div class="mt-4 rounded-full bg-app-line/60 h-4 w-full dark:bg-app-line-dark" />
 				</div>
-				<div v-for="index in 4" :key="index" class="surface-panel bg-app-panel h-48 animate-pulse dark:bg-app-panel-dark/70" />
+				<div v-for="index in 4" :key="index" class="rounded-lg bg-app-bg h-48 animate-pulse dark:bg-app-bg-dark" />
 			</div>
-			<div class="surface-panel bg-app-panel h-96 animate-pulse dark:bg-app-panel-dark/70" />
+			<div class="rounded-lg bg-app-bg h-96 animate-pulse dark:bg-app-bg-dark" />
 		</div>
 
 		<div v-else-if="(error && !fallbackData) || !person" class="max-w-3xl">
 			<InfoCallout title="Representative profile not available" tone="warning">
-				This representative page could not be loaded. Return to the representative directory or your area results and try again.
+				Try again later.
 			</InfoCallout>
 		</div>
 
@@ -290,13 +290,7 @@ usePageSeo({
 			<div class="space-y-6">
 				<header data-representative-summary="hero" class="surface-panel">
 					<AppBreadcrumbs :items="breadcrumbs" />
-					<div class="flex flex-wrap gap-2 items-center">
-						<VerificationBadge label="Representative profile" tone="accent" />
-						<VerificationBadge v-if="representativePresentation" :label="representativePresentation.levelLabel" />
-						<VerificationBadge :label="person.officeholderLabel" />
-						<VerificationBadge :label="person.onCurrentBallot ? person.ballotStatusLabel : 'Not on current ballot'" />
-					</div>
-					<div class="mt-5 gap-6 grid md:grid-cols-[minmax(0,1fr)_auto] md:items-start">
+					<div class="mt-4 gap-6 grid md:grid-cols-[minmax(0,1fr)_auto] md:items-start">
 						<div>
 							<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 								{{ person.location }}
@@ -310,7 +304,7 @@ usePageSeo({
 							<p class="text-lg text-app-muted mt-4 dark:text-app-muted-dark">
 								{{ representativePresentation?.officeDisplayLabel ?? person.officeSought }} · {{ person.party }}
 							</p>
-							<p class="text-base text-app-muted leading-8 mt-6 max-w-3xl dark:text-app-muted-dark">
+							<p class="text-lg text-app-ink leading-8 mt-5 max-w-3xl dark:text-app-text-dark">
 								{{ person.summary }}
 							</p>
 						</div>
@@ -322,32 +316,24 @@ usePageSeo({
 							size="lg"
 						/>
 					</div>
-					<div class="mt-6">
+					<div class="mt-5 flex flex-wrap gap-x-4 gap-y-1 items-center">
 						<UpdatedAt :value="person.freshness.dataLastUpdatedAt ?? person.updatedAt" label="Data through" />
+						<span class="text-sm text-app-muted dark:text-app-muted-dark">{{ person.onCurrentBallot ? person.ballotStatusLabel : "Not on the current ballot" }}</span>
+						<SourceDrawer :sources="person.sources" :title="`${person.name} sources`" button-label="Sources" />
 					</div>
-					<div class="bc-action-cluster mt-6">
-						<SourceDrawer :sources="person.sources" :title="`${person.name} sources and supporting records`" button-label="Sources & records" />
+					<div class="mt-5 flex flex-wrap gap-x-6 gap-y-2 items-center">
+						<SafeExternalLink v-if="person.officialWebsiteUrl" :href="person.officialWebsiteUrl" class="btn-secondary">
+							Official site
+							<span class="i-carbon-launch" aria-hidden="true" />
+						</SafeExternalLink>
 						<SafeExternalLink v-if="campaignLink" :href="campaignLink" class="btn-secondary">
-							<span class="i-carbon-launch" />
-							Open campaign site
+							Campaign site
+							<span class="i-carbon-launch" aria-hidden="true" />
 						</SafeExternalLink>
-						<SafeExternalLink v-if="person.officialWebsiteUrl" :href="person.officialWebsiteUrl" class="btn-secondary inline-flex gap-2 items-center">
-							Official office site
-							<span class="i-carbon-launch" />
-						</SafeExternalLink>
-						<SafeExternalLink v-if="person.openstatesUrl" :href="person.openstatesUrl" class="btn-secondary inline-flex gap-2 items-center">
+						<SafeExternalLink v-if="person.openstatesUrl" :href="person.openstatesUrl" class="btn-secondary">
 							Provider record
-							<span class="i-carbon-launch" />
+							<span class="i-carbon-launch" aria-hidden="true" />
 						</SafeExternalLink>
-						<NuxtLink v-if="hasFunding" :to="buildLookupAwareTarget(`/representatives/${person.slug}/funding`)" class="btn-secondary">
-							Funding page
-						</NuxtLink>
-						<NuxtLink v-if="hasInfluence" :to="buildLookupAwareTarget(`/representatives/${person.slug}/influence`)" class="btn-secondary">
-							Influence page
-						</NuxtLink>
-						<NuxtLink :to="buildLookupAwareTarget(overviewLink.to)" class="btn-secondary">
-							{{ overviewLink.label }}
-						</NuxtLink>
 						<NuxtLink :to="buildLookupAwareTarget(backToLayerLink.to)" class="btn-secondary">
 							{{ backToLayerLink.label }}
 						</NuxtLink>
@@ -355,26 +341,12 @@ usePageSeo({
 				</header>
 
 				<section id="at-a-glance" class="surface-panel scroll-mt-28">
-					<div>
-						<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
-							At a glance
-						</p>
-						<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-							Person-level civic context
-						</h2>
-					</div>
-					<div class="mt-6 flex flex-wrap gap-2">
-						<VerificationBadge :label="representativePresentation?.officeDisplayLabel ?? person.officeSought" tone="accent" />
-						<VerificationBadge v-if="hasFunding" label="Funding available" />
-						<VerificationBadge v-if="hasInfluence" label="Influence context available" />
-						<VerificationBadge :label="`${person.sources.length} source${person.sources.length === 1 ? '' : 's'}`" />
-					</div>
-					<div class="mt-6 gap-4 grid lg:grid-cols-[minmax(0,1.3fr)_minmax(18rem,0.9fr)]">
-						<div id="office-context" class="surface-row scroll-mt-32">
+					<div class="gap-10 grid lg:grid-cols-[minmax(0,1.3fr)_minmax(18rem,0.9fr)]">
+						<div id="office-context" class="scroll-mt-32">
 							<div class="flex flex-wrap gap-3 items-center">
-								<h3 class="text-xl text-app-ink font-serif dark:text-app-text-dark">
-									Office and jurisdiction context
-								</h3>
+								<h2 class="text-2xl text-app-ink font-serif dark:text-app-text-dark">
+									Office
+								</h2>
 							</div>
 							<dl class="mt-5 gap-4 grid sm:grid-cols-2">
 								<div v-for="item in officeContextFields" :key="item.label">
@@ -386,11 +358,8 @@ usePageSeo({
 									</dd>
 								</div>
 							</dl>
-							<div v-if="officeContextReferenceLinks.length" class="mt-6 pt-6 border-t border-app-line/80 dark:border-app-line-dark">
-								<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
-									Reference links
-								</p>
-								<div class="mt-4 flex flex-wrap gap-3">
+							<div v-if="officeContextReferenceLinks.length" class="mt-4">
+								<div class="flex flex-wrap gap-x-5 gap-y-1">
 									<SafeExternalLink
 										v-for="link in officeContextReferenceLinks"
 										:key="`${link.label}-${link.url}`"
@@ -403,23 +372,19 @@ usePageSeo({
 								</div>
 							</div>
 						</div>
-						<div class="surface-inset">
-							<h3 class="text-xl text-app-ink font-serif dark:text-app-text-dark">
-								Record status
-							</h3>
+						<div>
+							<h2 class="text-2xl text-app-ink font-serif dark:text-app-text-dark">
+								Records available
+							</h2>
 							<ul class="mt-4 space-y-3">
 								<li v-for="item in availableModuleStatusItems" :key="item.label" class="pb-3 border-b border-app-line/80 last:pb-0 dark:border-app-line-dark last:border-b-0">
 									<div class="flex flex-wrap gap-3 items-center justify-between">
 										<p class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
 											{{ item.label }}
 										</p>
-										<VerificationBadge :label="item.status" tone="accent" />
 									</div>
-									<p class="text-sm text-app-muted leading-7 mt-2 dark:text-app-muted-dark">
+									<p class="text-base text-app-ink leading-7 mt-2 dark:text-app-text-dark">
 										{{ item.summary }}
-									</p>
-									<p v-if="item.sourceSystem || item.reasonCode" class="text-xs text-app-muted tracking-[0.06em] font-semibold mt-2 uppercase dark:text-app-muted-dark">
-										{{ [item.sourceSystem, item.reasonCode].filter(Boolean).join(" · ") }}
 									</p>
 								</li>
 							</ul>
@@ -440,47 +405,44 @@ usePageSeo({
 				<section id="biography" class="surface-panel scroll-mt-28">
 					<div class="flex flex-wrap gap-4 items-center justify-between">
 						<div>
-							<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
-								Bio and issues
-							</p>
-							<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-								Public record and issue context
+							<h2 class="text-2xl text-app-ink font-serif dark:text-app-text-dark">
+								Background and issues
 							</h2>
 						</div>
 					</div>
 					<div class="mt-6 gap-6 grid xl:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
 						<div class="space-y-4">
-							<article v-for="block in person.biography" :key="block.id" class="p-5 rounded-xl bg-app-bg dark:bg-app-bg-dark/70">
+							<article v-for="block in person.biography" :key="block.id" class="content-block">
 								<div class="flex flex-wrap gap-3 items-start justify-between">
 									<h3 class="text-lg text-app-ink font-semibold dark:text-app-text-dark">
 										{{ block.title }}
 									</h3>
 									<SourceDrawer :sources="block.sources" :title="block.title" button-label="Sources" />
 								</div>
-								<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
+								<p class="text-base text-app-ink leading-7 mt-3 dark:text-app-text-dark">
 									{{ block.summary }}
 								</p>
 							</article>
 						</div>
 						<div class="space-y-6">
-							<div class="p-5 rounded-xl bg-app-bg dark:bg-app-bg-dark/70">
-								<h3 class="text-xl text-app-ink font-serif dark:text-app-text-dark">
+							<div>
+								<h3 class="text-lg text-app-ink font-semibold dark:text-app-text-dark">
 									Top issues
 								</h3>
 								<div class="mt-4 flex flex-wrap gap-2">
 									<IssueChip v-for="issue in person.topIssues" :key="issue.slug" :label="issue.label" />
 								</div>
 							</div>
-							<details v-if="person.publicStatements.length" class="p-5 rounded-xl bg-app-bg dark:bg-app-bg-dark/70">
-								<summary class="text-xl text-app-ink font-serif cursor-pointer dark:text-app-text-dark focus-ring">
+							<details v-if="person.publicStatements.length">
+								<summary class="text-lg text-app-ink font-semibold cursor-pointer dark:text-app-text-dark focus-ring">
 									Public statements
 								</summary>
 								<div class="mt-4 space-y-3">
-									<article v-for="statement in person.publicStatements" :key="statement.id" class="p-4 rounded-2xl bg-app-panel dark:bg-app-panel-dark/70">
+									<article v-for="statement in person.publicStatements" :key="statement.id">
 										<h4 class="text-base text-app-ink font-semibold dark:text-app-text-dark">
 											{{ statement.title }}
 										</h4>
-										<p class="text-sm text-app-muted leading-6 mt-2 dark:text-app-muted-dark">
+										<p class="text-base text-app-ink leading-7 mt-2 dark:text-app-text-dark">
 											{{ statement.summary }}
 										</p>
 									</article>
@@ -493,16 +455,13 @@ usePageSeo({
 				<section v-if="person.keyActions.length" id="actions" class="surface-panel scroll-mt-28">
 					<div class="flex flex-wrap gap-4 items-center justify-between">
 						<div>
-							<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
-								Actions
-							</p>
-							<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-								Documented votes and actions
+							<h2 class="text-2xl text-app-ink font-serif dark:text-app-text-dark">
+								Votes and actions
 							</h2>
 						</div>
 					</div>
 					<div v-if="person.keyActions.length" class="mt-6 space-y-4">
-						<article v-for="action in person.keyActions" :key="action.id" class="p-5 rounded-xl bg-app-bg dark:bg-app-bg-dark/70">
+						<article v-for="action in person.keyActions" :key="action.id" class="content-block">
 							<div class="flex flex-wrap gap-3 items-start justify-between">
 								<div>
 									<h3 class="text-lg text-app-ink font-semibold dark:text-app-text-dark">
@@ -514,7 +473,7 @@ usePageSeo({
 								</div>
 								<SourceDrawer :sources="action.sources" :title="action.title" button-label="Sources" />
 							</div>
-							<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
+							<p class="text-base text-app-ink leading-7 mt-3 dark:text-app-text-dark">
 								{{ action.summary }}
 							</p>
 							<p class="text-sm text-app-ink leading-7 mt-3 dark:text-app-text-dark">
@@ -527,24 +486,21 @@ usePageSeo({
 				<section v-if="hasFunding" id="funding" class="surface-panel scroll-mt-28">
 					<div class="flex flex-wrap gap-4 items-center justify-between">
 						<div>
-							<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
+							<h2 class="text-2xl text-app-ink font-serif dark:text-app-text-dark">
 								Funding
-							</p>
-							<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-								Finance summary
 							</h2>
 						</div>
 						<NuxtLink v-if="hasFunding" :to="buildLookupAwareTarget(`/representatives/${person.slug}/funding`)" class="btn-secondary">
-							Open full funding page
+							Full funding details
 						</NuxtLink>
 					</div>
 					<div v-if="person.funding" class="mt-6 gap-6 grid xl:grid-cols-[minmax(0,1fr)_minmax(0,0.95fr)]">
 						<div class="space-y-4">
-							<p class="text-sm text-app-muted leading-7 dark:text-app-muted-dark">
+							<p class="text-base text-app-ink leading-7 dark:text-app-text-dark">
 								{{ person.funding.summary }}
 							</p>
 							<div v-if="fundingHighlights.length" class="gap-3 grid sm:grid-cols-2">
-								<div v-for="item in fundingHighlights" :key="item.label" class="p-4 rounded-xl bg-app-bg dark:bg-app-bg-dark/70">
+								<div v-for="item in fundingHighlights" :key="item.label" class="content-block">
 									<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 										{{ item.label }}
 									</p>
@@ -557,7 +513,7 @@ usePageSeo({
 								{{ fundingLineItemsTitle }}
 							</p>
 							<ul class="space-y-3">
-								<li v-for="funder in fundingLineItems" :key="`${funder.name}-${funder.category}`" class="p-4 rounded-xl bg-app-bg dark:bg-app-bg-dark/70">
+								<li v-for="funder in fundingLineItems" :key="`${funder.name}-${funder.category}`" class="content-block">
 									<div class="flex flex-wrap gap-4 items-center justify-between">
 										<div>
 											<p class="text-lg text-app-ink font-semibold dark:text-app-text-dark">
@@ -574,8 +530,8 @@ usePageSeo({
 								</li>
 							</ul>
 						</div>
-						<details class="p-5 rounded-xl bg-app-bg dark:bg-app-bg-dark/70">
-							<summary class="text-xl text-app-ink font-serif cursor-pointer dark:text-app-text-dark focus-ring">
+						<details>
+							<summary class="text-lg text-app-ink font-semibold cursor-pointer dark:text-app-text-dark focus-ring">
 								Finance record details
 							</summary>
 							<ul class="text-sm text-app-muted leading-7 mt-4 space-y-2 dark:text-app-muted-dark">
@@ -591,21 +547,18 @@ usePageSeo({
 				<section v-if="hasInfluence" id="influence" class="surface-panel scroll-mt-28">
 					<div class="flex flex-wrap gap-4 items-center justify-between">
 						<div>
-							<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
+							<h2 class="text-2xl text-app-ink font-serif dark:text-app-text-dark">
 								Influence
-							</p>
-							<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-								Lobbying and public influence context
 							</h2>
 						</div>
 						<NuxtLink v-if="hasInfluence" :to="buildLookupAwareTarget(`/representatives/${person.slug}/influence`)" class="btn-secondary">
-							Open full influence page
+							Full influence details
 						</NuxtLink>
 					</div>
 					<div class="mt-6 gap-6 grid xl:grid-cols-[minmax(0,1fr)_minmax(0,0.95fr)]">
 						<div class="space-y-4">
 							<div v-if="influenceHighlights.length" class="gap-3 grid sm:grid-cols-2">
-								<div v-for="item in influenceHighlights" :key="item.label" class="p-4 rounded-xl bg-app-bg dark:bg-app-bg-dark/70">
+								<div v-for="item in influenceHighlights" :key="item.label" class="content-block">
 									<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 										{{ item.label }}
 									</p>
@@ -614,18 +567,18 @@ usePageSeo({
 									</p>
 								</div>
 							</div>
-							<article v-for="block in person.lobbyingContext.slice(0, 3)" :key="block.id" class="p-5 rounded-xl bg-app-bg dark:bg-app-bg-dark/70">
+							<article v-for="block in person.lobbyingContext.slice(0, 3)" :key="block.id" class="content-block">
 								<div class="flex flex-wrap gap-3 items-start justify-between">
 									<h3 class="text-lg text-app-ink font-semibold dark:text-app-text-dark">
 										{{ block.title }}
 									</h3>
 									<SourceDrawer :sources="block.sources" :title="block.title" button-label="Sources" />
 								</div>
-								<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
+								<p class="text-base text-app-ink leading-7 mt-3 dark:text-app-text-dark">
 									{{ block.summary }}
 								</p>
 							</article>
-							<div v-if="influence?.topRegistrants?.length" class="p-5 rounded-xl bg-app-bg dark:bg-app-bg-dark/70">
+							<div v-if="influence?.topRegistrants?.length" class="content-block">
 								<h3 class="text-lg text-app-ink font-semibold dark:text-app-text-dark">
 									Top reporting registrants
 								</h3>
@@ -637,8 +590,8 @@ usePageSeo({
 								</ul>
 							</div>
 						</div>
-						<details class="p-5 rounded-xl bg-app-bg dark:bg-app-bg-dark/70">
-							<summary class="text-xl text-app-ink font-serif cursor-pointer dark:text-app-text-dark focus-ring">
+						<details>
+							<summary class="text-lg text-app-ink font-semibold cursor-pointer dark:text-app-text-dark focus-ring">
 								Influence record details
 							</summary>
 							<ul class="text-sm text-app-muted leading-7 mt-4 space-y-2 dark:text-app-muted-dark">
@@ -653,14 +606,9 @@ usePageSeo({
 
 				<details id="sources" class="surface-panel scroll-mt-28">
 					<summary class="text-2xl text-app-ink font-serif cursor-pointer dark:text-app-text-dark focus-ring">
-						Sources and review notes
+						Sources and review status
 					</summary>
 					<div class="mt-5 flex flex-wrap gap-4 items-center justify-between">
-						<div>
-							<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-								Source records, freshness, and any limits attached to this profile.
-							</p>
-						</div>
 						<NuxtLink :to="reportIssueTo" class="btn-secondary">
 							Report an issue
 						</NuxtLink>
@@ -669,8 +617,8 @@ usePageSeo({
 						<div>
 							<SourceList :sources="person.sources" />
 						</div>
-						<div class="surface-inset">
-							<h3 class="text-xl text-app-ink font-serif dark:text-app-text-dark">
+						<div>
+							<h3 class="text-lg text-app-ink font-semibold dark:text-app-text-dark">
 								Review status
 							</h3>
 							<dl class="text-sm text-app-muted leading-7 mt-4 space-y-2 dark:text-app-muted-dark">
@@ -709,7 +657,7 @@ usePageSeo({
 					compact
 					:items="sectionLinks"
 					:show-breadcrumbs="false"
-					title="Representative profile"
+					title="On this page"
 				/>
 			</div>
 		</div>

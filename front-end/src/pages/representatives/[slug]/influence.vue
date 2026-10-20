@@ -91,30 +91,26 @@ usePageSeo({
 <template>
 	<section class="app-shell section-gap space-y-8">
 		<div v-if="pagePending" class="space-y-6">
-			<div class="surface-panel bg-app-panel h-80 animate-pulse dark:bg-app-panel-dark/70" />
-			<div class="surface-panel bg-app-panel h-64 animate-pulse dark:bg-app-panel-dark/70" />
+			<div class="rounded-lg bg-app-bg h-80 animate-pulse dark:bg-app-bg-dark" />
+			<div class="rounded-lg bg-app-bg h-64 animate-pulse dark:bg-app-bg-dark" />
 		</div>
 
 		<div v-else-if="(error && !fallbackData) || !person" class="max-w-3xl">
 			<InfoCallout title="Influence page unavailable" tone="warning">
-				This representative influence page could not be loaded. Return to the representative profile and try again.
+				Try again later.
 			</InfoCallout>
 		</div>
 
 		<div v-else class="space-y-8">
 			<header class="surface-panel">
 				<AppBreadcrumbs :items="breadcrumbs" />
-				<div class="flex flex-wrap gap-2">
-					<VerificationBadge label="Influence page" tone="accent" />
-					<VerificationBadge label="Context, not causation" />
-				</div>
 				<h1 class="text-5xl text-app-ink font-serif mt-5 dark:text-app-text-dark">
 					{{ person.name }} influence
 				</h1>
 				<p class="text-base text-app-muted leading-8 mt-5 dark:text-app-muted-dark">
 					{{
 						influenceAvailable
-							? "This page collects the lobbying, disclosure, and public-statement context attached to this officeholder. Treat it as context, not proof."
+							? "Context only. Disclosure filings don't show every form of contact or influence."
 							: influenceUnavailableSummary
 					}}
 				</p>
@@ -123,7 +119,7 @@ usePageSeo({
 						Back to profile
 					</NuxtLink>
 					<NuxtLink :to="buildLookupAwareTarget(`/representatives/${person.slug}/funding`)" class="btn-secondary">
-						Open funding page
+						Funding
 					</NuxtLink>
 					<SourceDrawer :sources="influenceSources.length ? influenceSources : person.sources" :title="`${person.name} influence sources`" button-label="Influence sources" />
 				</div>
@@ -138,7 +134,7 @@ usePageSeo({
 						Influence notes
 					</h2>
 					<div v-if="influence" class="mt-6 gap-3 grid sm:grid-cols-2">
-						<div class="p-4 rounded-xl bg-app-bg dark:bg-app-bg-dark/70">
+						<div class="content-block">
 							<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 								Coverage
 							</p>
@@ -146,7 +142,7 @@ usePageSeo({
 								{{ influence.coverageLabel }}
 							</p>
 						</div>
-						<div class="p-4 rounded-xl bg-app-bg dark:bg-app-bg-dark/70">
+						<div class="content-block">
 							<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 								Match mode
 							</p>
@@ -159,7 +155,7 @@ usePageSeo({
 						<article
 							v-for="item in person.lobbyingContext"
 							:key="item.id"
-							class="p-5 rounded-xl bg-app-bg dark:bg-app-bg-dark/70"
+							class="content-block"
 						>
 							<div class="flex flex-wrap gap-3 items-start justify-between">
 								<div>
@@ -172,11 +168,11 @@ usePageSeo({
 								</div>
 								<SourceDrawer :sources="item.sources" :title="item.title" button-label="Sources" />
 							</div>
-							<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
+							<p class="text-base text-app-ink leading-7 mt-3 dark:text-app-text-dark">
 								{{ item.summary }}
 							</p>
 						</article>
-						<article v-if="influence?.topRegistrants?.length" class="p-5 rounded-xl bg-app-bg dark:bg-app-bg-dark/70">
+						<article v-if="influence?.topRegistrants?.length" class="content-block">
 							<h3 class="text-xl text-app-ink font-semibold dark:text-app-text-dark">
 								Top reporting registrants
 							</h3>
@@ -203,12 +199,12 @@ usePageSeo({
 							<article
 								v-for="statement in person.publicStatements"
 								:key="statement.id"
-								class="p-5 rounded-xl bg-app-bg dark:bg-app-bg-dark/70"
+								class="content-block"
 							>
 								<h3 class="text-xl text-app-ink font-semibold dark:text-app-text-dark">
 									{{ statement.title }}
 								</h3>
-								<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
+								<p class="text-base text-app-ink leading-7 mt-3 dark:text-app-text-dark">
 									{{ statement.summary }}
 								</p>
 							</article>
@@ -217,16 +213,13 @@ usePageSeo({
 
 					<div class="surface-panel">
 						<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
-							Source note
+							Coverage
 						</h2>
 						<ul class="readable-list text-sm text-app-muted mt-5 pl-5 dark:text-app-muted-dark">
 							<li><strong class="text-app-ink dark:text-app-text-dark">Coverage:</strong> {{ influence?.coverageLabel || "Public disclosures and source-backed statements where available." }}</li>
 							<li><strong class="text-app-ink dark:text-app-text-dark">Match mode:</strong> {{ influence?.matchMode === "committee" ? "Committee crosswalk" : influence?.matchMode === "honoree" ? "Direct officeholder-name match" : "Not published" }}</li>
 							<li><strong class="text-app-ink dark:text-app-text-dark">Data through:</strong> {{ formatDate(person.freshness.dataLastUpdatedAt ?? person.updatedAt) }}</li>
 						</ul>
-						<p class="text-sm text-app-muted leading-7 mt-5 dark:text-app-muted-dark">
-							Treat sector and donor overlap as context, not proof. Disclosure filings do not show every form of contact or influence.
-						</p>
 					</div>
 				</div>
 			</section>

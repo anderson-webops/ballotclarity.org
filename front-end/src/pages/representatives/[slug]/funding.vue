@@ -10,7 +10,7 @@ const civicStore = useCivicStore();
 const { isHydrated, nationwideLookupResult } = storeToRefs(civicStore);
 const { layerBreadcrumbLink } = useRouteLayerNavigation();
 const representativeSlug = useRouteStringParam("slug");
-const { formatCompactNumber, formatCurrency, formatDate, formatPercent } = useFormatters();
+const { formatCurrency, formatDate, formatPercent } = useFormatters();
 const activeNationwideLookupResult = computed(() => isHydrated.value ? nationwideLookupResult.value : null);
 const activeLookupQuery = computed(() => buildNationwideLookupRouteQuery(
 	buildLookupContextFromNationwideResult(activeNationwideLookupResult.value),
@@ -102,23 +102,19 @@ usePageSeo({
 <template>
 	<section class="app-shell section-gap space-y-8">
 		<div v-if="pagePending" class="space-y-6">
-			<div class="surface-panel bg-app-panel h-80 animate-pulse dark:bg-app-panel-dark/70" />
-			<div class="surface-panel bg-app-panel h-64 animate-pulse dark:bg-app-panel-dark/70" />
+			<div class="rounded-lg bg-app-bg h-80 animate-pulse dark:bg-app-bg-dark" />
+			<div class="rounded-lg bg-app-bg h-64 animate-pulse dark:bg-app-bg-dark" />
 		</div>
 
 		<div v-else-if="(error && !fallbackData) || !person" class="max-w-3xl">
 			<InfoCallout title="Funding page unavailable" tone="warning">
-				This representative funding page could not be loaded. Return to the representative profile and try again.
+				Try again later.
 			</InfoCallout>
 		</div>
 
 		<div v-else class="space-y-8">
 			<header class="surface-panel">
 				<AppBreadcrumbs :items="breadcrumbs" />
-				<div class="flex flex-wrap gap-2">
-					<VerificationBadge label="Funding page" tone="accent" />
-					<VerificationBadge :label="person.officeholderLabel" />
-				</div>
 				<h1 class="text-5xl text-app-ink font-serif mt-5 dark:text-app-text-dark">
 					{{ person.name }} funding
 				</h1>
@@ -130,7 +126,7 @@ usePageSeo({
 						Back to profile
 					</NuxtLink>
 					<NuxtLink :to="buildLookupAwareTarget(`/representatives/${person.slug}/influence`)" class="btn-secondary">
-						Open influence page
+						Influence
 					</NuxtLink>
 					<SourceDrawer :sources="funding?.sources ?? person.sources" :title="`${person.name} funding sources`" button-label="Funding sources" />
 				</div>
@@ -152,7 +148,7 @@ usePageSeo({
 						}}
 					</p>
 					<div v-if="fundingHighlights.length" class="mt-6 gap-3 grid sm:grid-cols-2">
-						<div v-for="item in fundingHighlights" :key="item.label" class="p-4 rounded-xl bg-app-bg dark:bg-app-bg-dark/70">
+						<div v-for="item in fundingHighlights" :key="item.label" class="content-block">
 							<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 								{{ item.label }}
 							</p>
@@ -162,7 +158,7 @@ usePageSeo({
 						</div>
 					</div>
 					<ul class="mt-6 space-y-3">
-						<li v-for="funder in fundingLineItems" :key="`${funder.name}-${funder.category}`" class="p-4 rounded-xl bg-app-bg dark:bg-app-bg-dark/70">
+						<li v-for="funder in fundingLineItems" :key="`${funder.name}-${funder.category}`" class="content-block">
 							<div class="flex flex-wrap gap-4 items-center justify-between">
 								<div>
 									<p class="text-lg text-app-ink font-semibold dark:text-app-text-dark">
@@ -190,14 +186,6 @@ usePageSeo({
 							<li><strong class="text-app-ink dark:text-app-text-dark">Coverage:</strong> {{ funding.coverageLabel || funding.provenanceLabel || "Source-backed finance summary" }}</li>
 							<li><strong class="text-app-ink dark:text-app-text-dark">Data through:</strong> {{ formatDate(person.freshness.dataLastUpdatedAt ?? person.updatedAt) }}</li>
 						</ul>
-						<p class="text-sm text-app-muted leading-7 mt-5 dark:text-app-muted-dark">
-							Compare the reporting window before comparing totals across records.
-						</p>
-						<div class="mt-6 pt-6 border-t border-app-line/80 dark:border-app-line-dark">
-							<p class="text-sm text-app-muted leading-7 dark:text-app-muted-dark">
-								<strong class="text-app-ink dark:text-app-text-dark">Reference count:</strong> {{ formatCompactNumber(funding.sources.length) }} filing and methodology source{{ funding.sources.length === 1 ? "" : "s" }} are attached to this funding page.
-							</p>
-						</div>
 					</div>
 				</div>
 			</section>

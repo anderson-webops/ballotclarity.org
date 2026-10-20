@@ -9,7 +9,7 @@ const props = withDefaults(defineProps<{
 	title?: string;
 }>(), {
 	note: "Current officeholders matched to this location, grouped from federal to local.",
-	title: "Who represents you"
+	title: "Your current officials"
 });
 
 const levelOrder = ["Federal", "State", "County", "City", "Local", "Other"] as const;

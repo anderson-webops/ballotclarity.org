@@ -224,7 +224,7 @@ onBeforeUnmount(() => {
 							<div
 								v-if="isAboutOpen"
 								:id="aboutPanelId"
-								class="mt-px p-4 border border-app-line rounded-xl bg-app-panel gap-6 grid grid-cols-2 w-[34rem] shadow-[0_16px_40px_-20px_rgba(13,37,62,0.35)] left-0 top-full absolute dark:border-app-line-dark dark:bg-app-panel-dark"
+								class="mt-px p-4 border border-app-line rounded-xl bg-app-panel gap-6 grid grid-cols-2 w-[min(34rem,calc(100vw-2rem))] shadow-[0_16px_40px_-20px_rgba(13,37,62,0.35)] right-0 top-full absolute dark:border-app-line-dark dark:bg-app-panel-dark"
 							>
 								<div v-for="group in aboutGroups" :key="group.label">
 									<p class="eyebrow px-2">

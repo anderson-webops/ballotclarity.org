@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { AdminSourceHealth, PublicStatusResponse } from "~/types/civic";
+import { orderScheduledSourceChecks } from "~/utils/source-checks";
 
 const props = defineProps<{
 	status: PublicStatusResponse;
@@ -25,11 +26,7 @@ function segmentWidth(health: AdminSourceHealth) {
 	return Math.round((props.status.sourceSummary[health] / totalSources.value) * 100);
 }
 
-const upcomingChecks = computed(() => {
-	return [...props.status.sources]
-		.sort((left, right) => new Date(left.nextCheckAt).getTime() - new Date(right.nextCheckAt).getTime())
-		.slice(0, 4);
-});
+const scheduledChecks = computed(() => orderScheduledSourceChecks(props.status.sources, new Date()));
 </script>
 
 <template>
@@ -81,11 +78,11 @@ const upcomingChecks = computed(() => {
 		<div class="mt-6 gap-4 grid xl:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
 			<div class="px-4 py-4 border border-app-line/70 rounded-xl bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
 				<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
-					Upcoming checks
+					Scheduled checks
 				</p>
 				<ul class="mt-4 space-y-3">
 					<li
-						v-for="item in upcomingChecks"
+						v-for="{ check: item, isOverdue } in scheduledChecks"
 						:key="item.id"
 						class="px-3 py-3 rounded-lg bg-app-panel dark:bg-app-panel-dark/80"
 					>
@@ -95,7 +92,10 @@ const upcomingChecks = computed(() => {
 							</p>
 							<VerificationBadge :label="item.health" :tone="item.health === 'healthy' ? 'accent' : item.health === 'incident' ? 'warning' : 'neutral'" />
 						</div>
-						<p class="text-xs text-app-muted leading-6 mt-2 dark:text-app-muted-dark">
+						<p v-if="isOverdue" class="text-xs text-[#8a5b0a] leading-6 font-semibold mt-2 dark:text-[#efc77b]">
+							Overdue since {{ formatDateTime(item.nextCheckAt) }}
+						</p>
+						<p v-else class="text-xs text-app-muted leading-6 mt-2 dark:text-app-muted-dark">
 							Next check {{ formatDateTime(item.nextCheckAt) }}
 						</p>
 					</li>

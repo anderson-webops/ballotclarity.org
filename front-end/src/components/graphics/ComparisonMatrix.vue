@@ -28,68 +28,71 @@ function cellFor(row: ComparisonMatrixRow, columnId: string): ComparisonMatrixCe
 		</div>
 
 		<div class="mt-6 border border-app-line rounded-xl hidden overflow-x-auto dark:border-app-line-dark lg:block">
-			<div
-				class="grid min-w-[56rem]"
-				:style="{ gridTemplateColumns: `minmax(14rem, 18rem) repeat(${props.matrix.columns.length}, minmax(12rem, 1fr))` }"
-			>
-				<div class="p-4 border-b border-app-line bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/80" />
-				<div
-					v-for="column in props.matrix.columns"
-					:key="column.id"
-					class="p-4 border-b border-l border-app-line bg-white dark:border-app-line-dark dark:bg-app-panel-dark"
-				>
-					<p class="text-lg text-app-ink font-serif dark:text-app-text-dark">
-						{{ column.label }}
-					</p>
-					<p v-if="column.meta" class="text-sm text-app-muted mt-2 dark:text-app-muted-dark">
-						{{ column.meta }}
-					</p>
-					<div class="mt-3 flex flex-wrap gap-2 items-center">
-						<VerificationBadge
-							v-for="badge in column.badges ?? []"
-							:key="`${column.id}-${badge.label}`"
-							:label="badge.label"
-							:tone="badge.tone"
-						/>
-						<SourceDrawer
-							v-if="column.sources?.length"
-							:sources="column.sources"
-							:title="column.label"
-							button-label="Sources"
-						/>
-					</div>
-				</div>
-
-				<template v-for="row in props.matrix.rows" :key="row.id">
-					<div class="p-4 border-b border-app-line bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/80">
-						<p class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
-							{{ row.label }}
-						</p>
-						<p v-if="row.note" class="text-xs text-app-muted leading-6 mt-2 dark:text-app-muted-dark">
-							{{ row.note }}
-						</p>
-					</div>
-					<div
-						v-for="column in props.matrix.columns"
-						:key="`${row.id}-${column.id}`"
-						class="p-4 border-b border-l border-app-line bg-white dark:border-app-line-dark dark:bg-app-panel-dark"
-					>
-						<p class="text-sm text-app-ink leading-6 font-semibold dark:text-app-text-dark">
-							{{ cellFor(row, column.id)?.value ?? "Not documented yet" }}
-						</p>
-						<p v-if="cellFor(row, column.id)?.note" class="text-xs text-app-muted leading-6 mt-2 dark:text-app-muted-dark">
-							{{ cellFor(row, column.id)?.note }}
-						</p>
-						<div v-if="cellFor(row, column.id)?.sources?.length" class="mt-3">
-							<SourceDrawer
-								:sources="cellFor(row, column.id)?.sources ?? []"
-								:title="`${row.label} for ${column.label}`"
-								button-label="Sources"
-							/>
-						</div>
-					</div>
-				</template>
-			</div>
+			<table class="text-left min-w-[56rem] w-full border-collapse table-fixed">
+				<caption class="sr-only">
+					{{ props.matrix.title }}
+				</caption>
+				<colgroup>
+					<col class="w-[16rem]">
+					<col v-for="column in props.matrix.columns" :key="column.id">
+				</colgroup>
+				<thead>
+					<tr>
+						<td class="p-4 border-b border-app-line bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/80" />
+						<th
+							v-for="column in props.matrix.columns"
+							:key="column.id"
+							scope="col"
+							:abbr="column.label"
+							class="font-normal p-4 align-top border-b border-l border-app-line bg-app-panel dark:border-app-line-dark dark:bg-app-panel-dark"
+						>
+							<span class="text-lg text-app-ink font-serif block dark:text-app-text-dark">{{ column.label }}</span>
+							<span v-if="column.meta" class="text-sm text-app-muted mt-2 block dark:text-app-muted-dark">{{ column.meta }}</span>
+							<div class="mt-3 flex flex-wrap gap-2 items-center">
+								<VerificationBadge
+									v-for="badge in column.badges ?? []"
+									:key="`${column.id}-${badge.label}`"
+									:label="badge.label"
+									:tone="badge.tone"
+								/>
+								<SourceDrawer
+									v-if="column.sources?.length"
+									:sources="column.sources"
+									:title="column.label"
+									button-label="Sources"
+								/>
+							</div>
+						</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr v-for="row in props.matrix.rows" :key="row.id">
+						<th scope="row" :abbr="row.label" class="font-normal p-4 align-top border-b border-app-line bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/80">
+							<span class="text-sm text-app-ink font-semibold block dark:text-app-text-dark">{{ row.label }}</span>
+							<span v-if="row.note" class="text-xs text-app-muted leading-6 mt-2 block dark:text-app-muted-dark">{{ row.note }}</span>
+						</th>
+						<td
+							v-for="column in props.matrix.columns"
+							:key="`${row.id}-${column.id}`"
+							class="p-4 align-top border-b border-l border-app-line bg-app-panel dark:border-app-line-dark dark:bg-app-panel-dark"
+						>
+							<p class="text-sm text-app-ink leading-6 font-semibold dark:text-app-text-dark">
+								{{ cellFor(row, column.id)?.value ?? "Not documented yet" }}
+							</p>
+							<p v-if="cellFor(row, column.id)?.note" class="text-xs text-app-muted leading-6 mt-2 dark:text-app-muted-dark">
+								{{ cellFor(row, column.id)?.note }}
+							</p>
+							<div v-if="cellFor(row, column.id)?.sources?.length" class="mt-3">
+								<SourceDrawer
+									:sources="cellFor(row, column.id)?.sources ?? []"
+									:title="`${row.label} for ${column.label}`"
+									button-label="Sources"
+								/>
+							</div>
+						</td>
+					</tr>
+				</tbody>
+			</table>
 		</div>
 
 		<div class="mt-6 space-y-4 lg:hidden">

@@ -6,6 +6,7 @@ import type {
 	LocationLookupSelectionOption,
 	NationwideLookupResultContext
 } from "~/types/civic";
+import { calendarDaysUntil, describeDaysAway } from "~/utils/election-timeline";
 import { buildPublishedGuideDestination } from "~/utils/location-lookup";
 import { normalizeLookupResponseForDisplay, resolveLookupDestination } from "~/utils/nationwide-results";
 import { buildNationwideRouteTarget } from "~/utils/nationwide-route-context";
@@ -23,6 +24,36 @@ const { data: electionsData } = await useAsyncData<ElectionsResponse>(
 	() => api<ElectionsResponse>("/elections")
 );
 const featuredElection = computed(() => electionsData.value?.elections[0] ?? null);
+const { displayTimeZone, formatDate } = useFormatters();
+const upcomingElection = computed(() => {
+	const election = featuredElection.value;
+
+	if (!election?.date)
+		return null;
+
+	const daysAway = calendarDaysUntil(election.date, new Date(), displayTimeZone.value);
+
+	return daysAway < 0
+		? null
+		: { ...election, daysAway, relativeLabel: describeDaysAway(daysAway) };
+});
+const howItWorksSteps = [
+	{
+		description: "A full street address gives the most precise match. A ZIP code works too.",
+		icon: "i-carbon-location",
+		title: "Enter your address"
+	},
+	{
+		description: "See the districts you live in and the officials who represent you now.",
+		icon: "i-carbon-map",
+		title: "See who represents you"
+	},
+	{
+		description: "Get key dates and links to official tools for registration, polling places, and sample ballots.",
+		icon: "i-carbon-checkmark-outline",
+		title: "Check official voting details"
+	}
+];
 const faqEntries = [
 	{
 		answer: "Start with the location lookup. Ballot Clarity shows districts, representatives, official election links, and a local guide when one is published for your area.",
@@ -148,24 +179,43 @@ async function selectHomeLookupOption(option: LocationLookupSelectionOption) {
 </script>
 
 <template>
-	<div class="home-page pb-8 space-y-10 sm:space-y-14">
+	<div class="home-page pb-8 space-y-12 sm:space-y-16">
+		<section v-if="upcomingElection" class="home-section app-shell" aria-label="Upcoming election">
+			<NuxtLink :to="`/elections/${upcomingElection.slug}`" class="home-election-banner group focus-ring" prefetch-on="interaction">
+				<span class="home-election-banner__icon" aria-hidden="true">
+					<span class="i-carbon-calendar-heat-map" />
+				</span>
+				<span class="min-w-0">
+					<span class="text-sm text-app-muted block dark:text-app-muted-dark">{{ upcomingElection.locationName }}</span>
+					<span class="text-base text-app-ink font-semibold block sm:text-lg dark:text-app-text-dark">
+						Election Day is {{ formatDate(upcomingElection.date) }}
+						<span class="home-election-banner__count">{{ upcomingElection.relativeLabel }}</span>
+					</span>
+				</span>
+				<span class="text-app-accent font-semibold ml-auto shrink-0 gap-1.5 hidden items-center sm:inline-flex">
+					Key dates and deadlines
+					<span class="i-carbon-arrow-right transition group-hover:translate-x-0.5" aria-hidden="true" />
+				</span>
+			</NuxtLink>
+		</section>
+
 		<section class="home-section app-shell">
 			<div class="home-entry-grid">
 				<div class="home-intro">
-					<p class="text-xs text-app-muted tracking-[0.2em] font-semibold uppercase dark:text-app-muted-dark">
-						Ballot Clarity · Public records, explained
+					<p class="eyebrow">
+						Nonpartisan public-interest project
 					</p>
 					<h1 class="home-title text-app-ink font-serif dark:text-app-text-dark">
-						Look up your area.
+						Find your ballot, districts, and officials.
 					</h1>
-					<p class="home-description text-app-muted dark:text-app-muted-dark">
-						Find your districts, explore representative records, and reach official election resources. Start with a street address or ZIP code.
+					<p class="home-description text-app-ink-soft dark:text-app-muted-dark">
+						Enter your address to see who represents you, what is on your ballot where we have a published guide, and where to confirm every detail with official election offices.
 					</p>
 					<div v-if="hasNationwideResultContext || hasGuideShellContext || hasVerifiedGuideContext" class="home-resume">
 						<p class="text-sm text-app-muted dark:text-app-muted-dark">
 							Your saved area<span v-if="activeNationwideResult?.location">: <strong class="text-app-ink dark:text-app-text-dark">{{ activeNationwideResult.location.displayName }}</strong></span>
 						</p>
-						<NuxtLink :to="resumeTarget" class="btn-secondary mt-3" prefetch-on="interaction">
+						<NuxtLink :to="resumeTarget" class="btn-primary mt-3" prefetch-on="interaction">
 							{{ hasVerifiedGuideContext ? 'Continue to your ballot guide' : hasGuideShellContext ? 'Continue to your election overview' : 'Continue to your results' }}
 							<span class="i-carbon-arrow-right" aria-hidden="true" />
 						</NuxtLink>
@@ -181,13 +231,6 @@ async function selectHomeLookupOption(option: LocationLookupSelectionOption) {
 						@lookup-resolved="handleHomeLookupResolved"
 					/>
 				</div>
-			</div>
-			<div class="home-trust-row text-sm text-app-muted dark:text-app-muted-dark">
-				<span class="inline-flex gap-2 items-center"><span class="i-carbon-document" aria-hidden="true" /> Source links on every major reading page</span>
-				<span>Nonpartisan public-interest project</span>
-				<NuxtLink to="/coverage" class="underline underline-offset-4 focus-ring">
-					Check coverage
-				</NuxtLink>
 			</div>
 		</section>
 
@@ -209,17 +252,43 @@ async function selectHomeLookupOption(option: LocationLookupSelectionOption) {
 				</p>
 			</div>
 		</section>
+
+		<section class="home-section app-shell" aria-labelledby="home-steps-title">
+			<h2 id="home-steps-title" class="text-2xl text-app-ink font-serif sm:text-3xl dark:text-app-text-dark">
+				How it works
+			</h2>
+			<ol class="home-steps mt-6">
+				<li v-for="(step, index) in howItWorksSteps" :key="step.title" class="home-step">
+					<span class="home-step__number" aria-hidden="true">{{ index + 1 }}</span>
+					<div>
+						<h3 class="text-lg text-app-ink font-semibold dark:text-app-text-dark">
+							{{ step.title }}
+						</h3>
+						<p class="text-[0.95rem] text-app-muted leading-relaxed mt-1.5 dark:text-app-muted-dark">
+							{{ step.description }}
+						</p>
+					</div>
+				</li>
+			</ol>
+			<p class="text-sm text-app-muted mt-6 dark:text-app-muted-dark">
+				Ballot Clarity is not an official election website. Guide coverage varies by area —
+				<NuxtLink to="/coverage" class="primary-link">
+					see what is covered
+				</NuxtLink>.
+			</p>
+		</section>
+
 		<section class="home-help app-shell" aria-labelledby="home-help-title">
 			<div>
-				<h2 id="home-help-title" class="text-2xl text-app-ink font-serif dark:text-app-text-dark">
-					A little context before you explore
+				<h2 id="home-help-title" class="text-2xl text-app-ink font-serif sm:text-3xl dark:text-app-text-dark">
+					Not ready to enter an address?
 				</h2>
-				<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
-					Local guide coverage varies. You can also explore the public record without entering a location.
+				<p class="text-[0.95rem] text-app-muted leading-relaxed mt-3 dark:text-app-muted-dark">
+					You can search public records or browse every source the site cites without sharing a location.
 				</p>
-				<div class="mt-4 flex flex-wrap gap-3">
+				<div class="mt-5 flex flex-wrap gap-3">
 					<NuxtLink to="/search" class="btn-secondary">
-						Search records <span class="i-carbon-search" aria-hidden="true" />
+						<span class="i-carbon-search" aria-hidden="true" /> Search records
 					</NuxtLink>
 					<NuxtLink to="/sources" class="btn-secondary">
 						Browse sources
@@ -227,11 +296,15 @@ async function selectHomeLookupOption(option: LocationLookupSelectionOption) {
 				</div>
 			</div>
 			<div>
+				<h2 class="sr-only">
+					Common questions
+				</h2>
 				<details v-for="entry in faqEntries" :key="entry.question" class="home-faq">
-					<summary class="text-sm text-app-ink font-semibold dark:text-app-text-dark focus-ring">
+					<summary class="text-base text-app-ink font-semibold dark:text-app-text-dark focus-ring">
 						{{ entry.question }}
+						<span class="home-faq__chevron i-carbon-chevron-down" aria-hidden="true" />
 					</summary>
-					<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
+					<p class="text-[0.95rem] text-app-muted leading-relaxed mt-1 pb-2 dark:text-app-muted-dark">
 						{{ entry.answer }}
 					</p>
 				</details>

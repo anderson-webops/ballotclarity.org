@@ -674,7 +674,7 @@ test("voter resilience: Escape closes navigation and returns focus on mobile and
 		await waitForRuntimeCondition(cdp, hydratedCivicState, Boolean, "keyboard navigation hydration");
 		for (const width of [390, 1280]) {
 			await cdp.send("Emulation.setDeviceMetricsOverride", { width, height: 844, deviceScaleFactor: 1, mobile: false });
-			const selector = width === 390 ? 'button[aria-label="Toggle navigation"]' : 'nav[aria-label="Primary"] button';
+			const selector = width === 390 ? 'button[aria-label="Menu"]' : 'nav[aria-label="Primary"] button';
 			await cdp.send("Runtime.evaluate", { expression: `
 				window.navTrigger = Array.from(document.querySelectorAll(${JSON.stringify(selector)})).find(button => button.getClientRects().length);
 				window.navTrigger.click();
@@ -1065,14 +1065,14 @@ test("built app renders the key ballot guide pages against the built API", async
 	assert.equal(ballotResponse.headers.get("referrer-policy"), "strict-origin-when-cross-origin");
 	assert.equal(ballotResponse.headers.get("strict-transport-security"), "max-age=31536000");
 	assert.match(ballotResponse.headers.get("permissions-policy") || "", /camera=\(\)/);
-	assert.match(homeHtml, /Look up your area/i);
+	assert.match(homeHtml, /Find your ballot, districts, and officials/i);
 	assert.match(homeHtml, /Fulton County, Georgia/);
 	assert.match(homeHtml, /Street address or ZIP code/);
 	assert.match(homeHtml, /Search records/);
 	assert.doesNotMatch(homeHtml, /Popular pages/);
 	assert.doesNotMatch(homeHtml, /Choose the page you need\./i);
 	assert.match(homeHtml, /autocomplete="street-address"/);
-	assert.match(homeHtml, /Find your districts, explore representative records, and reach official election resources/i);
+	assert.match(homeHtml, /Enter your address to see who represents you/i);
 	assert.match(homeHtml, /Lookup data is used only to load civic results/i);
 	assert.match(homeHtml, /og:image/);
 	assert.match(homeHtml, /twitter:image/);
@@ -1659,13 +1659,13 @@ test("nationwide lookup context survives client navigation across results, distr
 			returnByValue: true
 		});
 		await waitForDocumentReady(cdp, `${appBaseUrl}/results`, "nationwide-context results navigation");
-		await waitForBodyText(cdp, /Representative data/, "nationwide-context results hydration");
+		await waitForBodyText(cdp, /Who represents you/, "nationwide-context results hydration");
 
 		const resultsText = await getDocumentBodyText(cdp);
 		assert.match(resultsText, /Provo, Utah/);
-		assert.match(resultsText, /Representative data/);
-		assert.match(resultsText, /7 representative matches/);
-		assert.match(resultsText, /Current results/i);
+		assert.match(resultsText, /Who represents you/);
+		assert.match(resultsText, /7 officials/);
+		assert.match(resultsText, /Your area/i);
 
 		await navigateAndWait(cdp, `${appBaseUrl}/districts`, "nationwide-context districts navigation");
 		await waitForBodyText(cdp, /Marsha Judkins/, "nationwide-context districts hydration");

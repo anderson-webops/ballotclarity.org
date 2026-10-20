@@ -22,8 +22,9 @@ onMounted(openFromHash);
 
 <template>
 	<details id="change-location" ref="panel" class="location-change-panel surface-row print-hidden" :open="isOpen" @toggle="isOpen = ($event.target as HTMLDetailsElement).open">
-		<summary class="text-sm text-app-ink font-semibold cursor-pointer dark:text-app-text-dark focus-ring">
-			Change location
+		<summary class="text-[0.95rem] text-app-ink cursor-pointer dark:text-app-text-dark focus-ring">
+			<span class="i-carbon-location text-app-accent mr-1.5 align-[-0.15em]" aria-hidden="true" />
+			Not the right place? <span class="text-app-accent font-semibold">Change location</span>
 		</summary>
 		<div class="mt-4 max-w-3xl">
 			<AddressLookupForm ref="lookupForm" compact :election="election" :framed="false" />

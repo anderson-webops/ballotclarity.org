@@ -2026,7 +2026,7 @@ export const demoElection: Election = {
 		},
 		{
 			label: "Election Day polls close",
-			date: "2026-11-03T19:00:00.000Z",
+			date: "2026-11-04T00:00:00.000Z",
 			note: "Polls close at 7:00 p.m. local time on Election Day."
 		}
 	],

@@ -71,9 +71,13 @@ those four questions, so the most urgent answer is always the first thing a vote
 
 ### 2.4 Development experience (found during the audit)
 
-- `npm run start:local` crashes in dev mode: the root `overrides` pin `simple-git@4.0.2`, which no longer
-  has a default export, and `@nuxt/devtools` imports it as `import Git from 'simple-git'`. The workaround is
-  `NUXT_DEVTOOLS_ENABLED=false npm run start:local`. The fix belongs in a separate dependency change.
+- `npm run start:local` crashed in dev mode: the root `overrides` pin `simple-git@4.0.2`, which has no default
+  export, and `@nuxt/devtools` 3.4.2 imported it as `import Git from 'simple-git'`. **Fixed** by
+  `claude/fix-devtools-simple-git` (lockfile moves to `@nuxt/devtools` 3.4.4, which no longer uses
+  `simple-git`), merged into `claude/ux-redesign-graphics`. `NUXT_DEVTOOLS_ENABLED=false` is no longer needed.
+- If the API keeps logging "Restarting 'src/server.ts'" under `start:local`, check whether the checkout lives in
+  a cloud-synced folder (for example iCloud Drive's Desktop & Documents). Sync activity touches files that
+  `node --watch` tracks. The same stack run from a local, non-synced disk did not restart.
 
 ## 3. Design principles
 
@@ -184,7 +188,7 @@ Header (always visible, sticky, never auto-hides)
 - Ballot guide navigation, candidate tabs, and the measure YES/NO summary.
 - Keeping saved location on directly opened directory pages.
 - Consolidating the trust pages.
-- Fixing the dev server (`simple-git` override and Nuxt devtools).
+- ~~Fixing the dev server (`simple-git` override and Nuxt devtools)~~: done, see section 2.4.
 
 **Phase 3, proposed**
 - Moderated usability sessions with 5–8 voters, including at least two who use screen readers or screen

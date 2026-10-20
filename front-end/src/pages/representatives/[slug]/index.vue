@@ -263,7 +263,7 @@ usePageSeo({
 
 <template>
 	<section class="app-shell section-gap">
-		<div v-if="pagePending" class="gap-8 grid 2xl:grid-cols-[minmax(0,1.45fr)_minmax(21rem,0.85fr)]">
+		<div v-if="pagePending" class="detail-layout">
 			<div class="space-y-6">
 				<div class="surface-panel animate-pulse">
 					<div class="rounded-full bg-app-line/70 h-6 w-40 dark:bg-app-line-dark" />
@@ -285,7 +285,7 @@ usePageSeo({
 			v-else
 			:key="representativeLayoutKey"
 			data-representative-layout="profile"
-			class="gap-8 grid 2xl:grid-cols-[minmax(0,1.45fr)_minmax(21rem,0.85fr)]"
+			class="detail-layout"
 		>
 			<div class="space-y-6">
 				<header data-representative-summary="hero" class="surface-panel">
@@ -703,7 +703,7 @@ usePageSeo({
 				</details>
 			</div>
 
-			<div class="space-y-6 xl:pt-[4.5rem]" data-representative-sidebar="record-details">
+			<div class="detail-layout__aside space-y-6" data-representative-sidebar="record-details">
 				<PageSectionNav
 					:breadcrumbs="breadcrumbs"
 					compact

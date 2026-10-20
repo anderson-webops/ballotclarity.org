@@ -113,7 +113,8 @@ function toLocationRepresentative(person: OpenStatesRepresentativeRecord): Locat
 		openstatesUrl: person.openstatesUrl,
 		party: person.party,
 		profileImages: person.profileImages,
-		sourceSystem: "Open States"
+		sourceSystem: "Open States",
+		updatedAt: person.updatedAt
 	};
 }
 

@@ -274,7 +274,7 @@ export function buildContestComparisonMatrix(contest: Contest): ComparisonMatrix
 			{
 				cells: (contest.candidates ?? []).map(candidate => ({
 					columnId: candidate.slug,
-					sources: candidate.comparison.topPriorities.flatMap(priority => priority.sources),
+					sources: candidate.comparison.topPriorities[0]?.sources ?? [],
 					value: candidate.comparison.topPriorities[0]?.text ?? "No top priority documented yet."
 				})),
 				id: "priorities",

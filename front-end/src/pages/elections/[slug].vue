@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useNow } from "@vueuse/core";
 import { buildKeyDateTimeline, calendarDaysUntil, describeDaysAway } from "~/utils/election-timeline";
 
 const civicStore = useCivicStore();
@@ -10,13 +11,15 @@ const guideStatusNote = computed(() => !data.value?.guideContent?.verifiedContes
 	? "Contest pages are still under local review."
 	: "");
 
-const keyDateTimeline = computed(() => data.value ? buildKeyDateTimeline(data.value.election.keyDates, new Date(), displayTimeZone.value) : []);
+// Ticks each minute so "Today" and "Next" move on when a deadline passes while the page stays open.
+const now = useNow({ interval: 60_000 });
+const keyDateTimeline = computed(() => data.value ? buildKeyDateTimeline(data.value.election.keyDates, now.value, displayTimeZone.value) : []);
 const nextKeyDate = computed(() => keyDateTimeline.value.find(entry => entry.isNext) ?? null);
 const electionDayLabel = computed(() => {
 	if (!data.value?.election.date)
 		return "";
 
-	const daysAway = calendarDaysUntil(data.value.election.date, new Date(), displayTimeZone.value);
+	const daysAway = calendarDaysUntil(data.value.election.date, now.value, displayTimeZone.value);
 	return daysAway < 0 ? "" : describeDaysAway(daysAway);
 });
 

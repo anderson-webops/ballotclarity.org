@@ -140,6 +140,13 @@ function cellFor(row: ComparisonMatrixRow, columnId: string): ComparisonMatrixCe
 						<p v-if="row.note || cellFor(row, column.id)?.note" class="text-xs text-app-muted leading-6 mt-2 dark:text-app-muted-dark">
 							{{ cellFor(row, column.id)?.note ?? row.note }}
 						</p>
+						<SourceDrawer
+							v-if="cellFor(row, column.id)?.sources?.length"
+							class="mt-2"
+							:sources="cellFor(row, column.id)?.sources ?? []"
+							:title="`${row.label} for ${column.label}`"
+							button-label="Sources"
+						/>
 					</div>
 				</dl>
 			</article>

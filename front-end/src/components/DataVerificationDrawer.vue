@@ -120,7 +120,7 @@ onBeforeUnmount(() => {
 
 		<Teleport to="body">
 			<div v-if="isOpen" class="inset-0 fixed z-70">
-				<button type="button" class="absolute-[2px] bg-app-ink/50 inset-0" aria-label="Close data verification panel" @click="closeDrawer" />
+				<button type="button" class="bg-app-ink/50 inset-0 absolute" aria-label="Close data verification panel" @click="closeDrawer" />
 				<aside
 					ref="panelRef"
 					class="p-5 border-l border-app-line bg-app-bg flex flex-col h-full max-w-xl w-full shadow-2xl right-0 top-0 absolute dark:border-app-line-dark dark:bg-app-bg-dark"

@@ -25,17 +25,16 @@ const { data: electionsData } = await useAsyncData<ElectionsResponse>(
 );
 const featuredElection = computed(() => electionsData.value?.elections[0] ?? null);
 const { displayTimeZone, formatDate } = useFormatters();
+// The API keeps snapshot order, so pick the soonest election that has not passed yet.
 const upcomingElection = computed(() => {
-	const election = featuredElection.value;
+	const now = new Date();
+	const upcoming = (electionsData.value?.elections ?? [])
+		.filter(election => election.date)
+		.map(election => ({ ...election, daysAway: calendarDaysUntil(election.date, now, displayTimeZone.value) }))
+		.filter(election => election.daysAway >= 0)
+		.sort((left, right) => left.daysAway - right.daysAway)[0];
 
-	if (!election?.date)
-		return null;
-
-	const daysAway = calendarDaysUntil(election.date, new Date(), displayTimeZone.value);
-
-	return daysAway < 0
-		? null
-		: { ...election, daysAway, relativeLabel: describeDaysAway(daysAway) };
+	return upcoming ? { ...upcoming, relativeLabel: describeDaysAway(upcoming.daysAway) } : null;
 });
 
 usePageSeo({

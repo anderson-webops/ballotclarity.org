@@ -499,6 +499,9 @@ function saveToPlan() {
 					<template #meta>
 						<SourceDrawer :sources="candidate.sources" :title="`${candidate.name} full source list`" />
 					</template>
+					<NuxtLink :to="reportIssueTo" class="text-sm btn-secondary mt-4 xl:hidden">
+						Report an issue
+					</NuxtLink>
 					<div class="mt-6 gap-4 grid lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
 						<div class="content-block">
 							<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">

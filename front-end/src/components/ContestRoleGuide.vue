@@ -7,17 +7,14 @@ defineProps<{
 </script>
 
 <template>
-	<section class="px-5 py-5 border border-app-line/80 rounded-xl bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
-		<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
-			What this contest decides
-		</p>
-		<h3 class="text-xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
+	<section>
+		<p class="text-base text-app-ink leading-7 dark:text-app-text-dark">
 			{{ contest.roleGuide.summary }}
-		</h3>
-		<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
+		</p>
+		<p class="text-sm text-app-muted leading-6 mt-2 dark:text-app-muted-dark">
 			{{ contest.roleGuide.whyItMatters }}
 		</p>
-		<ul class="text-sm text-app-muted leading-7 mt-4 space-y-2 dark:text-app-muted-dark">
+		<ul v-if="contest.roleGuide.decisionAreas.length" class="text-sm text-app-ink leading-6 mt-2 pl-5 list-disc space-y-1 dark:text-app-text-dark">
 			<li v-for="area in contest.roleGuide.decisionAreas" :key="area">
 				{{ area }}
 			</li>

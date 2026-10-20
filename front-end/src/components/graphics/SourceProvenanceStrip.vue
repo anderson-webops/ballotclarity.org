@@ -36,7 +36,7 @@ const numericBarItems = computed(() => numericItems.value.map(item => ({
 </script>
 
 <template>
-	<section class="p-5 border border-app-line/80 rounded-xl bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
+	<section>
 		<div class="flex flex-wrap gap-4 items-start justify-between">
 			<div class="max-w-3xl">
 				<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
@@ -71,7 +71,7 @@ const numericBarItems = computed(() => numericItems.value.map(item => ({
 			<div class="space-y-4">
 				<div
 					v-if="sourceAuthoritySegments.length"
-					class="px-4 py-4 border border-app-line/70 rounded-xl bg-app-panel dark:border-app-line-dark dark:bg-app-panel-dark/80"
+					class="content-block"
 				>
 					<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 						Source mix
@@ -86,7 +86,7 @@ const numericBarItems = computed(() => numericItems.value.map(item => ({
 
 				<div
 					v-if="numericBarItems.length"
-					class="px-4 py-4 border border-app-line/70 rounded-xl bg-app-panel dark:border-app-line-dark dark:bg-app-panel-dark/80"
+					class="content-block"
 				>
 					<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 						Matches found

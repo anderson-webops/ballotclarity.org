@@ -17,7 +17,7 @@ const props = withDefaults(defineProps<{
 </script>
 
 <template>
-	<article class="px-4 py-4 border border-app-line/80 rounded-xl bg-app-panel dark:border-app-line-dark dark:bg-app-panel-dark/82">
+	<article class="min-w-0">
 		<div class="flex flex-wrap gap-2 items-start justify-between">
 			<div>
 				<p v-if="props.eyebrow" class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">

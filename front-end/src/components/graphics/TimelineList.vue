@@ -6,11 +6,11 @@ const props = withDefaults(defineProps<{
 	eyebrow?: string;
 	items: TimelineEvent[];
 	note?: string;
-	title: string;
+	title?: string;
 	uncertainty?: string;
 }>(), {
 	badgeLabel: "",
-	eyebrow: "Timeline",
+	eyebrow: "",
 	note: "",
 	uncertainty: ""
 });
@@ -19,13 +19,13 @@ const { formatDate } = useFormatters();
 </script>
 
 <template>
-	<section v-if="props.items.length" class="p-5 border border-app-line/80 rounded-xl bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
+	<section v-if="props.items.length">
 		<div class="flex flex-wrap gap-4 items-start justify-between">
 			<div class="max-w-4xl">
-				<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
+				<p v-if="props.eyebrow" class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 					{{ props.eyebrow }}
 				</p>
-				<h3 class="text-2xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
+				<h3 v-if="props.title" class="text-2xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
 					{{ props.title }}
 				</h3>
 				<p v-if="props.note" class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
@@ -45,14 +45,14 @@ const { formatDate } = useFormatters();
 				:key="item.id"
 				class="pl-14 relative"
 			>
-				<span class="text-sm text-app-ink font-semibold border border-app-line rounded-full bg-white flex h-9 w-9 items-center left-0 top-1 justify-center absolute dark:text-app-text-dark dark:border-app-line-dark dark:bg-app-panel-dark">
+				<span class="text-sm text-app-ink font-semibold border border-app-line rounded-full bg-app-panel flex h-9 w-9 items-center left-0 top-1 justify-center absolute dark:text-app-text-dark dark:border-app-line-dark dark:bg-app-panel-dark">
 					{{ index + 1 }}
 				</span>
 				<span
 					v-if="index < props.items.length - 1"
 					class="bg-app-line h-[calc(100%+0.75rem)] w-px left-4 top-10 absolute dark:bg-app-line-dark"
 				/>
-				<div class="px-4 py-4 border border-app-line/70 rounded-xl bg-app-panel dark:border-app-line-dark dark:bg-app-panel-dark/80">
+				<div class="content-block">
 					<div class="flex flex-wrap gap-3 items-start justify-between">
 						<div>
 							<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">

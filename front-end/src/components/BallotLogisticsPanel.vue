@@ -24,8 +24,8 @@ const { formatDate, formatDateTime } = useFormatters();
 				<p class="ballot-logistics__date-value">
 					{{ item.date.includes("T") ? formatDateTime(item.date) : formatDate(item.date) }}
 				</p>
-				<p class="ballot-logistics__date-note">
-					{{ item.note || "Review the official notice for details." }}
+				<p v-if="item.note" class="ballot-logistics__date-note">
+					{{ item.note }}
 				</p>
 			</li>
 		</ol>
@@ -33,12 +33,9 @@ const { formatDate, formatDateTime } = useFormatters();
 		<div class="mt-6 space-y-5">
 			<OfficialResourceList
 				:resources="props.election.officialResources"
-				:title="props.hasContestContent ? 'Official notices linked in this guide' : 'Official notices and voter tools'"
-				:note="props.hasContestContent
-					? 'Use the official notices for deadlines, polling places, and ballot-return rules.'
-					: 'Use these official notices for deadlines, logistics, and final ballot confirmation.'"
+				title="Official links"
 			/>
-			<div v-if="props.hasContestContent && props.election.changeLog.length" class="surface-inset">
+			<div v-if="props.hasContestContent && props.election.changeLog.length">
 				<p class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
 					Recent updates
 				</p>

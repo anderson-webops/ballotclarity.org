@@ -6,7 +6,6 @@ import type {
 	LocationLookupSelectionOption,
 	NationwideLookupResultContext
 } from "~/types/civic";
-import { buildLocationGuessUiContent } from "~/utils/location-guess";
 import { buildPublishedGuideDestination } from "~/utils/location-lookup";
 import { normalizeLookupResponseForDisplay, resolveLookupDestination } from "~/utils/nationwide-results";
 
@@ -24,25 +23,19 @@ const emit = defineEmits<{
 
 const api = useApiClient();
 const civicStore = useCivicStore();
-const { data: coverageData } = useCoverage();
 
 const query = ref("");
 const isPending = ref(false);
 const errorMessage = ref("");
 const lookupResult = ref<NationwideLookupResultContext | null>(null);
 const inputId = `address-lookup-${useId()}`;
-const descriptionId = `${inputId}-description`;
-const usageId = `${inputId}-usage`;
 const privacyId = `${inputId}-privacy`;
 const errorId = `${inputId}-error`;
 const actionsId = `${inputId}-actions`;
 const lookupInput = ref<HTMLInputElement | null>(null);
 let activeRequest: AbortController | null = null;
-const locationGuessUi = computed(() => buildLocationGuessUiContent(coverageData.value?.locationGuess ?? null));
 const shouldShowInlineResults = computed(() => props.showInlineResults !== false);
 const inputDescribedBy = computed(() => [
-	descriptionId,
-	props.compact ? "" : usageId,
 	privacyId,
 	lookupResult.value && shouldShowInlineResults.value ? actionsId : "",
 	errorMessage.value ? errorId : ""
@@ -151,14 +144,8 @@ async function selectLookupOption(option: LocationLookupSelectionOption) {
 		<label :for="inputId" class="text-sm text-app-ink font-semibold block dark:text-app-text-dark">
 			Street address or ZIP code
 		</label>
-		<p :id="descriptionId" class="text-sm text-app-muted mt-2 dark:text-app-muted-dark">
-			{{ locationGuessUi.lookupForm }}
-		</p>
-		<p v-if="!compact" :id="usageId" class="text-sm text-app-muted leading-6 mt-3 dark:text-app-muted-dark">
-			Ballot Clarity can match many U.S. addresses and ZIP codes to districts, current officials, and official election links. A full street address is the strongest input. A ZIP code can be broader and may ask you to choose between more than one matched area.
-		</p>
 
-		<div class="lookup-form__fields mt-4">
+		<div class="lookup-form__fields mt-2">
 			<div class="min-w-0 relative">
 				<span class="i-carbon-search text-app-muted pointer-events-none left-4 top-1/2 absolute dark:text-app-muted-dark -translate-y-1/2" />
 				<input
@@ -180,7 +167,7 @@ async function selectLookupOption(option: LocationLookupSelectionOption) {
 					<span :class="isPending ? 'i-carbon-circle-dash animate-spin' : 'i-carbon-arrow-right'" />
 				</span>
 				<span class="lookup-submit-button__label">
-					{{ isPending ? 'Loading results' : 'See civic results' }}
+					{{ isPending ? 'Looking up…' : 'Look up' }}
 				</span>
 			</button>
 		</div>

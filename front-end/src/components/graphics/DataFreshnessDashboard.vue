@@ -46,7 +46,7 @@ const scheduledChecks = computed(() => orderScheduledSourceChecks(props.status.s
 			<VerificationBadge :label="`${totalSources} tracked source${totalSources === 1 ? '' : 's'}`" tone="accent" />
 		</div>
 
-		<div class="mt-6 px-4 py-4 border border-app-line/70 rounded-xl bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
+		<div class="mt-6">
 			<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 				Health split
 			</p>
@@ -76,7 +76,7 @@ const scheduledChecks = computed(() => orderScheduledSourceChecks(props.status.s
 		</div>
 
 		<div class="mt-6 gap-4 grid xl:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
-			<div class="px-4 py-4 border border-app-line/70 rounded-xl bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
+			<div class="content-block">
 				<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 					Scheduled checks
 				</p>
@@ -84,7 +84,7 @@ const scheduledChecks = computed(() => orderScheduledSourceChecks(props.status.s
 					<li
 						v-for="{ check: item, isOverdue } in scheduledChecks"
 						:key="item.id"
-						class="px-3 py-3 rounded-lg bg-app-panel dark:bg-app-panel-dark/80"
+						class="content-block"
 					>
 						<div class="flex flex-wrap gap-2 items-center justify-between">
 							<p class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
@@ -102,12 +102,12 @@ const scheduledChecks = computed(() => orderScheduledSourceChecks(props.status.s
 				</ul>
 			</div>
 
-			<div class="px-4 py-4 border border-app-line/70 rounded-xl bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
+			<div class="content-block">
 				<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 					Current reading condition
 				</p>
 				<div class="mt-4 gap-3 grid md:grid-cols-3">
-					<div class="px-3 py-3 rounded-lg bg-app-panel dark:bg-app-panel-dark/80">
+					<div class="content-block">
 						<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 							Overall
 						</p>
@@ -115,7 +115,7 @@ const scheduledChecks = computed(() => orderScheduledSourceChecks(props.status.s
 							{{ status.overallStatus }}
 						</p>
 					</div>
-					<div class="px-3 py-3 rounded-lg bg-app-panel dark:bg-app-panel-dark/80">
+					<div class="content-block">
 						<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 							Next review
 						</p>
@@ -123,7 +123,7 @@ const scheduledChecks = computed(() => orderScheduledSourceChecks(props.status.s
 							{{ status.nextReviewAt ? formatDateTime(status.nextReviewAt) : "Not scheduled" }}
 						</p>
 					</div>
-					<div class="px-3 py-3 rounded-lg bg-app-panel dark:bg-app-panel-dark/80">
+					<div class="content-block">
 						<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 							Next publish window
 						</p>

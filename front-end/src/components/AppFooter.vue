@@ -65,110 +65,87 @@ function resolveGuideLinkTo(path: string) {
 </script>
 
 <template>
-	<footer class="py-10 border-t border-app-line bg-app-panel sm:py-12 dark:border-app-line-dark dark:bg-app-panel-dark">
+	<footer class="py-10 border-t border-app-line bg-app-panel dark:border-app-line-dark dark:bg-app-panel-dark">
 		<div class="app-shell">
-			<div class="gap-6 grid lg:gap-8 xl:grid-cols-[minmax(0,1.12fr)_minmax(0,0.88fr)] xl:items-start">
-				<div class="max-w-3xl">
-					<p class="text-2xl text-app-ink font-serif mt-1 dark:text-app-text-dark">
+			<div class="gap-x-8 gap-y-8 grid lg:grid-cols-[minmax(0,1.3fr)_repeat(3,minmax(0,1fr))] sm:grid-cols-2">
+				<div>
+					<p class="text-lg text-app-ink font-serif dark:text-app-text-dark">
 						Ballot Clarity
 					</p>
-					<p class="bc-measure text-base text-app-muted mt-4 dark:text-app-muted-dark">
-						Ballot Clarity is a public-interest civic-information site built to help people look up their area, review the public record, and verify details with official sources.
+					<p class="text-sm text-app-muted mt-1 dark:text-app-muted-dark">
+						Nonpartisan public-interest project
 					</p>
+					<p class="text-sm mt-3">
+						<ProtectedEmailLink
+							loading-label="Email link loads in your browser."
+							loading-class="text-app-muted dark:text-app-muted-dark"
+							link-class="text-app-ink font-semibold rounded-sm transition dark:text-app-text-dark hover:text-app-accent focus-ring"
+							subject="Ballot Clarity inquiry"
+						/>
+					</p>
+				</div>
 
-					<div class="mt-7 p-4 border border-app-line/80 rounded-xl bg-app-bg/70 max-w-2xl dark:border-app-line-dark dark:bg-app-bg-dark/70">
-						<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
-							Contact
-						</p>
-						<div class="text-sm text-app-muted mt-4 space-y-4 dark:text-app-muted-dark">
-							<p>
-								Questions, corrections, and volunteer help welcome.
-							</p>
-							<p>
-								<ProtectedEmailLink
-									loading-label="Email link loads in your browser."
-									loading-class="text-app-muted dark:text-app-muted-dark"
-									link-class="text-app-ink font-semibold rounded-md transition dark:text-app-text-dark hover:text-app-accent focus-ring dark:hover:text-white"
-									subject="Ballot Clarity inquiry"
-								/>
-							</p>
-							<NuxtLink to="/contact" prefetch-on="interaction" class="text-app-ink font-semibold rounded-md inline-flex gap-2 transition items-center dark:text-app-text-dark hover:text-app-accent focus-ring dark:hover:text-white">
-								<span>Open contact page</span>
-								<span class="i-carbon-arrow-right" aria-hidden="true" />
+				<nav :aria-label="primarySectionLabel">
+					<p class="text-sm text-app-muted font-semibold dark:text-app-muted-dark">
+						{{ primarySectionLabel }}
+					</p>
+					<ul class="text-sm mt-3 space-y-2">
+						<li v-for="link in guideLinks" :key="link.to">
+							<NuxtLink :to="resolveGuideLinkTo(link.to)" prefetch-on="interaction" class="text-app-ink rounded-sm transition dark:text-app-text-dark hover:text-app-accent focus-ring">
+								{{ link.label }}
 							</NuxtLink>
-						</div>
-					</div>
-				</div>
+						</li>
+					</ul>
+				</nav>
 
-				<div class="gap-x-8 gap-y-7 grid sm:grid-cols-2 xl:grid-cols-3">
-					<div>
-						<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
-							{{ primarySectionLabel }}
-						</p>
-						<ul class="text-sm mt-4 space-y-3">
-							<li v-for="link in guideLinks" :key="link.to">
-								<NuxtLink :to="resolveGuideLinkTo(link.to)" prefetch-on="interaction" class="text-app-ink rounded-md transition dark:text-app-text-dark hover:text-app-accent focus-ring dark:hover:text-white">
-									{{ link.label }}
-								</NuxtLink>
-							</li>
-						</ul>
-					</div>
+				<nav aria-label="How it works">
+					<p class="text-sm text-app-muted font-semibold dark:text-app-muted-dark">
+						How it works
+					</p>
+					<ul class="text-sm mt-3 space-y-2">
+						<li v-for="link in howItWorksLinks" :key="link.to">
+							<NuxtLink :to="link.to" prefetch-on="interaction" class="text-app-ink rounded-sm transition dark:text-app-text-dark hover:text-app-accent focus-ring">
+								{{ link.label }}
+							</NuxtLink>
+						</li>
+					</ul>
+				</nav>
 
-					<div>
-						<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
-							How it works
-						</p>
-						<ul class="text-sm mt-4 space-y-3">
-							<li v-for="link in howItWorksLinks" :key="link.to">
-								<NuxtLink :to="link.to" prefetch-on="interaction" class="text-app-ink rounded-md transition dark:text-app-text-dark hover:text-app-accent focus-ring dark:hover:text-white">
-									{{ link.label }}
-								</NuxtLink>
-							</li>
-						</ul>
-					</div>
-
-					<div>
-						<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
-							Help and project
-						</p>
-						<ul class="text-sm mt-4 space-y-3">
-							<li v-for="link in projectLinks" :key="link.to">
-								<NuxtLink :to="link.to" prefetch-on="interaction" class="text-app-ink rounded-md transition dark:text-app-text-dark hover:text-app-accent focus-ring dark:hover:text-white">
-									{{ link.label }}
-								</NuxtLink>
-							</li>
-						</ul>
-					</div>
-				</div>
+				<nav aria-label="Help and project">
+					<p class="text-sm text-app-muted font-semibold dark:text-app-muted-dark">
+						Help and project
+					</p>
+					<ul class="text-sm mt-3 space-y-2">
+						<li v-for="link in projectLinks" :key="link.to">
+							<NuxtLink :to="link.to" prefetch-on="interaction" class="text-app-ink rounded-sm transition dark:text-app-text-dark hover:text-app-accent focus-ring">
+								{{ link.label }}
+							</NuxtLink>
+						</li>
+						<li>
+							<NuxtLink to="/contact" prefetch-on="interaction" class="text-app-ink rounded-sm transition dark:text-app-text-dark hover:text-app-accent focus-ring">
+								Contact
+							</NuxtLink>
+						</li>
+					</ul>
+				</nav>
 			</div>
 
-			<div class="mt-7 pt-4 border-t border-app-line/80 flex flex-col gap-3 dark:border-app-line-dark lg:flex-row lg:items-center lg:justify-between">
-				<div class="flex flex-col gap-3">
-					<p class="text-sm text-app-muted max-w-4xl dark:text-app-muted-dark">
-						Not an official election website. Ballot Clarity aims to provide nonpartisan civic information and cite sources where possible. Content can change, so verify critical election details with the official authorities linked throughout the site.
-					</p>
-					<div class="flex flex-wrap gap-x-5 gap-y-2 items-center">
-						<DataVerificationLauncher />
-						<NuxtLink to="/status" prefetch-on="interaction" class="text-sm text-app-ink font-semibold rounded-md inline-flex gap-2 transition items-center dark:text-app-text-dark hover:text-app-accent focus-ring dark:hover:text-white">
-							Public status
-						</NuxtLink>
-						<NuxtLink to="/corrections" prefetch-on="interaction" class="text-sm text-app-ink font-semibold rounded-md inline-flex gap-2 transition items-center dark:text-app-text-dark hover:text-app-accent focus-ring dark:hover:text-white">
-							Corrections log
-						</NuxtLink>
-					</div>
-				</div>
-				<div class="flex flex-col gap-3 items-start lg:items-end">
-					<div class="max-w-[28rem] w-full lg:w-[13rem]">
-						<ClientOnly>
-							<ThemeSchemePicker compact align="end" panel-align="end" />
-							<template #fallback>
-								<div class="px-4 py-3 border border-app-line rounded-full bg-app-panel h-12 w-full dark:border-app-line-dark dark:bg-app-panel-dark" />
-							</template>
-						</ClientOnly>
-					</div>
-					<p class="text-sm text-app-muted whitespace-nowrap dark:text-app-muted-dark">
-						© {{ year }} Ballot Clarity
-					</p>
+			<div class="text-sm text-app-muted mt-10 pt-4 border-t border-app-line flex flex-wrap gap-x-6 gap-y-3 items-center justify-between dark:text-app-muted-dark dark:border-app-line-dark">
+				<p class="max-w-3xl">
+					Not an official election website. Verify election details with your election office.
+				</p>
+				<div class="flex flex-wrap gap-x-5 gap-y-2 items-center">
+					<DataVerificationLauncher />
+					<NuxtLink to="/status" prefetch-on="interaction" class="text-app-ink rounded-sm transition dark:text-app-text-dark hover:text-app-accent focus-ring">
+						Status
+					</NuxtLink>
+					<NuxtLink to="/corrections" prefetch-on="interaction" class="text-app-ink rounded-sm transition dark:text-app-text-dark hover:text-app-accent focus-ring">
+						Corrections
+					</NuxtLink>
+					<ClientOnly>
+						<ThemeSchemePicker compact align="end" panel-align="end" />
+					</ClientOnly>
+					<span>© {{ year }} Ballot Clarity</span>
 				</div>
 			</div>
 		</div>

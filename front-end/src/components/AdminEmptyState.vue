@@ -11,7 +11,7 @@ defineProps<{
 </script>
 
 <template>
-	<section class="surface-panel max-w-4xl">
+	<section class="max-w-4xl surface-panel">
 		<div class="gap-5 grid sm:grid-cols-[auto_minmax(0,1fr)] sm:items-start">
 			<div class="text-app-accent border border-app-line rounded-xl bg-app-bg flex h-12 w-12 items-center justify-center dark:border-app-line-dark dark:bg-app-bg-dark/70">
 				<span class="i-carbon-inbox text-2xl" aria-hidden="true" />

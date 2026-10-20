@@ -40,7 +40,7 @@ const statusToneClass = computed(() => {
 		</div>
 
 		<div class="mt-6 gap-4 grid md:grid-cols-3">
-			<div class="p-4 rounded-xl bg-app-bg dark:bg-app-bg-dark/70">
+			<div class="content-block">
 				<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 					As of
 				</p>
@@ -48,7 +48,7 @@ const statusToneClass = computed(() => {
 					{{ formatDateTime(freshness.contentLastVerifiedAt) }}
 				</p>
 			</div>
-			<div class="p-4 rounded-xl bg-app-bg dark:bg-app-bg-dark/70">
+			<div class="content-block">
 				<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 					Data updated
 				</p>
@@ -56,7 +56,7 @@ const statusToneClass = computed(() => {
 					{{ freshness.dataLastUpdatedAt ? formatDateTime(freshness.dataLastUpdatedAt) : "Same as page review" }}
 				</p>
 			</div>
-			<div class="p-4 rounded-xl bg-app-bg dark:bg-app-bg-dark/70">
+			<div class="content-block">
 				<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 					Next review
 				</p>
@@ -72,7 +72,7 @@ const statusToneClass = computed(() => {
 				<span class="i-carbon-add group-open:i-carbon-subtract text-base text-app-muted dark:text-app-muted-dark" />
 			</summary>
 			<ul class="mt-4 space-y-3">
-				<li v-for="entry in changeLog" :key="entry.id" class="px-4 py-4 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70">
+				<li v-for="entry in changeLog" :key="entry.id" class="content-block">
 					<p class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
 						{{ formatDateTime(entry.date) }}
 					</p>

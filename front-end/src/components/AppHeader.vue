@@ -6,7 +6,6 @@ import { buildLookupContextFromNationwideResult, buildNationwideRouteTarget } fr
 
 interface HeaderLink {
 	badge?: "compare" | "plan";
-	description?: string;
 	label: string;
 	to: string;
 }
@@ -60,20 +59,20 @@ const aboutGroups: HeaderGroup[] = [
 	{
 		label: "How it works",
 		links: [
-			{ description: "How records are researched and summarized", label: "Methodology", to: "/methodology" },
-			{ description: "Our nonpartisan editorial standards", label: "Neutrality", to: "/neutrality" },
-			{ description: "Where each kind of data comes from", label: "Data sources", to: "/data-sources" },
-			{ description: "Which areas and elections are covered", label: "Coverage", to: "/coverage" },
-			{ description: "Browse every cited source", label: "Source directory", to: "/sources" }
+			{ label: "Methodology", to: "/methodology" },
+			{ label: "Neutrality", to: "/neutrality" },
+			{ label: "Data sources", to: "/data-sources" },
+			{ label: "Coverage", to: "/coverage" },
+			{ label: "Source directory", to: "/sources" }
 		]
 	},
 	{
 		label: "Help and project",
 		links: [
-			{ description: "Plain answers to common voting questions", label: "Voting help", to: "/help" },
-			{ description: "Fixes made to published information", label: "Corrections", to: "/corrections" },
-			{ description: "Who runs Ballot Clarity and why", label: "About", to: "/about" },
-			{ description: "Report an error or ask a question", label: "Contact", to: "/contact" }
+			{ label: "Voting help", to: "/help" },
+			{ label: "Corrections", to: "/corrections" },
+			{ label: "About", to: "/about" },
+			{ label: "Contact", to: "/contact" }
 		]
 	}
 ];
@@ -224,7 +223,7 @@ onBeforeUnmount(() => {
 							<div
 								v-if="isAboutOpen"
 								:id="aboutPanelId"
-								class="mt-px p-4 border border-app-line rounded-xl bg-app-panel gap-6 grid grid-cols-2 w-[min(34rem,calc(100vw-2rem))] shadow-[0_16px_40px_-20px_rgba(13,37,62,0.35)] right-0 top-full absolute dark:border-app-line-dark dark:bg-app-panel-dark"
+								class="mt-px p-4 border border-app-line rounded-xl bg-app-panel gap-6 grid grid-cols-2 w-[min(26rem,calc(100vw-2rem))] shadow-[0_16px_40px_-20px_rgba(13,37,62,0.35)] right-0 top-full absolute dark:border-app-line-dark dark:bg-app-panel-dark"
 							>
 								<div v-for="group in aboutGroups" :key="group.label">
 									<p class="eyebrow px-2">
@@ -238,8 +237,7 @@ onBeforeUnmount(() => {
 												prefetch-on="interaction"
 												class="px-2 py-2 rounded-lg block transition hover:bg-app-bg focus-ring dark:hover:bg-app-bg-dark"
 											>
-												<span class="text-sm text-app-ink font-semibold block dark:text-app-text-dark">{{ link.label }}</span>
-												<span class="text-[0.82rem] text-app-muted leading-snug block dark:text-app-muted-dark">{{ link.description }}</span>
+												<span class="text-sm text-app-ink block dark:text-app-text-dark">{{ link.label }}</span>
 											</NuxtLink>
 										</li>
 									</ul>

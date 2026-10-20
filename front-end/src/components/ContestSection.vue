@@ -29,7 +29,7 @@ const displayTitle = computed(() => props.contest.type === "measure" && props.co
 		class="pamphlet-surface"
 	>
 		<template #meta>
-			<span class="text-[11px] text-app-muted font-semibold px-2.5 py-1 rounded-full bg-white whitespace-nowrap dark:text-app-muted-dark dark:bg-app-panel-dark">
+			<span class="text-sm text-app-muted whitespace-nowrap dark:text-app-muted-dark">
 				{{ itemCountLabel }}
 			</span>
 		</template>
@@ -61,17 +61,16 @@ const displayTitle = computed(() => props.contest.type === "measure" && props.co
 				</div>
 
 				<div class="space-y-4">
-					<div class="p-4 rounded-xl bg-app-bg dark:bg-app-bg-dark/70">
-						<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
-							Why this contest matters
+					<div>
+						<p class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
+							What this office does
 						</p>
-						<div class="mt-3">
+						<div class="mt-1">
 							<ContestRoleGuide :contest="contest" />
 						</div>
 					</div>
-					<NuxtLink :to="`/contest/${contest.slug}`" class="text-sm text-app-accent font-semibold rounded-xl inline-flex gap-2 items-center focus-ring">
-						<span>Open full contest page</span>
-						<span class="i-carbon-arrow-right" />
+					<NuxtLink :to="`/contest/${contest.slug}`" class="btn-secondary">
+						Full contest page
 					</NuxtLink>
 				</div>
 			</div>

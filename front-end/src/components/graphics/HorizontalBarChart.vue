@@ -47,11 +47,10 @@ function widthPercent(value: number) {
 </script>
 
 <template>
-	<div v-if="props.items.length" class="space-y-4">
+	<div v-if="props.items.length" class="space-y-3">
 		<article
 			v-for="item in props.items"
 			:key="item.id"
-			class="px-4 py-4 border border-app-line/70 rounded-xl bg-app-panel dark:border-app-line-dark dark:bg-app-panel-dark/80"
 		>
 			<div class="flex flex-wrap gap-3 items-center justify-between">
 				<p class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
@@ -69,7 +68,7 @@ function widthPercent(value: number) {
 					/>
 				</div>
 			</div>
-			<div class="mt-3 rounded-full bg-app-line/80 h-3 overflow-hidden dark:bg-app-line-dark">
+			<div class="mt-1.5 rounded-full bg-app-line/60 h-2 overflow-hidden dark:bg-app-line-dark">
 				<div
 					class="rounded-full h-full transition-[width]"
 					:class="barToneClass(item.tone)"
@@ -81,7 +80,7 @@ function widthPercent(value: number) {
 			<p v-if="item.value <= 0" class="text-xs text-app-muted leading-6 mt-2 dark:text-app-muted-dark">
 				No measured value is available for this item.
 			</p>
-			<p v-if="item.detail" class="text-sm text-app-muted leading-6 mt-3 dark:text-app-muted-dark">
+			<p v-if="item.detail" class="text-sm text-app-muted leading-6 mt-1 dark:text-app-muted-dark">
 				{{ item.detail }}
 			</p>
 			<p v-if="item.uncertainty" class="text-xs text-app-muted leading-6 mt-2 dark:text-app-muted-dark">

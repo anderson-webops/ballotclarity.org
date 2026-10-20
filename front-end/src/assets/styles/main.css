@@ -1161,14 +1161,12 @@ main .surface-panel p:is(.text-sm, .text-base):not(.uppercase) {
 
 /* Status callouts */
 .callout--success {
-  border-color: #9bc8a9;
-  background: #eef8f1;
+  border-color: #5f9e74;
   color: #1d5232;
 }
 
 html.dark .callout--success {
-  border-color: #2f6b45;
-  background: #0f2618;
+  border-color: #3f8a5a;
   color: #a7dfb9;
 }
 
@@ -1700,4 +1698,254 @@ html.dark .ballot-logistics__date {
     grid-template-columns: minmax(0, 1fr) minmax(15rem, 18rem);
     align-items: start;
   }
+}
+
+/* ------------------------------------------------------------------
+   Paper layout (2026-10 visual pass)
+   Content sits directly on the page instead of in cards; structure comes from
+   spacing, type, and hairline dividers so the eye lands on content first.
+   ------------------------------------------------------------------ */
+
+html,
+body,
+html.dark body {
+  background: rgb(var(--app-panel-rgb));
+}
+
+.summary-strip {
+  gap: 1rem 2rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr));
+}
+
+.summary-strip__item,
+html.dark .summary-strip__item {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.summary-strip__item--interactive:hover,
+html.dark .summary-strip__item--interactive:hover {
+  box-shadow: none;
+  transform: none;
+}
+
+.summary-strip__item--interactive .summary-strip__value {
+  color: var(--app-accent);
+  text-decoration: underline;
+  text-decoration-color: rgba(var(--app-accent-rgb), 0.35);
+  text-underline-offset: 0.18em;
+}
+
+.summary-strip__label {
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+}
+
+.summary-strip__value {
+  margin-top: 0.25rem;
+  font-size: clamp(1.2rem, 1.1rem + 0.4vw, 1.5rem);
+}
+
+.section-nav-list {
+  margin-top: 0.75rem;
+  gap: 0;
+}
+
+.section-nav-link,
+html.dark .section-nav-link {
+  padding: 0.45rem 0.75rem;
+  border: 0;
+  border-left: 2px solid rgb(var(--app-line-rgb));
+  border-radius: 0;
+  background: transparent;
+}
+
+.section-nav-link:hover,
+.section-nav-link:focus-visible {
+  border-left-color: rgb(var(--app-accent-rgb));
+}
+
+.section-nav-link__label {
+  font-size: 0.92rem;
+  font-weight: 500;
+}
+
+.section-nav-link__badge {
+  padding: 0;
+  background: transparent;
+  color: var(--app-muted);
+}
+
+.section-nav--compact {
+  padding: 0 !important;
+}
+
+.expandable-section {
+  padding-top: 1.75rem;
+  border-top: 1px solid var(--app-line);
+}
+
+.expandable-section__body,
+html.dark .expandable-section__body {
+  margin-top: 0.5rem;
+  padding-top: 0;
+  border-top: 0;
+}
+
+.collapsible-card-summary::after,
+html.dark .collapsible-card-summary::after {
+  content: '+';
+  padding: 0;
+  border: 0;
+  font-size: 1.25rem;
+  font-weight: 400;
+  line-height: 1;
+}
+
+details[open] > .collapsible-card-summary::after {
+  content: '−';
+}
+
+.election-hero {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.ballot-toc {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.home-step,
+html.dark .home-step {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.home-election-banner {
+  border-color: transparent;
+}
+
+/* One segmented control for a measure choice instead of three loose pills. */
+.measure-decision {
+  display: inline-flex;
+  overflow: hidden;
+  border: 1px solid var(--app-line);
+  border-radius: 0.5rem;
+}
+
+.measure-decision__option {
+  min-height: 2.75rem;
+  padding: 0 1rem;
+  background: transparent;
+  color: var(--app-ink);
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.measure-decision__option + .measure-decision__option {
+  border-left: 1px solid var(--app-line);
+}
+
+.measure-decision__option:hover {
+  background: rgb(var(--app-bg-rgb));
+}
+
+.measure-decision__option[aria-pressed="true"] {
+  background: var(--app-action);
+  color: var(--app-action-text);
+}
+
+/* Election hero as a single headline block: title, one facts row, one status line. */
+.election-hero__facts {
+  grid-template-columns: repeat(auto-fit, minmax(7rem, max-content));
+  gap: 0.5rem 2.5rem;
+}
+
+.election-hero__fact--wide {
+  grid-column: auto;
+}
+
+.election-hero__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.25rem;
+  align-items: center;
+  margin-top: 1rem;
+}
+
+.election-hero__status {
+  display: inline-flex;
+  gap: 0.4rem;
+  align-items: center;
+  margin: 0;
+  font-weight: 600;
+}
+
+.election-hero__status--success {
+  color: #1d6b3a;
+}
+
+.election-hero__status--warning {
+  color: #8a5b0a;
+}
+
+html.dark .election-hero__status--success {
+  color: #8fd6a8;
+}
+
+html.dark .election-hero__status--warning {
+  color: #efc77b;
+}
+
+/* Saved-choices tray: one line and the two places to go next. */
+.ballot-tray {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.5rem;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.6rem 1rem;
+  border: 1px solid var(--app-line);
+  border-radius: 0.75rem;
+  background: rgb(var(--app-panel-rgb));
+  box-shadow: 0 10px 30px -20px rgba(13, 37, 62, 0.45);
+}
+
+/* Home: one centered column — the election date, the question, and the address field. */
+.home-entry {
+  max-width: 44rem;
+  margin: clamp(1.5rem, 6vh, 4.5rem) auto 0;
+}
+
+.home-entry .home-title {
+  max-width: none;
+  margin-top: 1rem;
+  font-size: clamp(2.1rem, 4vw, 3.25rem);
+}
+
+.home-entry .home-election-banner {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.15rem 0.75rem;
+  align-items: baseline;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.home-entry .home-election-banner:hover {
+  background: transparent;
+}
+
+.home-entry .home-lookup-card {
+  margin-top: 1.75rem;
 }

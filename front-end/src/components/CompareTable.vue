@@ -304,7 +304,7 @@ const mobileSections = computed(() => {
 
 		<div class="space-y-4 lg:hidden">
 			<InfoCallout v-if="props.showOnlyDifferences && !mobileSections.length" title="No differing rows in the current filter set">
-				All visible rows match across the selected candidates. Turn off the differences-only filter to review the full shared questionnaire and ballot information.
+				Turn off “Show only differences” to see every row.
 			</InfoCallout>
 
 			<details v-for="section in mobileSections" :key="section.key" class="group surface-panel">
@@ -314,7 +314,7 @@ const mobileSections = computed(() => {
 				</summary>
 
 				<div class="mt-5 space-y-4">
-					<article v-for="candidate in sortedCandidates" :key="`${section.key}-${candidate.slug}`" class="p-4 rounded-xl bg-app-bg dark:bg-app-bg-dark/70">
+					<article v-for="candidate in sortedCandidates" :key="`${section.key}-${candidate.slug}`" class="content-block">
 						<div class="flex flex-wrap gap-3 items-center">
 							<h3 class="text-xl text-app-ink font-serif dark:text-app-text-dark">
 								{{ candidate.comparison.displayName }}

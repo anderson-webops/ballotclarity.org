@@ -227,7 +227,7 @@ function getRepresentativePresentation(match: NationwideLookupResultContext["rep
 		<p v-if="!resultsPage" class="text-xs text-app-muted tracking-[0.2em] font-semibold uppercase dark:text-app-muted-dark">
 			{{ lookupPresentation.heading }}
 		</p>
-		<p v-if="!resultsPage || lookup.result !== 'resolved' || !hasLookupDetails" class="text-sm text-app-muted leading-6 mt-3 dark:text-app-muted-dark">
+		<p v-if="lookup.result !== 'resolved' || !hasLookupDetails" class="text-sm text-app-muted leading-6 mt-3 dark:text-app-muted-dark">
 			{{ lookup.note }}
 		</p>
 		<div v-if="lookup.result === 'resolved' && !resultsPage" class="mt-4 flex flex-wrap gap-2">
@@ -294,20 +294,21 @@ function getRepresentativePresentation(match: NationwideLookupResultContext["rep
 		<ol
 			v-if="visibleAvailabilityItems.length"
 			class="lookup-steps"
-			:class="compact ? 'mt-4 grid grid-cols-1 gap-3' : 'mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3 items-stretch md:auto-rows-fr'"
+			:class="compact ? 'mt-4 grid grid-cols-1 gap-3' : 'mt-4 grid gap-x-8 gap-y-4 md:grid-cols-2 xl:grid-cols-3 items-stretch md:auto-rows-fr'"
 		>
 			<li v-for="card in visibleAvailabilityItems" :key="card.id" class="lookup-step flex">
 				<component
 					:is="card.href ? NuxtLinkComponent : 'article'"
 					v-bind="card.href ? { to: card.href } : {}"
-					class="lookup-step-card group surface-row flex flex-col h-full w-full transition"
+					class="lookup-step-card group content-block-link flex flex-col h-full w-full"
 					:class="card.href ? 'focus-ring hover:border-app-accent dark:hover:border-app-accent' : ''"
 				>
 					<div class="flex gap-3 items-start">
 						<span class="lookup-step-card__number" aria-hidden="true" />
 						<div class="min-w-0">
-							<h3 class="text-base text-app-ink font-semibold dark:text-app-text-dark">
+							<h3 class="text-base font-semibold inline-flex gap-1.5 items-center" :class="card.href ? 'text-app-accent' : 'text-app-ink dark:text-app-text-dark'">
 								{{ card.title || card.item.label }}
+								<span v-if="card.href" class="i-carbon-arrow-right transition group-hover:translate-x-0.5" aria-hidden="true" />
 							</h3>
 							<VerificationBadge
 								v-if="card.item.status !== 'available'"
@@ -317,27 +318,14 @@ function getRepresentativePresentation(match: NationwideLookupResultContext["rep
 							/>
 						</div>
 					</div>
-					<p class="text-sm text-app-muted leading-6 mt-3 dark:text-app-muted-dark">
-						{{ card.item.detail }}
-					</p>
-					<p
-						v-if="card.href"
-						class="text-[0.95rem] text-app-accent font-semibold mt-auto pt-4 inline-flex gap-1.5 items-center"
-					>
-						{{ card.actionLabel }}
-						<span class="i-carbon-arrow-right transition group-hover:translate-x-0.5" aria-hidden="true" />
-					</p>
 				</component>
 			</li>
 		</ol>
 		<div v-if="visibleLookupActions.length" :id="resultsPage ? 'official-tools' : undefined" class="mt-6 gap-3 grid">
 			<div v-if="resultsPage">
 				<h2 class="text-2xl text-app-ink font-serif dark:text-app-text-dark">
-					Confirm with official election tools
+					Official election tools
 				</h2>
-				<p class="text-[0.95rem] text-app-muted leading-relaxed mt-2 max-w-3xl dark:text-app-muted-dark">
-					Check your registration, polling place, and sample ballot directly with election officials.
-				</p>
 			</div>
 			<div
 				v-for="action in visibleLookupActions"
@@ -350,7 +338,7 @@ function getRepresentativePresentation(match: NationwideLookupResultContext["rep
 					</p>
 					<span
 						v-if="action.badge"
-						class="text-[11px] text-app-muted tracking-[0.06em] font-semibold px-2 py-1 border border-app-line rounded-full uppercase dark:text-app-muted-dark dark:border-app-line-dark"
+						class="text-xs text-app-muted font-semibold dark:text-app-muted-dark"
 					>
 						{{ action.badge }}
 					</span>
@@ -422,9 +410,6 @@ function getRepresentativePresentation(match: NationwideLookupResultContext["rep
 						</p>
 						<VerificationBadge v-if="electionLogistics.mailOnly" label="Mail-only precinct" tone="warning" />
 					</div>
-					<p v-if="electionLogistics.normalizedAddress" class="text-sm text-app-muted leading-6 mt-3 dark:text-app-muted-dark">
-						Structured logistics returned for {{ electionLogistics.normalizedAddress }}.
-					</p>
 					<p class="text-sm text-app-muted leading-6 mt-3 dark:text-app-muted-dark">
 						{{ electionLogistics.officialSourceNote }}
 					</p>
@@ -437,7 +422,7 @@ function getRepresentativePresentation(match: NationwideLookupResultContext["rep
 							]"
 							v-show="section.items.length"
 							:key="section.id"
-							class="p-4 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70"
+							class="content-block"
 						>
 							<h3 class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
 								{{ section.title }}
@@ -537,7 +522,7 @@ function getRepresentativePresentation(match: NationwideLookupResultContext["rep
 						<article
 							v-for="contest in preview.contests.slice(0, 6)"
 							:key="contest.id"
-							class="p-4 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70"
+							class="content-block"
 						>
 							<div class="flex flex-wrap gap-2 items-center">
 								<h3 class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
@@ -603,8 +588,5 @@ function getRepresentativePresentation(match: NationwideLookupResultContext["rep
 				Open full local guide
 			</button>
 		</div>
-		<p class="text-xs text-app-muted leading-6 mt-4 dark:text-app-muted-dark">
-			{{ lookupPresentation.footerNote }}
-		</p>
 	</div>
 </template>

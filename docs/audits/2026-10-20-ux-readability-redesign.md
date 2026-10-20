@@ -215,5 +215,5 @@ npm run start:local     # check /ballot/<slug>, /candidate/<slug>, /measure/<slu
 
 - **New CSS-only classes:** The hero, contents list, and layout classes are plain CSS in `main.css`, so they do not depend on UnoCSS generation.
 - **New utility classes:** Templates use a few utilities that the released build did not contain, such as `space-y-5`. UnoCSS generates them at build time.
-- **Dark mode:** It was not screenshotted.
+- **Dark mode:** Only the ballot, candidate, and measure previews were checked in dark mode, at 1280 px. Other pages and sizes were not.
 - **Production data:** The production snapshot may differ from the reviewed file in the repository. Check its polls-close value separately.

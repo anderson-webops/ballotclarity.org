@@ -79,8 +79,8 @@ usePageSeo(() => ({
 		</form>
 
 		<div v-if="pending" class="space-y-6" role="status" aria-label="Searching public records">
-			<div class="surface-panel bg-white/70 h-56 animate-pulse dark:bg-app-panel-dark/70" />
-			<div class="surface-panel bg-white/70 h-56 animate-pulse dark:bg-app-panel-dark/70" />
+			<div class="surface-panel bg-app-panel h-56 animate-pulse dark:bg-app-panel-dark/70" />
+			<div class="surface-panel bg-app-panel h-56 animate-pulse dark:bg-app-panel-dark/70" />
 		</div>
 
 		<div v-else-if="error" class="surface-panel" role="alert">
@@ -96,7 +96,7 @@ usePageSeo(() => ({
 		</div>
 
 		<div v-else-if="!activeQuery" class="surface-panel">
-			<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+			<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 				Try one of these
 			</p>
 			<div class="mt-6 flex flex-wrap gap-3">
@@ -143,7 +143,7 @@ usePageSeo(() => ({
 			>
 				<div class="flex flex-wrap gap-4 items-center justify-between">
 					<div>
-						<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+						<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 							{{ group.label }}
 						</p>
 						<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
@@ -157,7 +157,7 @@ usePageSeo(() => ({
 						v-for="item in group.items"
 						:key="item.id"
 						:to="item.href"
-						class="px-5 py-5 border border-app-line/80 rounded-3xl bg-white/80 block transition dark:border-app-line-dark hover:border-app-accent dark:bg-app-panel-dark/70 focus-ring"
+						class="px-5 py-5 border border-app-line/80 rounded-xl bg-app-panel block transition dark:border-app-line-dark hover:border-app-accent dark:bg-app-panel-dark/70 focus-ring"
 					>
 						<div class="flex flex-wrap gap-3 items-start justify-between">
 							<div class="min-w-0">

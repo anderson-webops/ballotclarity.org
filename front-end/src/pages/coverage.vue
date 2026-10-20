@@ -41,9 +41,9 @@ function capabilityLabel(status: "in-build" | "live-now" | "planned") {
 <template>
 	<section class="app-shell section-gap space-y-8">
 		<div v-if="pending" class="space-y-6">
-			<div class="surface-panel bg-white/70 h-72 animate-pulse dark:bg-app-panel-dark/70" />
+			<div class="surface-panel bg-app-panel h-72 animate-pulse dark:bg-app-panel-dark/70" />
 			<div class="gap-6 grid xl:grid-cols-2">
-				<div v-for="index in 4" :key="index" class="surface-panel bg-white/70 h-56 animate-pulse dark:bg-app-panel-dark/70" />
+				<div v-for="index in 4" :key="index" class="surface-panel bg-app-panel h-56 animate-pulse dark:bg-app-panel-dark/70" />
 			</div>
 		</div>
 
@@ -90,7 +90,7 @@ function capabilityLabel(status: "in-build" | "live-now" | "planned") {
 						<TrustBadge :label="coverageBadgeLabel" tone="accent" />
 						<TrustBadge label="Official links attached" />
 					</div>
-					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold mt-6 uppercase dark:text-app-muted-dark">
+					<p class="text-xs text-app-muted tracking-[0.06em] font-semibold mt-6 uppercase dark:text-app-muted-dark">
 						Election coverage
 					</p>
 					<h1 class="text-5xl text-app-ink leading-tight font-serif mt-3 dark:text-app-text-dark">
@@ -100,8 +100,8 @@ function capabilityLabel(status: "in-build" | "live-now" | "planned") {
 						{{ coverageIntro }} Use the official election tools for final deadline, polling-place, and ballot confirmation.
 					</p>
 					<div class="mt-6 gap-4 grid md:grid-cols-2">
-						<div class="px-5 py-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
-							<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+						<div class="px-5 py-5 rounded-xl bg-app-bg dark:bg-app-bg-dark/70">
+							<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 								Current election
 							</p>
 							<p class="text-lg text-app-ink font-semibold mt-3 dark:text-app-text-dark">
@@ -111,8 +111,8 @@ function capabilityLabel(status: "in-build" | "live-now" | "planned") {
 								{{ formatDate(data.launchTarget.currentElectionDate) }}
 							</p>
 						</div>
-						<div class="px-5 py-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
-							<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+						<div class="px-5 py-5 rounded-xl bg-app-bg dark:bg-app-bg-dark/70">
+							<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 								Next election
 							</p>
 							<p class="text-lg text-app-ink font-semibold mt-3 dark:text-app-text-dark">
@@ -130,7 +130,7 @@ function capabilityLabel(status: "in-build" | "live-now" | "planned") {
 
 				<div class="space-y-4">
 					<div class="surface-panel">
-						<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+						<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 							Open next
 						</p>
 						<div class="mt-4 flex flex-wrap gap-3">
@@ -163,7 +163,7 @@ function capabilityLabel(status: "in-build" | "live-now" | "planned") {
 					</NuxtLink>
 				</div>
 				<div class="mt-6 gap-5 grid xl:grid-cols-2">
-					<article v-for="capability in publicCapabilities" :key="capability.id" class="px-5 py-5 border border-app-line/70 rounded-3xl bg-white/80 dark:border-app-line-dark dark:bg-app-panel-dark/70">
+					<article v-for="capability in publicCapabilities" :key="capability.id" class="px-5 py-5 border border-app-line/70 rounded-xl bg-app-panel dark:border-app-line-dark dark:bg-app-panel-dark/70">
 						<div class="flex flex-wrap gap-2 items-center">
 							<TrustBadge :label="capabilityLabel(capability.status)" :tone="capabilityTone(capability.status)" />
 						</div>
@@ -180,7 +180,7 @@ function capabilityLabel(status: "in-build" | "live-now" | "planned") {
 						Known limits and final checks
 					</summary>
 					<ul class="mt-5 space-y-4">
-						<li v-for="item in data.limitations" :key="item.id" class="px-5 py-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
+						<li v-for="item in data.limitations" :key="item.id" class="px-5 py-5 rounded-xl bg-app-bg dark:bg-app-bg-dark/70">
 							<p class="text-lg text-app-ink font-semibold dark:text-app-text-dark">
 								{{ item.title }}
 							</p>

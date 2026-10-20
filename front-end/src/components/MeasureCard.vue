@@ -58,16 +58,16 @@ function saveMeasure(decision: "no" | "review" | "yes") {
 		>
 			<div class="space-y-4">
 				<dl class="gap-3 grid sm:grid-cols-2">
-					<div class="p-3 rounded-2xl bg-white/80 dark:bg-app-panel-dark/70">
-						<dt class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+					<div class="p-3 rounded-2xl bg-app-panel dark:bg-app-panel-dark/70">
+						<dt class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 							What YES means
 						</dt>
 						<dd class="text-sm text-app-muted leading-6 mt-2 dark:text-app-muted-dark">
 							{{ measure.yesMeaning }}
 						</dd>
 					</div>
-					<div class="p-3 rounded-2xl bg-white/80 dark:bg-app-panel-dark/70">
-						<dt class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+					<div class="p-3 rounded-2xl bg-app-panel dark:bg-app-panel-dark/70">
+						<dt class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 							What NO means
 						</dt>
 						<dd class="text-sm text-app-muted leading-6 mt-2 dark:text-app-muted-dark">
@@ -83,7 +83,7 @@ function saveMeasure(decision: "no" | "review" | "yes") {
 		</ExpandableSection>
 
 		<div class="mt-6">
-			<p class="text-xs text-app-muted tracking-[0.22em] font-semibold uppercase dark:text-app-muted-dark">
+			<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 				{{ decisionHeading }}
 			</p>
 			<div class="mt-3 flex flex-wrap gap-2">

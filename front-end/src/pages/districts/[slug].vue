@@ -99,10 +99,10 @@ usePageSeo({
 	<section class="app-shell section-gap">
 		<div v-if="pagePending" class="gap-6 grid xl:grid-cols-[minmax(0,1.1fr)_minmax(18rem,0.9fr)]">
 			<div class="space-y-6">
-				<div class="surface-panel bg-white/70 h-80 animate-pulse dark:bg-app-panel-dark/70" />
-				<div class="surface-panel bg-white/70 h-72 animate-pulse dark:bg-app-panel-dark/70" />
+				<div class="surface-panel bg-app-panel h-80 animate-pulse dark:bg-app-panel-dark/70" />
+				<div class="surface-panel bg-app-panel h-72 animate-pulse dark:bg-app-panel-dark/70" />
 			</div>
-			<div class="surface-panel bg-white/70 h-72 animate-pulse dark:bg-app-panel-dark/70" />
+			<div class="surface-panel bg-app-panel h-72 animate-pulse dark:bg-app-panel-dark/70" />
 		</div>
 
 		<div v-else-if="pageError || !districtPageData" class="max-w-3xl">
@@ -162,7 +162,7 @@ usePageSeo({
 						</NuxtLink>
 					</div>
 					<div v-if="districtPageData.representatives.length" class="mt-6 gap-5 grid lg:grid-cols-2">
-						<article v-for="representative in districtPageData.representatives" :key="representative.slug" class="p-5 border border-app-line/70 rounded-3xl bg-white/80 dark:border-app-line-dark dark:bg-app-panel-dark/70">
+						<article v-for="representative in districtPageData.representatives" :key="representative.slug" class="p-5 border border-app-line/70 rounded-xl bg-app-panel dark:border-app-line-dark dark:bg-app-panel-dark/70">
 							<div class="flex gap-4 items-start">
 								<ProfileImageStack
 									v-if="representative.profileImages?.length"
@@ -312,7 +312,7 @@ usePageSeo({
 				</PageSectionNav>
 
 				<div v-if="activeLookupSummary.mode !== 'none'" class="surface-row">
-					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+					<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 						Area
 					</p>
 					<h2 class="text-2xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
@@ -356,9 +356,9 @@ usePageSeo({
 							v-for="contest in districtPageData.relatedContests"
 							:key="contest.slug"
 							:to="contest.href"
-							class="px-5 py-4 border border-app-line/70 rounded-3xl bg-white/80 block transition dark:border-app-line-dark hover:border-app-accent dark:bg-app-panel-dark/70 focus-ring"
+							class="px-5 py-4 border border-app-line/70 rounded-xl bg-app-panel block transition dark:border-app-line-dark hover:border-app-accent dark:bg-app-panel-dark/70 focus-ring"
 						>
-							<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+							<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 								{{ contest.jurisdiction }}
 							</p>
 							<p class="text-lg text-app-ink font-semibold mt-3 dark:text-app-text-dark">

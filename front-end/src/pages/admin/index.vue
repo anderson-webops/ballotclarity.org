@@ -61,7 +61,7 @@ usePageSeo({
 <template>
 	<section class="app-shell section-gap space-y-8">
 		<header class="max-w-4xl">
-			<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+			<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 				Operational dashboard
 			</p>
 			<h1 class="text-5xl text-app-ink font-serif mt-4 dark:text-app-text-dark">
@@ -90,7 +90,7 @@ usePageSeo({
 			<div class="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
 				<div class="max-w-3xl">
 					<div class="flex flex-wrap gap-3 items-center">
-						<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+						<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 							Account security
 						</p>
 						<TrustBadge :label="security.status === 'healthy' ? 'controls complete' : 'security action needed'" :tone="securityTone" />
@@ -108,32 +108,32 @@ usePageSeo({
 			</div>
 
 			<div class="mt-6 gap-4 grid md:grid-cols-2 xl:grid-cols-4">
-				<div class="px-4 py-4 border border-app-line/80 rounded-[1.4rem] bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
-					<p class="text-xs text-app-muted tracking-[0.16em] font-semibold uppercase dark:text-app-muted-dark">
+				<div class="px-4 py-4 border border-app-line/80 rounded-xl bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
+					<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 						Active users
 					</p>
 					<p class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
 						{{ security.activeUserCount }}
 					</p>
 				</div>
-				<div class="px-4 py-4 border border-app-line/80 rounded-[1.4rem] bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
-					<p class="text-xs text-app-muted tracking-[0.16em] font-semibold uppercase dark:text-app-muted-dark">
+				<div class="px-4 py-4 border border-app-line/80 rounded-xl bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
+					<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 						MFA enabled
 					</p>
 					<p class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
 						{{ security.mfaEnabledUserCount }}/{{ security.activeUserCount }}
 					</p>
 				</div>
-				<div class="px-4 py-4 border border-app-line/80 rounded-[1.4rem] bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
-					<p class="text-xs text-app-muted tracking-[0.16em] font-semibold uppercase dark:text-app-muted-dark">
+				<div class="px-4 py-4 border border-app-line/80 rounded-xl bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
+					<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 						Password change required
 					</p>
 					<p class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
 						{{ security.passwordChangeRequiredUserCount }}
 					</p>
 				</div>
-				<div class="px-4 py-4 border border-app-line/80 rounded-[1.4rem] bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
-					<p class="text-xs text-app-muted tracking-[0.16em] font-semibold uppercase dark:text-app-muted-dark">
+				<div class="px-4 py-4 border border-app-line/80 rounded-xl bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
+					<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 						Active admins
 					</p>
 					<p class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
@@ -147,7 +147,7 @@ usePageSeo({
 					Accounts missing MFA
 				</p>
 				<ul class="mt-3 gap-3 grid md:grid-cols-2">
-					<li v-for="user in security.usersWithoutMfa" :key="user.id" class="text-sm text-app-muted px-4 py-3 border border-app-warm/40 rounded-[1.2rem] bg-app-warm/10 dark:text-app-muted-dark">
+					<li v-for="user in security.usersWithoutMfa" :key="user.id" class="text-sm text-app-muted px-4 py-3 border border-app-warm/40 rounded-xl bg-app-warm/10 dark:text-app-muted-dark">
 						<span class="text-app-ink font-semibold dark:text-app-text-dark">{{ user.displayName }}</span>
 						<span class="mt-1 block">{{ user.username }} · {{ user.role }}</span>
 					</li>
@@ -159,7 +159,7 @@ usePageSeo({
 					Accounts using temporary passwords
 				</p>
 				<ul class="mt-3 gap-3 grid md:grid-cols-2">
-					<li v-for="user in security.usersRequiringPasswordChange" :key="user.id" class="text-sm text-app-muted px-4 py-3 border border-app-warm/40 rounded-[1.2rem] bg-app-warm/10 dark:text-app-muted-dark">
+					<li v-for="user in security.usersRequiringPasswordChange" :key="user.id" class="text-sm text-app-muted px-4 py-3 border border-app-warm/40 rounded-xl bg-app-warm/10 dark:text-app-muted-dark">
 						<span class="text-app-ink font-semibold dark:text-app-text-dark">{{ user.displayName }}</span>
 						<span class="mt-1 block">{{ user.username }} · {{ user.role }}</span>
 					</li>
@@ -169,28 +169,28 @@ usePageSeo({
 
 		<section class="gap-6 grid xl:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
 			<div class="surface-panel">
-				<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+				<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 					Needs attention
 				</p>
 				<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
 					Current operational priorities
 				</h2>
 				<ul class="readable-list text-sm text-app-muted mt-6 dark:text-app-muted-dark">
-					<li v-for="item in overview?.needsAttention ?? []" :key="item" class="px-4 py-4 border border-app-line/80 rounded-[1.4rem] bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
+					<li v-for="item in overview?.needsAttention ?? []" :key="item" class="px-4 py-4 border border-app-line/80 rounded-xl bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
 						{{ item }}
 					</li>
 				</ul>
 			</div>
 
 			<div class="surface-panel">
-				<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+				<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 					Recent activity
 				</p>
 				<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
 					Latest queue and publish events
 				</h2>
 				<div class="mt-6 space-y-4">
-					<article v-for="item in overview?.recentActivity ?? []" :key="item.id" class="px-4 py-4 border border-app-line/80 rounded-[1.4rem] bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
+					<article v-for="item in overview?.recentActivity ?? []" :key="item.id" class="px-4 py-4 border border-app-line/80 rounded-xl bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
 						<div class="flex flex-wrap gap-3 items-center justify-between">
 							<p class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
 								{{ item.label }}
@@ -209,7 +209,7 @@ usePageSeo({
 			<div class="surface-panel">
 				<div class="flex gap-4 items-center justify-between">
 					<div>
-						<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+						<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 							Guide packages
 						</p>
 						<h2 class="text-2xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
@@ -221,11 +221,11 @@ usePageSeo({
 					</NuxtLink>
 				</div>
 				<div class="mt-6 space-y-4">
-					<article v-for="item in packagePreview" :key="item.workflow.id" class="px-4 py-4 border border-app-line/80 rounded-[1.4rem] bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
+					<article v-for="item in packagePreview" :key="item.workflow.id" class="px-4 py-4 border border-app-line/80 rounded-xl bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
 						<p class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
 							{{ item.coverageScope.label }}
 						</p>
-						<p class="text-xs text-app-muted tracking-[0.16em] font-semibold mt-2 uppercase dark:text-app-muted-dark">
+						<p class="text-xs text-app-muted tracking-[0.06em] font-semibold mt-2 uppercase dark:text-app-muted-dark">
 							{{ item.workflow.status.replaceAll('_', ' ') }} · {{ item.diagnostics.completenessScore }}% checklist
 						</p>
 						<div class="mt-3 flex flex-wrap gap-2">
@@ -241,7 +241,7 @@ usePageSeo({
 			<div class="surface-panel">
 				<div class="flex gap-4 items-center justify-between">
 					<div>
-						<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+						<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 							Review queue
 						</p>
 						<h2 class="text-2xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
@@ -253,11 +253,11 @@ usePageSeo({
 					</NuxtLink>
 				</div>
 				<div class="mt-6 space-y-4">
-					<article v-for="item in reviewPreview" :key="item.id" class="px-4 py-4 border border-app-line/80 rounded-[1.4rem] bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
+					<article v-for="item in reviewPreview" :key="item.id" class="px-4 py-4 border border-app-line/80 rounded-xl bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
 						<p class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
 							{{ item.title }}
 						</p>
-						<p class="text-xs text-app-muted tracking-[0.16em] font-semibold mt-2 uppercase dark:text-app-muted-dark">
+						<p class="text-xs text-app-muted tracking-[0.06em] font-semibold mt-2 uppercase dark:text-app-muted-dark">
 							{{ item.status }}
 						</p>
 						<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
@@ -270,7 +270,7 @@ usePageSeo({
 			<div class="surface-panel">
 				<div class="flex gap-4 items-center justify-between">
 					<div>
-						<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+						<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 							Corrections
 						</p>
 						<h2 class="text-2xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
@@ -282,11 +282,11 @@ usePageSeo({
 					</NuxtLink>
 				</div>
 				<div class="mt-6 space-y-4">
-					<article v-for="item in correctionPreview" :key="item.id" class="px-4 py-4 border border-app-line/80 rounded-[1.4rem] bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
+					<article v-for="item in correctionPreview" :key="item.id" class="px-4 py-4 border border-app-line/80 rounded-xl bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
 						<p class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
 							{{ item.subject }}
 						</p>
-						<p class="text-xs text-app-muted tracking-[0.16em] font-semibold mt-2 uppercase dark:text-app-muted-dark">
+						<p class="text-xs text-app-muted tracking-[0.06em] font-semibold mt-2 uppercase dark:text-app-muted-dark">
 							{{ item.status }} · {{ item.priority }} priority
 						</p>
 						<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
@@ -299,7 +299,7 @@ usePageSeo({
 			<div class="surface-panel">
 				<div class="flex gap-4 items-center justify-between">
 					<div>
-						<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+						<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 							Source health
 						</p>
 						<h2 class="text-2xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
@@ -311,12 +311,12 @@ usePageSeo({
 					</NuxtLink>
 				</div>
 				<div class="mt-6 space-y-4">
-					<article v-for="item in sourcePreview" :key="item.id" class="px-4 py-4 border border-app-line/80 rounded-[1.4rem] bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
+					<article v-for="item in sourcePreview" :key="item.id" class="px-4 py-4 border border-app-line/80 rounded-xl bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
 						<div class="flex flex-wrap gap-3 items-center justify-between">
 							<p class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
 								{{ item.label }}
 							</p>
-							<p class="text-xs tracking-[0.16em] font-semibold uppercase" :class="item.health === 'healthy' ? 'text-app-accent' : item.health === 'incident' ? 'text-[#8B3A2E]' : 'text-app-muted dark:text-app-muted-dark'">
+							<p class="text-xs tracking-[0.06em] font-semibold uppercase" :class="item.health === 'healthy' ? 'text-app-accent' : item.health === 'incident' ? 'text-[#8B3A2E]' : 'text-app-muted dark:text-app-muted-dark'">
 								{{ item.health }}
 							</p>
 						</div>

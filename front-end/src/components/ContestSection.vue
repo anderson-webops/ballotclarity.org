@@ -56,15 +56,15 @@ const itemCountLabel = computed(() => props.contest.type === "candidate"
 			</div>
 
 			<div class="space-y-4">
-				<div class="p-4 rounded-[1.4rem] bg-app-bg dark:bg-app-bg-dark/70">
-					<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+				<div class="p-4 rounded-xl bg-app-bg dark:bg-app-bg-dark/70">
+					<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 						Why this contest matters
 					</p>
 					<div class="mt-3">
 						<ContestRoleGuide :contest="contest" />
 					</div>
 				</div>
-				<NuxtLink :to="`/contest/${contest.slug}`" class="text-sm text-app-accent font-semibold rounded-[1rem] inline-flex gap-2 items-center focus-ring">
+				<NuxtLink :to="`/contest/${contest.slug}`" class="text-sm text-app-accent font-semibold rounded-xl inline-flex gap-2 items-center focus-ring">
 					<span>Open canonical contest page</span>
 					<span class="i-carbon-arrow-right" />
 				</NuxtLink>

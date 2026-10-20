@@ -72,7 +72,7 @@ usePageSeo({
 		</div>
 
 		<div v-if="pending" class="space-y-6">
-			<div v-for="index in 4" :key="index" class="surface-panel bg-white/70 h-40 animate-pulse dark:bg-app-panel-dark/70" />
+			<div v-for="index in 4" :key="index" class="surface-panel bg-app-panel h-40 animate-pulse dark:bg-app-panel-dark/70" />
 		</div>
 
 		<div v-else-if="!filteredSources.length" class="surface-panel">

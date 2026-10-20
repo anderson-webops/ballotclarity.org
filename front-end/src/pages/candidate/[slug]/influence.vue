@@ -36,8 +36,8 @@ usePageSeo({
 <template>
 	<section class="app-shell section-gap space-y-8">
 		<div v-if="pending" class="space-y-6">
-			<div class="surface-panel bg-white/70 h-80 animate-pulse dark:bg-app-panel-dark/70" />
-			<div class="surface-panel bg-white/70 h-64 animate-pulse dark:bg-app-panel-dark/70" />
+			<div class="surface-panel bg-app-panel h-80 animate-pulse dark:bg-app-panel-dark/70" />
+			<div class="surface-panel bg-app-panel h-64 animate-pulse dark:bg-app-panel-dark/70" />
 		</div>
 
 		<GuideUnavailableState
@@ -89,7 +89,7 @@ usePageSeo({
 						<article
 							v-for="item in candidate.lobbyingContext"
 							:key="item.id"
-							class="p-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70"
+							class="p-5 rounded-xl bg-app-bg dark:bg-app-bg-dark/70"
 						>
 							<h3 class="text-xl text-app-ink font-semibold dark:text-app-text-dark">
 								{{ item.title }}
@@ -113,7 +113,7 @@ usePageSeo({
 							<article
 								v-for="statement in candidate.publicStatements"
 								:key="statement.id"
-								class="p-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70"
+								class="p-5 rounded-xl bg-app-bg dark:bg-app-bg-dark/70"
 							>
 								<h3 class="text-xl text-app-ink font-semibold dark:text-app-text-dark">
 									{{ statement.title }}

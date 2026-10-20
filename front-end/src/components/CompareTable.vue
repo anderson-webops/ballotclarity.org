@@ -137,11 +137,11 @@ const mobileSections = computed(() => {
 
 <template>
 	<div>
-		<div class="border border-app-line rounded-[2rem] hidden overflow-x-auto dark:border-app-line-dark lg:block">
+		<div class="border border-app-line rounded-xl hidden overflow-x-auto dark:border-app-line-dark lg:block">
 			<table class="bg-white min-w-full border-collapse dark:bg-app-panel-dark">
 				<thead>
 					<tr class="border-b border-app-line dark:border-app-line-dark">
-						<th class="text-xs text-app-muted tracking-[0.24em] font-semibold px-6 py-5 text-left bg-app-bg w-72 uppercase left-0 top-0 sticky z-30 dark:text-app-muted-dark dark:bg-app-bg-dark/90">
+						<th class="text-xs text-app-muted tracking-[0.06em] font-semibold px-6 py-5 text-left bg-app-bg w-72 uppercase left-0 top-0 sticky z-30 dark:text-app-muted-dark dark:bg-app-bg-dark/90">
 							Attribute
 						</th>
 						<th
@@ -270,10 +270,10 @@ const mobileSections = computed(() => {
 					<tr
 						v-for="question in questionRows"
 						:key="question.questionId"
-						class="align-top border-b border-app-line/70 last:border-b-0 dark:border-app-line-dark"
+						class="align-top border-b border-app-line/70 dark:border-app-line-dark last:border-b-0"
 					>
 						<th class="px-6 py-5 text-left bg-app-bg left-0 sticky z-10 dark:bg-app-bg-dark/85" :class="rowAccent(question.questionId)" scope="row">
-							<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+							<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 								{{ question.category }}
 							</p>
 							<p class="text-sm text-app-ink font-semibold mt-2 dark:text-app-text-dark">
@@ -314,7 +314,7 @@ const mobileSections = computed(() => {
 				</summary>
 
 				<div class="mt-5 space-y-4">
-					<article v-for="candidate in sortedCandidates" :key="`${section.key}-${candidate.slug}`" class="p-4 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
+					<article v-for="candidate in sortedCandidates" :key="`${section.key}-${candidate.slug}`" class="p-4 rounded-xl bg-app-bg dark:bg-app-bg-dark/70">
 						<div class="flex flex-wrap gap-3 items-center">
 							<h3 class="text-xl text-app-ink font-serif dark:text-app-text-dark">
 								{{ candidate.comparison.displayName }}

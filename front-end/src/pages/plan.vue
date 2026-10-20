@@ -163,7 +163,7 @@ function printPlan() {
 						<TrustBadge label="Print-friendly" />
 						<TrustBadge label="Current ballot plan" tone="warning" />
 					</div>
-					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold mt-5 uppercase dark:text-app-muted-dark">
+					<p class="text-xs text-app-muted tracking-[0.06em] font-semibold mt-5 uppercase dark:text-app-muted-dark">
 						My ballot plan
 					</p>
 					<h1 class="text-5xl text-app-ink leading-tight font-serif mt-3 max-w-[12ch] dark:text-app-text-dark sm:max-w-[14ch]">
@@ -175,8 +175,8 @@ function printPlan() {
 				</div>
 
 				<div class="xl:pb-1 lg:max-w-xl xl:max-w-none">
-					<div class="p-5 border border-app-line/70 rounded-[1.9rem] bg-app-bg/55 dark:border-app-line-dark dark:bg-app-bg-dark/55">
-						<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+					<div class="p-5 border border-app-line/70 rounded-xl bg-app-bg/55 dark:border-app-line-dark dark:bg-app-bg-dark/55">
+						<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 							Quick actions
 						</p>
 						<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
@@ -216,8 +216,8 @@ function printPlan() {
 		<LocationChangePanel :election="lookupElection" />
 
 		<div v-if="pending" class="space-y-6">
-			<div class="surface-panel bg-white/70 h-48 animate-pulse dark:bg-app-panel-dark/70" />
-			<div class="surface-panel bg-white/70 h-80 animate-pulse dark:bg-app-panel-dark/70" />
+			<div class="surface-panel bg-app-panel h-48 animate-pulse dark:bg-app-panel-dark/70" />
+			<div class="surface-panel bg-app-panel h-80 animate-pulse dark:bg-app-panel-dark/70" />
 		</div>
 
 		<div v-else-if="error || !data" class="max-w-3xl">
@@ -229,7 +229,7 @@ function printPlan() {
 		<div v-else class="space-y-8 lg:space-y-10">
 			<section class="gap-8 grid lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] print-hidden">
 				<div class="surface-panel">
-					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+					<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 						Plan progress
 					</p>
 					<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
@@ -250,7 +250,7 @@ function printPlan() {
 				</div>
 
 				<div class="surface-panel">
-					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+					<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 						Before you head out
 					</p>
 					<ul class="text-sm text-app-muted leading-7 mt-5 space-y-3 dark:text-app-muted-dark">
@@ -269,7 +269,7 @@ function printPlan() {
 			</section>
 
 			<section class="print-only surface-panel">
-				<p class="text-xs tracking-[0.24em] font-semibold uppercase">
+				<p class="text-xs tracking-[0.06em] font-semibold uppercase">
 					Ballot Clarity printout
 				</p>
 				<h2 class="text-3xl font-serif mt-3">
@@ -292,7 +292,7 @@ function printPlan() {
 			<section v-else-if="plannedEntries.length" class="print-plan-list surface-panel">
 				<div class="flex flex-wrap gap-4 items-start justify-between">
 					<div>
-						<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+						<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 							Saved choices
 						</p>
 						<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
@@ -302,10 +302,10 @@ function printPlan() {
 					<UpdatedAt :value="mostRecentSavedAt" label="Most recent save" />
 				</div>
 				<div class="print-plan-grid mt-6 space-y-4">
-					<article v-for="entry in plannedEntries" :key="entry.contest.slug" class="print-plan-entry px-5 py-5 border border-app-line/80 rounded-3xl bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
+					<article v-for="entry in plannedEntries" :key="entry.contest.slug" class="print-plan-entry px-5 py-5 border border-app-line/80 rounded-xl bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
 						<div class="flex flex-wrap gap-4 items-start justify-between">
 							<div class="min-w-0">
-								<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+								<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 									{{ entry.contest.office }}
 								</p>
 								<h3 class="text-2xl text-app-ink font-serif mt-2 dark:text-app-text-dark">
@@ -336,7 +336,7 @@ function printPlan() {
 								</button>
 							</div>
 						</div>
-						<div class="mt-4 p-4 rounded-2xl bg-white/80 dark:bg-app-panel-dark/70">
+						<div class="mt-4 p-4 rounded-2xl bg-app-panel dark:bg-app-panel-dark/70">
 							<ContestRoleGuide :contest="entry.contest" />
 						</div>
 					</article>
@@ -363,7 +363,7 @@ function printPlan() {
 			>
 				<div class="mt-6 gap-4 grid md:grid-cols-2">
 					<article v-for="contest in unplannedContests" :key="contest.slug" class="p-4 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70">
-						<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+						<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 							{{ contest.jurisdiction }}
 						</p>
 						<h3 class="text-xl text-app-ink font-serif mt-2 dark:text-app-text-dark">

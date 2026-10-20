@@ -17,7 +17,7 @@ usePageSeo({
 <template>
 	<section class="app-shell section-gap space-y-8">
 		<header class="max-w-4xl">
-			<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+			<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 				Review queue
 			</p>
 			<h1 class="text-5xl text-app-ink font-serif mt-4 dark:text-app-text-dark">
@@ -57,24 +57,24 @@ usePageSeo({
 					</div>
 
 					<div class="w-full space-y-3 xl:max-w-sm">
-						<div class="px-4 py-4 border border-app-line/80 rounded-[1.4rem] bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
-							<p class="text-xs text-app-muted tracking-[0.16em] font-semibold uppercase dark:text-app-muted-dark">
+						<div class="px-4 py-4 border border-app-line/80 rounded-xl bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
+							<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 								Assigned to
 							</p>
 							<p class="text-sm text-app-ink font-semibold mt-2 dark:text-app-text-dark">
 								{{ item.assignedTo }}
 							</p>
 						</div>
-						<div class="px-4 py-4 border border-app-line/80 rounded-[1.4rem] bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
-							<p class="text-xs text-app-muted tracking-[0.16em] font-semibold uppercase dark:text-app-muted-dark">
+						<div class="px-4 py-4 border border-app-line/80 rounded-xl bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
+							<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 								Source coverage
 							</p>
 							<p class="text-sm text-app-muted leading-7 mt-2 dark:text-app-muted-dark">
 								{{ item.sourceCoverage }}
 							</p>
 						</div>
-						<div v-if="item.blocker" class="px-4 py-4 border border-[#E7B9AA] rounded-[1.4rem] bg-[#FBEEE8] dark:border-[#6D433C] dark:bg-[#3A2421]">
-							<p class="text-xs text-[#8B3A2E] tracking-[0.16em] font-semibold uppercase dark:text-[#FFD4CB]">
+						<div v-if="item.blocker" class="px-4 py-4 border border-[#E7B9AA] rounded-xl bg-[#FBEEE8] dark:border-[#6D433C] dark:bg-[#3A2421]">
+							<p class="text-xs text-[#8B3A2E] tracking-[0.06em] font-semibold uppercase dark:text-[#FFD4CB]">
 								Blocker
 							</p>
 							<p class="text-sm text-[#8B3A2E] leading-7 mt-2 dark:text-[#FFD4CB]">

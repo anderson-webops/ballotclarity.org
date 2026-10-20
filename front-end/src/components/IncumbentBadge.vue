@@ -1,6 +1,6 @@
 <template>
-	<span class="text-[11px] text-app-ink tracking-[0.16em] font-semibold px-2.5 py-1 rounded-full bg-app-warm inline-flex gap-1 uppercase items-center">
-		<span class="i-carbon-badge" />
+	<span class="text-xs text-app-ink leading-5 font-semibold px-2 py-0.5 rounded-md bg-app-warm inline-flex gap-1 items-center">
+		<span class="i-carbon-badge" aria-hidden="true" />
 		Incumbent
 	</span>
 </template>

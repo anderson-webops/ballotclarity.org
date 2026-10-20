@@ -220,7 +220,7 @@ usePageSeo({
 <template>
 	<section class="app-shell section-gap space-y-8">
 		<header class="max-w-4xl">
-			<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+			<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 				Guide packages
 			</p>
 			<h1 class="text-5xl text-app-ink font-serif mt-4 dark:text-app-text-dark">
@@ -294,32 +294,32 @@ usePageSeo({
 						</div>
 
 						<div class="mt-5 gap-4 grid md:grid-cols-2 xl:grid-cols-4">
-							<div class="px-4 py-4 border border-app-line/80 rounded-[1.4rem] bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
-								<p class="text-xs text-app-muted tracking-[0.16em] font-semibold uppercase dark:text-app-muted-dark">
+							<div class="px-4 py-4 border border-app-line/80 rounded-xl bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
+								<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 									Counts
 								</p>
 								<p class="text-sm text-app-muted leading-7 mt-2 dark:text-app-muted-dark">
 									{{ item.counts.contests }} contests · {{ item.counts.candidates }} candidates · {{ item.counts.measures }} measures
 								</p>
 							</div>
-							<div class="px-4 py-4 border border-app-line/80 rounded-[1.4rem] bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
-								<p class="text-xs text-app-muted tracking-[0.16em] font-semibold uppercase dark:text-app-muted-dark">
+							<div class="px-4 py-4 border border-app-line/80 rounded-xl bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
+								<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 									Sources
 								</p>
 								<p class="text-sm text-app-muted leading-7 mt-2 dark:text-app-muted-dark">
 									{{ item.counts.officialResources }} official resources · {{ item.counts.attachedSources }} attached source records
 								</p>
 							</div>
-							<div class="px-4 py-4 border border-app-line/80 rounded-[1.4rem] bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
-								<p class="text-xs text-app-muted tracking-[0.16em] font-semibold uppercase dark:text-app-muted-dark">
+							<div class="px-4 py-4 border border-app-line/80 rounded-xl bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
+								<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 									Guide content
 								</p>
 								<p class="text-sm text-app-muted leading-7 mt-2 dark:text-app-muted-dark">
 									{{ item.contentStatus.verifiedContestPackage ? "Verified contest package" : "Verified contest package pending" }}
 								</p>
 							</div>
-							<div class="px-4 py-4 border border-app-line/80 rounded-[1.4rem] bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
-								<p class="text-xs text-app-muted tracking-[0.16em] font-semibold uppercase dark:text-app-muted-dark">
+							<div class="px-4 py-4 border border-app-line/80 rounded-xl bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
+								<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 									Rubric
 								</p>
 								<p class="text-sm text-app-muted leading-7 mt-2 dark:text-app-muted-dark">
@@ -332,7 +332,7 @@ usePageSeo({
 							<div
 								v-for="group in item.diagnostics.checklistCategories"
 								:key="group.id"
-								class="px-4 py-4 border border-app-line/80 rounded-[1.4rem] bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70"
+								class="px-4 py-4 border border-app-line/80 rounded-xl bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70"
 							>
 								<div class="flex flex-wrap gap-3 items-start justify-between">
 									<div>
@@ -361,7 +361,7 @@ usePageSeo({
 										/>
 									</div>
 								</div>
-								<p class="text-xs text-app-muted tracking-[0.16em] font-semibold mt-3 uppercase dark:text-app-muted-dark">
+								<p class="text-xs text-app-muted tracking-[0.06em] font-semibold mt-3 uppercase dark:text-app-muted-dark">
 									{{ groupSummary(group) }}
 								</p>
 
@@ -369,7 +369,7 @@ usePageSeo({
 									<li
 										v-for="check in group.items"
 										:key="check.id"
-										class="px-4 py-4 border border-app-line/80 rounded-[1.2rem] bg-white/80 dark:border-app-line-dark dark:bg-app-panel-dark/70"
+										class="px-4 py-4 border border-app-line/80 rounded-xl bg-app-panel dark:border-app-line-dark dark:bg-app-panel-dark/70"
 									>
 										<div class="flex flex-wrap gap-3 items-start justify-between">
 											<div>
@@ -431,8 +431,8 @@ usePageSeo({
 					</div>
 
 					<div class="space-y-4">
-						<div class="px-4 py-4 border border-app-line/80 rounded-[1.4rem] bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
-							<p class="text-xs text-app-muted tracking-[0.16em] font-semibold uppercase dark:text-app-muted-dark">
+						<div class="px-4 py-4 border border-app-line/80 rounded-xl bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
+							<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 								Recommendation summary
 							</p>
 							<div class="mt-3 flex flex-wrap gap-2">
@@ -445,8 +445,8 @@ usePageSeo({
 							</p>
 						</div>
 
-						<div v-if="item.diagnostics.blockers.length" class="px-4 py-4 border border-[#E7B9AA] rounded-[1.4rem] bg-[#FBEEE8] dark:border-[#6D433C] dark:bg-[#3A2421]">
-							<p class="text-xs text-[#8B3A2E] tracking-[0.16em] font-semibold uppercase dark:text-[#FFD4CB]">
+						<div v-if="item.diagnostics.blockers.length" class="px-4 py-4 border border-[#E7B9AA] rounded-xl bg-[#FBEEE8] dark:border-[#6D433C] dark:bg-[#3A2421]">
+							<p class="text-xs text-[#8B3A2E] tracking-[0.06em] font-semibold uppercase dark:text-[#FFD4CB]">
 								Blockers
 							</p>
 							<ul class="readable-list mt-4 space-y-3">
@@ -461,16 +461,16 @@ usePageSeo({
 							</ul>
 						</div>
 
-						<div v-if="item.diagnostics.warnings.length" class="px-4 py-4 border border-app-line/80 rounded-[1.4rem] bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
-							<p class="text-xs text-app-muted tracking-[0.16em] font-semibold uppercase dark:text-app-muted-dark">
+						<div v-if="item.diagnostics.warnings.length" class="px-4 py-4 border border-app-line/80 rounded-xl bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
+							<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 								Warnings
 							</p>
 							<ul class="readable-list mt-4 space-y-3">
-								<li v-for="issue in item.diagnostics.warnings" :key="issue.id" class="px-4 py-4 border rounded-[1.2rem]" :class="issueTone(issue)">
+								<li v-for="issue in item.diagnostics.warnings" :key="issue.id" class="px-4 py-4 border rounded-xl" :class="issueTone(issue)">
 									<p class="text-sm font-semibold" :class="issueTextTone(issue)">
 										{{ issue.title }}
 									</p>
-									<p class="text-xs tracking-[0.16em] font-semibold mt-2 uppercase" :class="issueTextTone(issue)">
+									<p class="text-xs tracking-[0.06em] font-semibold mt-2 uppercase" :class="issueTextTone(issue)">
 										{{ issue.kind.replaceAll('_', ' ') }} · {{ issue.pipelineClass.replaceAll('_', ' ') }}
 									</p>
 									<p class="text-sm leading-7 mt-3" :class="issueTextTone(issue)">

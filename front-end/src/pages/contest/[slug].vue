@@ -47,9 +47,9 @@ usePageSeo({
 <template>
 	<section class="app-shell section-gap space-y-8">
 		<div v-if="pending" class="space-y-6">
-			<div class="surface-panel bg-white/70 h-72 animate-pulse dark:bg-app-panel-dark/70" />
+			<div class="surface-panel bg-app-panel h-72 animate-pulse dark:bg-app-panel-dark/70" />
 			<div class="gap-6 grid xl:grid-cols-2">
-				<div v-for="index in 3" :key="index" class="surface-panel bg-white/70 h-64 animate-pulse dark:bg-app-panel-dark/70" />
+				<div v-for="index in 3" :key="index" class="surface-panel bg-app-panel h-64 animate-pulse dark:bg-app-panel-dark/70" />
 			</div>
 		</div>
 
@@ -75,7 +75,7 @@ usePageSeo({
 						<VerificationBadge label="Canonical contest page" tone="accent" />
 						<VerificationBadge :label="`${data.sourceCount} source${data.sourceCount === 1 ? '' : 's'}`" />
 					</div>
-					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold mt-6 uppercase dark:text-app-muted-dark">
+					<p class="text-xs text-app-muted tracking-[0.06em] font-semibold mt-6 uppercase dark:text-app-muted-dark">
 						{{ data.election.name }}
 					</p>
 					<h1 class="text-5xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
@@ -163,9 +163,9 @@ usePageSeo({
 							v-for="contest in data.relatedContests"
 							:key="contest.slug"
 							:to="contest.href"
-							class="px-5 py-5 border border-app-line/70 rounded-3xl bg-white/80 block transition dark:border-app-line-dark hover:border-app-accent dark:bg-app-panel-dark/70 focus-ring"
+							class="px-5 py-5 border border-app-line/70 rounded-xl bg-app-panel block transition dark:border-app-line-dark hover:border-app-accent dark:bg-app-panel-dark/70 focus-ring"
 						>
-							<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+							<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 								{{ contest.jurisdiction }}
 							</p>
 							<p class="text-xl text-app-ink font-semibold mt-3 dark:text-app-text-dark">

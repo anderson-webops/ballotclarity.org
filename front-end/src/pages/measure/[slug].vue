@@ -161,10 +161,10 @@ function saveMeasure(decision: "no" | "review" | "yes") {
 	<section class="app-shell section-gap">
 		<div v-if="pending" class="gap-8 grid 2xl:grid-cols-[minmax(0,1.35fr)_minmax(22rem,0.85fr)]">
 			<div class="space-y-6">
-				<div class="surface-panel bg-white/70 h-72 animate-pulse dark:bg-app-panel-dark/70" />
-				<div v-for="index in 4" :key="index" class="surface-panel bg-white/70 h-52 animate-pulse dark:bg-app-panel-dark/70" />
+				<div class="surface-panel bg-app-panel h-72 animate-pulse dark:bg-app-panel-dark/70" />
+				<div v-for="index in 4" :key="index" class="surface-panel bg-app-panel h-52 animate-pulse dark:bg-app-panel-dark/70" />
 			</div>
-			<div class="surface-panel bg-white/70 h-96 animate-pulse dark:bg-app-panel-dark/70" />
+			<div class="surface-panel bg-app-panel h-96 animate-pulse dark:bg-app-panel-dark/70" />
 		</div>
 
 		<GuideUnavailableState
@@ -187,7 +187,7 @@ function saveMeasure(decision: "no" | "review" | "yes") {
 						<VerificationBadge label="Measure explainer" tone="accent" />
 						<VerificationBadge :label="officialSources.length ? 'Official text linked' : 'Attached source set'" :tone="officialSources.length ? 'accent' : 'neutral'" />
 					</div>
-					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold mt-5 uppercase dark:text-app-muted-dark">
+					<p class="text-xs text-app-muted tracking-[0.06em] font-semibold mt-5 uppercase dark:text-app-muted-dark">
 						{{ measure.location }}
 					</p>
 					<h1 class="text-5xl text-app-ink leading-tight font-serif mt-3 dark:text-app-text-dark">
@@ -249,7 +249,7 @@ function saveMeasure(decision: "no" | "review" | "yes") {
 				<section id="at-a-glance" class="surface-panel scroll-mt-28">
 					<div class="flex flex-wrap gap-4 items-start justify-between">
 						<div>
-							<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+							<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 								At a glance
 							</p>
 							<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
@@ -259,10 +259,10 @@ function saveMeasure(decision: "no" | "review" | "yes") {
 						<SourceDrawer :sources="officialSources.length ? officialSources : measure.sources" :title="`${measure.title} official measure sources`" button-label="Official sources" />
 					</div>
 					<div class="mt-6 gap-4 grid lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1.1fr)]">
-						<article class="px-5 py-5 border border-app-line/80 rounded-3xl bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
+						<article class="px-5 py-5 border border-app-line/80 rounded-xl bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
 							<div class="flex flex-wrap gap-3 items-start justify-between">
 								<div>
-									<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+									<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 										Official ballot summary
 									</p>
 									<h3 class="text-xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
@@ -275,10 +275,10 @@ function saveMeasure(decision: "no" | "review" | "yes") {
 								{{ measure.ballotSummary }}
 							</p>
 						</article>
-						<article class="px-5 py-5 border border-app-line/80 rounded-3xl bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
+						<article class="px-5 py-5 border border-app-line/80 rounded-xl bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
 							<div class="flex flex-wrap gap-3 items-start justify-between">
 								<div>
-									<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+									<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 										Ballot Clarity summary
 									</p>
 									<h3 class="text-xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
@@ -300,8 +300,8 @@ function saveMeasure(decision: "no" | "review" | "yes") {
 								</li>
 							</ul>
 						</InfoCallout>
-						<div class="px-5 py-5 border border-app-line/80 rounded-3xl bg-white/80 dark:border-app-line-dark dark:bg-app-panel-dark/70">
-							<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+						<div class="px-5 py-5 border border-app-line/80 rounded-xl bg-app-panel dark:border-app-line-dark dark:bg-app-panel-dark/70">
+							<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 								Source types in this page
 							</p>
 							<div class="mt-4 flex flex-wrap gap-2">
@@ -338,12 +338,12 @@ function saveMeasure(decision: "no" | "review" | "yes") {
 						<SourceDrawer :sources="baselineSources.length ? baselineSources : measure.sources" :title="`${measure.title} current-law and proposal sources`" button-label="Baseline sources" />
 					</template>
 					<div class="mt-6 gap-6 grid lg:grid-cols-2">
-						<article class="px-5 py-5 border border-app-line/80 rounded-3xl bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
-							<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+						<article class="px-5 py-5 border border-app-line/80 rounded-xl bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
+							<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 								Current practice
 							</p>
 							<ul class="mt-4 space-y-3">
-								<li v-for="item in measure.currentPractice" :key="item.id" class="px-4 py-4 rounded-2xl bg-white/80 dark:bg-app-panel-dark/70">
+								<li v-for="item in measure.currentPractice" :key="item.id" class="px-4 py-4 rounded-2xl bg-app-panel dark:bg-app-panel-dark/70">
 									<div class="flex flex-wrap gap-3 items-start justify-between">
 										<p class="text-sm text-app-muted leading-7 max-w-2xl dark:text-app-muted-dark">
 											{{ item.text }}
@@ -353,12 +353,12 @@ function saveMeasure(decision: "no" | "review" | "yes") {
 								</li>
 							</ul>
 						</article>
-						<article class="px-5 py-5 border border-app-line/80 rounded-3xl bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
-							<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+						<article class="px-5 py-5 border border-app-line/80 rounded-xl bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
+							<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 								Proposed changes
 							</p>
 							<ul class="mt-4 space-y-3">
-								<li v-for="item in measure.proposedChanges" :key="item.id" class="px-4 py-4 rounded-2xl bg-white/80 dark:bg-app-panel-dark/70">
+								<li v-for="item in measure.proposedChanges" :key="item.id" class="px-4 py-4 rounded-2xl bg-app-panel dark:bg-app-panel-dark/70">
 									<div class="flex flex-wrap gap-3 items-start justify-between">
 										<p class="text-sm text-app-muted leading-7 max-w-2xl dark:text-app-muted-dark">
 											{{ item.text }}
@@ -382,8 +382,8 @@ function saveMeasure(decision: "no" | "review" | "yes") {
 						<SourceDrawer :sources="officialSources.length ? officialSources : measure.sources" :title="`${measure.title} yes and no meanings`" button-label="Outcome sources" />
 					</template>
 					<div class="mt-6 gap-6 grid md:grid-cols-2">
-						<article class="px-5 py-5 border border-app-line/80 rounded-3xl bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
-							<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+						<article class="px-5 py-5 border border-app-line/80 rounded-xl bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
+							<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 								If you vote YES
 							</p>
 							<h3 class="text-2xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
@@ -393,13 +393,13 @@ function saveMeasure(decision: "no" | "review" | "yes") {
 								{{ measure.yesMeaning }}
 							</p>
 							<ul class="text-sm text-app-muted leading-7 mt-4 space-y-3 dark:text-app-muted-dark">
-								<li v-for="item in measure.yesHighlights" :key="item" class="px-4 py-3 rounded-2xl bg-white/80 dark:bg-app-panel-dark/70">
+								<li v-for="item in measure.yesHighlights" :key="item" class="px-4 py-3 rounded-2xl bg-app-panel dark:bg-app-panel-dark/70">
 									{{ item }}
 								</li>
 							</ul>
 						</article>
-						<article class="px-5 py-5 border border-app-line/80 rounded-3xl bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
-							<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+						<article class="px-5 py-5 border border-app-line/80 rounded-xl bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
+							<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 								If you vote NO
 							</p>
 							<h3 class="text-2xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
@@ -409,7 +409,7 @@ function saveMeasure(decision: "no" | "review" | "yes") {
 								{{ measure.noMeaning }}
 							</p>
 							<ul class="text-sm text-app-muted leading-7 mt-4 space-y-3 dark:text-app-muted-dark">
-								<li v-for="item in measure.noHighlights" :key="item" class="px-4 py-3 rounded-2xl bg-white/80 dark:bg-app-panel-dark/70">
+								<li v-for="item in measure.noHighlights" :key="item" class="px-4 py-3 rounded-2xl bg-app-panel dark:bg-app-panel-dark/70">
 									{{ item }}
 								</li>
 							</ul>
@@ -427,10 +427,10 @@ function saveMeasure(decision: "no" | "review" | "yes") {
 						<SourceDrawer :sources="implementationSources.length ? implementationSources : measure.sources" :title="`${measure.title} implementation timeline sources`" button-label="Timeline sources" />
 					</template>
 					<div class="mt-6 space-y-4">
-						<article v-for="item in measure.implementationTimeline" :key="item.id" class="px-5 py-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
+						<article v-for="item in measure.implementationTimeline" :key="item.id" class="px-5 py-5 rounded-xl bg-app-bg dark:bg-app-bg-dark/70">
 							<div class="flex flex-wrap gap-3 items-start justify-between">
 								<div>
-									<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+									<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 										{{ item.label }}
 									</p>
 									<h3 class="text-xl text-app-ink font-serif mt-2 dark:text-app-text-dark">
@@ -458,8 +458,8 @@ function saveMeasure(decision: "no" | "review" | "yes") {
 						{{ measure.fiscalContextNote }}
 					</InfoCallout>
 					<div class="mt-6 gap-4 grid lg:grid-cols-3">
-						<article v-for="item in measure.fiscalSummary" :key="item.id" class="px-5 py-5 border border-app-line/80 rounded-3xl bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
-							<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+						<article v-for="item in measure.fiscalSummary" :key="item.id" class="px-5 py-5 border border-app-line/80 rounded-xl bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
+							<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 								{{ item.label }}
 							</p>
 							<p class="text-2xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
@@ -477,7 +477,7 @@ function saveMeasure(decision: "no" | "review" | "yes") {
 						</article>
 					</div>
 					<div class="mt-6 space-y-4">
-						<article v-for="impact in measure.potentialImpacts" :key="impact.id" class="px-5 py-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
+						<article v-for="impact in measure.potentialImpacts" :key="impact.id" class="px-5 py-5 rounded-xl bg-app-bg dark:bg-app-bg-dark/70">
 							<div class="flex flex-wrap gap-3 items-start justify-between">
 								<h3 class="text-lg text-app-ink font-semibold dark:text-app-text-dark">
 									{{ impact.title }}
@@ -490,7 +490,7 @@ function saveMeasure(decision: "no" | "review" | "yes") {
 						</article>
 					</div>
 					<div class="mt-6 space-y-4">
-						<article v-for="item in measure.argumentsAndConsiderations" :key="item.id" class="px-5 py-5 rounded-3xl bg-white/80 dark:bg-app-panel-dark/70">
+						<article v-for="item in measure.argumentsAndConsiderations" :key="item.id" class="px-5 py-5 rounded-xl bg-app-panel dark:bg-app-panel-dark/70">
 							<div class="flex flex-wrap gap-3 items-start justify-between">
 								<h3 class="text-lg text-app-ink font-semibold dark:text-app-text-dark">
 									{{ item.title }}
@@ -521,7 +521,7 @@ function saveMeasure(decision: "no" | "review" | "yes") {
 							<div class="flex flex-wrap gap-2 items-center">
 								<TrustBadge label="Arguments emphasizing approval" tone="accent" />
 							</div>
-							<article v-for="item in measure.supportArguments" :key="item.id" class="px-5 py-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
+							<article v-for="item in measure.supportArguments" :key="item.id" class="px-5 py-5 rounded-xl bg-app-bg dark:bg-app-bg-dark/70">
 								<div class="flex flex-wrap gap-3 items-start justify-between">
 									<div>
 										<h3 class="text-lg text-app-ink font-semibold dark:text-app-text-dark">
@@ -542,7 +542,7 @@ function saveMeasure(decision: "no" | "review" | "yes") {
 							<div class="flex flex-wrap gap-2 items-center">
 								<TrustBadge label="Arguments emphasizing rejection" />
 							</div>
-							<article v-for="item in measure.opposeArguments" :key="item.id" class="px-5 py-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
+							<article v-for="item in measure.opposeArguments" :key="item.id" class="px-5 py-5 rounded-xl bg-app-bg dark:bg-app-bg-dark/70">
 								<div class="flex flex-wrap gap-3 items-start justify-between">
 									<div>
 										<h3 class="text-lg text-app-ink font-semibold dark:text-app-text-dark">
@@ -572,8 +572,8 @@ function saveMeasure(decision: "no" | "review" | "yes") {
 						<SourceDrawer :sources="measure.sources" :title="`${measure.title} full source list`" />
 					</template>
 					<div class="mt-6 gap-4 grid lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
-						<div class="p-4 rounded-[1.35rem] bg-app-bg dark:bg-app-bg-dark/70">
-							<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+						<div class="p-4 rounded-xl bg-app-bg dark:bg-app-bg-dark/70">
+							<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 								Review timing
 							</p>
 							<div class="mt-3 space-y-3">
@@ -591,8 +591,8 @@ function saveMeasure(decision: "no" | "review" | "yes") {
 								</p>
 							</div>
 						</div>
-						<div class="p-4 rounded-[1.35rem] bg-app-bg dark:bg-app-bg-dark/70">
-							<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+						<div class="p-4 rounded-xl bg-app-bg dark:bg-app-bg-dark/70">
+							<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 								Verification scope
 							</p>
 							<div class="mt-3 gap-3 grid md:grid-cols-2">

@@ -32,8 +32,8 @@ usePageSeo({
 <template>
 	<section class="app-shell section-gap space-y-8">
 		<div v-if="pending" class="space-y-6">
-			<div class="surface-panel bg-white/70 h-80 animate-pulse dark:bg-app-panel-dark/70" />
-			<div class="surface-panel bg-white/70 h-64 animate-pulse dark:bg-app-panel-dark/70" />
+			<div class="surface-panel bg-app-panel h-80 animate-pulse dark:bg-app-panel-dark/70" />
+			<div class="surface-panel bg-app-panel h-64 animate-pulse dark:bg-app-panel-dark/70" />
 		</div>
 
 		<GuideUnavailableState
@@ -85,7 +85,7 @@ usePageSeo({
 						This section surfaces the largest named or categorized funders in the current finance summary. Open the sources list for the underlying filings.
 					</p>
 					<ul class="mt-6 space-y-3">
-						<li v-for="funder in candidate.funding.topFunders" :key="`${funder.name}-${funder.category}`" class="p-4 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
+						<li v-for="funder in candidate.funding.topFunders" :key="`${funder.name}-${funder.category}`" class="p-4 rounded-xl bg-app-bg dark:bg-app-bg-dark/70">
 							<div class="flex flex-wrap gap-4 items-center justify-between">
 								<div>
 									<p class="text-lg text-app-ink font-semibold dark:text-app-text-dark">

@@ -139,7 +139,7 @@ usePageSeo({
 
 		<section class="gap-6 grid lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
 			<div class="surface-panel">
-				<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+				<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 					Acceptance
 				</p>
 				<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
@@ -153,7 +153,7 @@ usePageSeo({
 			</div>
 
 			<div class="surface-panel">
-				<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+				<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 					Operator and notices
 				</p>
 				<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
@@ -169,7 +169,7 @@ usePageSeo({
 
 		<section class="gap-6 grid lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
 			<div class="surface-panel">
-				<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+				<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 					Governing law and venue
 				</p>
 				<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
@@ -185,7 +185,7 @@ usePageSeo({
 
 		<section class="gap-6 grid lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
 			<div class="surface-panel">
-				<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+				<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 					Service scope
 				</p>
 				<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
@@ -201,7 +201,7 @@ usePageSeo({
 
 		<section class="gap-6 grid lg:grid-cols-2">
 			<div class="surface-panel">
-				<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+				<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 					Informational limits
 				</p>
 				<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
@@ -215,7 +215,7 @@ usePageSeo({
 			</div>
 
 			<div class="surface-panel">
-				<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+				<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 					Sources and timeliness
 				</p>
 				<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
@@ -239,7 +239,7 @@ usePageSeo({
 
 		<section class="gap-6 grid lg:grid-cols-2">
 			<div class="surface-panel">
-				<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+				<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 					Permitted use and limited license
 				</p>
 				<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
@@ -253,7 +253,7 @@ usePageSeo({
 			</div>
 
 			<div class="surface-panel">
-				<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+				<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 					Ownership
 				</p>
 				<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
@@ -269,7 +269,7 @@ usePageSeo({
 
 		<section class="gap-6 grid lg:grid-cols-2">
 			<div class="surface-panel">
-				<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+				<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 					Prohibited conduct
 				</p>
 				<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
@@ -283,7 +283,7 @@ usePageSeo({
 			</div>
 
 			<div class="surface-panel">
-				<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+				<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 					Suspension and access control
 				</p>
 				<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
@@ -299,7 +299,7 @@ usePageSeo({
 
 		<section class="gap-6 grid lg:grid-cols-[minmax(0,1fr)_minmax(0,0.95fr)]">
 			<div class="surface-panel">
-				<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+				<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 					Corrections and submissions
 				</p>
 				<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
@@ -321,7 +321,7 @@ usePageSeo({
 			</div>
 
 			<div class="surface-panel">
-				<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+				<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 					Changes to the service
 				</p>
 				<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
@@ -336,14 +336,14 @@ usePageSeo({
 		</section>
 
 		<section class="surface-panel">
-			<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+			<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 				Disclaimers
 			</p>
 			<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
 				Service limits and liability posture
 			</h2>
 			<div class="mt-6 gap-4 grid lg:grid-cols-2">
-				<article v-for="item in legalLimits" :key="item" class="px-5 py-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
+				<article v-for="item in legalLimits" :key="item" class="px-5 py-5 rounded-xl bg-app-bg dark:bg-app-bg-dark/70">
 					<p class="text-sm text-app-muted leading-7 dark:text-app-muted-dark">
 						{{ item }}
 					</p>
@@ -356,7 +356,7 @@ usePageSeo({
 
 		<section class="gap-6 grid lg:grid-cols-[minmax(0,1fr)_minmax(0,0.95fr)]">
 			<div class="surface-panel">
-				<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+				<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 					Disputes and notices
 				</p>
 				<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
@@ -370,7 +370,7 @@ usePageSeo({
 			</div>
 
 			<div class="surface-panel">
-				<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+				<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 					Contact
 				</p>
 				<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">

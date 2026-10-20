@@ -24,7 +24,7 @@ defineProps<{
 		<div v-if="showBreadcrumbs !== false && breadcrumbs?.length" class="section-nav__crumbs">
 			<AppBreadcrumbs :items="breadcrumbs" compact />
 		</div>
-		<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+		<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 			{{ title }}
 		</p>
 		<p v-if="description" class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">

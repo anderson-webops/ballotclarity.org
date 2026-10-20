@@ -19,7 +19,7 @@ withDefaults(defineProps<{
 				{{ knownTitle }}
 			</h2>
 			<ul class="mt-5 space-y-4">
-				<li v-for="item in knownItems" :key="item.id" class="p-4 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
+				<li v-for="item in knownItems" :key="item.id" class="p-4 rounded-xl bg-app-bg dark:bg-app-bg-dark/70">
 					<div class="flex gap-3 items-start justify-between">
 						<div class="flex gap-3">
 							<span class="i-carbon-checkmark text-app-accent mt-1" />
@@ -43,7 +43,7 @@ withDefaults(defineProps<{
 				{{ unknownTitle }}
 			</h2>
 			<ul class="mt-5 space-y-4">
-				<li v-for="item in unknownItems" :key="item.id" class="p-4 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
+				<li v-for="item in unknownItems" :key="item.id" class="p-4 rounded-xl bg-app-bg dark:bg-app-bg-dark/70">
 					<div class="flex gap-3 items-start justify-between">
 						<div class="flex gap-3">
 							<span class="i-carbon-help text-[#8f6c2f] mt-1 dark:text-[#efcf96]" />

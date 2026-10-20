@@ -7,8 +7,8 @@ defineProps<{
 </script>
 
 <template>
-	<section class="px-5 py-5 border border-app-line/80 rounded-3xl bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
-		<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+	<section class="px-5 py-5 border border-app-line/80 rounded-xl bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
+		<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 			What this contest decides
 		</p>
 		<h3 class="text-xl text-app-ink font-serif mt-3 dark:text-app-text-dark">

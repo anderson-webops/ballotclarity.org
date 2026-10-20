@@ -91,8 +91,8 @@ usePageSeo({
 <template>
 	<section class="app-shell section-gap space-y-8">
 		<div v-if="pagePending" class="space-y-6">
-			<div class="surface-panel bg-white/70 h-80 animate-pulse dark:bg-app-panel-dark/70" />
-			<div class="surface-panel bg-white/70 h-64 animate-pulse dark:bg-app-panel-dark/70" />
+			<div class="surface-panel bg-app-panel h-80 animate-pulse dark:bg-app-panel-dark/70" />
+			<div class="surface-panel bg-app-panel h-64 animate-pulse dark:bg-app-panel-dark/70" />
 		</div>
 
 		<div v-else-if="(error && !fallbackData) || !person" class="max-w-3xl">
@@ -138,16 +138,16 @@ usePageSeo({
 						Influence notes
 					</h2>
 					<div v-if="influence" class="mt-6 gap-3 grid sm:grid-cols-2">
-						<div class="p-4 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
-							<p class="text-xs text-app-muted tracking-[0.14em] font-semibold uppercase dark:text-app-muted-dark">
+						<div class="p-4 rounded-xl bg-app-bg dark:bg-app-bg-dark/70">
+							<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 								Coverage
 							</p>
 							<p class="text-base text-app-ink mt-2 dark:text-app-text-dark">
 								{{ influence.coverageLabel }}
 							</p>
 						</div>
-						<div class="p-4 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
-							<p class="text-xs text-app-muted tracking-[0.14em] font-semibold uppercase dark:text-app-muted-dark">
+						<div class="p-4 rounded-xl bg-app-bg dark:bg-app-bg-dark/70">
+							<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 								Match mode
 							</p>
 							<p class="text-base text-app-ink mt-2 dark:text-app-text-dark">
@@ -159,7 +159,7 @@ usePageSeo({
 						<article
 							v-for="item in person.lobbyingContext"
 							:key="item.id"
-							class="p-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70"
+							class="p-5 rounded-xl bg-app-bg dark:bg-app-bg-dark/70"
 						>
 							<div class="flex flex-wrap gap-3 items-start justify-between">
 								<div>
@@ -176,7 +176,7 @@ usePageSeo({
 								{{ item.summary }}
 							</p>
 						</article>
-						<article v-if="influence?.topRegistrants?.length" class="p-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
+						<article v-if="influence?.topRegistrants?.length" class="p-5 rounded-xl bg-app-bg dark:bg-app-bg-dark/70">
 							<h3 class="text-xl text-app-ink font-semibold dark:text-app-text-dark">
 								Top reporting registrants
 							</h3>
@@ -203,7 +203,7 @@ usePageSeo({
 							<article
 								v-for="statement in person.publicStatements"
 								:key="statement.id"
-								class="p-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70"
+								class="p-5 rounded-xl bg-app-bg dark:bg-app-bg-dark/70"
 							>
 								<h3 class="text-xl text-app-ink font-semibold dark:text-app-text-dark">
 									{{ statement.title }}

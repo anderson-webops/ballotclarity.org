@@ -27,7 +27,7 @@ const statusToneClass = computed(() => {
 	<section class="surface-panel">
 		<div class="flex flex-wrap gap-4 items-start justify-between">
 			<div>
-				<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+				<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 					{{ title ?? "Freshness and review status" }}
 				</p>
 				<p class="text-sm text-app-muted leading-7 mt-3 max-w-3xl dark:text-app-muted-dark">
@@ -40,24 +40,24 @@ const statusToneClass = computed(() => {
 		</div>
 
 		<div class="mt-6 gap-4 grid md:grid-cols-3">
-			<div class="p-4 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
-				<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+			<div class="p-4 rounded-xl bg-app-bg dark:bg-app-bg-dark/70">
+				<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 					As of
 				</p>
 				<p class="text-sm text-app-ink font-semibold mt-3 dark:text-app-text-dark">
 					{{ formatDateTime(freshness.contentLastVerifiedAt) }}
 				</p>
 			</div>
-			<div class="p-4 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
-				<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+			<div class="p-4 rounded-xl bg-app-bg dark:bg-app-bg-dark/70">
+				<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 					Data updated
 				</p>
 				<p class="text-sm text-app-ink font-semibold mt-3 dark:text-app-text-dark">
 					{{ freshness.dataLastUpdatedAt ? formatDateTime(freshness.dataLastUpdatedAt) : "Same as page review" }}
 				</p>
 			</div>
-			<div class="p-4 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
-				<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+			<div class="p-4 rounded-xl bg-app-bg dark:bg-app-bg-dark/70">
+				<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 					Next review
 				</p>
 				<p class="text-sm text-app-ink font-semibold mt-3 dark:text-app-text-dark">
@@ -66,7 +66,7 @@ const statusToneClass = computed(() => {
 			</div>
 		</div>
 
-		<details v-if="changeLog?.length" class="group mt-6 px-5 py-4 border border-app-line rounded-3xl bg-white/70 dark:border-app-line-dark dark:bg-app-panel-dark/70">
+		<details v-if="changeLog?.length" class="group mt-6 px-5 py-4 border border-app-line rounded-xl bg-app-panel dark:border-app-line-dark dark:bg-app-panel-dark/70">
 			<summary class="text-sm text-app-ink font-semibold list-none flex gap-4 cursor-pointer items-center justify-between dark:text-app-text-dark focus-ring">
 				<span>Show change log</span>
 				<span class="i-carbon-add group-open:i-carbon-subtract text-base text-app-muted dark:text-app-muted-dark" />

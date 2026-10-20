@@ -143,7 +143,7 @@ usePageSeo({
 			</p>
 		</header>
 
-		<div v-if="pending" class="surface-panel bg-white/70 h-96 animate-pulse dark:bg-app-panel-dark/70" />
+		<div v-if="pending" class="surface-panel bg-app-panel h-96 animate-pulse dark:bg-app-panel-dark/70" />
 
 		<div v-else-if="(data?.candidates.length ?? 0) < 2" class="max-w-3xl">
 			<InfoCallout :title="emptyStateTitle" tone="warning">
@@ -202,7 +202,7 @@ usePageSeo({
 			<section class="surface-panel">
 				<div class="flex flex-wrap gap-4 items-center justify-between">
 					<div>
-						<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+						<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 							Comparable core
 						</p>
 						<h2 class="text-3xl text-app-ink font-serif mt-2 dark:text-app-text-dark">
@@ -302,7 +302,7 @@ usePageSeo({
 
 						<div class="mt-6 space-y-5">
 							<div>
-								<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+								<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 									Campaign links
 								</p>
 								<ul class="mt-3 space-y-2">
@@ -334,7 +334,7 @@ usePageSeo({
 							</div>
 
 							<div>
-								<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+								<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 									Candidate-quoted issue context
 								</p>
 								<div class="mt-3 space-y-3">

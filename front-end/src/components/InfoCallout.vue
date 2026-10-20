@@ -15,7 +15,7 @@ const toneClass = computed(() => {
 </script>
 
 <template>
-	<aside class="p-5 border rounded-3xl" :class="toneClass">
+	<aside class="p-4 border border-l-4 rounded-lg sm:p-5" :class="toneClass">
 		<p v-if="title" class="text-sm font-semibold">
 			{{ title }}
 		</p>

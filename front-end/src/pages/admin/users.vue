@@ -141,7 +141,7 @@ usePageSeo({
 <template>
 	<section class="app-shell section-gap space-y-8">
 		<header class="max-w-4xl">
-			<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+			<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 				User management
 			</p>
 			<h1 class="text-5xl text-app-ink font-serif mt-4 dark:text-app-text-dark">
@@ -171,7 +171,7 @@ usePageSeo({
 
 		<section class="gap-6 grid xl:grid-cols-[minmax(0,1fr)_minmax(0,0.95fr)]">
 			<div class="surface-panel">
-				<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+				<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 					Current users
 				</p>
 				<div v-if="error" class="mt-6">
@@ -180,7 +180,7 @@ usePageSeo({
 					</InfoCallout>
 				</div>
 				<ul v-else class="mt-6 space-y-4">
-					<li v-for="user in data?.users ?? []" :key="user.id" class="px-5 py-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
+					<li v-for="user in data?.users ?? []" :key="user.id" class="px-5 py-5 rounded-xl bg-app-bg dark:bg-app-bg-dark/70">
 						<div class="flex flex-wrap gap-3 items-center justify-between">
 							<div>
 								<p class="text-lg text-app-ink font-semibold dark:text-app-text-dark">
@@ -278,7 +278,7 @@ usePageSeo({
 			</div>
 
 			<div class="surface-panel">
-				<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+				<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 					Create user
 				</p>
 				<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">

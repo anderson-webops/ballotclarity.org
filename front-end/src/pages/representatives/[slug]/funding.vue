@@ -102,8 +102,8 @@ usePageSeo({
 <template>
 	<section class="app-shell section-gap space-y-8">
 		<div v-if="pagePending" class="space-y-6">
-			<div class="surface-panel bg-white/70 h-80 animate-pulse dark:bg-app-panel-dark/70" />
-			<div class="surface-panel bg-white/70 h-64 animate-pulse dark:bg-app-panel-dark/70" />
+			<div class="surface-panel bg-app-panel h-80 animate-pulse dark:bg-app-panel-dark/70" />
+			<div class="surface-panel bg-app-panel h-64 animate-pulse dark:bg-app-panel-dark/70" />
 		</div>
 
 		<div v-else-if="(error && !fallbackData) || !person" class="max-w-3xl">
@@ -152,8 +152,8 @@ usePageSeo({
 						}}
 					</p>
 					<div v-if="fundingHighlights.length" class="mt-6 gap-3 grid sm:grid-cols-2">
-						<div v-for="item in fundingHighlights" :key="item.label" class="p-4 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
-							<p class="text-xs text-app-muted tracking-[0.14em] font-semibold uppercase dark:text-app-muted-dark">
+						<div v-for="item in fundingHighlights" :key="item.label" class="p-4 rounded-xl bg-app-bg dark:bg-app-bg-dark/70">
+							<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 								{{ item.label }}
 							</p>
 							<p class="text-base text-app-ink mt-2 dark:text-app-text-dark">
@@ -162,7 +162,7 @@ usePageSeo({
 						</div>
 					</div>
 					<ul class="mt-6 space-y-3">
-						<li v-for="funder in fundingLineItems" :key="`${funder.name}-${funder.category}`" class="p-4 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
+						<li v-for="funder in fundingLineItems" :key="`${funder.name}-${funder.category}`" class="p-4 rounded-xl bg-app-bg dark:bg-app-bg-dark/70">
 							<div class="flex flex-wrap gap-4 items-center justify-between">
 								<div>
 									<p class="text-lg text-app-ink font-semibold dark:text-app-text-dark">

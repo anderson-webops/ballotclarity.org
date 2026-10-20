@@ -53,9 +53,9 @@ const hasPublicIncidents = computed(() => Boolean(data.value?.incidents.length))
 <template>
 	<section class="app-shell section-gap space-y-8">
 		<div v-if="pending" class="space-y-6">
-			<div class="surface-panel bg-white/70 h-64 animate-pulse dark:bg-app-panel-dark/70" />
+			<div class="surface-panel bg-app-panel h-64 animate-pulse dark:bg-app-panel-dark/70" />
 			<div class="gap-6 grid xl:grid-cols-2">
-				<div v-for="index in 4" :key="index" class="surface-panel bg-white/70 h-48 animate-pulse dark:bg-app-panel-dark/70" />
+				<div v-for="index in 4" :key="index" class="surface-panel bg-app-panel h-48 animate-pulse dark:bg-app-panel-dark/70" />
 			</div>
 		</div>
 
@@ -88,7 +88,7 @@ const hasPublicIncidents = computed(() => Boolean(data.value?.incidents.length))
 
 			<section v-if="hasSourceMetrics" class="gap-4 grid md:grid-cols-2 xl:grid-cols-4">
 				<div class="surface-row">
-					<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+					<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 						Healthy sources
 					</p>
 					<p class="text-3xl text-app-ink font-semibold mt-3 dark:text-app-text-dark">
@@ -96,7 +96,7 @@ const hasPublicIncidents = computed(() => Boolean(data.value?.incidents.length))
 					</p>
 				</div>
 				<div class="surface-row">
-					<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+					<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 						Review soon
 					</p>
 					<p class="text-3xl text-app-ink font-semibold mt-3 dark:text-app-text-dark">
@@ -104,7 +104,7 @@ const hasPublicIncidents = computed(() => Boolean(data.value?.incidents.length))
 					</p>
 				</div>
 				<div class="surface-row">
-					<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+					<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 						Incidents
 					</p>
 					<p class="text-3xl text-app-ink font-semibold mt-3 dark:text-app-text-dark">
@@ -112,7 +112,7 @@ const hasPublicIncidents = computed(() => Boolean(data.value?.incidents.length))
 					</p>
 				</div>
 				<div class="surface-row">
-					<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+					<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 						Stale
 					</p>
 					<p class="text-3xl text-app-ink font-semibold mt-3 dark:text-app-text-dark">

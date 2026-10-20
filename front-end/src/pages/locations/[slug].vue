@@ -73,9 +73,9 @@ usePageSeo({
 <template>
 	<section class="app-shell section-gap">
 		<div v-if="pending" class="space-y-6">
-			<div class="surface-panel bg-white/70 h-72 animate-pulse dark:bg-app-panel-dark/70" />
+			<div class="surface-panel bg-app-panel h-72 animate-pulse dark:bg-app-panel-dark/70" />
 			<div class="gap-6 grid lg:grid-cols-3">
-				<div v-for="index in 3" :key="index" class="surface-panel bg-white/70 h-56 animate-pulse dark:bg-app-panel-dark/70" />
+				<div v-for="index in 3" :key="index" class="surface-panel bg-app-panel h-56 animate-pulse dark:bg-app-panel-dark/70" />
 			</div>
 		</div>
 
@@ -96,7 +96,7 @@ usePageSeo({
 							:label="hasVerifiedContestPackage ? 'Verified ballot guide' : 'Election overview available'"
 						/>
 					</div>
-					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold mt-6 uppercase dark:text-app-muted-dark">
+					<p class="text-xs text-app-muted tracking-[0.06em] font-semibold mt-6 uppercase dark:text-app-muted-dark">
 						{{ jurisdiction.jurisdictionType }} guide
 					</p>
 					<h1 class="text-5xl text-app-ink leading-tight font-serif mt-3 dark:text-app-text-dark">
@@ -129,7 +129,7 @@ usePageSeo({
 			<section class="surface-panel">
 				<div class="flex flex-wrap gap-4 items-start justify-between">
 					<div>
-						<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+						<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 							Key election dates
 						</p>
 						<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
@@ -140,7 +140,7 @@ usePageSeo({
 				</div>
 				<dl class="mt-6 gap-5 grid md:grid-cols-3">
 					<div>
-						<dt class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+						<dt class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 							Election day
 						</dt>
 						<dd class="text-xl text-app-ink font-semibold mt-3 dark:text-app-text-dark">
@@ -148,7 +148,7 @@ usePageSeo({
 						</dd>
 					</div>
 					<div>
-						<dt class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+						<dt class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 							Registration deadline
 						</dt>
 						<dd class="text-xl text-app-ink font-semibold mt-3 dark:text-app-text-dark">
@@ -159,7 +159,7 @@ usePageSeo({
 						</dd>
 					</div>
 					<div>
-						<dt class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+						<dt class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 							Early voting opens
 						</dt>
 						<dd class="text-xl text-app-ink font-semibold mt-3 dark:text-app-text-dark">
@@ -176,7 +176,7 @@ usePageSeo({
 				<div class="surface-panel">
 					<div class="flex gap-4 items-start justify-between">
 						<div>
-							<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+							<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 								Official election office
 							</p>
 							<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">

@@ -129,7 +129,7 @@ usePageSeo({
 
 		<section class="gap-6 grid lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
 			<div class="surface-panel">
-				<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+				<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 					Purpose and scope
 				</p>
 				<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
@@ -146,14 +146,14 @@ usePageSeo({
 		</section>
 
 		<section class="surface-panel">
-			<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+			<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 				Source hierarchy
 			</p>
 			<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
 				What kinds of sources come first
 			</h2>
 			<div class="mt-6 gap-4 grid md:grid-cols-2">
-				<article v-for="item in sourceHierarchy" :key="item.label" class="px-5 py-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
+				<article v-for="item in sourceHierarchy" :key="item.label" class="px-5 py-5 rounded-xl bg-app-bg dark:bg-app-bg-dark/70">
 					<p class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
 						{{ item.label }}
 					</p>
@@ -166,7 +166,7 @@ usePageSeo({
 
 		<section class="gap-6 grid lg:grid-cols-2">
 			<div class="surface-panel">
-				<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+				<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 					Language rules
 				</p>
 				<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
@@ -180,7 +180,7 @@ usePageSeo({
 			</div>
 
 			<div class="surface-panel">
-				<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+				<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 					Organizational boundaries
 				</p>
 				<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
@@ -195,15 +195,15 @@ usePageSeo({
 		</section>
 
 		<section class="surface-panel">
-			<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+			<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 				Workflow
 			</p>
 			<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
 				The editorial and review path
 			</h2>
 			<div class="mt-6 gap-4 grid lg:grid-cols-3">
-				<article v-for="step in workflowSteps" :key="step.title" class="px-5 py-5 border border-app-line/80 rounded-3xl bg-white/80 dark:border-app-line-dark dark:bg-app-panel-dark/70">
-					<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+				<article v-for="step in workflowSteps" :key="step.title" class="px-5 py-5 border border-app-line/80 rounded-xl bg-app-panel dark:border-app-line-dark dark:bg-app-panel-dark/70">
+					<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 						{{ step.title }}
 					</p>
 					<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
@@ -215,7 +215,7 @@ usePageSeo({
 
 		<section class="gap-6 grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
 			<div class="surface-panel">
-				<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+				<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 					Red-flag review
 				</p>
 				<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
@@ -232,7 +232,7 @@ usePageSeo({
 			</div>
 
 			<div class="surface-panel">
-				<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+				<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 					Corrections and disputes
 				</p>
 				<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
@@ -255,7 +255,7 @@ usePageSeo({
 		</section>
 
 		<section class="surface-panel">
-			<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+			<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 				Audit metrics
 			</p>
 			<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">

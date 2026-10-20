@@ -71,10 +71,10 @@ function printBallot() {
 
 <template>
 	<section class="app-shell">
-		<div class="pamphlet-surface border border-app-line rounded-[2rem] bg-white shadow-[0_30px_80px_-48px_rgba(16,37,62,0.65)] overflow-hidden dark:border-app-line-dark dark:bg-app-panel-dark">
+		<div class="pamphlet-surface border border-app-line rounded-xl bg-white shadow-[0_30px_80px_-48px_rgba(16,37,62,0.65)] overflow-hidden dark:border-app-line-dark dark:bg-app-panel-dark">
 			<div class="px-6 py-8 gap-8 grid lg:px-10 sm:px-8 xl:grid-cols-[minmax(0,1.4fr)_minmax(18rem,0.8fr)]">
 				<div>
-					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold mt-4 uppercase dark:text-app-muted-dark sm:mt-6">
+					<p class="text-xs text-app-muted tracking-[0.06em] font-semibold mt-4 uppercase dark:text-app-muted-dark sm:mt-6">
 						{{ props.location.displayName }}
 					</p>
 					<h1 class="text-4xl text-app-ink leading-tight font-serif mt-3 max-w-4xl sm:text-5xl dark:text-app-text-dark">
@@ -91,8 +91,8 @@ function printBallot() {
 						<UpdatedAt :value="props.election.updatedAt" />
 					</div>
 					<div class="mt-6 gap-4 grid sm:grid-cols-2 xl:grid-cols-3">
-						<div class="px-5 py-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
-							<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+						<div class="px-5 py-5 rounded-xl bg-app-bg dark:bg-app-bg-dark/70">
+							<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 								Personalized to
 							</p>
 							<p class="text-sm text-app-ink font-semibold mt-3 dark:text-app-text-dark">
@@ -102,8 +102,8 @@ function printBallot() {
 								{{ primaryContextNote }}
 							</p>
 						</div>
-						<div class="px-5 py-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
-							<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+						<div class="px-5 py-5 rounded-xl bg-app-bg dark:bg-app-bg-dark/70">
+							<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 								{{ secondaryMetric.label }}
 							</p>
 							<p class="text-3xl text-app-ink font-semibold mt-3 dark:text-app-text-dark">
@@ -113,8 +113,8 @@ function printBallot() {
 								{{ secondaryMetric.note }}
 							</p>
 						</div>
-						<div class="px-5 py-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
-							<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+						<div class="px-5 py-5 rounded-xl bg-app-bg dark:bg-app-bg-dark/70">
+							<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 								{{ tertiaryMetric.label }}
 							</p>
 							<p class="text-3xl text-app-ink font-semibold mt-3 dark:text-app-text-dark">
@@ -129,7 +129,7 @@ function printBallot() {
 
 				<div class="surface-panel flex flex-col max-w-2xl justify-between relative z-10 xl:max-w-none">
 					<div>
-						<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+						<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 							{{ readingTitle }}
 						</p>
 						<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">

@@ -361,7 +361,7 @@ function clearFilters() {
 						aria-label="Ballot contents"
 						class="surface-panel"
 					>
-						<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+						<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 							Ballot contents
 						</p>
 						<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
@@ -377,7 +377,7 @@ function clearFilters() {
 						</div>
 
 						<div v-for="group in ballotContentsGroups" :key="group.label" class="mt-5">
-							<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+							<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 								{{ group.label }}
 							</p>
 							<ol class="mt-3 space-y-2">
@@ -385,7 +385,7 @@ function clearFilters() {
 									<SafeExternalLink
 										:href="item.href"
 										:new-tab="false"
-										class="p-3 border border-app-line/80 rounded-[1.15rem] bg-app-bg/55 flex gap-3 transition items-start justify-between dark:border-app-line-dark hover:border-app-accent/60 dark:bg-app-bg-dark/70 focus-ring"
+										class="p-3 border border-app-line/80 rounded-xl bg-app-bg/55 flex gap-3 transition items-start justify-between dark:border-app-line-dark hover:border-app-accent/60 dark:bg-app-bg-dark/70 focus-ring"
 									>
 										<div class="min-w-0">
 											<p class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
@@ -429,7 +429,7 @@ function clearFilters() {
 
 				<div class="space-y-6">
 					<section id="guide-overview" class="surface-panel scroll-mt-28">
-						<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+						<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 							{{ hasContestContent ? "Ballot at a glance" : "Election overview" }}
 						</p>
 						<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
@@ -465,7 +465,7 @@ function clearFilters() {
 						<summary class="text-sm text-app-ink font-semibold cursor-pointer dark:text-app-text-dark focus-ring">
 							Key dates and official links
 						</summary>
-						<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+						<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 							Key dates and official links
 						</p>
 						<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
@@ -473,7 +473,7 @@ function clearFilters() {
 						</h2>
 						<div class="mt-6 gap-4 grid 2xl:grid-cols-4 sm:grid-cols-2">
 							<div v-for="item in data.election.keyDates" :key="item.label" class="p-4 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70">
-								<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+								<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 									{{ item.label }}
 								</p>
 								<p class="text-sm text-app-ink font-semibold mt-3 dark:text-app-text-dark">
@@ -496,8 +496,8 @@ function clearFilters() {
 									: 'Use these official notices for deadlines, logistics, and final ballot confirmation.'"
 							/>
 							<div v-if="hasContestContent" class="space-y-4">
-								<div class="p-5 rounded-[1.5rem] bg-app-bg dark:bg-app-bg-dark/70">
-									<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+								<div class="p-5 rounded-xl bg-app-bg dark:bg-app-bg-dark/70">
+									<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 										Recent updates
 									</p>
 									<ul class="mt-4 space-y-3">
@@ -568,8 +568,8 @@ function clearFilters() {
 				<div class="mt-4 rounded-full bg-app-line/60 h-4 w-full dark:bg-app-line-dark" />
 				<div class="mt-2 rounded-full bg-app-line/60 h-4 w-3/4 dark:bg-app-line-dark" />
 				<div class="mt-8 gap-4 grid lg:grid-cols-2">
-					<div class="rounded-3xl bg-app-line/50 h-56 dark:bg-app-line-dark" />
-					<div class="rounded-3xl bg-app-line/50 h-56 dark:bg-app-line-dark" />
+					<div class="rounded-xl bg-app-line/50 h-56 dark:bg-app-line-dark" />
+					<div class="rounded-xl bg-app-line/50 h-56 dark:bg-app-line-dark" />
 				</div>
 			</div>
 		</section>
@@ -583,7 +583,7 @@ function clearFilters() {
 		<section v-else-if="filteredContests.length" id="contests-section" class="app-shell space-y-10">
 			<div v-if="filteredCandidateContests.length" id="candidate-contests-section" class="scroll-mt-28 space-y-6">
 				<div class="surface-panel">
-					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+					<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 						Candidate contests
 					</p>
 					<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
@@ -604,7 +604,7 @@ function clearFilters() {
 
 			<div v-if="filteredMeasureContests.length" id="measure-contests-section" class="scroll-mt-28 space-y-6">
 				<div class="surface-panel">
-					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+					<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 						Ballot measures
 					</p>
 					<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
@@ -642,7 +642,7 @@ function clearFilters() {
 			v-if="effectiveCompareList.length || effectiveBallotPlanCount"
 			class="px-4 bottom-4 left-0 right-0 fixed z-30 print-hidden"
 		>
-			<div class="mx-auto px-5 py-4 border border-app-line rounded-[1.75rem] bg-white flex flex-col gap-3 max-w-4xl w-full shadow-[0_24px_50px_-36px_rgba(16,37,62,0.7)] dark:border-app-line-dark dark:bg-app-panel-dark sm:flex-row sm:items-center sm:justify-between">
+			<div class="mx-auto px-5 py-4 border border-app-line rounded-xl bg-white flex flex-col gap-3 max-w-4xl w-full shadow-[0_24px_50px_-36px_rgba(16,37,62,0.7)] dark:border-app-line-dark dark:bg-app-panel-dark sm:flex-row sm:items-center sm:justify-between">
 				<div>
 					<p class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
 						{{ effectiveBallotPlanCount }} contest{{ effectiveBallotPlanCount === 1 ? "" : "s" }} saved · {{ effectiveCompareList.length }} candidate{{ effectiveCompareList.length === 1 ? "" : "s" }} in compare

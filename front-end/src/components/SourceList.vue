@@ -35,12 +35,12 @@ function getSourceRecordHref(source: Source) {
 			<li
 				v-for="source in sources"
 				:key="source.id"
-				class="p-4 border border-app-line/70 rounded-2xl bg-white/70 dark:border-app-line-dark dark:bg-app-panel-dark/70"
+				class="p-4 border border-app-line/70 rounded-2xl bg-app-panel dark:border-app-line-dark dark:bg-app-panel-dark/70"
 				:class="compact ? 'p-3' : 'p-4'"
 			>
 				<div class="flex flex-wrap gap-2 items-center">
 					<SourceAuthorityBadge :authority="source.authority" />
-					<span class="text-[11px] text-app-muted tracking-[0.14em] font-semibold px-2.5 py-1 rounded-full bg-app-bg uppercase dark:text-app-muted-dark dark:bg-app-bg-dark/70">
+					<span class="text-[11px] text-app-muted tracking-[0.06em] font-semibold px-2.5 py-1 rounded-full bg-app-bg uppercase dark:text-app-muted-dark dark:bg-app-bg-dark/70">
 						{{ source.type }}
 					</span>
 					<span class="text-xs text-app-muted dark:text-app-muted-dark">{{ formatDate(source.date) }}</span>

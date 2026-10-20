@@ -15,7 +15,7 @@ usePageSeo({
 <template>
 	<section class="app-shell section-gap">
 		<div class="surface-panel max-w-3xl">
-			<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+			<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 				404
 			</p>
 			<h1 class="text-4xl text-app-ink font-serif mt-3 dark:text-app-text-dark">

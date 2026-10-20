@@ -95,7 +95,7 @@ function saveToPlan() {
 			>
 				<div class="space-y-4">
 					<div>
-						<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+						<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 							Candidate bio
 						</p>
 						<p class="text-sm text-app-muted leading-7 mt-2 dark:text-app-muted-dark">
@@ -104,7 +104,7 @@ function saveToPlan() {
 					</div>
 
 					<div v-if="candidate.topIssues.length">
-						<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+						<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 							Top issues
 						</p>
 						<div class="mt-3 flex flex-wrap gap-2">
@@ -114,11 +114,11 @@ function saveToPlan() {
 
 					<div v-if="!isQuickView" class="space-y-4">
 						<div v-if="candidate.keyActions.length">
-							<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+							<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 								Selected actions
 							</p>
 							<ul class="mt-3 space-y-2">
-								<li v-for="action in candidate.keyActions.slice(0, 2)" :key="action.id" class="text-sm text-app-muted leading-6 p-3 rounded-2xl bg-white/80 dark:text-app-muted-dark dark:bg-app-panel-dark/70">
+								<li v-for="action in candidate.keyActions.slice(0, 2)" :key="action.id" class="text-sm text-app-muted leading-6 p-3 rounded-2xl bg-app-panel dark:text-app-muted-dark dark:bg-app-panel-dark/70">
 									<p class="text-app-ink font-semibold dark:text-app-text-dark">
 										{{ action.title }}
 									</p>
@@ -130,7 +130,7 @@ function saveToPlan() {
 						</div>
 
 						<div>
-							<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+							<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 								Funding snapshot
 							</p>
 							<p class="text-sm text-app-muted leading-6 mt-2 dark:text-app-muted-dark">
@@ -142,8 +142,8 @@ function saveToPlan() {
 						</div>
 					</div>
 
-					<div class="p-3 rounded-2xl bg-white/80 dark:bg-app-panel-dark/70">
-						<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+					<div class="p-3 rounded-2xl bg-app-panel dark:bg-app-panel-dark/70">
+						<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 							Coverage note
 						</p>
 						<p class="text-sm text-app-muted leading-6 mt-2 dark:text-app-muted-dark">

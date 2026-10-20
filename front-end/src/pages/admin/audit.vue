@@ -56,7 +56,7 @@ usePageSeo({
 <template>
 	<section class="app-shell section-gap space-y-8">
 		<header class="max-w-4xl">
-			<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+			<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 				Immutable audit trail
 			</p>
 			<h1 class="text-5xl text-app-ink font-serif mt-4 dark:text-app-text-dark">
@@ -79,7 +79,7 @@ usePageSeo({
 
 		<section v-else class="gap-4 grid lg:grid-cols-3">
 			<article class="surface-panel">
-				<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+				<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 					Integrity
 				</p>
 				<h2 class="text-2xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
@@ -91,7 +91,7 @@ usePageSeo({
 			</article>
 
 			<article class="surface-panel">
-				<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+				<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 					Latest hash
 				</p>
 				<p class="text-lg text-app-ink font-semibold mt-3 break-all dark:text-app-text-dark">
@@ -103,7 +103,7 @@ usePageSeo({
 			</article>
 
 			<article class="surface-panel">
-				<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+				<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 					Events shown
 				</p>
 				<p class="text-4xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
@@ -118,7 +118,7 @@ usePageSeo({
 		<section class="surface-panel space-y-5">
 			<div class="flex flex-wrap gap-4 items-center justify-between">
 				<div>
-					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+					<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 						Event log
 					</p>
 					<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
@@ -138,11 +138,11 @@ usePageSeo({
 				<li
 					v-for="event in data.events"
 					:key="event.id"
-					class="px-5 py-5 border border-app-line/80 rounded-[1.6rem] bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70"
+					class="px-5 py-5 border border-app-line/80 rounded-xl bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70"
 				>
 					<div class="flex flex-wrap gap-3 items-start justify-between">
 						<div class="min-w-0">
-							<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+							<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 								#{{ event.sequence }} · {{ formatEventType(event.eventType) }}
 							</p>
 							<h3 class="text-xl text-app-ink font-serif mt-2 dark:text-app-text-dark">
@@ -176,9 +176,9 @@ usePageSeo({
 						<div
 							v-for="[key, value] in metadataEntries(event.metadata)"
 							:key="key"
-							class="px-4 py-3 border border-app-line/80 rounded-2xl bg-white/70 dark:border-app-line-dark dark:bg-app-panel-dark/70"
+							class="px-4 py-3 border border-app-line/80 rounded-2xl bg-app-panel dark:border-app-line-dark dark:bg-app-panel-dark/70"
 						>
-							<dt class="text-xs text-app-muted tracking-[0.16em] font-semibold uppercase dark:text-app-muted-dark">
+							<dt class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 								{{ formatEventType(key) }}
 							</dt>
 							<dd class="text-sm text-app-ink mt-2 break-words dark:text-app-text-dark">

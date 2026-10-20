@@ -143,7 +143,7 @@ usePageSeo({
 			</div>
 
 			<div v-if="activeLookupSummary.mode !== 'none'" class="surface-panel">
-				<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+				<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 					Current area
 				</p>
 				<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
@@ -168,8 +168,8 @@ usePageSeo({
 		</header>
 
 		<div v-if="directoryPending && !directoryData.representatives.length" class="gap-6 grid lg:grid-cols-2">
-			<div class="surface-panel bg-white/70 h-56 animate-pulse dark:bg-app-panel-dark/70" />
-			<div class="surface-panel bg-white/70 h-56 animate-pulse dark:bg-app-panel-dark/70" />
+			<div class="surface-panel bg-app-panel h-56 animate-pulse dark:bg-app-panel-dark/70" />
+			<div class="surface-panel bg-app-panel h-56 animate-pulse dark:bg-app-panel-dark/70" />
 		</div>
 
 		<div v-else-if="directoryError || !directoryData" class="max-w-3xl">

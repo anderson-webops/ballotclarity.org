@@ -267,12 +267,12 @@ usePageSeo({
 			<div class="space-y-6">
 				<div class="surface-panel animate-pulse">
 					<div class="rounded-full bg-app-line/70 h-6 w-40 dark:bg-app-line-dark" />
-					<div class="mt-4 rounded-[1rem] bg-app-line/60 h-14 w-2/3 dark:bg-app-line-dark" />
+					<div class="mt-4 rounded-xl bg-app-line/60 h-14 w-2/3 dark:bg-app-line-dark" />
 					<div class="mt-4 rounded-full bg-app-line/60 h-4 w-full dark:bg-app-line-dark" />
 				</div>
-				<div v-for="index in 4" :key="index" class="surface-panel bg-white/70 h-48 animate-pulse dark:bg-app-panel-dark/70" />
+				<div v-for="index in 4" :key="index" class="surface-panel bg-app-panel h-48 animate-pulse dark:bg-app-panel-dark/70" />
 			</div>
-			<div class="surface-panel bg-white/70 h-96 animate-pulse dark:bg-app-panel-dark/70" />
+			<div class="surface-panel bg-app-panel h-96 animate-pulse dark:bg-app-panel-dark/70" />
 		</div>
 
 		<div v-else-if="(error && !fallbackData) || !person" class="max-w-3xl">
@@ -298,7 +298,7 @@ usePageSeo({
 					</div>
 					<div class="mt-5 gap-6 grid md:grid-cols-[minmax(0,1fr)_auto] md:items-start">
 						<div>
-							<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+							<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 								{{ person.location }}
 							</p>
 							<div class="mt-3 flex flex-wrap gap-3 items-center">
@@ -356,7 +356,7 @@ usePageSeo({
 
 				<section id="at-a-glance" class="surface-panel scroll-mt-28">
 					<div>
-						<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+						<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 							At a glance
 						</p>
 						<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
@@ -378,7 +378,7 @@ usePageSeo({
 							</div>
 							<dl class="mt-5 gap-4 grid sm:grid-cols-2">
 								<div v-for="item in officeContextFields" :key="item.label">
-									<dt class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+									<dt class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 										{{ item.label }}
 									</dt>
 									<dd class="text-sm text-app-ink mt-2 dark:text-app-text-dark">
@@ -387,7 +387,7 @@ usePageSeo({
 								</div>
 							</dl>
 							<div v-if="officeContextReferenceLinks.length" class="mt-6 pt-6 border-t border-app-line/80 dark:border-app-line-dark">
-								<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+								<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 									Reference links
 								</p>
 								<div class="mt-4 flex flex-wrap gap-3">
@@ -408,7 +408,7 @@ usePageSeo({
 								Record status
 							</h3>
 							<ul class="mt-4 space-y-3">
-								<li v-for="item in availableModuleStatusItems" :key="item.label" class="pb-3 border-b border-app-line/80 last:pb-0 last:border-b-0 dark:border-app-line-dark">
+								<li v-for="item in availableModuleStatusItems" :key="item.label" class="pb-3 border-b border-app-line/80 last:pb-0 dark:border-app-line-dark last:border-b-0">
 									<div class="flex flex-wrap gap-3 items-center justify-between">
 										<p class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
 											{{ item.label }}
@@ -418,7 +418,7 @@ usePageSeo({
 									<p class="text-sm text-app-muted leading-7 mt-2 dark:text-app-muted-dark">
 										{{ item.summary }}
 									</p>
-									<p v-if="item.sourceSystem || item.reasonCode" class="text-xs text-app-muted tracking-[0.12em] font-semibold mt-2 uppercase dark:text-app-muted-dark">
+									<p v-if="item.sourceSystem || item.reasonCode" class="text-xs text-app-muted tracking-[0.06em] font-semibold mt-2 uppercase dark:text-app-muted-dark">
 										{{ [item.sourceSystem, item.reasonCode].filter(Boolean).join(" · ") }}
 									</p>
 								</li>
@@ -440,7 +440,7 @@ usePageSeo({
 				<section id="biography" class="surface-panel scroll-mt-28">
 					<div class="flex flex-wrap gap-4 items-center justify-between">
 						<div>
-							<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+							<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 								Bio and issues
 							</p>
 							<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
@@ -450,7 +450,7 @@ usePageSeo({
 					</div>
 					<div class="mt-6 gap-6 grid xl:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
 						<div class="space-y-4">
-							<article v-for="block in person.biography" :key="block.id" class="p-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
+							<article v-for="block in person.biography" :key="block.id" class="p-5 rounded-xl bg-app-bg dark:bg-app-bg-dark/70">
 								<div class="flex flex-wrap gap-3 items-start justify-between">
 									<h3 class="text-lg text-app-ink font-semibold dark:text-app-text-dark">
 										{{ block.title }}
@@ -463,7 +463,7 @@ usePageSeo({
 							</article>
 						</div>
 						<div class="space-y-6">
-							<div class="p-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
+							<div class="p-5 rounded-xl bg-app-bg dark:bg-app-bg-dark/70">
 								<h3 class="text-xl text-app-ink font-serif dark:text-app-text-dark">
 									Top issues
 								</h3>
@@ -471,12 +471,12 @@ usePageSeo({
 									<IssueChip v-for="issue in person.topIssues" :key="issue.slug" :label="issue.label" />
 								</div>
 							</div>
-							<details v-if="person.publicStatements.length" class="p-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
+							<details v-if="person.publicStatements.length" class="p-5 rounded-xl bg-app-bg dark:bg-app-bg-dark/70">
 								<summary class="text-xl text-app-ink font-serif cursor-pointer dark:text-app-text-dark focus-ring">
 									Public statements
 								</summary>
 								<div class="mt-4 space-y-3">
-									<article v-for="statement in person.publicStatements" :key="statement.id" class="p-4 rounded-2xl bg-white/80 dark:bg-app-panel-dark/70">
+									<article v-for="statement in person.publicStatements" :key="statement.id" class="p-4 rounded-2xl bg-app-panel dark:bg-app-panel-dark/70">
 										<h4 class="text-base text-app-ink font-semibold dark:text-app-text-dark">
 											{{ statement.title }}
 										</h4>
@@ -493,7 +493,7 @@ usePageSeo({
 				<section v-if="person.keyActions.length" id="actions" class="surface-panel scroll-mt-28">
 					<div class="flex flex-wrap gap-4 items-center justify-between">
 						<div>
-							<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+							<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 								Actions
 							</p>
 							<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
@@ -502,7 +502,7 @@ usePageSeo({
 						</div>
 					</div>
 					<div v-if="person.keyActions.length" class="mt-6 space-y-4">
-						<article v-for="action in person.keyActions" :key="action.id" class="p-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
+						<article v-for="action in person.keyActions" :key="action.id" class="p-5 rounded-xl bg-app-bg dark:bg-app-bg-dark/70">
 							<div class="flex flex-wrap gap-3 items-start justify-between">
 								<div>
 									<h3 class="text-lg text-app-ink font-semibold dark:text-app-text-dark">
@@ -527,7 +527,7 @@ usePageSeo({
 				<section v-if="hasFunding" id="funding" class="surface-panel scroll-mt-28">
 					<div class="flex flex-wrap gap-4 items-center justify-between">
 						<div>
-							<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+							<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 								Funding
 							</p>
 							<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
@@ -544,8 +544,8 @@ usePageSeo({
 								{{ person.funding.summary }}
 							</p>
 							<div v-if="fundingHighlights.length" class="gap-3 grid sm:grid-cols-2">
-								<div v-for="item in fundingHighlights" :key="item.label" class="p-4 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
-									<p class="text-xs text-app-muted tracking-[0.14em] font-semibold uppercase dark:text-app-muted-dark">
+								<div v-for="item in fundingHighlights" :key="item.label" class="p-4 rounded-xl bg-app-bg dark:bg-app-bg-dark/70">
+									<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 										{{ item.label }}
 									</p>
 									<p class="text-base text-app-ink mt-2 dark:text-app-text-dark">
@@ -553,11 +553,11 @@ usePageSeo({
 									</p>
 								</div>
 							</div>
-							<p class="text-xs text-app-muted tracking-[0.18em] font-semibold px-1 pt-2 uppercase dark:text-app-muted-dark">
+							<p class="text-xs text-app-muted tracking-[0.06em] font-semibold px-1 pt-2 uppercase dark:text-app-muted-dark">
 								{{ fundingLineItemsTitle }}
 							</p>
 							<ul class="space-y-3">
-								<li v-for="funder in fundingLineItems" :key="`${funder.name}-${funder.category}`" class="p-4 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
+								<li v-for="funder in fundingLineItems" :key="`${funder.name}-${funder.category}`" class="p-4 rounded-xl bg-app-bg dark:bg-app-bg-dark/70">
 									<div class="flex flex-wrap gap-4 items-center justify-between">
 										<div>
 											<p class="text-lg text-app-ink font-semibold dark:text-app-text-dark">
@@ -574,7 +574,7 @@ usePageSeo({
 								</li>
 							</ul>
 						</div>
-						<details class="p-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
+						<details class="p-5 rounded-xl bg-app-bg dark:bg-app-bg-dark/70">
 							<summary class="text-xl text-app-ink font-serif cursor-pointer dark:text-app-text-dark focus-ring">
 								Finance record details
 							</summary>
@@ -591,7 +591,7 @@ usePageSeo({
 				<section v-if="hasInfluence" id="influence" class="surface-panel scroll-mt-28">
 					<div class="flex flex-wrap gap-4 items-center justify-between">
 						<div>
-							<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+							<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 								Influence
 							</p>
 							<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
@@ -605,8 +605,8 @@ usePageSeo({
 					<div class="mt-6 gap-6 grid xl:grid-cols-[minmax(0,1fr)_minmax(0,0.95fr)]">
 						<div class="space-y-4">
 							<div v-if="influenceHighlights.length" class="gap-3 grid sm:grid-cols-2">
-								<div v-for="item in influenceHighlights" :key="item.label" class="p-4 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
-									<p class="text-xs text-app-muted tracking-[0.14em] font-semibold uppercase dark:text-app-muted-dark">
+								<div v-for="item in influenceHighlights" :key="item.label" class="p-4 rounded-xl bg-app-bg dark:bg-app-bg-dark/70">
+									<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 										{{ item.label }}
 									</p>
 									<p class="text-base text-app-ink mt-2 dark:text-app-text-dark">
@@ -614,7 +614,7 @@ usePageSeo({
 									</p>
 								</div>
 							</div>
-							<article v-for="block in person.lobbyingContext.slice(0, 3)" :key="block.id" class="p-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
+							<article v-for="block in person.lobbyingContext.slice(0, 3)" :key="block.id" class="p-5 rounded-xl bg-app-bg dark:bg-app-bg-dark/70">
 								<div class="flex flex-wrap gap-3 items-start justify-between">
 									<h3 class="text-lg text-app-ink font-semibold dark:text-app-text-dark">
 										{{ block.title }}
@@ -625,7 +625,7 @@ usePageSeo({
 									{{ block.summary }}
 								</p>
 							</article>
-							<div v-if="influence?.topRegistrants?.length" class="p-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
+							<div v-if="influence?.topRegistrants?.length" class="p-5 rounded-xl bg-app-bg dark:bg-app-bg-dark/70">
 								<h3 class="text-lg text-app-ink font-semibold dark:text-app-text-dark">
 									Top reporting registrants
 								</h3>
@@ -637,7 +637,7 @@ usePageSeo({
 								</ul>
 							</div>
 						</div>
-						<details class="p-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
+						<details class="p-5 rounded-xl bg-app-bg dark:bg-app-bg-dark/70">
 							<summary class="text-xl text-app-ink font-serif cursor-pointer dark:text-app-text-dark focus-ring">
 								Influence record details
 							</summary>

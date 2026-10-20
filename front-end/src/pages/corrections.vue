@@ -12,8 +12,8 @@ usePageSeo({
 <template>
 	<section class="app-shell section-gap space-y-8">
 		<div v-if="pending" class="space-y-6">
-			<div class="surface-panel bg-white/70 h-64 animate-pulse dark:bg-app-panel-dark/70" />
-			<div v-for="index in 3" :key="index" class="surface-panel bg-white/70 h-44 animate-pulse dark:bg-app-panel-dark/70" />
+			<div class="surface-panel bg-app-panel h-64 animate-pulse dark:bg-app-panel-dark/70" />
+			<div v-for="index in 3" :key="index" class="surface-panel bg-app-panel h-44 animate-pulse dark:bg-app-panel-dark/70" />
 		</div>
 
 		<div v-else-if="error || !data" class="max-w-3xl">
@@ -82,8 +82,8 @@ usePageSeo({
 							</p>
 						</div>
 
-						<div class="px-5 py-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
-							<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+						<div class="px-5 py-5 rounded-xl bg-app-bg dark:bg-app-bg-dark/70">
+							<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 								Affected page
 							</p>
 							<p class="text-base text-app-ink font-semibold mt-3 dark:text-app-text-dark">

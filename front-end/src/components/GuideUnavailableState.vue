@@ -32,7 +32,7 @@ const showTertiaryAction = computed(() => Boolean(
 					<TrustBadge label="Not a verified guide page" tone="warning" />
 					<TrustBadge label="Use official links" />
 				</div>
-				<p class="text-xs text-app-muted tracking-[0.24em] font-semibold mt-6 uppercase dark:text-app-muted-dark">
+				<p class="text-xs text-app-muted tracking-[0.06em] font-semibold mt-6 uppercase dark:text-app-muted-dark">
 					{{ eyebrow }}
 				</p>
 				<h1 class="text-4xl text-app-ink leading-tight font-serif mt-3 sm:text-5xl dark:text-app-text-dark">
@@ -54,8 +54,8 @@ const showTertiaryAction = computed(() => Boolean(
 				</div>
 			</div>
 
-			<div class="px-4 py-4 border border-[#E7B9AA] rounded-[1.4rem] bg-[#FBEEE8] dark:border-[#6D433C] dark:bg-[#3A2421]">
-				<p class="text-xs text-[#8B3A2E] tracking-[0.18em] font-semibold uppercase dark:text-[#FFD4CB]">
+			<div class="px-4 py-4 border border-[#E7B9AA] rounded-xl bg-[#FBEEE8] dark:border-[#6D433C] dark:bg-[#3A2421]">
+				<p class="text-xs text-[#8B3A2E] tracking-[0.06em] font-semibold uppercase dark:text-[#FFD4CB]">
 					What this means
 				</p>
 				<p class="text-sm text-[#8B3A2E] leading-7 mt-3 dark:text-[#FFD4CB]">

@@ -26,7 +26,7 @@ withDefaults(defineProps<{
 			<li
 				v-for="resource in resources"
 				:key="resource.label"
-				class="border border-app-line/70 rounded-2xl bg-white/80 dark:border-app-line-dark dark:bg-app-panel-dark/70"
+				class="border border-app-line/70 rounded-2xl bg-app-panel dark:border-app-line-dark dark:bg-app-panel-dark/70"
 				:class="compact ? 'p-3' : 'p-4'"
 			>
 				<SafeExternalLink v-if="resource.url" :href="resource.url" class="text-sm text-app-ink font-semibold rounded-lg inline-flex gap-2 transition items-start dark:text-app-text-dark hover:text-app-accent focus-ring dark:hover:text-white">

@@ -74,7 +74,7 @@ usePageSeo({
 			</h2>
 			<div class="mt-6 gap-4 grid md:grid-cols-3">
 				<div v-for="item in standards" :key="item.label" class="surface-row">
-					<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+					<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 						{{ item.label }}
 					</p>
 					<p class="text-2xl text-app-ink font-serif mt-3 dark:text-app-text-dark">

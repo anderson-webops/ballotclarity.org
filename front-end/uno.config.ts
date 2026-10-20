@@ -10,16 +10,17 @@ import {
 
 export default defineConfig({
 	shortcuts: [
-		["app-shell", "mx-auto w-full max-w-[84rem] px-4 sm:px-6 lg:px-8"],
-		["section-gap", "py-8 sm:py-12 lg:py-16"],
-		["surface-panel", "rounded-[1.35rem] border border-app-line/70 bg-app-panel/90 p-4 shadow-[0_16px_42px_-38px_rgba(13,37,62,0.34)] backdrop-blur sm:rounded-[1.55rem] sm:p-5 dark:border-app-line-dark dark:bg-app-panel-dark/94"],
-		["surface-primary", "rounded-[1.75rem] border border-app-line/80 bg-app-panel/92 p-5 shadow-[0_28px_64px_-50px_rgba(13,37,62,0.52)] backdrop-blur sm:rounded-[2rem] sm:p-7 dark:border-app-line-dark dark:bg-app-panel-dark/96"],
-		["surface-row", "rounded-[1.1rem] border border-app-line/70 bg-white/72 p-3 dark:border-app-line-dark dark:bg-app-bg-dark/60"],
-		["surface-inset", "rounded-[1.25rem] bg-app-bg/72 p-4 dark:bg-app-bg-dark/68"],
+		["app-shell", "mx-auto w-full max-w-[80rem] px-4 sm:px-6 lg:px-8"],
+		["section-gap", "py-8 sm:py-10 lg:py-14"],
+		["surface-panel", "rounded-xl border border-app-line bg-app-panel p-4 sm:p-6 dark:border-app-line-dark dark:bg-app-panel-dark"],
+		["surface-primary", "rounded-2xl border border-app-line bg-app-panel p-5 shadow-[0_1px_2px_rgba(13,37,62,0.06),0_12px_32px_-24px_rgba(13,37,62,0.28)] sm:p-7 dark:border-app-line-dark dark:bg-app-panel-dark"],
+		["surface-row", "rounded-lg border border-app-line bg-app-panel p-4 dark:border-app-line-dark dark:bg-app-panel-dark"],
+		["surface-inset", "rounded-lg bg-app-bg p-4 dark:bg-app-bg-dark/70"],
+		["eyebrow", "text-xs font-semibold uppercase tracking-[0.06em] text-app-muted dark:text-app-muted-dark"],
 		["focus-ring", "focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-app-accent-strong focus-visible:ring-offset-3 focus-visible:ring-offset-app-bg dark:focus-visible:ring-offset-app-bg-dark"],
-		["primary-link", "inline-flex items-center gap-2 font-medium text-app-accent transition hover:text-app-accent-strong"],
-		["btn-primary", "focus-ring inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-app-action px-4 py-2.5 text-sm font-semibold text-app-action-text transition hover:bg-app-action-strong disabled:cursor-not-allowed disabled:opacity-60 sm:px-5 sm:py-3"],
-		["btn-secondary", "focus-ring inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-app-line bg-white px-4 py-2.5 text-sm font-semibold text-app-ink transition hover:border-app-accent hover:text-app-accent dark:border-app-line-dark dark:bg-transparent dark:text-app-text-dark sm:px-5 sm:py-3"],
+		["primary-link", "inline-flex items-center gap-2 font-semibold text-app-accent underline decoration-app-accent/30 underline-offset-4 transition hover:text-app-accent-strong hover:decoration-current"],
+		["btn-primary", "focus-ring inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-app-action px-4 py-2.5 text-[0.95rem] font-semibold text-app-action-text transition hover:bg-app-action-strong disabled:cursor-not-allowed disabled:opacity-60 sm:px-5"],
+		["btn-secondary", "focus-ring inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-app-line bg-app-panel px-4 py-2.5 text-[0.95rem] font-semibold text-app-ink transition hover:border-app-accent hover:text-app-accent dark:border-app-line-dark dark:bg-app-panel-dark dark:text-app-text-dark sm:px-5"],
 	],
 	theme: {
 		colors: {

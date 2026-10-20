@@ -196,7 +196,7 @@ function buildLookupAwareTarget(path: string) {
 			</div>
 
 			<div class="surface-panel">
-				<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+				<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 					Area
 				</p>
 				<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
@@ -216,7 +216,7 @@ function buildLookupAwareTarget(path: string) {
 		</header>
 
 		<div v-if="directoriesPending && !directoryData.districts.districts.length" class="gap-6 grid lg:grid-cols-2 xl:grid-cols-3">
-			<div v-for="index in 3" :key="index" class="surface-panel bg-white/70 h-72 animate-pulse dark:bg-app-panel-dark/70" />
+			<div v-for="index in 3" :key="index" class="surface-panel bg-app-panel h-72 animate-pulse dark:bg-app-panel-dark/70" />
 		</div>
 
 		<div v-else-if="directoriesError || !directoryData" class="max-w-3xl">
@@ -250,7 +250,7 @@ function buildLookupAwareTarget(path: string) {
 					:key="district.slug"
 					class="surface-row flex flex-col"
 				>
-					<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+					<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 						{{ district.jurisdiction }}
 					</p>
 					<h2 class="text-2xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
@@ -284,9 +284,9 @@ function buildLookupAwareTarget(path: string) {
 								{{ getDistrictRepresentativeCountLabel(district) }}
 							</NuxtLink>
 							<div
-								class="mt-2 p-3 border border-app-line/85 rounded-2xl bg-white/96 opacity-0 max-w-80 min-w-64 invisible pointer-events-none shadow-[0_18px_38px_-24px_rgba(16,37,62,0.58)] transition duration-150 left-0 top-full absolute z-20 dark:border-app-line-dark dark:bg-app-panel-dark/96 group-focus-within:opacity-100 group-hover:opacity-100 group-focus-within:visible group-hover:visible"
+								class="mt-2 p-3 border border-app-line/85 rounded-2xl bg-app-panel opacity-0 max-w-80 min-w-64 invisible pointer-events-none shadow-[0_18px_38px_-24px_rgba(16,37,62,0.58)] transition duration-150 left-0 top-full absolute z-20 dark:border-app-line-dark dark:bg-app-panel-dark/96 group-focus-within:opacity-100 group-hover:opacity-100 group-focus-within:visible group-hover:visible"
 							>
-								<p class="text-[11px] text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+								<p class="text-[11px] text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 									{{ getDistrictRepresentatives(district.slug).length === 1 ? "Linked representative" : "Linked representatives" }}
 								</p>
 								<ul class="mt-2 space-y-2">
@@ -325,7 +325,7 @@ function buildLookupAwareTarget(path: string) {
 						<VerificationBadge v-else :label="getDistrictRepresentativeCountLabel(district)" tone="accent" />
 					</div>
 					<div v-if="getDistrictRepresentatives(district.slug).length" class="mt-5 pt-5 border-t border-app-line/80 dark:border-app-line-dark">
-						<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+						<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 							{{ getDistrictRepresentatives(district.slug).length === 1 ? 'Current representative' : 'Current representatives' }}
 						</p>
 						<p class="text-lg text-app-ink font-semibold mt-3 dark:text-app-text-dark">

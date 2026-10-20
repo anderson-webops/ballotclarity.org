@@ -178,7 +178,7 @@ function saveToPlan() {
 
 <template>
 	<section class="app-shell section-gap">
-		<div v-if="pending" class="gap-8 grid 2xl:grid-cols-[minmax(0,1.4fr)_minmax(22rem,0.8fr)]">
+		<div v-if="pending" class="detail-layout">
 			<div class="space-y-6">
 				<div class="surface-panel animate-pulse">
 					<div class="rounded-full bg-app-line/70 h-6 w-32 dark:bg-app-line-dark" />
@@ -204,7 +204,7 @@ function saveToPlan() {
 			title="Candidate profile not published yet"
 		/>
 
-		<div v-else class="gap-8 grid 2xl:grid-cols-[minmax(0,1.45fr)_minmax(21rem,0.85fr)]">
+		<div v-else class="detail-layout">
 			<div class="space-y-6">
 				<header class="surface-panel">
 					<div class="flex flex-wrap gap-2 items-center">
@@ -650,10 +650,9 @@ function saveToPlan() {
 				</ExpandableSection>
 			</div>
 
-			<aside class="xl:self-start xl:top-28 xl:sticky">
+			<aside class="detail-layout__aside">
 				<PageSectionNav
-					title="Jump to section"
-					description="Use the summary first, then open only the sections you need."
+					title="On this page"
 					:breadcrumbs="candidateBreadcrumbs"
 					:items="sectionLinks.map(section => ({ href: section.href, label: section.label }))"
 				>

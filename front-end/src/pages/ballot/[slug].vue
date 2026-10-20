@@ -1,12 +1,11 @@
 <script setup lang="ts">
 import type { Contest } from "~/types/civic";
 import { storeToRefs } from "pinia";
-import BallotStructureOverviewGraphic from "~/components/graphics/BallotStructureOverviewGraphic.vue";
 import { buildCompareRoute } from "~/stores/civic";
 
 const civicStore = useCivicStore();
 const route = useRoute();
-const { formatDate, formatDateTime } = useFormatters();
+const { formatDate } = useFormatters();
 const { ballotPlan, ballotPlanCount, ballotViewMode, compareList, isHydrated, selectedIssues } = storeToRefs(civicStore);
 
 const ballotSlug = useRouteStringParam("slug");
@@ -18,9 +17,6 @@ const effectiveBallotPlanCount = computed(() => isHydrated.value ? ballotPlanCou
 const effectiveBallotViewMode = computed(() => isHydrated.value ? ballotViewMode.value : "quick");
 const effectiveCompareList = computed(() => isHydrated.value ? compareList.value : []);
 const effectiveSelectedIssues = computed(() => isHydrated.value ? selectedIssues.value : []);
-const showPersistedBallotState = computed(() => isHydrated.value);
-const hasVerifiedContestPackage = computed(() => Boolean(data.value?.guideContent?.verifiedContestPackage));
-const hasPublishedGuideShell = computed(() => Boolean(data.value?.guideContent?.publishedGuideShell));
 const hasContestContent = computed(() => Boolean(data.value?.election.contests.length));
 const shellOnlyGuideNote = computed(() => data.value?.guideContent?.summary
 	?? "Official election links are current for this area. Verified contest, candidate, and measure pages are still under local review.");
@@ -126,8 +122,6 @@ const planHref = computed(() => ({
 	}
 }));
 
-const electionOverviewHref = computed(() => data.value ? `/elections/${data.value.election.slug}` : "/ballot");
-const jurisdictionHref = computed(() => data.value ? `/locations/${data.value.election.jurisdictionSlug}` : "/");
 const ballotCounts = computed(() => {
 	if (!data.value) {
 		return {
@@ -168,69 +162,6 @@ const personalizationNote = computed(() => {
 
 	return "Use a full address for the most specific district match.";
 });
-const guideSummaryItems = computed(() => {
-	if (!hasContestContent.value) {
-		return [
-			{
-				label: "Personalized to",
-				note: personalizationNote.value,
-				value: personalizationLabel.value
-			},
-			{
-				label: "Official links",
-				href: "#guide-logistics",
-				note: "Election-office links attached to this overview.",
-				value: data.value?.election.officialResources.length ?? 0
-			},
-			{
-				label: "Key dates",
-				href: "#guide-logistics",
-				note: "Calendar items attached to this page.",
-				value: data.value?.election.keyDates.length ?? 0
-			},
-			{
-				label: "Guide status",
-				note: hasPublishedGuideShell.value
-					? "Verified contest pages are still under local review."
-					: "No local guide is published for this area yet.",
-				value: hasVerifiedContestPackage.value ? "Verified" : hasPublishedGuideShell.value ? "In review" : "Not yet"
-			},
-		];
-	}
-
-	return [
-		{
-			label: "Personalized to",
-			note: personalizationNote.value,
-			value: personalizationLabel.value
-		},
-		{
-			label: "Contests",
-			href: "#contests-section",
-			note: "Total sections in this ballot guide.",
-			value: ballotCounts.value.contestCount
-		},
-		{
-			label: "Candidates",
-			href: filteredCandidateContests.value.length ? "#candidate-contests-section" : "#contests-section",
-			note: "Candidate profiles linked from this ballot.",
-			value: ballotCounts.value.candidateCount
-		},
-		{
-			label: "Measures",
-			href: filteredMeasureContests.value.length ? "#measure-contests-section" : "#contests-section",
-			note: "Measure explainers with yes / no summaries.",
-			value: ballotCounts.value.measureCount
-		},
-		{
-			label: "Saved to plan",
-			note: showPersistedBallotState.value
-				? "Contests currently saved in your checklist."
-				: "Saved-plan state appears after this browser syncs.",
-			value: showPersistedBallotState.value ? effectiveBallotPlanCount.value : "—"
-		}
-	];
-});
 const coverageNotes = computed(() => {
 	if (!data.value)
 		return [];
@@ -260,7 +191,10 @@ const ballotContentsGroups = computed(() => {
 			? `${contest.candidates?.length ?? 0} candidate${contest.candidates?.length === 1 ? "" : "s"}`
 			: `${contest.measures?.length ?? 0} measure${contest.measures?.length === 1 ? "" : "s"}`,
 		href: `#${contest.slug}`,
-		label: contest.office,
+		// Measure contests share a generic office label ("County Ballot Measure"); the measure title tells them apart.
+		label: contest.type === "measure" && contest.measures?.length === 1
+			? contest.measures?.[0]?.title ?? contest.office
+			: contest.office,
 		meta: contest.jurisdiction,
 		saved: Boolean(effectiveBallotPlan.value[contest.slug]),
 		slug: contest.slug,
@@ -270,7 +204,7 @@ const ballotContentsGroups = computed(() => {
 	return [
 		{
 			items: contests.filter(contest => contest.type === "candidate"),
-			label: "Offices and races"
+			label: "Races"
 		},
 		{
 			items: contests.filter(contest => contest.type === "measure"),
@@ -355,292 +289,202 @@ function clearFilters() {
 			</div>
 		</section>
 
-		<section v-if="data" class="app-shell print-hidden">
-			<div :class="hasContestContent ? 'gap-6 grid 2xl:grid-cols-[minmax(17rem,0.62fr)_minmax(0,1.38fr)]' : 'mx-auto max-w-5xl'">
-				<div v-if="hasContestContent && ballotContentsGroups.length" class="self-start space-y-4 2xl:top-24 2xl:sticky">
-					<nav
-						aria-label="Ballot contents"
-						class="surface-panel"
-					>
-						<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
-							Ballot contents
-						</p>
-						<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
-							Jump directly to races and measures, then save choices to your ballot plan.
-						</p>
-						<div class="mt-5 gap-2 grid">
-							<a href="#guide-controls" class="section-nav-link focus-ring">
-								<span class="section-nav-link__label">Search and filters</span>
-							</a>
-							<a href="#guide-logistics" class="section-nav-link focus-ring">
-								<span class="section-nav-link__label">Key dates and official links</span>
-							</a>
-						</div>
+		<section v-if="data && !hasContestContent" class="app-shell print-hidden">
+			<div class="mx-auto max-w-5xl space-y-6">
+				<section id="guide-overview" class="surface-panel scroll-mt-28">
+					<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
+						Election overview
+					</p>
+					<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
+						Official links are live for this area
+					</h2>
+					<p class="text-sm text-app-muted leading-7 mt-4 max-w-3xl dark:text-app-muted-dark">
+						This page is personalized to {{ personalizationLabel }}. Official links and key dates are current here, while verified contest, candidate, and measure pages are still under local review.
+					</p>
+					<InfoCallout title="Verified contest pages pending" tone="warning" class="mt-6">
+						Use the official links and key dates below for logistics and deadline checks. Contest, candidate, and measure pages open after the local package is verified.
+					</InfoCallout>
+				</section>
 
-						<div v-for="group in ballotContentsGroups" :key="group.label" class="mt-5">
-							<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
+				<BallotLogisticsPanel
+					:election="data.election"
+					:has-contest-content="false"
+				/>
+			</div>
+		</section>
+
+		<section v-if="data && hasContestContent" class="app-shell print-hidden">
+			<div class="ballot-layout">
+				<aside v-if="ballotContentsGroups.length" class="ballot-layout__toc">
+					<nav aria-label="On this ballot" class="ballot-toc">
+						<p class="ballot-toc__title">
+							On this ballot
+						</p>
+						<div v-for="group in ballotContentsGroups" :key="group.label" class="ballot-toc__group">
+							<p class="ballot-toc__group-label">
 								{{ group.label }}
 							</p>
-							<ol class="mt-3 space-y-2">
+							<ol class="ballot-toc__list">
 								<li v-for="item in group.items" :key="item.slug">
 									<SafeExternalLink
 										:href="item.href"
 										:new-tab="false"
-										class="p-3 border border-app-line/80 rounded-xl bg-app-bg/55 flex gap-3 transition items-start justify-between dark:border-app-line-dark hover:border-app-accent/60 dark:bg-app-bg-dark/70 focus-ring"
+										class="ballot-toc__link focus-ring"
 									>
-										<div class="min-w-0">
-											<p class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
-												{{ item.label }}
-											</p>
-											<p class="text-xs text-app-muted leading-6 mt-1 dark:text-app-muted-dark">
-												{{ item.meta }}
-											</p>
-										</div>
-										<div class="text-right flex flex-col gap-2 items-end">
-											<span class="text-[11px] text-app-muted font-semibold px-2.5 py-1 rounded-full bg-white whitespace-nowrap dark:text-app-muted-dark dark:bg-app-panel-dark">
-												{{ item.countLabel }}
+										<span class="ballot-toc__label">{{ item.label }}</span>
+										<span class="ballot-toc__meta">
+											{{ item.countLabel }}
+											<span v-if="item.saved" class="ballot-toc__saved">
+												<span class="i-carbon-checkmark" aria-hidden="true" />
+												Saved
 											</span>
-											<span
-												class="text-[11px] font-semibold px-2.5 py-1 rounded-full inline-flex gap-1 whitespace-nowrap items-center"
-												:class="item.saved
-													? 'bg-app-accent text-app-action-text'
-													: 'bg-app-warm/75 text-app-ink dark:bg-app-bg-dark dark:text-app-text-dark'"
-											>
-												<span :class="item.saved ? 'i-carbon-checkmark' : 'i-carbon-time'" aria-hidden="true" />
-												{{ item.saved ? "Saved" : "Open" }}
-											</span>
-										</div>
+										</span>
 									</SafeExternalLink>
 								</li>
 							</ol>
 						</div>
-						<div class="bc-action-cluster mt-6 pt-6 border-t border-app-line/80 dark:border-app-line-dark">
+						<div class="ballot-toc__footer">
 							<NuxtLink :to="planHref" class="btn-primary">
 								Open my ballot plan
 							</NuxtLink>
-							<NuxtLink :to="electionOverviewHref" class="btn-secondary">
-								Election overview
-							</NuxtLink>
-							<NuxtLink :to="jurisdictionHref" class="btn-secondary">
-								Location hub
-							</NuxtLink>
+							<a href="#guide-logistics" class="primary-link focus-ring">Key dates and official links</a>
 						</div>
 					</nav>
-				</div>
+				</aside>
 
-				<div class="space-y-6">
-					<section id="guide-overview" class="surface-panel scroll-mt-28">
-						<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
-							{{ hasContestContent ? "Ballot at a glance" : "Election overview" }}
-						</p>
-						<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-							{{ hasContestContent ? "Showing contests for your districts" : "Official links are live for this area" }}
-						</h2>
-						<p class="text-sm text-app-muted leading-7 mt-4 max-w-3xl dark:text-app-muted-dark">
-							{{ hasContestContent
-								? `This guide is personalized to ${personalizationLabel}. It is designed to reduce overload, but district matching and time-sensitive logistics should still be checked against the official election overview.`
-								: `This page is personalized to ${personalizationLabel}. Official links and key dates are current here, while verified contest, candidate, and measure pages are still under local review.` }}
-						</p>
-
-						<div v-if="hasContestContent" class="mt-6">
-							<PageSummaryStrip :items="guideSummaryItems" />
+				<div class="ballot-layout__main">
+					<section id="guide-controls" class="ballot-controls scroll-mt-28">
+						<label for="ballot-search" class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
+							Search this ballot
+						</label>
+						<div class="mt-2 relative">
+							<span class="i-carbon-search text-app-muted pointer-events-none left-4 top-1/2 absolute dark:text-app-muted-dark -translate-y-1/2" />
+							<input
+								id="ballot-search"
+								v-model="searchQuery"
+								type="search"
+								placeholder="Search candidates, measures, or issues"
+								class="text-sm text-app-ink pl-11 pr-4 border border-app-line rounded-full bg-white h-[3.25rem] w-full dark:text-app-text-dark placeholder:text-app-muted dark:border-app-line-dark dark:bg-app-panel-dark focus-ring dark:placeholder:text-app-muted-dark"
+							>
 						</div>
 
-						<div v-if="hasContestContent" class="mt-6">
-							<BallotStructureOverviewGraphic :contests="filteredContests" />
-						</div>
-
-						<details v-if="hasContestContent" class="mt-6 surface-row">
-							<summary class="text-sm text-app-ink font-semibold cursor-pointer dark:text-app-text-dark focus-ring">
-								Coverage notes and limits
+						<details v-if="issueOptions.length" class="ballot-controls__filters" :open="effectiveSelectedIssues.length > 0">
+							<summary class="ballot-controls__filters-summary focus-ring">
+								Filter by issue
+								<span v-if="effectiveSelectedIssues.length" class="ballot-controls__count">{{ effectiveSelectedIssues.length }} selected</span>
 							</summary>
-							<ul class="text-sm text-app-muted leading-7 mt-4 space-y-2 dark:text-app-muted-dark">
-								<li v-for="item in coverageNotes" :key="item">
-									{{ item }}
-								</li>
-							</ul>
+							<div class="mt-3 flex flex-wrap gap-2">
+								<button
+									v-for="issue in issueOptions"
+									:key="issue.slug"
+									type="button"
+									class="text-xs font-semibold px-3 py-2 border rounded-full transition focus-ring"
+									:class="effectiveSelectedIssues.includes(issue.slug)
+										? 'border-app-accent bg-app-accent text-app-action-text'
+										: 'border-app-line bg-white text-app-muted hover:border-app-accent hover:text-app-accent dark:border-app-line-dark dark:bg-app-panel-dark dark:text-app-muted-dark'"
+									:aria-pressed="effectiveSelectedIssues.includes(issue.slug)"
+									@click="civicStore.toggleIssue(issue.slug)"
+								>
+									<span v-if="effectiveSelectedIssues.includes(issue.slug)" class="i-carbon-checkmark mr-1" aria-hidden="true" />
+									{{ issue.label }}
+								</button>
+							</div>
+							<button
+								v-if="effectiveSelectedIssues.length || searchQuery"
+								type="button"
+								class="text-sm text-app-accent font-semibold mt-3 rounded-full focus-ring"
+								@click="clearFilters"
+							>
+								Clear filters
+							</button>
 						</details>
-
-						<InfoCallout v-else title="Verified contest pages pending" tone="warning" class="mt-6">
-							Use the official links and key dates below for logistics and deadline checks. Contest, candidate, and measure pages open after the local package is verified.
-						</InfoCallout>
 					</section>
 
-					<details id="guide-logistics" class="surface-panel scroll-mt-28">
-						<summary class="text-sm text-app-ink font-semibold cursor-pointer dark:text-app-text-dark focus-ring">
-							Key dates and official links
-						</summary>
-						<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
-							Key dates and official links
-						</p>
-						<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-							{{ hasContestContent ? "Use the ballot guide with the election overview" : "Use the official links on this page" }}
-						</h2>
-						<div class="mt-6 gap-4 grid 2xl:grid-cols-4 sm:grid-cols-2">
-							<div v-for="item in data.election.keyDates" :key="item.label" class="p-4 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70">
-								<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
-									{{ item.label }}
-								</p>
-								<p class="text-sm text-app-ink font-semibold mt-3 dark:text-app-text-dark">
-									{{ item.date.includes("T") ? formatDateTime(item.date) : formatDate(item.date) }}
-								</p>
-								<p class="text-xs text-app-muted leading-6 mt-2 dark:text-app-muted-dark">
-									{{ item.note || "Review the official notice for details." }}
-								</p>
-							</div>
+					<div v-if="pending" class="space-y-6">
+						<div v-for="index in 3" :key="index" class="surface-panel animate-pulse">
+							<div class="rounded-full bg-app-line/70 h-6 w-48 dark:bg-app-line-dark" />
+							<div class="mt-4 rounded-full bg-app-line/60 h-4 w-full dark:bg-app-line-dark" />
+							<div class="mt-2 rounded-full bg-app-line/60 h-4 w-3/4 dark:bg-app-line-dark" />
 						</div>
-						<div
-							class="mt-6 gap-5 grid"
-							:class="hasContestContent ? 'lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]' : ''"
-						>
-							<OfficialResourceList
-								:resources="data.election.officialResources"
-								:title="hasContestContent ? 'Official notices linked in this guide' : 'Official notices and voter tools'"
-								:note="hasContestContent
-									? 'The printable ballot guide is useful for reading contests. Use the official notices for time-sensitive logistics.'
-									: 'Use these official notices for deadlines, logistics, and final ballot confirmation.'"
+					</div>
+
+					<InfoCallout v-else-if="error" title="Unable to load ballot" tone="warning">
+						The ballot guide could not be loaded. Refresh the page or return to the home page and try again.
+					</InfoCallout>
+
+					<div v-else-if="filteredContests.length" id="contests-section" class="space-y-10">
+						<div v-if="filteredCandidateContests.length" id="candidate-contests-section" class="scroll-mt-28 space-y-5">
+							<h2 class="ballot-group-heading font-serif">
+								Races
+								<span class="ballot-group-heading__count">{{ filteredCandidateContests.length }}</span>
+							</h2>
+							<ContestSection
+								v-for="(contest, index) in filteredCandidateContests"
+								:key="contest.slug"
+								:contest="contest"
+								:open="index === 0"
+								:view-mode="effectiveBallotViewMode"
 							/>
-							<div v-if="hasContestContent" class="space-y-4">
-								<div class="p-5 rounded-xl bg-app-bg dark:bg-app-bg-dark/70">
-									<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
-										Recent updates
-									</p>
-									<ul class="mt-4 space-y-3">
-										<li v-for="entry in data.election.changeLog" :key="entry.id" class="text-sm text-app-muted leading-7 dark:text-app-muted-dark">
-											<span class="text-app-ink font-semibold dark:text-app-text-dark">{{ formatDateTime(entry.date) }}</span>
-											<span class="text-app-line mx-2 dark:text-app-line-dark">·</span>
-											{{ entry.summary }}
-										</li>
-									</ul>
-								</div>
-							</div>
 						</div>
+
+						<div v-if="filteredMeasureContests.length" id="measure-contests-section" class="scroll-mt-28 space-y-5">
+							<h2 class="ballot-group-heading font-serif">
+								Ballot measures
+								<span class="ballot-group-heading__count">{{ filteredMeasureContests.length }}</span>
+							</h2>
+							<ContestSection
+								v-for="(contest, index) in filteredMeasureContests"
+								:key="contest.slug"
+								:contest="contest"
+								:open="index === 0 && !filteredCandidateContests.length"
+								:view-mode="effectiveBallotViewMode"
+							/>
+						</div>
+					</div>
+
+					<div v-else class="surface-panel text-center">
+						<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
+							No ballot items match the current filters.
+						</h2>
+						<p class="text-sm text-app-muted leading-7 mx-auto mt-4 max-w-2xl dark:text-app-muted-dark">
+							Try clearing the search field or removing selected issues to restore the full ballot guide.
+						</p>
+						<button type="button" class="btn-primary mt-6" @click="clearFilters">
+							Clear filters
+						</button>
+					</div>
+
+					<BallotLogisticsPanel
+						:election="data.election"
+						:has-contest-content="true"
+					/>
+
+					<details class="surface-row">
+						<summary class="text-sm text-app-ink font-semibold cursor-pointer dark:text-app-text-dark focus-ring">
+							Coverage notes and limits
+						</summary>
+						<ul class="text-sm text-app-muted leading-7 mt-4 space-y-2 dark:text-app-muted-dark">
+							<li v-for="item in coverageNotes" :key="item">
+								{{ item }}
+							</li>
+						</ul>
 					</details>
-
-					<section v-if="hasContestContent" id="guide-controls" class="surface-panel scroll-mt-28">
-						<div class="gap-6 grid 2xl:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
-							<div>
-								<label for="ballot-search" class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
-									Search this ballot
-								</label>
-								<div class="mt-3 relative">
-									<span class="i-carbon-search text-app-muted pointer-events-none left-4 top-1/2 absolute dark:text-app-muted-dark -translate-y-1/2" />
-									<input
-										id="ballot-search"
-										v-model="searchQuery"
-										type="search"
-										placeholder="Search candidates, measures, or issues"
-										class="text-sm text-app-ink pl-11 pr-4 border border-app-line rounded-full bg-white h-[3.25rem] w-full dark:text-app-text-dark placeholder:text-app-muted dark:border-app-line-dark dark:bg-app-panel-dark focus-ring dark:placeholder:text-app-muted-dark"
-									>
-								</div>
-							</div>
-
-							<div>
-								<div class="flex gap-4 items-center justify-between">
-									<p class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
-										Filter by issue
-									</p>
-									<button type="button" class="text-xs text-app-accent font-semibold rounded-full focus-ring" @click="clearFilters">
-										Clear filters
-									</button>
-								</div>
-								<div class="mt-3 flex flex-wrap gap-2">
-									<button
-										v-for="issue in issueOptions"
-										:key="issue.slug"
-										type="button"
-										class="text-xs font-semibold px-3 py-2 border rounded-full transition focus-ring"
-										:class="effectiveSelectedIssues.includes(issue.slug)
-											? 'border-app-accent bg-app-accent text-app-action-text'
-											: 'border-app-line bg-white text-app-muted hover:border-app-accent hover:text-app-accent dark:border-app-line-dark dark:bg-app-panel-dark dark:text-app-muted-dark'"
-										:aria-pressed="effectiveSelectedIssues.includes(issue.slug)"
-										@click="civicStore.toggleIssue(issue.slug)"
-									>
-										<span v-if="effectiveSelectedIssues.includes(issue.slug)" class="i-carbon-checkmark mr-1" aria-hidden="true" />
-										{{ issue.label }}
-									</button>
-								</div>
-							</div>
-						</div>
-					</section>
 				</div>
 			</div>
 		</section>
 
-		<section v-if="pending" class="app-shell space-y-6">
+		<section v-if="!data && pending" class="app-shell space-y-6">
 			<div v-for="index in 3" :key="index" class="surface-panel animate-pulse">
 				<div class="rounded-full bg-app-line/70 h-6 w-48 dark:bg-app-line-dark" />
 				<div class="mt-4 rounded-full bg-app-line/60 h-4 w-full dark:bg-app-line-dark" />
 				<div class="mt-2 rounded-full bg-app-line/60 h-4 w-3/4 dark:bg-app-line-dark" />
-				<div class="mt-8 gap-4 grid lg:grid-cols-2">
-					<div class="rounded-xl bg-app-line/50 h-56 dark:bg-app-line-dark" />
-					<div class="rounded-xl bg-app-line/50 h-56 dark:bg-app-line-dark" />
-				</div>
 			</div>
 		</section>
 
-		<section v-else-if="error" class="app-shell">
+		<section v-else-if="!data && error" class="app-shell">
 			<InfoCallout title="Unable to load ballot" tone="warning">
 				The ballot guide could not be loaded. Refresh the page or return to the home page and try again.
 			</InfoCallout>
-		</section>
-
-		<section v-else-if="filteredContests.length" id="contests-section" class="app-shell space-y-10">
-			<div v-if="filteredCandidateContests.length" id="candidate-contests-section" class="scroll-mt-28 space-y-6">
-				<div class="surface-panel">
-					<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
-						Candidate contests
-					</p>
-					<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-						Races with candidate profiles
-					</h2>
-					<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-						These sections group the offices on your ballot where voters are choosing between candidates. Each card links out to deeper profiles when available.
-					</p>
-				</div>
-				<ContestSection
-					v-for="(contest, index) in filteredCandidateContests"
-					:key="contest.slug"
-					:contest="contest"
-					:open="index === 0"
-					:view-mode="effectiveBallotViewMode"
-				/>
-			</div>
-
-			<div v-if="filteredMeasureContests.length" id="measure-contests-section" class="scroll-mt-28 space-y-6">
-				<div class="surface-panel">
-					<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
-						Ballot measures
-					</p>
-					<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-						Questions and measures on this ballot
-					</h2>
-					<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-						These sections explain what each measure would do, what a yes or no vote means, and which source records are attached to the summary.
-					</p>
-				</div>
-				<ContestSection
-					v-for="(contest, index) in filteredMeasureContests"
-					:key="contest.slug"
-					:contest="contest"
-					:open="index === 0 && !filteredCandidateContests.length"
-					:view-mode="effectiveBallotViewMode"
-				/>
-			</div>
-		</section>
-
-		<section v-else-if="hasContestContent" class="app-shell">
-			<div class="surface-panel text-center">
-				<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
-					No ballot items match the current filters.
-				</h2>
-				<p class="text-sm text-app-muted leading-7 mx-auto mt-4 max-w-2xl dark:text-app-muted-dark">
-					Try clearing the search field or removing selected issues to restore the full ballot guide.
-				</p>
-				<button type="button" class="btn-primary mt-6" @click="clearFilters">
-					Clear filters
-				</button>
-			</div>
 		</section>
 
 		<section

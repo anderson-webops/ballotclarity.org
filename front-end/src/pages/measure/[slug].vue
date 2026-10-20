@@ -159,7 +159,7 @@ function saveMeasure(decision: "no" | "review" | "yes") {
 
 <template>
 	<section class="app-shell section-gap">
-		<div v-if="pending" class="gap-8 grid 2xl:grid-cols-[minmax(0,1.35fr)_minmax(22rem,0.85fr)]">
+		<div v-if="pending" class="detail-layout">
 			<div class="space-y-6">
 				<div class="surface-panel bg-app-panel h-72 animate-pulse dark:bg-app-panel-dark/70" />
 				<div v-for="index in 4" :key="index" class="surface-panel bg-app-panel h-52 animate-pulse dark:bg-app-panel-dark/70" />
@@ -180,7 +180,7 @@ function saveMeasure(decision: "no" | "review" | "yes") {
 			title="Measure page not published yet"
 		/>
 
-		<div v-else class="gap-8 grid 2xl:grid-cols-[minmax(0,1.35fr)_minmax(22rem,0.85fr)]">
+		<div v-else class="detail-layout">
 			<div class="space-y-6">
 				<header class="surface-panel">
 					<div class="flex flex-wrap gap-2">
@@ -625,10 +625,9 @@ function saveMeasure(decision: "no" | "review" | "yes") {
 				</ExpandableSection>
 			</div>
 
-			<aside class="xl:self-start xl:top-28 xl:sticky">
+			<aside class="detail-layout__aside">
 				<PageSectionNav
-					title="Jump to section"
-					description="Read the overview first, then open only the parts of the measure you need."
+					title="On this page"
 					:breadcrumbs="measureBreadcrumbs"
 					:items="sectionLinks.map(section => ({ href: section.href, label: section.label }))"
 				>

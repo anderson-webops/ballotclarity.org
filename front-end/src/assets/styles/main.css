@@ -566,7 +566,7 @@ html.dark .home-summary-card-link:focus-visible {
 .summary-strip {
   display: grid;
   gap: 0.9rem;
-  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr));
 }
 
 .summary-strip__item {
@@ -611,6 +611,7 @@ html.dark .summary-strip__item--interactive:hover {
 
 .summary-strip__value {
   margin: 0.55rem 0 0;
+  overflow-wrap: anywhere;
   font-size: clamp(1.45rem, 1.25rem + 0.6vw, 2rem);
   line-height: 1.1;
   font-weight: 650;
@@ -1132,5 +1133,571 @@ html.dark .expandable-section__body {
 
   main {
     padding: 0 !important;
+  }
+}
+
+/* ------------------------------------------------------------------
+   Readability layer (2026-10 UX redesign, phase 1)
+   See docs/audits/2026-10-20-ux-readability-redesign.md.
+   These rules set reading floors on top of the utility classes so long-form
+   copy stays legible without rewriting every template at once.
+   ------------------------------------------------------------------ */
+
+/* Reading-text floors: 12px/14px utilities were used for most explanatory copy. */
+main :is(p, li, dd, blockquote).text-xs:not(.uppercase) {
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+
+main :is(p, li, dd, blockquote).text-sm:not(.uppercase) {
+  font-size: 0.975rem;
+  line-height: 1.65;
+}
+
+/* Keep explanatory paragraphs to a comfortable line length inside wide panels. */
+main .surface-panel p:is(.text-sm, .text-base):not(.uppercase) {
+  max-width: 72ch;
+}
+
+/* Status callouts */
+.callout--success {
+  border-color: #9bc8a9;
+  background: #eef8f1;
+  color: #1d5232;
+}
+
+html.dark .callout--success {
+  border-color: #2f6b45;
+  background: #0f2618;
+  color: #a7dfb9;
+}
+
+/* Election hero: one compact summary instead of three stat cards and a reading note. */
+.election-hero {
+  border: 1px solid var(--app-line);
+  border-radius: 1rem;
+  background: var(--app-panel);
+  padding: 1.5rem 1.25rem;
+}
+
+html.dark .election-hero {
+  border-color: var(--app-line-dark);
+  background: var(--app-panel-dark);
+}
+
+.election-hero__grid {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.election-hero__eyebrow {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--app-muted);
+}
+
+.election-hero__title {
+  margin: 0.5rem 0 0;
+  font-size: clamp(1.9rem, 1.4rem + 2.2vw, 3rem);
+  line-height: 1.12;
+  color: var(--app-ink);
+}
+
+.election-hero__lead {
+  margin: 0.85rem 0 0;
+  max-width: 62ch;
+  font-size: 1.0625rem;
+  line-height: 1.65;
+  color: var(--app-muted);
+}
+
+.election-hero__facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem 1.5rem;
+  margin: 1.25rem 0 0;
+  padding: 1rem 0 0;
+  border-top: 1px solid var(--app-line);
+}
+
+.election-hero__fact {
+  min-width: 0;
+}
+
+.election-hero__fact dt {
+  font-size: 0.8125rem;
+  color: var(--app-muted);
+}
+
+.election-hero__fact dd {
+  margin: 0.15rem 0 0;
+  font-size: 1.0625rem;
+  font-weight: 650;
+  color: var(--app-ink);
+  overflow-wrap: anywhere;
+}
+
+.election-hero__fact--wide {
+  grid-column: 1 / -1;
+}
+
+.election-hero__meta {
+  margin-top: 0.85rem;
+  font-size: 0.875rem;
+  color: var(--app-muted);
+}
+
+.election-hero__status {
+  display: grid;
+  gap: 1rem;
+  align-content: start;
+}
+
+.election-hero__guidance {
+  display: block;
+  margin-top: 0.5rem;
+  opacity: 0.9;
+}
+
+html.dark .election-hero__eyebrow,
+html.dark .election-hero__lead,
+html.dark .election-hero__fact dt,
+html.dark .election-hero__meta {
+  color: var(--app-muted-dark);
+}
+
+html.dark .election-hero__title,
+html.dark .election-hero__fact dd {
+  color: var(--app-text-dark);
+}
+
+html.dark .election-hero__facts {
+  border-top-color: var(--app-line-dark);
+}
+
+@media (min-width: 640px) {
+  .election-hero {
+    padding: 2rem;
+  }
+
+  .election-hero__facts {
+    grid-template-columns: repeat(4, minmax(0, auto));
+    justify-content: start;
+  }
+
+  .election-hero__fact--wide {
+    grid-column: auto;
+  }
+}
+
+@media (min-width: 1280px) {
+  .election-hero__grid {
+    grid-template-columns: minmax(0, 1fr) minmax(19rem, 23rem);
+    gap: 2.5rem;
+  }
+}
+
+/* Ballot page: table of contents beside the contests, contests first on phones. */
+.ballot-layout {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.ballot-layout__main {
+  display: grid;
+  gap: 1.5rem;
+  min-width: 0;
+  align-content: start;
+}
+
+.ballot-toc {
+  border: 1px solid var(--app-line);
+  border-radius: 0.75rem;
+  background: var(--app-panel);
+  padding: 1rem;
+}
+
+html.dark .ballot-toc {
+  border-color: var(--app-line-dark);
+  background: var(--app-panel-dark);
+}
+
+.ballot-toc__title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 650;
+  color: var(--app-ink);
+}
+
+.ballot-toc__group {
+  margin-top: 0.85rem;
+}
+
+.ballot-toc__group-label {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--app-muted);
+}
+
+.ballot-toc__list {
+  margin: 0.35rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ballot-toc__link {
+  display: flex;
+  gap: 0.75rem;
+  align-items: baseline;
+  justify-content: space-between;
+  min-height: 44px;
+  padding: 0.6rem 0.25rem;
+  border-bottom: 1px solid var(--app-line);
+  color: var(--app-ink);
+}
+
+.ballot-toc__list li:last-child .ballot-toc__link {
+  border-bottom: 0;
+}
+
+.ballot-toc__link:hover .ballot-toc__label {
+  color: var(--app-accent-strong);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.ballot-toc__label {
+  min-width: 0;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.ballot-toc__meta {
+  display: inline-flex;
+  flex-shrink: 0;
+  gap: 0.5rem;
+  align-items: center;
+  font-size: 0.8125rem;
+  color: var(--app-muted);
+  white-space: nowrap;
+}
+
+.ballot-toc__saved {
+  display: inline-flex;
+  gap: 0.2rem;
+  align-items: center;
+  padding: 0.1rem 0.5rem;
+  border-radius: 9999px;
+  background: rgb(var(--app-accent-rgb));
+  color: rgb(var(--app-action-text-rgb));
+  font-weight: 600;
+}
+
+.ballot-toc__footer {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--app-line);
+}
+
+html.dark .ballot-toc__title,
+html.dark .ballot-toc__link {
+  color: var(--app-text-dark);
+}
+
+html.dark .ballot-toc__group-label,
+html.dark .ballot-toc__meta {
+  color: var(--app-muted-dark);
+}
+
+html.dark .ballot-toc__link,
+html.dark .ballot-toc__footer {
+  border-color: var(--app-line-dark);
+}
+
+.ballot-controls__filters {
+  margin-top: 0.75rem;
+}
+
+.ballot-controls__filters-summary {
+  display: inline-flex;
+  gap: 0.5rem;
+  align-items: center;
+  min-height: 44px;
+  cursor: pointer;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--app-ink);
+}
+
+.ballot-controls__filters-summary::-webkit-details-marker {
+  display: none;
+}
+
+.ballot-controls__filters-summary::after {
+  content: "";
+  width: 0.5rem;
+  height: 0.5rem;
+  margin-left: 0.15rem;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: translateY(-0.15rem) rotate(45deg);
+  transition: transform 0.18s ease;
+}
+
+.ballot-controls__filters[open] > .ballot-controls__filters-summary::after {
+  transform: translateY(0.1rem) rotate(-135deg);
+}
+
+.election-hero__status .primary-link,
+.ballot-toc__footer .primary-link {
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+
+.ballot-controls__count {
+  padding: 0.1rem 0.55rem;
+  border-radius: 9999px;
+  background: rgb(var(--app-accent-rgb));
+  color: rgb(var(--app-action-text-rgb));
+  font-size: 0.8125rem;
+}
+
+html.dark .ballot-controls__filters-summary {
+  color: var(--app-text-dark);
+}
+
+.ballot-group-heading {
+  display: flex;
+  gap: 0.6rem;
+  align-items: baseline;
+  margin: 0;
+  font-size: clamp(1.6rem, 1.3rem + 1vw, 2rem);
+  color: var(--app-ink);
+}
+
+.ballot-group-heading__count {
+  font-family: "Public Sans", system-ui, sans-serif;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--app-muted);
+}
+
+html.dark .ballot-group-heading {
+  color: var(--app-text-dark);
+}
+
+html.dark .ballot-group-heading__count {
+  color: var(--app-muted-dark);
+}
+
+.ballot-logistics__summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.75rem;
+  align-items: baseline;
+  cursor: pointer;
+  font-weight: 650;
+  color: var(--app-ink);
+}
+
+.ballot-logistics__hint {
+  font-size: 0.875rem;
+  font-weight: 400;
+  color: var(--app-muted);
+}
+
+.ballot-logistics__dates {
+  display: grid;
+  margin: 1.25rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ballot-logistics__date {
+  display: grid;
+  gap: 0.15rem;
+  padding: 0.85rem 0;
+  border-top: 1px solid var(--app-line);
+}
+
+.ballot-logistics__date-label {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--app-muted);
+}
+
+.ballot-logistics__date-value {
+  margin: 0;
+  font-size: 1.0625rem;
+  font-weight: 650;
+  color: var(--app-ink);
+}
+
+.ballot-logistics__date-note {
+  margin: 0;
+  max-width: 68ch;
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  color: var(--app-muted);
+}
+
+html.dark .ballot-logistics__summary,
+html.dark .ballot-logistics__date-value {
+  color: var(--app-text-dark);
+}
+
+html.dark .ballot-logistics__hint,
+html.dark .ballot-logistics__date-label,
+html.dark .ballot-logistics__date-note {
+  color: var(--app-muted-dark);
+}
+
+html.dark .ballot-logistics__date {
+  border-top-color: var(--app-line-dark);
+}
+
+@media (min-width: 768px) {
+  .ballot-logistics__date {
+    grid-template-columns: minmax(12rem, 0.35fr) minmax(0, 1fr);
+    column-gap: 1.5rem;
+  }
+
+  .ballot-logistics__date-note {
+    grid-column: 2;
+  }
+}
+
+/* On phones the contents list is short reference, so contests come right after it. */
+@media (max-width: 1279.98px) {
+  .ballot-toc__footer .btn-primary {
+    display: none;
+  }
+}
+
+@media (min-width: 1280px) {
+  .ballot-layout {
+    grid-template-columns: minmax(15rem, 17.5rem) minmax(0, 1fr);
+    gap: 2rem;
+  }
+
+  .ballot-layout__toc {
+    position: sticky;
+    top: 6rem;
+    align-self: start;
+    max-height: calc(100dvh - 7rem);
+    overflow-y: auto;
+  }
+}
+
+/* Detail pages (candidate, measure, representative): sidebar beside content from 1280px,
+   and page navigation first, as a compact row, on narrower screens. Previously the grid only
+   split at 1536px while the sidebar expected 1280px, so most laptops saw the navigation and
+   breadcrumbs at the very bottom of the page. */
+.detail-layout {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.detail-layout > :first-child {
+  min-width: 0;
+}
+
+.detail-layout__aside {
+  order: -1;
+  min-width: 0;
+}
+
+@media (min-width: 1280px) {
+  .detail-layout {
+    grid-template-columns: minmax(0, 1fr) minmax(16rem, 19rem);
+    gap: 2rem;
+  }
+
+  .detail-layout__aside {
+    order: 0;
+    position: sticky;
+    top: 6rem;
+    align-self: start;
+  }
+}
+
+@media (max-width: 1279.98px) {
+  .detail-layout__aside .section-nav {
+    position: static;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+    backdrop-filter: none;
+  }
+
+  .detail-layout__aside .section-nav__title,
+  .detail-layout__aside .section-nav__description,
+  .detail-layout__aside .section-nav__actions,
+  .detail-layout__aside .section-nav-link__note,
+  .detail-layout__aside .section-nav-link__badge {
+    display: none;
+  }
+
+  .detail-layout__aside .section-nav__crumbs {
+    margin-bottom: 0.5rem;
+    padding-bottom: 0;
+    border-bottom: 0;
+  }
+
+  .detail-layout__aside .section-nav-list {
+    display: flex;
+    gap: 0.5rem;
+    margin: 0;
+    padding-bottom: 0.25rem;
+    overflow-x: auto;
+    scrollbar-width: thin;
+  }
+
+  .detail-layout__aside .section-nav-link {
+    align-items: center;
+    min-height: 44px;
+    padding: 0.5rem 0.95rem;
+    border-radius: 9999px;
+    white-space: nowrap;
+  }
+
+  .detail-layout__aside .section-nav-link__label {
+    font-size: 0.9375rem;
+  }
+}
+
+/* Contest sections size to their column, not the viewport, so they still fit beside the
+   ballot table of contents. */
+.contest-section__body {
+  container-type: inline-size;
+}
+
+.contest-section__grid,
+.contest-section__items {
+  display: grid;
+  gap: 1rem;
+}
+
+.contest-section__grid {
+  gap: 1.5rem;
+}
+
+@container (min-width: 34rem) {
+  .contest-section__items {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@container (min-width: 64rem) {
+  .contest-section__grid {
+    grid-template-columns: minmax(0, 1fr) minmax(15rem, 18rem);
+    align-items: start;
   }
 }

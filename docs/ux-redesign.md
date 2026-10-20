@@ -230,3 +230,37 @@ file was resolved on its merits.
 - **Unused code:** the 7 components that were never rendered on that branch, plus the schema builders and types that only the dropped graphics used.
 
 `codex/graphics` itself is unchanged, so anything left out can still be revisited there.
+
+## 9. Merging the `claude/ux-readability-redesign` branch
+
+A parallel session audited the **reading pages** (ballot, candidate, measure, representative detail), which
+sections 1–8 left for Phase 2. Its full audit, with before/after screenshots, is in
+[`docs/audits/2026-10-20-ux-readability-redesign.md`](audits/2026-10-20-ux-readability-redesign.md). The
+branch was based on current `main` but had never been built. On this branch it lints, type-checks, and
+passes the unit, e2e and a11y suites.
+
+**Kept**
+
+- **Ballot page, contests first:** a compact hero with one status callout, a sticky "On this ballot"
+  contents list beside the races from 1280px, collapsed issue filters, and key dates and official links moved
+  below the contests. Measure titles replace the generic "County Ballot Measure". This replaces codex's
+  ballot-structure overview, which did the same job but pushed the contests further down.
+- **Detail-page navigation fix:** candidate, measure and representative pages switched to two columns at
+  1536px while their sidebar expected 1280px. Below 1536px, which includes most laptops and every phone, the
+  section navigation rendered after the whole page. It is now a sticky sidebar from 1280px and a chip row at the
+  top on smaller screens, titled "On this page".
+- **Darker secondary text:** about 6.7–6.9:1 in all three light themes. It replaces the 5.7:1 values from
+  section 6.
+- **Reading-size floors** (12→14px and 14→15.6px for explanatory text) and a 72-character line limit inside
+  panels.
+- **Success callout tone**, so a verified guide no longer shows its status in amber.
+- **Back-end regression test** for the Election Day poll-close time (`back-end/test/election-key-dates.test.ts`).
+  Both branches made the identical data fix.
+
+**Not kept**
+
+- **Global 0.08em letter-spacing override:** labels already use 0.06em from the codemod in section 6, so this
+  would have mixed two values.
+- **Nested-card radius rule:** it set nested panels back to 1rem after the flattening in section 6. Its new
+  hero and contents-list radii were also brought down to match (1rem and 0.75rem).
+- **Header changes:** that branch only proposed them. Section 4's header is already implemented here.

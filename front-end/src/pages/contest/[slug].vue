@@ -1,7 +1,15 @@
 <script setup lang="ts">
+import ComparisonMatrix from "~/components/graphics/ComparisonMatrix.vue";
+import { buildContestComparisonMatrix } from "~/utils/graphics-schema";
+
 const { openLayerLink, overviewLink } = useRouteLayerNavigation();
 const contestSlug = useRouteStringParam("slug");
 const { data, error, pending } = await useContest(contestSlug);
+// A side-by-side matrix only helps when there is more than one option to compare.
+const contestComparisonMatrix = computed(() => {
+	const matrix = data.value ? buildContestComparisonMatrix(data.value.contest) : null;
+	return matrix && matrix.columns.length > 1 ? matrix : null;
+});
 
 const compareHref = computed(() => {
 	if (!data.value || data.value.contest.type !== "candidate")
@@ -140,6 +148,8 @@ usePageSeo({
 					:measure="measure"
 				/>
 			</section>
+
+			<ComparisonMatrix v-if="contestComparisonMatrix" :matrix="contestComparisonMatrix" />
 
 			<section class="gap-6 grid xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
 				<div class="surface-panel">

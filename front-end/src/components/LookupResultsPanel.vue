@@ -2,8 +2,13 @@
 import type {
 	LocationLookupAction,
 	LocationLookupSelectionOption,
+	LookupAvailabilityStatus,
 	NationwideLookupResultContext
 } from "~/types/civic";
+import DistrictLadder from "~/components/graphics/DistrictLadder.vue";
+import RepresentativeGrid from "~/components/graphics/RepresentativeGrid.vue";
+import SourceProvenanceStrip from "~/components/graphics/SourceProvenanceStrip.vue";
+import { buildLookupProvenanceSummary, buildRepresentativeCards } from "~/utils/graphics-schema";
 import { buildLookupPresentation, filterLookupActionsForPresentation } from "~/utils/location-lookup";
 import { buildNationwideDistrictHref, buildNationwideRepresentativeHref } from "~/utils/lookup-links";
 import { buildNationwideRouteTarget } from "~/utils/nationwide-route-context";
@@ -21,12 +26,6 @@ const emit = defineEmits<{
 }>();
 const { formatDate } = useFormatters();
 const NuxtLinkComponent = resolveComponent("NuxtLink");
-
-const externalHrefPattern = /^https?:\/\//;
-
-function isExternalHref(href: string) {
-	return externalHrefPattern.test(href);
-}
 
 const lookupResolution = computed(() => ({
 	electionSlug: props.lookup.electionSlug,
@@ -51,6 +50,27 @@ const visibleLookupActions = computed(() => {
 		return true;
 	});
 });
+const representativeCards = computed(() => buildRepresentativeCards(props.lookup.representativeMatches).map((card, index) => {
+	const match = props.lookup.representativeMatches[index]!;
+	const presentation = getRepresentativePresentation(match);
+
+	return {
+		...card,
+		href: buildRepresentativeHref(match),
+		levelLabel: presentation.levelLabel,
+		officeTitle: presentation.officeDisplayLabel
+	};
+}));
+const districtLinks = computed(() => Object.fromEntries(props.lookup.districtMatches.map(match => [match.id, buildDistrictHref(match)])));
+const lookupProvenanceSummary = computed(() => buildLookupProvenanceSummary({
+	districtMatches: props.lookup.districtMatches,
+	fromCache: props.lookup.fromCache,
+	guideAvailability: props.lookup.guideAvailability,
+	inputKind: props.lookup.inputKind,
+	officialToolActions: props.lookup.actions.filter(action => action.kind === "official-verification"),
+	representativeMatches: props.lookup.representativeMatches,
+	resolvedAt: props.lookup.resolvedAt
+}));
 const selectionOptions = computed(() => props.lookup.selectionOptions ?? []);
 const hasSelectionOptions = computed(() => selectionOptions.value.length > 0);
 const electionLogistics = computed(() => props.lookup.electionLogistics);
@@ -138,8 +158,8 @@ const hasLookupDetails = computed(() => Boolean(
 	|| props.lookup.representativeMatches.length
 ));
 
-function availabilityTone(status: "available" | "limited" | "unavailable") {
-	return status === "available" ? "accent" : status === "limited" ? "warning" : "neutral";
+function availabilityTone(status: LookupAvailabilityStatus) {
+	return status === "available" ? "accent" : status === "partial" || status === "limited" ? "warning" : "neutral";
 }
 
 function openGuideAction(action: LocationLookupAction) {
@@ -291,7 +311,7 @@ function getRepresentativePresentation(match: NationwideLookupResultContext["rep
 							<VerificationBadge
 								v-if="card.item.status !== 'available'"
 								class="mt-1.5"
-								:label="card.item.status === 'limited' ? 'Partly available' : card.item.status"
+								:label="card.item.status === 'limited' || card.item.status === 'partial' ? 'Partly available' : 'Not available yet'"
 								:tone="availabilityTone(card.item.status)"
 							/>
 						</div>
@@ -358,15 +378,30 @@ function getRepresentativePresentation(match: NationwideLookupResultContext["rep
 				</div>
 			</div>
 		</div>
+		<section
+			v-if="lookup.result === 'resolved' && (representativeCards.length || lookup.districtMatches.length)"
+			class="mt-8 gap-4 grid items-start xl:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]"
+			aria-label="Your officials and districts"
+		>
+			<RepresentativeGrid v-if="representativeCards.length" :cards="representativeCards" />
+			<DistrictLadder
+				v-if="lookup.districtMatches.length"
+				:links="districtLinks"
+				:lookup-input-kind="lookup.inputKind"
+				:matches="lookup.districtMatches"
+				:normalized-address="lookup.normalizedAddress"
+			/>
+		</section>
 		<details v-if="hasLookupDetails" class="mt-4 surface-inset">
 			<summary class="text-sm text-app-ink font-semibold cursor-pointer dark:text-app-text-dark focus-ring">
-				Show districts, representatives, and provider details
+				How this result was matched
 			</summary>
 			<p v-if="resultsPage && lookup.result === 'resolved'" class="text-sm text-app-muted leading-6 mt-3 dark:text-app-muted-dark">
 				{{ lookup.note }}
 			</p>
-			<p class="text-sm text-app-muted leading-6 mt-3 dark:text-app-muted-dark">
-				These details are useful for verification, but the action cards above are the fastest path to the next page.
+			<SourceProvenanceStrip v-if="lookup.result === 'resolved'" class="mt-4" :summary="lookupProvenanceSummary" />
+			<p v-if="lookup.fromCache" class="text-xs text-app-muted leading-6 mt-3 dark:text-app-muted-dark">
+				Loaded from the local lookup cache.
 			</p>
 
 			<div v-if="hasElectionLogistics && electionLogistics" class="mt-4 gap-4 grid">
@@ -548,69 +583,6 @@ function getRepresentativePresentation(match: NationwideLookupResultContext["rep
 						</article>
 					</div>
 				</article>
-			</div>
-			<div v-if="lookup.normalizedAddress || lookup.districtMatches.length || lookup.representativeMatches.length" class="mt-4 gap-4 grid lg:grid-cols-2">
-				<div v-if="lookup.districtMatches.length" class="surface-row">
-					<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
-						Matched districts
-					</p>
-					<p v-if="lookup.normalizedAddress" class="text-sm text-app-muted leading-6 mt-2 dark:text-app-muted-dark">
-						{{ lookup.normalizedAddress }}
-					</p>
-					<ul class="mt-3 space-y-2">
-						<li v-for="match in lookup.districtMatches" :key="match.id" class="text-sm text-app-muted leading-6 dark:text-app-muted-dark">
-							<NuxtLink
-								:to="buildDistrictHref(match)"
-								class="text-app-ink font-semibold underline decoration-transparent underline-offset-3 transition dark:text-app-text-dark focus-visible:text-app-accent hover:text-app-accent focus-visible:decoration-current hover:decoration-current"
-							>
-								{{ match.label }}
-							</NuxtLink>
-							<span class="text-xs tracking-[0.06em] ml-2 uppercase">{{ match.sourceSystem }}</span>
-						</li>
-					</ul>
-					<p v-if="lookup.fromCache" class="text-xs text-app-muted leading-6 mt-3 dark:text-app-muted-dark">
-						Loaded from the local lookup cache.
-					</p>
-				</div>
-				<div v-if="lookup.representativeMatches.length" class="surface-row">
-					<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
-						Current representatives
-					</p>
-					<ul class="mt-3 space-y-3">
-						<li v-for="match in lookup.representativeMatches" :key="match.id" class="text-sm text-app-muted leading-6 dark:text-app-muted-dark">
-							<div class="flex gap-3 items-start">
-								<ProfileImageStack
-									v-if="match.profileImages?.length"
-									:images="match.profileImages"
-									:name="match.name"
-									size="sm"
-								/>
-								<div class="min-w-0">
-									<div class="flex flex-wrap gap-2 items-center">
-										<NuxtLink
-											:to="buildRepresentativeHref(match)"
-											class="text-app-ink font-semibold underline decoration-transparent underline-offset-3 transition dark:text-app-text-dark focus-visible:text-app-accent hover:text-app-accent focus-visible:decoration-current hover:decoration-current"
-										>
-											{{ match.name }}
-										</NuxtLink>
-										<VerificationBadge :label="getRepresentativePresentation(match).levelLabel" tone="accent" />
-										<span v-if="match.party" class="text-xs tracking-[0.06em] uppercase">{{ match.party }}</span>
-										<VerificationBadge :label="match.sourceSystem" />
-									</div>
-									<p>{{ getRepresentativePresentation(match).officeDisplayLabel }}</p>
-								</div>
-							</div>
-							<SafeExternalLink
-								v-if="match.openstatesUrl"
-								:href="match.openstatesUrl"
-								class="text-app-accent underline underline-offset-3 inline-flex gap-2 items-center"
-							>
-								Open record
-								<span v-if="isExternalHref(match.openstatesUrl)" class="i-carbon-launch" />
-							</SafeExternalLink>
-						</li>
-					</ul>
-				</div>
 			</div>
 		</details>
 		<div v-if="lookupPresentation.canOpenGuide && lookup.location && lookup.electionSlug && !availabilityItems.length" class="mt-4 flex flex-wrap gap-3">

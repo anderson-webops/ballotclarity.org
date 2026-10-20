@@ -1,7 +1,13 @@
 <script setup lang="ts">
 import type { Source } from "~/types/civic";
 import { storeToRefs } from "pinia";
+import FinanceBreakdownChart from "~/components/graphics/FinanceBreakdownChart.vue";
+import TimelineList from "~/components/graphics/TimelineList.vue";
 import { buildCompareLaunchSlugs, buildCompareRoute } from "~/stores/civic";
+import {
+	buildCandidateFinanceCategoryBreakdown,
+	buildCandidateTimeline
+} from "~/utils/graphics-schema";
 
 const civicStore = useCivicStore();
 const siteUrl = useSiteUrl();
@@ -10,6 +16,8 @@ const { ballotPlan, compareList, isHydrated } = storeToRefs(civicStore);
 const candidateSlug = useRouteStringParam("slug");
 const { formatCompactNumber, formatCurrency, formatDate, formatDateTime, formatPercent } = useFormatters();
 const { data: candidate, error, pending } = await useCandidate(candidateSlug);
+const candidateTimeline = computed(() => candidate.value ? buildCandidateTimeline(candidate.value) : []);
+const financeBreakdown = computed(() => candidate.value ? buildCandidateFinanceCategoryBreakdown(candidate.value, formatDate) : null);
 const sectionLinks = [
 	{ href: "#at-a-glance", label: "At a glance" },
 	{ href: "#biography", label: "Bio" },
@@ -473,24 +481,13 @@ function saveToPlan() {
 					<InfoCallout class="mt-5" title="How selected actions work">
 						{{ actionCoverageNote }}
 					</InfoCallout>
-					<div class="mt-6 space-y-4">
-						<article v-for="action in candidate.keyActions" :key="action.id" class="p-5 rounded-xl bg-app-bg dark:bg-app-bg-dark/70">
-							<div class="flex flex-wrap gap-3 items-start justify-between">
-								<div>
-									<h3 class="text-lg text-app-ink font-semibold dark:text-app-text-dark">
-										{{ action.title }}
-									</h3>
-									<UpdatedAt :value="action.date" label="Documented" />
-								</div>
-								<SourceDrawer :sources="action.sources" :title="action.title" button-label="Sources" />
-							</div>
-							<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
-								{{ action.summary }}
-							</p>
-							<p class="text-sm text-app-ink font-medium mt-3 dark:text-app-text-dark">
-								{{ action.significance }}
-							</p>
-						</article>
+					<div class="mt-6">
+						<TimelineList
+							:items="candidateTimeline"
+							:badge-label="`${candidate.keyActions.length} documented action${candidate.keyActions.length === 1 ? '' : 's'}`"
+							eyebrow="Newest first"
+							title="Documented actions over time"
+						/>
 					</div>
 				</ExpandableSection>
 
@@ -533,6 +530,9 @@ function saveToPlan() {
 								{{ formatPercent(candidate.funding.smallDonorShare) }}
 							</p>
 						</div>
+					</div>
+					<div v-if="financeBreakdown?.categories.length" class="mt-6">
+						<FinanceBreakdownChart :breakdown="financeBreakdown" />
 					</div>
 					<p class="text-sm text-app-muted leading-7 mt-6 dark:text-app-muted-dark">
 						{{ candidate.funding.summary }}

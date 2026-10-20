@@ -190,3 +190,39 @@ Header (always visible, sticky, never auto-hides)
 - Moderated usability sessions with 5–8 voters, including at least two who use screen readers or screen
   magnification and two on low-end Android phones.
 - Measure: time to first official link, lookup-to-results completion, and use of "Change location".
+
+## 8. Merging the `codex/graphics` branch
+
+`codex/graphics` (April 2026) added about 24 data-graphic components plus some infrastructure changes. By
+October it was 316 commits behind `main`. Its own "merge main" commits had also revived content that `main`
+deliberately removed (for example, "Download JSON" buttons and evidence rails that 5dc2c0b took out), and it
+predates `main`'s June copy rules that ban internal jargon such as "evidence", "archive", "surface" and "layer".
+The combined branch `claude/ux-redesign-graphics` is a real merge, so codex's history is preserved, but each
+file was resolved on its merits.
+
+**Kept, adapted to this design and to `main`'s copy rules**
+
+| Graphic | Where | Why |
+| --- | --- | --- |
+| Representative grid | Results | Names your officials on the page, grouped federal → local, each linking to their profile. Uses `main`'s level classifier instead of codex's regex. |
+| District ladder | Results | Lists your districts from largest to most local, each linking to its district page. Fixes a codex bug that labeled "State Senate" districts as Federal (now `utils/district-level.ts`, with tests). |
+| Source provenance strip | Results → "How this result was matched" | Verification detail, so it sits inside the disclosure, below the answer. |
+| Timeline | Candidate → actions | Replaces the plain action list. Codex had shown both, so the same actions appeared twice. |
+| Finance breakdown chart | Candidate → funding | Shows money by funder category. The hard-coded "medium confidence" and "direct" badges were removed because they were constants, not data. |
+| Comparison matrix | Contest | Side-by-side comparison of candidates or measures. Shown only when there are at least 2 to compare. |
+| Ballot structure overview | Ballot guide | The contest index proposed for Phase 2. |
+| Source health bar | Status | Replaces 4 number tiles. Shown only when source metrics exist, as `main` intended. |
+| Theme picker hydration fix | Footer | Avoids a light/dark label mismatch on first render. |
+
+**Left out**
+
+- **Home fact cards and "what the lookup answers" panel:** they overlap the election banner and the "How it works" steps, and they reverse `main`'s later simplification of the home page.
+- **Measure before/after diff and impact diagram:** they repeat the "current vs. proposed" cards and the sections below them.
+- **Candidate evidence-completeness panel, office context card and per-candidate issue matrix:** they repeat the "what we know / don't know" lists and the issues section.
+- **Representatives directory overhaul** ("How the representative layer is organized", directory lifecycle timeline, average source depth): self-referential copy that `main`'s rules exclude, and it would undo `main`'s tidier cards.
+- **Compare-page matrix:** it duplicates the full compare table, which already has a "show only differences" filter.
+- **Funding and influence "confidence/linkage" callouts:** they printed constants as if they were measurements.
+- **Infrastructure:** the silent Postgres→SQLite fallback in the API, the package rename, the `.env` generator and npm script changes, and analytics constants for a tracker `main` no longer has. `main`'s `start:local` and security hardening supersede these.
+- **Unused code:** the 7 components that were never rendered on that branch, plus the schema builders and types that only the dropped graphics used.
+
+`codex/graphics` itself is unchanged, so anything left out can still be revisited there.

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { Contest } from "~/types/civic";
 import { storeToRefs } from "pinia";
+import BallotStructureOverviewGraphic from "~/components/graphics/BallotStructureOverviewGraphic.vue";
 import { buildCompareRoute } from "~/stores/civic";
 
 const civicStore = useCivicStore();
@@ -443,6 +444,10 @@ function clearFilters() {
 
 						<div v-if="hasContestContent" class="mt-6">
 							<PageSummaryStrip :items="guideSummaryItems" />
+						</div>
+
+						<div v-if="hasContestContent" class="mt-6">
+							<BallotStructureOverviewGraphic :contests="filteredContests" />
 						</div>
 
 						<details v-if="hasContestContent" class="mt-6 surface-row">

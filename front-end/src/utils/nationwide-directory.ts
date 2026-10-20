@@ -74,6 +74,7 @@ function buildRepresentativeSummary(
 		: [];
 
 	return {
+		id: match.id,
 		incumbent: true,
 		governmentLevel: classification.governmentLevel,
 		location: locationLabel,
@@ -81,6 +82,7 @@ function buildRepresentativeSummary(
 		officeDisplayLabel: classification.officeDisplayLabel,
 		officeholderLabel: "Current officeholder",
 		officeType: classification.officeType,
+		officeTitle: match.officeTitle,
 		officeSought: match.officeTitle,
 		onCurrentBallot: false,
 		ballotStatusLabel: "Published ballot status unavailable in this area",

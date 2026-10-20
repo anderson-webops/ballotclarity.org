@@ -297,6 +297,123 @@ export interface TrustBullet {
 	sources: Source[];
 }
 
+export type GraphicsTone = "accent" | "neutral" | "warning";
+export type DataConfidence = "high" | "low" | "medium";
+export type DataLinkageType = "crosswalked" | "direct" | "inferred";
+
+export interface FactStat {
+	label: string;
+	value: number | string;
+	detail: string;
+}
+
+export interface GraphicsBadge {
+	label: string;
+	title?: string;
+	tone?: GraphicsTone;
+}
+
+export interface ProvenanceSummary {
+	title: string;
+	eyebrow?: string;
+	note?: string;
+	badges?: GraphicsBadge[];
+	items: FactStat[];
+	uncertainty?: string;
+	sources: Source[];
+}
+
+export type LookupAvailabilityStatus = "available" | "partial" | "limited" | "unavailable";
+
+export interface LookupAvailability {
+	label: string;
+	status: LookupAvailabilityStatus;
+	detail: string;
+	sources?: Source[];
+	confidence?: DataConfidence;
+	note?: string;
+}
+
+export interface RepresentativeCard {
+	id: string;
+	name: string;
+	officeTitle: string;
+	levelLabel?: string;
+	districtLabel: string;
+	party?: string;
+	summary?: string;
+	href?: string;
+	sourceLabel?: string;
+	sourceSystem?: string;
+	openstatesUrl?: string;
+	updatedAt?: string;
+	badges?: GraphicsBadge[];
+	sources?: Source[];
+	confidence?: DataConfidence;
+	linkageType?: DataLinkageType;
+	uncertainty?: string;
+}
+
+export interface TimelineEvent {
+	id: string;
+	date: string;
+	title: string;
+	summary: string;
+	detail?: string;
+	sources?: Source[];
+	confidence?: DataConfidence;
+	uncertainty?: string;
+}
+
+export interface ComparisonMatrixColumn {
+	id: string;
+	label: string;
+	meta?: string;
+	badges?: GraphicsBadge[];
+	sources?: Source[];
+}
+
+export interface ComparisonMatrixCell {
+	columnId: string;
+	value: string;
+	note?: string;
+	sources?: Source[];
+}
+
+export interface ComparisonMatrixRow {
+	id: string;
+	label: string;
+	note?: string;
+	cells: ComparisonMatrixCell[];
+}
+
+export interface ComparisonMatrixData {
+	title: string;
+	eyebrow?: string;
+	note?: string;
+	columns: ComparisonMatrixColumn[];
+	rows: ComparisonMatrixRow[];
+	uncertainty?: string;
+}
+
+export interface FinanceCategoryAmount {
+	label: string;
+	amount: number;
+	note?: string;
+}
+
+export interface FinanceCategoryBreakdown {
+	cycleLabel: string;
+	totalAmount: number;
+	categories: FinanceCategoryAmount[];
+	sourceLabel: string;
+	coverageNote: string;
+	confidence: DataConfidence;
+	linkageType: DataLinkageType;
+	disclaimer: string;
+	sources?: Source[];
+}
+
 export type ComparisonProvenanceStatus
 	= | "candidate-quoted"
 		| "candidate-submitted"
@@ -495,12 +612,7 @@ export type RepresentativeOfficeType
 		| "us_house"
 		| "us_senate";
 
-export interface LocationRepresentativeMatch {
-	id: string;
-	name: string;
-	party?: string;
-	officeTitle: string;
-	districtLabel: string;
+export interface LocationRepresentativeMatch extends RepresentativeCard {
 	governmentLevel: RepresentativeGovernmentLevel | null;
 	officeDisplayLabel: string;
 	officeType: RepresentativeOfficeType | null;
@@ -513,8 +625,9 @@ export type LocationLookupActionKind = "ballot-guide" | "official-verification";
 export type LocationLookupInputKind = "address" | "zip";
 export type LocationLookupResult = "resolved" | "unsupported";
 export type LocationGuideAvailability = "published" | "not-published";
+export type LocationDataAvailabilityStatus = LookupAvailabilityStatus;
+
 export type GuideContentStatus = "verified_local" | "official_logistics_only" | "staged_reference" | "seeded_demo";
-export type LocationDataAvailabilityStatus = "available" | "limited" | "unavailable";
 
 export interface GuideContentLayerStatus {
 	count: number;
@@ -536,11 +649,7 @@ export interface GuideContentSummary {
 	verifiedContestPackage: boolean;
 }
 
-export interface LocationDataAvailabilityItem {
-	label: string;
-	status: LocationDataAvailabilityStatus;
-	detail: string;
-}
+export interface LocationDataAvailabilityItem extends LookupAvailability {}
 
 export interface LocationDataAvailabilitySummary {
 	nationwideCivicResults: LocationDataAvailabilityItem;
@@ -895,7 +1004,7 @@ export interface DistrictSummary {
 	updatedAt: string;
 }
 
-export interface RepresentativeSummary {
+export interface RepresentativeSummary extends RepresentativeCard {
 	slug: string;
 	name: string;
 	location: string;

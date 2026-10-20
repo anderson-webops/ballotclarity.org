@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import DataFreshnessDashboard from "~/components/graphics/DataFreshnessDashboard.vue";
+
 const { formatDateTime } = useFormatters();
 const { data, error, pending } = await usePublicStatus();
 
@@ -86,40 +88,7 @@ const hasPublicIncidents = computed(() => Boolean(data.value?.incidents.length))
 				</div>
 			</header>
 
-			<section v-if="hasSourceMetrics" class="gap-4 grid md:grid-cols-2 xl:grid-cols-4">
-				<div class="surface-row">
-					<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
-						Healthy sources
-					</p>
-					<p class="text-3xl text-app-ink font-semibold mt-3 dark:text-app-text-dark">
-						{{ data.sourceSummary.healthy }}
-					</p>
-				</div>
-				<div class="surface-row">
-					<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
-						Review soon
-					</p>
-					<p class="text-3xl text-app-ink font-semibold mt-3 dark:text-app-text-dark">
-						{{ data.sourceSummary["review-soon"] }}
-					</p>
-				</div>
-				<div class="surface-row">
-					<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
-						Incidents
-					</p>
-					<p class="text-3xl text-app-ink font-semibold mt-3 dark:text-app-text-dark">
-						{{ data.sourceSummary.incident }}
-					</p>
-				</div>
-				<div class="surface-row">
-					<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
-						Stale
-					</p>
-					<p class="text-3xl text-app-ink font-semibold mt-3 dark:text-app-text-dark">
-						{{ data.sourceSummary.stale }}
-					</p>
-				</div>
-			</section>
+			<DataFreshnessDashboard v-if="hasSourceMetrics" :status="data" />
 
 			<section v-else class="surface-panel">
 				<div class="flex flex-wrap gap-2">

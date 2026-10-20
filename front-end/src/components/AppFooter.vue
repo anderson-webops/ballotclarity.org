@@ -11,13 +11,9 @@ const selectedElection = computed(() => civicStore.selectedElection);
 const selectedLocation = computed(() => civicStore.selectedLocation);
 const electionOverviewPath = computed(() => selectedElection.value?.slug ? `/elections/${selectedElection.value.slug}` : "/coverage");
 const locationHubPath = computed(() => selectedLocation.value?.slug ? `/locations/${selectedLocation.value.slug}` : "/coverage");
-const primarySectionLabel = computed(() => hasVerifiedGuideContext.value
-	? "Use the guide"
-	: hasGuideShellContext.value
-		? "Use the election overview"
-		: hasNationwideResultContext.value
-			? "Explore active results"
-			: "Start with lookup");
+const primarySectionLabel = computed(() => hasVerifiedGuideContext.value || hasGuideShellContext.value || hasNationwideResultContext.value
+	? "Your guide"
+	: "Get started");
 
 const guideLinks = computed(() => hasVerifiedGuideContext.value
 	? [
@@ -45,17 +41,17 @@ const guideLinks = computed(() => hasVerifiedGuideContext.value
 				{ label: "Search", to: "/search" },
 			]);
 
-const discoveryLinks = [
-	{ label: "About", to: "/about" },
-	{ label: "Coverage profile", to: "/coverage" },
+const howItWorksLinks = [
+	{ label: "Methodology", to: "/methodology" },
+	{ label: "Neutrality policy", to: "/neutrality" },
+	{ label: "Data sources", to: "/data-sources" },
+	{ label: "Coverage", to: "/coverage" },
 	{ label: "Source directory", to: "/sources" },
-	{ label: "Voting FAQ", to: "/help" },
 ];
 
-const policyLinks = [
-	{ label: "Methodology", to: "/methodology" },
-	{ label: "Data sources", to: "/data-sources" },
-	{ label: "Neutrality policy", to: "/neutrality" },
+const projectLinks = [
+	{ label: "Voting help", to: "/help" },
+	{ label: "About", to: "/about" },
 	{ label: "Accessibility", to: "/accessibility" },
 	{ label: "Privacy", to: "/privacy" },
 	{ label: "Terms", to: "/terms" },
@@ -69,7 +65,7 @@ function resolveGuideLinkTo(path: string) {
 </script>
 
 <template>
-	<footer class="py-10 border-t border-app-line/80 bg-white/80 dark:border-app-line-dark dark:bg-app-panel-dark/55">
+	<footer class="py-10 border-t border-app-line bg-app-panel sm:py-12 dark:border-app-line-dark dark:bg-app-panel-dark">
 		<div class="app-shell">
 			<div class="gap-6 grid lg:gap-8 xl:grid-cols-[minmax(0,1.12fr)_minmax(0,0.88fr)] xl:items-start">
 				<div class="max-w-3xl">
@@ -80,8 +76,8 @@ function resolveGuideLinkTo(path: string) {
 						Ballot Clarity is a public-interest civic-information site built to help people look up their area, review the public record, and verify details with official sources.
 					</p>
 
-					<div class="mt-7 p-4 border border-app-line/80 rounded-[1.5rem] bg-app-bg/70 max-w-2xl dark:border-app-line-dark dark:bg-app-bg-dark/70">
-						<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+					<div class="mt-7 p-4 border border-app-line/80 rounded-xl bg-app-bg/70 max-w-2xl dark:border-app-line-dark dark:bg-app-bg-dark/70">
+						<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 							Contact
 						</p>
 						<div class="text-sm text-app-muted mt-4 space-y-4 dark:text-app-muted-dark">
@@ -106,7 +102,7 @@ function resolveGuideLinkTo(path: string) {
 
 				<div class="gap-x-8 gap-y-7 grid sm:grid-cols-2 xl:grid-cols-3">
 					<div>
-						<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+						<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 							{{ primarySectionLabel }}
 						</p>
 						<ul class="text-sm mt-4 space-y-3">
@@ -119,11 +115,11 @@ function resolveGuideLinkTo(path: string) {
 					</div>
 
 					<div>
-						<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-							Learn and verify
+						<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
+							How it works
 						</p>
 						<ul class="text-sm mt-4 space-y-3">
-							<li v-for="link in discoveryLinks" :key="link.to">
+							<li v-for="link in howItWorksLinks" :key="link.to">
 								<NuxtLink :to="link.to" prefetch-on="interaction" class="text-app-ink rounded-md transition dark:text-app-text-dark hover:text-app-accent focus-ring dark:hover:text-white">
 									{{ link.label }}
 								</NuxtLink>
@@ -132,11 +128,11 @@ function resolveGuideLinkTo(path: string) {
 					</div>
 
 					<div>
-						<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-							Standards
+						<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
+							Help and project
 						</p>
 						<ul class="text-sm mt-4 space-y-3">
-							<li v-for="link in policyLinks" :key="link.to">
+							<li v-for="link in projectLinks" :key="link.to">
 								<NuxtLink :to="link.to" prefetch-on="interaction" class="text-app-ink rounded-md transition dark:text-app-text-dark hover:text-app-accent focus-ring dark:hover:text-white">
 									{{ link.label }}
 								</NuxtLink>

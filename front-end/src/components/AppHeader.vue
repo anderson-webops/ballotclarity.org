@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import type { ComponentPublicInstance } from "vue";
 import { storeToRefs } from "pinia";
 import { appName } from "~/constants";
 import { buildCompareRoute } from "~/stores/civic";
@@ -7,6 +6,7 @@ import { buildLookupContextFromNationwideResult, buildNationwideRouteTarget } fr
 
 interface HeaderLink {
 	badge?: "compare" | "plan";
+	description?: string;
 	label: string;
 	to: string;
 }
@@ -20,84 +20,64 @@ const civicStore = useCivicStore();
 const route = useRoute();
 const { activeNationwideResult, hasGuideShellContext, hasNationwideResultContext, hasVerifiedGuideContext } = useGuideEntryGate();
 const isMenuOpen = ref(false);
-const isHeaderVisible = ref(true);
-const lastScrollY = ref(0);
-const activeDesktopGroup = ref<string | null>(null);
-const desktopNavRef = ref<ComponentPublicInstance<HTMLElement> | HTMLElement | null>(null);
+const isAboutOpen = ref(false);
+const aboutMenuRef = ref<HTMLElement | null>(null);
+const aboutTrigger = shallowRef<HTMLButtonElement | null>(null);
 const mobileMenuTrigger = shallowRef<HTMLButtonElement | null>(null);
 const mobileNavigationId = `mobile-navigation-${useId()}`;
-
-const headerTopRevealOffset = 24;
-const headerDirectionThreshold = 12;
-
-let scrollFramePending = false;
+const aboutPanelId = `about-navigation-${useId()}`;
 
 const { ballotPlanCount, compareCount, compareList, isHydrated, selectedElection, selectedLocation } = storeToRefs(civicStore);
-const primaryNavLabel = computed(() => "Explore");
 const electionOverviewPath = computed(() => selectedElection.value?.slug ? `/elections/${selectedElection.value.slug}` : "/coverage");
-const locationHubPath = computed(() => selectedLocation.value?.slug ? `/locations/${selectedLocation.value.slug}` : "/coverage");
-const headerPrimaryAction = computed(() => hasVerifiedGuideContext.value
-	? { badge: "plan" as const, label: "My plan", to: "/plan" }
-	: hasGuideShellContext.value
-		? { label: "Election overview", to: electionOverviewPath.value }
-		: hasNationwideResultContext.value
-			? { label: "Results", to: "/results" }
-			: { label: "Lookup", to: "/" });
 
-const navGroups = computed<HeaderGroup[]>(() => {
-	const guideLinks: HeaderLink[] = hasVerifiedGuideContext.value
-		? [
-				{ badge: "plan", label: "My plan", to: "/plan" },
-				{ label: "Ballot guide", to: "/ballot" },
-				{ label: "Districts", to: "/districts" },
-				{ label: "Representatives", to: "/representatives" },
-				{ badge: "compare", label: "Compare", to: "/compare" },
-				{ label: "Search", to: "/search" }
-			]
-		: hasGuideShellContext.value
-			? [
-					{ label: "Election overview", to: electionOverviewPath.value },
-					{ label: "Location hub", to: locationHubPath.value },
-					{ label: "Districts", to: "/districts" },
-					{ label: "Representatives", to: "/representatives" },
-					{ label: "Search", to: "/search" }
-				]
-			: [
-					...(hasNationwideResultContext.value
-						? [{ label: "Results", to: "/results" }]
-						: [{ label: "Location lookup", to: "/" }]),
-					{ label: "Districts", to: "/districts" },
-					{ label: "Representatives", to: "/representatives" },
-					{ label: "Search", to: "/search" }
-				];
-
-	return [
-		{
-			label: primaryNavLabel.value,
-			links: guideLinks
-		},
-		{
-			label: "Learn and verify",
-			links: [
-				{ label: "Sources", to: "/sources" },
-				{ label: "Coverage", to: "/coverage" },
-				{ label: "Data sources", to: "/data-sources" },
-				{ label: "Methodology", to: "/methodology" },
-				{ label: "Neutrality", to: "/neutrality" }
-			]
-		},
-		{
-			label: "Project and help",
-			links: [
-				{ label: "Help", to: "/help" },
-				{ label: "Corrections", to: "/corrections" },
-				{ label: "About", to: "/about" }
-			]
-		}
+// Task links stay visible in the header; their first entry follows the voter's progress through the guide.
+const taskLinks = computed<HeaderLink[]>(() => {
+	const shared: HeaderLink[] = [
+		{ label: "Districts", to: "/districts" },
+		{ label: "Representatives", to: "/representatives" },
+		{ label: "Search", to: "/search" }
 	];
+
+	if (hasVerifiedGuideContext.value) {
+		return [
+			{ label: "Ballot guide", to: "/ballot" },
+			{ badge: "plan", label: "My plan", to: "/plan" },
+			{ badge: "compare", label: "Compare", to: "/compare" },
+			...shared
+		];
+	}
+
+	if (hasGuideShellContext.value)
+		return [{ label: "Election overview", to: electionOverviewPath.value }, ...shared];
+
+	if (hasNationwideResultContext.value)
+		return [{ label: "Your results", to: "/results" }, ...shared];
+
+	return [{ label: "Look up", to: "/" }, ...shared];
 });
 
-const showPersistedCivicState = computed(() => isHydrated.value);
+const aboutGroups: HeaderGroup[] = [
+	{
+		label: "How it works",
+		links: [
+			{ description: "How records are researched and summarized", label: "Methodology", to: "/methodology" },
+			{ description: "Our nonpartisan editorial standards", label: "Neutrality", to: "/neutrality" },
+			{ description: "Where each kind of data comes from", label: "Data sources", to: "/data-sources" },
+			{ description: "Which areas and elections are covered", label: "Coverage", to: "/coverage" },
+			{ description: "Browse every cited source", label: "Source directory", to: "/sources" }
+		]
+	},
+	{
+		label: "Help and project",
+		links: [
+			{ description: "Plain answers to common voting questions", label: "Voting help", to: "/help" },
+			{ description: "Fixes made to published information", label: "Corrections", to: "/corrections" },
+			{ description: "Who runs Ballot Clarity and why", label: "About", to: "/about" },
+			{ description: "Report an error or ask a question", label: "Contact", to: "/contact" }
+		]
+	}
+];
+
 const effectiveBallotPlanCount = computed(() => isHydrated.value ? ballotPlanCount.value : 0);
 const effectiveCompareCount = computed(() => isHydrated.value ? compareCount.value : 0);
 const effectiveCompareList = computed(() => isHydrated.value ? compareList.value : []);
@@ -116,33 +96,17 @@ const locationLookupHref = computed(() => {
 
 	return hasNationwideResultContext.value ? "/results#change-location" : "/#location-lookup";
 });
+const isAboutSectionActive = computed(() => aboutGroups.some(group => group.links.some(link => isActive(link.to))));
 
 watch(() => route.fullPath, () => {
 	isMenuOpen.value = false;
-	isHeaderVisible.value = true;
-	activeDesktopGroup.value = null;
-
-	if (import.meta.client)
-		lastScrollY.value = window.scrollY;
-});
-
-watch(isMenuOpen, (menuOpen) => {
-	if (menuOpen)
-		isHeaderVisible.value = true;
+	isAboutOpen.value = false;
 });
 
 function isActive(path: string) {
 	return path === "/"
 		? route.path === path
 		: route.path.startsWith(path);
-}
-
-function isGroupActive(group: HeaderGroup) {
-	return group.links.some(link => isActive(link.to));
-}
-
-function isDesktopGroupOpen(group: HeaderGroup) {
-	return activeDesktopGroup.value === group.label;
 }
 
 function linkBadge(link: HeaderLink) {
@@ -165,53 +129,9 @@ function resolveLinkTo(path: string) {
 	return path;
 }
 
-function toggleDesktopGroup(group: HeaderGroup) {
-	activeDesktopGroup.value = isDesktopGroupOpen(group) ? null : group.label;
-}
-
-function closeDesktopGroups() {
-	activeDesktopGroup.value = null;
-}
-
-function updateHeaderVisibility(nextScrollY: number) {
-	const clampedScrollY = Math.max(nextScrollY, 0);
-	const scrollDelta = clampedScrollY - lastScrollY.value;
-
-	if (isMenuOpen.value || clampedScrollY <= headerTopRevealOffset) {
-		isHeaderVisible.value = true;
-	}
-	else if (scrollDelta >= headerDirectionThreshold) {
-		isHeaderVisible.value = false;
-	}
-	else if (scrollDelta <= -headerDirectionThreshold) {
-		isHeaderVisible.value = true;
-	}
-
-	lastScrollY.value = clampedScrollY;
-}
-
-function handleScroll() {
-	if (scrollFramePending)
-		return;
-
-	scrollFramePending = true;
-
-	window.requestAnimationFrame(() => {
-		scrollFramePending = false;
-		updateHeaderVisibility(window.scrollY);
-	});
-}
-
-function handleDocumentPointerDown(event: PointerEvent) {
-	const target = event.target;
-	const desktopNavElement = desktopNavRef.value instanceof HTMLElement
-		? desktopNavRef.value
-		: desktopNavRef.value?.$el;
-
-	if (!(target instanceof Node) || !desktopNavElement || desktopNavElement.contains(target))
-		return;
-
-	closeDesktopGroups();
+function toggleAbout(event: MouseEvent) {
+	aboutTrigger.value = event.currentTarget as HTMLButtonElement;
+	isAboutOpen.value = !isAboutOpen.value;
 }
 
 function toggleMobileMenu(event: MouseEvent) {
@@ -219,18 +139,26 @@ function toggleMobileMenu(event: MouseEvent) {
 	isMenuOpen.value = !isMenuOpen.value;
 }
 
+function handleDocumentPointerDown(event: PointerEvent) {
+	const target = event.target;
+
+	if (!isAboutOpen.value || !(target instanceof Node) || aboutMenuRef.value?.contains(target))
+		return;
+
+	isAboutOpen.value = false;
+}
+
 function handleDocumentKeydown(event: KeyboardEvent) {
 	if (event.key !== "Escape" || event.defaultPrevented)
 		return;
 
-	const desktopNavElement: HTMLElement | null | undefined = desktopNavRef.value instanceof HTMLElement
-		? desktopNavRef.value
-		: desktopNavRef.value?.$el;
 	const returnFocus = isMenuOpen.value
 		? mobileMenuTrigger.value
-		: desktopNavElement?.querySelector<HTMLButtonElement>("button[aria-expanded=\"true\"]");
+		: isAboutOpen.value
+			? aboutTrigger.value
+			: null;
 	isMenuOpen.value = false;
-	closeDesktopGroups();
+	isAboutOpen.value = false;
 	if (returnFocus) {
 		event.preventDefault();
 		returnFocus.focus();
@@ -238,123 +166,107 @@ function handleDocumentKeydown(event: KeyboardEvent) {
 }
 
 onMounted(() => {
-	lastScrollY.value = window.scrollY;
-	window.addEventListener("scroll", handleScroll, { passive: true });
 	document.addEventListener("pointerdown", handleDocumentPointerDown);
 	document.addEventListener("keydown", handleDocumentKeydown);
 });
 
 onBeforeUnmount(() => {
-	window.removeEventListener("scroll", handleScroll);
 	document.removeEventListener("pointerdown", handleDocumentPointerDown);
 	document.removeEventListener("keydown", handleDocumentKeydown);
 });
 </script>
 
 <template>
-	<header
-		class="will-change-transform border-b border-app-line/80 bg-app-bg/94 transition-transform duration-250 ease-out top-0 sticky z-40 backdrop-blur dark:border-app-line-dark dark:bg-app-bg-dark/92 focus-within:translate-y-0"
-		:class="isHeaderVisible ? 'translate-y-0' : '-translate-y-full'"
-	>
-		<div class="mx-auto px-4 py-2.5 max-w-[96rem] w-full lg:px-8 sm:px-6 sm:py-3">
-			<div class="flex gap-3 items-center justify-between xl:gap-6">
-				<div class="flex shrink-0 min-w-0 items-center">
-					<NuxtLink to="/" class="rounded-full min-w-0 focus-ring">
-						<span class="flex gap-3 items-center">
-							<span class="text-app-ink border border-app-line rounded-2xl bg-white flex shrink-0 h-9 w-9 shadow-sm items-center justify-center dark:text-app-text-dark dark:border-app-line-dark dark:bg-app-panel-dark sm:h-10 sm:w-10">
-								<span class="i-carbon-notebook text-lg" />
-							</span>
-							<span class="min-w-0">
-								<span class="text-[0.98rem] text-app-ink leading-none font-serif block sm:text-[1.05rem] dark:text-app-text-dark">{{ appName }}</span>
-							</span>
-						</span>
-					</NuxtLink>
-				</div>
+	<header class="border-b border-app-line bg-app-panel top-0 sticky z-40 dark:border-app-line-dark dark:bg-app-panel-dark">
+		<div class="mx-auto px-4 max-w-[80rem] w-full lg:px-8 sm:px-6">
+			<div class="flex gap-4 h-16 items-center">
+				<NuxtLink to="/" class="rounded-lg flex shrink-0 gap-2.5 items-center focus-ring">
+					<span class="text-app-action-text rounded-lg bg-app-action flex h-9 w-9 items-center justify-center" aria-hidden="true">
+						<span class="i-carbon-notebook text-lg" />
+					</span>
+					<span class="text-lg text-app-ink leading-none font-serif dark:text-app-text-dark">{{ appName }}</span>
+				</NuxtLink>
 
-				<nav ref="desktopNavRef" class="flex-1 min-w-0 hidden justify-center xl:flex" aria-label="Primary">
-					<div class="px-2 py-1.5 border border-app-line/80 rounded-full bg-white/88 flex gap-1.5 max-w-full shadow-sm items-center dark:border-app-line-dark dark:bg-app-panel-dark/92">
-						<div
-							v-for="(group, index) in navGroups"
-							:key="group.label"
-							class="group relative"
-						>
+				<nav class="ml-4 hidden self-stretch lg:flex" aria-label="Primary">
+					<ul class="flex gap-1 items-stretch">
+						<li v-for="link in taskLinks" :key="link.to" class="flex">
+							<NuxtLink
+								:to="resolveLinkTo(link.to)"
+								:aria-current="isActive(link.to) ? 'page' : undefined"
+								prefetch-on="interaction"
+								class="header-nav-link text-[0.95rem] font-semibold px-3 border-b-3 inline-flex gap-1.5 whitespace-nowrap transition items-center focus-ring"
+								:class="isActive(link.to)
+									? 'border-app-accent text-app-ink dark:text-app-text-dark'
+									: 'border-transparent text-app-muted hover:text-app-ink dark:text-app-muted-dark dark:hover:text-app-text-dark'"
+							>
+								{{ link.label }}
+								<ClientOnly>
+									<span v-if="linkBadge(link)" class="text-[11px] text-app-action-text font-bold px-1.5 rounded-full bg-app-accent inline-flex h-5 min-w-5 items-center justify-center">
+										{{ linkBadge(link) }}
+									</span>
+								</ClientOnly>
+							</NuxtLink>
+						</li>
+						<li ref="aboutMenuRef" class="flex relative">
 							<button
 								type="button"
-								class="text-sm font-medium px-3.5 py-1.5 list-none rounded-full cursor-pointer whitespace-nowrap transition focus-ring"
-								:aria-controls="`header-group-panel-${index}`"
-								:aria-expanded="isDesktopGroupOpen(group)"
-								:class="isGroupActive(group) || isDesktopGroupOpen(group)
-									? 'bg-app-action text-app-action-text'
-									: 'text-app-muted hover:bg-app-bg hover:text-app-ink dark:text-app-muted-dark dark:hover:bg-app-bg-dark/70 dark:hover:text-app-text-dark'"
-								@click="toggleDesktopGroup(group)"
+								class="text-[0.95rem] font-semibold px-3 border-b-3 inline-flex gap-1.5 whitespace-nowrap transition items-center focus-ring"
+								:class="isAboutSectionActive || isAboutOpen
+									? 'border-app-accent text-app-ink dark:text-app-text-dark'
+									: 'border-transparent text-app-muted hover:text-app-ink dark:text-app-muted-dark dark:hover:text-app-text-dark'"
+								:aria-expanded="isAboutOpen"
+								:aria-controls="aboutPanelId"
+								@click="toggleAbout"
 							>
-								<span class="inline-flex gap-2 items-center">
-									<span>{{ group.label }}</span>
-									<span class="i-carbon-chevron-down text-xs transition" :class="isDesktopGroupOpen(group) ? 'rotate-180' : ''" />
-								</span>
+								About
+								<span class="i-carbon-chevron-down text-sm transition" :class="isAboutOpen ? 'rotate-180' : ''" aria-hidden="true" />
 							</button>
-							<div v-if="isDesktopGroupOpen(group)" class="pt-2 left-0 top-full absolute">
-								<div class="p-3 border border-app-line/80 rounded-[1.2rem] bg-white min-w-[16.5rem] shadow-[0_22px_48px_-30px_rgba(16,37,62,0.45)] dark:border-app-line-dark dark:bg-app-panel-dark">
-									<div :id="`header-group-panel-${index}`">
-										<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
-											{{ group.label }}
-										</p>
-										<div class="mt-3 gap-1 grid">
+							<div
+								v-if="isAboutOpen"
+								:id="aboutPanelId"
+								class="mt-px p-4 border border-app-line rounded-xl bg-app-panel gap-6 grid grid-cols-2 w-[34rem] shadow-[0_16px_40px_-20px_rgba(13,37,62,0.35)] left-0 top-full absolute dark:border-app-line-dark dark:bg-app-panel-dark"
+							>
+								<div v-for="group in aboutGroups" :key="group.label">
+									<p class="eyebrow px-2">
+										{{ group.label }}
+									</p>
+									<ul class="mt-2 space-y-0.5">
+										<li v-for="link in group.links" :key="link.to">
 											<NuxtLink
-												v-for="link in group.links"
-												:key="link.to"
-												:to="resolveLinkTo(link.to)"
+												:to="link.to"
 												:aria-current="isActive(link.to) ? 'page' : undefined"
 												prefetch-on="interaction"
-												class="px-3 py-2.5 rounded-[0.95rem] transition hover:bg-app-bg focus-ring dark:hover:bg-app-bg-dark/70"
-												@click="closeDesktopGroups"
+												class="px-2 py-2 rounded-lg block transition hover:bg-app-bg focus-ring dark:hover:bg-app-bg-dark"
 											>
-												<div class="flex gap-3 items-start justify-between">
-													<div class="min-w-0">
-														<p class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
-															{{ link.label }}
-														</p>
-													</div>
-													<span v-if="linkBadge(link)" class="text-[11px] text-app-ink font-bold px-1.5 rounded-full bg-app-warm inline-flex h-5 min-w-5 items-center justify-center">
-														{{ linkBadge(link) }}
-													</span>
-												</div>
+												<span class="text-sm text-app-ink font-semibold block dark:text-app-text-dark">{{ link.label }}</span>
+												<span class="text-[0.82rem] text-app-muted leading-snug block dark:text-app-muted-dark">{{ link.description }}</span>
 											</NuxtLink>
-										</div>
-									</div>
+										</li>
+									</ul>
 								</div>
 							</div>
-						</div>
-					</div>
+						</li>
+					</ul>
 				</nav>
 
-				<div class="shrink-0 gap-2.5 hidden items-center md:flex lg:gap-3">
-					<NuxtLink
-						:to="resolveLinkTo(headerPrimaryAction.to)"
-						prefetch-on="interaction"
-						class="text-sm text-app-ink font-medium px-3.5 py-2 border border-app-line rounded-full bg-white inline-flex gap-2 min-h-10 shadow-sm transition items-center dark:text-app-text-dark hover:text-app-accent lg:px-4 dark:border-app-line-dark hover:border-app-accent dark:bg-app-panel-dark focus-ring dark:hover:text-white"
-						:class="isActive(headerPrimaryAction.to) ? 'border-app-accent text-app-accent dark:border-app-accent dark:text-white' : ''"
-					>
-						<span>{{ headerPrimaryAction.label }}</span>
-						<ClientOnly>
-							<span v-if="headerPrimaryAction.badge === 'plan' && showPersistedCivicState && effectiveBallotPlanCount" class="text-[11px] text-app-ink font-bold px-1.5 rounded-full bg-app-warm inline-flex h-5 min-w-5 items-center justify-center">
-								{{ effectiveBallotPlanCount }}
-							</span>
-						</ClientOnly>
-					</NuxtLink>
-
+				<div class="ml-auto flex shrink-0 gap-2 items-center">
 					<ClientOnly>
 						<NuxtLink
-							v-if="showPersistedCivicState && effectiveSelectedLocation"
+							v-if="effectiveSelectedLocation"
 							:to="locationLookupHref"
 							prefetch-on="interaction"
-							class="text-xs text-app-muted px-3 py-2 border border-app-line rounded-full bg-white max-w-[12rem] hidden whitespace-nowrap shadow-sm transition items-center dark:text-app-muted-dark hover:text-app-accent dark:border-app-line-dark hover:border-app-accent dark:bg-app-panel-dark 2xl:inline-flex focus-ring dark:hover:text-white"
-							title="Change location"
+							class="text-sm text-app-ink px-3 border border-app-line rounded-lg max-w-[20rem] min-h-10 hidden transition items-center dark:text-app-text-dark dark:border-app-line-dark hover:border-app-accent xl:inline-flex focus-ring"
+							:title="`Change location (currently ${effectiveSelectedLocation.displayName})`"
 						>
-							<span class="i-carbon-location mr-1.5 align-middle shrink-0" />
+							<span class="i-carbon-location text-app-accent mr-1.5 shrink-0" aria-hidden="true" />
 							<span class="truncate">{{ effectiveSelectedLocation.displayName }}</span>
+							<span class="text-app-accent font-semibold ml-2 shrink-0">Change</span>
 						</NuxtLink>
 					</ClientOnly>
+
+					<NuxtLink to="/search" aria-label="Search public records" class="text-app-ink rounded-lg flex h-10 w-10 items-center justify-center dark:text-app-text-dark lg:hidden focus-ring">
+						<span class="i-carbon-search text-xl" aria-hidden="true" />
+					</NuxtLink>
 
 					<div class="shrink-0 h-10 w-10">
 						<ThemeToggleButton variant="icon" />
@@ -362,75 +274,72 @@ onBeforeUnmount(() => {
 
 					<button
 						type="button"
-						class="text-app-ink border border-app-line rounded-full bg-white inline-flex shrink-0 h-10 w-10 shadow-sm transition items-center justify-center dark:text-app-text-dark hover:text-app-accent dark:border-app-line-dark hover:border-app-accent dark:bg-app-panel-dark xl:hidden focus-ring"
+						class="text-app-ink border border-app-line rounded-lg inline-flex shrink-0 h-10 w-10 transition items-center justify-center dark:text-app-text-dark dark:border-app-line-dark hover:border-app-accent lg:hidden focus-ring"
 						:aria-expanded="isMenuOpen"
 						:aria-controls="mobileNavigationId"
-						aria-label="Toggle navigation"
+						aria-label="Menu"
 						@click="toggleMobileMenu"
 					>
-						<span :class="isMenuOpen ? 'i-carbon-close' : 'i-carbon-menu'" class="text-lg" />
+						<span :class="isMenuOpen ? 'i-carbon-close' : 'i-carbon-menu'" class="text-xl" aria-hidden="true" />
 					</button>
 				</div>
-
-				<NuxtLink to="/search" aria-label="Search public records" class="header-search-shortcut text-app-ink ml-auto rounded-full flex h-10 w-10 items-center justify-center dark:text-app-text-dark md:hidden focus-ring">
-					<span class="i-carbon-search text-lg" aria-hidden="true" />
-				</NuxtLink>
-
-				<button
-					type="button"
-					class="text-app-ink border border-app-line rounded-full bg-white inline-flex shrink-0 h-10 w-10 shadow-sm transition items-center justify-center dark:text-app-text-dark hover:text-app-accent dark:border-app-line-dark hover:border-app-accent dark:bg-app-panel-dark md:hidden focus-ring"
-					:aria-expanded="isMenuOpen"
-					:aria-controls="mobileNavigationId"
-					aria-label="Toggle navigation"
-					@click="toggleMobileMenu"
-				>
-					<span :class="isMenuOpen ? 'i-carbon-close' : 'i-carbon-menu'" class="text-lg" />
-				</button>
 			</div>
 		</div>
 
-		<div v-if="isMenuOpen" :id="mobileNavigationId" class="mobile-navigation-panel px-4 pb-4 pt-2.5 border-t border-app-line/80 bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark xl:hidden">
-			<nav class="space-y-5" aria-label="Mobile navigation">
-				<div class="space-y-2">
-					<div class="text-sm px-4 py-3 border border-app-line rounded-2xl bg-white flex items-center justify-between dark:border-app-line-dark dark:bg-app-panel-dark">
-						<div class="min-w-0">
-							<p class="text-app-muted truncate dark:text-app-muted-dark">
-								{{ showPersistedCivicState ? (effectiveSelectedLocation?.displayName || "No saved location yet") : "Location status loads after page load" }}
-							</p>
-							<NuxtLink :to="locationLookupHref" prefetch-on="interaction" class="text-xs text-app-accent font-semibold mt-1 inline-flex dark:text-[#9ed4e3] focus-ring">
-								Change location
-							</NuxtLink>
-						</div>
-						<ThemeToggleButton variant="text" />
-					</div>
-				</div>
-
-				<section v-for="group in navGroups" :key="group.label" class="mobile-navigation-group">
-					<div class="px-1 col-span-full">
-						<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-							{{ group.label }}
+		<div v-if="isMenuOpen" :id="mobileNavigationId" class="mobile-navigation-panel px-4 pb-6 pt-4 border-t border-app-line bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark lg:hidden">
+			<nav class="mx-auto max-w-xl space-y-6" aria-label="Mobile navigation">
+				<div class="px-4 py-3 border border-app-line rounded-xl bg-app-panel flex gap-3 items-center justify-between dark:border-app-line-dark dark:bg-app-panel-dark">
+					<div class="min-w-0">
+						<p class="eyebrow">
+							Your location
+						</p>
+						<p class="text-[0.95rem] text-app-ink font-semibold mt-0.5 truncate dark:text-app-text-dark">
+							{{ isHydrated ? (effectiveSelectedLocation?.displayName || "Not set yet") : "Loading…" }}
 						</p>
 					</div>
-					<NuxtLink
-						v-for="link in group.links"
-						:key="link.to"
-						:to="resolveLinkTo(link.to)"
-						:aria-current="isActive(link.to) ? 'page' : undefined"
-						prefetch-on="interaction"
-						class="px-4 py-3 rounded-2xl flex gap-3 transition items-start justify-between focus-ring"
-						:class="isActive(link.to)
-							? 'bg-app-action text-app-action-text'
-							: 'bg-white text-app-ink dark:bg-app-panel-dark dark:text-app-text-dark'"
-					>
-						<span class="min-w-0">
-							<span class="text-sm font-semibold block">
-								{{ link.label }}
-							</span>
-						</span>
-						<span v-if="linkBadge(link)" class="text-[11px] text-app-ink font-bold px-2 py-0.5 rounded-full bg-app-warm">
-							{{ linkBadge(link) }}
-						</span>
+					<NuxtLink :to="locationLookupHref" prefetch-on="interaction" class="btn-secondary shrink-0">
+						{{ effectiveSelectedLocation ? "Change" : "Set location" }}
 					</NuxtLink>
+				</div>
+
+				<ul class="space-y-1">
+					<li v-for="link in taskLinks" :key="link.to">
+						<NuxtLink
+							:to="resolveLinkTo(link.to)"
+							:aria-current="isActive(link.to) ? 'page' : undefined"
+							prefetch-on="interaction"
+							class="text-base font-semibold px-4 py-3 rounded-lg flex gap-3 transition items-center justify-between focus-ring"
+							:class="isActive(link.to)
+								? 'bg-app-action text-app-action-text'
+								: 'text-app-ink hover:bg-app-panel dark:text-app-text-dark dark:hover:bg-app-panel-dark'"
+						>
+							{{ link.label }}
+							<span v-if="linkBadge(link)" class="text-xs font-bold px-2 py-0.5 rounded-full bg-app-warm">
+								{{ linkBadge(link) }}
+							</span>
+						</NuxtLink>
+					</li>
+				</ul>
+
+				<section v-for="group in aboutGroups" :key="group.label">
+					<p class="eyebrow px-4">
+						{{ group.label }}
+					</p>
+					<ul class="mt-2 gap-x-2 grid grid-cols-2">
+						<li v-for="link in group.links" :key="link.to">
+							<NuxtLink
+								:to="link.to"
+								:aria-current="isActive(link.to) ? 'page' : undefined"
+								prefetch-on="interaction"
+								class="text-[0.95rem] px-4 py-2.5 rounded-lg block transition focus-ring"
+								:class="isActive(link.to)
+									? 'text-app-accent font-semibold'
+									: 'text-app-ink hover:bg-app-panel dark:text-app-text-dark dark:hover:bg-app-panel-dark'"
+							>
+								{{ link.label }}
+							</NuxtLink>
+						</li>
+					</ul>
 				</section>
 			</nav>
 		</div>

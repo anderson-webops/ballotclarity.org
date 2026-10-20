@@ -8,11 +8,12 @@ const props = defineProps<{
 
 const { formatCurrency } = useFormatters();
 
+const unitemizedLabel = "Not itemized among top funders";
 const barItems = computed(() => props.breakdown.categories.map(category => ({
-	detail: category.note ?? `Share of ${props.breakdown.cycleLabel.toLowerCase()} fundraising reflected in the current linked filings.`,
+	detail: category.note,
 	id: category.label,
 	label: category.label,
-	tone: props.breakdown.confidence === "low" ? "warning" as const : "accent" as const,
+	tone: category.label === unitemizedLabel ? "neutral" as const : "accent" as const,
 	value: category.amount,
 	valueLabel: formatCurrency(category.amount)
 })));
@@ -26,7 +27,7 @@ const barItems = computed(() => props.breakdown.categories.map(category => ({
 					Finance breakdown
 				</p>
 				<h3 class="text-2xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-					Where the money comes from, by category
+					Top funders by category
 				</h3>
 				<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
 					{{ props.breakdown.disclaimer }}

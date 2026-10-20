@@ -67,7 +67,8 @@ const lookupProvenanceSummary = computed(() => buildLookupProvenanceSummary({
 	fromCache: props.lookup.fromCache,
 	guideAvailability: props.lookup.guideAvailability,
 	inputKind: props.lookup.inputKind,
-	officialToolActions: props.lookup.actions.filter(action => action.kind === "official-verification"),
+	// Use the same de-duplicated tool list the page shows, so the source summary counts each tool once.
+	officialToolActions: visibleLookupActions.value.filter(action => action.kind === "official-verification"),
 	representativeMatches: props.lookup.representativeMatches,
 	resolvedAt: props.lookup.resolvedAt
 }));

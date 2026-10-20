@@ -75,20 +75,25 @@ function buildLookupSources(input: {
 		});
 	}
 
+	// Cite every matched official's actual provider, not only those with an Open States link.
 	for (const match of input.representativeMatches) {
-		if (!match.openstatesUrl)
-			continue;
+		const isOpenStates = Boolean(match.openstatesUrl) || /open states/i.test(match.sourceSystem);
 
 		sources.push({
-			authority: "open-data",
+			authority: isOpenStates
+				? "nonprofit-provider"
+				: /official|congress\.gov|government/i.test(match.sourceSystem) ? "official-government" : "open-data",
+			// Prefer the provider's own record date; only fall back to when this lookup retrieved it.
 			date: sourceDate(match.updatedAt ?? input.resolvedAt),
-			id: stableSourceId("lookup-representative-source", `${match.id}-${match.openstatesUrl}`),
-			note: `Representative source link for ${match.officeTitle}.`,
-			publisher: "Open States",
+			id: stableSourceId("lookup-representative-source", `${match.id}-${match.sourceSystem}`),
+			note: match.updatedAt
+				? `Representative record for ${match.officeTitle}.`
+				: `Representative record for ${match.officeTitle}, retrieved during this lookup.`,
+			publisher: isOpenStates ? "Open States" : match.sourceSystem,
 			sourceSystem: match.sourceSystem,
 			title: `${match.name} representative record`,
 			type: "official record",
-			url: match.openstatesUrl
+			url: match.openstatesUrl ?? ""
 		});
 	}
 
@@ -171,9 +176,7 @@ export function buildRepresentativeCards(matches: LocationRepresentativeMatch[])
 }
 
 export function buildCandidateTimeline(candidate: Candidate): TimelineEvent[] {
-	const orderedActions = [...candidate.keyActions].sort((left, right) => new Date(right.date).getTime() - new Date(left.date).getTime());
-
-	return [
+	const events: TimelineEvent[] = [
 		{
 			date: candidate.comparison.ballotStatus.asOf,
 			detail: candidate.comparison.ballotStatus.provenance.detail,
@@ -182,7 +185,7 @@ export function buildCandidateTimeline(candidate: Candidate): TimelineEvent[] {
 			summary: candidate.comparison.ballotStatus.label,
 			title: "Ballot status confirmed"
 		},
-		...orderedActions.map(action => ({
+		...candidate.keyActions.map(action => ({
 			date: action.date,
 			detail: action.significance,
 			id: action.id,
@@ -191,6 +194,9 @@ export function buildCandidateTimeline(candidate: Candidate): TimelineEvent[] {
 			title: action.title
 		}))
 	];
+
+	// Newest first across every event, including the ballot-status entry.
+	return events.sort((left, right) => new Date(right.date).getTime() - new Date(left.date).getTime());
 }
 
 export function buildCandidateFinanceCategoryBreakdown(candidate: Candidate, formatDate: DateFormatter): FinanceCategoryBreakdown {
@@ -199,10 +205,27 @@ export function buildCandidateFinanceCategoryBreakdown(candidate: Candidate, for
 	for (const funder of candidate.funding.topFunders)
 		totalsByCategory.set(funder.category, (totalsByCategory.get(funder.category) ?? 0) + funder.amount);
 
+	const totalRaised = candidate.funding.totalRaised;
+	const itemizedTotal = [...totalsByCategory.values()].reduce((sum, amount) => sum + amount, 0);
+	const unitemizedAmount = Math.max(totalRaised - itemizedTotal, 0);
+	const shareOfTotal = (amount: number) => totalRaised > 0 ? Math.round((amount / totalRaised) * 100) : 0;
+	const categories = [...totalsByCategory.entries()]
+		.map(([label, amount]) => ({ amount, label, note: `${shareOfTotal(amount)}% of total raised.` }))
+		.sort((left, right) => right.amount - left.amount);
+
+	// Top funders are a sample; show the rest so the bars don't imply they are the whole picture.
+	if (unitemizedAmount > 0) {
+		categories.push({
+			amount: unitemizedAmount,
+			label: "Not itemized among top funders",
+			note: `${shareOfTotal(unitemizedAmount)}% of total raised, from contributors outside the top-funder list.`
+		});
+	}
+
 	return {
-		categories: [...totalsByCategory.entries()].map(([label, amount]) => ({ amount, label })).sort((left, right) => right.amount - left.amount),
+		categories,
 		confidence: "medium",
-		coverageNote: `Derived from the current finance summary and attached filing sources reviewed through ${formatDate(candidate.freshness.dataLastUpdatedAt ?? candidate.updatedAt)}.`,
+		coverageNote: `Top funders account for ${shareOfTotal(itemizedTotal)}% of total raised. Based on filings reviewed through ${formatDate(candidate.freshness.dataLastUpdatedAt ?? candidate.updatedAt)}.`,
 		cycleLabel: "Current filing window",
 		disclaimer: "Finance figures here are summary-level and cycle-bound. They are for scrutiny, not for ranking candidates or inferring motive.",
 		linkageType: "direct",

@@ -1,12 +1,15 @@
 <script setup lang="ts">
 const props = withDefaults(defineProps<{
 	title?: string;
-	tone?: "info" | "warning";
+	tone?: "info" | "success" | "warning";
 }>(), {
 	tone: "info",
 });
 
 const toneClass = computed(() => {
+	if (props.tone === "success")
+		return "callout--success";
+
 	if (props.tone === "warning")
 		return "border-[#d3b26c] bg-[#fcf4e4] text-[#7b5312] dark:border-[#7b5312] dark:bg-[#2c2110] dark:text-[#f1cd86]";
 

@@ -1,0 +1,92 @@
+<script setup lang="ts">
+import type { GraphicsTone, Source } from "~/types/civic";
+
+interface HorizontalBarChartItem {
+	id: string;
+	label: string;
+	value: number;
+	valueLabel?: string;
+	detail?: string;
+	tone?: GraphicsTone;
+	sources?: Source[];
+	uncertainty?: string;
+}
+
+const props = withDefaults(defineProps<{
+	items: HorizontalBarChartItem[];
+	minWidthPercent?: number;
+}>(), {
+	minWidthPercent: 0
+});
+
+const maxValue = computed(() => {
+	if (!props.items.length)
+		return 1;
+
+	return Math.max(...props.items.map(item => item.value), 1);
+});
+
+function barToneClass(tone: GraphicsTone | undefined) {
+	if (tone === "warning")
+		return "bg-[#c88920] dark:bg-[#f0bc53]";
+
+	if (tone === "neutral")
+		return "bg-slate-500 dark:bg-slate-400";
+
+	return "bg-app-accent";
+}
+
+function widthPercent(value: number) {
+	if (value <= 0)
+		return "0%";
+
+	const scaled = Math.max(1, Math.round((value / maxValue.value) * 100));
+
+	return `${Math.max(props.minWidthPercent, scaled)}%`;
+}
+</script>
+
+<template>
+	<div v-if="props.items.length" class="space-y-3">
+		<article
+			v-for="item in props.items"
+			:key="item.id"
+		>
+			<div class="flex flex-wrap gap-3 items-center justify-between">
+				<p class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
+					{{ item.label }}
+				</p>
+				<div class="flex flex-wrap gap-2 items-center">
+					<p class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
+						{{ item.valueLabel ?? item.value }}
+					</p>
+					<SourceDrawer
+						v-if="item.sources?.length"
+						:sources="item.sources"
+						:title="item.label"
+						button-label="Sources"
+					/>
+				</div>
+			</div>
+			<div class="mt-1.5 rounded-full bg-app-line/60 h-2 overflow-hidden dark:bg-app-line-dark">
+				<div
+					class="rounded-full h-full transition-[width]"
+					:class="barToneClass(item.tone)"
+					:style="{ width: widthPercent(item.value) }"
+					:aria-label="`${item.label}: ${item.valueLabel ?? item.value}`"
+					role="img"
+				/>
+			</div>
+			<p v-if="item.value <= 0" class="text-xs text-app-muted leading-6 mt-2 dark:text-app-muted-dark">
+				No measured value is available for this item.
+			</p>
+			<p v-if="item.detail" class="text-sm text-app-muted leading-6 mt-1 dark:text-app-muted-dark">
+				{{ item.detail }}
+			</p>
+			<p v-if="item.uncertainty" class="text-xs text-app-muted leading-6 mt-2 dark:text-app-muted-dark">
+				<strong class="text-app-ink dark:text-app-text-dark">Keep in mind:</strong>
+				{{ item.uncertainty }}
+			</p>
+		</article>
+	</div>
+</template>

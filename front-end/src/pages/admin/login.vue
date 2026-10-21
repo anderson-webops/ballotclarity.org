@@ -93,7 +93,7 @@ usePageSeo({
 						<TrustBadge label="Corrections and review" />
 						<TrustBadge label="Noindex" tone="warning" />
 					</div>
-					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold mt-6 uppercase dark:text-app-muted-dark">
+					<p class="text-xs text-app-muted tracking-[0.06em] font-semibold mt-6 uppercase dark:text-app-muted-dark">
 						Production operations
 					</p>
 					<h1 class="text-5xl text-app-ink font-serif mt-4 dark:text-app-text-dark">
@@ -104,7 +104,7 @@ usePageSeo({
 					</p>
 
 					<div class="mt-8 gap-4 grid sm:grid-cols-3">
-						<div class="px-4 py-4 border border-app-line/80 rounded-[1.4rem] bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
+						<div class="px-4 py-4 border border-app-line/80 rounded-xl bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
 							<p class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
 								Review gating
 							</p>
@@ -112,7 +112,7 @@ usePageSeo({
 								Track what is in draft, what needs sources, and what is ready to publish.
 							</p>
 						</div>
-						<div class="px-4 py-4 border border-app-line/80 rounded-[1.4rem] bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
+						<div class="px-4 py-4 border border-app-line/80 rounded-xl bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
 							<p class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
 								Corrections path
 							</p>
@@ -120,7 +120,7 @@ usePageSeo({
 								Keep reader-reported issues visible until they are triaged and resolved.
 							</p>
 						</div>
-						<div class="px-4 py-4 border border-app-line/80 rounded-[1.4rem] bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
+						<div class="px-4 py-4 border border-app-line/80 rounded-xl bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
 							<p class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
 								Source health
 							</p>
@@ -132,7 +132,7 @@ usePageSeo({
 				</section>
 
 				<section class="surface-panel">
-					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+					<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 						Sign in
 					</p>
 					<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">

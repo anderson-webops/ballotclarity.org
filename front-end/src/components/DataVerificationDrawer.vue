@@ -120,7 +120,7 @@ onBeforeUnmount(() => {
 
 		<Teleport to="body">
 			<div v-if="isOpen" class="inset-0 fixed z-70">
-				<button type="button" class="bg-app-ink/50 inset-0 absolute backdrop-blur-[2px]" aria-label="Close data verification panel" @click="closeDrawer" />
+				<button type="button" class="bg-app-ink/50 inset-0 absolute" aria-label="Close data verification panel" @click="closeDrawer" />
 				<aside
 					ref="panelRef"
 					class="p-5 border-l border-app-line bg-app-bg flex flex-col h-full max-w-xl w-full shadow-2xl right-0 top-0 absolute dark:border-app-line-dark dark:bg-app-bg-dark"
@@ -130,7 +130,7 @@ onBeforeUnmount(() => {
 				>
 					<div class="flex gap-4 items-start justify-between">
 						<div>
-							<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+							<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 								Data verification
 							</p>
 							<h2 :id="headingId" class="text-2xl text-app-ink font-serif mt-2 dark:text-app-text-dark">
@@ -162,16 +162,16 @@ onBeforeUnmount(() => {
 								Read the full public standards
 							</h3>
 							<div class="mt-4 flex flex-wrap gap-3">
-								<NuxtLink to="/sources" class="btn-secondary text-xs px-4 py-2" @click="closeDrawer">
+								<NuxtLink to="/sources" class="text-xs btn-secondary px-4 py-2" @click="closeDrawer">
 									Source directory
 								</NuxtLink>
-								<NuxtLink to="/status" class="btn-secondary text-xs px-4 py-2" @click="closeDrawer">
+								<NuxtLink to="/status" class="text-xs btn-secondary px-4 py-2" @click="closeDrawer">
 									Public status
 								</NuxtLink>
-								<NuxtLink to="/methodology" class="btn-secondary text-xs px-4 py-2" @click="closeDrawer">
+								<NuxtLink to="/methodology" class="text-xs btn-secondary px-4 py-2" @click="closeDrawer">
 									Methodology
 								</NuxtLink>
-								<NuxtLink to="/coverage" class="btn-secondary text-xs px-4 py-2" @click="closeDrawer">
+								<NuxtLink to="/coverage" class="text-xs btn-secondary px-4 py-2" @click="closeDrawer">
 									Coverage
 								</NuxtLink>
 							</div>

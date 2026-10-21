@@ -113,17 +113,9 @@ const trustInterfaceItems = [
 <template>
 	<section class="reading-page app-shell section-gap space-y-8">
 		<header class="max-w-4xl">
-			<div class="flex flex-wrap gap-2">
-				<TrustBadge label="Neutrality" tone="accent" />
-				<TrustBadge label="Sourcing" />
-				<TrustBadge label="Limits disclosed" tone="warning" />
-			</div>
-			<h1 class="text-5xl text-app-ink font-serif mt-5 dark:text-app-text-dark">
+			<h1 class="text-5xl text-app-ink font-serif dark:text-app-text-dark">
 				Methodology
 			</h1>
-			<p class="text-base text-app-muted leading-8 mt-5 max-w-3xl dark:text-app-muted-dark">
-				This page explains how Ballot Clarity writes summaries, shows sources, marks uncertainty, and handles corrections.
-			</p>
 		</header>
 
 		<MethodologySummaryCard

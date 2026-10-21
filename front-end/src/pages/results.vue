@@ -64,6 +64,23 @@ const activeLookupSummary = computed(() => buildActiveLookupSummary({
 	selectedLocation: null
 }));
 const locationGuessUi = computed(() => buildLocationGuessUiContent(coverageData.value?.locationGuess ?? null));
+const resultsStatusItems = computed(() => {
+	const result = activeResult.value;
+
+	if (!result)
+		return [];
+
+	return [
+		result.detectedFromIp
+			? "Approximate location"
+			: result.inputKind === "address" ? "Matched by street address" : "Matched by ZIP code",
+		result.guideContent?.verifiedContestPackage
+			? "Verified ballot guide"
+			: result.guideAvailability === "published"
+				? "Election overview available"
+				: "No local guide yet"
+	];
+});
 const hasVisibleActions = computed(() => activeResult.value
 	? filterLookupActionsForPresentation(activeResult.value.actions, {
 		...activeResult.value,
@@ -122,18 +139,14 @@ usePageSeo({
 </script>
 
 <template>
-	<section class="app-shell section-gap space-y-8">
+	<section class="app-shell section-gap space-y-6">
 		<div v-if="shouldShowResultsSkeleton" class="space-y-6">
-			<div class="surface-panel bg-white/70 h-56 animate-pulse dark:bg-app-panel-dark/70" />
-			<div class="surface-panel bg-white/70 h-[34rem] animate-pulse dark:bg-app-panel-dark/70" />
+			<div class="rounded-lg bg-app-bg h-56 animate-pulse dark:bg-app-bg-dark" />
+			<div class="rounded-lg bg-app-bg h-[34rem] animate-pulse dark:bg-app-bg-dark" />
 		</div>
 
-		<div v-else-if="!activeResult" class="surface-panel max-w-4xl">
-			<div class="flex flex-wrap gap-2">
-				<TrustBadge label="No saved location" tone="warning" />
-				<TrustBadge label="Start with an address or ZIP" />
-			</div>
-			<p class="text-xs text-app-muted tracking-[0.24em] font-semibold mt-6 uppercase dark:text-app-muted-dark">
+		<div v-else-if="!activeResult" class="max-w-4xl surface-panel">
+			<p class="eyebrow">
 				Results
 			</p>
 			<h1 class="text-4xl text-app-ink leading-tight font-serif mt-3 sm:text-5xl dark:text-app-text-dark">
@@ -144,51 +157,33 @@ usePageSeo({
 			</p>
 			<div class="mt-6 flex flex-wrap gap-3">
 				<NuxtLink to="/" class="btn-primary">
-					Open lookup
-				</NuxtLink>
-				<NuxtLink to="/coverage" class="btn-secondary">
-					Open coverage profile
+					Enter your address
 				</NuxtLink>
 			</div>
 		</div>
 
 		<template v-else>
 			<section class="results-overview">
-				<div class="flex flex-wrap gap-2">
-					<TrustBadge label="Current results" tone="accent" />
-					<TrustBadge v-if="hasVisibleActions" label="Official tools visible" />
-					<TrustBadge
-						:label="activeResult.guideContent?.verifiedContestPackage
-							? 'Verified ballot guide'
-							: activeResult.guideAvailability === 'published'
-								? 'Election overview available'
-								: 'Local guide not published'"
-						:tone="activeResult.guideAvailability === 'published' ? 'accent' : 'warning'"
-					/>
-				</div>
-				<div class="mt-6 flex flex-wrap gap-6 items-end justify-between">
-					<div>
-						<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-							Results for
-						</p>
-						<h1 class="text-4xl text-app-ink leading-tight font-serif mt-3 sm:text-5xl dark:text-app-text-dark">
-							{{ activeLookupSummary.label }}
-						</h1>
-					</div>
-					<UpdatedAt v-if="activeLookupSummary.resolvedAt" :value="activeLookupSummary.resolvedAt" label="Lookup updated" />
-				</div>
-				<p class="text-sm text-app-muted leading-7 mt-5 max-w-3xl dark:text-app-muted-dark">
+				<p class="eyebrow">
+					Your area
+				</p>
+				<h1 class="text-4xl text-app-ink leading-tight font-serif mt-2 sm:text-5xl dark:text-app-text-dark">
+					{{ activeLookupSummary.label }}
+				</h1>
+				<p class="results-status-line text-sm text-app-muted mt-4 dark:text-app-muted-dark">
+					<span v-for="item in resultsStatusItems" :key="item">{{ item }}</span>
+					<NuxtLink v-if="activeResult.districtMatches.length" :to="buildNationwideRouteTarget('/districts', activeResult)" class="primary-link font-medium">
+						{{ activeResult.districtMatches.length }} district{{ activeResult.districtMatches.length === 1 ? '' : 's' }}
+					</NuxtLink>
+					<NuxtLink v-if="activeResult.representativeMatches.length" :to="buildNationwideRouteTarget('/representatives', activeResult)" class="primary-link font-medium">
+						{{ activeResult.representativeMatches.length }} official{{ activeResult.representativeMatches.length === 1 ? '' : 's' }}
+					</NuxtLink>
+					<a v-if="hasVisibleActions" href="#official-tools" class="primary-link font-medium">Official tools</a>
+				</p>
+				<p v-if="activeResult.detectedFromIp" class="text-sm text-app-muted leading-6 mt-3 max-w-3xl dark:text-app-muted-dark">
 					{{ activeLookupSummary.note }}
 				</p>
-				<nav class="results-shortcuts mt-5" aria-label="Explore results">
-					<NuxtLink v-if="activeResult.districtMatches.length" :to="buildNationwideRouteTarget('/districts', activeResult)" class="btn-secondary">
-						Districts <span class="text-xs">{{ activeResult.districtMatches.length }}</span>
-					</NuxtLink>
-					<NuxtLink v-if="activeResult.representativeMatches.length" :to="buildNationwideRouteTarget('/representatives', activeResult)" class="btn-secondary">
-						Representatives <span class="text-xs">{{ activeResult.representativeMatches.length }}</span>
-					</NuxtLink>
-					<a v-if="hasVisibleActions" href="#official-tools" class="btn-secondary">Official tools <span class="i-carbon-arrow-down" aria-hidden="true" /></a>
-				</nav>
+				<UpdatedAt v-if="activeLookupSummary.resolvedAt" class="mt-2" :value="activeLookupSummary.resolvedAt" label="Looked up" />
 			</section>
 			<LocationChangePanel :election="activeResult.election" />
 			<LookupResultsPanel :lookup="activeResult" results-page @open-guide="openResultGuide" @select-option="selectLookupOption" />

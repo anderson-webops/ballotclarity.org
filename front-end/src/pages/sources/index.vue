@@ -42,17 +42,9 @@ usePageSeo({
 <template>
 	<section class="app-shell section-gap space-y-8">
 		<header class="max-w-4xl">
-			<div class="flex flex-wrap gap-2">
-				<TrustBadge label="Source directory" tone="accent" />
-				<TrustBadge label="Citation-ready" />
-				<TrustBadge label="Open record links" />
-			</div>
-			<h1 class="text-5xl text-app-ink font-serif mt-5 dark:text-app-text-dark">
+			<h1 class="text-5xl text-app-ink font-serif dark:text-app-text-dark">
 				Source directory
 			</h1>
-			<p class="text-base text-app-muted leading-8 mt-5 dark:text-app-muted-dark">
-				Here are the source systems and published source records Ballot Clarity uses across the site. Use this directory to see what a source is, what it is used for, and where you can inspect it directly.
-			</p>
 		</header>
 
 		<div class="surface-row">
@@ -72,16 +64,13 @@ usePageSeo({
 		</div>
 
 		<div v-if="pending" class="space-y-6">
-			<div v-for="index in 4" :key="index" class="surface-panel bg-white/70 h-40 animate-pulse dark:bg-app-panel-dark/70" />
+			<div v-for="index in 4" :key="index" class="rounded-lg bg-app-bg h-40 animate-pulse dark:bg-app-bg-dark" />
 		</div>
 
 		<div v-else-if="!filteredSources.length" class="surface-panel">
 			<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
 				No sources match the current search.
 			</h2>
-			<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-				Try a publisher name, source system, or source title. You can also clear the field to browse the full directory.
-			</p>
 		</div>
 
 		<div v-else class="space-y-8">

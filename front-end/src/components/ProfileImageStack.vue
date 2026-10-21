@@ -64,7 +64,7 @@ function handleImageError() {
 <template>
 	<figure class="inline-flex flex-col gap-3 items-center">
 		<div
-			class="profile-image-frame text-app-muted leading-none font-serif border border-app-line rounded-[2rem] bg-app-bg shrink-0 grid shadow-sm place-items-center relative overflow-hidden isolate dark:text-app-muted-dark dark:border-app-line-dark dark:bg-app-bg-dark"
+			class="profile-image-frame text-app-muted leading-none font-serif border border-app-line rounded-xl bg-app-bg shrink-0 grid shadow-sm place-items-center relative overflow-hidden isolate dark:text-app-muted-dark dark:border-app-line-dark dark:bg-app-bg-dark"
 			:class="frameClass"
 		>
 			<img

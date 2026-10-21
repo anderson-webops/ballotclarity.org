@@ -11,7 +11,7 @@ defineProps<{
 
 <template>
 	<section class="surface-panel">
-		<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+		<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 			{{ title ?? "How this page is built" }}
 		</p>
 		<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
@@ -25,7 +25,7 @@ defineProps<{
 			</summary>
 			<div class="mt-4 space-y-4">
 				<section v-for="item in items" :key="item.label">
-					<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+					<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 						{{ item.label }}
 					</p>
 					<ul class="mt-2 space-y-2">

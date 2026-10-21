@@ -228,6 +228,17 @@ function sanitizeProfileImage(value: unknown): ProfileImage | null {
 	});
 }
 
+const providerRecordDatePattern = /^\d{4}-\d{2}-\d{2}/;
+
+// Keep only the calendar date of a provider's record update so cached lookups stay small.
+function sanitizeProviderRecordDate(value: unknown) {
+	if (typeof value !== "string")
+		return undefined;
+
+	const date = value.trim().slice(0, 10);
+	return providerRecordDatePattern.test(date) && !Number.isNaN(Date.parse(date)) ? date : undefined;
+}
+
 function sanitizeRepresentativeMatch(value: unknown): LocationRepresentativeMatch | null {
 	if (!isRecord(value))
 		return null;
@@ -277,6 +288,7 @@ function sanitizeRepresentativeMatch(value: unknown): LocationRepresentativeMatc
 			? value.profileImages.map(sanitizeProfileImage).filter((item): item is ProfileImage => Boolean(item))
 			: undefined,
 		sourceSystem,
+		updatedAt: sanitizeProviderRecordDate(value.updatedAt),
 	};
 }
 
@@ -440,6 +452,7 @@ function expandCompactCookiePayload(value: unknown) {
 								]
 							: undefined,
 						sourceSystem: readCompactOptionalString(item, 8) ?? "Lookup results representative match",
+						updatedAt: readCompactOptionalString(item, 11),
 					};
 				}).filter(isPresent)
 			: [],
@@ -496,6 +509,7 @@ function buildCookiePayload(context: ActiveNationwideLookupContext) {
 			match.sourceSystem,
 			match.openstatesUrl ?? "",
 			match.profileImages?.[0]?.url ?? "",
+			sanitizeProviderRecordDate(match.updatedAt) ?? "",
 		]),
 		s: context.selectionId,
 		t: context.resolvedAt,
@@ -869,12 +883,14 @@ function buildDirectoryBundle(context: ActiveNationwideLookupContext) {
 			fundingSummary: "No person-level funding record is attached to this representative yet.",
 			governmentLevel: representative.governmentLevel,
 			href: `/representatives/${slug}`,
+			id: representative.id,
 			incumbent: true,
 			influenceAvailable: false,
 			influenceSummary: "No person-level influence record is attached to this representative yet.",
 			location: locationLabel,
 			name: representative.name,
 			officeDisplayLabel: representative.officeDisplayLabel,
+			officeTitle: representative.officeTitle,
 			officeSought: representative.officeTitle,
 			officeholderLabel: "Current officeholder",
 			officeType: representative.officeType,

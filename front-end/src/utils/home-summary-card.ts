@@ -2,7 +2,7 @@ export const interactiveHomeSummaryCardClass = [
 	"home-summary-card-link",
 	"focus-ring",
 	"p-4",
-	"rounded-[1.35rem]",
+	"rounded-xl",
 	"border",
 	"border-app-line/45",
 	"bg-app-bg/70",

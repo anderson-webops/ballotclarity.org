@@ -45,21 +45,21 @@ function providerStatusTone(status: "active" | "needs_endpoint" | "needs_key" | 
 <template>
 	<section class="app-shell section-gap">
 		<div v-if="pending" class="space-y-6">
-			<div class="surface-panel bg-white/70 h-72 animate-pulse dark:bg-app-panel-dark/70" />
+			<div class="rounded-lg bg-app-bg h-72 animate-pulse dark:bg-app-bg-dark" />
 			<div class="gap-6 grid lg:grid-cols-2">
-				<div v-for="index in 4" :key="index" class="surface-panel bg-white/70 h-64 animate-pulse dark:bg-app-panel-dark/70" />
+				<div v-for="index in 4" :key="index" class="rounded-lg bg-app-bg h-64 animate-pulse dark:bg-app-bg-dark" />
 			</div>
 		</div>
 
 		<div v-else-if="error || !data" class="max-w-3xl">
 			<InfoCallout title="Data sources unavailable" tone="warning">
-				The data-sources page could not be loaded. Refresh the page or return to the methodology page and try again.
+				Try again later.
 			</InfoCallout>
 		</div>
 
 		<div v-else-if="!data.launchTarget && !data.categories.length && !data.roadmap.length" class="max-w-4xl space-y-6">
 			<InfoCallout title="No local source plan published right now" tone="info">
-				No local source plan is published right now. You can still use lookup results and official election links when they are available.
+				Lookup results and official election links are still available.
 			</InfoCallout>
 			<div class="flex flex-wrap gap-3">
 				<NuxtLink to="/coverage" class="btn-primary">
@@ -73,20 +73,12 @@ function providerStatusTone(status: "active" | "needs_endpoint" | "needs_key" | 
 
 		<div v-else class="reading-page space-y-8">
 			<header class="max-w-5xl">
-				<div class="flex flex-wrap gap-2">
-					<TrustBadge label="Official sources first" tone="accent" />
-					<TrustBadge label="Providers when needed" />
-					<TrustBadge label="Limits stated" tone="warning" />
-				</div>
-				<p class="text-xs text-app-muted tracking-[0.24em] font-semibold mt-6 uppercase dark:text-app-muted-dark">
+				<p class="text-xs text-app-muted tracking-[0.06em] font-semibold mt-6 uppercase dark:text-app-muted-dark">
 					Data sources
 				</p>
 				<h1 class="text-5xl text-app-ink leading-tight font-serif mt-3 dark:text-app-text-dark">
 					Data sources
 				</h1>
-				<p class="bc-prose text-app-muted mt-5 dark:text-app-muted-dark">
-					Ballot Clarity uses official election sources first, then supporting civic-data systems when official material needs context. This page explains what each source class is used for and where its limits are.
-				</p>
 				<div class="mt-6 flex flex-wrap gap-4 items-center">
 					<UpdatedAt :value="data.updatedAt" label="Updated" />
 					<NuxtLink to="/methodology" class="btn-secondary">
@@ -109,7 +101,7 @@ function providerStatusTone(status: "active" | "needs_endpoint" | "needs_key" | 
 				<summary class="collapsible-card-summary cursor-pointer focus-ring">
 					<div class="flex flex-wrap gap-4 items-start justify-between">
 						<div>
-							<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+							<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 								Ballot-content data providers
 							</p>
 							<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
@@ -144,7 +136,7 @@ function providerStatusTone(status: "active" | "needs_endpoint" | "needs_key" | 
 							</summary>
 							<div class="mt-4 gap-4 grid md:grid-cols-2">
 								<div>
-									<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+									<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 										Capabilities
 									</p>
 									<ul class="readable-list text-sm text-app-muted mt-3 pl-5 dark:text-app-muted-dark">
@@ -154,7 +146,7 @@ function providerStatusTone(status: "active" | "needs_endpoint" | "needs_key" | 
 									</ul>
 								</div>
 								<div>
-									<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+									<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 										Limits
 									</p>
 									<ul class="readable-list text-sm text-app-muted mt-3 pl-5 dark:text-app-muted-dark">
@@ -186,7 +178,7 @@ function providerStatusTone(status: "active" | "needs_endpoint" | "needs_key" | 
 			<section class="space-y-5">
 				<div class="flex flex-wrap gap-4 items-start justify-between">
 					<div>
-						<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+						<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 							Source categories
 						</p>
 						<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
@@ -201,7 +193,7 @@ function providerStatusTone(status: "active" | "needs_endpoint" | "needs_key" | 
 				<div class="space-y-4">
 					<details v-for="category in data.categories" :key="category.slug" class="surface-row">
 						<summary class="collapsible-card-summary cursor-pointer focus-ring">
-							<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+							<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 								{{ category.title }}
 							</p>
 							<h3 class="text-2xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
@@ -210,7 +202,7 @@ function providerStatusTone(status: "active" | "needs_endpoint" | "needs_key" | 
 						</summary>
 						<div class="mt-6 gap-4 grid md:grid-cols-2">
 							<div>
-								<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+								<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 									Authoritative rule
 								</p>
 								<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
@@ -218,7 +210,7 @@ function providerStatusTone(status: "active" | "needs_endpoint" | "needs_key" | 
 								</p>
 							</div>
 							<div>
-								<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+								<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 									Live approach
 								</p>
 								<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
@@ -242,7 +234,7 @@ function providerStatusTone(status: "active" | "needs_endpoint" | "needs_key" | 
 								</summary>
 								<div class="mt-5 gap-4 grid md:grid-cols-3">
 									<div>
-										<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+										<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 											Access
 										</p>
 										<p class="text-sm text-app-ink font-semibold mt-2 dark:text-app-text-dark">
@@ -250,7 +242,7 @@ function providerStatusTone(status: "active" | "needs_endpoint" | "needs_key" | 
 										</p>
 									</div>
 									<div>
-										<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+										<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 											Coverage
 										</p>
 										<p class="text-sm text-app-ink font-semibold mt-2 dark:text-app-text-dark">
@@ -258,7 +250,7 @@ function providerStatusTone(status: "active" | "needs_endpoint" | "needs_key" | 
 										</p>
 									</div>
 									<div>
-										<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+										<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 											Update pattern
 										</p>
 										<p class="text-sm text-app-ink font-semibold mt-2 dark:text-app-text-dark">

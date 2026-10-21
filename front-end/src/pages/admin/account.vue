@@ -186,7 +186,7 @@ usePageSeo({
 				<TrustBadge label="Account security" tone="accent" />
 				<TrustBadge :label="session?.role || 'admin'" />
 			</div>
-			<p class="text-xs text-app-muted tracking-[0.24em] font-semibold mt-6 uppercase dark:text-app-muted-dark">
+			<p class="text-xs text-app-muted tracking-[0.06em] font-semibold mt-6 uppercase dark:text-app-muted-dark">
 				Current account
 			</p>
 			<h1 class="text-5xl text-app-ink font-serif mt-4 dark:text-app-text-dark">
@@ -204,7 +204,7 @@ usePageSeo({
 		<div class="mt-6 gap-6 grid lg:grid-cols-[minmax(0,0.95fr)_minmax(22rem,0.65fr)] lg:items-start">
 			<div class="space-y-6">
 				<section class="surface-panel">
-					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+					<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 						Password
 					</p>
 					<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
@@ -274,7 +274,7 @@ usePageSeo({
 					</p>
 
 					<div v-if="mfaSetup" class="mt-6 space-y-4">
-						<div class="p-4 border border-app-line rounded-3xl bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
+						<div class="p-4 border border-app-line rounded-xl bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
 							<p class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
 								Setup key
 							</p>
@@ -356,7 +356,7 @@ usePageSeo({
 			</div>
 
 			<aside class="surface-panel">
-				<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+				<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 					Session
 				</p>
 				<h2 class="text-2xl text-app-ink font-serif mt-3 dark:text-app-text-dark">

@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { storeToRefs } from "pinia";
 
-import { buildActiveLookupSummary } from "~/utils/active-lookup";
 import { buildGuideDistrictPageRecord, buildNationwideDistrictPageRecord } from "~/utils/district-page";
 import { isExternalHref } from "~/utils/link";
 import { buildLookupContextFromNationwideResult, buildNationwideLookupRouteQuery, buildNationwideRouteTarget } from "~/utils/nationwide-route-context";
@@ -9,7 +8,7 @@ import { resolveRepresentativePresentation } from "~/utils/representative-presen
 
 const route = useRoute();
 const civicStore = useCivicStore();
-const { isHydrated, nationwideLookupResult, selectedLocation } = storeToRefs(civicStore);
+const { isHydrated, nationwideLookupResult } = storeToRefs(civicStore);
 const { hasGuideShellContext, hasNationwideResultContext } = useGuideEntryGate();
 const districtSlug = useRouteStringParam("slug");
 const activeNationwideLookupResult = computed(() => isHydrated.value ? nationwideLookupResult.value : null);
@@ -32,11 +31,6 @@ const districtPageData = computed(() => {
 
 	return guideData.value;
 });
-const activeLookupSummary = computed(() => buildActiveLookupSummary({
-	nationwideLookupResult: activeNationwideLookupResult.value,
-	routeLookupQuery: activeLookupQuery.value?.lookup ?? null,
-	selectedLocation: isHydrated.value ? selectedLocation.value : null
-}));
 const pagePending = computed(() => guidePending.value || (!guideData.value && !lookupFallbackData.value));
 const pageError = computed(() => districtPageData.value ? null : guideError.value);
 function buildLookupAwareTarget(path: string) {
@@ -99,15 +93,15 @@ usePageSeo({
 	<section class="app-shell section-gap">
 		<div v-if="pagePending" class="gap-6 grid xl:grid-cols-[minmax(0,1.1fr)_minmax(18rem,0.9fr)]">
 			<div class="space-y-6">
-				<div class="surface-panel bg-white/70 h-80 animate-pulse dark:bg-app-panel-dark/70" />
-				<div class="surface-panel bg-white/70 h-72 animate-pulse dark:bg-app-panel-dark/70" />
+				<div class="rounded-lg bg-app-bg h-80 animate-pulse dark:bg-app-bg-dark" />
+				<div class="rounded-lg bg-app-bg h-72 animate-pulse dark:bg-app-bg-dark" />
 			</div>
-			<div class="surface-panel bg-white/70 h-72 animate-pulse dark:bg-app-panel-dark/70" />
+			<div class="rounded-lg bg-app-bg h-72 animate-pulse dark:bg-app-bg-dark" />
 		</div>
 
 		<div v-else-if="pageError || !districtPageData" class="max-w-3xl">
 			<InfoCallout title="District detail not available yet" tone="warning">
-				This district could not be loaded right now. Return to the district hub or results page and try again.
+				Try again later.
 			</InfoCallout>
 		</div>
 
@@ -115,32 +109,23 @@ usePageSeo({
 			<div class="space-y-8">
 				<header id="overview" class="surface-panel">
 					<AppBreadcrumbs :items="breadcrumbs" />
-					<div class="flex flex-wrap gap-2">
-						<VerificationBadge label="District page" tone="accent" />
-						<VerificationBadge :label="districtPageData.district.jurisdiction" />
-						<UpdatedAt :value="districtPageData.updatedAt" label="Updated" />
-					</div>
-					<h1 class="text-5xl text-app-ink font-serif mt-5 dark:text-app-text-dark">
+					<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
+						{{ districtPageData.district.jurisdiction }}
+					</p>
+					<h1 class="text-5xl text-app-ink font-serif mt-2 dark:text-app-text-dark">
 						{{ districtPageData.district.title }}
 					</h1>
-					<p class="text-base text-app-muted leading-8 mt-5 dark:text-app-muted-dark">
+					<p class="text-lg text-app-ink leading-8 mt-4 dark:text-app-text-dark">
 						{{ districtPageData.district.description }}
 					</p>
-					<div class="mt-6 flex flex-wrap gap-3">
+					<div class="mt-5 flex flex-wrap gap-x-6 gap-y-3 items-center">
 						<NuxtLink v-if="districtPageData.mode === 'guide'" :to="`/contest/${districtPageData.district.slug}`" class="btn-primary">
 							Open contest page
 						</NuxtLink>
 						<NuxtLink :to="buildLookupAwareTarget(districtContextLink.to)" class="btn-secondary">
 							{{ districtContextLink.label }}
 						</NuxtLink>
-						<NuxtLink :to="buildLookupAwareTarget('/representatives')" class="btn-secondary">
-							Representative directory
-						</NuxtLink>
-					</div>
-					<div class="mt-6 flex flex-wrap gap-2">
-						<VerificationBadge :label="`${districtPageData.representatives.length} current representative${districtPageData.representatives.length === 1 ? '' : 's'}`" tone="accent" />
-						<VerificationBadge v-if="districtPageData.candidates.length" :label="`${districtPageData.candidates.length} candidate${districtPageData.candidates.length === 1 ? '' : 's'}`" />
-						<VerificationBadge :label="`${districtPageData.sources.length} source${districtPageData.sources.length === 1 ? '' : 's'}`" />
+						<UpdatedAt :value="districtPageData.updatedAt" label="Updated" />
 					</div>
 					<p v-if="!districtPageData.candidates.length" class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
 						<strong class="text-app-ink dark:text-app-text-dark">Candidate field:</strong> {{ districtPageData.candidateAvailabilityNote }}
@@ -150,19 +135,16 @@ usePageSeo({
 				<section id="representatives" class="surface-panel">
 					<div class="flex flex-wrap gap-4 items-center justify-between">
 						<div>
-							<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
+							<h2 class="text-2xl text-app-ink font-serif dark:text-app-text-dark">
 								Current representatives
 							</h2>
-							<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
-								{{ districtPageData.representativeAvailabilityNote }}
-							</p>
 						</div>
 						<NuxtLink to="/representatives" class="btn-secondary">
 							All representatives
 						</NuxtLink>
 					</div>
 					<div v-if="districtPageData.representatives.length" class="mt-6 gap-5 grid lg:grid-cols-2">
-						<article v-for="representative in districtPageData.representatives" :key="representative.slug" class="p-5 border border-app-line/70 rounded-3xl bg-white/80 dark:border-app-line-dark dark:bg-app-panel-dark/70">
+						<article v-for="representative in districtPageData.representatives" :key="representative.slug">
 							<div class="flex gap-4 items-start">
 								<ProfileImageStack
 									v-if="representative.profileImages?.length"
@@ -171,22 +153,18 @@ usePageSeo({
 									size="md"
 								/>
 								<div class="min-w-0">
-									<div class="flex flex-wrap gap-3 items-center">
-										<p class="text-2xl text-app-ink font-serif dark:text-app-text-dark">
-											{{ representative.name }}
-										</p>
-										<VerificationBadge :label="getRepresentativePresentation(representative).levelLabel" tone="accent" />
-										<IncumbentBadge />
-									</div>
-									<p class="text-sm text-app-muted mt-3 dark:text-app-muted-dark">
+									<p class="text-xl text-app-ink font-serif dark:text-app-text-dark">
+										{{ representative.name }}
+									</p>
+									<p class="text-sm text-app-muted mt-1 dark:text-app-muted-dark">
 										{{ representative.party }} · {{ getRepresentativePresentation(representative).officeDisplayLabel }}
 									</p>
 								</div>
 							</div>
-							<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
+							<p class="text-sm text-app-ink leading-6 mt-3 dark:text-app-text-dark">
 								{{ representative.summary }}
 							</p>
-							<div class="mt-5 flex flex-wrap gap-3">
+							<div class="mt-3 flex flex-wrap gap-x-5 gap-y-1">
 								<SafeExternalLink
 									v-if="isExternalHref(representative.href)"
 									:href="representative.href"
@@ -265,13 +243,10 @@ usePageSeo({
 				</section>
 
 				<section v-if="districtPageData.officialResources.length" id="official-tools" class="surface-panel">
-					<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
-						Official verification tools
+					<h2 class="text-2xl text-app-ink font-serif dark:text-app-text-dark">
+						Official links
 					</h2>
-					<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-						Official election links for this office area.
-					</p>
-					<div class="mt-6">
+					<div class="mt-3">
 						<OfficialResourceList :resources="districtPageData.officialResources" />
 					</div>
 				</section>
@@ -280,11 +255,6 @@ usePageSeo({
 					<summary class="text-2xl text-app-ink font-serif cursor-pointer dark:text-app-text-dark focus-ring">
 						District sources
 					</summary>
-					<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-						{{ districtPageData.mode === "guide"
-							? "Sources for the candidate and official information on this page."
-							: "Sources for the district match, linked officials, and official election links on this page." }}
-					</p>
 					<div class="mt-6">
 						<SourceList :sources="districtPageData.sources" />
 					</div>
@@ -297,76 +267,45 @@ usePageSeo({
 					compact
 					:items="sectionLinks"
 					:show-breadcrumbs="false"
-					title="District page"
+					title="On this page"
 				>
 					<template #actions>
-						<div class="flex flex-wrap gap-3">
-							<NuxtLink :to="districtContextLink.to" class="btn-secondary">
-								{{ districtContextLink.label }}
-							</NuxtLink>
-							<NuxtLink to="/districts" class="btn-secondary">
-								All districts
-							</NuxtLink>
-						</div>
+						<NuxtLink to="/districts" class="text-sm btn-secondary">
+							All districts
+						</NuxtLink>
 					</template>
 				</PageSectionNav>
 
-				<div v-if="activeLookupSummary.mode !== 'none'" class="surface-row">
-					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-						Area
-					</p>
-					<h2 class="text-2xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-						{{ activeLookupSummary.label }}
-					</h2>
-					<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-						{{ activeLookupSummary.note }}
-					</p>
-					<div class="mt-5 flex flex-wrap gap-3 items-center">
-						<TrustBadge
-							:label="activeLookupSummary.mode === 'nationwide' ? 'Lookup results' : activeLookupSummary.mode === 'guide' ? 'Local guide' : 'No saved location'"
-							:tone="activeLookupSummary.mode === 'nationwide' ? 'accent' : activeLookupSummary.mode === 'guide' ? undefined : 'warning'"
-						/>
-						<UpdatedAt v-if="activeLookupSummary.resolvedAt" :value="activeLookupSummary.resolvedAt" label="Lookup updated" />
-					</div>
-				</div>
-
-				<details class="surface-row">
-					<summary class="text-sm text-app-ink font-semibold cursor-pointer dark:text-app-text-dark focus-ring">
+				<section>
+					<h2 class="text-lg text-app-ink font-semibold dark:text-app-text-dark">
 						What this office does
-					</summary>
-					<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
+					</h2>
+					<p class="text-base text-app-ink leading-7 mt-2 dark:text-app-text-dark">
 						{{ districtPageData.district.roleGuide.summary }}
 					</p>
-					<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-						<strong class="text-app-ink dark:text-app-text-dark">Why it matters:</strong> {{ districtPageData.district.roleGuide.whyItMatters }}
+					<p class="text-sm text-app-muted leading-6 mt-2 dark:text-app-muted-dark">
+						{{ districtPageData.district.roleGuide.whyItMatters }}
 					</p>
-					<ul class="readable-list text-sm text-app-muted mt-4 pl-5 dark:text-app-muted-dark">
+					<ul class="text-sm text-app-ink leading-6 mt-2 pl-5 list-disc space-y-1 dark:text-app-text-dark">
 						<li v-for="area in districtPageData.district.roleGuide.decisionAreas" :key="area">
 							{{ area }}
 						</li>
 					</ul>
-				</details>
+				</section>
 
-				<details v-if="districtPageData.relatedContests.length" class="surface-row">
-					<summary class="text-xl text-app-ink font-serif cursor-pointer dark:text-app-text-dark focus-ring">
+				<section v-if="districtPageData.relatedContests.length">
+					<h2 class="text-lg text-app-ink font-semibold dark:text-app-text-dark">
 						Related ballot pages
-					</summary>
-					<div class="mt-5 space-y-4">
-						<NuxtLink
-							v-for="contest in districtPageData.relatedContests"
-							:key="contest.slug"
-							:to="contest.href"
-							class="px-5 py-4 border border-app-line/70 rounded-3xl bg-white/80 block transition dark:border-app-line-dark hover:border-app-accent dark:bg-app-panel-dark/70 focus-ring"
-						>
-							<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
-								{{ contest.jurisdiction }}
-							</p>
-							<p class="text-lg text-app-ink font-semibold mt-3 dark:text-app-text-dark">
+					</h2>
+					<ul class="mt-2">
+						<li v-for="contest in districtPageData.relatedContests" :key="contest.slug" class="py-2">
+							<NuxtLink :to="contest.href" class="btn-secondary">
 								{{ contest.office }}
-							</p>
-						</NuxtLink>
-					</div>
-				</details>
+							</NuxtLink>
+							<span class="text-sm text-app-muted ml-2 dark:text-app-muted-dark">{{ contest.jurisdiction }}</span>
+						</li>
+					</ul>
+				</section>
 			</div>
 		</div>
 	</section>

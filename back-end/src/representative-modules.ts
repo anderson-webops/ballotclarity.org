@@ -6,6 +6,7 @@ import type {
 	EvidenceBlock,
 	ExternalLink,
 	LocationRepresentativeMatch,
+	LookupAvailabilityStatus,
 	PersonProfileEnrichmentStatus,
 	PersonProfileEnrichmentStatusItem,
 	PersonProfileFunding,
@@ -206,9 +207,9 @@ interface RepresentativeModuleAttachment {
 }
 
 export interface RepresentativeModuleResolver {
-	enrichLocationFinanceInfluenceAvailability: (context: ActiveNationwideLookupContext, currentDetail: string, currentStatus: "available" | "limited" | "unavailable") => Promise<{
+	enrichLocationFinanceInfluenceAvailability: (context: ActiveNationwideLookupContext, currentDetail: string, currentStatus: LookupAvailabilityStatus) => Promise<{
 		detail: string;
-		status: "available" | "limited" | "unavailable";
+		status: LookupAvailabilityStatus;
 	}>;
 	enrichNationwideDistrictRepresentatives: (context: ActiveNationwideLookupContext, representatives: RepresentativeSummary[]) => Promise<RepresentativeSummary[]>;
 	enrichNationwidePersonProfile: (context: ActiveNationwideLookupContext, response: PersonProfileResponse) => Promise<PersonProfileResponse>;
@@ -1638,12 +1639,14 @@ export function createRepresentativeModuleResolver({
 					fundingSummary: "",
 					governmentLevel: match.governmentLevel,
 					href: "",
+					id: match.id,
 					incumbent: true,
 					influenceAvailable: false,
 					influenceSummary: "",
 					location: context.location?.displayName || context.normalizedAddress || "Your area",
 					name: match.name,
 					officeDisplayLabel: match.officeDisplayLabel,
+					officeTitle: match.officeTitle,
 					officeSought: match.officeTitle,
 					officeholderLabel: "Current officeholder",
 					officeType: match.officeType,

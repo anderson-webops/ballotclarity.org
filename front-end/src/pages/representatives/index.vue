@@ -7,7 +7,6 @@ import { isExternalHref } from "~/utils/link";
 import { buildNationwideDirectoryResponses, mergeNationwideDirectoryResponses } from "~/utils/nationwide-directory";
 import { buildLookupContextFromNationwideResult, buildNationwideLookupRouteQuery, buildNationwideRouteTarget } from "~/utils/nationwide-route-context";
 import { groupRepresentativeSummariesByGovernmentLevel, resolveRepresentativePresentation } from "~/utils/representative-presentation";
-import { formatSourceCountLabel } from "~/utils/source-label";
 
 const route = useRoute();
 const civicStore = useCivicStore();
@@ -95,18 +94,14 @@ const activeLookupSummary = computed(() => buildActiveLookupSummary({
 	selectedLocation: isHydrated.value ? selectedLocation.value : null
 }));
 const representativeLinkIsExternal = (href: string) => isExternalHref(href);
-const introCopy = computed(() => directoryUsesNationwide.value
-	? "Current officials for your saved area."
-	: "This directory lists current officeholders and links to their district, profile, funding, and influence pages where available."
-);
 const requiresLookupPrompt = computed(() => !directoryUsesNationwide.value && !showGuideDirectory.value);
 const lookupPrompt = computed(() => activeLookupSummary.value.mode === "none"
 	? {
-			body: "Enter an address or ZIP code first so this page can show current officials for your area.",
+			body: "Enter an address or ZIP code to see your current officials.",
 			title: "Start with lookup"
 		}
 	: {
-			body: "A saved area is present, but this page needs a current address or ZIP result to load the matching officials.",
+			body: "Look up your address again to load your current officials.",
 			title: "Refresh results for this page"
 		}
 );
@@ -128,68 +123,39 @@ usePageSeo({
 
 <template>
 	<section class="app-shell section-gap space-y-8">
-		<header class="gap-6 grid xl:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
-			<div class="surface-panel">
-				<div class="flex flex-wrap gap-2">
-					<VerificationBadge label="Representative directory" tone="accent" />
-					<VerificationBadge label="Incumbents only" />
-				</div>
-				<h1 class="text-5xl text-app-ink font-serif mt-5 dark:text-app-text-dark">
-					Representatives
-				</h1>
-				<p class="text-base text-app-muted leading-8 mt-5 dark:text-app-muted-dark">
-					{{ introCopy }}
-				</p>
-			</div>
-
-			<div v-if="activeLookupSummary.mode !== 'none'" class="surface-panel">
-				<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-					Current area
-				</p>
-				<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-					{{ activeLookupSummary.label }}
-				</h2>
-				<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-					{{ activeLookupSummary.note }}
-				</p>
-				<div class="mt-5 flex flex-wrap gap-3 items-center">
-					<TrustBadge
-						:label="activeLookupSummary.mode === 'nationwide' ? 'Lookup results' : activeLookupSummary.mode === 'guide' ? 'Local guide' : 'No saved location'"
-						:tone="activeLookupSummary.mode === 'nationwide' ? 'accent' : activeLookupSummary.mode === 'guide' ? undefined : 'warning'"
-					/>
-					<UpdatedAt v-if="activeLookupSummary.resolvedAt" :value="activeLookupSummary.resolvedAt" label="Lookup updated" />
-				</div>
-				<div class="mt-6">
-					<NuxtLink :to="buildLookupAwareTarget('/districts')" class="btn-secondary">
-						Open district hub
-					</NuxtLink>
-				</div>
-			</div>
+		<header>
+			<h1 class="text-5xl text-app-ink font-serif dark:text-app-text-dark">
+				Representatives
+			</h1>
+			<p v-if="activeLookupSummary.mode !== 'none'" class="text-base text-app-muted mt-3 flex flex-wrap gap-x-4 gap-y-1 items-baseline dark:text-app-muted-dark">
+				<span class="text-app-ink font-semibold dark:text-app-text-dark">{{ activeLookupSummary.label }}</span>
+				<NuxtLink :to="buildLookupAwareTarget('/districts')" class="btn-secondary">
+					Districts
+				</NuxtLink>
+			</p>
 		</header>
 
 		<div v-if="directoryPending && !directoryData.representatives.length" class="gap-6 grid lg:grid-cols-2">
-			<div class="surface-panel bg-white/70 h-56 animate-pulse dark:bg-app-panel-dark/70" />
-			<div class="surface-panel bg-white/70 h-56 animate-pulse dark:bg-app-panel-dark/70" />
+			<div class="rounded-lg bg-app-bg h-56 animate-pulse dark:bg-app-bg-dark" />
+			<div class="rounded-lg bg-app-bg h-56 animate-pulse dark:bg-app-bg-dark" />
 		</div>
 
 		<div v-else-if="directoryError || !directoryData" class="max-w-3xl">
 			<InfoCallout title="Representative directory unavailable" tone="warning">
-				The representative directory could not be loaded. Open a district or contest page and try again.
+				Try again later.
 			</InfoCallout>
 		</div>
 
 		<div v-else-if="requiresLookupPrompt" class="max-w-3xl">
-			<InfoCallout :title="lookupPrompt.title" tone="warning">
+			<p class="text-xl text-app-ink font-semibold dark:text-app-text-dark">
+				{{ lookupPrompt.title }}
+			</p>
+			<p class="text-base text-app-muted mt-2 dark:text-app-muted-dark">
 				{{ lookupPrompt.body }}
-			</InfoCallout>
-			<div class="mt-6 flex flex-wrap gap-3">
-				<NuxtLink to="/" class="btn-primary">
-					Open lookup
-				</NuxtLink>
-				<NuxtLink to="/results" class="btn-secondary">
-					Results for your area
-				</NuxtLink>
-			</div>
+			</p>
+			<NuxtLink to="/" class="btn-primary mt-5">
+				Enter your address
+			</NuxtLink>
 		</div>
 
 		<div v-else class="space-y-6">
@@ -204,27 +170,17 @@ usePageSeo({
 					class="space-y-5"
 				>
 					<div class="flex flex-wrap gap-3 items-center justify-between">
-						<div>
-							<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
-								{{ group.label }}
-							</h2>
-							<p class="text-sm text-app-muted mt-3 dark:text-app-muted-dark">
-								{{ group.representatives.length }} current official{{ group.representatives.length === 1 ? "" : "s" }} in this section.
-							</p>
-						</div>
-						<VerificationBadge :label="`${group.representatives.length} official${group.representatives.length === 1 ? '' : 's'}`" tone="accent" />
+						<h2 class="text-2xl text-app-ink font-serif dark:text-app-text-dark">
+							{{ group.label }}
+						</h2>
 					</div>
-					<div class="gap-6 grid lg:grid-cols-2">
+					<div class="gap-x-10 grid lg:grid-cols-2">
 						<article
 							v-for="representative in group.representatives"
 							:key="representative.slug"
-							class="surface-row"
+							class="py-5 border-t border-app-line dark:border-app-line-dark"
 						>
-							<div class="flex flex-wrap gap-2 items-center">
-								<VerificationBadge :label="getRepresentativePresentation(representative).levelLabel" tone="accent" />
-								<IncumbentBadge />
-							</div>
-							<div class="mt-4 flex gap-4 items-start">
+							<div class="flex gap-4 items-start">
 								<ProfileImageStack
 									v-if="representative.profileImages?.length"
 									:images="representative.profileImages"
@@ -232,24 +188,28 @@ usePageSeo({
 									size="md"
 								/>
 								<div class="min-w-0">
-									<h3 class="text-2xl text-app-ink font-serif dark:text-app-text-dark">
-										{{ representative.name }}
+									<h3 class="text-xl text-app-ink font-serif dark:text-app-text-dark">
+										<NuxtLink v-if="!representativeLinkIsExternal(representative.href)" :to="buildLookupAwareTarget(representative.href)" class="hover:text-app-accent focus-ring">
+											{{ representative.name }}
+										</NuxtLink>
+										<template v-else>
+											{{ representative.name }}
+										</template>
 									</h3>
-									<p class="text-sm text-app-muted mt-3 dark:text-app-muted-dark">
-										{{ representative.party }} · {{ getRepresentativePresentation(representative).officeDisplayLabel }}
+									<p class="text-sm text-app-muted mt-1 dark:text-app-muted-dark">
+										{{ getRepresentativePresentation(representative).officeDisplayLabel }}<span v-if="representative.party"> · {{ representative.party }}</span>
+									</p>
+									<p v-if="representative.districtLabel !== getRepresentativePresentation(representative).officeDisplayLabel" class="text-sm text-app-muted dark:text-app-muted-dark">
+										{{ representative.districtLabel }}
 									</p>
 								</div>
 							</div>
-							<div class="mt-5 flex flex-wrap gap-2">
-								<VerificationBadge :label="representative.districtLabel" />
-								<VerificationBadge :label="formatSourceCountLabel(representative.sourceCount)" tone="accent" />
-							</div>
-							<div class="mt-6 flex flex-wrap gap-3">
-								<NuxtLink v-if="!representativeLinkIsExternal(representative.href)" :to="buildLookupAwareTarget(representative.href)" class="btn-secondary">
-									Profile
-								</NuxtLink>
+							<p v-if="representative.summary" class="text-sm text-app-ink leading-6 mt-3 dark:text-app-text-dark">
+								{{ representative.summary }}
+							</p>
+							<div class="mt-3 flex flex-wrap gap-x-5 gap-y-1">
 								<SafeExternalLink
-									v-else
+									v-if="representativeLinkIsExternal(representative.href)"
 									:href="representative.href"
 									class="btn-secondary inline-flex gap-2 items-center"
 								>
@@ -262,7 +222,7 @@ usePageSeo({
 								<NuxtLink
 									v-if="!representativeLinkIsExternal(representative.href) && representative.fundingAvailable"
 									:to="buildLookupAwareTarget(`${representative.href}/funding`)"
-									class="btn-primary"
+									class="btn-secondary"
 								>
 									Funding
 								</NuxtLink>
@@ -274,25 +234,6 @@ usePageSeo({
 									Influence
 								</NuxtLink>
 							</div>
-							<details
-								v-if="representative.summary || representative.fundingAvailable || representative.influenceAvailable"
-								class="mt-4"
-							>
-								<summary class="text-sm text-app-ink font-semibold cursor-pointer dark:text-app-text-dark focus-ring">
-									More context
-								</summary>
-								<div class="text-sm text-app-muted leading-6 mt-3 space-y-2 dark:text-app-muted-dark">
-									<p v-if="representative.summary">
-										{{ representative.summary }}
-									</p>
-									<p v-if="representative.fundingAvailable">
-										<strong class="text-app-ink dark:text-app-text-dark">Funding:</strong> {{ representative.fundingSummary }}
-									</p>
-									<p v-if="representative.influenceAvailable">
-										<strong class="text-app-ink dark:text-app-text-dark">Influence:</strong> {{ representative.influenceSummary }}
-									</p>
-								</div>
-							</details>
 						</article>
 					</div>
 				</section>

@@ -100,9 +100,9 @@
 		"@bomb.sh/tab": "0.0.22",
 		"esbuild": "^0.28.2",
 		"js-yaml": "4.3.2",
-		"launch-editor": "2.14.1",
+		"launch-editor": "2.14.2",
 		"vite": {
-			".": "^8.2.2",
+			".": "^8.3.4",
 			"esbuild": "^0.28.2"
 		},
 		"nitropack": {

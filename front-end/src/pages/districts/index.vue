@@ -2,12 +2,8 @@
 import type { DistrictsResponse, RepresentativesResponse } from "~/types/civic";
 import { storeToRefs } from "pinia";
 import { buildActiveLookupSummary } from "~/utils/active-lookup";
-import { buildDistrictRepresentativeAvailabilityNote, buildDistrictRepresentativeCountLabel } from "~/utils/district-availability";
-import {
-	buildDistrictRepresentativeBadgeHref,
-	buildDistrictRepresentativeBadgeTitle,
-	buildDistrictRepresentativePopoverLinks
-} from "~/utils/district-directory-links";
+import { buildDistrictRepresentativeAvailabilityNote } from "~/utils/district-availability";
+
 import { isExternalHref } from "~/utils/link";
 import { buildNationwideDirectoryResponses, mergeNationwideDirectoryResponses } from "~/utils/nationwide-directory";
 import { buildLookupContextFromNationwideResult, buildNationwideLookupRouteQuery, buildNationwideRouteTarget } from "~/utils/nationwide-route-context";
@@ -119,10 +115,6 @@ function getDistrictRepresentatives(districtSlug: string) {
 	return representativesByDistrict.value.get(districtSlug) ?? [];
 }
 
-function getDistrictRepresentativeCountLabel(district: typeof districts.value[number]) {
-	return buildDistrictRepresentativeCountLabel(district, getDistrictRepresentatives(district.slug).length || district.representativeCount);
-}
-
 function getDistrictRepresentativeAvailabilityNote(district: typeof districts.value[number]) {
 	return buildDistrictRepresentativeAvailabilityNote(district, getDistrictRepresentatives(district.slug).length || district.representativeCount);
 }
@@ -140,35 +132,19 @@ function getPrimaryDistrictRepresentativePresentation(districtSlug: string) {
 	return representative ? getRepresentativePresentation(representative) : null;
 }
 
-function getDistrictRepresentativeBadgeHref(district: typeof districts.value[number]) {
-	return buildDistrictRepresentativeBadgeHref(getDistrictRepresentatives(district.slug), district.href);
-}
-
-function getDistrictRepresentativeBadgeTitle(district: typeof districts.value[number]) {
-	return buildDistrictRepresentativeBadgeTitle(district, getDistrictRepresentatives(district.slug));
-}
-
-function getDistrictRepresentativePopoverLinks(districtSlug: string) {
-	return buildDistrictRepresentativePopoverLinks(getDistrictRepresentatives(districtSlug));
-}
-
 usePageSeo({
 	description: "Browse district-by-district Ballot Clarity pages for office context, current representatives, and the upcoming contest field.",
 	path: "/districts",
 	title: "District hub"
 });
-const districtIntroCopy = computed(() => directoryUsesNationwide.value
-	? "Open each matched office area to review the office, current officials, candidates, and official election links for your area."
-	: "Open each office area to review the office, current representative, and candidate field in one place."
-);
 const requiresLookupPrompt = computed(() => !directoryUsesNationwide.value && !showGuideDirectory.value);
 const lookupPrompt = computed(() => activeLookupSummary.value.mode === "none"
 	? {
-			body: "Enter an address or ZIP code first so this page can show the districts and current officials for your area.",
+			body: "Enter an address or ZIP code to see your districts.",
 			title: "Start with lookup"
 		}
 	: {
-			body: "A saved area is present, but this page needs a current address or ZIP result to load exact district and representative matches.",
+			body: "Look up your address again to load your districts.",
 			title: "Refresh results for this page"
 		}
 );
@@ -181,62 +157,35 @@ function buildLookupAwareTarget(path: string) {
 
 <template>
 	<section class="app-shell section-gap space-y-8">
-		<header class="gap-6 grid xl:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
-			<div class="surface-panel">
-				<div class="flex flex-wrap gap-2">
-					<VerificationBadge label="District hub" tone="accent" />
-					<VerificationBadge label="Contest-by-contest" />
-				</div>
-				<h1 class="text-5xl text-app-ink font-serif mt-5 dark:text-app-text-dark">
-					District pages
-				</h1>
-				<p class="text-base text-app-muted leading-8 mt-5 dark:text-app-muted-dark">
-					{{ districtIntroCopy }}
-				</p>
-			</div>
-
-			<div class="surface-panel">
-				<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-					Area
-				</p>
-				<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-					{{ activeLookupSummary.label }}
-				</h2>
-				<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-					{{ activeLookupSummary.note }}
-				</p>
-				<div class="mt-5 flex flex-wrap gap-3 items-center">
-					<TrustBadge
-						:label="activeLookupSummary.mode === 'nationwide' ? 'Lookup results' : activeLookupSummary.mode === 'guide' ? 'Local guide' : 'No saved location'"
-						:tone="activeLookupSummary.mode === 'nationwide' ? 'accent' : activeLookupSummary.mode === 'guide' ? undefined : 'warning'"
-					/>
-					<UpdatedAt v-if="activeLookupSummary.resolvedAt" :value="activeLookupSummary.resolvedAt" label="Lookup updated" />
-				</div>
-			</div>
+		<header>
+			<h1 class="text-5xl text-app-ink font-serif dark:text-app-text-dark">
+				District pages
+			</h1>
+			<p v-if="activeLookupSummary.mode !== 'none'" class="text-base text-app-ink font-semibold mt-3 dark:text-app-text-dark">
+				{{ activeLookupSummary.label }}
+			</p>
 		</header>
 
 		<div v-if="directoriesPending && !directoryData.districts.districts.length" class="gap-6 grid lg:grid-cols-2 xl:grid-cols-3">
-			<div v-for="index in 3" :key="index" class="surface-panel bg-white/70 h-72 animate-pulse dark:bg-app-panel-dark/70" />
+			<div v-for="index in 3" :key="index" class="rounded-lg bg-app-bg h-72 animate-pulse dark:bg-app-bg-dark" />
 		</div>
 
 		<div v-else-if="directoriesError || !directoryData" class="max-w-3xl">
 			<InfoCallout title="District pages unavailable" tone="warning">
-				The district hub could not be loaded. Open results or the coverage profile and try again.
+				Try again later.
 			</InfoCallout>
 		</div>
 
 		<div v-else-if="requiresLookupPrompt" class="max-w-3xl">
-			<InfoCallout :title="lookupPrompt.title" tone="warning">
+			<p class="text-xl text-app-ink font-semibold dark:text-app-text-dark">
+				{{ lookupPrompt.title }}
+			</p>
+			<p class="text-base text-app-muted mt-2 dark:text-app-muted-dark">
 				{{ lookupPrompt.body }}
-			</InfoCallout>
-			<div class="mt-6 flex flex-wrap gap-3">
-				<NuxtLink to="/" class="btn-primary">
-					Open lookup
-				</NuxtLink>
-				<NuxtLink to="/results" class="btn-secondary">
-					Results for your area
-				</NuxtLink>
-			</div>
+			</p>
+			<NuxtLink to="/" class="btn-primary mt-5">
+				Enter your address
+			</NuxtLink>
 		</div>
 
 		<div v-else class="space-y-6">
@@ -244,134 +193,61 @@ function buildLookupAwareTarget(path: string) {
 				{{ directorySummary }}
 			</p>
 
-			<section class="gap-6 grid lg:grid-cols-2 xl:grid-cols-3">
+			<section class="gap-x-10 grid lg:grid-cols-2 xl:grid-cols-3">
 				<article
 					v-for="district in districts"
 					:key="district.slug"
-					class="surface-row flex flex-col"
+					class="py-6 border-t border-app-line flex flex-col dark:border-app-line-dark"
 				>
-					<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+					<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 						{{ district.jurisdiction }}
 					</p>
-					<h2 class="text-2xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-						{{ district.title }}
+					<h2 class="text-2xl text-app-ink font-serif mt-1 dark:text-app-text-dark">
+						<NuxtLink :to="buildLookupAwareTarget(district.href)" class="hover:text-app-accent focus-ring">
+							{{ district.title }}
+						</NuxtLink>
 					</h2>
-					<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
+					<p class="text-sm text-app-muted leading-6 mt-2 dark:text-app-muted-dark">
 						{{ district.summary }}
 					</p>
-					<div class="mt-5 flex flex-wrap gap-2">
-						<VerificationBadge :label="`${district.candidateCount} candidate${district.candidateCount === 1 ? '' : 's'}`" />
-						<div
-							v-if="getDistrictRepresentatives(district.slug).length"
-							class="group relative"
-						>
-							<SafeExternalLink
-								v-if="getDistrictRepresentativeBadgeHref(district) && isExternalHref(getDistrictRepresentativeBadgeHref(district) ?? '')"
-								:href="getDistrictRepresentativeBadgeHref(district)"
-								:title="getDistrictRepresentativeBadgeTitle(district)"
-								class="text-[11px] text-app-accent font-semibold px-2.5 py-1 border border-app-accent/22 rounded-full bg-app-accent/8 inline-flex gap-1.5 transition items-center dark:text-[#9ed4e3] dark:border-app-accent/28 hover:border-app-accent/38 dark:bg-app-accent/12 hover:bg-app-accent/12 focus-ring"
-							>
-								<span class="rounded-full bg-current h-1.5 w-1.5" />
-								{{ getDistrictRepresentativeCountLabel(district) }}
-							</SafeExternalLink>
-							<NuxtLink
-								v-else-if="getDistrictRepresentativeBadgeHref(district)"
-								:to="buildLookupAwareTarget(getDistrictRepresentativeBadgeHref(district) ?? district.href)"
-								:title="getDistrictRepresentativeBadgeTitle(district)"
-								class="text-[11px] text-app-accent font-semibold px-2.5 py-1 border border-app-accent/22 rounded-full bg-app-accent/8 inline-flex gap-1.5 transition items-center dark:text-[#9ed4e3] dark:border-app-accent/28 hover:border-app-accent/38 dark:bg-app-accent/12 hover:bg-app-accent/12 focus-ring"
-							>
-								<span class="rounded-full bg-current h-1.5 w-1.5" />
-								{{ getDistrictRepresentativeCountLabel(district) }}
-							</NuxtLink>
-							<div
-								class="mt-2 p-3 border border-app-line/85 rounded-2xl bg-white/96 opacity-0 max-w-80 min-w-64 invisible pointer-events-none shadow-[0_18px_38px_-24px_rgba(16,37,62,0.58)] transition duration-150 left-0 top-full absolute z-20 dark:border-app-line-dark dark:bg-app-panel-dark/96 group-focus-within:opacity-100 group-hover:opacity-100 group-focus-within:visible group-hover:visible"
-							>
-								<p class="text-[11px] text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
-									{{ getDistrictRepresentatives(district.slug).length === 1 ? "Linked representative" : "Linked representatives" }}
-								</p>
-								<ul class="mt-2 space-y-2">
-									<li
-										v-for="representative in getDistrictRepresentativePopoverLinks(district.slug)"
-										:key="representative.href"
-									>
-										<SafeExternalLink
-											v-if="representative.external"
-											:href="representative.href"
-											class="px-3 py-2 rounded-xl bg-app-bg/70 block pointer-events-auto transition dark:bg-app-bg-dark/70 hover:bg-app-bg focus-ring dark:hover:bg-app-bg-dark"
-										>
-											<p class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
-												{{ representative.name }}
-											</p>
-											<p class="text-xs text-app-muted mt-1 dark:text-app-muted-dark">
-												{{ representative.party }} · {{ representative.officeDisplayLabel }}
-											</p>
-										</SafeExternalLink>
-										<NuxtLink
-											v-else
-											:to="buildLookupAwareTarget(representative.href)"
-											class="px-3 py-2 rounded-xl bg-app-bg/70 block pointer-events-auto transition dark:bg-app-bg-dark/70 hover:bg-app-bg focus-ring dark:hover:bg-app-bg-dark"
-										>
-											<p class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
-												{{ representative.name }}
-											</p>
-											<p class="text-xs text-app-muted mt-1 dark:text-app-muted-dark">
-												{{ representative.party }} · {{ representative.officeDisplayLabel }}
-											</p>
-										</NuxtLink>
-									</li>
-								</ul>
-							</div>
-						</div>
-						<VerificationBadge v-else :label="getDistrictRepresentativeCountLabel(district)" tone="accent" />
-					</div>
-					<div v-if="getDistrictRepresentatives(district.slug).length" class="mt-5 pt-5 border-t border-app-line/80 dark:border-app-line-dark">
-						<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+					<div v-if="getDistrictRepresentatives(district.slug).length" class="mt-4">
+						<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 							{{ getDistrictRepresentatives(district.slug).length === 1 ? 'Current representative' : 'Current representatives' }}
 						</p>
-						<p class="text-lg text-app-ink font-semibold mt-3 dark:text-app-text-dark">
-							{{ getPrimaryDistrictRepresentative(district.slug)?.name }}
+						<p class="text-lg text-app-ink font-semibold mt-1 dark:text-app-text-dark">
+							<SafeExternalLink
+								v-if="isExternalHref(getDistrictRepresentatives(district.slug)[0]?.href ?? '')"
+								:href="getDistrictRepresentatives(district.slug)[0]?.href"
+								class="hover:text-app-accent focus-ring"
+							>
+								{{ getPrimaryDistrictRepresentative(district.slug)?.name }}
+							</SafeExternalLink>
+							<NuxtLink
+								v-else
+								:to="buildLookupAwareTarget(getDistrictRepresentatives(district.slug)[0]?.href ?? '/representatives')"
+								class="hover:text-app-accent focus-ring"
+							>
+								{{ getPrimaryDistrictRepresentative(district.slug)?.name }}
+							</NuxtLink>
 						</p>
-						<div class="mt-2 flex flex-wrap gap-2 items-center">
-							<VerificationBadge :label="getPrimaryDistrictRepresentativePresentation(district.slug)?.levelLabel ?? 'Unclassified'" tone="accent" />
-							<p class="text-sm text-app-muted dark:text-app-muted-dark">
-								{{ getPrimaryDistrictRepresentative(district.slug)?.party }} · {{ getPrimaryDistrictRepresentativePresentation(district.slug)?.officeDisplayLabel }}
-							</p>
-						</div>
-						<p v-if="getDistrictRepresentatives(district.slug).length > 1" class="text-sm text-app-muted mt-2 dark:text-app-muted-dark">
-							{{ getDistrictRepresentatives(district.slug).length - 1 }} more linked official{{ getDistrictRepresentatives(district.slug).length - 1 === 1 ? '' : 's' }} are attached to this district match.
+						<p class="text-sm text-app-muted dark:text-app-muted-dark">
+							{{ getPrimaryDistrictRepresentativePresentation(district.slug)?.officeDisplayLabel }}<span v-if="getPrimaryDistrictRepresentative(district.slug)?.party"> · {{ getPrimaryDistrictRepresentative(district.slug)?.party }}</span>
+						</p>
+						<p v-if="getDistrictRepresentatives(district.slug).length > 1" class="text-sm text-app-muted mt-1 dark:text-app-muted-dark">
+							+{{ getDistrictRepresentatives(district.slug).length - 1 }} more
 						</p>
 					</div>
-					<p v-else-if="directoryUsesNationwide" class="text-sm text-app-muted leading-7 mt-5 pt-5 border-t border-app-line/80 dark:text-app-muted-dark dark:border-app-line-dark">
+					<p v-else-if="directoryUsesNationwide" class="text-sm text-app-muted leading-6 mt-4 dark:text-app-muted-dark">
 						{{ getDistrictRepresentativeAvailabilityNote(district) }}
 					</p>
-					<div class="mt-6 flex flex-wrap gap-3">
-						<NuxtLink :to="buildLookupAwareTarget(district.href)" class="btn-primary">
-							Open district page
-						</NuxtLink>
-						<SafeExternalLink
-							v-if="getDistrictRepresentatives(district.slug).length && isExternalHref(getDistrictRepresentatives(district.slug)[0]?.href ?? '')"
-							:href="getDistrictRepresentatives(district.slug)[0]?.href"
-							class="btn-secondary inline-flex gap-2 items-center"
-						>
-							Open record
-							<span class="i-carbon-launch" />
-						</SafeExternalLink>
-						<NuxtLink
-							v-else-if="getDistrictRepresentatives(district.slug).length"
-							:to="buildLookupAwareTarget(getDistrictRepresentatives(district.slug)[0]?.href ?? '/representatives')"
-							class="btn-secondary"
-						>
-							Open representative
-						</NuxtLink>
-						<SafeExternalLink
-							v-if="getDistrictRepresentatives(district.slug).length && getDistrictRepresentatives(district.slug)[0]?.openstatesUrl"
-							:href="getDistrictRepresentatives(district.slug)[0]?.openstatesUrl"
-							class="btn-secondary inline-flex gap-2 items-center"
-						>
-							Provider record
-							<span class="i-carbon-launch" />
-						</SafeExternalLink>
-					</div>
+					<SafeExternalLink
+						v-if="getDistrictRepresentatives(district.slug).length && getDistrictRepresentatives(district.slug)[0]?.openstatesUrl"
+						:href="getDistrictRepresentatives(district.slug)[0]?.openstatesUrl"
+						class="text-sm btn-secondary self-start"
+					>
+						Provider record
+						<span class="i-carbon-launch" aria-hidden="true" />
+					</SafeExternalLink>
 				</article>
 			</section>
 		</div>

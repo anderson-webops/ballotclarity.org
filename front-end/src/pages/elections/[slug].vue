@@ -1,14 +1,31 @@
 <script setup lang="ts">
+import { useNow } from "@vueuse/core";
+import { buildKeyDateTimeline, calendarDaysUntil, describeDaysAway } from "~/utils/election-timeline";
+
 const civicStore = useCivicStore();
-const { formatDate, formatDateTime } = useFormatters();
+const { displayTimeZone, formatDate, formatDateTime } = useFormatters();
 const electionSlug = useRouteStringParam("slug");
 const { data, error, pending } = await useBallot(electionSlug);
-const guideStatusTitle = computed(() => "Guide status");
-const guideStatusNote = computed(() => data.value?.guideContent?.verifiedContestPackage
-	? "Contest, candidate, and measure pages are verified for this area."
-	: data.value?.guideContent?.publishedGuideShell
-		? "Official election links are current. Verified contest pages are still under local review."
-		: "Use this page for key dates and official links, then open the ballot guide for contest-by-contest reading.");
+// Only a guide that is still under review needs a status line; a verified guide speaks for itself.
+const guideStatusNote = computed(() => !data.value?.guideContent?.verifiedContestPackage && data.value?.guideContent?.publishedGuideShell
+	? "Contest pages are still under local review."
+	: "");
+
+// Ticks each minute so "Today" and "Next" move on when a deadline passes while the page stays open.
+const now = useNow({ interval: 60_000 });
+const keyDateTimeline = computed(() => data.value ? buildKeyDateTimeline(data.value.election.keyDates, now.value, displayTimeZone.value) : []);
+const nextKeyDate = computed(() => keyDateTimeline.value.find(entry => entry.isNext) ?? null);
+const electionDayLabel = computed(() => {
+	if (!data.value?.election.date)
+		return "";
+
+	const daysAway = calendarDaysUntil(data.value.election.date, now.value, displayTimeZone.value);
+	return daysAway < 0 ? "" : describeDaysAway(daysAway);
+});
+
+function formatKeyDate(value: string) {
+	return value.includes("T") ? formatDateTime(value) : formatDate(value);
+}
 
 watchEffect(() => {
 	if (data.value) {
@@ -48,103 +65,112 @@ usePageSeo({
 <template>
 	<section class="app-shell section-gap">
 		<div v-if="pending" class="space-y-6">
-			<div class="surface-panel bg-white/70 h-72 animate-pulse dark:bg-app-panel-dark/70" />
+			<div class="rounded-lg bg-app-bg h-72 animate-pulse dark:bg-app-bg-dark" />
 			<div class="gap-6 grid lg:grid-cols-3">
-				<div v-for="index in 3" :key="index" class="surface-panel bg-white/70 h-48 animate-pulse dark:bg-app-panel-dark/70" />
+				<div v-for="index in 3" :key="index" class="rounded-lg bg-app-bg h-48 animate-pulse dark:bg-app-bg-dark" />
 			</div>
 		</div>
 
 		<div v-else-if="error || !data" class="max-w-3xl">
 			<InfoCallout title="Election overview not available" tone="warning">
-				This election overview could not be loaded. Return to the location hub or the home page and try again.
+				Try again later.
 			</InfoCallout>
 		</div>
 
 		<div v-else class="space-y-8">
-			<header class="gap-8 grid xl:grid-cols-[minmax(0,1.2fr)_minmax(22rem,0.85fr)]">
-				<div class="surface-panel">
-					<div class="flex flex-wrap gap-2">
-						<TrustBadge label="Election overview" tone="accent" />
-						<TrustBadge label="Official links attached" />
-					</div>
-					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold mt-6 uppercase dark:text-app-muted-dark">
+			<header class="gap-6 grid items-start lg:gap-10 lg:grid-cols-[minmax(0,1.35fr)_minmax(20rem,0.9fr)]">
+				<div>
+					<p class="eyebrow">
 						{{ data.location.displayName }}
 					</p>
-					<h1 class="text-5xl text-app-ink leading-tight font-serif mt-3 dark:text-app-text-dark">
+					<h1 class="text-4xl text-app-ink leading-tight font-serif mt-2 sm:text-5xl dark:text-app-text-dark">
 						{{ data.election.name }}
 					</h1>
-					<p class="text-base text-app-muted leading-8 mt-5 max-w-3xl dark:text-app-muted-dark">
-						{{ data.election.description }}
+					<p class="text-lg text-app-ink font-semibold mt-5 flex flex-wrap gap-x-3 gap-y-1 items-center dark:text-app-text-dark">
+						<span class="i-carbon-calendar text-app-accent" aria-hidden="true" />
+						Election Day {{ formatDate(data.election.date) }}
+						<span v-if="electionDayLabel" class="text-sm text-app-accent font-semibold px-2 py-0.5 rounded-md bg-app-accent/10">{{ electionDayLabel }}</span>
 					</p>
-					<div class="mt-6 flex flex-wrap gap-4 items-center">
-						<p class="text-sm text-app-muted inline-flex gap-2 items-center dark:text-app-muted-dark">
-							<span class="i-carbon-calendar" />
-							Election Day {{ formatDate(data.election.date) }}
-						</p>
-					</div>
-				</div>
-
-				<div class="space-y-4">
-					<InfoCallout :title="guideStatusTitle" tone="warning">
+					<p v-if="guideStatusNote" class="text-sm text-[#8a5b0a] font-semibold mt-3 inline-flex gap-1.5 items-center dark:text-[#efc77b]">
+						<span class="i-carbon-warning-alt" aria-hidden="true" />
 						{{ guideStatusNote }}
-					</InfoCallout>
-					<div class="flex flex-wrap gap-3">
+					</p>
+					<div class="mt-5 flex flex-wrap gap-x-6 gap-y-3 items-center">
 						<NuxtLink
 							v-if="data.guideContent?.verifiedContestPackage"
 							:to="`/ballot/${data.election.slug}`"
 							class="btn-primary"
 						>
-							Open ballot guide
+							Read the ballot guide
 						</NuxtLink>
 						<NuxtLink v-else :to="`/locations/${data.election.jurisdictionSlug}`" class="btn-primary">
 							Open location hub
 						</NuxtLink>
-						<NuxtLink to="/districts" class="btn-secondary">
-							District pages
-						</NuxtLink>
-						<NuxtLink to="/representatives" class="btn-secondary">
-							Representatives
-						</NuxtLink>
 					</div>
+				</div>
+
+				<div class="space-y-4">
+					<a v-if="nextKeyDate" href="#key-dates" class="election-next-deadline block focus-ring">
+						<p class="eyebrow">
+							Next deadline
+						</p>
+						<p class="text-xl text-app-ink font-semibold mt-2 dark:text-app-text-dark">
+							{{ nextKeyDate.label }}
+						</p>
+						<p class="text-base text-app-ink mt-1 flex flex-wrap gap-x-2 items-center dark:text-app-text-dark">
+							{{ formatKeyDate(nextKeyDate.date) }}
+							<span class="text-sm text-app-accent font-semibold">· {{ nextKeyDate.relativeLabel }}</span>
+						</p>
+						<p v-if="nextKeyDate.note" class="text-sm text-app-muted leading-6 mt-2 dark:text-app-muted-dark">
+							{{ nextKeyDate.note }}
+						</p>
+					</a>
 				</div>
 			</header>
 
-			<section class="surface-panel">
+			<section id="key-dates" class="surface-panel">
 				<div class="flex flex-wrap gap-4 items-start justify-between">
 					<div>
-						<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-							Key dates
-						</p>
-						<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-							Deadlines and election windows
+						<h2 class="text-2xl text-app-ink font-serif sm:text-3xl dark:text-app-text-dark">
+							Key dates and deadlines
 						</h2>
 					</div>
 					<UpdatedAt :value="data.election.updatedAt" label="Updated" />
 				</div>
-				<ol class="mt-6 divide-app-line divide-y dark:divide-app-line-dark">
-					<li v-for="item in data.election.keyDates" :key="item.label" class="py-4 gap-3 grid first:pt-0 last:pb-0 md:grid-cols-[minmax(11rem,0.38fr)_minmax(0,1fr)]">
-						<div>
-							<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
-								{{ item.label }}
+				<ol class="election-timeline mt-6">
+					<li
+						v-for="item in keyDateTimeline"
+						:key="item.label"
+						class="election-timeline__item"
+						:class="{
+							'election-timeline__item--passed': item.status === 'passed',
+							'election-timeline__item--next': item.isNext,
+						}"
+					>
+						<div class="election-timeline__when">
+							<p class="text-base text-app-ink font-semibold dark:text-app-text-dark">
+								{{ formatKeyDate(item.date) }}
 							</p>
-							<p class="text-base text-app-ink font-semibold mt-2 dark:text-app-text-dark">
-								{{ item.date.includes("T") ? formatDateTime(item.date) : formatDate(item.date) }}
+							<p class="election-timeline__status">
+								{{ item.isNext ? `Next · ${item.relativeLabel}` : item.relativeLabel }}
 							</p>
 						</div>
-						<p class="text-sm text-app-muted leading-7 dark:text-app-muted-dark">
-							{{ item.note || "Review the official county calendar for source context." }}
-						</p>
+						<div>
+							<h3 class="text-base text-app-ink font-semibold dark:text-app-text-dark">
+								{{ item.label }}
+							</h3>
+							<p class="text-sm text-app-muted leading-6 mt-1 dark:text-app-muted-dark">
+								{{ item.note || "Review the official county calendar for source context." }}
+							</p>
+						</div>
 					</li>
 				</ol>
 			</section>
 
 			<section class="surface-panel">
-				<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
+				<h2 class="text-2xl text-app-ink font-serif sm:text-3xl dark:text-app-text-dark">
 					Official links and notices
 				</h2>
-				<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-					These links point to the official election notices, calendars, and logistics attached to this page.
-				</p>
 				<div class="mt-6">
 					<OfficialResourceList :resources="data.election.officialResources" />
 				</div>
@@ -153,7 +179,7 @@ usePageSeo({
 						Change log
 					</summary>
 					<ul class="mt-4 space-y-3">
-						<li v-for="entry in data.election.changeLog" :key="entry.id" class="px-4 py-4 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70">
+						<li v-for="entry in data.election.changeLog" :key="entry.id" class="content-block">
 							<p class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
 								{{ formatDateTime(entry.date) }}
 							</p>
@@ -171,9 +197,6 @@ usePageSeo({
 						<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
 							Contest index
 						</h2>
-						<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
-							See the contests on the ballot before opening the full guide.
-						</p>
 					</div>
 					<NuxtLink :to="`/ballot/${data.election.slug}`" class="btn-secondary">
 						Read the full ballot guide
@@ -181,8 +204,8 @@ usePageSeo({
 				</div>
 
 				<div class="mt-6 gap-5 grid xl:grid-cols-2">
-					<article v-for="contest in data.election.contests" :key="contest.slug" class="p-5 border border-app-line/70 rounded-3xl bg-white/80 dark:border-app-line-dark dark:bg-app-panel-dark/70">
-						<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+					<article v-for="contest in data.election.contests" :key="contest.slug" class="content-block">
+						<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 							{{ contest.jurisdiction }}
 						</p>
 						<h3 class="text-2xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
@@ -192,7 +215,7 @@ usePageSeo({
 							{{ contest.description }}
 						</p>
 						<NuxtLink :to="`/contest/${contest.slug}`" class="text-sm text-app-accent font-semibold mt-4 rounded-lg inline-flex gap-2 items-center focus-ring">
-							<span>Open canonical contest page</span>
+							<span>Contest page</span>
 							<span class="i-carbon-arrow-right" />
 						</NuxtLink>
 						<NuxtLink
@@ -200,7 +223,7 @@ usePageSeo({
 							:to="`/districts/${contest.slug}`"
 							class="text-sm text-app-accent font-semibold mt-3 rounded-lg inline-flex gap-2 items-center focus-ring"
 						>
-							<span>Open district page</span>
+							<span>District page</span>
 							<span class="i-carbon-arrow-right" />
 						</NuxtLink>
 						<ul class="text-sm text-app-muted leading-7 mt-4 space-y-2 dark:text-app-muted-dark">

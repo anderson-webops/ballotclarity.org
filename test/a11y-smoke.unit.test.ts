@@ -61,7 +61,7 @@ test("accessibility smoke evaluates axe through browser automation without an in
 test("location key-date notes remain definition-list descriptions", () => {
 	const locationPage = readText("front-end/src/pages/locations/[slug].vue");
 	const keyDatesSection = locationPage.slice(
-		locationPage.indexOf("<p class=\"text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark\">"),
+		locationPage.indexOf("<p class=\"text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark\">"),
 		locationPage.indexOf("<section class=\"gap-6 grid xl:grid-cols")
 	);
 

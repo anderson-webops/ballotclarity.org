@@ -36,6 +36,7 @@ export function useFormatters() {
 	});
 
 	return {
+		displayTimeZone,
 		formatCompactNumber: (value: number) => compactFormatter.format(value),
 		formatCurrency: (value: number) => currencyFormatter.format(value),
 		formatDate: (value: string) => formatCivicDate(value, displayTimeZone.value),

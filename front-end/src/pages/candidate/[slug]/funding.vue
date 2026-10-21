@@ -1,7 +1,7 @@
 <script setup lang="ts">
 const { openLayerLink, overviewLink } = useRouteLayerNavigation();
 const candidateSlug = useRouteStringParam("slug");
-const { formatCompactNumber, formatCurrency, formatPercent } = useFormatters();
+const { formatCurrency, formatPercent } = useFormatters();
 const { data: candidate, error, pending } = await useCandidate(candidateSlug);
 
 const breadcrumbs = computed(() => [
@@ -32,17 +32,16 @@ usePageSeo({
 <template>
 	<section class="app-shell section-gap space-y-8">
 		<div v-if="pending" class="space-y-6">
-			<div class="surface-panel bg-white/70 h-80 animate-pulse dark:bg-app-panel-dark/70" />
-			<div class="surface-panel bg-white/70 h-64 animate-pulse dark:bg-app-panel-dark/70" />
+			<div class="rounded-lg bg-app-bg h-80 animate-pulse dark:bg-app-bg-dark" />
+			<div class="rounded-lg bg-app-bg h-64 animate-pulse dark:bg-app-bg-dark" />
 		</div>
 
 		<GuideUnavailableState
 			v-else-if="error || !candidate"
-			eyebrow="Candidate funding"
-			message="Candidate funding details are not published for this record yet. Ballot Clarity keeps this page closed until finance data has reviewed source coverage instead of showing an empty or misleading shell."
+			message="Funding details for this candidate aren't published yet."
 			:primary-label="openLayerLink.label"
 			:primary-to="openLayerLink.to"
-			secondary-label="Open coverage profile"
+			secondary-label="Coverage"
 			secondary-to="/coverage"
 			tertiary-label="Report missing information"
 			tertiary-to="/contact"
@@ -52,10 +51,6 @@ usePageSeo({
 		<div v-else class="space-y-8">
 			<header class="surface-panel">
 				<AppBreadcrumbs :items="breadcrumbs" />
-				<div class="flex flex-wrap gap-2">
-					<VerificationBadge label="Funding page" tone="accent" />
-					<VerificationBadge :label="candidate.party" />
-				</div>
 				<h1 class="text-5xl text-app-ink font-serif mt-5 dark:text-app-text-dark">
 					{{ candidate.name }} funding
 				</h1>
@@ -67,7 +62,7 @@ usePageSeo({
 						Back to profile
 					</NuxtLink>
 					<NuxtLink :to="`/candidate/${candidate.slug}/influence`" class="btn-secondary">
-						Open influence page
+						Influence
 					</NuxtLink>
 					<SourceDrawer :sources="candidate.funding.sources" :title="`${candidate.name} funding sources`" button-label="Funding sources" />
 				</div>
@@ -81,11 +76,8 @@ usePageSeo({
 					<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
 						Top funders
 					</h2>
-					<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-						This section surfaces the largest named or categorized funders in the current finance summary. Open the sources list for the underlying filings.
-					</p>
 					<ul class="mt-6 space-y-3">
-						<li v-for="funder in candidate.funding.topFunders" :key="`${funder.name}-${funder.category}`" class="p-4 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
+						<li v-for="funder in candidate.funding.topFunders" :key="`${funder.name}-${funder.category}`" class="content-block">
 							<div class="flex flex-wrap gap-4 items-center justify-between">
 								<div>
 									<p class="text-lg text-app-ink font-semibold dark:text-app-text-dark">
@@ -101,23 +93,6 @@ usePageSeo({
 							</div>
 						</li>
 					</ul>
-				</div>
-
-				<div class="surface-panel">
-					<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
-						What to look for
-					</h2>
-					<ul class="readable-list text-sm text-app-muted mt-5 pl-5 dark:text-app-muted-dark">
-						<li>Whether fundraising scale is materially different across the field</li>
-						<li>Which sectors or donor categories appear repeatedly</li>
-						<li>How much runway the campaign still has in cash on hand</li>
-						<li>Whether the source filings cover the same reporting window for all candidates</li>
-					</ul>
-					<div class="mt-6 pt-6 border-t border-app-line/80 dark:border-app-line-dark">
-						<p class="text-sm text-app-muted leading-7 dark:text-app-muted-dark">
-							<strong class="text-app-ink dark:text-app-text-dark">Reference count:</strong> {{ formatCompactNumber(candidate.funding.sources.length) }} filing and methodology source{{ candidate.funding.sources.length === 1 ? "" : "s" }} are attached to this funding page.
-						</p>
-					</div>
 				</div>
 			</section>
 		</div>

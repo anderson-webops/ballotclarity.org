@@ -96,14 +96,14 @@ onBeforeUnmount(() => {
 
 <template>
 	<div class="inline-flex">
-		<button type="button" class="btn-secondary text-xs px-4 py-2 focus-ring" @click="isOpen = true">
+		<button type="button" class="text-xs btn-secondary px-4 py-2 focus-ring" @click="isOpen = true">
 			<span class="i-carbon-document-view" />
 			More context
 		</button>
 
 		<Teleport to="body">
 			<div v-if="isOpen" class="inset-0 fixed z-70">
-				<button type="button" class="bg-app-ink/50 inset-0 absolute backdrop-blur-[2px]" :aria-label="`Close ${measure.title} context panel`" @click="closeDrawer" />
+				<button type="button" class="bg-app-ink/50 inset-0 absolute" :aria-label="`Close ${measure.title} context panel`" @click="closeDrawer" />
 				<aside
 					ref="panelRef"
 					class="p-5 border-l border-app-line bg-app-bg flex flex-col h-full max-w-xl w-full shadow-2xl right-0 top-0 absolute dark:border-app-line-dark dark:bg-app-bg-dark"
@@ -113,7 +113,7 @@ onBeforeUnmount(() => {
 				>
 					<div class="flex gap-4 items-start justify-between">
 						<div>
-							<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+							<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 								Measure context
 							</p>
 							<h2 :id="headingId" class="text-2xl text-app-ink font-serif mt-2 dark:text-app-text-dark">
@@ -130,7 +130,7 @@ onBeforeUnmount(() => {
 
 					<div class="mt-6 pr-1 flex-1 overflow-y-auto space-y-4">
 						<section class="surface-panel">
-							<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+							<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 								Ballot summary
 							</p>
 							<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
@@ -139,7 +139,7 @@ onBeforeUnmount(() => {
 						</section>
 
 						<section class="surface-panel">
-							<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+							<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 								Plain-language explanation
 							</p>
 							<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">

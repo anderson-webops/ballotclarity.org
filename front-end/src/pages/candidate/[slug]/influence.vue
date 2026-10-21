@@ -36,17 +36,16 @@ usePageSeo({
 <template>
 	<section class="app-shell section-gap space-y-8">
 		<div v-if="pending" class="space-y-6">
-			<div class="surface-panel bg-white/70 h-80 animate-pulse dark:bg-app-panel-dark/70" />
-			<div class="surface-panel bg-white/70 h-64 animate-pulse dark:bg-app-panel-dark/70" />
+			<div class="rounded-lg bg-app-bg h-80 animate-pulse dark:bg-app-bg-dark" />
+			<div class="rounded-lg bg-app-bg h-64 animate-pulse dark:bg-app-bg-dark" />
 		</div>
 
 		<GuideUnavailableState
 			v-else-if="error || !candidate"
-			eyebrow="Candidate influence"
-			message="Influence context is not published for this candidate record yet. Ballot Clarity keeps donor, disclosure, and lobbying context out of public candidate pages until supporting records are reviewed."
+			message="Influence details for this candidate aren't published yet."
 			:primary-label="openLayerLink.label"
 			:primary-to="openLayerLink.to"
-			secondary-label="Open coverage profile"
+			secondary-label="Coverage"
 			secondary-to="/coverage"
 			tertiary-label="Report missing information"
 			tertiary-to="/contact"
@@ -56,22 +55,18 @@ usePageSeo({
 		<div v-else class="space-y-8">
 			<header class="surface-panel">
 				<AppBreadcrumbs :items="breadcrumbs" />
-				<div class="flex flex-wrap gap-2">
-					<VerificationBadge label="Influence page" tone="accent" />
-					<VerificationBadge label="Context, not causation" />
-				</div>
 				<h1 class="text-5xl text-app-ink font-serif mt-5 dark:text-app-text-dark">
 					{{ candidate.name }} influence context
 				</h1>
 				<p class="text-base text-app-muted leading-8 mt-5 dark:text-app-muted-dark">
-					This page isolates the donor, sector, lobbying, and disclosure context attached to the candidate profile. It is meant to help scrutiny, not to imply automatic motive or proof of influence.
+					Context only. Not proof that any donor or organization influenced a decision.
 				</p>
 				<div class="mt-6 flex flex-wrap gap-3">
 					<NuxtLink :to="`/candidate/${candidate.slug}`" class="btn-secondary">
 						Back to profile
 					</NuxtLink>
 					<NuxtLink :to="`/candidate/${candidate.slug}/funding`" class="btn-secondary">
-						Open funding page
+						Funding
 					</NuxtLink>
 					<SourceDrawer :sources="influenceSources" :title="`${candidate.name} influence sources`" button-label="Influence sources" />
 				</div>
@@ -89,12 +84,12 @@ usePageSeo({
 						<article
 							v-for="item in candidate.lobbyingContext"
 							:key="item.id"
-							class="p-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70"
+							class="content-block"
 						>
 							<h3 class="text-xl text-app-ink font-semibold dark:text-app-text-dark">
 								{{ item.title }}
 							</h3>
-							<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
+							<p class="text-base text-app-ink leading-7 mt-3 dark:text-app-text-dark">
 								{{ item.summary }}
 							</p>
 							<div class="mt-4">
@@ -113,28 +108,16 @@ usePageSeo({
 							<article
 								v-for="statement in candidate.publicStatements"
 								:key="statement.id"
-								class="p-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70"
+								class="content-block"
 							>
 								<h3 class="text-xl text-app-ink font-semibold dark:text-app-text-dark">
 									{{ statement.title }}
 								</h3>
-								<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
+								<p class="text-base text-app-ink leading-7 mt-3 dark:text-app-text-dark">
 									{{ statement.summary }}
 								</p>
 							</article>
 						</div>
-					</div>
-
-					<div class="surface-panel">
-						<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
-							How to read this safely
-						</h2>
-						<ul class="readable-list text-sm text-app-muted mt-5 pl-5 dark:text-app-muted-dark">
-							<li>Treat sector and donor overlap as context, not proof</li>
-							<li>Compare the influence notes with the funding page and direct filings</li>
-							<li>Check whether the statements and the disclosures cover the same time window</li>
-							<li>Use the candidate profile for the broader record before drawing conclusions</li>
-						</ul>
 					</div>
 				</div>
 			</section>

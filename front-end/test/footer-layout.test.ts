@@ -4,15 +4,14 @@ import test from "node:test";
 
 const appFooter = readFileSync(new URL("../src/components/AppFooter.vue", import.meta.url), "utf8");
 
-test("footer contact card stays consolidated with the brand column", () => {
-	const brandDescriptionIndex = appFooter.indexOf("Ballot Clarity is a public-interest civic-information site");
-	const contactHeadingIndex = appFooter.indexOf("Contact");
-	const linkGridIndex = appFooter.indexOf("gap-x-8 gap-y-7 grid");
+test("footer keeps identity, contact, and the official-site disclaimer", () => {
+	assert.match(appFooter, /Nonpartisan public-interest project/);
+	assert.match(appFooter, /<ProtectedEmailLink/);
+	assert.match(appFooter, /Not an official election website\./);
+	assert.match(appFooter, /to="\/contact"/);
+});
 
-	assert.ok(brandDescriptionIndex !== -1);
-	assert.ok(contactHeadingIndex !== -1);
-	assert.ok(linkGridIndex !== -1);
-	assert.ok(contactHeadingIndex > brandDescriptionIndex);
-	assert.ok(contactHeadingIndex < linkGridIndex);
+test("footer link groups are navigation landmarks", () => {
+	assert.equal((appFooter.match(/<nav /g) ?? []).length, 3);
 	assert.doesNotMatch(appFooter, /sm:col-span-2/);
 });

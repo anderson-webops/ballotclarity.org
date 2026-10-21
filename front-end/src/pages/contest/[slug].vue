@@ -1,7 +1,15 @@
 <script setup lang="ts">
+import ComparisonMatrix from "~/components/graphics/ComparisonMatrix.vue";
+import { buildContestComparisonMatrix } from "~/utils/graphics-schema";
+
 const { openLayerLink, overviewLink } = useRouteLayerNavigation();
 const contestSlug = useRouteStringParam("slug");
 const { data, error, pending } = await useContest(contestSlug);
+// A side-by-side matrix only helps when there is more than one option to compare.
+const contestComparisonMatrix = computed(() => {
+	const matrix = data.value ? buildContestComparisonMatrix(data.value.contest) : null;
+	return matrix && matrix.columns.length > 1 ? matrix : null;
+});
 
 const compareHref = computed(() => {
 	if (!data.value || data.value.contest.type !== "candidate")
@@ -47,19 +55,18 @@ usePageSeo({
 <template>
 	<section class="app-shell section-gap space-y-8">
 		<div v-if="pending" class="space-y-6">
-			<div class="surface-panel bg-white/70 h-72 animate-pulse dark:bg-app-panel-dark/70" />
+			<div class="rounded-lg bg-app-bg h-72 animate-pulse dark:bg-app-bg-dark" />
 			<div class="gap-6 grid xl:grid-cols-2">
-				<div v-for="index in 3" :key="index" class="surface-panel bg-white/70 h-64 animate-pulse dark:bg-app-panel-dark/70" />
+				<div v-for="index in 3" :key="index" class="rounded-lg bg-app-bg h-64 animate-pulse dark:bg-app-bg-dark" />
 			</div>
 		</div>
 
 		<GuideUnavailableState
 			v-else-if="error || !data"
-			eyebrow="Contest detail"
-			message="This contest record is not published as verified local ballot content yet. Official logistics and representative lookup may still be available, but Ballot Clarity will not present an unverified contest roster as final."
+			message="This contest isn't published yet."
 			:primary-label="openLayerLink.label"
 			:primary-to="openLayerLink.to"
-			secondary-label="Open coverage profile"
+			secondary-label="Coverage"
 			secondary-to="/coverage"
 			tertiary-label="Report missing information"
 			tertiary-to="/contact"
@@ -69,60 +76,39 @@ usePageSeo({
 		<div v-else class="space-y-8">
 			<AppBreadcrumbs :items="breadcrumbs" />
 
-			<header class="gap-6 grid xl:grid-cols-[minmax(0,1.2fr)_minmax(22rem,0.8fr)]">
-				<div class="surface-panel">
-					<div class="flex flex-wrap gap-2">
-						<VerificationBadge label="Canonical contest page" tone="accent" />
-						<VerificationBadge :label="`${data.sourceCount} source${data.sourceCount === 1 ? '' : 's'}`" />
-					</div>
-					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold mt-6 uppercase dark:text-app-muted-dark">
+			<header class="gap-10 grid xl:grid-cols-[minmax(0,1.2fr)_minmax(20rem,0.8fr)]">
+				<div>
+					<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 						{{ data.election.name }}
 					</p>
 					<h1 class="text-5xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
 						{{ data.contest.office }}
 					</h1>
-					<p class="text-base text-app-muted leading-8 mt-5 dark:text-app-muted-dark">
+					<p class="text-lg text-app-ink leading-8 mt-4 dark:text-app-text-dark">
 						{{ data.contest.description }}
 					</p>
-					<div class="mt-6 flex flex-wrap gap-3">
-						<UpdatedAt :value="data.updatedAt" />
+					<div class="mt-5 flex flex-wrap gap-x-6 gap-y-3 items-center">
+						<NuxtLink v-if="compareHref" :to="compareHref" class="btn-primary">
+							Compare candidates
+						</NuxtLink>
 						<NuxtLink :to="openLayerLink.to" class="btn-secondary">
 							{{ openLayerLink.label }}
 						</NuxtLink>
 						<NuxtLink v-if="districtHref" :to="districtHref" class="btn-secondary">
-							Open district page
+							District page
 						</NuxtLink>
-						<NuxtLink v-if="districtHref" to="/representatives" class="btn-secondary">
-							Representative directory
-						</NuxtLink>
-						<NuxtLink :to="overviewLink.to" class="btn-secondary">
-							{{ overviewLink.label }}
-						</NuxtLink>
-						<NuxtLink v-if="compareHref" :to="compareHref" class="btn-secondary">
-							Compare this race
-						</NuxtLink>
+						<UpdatedAt :value="data.updatedAt" />
 					</div>
 				</div>
 
-				<details class="surface-panel">
-					<summary class="text-sm text-app-ink font-semibold cursor-pointer dark:text-app-text-dark focus-ring">
-						What this office or question controls
-					</summary>
-					<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-						{{ data.contest.roleGuide.summary }}
-					</p>
-					<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-						<strong class="text-app-ink dark:text-app-text-dark">Why it matters:</strong> {{ data.contest.roleGuide.whyItMatters }}
-					</p>
-					<ul class="readable-list text-sm text-app-muted mt-4 pl-5 dark:text-app-muted-dark">
-						<li v-for="item in data.contest.roleGuide.decisionAreas" :key="item">
-							{{ item }}
-						</li>
-					</ul>
-					<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-						{{ data.note }}
-					</p>
-				</details>
+				<section>
+					<h2 class="text-lg text-app-ink font-semibold dark:text-app-text-dark">
+						What this office does
+					</h2>
+					<div class="mt-2">
+						<ContestRoleGuide :contest="data.contest" />
+					</div>
+				</section>
 			</header>
 
 			<section v-if="data.contest.type === 'candidate'" class="gap-6 grid xl:grid-cols-2">
@@ -141,43 +127,30 @@ usePageSeo({
 				/>
 			</section>
 
-			<section class="gap-6 grid xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-				<div class="surface-panel">
-					<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
-						Contest sources
-					</h2>
-					<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-						This list aggregates the public records used across the entire contest surface, not just one candidate or one measure card.
-					</p>
-					<div class="mt-6">
-						<SourceList :sources="data.sources" />
-					</div>
-				</div>
+			<ComparisonMatrix v-if="contestComparisonMatrix" :matrix="contestComparisonMatrix" />
 
-				<div class="surface-panel">
-					<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
-						Related contests
-					</h2>
-					<div class="mt-6 space-y-4">
-						<NuxtLink
-							v-for="contest in data.relatedContests"
-							:key="contest.slug"
-							:to="contest.href"
-							class="px-5 py-5 border border-app-line/70 rounded-3xl bg-white/80 block transition dark:border-app-line-dark hover:border-app-accent dark:bg-app-panel-dark/70 focus-ring"
-						>
-							<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
-								{{ contest.jurisdiction }}
-							</p>
-							<p class="text-xl text-app-ink font-semibold mt-3 dark:text-app-text-dark">
-								{{ contest.office }}
-							</p>
-							<p class="text-sm text-app-muted mt-2 dark:text-app-muted-dark">
-								{{ contest.type === "candidate" ? "Candidate contest" : "Ballot measure" }}
-							</p>
+			<section v-if="data.relatedContests.length">
+				<h2 class="text-2xl text-app-ink font-serif dark:text-app-text-dark">
+					Other contests on this ballot
+				</h2>
+				<ul class="mt-3">
+					<li v-for="contest in data.relatedContests" :key="contest.slug" class="py-3 border-b border-app-line flex flex-wrap gap-x-3 gap-y-1 items-baseline justify-between dark:border-app-line-dark last:border-b-0">
+						<NuxtLink :to="contest.href" class="text-base text-app-accent font-semibold underline decoration-app-accent/35 underline-offset-4 hover:decoration-current focus-ring">
+							{{ contest.office }}
 						</NuxtLink>
-					</div>
-				</div>
+						<span class="text-sm text-app-muted dark:text-app-muted-dark">{{ contest.jurisdiction }} · {{ contest.type === "candidate" ? "Candidate race" : "Ballot measure" }}</span>
+					</li>
+				</ul>
 			</section>
+
+			<details class="contest-sources">
+				<summary class="text-base text-app-ink font-semibold cursor-pointer dark:text-app-text-dark focus-ring">
+					Sources ({{ data.sources.length }})
+				</summary>
+				<div class="mt-4">
+					<SourceList :sources="data.sources" />
+				</div>
+			</details>
 		</div>
 	</section>
 </template>

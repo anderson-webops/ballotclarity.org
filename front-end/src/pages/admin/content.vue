@@ -90,7 +90,7 @@ usePageSeo({
 <template>
 	<section class="app-shell section-gap space-y-8">
 		<header class="max-w-4xl">
-			<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+			<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 				Content control
 			</p>
 			<h1 class="text-5xl text-app-ink font-serif mt-4 dark:text-app-text-dark">
@@ -139,20 +139,20 @@ usePageSeo({
 						<h2 class="text-3xl text-app-ink font-serif mt-4 dark:text-app-text-dark">
 							{{ item.title }}
 						</h2>
-						<p class="text-xs text-app-muted tracking-[0.18em] font-semibold mt-4 uppercase dark:text-app-muted-dark">
+						<p class="text-xs text-app-muted tracking-[0.06em] font-semibold mt-4 uppercase dark:text-app-muted-dark">
 							Internal workflow summary
 						</p>
 						<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
 							{{ item.summary }}
 						</p>
-						<p class="text-xs text-app-muted tracking-[0.18em] font-semibold mt-5 uppercase dark:text-app-muted-dark">
+						<p class="text-xs text-app-muted tracking-[0.06em] font-semibold mt-5 uppercase dark:text-app-muted-dark">
 							Public page summary
 						</p>
 						<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
 							{{ item.publicSummary }}
 						</p>
 						<div v-if="item.publicBallotSummary" class="mt-4">
-							<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+							<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 								Ballot card summary
 							</p>
 							<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
@@ -269,7 +269,7 @@ usePageSeo({
 							Publishing, unpublishing, and live-content changes require an admin account with multi-factor authentication.
 						</p>
 
-						<div v-if="canPublish" class="p-4 border border-app-line rounded-3xl bg-white/70 space-y-4 dark:border-app-line-dark dark:bg-app-panel-dark/70">
+						<div v-if="canPublish" class="p-4 border border-app-line rounded-xl bg-app-panel space-y-4 dark:border-app-line-dark dark:bg-app-panel-dark/70">
 							<div>
 								<p class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
 									Publish approval

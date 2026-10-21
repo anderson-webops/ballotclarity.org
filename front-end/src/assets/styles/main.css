@@ -24,9 +24,7 @@ html {
 body {
   min-height: 100vh;
   margin: 0;
-  background:
-    radial-gradient(circle at top left, var(--app-bg-glow-primary), transparent 28rem),
-    linear-gradient(180deg, rgba(var(--app-panel-rgb), 0.88), rgb(var(--app-bg-rgb)));
+  background: rgb(var(--app-bg-rgb));
   color: var(--app-ink);
   font-family: "Public Sans", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   font-size: var(--app-font-body);
@@ -44,9 +42,7 @@ html.dark {
 }
 
 html.dark body {
-  background:
-    radial-gradient(circle at top left, var(--app-bg-glow-primary), transparent 24rem),
-    linear-gradient(180deg, rgba(var(--app-bg-rgb), 0.98), rgb(var(--app-bg-rgb)));
+  background: rgb(var(--app-bg-rgb));
   color: var(--app-text-dark);
 }
 
@@ -108,6 +104,17 @@ h6 {
 
 .bc-measure {
   max-width: min(100%, var(--app-reading-measure));
+}
+
+.bc-prose a:not([class*="btn-"]) {
+  color: var(--app-accent);
+  text-decoration: underline;
+  text-decoration-color: rgba(var(--app-accent-rgb), 0.35);
+  text-underline-offset: 0.2em;
+}
+
+.bc-prose a:not([class*="btn-"]):hover {
+  text-decoration-color: currentColor;
 }
 
 .bc-prose p + p {
@@ -214,36 +221,109 @@ h6 {
 
 .home-entry-grid {
   display: grid;
-  gap: 1.5rem;
+  gap: 1.75rem;
   align-items: center;
 }
 
 .home-title {
-  font-size: clamp(2.25rem, 4.6vw, 4.25rem);
-  line-height: 1.12;
+  font-size: clamp(2.25rem, 4.2vw, 3.75rem);
+  line-height: 1.1;
   margin: 0.75rem 0 0;
+  max-width: 16ch;
 }
 
 .home-description {
-  font-size: clamp(1rem, 1.5vw, 1.125rem);
-  line-height: 1.7;
-  max-width: 48ch;
-  margin-top: 1rem;
+  font-size: clamp(1.05rem, 1.4vw, 1.2rem);
+  line-height: 1.65;
+  max-width: 46ch;
+  margin-top: 1.25rem;
 }
 
 .home-resume {
-  border-left: 2px solid var(--app-accent);
+  border-left: 3px solid var(--app-accent);
   padding-left: 1rem;
-  margin-top: 1.5rem;
+  margin-top: 1.75rem;
 }
 
-.home-trust-row {
+.home-election-banner {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem 1.5rem;
+  gap: 0.9rem;
   align-items: center;
-  padding: 1.5rem 0;
-  border-bottom: 1px solid var(--app-line);
+  padding: 0.85rem 1.1rem;
+  border: 1px solid rgba(var(--app-accent-rgb), 0.28);
+  border-radius: 0.9rem;
+  background: rgba(var(--app-accent-rgb), 0.07);
+  transition: border-color 0.18s ease, background-color 0.18s ease;
+}
+
+.home-election-banner:hover {
+  border-color: rgb(var(--app-accent-rgb));
+  background: rgba(var(--app-accent-rgb), 0.1);
+}
+
+.home-election-banner__icon {
+  display: inline-flex;
+  flex: 0 0 auto;
+  width: 2.5rem;
+  height: 2.5rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.65rem;
+  background: var(--app-accent);
+  color: var(--app-action-text);
+  font-size: 1.25rem;
+}
+
+html.dark .home-election-banner__icon {
+  color: var(--app-bg);
+}
+
+.home-election-banner__count {
+  display: inline-block;
+  margin-left: 0.4rem;
+  padding: 0 0.5rem;
+  border-radius: 0.4rem;
+  background: var(--app-panel);
+  color: var(--app-accent);
+  font-size: 0.85em;
+  white-space: nowrap;
+}
+
+.home-steps {
+  display: grid;
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: none;
+}
+
+.home-step {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  padding: 1.1rem 1.15rem;
+  border: 1px solid rgb(var(--app-line-rgb));
+  border-radius: 0.9rem;
+  background: rgb(var(--app-panel-rgb));
+}
+
+html.dark .home-step {
+  border-color: rgb(var(--app-line-dark-rgb));
+  background: rgb(var(--app-panel-dark-rgb));
+}
+
+.home-step__number {
+  display: inline-flex;
+  flex: 0 0 auto;
+  width: 2rem;
+  height: 2rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background: var(--app-action);
+  color: var(--app-action-text);
+  font-weight: 700;
 }
 
 .home-help {
@@ -253,12 +333,35 @@ h6 {
 
 .home-faq {
   border-bottom: 1px solid var(--app-line);
-  padding: 0.75rem 0;
+}
+
+.home-faq:first-of-type {
+  border-top: 1px solid var(--app-line);
 }
 
 .home-faq summary {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  justify-content: space-between;
+  min-height: var(--app-target-min);
+  padding: 0.9rem 0;
   cursor: pointer;
-  padding: 0.5rem 0;
+  list-style: none;
+}
+
+.home-faq summary::-webkit-details-marker {
+  display: none;
+}
+
+.home-faq__chevron {
+  flex: 0 0 auto;
+  color: var(--app-muted);
+  transition: transform 0.18s ease;
+}
+
+.home-faq[open] .home-faq__chevron {
+  transform: rotate(180deg);
 }
 
 .mobile-navigation-panel {
@@ -273,6 +376,107 @@ h6 {
   gap: 0.5rem;
 }
 
+.lookup-steps {
+  margin-bottom: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: lookup-step;
+}
+
+.lookup-step {
+  counter-increment: lookup-step;
+}
+
+.lookup-step-card__number {
+  display: inline-flex;
+  flex: 0 0 auto;
+  width: 1.75rem;
+  height: 1.75rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background: rgba(var(--app-accent-rgb), 0.12);
+  color: var(--app-accent);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.lookup-step-card__number::before {
+  content: counter(lookup-step);
+}
+
+.election-next-deadline {
+  padding: 1.1rem 1.25rem;
+  border: 1px solid rgba(var(--app-accent-rgb), 0.3);
+  border-left: 4px solid rgb(var(--app-accent-rgb));
+  border-radius: 0.75rem;
+  background: rgba(var(--app-accent-rgb), 0.06);
+  transition: border-color 0.18s ease;
+}
+
+.election-next-deadline:hover {
+  border-color: rgb(var(--app-accent-rgb));
+}
+
+.election-timeline {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.election-timeline__item {
+  display: grid;
+  gap: 0.35rem 1.5rem;
+  padding: 1rem 0 1rem 1rem;
+  border-left: 3px solid transparent;
+  border-top: 1px solid var(--app-line);
+}
+
+.election-timeline__item:first-child {
+  border-top: 0;
+}
+
+/* De-emphasize passed dates with color, not opacity, so text keeps AA contrast. */
+.election-timeline__item--passed :is(p, h3) {
+  color: var(--app-muted) !important;
+  font-weight: 500;
+}
+
+.election-timeline__item--next {
+  border-left-color: rgb(var(--app-accent-rgb));
+  background: rgba(var(--app-accent-rgb), 0.05);
+}
+
+.election-timeline__status {
+  margin: 0.15rem 0 0;
+  color: var(--app-muted);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.election-timeline__item--next .election-timeline__status {
+  color: var(--app-accent);
+}
+
+@media (min-width: 768px) {
+  .election-timeline__item {
+    grid-template-columns: minmax(11rem, 0.32fr) minmax(0, 1fr);
+  }
+}
+
+.results-status-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 1rem;
+  align-items: center;
+}
+
+.results-status-line > span + span::before {
+  content: '·';
+  margin-right: 0.75rem;
+  color: var(--app-muted);
+}
+
 .results-shortcuts {
   display: flex;
   flex-wrap: wrap;
@@ -284,11 +488,17 @@ h6 {
   scroll-margin-top: 5rem;
 }
 
+@media (min-width: 768px) {
+  .home-steps {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
 @media (min-width: 900px) {
   .home-entry-grid {
     grid-template-columns: minmax(0, 1fr) minmax(24rem, 0.9fr);
-    gap: 3rem;
-    padding-block: 1.5rem;
+    gap: 3.5rem;
+    padding-block: 1rem;
   }
 
   .home-help {
@@ -356,14 +566,14 @@ html.dark .home-summary-card-link:focus-visible {
 .summary-strip {
   display: grid;
   gap: 0.9rem;
-  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr));
 }
 
 .summary-strip__item {
   padding: 0.8rem 0.9rem;
-  border: 1px solid rgba(210, 215, 221, 0.85);
-  border-radius: 1.35rem;
-  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid rgb(var(--app-line-rgb));
+  border-radius: 0.75rem;
+  background: rgb(var(--app-panel-rgb));
 }
 
 .summary-strip__item--interactive {
@@ -381,8 +591,8 @@ html.dark .home-summary-card-link:focus-visible {
 }
 
 html.dark .summary-strip__item {
-  border-color: rgba(51, 68, 88, 0.9);
-  background: rgba(17, 32, 50, 0.78);
+  border-color: rgb(var(--app-line-dark-rgb));
+  background: rgb(var(--app-panel-dark-rgb));
 }
 
 html.dark .summary-strip__item--interactive:hover {
@@ -392,15 +602,16 @@ html.dark .summary-strip__item--interactive:hover {
 
 .summary-strip__label {
   margin: 0;
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.18em;
+  font-size: 0.78rem;
+  font-weight: 650;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--app-muted);
 }
 
 .summary-strip__value {
   margin: 0.55rem 0 0;
+  overflow-wrap: anywhere;
   font-size: clamp(1.45rem, 1.25rem + 0.6vw, 2rem);
   line-height: 1.1;
   font-weight: 650;
@@ -429,7 +640,7 @@ html.dark .summary-strip__value {
 
 .section-nav--compact {
   padding: 0.9rem !important;
-  border-radius: 1.2rem !important;
+  border-radius: 0.75rem !important;
 }
 
 .section-nav--compact .section-nav-list {
@@ -471,9 +682,9 @@ html.dark .section-nav__crumbs {
 
 .section-nav-link {
   padding: 0.75rem 0.9rem;
-  border: 1px solid rgba(210, 215, 221, 0.85);
-  border-radius: 1.15rem;
-  background: rgba(255, 255, 255, 0.84);
+  border: 1px solid rgb(var(--app-line-rgb));
+  border-radius: 0.6rem;
+  background: rgb(var(--app-panel-rgb));
   display: flex;
   gap: 0.9rem;
   align-items: flex-start;
@@ -482,13 +693,12 @@ html.dark .section-nav__crumbs {
 }
 
 .section-nav-link:hover {
-  border-color: rgba(43, 102, 120, 0.55);
-  transform: translateY(-1px);
+  border-color: rgb(var(--app-accent-rgb));
 }
 
 html.dark .section-nav-link {
-  border-color: rgba(51, 68, 88, 0.9);
-  background: rgba(17, 32, 50, 0.8);
+  border-color: rgb(var(--app-line-dark-rgb));
+  background: rgb(var(--app-panel-dark-rgb));
 }
 
 .section-nav-link__label {
@@ -511,9 +721,9 @@ html.dark .section-nav-link {
   margin-top: 0.1rem;
   padding: 0.28rem 0.6rem;
   border-radius: 9999px;
-  background: rgba(232, 216, 181, 0.9);
-  color: var(--app-ink);
-  font-size: 0.72rem;
+  background: rgba(var(--app-accent-rgb), 0.1);
+  color: var(--app-accent);
+  font-size: 0.75rem;
   font-weight: 700;
   white-space: nowrap;
 }
@@ -564,13 +774,11 @@ html.dark .section-nav-link__note {
   right: 0;
   top: 0.05rem;
   padding: 0.35rem 0.7rem;
-  border: 1px solid rgba(210, 215, 221, 0.85);
-  border-radius: 9999px;
+  border: 1px solid rgb(var(--app-line-rgb));
+  border-radius: 0.4rem;
   color: var(--app-muted);
-  font-size: 0.72rem;
-  font-weight: 800;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  font-size: 0.8rem;
+  font-weight: 650;
 }
 
 details[open] > .collapsible-card-summary::after {
@@ -583,9 +791,9 @@ html.dark .collapsible-card-summary::after {
 }
 
 .legal-page .surface-panel li[class*="rounded-2xl"],
-.legal-page .surface-panel article[class*="rounded-3xl"],
+.legal-page .surface-panel article[class*="rounded-xl"],
 .reading-page .surface-panel li[class*="rounded-2xl"],
-.reading-page .surface-panel article[class*="rounded-3xl"] {
+.reading-page .surface-panel article[class*="rounded-xl"] {
   padding: 0.85rem 0;
   border-radius: 0;
   border-bottom: 1px solid rgba(210, 215, 221, 0.7);
@@ -593,16 +801,16 @@ html.dark .collapsible-card-summary::after {
 }
 
 .legal-page .surface-panel li[class*="rounded-2xl"]:last-child,
-.legal-page .surface-panel article[class*="rounded-3xl"]:last-child,
+.legal-page .surface-panel article[class*="rounded-xl"]:last-child,
 .reading-page .surface-panel li[class*="rounded-2xl"]:last-child,
-.reading-page .surface-panel article[class*="rounded-3xl"]:last-child {
+.reading-page .surface-panel article[class*="rounded-xl"]:last-child {
   border-bottom: 0;
 }
 
 html.dark .legal-page .surface-panel li[class*="rounded-2xl"],
-html.dark .legal-page .surface-panel article[class*="rounded-3xl"],
+html.dark .legal-page .surface-panel article[class*="rounded-xl"],
 html.dark .reading-page .surface-panel li[class*="rounded-2xl"],
-html.dark .reading-page .surface-panel article[class*="rounded-3xl"] {
+html.dark .reading-page .surface-panel article[class*="rounded-xl"] {
   border-bottom-color: rgba(51, 68, 88, 0.86);
   background: transparent;
 }
@@ -650,7 +858,7 @@ html.dark .expandable-section__chevron {
 .expandable-section__body {
   margin-top: 1rem;
   padding-top: 1rem;
-  border-top: 1px solid rgba(210, 215, 221, 0.85);
+  border-top: 1px solid rgb(var(--app-line-rgb));
 }
 
 html.dark .expandable-section__body {
@@ -741,14 +949,6 @@ html.dark .expandable-section__body {
   }
 }
 
-@media (max-width: 640px) {
-  body {
-    background:
-      radial-gradient(circle at top left, var(--app-bg-glow-primary), transparent 18rem),
-      linear-gradient(180deg, rgba(var(--app-panel-rgb), 0.88), rgb(var(--app-bg-rgb)));
-  }
-}
-
 @media (max-width: 767px) {
   html {
     scroll-padding-top: 4.5rem;
@@ -776,11 +976,6 @@ html.dark .expandable-section__body {
 
   .summary-strip__item {
     padding: 0.75rem 0.8rem;
-    border-radius: 1.2rem;
-  }
-
-  .summary-strip__label {
-    letter-spacing: 0.14em;
   }
 
   .summary-strip__value {
@@ -808,7 +1003,6 @@ html.dark .expandable-section__body {
   .section-nav-link {
     gap: 0.75rem;
     padding: 0.65rem 0.8rem;
-    border-radius: 1rem;
   }
 
   .section-nav-link__label {
@@ -940,4 +1134,818 @@ html.dark .expandable-section__body {
   main {
     padding: 0 !important;
   }
+}
+
+/* ------------------------------------------------------------------
+   Readability layer (2026-10 UX redesign, phase 1)
+   See docs/audits/2026-10-20-ux-readability-redesign.md.
+   These rules set reading floors on top of the utility classes so long-form
+   copy stays legible without rewriting every template at once.
+   ------------------------------------------------------------------ */
+
+/* Reading-text floors: 12px/14px utilities were used for most explanatory copy. */
+main :is(p, li, dd, blockquote).text-xs:not(.uppercase) {
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+
+main :is(p, li, dd, blockquote).text-sm:not(.uppercase) {
+  font-size: 0.975rem;
+  line-height: 1.65;
+}
+
+/* Keep explanatory paragraphs to a comfortable line length inside wide panels. */
+main .surface-panel p:is(.text-sm, .text-base):not(.uppercase) {
+  max-width: 72ch;
+}
+
+/* Status callouts */
+.callout--success {
+  border-color: #5f9e74;
+  color: #1d5232;
+}
+
+html.dark .callout--success {
+  border-color: #3f8a5a;
+  color: #a7dfb9;
+}
+
+/* Election hero: one compact summary instead of three stat cards and a reading note. */
+.election-hero {
+  border: 1px solid var(--app-line);
+  border-radius: 1rem;
+  background: var(--app-panel);
+  padding: 1.5rem 1.25rem;
+}
+
+html.dark .election-hero {
+  border-color: var(--app-line-dark);
+  background: var(--app-panel-dark);
+}
+
+.election-hero__grid {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.election-hero__eyebrow {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--app-muted);
+}
+
+.election-hero__title {
+  margin: 0.5rem 0 0;
+  font-size: clamp(1.9rem, 1.4rem + 2.2vw, 3rem);
+  line-height: 1.12;
+  color: var(--app-ink);
+}
+
+.election-hero__lead {
+  margin: 0.85rem 0 0;
+  max-width: 62ch;
+  font-size: 1.0625rem;
+  line-height: 1.65;
+  color: var(--app-muted);
+}
+
+.election-hero__facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem 1.5rem;
+  margin: 1.25rem 0 0;
+  padding: 1rem 0 0;
+  border-top: 1px solid var(--app-line);
+}
+
+.election-hero__fact {
+  min-width: 0;
+}
+
+.election-hero__fact dt {
+  font-size: 0.8125rem;
+  color: var(--app-muted);
+}
+
+.election-hero__fact dd {
+  margin: 0.15rem 0 0;
+  font-size: 1.0625rem;
+  font-weight: 650;
+  color: var(--app-ink);
+  overflow-wrap: anywhere;
+}
+
+.election-hero__fact--wide {
+  grid-column: 1 / -1;
+}
+
+.election-hero__meta {
+  margin-top: 0.85rem;
+  font-size: 0.875rem;
+  color: var(--app-muted);
+}
+
+.election-hero__status {
+  display: grid;
+  gap: 1rem;
+  align-content: start;
+}
+
+.election-hero__guidance {
+  display: block;
+  margin-top: 0.5rem;
+  opacity: 0.9;
+}
+
+html.dark .election-hero__eyebrow,
+html.dark .election-hero__lead,
+html.dark .election-hero__fact dt,
+html.dark .election-hero__meta {
+  color: var(--app-muted-dark);
+}
+
+html.dark .election-hero__title,
+html.dark .election-hero__fact dd {
+  color: var(--app-text-dark);
+}
+
+html.dark .election-hero__facts {
+  border-top-color: var(--app-line-dark);
+}
+
+@media (min-width: 640px) {
+  .election-hero {
+    padding: 2rem;
+  }
+
+  .election-hero__facts {
+    grid-template-columns: repeat(4, minmax(0, auto));
+    justify-content: start;
+  }
+
+  .election-hero__fact--wide {
+    grid-column: auto;
+  }
+}
+
+@media (min-width: 1280px) {
+  .election-hero__grid {
+    grid-template-columns: minmax(0, 1fr) minmax(19rem, 23rem);
+    gap: 2.5rem;
+  }
+}
+
+/* Ballot page: table of contents beside the contests, contests first on phones. */
+.ballot-layout {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.ballot-layout__main {
+  display: grid;
+  gap: 1.5rem;
+  min-width: 0;
+  align-content: start;
+}
+
+.ballot-toc {
+  border: 1px solid var(--app-line);
+  border-radius: 0.75rem;
+  background: var(--app-panel);
+  padding: 1rem;
+}
+
+html.dark .ballot-toc {
+  border-color: var(--app-line-dark);
+  background: var(--app-panel-dark);
+}
+
+.ballot-toc__title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 650;
+  color: var(--app-ink);
+}
+
+.ballot-toc__group {
+  margin-top: 0.85rem;
+}
+
+.ballot-toc__group-label {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--app-muted);
+}
+
+.ballot-toc__list {
+  margin: 0.35rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ballot-toc__link {
+  display: flex;
+  gap: 0.75rem;
+  align-items: baseline;
+  justify-content: space-between;
+  min-height: 44px;
+  padding: 0.6rem 0.25rem;
+  border-bottom: 1px solid var(--app-line);
+  color: var(--app-ink);
+}
+
+.ballot-toc__list li:last-child .ballot-toc__link {
+  border-bottom: 0;
+}
+
+.ballot-toc__link:hover .ballot-toc__label {
+  color: var(--app-accent-strong);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.ballot-toc__label {
+  min-width: 0;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.ballot-toc__meta {
+  display: inline-flex;
+  flex-shrink: 0;
+  gap: 0.5rem;
+  align-items: center;
+  font-size: 0.8125rem;
+  color: var(--app-muted);
+  white-space: nowrap;
+}
+
+.ballot-toc__saved {
+  display: inline-flex;
+  gap: 0.2rem;
+  align-items: center;
+  padding: 0.1rem 0.5rem;
+  border-radius: 9999px;
+  background: rgb(var(--app-accent-rgb));
+  color: rgb(var(--app-action-text-rgb));
+  font-weight: 600;
+}
+
+.ballot-toc__footer {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--app-line);
+}
+
+html.dark .ballot-toc__title,
+html.dark .ballot-toc__link {
+  color: var(--app-text-dark);
+}
+
+html.dark .ballot-toc__group-label,
+html.dark .ballot-toc__meta {
+  color: var(--app-muted-dark);
+}
+
+html.dark .ballot-toc__link,
+html.dark .ballot-toc__footer {
+  border-color: var(--app-line-dark);
+}
+
+.ballot-controls__filters {
+  margin-top: 0.75rem;
+}
+
+.ballot-controls__filters-summary {
+  display: inline-flex;
+  gap: 0.5rem;
+  align-items: center;
+  min-height: 44px;
+  cursor: pointer;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--app-ink);
+}
+
+.ballot-controls__filters-summary::-webkit-details-marker {
+  display: none;
+}
+
+.ballot-controls__filters-summary::after {
+  content: "";
+  width: 0.5rem;
+  height: 0.5rem;
+  margin-left: 0.15rem;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: translateY(-0.15rem) rotate(45deg);
+  transition: transform 0.18s ease;
+}
+
+.ballot-controls__filters[open] > .ballot-controls__filters-summary::after {
+  transform: translateY(0.1rem) rotate(-135deg);
+}
+
+.election-hero__status .primary-link,
+.ballot-toc__footer .primary-link {
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+
+.ballot-controls__count {
+  padding: 0.1rem 0.55rem;
+  border-radius: 9999px;
+  background: rgb(var(--app-accent-rgb));
+  color: rgb(var(--app-action-text-rgb));
+  font-size: 0.8125rem;
+}
+
+html.dark .ballot-controls__filters-summary {
+  color: var(--app-text-dark);
+}
+
+.ballot-group-heading {
+  display: flex;
+  gap: 0.6rem;
+  align-items: baseline;
+  margin: 0;
+  font-size: clamp(1.6rem, 1.3rem + 1vw, 2rem);
+  color: var(--app-ink);
+}
+
+.ballot-group-heading__count {
+  font-family: "Public Sans", system-ui, sans-serif;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--app-muted);
+}
+
+html.dark .ballot-group-heading {
+  color: var(--app-text-dark);
+}
+
+html.dark .ballot-group-heading__count {
+  color: var(--app-muted-dark);
+}
+
+.ballot-logistics__summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.75rem;
+  align-items: baseline;
+  cursor: pointer;
+  font-weight: 650;
+  color: var(--app-ink);
+}
+
+.ballot-logistics__hint {
+  font-size: 0.875rem;
+  font-weight: 400;
+  color: var(--app-muted);
+}
+
+.ballot-logistics__dates {
+  display: grid;
+  margin: 1.25rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ballot-logistics__date {
+  display: grid;
+  gap: 0.15rem;
+  padding: 0.85rem 0;
+  border-top: 1px solid var(--app-line);
+}
+
+.ballot-logistics__date-label {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--app-muted);
+}
+
+.ballot-logistics__date-value {
+  margin: 0;
+  font-size: 1.0625rem;
+  font-weight: 650;
+  color: var(--app-ink);
+}
+
+.ballot-logistics__date-note {
+  margin: 0;
+  max-width: 68ch;
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  color: var(--app-muted);
+}
+
+html.dark .ballot-logistics__summary,
+html.dark .ballot-logistics__date-value {
+  color: var(--app-text-dark);
+}
+
+html.dark .ballot-logistics__hint,
+html.dark .ballot-logistics__date-label,
+html.dark .ballot-logistics__date-note {
+  color: var(--app-muted-dark);
+}
+
+html.dark .ballot-logistics__date {
+  border-top-color: var(--app-line-dark);
+}
+
+@media (min-width: 768px) {
+  .ballot-logistics__date {
+    grid-template-columns: minmax(12rem, 0.35fr) minmax(0, 1fr);
+    column-gap: 1.5rem;
+  }
+
+  .ballot-logistics__date-note {
+    grid-column: 2;
+  }
+}
+
+/* On phones the contents list is short reference, so contests come right after it. */
+@media (max-width: 1279.98px) {
+  .ballot-toc__footer .btn-primary {
+    display: none;
+  }
+}
+
+@media (min-width: 1280px) {
+  .ballot-layout {
+    grid-template-columns: minmax(15rem, 17.5rem) minmax(0, 1fr);
+    gap: 2rem;
+  }
+
+  .ballot-layout__toc {
+    position: sticky;
+    top: 6rem;
+    align-self: start;
+    max-height: calc(100dvh - 7rem);
+    overflow-y: auto;
+  }
+}
+
+/* Detail pages (candidate, measure, representative): sidebar beside content from 1280px,
+   and page navigation first, as a compact row, on narrower screens. Previously the grid only
+   split at 1536px while the sidebar expected 1280px, so most laptops saw the navigation and
+   breadcrumbs at the very bottom of the page. */
+.detail-layout {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.detail-layout > :first-child {
+  min-width: 0;
+}
+
+.detail-layout__aside {
+  order: -1;
+  min-width: 0;
+}
+
+@media (min-width: 1280px) {
+  .detail-layout {
+    grid-template-columns: minmax(0, 1fr) minmax(16rem, 19rem);
+    gap: 2rem;
+  }
+
+  .detail-layout__aside {
+    order: 0;
+    position: sticky;
+    top: 6rem;
+    align-self: start;
+  }
+}
+
+@media (max-width: 1279.98px) {
+  .detail-layout__aside .section-nav {
+    position: static;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+    backdrop-filter: none;
+  }
+
+  .detail-layout__aside .section-nav__title,
+  .detail-layout__aside .section-nav__description,
+  .detail-layout__aside .section-nav__actions,
+  .detail-layout__aside .section-nav-link__note,
+  .detail-layout__aside .section-nav-link__badge {
+    display: none;
+  }
+
+  .detail-layout__aside .section-nav__crumbs {
+    margin-bottom: 0.5rem;
+    padding-bottom: 0;
+    border-bottom: 0;
+  }
+
+  .detail-layout__aside .section-nav-list {
+    display: flex;
+    gap: 0.5rem;
+    margin: 0;
+    padding-bottom: 0.25rem;
+    overflow-x: auto;
+    scrollbar-width: thin;
+  }
+
+  .detail-layout__aside .section-nav-link {
+    align-items: center;
+    min-height: 44px;
+    padding: 0.5rem 0.95rem;
+    border-radius: 9999px;
+    white-space: nowrap;
+  }
+
+  .detail-layout__aside .section-nav-link__label {
+    font-size: 0.9375rem;
+  }
+}
+
+/* Contest sections size to their column, not the viewport, so they still fit beside the
+   ballot table of contents. */
+.contest-section__body {
+  container-type: inline-size;
+}
+
+.contest-section__grid,
+.contest-section__items {
+  display: grid;
+  gap: 1rem;
+}
+
+.contest-section__grid {
+  gap: 1.5rem;
+}
+
+@container (min-width: 34rem) {
+  .contest-section__items {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@container (min-width: 64rem) {
+  .contest-section__grid {
+    grid-template-columns: minmax(0, 1fr) minmax(15rem, 18rem);
+    align-items: start;
+  }
+}
+
+/* ------------------------------------------------------------------
+   Paper layout (2026-10 visual pass)
+   Content sits directly on the page instead of in cards; structure comes from
+   spacing, type, and hairline dividers so the eye lands on content first.
+   ------------------------------------------------------------------ */
+
+html,
+body,
+html.dark body {
+  background: rgb(var(--app-panel-rgb));
+}
+
+.summary-strip {
+  gap: 1rem 2rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr));
+}
+
+.summary-strip__item,
+html.dark .summary-strip__item {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.summary-strip__item--interactive:hover,
+html.dark .summary-strip__item--interactive:hover {
+  box-shadow: none;
+  transform: none;
+}
+
+.summary-strip__item--interactive .summary-strip__value {
+  color: var(--app-accent);
+  text-decoration: underline;
+  text-decoration-color: rgba(var(--app-accent-rgb), 0.35);
+  text-underline-offset: 0.18em;
+}
+
+.summary-strip__label {
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+}
+
+.summary-strip__value {
+  margin-top: 0.25rem;
+  font-size: clamp(1.2rem, 1.1rem + 0.4vw, 1.5rem);
+}
+
+.section-nav-list {
+  margin-top: 0.75rem;
+  gap: 0;
+}
+
+.section-nav-link,
+html.dark .section-nav-link {
+  padding: 0.45rem 0.75rem;
+  border: 0;
+  border-left: 2px solid rgb(var(--app-line-rgb));
+  border-radius: 0;
+  background: transparent;
+}
+
+.section-nav-link:hover,
+.section-nav-link:focus-visible {
+  border-left-color: rgb(var(--app-accent-rgb));
+}
+
+.section-nav-link__label {
+  font-size: 0.92rem;
+  font-weight: 500;
+}
+
+.section-nav-link__badge {
+  padding: 0;
+  background: transparent;
+  color: var(--app-muted);
+}
+
+.section-nav--compact {
+  padding: 0 !important;
+}
+
+.expandable-section {
+  padding-top: 1.75rem;
+  border-top: 1px solid var(--app-line);
+}
+
+.expandable-section__body,
+html.dark .expandable-section__body {
+  margin-top: 0.5rem;
+  padding-top: 0;
+  border-top: 0;
+}
+
+.collapsible-card-summary::after,
+html.dark .collapsible-card-summary::after {
+  content: '+';
+  padding: 0;
+  border: 0;
+  font-size: 1.25rem;
+  font-weight: 400;
+  line-height: 1;
+}
+
+details[open] > .collapsible-card-summary::after {
+  content: '−';
+}
+
+.election-hero {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.ballot-toc {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.home-step,
+html.dark .home-step {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.home-election-banner {
+  border-color: transparent;
+}
+
+/* One segmented control for a measure choice instead of three loose pills. */
+.measure-decision {
+  display: inline-flex;
+  overflow: hidden;
+  border: 1px solid var(--app-line);
+  border-radius: 0.5rem;
+}
+
+.measure-decision__option {
+  min-height: 2.75rem;
+  padding: 0 1rem;
+  background: transparent;
+  color: var(--app-ink);
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.measure-decision__option + .measure-decision__option {
+  border-left: 1px solid var(--app-line);
+}
+
+.measure-decision__option:hover {
+  background: rgb(var(--app-bg-rgb));
+}
+
+.measure-decision__option[aria-pressed="true"] {
+  background: var(--app-action);
+  color: var(--app-action-text);
+}
+
+/* Election hero as a single headline block: title, one facts row, one status line. */
+.election-hero__facts {
+  grid-template-columns: repeat(auto-fit, minmax(7rem, max-content));
+  gap: 0.5rem 2.5rem;
+}
+
+.election-hero__fact--wide {
+  grid-column: auto;
+}
+
+.election-hero__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.25rem;
+  align-items: center;
+  margin-top: 1rem;
+}
+
+.election-hero__status {
+  display: inline-flex;
+  gap: 0.4rem;
+  align-items: center;
+  margin: 0;
+  font-weight: 600;
+}
+
+.election-hero__status--success {
+  color: #1d6b3a;
+}
+
+.election-hero__status--warning {
+  color: #8a5b0a;
+}
+
+html.dark .election-hero__status--success {
+  color: #8fd6a8;
+}
+
+html.dark .election-hero__status--warning {
+  color: #efc77b;
+}
+
+/* Saved-choices tray: one line and the two places to go next. */
+.ballot-tray {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.5rem;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.6rem 1rem;
+  border: 1px solid var(--app-line);
+  border-radius: 0.75rem;
+  background: rgb(var(--app-panel-rgb));
+  box-shadow: 0 10px 30px -20px rgba(13, 37, 62, 0.45);
+}
+
+/* Home: one centered column — the election date, the question, and the address field. */
+.home-entry {
+  max-width: 44rem;
+  margin: clamp(1.5rem, 6vh, 4.5rem) auto 0;
+}
+
+.home-entry .home-title {
+  max-width: none;
+  margin-top: 1rem;
+  font-size: clamp(2.1rem, 4vw, 3.25rem);
+}
+
+.home-entry .home-election-banner {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.15rem 0.75rem;
+  align-items: baseline;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.home-entry .home-election-banner:hover {
+  background: transparent;
+}
+
+.home-entry .home-lookup-card {
+  margin-top: 1.75rem;
 }

@@ -301,7 +301,9 @@ jobs:
           retention-days: 7
 
   publish-runtime:
-    if: startsWith(github.ref, 'refs/tags/')
+    # Pre-release tags (v1.2.3-rc.1) are cut from review branches and never publish a runtime;
+    # stable vX.Y.Z tags still go through the main-ancestry guard below.
+    if: startsWith(github.ref, 'refs/tags/') && !contains(github.ref_name, '-')
     needs: [lint, typecheck, test, security-audit, production-config, test-e2e, accessibility, build, native-arm64]
     runs-on: ubuntu-24.04
     permissions:

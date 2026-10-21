@@ -1,6 +1,7 @@
 {
+  "contentSha256": "6e3e7be09f3f226e1eec4503438539a589b085a2ffb2b76603fbb2a9f9a064a5",
   "importedAt": "2026-04-24T12:00:00.000Z",
-  "note": "Reviewed Fulton County coverage package published as official-logistics-only. Verified contest, candidate, and measure records are not included.",
+  "note": "Reviewed Fulton County coverage package published as official-logistics-only. Verified contest, candidate, and measure records are not included. The Election Day poll-close time was corrected to 7:00 p.m. Eastern on October 20, 2026, after this review; that correction awaits editorial re-review.",
   "reviewedAt": "2026-04-24T12:00:00.000Z",
   "sourceLabel": "Reviewed Fulton County official-logistics-only coverage snapshot",
   "sourceOrigin": "Ballot Clarity source/data pipeline",

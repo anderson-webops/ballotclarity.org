@@ -80,45 +80,12 @@ const accordionItems = faqItems.map(item => ({
 	<section class="app-shell section-gap space-y-8">
 		<header class="gap-6 grid lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
 			<div>
-				<div class="flex flex-wrap gap-2">
-					<TrustBadge label="Help hub" tone="accent" />
-					<TrustBadge label="Plain language" />
-					<TrustBadge label="Official verification encouraged" tone="warning" />
-				</div>
-				<h1 class="text-5xl text-app-ink font-serif mt-5 dark:text-app-text-dark">
+				<h1 class="text-5xl text-app-ink font-serif dark:text-app-text-dark">
 					Voting help and ballot basics
 				</h1>
-				<p class="text-base text-app-muted leading-8 mt-5 max-w-3xl dark:text-app-muted-dark">
-					This page answers common questions about ballot listings, voter guides, timing, and how to verify election information.
-				</p>
 			</div>
-
-			<InfoCallout title="Important reminder" tone="warning">
-				Ballot Clarity is not an official government website. Use this site to understand the landscape, then confirm time-sensitive details with the election office for your jurisdiction.
-			</InfoCallout>
 		</header>
 
 		<MethodologyAccordion :items="accordionItems" />
-
-		<nav class="flex flex-wrap gap-3" aria-label="Related help links">
-			<NuxtLink to="/coverage" class="btn-primary">
-				Check coverage
-			</NuxtLink>
-			<NuxtLink to="/methodology" class="btn-secondary">
-				Methodology
-			</NuxtLink>
-			<NuxtLink to="/neutrality" class="btn-secondary">
-				Neutrality policy
-			</NuxtLink>
-			<NuxtLink to="/privacy" class="btn-secondary">
-				Privacy
-			</NuxtLink>
-			<NuxtLink to="/accessibility" class="btn-secondary">
-				Accessibility
-			</NuxtLink>
-			<NuxtLink to="/contact" class="btn-secondary">
-				Report an issue
-			</NuxtLink>
-		</nav>
 	</section>
 </template>

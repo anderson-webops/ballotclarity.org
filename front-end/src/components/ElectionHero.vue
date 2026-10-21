@@ -11,57 +11,24 @@ const props = defineProps<{
 const { formatDate } = useFormatters();
 const contestCount = computed(() => props.election.contests.length);
 const measureCount = computed(() => props.election.contests.reduce((count, contest) => count + (contest.measures?.length ?? 0), 0));
-const personalizationLabel = computed(() => props.location.lookupInput ?? props.location.displayName);
 const hasVerifiedContestPackage = computed(() => Boolean(props.guideContent?.verifiedContestPackage));
 const isGuideShellOnly = computed(() => Boolean(props.guideContent?.publishedGuideShell) && !hasVerifiedContestPackage.value);
-const guideStatusTitle = computed(() => "Guide status");
-const guideStatusNote = computed(() => props.guideContent?.verifiedContestPackage
-	? "Contest, candidate, and measure pages are verified for this area."
-	: props.guideContent?.publishedGuideShell
-		? "Official election links are current. Contest, candidate, and measure pages are still under local review."
-		: props.note);
-const primaryContextNote = computed(() => hasVerifiedContestPackage.value
-	? `Showing contests for your districts in ${props.location.displayName}.`
-	: `Official election links are attached for ${props.location.displayName}. Verified contest pages are still under local review.`);
-const secondaryMetric = computed(() => hasVerifiedContestPackage.value
-	? {
-			label: "Contests",
-			note: "Candidate and measure sections included in this ballot guide.",
-			value: String(contestCount.value)
-		}
-	: {
-			label: "Official links",
-			note: "Current election-office links attached to this page.",
-			value: String(props.election.officialResources.length)
-		});
-const tertiaryMetric = computed(() => hasVerifiedContestPackage.value
-	? {
-			label: "Measures",
-			note: "Countywide measures with plain-language summaries and sources.",
-			value: String(measureCount.value)
-		}
-	: {
-			label: "Key dates",
-			note: "Calendar items attached for deadlines and election logistics.",
-			value: String(props.election.keyDates.length)
-		});
-const readingTitle = computed(() => hasVerifiedContestPackage.value ? "Read this ballot like a pamphlet" : "Use this page as an election overview");
-const readingLead = computed(() => hasVerifiedContestPackage.value
-	? "Each contest below includes plainspoken summaries, record highlights, funding context, and direct source lists. Information may still be incomplete, so review original records before voting."
-	: "This page keeps official links, key dates, and guide status in one place while verified contest, candidate, and measure pages are still under local review.");
-const actionLabel = computed(() => isGuideShellOnly.value ? "Print this election overview" : "Print this ballot guide");
-const matchGuidance = computed(() => {
-	if (props.location.lookupMode === "zip-preview")
-		return "This guide was opened from a ZIP-only preview. ZIPs can span multiple districts, so verify the exact ballot in the official election tools before relying on district-specific contests.";
-
-	if (props.location.lookupMode === "address-verified")
-		return "This address was accepted by the voter-information provider. Use official election tools for any late changes or final ballot confirmation.";
-
-	if (props.location.lookupMode === "address-submitted")
-		return "A full address is the right input for exact ballot matching. Verify the exact ballot with official election tools when details are time-sensitive.";
-
-	return "Use the official election office links for final district, polling-place, and ballot verification when details are time-sensitive.";
-});
+const guideStatus = computed(() => hasVerifiedContestPackage.value
+	? { label: "Verified guide", tone: "success" as const }
+	: isGuideShellOnly.value
+		? { label: "Contest pages are still under local review.", tone: "warning" as const }
+		: { label: props.note, tone: "warning" as const });
+const facts = computed(() => hasVerifiedContestPackage.value
+	? [
+			{ label: "Contests", value: String(contestCount.value) },
+			{ label: "Measures", value: String(measureCount.value) }
+		]
+	: [
+			{ label: "Official links", value: String(props.election.officialResources.length) },
+			{ label: "Key dates", value: String(props.election.keyDates.length) }
+		]);
+// ZIP codes can span districts, so a ZIP-only guide needs one local caveat; other inputs need none.
+const isZipPreview = computed(() => props.location.lookupMode === "zip-preview");
 
 function printBallot() {
 	if (import.meta.client)
@@ -71,92 +38,36 @@ function printBallot() {
 
 <template>
 	<section class="app-shell">
-		<div class="pamphlet-surface border border-app-line rounded-[2rem] bg-white shadow-[0_30px_80px_-48px_rgba(16,37,62,0.65)] overflow-hidden dark:border-app-line-dark dark:bg-app-panel-dark">
-			<div class="px-6 py-8 gap-8 grid lg:px-10 sm:px-8 xl:grid-cols-[minmax(0,1.4fr)_minmax(18rem,0.8fr)]">
-				<div>
-					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold mt-4 uppercase dark:text-app-muted-dark sm:mt-6">
-						{{ props.location.displayName }}
-					</p>
-					<h1 class="text-4xl text-app-ink leading-tight font-serif mt-3 max-w-4xl sm:text-5xl dark:text-app-text-dark">
-						{{ props.election.name }}
-					</h1>
-					<p class="text-base text-app-muted leading-7 mt-4 max-w-2xl dark:text-app-muted-dark">
-						{{ props.election.description }}
-					</p>
-					<div class="text-sm text-app-muted mt-6 flex flex-wrap gap-4 items-center dark:text-app-muted-dark">
-						<span class="inline-flex gap-2 items-center">
-							<span class="i-carbon-calendar" />
-							Election Day {{ formatDate(props.election.date) }}
-						</span>
-						<UpdatedAt :value="props.election.updatedAt" />
-					</div>
-					<div class="mt-6 gap-4 grid sm:grid-cols-2 xl:grid-cols-3">
-						<div class="px-5 py-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
-							<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
-								Personalized to
-							</p>
-							<p class="text-sm text-app-ink font-semibold mt-3 dark:text-app-text-dark">
-								{{ personalizationLabel }}
-							</p>
-							<p class="text-xs text-app-muted leading-6 mt-2 dark:text-app-muted-dark">
-								{{ primaryContextNote }}
-							</p>
-						</div>
-						<div class="px-5 py-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
-							<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
-								{{ secondaryMetric.label }}
-							</p>
-							<p class="text-3xl text-app-ink font-semibold mt-3 dark:text-app-text-dark">
-								{{ secondaryMetric.value }}
-							</p>
-							<p class="text-xs text-app-muted leading-6 mt-2 dark:text-app-muted-dark">
-								{{ secondaryMetric.note }}
-							</p>
-						</div>
-						<div class="px-5 py-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
-							<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
-								{{ tertiaryMetric.label }}
-							</p>
-							<p class="text-3xl text-app-ink font-semibold mt-3 dark:text-app-text-dark">
-								{{ tertiaryMetric.value }}
-							</p>
-							<p class="text-xs text-app-muted leading-6 mt-2 dark:text-app-muted-dark">
-								{{ tertiaryMetric.note }}
-							</p>
-						</div>
-					</div>
+		<div class="election-hero">
+			<p class="election-hero__eyebrow">
+				{{ props.location.displayName }}
+			</p>
+			<h1 class="election-hero__title font-serif">
+				{{ props.election.name }}
+			</h1>
+			<dl class="election-hero__facts">
+				<div class="election-hero__fact election-hero__fact--wide">
+					<dt>Election Day</dt>
+					<dd>{{ formatDate(props.election.date) }}</dd>
 				</div>
-
-				<div class="surface-panel flex flex-col max-w-2xl justify-between relative z-10 xl:max-w-none">
-					<div>
-						<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-							{{ readingTitle }}
-						</p>
-						<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-							{{ readingLead }}
-						</p>
-						<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-							This ballot is personalized to {{ personalizationLabel }}. {{ matchGuidance }}
-						</p>
-					</div>
-
-					<div class="mt-6 space-y-3">
-						<InfoCallout :title="guideStatusTitle" tone="warning">
-							{{ guideStatusNote }}
-						</InfoCallout>
-
-						<div class="bc-action-cluster">
-							<button type="button" class="btn-primary" @click="printBallot">
-								<span class="i-carbon-printer" />
-								{{ actionLabel }}
-							</button>
-							<NuxtLink to="/coverage" class="btn-secondary">
-								Check coverage
-							</NuxtLink>
-						</div>
-					</div>
+				<div v-for="fact in facts" :key="fact.label" class="election-hero__fact">
+					<dt>{{ fact.label }}</dt>
+					<dd>{{ fact.value }}</dd>
 				</div>
+			</dl>
+			<div class="election-hero__meta">
+				<p class="election-hero__status" :class="`election-hero__status--${guideStatus.tone}`">
+					<span :class="guideStatus.tone === 'success' ? 'i-carbon-checkmark-filled' : 'i-carbon-warning-alt'" aria-hidden="true" />
+					{{ guideStatus.label }}
+				</p>
+				<UpdatedAt :value="props.election.updatedAt" />
+				<button type="button" class="text-sm btn-secondary print-hidden" @click="printBallot">
+					Print
+				</button>
 			</div>
+			<p v-if="isZipPreview" class="text-sm text-app-muted mt-3 dark:text-app-muted-dark">
+				ZIP codes can span districts. Confirm your exact ballot with the official election tools.
+			</p>
 		</div>
 	</section>
 </template>

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import DataFreshnessDashboard from "~/components/graphics/DataFreshnessDashboard.vue";
+
 const { formatDateTime } = useFormatters();
 const { data, error, pending } = await usePublicStatus();
 
@@ -6,17 +8,6 @@ usePageSeo({
 	description: "Public status page for Ballot Clarity showing source health, coverage, and current review notices.",
 	path: "/status",
 	title: "Public Status"
-});
-
-const statusTone = computed(() => {
-	switch (data.value?.overallStatus) {
-		case "healthy":
-			return "accent" as const;
-		case "degraded":
-			return "warning" as const;
-		default:
-			return "neutral" as const;
-	}
 });
 
 const statusLabel = computed(() => {
@@ -53,32 +44,27 @@ const hasPublicIncidents = computed(() => Boolean(data.value?.incidents.length))
 <template>
 	<section class="app-shell section-gap space-y-8">
 		<div v-if="pending" class="space-y-6">
-			<div class="surface-panel bg-white/70 h-64 animate-pulse dark:bg-app-panel-dark/70" />
+			<div class="rounded-lg bg-app-bg h-64 animate-pulse dark:bg-app-bg-dark" />
 			<div class="gap-6 grid xl:grid-cols-2">
-				<div v-for="index in 4" :key="index" class="surface-panel bg-white/70 h-48 animate-pulse dark:bg-app-panel-dark/70" />
+				<div v-for="index in 4" :key="index" class="rounded-lg bg-app-bg h-48 animate-pulse dark:bg-app-bg-dark" />
 			</div>
 		</div>
 
 		<div v-else-if="error || !data" class="max-w-3xl">
 			<InfoCallout title="Public status unavailable" tone="warning">
-				The status page could not be loaded. Refresh the page or return to the coverage page and try again.
+				Try again later.
 			</InfoCallout>
 		</div>
 
 		<div v-else class="space-y-8">
-			<header class="surface-panel max-w-5xl">
-				<div class="flex flex-wrap gap-2">
-					<TrustBadge :label="statusLabel" :tone="statusTone" />
-					<TrustBadge :label="coveragePackageLabel" />
-					<TrustBadge label="Public source health" tone="warning" />
-				</div>
-				<h1 class="text-5xl text-app-ink font-serif mt-5 dark:text-app-text-dark">
+			<header class="max-w-5xl surface-panel">
+				<h1 class="text-5xl text-app-ink font-serif dark:text-app-text-dark">
 					Public status
 				</h1>
-				<p class="text-base text-app-muted leading-8 mt-5 dark:text-app-muted-dark">
-					This page shows whether Ballot Clarity's public data and guide coverage are ready to rely on.
+				<p class="text-lg text-app-ink font-semibold mt-3 dark:text-app-text-dark">
+					{{ statusLabel }} · {{ coveragePackageLabel }}
 				</p>
-				<div class="mt-6 flex flex-wrap gap-4 items-center">
+				<div class="mt-3 flex flex-wrap gap-4 items-center">
 					<UpdatedAt :value="data.updatedAt" label="Status updated" />
 					<p class="text-sm text-app-muted dark:text-app-muted-dark">
 						Coverage data updated {{ formatDateTime(data.coverageUpdatedAt) }}
@@ -86,40 +72,7 @@ const hasPublicIncidents = computed(() => Boolean(data.value?.incidents.length))
 				</div>
 			</header>
 
-			<section v-if="hasSourceMetrics" class="gap-4 grid md:grid-cols-2 xl:grid-cols-4">
-				<div class="surface-row">
-					<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
-						Healthy sources
-					</p>
-					<p class="text-3xl text-app-ink font-semibold mt-3 dark:text-app-text-dark">
-						{{ data.sourceSummary.healthy }}
-					</p>
-				</div>
-				<div class="surface-row">
-					<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
-						Review soon
-					</p>
-					<p class="text-3xl text-app-ink font-semibold mt-3 dark:text-app-text-dark">
-						{{ data.sourceSummary["review-soon"] }}
-					</p>
-				</div>
-				<div class="surface-row">
-					<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
-						Incidents
-					</p>
-					<p class="text-3xl text-app-ink font-semibold mt-3 dark:text-app-text-dark">
-						{{ data.sourceSummary.incident }}
-					</p>
-				</div>
-				<div class="surface-row">
-					<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
-						Stale
-					</p>
-					<p class="text-3xl text-app-ink font-semibold mt-3 dark:text-app-text-dark">
-						{{ data.sourceSummary.stale }}
-					</p>
-				</div>
-			</section>
+			<DataFreshnessDashboard v-if="hasSourceMetrics" :status="data" />
 
 			<section v-else class="surface-panel">
 				<div class="flex flex-wrap gap-2">

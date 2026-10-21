@@ -46,7 +46,7 @@ async function signOut() {
 	<div class="bg-app-bg min-h-screen dark:bg-app-bg-dark">
 		<a href="#admin-main-content" class="skip-link focus-ring">Skip to content</a>
 
-		<header class="border-b border-app-line/80 bg-app-bg/95 top-0 sticky z-40 backdrop-blur dark:border-app-line-dark dark:bg-app-bg-dark/95">
+		<header class="border-b border-app-line/80 bg-app-bg/95 top-0 sticky z-40 dark:border-app-line-dark dark:bg-app-bg-dark/95">
 			<div class="app-shell py-3 space-y-3 lg:py-4">
 				<div class="flex gap-3 items-center justify-between">
 					<div class="min-w-0">
@@ -65,10 +65,10 @@ async function signOut() {
 						<NuxtLink to="/admin/account" class="text-xs text-app-muted px-3 py-2 border border-app-line rounded-full bg-white hidden dark:text-app-muted-dark hover:text-app-ink dark:border-app-line-dark dark:bg-app-panel-dark xl:block focus-ring dark:hover:text-app-text-dark">
 							{{ session?.displayName || session?.username || "Admin" }} · {{ session?.role || "admin" }}
 						</NuxtLink>
-						<NuxtLink to="/" class="btn-secondary text-xs sm:text-sm !px-3 !py-2 sm:!px-4">
+						<NuxtLink to="/" class="text-xs btn-secondary sm:text-sm !px-3 !py-2 sm:!px-4">
 							Public site
 						</NuxtLink>
-						<button type="button" class="btn-primary text-xs sm:text-sm !px-3 !py-2 sm:!px-4" @click="signOut">
+						<button type="button" class="text-xs btn-primary sm:text-sm !px-3 !py-2 sm:!px-4" @click="signOut">
 							Sign out
 						</button>
 					</div>

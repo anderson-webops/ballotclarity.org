@@ -14,15 +14,15 @@ usePageSeo({
 
 <template>
 	<section class="app-shell section-gap">
-		<div class="surface-panel max-w-3xl">
-			<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+		<div class="max-w-3xl surface-panel">
+			<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 				404
 			</p>
 			<h1 class="text-4xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
 				This page could not be found.
 			</h1>
 			<p class="text-base text-app-muted leading-7 mt-4 max-w-2xl dark:text-app-muted-dark">
-				The page may have moved, the link may be incomplete, or the record may not be publicly available. Return to the home page, search the site, or open the source directory.
+				The link may be broken, or the page may have moved.
 			</p>
 			<div class="mt-8 flex flex-wrap gap-3">
 				<NuxtLink to="/" class="btn-primary">

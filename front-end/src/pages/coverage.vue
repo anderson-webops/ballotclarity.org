@@ -4,12 +4,11 @@ const { data, error, pending } = await useCoverage();
 const publicCapabilities = computed(() => (data.value?.supportedContentTypes ?? []).filter(capability => capability.id !== "editorial-ops" && capability.status !== "planned"));
 const hasPublishedGuideShell = computed(() => Boolean(data.value?.guideContent?.publishedGuideShell));
 const hasVerifiedContestPackage = computed(() => Boolean(data.value?.guideContent?.verifiedContestPackage));
-const coverageBadgeLabel = computed(() => hasVerifiedContestPackage.value ? "Verified ballot guide" : hasPublishedGuideShell.value ? "Election overview available" : "Published election area");
 const coverageIntro = computed(() => hasVerifiedContestPackage.value
-	? "This page shows the verified local guide layers currently published for this area."
+	? "Verified local guide published."
 	: hasPublishedGuideShell.value
-		? "This page shows the official election links and overview layers currently published for this area. Verified contest pages are still under local review."
-		: "This page shows the current published election area and its official election links.");
+		? "Official election links published. Contest pages are still under local review."
+		: "Official election links published.");
 
 usePageSeo({
 	description: "Guide availability, official election links, and known limits for Ballot Clarity coverage.",
@@ -41,21 +40,21 @@ function capabilityLabel(status: "in-build" | "live-now" | "planned") {
 <template>
 	<section class="app-shell section-gap space-y-8">
 		<div v-if="pending" class="space-y-6">
-			<div class="surface-panel bg-white/70 h-72 animate-pulse dark:bg-app-panel-dark/70" />
+			<div class="rounded-lg bg-app-bg h-72 animate-pulse dark:bg-app-bg-dark" />
 			<div class="gap-6 grid xl:grid-cols-2">
-				<div v-for="index in 4" :key="index" class="surface-panel bg-white/70 h-56 animate-pulse dark:bg-app-panel-dark/70" />
+				<div v-for="index in 4" :key="index" class="rounded-lg bg-app-bg h-56 animate-pulse dark:bg-app-bg-dark" />
 			</div>
 		</div>
 
 		<div v-else-if="error || !data" class="max-w-3xl">
 			<InfoCallout title="Coverage profile unavailable" tone="warning">
-				The public coverage profile could not be loaded. Refresh the page or return to the home page and try again.
+				Try again later.
 			</InfoCallout>
 		</div>
 
 		<div v-else-if="!data.launchTarget" class="max-w-4xl space-y-6">
 			<InfoCallout title="No local guide published right now" tone="info">
-				Ballot Clarity can still show lookup results, district pages, representative pages, and official election links when they are available.
+				Districts, representatives, and official election links are still available.
 			</InfoCallout>
 			<div class="surface-panel">
 				<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
@@ -86,22 +85,18 @@ function capabilityLabel(status: "in-build" | "live-now" | "planned") {
 		<div v-else class="space-y-8">
 			<header class="gap-6 grid xl:grid-cols-[minmax(0,1.2fr)_minmax(24rem,0.8fr)]">
 				<div class="surface-panel">
-					<div class="flex flex-wrap gap-2">
-						<TrustBadge :label="coverageBadgeLabel" tone="accent" />
-						<TrustBadge label="Official links attached" />
-					</div>
-					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold mt-6 uppercase dark:text-app-muted-dark">
+					<p class="text-xs text-app-muted tracking-[0.06em] font-semibold mt-6 uppercase dark:text-app-muted-dark">
 						Election coverage
 					</p>
 					<h1 class="text-5xl text-app-ink leading-tight font-serif mt-3 dark:text-app-text-dark">
 						{{ data.launchTarget.displayName }}
 					</h1>
 					<p class="bc-prose text-app-muted mt-5 dark:text-app-muted-dark">
-						{{ coverageIntro }} Use the official election tools for final deadline, polling-place, and ballot confirmation.
+						{{ coverageIntro }}
 					</p>
 					<div class="mt-6 gap-4 grid md:grid-cols-2">
-						<div class="px-5 py-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
-							<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+						<div class="content-block">
+							<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 								Current election
 							</p>
 							<p class="text-lg text-app-ink font-semibold mt-3 dark:text-app-text-dark">
@@ -111,8 +106,8 @@ function capabilityLabel(status: "in-build" | "live-now" | "planned") {
 								{{ formatDate(data.launchTarget.currentElectionDate) }}
 							</p>
 						</div>
-						<div class="px-5 py-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
-							<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+						<div class="content-block">
+							<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 								Next election
 							</p>
 							<p class="text-lg text-app-ink font-semibold mt-3 dark:text-app-text-dark">
@@ -130,7 +125,7 @@ function capabilityLabel(status: "in-build" | "live-now" | "planned") {
 
 				<div class="space-y-4">
 					<div class="surface-panel">
-						<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+						<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 							Open next
 						</p>
 						<div class="mt-4 flex flex-wrap gap-3">
@@ -163,7 +158,7 @@ function capabilityLabel(status: "in-build" | "live-now" | "planned") {
 					</NuxtLink>
 				</div>
 				<div class="mt-6 gap-5 grid xl:grid-cols-2">
-					<article v-for="capability in publicCapabilities" :key="capability.id" class="px-5 py-5 border border-app-line/70 rounded-3xl bg-white/80 dark:border-app-line-dark dark:bg-app-panel-dark/70">
+					<article v-for="capability in publicCapabilities" :key="capability.id" class="content-block">
 						<div class="flex flex-wrap gap-2 items-center">
 							<TrustBadge :label="capabilityLabel(capability.status)" :tone="capabilityTone(capability.status)" />
 						</div>
@@ -180,7 +175,7 @@ function capabilityLabel(status: "in-build" | "live-now" | "planned") {
 						Known limits and final checks
 					</summary>
 					<ul class="mt-5 space-y-4">
-						<li v-for="item in data.limitations" :key="item.id" class="px-5 py-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
+						<li v-for="item in data.limitations" :key="item.id" class="content-block">
 							<p class="text-lg text-app-ink font-semibold dark:text-app-text-dark">
 								{{ item.title }}
 							</p>

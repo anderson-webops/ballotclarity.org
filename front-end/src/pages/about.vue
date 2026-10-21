@@ -7,59 +7,29 @@ usePageSeo({
 </script>
 
 <template>
-	<section class="app-shell section-gap space-y-8">
-		<header class="max-w-4xl">
-			<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-				About the project
-			</p>
-			<h1 class="text-5xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-				A nonpartisan civic-information platform for voter literacy.
+	<section class="app-shell section-gap">
+		<div class="max-w-3xl">
+			<h1 class="text-5xl text-app-ink font-serif dark:text-app-text-dark">
+				About Ballot Clarity
 			</h1>
-			<p class="text-base text-app-muted leading-8 mt-5 max-w-3xl dark:text-app-muted-dark">
-				Ballot Clarity is designed to make public election information easier to inspect without making the interface feel like a campaign, a news feed, or a partisan advocacy product.
-			</p>
-		</header>
-
-		<section class="surface-panel max-w-5xl">
-			<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
-				What Ballot Clarity is for
-			</h2>
-			<div class="bc-prose text-app-muted mt-5 dark:text-app-muted-dark">
+			<div class="bc-prose text-app-ink mt-6 dark:text-app-text-dark">
 				<p>
-					Ballot Clarity turns scattered public records into readable, source-backed election information. A voter should be able to move from “Who represents me?” or “What is on my ballot?” to the supporting records without digging through disconnected PDFs and portals.
+					Ballot Clarity is a nonpartisan, public-interest civic-information site. It turns scattered public records — filings, notices, ballot text, and campaign materials — into readable, source-cited election information.
 				</p>
 				<p>
-					The site organizes contests by office, attaches sources directly to summaries, and states limits and uncertainty where users read the information. The goal is clarity, not persuasion.
+					Contests are organized by office, sources are attached to the summaries they support, and limits are stated where you read them. The goal is clarity, not persuasion.
 				</p>
 			</div>
-			<details class="mt-6 surface-row">
-				<summary class="text-sm text-app-ink font-semibold cursor-pointer dark:text-app-text-dark focus-ring">
-					Why public election data is hard to use
-				</summary>
-				<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-					Public information is often distributed across filing portals, meeting minutes, clerk notices, ethics forms, and campaign materials. Elections also include complex offices, dense measures, and uneven candidate records, so the usability problem starts before any analysis begins.
-				</p>
-			</details>
-		</section>
 
-		<section class="surface-panel max-w-4xl">
-			<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
-				Volunteer or contact
+			<h2 class="text-2xl text-app-ink font-serif mt-10 dark:text-app-text-dark">
+				Contact
 			</h2>
-			<p class="text-sm text-app-muted leading-7 mt-5 dark:text-app-muted-dark">
-				Ballot Clarity's coverage varies by place and by source availability. People who want to report a correction, volunteer, collaborate, or ask questions are welcome to get in touch.
+			<p class="text-base text-app-ink mt-2 dark:text-app-text-dark">
+				Report a correction, ask a question, or volunteer.
 			</p>
-			<div class="mt-6 flex flex-wrap gap-3">
-				<NuxtLink to="/contact" class="btn-primary">
-					Contact the project
-				</NuxtLink>
-				<NuxtLink to="/neutrality" class="btn-secondary">
-					Read neutrality policy
-				</NuxtLink>
-				<NuxtLink to="/methodology" class="btn-secondary">
-					Review methodology
-				</NuxtLink>
-			</div>
-		</section>
+			<NuxtLink to="/contact" class="btn-primary mt-4">
+				Contact the project
+			</NuxtLink>
+		</div>
 	</section>
 </template>

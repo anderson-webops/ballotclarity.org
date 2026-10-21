@@ -224,12 +224,7 @@ usePageSeo({
 <template>
 	<section class="legal-page app-shell section-gap space-y-8">
 		<header class="max-w-4xl">
-			<div class="flex flex-wrap gap-2">
-				<TrustBadge label="Current policy" tone="accent" />
-				<TrustBadge label="Lookup handling disclosed" />
-				<TrustBadge label="No targeted advertising" tone="warning" />
-			</div>
-			<h1 class="text-5xl text-app-ink font-serif mt-5 dark:text-app-text-dark">
+			<h1 class="text-5xl text-app-ink font-serif dark:text-app-text-dark">
 				Privacy Policy
 			</h1>
 			<p class="text-base text-app-muted leading-8 mt-5 max-w-3xl dark:text-app-muted-dark">
@@ -245,14 +240,14 @@ usePageSeo({
 		</InfoCallout>
 
 		<section class="surface-panel">
-			<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+			<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 				What data we handle
 			</p>
 			<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
 				What data Ballot Clarity currently handles
 			</h2>
 			<div class="mt-6 gap-4 grid lg:grid-cols-2">
-				<article v-for="item in collectionSections" :key="item.title" class="px-5 py-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
+				<article v-for="item in collectionSections" :key="item.title" class="content-block">
 					<h3 class="text-xl text-app-ink font-serif dark:text-app-text-dark">
 						{{ item.title }}
 					</h3>
@@ -266,14 +261,14 @@ usePageSeo({
 		</section>
 
 		<section class="surface-panel">
-			<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+			<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 				Current third-party recipients
 			</p>
 			<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
 				Current third-party processors and civic-data recipients
 			</h2>
 			<div class="mt-6 gap-4 grid lg:grid-cols-2">
-				<article v-for="item in providerDisclosureSections" :key="item.title" class="px-5 py-5 rounded-3xl bg-app-bg dark:bg-app-bg-dark/70">
+				<article v-for="item in providerDisclosureSections" :key="item.title" class="content-block">
 					<h3 class="text-xl text-app-ink font-serif dark:text-app-text-dark">
 						{{ item.title }}
 					</h3>
@@ -288,28 +283,28 @@ usePageSeo({
 
 		<section class="gap-6 grid lg:grid-cols-2">
 			<div class="surface-panel">
-				<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+				<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 					How we use data
 				</p>
 				<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
 					Why the site uses data
 				</h2>
 				<ul class="text-sm text-app-muted leading-7 mt-6 space-y-3 dark:text-app-muted-dark">
-					<li v-for="item in useSections" :key="item" class="px-4 py-3 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70">
+					<li v-for="item in useSections" :key="item" class="content-block">
 						{{ item }}
 					</li>
 				</ul>
 			</div>
 
 			<div class="surface-panel">
-				<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+				<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 					How we share or disclose data
 				</p>
 				<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
 					Service providers, external links, and current limits
 				</h2>
 				<ul class="text-sm text-app-muted leading-7 mt-6 space-y-3 dark:text-app-muted-dark">
-					<li v-for="item in sharingSections" :key="item" class="px-4 py-3 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70">
+					<li v-for="item in sharingSections" :key="item" class="content-block">
 						{{ item }}
 					</li>
 				</ul>
@@ -318,14 +313,14 @@ usePageSeo({
 
 		<section class="gap-6 grid lg:grid-cols-[minmax(0,1fr)_minmax(0,0.95fr)]">
 			<div class="surface-panel">
-				<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+				<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 					Cookies and tracking
 				</p>
 				<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
 					No sale, sharing, or targeted advertising
 				</h2>
 				<ul class="text-sm text-app-muted leading-7 mt-6 space-y-3 dark:text-app-muted-dark">
-					<li v-for="item in cookieNotes" :key="item" class="px-4 py-3 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70">
+					<li v-for="item in cookieNotes" :key="item" class="content-block">
 						{{ item }}
 					</li>
 				</ul>
@@ -337,7 +332,7 @@ usePageSeo({
 		</section>
 
 		<section class="surface-panel">
-			<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+			<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 				Retention and deletion
 			</p>
 			<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
@@ -346,7 +341,7 @@ usePageSeo({
 			<div class="mt-6 overflow-x-auto">
 				<table class="text-left min-w-full">
 					<thead>
-						<tr class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+						<tr class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 							<th class="px-4 py-3 border-b border-app-line dark:border-app-line-dark">
 								Category
 							</th>
@@ -389,28 +384,28 @@ usePageSeo({
 
 		<section class="gap-6 grid lg:grid-cols-2">
 			<div class="surface-panel">
-				<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+				<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 					Your choices and requests
 				</p>
 				<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
 					Rights requests and no-account limits
 				</h2>
 				<ul class="text-sm text-app-muted leading-7 mt-6 space-y-3 dark:text-app-muted-dark">
-					<li v-for="item in rightsNotes" :key="item" class="px-4 py-3 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70">
+					<li v-for="item in rightsNotes" :key="item" class="content-block">
 						{{ item }}
 					</li>
 				</ul>
 			</div>
 
 			<div class="surface-panel">
-				<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+				<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 					Children and families
 				</p>
 				<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
 					Children's privacy
 				</h2>
 				<ul class="text-sm text-app-muted leading-7 mt-6 space-y-3 dark:text-app-muted-dark">
-					<li v-for="item in childrenNotes" :key="item" class="px-4 py-3 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70">
+					<li v-for="item in childrenNotes" :key="item" class="content-block">
 						{{ item }}
 					</li>
 				</ul>
@@ -419,21 +414,21 @@ usePageSeo({
 
 		<section class="gap-6 grid lg:grid-cols-[minmax(0,1fr)_minmax(0,0.95fr)]">
 			<div class="surface-panel">
-				<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+				<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 					Security
 				</p>
 				<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
 					How Ballot Clarity approaches privacy and security controls
 				</h2>
 				<ul class="text-sm text-app-muted leading-7 mt-6 space-y-3 dark:text-app-muted-dark">
-					<li v-for="item in securityNotes" :key="item" class="px-4 py-3 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70">
+					<li v-for="item in securityNotes" :key="item" class="content-block">
 						{{ item }}
 					</li>
 				</ul>
 			</div>
 
 			<div class="surface-panel">
-				<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+				<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 					Changes and contact
 				</p>
 				<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">

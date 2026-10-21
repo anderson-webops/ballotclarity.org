@@ -3,7 +3,6 @@ import type { BallotPlanSelection, Contest, PlannedMeasureDecision } from "~/typ
 import { storeToRefs } from "pinia";
 import { buildCompareRoute } from "~/stores/civic";
 import { buildPlanUnavailableMessaging } from "~/utils/plan-messaging";
-import { formatSourceCountLabel } from "~/utils/source-label";
 
 const civicStore = useCivicStore();
 const route = useRoute();
@@ -155,69 +154,41 @@ function printPlan() {
 
 <template>
 	<section class="app-shell section-gap space-y-6 lg:space-y-10 sm:space-y-8">
-		<header class="surface-panel overflow-hidden">
-			<div class="gap-8 grid lg:gap-10 xl:gap-12 xl:grid-cols-[minmax(0,1.18fr)_minmax(19rem,0.82fr)] xl:items-end">
-				<div>
-					<div class="flex flex-wrap gap-2">
-						<TrustBadge label="Booth-ready workflow" tone="accent" />
-						<TrustBadge label="Print-friendly" />
-						<TrustBadge label="Current ballot plan" tone="warning" />
-					</div>
-					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold mt-5 uppercase dark:text-app-muted-dark">
-						My ballot plan
-					</p>
-					<h1 class="text-5xl text-app-ink leading-tight font-serif mt-3 max-w-[12ch] dark:text-app-text-dark sm:max-w-[14ch]">
-						Save choices, review gaps, and bring a clean plan with you.
-					</h1>
-					<p class="text-base text-app-muted leading-8 mt-6 max-w-3xl dark:text-app-muted-dark">
-						This page turns the ballot guide into a portable reference. Save one choice per contest, mark measures for review, and print the result if you do not want to rely on a phone at the polling place.
-					</p>
-				</div>
-
-				<div class="xl:pb-1 lg:max-w-xl xl:max-w-none">
-					<div class="p-5 border border-app-line/70 rounded-[1.9rem] bg-app-bg/55 dark:border-app-line-dark dark:bg-app-bg-dark/55">
-						<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-							Quick actions
-						</p>
-						<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
-							{{ data
-								? "Print the plan, go back to the ballot guide, or clear saved choices before you leave."
-								: "The ballot plan opens after Ballot Clarity publishes a local guide for this area." }}
-						</p>
-						<div class="mt-5 flex flex-col gap-3">
-							<button v-if="data" type="button" class="btn-primary w-full justify-center" @click="printPlan">
-								<span class="i-carbon-printer" />
-								Print this plan
-							</button>
-							<NuxtLink to="/accessibility" class="btn-secondary w-full justify-center print-hidden">
-								Accessibility and print standards
-							</NuxtLink>
-							<NuxtLink v-if="data" :to="`/ballot/${electionSlug}`" class="btn-secondary w-full justify-center">
-								Return to ballot
-							</NuxtLink>
-							<NuxtLink v-else to="/#location-lookup" class="btn-primary w-full justify-center">
-								Return to lookup
-							</NuxtLink>
-							<NuxtLink v-if="!data" to="/coverage" class="btn-secondary w-full justify-center">
-								Open coverage profile
-							</NuxtLink>
-							<button v-if="data" type="button" class="btn-secondary w-full justify-center" @click="civicStore.clearBallotPlan()">
-								Clear saved choices
-							</button>
-							<NuxtLink v-if="data && showPersistedPlanState && effectiveCompareCount >= 2" :to="compareHref" class="btn-secondary w-full justify-center">
-								Open compare
-							</NuxtLink>
-						</div>
-					</div>
-				</div>
+		<header>
+			<h1 class="text-5xl text-app-ink leading-tight font-serif dark:text-app-text-dark">
+				My ballot plan
+			</h1>
+			<p v-if="data" class="text-base text-app-muted mt-3 dark:text-app-muted-dark">
+				{{ data.election.name }} · {{ data.location.displayName }} · {{ formatDate(data.election.date) }}
+			</p>
+			<p v-else class="text-base text-app-muted mt-3 dark:text-app-muted-dark">
+				The ballot plan opens after Ballot Clarity publishes a local guide for this area.
+			</p>
+			<div class="mt-5 flex flex-wrap gap-x-6 gap-y-3 items-center print-hidden">
+				<button v-if="data" type="button" class="btn-primary" @click="printPlan">
+					<span class="i-carbon-printer" aria-hidden="true" />
+					Print
+				</button>
+				<NuxtLink v-if="data" :to="`/ballot/${electionSlug}`" class="btn-secondary">
+					Back to ballot
+				</NuxtLink>
+				<NuxtLink v-else to="/#location-lookup" class="btn-primary">
+					Enter your address
+				</NuxtLink>
+				<NuxtLink v-if="data && showPersistedPlanState && effectiveCompareCount >= 2" :to="compareHref" class="btn-secondary">
+					Open compare
+				</NuxtLink>
+				<button v-if="data" type="button" class="text-sm text-app-muted font-medium underline decoration-app-line underline-offset-4 min-h-10 dark:text-app-muted-dark hover:text-app-ink focus-ring" @click="civicStore.clearBallotPlan()">
+					Clear saved choices
+				</button>
 			</div>
 		</header>
 
 		<LocationChangePanel :election="lookupElection" />
 
 		<div v-if="pending" class="space-y-6">
-			<div class="surface-panel bg-white/70 h-48 animate-pulse dark:bg-app-panel-dark/70" />
-			<div class="surface-panel bg-white/70 h-80 animate-pulse dark:bg-app-panel-dark/70" />
+			<div class="rounded-lg bg-app-bg h-48 animate-pulse dark:bg-app-bg-dark" />
+			<div class="rounded-lg bg-app-bg h-80 animate-pulse dark:bg-app-bg-dark" />
 		</div>
 
 		<div v-else-if="error || !data" class="max-w-3xl">
@@ -229,16 +200,10 @@ function printPlan() {
 		<div v-else class="space-y-8 lg:space-y-10">
 			<section class="gap-8 grid lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] print-hidden">
 				<div class="surface-panel">
-					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-						Plan progress
-					</p>
-					<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
+					<h2 class="text-2xl text-app-ink font-serif dark:text-app-text-dark">
 						{{ completionStats.progressLabel }}
 					</h2>
-					<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-						Location: {{ data.location.displayName }}. Election: {{ data.election.name }} on {{ formatDate(data.election.date) }}.
-					</p>
-					<div class="mt-6 rounded-full bg-app-line/60 h-3 dark:bg-app-line-dark">
+					<div class="mt-4 rounded-full bg-app-line/60 h-3 dark:bg-app-line-dark">
 						<div
 							class="rounded-full bg-app-accent h-3 transition-[width]"
 							:style="{ width: `${completionStats.progressPercent}%` }"
@@ -250,26 +215,15 @@ function printPlan() {
 				</div>
 
 				<div class="surface-panel">
-					<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
-						Before you head out
-					</p>
-					<ul class="text-sm text-app-muted leading-7 mt-5 space-y-3 dark:text-app-muted-dark">
-						<li>Verify polling-place, early-voting, or ballot-return logistics in the official links before leaving.</li>
-						<li>Print this page or copy the key choices if phone use may be restricted where you vote.</li>
-						<li>Keep undecided contests visible here instead of rushing through them in the booth.</li>
-					</ul>
-					<div class="mt-6">
-						<OfficialResourceList
-							:resources="data.election.officialResources"
-							title="Official logistics links"
-							note="Use these links for final voting instructions and deadline verification."
-						/>
-					</div>
+					<OfficialResourceList
+						:resources="data.election.officialResources"
+						title="Official links"
+					/>
 				</div>
 			</section>
 
 			<section class="print-only surface-panel">
-				<p class="text-xs tracking-[0.24em] font-semibold uppercase">
+				<p class="text-xs tracking-[0.06em] font-semibold uppercase">
 					Ballot Clarity printout
 				</p>
 				<h2 class="text-3xl font-serif mt-3">
@@ -278,34 +232,28 @@ function printPlan() {
 				<p class="text-sm mt-4">
 					{{ data.location.displayName }} · {{ formatDate(data.election.date) }}
 				</p>
-				<p class="text-sm mt-4">
-					This print view keeps saved choices and source reminders in a simple, high-contrast format you can bring as a personal reference.
-				</p>
 			</section>
 
 			<section v-if="!showPersistedPlanState" class="surface-panel print-hidden">
-				<InfoCallout title="Syncing your saved plan" tone="info">
-					Ballot Clarity is loading the compare list and saved ballot-plan choices stored in this browser before it renders your personal checklist.
-				</InfoCallout>
+				<p class="text-base text-app-muted dark:text-app-muted-dark">
+					Loading saved choices…
+				</p>
 			</section>
 
 			<section v-else-if="plannedEntries.length" class="print-plan-list surface-panel">
 				<div class="flex flex-wrap gap-4 items-start justify-between">
 					<div>
-						<p class="text-xs text-app-muted tracking-[0.24em] font-semibold uppercase dark:text-app-muted-dark">
+						<h2 class="text-2xl text-app-ink font-serif dark:text-app-text-dark">
 							Saved choices
-						</p>
-						<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-							Your current ballot plan
 						</h2>
 					</div>
 					<UpdatedAt :value="mostRecentSavedAt" label="Most recent save" />
 				</div>
 				<div class="print-plan-grid mt-6 space-y-4">
-					<article v-for="entry in plannedEntries" :key="entry.contest.slug" class="print-plan-entry px-5 py-5 border border-app-line/80 rounded-3xl bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
+					<article v-for="entry in plannedEntries" :key="entry.contest.slug" class="print-plan-entry py-5 border-b border-app-line dark:border-app-line-dark last:border-b-0">
 						<div class="flex flex-wrap gap-4 items-start justify-between">
 							<div class="min-w-0">
-								<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+								<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 									{{ entry.contest.office }}
 								</p>
 								<h3 class="text-2xl text-app-ink font-serif mt-2 dark:text-app-text-dark">
@@ -320,24 +268,18 @@ function printPlan() {
 								<UpdatedAt :value="entry.savedAt" label="Saved" />
 							</div>
 						</div>
-						<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
+						<p class="text-base text-app-ink leading-7 mt-4 dark:text-app-text-dark">
 							{{ entry.summary }}
 						</p>
 						<div class="mt-4 flex flex-wrap gap-3 items-center justify-between">
-							<p class="text-sm text-app-muted dark:text-app-muted-dark">
-								{{ formatSourceCountLabel(entry.sourceCount) }} linked in the detail page.
-							</p>
-							<div class="flex flex-wrap gap-3">
+							<div class="flex flex-wrap gap-x-6 gap-y-2 print-hidden">
 								<NuxtLink :to="entry.href" class="btn-secondary">
-									Open detail page
+									Details
 								</NuxtLink>
 								<button type="button" class="btn-secondary" @click="civicStore.clearPlannedContest(entry.contest.slug)">
 									Remove from plan
 								</button>
 							</div>
-						</div>
-						<div class="mt-4 p-4 rounded-2xl bg-white/80 dark:bg-app-panel-dark/70">
-							<ContestRoleGuide :contest="entry.contest" />
 						</div>
 					</article>
 				</div>
@@ -345,25 +287,22 @@ function printPlan() {
 
 			<section v-else class="surface-panel">
 				<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
-					No contests saved yet.
+					No choices saved yet.
 				</h2>
-				<p class="text-sm text-app-muted leading-7 mt-4 max-w-3xl dark:text-app-muted-dark">
-					Save one candidate or measure choice from the ballot guide to build a printable reference. Ballot Clarity keeps the plan neutral: it records your current choice and sends you back to source-backed pages when you want to review it.
-				</p>
 				<NuxtLink :to="`/ballot/${electionSlug}`" class="btn-primary mt-6">
-					Start saving choices
+					Go to the ballot
 				</NuxtLink>
 			</section>
 
 			<ExpandableSection
 				v-if="unplannedContests.length"
 				eyebrow="Still open"
-				title="Contests still marked for review"
+				title="Not decided yet"
 				class="print-hidden"
 			>
 				<div class="mt-6 gap-4 grid md:grid-cols-2">
-					<article v-for="contest in unplannedContests" :key="contest.slug" class="p-4 rounded-2xl bg-app-bg dark:bg-app-bg-dark/70">
-						<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+					<article v-for="contest in unplannedContests" :key="contest.slug" class="content-block">
+						<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 							{{ contest.jurisdiction }}
 						</p>
 						<h3 class="text-xl text-app-ink font-serif mt-2 dark:text-app-text-dark">

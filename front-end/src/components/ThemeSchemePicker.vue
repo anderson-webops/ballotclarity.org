@@ -16,10 +16,12 @@ const colorMode = useColorMode();
 const { activeScheme, scheme, schemes } = useThemeScheme();
 
 const open = ref(false);
+const hasMounted = ref(false);
 const panelRef = ref<HTMLElement | null>(null);
 const triggerRef = ref<HTMLElement | null>(null);
 const panelStyle = ref<Record<string, string>>({});
 const isDark = computed(() => isDarkThemeValue(colorMode.value));
+const currentModeLabel = computed(() => hasMounted.value ? (isDark.value ? "Dark" : "Light") : "Mode");
 const panelAlignment = computed(() => props.panelAlign ?? props.align);
 
 function toggleOpen() {
@@ -61,6 +63,10 @@ useEventListener("keydown", (event: KeyboardEvent) => {
 
 useEventListener("resize", updatePanelPosition);
 
+onMounted(() => {
+	hasMounted.value = true;
+});
+
 watch(open, async (nextOpen) => {
 	if (!nextOpen) {
 		panelStyle.value = {};
@@ -90,7 +96,7 @@ watch(panelAlignment, async () => {
 			ref="panelRef"
 			role="dialog"
 			aria-label="Color scheme picker"
-			class="theme-scheme-picker__panel p-4 border border-app-line rounded-[1.45rem] bg-app-panel shadow-[0_28px_80px_rgba(0,0,0,0.26)] bottom-[calc(100%+0.75rem)] left-0 absolute z-[90] dark:border-app-line-dark dark:bg-app-panel-dark"
+			class="theme-scheme-picker__panel p-4 border border-app-line rounded-xl bg-app-panel shadow-[0_28px_80px_rgba(0,0,0,0.26)] bottom-[calc(100%+0.75rem)] left-0 absolute z-[90] dark:border-app-line-dark dark:bg-app-panel-dark"
 			:class="[
 				props.compact ? 'w-[min(28rem,calc(100vw-2rem))]' : 'w-[min(30rem,calc(100vw-2rem))]',
 			]"
@@ -98,14 +104,14 @@ watch(panelAlignment, async () => {
 		>
 			<div class="flex gap-4 items-start justify-between">
 				<div>
-					<p class="text-xs text-app-muted tracking-[0.22em] font-semibold uppercase dark:text-app-muted-dark">
+					<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 						Color scheme
 					</p>
 					<h2 class="text-base text-app-ink font-semibold mt-2 dark:text-app-text-dark">
 						Choose the palette family.
 					</h2>
 					<p class="text-sm text-app-muted leading-6 mt-2 dark:text-app-muted-dark">
-						The palette applies to both light and dark mode. Current mode: {{ isDark ? "Dark" : "Light" }}.
+						The palette applies to both light and dark mode. Current mode: {{ currentModeLabel }}.
 					</p>
 				</div>
 				<button
@@ -123,7 +129,7 @@ watch(panelAlignment, async () => {
 					v-for="option in schemes"
 					:key="option.id"
 					type="button"
-					class="p-4 text-left border rounded-[1.25rem] transition focus-ring"
+					class="p-4 text-left border rounded-xl transition focus-ring"
 					:class="option.id === scheme
 						? 'border-app-accent bg-app-accent/10 shadow-[0_0_0_1px_rgba(var(--app-accent-rgb),0.24)]'
 						: 'border-app-line bg-app-bg/60 hover:border-app-accent dark:border-app-line-dark dark:bg-app-bg-dark/50'"
@@ -152,7 +158,7 @@ watch(panelAlignment, async () => {
 						</div>
 
 						<div class="flex shrink-0 gap-2 self-start">
-							<div class="p-1.5 border border-black/8 rounded-2xl bg-white/40">
+							<div class="p-1.5 border border-black/8 rounded-2xl bg-app-panel">
 								<div class="flex gap-1">
 									<span class="border border-black/8 rounded-xl h-7 w-7" :style="{ backgroundColor: option.swatches.light.surface }" />
 									<span class="rounded-full h-7 w-3" :style="{ backgroundColor: option.swatches.light.accent }" />
@@ -186,8 +192,8 @@ watch(panelAlignment, async () => {
 				class="text-sm text-app-ink font-semibold dark:text-app-text-dark"
 				:class="props.compact ? 'min-w-[4.75rem] text-left' : ''"
 			>{{ activeScheme.label }}</span>
-			<span class="text-xs text-app-muted tracking-[0.14em] uppercase dark:text-app-muted-dark">
-				{{ isDark ? "Dark" : "Light" }}
+			<span class="text-xs text-app-muted tracking-[0.06em] uppercase dark:text-app-muted-dark">
+				{{ currentModeLabel }}
 			</span>
 		</button>
 	</div>

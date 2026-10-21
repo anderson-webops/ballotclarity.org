@@ -22,56 +22,41 @@ function getSourceRecordHref(source: Source) {
 
 <template>
 	<div>
-		<div v-if="title || note" class="mb-3">
-			<h3 v-if="title" class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
+		<div v-if="title || note" class="mb-2">
+			<h3 v-if="title" class="text-base text-app-ink font-semibold dark:text-app-text-dark">
 				{{ title }}
 			</h3>
-			<p v-if="note" class="text-xs text-app-muted mt-1 dark:text-app-muted-dark">
+			<p v-if="note" class="text-sm text-app-muted mt-1 dark:text-app-muted-dark">
 				{{ note }}
 			</p>
 		</div>
 
-		<ul class="space-y-3">
+		<ul>
 			<li
 				v-for="source in sources"
 				:key="source.id"
-				class="p-4 border border-app-line/70 rounded-2xl bg-white/70 dark:border-app-line-dark dark:bg-app-panel-dark/70"
-				:class="compact ? 'p-3' : 'p-4'"
+				class="border-b border-app-line dark:border-app-line-dark last:border-b-0"
+				:class="compact ? 'py-2' : 'py-3'"
 			>
-				<div class="flex flex-wrap gap-2 items-center">
-					<SourceAuthorityBadge :authority="source.authority" />
-					<span class="text-[11px] text-app-muted tracking-[0.14em] font-semibold px-2.5 py-1 rounded-full bg-app-bg uppercase dark:text-app-muted-dark dark:bg-app-bg-dark/70">
-						{{ source.type }}
-					</span>
-					<span class="text-xs text-app-muted dark:text-app-muted-dark">{{ formatDate(source.date) }}</span>
-				</div>
 				<NuxtLink
 					v-if="getSourceRecordHref(source)"
 					:to="getSourceRecordHref(source)!"
-					class="text-sm text-app-ink font-semibold mt-3 rounded-lg inline-flex gap-2 transition items-start dark:text-app-text-dark hover:text-app-accent focus-ring dark:hover:text-white"
+					class="text-base text-app-ink font-semibold underline decoration-app-line underline-offset-4 transition dark:text-app-text-dark hover:text-app-accent hover:decoration-current focus-ring"
 				>
-					<span class="i-carbon-document text-base mt-0.5" />
-					<span>{{ source.title }}</span>
+					{{ source.title }}
 				</NuxtLink>
-				<p v-else class="text-sm text-app-ink font-semibold mt-3 inline-flex gap-2 items-start dark:text-app-text-dark">
-					<span class="i-carbon-document text-base mt-0.5" />
-					<span>{{ source.title }}</span>
+				<p v-else class="text-base text-app-ink font-semibold dark:text-app-text-dark">
+					{{ source.title }}
 				</p>
-				<p class="text-xs text-app-muted mt-2 dark:text-app-muted-dark">
-					{{ source.publisher }}
+				<p class="text-sm text-app-muted mt-0.5 dark:text-app-muted-dark">
+					{{ source.publisher }} · <SourceAuthorityBadge :authority="source.authority" /> · {{ formatDate(source.date) }}
 				</p>
-				<p class="text-xs text-app-muted mt-1 dark:text-app-muted-dark">
-					Source system: {{ source.sourceSystem }}
-				</p>
-				<p v-if="!getSourceRecordHref(source)" class="text-xs text-app-muted mt-2 dark:text-app-muted-dark">
-					This citation stays inline on this page and is not published as a standalone source record.
-				</p>
-				<p v-if="source.note" class="text-xs text-app-muted mt-2 dark:text-app-muted-dark">
+				<p v-if="source.note && !compact" class="text-sm text-app-muted mt-1 dark:text-app-muted-dark">
 					{{ source.note }}
 				</p>
-				<SafeExternalLink v-if="source.url" :href="source.url" class="text-xs text-app-accent font-semibold mt-3 rounded-lg inline-flex gap-2 items-center focus-ring">
-					<span class="i-carbon-launch" />
-					Open source file
+				<SafeExternalLink v-if="source.url" :href="source.url" class="text-sm btn-secondary min-h-8">
+					Open source
+					<span class="i-carbon-launch" aria-hidden="true" />
 				</SafeExternalLink>
 			</li>
 		</ul>

@@ -104,7 +104,7 @@ usePageSeo({
 			<NuxtLink to="/admin/content" class="text-sm text-app-muted font-semibold rounded-full dark:text-app-muted-dark hover:text-app-ink focus-ring dark:hover:text-app-text-dark">
 				Back to content
 			</NuxtLink>
-			<p class="text-xs text-app-muted tracking-[0.24em] font-semibold mt-6 uppercase dark:text-app-muted-dark">
+			<p class="text-xs text-app-muted tracking-[0.06em] font-semibold mt-6 uppercase dark:text-app-muted-dark">
 				Content history
 			</p>
 			<h1 class="text-5xl text-app-ink font-serif mt-4 dark:text-app-text-dark">
@@ -142,32 +142,32 @@ usePageSeo({
 					<TrustBadge :label="item.published ? 'Published' : 'Internal only'" :tone="item.published ? 'accent' : 'warning'" />
 				</div>
 				<div class="mt-6 gap-5 grid md:grid-cols-2 xl:grid-cols-4">
-					<div class="p-5 border border-app-line rounded-3xl bg-white/70 dark:border-app-line-dark dark:bg-app-panel-dark/70">
-						<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+					<div class="p-5 border border-app-line rounded-xl bg-app-panel dark:border-app-line-dark dark:bg-app-panel-dark/70">
+						<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 							Owner
 						</p>
 						<p class="text-lg text-app-ink font-semibold mt-3 dark:text-app-text-dark">
 							{{ item.assignedTo }}
 						</p>
 					</div>
-					<div class="p-5 border border-app-line rounded-3xl bg-white/70 dark:border-app-line-dark dark:bg-app-panel-dark/70">
-						<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+					<div class="p-5 border border-app-line rounded-xl bg-app-panel dark:border-app-line-dark dark:bg-app-panel-dark/70">
+						<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 							Priority
 						</p>
 						<p class="text-lg text-app-ink font-semibold mt-3 dark:text-app-text-dark">
 							{{ item.priority }}
 						</p>
 					</div>
-					<div class="p-5 border border-app-line rounded-3xl bg-white/70 dark:border-app-line-dark dark:bg-app-panel-dark/70">
-						<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+					<div class="p-5 border border-app-line rounded-xl bg-app-panel dark:border-app-line-dark dark:bg-app-panel-dark/70">
+						<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 							Updated
 						</p>
 						<p class="text-lg text-app-ink font-semibold mt-3 dark:text-app-text-dark">
 							{{ formatDate(item.updatedAt) }}
 						</p>
 					</div>
-					<div class="p-5 border border-app-line rounded-3xl bg-white/70 dark:border-app-line-dark dark:bg-app-panel-dark/70">
-						<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+					<div class="p-5 border border-app-line rounded-xl bg-app-panel dark:border-app-line-dark dark:bg-app-panel-dark/70">
+						<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 							Revisions
 						</p>
 						<p class="text-lg text-app-ink font-semibold mt-3 dark:text-app-text-dark">
@@ -189,7 +189,7 @@ usePageSeo({
 			<article v-for="history in historyData?.history ?? []" :key="history.id" class="surface-panel">
 				<div class="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
 					<div>
-						<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+						<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 							{{ formatDate(history.changedAt) }}
 						</p>
 						<h2 class="text-2xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
@@ -199,7 +199,7 @@ usePageSeo({
 							Changed fields: {{ changedLabel(history) }}
 						</p>
 					</div>
-					<div v-if="confirmRollbackId === history.id" class="p-4 border border-app-line rounded-3xl bg-white/70 shrink-0 space-y-3 dark:border-app-line-dark dark:bg-app-panel-dark/70">
+					<div v-if="confirmRollbackId === history.id" class="p-4 border border-app-line rounded-xl bg-app-panel shrink-0 space-y-3 dark:border-app-line-dark dark:bg-app-panel-dark/70">
 						<p class="text-sm text-app-muted leading-6 dark:text-app-muted-dark">
 							Restore the version from {{ formatDate(history.changedAt) }}?
 						</p>
@@ -218,8 +218,8 @@ usePageSeo({
 				</div>
 
 				<div class="mt-6 gap-4 grid lg:grid-cols-2">
-					<div class="p-5 border border-app-line rounded-3xl bg-white/70 dark:border-app-line-dark dark:bg-app-panel-dark/70">
-						<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+					<div class="p-5 border border-app-line rounded-xl bg-app-panel dark:border-app-line-dark dark:bg-app-panel-dark/70">
+						<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 							Before
 						</p>
 						<dl class="mt-4 space-y-4">
@@ -233,8 +233,8 @@ usePageSeo({
 							</div>
 						</dl>
 					</div>
-					<div class="p-5 border border-app-line rounded-3xl bg-white/70 dark:border-app-line-dark dark:bg-app-panel-dark/70">
-						<p class="text-xs text-app-muted tracking-[0.18em] font-semibold uppercase dark:text-app-muted-dark">
+					<div class="p-5 border border-app-line rounded-xl bg-app-panel dark:border-app-line-dark dark:bg-app-panel-dark/70">
+						<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 							After
 						</p>
 						<dl class="mt-4 space-y-4">

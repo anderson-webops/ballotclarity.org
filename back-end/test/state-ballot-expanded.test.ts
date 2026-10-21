@@ -108,8 +108,8 @@ test("source-published candidate websites retain only safe absolute public links
 test("the national research inventory separates actual adapters from pending coverage", () => {
 	const rows = parseCsv(readFileSync(new URL("../../docs/state-coverage-2026.csv", import.meta.url), "utf8"), { columns: true }) as Array<{ state_code: string; integration_status: string; official_source_url: string }>;
 	assert.deepEqual(rows.map(row => row.state_code).sort(), usStates.map(state => state[0]).sort());
-	assert.deepEqual(rows.filter(row => row.integration_status === "integrated").map(row => row.state_code).sort(), stateBallotSources.map(source => source.stateCode).sort());
-	assert.ok(rows.some(row => row.integration_status === "research-pending"));
+	assert.deepEqual(rows.filter(row => row.integration_status.startsWith("integrated")).map(row => row.state_code).sort(), stateBallotSources.map(source => source.stateCode).sort());
+	assert.ok(rows.some(row => !row.integration_status.startsWith("integrated")));
 	for (const source of stateBallotSources)
 		assert.equal(rows.find(row => row.state_code === source.stateCode)?.official_source_url, source.pageUrl);
 });

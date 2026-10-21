@@ -4,6 +4,10 @@ import { dirname, resolve } from "node:path";
 const projectRoot = resolve(import.meta.dirname, "..");
 const runtimeAssets = [
 	{
+		sourcePath: resolve(projectRoot, "src", "data", "state-ballots", "illinois-2026.json"),
+		targetPath: resolve(projectRoot, "dist", "data", "state-ballots", "illinois-2026.json")
+	},
+	{
 		sourcePath: resolve(projectRoot, "admin-schema.sql"),
 		targetPath: resolve(projectRoot, "dist", "admin-schema.sql")
 	},

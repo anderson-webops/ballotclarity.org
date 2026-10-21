@@ -1,0 +1,5186 @@
+{
+  "schemaVersion": 1,
+  "stateCode": "IL",
+  "sourceId": "il-sbe-2026",
+  "electionDate": "2026-11-03",
+  "sourceUrl": "https://www.elections.il.gov/ElectionOperations/CandidateFilingSearch.aspx?ID=sejIrI%2BQmww%3D",
+  "retrievalPolicy": "manual-snapshot",
+  "retrievedAt": "2026-10-21T04:59:46.328Z",
+  "sourceSha256": "d16262ee1ed4b5935046f82a8f21f96f781776d44a9bf371146f9df04699dc3a",
+  "recordCount": 523,
+  "records": [
+    {
+      "id": "38d2c8187f4046fc62565c6d",
+      "name": "Rhys Read",
+      "party": "REPUBLICAN",
+      "office": "State House District 56",
+      "district": "56",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "818179ab1ada8ed02b1040df",
+      "name": "Jessica Dixon Heitman",
+      "party": "DEMOCRATIC",
+      "office": "State House District 97",
+      "district": "97",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "a65492a82d31c26a06aaa63f",
+      "name": "Jared Ploger",
+      "party": "DEMOCRATIC",
+      "office": "State Senate District 42",
+      "district": "42",
+      "scope": "state-senate",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "7522b091b016006937db8fb2",
+      "name": "Marc Parker",
+      "party": "DEMOCRATIC",
+      "office": "3RD CIRCUIT - 2ND SUBCIRCUIT - STOBBS VACANCY",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "67e96b9e344fbdcb7664f306",
+      "name": "Joseph M. Tracy",
+      "party": "REPUBLICAN",
+      "office": "State House District 54",
+      "district": "54",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "b46e34451003f5c17ecb9111",
+      "name": "Abdallah J. Alkodah",
+      "party": "INDEPENDENT",
+      "office": "State House District 13",
+      "district": "13",
+      "scope": "state-house",
+      "status": "inactive",
+      "sourceStatus": "Removed"
+    },
+    {
+      "id": "eff6c3f9b43159415885f047",
+      "name": "Mayra Macias",
+      "party": "INDEPENDENT",
+      "office": "U.S. House District 4",
+      "district": "4",
+      "scope": "congressional",
+      "status": "inactive",
+      "sourceStatus": "Removed",
+      "candidateUrl": "https://voteformayra.com/"
+    },
+    {
+      "id": "80e61b80eb83fa95bfb976cf",
+      "name": "Byron Sigcho Lopez",
+      "party": "INDEPENDENT",
+      "office": "U.S. House District 4",
+      "district": "4",
+      "scope": "congressional",
+      "status": "inactive",
+      "sourceStatus": "Removed",
+      "candidateUrl": "https://www.bslforcongress.com/"
+    },
+    {
+      "id": "90d3fe943ea0a2e29064982e",
+      "name": "Monet S. Wilson",
+      "party": "INDEPENDENT",
+      "office": "State House District 29",
+      "district": "29",
+      "scope": "state-house",
+      "status": "withdrawn",
+      "sourceStatus": "Withdrawn"
+    },
+    {
+      "id": "6084b7d5c7065a7a12963d70",
+      "name": "Collin Corbett / Carolyn Schofield",
+      "party": "INDEPENDENT",
+      "office": "GOVERNOR AND LIEUTENANT GOVERNOR",
+      "district": "",
+      "scope": "statewide",
+      "status": "filed",
+      "sourceStatus": "Active",
+      "candidateUrl": "https://collinforil.com/"
+    },
+    {
+      "id": "1c75301cd6a838742bf51bc7",
+      "name": "Griselda Romero / Eyde Arndell",
+      "party": "GREEN",
+      "office": "GOVERNOR AND LIEUTENANT GOVERNOR",
+      "district": "",
+      "scope": "statewide",
+      "status": "inactive",
+      "sourceStatus": "Removed"
+    },
+    {
+      "id": "8e8d900cb6dec7ef78cc0051",
+      "name": "Anna Schiefelbein",
+      "party": "GREEN",
+      "office": "COMPTROLLER",
+      "district": "",
+      "scope": "statewide",
+      "status": "inactive",
+      "sourceStatus": "Removed",
+      "candidateUrl": "https://www.voteforanna.org/"
+    },
+    {
+      "id": "f589b77336ca0c7e42453887",
+      "name": "Jeffrey Schiefelbein",
+      "party": "GREEN",
+      "office": "SECRETARY OF STATE",
+      "district": "",
+      "scope": "statewide",
+      "status": "inactive",
+      "sourceStatus": "Removed"
+    },
+    {
+      "id": "1253ec4cf318e3dee99d164b",
+      "name": "Timothea Papas",
+      "party": "GREEN",
+      "office": "TREASURER",
+      "district": "",
+      "scope": "statewide",
+      "status": "inactive",
+      "sourceStatus": "Removed"
+    },
+    {
+      "id": "277fe30a7f692d896abf0073",
+      "name": "Richard Mayers",
+      "party": "NEW",
+      "office": "GOVERNOR AND LIEUTENANT GOVERNOR",
+      "district": "",
+      "scope": "statewide",
+      "status": "inactive",
+      "sourceStatus": "Removed"
+    },
+    {
+      "id": "16d3afccd3106a4c9c05487a",
+      "name": "William Lo",
+      "party": "INDEPENDENT",
+      "office": "State Senate District 59",
+      "district": "59",
+      "scope": "state-senate",
+      "status": "withdrawn",
+      "sourceStatus": "Withdrawn",
+      "candidateUrl": "https://www.electlo.com/"
+    },
+    {
+      "id": "6435b5caa271c9fba55d21c4",
+      "name": "Gary Pierce / Alejandro Cabrera",
+      "party": "INDEPENDENCE PARTY",
+      "office": "GOVERNOR AND LIEUTENANT GOVERNOR",
+      "district": "",
+      "scope": "statewide",
+      "status": "inactive",
+      "sourceStatus": "Removed",
+      "candidateUrl": "https://www.standwithgary.com/"
+    },
+    {
+      "id": "5752819cd7f9c64c40e86fb9",
+      "name": "Andrew Stephen Cottingham",
+      "party": "INDEPENDENCE PARTY",
+      "office": "State House District 112",
+      "district": "112",
+      "scope": "state-house",
+      "status": "inactive",
+      "sourceStatus": "Removed",
+      "candidateUrl": "https://electcottingham.us/"
+    },
+    {
+      "id": "bc09fefb9c4bb631cc75c8a2",
+      "name": "Tyrone F Muhammad",
+      "party": "INDEPENDENT",
+      "office": "UNITED STATES SENATOR",
+      "district": "",
+      "scope": "statewide",
+      "status": "inactive",
+      "sourceStatus": "Removed"
+    },
+    {
+      "id": "e8f756b73d9636075031321d",
+      "name": "Chad M. Long",
+      "party": "INDEPENDENT",
+      "office": "9TH CIRCUIT - CAVANAUGH VACANCY",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "54dc2f276a832d706d440783",
+      "name": "Jordan Villas",
+      "party": "WORKING CLASS PARTY",
+      "office": "State Senate District 12",
+      "district": "12",
+      "scope": "state-senate",
+      "status": "inactive",
+      "sourceStatus": "Removed",
+      "candidateUrl": "https://workingclassparty.org/"
+    },
+    {
+      "id": "169738f24a58f9fd39b2be2c",
+      "name": "Whitfield Harrington Jr",
+      "party": "AMERICAN CENTER PARTY",
+      "office": "UNITED STATES SENATOR",
+      "district": "",
+      "scope": "statewide",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "a8c99c31ecd84c879f0fd07e",
+      "name": "Darryl Robinson",
+      "party": "INDEPENDENT",
+      "office": "State House District 9",
+      "district": "9",
+      "scope": "state-house",
+      "status": "inactive",
+      "sourceStatus": "Removed"
+    },
+    {
+      "id": "81a8fcd299b388e55f441298",
+      "name": "Chris Getty",
+      "party": "INDEPENDENT",
+      "office": "U.S. House District 4",
+      "district": "4",
+      "scope": "congressional",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "c424cb0d33d8467d701fed42",
+      "name": "Bertina E. Lampkin",
+      "office": "1ST APPELLATE - RETAIN LAMPKIN",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "9e9dad2029b19081fc6a5cb4",
+      "name": "William J. \"Bill\" Thurston",
+      "office": "1ST CIRCUIT - RETAIN THURSTON",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "0612027752087339e38b2d0c",
+      "name": "Sarah K. Tripp",
+      "office": "1ST CIRCUIT - RETAIN TRIPP",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "c0eb627940d907af3ca75a76",
+      "name": "Allison Lorton",
+      "office": "7TH CIRCUIT - RETAIN LORTON",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "5fe7fb8dad114dc4d055d629",
+      "name": "Michael L. \"Mike\" Atterberry",
+      "office": "8TH CIRCUIT - RETAIN ATTERBERRY",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "928327ee1b6f1288e407bc7f",
+      "name": "Charles H.W. Burch",
+      "office": "8TH CIRCUIT - RETAIN BURCH",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "198049991c870e1ea94c57c4",
+      "name": "Tad Brenner",
+      "office": "8TH CIRCUIT - RETAIN BRENNER",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "8f9196a692e1a5e6ac6e9c08",
+      "name": "Andrew J. Doyle",
+      "office": "9TH CIRCUIT - RETAIN DOYLE",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "1f6a881870fbbd5ee0d3e17c",
+      "name": "David L. Vancil, Jr.",
+      "office": "9TH CIRCUIT - RETAIN VANCIL, JR.",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "b8c7194ead2c668ecde44281",
+      "name": "Peter W. Church",
+      "office": "14TH CIRCUIT - RETAIN CHURCH",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "d1243de80147b1b4968c1585",
+      "name": "Terence M. Patton",
+      "office": "14TH CIRCUIT - RETAIN PATTON",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "1dd958d90c1d1237c66f5e4e",
+      "name": "John B. \"Ben\" Roe IV",
+      "office": "15TH CIRCUIT - RETAIN ROE IV",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "e52a8aef97b2746ca2dca62a",
+      "name": "Douglas E. Lee",
+      "office": "15TH CIRCUIT - RETAIN LEE",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "36d5d8c7da47092d5e84a55a",
+      "name": "J. Jerry Kane",
+      "office": "15TH CIRCUIT - RETAIN KANE",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "29c6e74bde9c166fb2b200fb",
+      "name": "Joseph M. Grady",
+      "office": "16TH CIRCUIT - RETAIN GRADY",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "06d147078f7981747a3a24f7",
+      "name": "Donald (D.J.) Tegeler",
+      "office": "16TH CIRCUIT - RETAIN TEGELER",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "d59b3815455e442270c42759",
+      "name": "Robert K. Villa",
+      "office": "16TH CIRCUIT - RETAIN VILLA",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "6ad2083a8500a904a46b26fb",
+      "name": "Elizabeth Flood",
+      "office": "16TH CIRCUIT - RETAIN FLOOD",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "499c118da2359fda5077b12a",
+      "name": "Lisa R. Fabiano",
+      "office": "17TH CIRCUIT - RETAIN FABIANO",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "6db7707b038756eeba7d5a96",
+      "name": "Gwyn Gulley",
+      "office": "17TH CIRCUIT - RETAIN GULLEY",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "68d37cf7ba816e9ca9d60634",
+      "name": "Ronald J. \"Ron\" White",
+      "office": "17TH CIRCUIT - RETAIN WHITE",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "e2e60d71e5c12e1d0f74f2f9",
+      "name": "Ann Celine Walsh",
+      "office": "18TH CIRCUIT - RETAIN WALSH",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "69d929c0d4858cb76befe5ee",
+      "name": "Monique O' + Char(39) + 'Toole",
+      "office": "18TH CIRCUIT - RETAIN O' + Char(39) + 'TOOLE",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "03af88828c59133d86e0fe3a",
+      "name": "Richard D. Felice",
+      "office": "18TH CIRCUIT - RETAIN FELICE",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "d2cb1bc6292548a7e0f9dc42",
+      "name": "Margaret \"Peggy\" O' + Char(39) + 'Connell",
+      "office": "18TH CIRCUIT - RETAIN O' + Char(39) + 'CONNELL",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "6d702289cc5982df36d0aea8",
+      "name": "James K. Booras",
+      "office": "19TH CIRCUIT - RETAIN BOORAS",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "9da3be7dde05cfcd0d74f7b6",
+      "name": "Marnie M. Slavin",
+      "office": "19TH CIRCUIT - RETAIN SLAVIN",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "6d898aa1dcb94d77fcd80850",
+      "name": "Michael Sabol",
+      "office": "21ST CIRCUIT - RETAIN SABOL",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "508496d1a0904536b8181ac1",
+      "name": "William S. Dickenson",
+      "office": "21ST CIRCUIT - RETAIN DICKENSON",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "9927ccdd6cc2a8e0b8d7e44d",
+      "name": "Lindsay Parkhurst",
+      "office": "21ST CIRCUIT - RETAIN PARKHURST",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "d8ef01a56bf94235cb3ddc04",
+      "name": "Michael W. Feetterer",
+      "office": "22ND CIRCUIT - RETAIN FEETTERER",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "87d3f5cfc1e45bb8d4471d38",
+      "name": "David R. Gervais",
+      "office": "22ND CIRCUIT - RETAIN GERVAIS",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "f717f11a907beb38c8bf4766",
+      "name": "Justin M. Hansen",
+      "office": "22ND CIRCUIT - RETAIN HANSEN",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "85a21f6dce2025adf663305a",
+      "name": "Mark R. Gerhardt",
+      "office": "22ND CIRCUIT - RETAIN GERHARDT",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "72fe805a66e268ec6de5c49b",
+      "name": "Jody P. Gleason",
+      "office": "23RD CIRCUIT - RETAIN GLEASON",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "7db84038ddd01d9562fc078b",
+      "name": "James W. Campanella",
+      "office": "24TH CIRCUIT - RETAIN CAMPANELLA",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "4abc97c58380ad111b36bdb2",
+      "name": "Chris Hitzemann",
+      "office": "24TH CIRCUIT - RETAIN HITZEMANN",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "93508daea85748a6ace9a0de",
+      "name": "Andrea M. Buford",
+      "office": "COOK CIRCUIT - RETAIN BUFORD",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "1a7e19a877a87255df5d0472",
+      "name": "Laura Ayala-Gonzalez",
+      "office": "COOK CIRCUIT - RETAIN AYALA-GONZALEZ",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "0c69a54274a77f51368f174b",
+      "name": "Thomas J. Byrne",
+      "office": "COOK CIRCUIT - RETAIN BYRNE",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "3cc55de90f842f278c24480a",
+      "name": "Kerry M. Kennedy",
+      "office": "COOK CIRCUIT - RETAIN KENNEDY",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "2a89e91b1697e1f219ad99b1",
+      "name": "Sheree D. Henry",
+      "office": "COOK CIRCUIT - RETAIN HENRY",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "7ca99a5e484e023408f23c6e",
+      "name": "Thomas J. Carroll",
+      "office": "COOK CIRCUIT - RETAIN CARROLL",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "0224b81864d28618dff2cb26",
+      "name": "Maritza Martinez",
+      "office": "COOK CIRCUIT - RETAIN MARTINEZ",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "3c266031c3de766cd41f8c53",
+      "name": "Teresa Molina-Gonzalez",
+      "office": "COOK CIRCUIT - RETAIN MOLINA-GONZALEZ",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "fc337c169618a2e3b83f1f4b",
+      "name": "Krista D. Butler",
+      "office": "COOK CIRCUIT - RETAIN BUTLER",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "3846cad17b5c8ab703d88668",
+      "name": "Tyria B. Walton",
+      "office": "COOK CIRCUIT - RETAIN WALTON",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "a59039aabb2f4a8291013e6d",
+      "name": "Sondra N. Denmark",
+      "office": "COOK CIRCUIT - RETAIN DENMARK",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "1043554525692f10ce876af6",
+      "name": "Steven G. Watkins",
+      "office": "COOK CIRCUIT - RETAIN WATKINS",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "6c80b7395153ae25ebf1f396",
+      "name": "Erin Haggerty Antonietti",
+      "office": "COOK CIRCUIT - RETAIN ANTONIETTI",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "29681da7724f5dd04bb27d12",
+      "name": "Terrence J. McGuire",
+      "office": "COOK CIRCUIT - RETAIN McGUIRE",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "cdd03c8102811763a43dcf3d",
+      "name": "Daniel Edward Maloney",
+      "office": "COOK CIRCUIT - RETAIN MALONEY",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "52165974ea6b16f0fef811c9",
+      "name": "Regina A. Mescall",
+      "office": "COOK CIRCUIT - RETAIN MESCALL",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "61caac785f8d1c6e5ae8d095",
+      "name": "John Michael Allegretti",
+      "office": "COOK CIRCUIT - RETAIN ALLEGRETTI",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "f831001063a4a3245cb6ae52",
+      "name": "John J. Mahoney",
+      "office": "COOK CIRCUIT - RETAIN MAHONEY",
+      "district": "",
+      "scope": "local",
+      "status": "withdrawn",
+      "sourceStatus": "Withdrawn"
+    },
+    {
+      "id": "5317aae3098688eb7ebebb5e",
+      "name": "Celestia L. Mays",
+      "office": "COOK CIRCUIT - RETAIN MAYS",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "5434ed216dbe058c28cebdd4",
+      "name": "Caroline Kate Moreland",
+      "office": "COOK CIRCUIT - RETAIN MORELAND",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "3ecdcd8c6ac57aaa60ebdaab",
+      "name": "Bridget Anne Mitchell",
+      "office": "COOK CIRCUIT - RETAIN MITCHELL",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "ddd364cb52caea3e1d216288",
+      "name": "Lorraine Mary Murphy",
+      "office": "COOK CIRCUIT - RETAIN MURPHY",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "a44934abbc7df5a8413de156",
+      "name": "Lewis Nixon",
+      "office": "COOK CIRCUIT - RETAIN NIXON",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "bd00eb798e579d447d28756c",
+      "name": "Patricia O' + Char(39) + 'Brien Sheahan",
+      "office": "COOK CIRCUIT - RETAIN SHEAHAN",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "7b36e19951a9cefc5639359b",
+      "name": "Joan E. Powell",
+      "office": "COOK CIRCUIT - RETAIN POWELL",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "c5d03854a677fe7dece57a20",
+      "name": "Kristal R. Rivers",
+      "office": "COOK CIRCUIT - RETAIN RIVERS",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "e671eafa8698dfec2e6c69c1",
+      "name": "Jill Rose Quinn",
+      "office": "COOK CIRCUIT - RETAIN QUINN",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "65bcf4af429466ed9bee7dcc",
+      "name": "Kristyna Colleen Ryan",
+      "office": "COOK CIRCUIT - RETAIN RYAN",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "00a136fcb31b31f171cf9c11",
+      "name": "Levander Smith, Jr.",
+      "office": "COOK CIRCUIT - RETAIN SMITH, JR.",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "2dffa4b141021cbaeb819da7",
+      "name": "Tiesha L. Smith",
+      "office": "COOK CIRCUIT - RETAIN SMITH",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "1c437d8576c7ea7cf9fcd535",
+      "name": "Chris Stacey",
+      "office": "COOK CIRCUIT - RETAIN STACEY",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "381390ae63985c28833f622b",
+      "name": "Elizabeth Anne Walsh",
+      "office": "COOK CIRCUIT - RETAIN WALSH",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "af4dd18914d8c9deb29f5fea",
+      "name": "Maureen Ward Kirby",
+      "office": "COOK CIRCUIT - RETAIN WARD KIRBY",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "6d36b89595cf3ec7298a3a58",
+      "name": "Lynn Weaver Boyle",
+      "office": "COOK CIRCUIT - RETAIN WEAVER BOYLE",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "17b8557ba0c536fe98322523",
+      "name": "Maura McMahon Zeller",
+      "office": "COOK CIRCUIT - RETAIN ZELLER",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "ed878690d5a0a9bbbd164b8b",
+      "name": "Marie Aileen Dempsey",
+      "office": "COOK CIRCUIT - RETAIN DEMPSEY",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "60984a5c85422f87f1cfb037",
+      "name": "Ursula Walowski",
+      "office": "COOK CIRCUIT - RETAIN WALOWSKI",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "6f1d88a91423268f19b63d6a",
+      "name": "Anthony C. \"Tony\" Kyriakopoulos",
+      "office": "COOK CIRCUIT - RETAIN KYRIAKOPOULOS",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "50ab0c4d0f064e06d427d8bc",
+      "name": "John G. Mulroe",
+      "office": "COOK CIRCUIT - RETAIN MULROE",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "cd6a91e8915deb2b5964c8f4",
+      "name": "Mary Catherine Marubio",
+      "office": "COOK CIRCUIT - RETAIN MARUBIO",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "e15f16b19ffb5f3b6047bd3c",
+      "name": "Diana L. Kenworthy",
+      "office": "COOK CIRCUIT - RETAIN KENWORTHY",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "a3893f9e639b505bdac3c792",
+      "name": "Patricia Maria Fallon",
+      "office": "COOK CIRCUIT - RETAIN FALLON",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "e320754e078699b41669b269",
+      "name": "James P. Pieczonka",
+      "office": "COOK CIRCUIT - RETAIN PIECZONKA",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "6df6d4dbb6e7652026b2067a",
+      "name": "Edward A. Arce",
+      "office": "COOK CIRCUIT - RETAIN ARCE",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "70bf1e3daba0cbe573520b82",
+      "name": "Perla Tirado",
+      "office": "COOK CIRCUIT - RETAIN TIRADO",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "e4cf39eaca6097bbb8ea35c3",
+      "name": "Gerardo Tristan, Jr.",
+      "office": "COOK CIRCUIT - RETAIN TRISTAN, JR.",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "b61bd7d2cc1c8de75c9aa969",
+      "name": "Patrick Kevin Coughlin",
+      "office": "COOK CIRCUIT - RETAIN COUGHLIN",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "9735ae29da833ee6be22e803",
+      "name": "Nichole C. Patton",
+      "office": "COOK CIRCUIT - RETAIN PATTON",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "ea72e414b2bc8f6a120b4154",
+      "name": "Stephen A. Kouri",
+      "office": "10TH CIRCUIT - RETAIN KOURI",
+      "district": "",
+      "scope": "local",
+      "status": "withdrawn",
+      "sourceStatus": "Withdrawn"
+    },
+    {
+      "id": "597639c373af580f3ec4fbe9",
+      "name": "James A. Mack",
+      "office": "10TH CIRCUIT - RETAIN MACK",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "96999389e5361f346c6ed2d6",
+      "name": "Christopher R. Doscotch",
+      "office": "10TH CIRCUIT - RETAIN DOSCOTCH",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "72801ae9601377196c8e7764",
+      "name": "Matthew J. Fitton",
+      "office": "11TH CIRCUIT - RETAIN FITTON",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "6945a8135a1e91e8d692904e",
+      "name": "Jason Chambers",
+      "office": "11TH CIRCUIT - RETAIN CHAMBERS",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "99505f4f3aaede6b932ac071",
+      "name": "Jonathan C. Wright",
+      "office": "11TH CIRCUIT - RETAIN WRIGHT",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "7c0a398f37ac3212269662a9",
+      "name": "Amy M. Bertani-Tomczak",
+      "office": "12TH CIRCUIT - RETAIN BERTANI-TOMCZAK",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "1675b4893c34a69a072320f6",
+      "name": "Sarah Jones",
+      "office": "12TH CIRCUIT - RETAIN JONES",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "0cf8ffc054e5616b168ccd40",
+      "name": "Daniel L. Kennedy",
+      "office": "12TH CIRCUIT - RETAIN KENNEDY",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "469939b8a882d4f2bc31ea6d",
+      "name": "Daniel D. Rippy",
+      "office": "12TH CIRCUIT - RETAIN RIPPY",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "0fedd91109b28313dfb58fb4",
+      "name": "Sheldon R. Sobol",
+      "office": "13TH CIRCUIT - RETAIN SOBOL",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "68e0b8ed6e6835fb0b77f6ba",
+      "name": "John L. McGehee",
+      "office": "14TH CIRCUIT - RETAIN McGEHEE",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "51dca163e6327f6fa94cf883",
+      "name": "Matthew J. Hartrich",
+      "office": "2ND CIRCUIT - RETAIN HARTRICH",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "352e339c35e057c32c4ea275",
+      "name": "Tara R. Cook",
+      "office": "2ND CIRCUIT - RETAIN COOK",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "b39ec84df5e72ca1cd8bc07e",
+      "name": "William C. Hudson",
+      "office": "2ND CIRCUIT - RETAIN HUDSON",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "b5d72fc6817b3cd2c1e862b4",
+      "name": "Thomas J. Foster",
+      "office": "2ND CIRCUIT - RETAIN FOSTER",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "b1055e16f685376f07647486",
+      "name": "Barry L. Vaughan",
+      "office": "2ND CIRCUIT - RETAIN VAUGHAN",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "35dfcc407aa7a5aacc21d094",
+      "name": "James A. Knecht",
+      "office": "4TH APPELLATE - RETAIN KNECHT",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "f240fe8784eec03ff4959f5c",
+      "name": "John B. Barberis, Jr.",
+      "office": "5TH APPELLATE - RETAIN BARBERIS, JR.",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "490e2e6e72e44f5f1e5e19f9",
+      "name": "Amy Maher",
+      "office": "3RD CIRCUIT - RETAIN MAHER",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "54698da267ba6c1f923d686a",
+      "name": "Dennis R. Ruth",
+      "office": "3RD CIRCUIT - RETAIN RUTH",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "ffd2ac6aeee8a72fd4a341ac",
+      "name": "Joel J.C. Powless",
+      "office": "4TH CIRCUIT - RETAIN POWLESS",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "b26f96403ac7693a2ab27f7c",
+      "name": "Martin W. Siemer",
+      "office": "4TH CIRCUIT - RETAIN SIEMER",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "acfd8b6d661afe14551cbfad",
+      "name": "Stanley M. Brandmeyer",
+      "office": "4TH CIRCUIT - RETAIN BRANDMEYER",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "7d96aa015d785943dd55870b",
+      "name": "Mitchell Shick",
+      "office": "5TH CIRCUIT - RETAIN SHICK",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "9ac3609fe3561acbfcec3c7e",
+      "name": "Thomas M. O' + Char(39) + 'Shaughnessy",
+      "office": "5TH CIRCUIT - RETAIN O' + Char(39) + 'SHAUGHNESSY",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "1f86822b453f162bb0f2e29f",
+      "name": "Robert C. \"R.C.\" Bollinger",
+      "office": "6TH CIRCUIT - RETAIN BOLLINGER",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "bcd91fb7da31c25b1d7c3109",
+      "name": "Jason M. Bohm",
+      "office": "6TH CIRCUIT - RETAIN BOHM",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "4fc6f63f55a3744f7ed0d045",
+      "name": "Dana Rhoades",
+      "office": "6TH CIRCUIT - RETAIN RHOADES",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "73610dc7219428eb9518f07e",
+      "name": "Ramona M. Sullivan",
+      "office": "6TH CIRCUIT - RETAIN SULLIVAN",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "31868803479913b5daa4f9fd",
+      "name": "Jamie Guerra Dickler",
+      "office": "COOK CIRCUIT - RETAIN DICKLER",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "452fbc709163b943dd16a199",
+      "name": "Eileen Marie O' + Char(39) + 'Connor",
+      "office": "COOK CIRCUIT - RETAIN O' + Char(39) + 'CONNOR",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "094509303faaf7f50d97dc26",
+      "name": "Robert D. Kuzas",
+      "office": "COOK CIRCUIT - RETAIN KUZAS",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "dd2ed7c88163b865daefe1ae",
+      "name": "Pamela Reaves-Harris",
+      "office": "COOK CIRCUIT - RETAIN REAVES-HARRIS",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "4da41c4706f7e9dc50044968",
+      "name": "Judith C. Rice",
+      "office": "COOK CIRCUIT - RETAIN RICE",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "06b08ab558eb8d9f7d3207ac",
+      "name": "Michael A. Forti",
+      "office": "COOK CIRCUIT - RETAIN FORTI",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "8e955a1f6bb02954805321a2",
+      "name": "Jonathan Clark Green",
+      "office": "COOK CIRCUIT - RETAIN GREEN",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "726345fb9af7b4bc2da4d26e",
+      "name": "Julie Bess Aimen",
+      "office": "COOK CIRCUIT - RETAIN AIMEN",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "124296cf8994466fcb1b8849",
+      "name": "Thomas M. Cushing",
+      "office": "COOK CIRCUIT - RETAIN CUSHING",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "832131e933eddc38105d5abb",
+      "name": "Megan Elizabeth Goldish",
+      "office": "COOK CIRCUIT - RETAIN GOLDISH",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "b4d66fd084ca49e691822339",
+      "name": "Anjana M.J. Hansen",
+      "office": "COOK CIRCUIT - RETAIN HANSEN",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "5a759cb1095e86fb1e57c753",
+      "name": "Abbey Fishman Romanek",
+      "office": "COOK CIRCUIT - RETAIN ROMANEK",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "4ee6c9ad806240e668d249a7",
+      "name": "Carissa Bryant",
+      "party": "REPUBLICAN",
+      "office": "9TH CIRCUIT - CAVANAUGH VACANCY",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "af50e1c6179d8e2028c17137",
+      "name": "Ryan Wamser",
+      "party": "DEMOCRATIC",
+      "office": "CALHOUN/GREENE/JERSEY/MACOUPIN SUPERINTENDENT OF SCHOOLS",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "8dbbb0f1dab0ef4ce48f8b28",
+      "name": "Max Solomon",
+      "party": "REPUBLICAN",
+      "office": "TREASURER",
+      "district": "",
+      "scope": "statewide",
+      "status": "filed",
+      "sourceStatus": "Active",
+      "candidateUrl": "https://www.maxsolomon.info/"
+    },
+    {
+      "id": "41a92fef73a195d4f73a11c4",
+      "name": "Lenoard \"Jamie\" Snyder",
+      "party": "REPUBLICAN",
+      "office": "1ST CIRCUIT - SOLVERSON VACANCY",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "cdc23d2f97d8e4fe393cba43",
+      "name": "Stephanie S. Kelly",
+      "party": "DEMOCRATIC",
+      "office": "COOK CIRCUIT - 5TH SUBCIRCUIT - ROSS VACANCY",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "ed52a15f35e60a583dc1b767",
+      "name": "Randy A. Yedinak",
+      "party": "REPUBLICAN",
+      "office": "11TH CIRCUIT - BAUKNECHT VACANCY",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "43e01db0b17c92509f81a92b",
+      "name": "Sarah R. Duffy",
+      "party": "REPUBLICAN",
+      "office": "11TH CIRCUIT - COSTIGAN VACANCY",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "051527b6a9c48a9c8a61f6cb",
+      "name": "Benjamin W. Reed",
+      "party": "DEMOCRATIC",
+      "office": "1ST CIRCUIT - SOLVERSON VACANCY",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "73ed9ed4f4a21111b9501dfb",
+      "name": "Antoinette Jewel Simmons",
+      "party": "REPUBLICAN",
+      "office": "State House District 25",
+      "district": "25",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "4e09b529baaa2ca2f5916685",
+      "name": "George McClellan, Jr.",
+      "party": "DEMOCRATIC",
+      "office": "State House District 114",
+      "district": "114",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "222de902aa1d16272800a4c3",
+      "name": "Patty Garcia",
+      "party": "DEMOCRATIC",
+      "office": "U.S. House District 4",
+      "district": "4",
+      "scope": "congressional",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "996257b14fba5eab7d0c60aa",
+      "name": "Edgardo \"Eddie\" Perez",
+      "party": "REPUBLICAN",
+      "office": "State Senate District 42",
+      "district": "42",
+      "scope": "state-senate",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "3f74ca09b8558f4276bf5e02",
+      "name": "Kate McGrath",
+      "party": "REPUBLICAN",
+      "office": "State Senate District 29",
+      "district": "29",
+      "scope": "state-senate",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "67d421564de02a90c258fd18",
+      "name": "Vince Romano",
+      "party": "REPUBLICAN",
+      "office": "State Senate District 8",
+      "district": "8",
+      "scope": "state-senate",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "12081df62afba14030dff55f",
+      "name": "Sarah B. Mertens",
+      "party": "DEMOCRATIC",
+      "office": "State Senate District 35",
+      "district": "35",
+      "scope": "state-senate",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "32b0611b20f3be870605d253",
+      "name": "Diane M. Harris",
+      "party": "REPUBLICAN",
+      "office": "SECRETARY OF STATE",
+      "district": "",
+      "scope": "statewide",
+      "status": "filed",
+      "sourceStatus": "Active",
+      "candidateUrl": "https://www.harrisforsos.com/"
+    },
+    {
+      "id": "2a8889fafc99d859e7b535ad",
+      "name": "Tom Lally",
+      "party": "REPUBLICAN",
+      "office": "State Senate District 9",
+      "district": "9",
+      "scope": "state-senate",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "3193f506eabf3e6591e595a9",
+      "name": "Jil Tracy",
+      "party": "REPUBLICAN",
+      "office": "State Senate District 50",
+      "district": "50",
+      "scope": "state-senate",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "69ab1c0c978d64fbad4c27f6",
+      "name": "Frank Lesko",
+      "party": "REPUBLICAN",
+      "office": "State Senate District 48",
+      "district": "48",
+      "scope": "state-senate",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "d584dc70c16f1e64848efb6f",
+      "name": "Steve McClure",
+      "party": "REPUBLICAN",
+      "office": "State Senate District 54",
+      "district": "54",
+      "scope": "state-senate",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "d6c0e93736660de22397c022",
+      "name": "Neil Anderson",
+      "party": "REPUBLICAN",
+      "office": "State Senate District 47",
+      "district": "47",
+      "scope": "state-senate",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "c62c909da2ead86f1c0c1e54",
+      "name": "Sue Rezin",
+      "party": "REPUBLICAN",
+      "office": "State Senate District 38",
+      "district": "38",
+      "scope": "state-senate",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "2880a7e4f42c42487a6691d0",
+      "name": "Robert W. Fioretti",
+      "party": "REPUBLICAN",
+      "office": "ATTORNEY GENERAL",
+      "district": "",
+      "scope": "statewide",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "9665a1fdd80abc3be064d8af",
+      "name": "Daniel Rhyne",
+      "party": "REPUBLICAN",
+      "office": "State Senate District 57",
+      "district": "57",
+      "scope": "state-senate",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "d0336bfa387d41d879971b57",
+      "name": "Ed Hershey",
+      "party": "WORKING CLASS PARTY",
+      "office": "U.S. House District 4",
+      "district": "4",
+      "scope": "congressional",
+      "status": "filed",
+      "sourceStatus": "Active",
+      "candidateUrl": "https://workingclassparty.org/"
+    },
+    {
+      "id": "1b139469dbe2d5d5958b8860",
+      "name": "Adam M. Beaty",
+      "party": "REPUBLICAN",
+      "office": "State House District 80",
+      "district": "80",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "7a7c002bbf9f04a39f8ea56d",
+      "name": "Wayne Keen",
+      "party": "REPUBLICAN",
+      "office": "State House District 54",
+      "district": "54",
+      "scope": "state-house",
+      "status": "withdrawn",
+      "sourceStatus": "Withdrawn"
+    },
+    {
+      "id": "83a458c3a58bdc9740b3a578",
+      "name": "Brian Scopa",
+      "party": "REPUBLICAN",
+      "office": "State House District 84",
+      "district": "84",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "3d427aea37fdd21f2d98dd1c",
+      "name": "Jesse Rodriguez",
+      "party": "REPUBLICAN",
+      "office": "State House District 83",
+      "district": "83",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "3c055ecec428079dae2ba88a",
+      "name": "Nona Parker",
+      "party": "REPUBLICAN",
+      "office": "State House District 98",
+      "district": "98",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "5fc108d9d4f58c149905ecbc",
+      "name": "Julian-Jahleel Randolph Jemison",
+      "party": "REPUBLICAN",
+      "office": "State House District 78",
+      "district": "78",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "614287d631ce2c1d49a75f86",
+      "name": "Kermit Thomas",
+      "party": "DEMOCRATIC",
+      "office": "State House District 71",
+      "district": "71",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "c0a050f5f1f1c2adbbf8528c",
+      "name": "Ralph Black",
+      "party": "REPUBLICAN",
+      "office": "State House District 44",
+      "district": "44",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "053cf03bacf483c816746da7",
+      "name": "Cesar A. Guillen",
+      "party": "REPUBLICAN",
+      "office": "State House District 39",
+      "district": "39",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "185e68bd7254a9ec758ff434",
+      "name": "James \"Jim\" Geldermann",
+      "party": "REPUBLICAN",
+      "office": "State House District 17",
+      "district": "17",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "6429c7632fb94d97f06fc0ec",
+      "name": "Tina Marie Durrant",
+      "party": "REPUBLICAN",
+      "office": "State House District 61",
+      "district": "61",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "2b735ca5cea155089a4feca2",
+      "name": "David Sheppard",
+      "party": "REPUBLICAN",
+      "office": "State House District 36",
+      "district": "36",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "de5d11c6bef94c7d47555265",
+      "name": "Chris Metcalfe",
+      "party": "REPUBLICAN",
+      "office": "State House District 85",
+      "district": "85",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "e3cf28291d39e6b5be6d7296",
+      "name": "Pedro Jovany Mendoza",
+      "party": "REPUBLICAN",
+      "office": "State House District 46",
+      "district": "46",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "1971792a27f41825d0dcfb03",
+      "name": "Elizabeth Bauer",
+      "party": "REPUBLICAN",
+      "office": "State House District 53",
+      "district": "53",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "9d8b6f0dd50accfd4a93728c",
+      "name": "Edward \"Ed\" Lapinski",
+      "party": "REPUBLICAN",
+      "office": "State House District 56",
+      "district": "56",
+      "scope": "state-house",
+      "status": "withdrawn",
+      "sourceStatus": "Withdrawn"
+    },
+    {
+      "id": "9bf896313029a57cfe5b2259",
+      "name": "Daniel T. Behr",
+      "party": "REPUBLICAN",
+      "office": "State House District 57",
+      "district": "57",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "1f8665d2c427fa0d8d001ba6",
+      "name": "Ajay Gupta",
+      "party": "REPUBLICAN",
+      "office": "State House District 41",
+      "district": "41",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "70f29ca6f1f6bac341ea8e78",
+      "name": "Christopher \"C.D.\" Davidsmeyer",
+      "party": "REPUBLICAN",
+      "office": "State House District 100",
+      "district": "100",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "e05df6549e2a0cdb351a65ed",
+      "name": "Frederick L. Walls",
+      "party": "REPUBLICAN",
+      "office": "State Senate District 17",
+      "district": "17",
+      "scope": "state-senate",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "136b997165cd49a8419eb29e",
+      "name": "Stephanie W. Trussell",
+      "party": "REPUBLICAN",
+      "office": "State House District 42",
+      "district": "42",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "ddb4159fc5f0a15676eb57d4",
+      "name": "Lori Smith",
+      "party": "REPUBLICAN",
+      "office": "State House District 51",
+      "district": "51",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "786907bdc9d661d990c263d5",
+      "name": "Laura Hruska",
+      "party": "REPUBLICAN",
+      "office": "State House District 2",
+      "district": "2",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "ba9d634efb04b2b4df107d5d",
+      "name": "Terry Nguyen Le",
+      "party": "REPUBLICAN",
+      "office": "State House District 13",
+      "district": "13",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "35fc9ff9ef543f2ad821c54f",
+      "name": "Jason R. Bunting",
+      "party": "REPUBLICAN",
+      "office": "State House District 106",
+      "district": "106",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "e334d8ef4d0d5ab88beab0dd",
+      "name": "Michael W. Fleming",
+      "party": "REPUBLICAN",
+      "office": "18TH CIRCUIT - 4TH SUBCIRCUIT - WILSON VACANCY",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "ac7705307a8a0c5f394e6808",
+      "name": "Pete Donaghue",
+      "party": "REPUBLICAN",
+      "office": "State House District 18",
+      "district": "18",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "16d46c0b06c46f4888bcfebe",
+      "name": "John \"JZ\" Zimmers",
+      "party": "REPUBLICAN",
+      "office": "State House District 19",
+      "district": "19",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "96a62f07f10851d2fb7bdef8",
+      "name": "Eric Su",
+      "party": "REPUBLICAN",
+      "office": "State House District 21",
+      "district": "21",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "e6a5d0f4e76e39a4b2d84a53",
+      "name": "Laurie Parman",
+      "party": "REPUBLICAN",
+      "office": "State House District 66",
+      "district": "66",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "caf594fab271cc1a490be88d",
+      "name": "Douglas Fagan",
+      "party": "DEMOCRATIC",
+      "office": "State House District 101",
+      "district": "101",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "ad46b7b8320011058acf066e",
+      "name": "John Ping",
+      "party": "DEMOCRATIC",
+      "office": "State House District 90",
+      "district": "90",
+      "scope": "state-house",
+      "status": "withdrawn",
+      "sourceStatus": "Withdrawn"
+    },
+    {
+      "id": "15e4507c3e86538d7fc62c0c",
+      "name": "Michael P. Vespa",
+      "party": "DEMOCRATIC",
+      "office": "10TH CIRCUIT - VESPA VACANCY",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "9c87419914a036cb6ce1ba9d",
+      "name": "Lupe Castillo",
+      "party": "REPUBLICAN",
+      "office": "U.S. House District 4",
+      "district": "4",
+      "scope": "congressional",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "cbb9de501861382a4929cd28",
+      "name": "Tamiko \"T.C.\" Mueller",
+      "party": "DEMOCRATIC",
+      "office": "State Senate District 59",
+      "district": "59",
+      "scope": "state-senate",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "626a453d901d806536e260de",
+      "name": "Linda Z. Polacek",
+      "party": "REPUBLICAN",
+      "office": "State Senate District 23",
+      "district": "23",
+      "scope": "state-senate",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "05d620d048d1b8c5364a2867",
+      "name": "David Mathis",
+      "party": "REPUBLICAN",
+      "office": "State Senate District 27",
+      "district": "27",
+      "scope": "state-senate",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "3a3c0c57749bf7e88a287eaf",
+      "name": "Brian Skala",
+      "party": "REPUBLICAN",
+      "office": "State Senate District 14",
+      "district": "14",
+      "scope": "state-senate",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "be1702251f45f81f9aed7001",
+      "name": "Julie Berkowicz",
+      "party": "REPUBLICAN",
+      "office": "State Senate District 21",
+      "district": "21",
+      "scope": "state-senate",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "ecc86bf4990cba594ea4074e",
+      "name": "Ernie R. Marcelain",
+      "party": "DEMOCRATIC",
+      "office": "State Senate District 38",
+      "district": "38",
+      "scope": "state-senate",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "5c6b58357205ef7a03f26673",
+      "name": "Craig Wilcox",
+      "party": "REPUBLICAN",
+      "office": "State Senate District 32",
+      "district": "32",
+      "scope": "state-senate",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "d7a183fa4ab2bb50fbc1029a",
+      "name": "Dave Syverson",
+      "party": "REPUBLICAN",
+      "office": "State Senate District 35",
+      "district": "35",
+      "scope": "state-senate",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "345aa0703a9039ae05a240c3",
+      "name": "Carl Lambrecht",
+      "party": "REPUBLICAN",
+      "office": "U.S. House District 10",
+      "district": "10",
+      "scope": "congressional",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "9aa7e4c63b78fa294a390d28",
+      "name": "Nicole Dopler",
+      "party": "DEMOCRATIC",
+      "office": "State House District 73",
+      "district": "73",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "56e8ec9b75c24542b01aad1c",
+      "name": "Mary Catherine Roberson",
+      "party": "DEMOCRATIC",
+      "office": "State House District 104",
+      "district": "104",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "cae6293cf88c57ef90f7534e",
+      "name": "Justin Cochran",
+      "party": "DEMOCRATIC",
+      "office": "State House District 55",
+      "district": "55",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "615ecbe77acd29c1cb3dc2b7",
+      "name": "John Paul Augustynowicz",
+      "party": "REPUBLICAN",
+      "office": "State House District 49",
+      "district": "49",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "5e84af636694ba7a91d5b9d0",
+      "name": "Justin J. Kumar",
+      "party": "REPUBLICAN",
+      "office": "State House District 12",
+      "district": "12",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "4ed6f21b15035daae3c75097",
+      "name": "Michael Scott Noack",
+      "party": "REPUBLICAN",
+      "office": "U.S. House District 2",
+      "district": "2",
+      "scope": "congressional",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "d9c4d55b56559bd739c1b607",
+      "name": "Bryan Drew",
+      "party": "REPUBLICAN",
+      "office": "COMPTROLLER",
+      "district": "",
+      "scope": "statewide",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "745d15087f3573e0d12e0b89",
+      "name": "Nolan Kemp",
+      "party": "DEMOCRATIC",
+      "office": "State House District 74",
+      "district": "74",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "b145b3bd98b0069d37960e36",
+      "name": "Amy Christiansen",
+      "party": "DEMOCRATIC",
+      "office": "12TH CIRCUIT - 1ST SUBCIRCUIT - CARLSON VACANCY",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active",
+      "candidateUrl": "https://www.electjudgeamy.com/"
+    },
+    {
+      "id": "bb69d257f1d239c44004d990",
+      "name": "Caroline McCree",
+      "party": "DEMOCRATIC",
+      "office": "State House District 75",
+      "district": "75",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active",
+      "candidateUrl": "https://votemccree.com/"
+    },
+    {
+      "id": "9d3a4eb20a1c38d2465ca724",
+      "name": "Anthony Airdo",
+      "party": "REPUBLICAN",
+      "office": "State House District 77",
+      "district": "77",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "1ff144b1278e210164799924",
+      "name": "Jonathan L. Jackson",
+      "party": "DEMOCRATIC",
+      "office": "U.S. House District 1",
+      "district": "1",
+      "scope": "congressional",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "3898282f3ceabc412d119298",
+      "name": "Don Tracy",
+      "party": "REPUBLICAN",
+      "office": "UNITED STATES SENATOR",
+      "district": "",
+      "scope": "statewide",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "c99054eca89b1de1fb2fff57",
+      "name": "Shannon Fehrholz",
+      "party": "REPUBLICAN",
+      "office": "MENARD/SANGAMON - SUPERINTENDENT OF SCHOOLS",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "dba1bedda14004202d47498e",
+      "name": "Eric Sorensen",
+      "party": "DEMOCRATIC",
+      "office": "U.S. House District 17",
+      "district": "17",
+      "scope": "congressional",
+      "status": "filed",
+      "sourceStatus": "Active",
+      "candidateUrl": "https://ericforillinois.com/"
+    },
+    {
+      "id": "0eb1a28743657fbb9b12ae8a",
+      "name": "Joseph H. \"Joe\" Berning",
+      "party": "DEMOCRATIC",
+      "office": "State Senate District 45",
+      "district": "45",
+      "scope": "state-senate",
+      "status": "filed",
+      "sourceStatus": "Active",
+      "candidateUrl": "https://www.berningforillinois.com/"
+    },
+    {
+      "id": "83cc32f6d0172060a07587e2",
+      "name": "Michelle A. Vescogni",
+      "party": "REPUBLICAN",
+      "office": "13TH CIRCUIT - RACCUGLIA VACANCY",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active",
+      "candidateUrl": "https://judgeshellyvescogni.com/"
+    },
+    {
+      "id": "fccf824c563150ca3afcb9ee",
+      "name": "Timothy J. Cusack",
+      "party": "REPUBLICAN",
+      "office": "10TH CIRCUIT - VESPA VACANCY",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "ed5051393e30533aec4107e9",
+      "name": "Erin C. Hannigan",
+      "party": "DEMOCRATIC",
+      "office": "17TH CIRCUIT - 1ST SUBCIRCUIT - LOWRY VACANCY",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "8a2a3105d84688cbfcfec566",
+      "name": "Blaine Wilhour",
+      "party": "REPUBLICAN",
+      "office": "State House District 110",
+      "district": "110",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "1ceb71741017721f2c8f57c7",
+      "name": "AJ Johnson",
+      "party": "DEMOCRATIC",
+      "office": "State House District 64",
+      "district": "64",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active",
+      "candidateUrl": "https://ajjohnsonforstaterep.com/"
+    },
+    {
+      "id": "2047fb33d6e399238af55817",
+      "name": "Martin McLaughlin",
+      "party": "REPUBLICAN",
+      "office": "State House District 52",
+      "district": "52",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "b7777acc0f7abe4f8308fdd4",
+      "name": "Scott Robinson",
+      "party": "REPUBLICAN",
+      "office": "17TH CIRCUIT - 2ND SUBCIRCUIT - DOHERTY VACANCY",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "b0aea728a1cde885761af4d9",
+      "name": "Tionn Fambro Carter",
+      "party": "DEMOCRATIC",
+      "office": "14TH CIRCUIT - THOMPSON VACANCY",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active",
+      "candidateUrl": "https://www.tionnforjudge.com/"
+    },
+    {
+      "id": "67dafadf768c95866347e513",
+      "name": "Julie Wollerman",
+      "party": "DEMOCRATIC",
+      "office": "BOND/CHRISTIAN/EFFINGHAM, ETC. - SUPT. OF SCHOOLS",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "3b441705b57aa210a303efab",
+      "name": "Molly Allen",
+      "party": "REPUBLICAN",
+      "office": "DeWITT/LIVINGSTON/LOGAN, ETC. - SUPERINTENDENT OF SCHOOLS",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "9e8ab7df7e604c3345662631",
+      "name": "Peter Janko",
+      "party": "DEMOCRATIC",
+      "office": "State House District 69",
+      "district": "69",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active",
+      "candidateUrl": "https://pete4illinois.com/"
+    },
+    {
+      "id": "a051cd093ea66e9da3908343",
+      "name": "Mary E. Miller",
+      "party": "REPUBLICAN",
+      "office": "U.S. House District 15",
+      "district": "15",
+      "scope": "congressional",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "1174483c20eb4686396ec0f5",
+      "name": "Chris G. Miller",
+      "party": "REPUBLICAN",
+      "office": "State House District 101",
+      "district": "101",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "838d763b9a23129173471deb",
+      "name": "Dave Demler",
+      "party": "REPUBLICAN",
+      "office": "FULTON/HANCOCK/McDONOUGH, ETC. - SUPERINTENDENT OF SCHOOLS",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "9b2c0ca9321973b3c36f12c9",
+      "name": "Jason A. Helland",
+      "party": "REPUBLICAN",
+      "office": "3RD APPELLATE - McDADE VACANCY",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "1c8bd24aa09f1ac8ef119707",
+      "name": "Steven Reick",
+      "party": "REPUBLICAN",
+      "office": "State House District 63",
+      "district": "63",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "19b725035e5ad9356ecc8219",
+      "name": "Fred Crespo",
+      "party": "DEMOCRATIC",
+      "office": "State House District 44",
+      "district": "44",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "f6ba5c034e6ddd714617248d",
+      "name": "Matthew Hickam",
+      "party": "REPUBLICAN",
+      "office": "ALEXANDER/JACKSON/PERRY, ETC. - SUPT. OF SCHOOLS",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "5cb8f714402d7110dfb224cd",
+      "name": "Scott P. McClintock",
+      "party": "REPUBLICAN",
+      "office": "9TH CIRCUIT - STANDARD VACANCY",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "c217c7bc7baec655bd236500",
+      "name": "Christopher J. Tennyson",
+      "party": "REPUBLICAN",
+      "office": "LEE/OGLE/WHITESIDE - SUPERINTENDENT OF SCHOOLS",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "9ba19116090b5e0af916313b",
+      "name": "Maurice A. West II",
+      "party": "DEMOCRATIC",
+      "office": "State House District 67",
+      "district": "67",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "01fd147c1ec57b4098020872",
+      "name": "Carol Ammons",
+      "party": "DEMOCRATIC",
+      "office": "State House District 103",
+      "district": "103",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "14eab703f7a415b2fb17d260",
+      "name": "Veronica Garcia-Martinez",
+      "party": "DEMOCRATIC",
+      "office": "State House District 70",
+      "district": "70",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "838650b729bc169e518df6f4",
+      "name": "Lorie Lequatte",
+      "party": "REPUBLICAN",
+      "office": "FRANKLIN/JOHNSON/MASSAC, ETC. - SUPERINTENDENT OF SCHOOLS",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "9da68ec16d883ee0d9d9bc2b",
+      "name": "Patrick G. King",
+      "party": "REPUBLICAN",
+      "office": "3RD CIRCUIT - 2ND SUBCIRCUIT - STOBBS VACANCY",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "76b3c536bc4eaaa760db5214",
+      "name": "Matthew E. Vaughn",
+      "party": "REPUBLICAN",
+      "office": "2ND CIRCUIT - MOLT VACANCY",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "fba7e13f630b557d103d113d",
+      "name": "Christine McGovern",
+      "party": "REPUBLICAN",
+      "office": "State Senate District 18",
+      "district": "18",
+      "scope": "state-senate",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "8c39f29dfec3bc0f51286c36",
+      "name": "Julie Fortier",
+      "party": "DEMOCRATIC",
+      "office": "U.S. House District 12",
+      "district": "12",
+      "scope": "congressional",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "ce9982238769d06cd6d06639",
+      "name": "Gabriel \"Gabe\" Grosboll",
+      "party": "REPUBLICAN",
+      "office": "8TH CIRCUIT - LANNERD VACANCY",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "1e77424d0c0adf2de98a4411",
+      "name": "Angel Oakley",
+      "party": "REPUBLICAN",
+      "office": "U.S. House District 3",
+      "district": "3",
+      "scope": "congressional",
+      "status": "filed",
+      "sourceStatus": "Active",
+      "candidateUrl": "https://libertyangel.us/"
+    },
+    {
+      "id": "2f30ed5caa91eadda60301c6",
+      "name": "Jeremy Brush",
+      "party": "REPUBLICAN",
+      "office": "CLAY/CRAWFORD/JASPER, ETC - SUPERINTENDENT OF SCHOOLS",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "dffd447f4219fbacca4e1924",
+      "name": "Christian Maxwell",
+      "party": "REPUBLICAN",
+      "office": "U.S. House District 1",
+      "district": "1",
+      "scope": "congressional",
+      "status": "filed",
+      "sourceStatus": "Active",
+      "candidateUrl": "https://www.christianmaxwellforcongress.com/"
+    },
+    {
+      "id": "d4b363d2e392c0c28aabc351",
+      "name": "Ryan McClellan",
+      "party": "REPUBLICAN",
+      "office": "MONROE/RANDOLPH - SUPERINTENDENT OF SCHOOLS",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "cf7a4dcc0d27aa01b4d4dad8",
+      "name": "Kathryn Jennings",
+      "party": "REPUBLICAN",
+      "office": "HENDERSON/KNOX/MERCER/WARREN - SUPERINTENDENT OF SCHOOLS",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "6d62c5acd2bfb71cca65b75b",
+      "name": "Patricia High",
+      "party": "REPUBLICAN",
+      "office": "IROQUOIS/KANKAKEE - SUPERINTENDENT OF SCHOOLS",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "48f84a80db4829a928fb235f",
+      "name": "Jon Kelly",
+      "party": "REPUBLICAN",
+      "office": "CHAMPAIGN/FORD - SUPERENTENDENT OF SCHOOLS",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "18590b9fcdb45b7db598e264",
+      "name": "Kyle Thompson",
+      "party": "REPUBLICAN",
+      "office": "CLARK/COLES/CUMBERLAND, ETC. - SUP OF SCHOOLS",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "d247560ed08f95efed3d15a9",
+      "name": "Meghan Martin",
+      "party": "REPUBLICAN",
+      "office": "GRUNDY/KENDALL - SUPERINTENDENT OF SCHOOLS",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "603bbe742acc7b7dbe86b1fe",
+      "name": "Bob Morgan",
+      "party": "DEMOCRATIC",
+      "office": "State House District 58",
+      "district": "58",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "12956959f6ec7916ab9bb057",
+      "name": "Daniel Didech",
+      "party": "DEMOCRATIC",
+      "office": "State House District 59",
+      "district": "59",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "5064719387f28a4656d41748",
+      "name": "Paul Jacobs",
+      "party": "REPUBLICAN",
+      "office": "State Senate District 59",
+      "district": "59",
+      "scope": "state-senate",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "b7e2d2d13a81db7002f3860e",
+      "name": "Joseph Johnson",
+      "party": "REPUBLICAN",
+      "office": "State House District 55",
+      "district": "55",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "025a8124bd45e25570f6a015",
+      "name": "Jeff Wilson",
+      "party": "REPUBLICAN",
+      "office": "U.S. House District 13",
+      "district": "13",
+      "scope": "congressional",
+      "status": "filed",
+      "sourceStatus": "Active",
+      "candidateUrl": "https://wilsonforcongress.com/"
+    },
+    {
+      "id": "4ad7f6480b4ecae94924245f",
+      "name": "Nikki Budzinski",
+      "party": "DEMOCRATIC",
+      "office": "U.S. House District 13",
+      "district": "13",
+      "scope": "congressional",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "0492cd008f1f8d921d14df8a",
+      "name": "Demerike \"Demi\" Palecek",
+      "party": "DEMOCRATIC",
+      "office": "State House District 13",
+      "district": "13",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active",
+      "candidateUrl": "https://demiforillinois.com/"
+    },
+    {
+      "id": "06078d64e22a153de88fc735",
+      "name": "Michelle Mussman",
+      "party": "DEMOCRATIC",
+      "office": "State House District 56",
+      "district": "56",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active",
+      "candidateUrl": "https://votemichelle.org/"
+    },
+    {
+      "id": "2ee31626c4d7d8bbec7db9c1",
+      "name": "Tracy Katz Muhl",
+      "party": "DEMOCRATIC",
+      "office": "State House District 57",
+      "district": "57",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "d7c036158ea2e69750aa0542",
+      "name": "Christopher Belt",
+      "party": "DEMOCRATIC",
+      "office": "State Senate District 57",
+      "district": "57",
+      "scope": "state-senate",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "4bc6fdc944ae4fea58a99c54",
+      "name": "Erica Harriss",
+      "party": "REPUBLICAN",
+      "office": "State Senate District 56",
+      "district": "56",
+      "scope": "state-senate",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "17f120981a684a81008c33b9",
+      "name": "Marsia Geldert-Murphey",
+      "party": "DEMOCRATIC",
+      "office": "State Senate District 56",
+      "district": "56",
+      "scope": "state-senate",
+      "status": "filed",
+      "sourceStatus": "Active",
+      "candidateUrl": "https://marsieforillinois.info/"
+    },
+    {
+      "id": "1a94eb0b1be95188e90fb07e",
+      "name": "Jennifer Davis",
+      "party": "REPUBLICAN",
+      "office": "U.S. House District 8",
+      "district": "8",
+      "scope": "congressional",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "8c76879796dc2b1f756374d0",
+      "name": "Melissa L. Bean",
+      "party": "DEMOCRATIC",
+      "office": "U.S. House District 8",
+      "district": "8",
+      "scope": "congressional",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "b53ffbcb1ba4d9d1818ffa9d",
+      "name": "Shantel Franklin",
+      "party": "DEMOCRATIC",
+      "office": "State House District 8",
+      "district": "8",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "869b5d88932a94aa04a9ea33",
+      "name": "Nicolle Grasse",
+      "party": "DEMOCRATIC",
+      "office": "State House District 53",
+      "district": "53",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "4c8ef6ba586d6b4b4f63a2d5",
+      "name": "Chris Balkema",
+      "party": "REPUBLICAN",
+      "office": "State Senate District 53",
+      "district": "53",
+      "scope": "state-senate",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "9538933148e67e8e374f59d8",
+      "name": "Mary Beth Canty",
+      "party": "DEMOCRATIC",
+      "office": "State House District 54",
+      "district": "54",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "29ad79ee1052939b65040e2a",
+      "name": "Sharon Chung",
+      "party": "DEMOCRATIC",
+      "office": "State House District 91",
+      "district": "91",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "cef1523e4ef1bcc0e1aae56a",
+      "name": "Jehan Gordon-Booth",
+      "party": "DEMOCRATIC",
+      "office": "State House District 92",
+      "district": "92",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "30d9ae65c492332c9ce12043",
+      "name": "Travis Weaver",
+      "party": "REPUBLICAN",
+      "office": "State House District 93",
+      "district": "93",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "338d1d832b155d36b9414d3a",
+      "name": "Joshua S. Higgins",
+      "party": "REPUBLICAN",
+      "office": "State House District 94",
+      "district": "94",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active",
+      "candidateUrl": "https://higginsforrep.com/"
+    },
+    {
+      "id": "252c9cc3a70ce5e06402a862",
+      "name": "Mike Coffey",
+      "party": "REPUBLICAN",
+      "office": "State House District 95",
+      "district": "95",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "4c98e2331bc3fd4ba9df7c0d",
+      "name": "Sue Scherer",
+      "party": "DEMOCRATIC",
+      "office": "State House District 96",
+      "district": "96",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "2f336869d8176b7a921e7afc",
+      "name": "Jed Davis",
+      "party": "REPUBLICAN",
+      "office": "State House District 75",
+      "district": "75",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active",
+      "candidateUrl": "https://jedforfreedom.com/"
+    },
+    {
+      "id": "382f940a3fadbf2403f250d4",
+      "name": "Norma Hernandez",
+      "party": "DEMOCRATIC",
+      "office": "State House District 77",
+      "district": "77",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "0d0ec614539a5105edbb1992",
+      "name": "Liz Bishop",
+      "party": "REPUBLICAN",
+      "office": "State House District 76",
+      "district": "76",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "1476661e77e7d8276abe97c4",
+      "name": "Amy \"Murri\" Briel",
+      "party": "DEMOCRATIC",
+      "office": "State House District 76",
+      "district": "76",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "74141c20d9e5c9bda532a8fb",
+      "name": "Ram Villivalam",
+      "party": "DEMOCRATIC",
+      "office": "State Senate District 8",
+      "district": "8",
+      "scope": "state-senate",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "a44a324e08cb2a63491e83b2",
+      "name": "John M. Cabello",
+      "party": "REPUBLICAN",
+      "office": "State House District 90",
+      "district": "90",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "86595991e7da774c8980d98f",
+      "name": "Tim Bass",
+      "party": "REPUBLICAN",
+      "office": "8TH CIRCUIT - ADRIAN VACANCY",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "767d3096fd8013d1803307dd",
+      "name": "Camille Lilly",
+      "party": "DEMOCRATIC",
+      "office": "State House District 78",
+      "district": "78",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "0eedc65e9b35dc1a4d2a251b",
+      "name": "Jackie Haas",
+      "party": "REPUBLICAN",
+      "office": "State House District 79",
+      "district": "79",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active",
+      "candidateUrl": "https://votejackie.com/"
+    },
+    {
+      "id": "566a8363c13ff31de98db8a0",
+      "name": "Chad Koppie",
+      "party": "REPUBLICAN",
+      "office": "U.S. House District 7",
+      "district": "7",
+      "scope": "congressional",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "a6fc0ca0a2884ebe30660b21",
+      "name": "La Shawn K. Ford",
+      "party": "DEMOCRATIC",
+      "office": "U.S. House District 7",
+      "district": "7",
+      "scope": "congressional",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "6ebe738af67b0e17d8cef700",
+      "name": "Brittany Michelle Pedersen",
+      "party": "DEMOCRATIC",
+      "office": "COOK CIRCUIT - 13TH SUBCIRCUIT - MARTIN C. KELLEY VACANCY",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "161b20780cc1bf07351be122",
+      "name": "Dan Naranjo",
+      "party": "DEMOCRATIC",
+      "office": "COOK CIRCUIT - 13TH SUBCIRCUIT - O' + Char(39) + 'MALLEY VACANCY",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "3b4626ce5fcb362db1cc00c4",
+      "name": "William F. Kelley",
+      "party": "DEMOCRATIC",
+      "office": "COOK CIRCUIT - 13TH SUBCIRCUIT - THOMAS J. KELLEY VACANCY",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "88036be614c1228941468415",
+      "name": "Julian Sanchez Crozier",
+      "party": "DEMOCRATIC",
+      "office": "COOK CIRCUIT - 16TH SUBCIRCUIT - BAIRD VACANCY",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active",
+      "candidateUrl": "https://jscforjudge.com/"
+    },
+    {
+      "id": "d9853c23eac174275afddfd3",
+      "name": "Jessica Karina Velez",
+      "party": "DEMOCRATIC",
+      "office": "COOK CIRCUIT - 16TH SUBCIRCUIT - MENDOZA VACANCY",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active",
+      "candidateUrl": "https://jessicavelezforjudge.com/"
+    },
+    {
+      "id": "0cadd1f4434585273c7d80c1",
+      "name": "Natalia Moore",
+      "party": "DEMOCRATIC",
+      "office": "COOK CIRCUIT - 17TH SUBCIRCUIT - BROOKS VACANCY",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active",
+      "candidateUrl": "https://natalia4judge.com/"
+    },
+    {
+      "id": "0156f8a956a8b5a225a9c397",
+      "name": "Bianca B. Brown",
+      "party": "DEMOCRATIC",
+      "office": "COOK CIRCUIT - 17TH SUBCIRCUIT - CARROLL VACANCY",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "c10ebe8baaed3d621d2ec4af",
+      "name": "Melissa Olivero",
+      "party": "DEMOCRATIC",
+      "office": "13TH CIRCUIT - RACCUGLIA VACANCY",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active",
+      "candidateUrl": "https://olivero4judge.com/"
+    },
+    {
+      "id": "7677b1be2468856e4a208eb8",
+      "name": "Seth Lewis",
+      "party": "REPUBLICAN",
+      "office": "State Senate District 24",
+      "district": "24",
+      "scope": "state-senate",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "1e5e7c39b14ec1784daf6de7",
+      "name": "Benjamin \"Ben\" McAdams",
+      "party": "DEMOCRATIC",
+      "office": "State Senate District 24",
+      "district": "24",
+      "scope": "state-senate",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "821c16a274bdfa0bfa96394a",
+      "name": "Curtis J. Tarver II",
+      "party": "DEMOCRATIC",
+      "office": "State House District 25",
+      "district": "25",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "7e40df590c820301b900e53f",
+      "name": "Kam Buckner",
+      "party": "DEMOCRATIC",
+      "office": "State House District 26",
+      "district": "26",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "007ada124ace906697858a20",
+      "name": "Darby Hills",
+      "party": "REPUBLICAN",
+      "office": "State Senate District 26",
+      "district": "26",
+      "scope": "state-senate",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "eb9c68f2b7869db591292259",
+      "name": "Nabeela Syed",
+      "party": "DEMOCRATIC",
+      "office": "State Senate District 26",
+      "district": "26",
+      "scope": "state-senate",
+      "status": "filed",
+      "sourceStatus": "Active",
+      "candidateUrl": "https://nabeelasyed.com/"
+    },
+    {
+      "id": "9543a42e702d477fbbe61b8a",
+      "name": "Justin Q. Slaughter",
+      "party": "DEMOCRATIC",
+      "office": "State House District 27",
+      "district": "27",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "f9e330d09ff87e99b31acb31",
+      "name": "Judith C. Rice",
+      "party": "DEMOCRATIC",
+      "office": "1ST APPELLATE - HOFFMAN VACANCY",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "3eb77498c258e055d8a3385d",
+      "name": "Brad Schneider",
+      "party": "DEMOCRATIC",
+      "office": "U.S. House District 10",
+      "district": "10",
+      "scope": "congressional",
+      "status": "filed",
+      "sourceStatus": "Active",
+      "candidateUrl": "https://schneiderforcongress.com/"
+    },
+    {
+      "id": "041d7f8be5ad94143c095bdb",
+      "name": "Jawaharial \"Omar\" Williams",
+      "party": "DEMOCRATIC",
+      "office": "State House District 10",
+      "district": "10",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "c897c36763bd58ca4df1bb72",
+      "name": "Aaron M. Ortiz",
+      "party": "DEMOCRATIC",
+      "office": "State House District 1",
+      "district": "1",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "b498b95a3801f5add7ad5914",
+      "name": "Brad Stephens",
+      "party": "REPUBLICAN",
+      "office": "State House District 20",
+      "district": "20",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "ada0dbbcfadd9a9128b88602",
+      "name": "Jeff Walter",
+      "party": "REPUBLICAN",
+      "office": "U.S. House District 11",
+      "district": "11",
+      "scope": "congressional",
+      "status": "filed",
+      "sourceStatus": "Active",
+      "candidateUrl": "https://www.jeffwalterforcongress.com/"
+    },
+    {
+      "id": "1f03d6c1d5e00763ac1805e6",
+      "name": "Bill Foster",
+      "party": "DEMOCRATIC",
+      "office": "U.S. House District 11",
+      "district": "11",
+      "scope": "congressional",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "846715ec5ff14954d1273c4f",
+      "name": "Charlie Meier",
+      "party": "REPUBLICAN",
+      "office": "State House District 109",
+      "district": "109",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "1199dcc287b404c3608516fc",
+      "name": "Delia Ramirez",
+      "party": "DEMOCRATIC",
+      "office": "U.S. House District 3",
+      "district": "3",
+      "scope": "congressional",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "eaa7f2261a856f36d75dcb17",
+      "name": "Eva-Dina Delgado",
+      "party": "DEMOCRATIC",
+      "office": "State House District 3",
+      "district": "3",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "7ee87f2450c1b2199587d862",
+      "name": "Mattie Hunter",
+      "party": "DEMOCRATIC",
+      "office": "State Senate District 3",
+      "district": "3",
+      "scope": "state-senate",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "3e16f1ebf7ce266c2d28e815",
+      "name": "Miguel Alvelo-Rivera",
+      "party": "DEMOCRATIC",
+      "office": "State House District 40",
+      "district": "40",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active",
+      "candidateUrl": "https://miguelfor40.org/"
+    },
+    {
+      "id": "edd729c2a2ffe58ced3896f9",
+      "name": "Elgie R. Sims, Jr.",
+      "party": "DEMOCRATIC",
+      "office": "State Senate District 17",
+      "district": "17",
+      "scope": "state-senate",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "46882279ee8b5a3e3925f295",
+      "name": "Jennifer Gong-Gershowitz",
+      "party": "DEMOCRATIC",
+      "office": "State House District 17",
+      "district": "17",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "3b550d29bcf1f70926a7bdc7",
+      "name": "Dillan S. Vancil",
+      "party": "REPUBLICAN",
+      "office": "U.S. House District 17",
+      "district": "17",
+      "scope": "congressional",
+      "status": "filed",
+      "sourceStatus": "Active",
+      "candidateUrl": "https://vancilforcongress.com/"
+    },
+    {
+      "id": "f24e65d9990ac232f048bdf5",
+      "name": "Michael J. Kelly",
+      "party": "DEMOCRATIC",
+      "office": "State House District 15",
+      "district": "15",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "af956c9e6c7b763eb426233b",
+      "name": "Napoleon B. Harris III",
+      "party": "DEMOCRATIC",
+      "office": "State Senate District 15",
+      "district": "15",
+      "scope": "state-senate",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "1b2eee2566e1376e549ed078",
+      "name": "Paul Nolley",
+      "party": "DEMOCRATIC",
+      "office": "U.S. House District 16",
+      "district": "16",
+      "scope": "congressional",
+      "status": "filed",
+      "sourceStatus": "Active",
+      "candidateUrl": "https://nolleyforcongress.com/"
+    },
+    {
+      "id": "71299695cd3ccb77ef8bfb8a",
+      "name": "Darin LaHood",
+      "party": "REPUBLICAN",
+      "office": "U.S. House District 16",
+      "district": "16",
+      "scope": "congressional",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "6cd58820c510515ca4664568",
+      "name": "Kevin John Olickal",
+      "party": "DEMOCRATIC",
+      "office": "State House District 16",
+      "district": "16",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "4e84f11321a9881d4f953db8",
+      "name": "Barbara Hernandez",
+      "party": "DEMOCRATIC",
+      "office": "State House District 50",
+      "district": "50",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "34bd96288f23328d1051b9d5",
+      "name": "Jenny Levin",
+      "party": "DEMOCRATIC",
+      "office": "State House District 51",
+      "district": "51",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "bea0c338951f15a03d82e213",
+      "name": "Chapin Rose",
+      "party": "REPUBLICAN",
+      "office": "State Senate District 51",
+      "district": "51",
+      "scope": "state-senate",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "406be613d3050efc3bb8a9e5",
+      "name": "Maria Peterson",
+      "party": "DEMOCRATIC",
+      "office": "State House District 52",
+      "district": "52",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "e81dc0888d5e3958b8716d47",
+      "name": "Tom Weber",
+      "party": "REPUBLICAN",
+      "office": "State House District 64",
+      "district": "64",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "c6b9d0ec149d9a3b8b083ba3",
+      "name": "Joyce Mason",
+      "party": "DEMOCRATIC",
+      "office": "State House District 61",
+      "district": "61",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "d650c7dd625a782c73075fdd",
+      "name": "Laura Faver Dias",
+      "party": "DEMOCRATIC",
+      "office": "State House District 62",
+      "district": "62",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "2134b8b7228b329fce0c88b7",
+      "name": "Dan Ugaste",
+      "party": "REPUBLICAN",
+      "office": "State House District 65",
+      "district": "65",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "81ad53d6916cb26e2404b3e1",
+      "name": "Ricky Rivard",
+      "party": "DEMOCRATIC",
+      "office": "State House District 65",
+      "district": "65",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "383177cd095cf45a0f891416",
+      "name": "Suzanne Ness",
+      "party": "DEMOCRATIC",
+      "office": "State House District 66",
+      "district": "66",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "3379fbb4c2dc4a2f280a4004",
+      "name": "Margaret \"Peggy\" O' + Char(39) + 'Connell",
+      "party": "DEMOCRATIC",
+      "office": "3RD APPELLATE - McDADE VACANCY",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active",
+      "candidateUrl": "https://judgeoconnell.com/"
+    },
+    {
+      "id": "cbd25fcd53c951bb99c53002",
+      "name": "Amy E. Sholar",
+      "party": "REPUBLICAN",
+      "office": "5TH APPELLATE - WELCH VACANCY",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "40287dd018dd36d1afcef019",
+      "name": "Tommy Hanson",
+      "party": "REPUBLICAN",
+      "office": "U.S. House District 5",
+      "district": "5",
+      "scope": "congressional",
+      "status": "filed",
+      "sourceStatus": "Active",
+      "candidateUrl": "https://votetommyhanson.com/"
+    },
+    {
+      "id": "200ab1edbda03dc9edff8a82",
+      "name": "Mike Quigley",
+      "party": "DEMOCRATIC",
+      "office": "U.S. House District 5",
+      "district": "5",
+      "scope": "congressional",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "11509a82563614cc6cfca843",
+      "name": "Kimberly Neely DuBuclet",
+      "party": "DEMOCRATIC",
+      "office": "State House District 5",
+      "district": "5",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active",
+      "candidateUrl": "https://kim4staterep.com/"
+    },
+    {
+      "id": "8a01be9d00c23a02427a7d43",
+      "name": "Lakesia Collins",
+      "party": "DEMOCRATIC",
+      "office": "State Senate District 5",
+      "district": "5",
+      "scope": "state-senate",
+      "status": "filed",
+      "sourceStatus": "Active",
+      "candidateUrl": "https://lakesiacollinsforsenate.com/"
+    },
+    {
+      "id": "3a9a0c07934aed611574fa39",
+      "name": "Rita Mayfield",
+      "party": "DEMOCRATIC",
+      "office": "State House District 60",
+      "district": "60",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "39a53d846af75a13f859db36",
+      "name": "Will Guzzardi",
+      "party": "DEMOCRATIC",
+      "office": "State House District 39",
+      "district": "39",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "ba551b545050319e3ac9f5cf",
+      "name": "Don Harmon",
+      "party": "DEMOCRATIC",
+      "office": "State Senate District 39",
+      "district": "39",
+      "scope": "state-senate",
+      "status": "filed",
+      "sourceStatus": "Active",
+      "candidateUrl": "https://harmonforillinois.com/"
+    },
+    {
+      "id": "ecf078b7eb07cfff10b131b8",
+      "name": "Janet Yang Rohr",
+      "party": "DEMOCRATIC",
+      "office": "State House District 41",
+      "district": "41",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "0a57bb8b6abeaa67f2a6c9bc",
+      "name": "Michael W. Halpin",
+      "party": "DEMOCRATIC",
+      "office": "State Senate District 36",
+      "district": "36",
+      "scope": "state-senate",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "c470122eae09f24953609a44",
+      "name": "Brad Beekman",
+      "party": "REPUBLICAN",
+      "office": "State Senate District 36",
+      "district": "36",
+      "scope": "state-senate",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "80f172c7b0e5654bafdb041b",
+      "name": "Patrick Sheehan",
+      "party": "REPUBLICAN",
+      "office": "State House District 37",
+      "district": "37",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "a917f215021d62f1050b6a54",
+      "name": "Debbie Meyers-Martin",
+      "party": "DEMOCRATIC",
+      "office": "State House District 38",
+      "district": "38",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "a129a50cc5f45fb155005887",
+      "name": "Alexi Giannoulias",
+      "party": "DEMOCRATIC",
+      "office": "SECRETARY OF STATE",
+      "district": "",
+      "scope": "statewide",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "175828866555bd3584ecf78d",
+      "name": "Jill R. Reedy",
+      "party": "REPUBLICAN",
+      "office": "MACON/PIATT - SUPERINTENDENT OF SCHOOLS",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "603cf634ee5be6b7bf437617",
+      "name": "Jeffrey Shane Ekena",
+      "party": "REPUBLICAN",
+      "office": "MASON/TAZEWELL/WOODFORD SUPERINTENDENT OF SCHOOLS",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "782c8a1a2591a4afa90b7727",
+      "name": "Margaret Croke",
+      "party": "DEMOCRATIC",
+      "office": "COMPTROLLER",
+      "district": "",
+      "scope": "statewide",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "141545f6a5058322a945fc5a",
+      "name": "John Consolino",
+      "party": "REPUBLICAN",
+      "office": "CLINTON/JEFFERSON/MARION, ETC. - SUPERINTENDENT OF SCHOOLS",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "13ac5818e95901a9a8b0318f",
+      "name": "Jarrett Knox",
+      "party": "DEMOCRATIC",
+      "office": "COOK CIRCUIT - 11TH SUBCIRCUIT - MEYERSON VACANCY",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active",
+      "candidateUrl": "https://knoxforjudge.com/"
+    },
+    {
+      "id": "4c1e5ce3596bb9a90b9605fb",
+      "name": "Kim Przekota",
+      "party": "DEMOCRATIC",
+      "office": "COOK CIRCUIT - 11TH SUBCIRCUIT - ROBERTS VACANCY",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "12609fa21aaa761cb01b13c9",
+      "name": "Robert \"Bob\" Groebner",
+      "party": "DEMOCRATIC",
+      "office": "COOK CIRCUIT - 13TH SUBCIRCUIT - CURRY, JR. VACANCY",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "06676128306f2403ee085a16",
+      "name": "Ryan F. Myers",
+      "party": "DEMOCRATIC",
+      "office": "LaSALLE/MARSHALL/PUTNAM - SUPERINTENDENT OF SCHOOLS",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "42477e554d9318fc3adb6a94",
+      "name": "Elizabeth \"Lisa\" Hernandez",
+      "party": "DEMOCRATIC",
+      "office": "State House District 2",
+      "district": "2",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "99d1aa0c120ffc1934bf3518",
+      "name": "Omar Aquino",
+      "party": "DEMOCRATIC",
+      "office": "State Senate District 2",
+      "district": "2",
+      "scope": "state-senate",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "73c2bea76be553e6f2478f5d",
+      "name": "William \"Will\" Davis",
+      "party": "DEMOCRATIC",
+      "office": "State House District 30",
+      "district": "30",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "49e38467a9cee5c9349b1d73",
+      "name": "Adriane L. Johnson",
+      "party": "DEMOCRATIC",
+      "office": "State Senate District 30",
+      "district": "30",
+      "scope": "state-senate",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "0b4d45a13dbd0e7958522c9a",
+      "name": "Michael \"Mike\" Crawford",
+      "party": "DEMOCRATIC",
+      "office": "State House District 31",
+      "district": "31",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "8c69b21385d8ab69d3bc4a8f",
+      "name": "Lisa J. Davis",
+      "party": "DEMOCRATIC",
+      "office": "State House District 32",
+      "district": "32",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "d3ba82aa35af00a44a0490eb",
+      "name": "Michael W. Frerichs",
+      "party": "DEMOCRATIC",
+      "office": "TREASURER",
+      "district": "",
+      "scope": "statewide",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "9bab22e2c10c80ce7d176d76",
+      "name": "Juliana Stratton",
+      "party": "DEMOCRATIC",
+      "office": "UNITED STATES SENATOR",
+      "district": "",
+      "scope": "statewide",
+      "status": "filed",
+      "sourceStatus": "Active",
+      "candidateUrl": "https://julianastratton.com/"
+    },
+    {
+      "id": "e1dfe226d0adb41ad901a2aa",
+      "name": "Kathleen Cunniff Ori",
+      "party": "DEMOCRATIC",
+      "office": "COOK CIRCUIT - 8TH SUBCIRCUIT - GAMRATH VACANCY",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "66ab4fcdbf920923e36b1204",
+      "name": "Lester Finkle",
+      "party": "DEMOCRATIC",
+      "office": "COOK CIRCUIT - 8TH SUBCIRCUIT - MIKVA VACANCY",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "8b5bd5b91498e2276267c45f",
+      "name": "Steven Q. McKenzie",
+      "party": "DEMOCRATIC",
+      "office": "COOK CIRCUIT - BURKE VACANCY",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "6f714e721bd343849d605d68",
+      "name": "Luz Maria Toledo",
+      "party": "DEMOCRATIC",
+      "office": "COOK CIRCUIT - COBBS VACANCY",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "fb111f401489daeb01618c87",
+      "name": "Ashonta C. Rice",
+      "party": "DEMOCRATIC",
+      "office": "COOK CIRCUIT - COGHLAN VACANCY",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active",
+      "candidateUrl": "https://www.ashontaforjudge.com/"
+    },
+    {
+      "id": "b9146d6ca7c297d591f02531",
+      "name": "Ava George Stewart",
+      "party": "DEMOCRATIC",
+      "office": "COOK CIRCUIT - HOOKS VACANCY",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "0789317fa25ee23d22057a55",
+      "name": "D' + Char(39) + 'Anthony \"Tony\" Thedford",
+      "party": "DEMOCRATIC",
+      "office": "COOK CIRCUIT - KARKULA VACANCY",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "6d18f74c4c905a50a850ca13",
+      "name": "Andrew S. Chesney",
+      "party": "REPUBLICAN",
+      "office": "State Senate District 45",
+      "district": "45",
+      "scope": "state-senate",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "aa630a6d5039c124270ec1e9",
+      "name": "Amy Elik",
+      "party": "REPUBLICAN",
+      "office": "State House District 111",
+      "district": "111",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "5e7a32f083a8c9608e2c33d9",
+      "name": "Rosetta \"Rosie\" Brown",
+      "party": "DEMOCRATIC",
+      "office": "State House District 111",
+      "district": "111",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "439e7217f15c14b9ab9fd901",
+      "name": "Jimmy Ford",
+      "party": "REPUBLICAN",
+      "office": "State House District 112",
+      "district": "112",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "0bb0c44116b5408e6b087983",
+      "name": "Katie Stuart",
+      "party": "DEMOCRATIC",
+      "office": "State House District 112",
+      "district": "112",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "bd2342dabbb918940c8d2e71",
+      "name": "Maura Hirschauer",
+      "party": "DEMOCRATIC",
+      "office": "State House District 49",
+      "district": "49",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active",
+      "candidateUrl": "https://votemaura.com/"
+    },
+    {
+      "id": "4f81a23e170a2871707b8fbd",
+      "name": "Brenda Mathis",
+      "party": "REPUBLICAN",
+      "office": "4TH CIRCUIT - JARMAN VACANCY",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "1ceb8555820496556d76cf65",
+      "name": "Jennifer Sanalitro",
+      "party": "REPUBLICAN",
+      "office": "State House District 48",
+      "district": "48",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "2b1e770a29ddd79ceca1f48a",
+      "name": "Amanda Zahorak",
+      "party": "DEMOCRATIC",
+      "office": "State House District 48",
+      "district": "48",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "067676916b5d7a762060c0e5",
+      "name": "Doris Turner",
+      "party": "DEMOCRATIC",
+      "office": "State Senate District 48",
+      "district": "48",
+      "scope": "state-senate",
+      "status": "filed",
+      "sourceStatus": "Active",
+      "candidateUrl": "https://dorisforillinois.com/"
+    },
+    {
+      "id": "c3899d7d929a721615eced42",
+      "name": "Diane Blair-Sherlock",
+      "party": "DEMOCRATIC",
+      "office": "State House District 46",
+      "district": "46",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "5995683533b4ef4b85917fa7",
+      "name": "Robert A. Vrankovich",
+      "party": "REPUBLICAN",
+      "office": "State House District 47",
+      "district": "47",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "b9fe1c49c5a6c9b8ba8bb391",
+      "name": "Erica Bray-Parker",
+      "party": "DEMOCRATIC",
+      "office": "State House District 47",
+      "district": "47",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active",
+      "candidateUrl": "https://ericaforil47.com/"
+    },
+    {
+      "id": "12563f0180988ab600d6f82f",
+      "name": "Karen Battaglia",
+      "party": "DEMOCRATIC",
+      "office": "State Senate District 32",
+      "district": "32",
+      "scope": "state-senate",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "a76f6a0dae93153a9da89bfd",
+      "name": "Marcus C. Evans, Jr.",
+      "party": "DEMOCRATIC",
+      "office": "State House District 33",
+      "district": "33",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "7ad6c988d75be6f4db82bdeb",
+      "name": "Michele Clark",
+      "party": "DEMOCRATIC",
+      "office": "State Senate District 33",
+      "district": "33",
+      "scope": "state-senate",
+      "status": "filed",
+      "sourceStatus": "Active",
+      "candidateUrl": "https://micheleforilsenate.com/"
+    },
+    {
+      "id": "2bc9da0fa4b6814eea9f1090",
+      "name": "Danielle Penman",
+      "party": "REPUBLICAN",
+      "office": "State Senate District 33",
+      "district": "33",
+      "scope": "state-senate",
+      "status": "filed",
+      "sourceStatus": "Active",
+      "candidateUrl": "https://daniellepenman.com/"
+    },
+    {
+      "id": "f854d15164ab0859d5f09929",
+      "name": "Cleopatra \"Cleo\" Cowley",
+      "party": "DEMOCRATIC",
+      "office": "State House District 34",
+      "district": "34",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "f0abab37eb22f7687a4060a1",
+      "name": "David A. Dewar",
+      "party": "REPUBLICAN",
+      "office": "State House District 35",
+      "district": "35",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active",
+      "candidateUrl": "https://repdaviddewar.com/"
+    },
+    {
+      "id": "bf10762ab07e0b0a8fe2b9b4",
+      "name": "Mary Gill",
+      "party": "DEMOCRATIC",
+      "office": "State House District 35",
+      "district": "35",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "554065ad8ff9bdd3d2284380",
+      "name": "Lindsey LaPointe",
+      "party": "DEMOCRATIC",
+      "office": "State House District 19",
+      "district": "19",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "5ca81cc7b614a7e62e8412d5",
+      "name": "Graciela Guzman",
+      "party": "DEMOCRATIC",
+      "office": "State Senate District 20",
+      "district": "20",
+      "scope": "state-senate",
+      "status": "filed",
+      "sourceStatus": "Active",
+      "candidateUrl": "https://gracielafor20.org/"
+    },
+    {
+      "id": "d3aa51dc1760a8add103b6a0",
+      "name": "Angie Guerrero-Cuellar",
+      "party": "DEMOCRATIC",
+      "office": "State House District 22",
+      "district": "22",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "1950f5bec881b221dfb0544d",
+      "name": "Edgar Gonzalez, Jr.",
+      "party": "DEMOCRATIC",
+      "office": "State House District 23",
+      "district": "23",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "cc6a1123912455391ff0d958",
+      "name": "Abdelnasser Rashid",
+      "party": "DEMOCRATIC",
+      "office": "State House District 21",
+      "district": "21",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "ec8ed8ee7ef3cd5ea0776e73",
+      "name": "Laura Ellman",
+      "party": "DEMOCRATIC",
+      "office": "State Senate District 21",
+      "district": "21",
+      "scope": "state-senate",
+      "status": "filed",
+      "sourceStatus": "Active",
+      "candidateUrl": "https://ellmanforillinois.com/"
+    },
+    {
+      "id": "17cac1cce810cfcff8260bed",
+      "name": "Robert \"Bob\" Rita",
+      "party": "DEMOCRATIC",
+      "office": "State House District 28",
+      "district": "28",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "9fcdff9c98c73309898a4753",
+      "name": "Thaddeus Jones",
+      "party": "DEMOCRATIC",
+      "office": "State House District 29",
+      "district": "29",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "34acd088390c39651a983b59",
+      "name": "Julie A. Morrison",
+      "party": "DEMOCRATIC",
+      "office": "State Senate District 29",
+      "district": "29",
+      "scope": "state-senate",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "d22b9a71db66da21a1f69bde",
+      "name": "Suzanne \"Suzy\" Glowiak Hilton",
+      "party": "DEMOCRATIC",
+      "office": "State Senate District 23",
+      "district": "23",
+      "scope": "state-senate",
+      "status": "filed",
+      "sourceStatus": "Active",
+      "candidateUrl": "https://suzyforsenate.com/"
+    },
+    {
+      "id": "379439366945b39fba6dbfda",
+      "name": "Theresa Mah",
+      "party": "DEMOCRATIC",
+      "office": "State House District 24",
+      "district": "24",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "9d18450bd187ed27cf766d7f",
+      "name": "Carina Santa Maria",
+      "party": "DEMOCRATIC",
+      "office": "State Senate District 27",
+      "district": "27",
+      "scope": "state-senate",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "796c0ffaad204980cc6a9ba0",
+      "name": "Brian T Shinkle",
+      "party": "REPUBLICAN",
+      "office": "2ND CIRCUIT - VALENTINE VACANCY",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "cddfa6e0c3cd0bf7e2a14832",
+      "name": "Chelsey E. Clark",
+      "party": "REPUBLICAN",
+      "office": "2ND CIRCUIT - VAUGHN VACANCY",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "eb8b33dd7bba10d6723b0f16",
+      "name": "Donna Miller",
+      "party": "DEMOCRATIC",
+      "office": "U.S. House District 2",
+      "district": "2",
+      "scope": "congressional",
+      "status": "filed",
+      "sourceStatus": "Active",
+      "candidateUrl": "https://donnaforcongress.com/"
+    },
+    {
+      "id": "53165e16f8eb72fba2713768",
+      "name": "Rick Ryan",
+      "party": "DEMOCRATIC",
+      "office": "State House District 36",
+      "district": "36",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "633f580bed176d34bb91ed58",
+      "name": "John Curran",
+      "party": "REPUBLICAN",
+      "office": "State Senate District 41",
+      "district": "41",
+      "scope": "state-senate",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "6b3eb58b2d022e2dc194842f",
+      "name": "Sally J. Turner",
+      "party": "REPUBLICAN",
+      "office": "State Senate District 44",
+      "district": "44",
+      "scope": "state-senate",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "989d186a78acc1493e21886a",
+      "name": "Gina Parrilli",
+      "party": "REPUBLICAN",
+      "office": "State House District 45",
+      "district": "45",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "6797d9b5eb3ff80814132b89",
+      "name": "Martha \"Marti\" Deuter",
+      "party": "DEMOCRATIC",
+      "office": "State House District 45",
+      "district": "45",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "b75f81100f311dc9eb7e7f89",
+      "name": "Lilian Jimenez",
+      "party": "DEMOCRATIC",
+      "office": "State House District 4",
+      "district": "4",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "d2d64f0af92e534ab9c5dd00",
+      "name": "Kathy Easton",
+      "party": "REPUBLICAN",
+      "office": "State House District 68",
+      "district": "68",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "961ac12b815a35699b933c0b",
+      "name": "Dave Vella",
+      "party": "DEMOCRATIC",
+      "office": "State House District 68",
+      "district": "68",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "68e02202f6d64fb2040812ba",
+      "name": "Jennifer Todd",
+      "party": "DEMOCRATIC",
+      "office": "U.S. House District 15",
+      "district": "15",
+      "scope": "congressional",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "a901d77158abc22f906e2705",
+      "name": "Christina Kye",
+      "party": "DEMOCRATIC",
+      "office": "18TH CIRCUIT - 4TH SUBCIRCUIT - WILSON VACANCY",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active",
+      "candidateUrl": "https://judgechristinakye.com/"
+    },
+    {
+      "id": "0c2da8e26a6442b9c3a15f8d",
+      "name": "Paul Kendrick",
+      "party": "DEMOCRATIC",
+      "office": "State House District 12",
+      "district": "12",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active",
+      "candidateUrl": "https://paulforillinois.com/"
+    },
+    {
+      "id": "56ec0cd22c164149960f0774",
+      "name": "Celina Villanueva",
+      "party": "DEMOCRATIC",
+      "office": "State Senate District 12",
+      "district": "12",
+      "scope": "state-senate",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "bc83c2750868924b11de8393",
+      "name": "Robyn Gabel",
+      "party": "DEMOCRATIC",
+      "office": "State House District 18",
+      "district": "18",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "00b33482642b0293adc3d1b8",
+      "name": "Frances Ann Hurley",
+      "party": "DEMOCRATIC",
+      "office": "State Senate District 18",
+      "district": "18",
+      "scope": "state-senate",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "5cc9ff5dd25beb4d6b48608f",
+      "name": "Terra Costa Howard",
+      "party": "DEMOCRATIC",
+      "office": "18TH CIRCUIT - 5TH SUBCIRCUIT - FULLERTON VACANCY",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "e0b57e28666903035e3df203",
+      "name": "Emil Jones, III",
+      "party": "DEMOCRATIC",
+      "office": "State Senate District 14",
+      "district": "14",
+      "scope": "state-senate",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "0904de7514751aa4a4c36c26",
+      "name": "Judd Thruman",
+      "party": "REPUBLICAN",
+      "office": "15TH CIRCUIT - HAUSER VACANCY",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active",
+      "candidateUrl": "https://judd4judge.com/"
+    },
+    {
+      "id": "7bd57a3e30885f49dc4554a2",
+      "name": "John D. Hay",
+      "party": "REPUBLICAN",
+      "office": "15TH CIRCUIT - WARD VACANCY",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "0a73dd2233ece0a76cd85d58",
+      "name": "James T. \"Jim\" Marter",
+      "party": "REPUBLICAN",
+      "office": "U.S. House District 14",
+      "district": "14",
+      "scope": "congressional",
+      "status": "filed",
+      "sourceStatus": "Active",
+      "candidateUrl": "https://marter4congress.us/"
+    },
+    {
+      "id": "c6068e0988f8a6a8f66d15fa",
+      "name": "Lauren Underwood",
+      "party": "DEMOCRATIC",
+      "office": "U.S. House District 14",
+      "district": "14",
+      "scope": "congressional",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "c08cb24f0330167e812e804c",
+      "name": "Kelly M. Cassidy",
+      "party": "DEMOCRATIC",
+      "office": "State House District 14",
+      "district": "14",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "cbaaff7ed4f0b2d084da7529",
+      "name": "JohnPaul Ivec",
+      "party": "REPUBLICAN",
+      "office": "12TH CIRCUIT - 1ST SUBCIRCUIT - CARLSON VACANCY",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active",
+      "candidateUrl": "https://ivecforjudge.com/"
+    },
+    {
+      "id": "a703e39cffb0d975256afae9",
+      "name": "Sonni Choi Williams",
+      "party": "DEMOCRATIC",
+      "office": "12TH CIRCUIT - 3RD SUBCIRCUIT - ANDERSON VACANCY",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active",
+      "candidateUrl": "https://vote4sonni.com/"
+    },
+    {
+      "id": "2022bd59f57d9ea76652db8c",
+      "name": "Erin O' + Char(39) + 'Brien",
+      "party": "REPUBLICAN",
+      "office": "12TH CIRCUIT - 5TH SUBCIRCUIT - PETRUNGARO VACANCY",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "b0231f4224b03b666444c5fd",
+      "name": "Mike Bost",
+      "party": "REPUBLICAN",
+      "office": "U.S. House District 12",
+      "district": "12",
+      "scope": "congressional",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "d4909b2a831252f14e79a932",
+      "name": "Gregory Michael Minger",
+      "party": "REPUBLICAN",
+      "office": "11TH CIRCUIT - FEENEY, III VACANCY",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "c19aae6ad07b9bd5f5b0934d",
+      "name": "Ann M. Williams",
+      "party": "DEMOCRATIC",
+      "office": "State House District 11",
+      "district": "11",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "3f73ad11426dc446881a8291",
+      "name": "Mike Porfirio",
+      "party": "DEMOCRATIC",
+      "office": "State Senate District 11",
+      "district": "11",
+      "scope": "state-senate",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "114e0c3ce0dd0e110e05c7ae",
+      "name": "Jay C. Hoffman",
+      "party": "DEMOCRATIC",
+      "office": "State House District 113",
+      "district": "113",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "cc7ba2f8e979b1c541911bd9",
+      "name": "Kevin Schmidt",
+      "party": "REPUBLICAN",
+      "office": "State House District 114",
+      "district": "114",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "3939305d15c7c2499a0acce0",
+      "name": "David H. Friess",
+      "party": "REPUBLICAN",
+      "office": "State House District 115",
+      "district": "115",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "e24556079d2423a6f628314a",
+      "name": "Dave Severin",
+      "party": "REPUBLICAN",
+      "office": "State House District 116",
+      "district": "116",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "c0f67f29f9788e988bfa816f",
+      "name": "Patrick Windhorst",
+      "party": "REPUBLICAN",
+      "office": "State House District 117",
+      "district": "117",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "39a07a625e8a5f3926988736",
+      "name": "Scott Doody",
+      "party": "REPUBLICAN",
+      "office": "State House District 118",
+      "district": "118",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "8715e85037fa6b732736db7e",
+      "name": "Homer \"Chip\" Markel",
+      "party": "DEMOCRATIC",
+      "office": "State House District 118",
+      "district": "118",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active",
+      "candidateUrl": "https://chipforstaterep.com/"
+    },
+    {
+      "id": "f6fac01b52c4a88fe01734be",
+      "name": "Jill Reis",
+      "party": "REPUBLICAN",
+      "office": "ADAMS/BROWN/CASS/MORGAN/PIKE/SCOTT SUPERINTENDENT OF SCHOOLS",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "697c591bf0555f1bea047ccd",
+      "name": "Saba Haider",
+      "party": "DEMOCRATIC",
+      "office": "State House District 84",
+      "district": "84",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active",
+      "candidateUrl": "https://sabahaider.com/"
+    },
+    {
+      "id": "82f6ed0a55d09cb2ec15581f",
+      "name": "Patrick Hanley",
+      "party": "DEMOCRATIC",
+      "office": "State Senate District 9",
+      "district": "9",
+      "scope": "state-senate",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "4fde81ef3423187e77ef0a21",
+      "name": "John Elleson",
+      "party": "REPUBLICAN",
+      "office": "U.S. House District 9",
+      "district": "9",
+      "scope": "congressional",
+      "status": "filed",
+      "sourceStatus": "Active",
+      "candidateUrl": "https://johnelleson.com/"
+    },
+    {
+      "id": "b8aafae8499c1cd8983358b5",
+      "name": "Daniel Biss",
+      "party": "DEMOCRATIC",
+      "office": "U.S. House District 9",
+      "district": "9",
+      "scope": "congressional",
+      "status": "filed",
+      "sourceStatus": "Active",
+      "candidateUrl": "https://danielbiss.com/"
+    },
+    {
+      "id": "782e656420f573f6c899fcf6",
+      "name": "Yolonda Morris",
+      "party": "DEMOCRATIC",
+      "office": "State House District 9",
+      "district": "9",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "e27fe67a006e5b5574a0cb83",
+      "name": "Natalie A. Manley",
+      "party": "DEMOCRATIC",
+      "office": "State House District 98",
+      "district": "98",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "f87d0def88b1ca5a18627334",
+      "name": "Kyle A. Moore",
+      "party": "REPUBLICAN",
+      "office": "State House District 99",
+      "district": "99",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "02a6d1c5863d36edca84f61b",
+      "name": "Sarah E Emery",
+      "party": "REPUBLICAN",
+      "office": "EDWARDS/GALLATIN/HAMILTON, ETC. - SUPERINTENDENT OF SCHOOLS",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "300badb90804afcab4ef6712",
+      "name": "Scott Bloomquist",
+      "party": "REPUBLICAN",
+      "office": "BOONE/WINNEBAGO - SUPERINTENDENT OF SCHOOLS",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "22759684ef4ae938ad6360e8",
+      "name": "Kathy Marshall",
+      "party": "REPUBLICAN",
+      "office": "BUREAU/HENRY/STARK - SUPERINTENDENT OF SCHOOLS",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "78ed6b00493c8cf1343500a4",
+      "name": "Kwame Raoul",
+      "party": "DEMOCRATIC",
+      "office": "ATTORNEY GENERAL",
+      "district": "",
+      "scope": "statewide",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "9b3f6f380268fc37dec22ed9",
+      "name": "Christopher Shockey",
+      "party": "REPUBLICAN",
+      "office": "CARROLL/JoDAVIESS/STEPHENSON - SUPERINTENDENT OF SCHOOLS",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "1f244f08080c5debb748952a",
+      "name": "Sam Bae",
+      "party": "DEMOCRATIC",
+      "office": "COOK CIRCUIT - 18TH SUBCIRCUIT - ANDREOU VACANCY",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "4e11b976e23e3f9faf23a66c",
+      "name": "Juan Ponce de Leon",
+      "party": "DEMOCRATIC",
+      "office": "COOK CIRCUIT - 18TH SUBCIRCUIT - CHRONES VACANCY",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active",
+      "candidateUrl": "https://juan4judge.com/"
+    },
+    {
+      "id": "7a50013b3868da79bf203f26",
+      "name": "Sara McGann",
+      "party": "DEMOCRATIC",
+      "office": "COOK CIRCUIT - 19TH SUBCIRCUIT - FAIRMAN VACANCY",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "52fc548e8ebd9b24ee22b9b4",
+      "name": "Monica Somerville",
+      "party": "DEMOCRATIC",
+      "office": "COOK CIRCUIT - 19TH SUBCIRCUIT - KANE VACANCY",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "61ea45cc6ce040efea54ef1b",
+      "name": "Radiance Ward",
+      "party": "DEMOCRATIC",
+      "office": "COOK CIRCUIT - 1ST SUBCIRCUIT - BALANOFF VACANCY",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active",
+      "candidateUrl": "https://radiancewardforjudge.com/"
+    },
+    {
+      "id": "82518bb3c5bf036a7f5ca908",
+      "name": "Ashley Greer Shambley",
+      "party": "DEMOCRATIC",
+      "office": "COOK CIRCUIT - 1ST SUBCIRCUIT - WALKER VACANCY",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active",
+      "candidateUrl": "https://ashleygreershambleyforjudge.com/"
+    },
+    {
+      "id": "2872fd530ed84e6f3e27a75b",
+      "name": "Michael J. Zink",
+      "party": "DEMOCRATIC",
+      "office": "COOK CIRCUIT - 20TH SUBCIRCUIT - HARACZ VACANCY",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active",
+      "candidateUrl": "https://zinkforjudge.com/"
+    },
+    {
+      "id": "6acbbd51af72c3453adfcb8c",
+      "name": "Jon Stromsta",
+      "party": "DEMOCRATIC",
+      "office": "COOK CIRCUIT - 20TH SUBCIRCUIT - MILLER VACANCY",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "189f74460a62d768387f01cf",
+      "name": "John Carroll",
+      "party": "DEMOCRATIC",
+      "office": "COOK CIRCUIT - 3RD SUBCIRCUIT - MURPHY VACANCY",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "658f133185ef816ceecf2396",
+      "name": "Rachel Marrello",
+      "party": "DEMOCRATIC",
+      "office": "COOK CIRCUIT - 3RD SUBCIRCUIT - SHERLOCK VACANCY",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "898a033ea5f93f40a438755e",
+      "name": "Dan Swanson",
+      "party": "REPUBLICAN",
+      "office": "State House District 71",
+      "district": "71",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "99c4e69d213a0b3dfca68679",
+      "name": "Anna Moeller",
+      "party": "DEMOCRATIC",
+      "office": "State House District 43",
+      "district": "43",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "e2900811e2b341e58f5ba6c6",
+      "name": "Bradley J. Fritts",
+      "party": "REPUBLICAN",
+      "office": "State House District 74",
+      "district": "74",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "ed77054a4dc668b1323ff8a2",
+      "name": "Gregg Johnson",
+      "party": "DEMOCRATIC",
+      "office": "State House District 72",
+      "district": "72",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "cb8d8b58438a18e0bd6ed658",
+      "name": "Ryan Spain",
+      "party": "REPUBLICAN",
+      "office": "State House District 73",
+      "district": "73",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "095d25e6d7ef9bdf73ddb6f2",
+      "name": "Joe C. Sosnowski",
+      "party": "REPUBLICAN",
+      "office": "State House District 69",
+      "district": "69",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active",
+      "candidateUrl": "https://www.joesosnowski.com/"
+    },
+    {
+      "id": "c94bd84303a21a1de6c300ab",
+      "name": "Niki Conforti",
+      "party": "REPUBLICAN",
+      "office": "U.S. House District 6",
+      "district": "6",
+      "scope": "congressional",
+      "status": "filed",
+      "sourceStatus": "Active",
+      "candidateUrl": "https://www.conforti4congress.com/"
+    },
+    {
+      "id": "4705ecb669988ee20e68768b",
+      "name": "Sean Casten",
+      "party": "DEMOCRATIC",
+      "office": "U.S. House District 6",
+      "district": "6",
+      "scope": "congressional",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "6f12591836ca5f5b3fb2c8f4",
+      "name": "Sonya Marie Harper",
+      "party": "DEMOCRATIC",
+      "office": "State House District 6",
+      "district": "6",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "82c35720ae726e911fbc35fb",
+      "name": "Sara Feigenholtz",
+      "party": "DEMOCRATIC",
+      "office": "State Senate District 6",
+      "district": "6",
+      "scope": "state-senate",
+      "status": "filed",
+      "sourceStatus": "Active",
+      "candidateUrl": "https://sarafeigenholtz.com/"
+    },
+    {
+      "id": "7841a7a885d55f6da2175eb6",
+      "name": "Jeff Keicher",
+      "party": "REPUBLICAN",
+      "office": "State House District 70",
+      "district": "70",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "87056e7f74ad5b07fa522a5e",
+      "name": "Margaret A. DeLarosa",
+      "party": "DEMOCRATIC",
+      "office": "State House District 42",
+      "district": "42",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "0ceb4dacf69733cdba269375",
+      "name": "Linda Holmes",
+      "party": "DEMOCRATIC",
+      "office": "State Senate District 42",
+      "district": "42",
+      "scope": "state-senate",
+      "status": "withdrawn",
+      "sourceStatus": "Withdrawn",
+      "candidateUrl": "https://lindaholmesforil.com/"
+    },
+    {
+      "id": "9064bc1ad44aaaa39004b38b",
+      "name": "Emanuel \"Chris\" Welch",
+      "party": "DEMOCRATIC",
+      "office": "State House District 7",
+      "district": "7",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "8fe3d5d1865fba9efbbff9eb",
+      "name": "Matt Hanson",
+      "party": "DEMOCRATIC",
+      "office": "State House District 83",
+      "district": "83",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "dfadd11caeef2b81fc4d72b6",
+      "name": "Anthony DeLuca",
+      "party": "DEMOCRATIC",
+      "office": "State House District 80",
+      "district": "80",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "b297e3657229c3ac846e8761",
+      "name": "Laura Hois",
+      "party": "REPUBLICAN",
+      "office": "State House District 81",
+      "district": "81",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "937157f228d0cb0e55f6152d",
+      "name": "Anne Stava",
+      "party": "DEMOCRATIC",
+      "office": "State House District 81",
+      "district": "81",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "b9541f63bad4faccc52ed424",
+      "name": "Nicole La Ha",
+      "party": "REPUBLICAN",
+      "office": "State House District 82",
+      "district": "82",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "313e366d52f9a0bbaa285179",
+      "name": "Dagmara \"Dee\" Avelar",
+      "party": "DEMOCRATIC",
+      "office": "State House District 85",
+      "district": "85",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "ea899000cc56b1ff2cea76cd",
+      "name": "Lawrence \"Larry\" M. Walsh, Jr.",
+      "party": "DEMOCRATIC",
+      "office": "State House District 86",
+      "district": "86",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "baeb4fdfba027cfb178cf671",
+      "name": "William E Hauter",
+      "party": "REPUBLICAN",
+      "office": "State House District 87",
+      "district": "87",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "ccf03a4b98922339c39a8495",
+      "name": "Regan Deering",
+      "party": "REPUBLICAN",
+      "office": "State House District 88",
+      "district": "88",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "4ebe27e4193509574139335d",
+      "name": "Tony M. McCombie",
+      "party": "REPUBLICAN",
+      "office": "State House District 89",
+      "district": "89",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "436811a1674d0b1fc0cc1fa9",
+      "name": "Gabby Shanahan",
+      "party": "REPUBLICAN",
+      "office": "State House District 97",
+      "district": "97",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "083537643674cc488ac353a4",
+      "name": "Harry Benton",
+      "party": "DEMOCRATIC",
+      "office": "State House District 97",
+      "district": "97",
+      "scope": "state-house",
+      "status": "withdrawn",
+      "sourceStatus": "Withdrawn"
+    },
+    {
+      "id": "2e34238e4d16b421925c0c9f",
+      "name": "JB Pritzker / Christian Mitchell",
+      "party": "DEMOCRATIC",
+      "office": "GOVERNOR AND LIEUTENANT GOVERNOR",
+      "district": "",
+      "scope": "statewide",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "0fd7edc48291cfe84ba0ed13",
+      "name": "Darren Bailey / Aaron B. Del Mar",
+      "party": "REPUBLICAN",
+      "office": "GOVERNOR AND LIEUTENANT GOVERNOR",
+      "district": "",
+      "scope": "statewide",
+      "status": "filed",
+      "sourceStatus": "Active",
+      "candidateUrl": "https://baileyforillinois.com/"
+    },
+    {
+      "id": "3c88f79133ed8939a6a15e2a",
+      "name": "Brandun Schweizer",
+      "party": "REPUBLICAN",
+      "office": "State House District 104",
+      "district": "104",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "213f5beb2090c4c1034c5b8f",
+      "name": "Adam M. Niemerg",
+      "party": "REPUBLICAN",
+      "office": "State House District 102",
+      "district": "102",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "38b355c84fb2f05fb8bf1978",
+      "name": "Tim Ruestman",
+      "party": "REPUBLICAN",
+      "office": "State House District 105",
+      "district": "105",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "0169c9752c025a3e5362e2bd",
+      "name": "Brad Halbrook",
+      "party": "REPUBLICAN",
+      "office": "State House District 107",
+      "district": "107",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active",
+      "candidateUrl": "https://bradhalbrook.com/"
+    },
+    {
+      "id": "ee31ce4dffb4042423260fdf",
+      "name": "Wayne A. Rosenthal",
+      "party": "REPUBLICAN",
+      "office": "State House District 108",
+      "district": "108",
+      "scope": "state-house",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "6ecca3d07cb9aa06d90244a3",
+      "name": "Christopher E. \"Chris\" Reif",
+      "office": "7TH CIRCUIT - RETAIN REIF",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "6411d8677b31ba3f2609ebd8",
+      "name": "Zachary A. Schmidt",
+      "office": "7TH CIRCUIT - RETAIN SCHMIDT",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "1cba4da04ac852e6bef89723",
+      "name": "John M. \"Mo\" Madonia",
+      "office": "7TH CIRCUIT - RETAIN MADONIA",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "5c17729b78889cf83dae6bd8",
+      "name": "Adam Giganti",
+      "office": "7TH CIRCUIT - RETAIN GIGANTI",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "1c8e4dc2b2757423843065a0",
+      "name": "Raylene Grischow",
+      "office": "7TH CIRCUIT - RETAIN GRISCHOW",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    },
+    {
+      "id": "251616d191cb555da4f959c9",
+      "name": "Gail L. Noll",
+      "office": "7TH CIRCUIT - RETAIN NOLL",
+      "district": "",
+      "scope": "local",
+      "status": "filed",
+      "sourceStatus": "Active"
+    }
+  ]
+}

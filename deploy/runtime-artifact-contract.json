@@ -14,6 +14,7 @@
 			"name": "backend",
 			"entrypoint": "back-end/dist/server.js",
 			"requiredPaths": [
+				"back-end/dist/data/state-ballots/illinois-2026.json",
 				"back-end/dist/admin-schema.postgres.sql",
 				"back-end/dist/admin-schema.sql",
 				"back-end/dist/live-data-schema.sql",

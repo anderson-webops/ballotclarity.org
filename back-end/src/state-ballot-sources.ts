@@ -5,13 +5,60 @@ export interface StateBallotSource {
 	electionDate: string;
 	url: string;
 	pageUrl: string;
-	format: "csv" | "delaware-html" | "michigan-html" | "new-mexico-html" | "virginia-html" | "colorado-html" | "kentucky-html" | "north-dakota-html";
+	format: "csv" | "delaware-html" | "michigan-html" | "new-mexico-html" | "virginia-html" | "colorado-html" | "kentucky-html" | "north-dakota-html" | "utah-html" | "mississippi-csv" | "south-dakota-csv" | "hawaii-csv" | "illinois-tsv";
 	delimiter?: string;
 	postBody?: string;
 	documentUrls?: readonly string[];
+	retrievalPolicy?: "manual-snapshot";
 }
 
 export const stateBallotSources: readonly StateBallotSource[] = [
+	{
+		stateCode: "UT",
+		id: "ut-lg-2026",
+		label: "Utah Lieutenant Governor",
+		electionDate: "2026-11-03",
+		url: "https://vote.utah.gov/2026-candidate-filings/",
+		pageUrl: "https://vote.utah.gov/2026-candidate-filings/",
+		format: "utah-html",
+	},
+	{
+		stateCode: "MS",
+		id: "ms-sos-2026",
+		label: "Mississippi Secretary of State",
+		electionDate: "2026-11-03",
+		url: "https://www.sos.ms.gov/content/CandidateQualifying/default.aspx",
+		pageUrl: "https://www.sos.ms.gov/content/CandidateQualifying/default.aspx",
+		format: "mississippi-csv",
+	},
+	{
+		stateCode: "SD",
+		id: "sd-sos-2026",
+		label: "South Dakota Secretary of State",
+		electionDate: "2026-11-03",
+		url: "https://vip.sdsos.gov/candidatelist.aspx?eid=774",
+		pageUrl: "https://vip.sdsos.gov/candidatelist.aspx?eid=774",
+		format: "south-dakota-csv",
+	},
+	{
+		stateCode: "HI",
+		id: "hi-elections-2026",
+		label: "Hawaii Office of Elections",
+		electionDate: "2026-11-03",
+		url: "https://olvr.hawaii.gov/Controls/CandidateFiling.aspx?elid=94",
+		pageUrl: "https://elections.hawaii.gov/candidates/candidate-reports/",
+		format: "hawaii-csv",
+	},
+	{
+		stateCode: "IL",
+		id: "il-sbe-2026",
+		label: "Illinois State Board of Elections",
+		electionDate: "2026-11-03",
+		url: "https://www.elections.il.gov/ElectionOperations/DownloadCandidates.aspx?ID=sejIrI%2bQmww%3d",
+		pageUrl: "https://www.elections.il.gov/ElectionOperations/CandidateFilingSearch.aspx?ID=sejIrI%2BQmww%3D",
+		format: "illinois-tsv",
+		retrievalPolicy: "manual-snapshot",
+	},
 	{
 		stateCode: "CO",
 		id: "co-sos-2026",

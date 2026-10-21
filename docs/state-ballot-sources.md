@@ -11,12 +11,17 @@ registration, campaign-finance filings, or third-party forecasts.
 | Colorado | [Secretary of State official general list](https://www.sos.state.co.us/pubs/elections/vote/generalCandidates.html) | HTML | Federal, statewide, legislative, judicial, and other official records; strike-through withdrawals and certified write-ins retained. Education/regent district numbers are not assumed to establish voter eligibility. |
 | Delaware | [Department of Elections](https://elections.delaware.gov/candidates/candidatelist/genl_fcddt_2026.html) | HTML | Federal, statewide, legislative, and local records; source qualification/withdrawal status retained. |
 | Florida | [Division of Elections candidate download](https://dos.elections.myflorida.com/candidates/downloadcanlist.asp) | Public form POST, TSV | State-filed federal, statewide, legislative, and other offices; explicit status retained. Unopposed, withdrawn, defeated, deceased, removed, and unrecognized statuses are not presented as active ballot candidates. |
+| Hawaii | [Office of Elections candidate reports](https://elections.hawaii.gov/candidates/candidate-reports/) | Public CSV export | The complete selected 2026 report is checked against its declared row count. Only explicit `In General` records are assigned to November 3; issued, primary, withdrawn, void, already-elected, and merely filed records are not promoted into general-election claims. Safe source-published campaign sites are retained. |
+| Illinois | [State Board of Elections candidate filings](https://www.elections.il.gov/ElectionOperations/CandidateFilingSearch.aspx?ID=sejIrI%2BQmww%3D) | Bundled dated snapshot from public TSV | Publisher robots rules disallow crawling, so automatic retrieval is disabled. The captured retrieval time/hash remain unchanged on reload. Exact general date/type, explicit joint-ticket brackets, ordinal legislative districts and inactive statuses are preserved. Regional judicial districts never become statewide eligibility. |
 | Kentucky | [Secretary of State candidate filings](https://web.sos.ky.gov/CandidateFilings/) | Five linked HTML pages | Federal and state legislative offices, plus the published closed-status list. All pages must select the same 2026 general election; incomplete document sets fail closed. |
 | Maryland | [State Board of Elections](https://elections.maryland.gov/elections/2026/general_candidates/2026_GG_statewide_candidatelist.html) | CSV | Federal, statewide, legislative, and local records; joint tickets and source status retained. The publisher's trailing empty header and literal quotes in unquoted fields are handled only in this adapter. |
 | Michigan | [Department of State official candidate report](https://mi-boe.entellitrak.com/etk-mi-boe-prod/page.request.do?page=page.miboePublicReport&electionType=GEN&electionYear=2026) | HTML | Federal, statewide, legislative, and judicial records; withdrawal/disqualification flags retained. Report totals count running mates individually; joint tickets remain one ballot entry. |
+| Mississippi | [Secretary of State qualifying list](https://www.sos.ms.gov/content/CandidateQualifying/default.aspx) | Public CSV export | Federal, judicial, and legislative special-election records explicitly dated November 3. Judicial places remain separate. Six State Senate 34 entries have no election date in either the page section or export and are withheld pending separate dated evidence. |
 | New Mexico | [Secretary of State candidate list](https://candidateportal.servis.sos.state.nm.us/CandidateList.aspx?cty=99) | HTML | Federal, statewide, legislative, and local records; qualification status retained. Paginated or changed table layouts fail closed. |
 | North Carolina | [State Board of Elections candidate lists](https://www.ncsbe.gov/results-data/candidate-lists) | CSV | Federal, statewide, legislative, and local filings. Exact election date required; cross-county statewide/district duplicates removed while local county identities remain distinct. Listing alone does not establish final ballot qualification. |
 | North Dakota | [Secretary of State contest/candidate list](https://vip.sos.nd.gov/candidatelist.aspx?eid=348) | Public search form, HTML | Federal, statewide, legislative, and local records. The normal unfiltered search is posted with its observed public form tokens. Unnamed vacancies are not candidates; source county jurisdiction is retained for local records. |
+| South Dakota | [Secretary of State general candidate list](https://vip.sdsos.gov/candidatelist.aspx?eid=774) | Public CSV export | Full export count must match the paginated report total. Withdrawal annotations are retained, at-large Congress is statewide, and local county identities remain distinct. Missing local ballot order is recorded, not treated as proof of ballot qualification or an inferred unopposed outcome. |
+| Utah | [Lieutenant Governor candidate filings](https://vote.utah.gov/2026-candidate-filings/) | HTML | All five federal/legislative/school/judicial tables are required. Only `Election Candidate` and `Write-In` records are used for the general election. Primary/convention losers and other inactive filing history are excluded. School and local judicial districts are not legislative eligibility; statewide appellate/supreme retention questions remain statewide. |
 | Virginia | [Department of Elections federal candidate list](https://www.elections.virginia.gov/casting-a-ballot/candidate-list/november-3-2026-gen-elect-federal-offices/) | HTML | Federal offices only. The adapter does not claim local/state legislative coverage or infer a qualification flag absent from the table. |
 | Wyoming | [Secretary of State 2026 election information](https://sos.wyo.gov/Elections/2026ElectionInformation.aspx) | CSV | Federal, statewide, legislative, and other filings; withdrawal dates retained. At-large congressional contests are statewide. |
 
@@ -51,10 +56,19 @@ enrichment without changing any existing provider or reviewed-guide workflow.
 
 ## Refresh, limits, and privacy
 
-Each state is fetched on demand and cached in process for four hours. Concurrent
+Automatic sources are fetched on demand and cached in process for four hours. Concurrent
 lookups share a pending fetch. Failed/invalid fetches are cached for five minutes,
 then retried; expired or invalid data is not silently reused. No new daemon,
 database, provider credential, or scheduled external job is required.
+
+Illinois instead loads a validated, immutable snapshot from
+`back-end/src/data/state-ballots/illinois-2026.json`. Its publisher disallows
+crawling. Loading, caching, checking, or exporting this snapshot never makes an
+Illinois network request and never relabels the captured retrieval timestamp as
+fresh. Later changes may be missing, which is disclosed alongside the records.
+The snapshot is independently required by the runtime artifact contract and copied
+into the compiled service. Updates require reviewed, publisher-permitted source
+material, not a bypass of the publisher's automation policy.
 
 Requests use HTTPS with certificate verification, public-IP validation and pinned
 DNS, a source-host allowlist on every redirect, a 12 MiB body limit, two redirects,
@@ -67,6 +81,16 @@ Source failure logs contain only the state code.
 Snapshots include a SHA-256 of the retrieved UTF-8 body and retrieval timestamp.
 Kentucky's fingerprint covers the ordered URL/body envelope of all five required
 documents; none of those office pages is treated as a complete state list alone.
+Hawaii, Mississippi, and South Dakota fingerprints cover both the
+validated public form page and its downloaded CSV body. Illinois retains the
+fingerprint of its captured form/TSV pair without refreshing it. Only observed public
+export commands and required election selectors/tokens are submitted. Hawaii and
+South Dakota exports must contain every row counted by the public report, rather
+than only the visible page. No anti-bot challenge is bypassed.
+Utah permits crawling with a ten-second crawl delay; the on-demand four-hour
+server cache is retained and operator diagnostics must not be run concurrently
+against that publisher. Mississippi's listed exclusions do not include the public
+candidate report. Hawaii and South Dakota returned no robots document (404).
 The diagnostic command emits metadata/counts, not candidates' contact details:
 
 ```sh
@@ -84,6 +108,15 @@ URLs, retrieval times, source hashes, and per-state row counts. Following lines
 contain only candidate/office/party/status/district/jurisdiction information and
 safe source-published campaign links. No residential or contact fields are kept.
 
+`docs/data/2026-11-03-public-export-candidates.jsonl` adds Utah, Mississippi, South
+Dakota, Hawaii, and Illinois with the same schema and provenance contract.
+Hawaii and Utah exclude filing history that does not explicitly establish a
+general-election candidacy. Other sources retain their dated withdrawn/inactive
+records for review; these must never be imported as active candidates.
+The manifest distinguishes automatic retrieval from Illinois's manual-snapshot
+policy. Its 523 Illinois records remain dated to their actual capture, not the
+time a new transfer file is generated.
+
 Create a new snapshot without overwriting an existing document:
 
 ```sh
@@ -97,8 +130,10 @@ records and specialized board/judicial districts still need an actual ballot
 mapping; do not assign them to voters based on a ZIP centroid.
 
 The complete 50-state/DC research inventory is `docs/state-coverage-2026.csv`.
-An integrated feed is distinct from an identified, blocked, or not-yet-researched
-source. Remaining states still need official-source research and, where no usable
+An integrated feed is distinct from an identified or access-limited source.
+All jurisdictions now have an initial source review, but that review is not an
+exhaustive search or evidence of complete coverage. Remaining states still need
+official-source research and, where no usable
 feed is available, public candidate/profile/news evidence. This national goal is
 not complete merely because the current adapters pass their tests.
 

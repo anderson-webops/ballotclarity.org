@@ -5,6 +5,7 @@ import { createHash } from "node:crypto";
 import { getStateAbbreviationForName } from "./official-election-tools.js";
 import { fetchStateBallotSourceText } from "./state-ballot-fetch.js";
 import { parseStateCandidateRecords, stateRecordMatchesDistricts } from "./state-ballot-records.js";
+import { loadBundledStateSnapshot } from "./state-ballot-snapshot.js";
 import { stateBallotSources } from "./state-ballot-sources.js";
 
 export interface StateBallotSnapshot {
@@ -53,6 +54,12 @@ export function createStateBallotRepository(options: StateBallotRepositoryOption
 			const operation = Promise.resolve().then(async () => {
 				let failureReason: "transport" | "format" = "transport";
 				try {
+					if (source.retrievalPolicy === "manual-snapshot") {
+						failureReason = "format";
+						const snapshot = await loadBundledStateSnapshot(source);
+						cached.set(source.id, { expiresAt: now() + ttlMs, snapshot });
+						return snapshot;
+					}
 					const body = await fetchText(source);
 					failureReason = "format";
 					const snapshot: StateBallotSnapshot = {
@@ -110,7 +117,9 @@ export function buildStateBallotPreview(snapshot: StateBallotSnapshot, lookup: P
 		generatedAt: snapshot.retrievedAt,
 		disclaimer: snapshot.source.stateCode === "VA"
 			? "Federal candidates only; state and local contests are not included. This is not an address-specific ballot."
-			: "State records; local contests may be missing. Filing does not establish ballot qualification.",
+			: snapshot.source.retrievalPolicy === "manual-snapshot"
+				? "Dated snapshot; later changes and local contests may be missing. Filing does not establish ballot qualification."
+				: "State records; local contests may be missing. Filing does not establish ballot qualification.",
 		officialOnly: true,
 		status: "official_source_unverified",
 		contests: [...contests.values()],

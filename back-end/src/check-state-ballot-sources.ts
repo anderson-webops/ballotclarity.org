@@ -17,6 +17,7 @@ async function main() {
 		console.log(JSON.stringify({
 			state: source.stateCode,
 			sourceUrl: source.pageUrl,
+			retrievalPolicy: source.retrievalPolicy ?? "automatic",
 			electionDate: source.electionDate,
 			status: snapshot ? "available" : "unavailable",
 			retrievedAt: snapshot?.retrievedAt,

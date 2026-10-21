@@ -13,6 +13,7 @@ export function serializeStateBallotSnapshots(snapshots: readonly StateBallotSna
 			sourceId: snapshot.source.id,
 			sourceUrl: snapshot.source.pageUrl,
 			documentUrls: snapshot.source.documentUrls,
+			retrievalPolicy: snapshot.source.retrievalPolicy ?? "automatic",
 			retrievedAt: snapshot.retrievedAt,
 			sourceSha256: snapshot.sha256,
 			recordCount: snapshot.records.length,

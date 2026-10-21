@@ -1,9 +1,11 @@
+import type { StateCandidateValues } from "./state-ballot-additional-records.js";
 import type { StateHtmlNode as HtmlNode } from "./state-ballot-html.js";
 import type { StateBallotSource } from "./state-ballot-sources.js";
 import type { LocationDistrictMatch } from "./types/civic.js";
 import { createHash } from "node:crypto";
 import { parse as parseCsv } from "csv-parse/sync";
 import { normalizePublicHref } from "./public-href.js";
+import { parseAdditionalStateRecords } from "./state-ballot-additional-records.js";
 import { stateHtmlAttribute as attribute, stateHtmlDescendants as descendants, parseStateHtml as parseHtml, stateHtmlTableRows, stateHtmlText as textContent } from "./state-ballot-html.js";
 
 export type StateCandidateStatus = "listed" | "filed" | "qualified" | "write-in" | "withdrawn" | "disqualified" | "defeated" | "elected" | "unopposed" | "inactive" | "unrecognized";
@@ -61,13 +63,13 @@ export function classifyStateContest(office: string, district = ""): { scope: St
 	return { scope: "local", district: normalizeStateDistrict(number) };
 }
 
-function makeRecord(source: StateBallotSource, values: { name: string; office: string; party: string; status?: string; district?: string; jurisdiction?: string; candidateUrl?: string }): StateCandidateRecord | null {
+function makeRecord(source: StateBallotSource, values: StateCandidateValues): StateCandidateRecord | null {
 	const name = clean(values.name);
 	const office = clean(values.office);
 	if (!name || !office || name.length > 250 || office.length > 300)
 		return null;
 	const party = clean(values.party);
-	const geography = classifyStateContest(office, values.district);
+	const geography = values.scope ? { scope: values.scope, district: values.scope === "statewide" ? "" : normalizeStateDistrict(values.district ?? "") } : classifyStateContest(office, values.district);
 	if (geography.scope === "congressional" && geography.district === "0" && ["AK", "DE", "ND", "SD", "VT", "WY"].includes(source.stateCode)) {
 		geography.scope = "statewide";
 		geography.district = "";
@@ -350,6 +352,9 @@ export function parseStateCandidateRecords(source: StateBallotSource, body: stri
 	}
 	else if (source.format === "kentucky-html") {
 		records = parseKentucky(source, body);
+	}
+	else if (["utah-html", "mississippi-csv", "south-dakota-csv", "hawaii-csv", "illinois-tsv"].includes(source.format)) {
+		records = parseAdditionalStateRecords(source, body, makeRecord);
 	}
 	else {
 		const table = parseCsv(body, {

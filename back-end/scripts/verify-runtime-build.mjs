@@ -4,6 +4,7 @@ import { dirname, extname, resolve } from "node:path";
 const projectRoot = resolve(import.meta.dirname, "..");
 const distRoot = resolve(projectRoot, "dist");
 const requiredRuntimeFiles = [
+	"data/state-ballots/illinois-2026.json",
 	"admin-schema.postgres.sql",
 	"admin-schema.sql",
 	"live-data-schema.sql",

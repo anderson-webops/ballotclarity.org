@@ -25,6 +25,9 @@ defineProps<{
 				<p class="summary-strip__value">
 					{{ item.value }}
 				</p>
+				<p v-if="item.note" class="summary-strip__note">
+					{{ item.note }}
+				</p>
 			</SafeExternalLink>
 
 			<NuxtLink
@@ -38,6 +41,9 @@ defineProps<{
 				<p class="summary-strip__value">
 					{{ item.value }}
 				</p>
+				<p v-if="item.note" class="summary-strip__note">
+					{{ item.note }}
+				</p>
 			</NuxtLink>
 
 			<article
@@ -49,6 +55,9 @@ defineProps<{
 				</p>
 				<p class="summary-strip__value">
 					{{ item.value }}
+				</p>
+				<p v-if="item.note" class="summary-strip__note">
+					{{ item.note }}
 				</p>
 			</article>
 		</template>

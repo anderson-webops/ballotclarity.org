@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { AdminSourceHealth, PublicStatusResponse } from "~/types/civic";
+import { useNow } from "@vueuse/core";
 import { orderScheduledSourceChecks } from "~/utils/source-checks";
 
 const props = defineProps<{
@@ -26,7 +27,9 @@ function segmentWidth(health: AdminSourceHealth) {
 	return Math.round((props.status.sourceSummary[health] / totalSources.value) * 100);
 }
 
-const scheduledChecks = computed(() => orderScheduledSourceChecks(props.status.sources, new Date()));
+// Ticks each minute so a check moves to overdue once its time passes.
+const now = useNow({ interval: 60_000 });
+const scheduledChecks = computed(() => orderScheduledSourceChecks(props.status.sources, now.value));
 </script>
 
 <template>

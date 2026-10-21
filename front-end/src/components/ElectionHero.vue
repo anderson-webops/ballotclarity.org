@@ -27,8 +27,15 @@ const facts = computed(() => hasVerifiedContestPackage.value
 			{ label: "Official links", value: String(props.election.officialResources.length) },
 			{ label: "Key dates", value: String(props.election.keyDates.length) }
 		]);
-// ZIP codes can span districts, so a ZIP-only guide needs one local caveat; other inputs need none.
-const isZipPreview = computed(() => props.location.lookupMode === "zip-preview");
+// A guide not matched to a verified address needs one local caveat; ZIP codes get the more specific reason.
+const confirmationCaveat = computed(() => {
+	if (props.location.lookupMode === "zip-preview")
+		return "ZIP codes can span districts. Confirm your exact ballot with the official election tools.";
+
+	return props.location.requiresOfficialConfirmation
+		? "Not matched to a verified address. Confirm your exact ballot with the official election tools."
+		: "";
+});
 
 function printBallot() {
 	if (import.meta.client)
@@ -65,8 +72,8 @@ function printBallot() {
 					Print
 				</button>
 			</div>
-			<p v-if="isZipPreview" class="text-sm text-app-muted mt-3 dark:text-app-muted-dark">
-				ZIP codes can span districts. Confirm your exact ballot with the official election tools.
+			<p v-if="confirmationCaveat" class="text-sm text-app-muted mt-3 dark:text-app-muted-dark">
+				{{ confirmationCaveat }}
 			</p>
 		</div>
 	</section>

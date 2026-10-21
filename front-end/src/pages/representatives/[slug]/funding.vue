@@ -79,16 +79,16 @@ const summaryItems = computed(() => {
 
 	if (!fundingAvailable.value || !funding.value) {
 		return [
-			{ label: "Current office", note: "Current office.", value: person.value.officeDisplayLabel || person.value.officeSought },
-			{ label: "Updated", note: "Profile freshness.", value: formatDate(person.value.freshness.dataLastUpdatedAt ?? person.value.updatedAt) }
+			{ label: "Current office", value: person.value.officeDisplayLabel || person.value.officeSought },
+			{ label: "Updated", value: formatDate(person.value.freshness.dataLastUpdatedAt ?? person.value.updatedAt) }
 		];
 	}
 
 	return [
-		{ label: "Current office", note: "Current office.", value: person.value.officeDisplayLabel || person.value.officeSought },
+		{ label: "Current office", value: person.value.officeDisplayLabel || person.value.officeSought },
 		{ label: "Total raised", note: "Current filing-window total.", value: formatCurrency(funding.value.totalRaised) },
 		{ label: "Disbursements", note: "Reported spending in the same filing window.", value: typeof funding.value.totalSpent === "number" ? formatCurrency(funding.value.totalSpent) : "Not published" },
-		{ label: "Cash on hand", note: "Reported funds still available.", value: formatCurrency(funding.value.cashOnHand) }
+		{ label: "Cash on hand", value: formatCurrency(funding.value.cashOnHand) }
 	];
 });
 

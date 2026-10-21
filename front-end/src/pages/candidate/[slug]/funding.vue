@@ -17,7 +17,7 @@ const summaryItems = computed(() => {
 
 	return [
 		{ label: "Total raised", note: "Current filing-window total.", value: formatCurrency(candidate.value.funding.totalRaised) },
-		{ label: "Cash on hand", note: "Reported funds still available.", value: formatCurrency(candidate.value.funding.cashOnHand) },
+		{ label: "Cash on hand", value: formatCurrency(candidate.value.funding.cashOnHand) },
 		{ label: "Small-donor share", note: "Share attributed to smaller donors in the current summary.", value: formatPercent(candidate.value.funding.smallDonorShare) }
 	];
 });

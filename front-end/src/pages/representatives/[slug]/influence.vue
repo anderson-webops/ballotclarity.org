@@ -67,17 +67,17 @@ const summaryItems = computed(() => {
 
 	if (!influenceAvailable.value) {
 		return [
-			{ label: "Current office", note: "Current office.", value: person.value.officeDisplayLabel || person.value.officeSought },
-			{ label: "Updated", note: "Profile freshness.", value: formatDateTime(person.value.updatedAt) }
+			{ label: "Current office", value: person.value.officeDisplayLabel || person.value.officeSought },
+			{ label: "Updated", value: formatDateTime(person.value.updatedAt) }
 		];
 	}
 
 	return [
-		{ label: "Current office", note: "Current office.", value: person.value.officeDisplayLabel || person.value.officeSought },
+		{ label: "Current office", value: person.value.officeDisplayLabel || person.value.officeSought },
 		{ label: "Reports", note: "Disclosure reports matched to this officeholder.", value: influence.value?.reportCount ?? person.value.lobbyingContext.length },
 		{ label: "Contribution items", note: "Contribution items kept after officeholder matching.", value: influence.value?.contributionCount ?? person.value.publicStatements.length },
 		{ label: "Matched total", note: "Total dollar amount across the attached disclosure context.", value: typeof influence.value?.totalMatched === "number" ? formatCurrency(influence.value.totalMatched) : "Not published" },
-		{ label: "Updated", note: "Profile freshness.", value: formatDateTime(person.value.updatedAt) }
+		{ label: "Updated", value: formatDateTime(person.value.updatedAt) }
 	];
 });
 

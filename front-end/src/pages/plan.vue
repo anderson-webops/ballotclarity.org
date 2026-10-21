@@ -50,22 +50,18 @@ const completionStats = computed(() => {
 const planSummaryItems = computed(() => ([
 	{
 		label: "Saved",
-		note: "Contests already recorded in your plan.",
 		value: completionStats.value.savedCount
 	},
 	{
 		label: "Still reviewing",
-		note: "Contests not yet saved.",
 		value: completionStats.value.pendingCount
 	},
 	{
 		label: "Election day",
-		note: data.value?.location.displayName ?? "Current location context",
 		value: data.value ? formatDate(data.value.election.date) : "Not loaded"
 	},
 	{
 		label: "Last guide update",
-		note: "Freshness of the current ballot guide.",
 		value: data.value ? formatDateTime(data.value.updatedAt) : "Not loaded"
 	}
 ]));

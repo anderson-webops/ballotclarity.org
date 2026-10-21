@@ -6,6 +6,7 @@ import type {
 	LocationLookupSelectionOption,
 	NationwideLookupResultContext
 } from "~/types/civic";
+import { useNow } from "@vueuse/core";
 import { calendarDaysUntil, describeDaysAway } from "~/utils/election-timeline";
 import { buildPublishedGuideDestination } from "~/utils/location-lookup";
 import { normalizeLookupResponseForDisplay, resolveLookupDestination } from "~/utils/nationwide-results";
@@ -26,11 +27,12 @@ const { data: electionsData } = await useAsyncData<ElectionsResponse>(
 const featuredElection = computed(() => electionsData.value?.elections[0] ?? null);
 const { displayTimeZone, formatDate } = useFormatters();
 // The API keeps snapshot order, so pick the soonest election that has not passed yet.
+// Ticks each minute so the banner drops a passed election without a reload.
+const now = useNow({ interval: 60_000 });
 const upcomingElection = computed(() => {
-	const now = new Date();
 	const upcoming = (electionsData.value?.elections ?? [])
 		.filter(election => election.date)
-		.map(election => ({ ...election, daysAway: calendarDaysUntil(election.date, now, displayTimeZone.value) }))
+		.map(election => ({ ...election, daysAway: calendarDaysUntil(election.date, now.value, displayTimeZone.value) }))
 		.filter(election => election.daysAway >= 0)
 		.sort((left, right) => left.daysAway - right.daysAway)[0];
 

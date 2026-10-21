@@ -119,8 +119,8 @@ const atGlanceStats = computed(() => {
 
 	const activityLabel = candidate.value.incumbent ? "Documented votes and actions" : "Documented campaign actions";
 	const activityNote = candidate.value.incumbent
-		? "Selected official actions from the attached source records. This page is not a full legislative ledger."
-		: "Published policy releases, local-government actions, and other source-backed items included in the attached source records.";
+		? "Selected official actions. Not a full voting record."
+		: "Selected campaign, policy, or public-office actions. Not a full record.";
 	const influenceSectors = [...new Set(candidate.value.funding.topFunders.map(funder => funder.category))].slice(0, 2);
 	const influenceNote = influenceSectors.length
 		? `Context draws on ${influenceSectors.join(" and ")}. This is context only, not proof of influence.`

@@ -20,9 +20,9 @@ const summaryItems = computed(() => {
 		return [];
 
 	return [
-		{ label: "Influence notes", note: "Context blocks on donors, sectors, and public disclosures.", value: candidate.value.lobbyingContext.length },
-		{ label: "Public statements", note: "Statements that interact with the influence context.", value: candidate.value.publicStatements.length },
-		{ label: "Updated", note: "Profile freshness.", value: formatDateTime(candidate.value.updatedAt) }
+		{ label: "Influence notes", value: candidate.value.lobbyingContext.length },
+		{ label: "Public statements", value: candidate.value.publicStatements.length },
+		{ label: "Updated", value: formatDateTime(candidate.value.updatedAt) }
 	];
 });
 

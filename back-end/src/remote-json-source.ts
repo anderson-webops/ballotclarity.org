@@ -15,13 +15,17 @@ interface RemoteJsonResponse {
 
 interface RemoteJsonTransportInput {
 	address: string;
+	postBody?: string;
 	timeoutMs: number;
 	url: URL;
 }
 
 interface FetchRemoteJsonOptions {
+	allowedHosts?: readonly string[];
 	maxBytes?: number;
 	maxRedirects?: number;
+	postBody?: string;
+	requireJson?: boolean;
 	resolveAddresses?: (hostname: string) => Promise<LookupAddress[]>;
 	timeoutMs?: number;
 	transport?: (input: RemoteJsonTransportInput) => Promise<RemoteJsonResponse>;
@@ -138,18 +142,20 @@ async function resolvePublicAddresses(
 
 function requestPinnedRemoteJson({
 	address,
+	postBody,
 	timeoutMs,
 	url,
 }: RemoteJsonTransportInput): Promise<RemoteJsonResponse> {
 	return new Promise((resolve, reject) => {
 		const request = httpsRequest({
 			headers: {
-				"Accept": "application/json, application/*+json",
+				"Accept": "application/json, application/*+json, text/csv, text/plain, text/html, application/octet-stream",
 				"Host": url.host,
 				"User-Agent": "Ballot-Clarity-Coverage-Importer/1.0",
+				...(postBody ? { "Content-Type": "application/x-www-form-urlencoded", "Content-Length": Buffer.byteLength(postBody) } : {}),
 			},
 			hostname: address,
-			method: "GET",
+			method: postBody ? "POST" : "GET",
 			path: `${url.pathname}${url.search}`,
 			port: url.port || 443,
 			rejectUnauthorized: true,
@@ -168,7 +174,7 @@ function requestPinnedRemoteJson({
 			request.destroy(new Error(`Remote coverage source timed out after ${timeoutMs}ms.`));
 		});
 		request.once("error", reject);
-		request.end();
+		request.end(postBody);
 	});
 }
 
@@ -201,7 +207,8 @@ function isJsonContentType(value: string | string[] | undefined) {
 async function readBoundedJsonBody(
 	response: RemoteJsonResponse,
 	maxBytes: number,
-	timeoutMs: number
+	timeoutMs: number,
+	requireJson = true,
 ) {
 	const contentLength = Number(response.headers["content-length"]);
 
@@ -217,7 +224,7 @@ async function readBoundedJsonBody(
 		throw new Error("Remote coverage source must not use compressed content encoding.");
 	}
 
-	if (!isJsonContentType(response.headers["content-type"])) {
+	if (requireJson && !isJsonContentType(response.headers["content-type"])) {
 		response.body.destroy?.();
 		throw new Error("Remote coverage source must return an application/json content type.");
 	}
@@ -240,7 +247,8 @@ async function readBoundedJsonBody(
 			chunks.push(chunk);
 		}
 
-		return Buffer.concat(chunks).toString("utf8");
+		const body = Buffer.concat(chunks);
+		return requireJson ? body.toString("utf8") : new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(body);
 	})(), timeoutMs);
 }
 
@@ -264,11 +272,15 @@ export async function fetchRemoteJsonText(
 		?? (hostname => lookup(hostname, { all: true, verbatim: true }));
 	const transport = options.transport ?? requestPinnedRemoteJson;
 	let currentUrl = parseRemoteJsonUrl(source);
+	let postBody = options.postBody;
 
 	for (let redirectCount = 0; ; redirectCount += 1) {
+		if (options.allowedHosts && !options.allowedHosts.includes(currentUrl.hostname.toLowerCase()))
+			throw new Error("Remote source hostname is outside the configured source allowlist.");
 		const addresses = await resolvePublicAddresses(currentUrl, resolveAddresses);
 		const response = await withTimeout(transport({
 			address: addresses[0]!.address,
+			...(postBody ? { postBody } : {}),
 			timeoutMs,
 			url: currentUrl,
 		}), timeoutMs);
@@ -284,6 +296,7 @@ export async function fetchRemoteJsonText(
 				throw new Error(`Remote coverage source exceeded ${maxRedirects} redirects.`);
 
 			currentUrl = parseRemoteJsonUrl(new URL(location, currentUrl));
+			if ([301, 302, 303].includes(response.statusCode)) postBody = undefined;
 			continue;
 		}
 
@@ -292,6 +305,10 @@ export async function fetchRemoteJsonText(
 			throw new Error(`Unable to fetch live coverage snapshot: HTTP ${response.statusCode}.`);
 		}
 
-		return await readBoundedJsonBody(response, maxBytes, timeoutMs);
+		return await readBoundedJsonBody(response, maxBytes, timeoutMs, options.requireJson ?? true);
 	}
+}
+
+export function fetchRemoteSourceText(source: string | URL, options: FetchRemoteJsonOptions = {}) {
+	return fetchRemoteJsonText(source, { ...options, requireJson: false });
 }

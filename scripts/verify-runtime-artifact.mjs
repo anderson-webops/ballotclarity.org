@@ -160,6 +160,7 @@ try {
 		HOME: temporaryRoot,
 		LANG: "C.UTF-8",
 		NODE_ENV: "production",
+		STATE_BALLOT_LOOKUP_ENABLED: "false",
 		PATH: dirname(process.execPath),
 		TMPDIR: temporaryRoot,
 	};

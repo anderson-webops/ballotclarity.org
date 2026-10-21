@@ -162,6 +162,8 @@ export interface ElectionLogisticsCandidate {
 export type BallotContentPreviewStatus = "official_source_unverified" | "provider_unverified";
 
 export interface BallotContentPreviewCandidate {
+	ballotStatus?: "listed" | "filed" | "qualified" | "write-in" | "withdrawn" | "disqualified" | "defeated" | "elected" | "unopposed" | "inactive" | "unrecognized";
+	sourceStatus?: string;
 	candidateUrl?: string;
 	email?: string;
 	id: string;
@@ -196,6 +198,8 @@ export interface BallotContentPreviewContest {
 }
 
 export interface BallotContentPreview {
+	electionDate?: string;
+	sourceUrl?: string;
 	candidateCount: number;
 	contestCount: number;
 	disclaimer: string;

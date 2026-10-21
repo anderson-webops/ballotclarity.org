@@ -1,8 +1,10 @@
 import assert from "node:assert/strict";
+import { Buffer } from "node:buffer";
 import { Readable } from "node:stream";
 import test from "node:test";
 import {
 	fetchRemoteJsonText,
+	fetchRemoteSourceText,
 	isPublicRemoteAddress,
 	parseRemoteJsonUrl,
 } from "../src/remote-json-source.js";
@@ -40,6 +42,44 @@ test("remote JSON sources require public HTTPS destinations", async () => {
 		}),
 		/resolved to a private/u
 	);
+});
+
+test("official text imports retain form POSTs and enforce source-host redirect boundaries", async () => {
+	const bodies: Array<string | undefined> = [];
+	const body = await fetchRemoteSourceText("https://example.com/download", {
+		allowedHosts: ["example.com"],
+		postBody: "election=general",
+		resolveAddresses: publicResolver,
+		transport: async (input) => {
+			bodies.push(input.postBody);
+			return bodies.length === 1 ? response({ statusCode: 303, location: "/file.csv" }) : response({ contentType: "text/csv", body: "name\nSample\n" });
+		},
+	});
+	assert.equal(body, "name\nSample\n");
+	assert.deepEqual(bodies, ["election=general", undefined]);
+	await assert.rejects(fetchRemoteSourceText("https://example.com/download", {
+		allowedHosts: ["example.com"],
+		resolveAddresses: publicResolver,
+		transport: async () => response({ statusCode: 307, location: "https://another.example.com/file.csv" }),
+	}), /allowlist/u);
+});
+
+test("official text imports reject bad UTF-8, private destinations, oversize bodies, and compressed input", async () => {
+	for (const [headers, body, expected] of [
+		[{ "content-type": "text/csv" }, Buffer.from([0xFF]), /encoded data/u],
+		[{ "content-type": "text/csv" }, Buffer.from("12345"), /4-byte limit/u],
+		[{ "content-encoding": "gzip" }, Buffer.from("name"), /compressed/u],
+	] as const) {
+		await assert.rejects(fetchRemoteSourceText("https://example.com/file.csv", {
+			maxBytes: 4,
+			resolveAddresses: publicResolver,
+			transport: async () => ({ headers, body: Readable.from([body]), statusCode: 200 }),
+		}), expected);
+	}
+	await assert.rejects(fetchRemoteSourceText("https://example.com/file.csv", {
+		resolveAddresses: async () => [{ address: "127.0.0.1", family: 4 }],
+		transport: async () => response({ body: "name\nSample\n" }),
+	}), /private/u);
 });
 
 test("remote JSON redirects are revalidated and bounded", async () => {

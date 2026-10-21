@@ -137,7 +137,7 @@ function buildOfficialVerificationAction(resource: OfficialResource | undefined)
 
 	return {
 		badge: "Official",
-		description: resource.note || "Use the official election-office tool to verify your precinct, polling place, and sample ballot before relying on an approximate coverage guide.",
+		description: resource.note || "",
 		id: "official-verification",
 		kind: "official-verification",
 		title: resource.label,

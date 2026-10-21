@@ -6,6 +6,7 @@ import type { CongressClient, CongressMemberDetail, CongressMemberRecord } from 
 import type { CoverageRepository } from "./coverage-repository.js";
 import type { OpenStatesRepresentativeRecord } from "./openstates.js";
 import type { PublicRequestThrottle } from "./public-request-throttle.js";
+import type { StateBallotRepository } from "./state-ballot-repository.js";
 import type { SupplementalOfficeholderRecord } from "./supplemental-officeholders.js";
 import type {
 	AdminActivityItem,
@@ -127,6 +128,7 @@ import { buildCuratedPublicSourceRecords, mapAuthorityToPublisherType } from "./
 import { classifyRepresentative } from "./representative-classification.js";
 import { createRepresentativeModuleResolver } from "./representative-modules.js";
 import { createSourceAssetStore } from "./source-asset-store.js";
+import { attachStateBallotPreview, createStateBallotRepository } from "./state-ballot-repository.js";
 import {
 	findSupplementalOfficeholderByRepresentativeSlug,
 	findSupplementalOfficeholdersByDistrictSlug,
@@ -168,6 +170,7 @@ interface CreateAppOptions {
 	trustProxy?: string | null;
 	zipLocationService?: ZipLocationService | null;
 	zipLookupLogger?: ZipLookupLogger;
+	stateBallotRepository?: StateBallotRepository | null;
 }
 
 export interface BallotClarityApplication extends Express {
@@ -2988,6 +2991,13 @@ export async function createApp(options: CreateAppOptions = {}) {
 		sourceMonitorSeed: options.sourceMonitorSeed
 	});
 	const logger = createLogger("ballot-clarity-api");
+	const stateBallotRepository = options.stateBallotRepository === undefined
+		? process.env.STATE_BALLOT_LOOKUP_ENABLED === "false"
+			? null
+			: createStateBallotRepository({
+					onUnavailable: stateCode => logger.warn("state-ballot.source-unavailable", { stateCode }),
+				})
+		: options.stateBallotRepository;
 	const adminApiRateLimitWindowMs = resolvePositiveIntegerEnv(
 		"ADMIN_API_RATE_LIMIT_WINDOW_MS",
 		15 * 60 * 1000,
@@ -4480,6 +4490,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 			publishedPrimaryPackage?.contentStatus ?? null,
 		);
 
+		await attachStateBallotPreview(lookupResponse, stateBallotRepository);
 		const activeLookupContext = buildActiveNationwideLookupContext(lookupResponse);
 
 		if (lookupResponse.result === "resolved" && lookupResponse.availability && activeLookupContext) {
@@ -5106,14 +5117,14 @@ export async function createApp(options: CreateAppOptions = {}) {
 		response.json(lookupResponse);
 	});
 
-	app.get("/api/location/active", (request, response) => {
+	app.get("/api/location/active", async (request, response) => {
 		response.set("Cache-Control", "no-store");
 		const activeLookup = readActiveNationwideLookupContext(
 			request.header("cookie"),
 			activeLookupCookieSecret
 		);
 
-		response.json(activeLookup ? buildActiveNationwideLookupResponse(activeLookup) : null);
+		response.json(activeLookup ? await attachStateBallotPreview(buildActiveNationwideLookupResponse(activeLookup), stateBallotRepository) : null);
 	});
 
 	app.get("/api/location/guess", async (request, response) => {

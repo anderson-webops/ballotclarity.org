@@ -2,6 +2,7 @@
 import type { LocationLookupAction, LocationLookupResponse, LocationLookupSelectionOption } from "~/types/civic";
 import { storeToRefs } from "pinia";
 import { buildActiveLookupSummary } from "~/utils/active-lookup";
+import { needsBallotPreviewRefresh, restoreMatchingBallotPreviews } from "~/utils/ballot-preview-refresh";
 import { buildLocationGuessUiContent } from "~/utils/location-guess";
 import { buildPublishedGuideDestination, filterLookupActionsForPresentation } from "~/utils/location-lookup";
 import { normalizeLookupResponseForDisplay, resolveLookupDestination } from "~/utils/nationwide-results";
@@ -13,6 +14,7 @@ const civicStore = useCivicStore();
 const { data: coverageData } = useCoverage();
 const { isHydrated, nationwideLookupResult } = storeToRefs(civicStore);
 const storedNationwideLookupResult = computed(() => isHydrated.value ? nationwideLookupResult.value : null);
+const shouldRefreshBallotPreviews = computed(() => needsBallotPreviewRefresh(storedNationwideLookupResult.value));
 const activeLookupQuery = computed(() => buildNationwideLookupRouteQuery(
 	buildLookupContextFromNationwideResult(storedNationwideLookupResult.value),
 	route.query
@@ -20,7 +22,7 @@ const activeLookupQuery = computed(() => buildNationwideLookupRouteQuery(
 const { data: savedLookupResult } = await useAsyncData(
 	"results:saved-active-lookup",
 	async () => {
-		if (activeLookupQuery.value?.lookup)
+		if (activeLookupQuery.value?.lookup && !shouldRefreshBallotPreviews.value)
 			return null;
 
 		const response = await api<LocationLookupResponse | null>("/location/active");
@@ -28,7 +30,8 @@ const { data: savedLookupResult } = await useAsyncData(
 	},
 	{
 		default: () => null,
-		watch: [activeLookupQuery]
+		getCachedData: (key, nuxtApp, context) => context.cause === "initial" ? nuxtApp.payload.data[key] : undefined,
+		watch: [activeLookupQuery, shouldRefreshBallotPreviews]
 	}
 );
 const { data: routeLookupResult } = await useAsyncData(
@@ -52,11 +55,10 @@ const { data: routeLookupResult } = await useAsyncData(
 		watch: [activeLookupQuery, storedNationwideLookupResult]
 	}
 );
-const activeResult = computed(() =>
-	storedNationwideLookupResult.value
-	?? routeLookupResult.value
-	?? savedLookupResult.value
-);
+const activeResult = computed(() => restoreMatchingBallotPreviews(
+	storedNationwideLookupResult.value ?? routeLookupResult.value ?? savedLookupResult.value,
+	savedLookupResult.value,
+));
 const shouldShowResultsSkeleton = computed(() => !activeResult.value && !isHydrated.value && Boolean(activeLookupQuery.value?.lookup));
 const activeLookupSummary = computed(() => buildActiveLookupSummary({
 	nationwideLookupResult: activeResult.value,
@@ -78,7 +80,7 @@ const resultsStatusItems = computed(() => {
 			? "Verified ballot guide"
 			: result.guideAvailability === "published"
 				? "Election overview available"
-				: "No local guide yet"
+				: "Limited local ballot information"
 	];
 });
 const hasVisibleActions = computed(() => activeResult.value

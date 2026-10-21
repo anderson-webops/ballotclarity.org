@@ -50,6 +50,7 @@
 		"local:setup": "node ./scripts/setup-local-provider.mjs",
 		"start:local": "node ./scripts/start-local.mjs",
 		"doctor:local": "node ./scripts/start-local.mjs --check",
+		"states:check": "npm run -w back-end states:check --",
 		"verify:local": "node ./scripts/verify-local-runtime.mjs",
 		"verify:backend-lockfile": "npm ci --prefix back-end --workspaces=false --include=optional --strict-allow-scripts",
 		"verify:native-bindings": "node ./scripts/verify-native-bindings.mjs",

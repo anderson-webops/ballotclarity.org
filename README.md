@@ -431,6 +431,7 @@ These endpoints live on the Express service, but they are intended to be reached
 - Production roadmap: see `docs/production-readiness-roadmap.md` for the staged path from fixture-backed development data to a real operated civic-information service
 - Runtime artifact contract: see `docs/runtime-artifact.md` for the hashed two-service bundle, clean-directory acceptance test, external writable-state declarations, and promotion/rollback boundary
 - Live-data sequence: see `docs/live-data-implementation-sequence.md` for the concrete schema, env, provider, and rollout order for replacing fixture coverage with reviewed civic data
+- Official state candidates: see `docs/state-ballot-sources.md` for the eight enabled 2026 feeds, national official-office links, coverage limits, and `npm run states:check`
 - Launch brief: see `docs/fulton-county-ga-launch.md` for the selected official systems and provider stack
 
 ## Production mode

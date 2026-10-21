@@ -1,5 +1,5 @@
 import { spawn } from "node:child_process";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync } from "node:fs";
 import http from "node:http";
 import { createRequire } from "node:module";
 import { dirname, resolve } from "node:path";
@@ -7,6 +7,9 @@ import process from "node:process";
 import { fileURLToPath } from "node:url";
 import puppeteer from "puppeteer";
 import { buildFultonOfficialLogisticsOnlySnapshot } from "../back-end/src/fulton-reviewed-coverage.js";
+import { buildLocationLookupResponse } from "../back-end/src/location-lookup.js";
+import { buildStateBallotPreview } from "../back-end/src/state-ballot-repository.js";
+import { stateBallotSources } from "../back-end/src/state-ballot-sources.js";
 
 const require = createRequire(import.meta.url);
 const axeSourcePath = require.resolve("axe-core/axe.min.js");
@@ -437,6 +440,17 @@ function emptyCollection() {
 function responseFor(url) {
 	const pathname = url.pathname.replace(/\/+/g, "/");
 	const apiPathname = pathname.startsWith("/api/") ? pathname.slice(4) : pathname;
+	if (apiPathname === "/location/active" && process.env.A11Y_STATE_CANDIDATES === "true") {
+		const lookup = buildLocationLookupResponse("27601", null, [], null, undefined, "empty", mockCoverage, {
+			stateAbbreviation: "NC", stateName: "North Carolina", locality: "Raleigh", postalCode: "27601", districtMatches: [], representativeMatches: [],
+		});
+		lookup.ballotContentPreviews = [buildStateBallotPreview({
+			source: stateBallotSources.find(source => source.stateCode === "NC"),
+			retrievedAt: "2026-10-20T12:00:00Z", sha256: "synthetic-accessibility-fixture",
+			records: Array.from({ length: 8 }, (_value, index) => ({ id: `candidate-${index}`, name: `Fixture Candidate ${index + 1}`, party: "Example Party", office: "U.S. Senate", district: "", scope: "statewide", status: "filed" })),
+		}, { districtMatches: [] })];
+		return lookup;
+	}
 	if (apiPathname === "/ballot" && reviewedElection && reviewedLocation) {
 		return {
 			election: reviewedElection,
@@ -634,7 +648,8 @@ async function analyzePage(browser, route, scheme) {
 	page.on("pageerror", error => pageErrors.push(error.message));
 	page.setDefaultNavigationTimeout(pageTimeoutMs);
 	page.setDefaultTimeout(pageTimeoutMs);
-	await page.setViewport({ width: 1280, height: 1000, deviceScaleFactor: 1 });
+	const viewportWidth = Number(process.env.A11Y_VIEWPORT_WIDTH || 1280);
+	await page.setViewport({ width: viewportWidth, height: 1000, deviceScaleFactor: 1 });
 	if (scheme === "dark" || scheme === "light") {
 		await page.emulateMediaFeatures([{ name: "prefers-color-scheme", value: scheme }]);
 	}
@@ -645,6 +660,16 @@ async function analyzePage(browser, route, scheme) {
 		throw new Error(`${url} returned ${status}`);
 	}
 	await page.waitForNetworkIdle({ idleTime: 500, timeout: 8_000 }).catch(() => {});
+	if (route === "/results" && process.env.A11Y_STATE_CANDIDATES === "true") {
+		await page.waitForFunction(() => document.body.innerText.includes("Fixture Candidate 8"));
+		const overflows = await page.evaluate(() => document.documentElement.scrollWidth > innerWidth);
+		if (overflows) throw new Error(`State candidate results overflow at ${viewportWidth}px.`);
+	}
+	if (process.env.A11Y_SCREENSHOT_DIR) {
+		mkdirSync(process.env.A11Y_SCREENSHOT_DIR, { recursive: true });
+		const filename = `${route.replace(/[^a-z0-9]+/giu, "-") || "home"}-${scheme}-${viewportWidth}.png`;
+		await page.screenshot({ path: resolve(process.env.A11Y_SCREENSHOT_DIR, filename), fullPage: true });
+	}
 	if (pageErrors.length) {
 		await page.close();
 		throw new Error(`${url} produced page errors: ${pageErrors.join(" | ")}`);

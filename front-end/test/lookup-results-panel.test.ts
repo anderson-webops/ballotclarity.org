@@ -34,10 +34,13 @@ test("lookup availability cards expose page links for actionable categories", ()
 	assert.doesNotMatch(lookupResultsPanel, /:is="card\.href \? 'NuxtLink' : 'article'"/);
 });
 
-test("lookup results show provider ballot previews with official verification copy", () => {
-	assert.match(lookupResultsPanel, /Provider ballot preview/);
-	assert.match(lookupResultsPanel, /Needs official verification/);
-	assert.match(lookupResultsPanel, /preview\.disclaimer/);
-	assert.match(lookupResultsPanel, /preview\.verificationResource\.url/);
-	assert.match(lookupResultsPanel, /Verify with/);
+test("lookup results expose ballot records outside collapsed matching details without truncating candidates", () => {
+	const component = readFileSync(new URL("../src/components/BallotContentPreviews.vue", import.meta.url), "utf8");
+	assert.match(lookupResultsPanel, /<BallotContentPreviews/);
+	assert.ok(lookupResultsPanel.indexOf("<BallotContentPreviews") < lookupResultsPanel.indexOf("How this result was matched"));
+	assert.match(component, /preview\.disclaimer/);
+	assert.match(component, /preview\.sourceUrl/);
+	assert.match(component, /preview\.verificationResource\.url/);
+	assert.match(component, /v-for="candidate in contest.candidates"/);
+	assert.doesNotMatch(component, /\.slice\(/);
 });

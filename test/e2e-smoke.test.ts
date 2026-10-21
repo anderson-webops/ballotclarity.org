@@ -612,6 +612,55 @@ async function withResilienceBrowser(t: TestContext, run: (cdp: CdpSession) => P
 
 const hydratedCivicState = "document.querySelector('#__nuxt')?.__vue_app__?.config.globalProperties.$pinia?.state.value.civic?.isHydrated === true";
 
+test("state records: every candidate is visible with election, provenance, and limited-coverage disclosure", async (t) => {
+	await withResilienceBrowser(t, async (cdp) => {
+		const snapshot = structuredClone(nationwideLookupSnapshot);
+		Object.assign(snapshot.nationwideLookupResult, {
+			availability: { ...snapshot.nationwideLookupResult.availability, ballotCandidates: { label: "Ballot candidate data", detail: "Official state records", status: "limited" } },
+			ballotContentPreviews: [{
+				id: "state-fixture", providerId: "official-state-nc", providerLabel: "State Election Office",
+				sourceAuthority: "official-government", sourceUrl: "https://www.ncsbe.gov/results-data/candidate-lists",
+				electionDate: "2026-11-03", generatedAt: "2026-10-20T12:00:00Z", officialOnly: true,
+				status: "official_source_unverified", disclaimer: "State records; local contests may be missing. Filing does not establish ballot qualification.",
+				contestCount: 1, candidateCount: 8, measureCount: 0,
+				contests: [{ id: "senate-fixture", title: "U.S. Senate", sourceLabels: ["State Election Office"], candidates: Array.from({ length: 8 }, (_value, index) => ({ id: `candidate-${index}`, name: `Fixture Candidate ${index + 1}`, party: "Example Party", ballotStatus: "filed" })) }],
+			}],
+		});
+		let refreshRequests = 0;
+		cdp.on("Fetch.requestPaused", ({ requestId }) => {
+			refreshRequests += 1;
+			void cdp.send("Fetch.fulfillRequest", {
+				requestId, responseCode: 200,
+				responseHeaders: [{ name: "content-type", value: "application/json" }, { name: "access-control-allow-origin", value: appBaseUrl }, { name: "access-control-allow-credentials", value: "true" }],
+				body: Buffer.from(JSON.stringify(snapshot.nationwideLookupResult)).toString("base64"),
+			});
+		});
+		await cdp.send("Fetch.enable", { patterns: [{ urlPattern: "*/location/active*" }] });
+		await cdp.send("Page.addScriptToEvaluateOnNewDocument", { source: `localStorage.setItem('ballot-clarity:civic-store', ${JSON.stringify(JSON.stringify(snapshot))});` });
+		await navigateAndWait(cdp, `${appBaseUrl}/results`, "state candidate results");
+		await waitForBodyText(cdp, /Fixture Candidate 8/u, "untruncated candidate list");
+		assert.ok(refreshRequests > 0);
+		const persisted = await cdp.send("Runtime.evaluate", { expression: "JSON.parse(localStorage.getItem('ballot-clarity:civic-store')).nationwideLookupResult.ballotContentPreviews.length", returnByValue: true });
+		assert.equal(persisted.result.value, 0);
+		const content = await cdp.send("Runtime.evaluate", { expression: `(() => {
+			const heading = Array.from(document.querySelectorAll('h2')).find(node => node.textContent.includes('State candidate records'));
+			const section = heading.closest('section');
+			return { count: section.querySelectorAll('li').length, insideDetails: Boolean(section.closest('details')), source: section.querySelector('a').href, text: document.body.innerText };
+		})()`, returnByValue: true });
+		assert.equal(content.result.value.count, 8);
+		assert.equal(content.result.value.insideDetails, false);
+		assert.match(content.result.value.text, /Limited local ballot information/u);
+		assert.match(content.result.value.text, /November 3, 2026/u);
+		assert.match(content.result.value.text, /Filing does not establish ballot qualification/u);
+		assert.equal(content.result.value.source, "https://www.ncsbe.gov/results-data/candidate-lists");
+		for (const width of [320, 1280]) {
+			await cdp.send("Emulation.setDeviceMetricsOverride", { width, height: 844, deviceScaleFactor: 1, mobile: false });
+			const layout = await cdp.send("Runtime.evaluate", { expression: "document.documentElement.scrollWidth <= innerWidth", returnByValue: true });
+			assert.equal(layout.result.value, true);
+		}
+	});
+});
+
 test("layout: lookup stays visible and usable across narrow and wide screens", async (t) => {
 	await withResilienceBrowser(t, async (cdp) => {
 		await navigateAndWait(cdp, appBaseUrl, "responsive lookup home");
@@ -906,6 +955,7 @@ before(async () => {
 
 	const api = startProcess(process.execPath, ["back-end/dist/server.js"], {
 		...process.env,
+		STATE_BALLOT_LOOKUP_ENABLED: "false",
 		ADMIN_API_KEY: adminApiKey,
 		ADMIN_DB_PATH: adminDbPath,
 		ADMIN_DATABASE_URL: "",

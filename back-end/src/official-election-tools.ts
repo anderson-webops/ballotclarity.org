@@ -1,4 +1,5 @@
 import type { OfficialResource } from "./types/civic.js";
+import { usStates } from "./us-states.js";
 
 interface StateOfficialToolSet {
 	stateAbbreviation: string;
@@ -49,14 +50,26 @@ export function getOfficialToolsForState(stateAbbreviation?: string) {
 	if (!stateAbbreviation)
 		return [];
 
-	return stateOfficialToolSets.find(item => item.stateAbbreviation === stateAbbreviation.toUpperCase())?.resources ?? [];
+	const abbreviation = stateAbbreviation.trim().toUpperCase();
+	const existing = stateOfficialToolSets.find(item => item.stateAbbreviation === abbreviation);
+	if (existing) return existing.resources;
+	const state = usStates.find(item => item[0] === abbreviation);
+	return state
+		? [{
+				authority: "official-government" as const,
+				label: `${state[1]} election offices`,
+				sourceLabel: "U.S. Election Assistance Commission",
+				sourceSystem: "EAC state and local election office directory",
+				url: `https://www.eac.gov/voters/register-and-vote-in-your-state?field_state_target_id=${state[2]}`,
+			}]
+		: [];
 }
 
 export function getStateNameForAbbreviation(stateAbbreviation?: string) {
 	if (!stateAbbreviation)
 		return undefined;
 
-	return stateOfficialToolSets.find(item => item.stateAbbreviation === stateAbbreviation.toUpperCase())?.stateName;
+	return usStates.find(item => item[0] === stateAbbreviation.trim().toUpperCase())?.[1];
 }
 
 export function getStateAbbreviationForName(stateName?: string) {
@@ -64,5 +77,5 @@ export function getStateAbbreviationForName(stateName?: string) {
 		return undefined;
 
 	const normalizedName = stateName.trim().toLowerCase();
-	return stateOfficialToolSets.find(item => item.stateName.toLowerCase() === normalizedName)?.stateAbbreviation;
+	return usStates.find(item => item[1].toLowerCase() === normalizedName)?.[0];
 }

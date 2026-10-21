@@ -22,11 +22,74 @@ import { buildGuidePackageId } from "../src/guide-packages.js";
 import { createPublicRequestThrottle } from "../src/public-request-throttle.js";
 import { classifyRepresentative } from "../src/representative-classification.js";
 import { createApp as createApplication } from "../src/server.js";
+import { createStateBallotRepository } from "../src/state-ballot-repository.js";
 
 function findRepoRoot() {
 	const cwd = process.cwd();
 	return existsSync(join(cwd, "front-end")) ? cwd : join(cwd, "..");
 }
+
+test("state candidate records populate lookup and active-cookie routes without promoting guide coverage", async () => {
+	let sourceReads = 0;
+	const isolatedApp = await createApp({
+		adminDbPath: ":memory:",
+		congressClient: null,
+		googleCivicClient: null,
+		ldaClient: null,
+		openFecClient: null,
+		openStatesClient: null,
+		stateBallotRepository: createStateBallotRepository({
+			now: () => Date.parse("2026-10-20T12:00:00Z"),
+			fetchText: async () => {
+				sourceReads += 1;
+				return "election_dt,contest_name,name_on_ballot,party_candidate\n11/03/2026,US SENATE,State Candidate,Example\n11/03/2026,NC HOUSE DISTRICT 7,Wrong Scope,Example\n";
+			},
+		}),
+		zipLocationService: {
+			async lookupZip(postalCode) {
+				return { postalCode, matches: [{
+					id: "zip:nc:fixture",
+					locality: "Raleigh",
+					stateAbbreviation: "NC",
+					stateName: "North Carolina",
+					postalCode,
+					latitude: 35.78,
+					longitude: -78.64,
+					sourceSystem: "Fixture",
+					districtMatches: [{ id: "house:7", label: "House 7", districtCode: "7", districtType: "state-house", sourceSystem: "Fixture" }],
+					representativeMatches: [],
+				}] };
+			},
+		},
+	});
+	const isolatedServer = isolatedApp.listen(0, "127.0.0.1");
+	await once(isolatedServer, "listening");
+	const address = isolatedServer.address() as AddressInfo;
+	const origin = `http://127.0.0.1:${address.port}`;
+	try {
+		const response = await fetch(`${origin}/api/location`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ q: "27601" }) });
+		assert.equal(response.status, 200);
+		const body = await response.json();
+		assert.equal(body.guideAvailability, "not-published");
+		assert.equal(body.ballotContentPreviews[0].providerId, "official-state-nc");
+		assert.equal(body.ballotContentPreviews[0].candidateCount, 1);
+		assert.equal(body.availability.ballotCandidates.status, "limited");
+		assert.ok(body.actions.some((action: { url: string }) => action.url.includes("eac.gov")));
+		const cookie = response.headers.getSetCookie().map(value => value.split(";", 1)[0]).join("; ");
+		assert.ok(cookie.includes("ballot-clarity-nationwide-lookup="));
+		const active = await fetch(`${origin}/api/location/active`, { headers: { cookie } });
+		const restored = await active.json();
+		assert.equal(restored.ballotContentPreviews[0].candidateCount, 1);
+		assert.equal(restored.ballotContentPreviews[0].contests[0].candidates[0].name, "State Candidate");
+		assert.equal(restored.guideAvailability, "not-published");
+		assert.equal(sourceReads, 1);
+		assert.match(active.headers.get("cache-control") ?? "", /no-store/u);
+	}
+	finally {
+		await new Promise<void>((resolve, reject) => isolatedServer.close(error => error ? reject(error) : resolve()));
+		await isolatedApp.closeResources();
+	}
+});
 
 let server: Server;
 let baseUrl = "";

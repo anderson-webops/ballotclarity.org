@@ -623,7 +623,7 @@ test("state records: every candidate is visible with election, provenance, and l
 				electionDate: "2026-11-03", generatedAt: "2026-10-20T12:00:00Z", officialOnly: true,
 				status: "official_source_unverified", disclaimer: "State records; local contests may be missing. Filing does not establish ballot qualification.",
 				contestCount: 1, candidateCount: 8, measureCount: 0,
-				contests: [{ id: "senate-fixture", title: "U.S. Senate", sourceLabels: ["State Election Office"], candidates: Array.from({ length: 8 }, (_value, index) => ({ id: `candidate-${index}`, name: `Fixture Candidate ${index + 1}`, party: "Example Party", ballotStatus: "filed" })) }],
+				contests: [{ id: "senate-fixture", title: "U.S. Senate", sourceLabels: ["State Election Office"], candidates: Array.from({ length: 8 }, (_value, index) => ({ id: `candidate-${index}`, name: `Fixture Candidate ${index + 1}`, party: "Example Party", ballotStatus: "filed", candidateUrl: index === 0 ? "https://campaign.example.org/" : undefined })) }],
 			}],
 		});
 		let refreshRequests = 0;
@@ -645,7 +645,8 @@ test("state records: every candidate is visible with election, provenance, and l
 		const content = await cdp.send("Runtime.evaluate", { expression: `(() => {
 			const heading = Array.from(document.querySelectorAll('h2')).find(node => node.textContent.includes('State candidate records'));
 			const section = heading.closest('section');
-			return { count: section.querySelectorAll('li').length, insideDetails: Boolean(section.closest('details')), source: section.querySelector('a').href, text: document.body.innerText };
+			const candidateLink = section.querySelector('li a');
+			return { count: section.querySelectorAll('li').length, insideDetails: Boolean(section.closest('details')), source: section.querySelector('a').href, candidateUrl: candidateLink.href, candidateName: candidateLink.textContent.trim(), text: document.body.innerText };
 		})()`, returnByValue: true });
 		assert.equal(content.result.value.count, 8);
 		assert.equal(content.result.value.insideDetails, false);
@@ -653,6 +654,8 @@ test("state records: every candidate is visible with election, provenance, and l
 		assert.match(content.result.value.text, /November 3, 2026/u);
 		assert.match(content.result.value.text, /Filing does not establish ballot qualification/u);
 		assert.equal(content.result.value.source, "https://www.ncsbe.gov/results-data/candidate-lists");
+		assert.equal(content.result.value.candidateUrl, "https://campaign.example.org/");
+		assert.equal(content.result.value.candidateName, "Fixture Candidate 1");
 		for (const width of [320, 1280]) {
 			await cdp.send("Emulation.setDeviceMetricsOverride", { width, height: 844, deviceScaleFactor: 1, mobile: false });
 			const layout = await cdp.send("Runtime.evaluate", { expression: "document.documentElement.scrollWidth <= innerWidth", returnByValue: true });

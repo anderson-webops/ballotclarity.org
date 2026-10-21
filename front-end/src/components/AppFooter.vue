@@ -72,9 +72,6 @@ function resolveGuideLinkTo(path: string) {
 					<p class="text-lg text-app-ink font-serif dark:text-app-text-dark">
 						Ballot Clarity
 					</p>
-					<p class="text-sm text-app-muted mt-1 dark:text-app-muted-dark">
-						Nonpartisan public-interest project
-					</p>
 					<p class="text-sm mt-3">
 						<ProtectedEmailLink
 							loading-label="Email link loads in your browser."

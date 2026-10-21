@@ -3,7 +3,7 @@ import type { StateBallotSource } from "./state-ballot-sources.js";
 import type { BallotContentPreview, BallotContentPreviewContest, LocationLookupResponse } from "./types/civic.js";
 import { createHash } from "node:crypto";
 import { getStateAbbreviationForName } from "./official-election-tools.js";
-import { fetchRemoteSourceText } from "./remote-json-source.js";
+import { fetchStateBallotSourceText } from "./state-ballot-fetch.js";
 import { parseStateCandidateRecords, stateRecordMatchesDistricts } from "./state-ballot-records.js";
 import { stateBallotSources } from "./state-ballot-sources.js";
 
@@ -32,13 +32,7 @@ export function createStateBallotRepository(options: StateBallotRepositoryOption
 	const ttlMs = options.ttlMs ?? 4 * 60 * 60 * 1000;
 	const cached = new Map<string, { expiresAt: number; snapshot: StateBallotSnapshot | null }>();
 	const pending = new Map<string, Promise<StateBallotSnapshot | null>>();
-	const fetchText = options.fetchText ?? (source => fetchRemoteSourceText(source.url, {
-		allowedHosts: [new URL(source.url).hostname],
-		maxBytes: 12 * 1024 * 1024,
-		maxRedirects: 2,
-		postBody: source.postBody,
-		timeoutMs: 12_000,
-	}));
+	const fetchText = options.fetchText ?? fetchStateBallotSourceText;
 	if (!Number.isSafeInteger(ttlMs) || ttlMs <= 0 || ttlMs > 24 * 60 * 60 * 1000)
 		throw new Error("State source cache lifetime must be between one millisecond and one day.");
 
@@ -102,7 +96,7 @@ export function buildStateBallotPreview(snapshot: StateBallotSnapshot, lookup: P
 			};
 			contests.set(key, contest);
 		}
-		contest.candidates.push({ id: record.id, name: record.name, party: record.party, ballotStatus: record.status, sourceStatus: record.sourceStatus });
+		contest.candidates.push({ id: record.id, name: record.name, party: record.party, ballotStatus: record.status, sourceStatus: record.sourceStatus, candidateUrl: record.candidateUrl });
 	}
 	if (!contests.size)
 		return null;

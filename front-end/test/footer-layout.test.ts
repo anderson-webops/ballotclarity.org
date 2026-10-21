@@ -5,7 +5,8 @@ import test from "node:test";
 const appFooter = readFileSync(new URL("../src/components/AppFooter.vue", import.meta.url), "utf8");
 
 test("footer keeps identity, contact, and the official-site disclaimer", () => {
-	assert.match(appFooter, /Nonpartisan public-interest project/);
+	assert.match(appFooter, /Ballot Clarity/);
+	assert.doesNotMatch(appFooter, /Nonpartisan public-interest project/);
 	assert.match(appFooter, /<ProtectedEmailLink/);
 	assert.match(appFooter, /Not an official election website\./);
 	assert.match(appFooter, /to="\/contact"/);

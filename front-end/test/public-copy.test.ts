@@ -203,7 +203,7 @@ test("public project identity avoids unverified nonprofit status claims", () => 
 	assert.doesNotMatch(identityText, /Ballot Clarity is a nonprofit/i);
 	assert.doesNotMatch(identityText, /501\(c\)\(3\)-style operating model/i);
 	assert.match(identityText, /public-interest civic-information site/);
-	assert.match(identityText, /Nonpartisan public-interest project/);
+	assert.doesNotMatch(footer, /Nonpartisan public-interest project/);
 	assert.match(identityText, /does not currently claim tax-exempt status/);
 });
 

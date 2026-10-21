@@ -1,0 +1,52 @@
+state_code,state_name,integration_status,official_source_url,ingested_scope,evidence_window,remaining_work
+AL,Alabama,research-pending,,,,Find current official ballot sources and public candidate/profile/news evidence
+AK,Alaska,transport-unavailable,https://www.elections.alaska.gov/election-candidates/,candidate-source-identified,2026-10-20..2026-10-21,Verify supported retrieval without disabling TLS and research candidate profiles
+AZ,Arizona,research-pending,,,,Find current official ballot sources and public candidate/profile/news evidence
+AR,Arkansas,research-pending,,,,Find current official ballot sources and public candidate/profile/news evidence
+CA,California,public-source-unvalidated,https://www.sos.ca.gov/elections/candidate-statements/,certified-material-mostly-pdf,2026-10-20..2026-10-21,Validate candidate extraction and preserve certified status plus candidate profiles
+CO,Colorado,integrated,https://www.sos.state.co.us/pubs/elections/vote/generalCandidates.html,federal|statewide|legislative|judicial|other-records,2026-10-21,Validate specialized/local district mapping and expand candidate profiles
+CT,Connecticut,research-pending,,,,Find current official ballot sources and public candidate/profile/news evidence
+DE,Delaware,integrated,https://elections.delaware.gov/candidates/candidatelist/genl_fcddt_2026.html,federal|statewide|legislative|local-records,2026-10-21,Validate local ballot mapping and expand candidate profiles
+DC,District of Columbia,research-pending,,,,Find current official ballot sources and public candidate/profile/news evidence
+FL,Florida,integrated,https://dos.elections.myflorida.com/candidates/downloadcanlist.asp,federal|statewide|legislative|other-records,2026-10-21,Validate local ballot mapping and expand candidate profiles
+GA,Georgia,research-pending,,,,Find current official candidate/measure sources beyond existing logistics and public candidate/profile/news evidence
+HI,Hawaii,research-pending,,,,Find current official ballot sources and public candidate/profile/news evidence
+ID,Idaho,research-pending,,,,Find current official ballot sources and public candidate/profile/news evidence
+IL,Illinois,research-pending,,,,Find current official ballot sources and public candidate/profile/news evidence
+IN,Indiana,public-source-unvalidated,https://www.in.gov/sos/elections/,general-candidate-source-identified,2026-10-20..2026-10-21,Validate public export/schema and research candidate profiles
+IA,Iowa,access-limited,https://sos.iowa.gov/general-election,general-candidate-source-identified,2026-10-20..2026-10-21,HTTP 403; investigate other published official sources and public candidate/profile/news evidence
+KS,Kansas,research-pending,,,,Find current official ballot sources and public candidate/profile/news evidence
+KY,Kentucky,integrated,https://web.sos.ky.gov/CandidateFilings/,federal|state-legislative|closed-status-records,2026-10-21,Validate other local/judicial office feeds and expand candidate profiles
+LA,Louisiana,public-source-unvalidated,https://voterportal.sos.la.gov/,public-interface-identified,2026-10-20..2026-10-21,Validate a future-ballot contract rather than inferring nominees from results; research candidate profiles
+ME,Maine,access-limited,https://www.maine.gov/sos/elections-voting/upcoming-elections,general-candidate-workbook-identified,2026-10-21,HTTP 403; investigate published download links and public candidate/profile/news evidence
+MD,Maryland,integrated,https://elections.maryland.gov/elections/2026/general_candidates/2026_GG_statewide_candidatelist.html,federal|statewide|legislative|local-records,2026-10-21,Validate local ballot mapping and expand candidate profiles
+MA,Massachusetts,research-pending,,,,Find current official ballot sources and public candidate/profile/news evidence
+MI,Michigan,integrated,https://mi-boe.entellitrak.com/etk-mi-boe-prod/page.request.do?page=page.miboePublicReport&electionType=GEN&electionYear=2026,federal|statewide|legislative|judicial-records,2026-10-21,Validate local/judicial ballot mapping and expand candidate profiles
+MN,Minnesota,access-limited,https://candidates.sos.mn.gov/,public-candidate-export-identified,2026-10-20..2026-10-21,Normal export reaches anti-bot challenge; use other published official/profile/news evidence without bypass
+MS,Mississippi,research-pending,,,,Find current official ballot sources and public candidate/profile/news evidence
+MO,Missouri,research-pending,,,,Find current official ballot sources and public candidate/profile/news evidence
+MT,Montana,research-pending,,,,Find current official ballot sources and public candidate/profile/news evidence
+NE,Nebraska,research-pending,,,,Find current official ballot sources and public candidate/profile/news evidence
+NV,Nevada,research-pending,,,,Find current official ballot sources and public candidate/profile/news evidence
+NH,New Hampshire,research-pending,,,,Find current official ballot sources and public candidate/profile/news evidence
+NJ,New Jersey,research-pending,,,,Find current official ballot sources and public candidate/profile/news evidence
+NM,New Mexico,integrated,https://candidateportal.servis.sos.state.nm.us/CandidateList.aspx?cty=99,federal|statewide|legislative|local-records,2026-10-21,Validate local ballot mapping and expand candidate profiles
+NY,New York,access-limited,https://publicreporting.elections.ny.gov/CandidatesList/CandidatesList,public-election-selectors-identified,2026-10-20..2026-10-21,Candidate POST returned HTTP 403; investigate published exports and public candidate/profile/news evidence
+NC,North Carolina,integrated,https://www.ncsbe.gov/results-data/candidate-lists,federal|statewide|legislative|local-records,2026-10-21,Validate local ballot mapping and expand candidate profiles
+ND,North Dakota,integrated,https://vip.sos.nd.gov/candidatelist.aspx?eid=348,federal|statewide|legislative|local-records,2026-10-21,Validate local ballot mapping and expand candidate profiles
+OH,Ohio,research-pending,,,,Find current official ballot sources and verify current district boundaries; research candidate/profile/news evidence
+OK,Oklahoma,research-pending,,,,Find current official ballot sources and public candidate/profile/news evidence
+OR,Oregon,public-source-unvalidated,https://sos.oregon.gov/elections/Pages/candidate-filing.aspx,official-candidate-source-identified,2026-10-20..2026-10-21,Validate general-election records without treating finance registration as qualification; research candidate profiles
+PA,Pennsylvania,research-pending,,,,Find current official ballot sources and public candidate/profile/news evidence
+RI,Rhode Island,access-limited,https://vote.sos.ri.gov/Home/,public-candidate-summary-identified,2026-10-20..2026-10-21,Direct retrieval returned HTTP 403; investigate other published sources and candidate/profile/news evidence
+SC,South Carolina,protected-voter-lookup,https://scvotes.gov/,official-voter-portal-identified,2026-10-20..2026-10-21,Do not automate private voter/CAPTCHA lookup; find public candidate lists and profile/news evidence
+SD,South Dakota,research-pending,,,,Find current official ballot sources and public candidate/profile/news evidence
+TN,Tennessee,access-limited,https://sos.tn.gov/elections/2026-candidate-lists,official-candidate-lists-identified,2026-10-21,HTTP 403; investigate other published official data and candidate/profile/news evidence
+TX,Texas,public-source-unvalidated,https://www.sos.state.tx.us/elections/laws/2026-november-general-election.shtml,certification-material-identified,2026-10-20..2026-10-21,Validate structured extraction and research candidate profiles
+UT,Utah,research-pending,,,,Find current official candidate/measure sources beyond existing voter tools and public candidate/profile/news evidence
+VT,Vermont,access-limited,https://sos.vermont.gov/elections/election-info-resources/candidates,official-candidate-list-and-voter-guide-identified,2026-10-21,HTTP 403 on candidate page; investigate published statewide guide data and public candidate/profile/news evidence
+VA,Virginia,integrated,https://www.elections.virginia.gov/casting-a-ballot/candidate-list/november-3-2026-gen-elect-federal-offices/,federal-only,2026-10-21,Add state/local offices and referendums plus candidate profiles
+WA,Washington,access-limited,https://voter.votewa.gov/CandidateList.aspx?e=899,2026-general-list-paginated,2026-10-20..2026-10-21,887 entries over nine pages; normal export returned HTTP 403; validate published complete data and candidate profiles
+WV,West Virginia,research-pending,,,,Find current official ballot sources and public candidate/profile/news evidence
+WI,Wisconsin,research-pending,,,,Find current official ballot sources and public candidate/profile/news evidence
+WY,Wyoming,integrated,https://sos.wyo.gov/Elections/2026ElectionInformation.aspx,federal|statewide|legislative|other-records,2026-10-21,Validate local ballot mapping and expand candidate profiles

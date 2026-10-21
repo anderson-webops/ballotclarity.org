@@ -39,7 +39,10 @@ const statusLabels: Record<string, string> = { "filed": "Filed", "qualified": "Q
 					</p>
 					<ul v-if="contest.candidates.length" class="mt-3 space-y-2">
 						<li v-for="candidate in contest.candidates" :key="candidate.id" class="text-sm text-app-muted leading-6 dark:text-app-muted-dark">
-							<span class="text-app-ink font-semibold dark:text-app-text-dark">{{ candidate.name }}</span>
+							<SafeExternalLink v-if="candidate.candidateUrl" :href="candidate.candidateUrl" class="text-app-accent font-semibold underline underline-offset-3 focus-ring">
+								{{ candidate.name }}
+							</SafeExternalLink>
+							<span v-else class="text-app-ink font-semibold dark:text-app-text-dark">{{ candidate.name }}</span>
 							<span v-if="candidate.party"> · {{ candidate.party }}</span>
 							<span v-if="candidate.ballotStatus && statusLabels[candidate.ballotStatus]"> · {{ statusLabels[candidate.ballotStatus] }}</span>
 						</li>

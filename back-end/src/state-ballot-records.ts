@@ -1,8 +1,10 @@
+import type { StateHtmlNode as HtmlNode } from "./state-ballot-html.js";
 import type { StateBallotSource } from "./state-ballot-sources.js";
 import type { LocationDistrictMatch } from "./types/civic.js";
 import { createHash } from "node:crypto";
 import { parse as parseCsv } from "csv-parse/sync";
-import { parse as parseHtml } from "parse5";
+import { normalizePublicHref } from "./public-href.js";
+import { stateHtmlAttribute as attribute, stateHtmlDescendants as descendants, parseStateHtml as parseHtml, stateHtmlTableRows, stateHtmlText as textContent } from "./state-ballot-html.js";
 
 export type StateCandidateStatus = "listed" | "filed" | "qualified" | "write-in" | "withdrawn" | "disqualified" | "defeated" | "elected" | "unopposed" | "inactive" | "unrecognized";
 export type StateContestScope = "statewide" | "congressional" | "state-senate" | "state-house" | "local";
@@ -16,13 +18,8 @@ export interface StateCandidateRecord {
 	scope: StateContestScope;
 	status: StateCandidateStatus;
 	sourceStatus?: string;
-}
-
-interface HtmlNode {
-	nodeName: string;
-	value?: string;
-	attrs?: Array<{ name: string; value: string }>;
-	childNodes?: HtmlNode[];
+	jurisdiction?: string;
+	candidateUrl?: string;
 }
 
 function clean(value: unknown) {
@@ -36,7 +33,7 @@ export function normalizeStateDistrict(value: string) {
 function statusFromText(value: string, party: string): StateCandidateStatus {
 	if (/withdraw|withdrew|^WITHD$|^WIT$|^declined\b/iu.test(value)) return "withdrawn";
 	if (/^unopposed$/iu.test(value)) return "unopposed";
-	if (/^deceased$|^removed$/iu.test(value)) return "inactive";
+	if (/^deceased$|^removed$|^inactive$/iu.test(value)) return "inactive";
 	if (/defeat|eliminat|^DEF$/iu.test(value)) return "defeated";
 	if (/elected|^ELE$/iu.test(value)) return "elected";
 	if (/disqual|unqualif|not.*qual|^DNQ$|^DISQ$|^failed to submit required number of signatures/iu.test(value)) return "disqualified";
@@ -64,7 +61,7 @@ export function classifyStateContest(office: string, district = ""): { scope: St
 	return { scope: "local", district: normalizeStateDistrict(number) };
 }
 
-function makeRecord(source: StateBallotSource, values: { name: string; office: string; party: string; status?: string; district?: string }): StateCandidateRecord | null {
+function makeRecord(source: StateBallotSource, values: { name: string; office: string; party: string; status?: string; district?: string; jurisdiction?: string; candidateUrl?: string }): StateCandidateRecord | null {
 	const name = clean(values.name);
 	const office = clean(values.office);
 	if (!name || !office || name.length > 250 || office.length > 300)
@@ -75,7 +72,10 @@ function makeRecord(source: StateBallotSource, values: { name: string; office: s
 		geography.scope = "statewide";
 		geography.district = "";
 	}
-	const key = JSON.stringify([source.stateCode, source.electionDate, office.toLowerCase(), geography.district, name.toLowerCase(), party.toLowerCase()]);
+	const jurisdiction = geography.scope === "local" ? clean(values.jurisdiction) || undefined : undefined;
+	const keyParts = [source.stateCode, source.electionDate, office.toLowerCase(), geography.district, name.toLowerCase(), party.toLowerCase()];
+	if (jurisdiction) keyParts.push(jurisdiction.toLowerCase());
+	const key = JSON.stringify(keyParts);
 	return {
 		id: createHash("sha256").update(key).digest("hex").slice(0, 24),
 		name,
@@ -84,6 +84,8 @@ function makeRecord(source: StateBallotSource, values: { name: string; office: s
 		...geography,
 		status: statusFromText(values.status ?? "", party),
 		sourceStatus: clean(values.status) || undefined,
+		jurisdiction,
+		candidateUrl: /^https?:\/\//iu.test(values.candidateUrl ?? "") ? normalizePublicHref(values.candidateUrl) || undefined : undefined,
 	};
 }
 
@@ -93,7 +95,7 @@ function candidateFromCsv(source: StateBallotSource, row: Record<string, string>
 			const [month, day, year] = clean(row.election_dt).split("/");
 			if (`${year}-${month?.padStart(2, "0")}-${day?.padStart(2, "0")}` !== source.electionDate)
 				return null;
-			return makeRecord(source, { name: row.name_on_ballot ?? "", office: row.contest_name ?? "", party: row.party_candidate ?? "" });
+			return makeRecord(source, { name: row.name_on_ballot ?? "", office: row.contest_name ?? "", party: row.party_candidate ?? "", jurisdiction: row.county_name });
 		}
 		case "WY":
 			if (!/2026.*general|general.*2026/iu.test(row.Election ?? "")) return null;
@@ -102,6 +104,7 @@ function candidateFromCsv(source: StateBallotSource, row: Record<string, string>
 				office: row["Office Sought"] ?? "",
 				party: row["Party Affiliation"] ?? "",
 				status: clean(row["Date Withdrawn"]) ? "withdrawn" : "listed",
+				candidateUrl: row["Web Address"],
 			});
 		case "MD": {
 			const name = [row["Candidate First Name and Middle Name"], row["Candidate Ballot Last Name and Suffix"]].filter(Boolean).join(" ");
@@ -126,22 +129,6 @@ function candidateFromCsv(source: StateBallotSource, row: Record<string, string>
 		default:
 			throw new Error("No parser is configured for this official source.");
 	}
-}
-
-function descendants(node: HtmlNode, predicate: (child: HtmlNode) => boolean): HtmlNode[] {
-	return (node.childNodes ?? []).flatMap(child => [
-		...(predicate(child) ? [child] : []),
-		...descendants(child, predicate),
-	]);
-}
-
-function attribute(node: HtmlNode, name: string) {
-	return node.attrs?.find(item => item.name === name)?.value ?? "";
-}
-
-function textContent(node: HtmlNode): string {
-	if (node.nodeName === "script" || node.nodeName === "style") return "";
-	return node.value ?? (node.childNodes ?? []).map(textContent).join(" ");
 }
 
 function parseDelaware(source: StateBallotSource, body: string) {
@@ -235,6 +222,108 @@ function parseStateTable(source: StateBallotSource, body: string) {
 	});
 }
 
+function tableCells(row: HtmlNode) {
+	return (row.childNodes ?? []).filter(node => ["td", "th"].includes(node.nodeName));
+}
+
+function findCandidateTable(document: HtmlNode, required: string[]) {
+	return descendants(document, node => node.nodeName === "table").find((table) => {
+		const first = stateHtmlTableRows(table)[0];
+		const headers = first ? tableCells(first).map(cell => clean(textContent(cell))) : [];
+		return required.every(header => headers.includes(header));
+	});
+}
+
+function parseColorado(source: StateBallotSource, body: string) {
+	const document = parseHtml(body);
+	const title = descendants(document, node => node.nodeName === "title")[0];
+	if (!title || clean(textContent(title)) !== "2026 General Election Official Candidate List")
+		throw new Error("The official source does not identify the configured general election.");
+	const table = findCandidateTable(document, ["Candidate name", "Office", "District", "Party", "Write in?"]);
+	if (!table) throw new Error("The official candidate table has an unexpected layout.");
+	if (tableCells(stateHtmlTableRows(table)[0]!).map(cell => clean(textContent(cell))).join("|") !== "Candidate name|Office|District|Party|Write in?")
+		throw new Error("The official candidate columns have changed order.");
+	return stateHtmlTableRows(table).slice(1).map((row) => {
+		const cells = tableCells(row);
+		if (cells.length !== 5) throw new Error("The official candidate table has an inconsistent row layout.");
+		const [name, office, district, party, writeIn] = cells.map(cell => clean(textContent(cell)));
+		if (!["Y", "N", ""].includes(writeIn ?? "")) throw new Error("The official write-in marker has changed.");
+		const hasWithdrawalMark = (node: HtmlNode) => ["s", "del", "strike"].includes(node.nodeName) || /text-decoration(?:-line)?\s*:[^;]*line-through/iu.test(attribute(node, "style"));
+		const withdrawn = hasWithdrawalMark(row) || cells.some(cell => hasWithdrawalMark(cell) || descendants(cell, hasWithdrawalMark).length > 0);
+		const record = makeRecord(source, { name: name ?? "", office: office ?? "", district: district ?? "", party: party ?? "", status: withdrawn ? "withdrawn" : writeIn === "Y" ? "write-in" : "qualified", jurisdiction: district });
+		if (!record) throw new Error("The official candidate table contains an incomplete candidate.");
+		if (["Colorado Supreme Court", "Colorado Court of Appeals", "University of Colorado Board of Regents"].includes(office ?? "") && /^(?:state|at[- ]large)$/iu.test(district ?? "")) {
+			record.scope = "statewide";
+			record.district = "";
+			delete record.jurisdiction;
+		}
+		return record;
+	});
+}
+
+function parseNorthDakota(source: StateBallotSource, body: string) {
+	const document = parseHtml(body);
+	const title = descendants(document, node => node.nodeName === "title")[0];
+	if (!title || clean(textContent(title)) !== "2026 General Election Contest/Candidate List")
+		throw new Error("The official source does not identify the configured general election.");
+	const table = findCandidateTable(document, ["Contest", "District", "Name", "Party", "Term Length"]);
+	if (!table || descendants(table, node => /rgPager/u.test(attribute(node, "class"))).length)
+		throw new Error("The official candidate table is missing or paginated.");
+	const rows = stateHtmlTableRows(table);
+	const headers = tableCells(rows.shift()!).map(cell => clean(textContent(cell)));
+	return rows.flatMap((row) => {
+		const cells = tableCells(row).map(cell => clean(textContent(cell)));
+		if (cells.length !== headers.length) throw new Error("The official candidate table has an inconsistent row layout.");
+		const field = (name: string) => cells[headers.lastIndexOf(name)] ?? "";
+		const office = field("Contest");
+		if (!office) throw new Error("The official candidate table contains an incomplete contest.");
+		if (!field("Name") && !field("First Name") && !field("Last Name")) return [];
+		const record = makeRecord(source, { name: field("Name"), office, party: field("Party"), district: field("District").match(/\d+[A-Z]?/iu)?.[0], status: "listed", jurisdiction: field("County") || field("District"), candidateUrl: field("Website") });
+		if (!record) throw new Error("The official candidate table contains an incomplete candidate.");
+		if (["Agriculture Commissioner", "Public Service Commissioner", "Tax Commissioner", "Justice of the Supreme Court"].includes(office)) {
+			record.scope = "statewide";
+			record.district = "";
+			delete record.jurisdiction;
+		}
+		return [record];
+	});
+}
+
+function parseKentucky(source: StateBallotSource, body: string) {
+	const envelope = JSON.parse(body) as { documents?: Array<{ url?: unknown; body?: unknown }> };
+	if (!Array.isArray(envelope.documents) || JSON.stringify(envelope.documents.map(document => document.url)) !== JSON.stringify(source.documentUrls))
+		throw new Error("The official candidate document set is incomplete.");
+	return envelope.documents.flatMap((item) => {
+		if (typeof item.body !== "string" || typeof item.url !== "string") throw new Error("The official candidate document is invalid.");
+		const document = parseHtml(item.body);
+		const election = descendants(document, node => node.nodeName === "select" && attribute(node, "name") === "ctl00$MainContent$ddlElection")[0];
+		const selected = election && descendants(election, node => node.nodeName === "option" && Boolean(node.attrs?.some(item => item.name === "selected")))[0];
+		if (!selected || clean(textContent(selected)) !== "2026 General Election")
+			throw new Error("The official source does not identify the configured general election.");
+		const inactive = new URL(item.url).searchParams.get("withdrawn") === "1";
+		const nameColumn = inactive ? "Name" : "Name / Running Mate";
+		const tables = descendants(document, node => node.nodeName === "table").filter((table) => {
+			const first = stateHtmlTableRows(table)[0];
+			return first && tableCells(first).some(cell => clean(textContent(cell)) === nameColumn);
+		});
+		if (!tables.length) throw new Error("The official candidate table has an unexpected layout.");
+		return tables.flatMap((table) => {
+			const rows = stateHtmlTableRows(table);
+			const headers = tableCells(rows.shift()!).map(cell => clean(textContent(cell)));
+			if (["Office", "District/Division", "Party"].some(header => !headers.includes(header)))
+				throw new Error("The official candidate table has an unexpected layout.");
+			return rows.map((row) => {
+				const cells = tableCells(row).map(cell => clean(textContent(cell)));
+				if (cells.length !== headers.length) throw new Error("The official candidate table has an inconsistent row layout.");
+				const field = (name: string) => cells[headers.indexOf(name)] ?? "";
+				const record = makeRecord(source, { name: field(nameColumn), office: field("Office"), district: field("District/Division").match(/\d+/u)?.[0], party: field("Party"), status: inactive ? "inactive" : "listed" });
+				if (!record) throw new Error("The official candidate table contains an incomplete candidate.");
+				return record;
+			});
+		});
+	});
+}
+
 const requiredColumns: Record<string, string[]> = {
 	NC: ["election_dt", "contest_name", "name_on_ballot", "party_candidate"],
 	WY: ["Election", "Office Sought", "Ballot Name", "Date Withdrawn"],
@@ -252,6 +341,15 @@ export function parseStateCandidateRecords(source: StateBallotSource, body: stri
 	}
 	else if (source.format === "new-mexico-html" || source.format === "virginia-html") {
 		records = parseStateTable(source, body);
+	}
+	else if (source.format === "colorado-html") {
+		records = parseColorado(source, body);
+	}
+	else if (source.format === "north-dakota-html") {
+		records = parseNorthDakota(source, body);
+	}
+	else if (source.format === "kentucky-html") {
+		records = parseKentucky(source, body);
 	}
 	else {
 		const table = parseCsv(body, {

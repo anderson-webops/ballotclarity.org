@@ -36,10 +36,6 @@ const uncertaintyNote = computed(() => {
 		<h2 class="text-2xl text-app-ink font-serif dark:text-app-text-dark">
 			{{ props.title }}
 		</h2>
-		<p class="text-sm text-app-muted leading-6 mt-2 dark:text-app-muted-dark">
-			From the largest area to the most local<span v-if="props.normalizedAddress"> for {{ props.normalizedAddress }}</span>.
-		</p>
-
 		<ol class="mt-4 divide-app-line divide-y dark:divide-app-line-dark">
 			<li
 				v-for="{ level, match } in orderedMatches"

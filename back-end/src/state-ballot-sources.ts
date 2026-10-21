@@ -5,12 +5,47 @@ export interface StateBallotSource {
 	electionDate: string;
 	url: string;
 	pageUrl: string;
-	format: "csv" | "delaware-html" | "michigan-html" | "new-mexico-html" | "virginia-html";
+	format: "csv" | "delaware-html" | "michigan-html" | "new-mexico-html" | "virginia-html" | "colorado-html" | "kentucky-html" | "north-dakota-html";
 	delimiter?: string;
 	postBody?: string;
+	documentUrls?: readonly string[];
 }
 
 export const stateBallotSources: readonly StateBallotSource[] = [
+	{
+		stateCode: "CO",
+		id: "co-sos-2026",
+		label: "Colorado Secretary of State",
+		electionDate: "2026-11-03",
+		url: "https://www.sos.state.co.us/pubs/elections/vote/generalCandidates.html",
+		pageUrl: "https://www.sos.state.co.us/pubs/elections/vote/generalCandidates.html",
+		format: "colorado-html",
+	},
+	{
+		stateCode: "KY",
+		id: "ky-sos-2026",
+		label: "Kentucky Secretary of State",
+		electionDate: "2026-11-03",
+		url: "https://web.sos.ky.gov/CandidateFilings/",
+		pageUrl: "https://web.sos.ky.gov/CandidateFilings/",
+		format: "kentucky-html",
+		documentUrls: [
+			"https://web.sos.ky.gov/CandidateFilings/Default.aspx?id=3",
+			"https://web.sos.ky.gov/CandidateFilings/Default.aspx?id=4",
+			"https://web.sos.ky.gov/CandidateFilings/Default.aspx?id=11",
+			"https://web.sos.ky.gov/CandidateFilings/Default.aspx?id=12",
+			"https://web.sos.ky.gov/CandidateFilings/Default.aspx?withdrawn=1",
+		],
+	},
+	{
+		stateCode: "ND",
+		id: "nd-sos-2026",
+		label: "North Dakota Secretary of State",
+		electionDate: "2026-11-03",
+		url: "https://vip.sos.nd.gov/candidatelist.aspx?eid=348",
+		pageUrl: "https://vip.sos.nd.gov/candidatelist.aspx?eid=348",
+		format: "north-dakota-html",
+	},
 	{
 		stateCode: "NM",
 		id: "nm-sos-2026",

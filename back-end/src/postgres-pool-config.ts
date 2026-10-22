@@ -1,5 +1,6 @@
-import type { PoolConfig } from "pg";
+import type { Pool, PoolConfig } from "pg";
 import process from "node:process";
+import { createLogger } from "./logger.js";
 
 interface PostgresPoolConfigOptions {
 	connectionString: string;
@@ -12,6 +13,25 @@ const defaultIdleTimeoutMs = 10_000;
 const maximumConnectionTimeoutMs = 60_000;
 const maximumIdleTimeoutMs = 300_000;
 const maximumPoolSize = 100;
+const sqlStatePattern = /^[0-9A-Z]{5}$/u;
+const logger = createLogger("ballot-clarity-api");
+
+export function safePostgresErrorCode(error: unknown) {
+	const code = error && typeof error === "object" && "code" in error
+		? error.code
+		: undefined;
+
+	return typeof code === "string" && sqlStatePattern.test(code) ? code : "UNKNOWN";
+}
+
+export function attachPostgresPoolErrorHandler(pool: Pool, component: "address-cache" | "admin") {
+	pool.on("error", (error) => {
+		logger.warn("postgres.idle_client_failed", {
+			code: safePostgresErrorCode(error),
+			component,
+		});
+	});
+}
 
 export function resolveBoundedPositiveInteger(
 	value: string | number | null | undefined,

@@ -18,6 +18,15 @@ The verifier refuses a dirty source checkout, creates a detached temporary Git w
 - sends `SIGTERM` to both services and requires a clean bounded shutdown;
 - verifies the artifact hashes again so runtime startup cannot mutate the release tree.
 
+The clean build embeds the same public `{version, commit}` identity in the
+frontend `/deployment.json` and backend `/api/release` responses. The two
+identity files are required hashed artifact members, and acceptance checks both
+responses without a checkout. Both responses use `no-store`.
+The ARM64 release job also stops its disposable PostgreSQL 17 service after
+opening idle connections, requires liveness with failed readiness, restarts
+PostgreSQL, and verifies readiness recovery, authorization, unchanged synthetic
+data/schema, graceful shutdown and retained-artifact restart.
+
 The artifact never contains environment files, credentials, databases, logs, queues, live coverage state or public election bulk datasets. `STATE_BALLOT_DATA_DIR`, `ADMIN_DB_PATH`, `LIVE_COVERAGE_FILE`, and `BALLOTCLARITY_ZIP_LOOKUP_LOG_PATH` must resolve outside immutable releases and be preserved independently during both promotion and rollback. Production Postgres state likewise remains external.
 
 All reviewed candidate sources need validated external imports before their data

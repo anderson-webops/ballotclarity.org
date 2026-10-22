@@ -12,7 +12,6 @@ import {
 	statSync,
 	writeFileSync,
 } from "node:fs";
-import { tmpdir } from "node:os";
 import { basename, dirname, extname, join, relative, resolve, sep } from "node:path";
 import process from "node:process";
 import { pathToFileURL } from "node:url";
@@ -128,6 +127,32 @@ function assertRequiredPaths(root, contract) {
 	}
 }
 
+function assertReleaseIdentity(root, commit) {
+	if (!/^[0-9a-f]{40}$/u.test(commit))
+		throw new Error("Runtime manifest has an invalid source commit.");
+
+	const identityPaths = [
+		"front-end/.output/public/deployment.json",
+		"back-end/dist/release-identity.json",
+	];
+	const identities = identityPaths.map(path => JSON.parse(readFileSync(resolve(root, path), "utf8")));
+
+	for (const identity of identities) {
+		if (
+			!identity
+			|| typeof identity !== "object"
+			|| Object.keys(identity).sort().join(",") !== "commit,version"
+			|| identity.commit !== commit
+			|| !/^(?:development|[0-9]+\.[0-9]+\.[0-9]+)$/u.test(identity.version)
+		) {
+			throw new Error("Compiled release identity does not match the source commit.");
+		}
+	}
+
+	if (JSON.stringify(identities[0]) !== JSON.stringify(identities[1]))
+		throw new Error("Frontend and backend release identities differ.");
+}
+
 function assertBuildInputs(sourceRoot = projectRoot) {
 	for (const [source] of copiedPaths) {
 		if (!existsSync(resolve(sourceRoot, source)))
@@ -201,6 +226,7 @@ export function verifyRuntimeArtifact(outputRoot) {
 	assertRequiredPaths(resolvedRoot, contract);
 	const files = listArtifactFiles(resolvedRoot);
 	assertNoPrivateOrWritableContent(resolvedRoot, files);
+	assertReleaseIdentity(resolvedRoot, manifest.source?.commit);
 	const actualPaths = files.map(path => normalizePath(resolvedRoot, path));
 	const expectedPaths = manifest.files.map(file => file.path);
 
@@ -265,7 +291,9 @@ export function buildRuntimeArtifact(outputRoot = resolve(projectRoot, "dist/bal
 	const resolvedRoot = resolve(outputRoot);
 	assertSafeOutputPath(resolvedRoot);
 	const source = assertCleanSourceCheckout();
-	const temporaryRoot = mkdtempSync(join(tmpdir(), "ballot-clarity-artifact-source-"));
+	const runRoot = resolve(projectRoot, ".ai-work/runs");
+	mkdirSync(runRoot, { recursive: true });
+	const temporaryRoot = mkdtempSync(join(runRoot, "ballot-clarity-artifact-source-"));
 	const isolatedRoot = join(temporaryRoot, "source");
 	let registeredWorktree = false;
 

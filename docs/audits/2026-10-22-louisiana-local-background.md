@@ -106,7 +106,7 @@ The existing approved automatic adapters keep their own reviewed schedules and
 durable external cache. This change creates no unreviewed news crawler, scheduler,
 automatic approval, server install or production configuration change. Future
 elections need renewed policy, source/date/identity review and separate imports.
-Current source/runtime/data gates and rollback are in server-ai-current.md.
+Current source/runtime/data gates and rollback are in the local-only operator handoff.
 
 ## Local verification
 

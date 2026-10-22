@@ -241,6 +241,20 @@ jobs:
 
   native-arm64:
     runs-on: ubuntu-24.04-arm
+    services:
+      postgres:
+        image: postgres:17.11-alpine3.23@sha256:9ea644da56f1a82283b173fa38a316636fe7c538991a8ae41998cd3765434991
+        env:
+          POSTGRES_DB: ballot_clarity_test
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d ballot_clarity_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
     outputs:
       archive_sha256: ${{ steps.package.outputs.archive_sha256 }}
     steps:
@@ -267,6 +281,9 @@ jobs:
 
       - name: Build and accept the exact ARM64 runtime
         id: package
+        env:
+          POSTGRES_TEST_CONTAINER_ID: ${{ job.services.postgres.id }}
+          TEST_ADMIN_DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/ballot_clarity_test
         run: |
           set -euo pipefail
           printf '/.ai-work/\n' >> "$(git rev-parse --git-path info/exclude)"
@@ -282,6 +299,8 @@ jobs:
           tar -C .ai-work/runs/arm64-release/unpacked -xzf \
             ".ai-work/runs/arm64-release/release-assets/ballot-clarity-${GITHUB_SHA}-linux-arm64.tar.gz"
           node scripts/verify-runtime-artifact.mjs \
+            "$PWD/.ai-work/runs/arm64-release/unpacked/ballot-clarity-runtime"
+          node scripts/verify-postgres-recovery.mjs \
             "$PWD/.ai-work/runs/arm64-release/unpacked/ballot-clarity-runtime"
           cp .ai-work/runs/arm64-release/ballot-clarity-runtime/runtime-manifest.json \
             .ai-work/runs/arm64-release/release-assets/runtime-manifest.json

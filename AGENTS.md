@@ -1,5 +1,9 @@
 # Repository Guidelines
 
+Server-AI prompts and operator handoffs are local-only. Keep them in the ignored
+`.ai-work/server-instructions/` folder, never in Git or release assets. Public
+artifact contracts and source documentation remain separate.
+
 ## GitGuardian Availability
 
 - Use GitGuardian/`ggshield` when available. Quota, authentication, network, or service failures are not commit or push blockers. Record the scan as unavailable, review staged and outgoing changes, run an available independent local secret scan, and proceed with the other required checks. Never ignore a confirmed secret finding or claim a failed scan passed.

@@ -6,6 +6,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import process from "node:process";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 import { fetchStateBallotSourceText } from "../src/state-ballot-fetch.js";
 import { buildStateBallotPreview, createStateBallotRepository } from "../src/state-ballot-repository.js";
 import { loadBundledStateSnapshot, parseBundledStateSnapshot } from "../src/state-ballot-snapshot.js";
@@ -90,7 +91,7 @@ test("the management command imports external-only snapshots without adding a bu
 	data.retrievedAt = "2026-10-21T00:00:00.000Z";
 	data.documents[0]!.retrievedAt = data.retrievedAt;
 	await writeFile(file, JSON.stringify(data));
-	const script = new URL("../src/manage-state-ballot-data.ts", import.meta.url).pathname;
+	const script = fileURLToPath(new URL("../src/manage-state-ballot-data.ts", import.meta.url));
 	const output = execFileSync(process.execPath, ["--import", "tsx", script, "import", file], { env: { ...process.env, STATE_BALLOT_DATA_DIR: directory, STATE_BALLOT_ENABLED_STATES: "NY" }, encoding: "utf8" });
 	assert.equal(JSON.parse(output).records, 8);
 	assert.equal((await createStateBallotStorage(directory).read(source))?.records.length, 8);

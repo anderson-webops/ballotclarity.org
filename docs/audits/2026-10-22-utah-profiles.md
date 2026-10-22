@@ -62,8 +62,8 @@ application importer inputs. The two-member
 `server-reviewed-utah-addendum-2026-v1.10.3.tar.gz` includes only the supported
 snapshot and transfer manifest. It supplements the unchanged v1.10.0/v1.10.1/
 v1.10.2 packages and requires v1.10.3 plus separately approved operator transfer
-and import. Exact current hashes and acceptance steps are in
-[server-ai-current.md](../server-ai-current.md).
+and import. Exact current hashes and acceptance steps are retained in the
+local-only operator handoff outside Git.
 
 Bulk data stays outside Git and runtime artifacts. Source publication, runtime
 activation and reviewed-data activation are distinct. No production connection,

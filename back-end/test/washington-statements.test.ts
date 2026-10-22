@@ -7,6 +7,7 @@ import { mkdtemp, readdir, readFile, rm, symlink, writeFile } from "node:fs/prom
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 import { electionReferenceSources } from "../src/election-reference-sources.js";
 import { parseElectionReferenceSnapshot } from "../src/election-references.js";
 import { prepareWashingtonStatementFiles } from "../src/prepare-washington-statements.js";
@@ -213,7 +214,7 @@ test("the local Washington plan prepares external snapshots without publisher re
 		await symlink(candidateFile, linked);
 		await writeFile(path, JSON.stringify({ ...plan, candidateFile: linked, outputDirectory: join(directory, "linked-output") }));
 		await assert.rejects(prepareWashingtonStatementFiles(path), /ELOOP/u);
-		await writeFile(path, JSON.stringify({ ...plan, outputDirectory: new URL("../data/state-ballots/preparation", import.meta.url).pathname }));
+		await writeFile(path, JSON.stringify({ ...plan, outputDirectory: fileURLToPath(new URL("../data/state-ballots/preparation", import.meta.url)) }));
 		await assert.rejects(prepareWashingtonStatementFiles(path), /outside/u);
 	}
 	finally {

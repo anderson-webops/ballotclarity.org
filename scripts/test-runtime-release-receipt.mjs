@@ -38,6 +38,7 @@ function fixture() {
 			"clean isolated source build",
 			"complete hashed runtime inventory",
 			"unpacked two-service health and readiness",
+			"PostgreSQL 17 stopped-service recovery and retained restart",
 			"missing module and changed entrypoint rejection",
 			"graceful shutdown",
 			"extracted transport archive acceptance",

@@ -66,7 +66,7 @@ import {
 	verifyPassword
 } from "./admin-store.js";
 import { normalizeCorrectionSubmission } from "./feedback-submission.js";
-import { createPostgresPoolConfig } from "./postgres-pool-config.js";
+import { attachPostgresPoolErrorHandler, createPostgresPoolConfig } from "./postgres-pool-config.js";
 
 interface CountRow {
 	count: number;
@@ -731,8 +731,15 @@ export async function createPostgresAdminRepository(options: AdminRepositoryOpti
 		defaultMax: 4,
 		maxEnvName: "ADMIN_DATABASE_POOL_MAX",
 	}));
+	attachPostgresPoolErrorHandler(pool, "admin");
 
-	await seedPostgresDatabase(pool, options);
+	try {
+		await seedPostgresDatabase(pool, options);
+	}
+	catch (error) {
+		await pool.end();
+		throw error;
+	}
 
 	async function runTransaction<T>(work: (client: PoolClient) => Promise<T>) {
 		const client = await pool.connect();

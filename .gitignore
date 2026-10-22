@@ -23,3 +23,4 @@ data/live-coverage.local.json.meta.json
 .env.local
 .env.*.local
 .idea/
+/.ai-work/

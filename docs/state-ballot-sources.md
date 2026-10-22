@@ -687,7 +687,7 @@ office/ticket slots remain explicit. Re-preparing a directory collection does no
 deduplicate against itself. Fresh approved downloads may feed this staging flow;
 changed counts, source drift, missing matches or unknown editions require review
 before separate imports. Current configuration and future-edition/election gates
-are documented in `server-ai-current.md`.
+are documented in the local-only operator handoff, outside Git.
 
 Webster Parish Journal supplies nine additional local candidate statements and
 21 short background facts. Six profiles concern school-board Districts 3/7/9/11,

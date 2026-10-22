@@ -197,6 +197,16 @@ try {
 	const readinessHead = await waitForResponse(`${apiBaseUrl}/readyz`, { method: "HEAD" });
 	assert.equal(readinessHead.status, 200);
 	assert.equal(await readinessHead.text(), "");
+	const releaseIdentity = JSON.parse(readFileSync(resolve(unpackedRoot, "back-end/dist/release-identity.json"), "utf8"));
+	const apiRelease = await waitForResponse(`${apiBaseUrl}/api/release`);
+	assert.equal(apiRelease.status, 200);
+	assert.equal(apiRelease.headers.get("cache-control"), "no-store");
+	assert.deepEqual(await apiRelease.json(), releaseIdentity);
+	assert.equal(releaseIdentity.commit, manifest.source.commit);
+	const apiReleaseHead = await waitForResponse(`${apiBaseUrl}/api/release`, { method: "HEAD" });
+	assert.equal(apiReleaseHead.status, 200);
+	assert.equal(apiReleaseHead.headers.get("cache-control"), "no-store");
+	assert.equal(await apiReleaseHead.text(), "");
 
 	frontendProcess = startProcess("front-end/.output/server/index.mjs", unpackedRoot, {
 		...baseEnvironment,
@@ -211,6 +221,10 @@ try {
 	const homepage = await waitForResponse(`${frontendBaseUrl}/`);
 	assert.equal(homepage.status, 200, frontendProcess.getOutput());
 	assert.match(await homepage.text(), /Ballot Clarity/u);
+	const frontendRelease = await waitForResponse(`${frontendBaseUrl}/deployment.json`);
+	assert.equal(frontendRelease.status, 200);
+	assert.equal(frontendRelease.headers.get("cache-control"), "no-store");
+	assert.deepEqual(await frontendRelease.json(), releaseIdentity);
 
 	await stopProcess(frontendProcess, "Compiled frontend");
 	frontendProcess = undefined;

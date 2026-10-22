@@ -168,6 +168,12 @@ export default defineNuxtConfig({
 			"/**": {
 				headers: securityHeaders
 			},
+			"/deployment.json": {
+				headers: {
+					...securityHeaders,
+					"cache-control": "no-store"
+				}
+			},
 			"/_nuxt/**": {
 				headers: {
 					...securityHeaders,

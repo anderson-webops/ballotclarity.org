@@ -7,6 +7,7 @@
 			"requiredPaths": [
 				"front-end/.output/nitro.json",
 				"front-end/.output/public",
+				"front-end/.output/public/deployment.json",
 				"front-end/.output/server"
 			]
 		},
@@ -17,6 +18,7 @@
 				"back-end/dist/admin-schema.postgres.sql",
 				"back-end/dist/admin-schema.sql",
 				"back-end/dist/live-data-schema.sql",
+				"back-end/dist/release-identity.json",
 				"back-end/dist/server.js",
 				"back-end/dist/manage-election-references.js",
 				"back-end/dist/congressional-biographies.js",

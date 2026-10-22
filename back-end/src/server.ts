@@ -124,10 +124,12 @@ import { createLogger, createRequestLoggingMiddleware, sanitizeLogText } from ".
 import { getOfficialToolsForState, getStateAbbreviationForName, getStateNameForAbbreviation } from "./official-election-tools.js";
 import { createOpenFecClient } from "./openfec.js";
 import { createOpenStatesClient } from "./openstates.js";
+import { safePostgresErrorCode } from "./postgres-pool-config.js";
 import { buildCongressProfileImages, uniqueProfileImages } from "./profile-images.js";
 import { parseTrustProxySetting } from "./proxy-trust.js";
 import { createPublicRequestThrottle } from "./public-request-throttle.js";
 import { buildCuratedPublicSourceRecords, mapAuthorityToPublisherType } from "./public-source-directory.js";
+import { loadReleaseIdentity } from "./release-identity.js";
 import { classifyRepresentative } from "./representative-classification.js";
 import { createRepresentativeModuleResolver } from "./representative-modules.js";
 import { createSourceAssetStore } from "./source-asset-store.js";
@@ -176,6 +178,7 @@ interface CreateAppOptions {
 	zipLookupLogger?: ZipLookupLogger;
 	stateBallotRepository?: StateBallotRepository | null;
 	electionReferenceRepository?: ElectionReferenceRepository | null;
+	releaseIdentity?: ReturnType<typeof loadReleaseIdentity>;
 }
 
 export interface BallotClarityApplication extends Express {
@@ -2977,6 +2980,7 @@ function buildSearchResponse(
 
 export async function createApp(options: CreateAppOptions = {}) {
 	const app = express() as BallotClarityApplication;
+	const releaseIdentity = options.releaseIdentity ?? loadReleaseIdentity();
 	const activeLookupCookieSecret = options.activeLookupCookieSecret ?? process.env.ACTIVE_LOOKUP_COOKIE_SECRET ?? "";
 	const adminApiKey = options.adminApiKey ?? process.env.ADMIN_API_KEY ?? null;
 	const adminSessionSecret = options.adminSessionSecret ?? process.env.ADMIN_SESSION_SECRET ?? null;
@@ -4635,6 +4639,14 @@ export async function createApp(options: CreateAppOptions = {}) {
 		app.head(path, readinessHandler);
 		app.get(path, readinessHandler);
 	}
+	const releaseHandler = (request: Request, response: Response) => {
+		response.set("Cache-Control", "no-store");
+		return request.method === "HEAD"
+			? response.status(200).end()
+			: response.status(200).json(releaseIdentity);
+	};
+	app.head("/api/release", releaseHandler);
+	app.get("/api/release", releaseHandler);
 
 	app.use(cors({
 		credentials: true,
@@ -6148,11 +6160,10 @@ export async function createApp(options: CreateAppOptions = {}) {
 
 	const errorHandler: ErrorRequestHandler = (error, request, response, _next) => {
 		logger.error("request.failed", {
-			error: error instanceof Error ? error.message : "Unhandled request error.",
+			errorCode: safePostgresErrorCode(error),
 			method: request.method,
 			path: request.path,
 			requestId: response.locals.requestId,
-			stack: error instanceof Error ? error.stack : undefined
 		});
 
 		if (response.headersSent)

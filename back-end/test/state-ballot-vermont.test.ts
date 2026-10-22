@@ -6,6 +6,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import process from "node:process";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 import { fetchStateBallotSourceText } from "../src/state-ballot-fetch.js";
 import { buildStateBallotPreview, createStateBallotRepository } from "../src/state-ballot-repository.js";
 import { loadBundledStateSnapshot, parseBundledStateSnapshot } from "../src/state-ballot-snapshot.js";
@@ -90,7 +91,7 @@ test("Vermont management import preserves reviewed source dates and refuses auto
 	data.retrievedAt = "2026-10-21T00:00:00.000Z";
 	for (const document of data.documents) document.retrievedAt = data.retrievedAt;
 	await writeFile(file, JSON.stringify(data));
-	const script = new URL("../src/manage-state-ballot-data.ts", import.meta.url).pathname;
+	const script = fileURLToPath(new URL("../src/manage-state-ballot-data.ts", import.meta.url));
 	const env = { ...process.env, STATE_BALLOT_DATA_DIR: directory, STATE_BALLOT_ENABLED_STATES: "VT" };
 	const output = execFileSync(process.execPath, ["--import", "tsx", script, "import", file], { env, encoding: "utf8" });
 	assert.equal(JSON.parse(output).records, 7);

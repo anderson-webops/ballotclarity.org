@@ -6,6 +6,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import process from "node:process";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 import { serializeStateBallotSnapshots } from "../src/state-ballot-export.js";
 import { fetchStateBallotSourceText } from "../src/state-ballot-fetch.js";
 import { buildStateBallotPreview, createStateBallotRepository } from "../src/state-ballot-repository.js";
@@ -95,8 +96,8 @@ test("New Hampshire management import and restart preserve exact transfer bytes 
 	const data = payload();
 	await writeFile(file, JSON.stringify(data));
 	const environment = { ...process.env, STATE_BALLOT_DATA_DIR: directory, STATE_BALLOT_ENABLED_STATES: "NH" };
-	const manager = new URL("../src/manage-state-ballot-data.ts", import.meta.url).pathname;
-	const exporter = new URL("../src/export-state-ballot-sources.ts", import.meta.url).pathname;
+	const manager = fileURLToPath(new URL("../src/manage-state-ballot-data.ts", import.meta.url));
+	const exporter = fileURLToPath(new URL("../src/export-state-ballot-sources.ts", import.meta.url));
 	const imported = execFileSync(process.execPath, ["--import", "tsx", manager, "import", file], { env: environment, encoding: "utf8" });
 	assert.equal(JSON.parse(imported).records, 10);
 	const expected = serializeStateBallotSnapshots([parseBundledStateSnapshot(source, JSON.stringify(data))]);

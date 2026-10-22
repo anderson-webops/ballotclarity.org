@@ -6,6 +6,7 @@ import { mkdtemp, readdir, readFile, rm, symlink, writeFile } from "node:fs/prom
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 import { buildStateBallotPreview, createStateBallotRepository, resolveStateBallotConfiguration } from "../src/state-ballot-repository.js";
 import { loadBundledStateSnapshot } from "../src/state-ballot-snapshot.js";
 import { stateBallotSources } from "../src/state-ballot-sources.js";
@@ -29,7 +30,7 @@ test("state ingestion configuration accepts explicit controls and rejects invali
 		assert.throws(() => resolveStateBallotConfiguration({ STATE_BALLOT_CACHE_TTL_MS: value }), /lifetime/u);
 	assert.throws(() => resolveStateBallotConfiguration({ STATE_BALLOT_ENABLED_STATES: "XX" }), /configured/u);
 	assert.throws(() => assertExternalStateDataDirectory("relative/data"), /outside/u);
-	assert.throws(() => assertExternalStateDataDirectory(new URL("../src/data", import.meta.url).pathname), /outside/u);
+	assert.throws(() => assertExternalStateDataDirectory(fileURLToPath(new URL("../src/data", import.meta.url))), /outside/u);
 });
 
 test("atomic storage binds public records to source configuration without raw fields", async (context) => {
@@ -44,7 +45,7 @@ test("atomic storage binds public records to source configuration without raw fi
 	assert.deepEqual(await storage.read(automatic), snapshot);
 	const path = join(directory, `${automatic.id}.json`);
 	await rm(path);
-	await symlink(new URL("./fixtures/reviewed-state-catalog.json", import.meta.url).pathname, path);
+	await symlink(fileURLToPath(new URL("./fixtures/reviewed-state-catalog.json", import.meta.url)), path);
 	await assert.rejects(storage.read(automatic));
 	await assert.rejects(readBoundedStateData(directory), /regular file/u);
 });
@@ -195,7 +196,7 @@ test("malformed and future reviewed data fail closed and a restored import recov
 test("the management command imports reviewed facts and refuses manual refresh", async (context) => {
 	const directory = await mkdtemp(join(tmpdir(), "ballot-state-command-"));
 	context.after(() => rm(directory, { recursive: true, force: true }));
-	const script = new URL("../src/manage-state-ballot-data.ts", import.meta.url).pathname;
+	const script = fileURLToPath(new URL("../src/manage-state-ballot-data.ts", import.meta.url));
 	const file = join(directory, "reviewed-fixture.json");
 	await writeFile(file, readReviewedStateFixture("IL"));
 	const environment = { ...process.env, STATE_BALLOT_DATA_DIR: directory, STATE_BALLOT_ENABLED_STATES: "IL" };

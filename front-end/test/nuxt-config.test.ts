@@ -108,6 +108,7 @@ test("nuxt config uses srcDir and expected civic modules", async () => {
 		"x-frame-options": "DENY"
 	});
 	assert.equal(config.nitro?.routeRules?.["/_nuxt/**"]?.headers?.["cache-control"], "public, max-age=31536000, immutable");
+	assert.equal(config.nitro?.routeRules?.["/deployment.json"]?.headers?.["cache-control"], "no-store");
 	assert.equal(config.nitro?.routeRules?.["/_nuxt/**"]?.headers?.["content-security-policy"], contentSecurityPolicy);
 	assert.equal(config.nitro?.routeRules?.["/**"]?.headers?.["content-security-policy-report-only"], undefined);
 	assert.equal(config.nitro?.routeRules?.["/_nuxt/**"]?.headers?.["cross-origin-opener-policy"], "same-origin");

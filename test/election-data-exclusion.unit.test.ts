@@ -19,6 +19,7 @@ function fixture() {
 	}
 	for (const name of ["admin-schema.sql", "admin-schema.postgres.sql", "live-data-schema.sql"]) write(root, name, "SELECT 1;\n");
 	for (const name of ["server.js", "manage-election-references.js", "congressional-biographies.js", "prepare-congressional-biographies.js", "washington-statements.js", "washington-statement-sources.js", "prepare-washington-statements.js", "manage-state-ballot-data.js", "export-state-ballot-sources.js", "check-state-ballot-sources.js"]) write(root, `dist/${name}`, "export {};\n");
+	write(root, "dist/release-identity.json", '{"version":"development","commit":"0000000000000000000000000000000000000000"}\n');
 	return root;
 }
 

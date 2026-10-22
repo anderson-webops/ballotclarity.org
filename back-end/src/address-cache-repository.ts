@@ -4,7 +4,7 @@ import { existsSync, readFileSync } from "node:fs";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
 import { Pool } from "pg";
-import { createPostgresPoolConfig } from "./postgres-pool-config.js";
+import { attachPostgresPoolErrorHandler, createPostgresPoolConfig } from "./postgres-pool-config.js";
 import { openSecretJson, sealSecretJson } from "./secret-envelope.js";
 
 export interface CachedAddressLookup extends CensusAddressLookupResult {
@@ -100,9 +100,11 @@ async function createPostgresAddressCacheRepository(
 		defaultMax: 2,
 		maxEnvName: "ADDRESS_CACHE_DATABASE_POOL_MAX",
 	}));
+	attachPostgresPoolErrorHandler(pool, "address-cache");
 
-	await pool.query(readFileSync(resolveSchemaPath(), "utf8"));
-	await pool.query(`
+	try {
+		await pool.query(readFileSync(resolveSchemaPath(), "utf8"));
+		await pool.query(`
 		ALTER TABLE address_lookups ADD COLUMN IF NOT EXISTS encrypted_payload TEXT;
 		ALTER TABLE address_lookups ADD COLUMN IF NOT EXISTS expires_at TIMESTAMPTZ;
 		ALTER TABLE address_lookups ALTER COLUMN normalized_address DROP NOT NULL;
@@ -111,7 +113,12 @@ async function createPostgresAddressCacheRepository(
 		WHERE encrypted_payload IS NULL OR expires_at IS NULL;
 		CREATE INDEX IF NOT EXISTS idx_address_lookups_expires_at ON address_lookups(expires_at);
 		CREATE INDEX IF NOT EXISTS idx_address_lookups_updated_at ON address_lookups(updated_at DESC);
-	`);
+		`);
+	}
+	catch (error) {
+		await pool.end();
+		throw error;
+	}
 
 	return {
 		close: async () => await pool.end(),

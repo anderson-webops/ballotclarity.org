@@ -132,6 +132,6 @@ stores and test services are removed. Publication, protected runtime acceptance,
 public code activation and approved operator data import remain separate gates;
 the final source-local release receipt records their actual outcomes.
 
-Current operating instructions and approved transfer/import prerequisites are in
-[server-ai-current.md](../server-ai-current.md). Further state/local collection
+Current operating instructions and approved transfer/import prerequisites are
+retained in a local-only operator handoff. Further state/local collection
 remains unfinished, without weakening denied-source or personal-matching gates.

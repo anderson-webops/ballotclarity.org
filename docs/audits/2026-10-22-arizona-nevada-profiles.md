@@ -71,8 +71,8 @@ count is validated against maintained source. Source PDFs/HTML, review CSV/JSONL
 contacts and credentials are excluded. Bulk data stays outside Git and protected
 runtime artifacts. The source agent has neither uploaded nor imported the package.
 Approved operator transfer/import remains separate from protected runtime activation.
-See [current instructions](../server-ai-current.md) for exact hashes, acceptance
-and recovery, including retaining new collection files during rollback to v1.10.3.
+The local-only operator handoff retains exact hashes, acceptance and recovery,
+including retaining new collection files during rollback to v1.10.3.
 
 ## Local acceptance
 

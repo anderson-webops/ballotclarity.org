@@ -7,6 +7,7 @@ const requiredRuntimeFiles = [
 	"admin-schema.postgres.sql",
 	"admin-schema.sql",
 	"live-data-schema.sql",
+	"release-identity.json",
 	"server.js",
 	"manage-election-references.js",
 	"congressional-biographies.js",

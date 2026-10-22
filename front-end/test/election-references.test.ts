@@ -49,3 +49,14 @@ test("references render even when official candidate data is unavailable", () =>
 	assert.match(component, /aria-labelledby="candidate-information-heading"/u);
 	assert.doesNotMatch(component, /ballotContentPreviews|guideAvailability|districtMatches/u);
 });
+
+test("partial collections keep healthy profiles visible with local recovery feedback and distinct keys", () => {
+	const component = readFileSync(new URL("../src/components/ElectionReferences.vue", import.meta.url), "utf8");
+	assert.match(component, /v-if="data.incomplete"/u);
+	assert.match(component, /Some candidate information is unavailable/u);
+	assert.match(component, /record.source.collectionId \?\? record.source.url/u);
+	assert.match(component, /emit\("retry"\)/u);
+	assert.match(component, /document.activeElement === retryControl/u);
+	assert.match(component, /getElementById\("candidate-information-heading"\)/u);
+	assert.doesNotMatch(component, /collection settings|data import|local review|check back/u);
+});

@@ -213,6 +213,7 @@ export interface PublicElectionReference {
 	jurisdiction?: string;
 	facts: string[];
 	source: {
+		collectionId?: string;
 		kind: "candidate-statement" | "news-report" | "official-biography";
 		title: string;
 		publisher: string;
@@ -225,6 +226,8 @@ export interface PublicElectionReference {
 
 export interface ElectionReferencesResponse {
 	available: boolean;
+	incomplete?: boolean;
+	collections?: string[];
 	stateCode: string;
 	electionDate?: string;
 	total: number;

@@ -35,6 +35,7 @@ export interface ElectionReferenceSnapshot {
 
 export interface ElectionReferenceRepository {
 	getSnapshot: (stateCode: string) => Promise<ElectionReferenceSnapshot | null>;
+	getSnapshots?: (stateCode: string) => Promise<ElectionReferenceSnapshot[]>;
 }
 
 const maximumBytes = 12 * 1024 * 1024;
@@ -116,27 +117,59 @@ export function createElectionReferenceStorage(directory: string) {
 	};
 }
 
+export function selectElectionReferenceSources(sources: readonly ElectionReferenceSource[], stateCode: string, now = Date.now()) {
+	const active = sources.filter(source => source.stateCode === stateCode.toUpperCase() && now < Date.parse(`${source.electionDate}T00:00:00Z`) + 2 * 24 * 60 * 60 * 1000);
+	const electionDate = active.map(source => source.electionDate).sort()[0];
+	return active.filter(source => source.electionDate === electionDate);
+}
+
 export function createElectionReferenceRepository(options: { dataDirectory?: string | null; now?: () => number; sources?: readonly ElectionReferenceSource[] } = {}): ElectionReferenceRepository {
 	const directory = options.dataDirectory === undefined ? process.env.STATE_BALLOT_DATA_DIR || null : options.dataDirectory;
 	const storage = directory ? createElectionReferenceStorage(directory) : null;
 	const now = options.now ?? Date.now;
 	const sources = options.sources ?? electionReferenceSources;
+	async function getSnapshots(stateCode: string) {
+		if (!storage) return [];
+		const captureTime = now();
+		const active = selectElectionReferenceSources(sources, stateCode, captureTime);
+		const snapshots: ElectionReferenceSnapshot[] = [];
+		let failed = false;
+		for (const source of active) {
+			try {
+				const snapshot = await storage.read(source, captureTime);
+				if (snapshot) snapshots.push(snapshot);
+			}
+			catch {
+				failed = true;
+			}
+		}
+		if (failed && !snapshots.length) throw new Error("Election reference collections are unavailable.");
+		return snapshots;
+	}
 	return {
+		getSnapshots,
 		async getSnapshot(stateCode) {
-			const source = sources.find(item => item.stateCode === stateCode.toUpperCase());
-			if (!source || !storage || now() >= Date.parse(`${source.electionDate}T00:00:00Z`) + 2 * 24 * 60 * 60 * 1000) return null;
-			return storage.read(source, now());
+			return (await getSnapshots(stateCode))[0] ?? null;
 		},
 	};
 }
 
 export function buildElectionReferencePage(source: ElectionReferenceSource, snapshot: ElectionReferenceSnapshot, filters: { search: string; scope: string; offset: number; limit: number }) {
-	parseElectionReferenceSnapshot(source, JSON.stringify(snapshot));
-	const matching = snapshot.records.filter(record => (filters.scope === "all" || record.scope === filters.scope) && (!filters.search || [record.name, record.office, record.jurisdiction, ...record.facts].join(" ").toLowerCase().includes(filters.search)));
-	const offset = filters.offset >= matching.length ? Math.max(0, Math.floor((matching.length - 1) / filters.limit) * filters.limit) : filters.offset;
-	const records: PublicElectionReference[] = matching.slice(offset, offset + filters.limit).map((record) => {
-		const document = source.documents[record.sourceDocumentIndex]!;
-		return { id: record.id, name: record.name, office: record.office, scope: record.scope, ...(record.jurisdiction ? { jurisdiction: record.jurisdiction } : {}), facts: record.facts, source: { ...document, capturedAt: snapshot.documents[record.sourceDocumentIndex]!.capturedAt } };
+	return buildElectionReferencePages([{ source, snapshot }], filters);
+}
+
+export function buildElectionReferencePages(collections: readonly { source: ElectionReferenceSource; snapshot: ElectionReferenceSnapshot }[], filters: { search: string; scope: string; offset: number; limit: number }) {
+	if (new Set(collections.map(({ source }) => source.stateCode)).size > 1 || new Set(collections.map(({ source }) => source.electionDate)).size > 1 || new Set(collections.map(({ source }) => source.id)).size !== collections.length)
+		throw new Error("Reference collections must belong to the same state and election without duplicate collections.");
+	const entries = collections.flatMap(({ source, snapshot }) => {
+		parseElectionReferenceSnapshot(source, JSON.stringify(snapshot));
+		return snapshot.records.map(record => ({ source, snapshot, record }));
 	});
-	return { total: snapshot.records.length, matched: matching.length, offset, limit: filters.limit, records };
+	const matching = entries.filter(({ record }) => (filters.scope === "all" || record.scope === filters.scope) && (!filters.search || [record.name, record.office, record.jurisdiction, ...record.facts].join(" ").toLowerCase().includes(filters.search)));
+	const offset = filters.offset >= matching.length ? Math.max(0, Math.floor((matching.length - 1) / filters.limit) * filters.limit) : filters.offset;
+	const records: PublicElectionReference[] = matching.slice(offset, offset + filters.limit).map(({ source, snapshot, record }) => {
+		const document = source.documents[record.sourceDocumentIndex]!;
+		return { id: record.id, name: record.name, office: record.office, scope: record.scope, ...(record.jurisdiction ? { jurisdiction: record.jurisdiction } : {}), facts: record.facts, source: { ...document, collectionId: source.id, capturedAt: snapshot.documents[record.sourceDocumentIndex]!.capturedAt } };
+	});
+	return { total: entries.length, matched: matching.length, offset, limit: filters.limit, records };
 }

@@ -8,6 +8,23 @@ const { formatDate, formatDateTime } = useFormatters();
 const range = computed(() => props.data?.matched ? `${props.data.offset + 1}–${Math.min(props.data.offset + props.data.records.length, props.data.matched)} of ${props.data.matched}` : "0 references");
 const hasReporting = computed(() => props.data?.records.some(record => record.source.kind === "news-report"));
 const sourceLabels = { "candidate-statement": "Candidate-provided", "news-report": "News report", "official-biography": "Official biography" };
+const retryRequested = ref(false);
+let retryControl: EventTarget | null = null;
+
+function retry(event: MouseEvent) {
+	retryControl = event.currentTarget;
+	retryRequested.value = true;
+	emit("retry");
+}
+
+watch(() => [props.pending, props.data, props.error], async () => {
+	if (!retryRequested.value || props.pending) return;
+	retryRequested.value = false;
+	await nextTick();
+	if (document.activeElement === document.body || document.activeElement === retryControl)
+		(document.getElementById("candidate-information-heading") ?? document.getElementById("record-search"))?.focus();
+	retryControl = null;
+});
 
 async function changePage(offset: number) {
 	await navigateTo({ path: "/records", query: { ...route.query, referenceOffset: offset ? String(offset) : undefined } });
@@ -21,7 +38,7 @@ async function changePage(offset: number) {
 		</h2>
 		<p v-if="error" class="text-sm text-app-muted dark:text-app-muted-dark" role="status">
 			Candidate information is temporarily unavailable.
-			<button type="button" class="text-app-accent underline focus-ring" @click="emit('retry')">
+			<button type="button" class="text-app-accent underline focus-ring" @click="retry">
 				Retry
 			</button>
 		</p>
@@ -29,6 +46,12 @@ async function changePage(offset: number) {
 			Loading information…
 		</p>
 		<template v-else-if="data?.available">
+			<p v-if="data.incomplete" class="text-sm text-app-muted dark:text-app-muted-dark" role="status">
+				Some candidate information is unavailable.
+				<button type="button" class="text-app-accent underline focus-ring" @click="retry">
+					Retry
+				</button>
+			</p>
 			<p v-if="data.electionDate" class="text-sm text-app-muted dark:text-app-muted-dark">
 				Election: <time :datetime="data.electionDate" class="attention-date">{{ formatDate(data.electionDate) }}</time>
 			</p>
@@ -39,7 +62,7 @@ async function changePage(offset: number) {
 				{{ range }}
 			</p>
 			<ul class="border-t border-app-line divide-app-line divide-y dark:border-app-line-dark dark:divide-app-line-dark" aria-label="Candidate information">
-				<li v-for="record in data.records" :key="record.id" class="py-5 min-w-0 break-words space-y-3">
+				<li v-for="record in data.records" :key="`${record.source.collectionId ?? record.source.url}:${record.id}`" class="py-5 min-w-0 break-words space-y-3">
 					<h3 class="text-xl text-app-ink font-semibold dark:text-app-text-dark">
 						{{ record.name }}
 					</h3>

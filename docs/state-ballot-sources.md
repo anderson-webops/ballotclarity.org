@@ -477,6 +477,7 @@ snapshot importer. Import it through its own compiled command:
 node back-end/dist/manage-election-references.js import /absolute/reviewed-data/election-references-louisiana-2026.json
 node back-end/dist/manage-election-references.js import /absolute/reviewed-data/election-references-maine-orono-2026.json
 node back-end/dist/manage-election-references.js import /absolute/reviewed-data/election-references-washington-congressional-2026.json
+node back-end/dist/manage-election-references.js import /absolute/reviewed-data/election-references-washington-ld1-2026.json
 node back-end/dist/manage-election-references.js import /absolute/reviewed-data/election-references-north-carolina-judicial-2026.json
 node back-end/dist/manage-election-references.js import /absolute/reviewed-data/election-references-new-mexico-supreme-2026.json
 node back-end/dist/manage-election-references.js import /absolute/reviewed-data/election-references-alaska-statewide-2026.json
@@ -485,6 +486,8 @@ node back-end/dist/manage-election-references.js import /absolute/reviewed-data/
 node back-end/dist/manage-election-references.js import /absolute/reviewed-data/election-references-arizona-statewide-2026.json
 node back-end/dist/manage-election-references.js import /absolute/reviewed-data/election-references-nevada-executive-2026.json
 node back-end/dist/manage-election-references.js export LA
+node back-end/dist/manage-election-references.js export WA --source wa-congressional-statements-2026
+node back-end/dist/manage-election-references.js export WA --source wa-ld1-statements-2026
 ```
 
 Set the existing `STATE_BALLOT_DATA_DIR` to durable writable storage outside code
@@ -503,6 +506,17 @@ when known, capture time and a safe source link accompany every displayed record
 The UI labels candidate-provided claims, official biographies and reporting, with a local qualification
 limitation for reports. Reference failures do not disable official records.
 
+Multiple reference collections for one state are combined in registry order for
+the earliest unexpired configured election, before global search, scope and
+pagination. States and election dates are never mixed; the two-day UTC expiry
+is unchanged. The additive `collections` response lists configured source IDs,
+not data availability. Each record includes `source.collectionId`; its existing
+opaque ID, attribution and capture time remain intact. Missing/corrupt collections
+are isolated: healthy records remain available with `incomplete: true` and Retry;
+all missing yields unavailable, while failures without healthy data yield 503.
+Restoring/importing a collection requires no restart. Use `--source` when exporting
+a state with multiple configured collections; ambiguous export fails explicitly.
+
 Washington's independent `election-references-washington-congressional-2026.json`
 contains twenty candidate-provided profiles with 61 reviewed background facts,
 covering both listed candidates in each of the ten congressional districts. Its
@@ -510,6 +524,17 @@ ten public race requests are derived from the linked normal-mode VoteWA guide,
 not a voter identity, preview mode or denied export. Original response hashes and
 capture times are retained. No publication date, qualification, personal ballot
 eligibility or publisher verification of the candidates' claims is inferred.
+
+The additive `election-references-washington-ld1-2026.json` supplies four House
+profiles for Legislative District 1, Positions 1 and 2: Davina Duerr, Maggie Wang,
+Shelley Kloba and Cliff Moon. Twelve short candidate-provided background facts
+reconcile with the exact retained official names, offices and public guide IDs.
+The current guide's selected GENERAL 2026 election, four actual candidate links,
+normal-mode application contract, exact-host policy and reuse notice were reviewed
+before the two race requests. Missing fields, publication dates, party preferences,
+qualifications and personal eligibility are not inferred. No Senate or complete
+legislative coverage is claimed. All twenty congressional profiles and the 887
+official records are unchanged. See `audits/2026-10-22-washington-profile-collections.md`.
 The optional pinned public `pageUrl` opens the actual guide rather than its data
 response; both links remain subject to public-HTTPS validation. Raw photographs,
 contacts, family/medical details and campaign prose are excluded. This remains a

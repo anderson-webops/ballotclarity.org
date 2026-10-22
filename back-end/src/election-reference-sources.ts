@@ -137,4 +137,16 @@ export const electionReferenceSources: readonly ElectionReferenceSource[] = [
 			kind: "candidate-statement" as const,
 		})),
 	},
+	{
+		id: "wa-ld1-statements-2026",
+		stateCode: "WA",
+		electionDate: "2026-11-03",
+		documents: [186957, 186958].map((race, index) => ({
+			url: `https://voter.votewa.gov/elections/candidate.ashx?e=899&r=${race}&b=0&la=en&c=`,
+			pageUrl: `https://voter.votewa.gov/genericvoterguide.aspx?e=899&c=#/candidates/${race}`,
+			title: `Legislative District 1, House Position ${index + 1} candidate statements`,
+			publisher: "Washington Secretary of State / VoteWA",
+			kind: "candidate-statement" as const,
+		})),
+	},
 ];

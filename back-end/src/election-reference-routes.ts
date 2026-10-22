@@ -3,7 +3,7 @@ import type { ElectionReferenceRepository } from "./election-references.js";
 import type { PublicRequestThrottle } from "./public-request-throttle.js";
 import type { ElectionReferencesResponse } from "./types/civic.js";
 import { electionReferenceSources } from "./election-reference-sources.js";
-import { buildElectionReferencePage } from "./election-references.js";
+import { buildElectionReferencePages, selectElectionReferenceSources } from "./election-references.js";
 import { createPublicRequestThrottle } from "./public-request-throttle.js";
 import { parseStateRecordFilters } from "./state-records.js";
 import { usStates } from "./us-states.js";
@@ -34,13 +34,22 @@ export function registerElectionReferenceRoutes(app: Express, repository: Electi
 			response.status(400).json({ message: error instanceof Error ? error.message : "The selected information filter is invalid." });
 			return;
 		}
-		const source = electionReferenceSources.find(item => item.stateCode === stateCode);
-		const payload: ElectionReferencesResponse = { available: false, stateCode, electionDate: source?.electionDate, total: 0, matched: 0, offset: filters.offset, limit: filters.limit, records: [] };
+		const sources = electionReferenceSources.filter(item => item.stateCode === stateCode);
+		const selected = selectElectionReferenceSources(sources, stateCode);
+		const payload: ElectionReferencesResponse = { available: false, collections: selected.map(source => source.id), stateCode, electionDate: selected[0]?.electionDate, total: 0, matched: 0, offset: filters.offset, limit: filters.limit, records: [] };
 		try {
-			const snapshot = source && repository ? await repository.getSnapshot(stateCode) : null;
-			if (snapshot && source) {
-				Object.assign(payload, buildElectionReferencePage(source, snapshot, filters));
+			const snapshots = sources.length && repository ? repository.getSnapshots ? await repository.getSnapshots(stateCode) : [await repository.getSnapshot(stateCode)].filter(item => item !== null) : [];
+			if (snapshots.length) {
+				const collections = snapshots.map((snapshot) => {
+					const source = sources.find(item => item.id === snapshot.sourceId);
+					if (!source) throw new Error("The reference collection is not configured for this state.");
+					return { source, snapshot };
+				});
+				Object.assign(payload, buildElectionReferencePages(collections, filters));
 				payload.available = true;
+				payload.electionDate = snapshots[0]!.electionDate;
+				payload.collections = sources.filter(source => source.electionDate === payload.electionDate).map(source => source.id);
+				if (snapshots.length < payload.collections.length) payload.incomplete = true;
 			}
 			response.json(payload);
 		}

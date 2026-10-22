@@ -59,7 +59,7 @@ test("judicial references pin independent public publications without using excl
 	assert.equal(biographySource.stateCode, "NM");
 	assert.equal(biographySource.documents[0]!.url, "https://supremecourt.nmcourts.gov/about-this-court/supreme-court-justices/");
 	assert.equal(biographySource.documents[0]!.kind, "official-biography");
-	assert.equal(new Set(electionReferenceSources.map(collection => collection.stateCode)).size, electionReferenceSources.length);
+	assert.equal(new Set(electionReferenceSources.map(collection => collection.id)).size, electionReferenceSources.length);
 });
 
 test("Alaska and Oregon references pin candidate-authored PDFs without inferring qualification or publication dates", () => {

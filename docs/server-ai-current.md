@@ -1,6 +1,6 @@
 # Current server-AI instructions
 
-Target: **v1.10.4**, November 3, 2026 election. This is the current operating
+Target: **v1.10.5**, November 3, 2026 election. This is the current operating
 handoff, not proof of deployment or data activation. Further collection continues.
 
 ## Release and authority
@@ -49,7 +49,8 @@ publishers remain excluded from AI collection. Brunswick NC's 39 records and
 Santa Fe NM's 46 retain separate IDs, dates and documents, without replacing primary
 feeds. New local/unverified legislative matching remains withheld.
 
-Ten reference collections retain 88 entries and 236 factual items. North Carolina's
+Eleven reference collections across ten states retain 92 entries and 248 factual
+items. North Carolina's
 eight judicial submissions are candidate-provided; New Mexico's two Supreme Court
 retention profiles use official court biographies. Neither source establishes
 qualification or personal eligibility. Candidate statements are not independent
@@ -78,24 +79,32 @@ complete executive slates. Keep source authorship separate for every record;
 official office biographies do not establish ballot qualification or independently
 verify all their claims. Stale office/term claims and uncertain dates are omitted.
 
+Washington combines the retained twenty congressional profiles with four House
+profiles for Legislative District 1, Positions 1 and 2: Davina Duerr, Maggie Wang,
+Shelley Kloba and Cliff Moon. The twelve new facts are candidate-provided claims,
+not independently verified biographies. This is not complete legislative coverage,
+a Senate slate or a new personal ballot assignment. The original 887 official
+records and twenty congressional profiles remain unchanged.
+
 Bulk election data is outside Git and runtime releases. Code deployment alone
 does not populate reviewed records or reference collections.
 
 ## Reviewed-data transfer prerequisite
 
 Use one cumulative source-computer package:
-`back-end/data/state-ballots/server-reviewed-election-data-2026-v1.10.4.tar.gz`.
-It is 716,788 bytes with exactly 44 flat members: 33 reviewed official snapshots
-(17,662 records), ten reference snapshots (88 profiles/236 factual items), and
-`server-reviewed-election-data-2026-v1.10.4-manifest.json`.
+`back-end/data/state-ballots/server-reviewed-election-data-2026-v1.10.5.tar.gz`.
+It is 717,653 bytes with exactly 45 flat members: 33 reviewed official snapshots
+(17,662 records), eleven reference snapshots (92 profiles/248 factual items), and
+`server-reviewed-election-data-2026-v1.10.5-manifest.json`.
 
 Archive SHA-256:
-`fdee8ee4026b7bf2edd3eaaf388dfb8e1e6ef07f6cdf548140815275db29fc98`.
+`7311248776bb7c80d136c977d911a3e377c9ed49a7dc497d6914a74394603e7e`.
 Manifest SHA-256:
-`e000ab93cc6a7234fafc38e1b29c41a0ac39365cba7b9047e35c0e8744f7d132`.
+`5b84673ec636d9e787567353cb955bc92814554a9e6be36f912d32707924172d`.
 
-This replaces the four-package transfer procedure, not the historical packages,
-tags or data. Preserve those artifacts for recovery. Existing snapshots retain
+This supersedes the v1.10.4 cumulative transfer procedure, not the historical
+packages, tags or data. Preserve the five preceding packages for recovery.
+Existing snapshots retain
 their original bytes, configuration fingerprints, capture dates and authorship;
 nothing is relabeled as freshly collected. The seventeen permitted automatic
 sources are refreshed separately and are not bulk files inside this package.
@@ -113,12 +122,16 @@ Use the manifest's `officialSnapshots` list only with the official importer and
 `referenceSnapshots` only with the reference importer. No research CSV/JSONL,
 publisher PDF, photograph, contact, campaign essay or credential is included.
 
-Import all 43 listed files separately, retaining exit status, original timestamp
+Import all 44 listed snapshots separately, retaining exit status, original timestamp
 and count; re-importing unchanged snapshots uses the same atomic validation.
 Existing data survives absent later imports. Do not delete unrelated durable
-state or restore a bundled-data fallback. During rollback to v1.10.3, retain but
-do not relabel the two new AZ/NV collection files; restore that runtime's compatible
-reviewed configuration. The eight preceding reference configurations are unchanged.
+state or restore a bundled-data fallback. During rollback to v1.10.4, retain the
+new `references-wa-ld1-statements-2026.json` file without relabeling it; that runtime
+ignores the new collection and retains the twenty congressional profiles. Use its
+retained manifest and compiled commands, without the new export `--source` option
+or imports for unknown IDs. The ten preceding reference configurations and their
+fingerprints are unchanged. Never rename a source, rewrite its cache or delete
+older files to make rollback work.
 
 ## Publisher policy and configuration
 
@@ -141,6 +154,16 @@ returned 400 for its policy request, so no document collection was accepted ther
 The separately permitted independent biographies/statements are not substitutes
 for those documents. Nevada's captured governor biography is linked from the
 actual public www homepage; search-only int/prod hosts were never requested.
+
+The current VoteWA candidate list selects GENERAL 2026, election 899. Its public
+guide and linked application establish normal-mode requests with `b=0`, `la=en`
+and empty county, without preview or voter identity. The LD1 statements were
+retrieved only after reviewing the exact-host policy and Secretary of State reuse
+notice. Candidate essays and photos are not treated as blanket public-domain
+material. Short attributed factual summaries are retained; raw prose, images,
+contact details and missing-field inferences are not exported. King County
+publications remain excluded; a candidate's mention of county volunteer work is
+not a new county source or reuse permission.
 
 Keep `nc-sbe-2026` excluded: its configured distribution-host policy request
 returned 403. Keep `nm-sos-2026` excluded: the state candidate host explicitly
@@ -170,6 +193,8 @@ Use the verified manifest's exact file lists, not an unreviewed directory glob.
 ```bash
 node back-end/dist/manage-state-ballot-data.js import /approved/staging/reviewed-state.json
 node back-end/dist/manage-election-references.js import /approved/staging/reviewed-references.json
+node back-end/dist/manage-election-references.js export WA --source wa-congressional-statements-2026
+node back-end/dist/manage-election-references.js export WA --source wa-ld1-statements-2026
 node back-end/dist/manage-state-ballot-data.js refresh WA MT KS SC UT MS SD HI CO KY ND VA MI WY MD FL DE
 ```
 
@@ -179,6 +204,27 @@ and persists across restart without a bundled fallback. Automatic downloads stor
 validated facts, not raw contact-bearing responses. Freshness defaults to four
 hours; failed fetches have bounded retry caching. Invalid/expired data is not
 silently represented as current.
+
+Reference imports report `sourceId` alongside state, count and capture time.
+Export each collection explicitly when a state has multiple configured sources;
+an unqualified `export WA` fails rather than silently exporting only one. Single-
+collection states retain their existing export form. Imports remain separate,
+atomic, fingerprint-validated snapshots in the existing external data directory.
+
+The reference API combines collections for the earliest unexpired configured
+election only, in registry order, before applying global search, scope and
+pagination. It never merges states or elections. The two-day UTC post-election
+expiry is unchanged. The additive `collections` field lists configured IDs for
+that election, not proof that their data has been imported. Each returned record
+has `source.collectionId`; opaque record IDs and per-document attribution survive.
+Clients must use collection plus record identity, not record ID alone.
+
+A missing or corrupt collection does not hide healthy collections. Partial
+results set `incomplete: true`; the directory retains them with a local Retry
+control. All-missing collections remain unavailable, and failures with no healthy
+collection return 503. Importing a restored file is visible on the next request,
+without restart. Retry restores meaningful focus only if the reader has not moved
+focus elsewhere. Official records and personal lookup remain independent.
 
 Use only the host's already approved scheduling system for the explicit permitted
 refresh list while current policies still allow it. This release installs no
@@ -196,7 +242,7 @@ automatic OCR approval, repeated invalid imports or news/profile extraction.
    filter isolation. Explicit missing sources stay unavailable. Default fallback
    must retain the actual returned source's attribution, not its primary's label.
 3. Check `/api/election-references/LA`, `/ME`, `/WA`, `/NC`, `/NM`, `/AK`, `/OR`, `/UT`, `/AZ`, `/NV`
-   and the directory sections. Expected totals are 2, 3, 20, 8, 2, 15, 14, 16, 5 and 3,
+   and the directory sections. Expected totals are 2, 3, 24, 8, 2, 15, 14, 16, 5 and 3,
    respectively. OR's local filter has five references, without adding official
    records or making them personal ballot choices. Retain distinct
    candidate-provided, news-report and official-biography labels, original capture
@@ -209,6 +255,13 @@ automatic OCR approval, repeated invalid imports or news/profile extraction.
    Joe/Joseph Lombardo remain different people in different states. Angela Harrolle
    Mohan is the lieutenant-governor ticket member, not an extra governor choice.
    Her honorary commander role must not be presented as active military service.
+   WA must list `wa-congressional-statements-2026` and `wa-ld1-statements-2026`,
+   return twenty congressional and four `state-house` profiles, and leave its
+   887 official records unchanged. Check source attribution and collection IDs,
+   filtered global pagination, and partial/recovered results after each collection
+   is independently withheld or restored in an isolated acceptance environment.
+   Do not corrupt production files to run failure tests. Configuration metadata
+   alone is not evidence of any imported profile.
 4. Using synthetic state-only locations, check twelve NC/eighteen NM preview
    entries, no new unverified legislative/local assignment, and limited-coverage
    feedback. Never use a real person's address for acceptance.

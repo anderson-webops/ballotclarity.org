@@ -17,12 +17,14 @@ async function main() {
 			if (!source) throw new Error("Each reference import must match a configured reviewed collection.");
 			const snapshot = parseElectionReferenceSnapshot(source, body);
 			await storage.write(source, snapshot);
-			console.log(JSON.stringify({ state: source.stateCode, action: "imported", references: snapshot.recordCount, retrievedAt: snapshot.retrievedAt }));
+			console.log(JSON.stringify({ state: source.stateCode, sourceId: source.id, action: "imported", references: snapshot.recordCount, retrievedAt: snapshot.retrievedAt }));
 		}
 		return;
 	}
-	if (command !== "export" || requested.length !== 1) throw new Error("Use import SNAPSHOT.json [...] or export STATE. Automatic refresh is not supported.");
-	const source = electionReferenceSources.find(item => item.stateCode === requested[0]!.toUpperCase());
+	if (command !== "export" || ![1, 3].includes(requested.length) || (requested.length === 3 && requested[1] !== "--source")) throw new Error("Use import SNAPSHOT.json [...] or export STATE [--source SOURCE_ID]. Automatic refresh is not supported.");
+	const matching = electionReferenceSources.filter(item => item.stateCode === requested[0]!.toUpperCase() && (requested.length === 1 || item.id === requested[2]));
+	if (matching.length > 1) throw new Error("More than one reference collection is configured; provide --source SOURCE_ID.");
+	const source = matching[0];
 	if (!source) throw new Error("The requested reference collection is not configured.");
 	const snapshot = await storage.read(source);
 	if (!snapshot) throw new Error("The reviewed reference collection has not been imported.");

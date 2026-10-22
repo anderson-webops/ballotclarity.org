@@ -1,6 +1,6 @@
 # Current server-AI instructions
 
-Target: **v1.10.2**, November 3, 2026 election. This is the current operating
+Target: **v1.10.3**, November 3, 2026 election. This is the current operating
 handoff, not proof of deployment or data activation. Further collection continues.
 
 ## Release and authority
@@ -49,7 +49,7 @@ publishers remain excluded from AI collection. Brunswick NC's 39 records and
 Santa Fe NM's 46 retain separate IDs, dates and documents, without replacing primary
 feeds. New local/unverified legislative matching remains withheld.
 
-Seven reference collections retain 64 entries and 183 factual items. North Carolina's
+Eight reference collections retain 80 entries and 213 factual items. North Carolina's
 eight judicial submissions are candidate-provided; New Mexico's two Supreme Court
 retention profiles use official court biographies. Neither source establishes
 qualification or personal eligibility. Candidate statements are not independent
@@ -63,6 +63,12 @@ eastern-county edition adds fourteen submissions, including five county-office
 profiles. Three of those local submissions have no independently matched retained
 filing and remain references only. Neither collection changes official totals,
 personal previews or precinct eligibility. Missing statements are not withdrawals.
+
+Utah adds all sixteen congressional submissions and thirty short background/position
+items from its public general-election pamphlet. Four other congressional candidates
+remain in the official list without profile submissions. Two explicit middle-initial
+name variants were reviewed against the same printed House districts. These are
+candidate-provided claims, not state-verified biographies or personal ballot matches.
 
 Bulk election data is outside Git and runtime releases. Code deployment alone
 does not populate reviewed records or reference collections.
@@ -130,6 +136,22 @@ independent qualifications. Earlier collection fingerprints remain unchanged.
 Rollback to v1.10.1 ignores the two new collection files; retain rather than
 relabel them and restore the compatible reviewed configuration.
 
+The additional `server-reviewed-utah-addendum-2026-v1.10.3.tar.gz` contains exactly
+`election-references-utah-congressional-2026.json` and
+`server-reviewed-utah-addendum-2026-v1.10.3-manifest.json`: sixteen profiles and
+thirty factual/position items. It requires v1.10.3 and a separate approved transfer
+and reference import. Preserve all three preceding data packages unchanged.
+Archive SHA-256:
+`f4e70434e37ae9feac0c6b4f174103992e4ab6e91313cf00db0bcdff9f61e184`.
+Manifest SHA-256:
+`604c369398fe2ea0e972405c615a3fec316a8648be701a5fccbee8587ef576ef`.
+
+Verify the exact two members, data/configuration fingerprints and capture time
+before import. The companion CSV/JSONL and review manifest are not importer inputs.
+No publisher PDF, photograph or contact data is in this archive or runtime release.
+Rollback to v1.10.2 ignores the new collection while preserving earlier data; retain
+its file and restore the compatible reviewed configuration rather than relabel it.
+
 ## Publisher policy and configuration
 
 Review current publisher policies, permitted paths, election selection and reuse
@@ -137,6 +159,13 @@ conditions before retrieval. A working adapter is not permission. Honor delays,
 redirects, TLS, exclusions and bounded failure handling. Do not change identity,
 use mirrors/alternate hosts to evade a denial, query private voter tools or infer
 nominees from primary totals/FEC filings.
+
+The California voter-guide host's policy request returned 403 on October 22.
+Do not collect that guide or use its CDN, a mirror or another identity to bypass
+the denial. This does not change the separately reviewed official candidate list.
+Utah's public pamphlet host permits collection with a ten-second delay; recheck
+its current terms and candidate authorship before another capture. The profile
+path needs no address-based or private voter tool and is not an automatic adapter.
 
 Keep `nc-sbe-2026` excluded: its configured distribution-host policy request
 returned 403. Keep `nm-sos-2026` excluded: the state candidate host explicitly
@@ -191,13 +220,16 @@ automatic OCR approval, repeated invalid imports or news/profile extraction.
    source. Confirm 39/46 records, local scope, retention choices and source/state/
    filter isolation. Explicit missing sources stay unavailable. Default fallback
    must retain the actual returned source's attribution, not its primary's label.
-3. Check `/api/election-references/LA`, `/ME`, `/WA`, `/NC`, `/NM`, `/AK`, `/OR`
-   and the directory sections. Expected totals are 2, 3, 20, 8, 2, 15 and 14,
+3. Check `/api/election-references/LA`, `/ME`, `/WA`, `/NC`, `/NM`, `/AK`, `/OR`, `/UT`
+   and the directory sections. Expected totals are 2, 3, 20, 8, 2, 15, 14 and 16,
    respectively. OR's local filter has five references, without adding official
    records or making them personal ballot choices. Retain distinct
    candidate-provided, news-report and official-biography labels, original capture
    dates and source links. Missing/corrupt profiles must not disable official data.
    Never turn references into qualification or personal lookup content.
+   UT has sixteen congressional references and no local/statewide profile records;
+   its retained official dataset stays at 255 records, including all twenty House
+   candidates. Synthetic state-only UT previews remain seven retention entries.
 4. Using synthetic state-only locations, check twelve NC/eighteen NM preview
    entries, no new unverified legislative/local assignment, and limited-coverage
    feedback. Never use a real person's address for acceptance.

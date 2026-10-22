@@ -14,6 +14,18 @@ export interface ElectionReferenceSource {
 
 export const electionReferenceSources: readonly ElectionReferenceSource[] = [
 	{
+		id: "ut-congressional-statements-2026",
+		stateCode: "UT",
+		electionDate: "2026-11-03",
+		documents: [{
+			url: "https://vote.utah.gov/wp-content/uploads/2026/09/2026-Voter-Information-Pamphlet.pdf",
+			pageUrl: "https://vote.utah.gov/wp-content/uploads/2026/09/2026-Voter-Information-Pamphlet.pdf#page=6",
+			title: "2026 congressional candidate submissions",
+			publisher: "Utah Office of the Lieutenant Governor",
+			kind: "candidate-statement",
+		}],
+	},
+	{
 		id: "ak-statewide-statements-2026",
 		stateCode: "AK",
 		electionDate: "2026-11-03",

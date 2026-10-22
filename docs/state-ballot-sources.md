@@ -481,6 +481,7 @@ node back-end/dist/manage-election-references.js import /absolute/reviewed-data/
 node back-end/dist/manage-election-references.js import /absolute/reviewed-data/election-references-new-mexico-supreme-2026.json
 node back-end/dist/manage-election-references.js import /absolute/reviewed-data/election-references-alaska-statewide-2026.json
 node back-end/dist/manage-election-references.js import /absolute/reviewed-data/election-references-oregon-eastern-2026.json
+node back-end/dist/manage-election-references.js import /absolute/reviewed-data/election-references-utah-congressional-2026.json
 node back-end/dist/manage-election-references.js export LA
 ```
 
@@ -568,6 +569,32 @@ companions remain in the ignored data directory. The v1.10.2 three-member operat
 addendum supplements the unchanged v1.10.0 and v1.10.1 packages. It is not a Git
 or runtime asset, an automatic profile refresh or an approved production transfer.
 Use current server-AI instructions for exact package hashes and acceptance.
+
+Utah's public general-election pamphlet supplies all sixteen congressional
+submissions and thirty short background/position summaries. Its twenty printed
+House candidates reconcile with all twenty in the retained official 255-record
+dataset. Jesse West, Babak "Bobby" Darvish, Daniel Cottam and Cassie Easley have no
+submitted profile, not an inferred withdrawal. Robert Moesinger/Robert M. Moesinger
+and Blake Moore/Blake D. Moore are explicit reviewed name variants in the same
+printed districts, not fuzzy personal-ballot matches. The link opens PDF page six.
+All sixteen statement pages, four missing-statement pages, cover and authorship
+notice were visually reviewed. Princeton study is not a degree; unspecified degree
+levels and qualified policy positions are not expanded into stronger claims.
+
+The pamphlet explicitly says its federal statements were not edited by the
+Lieutenant Governor's Office. Its original 05:35:46Z October 22 capture and byte
+hash remain provenance, not a publication date or independent verification.
+The reviewed source permits collection with a ten-second delay. Utah's general
+reuse notice is not a blanket license to third-party submissions; the new short
+factual summaries neither modify nor redistribute the state PDF or campaign essays.
+The two-member v1.10.3 addendum contains only the supported reference snapshot and
+its manifest, supplementing all three earlier packages. It stays outside Git and
+runtime assets and needs separately approved operator transfer/import.
+
+California's voter-guide policy request returned 403. No guide documents were
+collected, and no CDN, mirror or identity workaround was attempted. Its separately
+reviewed official candidate dataset remains unchanged. See
+`docs/audits/2026-10-22-utah-profiles.md` and current server-AI instructions.
 
 Do not relabel references `listed` or `qualified`, merge them into personal ballot
 previews, infer an outcome, or claim a complete Louisiana ballot. Collections are

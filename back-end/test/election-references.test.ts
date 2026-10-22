@@ -86,6 +86,23 @@ test("Alaska and Oregon references pin candidate-authored PDFs without inferring
 	}
 });
 
+test("Utah references pin the public general-election pamphlet without address-based voter tools", () => {
+	const collection = electionReferenceSources.find(item => item.id === "ut-congressional-statements-2026")!;
+	assert.equal(collection.stateCode, "UT");
+	assert.equal(collection.electionDate, "2026-11-03");
+	assert.equal(collection.documents.length, 1);
+	assert.equal(collection.documents[0]!.url, "https://vote.utah.gov/wp-content/uploads/2026/09/2026-Voter-Information-Pamphlet.pdf");
+	assert.equal(collection.documents[0]!.pageUrl, `${collection.documents[0]!.url}#page=6`);
+	assert.equal(collection.documents[0]!.kind, "candidate-statement");
+	assert.equal(collection.documents[0]!.publishedDate, undefined);
+	const data = fixture(collection);
+	const snapshot = parseElectionReferenceSnapshot(collection, JSON.stringify(data));
+	const page = buildElectionReferencePage(collection, snapshot, { search: "", scope: "all", offset: 0, limit: 50 });
+	assert.equal(page.total, 1);
+	assert.equal(page.records[0]!.source.publisher, "Utah Office of the Lieutenant Governor");
+	assert.equal("status" in page.records[0]!, false);
+});
+
 test("references reject different elections, states, collections and unreviewed fields", () => {
 	const data = fixture();
 	for (const invalid of [{ ...data, electionDate: "2028-11-07" }, { ...data, stateCode: "LA" }, { ...data, sourceId: newsSource.id }, { ...data, type: "official-candidates" }, { ...data, address: "Excluded" }]) assert.throws(() => parseElectionReferenceSnapshot(source, JSON.stringify(invalid)), /configured collection/u);

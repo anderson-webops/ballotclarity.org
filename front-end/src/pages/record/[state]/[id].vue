@@ -1,0 +1,141 @@
+<script setup lang="ts">
+import type { ElectionReferencesResponse, PublicElectionReference, PublicStateCandidateRecord, StateRecordsResponse } from "~/types/civic";
+import { findRecordDetail } from "~/utils/record-detail";
+import { stateRecordArea, stateRecordStatusLabels } from "~/utils/state-records";
+
+const route = useRoute();
+const api = useApiClient();
+const { formatDate, formatDateTime } = useFormatters();
+const stateCode = useRouteStringParam("state");
+const recordId = useRouteStringParam("id");
+const isReference = computed(() => route.query.kind === "reference");
+const sourceId = computed(() => typeof route.query.source === "string" ? route.query.source : undefined);
+const search = computed(() => typeof route.query.name === "string" ? route.query.name.slice(0, 120) : "");
+const sourceLabels = { "candidate-statement": "Candidate-provided", "news-report": "News report", "official-biography": "Official biography" };
+const { data, error, pending, refresh } = await useAsyncData(
+	() => `record-detail:${stateCode.value}:${recordId.value}:${isReference.value}:${sourceId.value}:${search.value}`,
+	async () => {
+		if (!/^[A-Z]{2}$/u.test(stateCode.value) || !/^[a-z\d-]{1,160}$/u.test(recordId.value) || !search.value.trim())
+			return null;
+		if (isReference.value) {
+			const result = await findRecordDetail<PublicElectionReference, ElectionReferencesResponse>(
+				offset => api(`/election-references/${stateCode.value}`, { query: { q: search.value, scope: "all", offset, limit: 100 } }),
+				record => record.id === recordId.value && (!sourceId.value || record.source.collectionId === sourceId.value)
+			);
+			return result ? { reference: result.record, official: null, source: null, electionDate: result.page.electionDate } : null;
+		}
+		const result = await findRecordDetail<PublicStateCandidateRecord, StateRecordsResponse>(
+			offset => api(`/state-records/${stateCode.value}`, { query: { source: sourceId.value, q: search.value, scope: "all", status: "all", offset, limit: 100 } }),
+			record => record.id === recordId.value
+		);
+		return result ? { reference: null, official: result.record, source: result.page.source, electionDate: result.page.source.electionDate } : null;
+	},
+	{ default: () => null }
+);
+const name = computed(() => data.value?.reference?.name ?? data.value?.official?.name);
+const backTo = computed(() => ({ path: "/records", query: { state: stateCode.value, ...(isReference.value ? {} : { source: sourceId.value }) } }));
+
+usePageSeo({ title: name.value ?? "Candidate record", description: "Candidate source record and supporting information.", path: route.path, robots: "noindex,follow" });
+</script>
+
+<template>
+	<article class="app-shell section-gap max-w-3xl space-y-7">
+		<NuxtLink :to="backTo" class="text-app-accent underline underline-offset-3 focus-ring">
+			Candidate records
+		</NuxtLink>
+		<p v-if="pending" role="status">
+			Loading record…
+		</p>
+		<div v-else-if="error || !data" class="space-y-4">
+			<h1 class="text-3xl font-serif">
+				Candidate record unavailable
+			</h1>
+			<button v-if="error" type="button" class="btn-secondary" @click="refresh()">
+				Retry
+			</button>
+		</div>
+		<template v-else>
+			<header>
+				<h1 class="text-4xl text-app-ink font-serif dark:text-app-text-dark">
+					{{ name }}
+				</h1>
+				<p class="text-lg text-app-muted mt-3 dark:text-app-muted-dark">
+					{{ data.reference?.office ?? data.official?.office }}<template v-if="data.reference?.jurisdiction || data.official && stateRecordArea(data.official)">
+						· {{ data.reference?.jurisdiction ?? (data.official ? stateRecordArea(data.official) : '') }}
+					</template>
+				</p>
+			</header>
+			<p v-if="data.electionDate" class="text-sm text-app-muted dark:text-app-muted-dark">
+				Election: {{ formatDate(data.electionDate) }}
+			</p>
+			<template v-if="data.reference">
+				<p class="text-sm text-app-muted dark:text-app-muted-dark">
+					{{ sourceLabels[data.reference.source.kind] }} · {{ data.reference.source.publisher }}
+				</p>
+				<p v-if="data.reference.source.kind === 'news-report'" class="text-sm text-app-muted dark:text-app-muted-dark">
+					Reporting does not establish ballot qualification.
+				</p>
+				<ul v-if="data.reference.facts.length" class="readable-list pl-5 space-y-4">
+					<li v-for="fact in data.reference.facts" :key="fact">
+						{{ fact }}
+					</li>
+				</ul>
+				<section class="pt-5 border-t border-app-line space-y-3 dark:border-app-line-dark" aria-label="Source">
+					<SafeExternalLink :href="data.reference.source.pageUrl ?? data.reference.source.url" class="text-app-accent underline underline-offset-3 focus-ring">
+						{{ data.reference.source.title }}
+					</SafeExternalLink>
+					<p v-if="data.reference.source.publishedDate" class="text-sm text-app-muted dark:text-app-muted-dark">
+						Published {{ formatDate(data.reference.source.publishedDate) }}
+					</p>
+					<p class="text-sm text-app-muted dark:text-app-muted-dark">
+						Retrieved {{ formatDateTime(data.reference.source.capturedAt) }}
+					</p>
+				</section>
+			</template>
+			<template v-else-if="data.official && data.source">
+				<dl class="space-y-4">
+					<div>
+						<dt class="font-semibold">
+							Status
+						</dt><dd>{{ stateRecordStatusLabels[data.official.status] }}</dd>
+					</div>
+					<div v-if="data.official.party">
+						<dt class="font-semibold">
+							Party
+						</dt><dd>{{ data.official.party }}</dd>
+					</div>
+					<div v-if="data.official.sourceStatus && data.official.sourceStatus.toLowerCase() !== data.official.status">
+						<dt class="font-semibold">
+							Source status
+						</dt><dd>{{ data.official.sourceStatus }}</dd>
+					</div>
+					<div v-if="data.official.ballotDesignation">
+						<dt class="font-semibold">
+							Ballot designation
+						</dt><dd>{{ data.official.ballotDesignation }}</dd>
+					</div>
+				</dl>
+				<SafeExternalLink v-if="data.official.candidateUrl" :href="data.official.candidateUrl" class="text-app-accent underline underline-offset-3 focus-ring">
+					Candidate website
+				</SafeExternalLink>
+				<section class="pt-5 border-t border-app-line space-y-3 dark:border-app-line-dark" aria-label="Source">
+					<SafeExternalLink v-if="data.source.url" :href="data.source.url" class="text-app-accent underline underline-offset-3 focus-ring">
+						{{ data.source.label ?? 'Official source' }}
+					</SafeExternalLink>
+					<SafeExternalLink v-for="document in data.source.documentLinks" :key="document.url" :href="document.url" class="text-app-accent underline underline-offset-3 block focus-ring">
+						{{ document.label }}
+					</SafeExternalLink>
+					<p v-if="data.source.retrievedAt" class="text-sm text-app-muted dark:text-app-muted-dark">
+						Retrieved {{ formatDateTime(data.source.retrievedAt) }}
+					</p>
+					<p v-if="data.source.scopeNotice" class="text-sm text-app-muted dark:text-app-muted-dark">
+						{{ data.source.scopeNotice }}
+					</p>
+					<p class="text-sm text-app-muted dark:text-app-muted-dark">
+						These records are not a personalized ballot. Later changes may be missing.
+					</p>
+				</section>
+			</template>
+		</template>
+	</article>
+</template>

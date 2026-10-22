@@ -10,11 +10,10 @@ const { formatDate, formatDateTime } = useFormatters();
 </script>
 
 <template>
-	<details id="guide-logistics" class="surface-panel scroll-mt-28" :open="!props.hasContestContent">
-		<summary class="ballot-logistics__summary focus-ring">
+	<section id="guide-logistics" class="surface-panel scroll-mt-28">
+		<h2 class="ballot-logistics__summary">
 			Key dates and official links
-			<span class="ballot-logistics__hint">{{ props.election.keyDates.length }} dates · {{ props.election.officialResources.length }} official links</span>
-		</summary>
+		</h2>
 
 		<ol class="ballot-logistics__dates">
 			<li v-for="item in props.election.keyDates" :key="item.label" class="ballot-logistics__date">
@@ -22,7 +21,7 @@ const { formatDate, formatDateTime } = useFormatters();
 					{{ item.label }}
 				</p>
 				<p class="ballot-logistics__date-value">
-					<span class="attention-date">{{ item.date.includes("T") ? formatDateTime(item.date) : formatDate(item.date) }}</span>
+					<span>{{ item.date.includes("T") ? formatDateTime(item.date) : formatDate(item.date) }}</span>
 				</p>
 				<p v-if="item.note" class="ballot-logistics__date-note">
 					{{ item.note }}
@@ -48,5 +47,5 @@ const { formatDate, formatDateTime } = useFormatters();
 				</ul>
 			</div>
 		</div>
-	</details>
+	</section>
 </template>

@@ -2,12 +2,8 @@
 import type { DistrictsResponse, RepresentativesResponse } from "~/types/civic";
 import { storeToRefs } from "pinia";
 import { buildActiveLookupSummary } from "~/utils/active-lookup";
-import { buildDistrictRepresentativeAvailabilityNote } from "~/utils/district-availability";
-
-import { isExternalHref } from "~/utils/link";
 import { buildNationwideDirectoryResponses, mergeNationwideDirectoryResponses } from "~/utils/nationwide-directory";
 import { buildLookupContextFromNationwideResult, buildNationwideLookupRouteQuery, buildNationwideRouteTarget } from "~/utils/nationwide-route-context";
-import { resolveRepresentativePresentation } from "~/utils/representative-presentation";
 
 const route = useRoute();
 const civicStore = useCivicStore();
@@ -115,23 +111,6 @@ function getDistrictRepresentatives(districtSlug: string) {
 	return representativesByDistrict.value.get(districtSlug) ?? [];
 }
 
-function getDistrictRepresentativeAvailabilityNote(district: typeof districts.value[number]) {
-	return buildDistrictRepresentativeAvailabilityNote(district, getDistrictRepresentatives(district.slug).length || district.representativeCount);
-}
-
-function getRepresentativePresentation(representative: RepresentativesResponse["representatives"][number]) {
-	return resolveRepresentativePresentation(representative, activeNationwideLookupResult.value?.location?.state ?? null);
-}
-
-function getPrimaryDistrictRepresentative(districtSlug: string) {
-	return getDistrictRepresentatives(districtSlug)[0] ?? null;
-}
-
-function getPrimaryDistrictRepresentativePresentation(districtSlug: string) {
-	const representative = getPrimaryDistrictRepresentative(districtSlug);
-	return representative ? getRepresentativePresentation(representative) : null;
-}
-
 usePageSeo({
 	description: "Browse district-by-district Ballot Clarity pages for office context, current representatives, and the upcoming contest field.",
 	path: "/districts",
@@ -194,61 +173,16 @@ function buildLookupAwareTarget(path: string) {
 			</p>
 
 			<section class="gap-x-10 grid lg:grid-cols-2 xl:grid-cols-3">
-				<article
-					v-for="district in districts"
-					:key="district.slug"
-					class="py-6 border-t border-app-line flex flex-col dark:border-app-line-dark"
-				>
-					<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
-						{{ district.jurisdiction }}
-					</p>
-					<h2 class="text-2xl text-app-ink font-serif mt-1 dark:text-app-text-dark">
-						<NuxtLink :to="buildLookupAwareTarget(district.href)" class="hover:text-app-accent focus-ring">
-							{{ district.title }}
-						</NuxtLink>
+				<NuxtLink v-for="district in districts" :key="district.slug" :to="buildLookupAwareTarget(district.href)" class="py-6 border-t border-app-line block dark:border-app-line-dark focus-ring">
+					<h2 class="text-2xl text-app-ink font-serif dark:text-app-text-dark">
+						{{ district.title }}
 					</h2>
-					<p class="text-sm text-app-muted leading-6 mt-2 dark:text-app-muted-dark">
-						{{ district.summary }}
+					<p class="text-sm text-app-muted mt-2 dark:text-app-muted-dark">
+						{{ district.jurisdiction }}<template v-if="getDistrictRepresentatives(district.slug).length">
+							· {{ getDistrictRepresentatives(district.slug).length }} representative{{ getDistrictRepresentatives(district.slug).length === 1 ? '' : 's' }}
+						</template>
 					</p>
-					<div v-if="getDistrictRepresentatives(district.slug).length" class="mt-4">
-						<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
-							{{ getDistrictRepresentatives(district.slug).length === 1 ? 'Current representative' : 'Current representatives' }}
-						</p>
-						<p class="text-lg text-app-ink font-semibold mt-1 dark:text-app-text-dark">
-							<SafeExternalLink
-								v-if="isExternalHref(getDistrictRepresentatives(district.slug)[0]?.href ?? '')"
-								:href="getDistrictRepresentatives(district.slug)[0]?.href"
-								class="hover:text-app-accent focus-ring"
-							>
-								{{ getPrimaryDistrictRepresentative(district.slug)?.name }}
-							</SafeExternalLink>
-							<NuxtLink
-								v-else
-								:to="buildLookupAwareTarget(getDistrictRepresentatives(district.slug)[0]?.href ?? '/representatives')"
-								class="hover:text-app-accent focus-ring"
-							>
-								{{ getPrimaryDistrictRepresentative(district.slug)?.name }}
-							</NuxtLink>
-						</p>
-						<p class="text-sm text-app-muted dark:text-app-muted-dark">
-							{{ getPrimaryDistrictRepresentativePresentation(district.slug)?.officeDisplayLabel }}<span v-if="getPrimaryDistrictRepresentative(district.slug)?.party"> · {{ getPrimaryDistrictRepresentative(district.slug)?.party }}</span>
-						</p>
-						<p v-if="getDistrictRepresentatives(district.slug).length > 1" class="text-sm text-app-muted mt-1 dark:text-app-muted-dark">
-							+{{ getDistrictRepresentatives(district.slug).length - 1 }} more
-						</p>
-					</div>
-					<p v-else-if="directoryUsesNationwide" class="text-sm text-app-muted leading-6 mt-4 dark:text-app-muted-dark">
-						{{ getDistrictRepresentativeAvailabilityNote(district) }}
-					</p>
-					<SafeExternalLink
-						v-if="getDistrictRepresentatives(district.slug).length && getDistrictRepresentatives(district.slug)[0]?.openstatesUrl"
-						:href="getDistrictRepresentatives(district.slug)[0]?.openstatesUrl"
-						class="text-sm btn-secondary self-start"
-					>
-						Provider record
-						<span class="i-carbon-launch" aria-hidden="true" />
-					</SafeExternalLink>
-				</article>
+				</NuxtLink>
 			</section>
 		</div>
 	</section>

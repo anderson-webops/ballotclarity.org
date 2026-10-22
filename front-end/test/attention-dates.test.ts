@@ -8,10 +8,10 @@ function luminance(hex: string) {
 	return channels[0]! * 0.2126 + channels[1]! * 0.7152 + channels[2]! * 0.0722;
 }
 
-test("attention dates use AA-readable red in every palette and mode", () => {
+test("nearest relative labels use AA-readable red in every palette and mode", () => {
 	const css = readFileSync(new URL("../src/assets/styles/main.css", import.meta.url), "utf8");
-	assert.match(css, /\.attention-date\s*\{\s*color: #b91c1c;/u);
-	assert.match(css, /html\.dark \.attention-date\s*\{\s*color: #fca5a5;/u);
+	assert.match(css, /\.election-timeline__status\.attention-relative\s*\{\s*color: #b91c1c;/u);
+	assert.match(css, /html\.dark \.attention-relative\s*\{\s*color: #fca5a5;/u);
 	for (const scheme of themeSchemeDefinitions) {
 		for (const mode of ["light", "dark"] as const) {
 			const foreground = luminance(mode === "light" ? "#b91c1c" : "#fca5a5");
@@ -24,10 +24,12 @@ test("attention dates use AA-readable red in every palette and mode", () => {
 	}
 });
 
-test("deadline styling is scoped to consequential dates, not source freshness", () => {
+test("only the nearest countdown is emphasized, never calendar dates or freshness", () => {
 	const preview = readFileSync(new URL("../src/components/BallotContentPreviews.vue", import.meta.url), "utf8");
-	assert.match(preview, /attention-date[^>]*>\{\{ formatDate\(preview.electionDate\)/u);
-	assert.doesNotMatch(preview, /attention-date[^>]*>\{\{ formatDateTime\(preview.generatedAt\)/u);
+	assert.doesNotMatch(preview, /attention-date|attention-relative/u);
 	const timeline = readFileSync(new URL("../src/pages/elections/[slug].vue", import.meta.url), "utf8");
-	assert.match(timeline, /'attention-date': item.status !== 'passed'/u);
+	assert.match(readFileSync(new URL("../src/components/ElectionKeyDates.vue", import.meta.url), "utf8"), /'attention-relative': item.isNext/u);
+	assert.match(timeline, /entry.status !== "passed"/u);
+	assert.doesNotMatch(timeline, /attention-date|nextKeyDate/u);
+	assert.match(readFileSync(new URL("../src/pages/index.vue", import.meta.url), "utf8"), /home-election-banner__count attention-relative/u);
 });

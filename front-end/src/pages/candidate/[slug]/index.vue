@@ -261,6 +261,7 @@ function saveToPlan() {
 
 				<ExpandableSection
 					id="biography"
+					:collapsible="false"
 					eyebrow="Biography"
 					title="Background"
 				>

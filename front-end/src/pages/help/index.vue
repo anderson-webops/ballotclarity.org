@@ -2,22 +2,19 @@
 const faqItems = [
 	{
 		answer: [
-			"An official ballot listing is the set of contests and measures expected to appear on a voter's ballot for a specific election and location.",
-			"A voter guide adds explanation around those items. Ballot Clarity is designed as a voter guide that points back to source material and official records."
+			"An official ballot lists the contests and measures for a specific election and location. A voter guide provides background and supporting sources."
 		],
 		question: "What is the difference between an official ballot listing and a voter guide?"
 	},
 	{
 		answer: [
-			"Yes. Many jurisdictions allow voters to bring notes or a printed ballot guide, but users should still review their local election office guidance before Election Day.",
-			"This help hub is informational only and is not a substitute for official rules issued by the election office."
+			"Rules vary by jurisdiction. Check your election office’s guidance before bringing notes or a printed guide."
 		],
 		question: "Can I bring notes or a printed guide with me when I vote?"
 	},
 	{
 		answer: [
-			"Check the updated timestamp, review the linked sources, and verify the latest information with the official election office when a deadline or location is time-sensitive.",
-			"Ballot Clarity is designed to show what changed and when, but official election offices remain the final authority."
+			"Confirm time-sensitive deadlines and polling locations with your election office."
 		],
 		question: "What should I do if election information changes close to voting?"
 	}
@@ -53,16 +50,16 @@ usePageSeo({
 		</header>
 
 		<div class="max-w-3xl divide-app-line divide-y dark:divide-app-line-dark">
-			<details v-for="item in faqItems" :key="item.question" class="py-4">
-				<summary class="text-base text-app-ink font-semibold rounded-sm cursor-pointer dark:text-app-text-dark focus-ring">
+			<section v-for="item in faqItems" :key="item.question" class="py-4">
+				<h2 class="text-base text-app-ink font-semibold dark:text-app-text-dark">
 					{{ item.question }}
-				</summary>
+				</h2>
 				<div class="text-sm text-app-muted leading-7 mt-3 space-y-3 dark:text-app-muted-dark">
 					<p v-for="paragraph in item.answer" :key="paragraph">
 						{{ paragraph }}
 					</p>
 				</div>
-			</details>
+			</section>
 		</div>
 	</section>
 </template>

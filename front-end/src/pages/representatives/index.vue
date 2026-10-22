@@ -9,6 +9,8 @@ import { buildLookupContextFromNationwideResult, buildNationwideLookupRouteQuery
 import { groupRepresentativeSummariesByGovernmentLevel, resolveRepresentativePresentation } from "~/utils/representative-presentation";
 
 const route = useRoute();
+const NuxtLinkComponent = resolveComponent("NuxtLink");
+const SafeExternalLinkComponent = resolveComponent("SafeExternalLink");
 const civicStore = useCivicStore();
 const { isHydrated, nationwideLookupResult, selectedLocation } = storeToRefs(civicStore);
 const { hasGuideShellContext, hasNationwideResultContext } = useGuideEntryGate();
@@ -175,66 +177,20 @@ usePageSeo({
 						</h2>
 					</div>
 					<div class="gap-x-10 grid lg:grid-cols-2">
-						<article
+						<component
+							:is="representativeLinkIsExternal(representative.href) ? SafeExternalLinkComponent : NuxtLinkComponent"
 							v-for="representative in group.representatives"
 							:key="representative.slug"
-							class="py-5 border-t border-app-line dark:border-app-line-dark"
+							v-bind="representativeLinkIsExternal(representative.href) ? { href: representative.href } : { to: buildLookupAwareTarget(representative.href) }"
+							class="py-5 border-t border-app-line block dark:border-app-line-dark focus-ring"
 						>
-							<div class="flex gap-4 items-start">
-								<ProfileImageStack
-									v-if="representative.profileImages?.length"
-									:images="representative.profileImages"
-									:name="representative.name"
-									size="md"
-								/>
-								<div class="min-w-0">
-									<h3 class="text-xl text-app-ink font-serif dark:text-app-text-dark">
-										<NuxtLink v-if="!representativeLinkIsExternal(representative.href)" :to="buildLookupAwareTarget(representative.href)" class="hover:text-app-accent focus-ring">
-											{{ representative.name }}
-										</NuxtLink>
-										<template v-else>
-											{{ representative.name }}
-										</template>
-									</h3>
-									<p class="text-sm text-app-muted mt-1 dark:text-app-muted-dark">
-										{{ getRepresentativePresentation(representative).officeDisplayLabel }}<span v-if="representative.party"> · {{ representative.party }}</span>
-									</p>
-									<p v-if="representative.districtLabel !== getRepresentativePresentation(representative).officeDisplayLabel" class="text-sm text-app-muted dark:text-app-muted-dark">
-										{{ representative.districtLabel }}
-									</p>
-								</div>
-							</div>
-							<p v-if="representative.summary" class="text-sm text-app-ink leading-6 mt-3 dark:text-app-text-dark">
-								{{ representative.summary }}
+							<h3 class="text-xl text-app-ink font-serif dark:text-app-text-dark">
+								{{ representative.name }}
+							</h3>
+							<p class="text-sm text-app-muted leading-6 mt-2 dark:text-app-muted-dark">
+								{{ getRepresentativePresentation(representative).officeDisplayLabel }}<span v-if="representative.party"> · {{ representative.party }}</span>
 							</p>
-							<div class="mt-3 flex flex-wrap gap-x-5 gap-y-1">
-								<SafeExternalLink
-									v-if="representativeLinkIsExternal(representative.href)"
-									:href="representative.href"
-									class="btn-secondary inline-flex gap-2 items-center"
-								>
-									Open record
-									<span class="i-carbon-launch" />
-								</SafeExternalLink>
-								<NuxtLink :to="buildLookupAwareTarget(`/districts/${representative.districtSlug}`)" class="btn-secondary">
-									District page
-								</NuxtLink>
-								<NuxtLink
-									v-if="!representativeLinkIsExternal(representative.href) && representative.fundingAvailable"
-									:to="buildLookupAwareTarget(`${representative.href}/funding`)"
-									class="btn-secondary"
-								>
-									Funding
-								</NuxtLink>
-								<NuxtLink
-									v-if="!representativeLinkIsExternal(representative.href) && representative.influenceAvailable"
-									:to="buildLookupAwareTarget(`${representative.href}/influence`)"
-									class="btn-secondary"
-								>
-									Influence
-								</NuxtLink>
-							</div>
-						</article>
+						</component>
 					</div>
 				</section>
 			</div>

@@ -60,7 +60,8 @@ test("the public directory exposes only necessary labels and source limits", () 
 	assert.match(page, /These records are not a personalized ballot/u);
 	assert.match(page, /Include inactive records/u);
 	assert.match(page, /Candidate record pages/u);
-	assert.match(page, /class="attention-date"/u);
+	assert.doesNotMatch(page, /attention-date|attention-relative/u);
+	assert.match(page, /path: `\/record\//u);
 	assert.match(page, /v-for="document in data.source.documentLinks"/u);
 	assert.match(page, /:href="document.url"/u);
 	assert.doesNotMatch(page, /prototype|under local review|check back later|saved guide area|<table/iu);

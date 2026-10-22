@@ -56,7 +56,7 @@ function printBallot() {
 			<dl class="election-hero__facts">
 				<div class="election-hero__fact election-hero__fact--wide">
 					<dt>Election Day</dt>
-					<dd><span class="attention-date">{{ formatDate(props.election.date) }}</span></dd>
+					<dd><span>{{ formatDate(props.election.date) }}</span></dd>
 				</div>
 				<div v-for="fact in facts" :key="fact.label" class="election-hero__fact">
 					<dt>{{ fact.label }}</dt>

@@ -221,6 +221,7 @@ function saveMeasure(decision: "no" | "review" | "yes") {
 
 				<ExpandableSection
 					id="outcomes"
+					:collapsible="false"
 					eyebrow="YES / NO outcomes"
 					title="If you vote YES or NO"
 					open

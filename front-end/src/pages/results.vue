@@ -4,12 +4,13 @@ import { storeToRefs } from "pinia";
 import { buildActiveLookupSummary } from "~/utils/active-lookup";
 import { needsBallotPreviewRefresh, restoreMatchingBallotPreviews } from "~/utils/ballot-preview-refresh";
 import { buildLocationGuessUiContent } from "~/utils/location-guess";
-import { buildPublishedGuideDestination, filterLookupActionsForPresentation } from "~/utils/location-lookup";
+import { buildPublishedGuideDestination } from "~/utils/location-lookup";
 import { normalizeLookupResponseForDisplay, resolveLookupDestination } from "~/utils/nationwide-results";
-import { buildLookupContextFromNationwideResult, buildNationwideLookupRouteQuery, buildNationwideRouteTarget } from "~/utils/nationwide-route-context";
+import { buildLookupContextFromNationwideResult, buildNationwideLookupRouteQuery } from "~/utils/nationwide-route-context";
 
 const api = useApiClient();
 const route = useRoute();
+definePageMeta({ middleware: to => to.hash === "#change-location" ? navigateTo("/#location-lookup", { replace: true }) : undefined });
 const civicStore = useCivicStore();
 const { data: coverageData } = useCoverage();
 const { isHydrated, nationwideLookupResult } = storeToRefs(civicStore);
@@ -76,19 +77,9 @@ const resultsStatusItems = computed(() => {
 		result.detectedFromIp
 			? "Approximate location"
 			: result.inputKind === "address" ? "Matched by street address" : "Matched by ZIP code",
-		result.guideContent?.verifiedContestPackage
-			? "Verified ballot guide"
-			: result.guideAvailability === "published"
-				? "Election overview available"
-				: "Limited local ballot information"
+		...(result.guideContent?.verifiedContestPackage ? ["Verified ballot guide"] : [])
 	];
 });
-const hasVisibleActions = computed(() => activeResult.value
-	? filterLookupActionsForPresentation(activeResult.value.actions, {
-		...activeResult.value,
-		location: activeResult.value.location ?? undefined,
-	}).length > 0
-	: false);
 
 async function openResultGuide(action: LocationLookupAction) {
 	if (!activeResult.value || !action.electionSlug || !action.location)
@@ -166,28 +157,16 @@ usePageSeo({
 
 		<template v-else>
 			<section class="results-overview">
-				<p class="eyebrow">
-					Your area
-				</p>
 				<h1 class="text-4xl text-app-ink leading-tight font-serif mt-2 sm:text-5xl dark:text-app-text-dark">
 					{{ activeLookupSummary.label }}
 				</h1>
 				<p class="results-status-line text-sm text-app-muted mt-4 dark:text-app-muted-dark">
 					<span v-for="item in resultsStatusItems" :key="item">{{ item }}</span>
-					<NuxtLink v-if="activeResult.districtMatches.length" :to="buildNationwideRouteTarget('/districts', activeResult)" class="primary-link font-medium">
-						{{ activeResult.districtMatches.length }} district{{ activeResult.districtMatches.length === 1 ? '' : 's' }}
-					</NuxtLink>
-					<NuxtLink v-if="activeResult.representativeMatches.length" :to="buildNationwideRouteTarget('/representatives', activeResult)" class="primary-link font-medium">
-						{{ activeResult.representativeMatches.length }} official{{ activeResult.representativeMatches.length === 1 ? '' : 's' }}
-					</NuxtLink>
-					<a v-if="hasVisibleActions" href="#official-tools" class="primary-link font-medium">Official tools</a>
 				</p>
 				<p v-if="activeResult.detectedFromIp" class="text-sm text-app-muted leading-6 mt-3 max-w-3xl dark:text-app-muted-dark">
 					{{ activeLookupSummary.note }}
 				</p>
-				<UpdatedAt v-if="activeLookupSummary.resolvedAt" class="mt-2" :value="activeLookupSummary.resolvedAt" label="Looked up" />
 			</section>
-			<LocationChangePanel :election="activeResult.election" />
 			<LookupResultsPanel :lookup="activeResult" results-page @open-guide="openResultGuide" @select-option="selectLookupOption" />
 		</template>
 	</section>

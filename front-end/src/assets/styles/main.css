@@ -826,6 +826,9 @@ html.dark .reading-page .surface-panel article[class*="rounded-xl"] {
   gap: 1rem;
   align-items: flex-start;
   justify-content: space-between;
+}
+
+summary.expandable-section__summary {
   cursor: pointer;
 }
 
@@ -1951,10 +1954,11 @@ html.dark .election-hero__status--warning {
   margin-top: 1.75rem;
 }
 
-.attention-date {
+.attention-relative,
+.election-timeline__status.attention-relative {
   color: #b91c1c;
 }
 
-html.dark .attention-date {
+html.dark .attention-relative {
   color: #fca5a5;
 }

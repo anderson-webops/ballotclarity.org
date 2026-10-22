@@ -23,14 +23,16 @@ test("retired information pages redirect permanently to the corresponding consol
 	}
 });
 
-test("header offers five About destinations while legal links remain in the footer", () => {
+test("About is a direct link, with secondary destinations preserved in the footer", () => {
 	const header = source("components/AppHeader.vue");
-	const aboutLinks = header.match(/const aboutLinks: HeaderLink\[\] = \[([\s\S]*?)\n\];/)![1]!;
-	assert.equal((aboutLinks.match(/label:/g) ?? []).length, 5);
+	assert.match(header, /<NuxtLink to="\/about"/u);
+	assert.doesNotMatch(header, /aboutLinks|toggleAbout|isAboutOpen/u);
 	assert.doesNotMatch(header, /to: "\/(privacy|terms|accessibility|methodology|neutrality|data-sources)"/);
 	const footer = source("components/AppFooter.vue");
 	assert.match(footer, /label: "Privacy", to: "\/privacy"/);
 	assert.match(footer, /label: "Terms", to: "\/terms"/);
+	for (const destination of ["sources", "coverage", "help", "contact"])
+		assert.ok(footer.includes(`"/${destination}"`));
 	assert.doesNotMatch(footer, /to: "\/(methodology|neutrality|data-sources)"/);
 });
 

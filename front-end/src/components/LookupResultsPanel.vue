@@ -144,6 +144,10 @@ const availabilityItems = computed(() => {
 const visibleAvailabilityItems = computed(() => availabilityItems.value.filter((card) => {
 	if (props.resultsPage && card.id === "civic-results")
 		return false;
+	if (props.resultsPage && (card.id === "representatives" || card.id === "finance-influence"))
+		return false;
+	if (card.id === "finance-influence" && availabilityItems.value.some(item => item.id === "representatives" && item.href === card.href && item.item.status !== "unavailable"))
+		return false;
 	if (!card.href || card.item.status === "unavailable")
 		return false;
 
@@ -323,9 +327,17 @@ function getRepresentativePresentation(match: NationwideLookupResultContext["rep
 			</li>
 		</ol>
 		<BallotContentPreviews v-if="hasBallotContentPreviews" :previews="ballotContentPreviews" class="mt-8" />
-		<NuxtLink v-if="lookup.result === 'resolved'" :to="lookup.location?.state ? { path: '/records', query: { state: lookup.location.state } } : '/records'" class="text-sm text-app-accent font-semibold mt-4 underline underline-offset-3 inline-block focus-ring">
-			Browse candidate records
-		</NuxtLink>
+		<nav v-if="lookup.result === 'resolved'" aria-label="Area records" class="text-base mt-5 flex flex-wrap gap-x-8 gap-y-3">
+			<NuxtLink :to="lookup.location?.state ? { path: '/records', query: { state: lookup.location.state } } : '/records'" class="text-app-accent font-semibold underline underline-offset-3 focus-ring">
+				Candidate records
+			</NuxtLink>
+			<NuxtLink v-if="resultsPage && lookup.representativeMatches.length" :to="buildLookupAwareTarget('/representatives')" class="text-app-accent font-semibold underline underline-offset-3 focus-ring">
+				{{ lookup.representativeMatches.length }} representatives
+			</NuxtLink>
+			<NuxtLink v-if="resultsPage && lookup.districtMatches.length" :to="buildLookupAwareTarget('/districts')" class="text-app-accent font-semibold underline underline-offset-3 focus-ring">
+				{{ lookup.districtMatches.length }} districts
+			</NuxtLink>
+		</nav>
 		<div v-if="visibleLookupActions.length" :id="resultsPage ? 'official-tools' : undefined" class="mt-6 gap-3 grid">
 			<div v-if="resultsPage">
 				<h2 class="text-2xl text-app-ink font-serif dark:text-app-text-dark">
@@ -338,7 +350,11 @@ function getRepresentativePresentation(match: NationwideLookupResultContext["rep
 				class="surface-row"
 			>
 				<div class="flex flex-wrap gap-2 items-center">
-					<p class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
+					<SafeExternalLink v-if="action.kind !== 'ballot-guide' && action.url" :href="action.url" class="text-sm text-app-accent font-semibold underline underline-offset-3 inline-flex gap-2 items-center focus-ring">
+						{{ action.title }}
+						<span class="i-carbon-launch" aria-hidden="true" />
+					</SafeExternalLink>
+					<p v-else class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
 						{{ action.title }}
 					</p>
 					<span
@@ -351,7 +367,7 @@ function getRepresentativePresentation(match: NationwideLookupResultContext["rep
 				<p v-if="action.description" class="text-sm text-app-muted leading-6 mt-2 dark:text-app-muted-dark">
 					{{ action.description }}
 				</p>
-				<div class="mt-4 flex flex-wrap gap-3">
+				<div v-if="action.kind === 'ballot-guide'" class="mt-4 flex flex-wrap gap-3">
 					<button
 						v-if="action.kind === 'ballot-guide'"
 						type="button"
@@ -361,19 +377,11 @@ function getRepresentativePresentation(match: NationwideLookupResultContext["rep
 						<span class="i-carbon-arrow-right" />
 						{{ lookupPresentation.guideActionLabel }}
 					</button>
-					<SafeExternalLink
-						v-else-if="action.url"
-						:href="action.url"
-						class="btn-secondary"
-					>
-						<span class="i-carbon-launch" aria-hidden="true" />
-						Open {{ action.title }}
-					</SafeExternalLink>
 				</div>
 			</div>
 		</div>
 		<section
-			v-if="lookup.result === 'resolved' && (representativeCards.length || lookup.districtMatches.length)"
+			v-if="!resultsPage && lookup.result === 'resolved' && (representativeCards.length || lookup.districtMatches.length)"
 			class="mt-8 gap-4 grid items-start xl:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]"
 			aria-label="Your officials and districts"
 		>
@@ -408,7 +416,7 @@ function getRepresentativePresentation(match: NationwideLookupResultContext["rep
 							{{ electionLogistics.electionName }}
 						</p>
 						<p v-if="electionLogistics.electionDay" class="text-sm text-app-muted dark:text-app-muted-dark">
-							<span class="attention-date">{{ formatDate(electionLogistics.electionDay) }}</span>
+							<span>{{ formatDate(electionLogistics.electionDay) }}</span>
 						</p>
 						<VerificationBadge v-if="electionLogistics.mailOnly" label="Mail-only precinct" tone="warning" />
 					</div>

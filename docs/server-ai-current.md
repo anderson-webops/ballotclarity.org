@@ -1,6 +1,6 @@
 # Current server-AI instructions
 
-Target: **v1.12.0**, November 3, 2026 election. This handoff is not proof of runtime
+Code target: **v1.12.1**. Reviewed data package: **v1.12.0**, November 3, 2026 election. This handoff is not proof of runtime
 or data activation. Nationwide/local collection remains unfinished.
 
 ## Authority and release acceptance
@@ -27,6 +27,11 @@ Build toolchain: Node 24.18.1/npm 12.0.2; production uses compiled Node entrypoi
 not npm, tsx, development dependencies or a server-side source installation.
 
 ## Durable state and rollback
+
+The UI-only v1.12.1 update preserves every v1.12.0 collection configuration and
+snapshot. Retain v1.12.0 as the immediate code rollback. Do not regenerate or
+relabel the unchanged v1.12.0 data package for this UI release. The older
+v1.11.2 data/parser compatibility boundary below remains relevant for deeper rollback.
 
 STATE_BALLOT_DATA_DIR must be absolute, writable by the existing application
 identity, physically outside checkouts and immutable releases, and preserved
@@ -155,6 +160,15 @@ authorized operator must arrange an approved transfer. No source-agent SSH/SCP,
 public upload, GitHub data asset, guessed server path or permission change.
 Bulk datasets stay outside Git and runtime releases. Without approved transfer,
 report reviewed data unavailable rather than claiming code activation populated it.
+
+Verify compact `/records` rows link to exact `/record/:state/:id` details. Open
+an official record, a sourced factual profile and a sparse identity-only profile;
+confirm statuses, facts, source attribution and capture dates remain available on
+the detail pages. Similar names and references from a different collection must
+not substitute for the requested identity. Verify the header Change control and
+legacy `#change-location` links reach the focused home lookup form. Calendar dates
+remain neutral; only the nearest relative timeline label is red. Past dates remain
+available in their secondary disclosure. No data import is needed for this UI change.
 
 Before extraction, verify both hashes and the exact member allowlist. Reject
 traversal, links, extra members, wrong sizes/hashes or mismatched source/election/

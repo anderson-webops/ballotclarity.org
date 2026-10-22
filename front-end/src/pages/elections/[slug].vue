@@ -15,7 +15,8 @@ const guideStatusNote = computed(() => !data.value?.guideContent?.verifiedContes
 // Ticks each minute so "Today" and "Next" move on when a deadline passes while the page stays open.
 const now = useNow({ interval: 60_000 });
 const keyDateTimeline = computed(() => data.value ? buildKeyDateTimeline(data.value.election.keyDates, now.value, displayTimeZone.value) : []);
-const nextKeyDate = computed(() => keyDateTimeline.value.find(entry => entry.isNext) ?? null);
+const upcomingKeyDates = computed(() => keyDateTimeline.value.filter(entry => entry.status !== "passed"));
+const pastKeyDates = computed(() => keyDateTimeline.value.filter(entry => entry.status === "passed"));
 const electionDayLabel = computed(() => {
 	if (!data.value?.election.date)
 		return "";
@@ -23,10 +24,6 @@ const electionDayLabel = computed(() => {
 	const daysAway = calendarDaysUntil(data.value.election.date, now.value, displayTimeZone.value);
 	return daysAway < 0 ? "" : describeDaysAway(daysAway);
 });
-
-function formatKeyDate(value: string) {
-	return value.includes("T") ? formatDateTime(value) : formatDate(value);
-}
 
 watchEffect(() => {
 	if (data.value) {
@@ -79,7 +76,7 @@ usePageSeo({
 		</div>
 
 		<div v-else class="space-y-8">
-			<header class="gap-6 grid items-start lg:gap-10 lg:grid-cols-[minmax(0,1.35fr)_minmax(20rem,0.9fr)]">
+			<header class="max-w-4xl">
 				<div>
 					<p class="eyebrow">
 						{{ data.location.displayName }}
@@ -89,7 +86,7 @@ usePageSeo({
 					</h1>
 					<p class="text-lg text-app-ink font-semibold mt-5 flex flex-wrap gap-x-3 gap-y-1 items-center dark:text-app-text-dark">
 						<span class="i-carbon-calendar text-app-accent" aria-hidden="true" />
-						Election Day <span class="attention-date">{{ formatDate(data.election.date) }}</span>
+						Election Day <span>{{ formatDate(data.election.date) }}</span>
 						<span v-if="electionDayLabel" class="text-sm text-app-accent font-semibold px-2 py-0.5 rounded-md bg-app-accent/10">{{ electionDayLabel }}</span>
 					</p>
 					<p v-if="guideStatusNote" class="text-sm text-[#8a5b0a] font-semibold mt-3 inline-flex gap-1.5 items-center dark:text-[#efc77b]">
@@ -109,24 +106,6 @@ usePageSeo({
 						</NuxtLink>
 					</div>
 				</div>
-
-				<div class="space-y-4">
-					<a v-if="nextKeyDate" href="#key-dates" class="election-next-deadline block focus-ring">
-						<p class="eyebrow">
-							Next deadline
-						</p>
-						<p class="text-xl text-app-ink font-semibold mt-2 dark:text-app-text-dark">
-							{{ nextKeyDate.label }}
-						</p>
-						<p class="text-base text-app-ink mt-1 flex flex-wrap gap-x-2 items-center dark:text-app-text-dark">
-							<span class="attention-date">{{ formatKeyDate(nextKeyDate.date) }}</span>
-							<span class="attention-date text-sm font-semibold">· {{ nextKeyDate.relativeLabel }}</span>
-						</p>
-						<p v-if="nextKeyDate.note" class="text-sm text-app-muted leading-6 mt-2 dark:text-app-muted-dark">
-							{{ nextKeyDate.note }}
-						</p>
-					</a>
-				</div>
 			</header>
 
 			<section id="key-dates" class="surface-panel">
@@ -138,34 +117,13 @@ usePageSeo({
 					</div>
 					<UpdatedAt :value="data.election.updatedAt" label="Updated" />
 				</div>
-				<ol class="election-timeline mt-6">
-					<li
-						v-for="item in keyDateTimeline"
-						:key="item.label"
-						class="election-timeline__item"
-						:class="{
-							'election-timeline__item--passed': item.status === 'passed',
-							'election-timeline__item--next': item.isNext,
-						}"
-					>
-						<div class="election-timeline__when">
-							<p class="text-base text-app-ink font-semibold dark:text-app-text-dark">
-								<span :class="{ 'attention-date': item.status !== 'passed' }">{{ formatKeyDate(item.date) }}</span>
-							</p>
-							<p class="election-timeline__status">
-								{{ item.isNext ? `Next · ${item.relativeLabel}` : item.relativeLabel }}
-							</p>
-						</div>
-						<div>
-							<h3 class="text-base text-app-ink font-semibold dark:text-app-text-dark">
-								{{ item.label }}
-							</h3>
-							<p class="text-sm text-app-muted leading-6 mt-1 dark:text-app-muted-dark">
-								{{ item.note || "Review the official county calendar for source context." }}
-							</p>
-						</div>
-					</li>
-				</ol>
+				<ElectionKeyDates v-if="upcomingKeyDates.length" :entries="upcomingKeyDates" />
+				<details v-if="pastKeyDates.length" class="mt-6">
+					<summary class="text-sm text-app-muted cursor-pointer dark:text-app-muted-dark focus-ring">
+						Past dates ({{ pastKeyDates.length }})
+					</summary>
+					<ElectionKeyDates :entries="pastKeyDates" />
+				</details>
 			</section>
 
 			<section class="surface-panel">

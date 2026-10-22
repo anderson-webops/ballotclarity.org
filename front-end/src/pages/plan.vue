@@ -6,9 +6,10 @@ import { buildPlanUnavailableMessaging } from "~/utils/plan-messaging";
 
 const civicStore = useCivicStore();
 const route = useRoute();
+definePageMeta({ middleware: to => to.hash === "#change-location" ? navigateTo("/#location-lookup", { replace: true }) : undefined });
 const { ballotPlan, ballotPlanCount, compareCount, compareList, isHydrated, selectedElection, selectedLocation } = storeToRefs(civicStore);
 const { formatDate, formatDateTime } = useFormatters();
-const { activeLookupContext, activeNationwideResult, allowsGuideEntryPoints } = useGuideEntryGate();
+const { activeLookupContext, allowsGuideEntryPoints } = useGuideEntryGate();
 
 const effectiveBallotPlan = computed(() => isHydrated.value ? ballotPlan.value : {});
 const effectiveBallotPlanCount = computed(() => isHydrated.value ? ballotPlanCount.value : 0);
@@ -24,9 +25,7 @@ const electionSlug = computed(() => {
 });
 const locationSlug = computed(() => isHydrated.value && allowsGuideEntryPoints.value ? selectedLocation.value?.slug : undefined);
 const { data, error, pending } = await useBallot(electionSlug, locationSlug);
-const lookupElection = computed(() => showPersistedPlanState.value
-	? (selectedElection.value ?? activeNationwideResult.value?.election ?? data.value?.election ?? null)
-	: (data.value?.election ?? null));
+
 const planUnavailableMessaging = computed(() => buildPlanUnavailableMessaging(activeLookupContext.value));
 
 usePageSeo({
@@ -155,7 +154,7 @@ function printPlan() {
 				My ballot plan
 			</h1>
 			<p v-if="data" class="text-base text-app-muted mt-3 dark:text-app-muted-dark">
-				{{ data.election.name }} · {{ data.location.displayName }} · <span class="attention-date">{{ formatDate(data.election.date) }}</span>
+				{{ data.election.name }} · {{ data.location.displayName }} · <span>{{ formatDate(data.election.date) }}</span>
 			</p>
 			<p v-else class="text-base text-app-muted mt-3 dark:text-app-muted-dark">
 				The ballot plan opens after Ballot Clarity publishes a local guide for this area.
@@ -179,8 +178,6 @@ function printPlan() {
 				</button>
 			</div>
 		</header>
-
-		<LocationChangePanel :election="lookupElection" />
 
 		<div v-if="pending" class="space-y-6">
 			<div class="rounded-lg bg-app-bg h-48 animate-pulse dark:bg-app-bg-dark" />
@@ -226,7 +223,7 @@ function printPlan() {
 					{{ data.election.name }}
 				</h2>
 				<p class="text-sm mt-4">
-					{{ data.location.displayName }} · <span class="attention-date">{{ formatDate(data.election.date) }}</span>
+					{{ data.location.displayName }} · <span>{{ formatDate(data.election.date) }}</span>
 				</p>
 			</section>
 

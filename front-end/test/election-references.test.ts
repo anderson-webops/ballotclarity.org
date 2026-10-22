@@ -10,11 +10,12 @@ test("candidate information keeps source attribution and dates without qualifica
 	assert.match(component, /"official-biography": "Official biography"/u);
 	assert.match(component, /sourceLabels\[record.source.kind\]/u);
 	assert.match(component, /Reporting does not establish ballot qualification/u);
-	assert.match(component, /record.source.publisher/u);
-	assert.match(component, /record.source.publishedDate/u);
-	assert.match(component, /record.source.capturedAt/u);
-	assert.match(component, /:href="record.source.pageUrl \?\? record.source.url"/u);
-	assert.match(component, /class="attention-date"/u);
+	const detail = readFileSync(new URL("../src/pages/record/[state]/[id].vue", import.meta.url), "utf8");
+	assert.match(detail, /reference.source.publisher/u);
+	assert.match(detail, /reference.source.publishedDate/u);
+	assert.match(detail, /reference.source.capturedAt/u);
+	assert.match(detail, /reference.source.pageUrl \?\? data.reference.source.url/u);
+	assert.doesNotMatch(component, /attention-date|attention-relative/u);
 	assert.doesNotMatch(component, /v-html|Candidate website|Qualified|prototype|check back later|under local review/u);
 });
 
@@ -39,7 +40,8 @@ test("information pagination has its own bounded offset and does not move offici
 
 test("identity-only references omit empty fact lists without placeholder explanations", () => {
 	const component = readFileSync(new URL("../src/components/ElectionReferences.vue", import.meta.url), "utf8");
-	assert.match(component, /<ul v-if="record.facts.length"/u);
+	const detail = readFileSync(new URL("../src/pages/record/[state]/[id].vue", import.meta.url), "utf8");
+	assert.match(detail, /<ul v-if="data.reference.facts.length"/u);
 	assert.match(component, /record.name/u);
 	assert.match(component, /record.office/u);
 	assert.match(component, /sourceLabels\[record.source.kind\]/u);
@@ -54,7 +56,7 @@ test("references render even when official candidate data is unavailable", () =>
 	assert.match(page, /href="#candidate-information-heading"/u);
 	assert.match(page, /Official candidate records are unavailable/u);
 	const component = readFileSync(new URL("../src/components/ElectionReferences.vue", import.meta.url), "utf8");
-	assert.match(component, /\{\{ fact \}\}/u);
+	assert.match(component, /path: `\/record\//u);
 	assert.match(component, /aria-labelledby="candidate-information-heading"/u);
 	assert.doesNotMatch(component, /ballotContentPreviews|guideAvailability|districtMatches/u);
 });

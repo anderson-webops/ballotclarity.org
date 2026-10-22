@@ -106,7 +106,7 @@ usePageSeo({
 				Include inactive records
 			</label>
 		</form>
-		<a v-if="referenceData?.available && referenceData.matched" href="#candidate-information-heading" class="text-sm text-app-accent underline underline-offset-3 inline-block focus-ring">
+		<a v-if="data?.available && referenceData?.available && referenceData.matched" href="#candidate-information-heading" class="text-sm text-app-accent underline underline-offset-3 inline-block focus-ring">
 			Candidate information ({{ referenceData.matched }})
 		</a>
 		<p v-if="stateError || error" class="text-sm text-app-muted dark:text-app-muted-dark" role="status">
@@ -124,7 +124,7 @@ usePageSeo({
 		<template v-else-if="data">
 			<div class="text-sm text-app-muted leading-6 space-y-2 dark:text-app-muted-dark">
 				<p v-if="data.source.electionDate">
-					Election: <time :datetime="data.source.electionDate" class="attention-date">{{ formatDate(data.source.electionDate) }}</time>
+					Election: <time :datetime="data.source.electionDate">{{ formatDate(data.source.electionDate) }}</time>
 				</p>
 				<p v-if="data.source.label">
 					{{ data.source.label }}<template v-if="data.source.retrievedAt">
@@ -162,30 +162,17 @@ usePageSeo({
 					{{ recordRange }}
 				</p>
 				<ul class="border-t border-app-line divide-app-line divide-y dark:border-app-line-dark dark:divide-app-line-dark" aria-label="Candidate records">
-					<li v-for="record in data.records" :key="record.id" class="py-5 min-w-0 break-words space-y-2">
-						<div class="flex flex-wrap gap-x-4 gap-y-2 items-baseline justify-between">
+					<li v-for="record in data.records" :key="record.id" class="min-w-0 break-words">
+						<NuxtLink :to="{ path: `/record/${filters.stateCode}/${record.id}`, query: { name: record.name, source: data.source.id } }" class="py-5 block focus-ring">
 							<h2 class="text-xl text-app-ink font-semibold dark:text-app-text-dark">
 								{{ record.name }}
 							</h2>
-							<span class="text-sm text-app-muted dark:text-app-muted-dark">{{ stateRecordStatusLabels[record.status] }}</span>
-						</div>
-						<p class="text-sm text-app-ink dark:text-app-text-dark">
-							{{ record.office }}<template v-if="stateRecordArea(record)">
-								· {{ stateRecordArea(record) }}
-							</template>
-						</p>
-						<p v-if="record.party" class="text-sm text-app-muted dark:text-app-muted-dark">
-							{{ record.party }}
-						</p>
-						<p v-if="record.sourceStatus && record.sourceStatus.toLowerCase() !== record.status" class="text-sm text-app-muted dark:text-app-muted-dark">
-							{{ record.sourceStatus }}
-						</p>
-						<p v-if="record.ballotDesignation" class="text-sm text-app-muted dark:text-app-muted-dark">
-							{{ record.ballotDesignation }}
-						</p>
-						<SafeExternalLink v-if="record.candidateUrl" :href="record.candidateUrl" class="text-sm text-app-accent underline underline-offset-3 inline-block focus-ring">
-							Candidate website
-						</SafeExternalLink>
+							<p class="text-sm text-app-muted leading-6 mt-2 dark:text-app-muted-dark">
+								{{ record.office }}<template v-if="stateRecordArea(record)">
+									· {{ stateRecordArea(record) }}
+								</template> · {{ stateRecordStatusLabels[record.status] }}
+							</p>
+						</NuxtLink>
 					</li>
 				</ul>
 				<nav v-if="data.matched > data.limit" class="flex flex-wrap gap-4" aria-label="Candidate record pages">

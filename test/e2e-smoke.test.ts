@@ -651,7 +651,7 @@ test("state records: every candidate is visible with election, provenance, and l
 		})()`, returnByValue: true });
 		assert.equal(content.result.value.count, 8);
 		assert.equal(content.result.value.insideDetails, false);
-		assert.match(content.result.value.text, /Limited local ballot information/u);
+		assert.match(content.result.value.text, /Ballot information for your area is currently limited/u);
 		assert.match(content.result.value.text, /November 3, 2026/u);
 		assert.match(content.result.value.text, /Filing does not establish ballot qualification/u);
 		assert.equal(content.result.value.source, "https://www.ncsbe.gov/results-data/candidate-lists");
@@ -685,7 +685,7 @@ test("layout: lookup stays visible and usable across narrow and wide screens", a
 	});
 });
 
-test("layout: saved results have a direct home action and location links open the form", async (t) => {
+test("layout: saved results resume directly and location changes use the home form", async (t) => {
 	await withResilienceBrowser(t, async (cdp) => {
 		await cdp.send("Page.addScriptToEvaluateOnNewDocument", { source: `localStorage.setItem('ballot-clarity:civic-store', ${JSON.stringify(JSON.stringify(nationwideLookupSnapshot))});` });
 		await navigateAndWait(cdp, appBaseUrl, "returning visitor home");
@@ -693,9 +693,14 @@ test("layout: saved results have a direct home action and location links open th
 		await cdp.send("Runtime.evaluate", { expression: "Array.from(document.querySelectorAll('main a')).find(link => link.textContent.includes('Your results')).click()" });
 		await waitForRuntimeCondition(cdp, "location.pathname === '/results' && location.search.includes('lookup=84604')", Boolean, "resume preserves lookup context");
 		for (const path of ["/results?lookup=84604#change-location", "/plan#change-location"]) {
-			await navigateAndWait(cdp, `${appBaseUrl}${path}`, "change location entry");
-			await waitForRuntimeCondition(cdp, "document.querySelector('#change-location')?.open && document.activeElement?.id.startsWith('address-lookup-')", Boolean, "change location opens and focuses input");
+			await cdp.send("Page.navigate", { url: `${appBaseUrl}${path}` });
+			await waitForDocumentReady(cdp, `${appBaseUrl}/#location-lookup`, "redirected change location entry");
+			await waitForRuntimeCondition(cdp, "location.pathname === '/' && location.hash === '#location-lookup' && document.activeElement?.id.startsWith('address-lookup-')", Boolean, "legacy location link reaches the focused home input");
 		}
+		await navigateAndWait(cdp, `${appBaseUrl}/results?lookup=84604`, "simplified results");
+		await waitForRuntimeCondition(cdp, hydratedCivicState, Boolean, "results hydration");
+		const inlineForm = await cdp.send("Runtime.evaluate", { expression: "Boolean(document.querySelector('main input[id^=\"address-lookup-\"], #change-location'))", returnByValue: true });
+		assert.equal(inlineForm.result.value, false);
 	});
 });
 
@@ -721,11 +726,13 @@ test("layout: results keep unavailable-data explanations visible without dead sh
 	});
 });
 
-test("voter resilience: Escape closes navigation and returns focus on mobile and desktop", async (t) => {
+test("voter resilience: About is direct and Escape restores mobile navigation focus", async (t) => {
 	await withResilienceBrowser(t, async (cdp) => {
 		await navigateAndWait(cdp, appBaseUrl, "keyboard navigation home");
 		await waitForRuntimeCondition(cdp, hydratedCivicState, Boolean, "keyboard navigation hydration");
-		for (const width of [390, 1280]) {
+		const about = await cdp.send("Runtime.evaluate", { expression: "document.querySelector('nav[aria-label=\"Primary\"] a[href=\"/about\"]')?.textContent.trim()", returnByValue: true });
+		assert.equal(about.result.value, "About");
+		for (const width of [390]) {
 			await cdp.send("Emulation.setDeviceMetricsOverride", { width, height: 844, deviceScaleFactor: 1, mobile: false });
 			const selector = width === 390 ? 'button[aria-label="Menu"]' : 'nav[aria-label="Primary"] button';
 			await cdp.send("Runtime.evaluate", { expression: `
@@ -733,10 +740,6 @@ test("voter resilience: Escape closes navigation and returns focus on mobile and
 				window.navTrigger.click();
 			` });
 			await waitForRuntimeCondition(cdp, "window.navTrigger.getAttribute('aria-expanded')", value => value === "true", "navigation opens");
-			if (width === 1280) {
-				const links = await cdp.send("Runtime.evaluate", { expression: "Array.from(document.getElementById(window.navTrigger.getAttribute('aria-controls')).querySelectorAll('a')).map(link => link.textContent.trim())", returnByValue: true });
-				assert.deepEqual(links.result.value, ["About", "Sources", "Coverage", "Voting help", "Contact"]);
-			}
 			const legalLinks = await cdp.send("Runtime.evaluate", { expression: "document.querySelectorAll('header a[href=\"/privacy\"], header a[href=\"/terms\"]').length", returnByValue: true });
 			assert.equal(legalLinks.result.value, 0);
 			await cdp.send("Runtime.evaluate", { expression: "document.getElementById(window.navTrigger.getAttribute('aria-controls')).querySelector('a').focus()" });
@@ -1261,8 +1264,8 @@ test("built app renders the key ballot guide pages against the built API", async
 	assert.match(contactHtml, /Page URL or site path/);
 	assert.match(contactHtml, /Supporting links/);
 	assert.match(planHtml, /My ballot plan/);
-	assert.match(planHtml, /id="change-location"/);
-	assert.match(planHtml, /Street address or ZIP code/);
+	assert.doesNotMatch(planHtml, /id="change-location"/);
+	assert.doesNotMatch(planHtml, /Street address or ZIP code/);
 	assert.match(planHtml, /The ballot plan opens after Ballot Clarity publishes a local guide for this area\./);
 	assert.equal(compareEmptyPage.status, 200);
 	assert.match(compareEmptyHtml, /No compare candidates selected/);
@@ -1710,20 +1713,23 @@ test("nationwide lookup context survives client navigation across results, distr
 			returnByValue: true
 		});
 		await waitForDocumentReady(cdp, `${appBaseUrl}/results`, "nationwide-context results navigation");
-		await waitForBodyText(cdp, /Who represents you/, "nationwide-context results hydration");
+		await waitForBodyText(cdp, /representatives/, "nationwide-context results hydration");
 
 		const resultsText = await getDocumentBodyText(cdp);
 		assert.match(resultsText, /Provo, Utah/);
-		assert.match(resultsText, /Who represents you/);
-		assert.match(resultsText, /7 officials/);
+		assert.match(resultsText, /representatives/);
+		assert.match(resultsText, /7 representatives/);
 		assert.match(resultsText, /Your area/i);
 
 		await navigateAndWait(cdp, `${appBaseUrl}/districts`, "nationwide-context districts navigation");
-		await waitForBodyText(cdp, /Marsha Judkins/, "nationwide-context districts hydration");
+		await waitForBodyText(cdp, /Provo city/, "nationwide-context districts hydration");
 		const districtsText = await getDocumentBodyText(cdp);
 		assert.match(districtsText, /Provo, Utah/);
-		assert.match(districtsText, /Mike Kennedy/);
-		assert.match(districtsText, /Marsha Judkins/);
+		assert.match(districtsText, /Congressional District 3/);
+		assert.match(districtsText, /State House District 60/);
+		const districtRows = await cdp.send("Runtime.evaluate", { expression: "Array.from(document.querySelectorAll('main section.grid > a')).map(link => ({ href: link.getAttribute('href'), nestedControls: link.querySelectorAll('a, button').length }))", returnByValue: true });
+		assert.equal(districtRows.result.value.length, 5);
+		assert.ok(districtRows.result.value.every((row: { href: string; nestedControls: number }) => row.href.startsWith("/districts/") && row.nestedControls === 0));
 		assert.doesNotMatch(districtsText, /Local officials not attached yet/);
 
 		await navigateAndWait(cdp, `${appBaseUrl}/districts/provo-city`, "nationwide-context district-detail navigation");

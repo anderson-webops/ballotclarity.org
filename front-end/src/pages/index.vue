@@ -15,6 +15,18 @@ import { buildNationwideRouteTarget } from "~/utils/nationwide-route-context";
 const api = useApiClient();
 const siteUrl = useSiteUrl();
 const civicStore = useCivicStore();
+const route = useRoute();
+const homeLookupForm = ref<{ focusInput: () => void } | null>(null);
+
+async function focusLocationLookup() {
+	if (route.hash !== "#location-lookup")
+		return;
+	await nextTick();
+	homeLookupForm.value?.focusInput();
+}
+
+watch(() => route.hash, focusLocationLookup);
+onMounted(focusLocationLookup);
 const { activeNationwideResult, hasGuideShellContext, hasNationwideResultContext, hasVerifiedGuideContext } = useGuideEntryGate();
 const homeLookupResult = ref<NationwideLookupResultContext | null>(null);
 const homeLookupSelectionError = ref("");
@@ -143,8 +155,8 @@ async function selectHomeLookupOption(option: LocationLookupSelectionOption) {
 				<NuxtLink v-if="upcomingElection" :to="`/elections/${upcomingElection.slug}`" class="home-election-banner group focus-ring" prefetch-on="interaction">
 					<span class="text-sm text-app-muted dark:text-app-muted-dark">{{ upcomingElection.locationName }}</span>
 					<span class="text-base text-app-ink font-semibold dark:text-app-text-dark">
-						Election Day <span class="attention-date">{{ formatDate(upcomingElection.date) }}</span>
-						<span class="home-election-banner__count">{{ upcomingElection.relativeLabel }}</span>
+						Election Day <span>{{ formatDate(upcomingElection.date) }}</span>
+						<span class="home-election-banner__count attention-relative">{{ upcomingElection.relativeLabel }}</span>
 					</span>
 				</NuxtLink>
 				<h1 class="home-title text-app-ink font-serif dark:text-app-text-dark">
@@ -152,6 +164,7 @@ async function selectHomeLookupOption(option: LocationLookupSelectionOption) {
 				</h1>
 				<div id="location-lookup" class="home-lookup-card">
 					<AddressLookupForm
+						ref="homeLookupForm"
 						compact
 						:election="featuredElection"
 						:framed="false"

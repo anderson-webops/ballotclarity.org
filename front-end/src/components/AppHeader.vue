@@ -14,12 +14,8 @@ const civicStore = useCivicStore();
 const route = useRoute();
 const { activeNationwideResult, hasGuideShellContext, hasNationwideResultContext, hasVerifiedGuideContext } = useGuideEntryGate();
 const isMenuOpen = ref(false);
-const isAboutOpen = ref(false);
-const aboutMenuRef = ref<HTMLElement | null>(null);
-const aboutTrigger = shallowRef<HTMLButtonElement | null>(null);
 const mobileMenuTrigger = shallowRef<HTMLButtonElement | null>(null);
 const mobileNavigationId = `mobile-navigation-${useId()}`;
-const aboutPanelId = `about-navigation-${useId()}`;
 
 const { ballotPlanCount, compareCount, compareList, isHydrated, selectedElection, selectedLocation } = storeToRefs(civicStore);
 const electionOverviewPath = computed(() => selectedElection.value?.slug ? `/elections/${selectedElection.value.slug}` : "/coverage");
@@ -50,14 +46,6 @@ const taskLinks = computed<HeaderLink[]>(() => {
 	return [{ label: "Look up", to: "/" }, ...shared];
 });
 
-const aboutLinks: HeaderLink[] = [
-	{ label: "About", to: "/about" },
-	{ label: "Sources", to: "/sources" },
-	{ label: "Coverage", to: "/coverage" },
-	{ label: "Voting help", to: "/help" },
-	{ label: "Contact", to: "/contact" }
-];
-
 const effectiveBallotPlanCount = computed(() => isHydrated.value ? ballotPlanCount.value : 0);
 const effectiveCompareCount = computed(() => isHydrated.value ? compareCount.value : 0);
 const effectiveCompareList = computed(() => isHydrated.value ? compareList.value : []);
@@ -67,20 +55,10 @@ const effectiveSelectedLocation = computed(() => {
 
 	return activeNationwideResult.value?.location ?? selectedLocation.value;
 });
-const locationLookupHref = computed(() => {
-	if (route.path.startsWith("/plan"))
-		return "/plan#change-location";
-
-	if (route.path.startsWith("/results"))
-		return "/results#change-location";
-
-	return hasNationwideResultContext.value ? "/results#change-location" : "/#location-lookup";
-});
-const isAboutSectionActive = computed(() => aboutLinks.some(link => isActive(link.to)));
+const locationLookupHref = "/#location-lookup";
 
 watch(() => route.fullPath, () => {
 	isMenuOpen.value = false;
-	isAboutOpen.value = false;
 });
 
 function isActive(path: string) {
@@ -109,36 +87,17 @@ function resolveLinkTo(path: string) {
 	return path;
 }
 
-function toggleAbout(event: MouseEvent) {
-	aboutTrigger.value = event.currentTarget as HTMLButtonElement;
-	isAboutOpen.value = !isAboutOpen.value;
-}
-
 function toggleMobileMenu(event: MouseEvent) {
 	mobileMenuTrigger.value = event.currentTarget as HTMLButtonElement;
 	isMenuOpen.value = !isMenuOpen.value;
-}
-
-function handleDocumentPointerDown(event: PointerEvent) {
-	const target = event.target;
-
-	if (!isAboutOpen.value || !(target instanceof Node) || aboutMenuRef.value?.contains(target))
-		return;
-
-	isAboutOpen.value = false;
 }
 
 function handleDocumentKeydown(event: KeyboardEvent) {
 	if (event.key !== "Escape" || event.defaultPrevented)
 		return;
 
-	const returnFocus = isMenuOpen.value
-		? mobileMenuTrigger.value
-		: isAboutOpen.value
-			? aboutTrigger.value
-			: null;
+	const returnFocus = isMenuOpen.value ? mobileMenuTrigger.value : null;
 	isMenuOpen.value = false;
-	isAboutOpen.value = false;
 	if (returnFocus) {
 		event.preventDefault();
 		returnFocus.focus();
@@ -146,12 +105,10 @@ function handleDocumentKeydown(event: KeyboardEvent) {
 }
 
 onMounted(() => {
-	document.addEventListener("pointerdown", handleDocumentPointerDown);
 	document.addEventListener("keydown", handleDocumentKeydown);
 });
 
 onBeforeUnmount(() => {
-	document.removeEventListener("pointerdown", handleDocumentPointerDown);
 	document.removeEventListener("keydown", handleDocumentKeydown);
 });
 </script>
@@ -187,38 +144,10 @@ onBeforeUnmount(() => {
 								</ClientOnly>
 							</NuxtLink>
 						</li>
-						<li ref="aboutMenuRef" class="flex relative">
-							<button
-								type="button"
-								class="text-[0.95rem] font-semibold px-3 border-b-3 inline-flex gap-1.5 whitespace-nowrap transition items-center focus-ring"
-								:class="isAboutSectionActive || isAboutOpen
-									? 'border-app-accent text-app-ink dark:text-app-text-dark'
-									: 'border-transparent text-app-muted hover:text-app-ink dark:text-app-muted-dark dark:hover:text-app-text-dark'"
-								:aria-expanded="isAboutOpen"
-								:aria-controls="aboutPanelId"
-								@click="toggleAbout"
-							>
+						<li class="flex">
+							<NuxtLink to="/about" :aria-current="isActive('/about') ? 'page' : undefined" class="header-nav-link text-[0.95rem] font-semibold px-3 inline-flex items-center focus-ring">
 								About
-								<span class="i-carbon-chevron-down text-sm transition" :class="isAboutOpen ? 'rotate-180' : ''" aria-hidden="true" />
-							</button>
-							<div
-								v-if="isAboutOpen"
-								:id="aboutPanelId"
-								class="mt-px p-2 border border-app-line rounded-xl bg-app-panel w-52 shadow-[0_16px_40px_-20px_rgba(13,37,62,0.35)] right-0 top-full absolute dark:border-app-line-dark dark:bg-app-panel-dark"
-							>
-								<ul class="space-y-0.5">
-									<li v-for="link in aboutLinks" :key="link.to">
-										<NuxtLink
-											:to="link.to"
-											:aria-current="isActive(link.to) ? 'page' : undefined"
-											prefetch-on="interaction"
-											class="px-2 py-2 rounded-lg block transition hover:bg-app-bg focus-ring dark:hover:bg-app-bg-dark"
-										>
-											<span class="text-sm text-app-ink block dark:text-app-text-dark">{{ link.label }}</span>
-										</NuxtLink>
-									</li>
-								</ul>
-							</div>
+							</NuxtLink>
 						</li>
 					</ul>
 				</nav>
@@ -295,26 +224,9 @@ onBeforeUnmount(() => {
 					</li>
 				</ul>
 
-				<section>
-					<p class="eyebrow px-4">
-						About
-					</p>
-					<ul class="mt-2 gap-x-2 grid grid-cols-2">
-						<li v-for="link in aboutLinks" :key="link.to">
-							<NuxtLink
-								:to="link.to"
-								:aria-current="isActive(link.to) ? 'page' : undefined"
-								prefetch-on="interaction"
-								class="text-[0.95rem] px-4 py-2.5 rounded-lg block transition focus-ring"
-								:class="isActive(link.to)
-									? 'text-app-accent font-semibold'
-									: 'text-app-ink hover:bg-app-panel dark:text-app-text-dark dark:hover:bg-app-panel-dark'"
-							>
-								{{ link.label }}
-							</NuxtLink>
-						</li>
-					</ul>
-				</section>
+				<NuxtLink to="/about" :aria-current="isActive('/about') ? 'page' : undefined" class="text-base font-semibold px-4 py-3 rounded-lg block focus-ring">
+					About
+				</NuxtLink>
 			</nav>
 		</div>
 	</header>

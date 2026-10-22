@@ -1,5 +1,6 @@
 <script setup lang="ts">
 withDefaults(defineProps<{
+	collapsible?: boolean;
 	compact?: boolean;
 	description?: string;
 	eyebrow?: string;
@@ -8,6 +9,7 @@ withDefaults(defineProps<{
 	open?: boolean;
 	title: string;
 }>(), {
+	collapsible: true,
 	compact: false,
 	description: "",
 	eyebrow: "",
@@ -18,15 +20,16 @@ withDefaults(defineProps<{
 </script>
 
 <template>
-	<details
+	<component
+		:is="collapsible ? 'details' : 'section'"
 		:id="id"
 		class="expandable-section scroll-mt-28"
 		:class="nested
 			? 'expandable-section--nested'
 			: ''"
-		:open="open"
+		:open="collapsible ? open : undefined"
 	>
-		<summary class="expandable-section__summary focus-ring">
+		<component :is="collapsible ? 'summary' : 'header'" class="expandable-section__summary" :class="{ 'focus-ring': collapsible }">
 			<div class="min-w-0">
 				<h2 class="text-app-ink font-serif dark:text-app-text-dark" :class="compact ? 'text-xl' : 'text-2xl sm:text-[1.7rem]'">
 					{{ title }}
@@ -37,11 +40,11 @@ withDefaults(defineProps<{
 			</div>
 			<div class="expandable-section__meta">
 				<slot name="meta" />
-				<span class="expandable-section__chevron i-carbon-chevron-down" aria-hidden="true" />
+				<span v-if="collapsible" class="expandable-section__chevron i-carbon-chevron-down" aria-hidden="true" />
 			</div>
-		</summary>
+		</component>
 		<div class="expandable-section__body">
 			<slot />
 		</div>
-	</details>
+	</component>
 </template>

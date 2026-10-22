@@ -4,6 +4,7 @@ import { dirname, resolve } from "node:path";
 import process from "node:process";
 
 const projectRoot = resolve(import.meta.dirname, "..");
+const phase = process.argv[2];
 const versionPattern = /^v[0-9]+\.[0-9]+\.[0-9]+$/u;
 const commitPattern = /^[0-9a-f]{40}$/u;
 
@@ -30,19 +31,20 @@ if (tag && git("cat-file", "-t", `refs/tags/${tag}`) !== "tag")
 if (process.env.GITHUB_REF_TYPE === "tag" && tag !== process.env.GITHUB_REF_NAME)
 	throw new Error("The release build does not match its exact annotated tag.");
 
+if (phase !== "public" && phase !== "backend")
+	throw new Error("Specify public or backend release identity generation.");
+
 const identity = {
 	version: tag ? tag.slice(1) : "development",
 	commit,
 };
 const bytes = `${JSON.stringify(identity)}\n`;
 
-for (const relativePath of [
-	"front-end/.output/public/deployment.json",
-	"back-end/dist/release-identity.json",
-]) {
-	const target = resolve(projectRoot, relativePath);
-	mkdirSync(dirname(target), { recursive: true });
-	writeFileSync(target, bytes, { mode: 0o644 });
-}
+const relativePath = phase === "public"
+	? "front-end/public/deployment.json"
+	: "back-end/dist/release-identity.json";
+const target = resolve(projectRoot, relativePath);
+mkdirSync(dirname(target), { recursive: true });
+writeFileSync(target, bytes, { mode: 0o644 });
 
-console.log(`Embedded ${identity.version} at ${identity.commit} in both compiled services.`);
+console.log(`Embedded ${identity.version} at ${identity.commit} for ${phase}.`);

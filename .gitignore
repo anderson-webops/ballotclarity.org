@@ -9,6 +9,7 @@ dist
 .nuxt
 front-end/.output
 front-end/.nuxt
+front-end/public/deployment.json
 back-end/dist
 back-end/data/*.sqlite
 back-end/data/*.sqlite-shm

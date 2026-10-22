@@ -40,7 +40,7 @@
 		"providers:test:local": "DOTENV_CONFIG_PATH=../.env node -r dotenv/config dist/test-providers.js",
 		"start": "node dist/server.js",
 		"start:local": "DOTENV_CONFIG_PATH=../.env node -r dotenv/config dist/server.js",
-		"build": "tsc -p tsconfig.json && node ./scripts/copy-runtime-assets.mjs && node ../scripts/write-release-identity.mjs && node ./scripts/verify-runtime-build.mjs",
+    "build": "tsc -p tsconfig.json && node ./scripts/copy-runtime-assets.mjs && node ../scripts/write-release-identity.mjs backend && node ./scripts/verify-runtime-build.mjs",
 		"watch": "tsc -w",
 		"dev": "DOTENV_CONFIG_PATH=../.env tsx watch -r dotenv/config src/server.ts",
 		"lint": "eslint \"src/**/*.{js,ts}\" \"test/**/*.ts\"",

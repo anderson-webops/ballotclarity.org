@@ -23,6 +23,7 @@ const postgresBin = process.env.POSTGRES_TEST_BIN_DIR?.trim();
 let databaseUrl;
 let controller;
 let databaseStopped = false;
+let localDatabaseRunning = false;
 let api;
 
 function run(command, args) {
@@ -197,14 +198,20 @@ try {
 		assert.ok(postgresBin, "Set POSTGRES_TEST_BIN_DIR to PostgreSQL 17 binaries.");
 		const databasePort = await freePort();
 		const dataRoot = join(temporaryRoot, "pgdata");
-		const socketRoot = join(temporaryRoot, "socket");
 		const passwordPath = join(temporaryRoot, "synthetic-password");
-		mkdirSync(socketRoot);
 		writeFileSync(passwordPath, syntheticSecret, { mode: 0o600 });
 		run(resolve(postgresBin, "initdb"), ["-D", dataRoot, "-U", "ballot_test", "--auth-local=trust", "--auth-host=scram-sha-256", "--pwfile", passwordPath, "--no-instructions"]);
 		controller = {
-			start: () => run(resolve(postgresBin, "pg_ctl"), ["-D", dataRoot, "-o", `-h 127.0.0.1 -p ${databasePort} -k ${socketRoot}`, "-w", "start"]),
-			stop: () => run(resolve(postgresBin, "pg_ctl"), ["-D", dataRoot, "-m", "fast", "-w", "stop"]),
+			start: () => {
+				run(resolve(postgresBin, "pg_ctl"), ["-D", dataRoot, "-l", join(temporaryRoot, "postgres.log"), "-o", `-h 127.0.0.1 -p ${databasePort} -k /tmp`, "-w", "start"]);
+				localDatabaseRunning = true;
+			},
+			stop: () => {
+				if (localDatabaseRunning) {
+					run(resolve(postgresBin, "pg_ctl"), ["-D", dataRoot, "-m", "fast", "-w", "stop"]);
+					localDatabaseRunning = false;
+				}
+			},
 		};
 		controller.start();
 		databaseUrl = `postgres://ballot_test:${encodeURIComponent(syntheticSecret)}@127.0.0.1:${databasePort}/postgres`;
@@ -237,7 +244,7 @@ try {
 finally {
 	if (api?.child && api.child.exitCode === null && api.child.signalCode === null)
 		api.child.kill("SIGKILL");
-	if (databaseStopped)
+	if (databaseStopped && containerId)
 		controller?.start();
 	if (!containerId && controller)
 		controller.stop();

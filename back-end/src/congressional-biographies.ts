@@ -19,7 +19,7 @@ export const congressionalDirectory = {
 	electionDate: "2026-11-03",
 };
 
-export const congressionalBiographySources: readonly ElectionReferenceSource[] = ["AL", "AZ", "CA", "CO", "CT", "FL", "GA", "HI", "IA", "IL", "IN", "KS", "KY", "MA", "MD", "ME", "MI", "MN", "MO", "MS", "MT", "NC", "NE", "NH", "NJ", "NM", "NV", "NY", "OH", "OK", "OR", "PA", "RI", "SC", "SD", "TN", "TX", "VA", "WI", "WV"].map(stateCode => ({
+export const congressionalBiographySources: readonly ElectionReferenceSource[] = ["AL", "AR", "AZ", "CA", "CO", "CT", "DE", "FL", "GA", "HI", "IA", "ID", "IL", "IN", "KS", "KY", "MA", "MD", "ME", "MI", "MN", "MO", "MS", "MT", "NC", "ND", "NE", "NH", "NJ", "NM", "NV", "NY", "OH", "OK", "OR", "PA", "RI", "SC", "SD", "TN", "TX", "VA", "VT", "WI", "WV", "WY"].map(stateCode => ({
 	id: `us-cdir-${stateCode.toLowerCase()}-${congressionalDirectory.electionDate.slice(0, 4)}`,
 	stateCode,
 	electionDate: congressionalDirectory.electionDate,
@@ -41,7 +41,25 @@ const reviewedFieldHolds: readonly { edition: string; stateCode: string; name: s
 	{ edition: "2026-02-20", stateCode: "SD", name: "MIKE ROUNDS", field: "professionalHistory", clause: "governor, South Dakota, 2002-10", omitDate: true },
 	{ edition: "2026-02-20", stateCode: "SD", name: "MIKE ROUNDS", field: "professionalHistory", clause: "member, South Dakota State Senate, 1990-2000 (Minority Whip, 1993; Majority Leader, 1995)" },
 	{ edition: "2026-02-20", stateCode: "NY", name: "JOSEPH D. MORELLE", field: "professionalHistory", clause: "member, New York State Assembly, 1990-2018 (Majority Leader, 2013-18)", omitDate: true },
+	{ edition: "2026-02-20", stateCode: "AR", name: "STEVE WOMACK", field: "professionalHistory", clause: "mayor, City of Rogers, 1998-2010", omitDate: true },
+	{ edition: "2026-02-20", stateCode: "DE", name: "CHRISTOPHER A. COONS", field: "professionalHistory", clause: "president, New Castle County Council, 2000-04", omitDate: true },
+	{ edition: "2026-02-20", stateCode: "ID", name: "JAMES E. RISCH", field: "professionalHistory", clause: "Idaho State Senate, 1974-88, 1995-2003 (Assistant Majority Leader, 1996 / Majority Leader, 1976-82, 1997-2002; President Pro Tempore, 1983-88)" },
+	{ edition: "2026-02-20", stateCode: "ND", name: "JULIE FEDORCHAK", field: "professionalHistory", clause: "communications director, Governor Ed Schaefer, 1995-2000" },
+	{ edition: "2026-02-20", stateCode: "ND", name: "JULIE FEDORCHAK", field: "professionalHistory", clause: "North Dakota Public Service Commissioner, 2014, 2016, 2022" },
+	{ edition: "2026-02-20", stateCode: "VT", name: "BECCA BALINT", field: "education" },
+	{ edition: "2026-02-20", stateCode: "DE", name: "SARAH McBRIDE", field: "professionalHistory", clause: "state senator for the first state senate district, 2020-25", omitDate: true },
+	{ edition: "2026-02-20", stateCode: "CA", name: "MARK DeSAULNIER", field: "professionalHistory", clause: "member, California Area Resources Board, 1997-2006" },
+	{ edition: "2026-02-20", stateCode: "CA", name: "MARK DeSAULNIER", field: "professionalHistory", clause: "member, California State Senate, 2008-15", omitDate: true },
 ];
+
+const reviewedIdentityMappings = [
+	{ sourceId: "ar-washington-2026", candidateName: "Senator Tom Cotton", office: "U.S. Senate", displayName: "Tom Cotton", directoryName: "TOM COTTON", reviewUrl: "https://www.cotton.senate.gov/about-tom/" },
+	{ sourceId: "ar-washington-2026", candidateName: "Congressman Steve Womack", office: "U.S. Congress (House of Representatives)", displayName: "Steve Womack", directoryName: "STEVE WOMACK", reviewUrl: "https://womack.house.gov/biography/" },
+	{ sourceId: "de-doe-2026", candidateName: "Chris Coons", office: "U.S. Senator", displayName: "Chris Coons", directoryName: "CHRISTOPHER A. COONS", reviewUrl: "https://www.coons.senate.gov/meet-chris/" },
+	{ sourceId: "id-cassia-2026", candidateName: "Jim Risch", office: "United States Senator", displayName: "Jim Risch", directoryName: "JAMES E. RISCH", reviewUrl: "https://www.risch.senate.gov/about/about-jim/" },
+	{ sourceId: "id-cassia-2026", candidateName: "Mike Simpson", office: "United States Representative District 2", displayName: "Mike Simpson", directoryName: "MICHAEL K. SIMPSON", reviewUrl: "https://simpson.house.gov/biography/" },
+	{ sourceId: "wy-sos-2026", candidateName: "Harriet Hageman", office: "UNITED STATES SENATOR", displayName: "Harriet Hageman", directoryName: "HARRIET M. HAGEMAN", reviewUrl: "https://hageman.house.gov/about" },
+] as const;
 
 const digest = (value: string) => createHash("sha256").update(value).digest("hex");
 const fieldLabel = /; (?:education|professional history|military service|election history|committees|religion|spouse|children|family|married): /u;
@@ -54,7 +72,7 @@ export function parseCongressionalBiographies(body: string): CongressionalBiogra
 	if (Buffer.byteLength(body) > 8 * 1024 * 1024 || !header.includes(congressionalDirectory.editionYears) || Number(congress) !== congressionalDirectory.congress || !body.includes(congressionalDirectory.compilationNotice))
 		throw new Error("The directory does not match the reviewed edition and compilation cutoff.");
 	const text = body.replace(/\r\n/gu, "\n");
-	const pattern = /^(\p{Lu}[\p{Lu} .,'’"()\-]+?), (?:Republican|Democrat|Independent), of [^;]+?\b([A-Z]{2});[\s\S]*?(?=\n[ \t]*\n)/gmu;
+	const pattern = /^(\p{Lu}[\p{L} .,'’"()\-]+?), (?:Republican|Democrat|Independent), of [^;]+?[,;]\s+([A-Z]{2});[\s\S]*?(?=\n[ \t]*\n)/gmu;
 	const biographies = [...text.matchAll(pattern)].map((match) => {
 		const paragraph = match[0].replace(/-\n\s*/gu, "-").replace(/\s+/gu, " ").trim();
 		const field = (name: string) => {
@@ -133,25 +151,33 @@ export function prepareCongressionalBiographies(options: { body: string; capture
 	if (!Number.isFinite(Date.parse(options.capturedAt)) || Date.parse(options.capturedAt) > Date.now() || Date.parse(options.capturedAt) < Date.parse(congressionalDirectory.publishedDate) || options.sha256 !== digest(options.body))
 		throw new Error("The directory capture provenance is invalid.");
 	const biographies = parseCongressionalBiographies(options.body);
-	const outputs = congressionalBiographySources.map(source => ({ source, records: [] as ElectionReferenceSnapshot["records"], identities: [] as { candidateId: string; candidateName: string; candidateSourceId: string; directoryName: string; biographyOffset: number; slot: number }[] }));
+	const outputs = congressionalBiographySources.map(source => ({ source, records: [] as ElectionReferenceSnapshot["records"], identities: [] as { candidateId: string; candidateName: string; candidateSourceId: string; directoryName: string; biographyOffset: number; slot: number; identityReviewUrl?: string }[] }));
 	for (const candidateSnapshot of options.candidates) {
 		const source = candidateSnapshot.source;
 		if (source.electionDate !== congressionalDirectory.electionDate || ["nc-sbe-2026", "nm-sos-2026"].includes(source.id) || !Number.isFinite(Date.parse(candidateSnapshot.retrievedAt)) || Date.parse(candidateSnapshot.retrievedAt) > Date.now()) throw new Error("The candidate source or capture time is not permitted for this preparation.");
 		const output = outputs.find(item => item.source.stateCode === source.stateCode);
 		if (!output) continue;
 		for (const candidate of candidateSnapshot.records) {
-			if (!["listed", "filed", "qualified", "write-in"].includes(candidate.status) || (candidate.scope !== "congressional" && !(candidate.scope === "statewide" && /(?:U\.?S|United States).*Senat|Governor/iu.test(candidate.office) && !/Wayne State|Board of|Regent/iu.test(candidate.office)))) continue;
+			const atLargeHouse = candidate.scope === "statewide" && !candidate.district && !candidate.jurisdiction && [
+				{ sourceId: "nd-sos-2026", stateCode: "ND", office: "Representative in Congress" },
+				{ sourceId: "de-doe-2026", stateCode: "DE", office: "Representative in Congress" },
+				{ sourceId: "vt-south-burlington-2026", stateCode: "VT", office: "REPRESENTATIVE TO CONGRESS" },
+			].some(review => review.sourceId === source.id && review.stateCode === source.stateCode && review.office === candidate.office);
+			if (!["listed", "filed", "qualified", "write-in"].includes(candidate.status) || (candidate.scope !== "congressional" && !atLargeHouse && !(candidate.scope === "statewide" && /(?:U\.?S|United States).*Senat|Governor/iu.test(candidate.office) && !/Wayne State|Board of|Regent/iu.test(candidate.office)))) continue;
 			for (const person of candidatePeople(candidate)) {
-				const matches = biographies.filter(biography => biography.stateCode === source.stateCode && normalizeName(biography.name) === normalizeName(person.name));
-				if (matches.length !== 1 || options.previous.some(snapshot => !snapshot.sourceId.startsWith("us-cdir-") && snapshot.stateCode === source.stateCode && snapshot.electionDate === source.electionDate && snapshot.records.some(record => withoutInitials(record.name) === withoutInitials(person.name)))) continue;
+				const identity = congressionalDirectory.publishedDate === "2026-02-20" && source.electionDate === "2026-11-03" && person.slot === 0 ? reviewedIdentityMappings.find(mapping => mapping.sourceId === source.id && mapping.candidateName === candidate.name && mapping.office === candidate.office) : undefined;
+				const displayName = identity?.displayName ?? person.name;
+				const matches = biographies.filter(biography => biography.stateCode === source.stateCode && normalizeName(biography.name) === normalizeName(identity?.directoryName ?? person.name));
+				if (matches.length !== 1 || options.previous.some(snapshot => !snapshot.sourceId.startsWith("us-cdir-") && snapshot.stateCode === source.stateCode && snapshot.electionDate === source.electionDate && snapshot.records.some(record => withoutInitials(record.name) === withoutInitials(displayName)))) continue;
 				const biography = matches[0]!;
 				const facts = [...fieldFacts("Education", reviewedField(biography, "education")), ...fieldFacts("Professional background", reviewedField(biography, "professionalHistory"))];
 				if (!facts.length || facts.length > 6) continue;
 				const id = digest(`${output.source.id}/${candidate.id}/${person.slot}`).slice(0, 24);
-				if (output.records.some(record => record.id === id || normalizeName(record.name) === normalizeName(person.name))) continue;
-				const office = candidate.scope === "congressional" && /representative|\bhouse\b/iu.test(person.office) && !/senat|delegate|resident commissioner/iu.test(person.office) ? "U.S. Representative" : person.office;
-				output.records.push({ id, name: person.name, office, scope: candidate.scope, ...(candidate.jurisdiction ? { jurisdiction: candidate.jurisdiction } : candidate.district ? { jurisdiction: `${candidate.scope === "congressional" ? "Congressional District" : "District"} ${candidate.district}` } : {}), facts, sourceDocumentIndex: 0 });
-				output.identities.push({ candidateId: candidate.id, candidateName: candidate.name, candidateSourceId: source.id, directoryName: biography.name, biographyOffset: biography.offset, slot: person.slot });
+				if (output.records.some(record => record.id === id || normalizeName(record.name) === normalizeName(displayName))) continue;
+				const scope = atLargeHouse ? "congressional" : candidate.scope;
+				const office = scope === "congressional" && /representative|\bhouse\b/iu.test(person.office) && !/senat|delegate|resident commissioner/iu.test(person.office) ? "U.S. Representative" : person.office;
+				output.records.push({ id, name: displayName, office, scope, ...(atLargeHouse ? { jurisdiction: "At-large" } : candidate.jurisdiction ? { jurisdiction: candidate.jurisdiction } : candidate.district ? { jurisdiction: `${scope === "congressional" ? "Congressional District" : "District"} ${candidate.district}` } : {}), facts, sourceDocumentIndex: 0 });
+				output.identities.push({ candidateId: candidate.id, candidateName: candidate.name, candidateSourceId: source.id, directoryName: biography.name, biographyOffset: biography.offset, slot: person.slot, ...(identity ? { identityReviewUrl: identity.reviewUrl } : {}) });
 			}
 		}
 	}

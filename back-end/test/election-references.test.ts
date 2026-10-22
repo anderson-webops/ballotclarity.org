@@ -41,6 +41,20 @@ test("references preserve candidate, reporting and official biography authorship
 	}
 });
 
+test("DC background keeps independent council and attorney-general attribution without invented publication dates", () => {
+	const collection = electionReferenceSources.find(item => item.id === "dc-local-biographies-2026")!;
+	assert.equal(collection.stateCode, "DC");
+	assert.equal(collection.electionDate, "2026-11-03");
+	assert.equal(collection.documents.length, 8);
+	assert.ok(collection.documents.every(document => document.kind === "official-biography" && document.publishedDate === undefined));
+	const snapshot = parseElectionReferenceSnapshot(collection, JSON.stringify(fixture(collection)));
+	const page = buildElectionReferencePage(collection, snapshot, { search: "", scope: "local", offset: 6, limit: 2 });
+	assert.equal(page.matched, 8);
+	assert.equal(page.records[0]!.source.publisher, "District of Columbia Office of the Attorney General");
+	assert.equal(page.records[1]!.source.publisher, "Council of the District of Columbia");
+	assert.ok(page.records.every(record => record.source.capturedAt === retrievedAt && !("status" in record) && !("party" in record)));
+});
+
 test("judicial references pin independent public publications without using excluded distribution hosts", () => {
 	const candidateSource = electionReferenceSources.find(item => item.id === "nc-judicial-statements-2026")!;
 	const biographySource = electionReferenceSources.find(item => item.id === "nm-supreme-biographies-2026")!;

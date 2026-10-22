@@ -644,11 +644,13 @@ The governor publication is linked by its actual public www homepage; int/prod
 search results were not requested. Office biographies describe source authorship,
 not independently verified qualification or election recommendations.
 
-The national congressional collection adds forty independent `us-cdir-<state>-2026`
-sources, 162 profiles and 325 short background facts. The previously retained
-eleven collections/92 profiles/248 facts remain unchanged, including their exact
-configuration fingerprints. The combined reference collection covers 44 states,
-51 source IDs, 254 profiles and 573 factual items; these are not additional official
+The national congressional collection has 46 independent `us-cdir-<state>-2026`
+sources, 184 profiles and 368 short background facts. Six new states and thirteen
+further matches in nine preceding states add 22 profiles/43 facts. Eight DC
+profiles add 23 facts from seven council biographies/service histories and the
+attorney general's biography. All preceding 51 configurations and 254 profiles
+remain unchanged. The combined collection covers all 50 states plus DC,
+58 source IDs, 284 profiles and 639 factual items; these are not additional official
 choices, complete slates or personally eligible ballots.
 
 The GPO/Joint Committee on Printing publication is issued 2026-02-20 but states a
@@ -656,13 +658,20 @@ printed 2025-10-01 compilation cutoff. The exact-host policy, actual sitemap/det
 links, text/MODS and original PDF were reviewed independently. It is a federal
 biography source, not a proxy or mirror for a denied state voter guide. Current
 2026 candidate identity/office comes from active retained official records, not
-directory membership. Exact normalized full-name/state matching, explicit ticket
-slots and duplicate suppression exclude thirteen preceding profiles and four
-inactive candidates. No nickname or fuzzy identity inference is used.
+directory membership. Exact normalized full-name/state matching remains the
+default. Six explicitly reviewed source/name/office/edition-bound mappings use
+captured official identity pages; this is not general nickname matching or title
+stripping. Mixed-case surnames and the printed city/state semicolon are supported.
+Three reviewed DE/ND/VT at-large House cases affect reference display only, not
+official scopes or personal lookup. Ticket slots and duplicate/inactive exclusions
+remain intact. DC's ward references retain their official Ward 3/5/6 jurisdictions;
+current council biographies do not establish general-election qualification.
 
-Source errors appear in the original PDF as well as text. Six edition-specific
-holds across five profiles withhold Morrison/James education, Spartz's institution
-clause, Rounds's state-Senate clause/governor dates and Morelle's Assembly dates.
+Fifteen edition-specific holds across twelve profiles omit uncertain fields,
+clauses and ranges. The six preceding holds remain, with new Womack/Coons/McBride
+service-range holds, Risch's complex state-Senate clause, two Fedorchak clauses,
+Balint's education and two DeSaulnier clauses/ranges. Earlier source errors were
+confirmed in the original PDF; new text discrepancies are not presumed PDF errors.
 No replacement fact is invented or borrowed under the wrong attribution. Current/
 open-ended roles, malformed fields, contacts, birth/family/religion details and
 images are omitted. An official biography remains a source claim, not independent
@@ -680,16 +689,19 @@ changed counts, source drift, missing matches or unknown editions require review
 before separate imports. Current configuration and future-edition/election gates
 are documented in `server-ai-current.md`.
 
-The cumulative v1.11.0 operator package supersedes the v1.10.5 transfer procedure:
-33 unchanged reviewed official snapshots, all 51 reference snapshots and one
-manifest, exactly 85 flat members and 748,433 compressed bytes. It retains 17,662
-reviewed official records and 254 profiles/573 facts, not all election data.
-Seventeen permitted automatic sources refresh separately. The six earlier
+The cumulative v1.11.1 operator package supersedes the v1.11.0 transfer procedure:
+33 unchanged reviewed official snapshots, all 58 reference snapshots and one
+manifest, exactly 92 flat members and 754,597 compressed bytes. It retains 17,662
+reviewed official records and 284 profiles/639 facts, not all election data.
+Seventeen permitted automatic sources refresh separately. The seven earlier
 packages and published tags remain immutable; every preceding file retains its
 original timestamp, source/configuration hashes and schema. Publisher documents,
 research CSV/JSONL and secrets are not packaged. The archive is outside Git/runtime
 and still needs independently approved operator transfer/import. Current server
-instructions contain exact hashes and all 84 import prerequisites.
+instructions contain exact hashes and all 91 import prerequisites. Nine expanded
+Directory transfer files use versioned filenames; the manifest selects exactly
+one full snapshot per source ID. All 323 preceding canonical files remain byte-exact.
+See `docs/audits/2026-10-22-reference-coverage-gaps.md` for this expansion.
 See `docs/audits/2026-10-22-national-congressional-biographies.md` for reconciliation,
 source-quality holds and local acceptance; earlier AZ/NV evidence remains in
 `docs/audits/2026-10-22-arizona-nevada-profiles.md`.
@@ -700,7 +712,8 @@ pinned to an explicitly reviewed state/election/document set and stop serving tw
 days after that election, consistent with the official-source repository. A future
 election requires a newly reviewed collection identity and import, not a date
 substitution or automatic PDF/news crawl. Broader profile research and Louisiana's
-official integration remain incomplete.
+official integration remain incomplete. At least one reference per state/DC does
+not establish complete candidate, challenger, local or measure coverage.
 
 ## Reviewed snapshots and transfers
 

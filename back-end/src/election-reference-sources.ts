@@ -152,4 +152,19 @@ export const electionReferenceSources: readonly ElectionReferenceSource[] = [
 		})),
 	},
 	...congressionalBiographySources,
+	{
+		id: "dc-local-biographies-2026",
+		stateCode: "DC",
+		electionDate: "2026-11-03",
+		documents: [
+			{ url: "https://dccouncil.gov/council/phil-mendelson/", title: "Phil Mendelson biography", publisher: "Council of the District of Columbia", kind: "official-biography" },
+			{ url: "https://dccouncil.gov/council/councilmember-robert-c-white-jr/", title: "Robert White biography", publisher: "Council of the District of Columbia", kind: "official-biography" },
+			{ url: "https://dccouncil.gov/council/ward-4-councilmember-janeese-lewis-george/", title: "Janeese Lewis George biography", publisher: "Council of the District of Columbia", kind: "official-biography" },
+			{ url: "https://dccouncil.gov/council/ward-3-councilmember-matthew-frumin/", title: "Matthew Frumin biography", publisher: "Council of the District of Columbia", kind: "official-biography" },
+			{ url: "https://dccouncil.gov/council/ward-5-councilmember-zachary-parker/", title: "Zachary Parker biography", publisher: "Council of the District of Columbia", kind: "official-biography" },
+			{ url: "https://dccouncil.gov/council/councilmember-allen/", title: "Charles Allen biography", publisher: "Council of the District of Columbia", kind: "official-biography" },
+			{ url: "https://oag.dc.gov/about-oag/our-structure-divisions/about-attorney-general", title: "Brian L. Schwalb biography", publisher: "District of Columbia Office of the Attorney General", kind: "official-biography" },
+			{ url: "https://dccouncil.gov/council/elissa-silverman/", title: "Elissa Silverman service history", publisher: "Council of the District of Columbia", kind: "official-biography" },
+		],
+	},
 ];

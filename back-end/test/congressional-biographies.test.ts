@@ -29,9 +29,9 @@ function prepare(body: string, candidates = [candidateSnapshot()], previous: Ele
 }
 
 test("directory collections are additive, dated and pinned to the observed public edition", () => {
-	assert.equal(congressionalBiographySources.length, 40);
-	assert.equal(new Set(congressionalBiographySources.map(source => source.id)).size, 40);
-	assert.equal(electionReferenceSources.length, 51);
+	assert.equal(congressionalBiographySources.length, 46);
+	assert.equal(new Set(congressionalBiographySources.map(source => source.id)).size, 46);
+	assert.equal(electionReferenceSources.length, 58);
 	for (const source of congressionalBiographySources) {
 		assert.equal(source.electionDate, "2026-11-03");
 		assert.equal(source.documents.length, 1);
@@ -126,6 +126,52 @@ test("reviewed source discrepancies are withheld without inventing replacement f
 	const terms = header + biography("MIKE ROUNDS", "SD", "B.A., Example University", "member, South Dakota State Senate, 1990-2000 (Minority Whip, 1993; Majority Leader, 1995); governor, South Dakota, 2002-10") + biography("JOSEPH D. MORELLE", "NY", "B.A., Example University", "member, New York State Assembly, 1990-2018 (Majority Leader, 2013-18)");
 	const termOutputs = prepare(terms, [candidateSnapshot("SD", [candidate({ name: "Mike Rounds" })]), candidateSnapshot("NY", [candidate({ name: "Joseph D. Morelle" })])]);
 	assert.deepEqual(termOutputs.map(output => output.snapshot.records[0]!.facts[1]).sort(), ["Professional background: governor, South Dakota.", "Professional background: member, New York State Assembly."].sort());
+});
+
+test("reviewed heading variants retain mixed-case surnames and the printed semicolon before a state", () => {
+	const body = header + biography("SARAH McBRIDE", "DE") + biography("BECCA BALINT", "VT").replace("of Example City, VT;", "of Brattleboro; VT;");
+	const parsed = parseCongressionalBiographies(body);
+	assert.deepEqual(parsed.map(person => [person.name, person.stateCode]), [["SARAH McBRIDE", "DE"], ["BECCA BALINT", "VT"]]);
+	assert.equal(parseCongressionalBiographies(body.replace("Democrat, of Brattleboro; VT;", "Democrat, of Brattleboro; not a state;")).length, 1);
+});
+
+test("explicit identity reviews bind source, exact candidate name, office and directory identity", () => {
+	const body = header + biography("CHRISTOPHER A. COONS", "DE");
+	const source = candidateSnapshot("DE", [candidate({ name: "Chris Coons", scope: "statewide", office: "U.S. Senator", district: "" })]);
+	const output = prepare(body, [source])[0]!;
+	assert.equal(output.snapshot.records[0]!.name, "Chris Coons");
+	assert.equal(output.identities[0]!.identityReviewUrl, "https://www.coons.senate.gov/meet-chris/");
+	assert.equal(output.identities[0]!.directoryName, "CHRISTOPHER A. COONS");
+	assert.equal(prepare(body, [candidateSnapshot("DE", [candidate({ name: "Christopher Coons", scope: "statewide", office: "U.S. Senator" })])]).length, 0);
+	assert.equal(prepare(body, [candidateSnapshot("DE", [candidate({ name: "Chris Coons", scope: "statewide", office: "Governor" })])]).length, 0);
+	const unrelated = { ...source, source: { ...source.source, id: "unreviewed-source" } };
+	assert.equal(prepare(body, [unrelated]).length, 0);
+	assert.equal(source.records[0]!.name, "Chris Coons");
+});
+
+test("reviewed at-large House references do not alter official scopes or infer other districts", () => {
+	for (const [state, name, office] of [["ND", "JULIE FEDORCHAK", "Representative in Congress"], ["DE", "SARAH McBRIDE", "Representative in Congress"], ["VT", "BECCA BALINT", "REPRESENTATIVE TO CONGRESS"]]) {
+		const body = header + biography(name, state);
+		const snapshot = candidateSnapshot(state, [candidate({ name, office, scope: "statewide", district: "" })]);
+		const original = JSON.stringify(snapshot);
+		const output = prepare(body, [snapshot])[0]!.snapshot.records[0]!;
+		assert.equal(output.scope, "congressional");
+		assert.equal(output.office, "U.S. Representative");
+		assert.equal(output.jurisdiction, "At-large");
+		assert.equal(JSON.stringify(snapshot), original);
+		assert.equal(prepare(body, [{ ...snapshot, records: [{ ...snapshot.records[0]!, district: "7" }] }]).length, 0);
+		assert.equal(prepare(body, [{ ...snapshot, source: { ...snapshot.source, id: "unreviewed-source" } }]).length, 0);
+	}
+});
+
+test("new source holds omit disputed degrees and ambiguous election or service dates", () => {
+	const body = header + biography("BECCA BALINT", "VT", "A.B., Example University, 1990; Ed.M., Harvard University, 1994") + biography("JULIE FEDORCHAK", "ND", "B.A., Example University", "communications director, Governor Ed Schaefer, 1995-2000; president, Liffrig Communications, Inc., 2000-10; North Dakota Public Service Commissioner, 2014, 2016, 2022");
+	const outputs = prepare(body, [candidateSnapshot("VT", [candidate({ name: "Becca Balint" })]), candidateSnapshot("ND", [candidate({ name: "Julie Fedorchak" })])]);
+	assert.equal(outputs.length, 2);
+	assert.ok(outputs.find(output => output.source.stateCode === "VT")!.snapshot.records[0]!.facts.every(fact => !fact.startsWith("Education:")));
+	assert.deepEqual(outputs.find(output => output.source.stateCode === "ND")!.snapshot.records[0]!.facts[1], "Professional background: president, Liffrig Communications, Inc., 2000-10.");
+	const california = prepare(header + biography("MARK DeSAULNIER", "CA", "B.A., Example University", "member, California Area Resources Board, 1997-2006; member, California State Senate, 2008-15"), [candidateSnapshot("CA", [candidate({ name: "Mark DeSaulnier" })])])[0]!;
+	assert.deepEqual(california.snapshot.records[0]!.facts[1], "Professional background: member, California State Senate.");
 });
 
 test("compiled-compatible preparation stages validated files without import, network or overwriting", async (context) => {

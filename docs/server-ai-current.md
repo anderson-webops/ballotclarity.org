@@ -1,6 +1,6 @@
 # Current server-AI instructions
 
-Target: **v1.11.0**, November 3, 2026 election. This handoff is not proof of runtime
+Target: **v1.11.1**, November 3, 2026 election. This handoff is not proof of runtime
 or data activation. Nationwide/local collection remains unfinished.
 
 ## Authority and release acceptance
@@ -34,13 +34,16 @@ independently. Also preserve the existing database, ADMIN_DB_PATH,
 LIVE_COVERAGE_FILE and metadata sidecar, and optional
 BALLOTCLARITY_ZIP_LOOKUP_LOG_PATH. Credentials/logs never belong in artifacts.
 
-Retain v1.10.5, its reviewed environment, manifest, transfer package and durable-
+Retain v1.11.0, its reviewed environment, manifest, transfer package and durable-
 state backup before activation/import. Snapshot schema remains 1; no database
-migration is introduced. All eleven preceding collection configurations and
-fingerprints remain unchanged. During rollback, v1.10.5 ignores the forty new
-references-us-cdir-*-2026.json cache files and retains its eleven known collections.
-Use its own compiled commands; it does not support prepare-congressional or the
-new source IDs. Never rename sources, relabel snapshots, delete older data or
+migration is introduced. All 51 preceding collection configurations and
+fingerprints remain unchanged. During rollback, v1.11.0 ignores the six new
+us-cdir AR/DE/ID/ND/VT/WY cache files and references-dc-local-biographies-2026.json.
+Its 51 known collections remain compatible, including the nine expanded snapshots
+whose old records are unchanged. For exact prior data, use the retained pre-import
+backup and v1.11.0 manifest. Its older preparation command lacks the new reviewed
+identity, heading and at-large cases; do not use it to overwrite expanded data.
+Never rename sources, relabel snapshots, delete older data or
 restore a bundled-data fallback to force compatibility. Older official allowlist
 semantics also require their compatible reviewed environment.
 
@@ -53,24 +56,34 @@ automatic publishers remain excluded; seventeen are currently permitted.
 Brunswick NC's 39 records and Santa Fe NM's 46 retain separate IDs/documents and
 do not replace primary feeds. Unverified local/legislative matching stays withheld.
 
-Reference data:51 collections across 44 states, 254 profiles and 573 factual items.
-The new national collection contributes 162 profiles/325 facts in 40 collections;
-all preceding 92 profiles/248 facts remain unchanged. Six states AR/DE/ID/ND/VT/WY
-and DC still lack substantive references. Louisiana has two attributed Senate
+Reference data: 58 collections across all 50 states plus DC, 284 profiles and 639
+factual items. This update adds 22 Directory profiles/43 facts in fifteen states
+and eight DC profiles/23 facts. All preceding 254 profiles remain unchanged.
+Six new Directory collections cover AR/DE/ID/ND/VT/WY; nine preceding collections
+gain thirteen further exact matches. DC adds independent council/AG biographies,
+including three ward candidates. This is geographic reference coverage, not all
+candidates, races, local areas or complete ballots. Louisiana has two attributed Senate
 reports, not an accepted official qualification dataset. No directory, office
 biography, news report or candidate submission establishes ballot qualification,
 withdrawal, personal eligibility or a complete slate.
 
 The GPO/Joint Committee on Printing Directory is issued 2026-02-20 but states a
 printed compilation cutoff of 2025-10-01. It supplies historical background, not
-current membership or 2026 nominees. Only exact normalized full-name/state matches
-to active retained official records are accepted; no nickname/fuzzy matching.
-Ticket members keep explicit governor/lieutenant-governor slots. Thirteen existing
-profiles and four inactive candidates are excluded from the new collection.
+current membership or 2026 nominees. Exact normalized full-name/state matching is
+the default. Six separately reviewed mappings bind the exact source, candidate
+name, election office and edition to captured official identity pages; there is
+no general nickname, title-stripping or fuzzy-name rule. Mixed-case surnames and
+the printed city/state semicolon are recognized. Ticket members retain explicit
+governor/lieutenant-governor slots. Existing non-directory profiles and inactive
+candidates remain excluded. Three reviewed DE/ND/VT at-large House cases affect
+reference display only; original official scopes and personal lookup are unchanged.
 
-The original PDF itself contains discrepancies. Six edition-scoped field/clause/
-date holds cover five people: Morrison/James education, Spartz's institution
-clause, Rounds's state-Senate clause/governor range, and Morelle's Assembly range.
+The source contains discrepancies. Fifteen edition-scoped field/clause/date holds
+cover twelve people. The six preceding holds remain; nine new holds withhold
+Womack/Coons/McBride service ranges, Risch's complex Senate clause, Fedorchak's
+governor-name and ambiguous commissioner-year clauses, Balint's education, and
+DeSaulnier's agency-name clause/Senate date range. The original PDF confirmed
+earlier examples; new source-text differences are not assumed to be PDF errors.
 Uncertain dates/degrees are omitted, not silently corrected from another source.
 Current/open-ended role clauses and broken fields are withheld. Source authorship,
 publication/capture dates and reviewed limitations must survive reprocessing.
@@ -89,21 +102,23 @@ legislative slate. Question companions are not imported application measures.
 ## Reviewed-data transfer
 
 Use the cumulative source-computer package:
-back-end/data/state-ballots/server-reviewed-election-data-2026-v1.11.0.tar.gz
+back-end/data/state-ballots/server-reviewed-election-data-2026-v1.11.1.tar.gz
 
-It is 748,433 bytes with exactly 85 flat members:33 reviewed official snapshots/
-17,662 records, 51 reference snapshots/254 profiles/573 facts, and
-server-reviewed-election-data-2026-v1.11.0-manifest.json.
+It is 754,597 bytes with exactly 92 flat members: 33 reviewed official snapshots/
+17,662 records, 58 reference snapshots/284 profiles/639 facts, and
+server-reviewed-election-data-2026-v1.11.1-manifest.json.
 
 Archive SHA-256:
-95a9d12a3468969ee297b560fbf95989547f6f92bc7e4eaf7bf3723658d029fb
+3c9cb7a75005883ca098571cad0118b8dbe6b3c80535c3e7be4f1933e9b351f0
 
 Manifest SHA-256:
-23c8e0126a65ebe2b88d326a3cfa7b9af88a49f180e00d28c3f888ced73cdb0b
+6643cf51e4a9cac682fb6b99593ad9c35aa2c354b62fc7cd4d61e455931e374b
 
-This supersedes the v1.10.5 transfer procedure, not six preceding packages,
-published tags or durable data. Original bytes, configuration fingerprints and
-capture dates are preserved. Seventeen permitted automatic sources refresh
+This supersedes the v1.11.0 transfer procedure, not seven preceding packages,
+published tags or durable data. All 323 preceding canonical files remain byte-exact.
+Nine expanded Directory snapshots have new versioned transfer filenames; use the
+current manifest instead of importing both old and new files for one source ID.
+Original configuration fingerprints and capture dates are preserved. Seventeen permitted automatic sources refresh
 separately; their raw snapshots are not included in this archive.
 
 The source agent has not uploaded/imported this package. An independently
@@ -115,7 +130,7 @@ report reviewed data unavailable rather than claiming code activation populated 
 Before extraction, verify both hashes and the exact member allowlist. Reject
 traversal, links, extra members, wrong sizes/hashes or mismatched source/election/
 configuration fingerprints. Use officialSnapshots only with the official importer
-and referenceSnapshots only with the reference importer. Import all 84 snapshots
+and referenceSnapshots only with the reference importer. Import all 91 snapshots
 separately, retaining source ID, status, count and original capture time.
 Research CSV/JSONL, publisher text/PDF, images, contacts and credentials are not
 importer inputs and are not members of this package.
@@ -164,6 +179,7 @@ node back-end/dist/manage-state-ballot-data.js import /approved/staging/reviewed
 node back-end/dist/manage-election-references.js import /approved/staging/reviewed-references.json
 node back-end/dist/manage-election-references.js export WA --source wa-congressional-statements-2026
 node back-end/dist/manage-election-references.js export CA --source us-cdir-ca-2026
+node back-end/dist/manage-election-references.js export DC --source dc-local-biographies-2026
 node back-end/dist/manage-state-ballot-data.js refresh WA MT KS SC UT MS SD HI CO KY ND VA MI WY MD FL DE
 ```
 
@@ -222,8 +238,11 @@ external output. Files are created exclusively; use a fresh staging directory.
 A failure does not import anything or authorize replacing existing outputs.
 
 Inspect the preparation manifest and every affected count/source/field delta
-before imports. Current accepted output is 40 collections/162 profiles/325 facts.
-Keep the six quality holds and no-current-role rules. Stop on unexpected missing
+before imports. Current Directory preparation produces 46 collections/184 profiles/
+368 facts. DC's eight profiles/23 facts are a separately reviewed import, not
+output from this parser. Keep all fifteen quality holds and no-current-role rules.
+The six identity mappings require renewed review for any new source/name/office
+or edition; do not generalize them. Stop on unexpected missing
 states, count drops, unmatched candidates, changed fields or source drift; retain
 healthy durable data and stage evidence rather than automatically publishing a
 partial or empty replacement. Then separately validate/import exact approved files.
@@ -252,17 +271,22 @@ independent.
 1. Verify source tag/assets and served release identity separately from data.
    Check health/readiness and the affected directory pages.
 2. Reconcile all imported official snapshots and full paginated reference totals
-   by state/source against the verified manifest. Expected references total 254
-   across 44 states. There are 51 source collections, not one per state.
-3. Check new CA 35, AL 5, MI 7, MN 2, OH 3 and PA 4 profiles, their correct election
+   by state/source against the verified manifest. Expected references total 284
+   across 50 states plus DC. There are 58 source collections, not one per state.
+3. Check AR 2, DE 2, ID 2, ND 1, VT 1, WY 1 and DC 8 profiles; CA now has 37,
+   MI 8, VA 8 and NJ 5. Verify correct election
    offices/ticket slots, GPO source links, publication dates and capture times.
    Existing NC/NM totals become 9/3, AZ 6, NV 5, OR 17, ME 4; WA 24, AK 15 and UT 16
    remain unchanged. No missing biography implies withdrawal.
-4. Confirm Morrison/James education and the held Spartz/Rounds/Morelle claims do
-   not appear. All fields remain attributed background, never qualification.
+4. Confirm all fifteen held fields/clauses/ranges do not appear. DC keeps distinct
+   council/AG attribution and actual capture dates, without invented publication
+   dates or current-term claims. Ward 3/5/6 profiles filter as local; Robert White's
+   reference concerns the federal delegate race, not his source biography's council
+   role. All fields remain attributed background, never qualification.
    Test query/scope/global pagination and cross-state/name separation.
 5. Preserve NC 39/NM 46/AK 155/OR 279/UT 255/AZ 207/NV 254/WA 887 official records and
-   synthetic state-only preview counts 12/18/18/7/7/23/18/10. New profiles must
+   synthetic state-only preview counts 12/18/18/7/7/23/18/10, plus DC 33 from its
+   unchanged 436-record official list. New profiles must
    never enter personal lookup or create unverified local/legislative assignment.
 6. In an isolated acceptance environment, withhold/corrupt/restore individual
    collections, check healthy partial results/Retry, restart recovery, keyboard
@@ -272,8 +296,9 @@ independent.
    on mismatch. Report source publication, runtime activation and data activation
    separately. Local historical fixture clocks are not evidence of live freshness.
 
-Further work includes the six reference-state gaps/DC, permitted Louisiana/local
-official publications, other candidate backgrounds and attributed reporting.
+Further work includes permitted Louisiana/local official publications, remaining
+candidate backgrounds, challengers and attributed reporting. Having at least one
+reference in every state/DC does not complete these election/local coverage goals.
 Reliable personal local matching requires authoritative boundaries/provider
 vintage. Question companions require election/date/choice/geography/application
 review before measure import. Keep website text to substantive data, necessary

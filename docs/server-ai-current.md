@@ -1,6 +1,6 @@
 # Current server-AI instructions
 
-Target: **v1.10.3**, November 3, 2026 election. This is the current operating
+Target: **v1.10.4**, November 3, 2026 election. This is the current operating
 handoff, not proof of deployment or data activation. Further collection continues.
 
 ## Release and authority
@@ -49,7 +49,7 @@ publishers remain excluded from AI collection. Brunswick NC's 39 records and
 Santa Fe NM's 46 retain separate IDs, dates and documents, without replacing primary
 feeds. New local/unverified legislative matching remains withheld.
 
-Eight reference collections retain 80 entries and 213 factual items. North Carolina's
+Ten reference collections retain 88 entries and 236 factual items. North Carolina's
 eight judicial submissions are candidate-provided; New Mexico's two Supreme Court
 retention profiles use official court biographies. Neither source establishes
 qualification or personal eligibility. Candidate statements are not independent
@@ -70,87 +70,55 @@ remain in the official list without profile submissions. Two explicit middle-ini
 name variants were reviewed against the same printed House districts. These are
 candidate-provided claims, not state-verified biographies or personal ballot matches.
 
+Arizona adds five individual profiles from official biographies and candidate
+statements, corresponding to four governor/lieutenant-governor ticket rows.
+Profiles do not add official choices. Nevada adds two gubernatorial profiles and
+one lieutenant-governor profile from official office biographies. These are not
+complete executive slates. Keep source authorship separate for every record;
+official office biographies do not establish ballot qualification or independently
+verify all their claims. Stale office/term claims and uncertain dates are omitted.
+
 Bulk election data is outside Git and runtime releases. Code deployment alone
 does not populate reviewed records or reference collections.
 
 ## Reviewed-data transfer prerequisite
 
-Prepared source-computer package:
-`back-end/data/state-ballots/server-reviewed-election-data-2026-v1.10.0.tar.gz`,
-with its `-manifest.json` and `-SHA256SUMS` companions. This is **not a server path
-obtained by cloning Git**, not one of the protected runtime assets, and not uploaded
-by source publication. Request separately approved transfer through the existing
-trusted operator channel if absent. Never substitute fixtures or denied scraping.
+Use one cumulative source-computer package:
+`back-end/data/state-ballots/server-reviewed-election-data-2026-v1.10.4.tar.gz`.
+It is 716,788 bytes with exactly 44 flat members: 33 reviewed official snapshots
+(17,662 records), ten reference snapshots (88 profiles/236 factual items), and
+`server-reviewed-election-data-2026-v1.10.4-manifest.json`.
 
-Expected archive SHA-256:
-`8f31619604d8f034962bb5dd22dda917845804ae35785981b40c647d7d28e41c`.
-
-Expected manifest SHA-256:
-`3a5219266f8e36466d484e728b4f4e0a1b5bf9242a793ce44a64b4c9f633c1ab`.
-
-Its 37 members are 33 reviewed official snapshots with 17,662 records, three
-reference snapshots with 25 entries, and the manifest. Automatic official-source
-snapshots are deliberately excluded: refresh those sources normally. Verify the
-archive/manifest, require exactly the listed safe regular-file members, extract
-to owned staging outside the release, and verify every input hash and configured
-source fingerprint before import. Preserve original source dates/hashes. Imports
-are atomic per file, not a transactional batch; retain the prior backup and check
-each command before continuing.
-
-The separately prepared `server-reviewed-judicial-addendum-2026-v1.10.1.tar.gz`
-adds two reference snapshots, ten profiles and 22 facts. It has exactly three
-members: the NC and NM snapshots and its `-manifest.json`. It requires the
-v1.10.1 or later compatible runtime and separately approved operator transfer, just like the retained
-v1.10.0 package. Do not replace the earlier package or import into an older runtime.
-
-Addendum archive SHA-256:
-`2008a225e0e6b92ead5921d84e10f5b2d8bac5703207b60c4f13925b244197ee`.
-
-Addendum manifest SHA-256:
-`e804e9db3e3f72512f6ec33ab59e0e3a91842602054c285af4353a943ab89009`.
-
-Verify both hashes, the exact regular-file members and every source/input
-fingerprint before using the existing reference importer on
-`election-references-north-carolina-judicial-2026.json` and
-`election-references-new-mexico-supreme-2026.json`. The factual CSV/JSONL companions
-are not importer inputs. Earlier reference configuration fingerprints and data
-remain unchanged, so missing addendum imports must not hide LA/ME/WA references.
-Rollback to v1.10.0 ignores these new collection files; retain rather than relabel
-them and restore the retained compatible environment. Profiles never enter personal
-lookup previews or change official record totals.
-
-The additional `server-reviewed-pamphlet-addendum-2026-v1.10.2.tar.gz` contains
-exactly the AK and OR reference snapshots and its `-manifest.json`: 29 profiles
-and 89 factual items. It requires v1.10.2 and a separate approved transfer/import.
-Retain both earlier data packages unchanged. Its archive SHA-256 is
-`3458a414e453f142d848a410a89a10a32c10af25db229c982ce81b97414b09d7`;
-its manifest SHA-256 is
-`b94a89262bcde7d03a93a980e8145333fc05c08eda8db610e29e4587a9cab134`.
-
-After exact member/hash/source validation, import
-`election-references-alaska-statewide-2026.json` and
-`election-references-oregon-eastern-2026.json` through the reference command.
-Do not import the companion CSV/JSONL through the official candidate command.
-These are reviewed candidate-supplied summaries, not automatic PDF scraping or
-independent qualifications. Earlier collection fingerprints remain unchanged.
-Rollback to v1.10.1 ignores the two new collection files; retain rather than
-relabel them and restore the compatible reviewed configuration.
-
-The additional `server-reviewed-utah-addendum-2026-v1.10.3.tar.gz` contains exactly
-`election-references-utah-congressional-2026.json` and
-`server-reviewed-utah-addendum-2026-v1.10.3-manifest.json`: sixteen profiles and
-thirty factual/position items. It requires v1.10.3 and a separate approved transfer
-and reference import. Preserve all three preceding data packages unchanged.
 Archive SHA-256:
-`f4e70434e37ae9feac0c6b4f174103992e4ab6e91313cf00db0bcdff9f61e184`.
+`fdee8ee4026b7bf2edd3eaaf388dfb8e1e6ef07f6cdf548140815275db29fc98`.
 Manifest SHA-256:
-`604c369398fe2ea0e972405c615a3fec316a8648be701a5fccbee8587ef576ef`.
+`e000ab93cc6a7234fafc38e1b29c41a0ac39365cba7b9047e35c0e8744f7d132`.
 
-Verify the exact two members, data/configuration fingerprints and capture time
-before import. The companion CSV/JSONL and review manifest are not importer inputs.
-No publisher PDF, photograph or contact data is in this archive or runtime release.
-Rollback to v1.10.2 ignores the new collection while preserving earlier data; retain
-its file and restore the compatible reviewed configuration rather than relabel it.
+This replaces the four-package transfer procedure, not the historical packages,
+tags or data. Preserve those artifacts for recovery. Existing snapshots retain
+their original bytes, configuration fingerprints, capture dates and authorship;
+nothing is relabeled as freshly collected. The seventeen permitted automatic
+sources are refreshed separately and are not bulk files inside this package.
+
+The source agent has not uploaded or imported it. An independently authorized
+operator must arrange an approved transfer. Do not use source-agent SSH/SCP,
+public uploads, GitHub release assets, guessed remote paths or relaxed permissions.
+Without approved transfer, report reviewed data unavailable rather than pretending
+code activation populated it.
+
+Before extraction, verify archive/manifest hashes and exactly the declared members.
+Reject traversal, links, extra members or mismatched sizes/hashes. Verify each
+snapshot's source/election/configuration fingerprint against the accepted runtime.
+Use the manifest's `officialSnapshots` list only with the official importer and
+`referenceSnapshots` only with the reference importer. No research CSV/JSONL,
+publisher PDF, photograph, contact, campaign essay or credential is included.
+
+Import all 43 listed files separately, retaining exit status, original timestamp
+and count; re-importing unchanged snapshots uses the same atomic validation.
+Existing data survives absent later imports. Do not delete unrelated durable
+state or restore a bundled-data fallback. During rollback to v1.10.3, retain but
+do not relabel the two new AZ/NV collection files; restore that runtime's compatible
+reviewed configuration. The eight preceding reference configurations are unchanged.
 
 ## Publisher policy and configuration
 
@@ -166,6 +134,13 @@ the denial. This does not change the separately reviewed official candidate list
 Utah's public pamphlet host permits collection with a ten-second delay; recheck
 its current terms and candidate authorship before another capture. The profile
 path needs no address-based or private voter tool and is not an automatic adapter.
+
+Danielle Ford's campaign biography returned 403; do not retry it through other
+routes, identities or mirrors. Arizona Clean Elections' linked document host
+returned 400 for its policy request, so no document collection was accepted there.
+The separately permitted independent biographies/statements are not substitutes
+for those documents. Nevada's captured governor biography is linked from the
+actual public www homepage; search-only int/prod hosts were never requested.
 
 Keep `nc-sbe-2026` excluded: its configured distribution-host policy request
 returned 403. Keep `nm-sos-2026` excluded: the state candidate host explicitly
@@ -220,8 +195,8 @@ automatic OCR approval, repeated invalid imports or news/profile extraction.
    source. Confirm 39/46 records, local scope, retention choices and source/state/
    filter isolation. Explicit missing sources stay unavailable. Default fallback
    must retain the actual returned source's attribution, not its primary's label.
-3. Check `/api/election-references/LA`, `/ME`, `/WA`, `/NC`, `/NM`, `/AK`, `/OR`, `/UT`
-   and the directory sections. Expected totals are 2, 3, 20, 8, 2, 15, 14 and 16,
+3. Check `/api/election-references/LA`, `/ME`, `/WA`, `/NC`, `/NM`, `/AK`, `/OR`, `/UT`, `/AZ`, `/NV`
+   and the directory sections. Expected totals are 2, 3, 20, 8, 2, 15, 14, 16, 5 and 3,
    respectively. OR's local filter has five references, without adding official
    records or making them personal ballot choices. Retain distinct
    candidate-provided, news-report and official-biography labels, original capture
@@ -230,6 +205,10 @@ automatic OCR approval, repeated invalid imports or news/profile extraction.
    UT has sixteen congressional references and no local/statewide profile records;
    its retained official dataset stays at 255 records, including all twenty House
    candidates. Synthetic state-only UT previews remain seven retention entries.
+   AZ's official snapshot stays at 207 records and NV's at 254. Risa Lombardo and
+   Joe/Joseph Lombardo remain different people in different states. Angela Harrolle
+   Mohan is the lieutenant-governor ticket member, not an extra governor choice.
+   Her honorary commander role must not be presented as active military service.
 4. Using synthetic state-only locations, check twelve NC/eighteen NM preview
    entries, no new unverified legislative/local assignment, and limited-coverage
    feedback. Never use a real person's address for acceptance.

@@ -14,6 +14,28 @@ export interface ElectionReferenceSource {
 
 export const electionReferenceSources: readonly ElectionReferenceSource[] = [
 	{
+		id: "az-statewide-profiles-2026",
+		stateCode: "AZ",
+		electionDate: "2026-11-03",
+		documents: [
+			{ url: "https://azgovernor.gov/governor/meet-governor-katie-hobbs", title: "Katie Hobbs biography", publisher: "Office of the Arizona Governor", kind: "official-biography" },
+			{ url: "https://biggs.house.gov/about/biography", title: "Andy Biggs biography", publisher: "Office of Congressman Andy Biggs", kind: "official-biography" },
+			{ url: "https://risalombardo.com/about/", title: "Risa Lombardo candidate statement", publisher: "Lombardo for AZ", kind: "candidate-statement" },
+			{ url: "https://teriann4azgov.org/about", title: "Teri Ann Hourihan candidate statement", publisher: "Teri Ann Hourihan for Arizona Governor", kind: "candidate-statement" },
+			{ url: "https://teriann4azgov.org/teri-anns-lieutenant-governor", title: "Angela Harrolle Mohan candidate statement", publisher: "Teri Ann Hourihan for Arizona Governor", kind: "candidate-statement" },
+		],
+	},
+	{
+		id: "nv-executive-biographies-2026",
+		stateCode: "NV",
+		electionDate: "2026-11-03",
+		documents: [
+			{ url: "https://ag.nv.gov/About/AG_Aaron_Ford/", title: "Aaron D. Ford biography", publisher: "Nevada Office of the Attorney General", kind: "official-biography" },
+			{ url: "https://www.gov.nv.gov/about/governor-joe-lombardo/", title: "Joe Lombardo biography", publisher: "Office of the Nevada Governor", kind: "official-biography" },
+			{ url: "https://ltgov.nv.gov/AboutUs/BiographyStavrosAnthony/", title: "Stavros Anthony biography", publisher: "Office of the Nevada Lieutenant Governor", kind: "official-biography" },
+		],
+	},
+	{
 		id: "ut-congressional-statements-2026",
 		stateCode: "UT",
 		electionDate: "2026-11-03",

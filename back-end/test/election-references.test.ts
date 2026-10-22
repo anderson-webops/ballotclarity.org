@@ -103,6 +103,24 @@ test("Utah references pin the public general-election pamphlet without address-b
 	assert.equal("status" in page.records[0]!, false);
 });
 
+test("Arizona and Nevada profiles preserve mixed authorship and actual public biography hosts", () => {
+	const arizona = electionReferenceSources.find(item => item.id === "az-statewide-profiles-2026")!;
+	const nevada = electionReferenceSources.find(item => item.id === "nv-executive-biographies-2026")!;
+	assert.equal(arizona.stateCode, "AZ");
+	assert.equal(nevada.stateCode, "NV");
+	assert.deepEqual(arizona.documents.map(document => document.kind), ["official-biography", "official-biography", "candidate-statement", "candidate-statement", "candidate-statement"]);
+	assert.ok(nevada.documents.every(document => document.kind === "official-biography"));
+	assert.equal(nevada.documents[1]!.url, "https://www.gov.nv.gov/about/governor-joe-lombardo/");
+	for (const collection of [arizona, nevada]) {
+		assert.equal(collection.electionDate, "2026-11-03");
+		assert.ok(collection.documents.every(document => document.publishedDate === undefined && !/int\.|prod\.|daniellefornevada|storageccec/u.test(document.url)));
+		const snapshot = parseElectionReferenceSnapshot(collection, JSON.stringify(fixture(collection)));
+		const page = buildElectionReferencePage(collection, snapshot, { search: "", scope: "all", offset: 0, limit: 50 });
+		assert.deepEqual(page.records.map(record => record.source.kind), collection.documents.map(document => document.kind));
+		assert.ok(page.records.every(record => !("status" in record) && !("party" in record)));
+	}
+});
+
 test("references reject different elections, states, collections and unreviewed fields", () => {
 	const data = fixture();
 	for (const invalid of [{ ...data, electionDate: "2028-11-07" }, { ...data, stateCode: "LA" }, { ...data, sourceId: newsSource.id }, { ...data, type: "official-candidates" }, { ...data, address: "Excluded" }]) assert.throws(() => parseElectionReferenceSnapshot(source, JSON.stringify(invalid)), /configured collection/u);

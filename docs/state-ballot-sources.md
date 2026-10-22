@@ -482,6 +482,8 @@ node back-end/dist/manage-election-references.js import /absolute/reviewed-data/
 node back-end/dist/manage-election-references.js import /absolute/reviewed-data/election-references-alaska-statewide-2026.json
 node back-end/dist/manage-election-references.js import /absolute/reviewed-data/election-references-oregon-eastern-2026.json
 node back-end/dist/manage-election-references.js import /absolute/reviewed-data/election-references-utah-congressional-2026.json
+node back-end/dist/manage-election-references.js import /absolute/reviewed-data/election-references-arizona-statewide-2026.json
+node back-end/dist/manage-election-references.js import /absolute/reviewed-data/election-references-nevada-executive-2026.json
 node back-end/dist/manage-election-references.js export LA
 ```
 
@@ -595,6 +597,35 @@ California's voter-guide policy request returned 403. No guide documents were
 collected, and no CDN, mirror or identity workaround was attempted. Its separately
 reviewed official candidate dataset remains unchanged. See
 `docs/audits/2026-10-22-utah-profiles.md` and current server-AI instructions.
+
+Arizona adds five individual executive profiles and fourteen background/position
+items. Two are official office biographies; three are candidate-authored statements.
+All four retained governor/lieutenant-governor tickets have a gubernatorial profile;
+only the Hourihan ticket has a running-mate profile in this collection. Five people
+are not five additional official choices. The official 207-record snapshot stays
+unchanged. Historical Biggs career/education claims are kept separate from stale
+term/committee text; Hobbs's uncertain election-day date is omitted. Angela Harrolle
+Mohan's honorary commander role is not active military service.
+
+Nevada adds three official office biographies and nine background items: Aaron D.
+Ford and Joe/Joseph Lombardo for Governor, and Stavros Anthony for Lieutenant
+Governor. These do not complete either race or change the official 254-record list.
+Danielle Ford's campaign biography returned 403 and was not retried through other
+routes, identities or mirrors. Arizona's Risa Lombardo remains a different person.
+The governor publication is linked by its actual public www homepage; int/prod
+search results were not requested. Office biographies describe source authorship,
+not independently verified qualification or election recommendations.
+
+The cumulative v1.10.4 operator package replaces the four-package transfer procedure:
+33 unchanged reviewed official snapshots, all ten reference snapshots, and one
+manifest, exactly 44 members and 716,788 compressed bytes. It retains 17,662
+reviewed official records and 88 profiles/236 factual items, not all election data.
+Seventeen permitted automatic sources are refreshed separately. The earlier
+packages/tags remain immutable. Every file retains its original capture time,
+source/configuration hashes and schema. No raw source, research CSV/JSONL or secret
+is packaged. The archive remains outside Git/runtime and still requires independently
+approved operator transfer/import. Current server-AI instructions contain exact hashes.
+See `docs/audits/2026-10-22-arizona-nevada-profiles.md` for reconciliation and checks.
 
 Do not relabel references `listed` or `qualified`, merge them into personal ballot
 previews, infer an outcome, or claim a complete Louisiana ballot. Collections are

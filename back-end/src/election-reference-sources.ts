@@ -14,6 +14,40 @@ export interface ElectionReferenceSource {
 
 export const electionReferenceSources: readonly ElectionReferenceSource[] = [
 	{
+		id: "ak-statewide-statements-2026",
+		stateCode: "AK",
+		electionDate: "2026-11-03",
+		documents: ([
+			["Dave Bronson", "https://elections.alaska.gov/doc/oep/2026/Bronson,%20Dave_Governor_Eng_v3.pdf"],
+			["Josh Church", "https://elections.alaska.gov/doc/oep/2026/Church,%20Josh%20J_Lt.%20Governor_Eng_v2.pdf"],
+			["Jonathan S. Kreiss-Tomkins", "https://elections.alaska.gov/doc/oep/2026/KREISS-TOMKINS,%20JONATHAN%20S.%20JKT_Gov_Eng_v4.pdf"],
+			["Zac Johnson", "https://elections.alaska.gov/doc/oep/2026/JOHNSON,%20ZAC_Lt%20Gov_Eng_v2.pdf"],
+			["Treg Taylor", "https://elections.alaska.gov/doc/oep/2026/TAYLOR,%20TREG_Gov_Eng_v1.pdf"],
+			["Candi English", "https://elections.alaska.gov/doc/oep/2026/CANDI,%20ENGLISH_%20Lt%20Governor_%20Eng_v2.pdf"],
+			["Bernadette M. Wilson", "https://elections.alaska.gov/doc/oep/2026/WILSON,%20BERNADETTE_Gov_Eng_v2.pdf"],
+			["Michael K. Shower", "https://elections.alaska.gov/doc/oep/2026/SHOWER%20,%20MICHAEL%20K_%20Lt%20Governor_%20Eng_v1.pdf"],
+			["Mary Peltola", "https://elections.alaska.gov/doc/oep/2026/PELTOLA,MARY_US%20Sen_Eng_v1.pdf"],
+			["Dan S. Sullivan", "https://elections.alaska.gov/doc/oep/2026/SULLIVAN,%20DAN%20S_US%20Sen_Eng_v2.pdf"],
+			["Daniel J. Sullivan Jr.", "https://elections.alaska.gov/doc/oep/2026/SULLIVAN,%20DANIEL%20J.%20JR%20_US%20Sen_Eng_v1.pdf"],
+			["Nick Begich", "https://elections.alaska.gov/doc/oep/2026/BEGICH,%20NICK_US%20Rep_Eng_v1.pdf"],
+			["Eric Hafner", "https://elections.alaska.gov/doc/oep/2026/HAFNER,%20ERIC_US%20Rep_Eng_v1.pdf"],
+			["Bill Hill", "https://elections.alaska.gov/doc/oep/2026/HILL,%20BILL_US%20Rep_Eng_v2.pdf"],
+			["James C. McDermott", "https://elections.alaska.gov/doc/oep/2026/Mcdermott,%20James%20C_%20USRep_Eng_v2.pdf"],
+		] as const).map(([name, url]) => ({ url, title: `${name} candidate statement`, publisher: "Alaska Division of Elections", kind: "candidate-statement" as const })),
+	},
+	{
+		id: "or-eastern-statements-2026",
+		stateCode: "OR",
+		electionDate: "2026-11-03",
+		documents: [{
+			url: "https://sos.oregon.gov/elections/Voters-Pamphlet/Documents/VP_G26-Book19_web.pdf",
+			pageUrl: "https://sos.oregon.gov/elections/Voters-Pamphlet/Documents/VP_G26-Book19_web.pdf#page=29",
+			title: "2026 candidate statements: Baker, Grant, Harney, Lake and Malheur",
+			publisher: "Oregon Secretary of State",
+			kind: "candidate-statement",
+		}],
+	},
+	{
 		id: "nc-judicial-statements-2026",
 		stateCode: "NC",
 		electionDate: "2026-11-03",

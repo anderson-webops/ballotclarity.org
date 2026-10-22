@@ -479,6 +479,8 @@ node back-end/dist/manage-election-references.js import /absolute/reviewed-data/
 node back-end/dist/manage-election-references.js import /absolute/reviewed-data/election-references-washington-congressional-2026.json
 node back-end/dist/manage-election-references.js import /absolute/reviewed-data/election-references-north-carolina-judicial-2026.json
 node back-end/dist/manage-election-references.js import /absolute/reviewed-data/election-references-new-mexico-supreme-2026.json
+node back-end/dist/manage-election-references.js import /absolute/reviewed-data/election-references-alaska-statewide-2026.json
+node back-end/dist/manage-election-references.js import /absolute/reviewed-data/election-references-oregon-eastern-2026.json
 node back-end/dist/manage-election-references.js export LA
 ```
 
@@ -533,6 +535,39 @@ v1.10.0 data package. Neither package is included in Git or runtime release asse
 and both require separately approved operator transfer/import. Court copyright
 and candidate authorship are preserved: no campaign prose, media, personal contact
 or family details are redistributed. No automatic profile refresh is introduced.
+
+Alaska's collection contains fifteen candidate-provided profiles and 47 background
+items from the exact individual statements linked by the current `26genr` index.
+Their individual names and offices reconcile with eleven certified statewide/federal
+ballot-choice rows in the retained 155-record snapshot. Governor and lieutenant
+governor members remain separate profiles, not extra official choices. Six other
+rows have no linked statement; no withdrawal or missing candidacy is inferred.
+Dan S. Sullivan and Daniel J. Sullivan Jr. are kept separate. The source index,
+ordinary HTTPS policy/certificate checks, raw-byte hashes and actual PDF geometry
+are retained in local review evidence. Normal Node TLS still fails for this host;
+no trust override or automatic profile adapter is introduced.
+
+Oregon's collection contains all fourteen indexed submissions and 42 background
+items in the Baker/Grant/Harney/Lake/Malheur edition. It includes six statewide,
+two congressional, one legislative and five county-office profiles. Eleven names
+match retained official filings; three local submissions have no independent
+retained filing and remain candidate-provided references. Official Oregon totals
+remain 279. Gary Lyndon Dye remains in the official list but has no statement in
+this edition. Neither the edition's geography nor a profile's county assigns a
+personal ballot. The source link opens its candidate index at PDF page 29.
+
+All source candidate pages are visually reviewed with measured columns, avoiding
+cross-column attribution and off-page text. Attendance is not upgraded to a degree;
+family military service is not attributed to a candidate. Original publication
+dates are unknown, not inferred from PDF timestamps or footer placeholders.
+Only concise factual summaries, attribution and provenance are packaged, not
+campaign prose, images, contacts, family details or source PDFs.
+
+The two new supported JSON snapshots, factual CSV/JSONL and review/manifest
+companions remain in the ignored data directory. The v1.10.2 three-member operator
+addendum supplements the unchanged v1.10.0 and v1.10.1 packages. It is not a Git
+or runtime asset, an automatic profile refresh or an approved production transfer.
+Use current server-AI instructions for exact package hashes and acceptance.
 
 Do not relabel references `listed` or `qualified`, merge them into personal ballot
 previews, infer an outcome, or claim a complete Louisiana ballot. Collections are

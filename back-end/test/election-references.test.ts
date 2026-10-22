@@ -62,6 +62,30 @@ test("judicial references pin independent public publications without using excl
 	assert.equal(new Set(electionReferenceSources.map(collection => collection.stateCode)).size, electionReferenceSources.length);
 });
 
+test("Alaska and Oregon references pin candidate-authored PDFs without inferring qualification or publication dates", () => {
+	const alaska = electionReferenceSources.find(item => item.id === "ak-statewide-statements-2026")!;
+	const oregon = electionReferenceSources.find(item => item.id === "or-eastern-statements-2026")!;
+	assert.equal(alaska.stateCode, "AK");
+	assert.equal(alaska.documents.length, 15);
+	assert.equal(new Set(alaska.documents.map(document => document.url)).size, 15);
+	for (const document of alaska.documents) {
+		assert.equal(new URL(document.url).origin, "https://elections.alaska.gov");
+		assert.ok(new URL(document.url).pathname.startsWith("/doc/oep/2026/"));
+		assert.ok(document.url.endsWith(".pdf"));
+		assert.equal(document.pageUrl, undefined);
+	}
+	assert.equal(oregon.stateCode, "OR");
+	assert.equal(oregon.documents.length, 1);
+	assert.equal(oregon.documents[0]!.url, "https://sos.oregon.gov/elections/Voters-Pamphlet/Documents/VP_G26-Book19_web.pdf");
+	assert.equal(oregon.documents[0]!.pageUrl, `${oregon.documents[0]!.url}#page=29`);
+	for (const collection of [alaska, oregon]) {
+		assert.equal(collection.electionDate, "2026-11-03");
+		assert.ok(collection.documents.every(document => document.kind === "candidate-statement" && document.publishedDate === undefined));
+		const snapshot = parseElectionReferenceSnapshot(collection, JSON.stringify(fixture(collection)));
+		assert.equal(buildElectionReferencePage(collection, snapshot, { search: "", scope: "all", offset: 0, limit: 50 }).total, collection.documents.length);
+	}
+});
+
 test("references reject different elections, states, collections and unreviewed fields", () => {
 	const data = fixture();
 	for (const invalid of [{ ...data, electionDate: "2028-11-07" }, { ...data, stateCode: "LA" }, { ...data, sourceId: newsSource.id }, { ...data, type: "official-candidates" }, { ...data, address: "Excluded" }]) assert.throws(() => parseElectionReferenceSnapshot(source, JSON.stringify(invalid)), /configured collection/u);

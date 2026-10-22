@@ -1,6 +1,6 @@
 # Current server-AI instructions
 
-Target: **v1.10.1**, November 3, 2026 election. This is the current operating
+Target: **v1.10.2**, November 3, 2026 election. This is the current operating
 handoff, not proof of deployment or data activation. Further collection continues.
 
 ## Release and authority
@@ -49,13 +49,20 @@ publishers remain excluded from AI collection. Brunswick NC's 39 records and
 Santa Fe NM's 46 retain separate IDs, dates and documents, without replacing primary
 feeds. New local/unverified legislative matching remains withheld.
 
-Five reference collections retain 35 entries and 94 factual items. North Carolina's
+Seven reference collections retain 64 entries and 183 factual items. North Carolina's
 eight judicial submissions are candidate-provided; New Mexico's two Supreme Court
 retention profiles use official court biographies. Neither source establishes
 qualification or personal eligibility. Candidate statements are not independent
 verification. Louisiana's two reported Senate
 references are not official qualification; Louisiana still lacks an accepted
 official candidate dataset. Question companions are not application measures.
+
+Alaska adds fifteen individual candidate submissions for statewide/federal offices.
+Ticket members are separate profiles, not extra official ballot choices. Oregon's
+eastern-county edition adds fourteen submissions, including five county-office
+profiles. Three of those local submissions have no independently matched retained
+filing and remain references only. Neither collection changes official totals,
+personal previews or precinct eligibility. Missing statements are not withdrawals.
 
 Bulk election data is outside Git and runtime releases. Code deployment alone
 does not populate reviewed records or reference collections.
@@ -76,7 +83,7 @@ Expected manifest SHA-256:
 `3a5219266f8e36466d484e728b4f4e0a1b5bf9242a793ce44a64b4c9f633c1ab`.
 
 Its 37 members are 33 reviewed official snapshots with 17,662 records, three
-reference snapshots with 25 entries, and the manifest. Automatic factual-reference
+reference snapshots with 25 entries, and the manifest. Automatic official-source
 snapshots are deliberately excluded: refresh those sources normally. Verify the
 archive/manifest, require exactly the listed safe regular-file members, extract
 to owned staging outside the release, and verify every input hash and configured
@@ -87,7 +94,7 @@ each command before continuing.
 The separately prepared `server-reviewed-judicial-addendum-2026-v1.10.1.tar.gz`
 adds two reference snapshots, ten profiles and 22 facts. It has exactly three
 members: the NC and NM snapshots and its `-manifest.json`. It requires the
-v1.10.1 runtime and separately approved operator transfer, just like the retained
+v1.10.1 or later compatible runtime and separately approved operator transfer, just like the retained
 v1.10.0 package. Do not replace the earlier package or import into an older runtime.
 
 Addendum archive SHA-256:
@@ -105,6 +112,23 @@ remain unchanged, so missing addendum imports must not hide LA/ME/WA references.
 Rollback to v1.10.0 ignores these new collection files; retain rather than relabel
 them and restore the retained compatible environment. Profiles never enter personal
 lookup previews or change official record totals.
+
+The additional `server-reviewed-pamphlet-addendum-2026-v1.10.2.tar.gz` contains
+exactly the AK and OR reference snapshots and its `-manifest.json`: 29 profiles
+and 89 factual items. It requires v1.10.2 and a separate approved transfer/import.
+Retain both earlier data packages unchanged. Its archive SHA-256 is
+`3458a414e453f142d848a410a89a10a32c10af25db229c982ce81b97414b09d7`;
+its manifest SHA-256 is
+`b94a89262bcde7d03a93a980e8145333fc05c08eda8db610e29e4587a9cab134`.
+
+After exact member/hash/source validation, import
+`election-references-alaska-statewide-2026.json` and
+`election-references-oregon-eastern-2026.json` through the reference command.
+Do not import the companion CSV/JSONL through the official candidate command.
+These are reviewed candidate-supplied summaries, not automatic PDF scraping or
+independent qualifications. Earlier collection fingerprints remain unchanged.
+Rollback to v1.10.1 ignores the two new collection files; retain rather than
+relabel them and restore the compatible reviewed configuration.
 
 ## Publisher policy and configuration
 
@@ -167,8 +191,10 @@ automatic OCR approval, repeated invalid imports or news/profile extraction.
    source. Confirm 39/46 records, local scope, retention choices and source/state/
    filter isolation. Explicit missing sources stay unavailable. Default fallback
    must retain the actual returned source's attribution, not its primary's label.
-3. Check `/api/election-references/LA`, `/ME`, `/WA`, `/NC`, `/NM` and the directory
-   sections. Expected totals are 2, 3, 20, 8 and 2, respectively. Retain distinct
+3. Check `/api/election-references/LA`, `/ME`, `/WA`, `/NC`, `/NM`, `/AK`, `/OR`
+   and the directory sections. Expected totals are 2, 3, 20, 8, 2, 15 and 14,
+   respectively. OR's local filter has five references, without adding official
+   records or making them personal ballot choices. Retain distinct
    candidate-provided, news-report and official-biography labels, original capture
    dates and source links. Missing/corrupt profiles must not disable official data.
    Never turn references into qualification or personal lookup content.

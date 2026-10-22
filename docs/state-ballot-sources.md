@@ -485,9 +485,12 @@ node back-end/dist/manage-election-references.js import /absolute/reviewed-data/
 node back-end/dist/manage-election-references.js import /absolute/reviewed-data/election-references-utah-congressional-2026.json
 node back-end/dist/manage-election-references.js import /absolute/reviewed-data/election-references-arizona-statewide-2026.json
 node back-end/dist/manage-election-references.js import /absolute/reviewed-data/election-references-nevada-executive-2026.json
+node back-end/dist/manage-election-references.js import /absolute/reviewed-data/election-references-cdir-ca-2026.json
 node back-end/dist/manage-election-references.js export LA
 node back-end/dist/manage-election-references.js export WA --source wa-congressional-statements-2026
 node back-end/dist/manage-election-references.js export WA --source wa-ld1-statements-2026
+node back-end/dist/manage-election-references.js export CA --source us-cdir-ca-2026
+node back-end/dist/manage-election-references.js prepare-congressional /absolute/reviewed-data/preparation-plan.json
 ```
 
 Set the existing `STATE_BALLOT_DATA_DIR` to durable writable storage outside code
@@ -641,16 +644,55 @@ The governor publication is linked by its actual public www homepage; int/prod
 search results were not requested. Office biographies describe source authorship,
 not independently verified qualification or election recommendations.
 
-The cumulative v1.10.4 operator package replaces the four-package transfer procedure:
-33 unchanged reviewed official snapshots, all ten reference snapshots, and one
-manifest, exactly 44 members and 716,788 compressed bytes. It retains 17,662
-reviewed official records and 88 profiles/236 factual items, not all election data.
-Seventeen permitted automatic sources are refreshed separately. The earlier
-packages/tags remain immutable. Every file retains its original capture time,
-source/configuration hashes and schema. No raw source, research CSV/JSONL or secret
-is packaged. The archive remains outside Git/runtime and still requires independently
-approved operator transfer/import. Current server-AI instructions contain exact hashes.
-See `docs/audits/2026-10-22-arizona-nevada-profiles.md` for reconciliation and checks.
+The national congressional collection adds forty independent `us-cdir-<state>-2026`
+sources, 162 profiles and 325 short background facts. The previously retained
+eleven collections/92 profiles/248 facts remain unchanged, including their exact
+configuration fingerprints. The combined reference collection covers 44 states,
+51 source IDs, 254 profiles and 573 factual items; these are not additional official
+choices, complete slates or personally eligible ballots.
+
+The GPO/Joint Committee on Printing publication is issued 2026-02-20 but states a
+printed 2025-10-01 compilation cutoff. The exact-host policy, actual sitemap/details
+links, text/MODS and original PDF were reviewed independently. It is a federal
+biography source, not a proxy or mirror for a denied state voter guide. Current
+2026 candidate identity/office comes from active retained official records, not
+directory membership. Exact normalized full-name/state matching, explicit ticket
+slots and duplicate suppression exclude thirteen preceding profiles and four
+inactive candidates. No nickname or fuzzy identity inference is used.
+
+Source errors appear in the original PDF as well as text. Six edition-specific
+holds across five profiles withhold Morrison/James education, Spartz's institution
+clause, Rounds's state-Senate clause/governor dates and Morelle's Assembly dates.
+No replacement fact is invented or borrowed under the wrong attribution. Current/
+open-ended roles, malformed fields, contacts, birth/family/religion details and
+images are omitted. An official biography remains a source claim, not independent
+verification. The new CSV/JSONL/review/manifest companions preserve factual review
+and exact candidate/source/capture identities outside Git, not importer inputs.
+
+The compiled `prepare-congressional PLAN.json` flow validates local raw-text hash,
+capture time, pinned edition/compilation notice, configured candidate/reference
+snapshots and external output. It creates exclusive staging files and a manifest,
+with zero publisher requests or imports. Provide preceding non-directory profiles
+for selected states to prevent duplicate people. Candidate statuses and current
+office/ticket slots remain explicit. Re-preparing a directory collection does not
+deduplicate against itself. Fresh approved downloads may feed this staging flow;
+changed counts, source drift, missing matches or unknown editions require review
+before separate imports. Current configuration and future-edition/election gates
+are documented in `server-ai-current.md`.
+
+The cumulative v1.11.0 operator package supersedes the v1.10.5 transfer procedure:
+33 unchanged reviewed official snapshots, all 51 reference snapshots and one
+manifest, exactly 85 flat members and 748,433 compressed bytes. It retains 17,662
+reviewed official records and 254 profiles/573 facts, not all election data.
+Seventeen permitted automatic sources refresh separately. The six earlier
+packages and published tags remain immutable; every preceding file retains its
+original timestamp, source/configuration hashes and schema. Publisher documents,
+research CSV/JSONL and secrets are not packaged. The archive is outside Git/runtime
+and still needs independently approved operator transfer/import. Current server
+instructions contain exact hashes and all 84 import prerequisites.
+See `docs/audits/2026-10-22-national-congressional-biographies.md` for reconciliation,
+source-quality holds and local acceptance; earlier AZ/NV evidence remains in
+`docs/audits/2026-10-22-arizona-nevada-profiles.md`.
 
 Do not relabel references `listed` or `qualified`, merge them into personal ballot
 previews, infer an outcome, or claim a complete Louisiana ballot. Collections are

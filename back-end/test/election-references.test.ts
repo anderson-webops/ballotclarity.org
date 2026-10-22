@@ -247,7 +247,7 @@ test("reference management imports and exports reviewed data but refuses automat
 	const environment = { ...process.env, STATE_BALLOT_DATA_DIR: directory };
 	const imported = execFileSync(process.execPath, ["--import", "tsx", script, "import", file], { env: environment, encoding: "utf8" });
 	assert.equal(JSON.parse(imported).references, 3);
-	const exported = execFileSync(process.execPath, ["--import", "tsx", script, "export", "ME"], { env: environment, encoding: "utf8" });
+	const exported = execFileSync(process.execPath, ["--import", "tsx", script, "export", "ME", "--source", source.id], { env: environment, encoding: "utf8" });
 	assert.deepEqual(JSON.parse(exported), data);
 	const cache = join(directory, `references-${source.id}.json`);
 	const before = await readFile(cache, "utf8");

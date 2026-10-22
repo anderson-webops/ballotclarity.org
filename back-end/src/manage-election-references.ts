@@ -1,12 +1,18 @@
 import process from "node:process";
 import { electionReferenceSources } from "./election-reference-sources.js";
 import { createElectionReferenceStorage, parseElectionReferenceSnapshot } from "./election-references.js";
+import { prepareCongressionalBiographyFiles } from "./prepare-congressional-biographies.js";
 import { readBoundedStateData } from "./state-ballot-storage.js";
 
 async function main() {
+	const [command, ...requested] = process.argv.slice(2);
+	if (command === "prepare-congressional") {
+		if (requested.length !== 1) throw new Error("Use prepare-congressional PLAN.json. Preparation does not import or download data.");
+		console.log(JSON.stringify(await prepareCongressionalBiographyFiles(requested[0]!)));
+		return;
+	}
 	const directory = process.env.STATE_BALLOT_DATA_DIR;
 	if (!directory) throw new Error("STATE_BALLOT_DATA_DIR is required for persistent election references.");
-	const [command, ...requested] = process.argv.slice(2);
 	const storage = createElectionReferenceStorage(directory);
 	if (command === "import") {
 		if (!requested.length) throw new Error("Provide at least one reviewed reference snapshot.");

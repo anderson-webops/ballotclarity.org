@@ -9,6 +9,8 @@ const requiredRuntimeFiles = [
 	"live-data-schema.sql",
 	"server.js",
 	"manage-election-references.js",
+	"congressional-biographies.js",
+	"prepare-congressional-biographies.js",
 	"manage-state-ballot-data.js",
 	"export-state-ballot-sources.js",
 	"check-state-ballot-sources.js",

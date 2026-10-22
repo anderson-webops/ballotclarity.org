@@ -1,3 +1,5 @@
+import { congressionalBiographySources } from "./congressional-biographies.js";
+
 export interface ElectionReferenceSource {
 	id: string;
 	stateCode: string;
@@ -149,4 +151,5 @@ export const electionReferenceSources: readonly ElectionReferenceSource[] = [
 			kind: "candidate-statement" as const,
 		})),
 	},
+	...congressionalBiographySources,
 ];

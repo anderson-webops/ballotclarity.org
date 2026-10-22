@@ -19,6 +19,8 @@
 				"back-end/dist/live-data-schema.sql",
 				"back-end/dist/server.js",
 				"back-end/dist/manage-election-references.js",
+				"back-end/dist/congressional-biographies.js",
+				"back-end/dist/prepare-congressional-biographies.js",
 				"back-end/dist/manage-state-ballot-data.js",
 				"back-end/dist/export-state-ballot-sources.js",
 				"back-end/dist/check-state-ballot-sources.js",

@@ -8,6 +8,7 @@ const filters = computed(() => readStateRecordQuery(route.query, stateData.value
 const { data, error, pending, refresh } = await useStateRecords(filters);
 const referenceFilters = computed(() => ({ stateCode: filters.value.stateCode, search: filters.value.search, scope: filters.value.scope, offset: readStateRecordQuery({ offset: route.query.referenceOffset }, []).offset }));
 const { data: referenceData, error: referenceError, pending: referencePending, refresh: refreshReferences } = await useElectionReferences(referenceFilters);
+const { data: measureData } = await useMeasureReferences(() => filters.value.stateCode);
 const selectedState = ref(filters.value.stateCode);
 const selectedSource = ref(filters.value.sourceId ?? "");
 const sourceOptions = computed(() => stateData.value?.states.find(state => state.stateCode === selectedState.value)?.sources ?? []);
@@ -109,6 +110,7 @@ usePageSeo({
 		<a v-if="data?.available && referenceData?.available && referenceData.matched" href="#candidate-information-heading" class="text-sm text-app-accent underline underline-offset-3 inline-block focus-ring">
 			Candidate information ({{ referenceData.matched }})
 		</a>
+		<StateMeasureReferences v-if="filters.stateCode" :data="measureData" />
 		<p v-if="stateError || error" class="text-sm text-app-muted dark:text-app-muted-dark" role="status">
 			Candidate records are temporarily unavailable.
 			<button type="button" class="text-app-accent underline focus-ring" @click="retryRecords()">

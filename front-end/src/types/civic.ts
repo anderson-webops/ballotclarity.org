@@ -237,6 +237,14 @@ export interface ElectionReferencesResponse {
 	records: PublicElectionReference[];
 }
 
+export interface MeasureReferencesResponse {
+	available: boolean;
+	stateCode: string;
+	electionDate?: string;
+	source?: { title: string; publisher: string; url: string; publishedDate: string };
+	measures: { slug: string; designation: string; title: string; summary: string; passage: "55-percent" | "majority" }[];
+}
+
 export interface StateRecordsResponse {
 	available: boolean;
 	source: StateRecordState & { id?: string; label?: string; url?: string; retrievedAt?: string; scopeNotice?: string; documentLinks?: { label: string; url: string }[] };

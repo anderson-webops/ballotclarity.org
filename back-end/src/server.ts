@@ -5,6 +5,7 @@ import type { AdminAuditActor } from "./admin-store.js";
 import type { CongressClient, CongressMemberDetail, CongressMemberRecord } from "./congress.js";
 import type { CoverageRepository } from "./coverage-repository.js";
 import type { ElectionReferenceRepository } from "./election-references.js";
+import type { MeasureReferenceRepository } from "./measure-references.js";
 import type { OpenStatesRepresentativeRecord } from "./openstates.js";
 import type { PublicRequestThrottle } from "./public-request-throttle.js";
 import type { StateBallotRepository } from "./state-ballot-repository.js";
@@ -121,6 +122,8 @@ import { createLdaClient } from "./lda.js";
 import { buildLocationGuessNotePrefix, createLocationGuessService } from "./location-guess.js";
 import { buildLocationLookupResponse, classifyLookupInput, findSupportedCoverageSummaries, validateLookupInput } from "./location-lookup.js";
 import { createLogger, createRequestLoggingMiddleware, sanitizeLogText } from "./logger.js";
+import { registerMeasureReferenceRoutes } from "./measure-reference-routes.js";
+import { createMeasureReferenceRepository } from "./measure-references.js";
 import { getOfficialToolsForState, getStateAbbreviationForName, getStateNameForAbbreviation } from "./official-election-tools.js";
 import { createOpenFecClient } from "./openfec.js";
 import { createOpenStatesClient } from "./openstates.js";
@@ -176,6 +179,7 @@ interface CreateAppOptions {
 	zipLookupLogger?: ZipLookupLogger;
 	stateBallotRepository?: StateBallotRepository | null;
 	electionReferenceRepository?: ElectionReferenceRepository | null;
+	measureReferenceRepository?: MeasureReferenceRepository | null;
 }
 
 export interface BallotClarityApplication extends Express {
@@ -3007,6 +3011,9 @@ export async function createApp(options: CreateAppOptions = {}) {
 	const electionReferenceRepository = options.electionReferenceRepository === undefined
 		? process.env.STATE_BALLOT_LOOKUP_ENABLED === "false" ? null : createElectionReferenceRepository()
 		: options.electionReferenceRepository;
+	const measureReferenceRepository = options.measureReferenceRepository === undefined
+		? process.env.STATE_BALLOT_LOOKUP_ENABLED === "false" ? null : createMeasureReferenceRepository()
+		: options.measureReferenceRepository;
 	const adminApiRateLimitWindowMs = resolvePositiveIntegerEnv(
 		"ADMIN_API_RATE_LIMIT_WINDOW_MS",
 		15 * 60 * 1000,
@@ -3508,7 +3515,18 @@ export async function createApp(options: CreateAppOptions = {}) {
 	}
 
 	async function getPublicMeasure(slug: string) {
-		return (await listPublicMeasures()).find(measure => measure.slug === slug) ?? null;
+		const guideMeasure = (await listPublicMeasures()).find(measure => measure.slug === slug);
+
+		if (guideMeasure || !measureReferenceRepository)
+			return guideMeasure ?? null;
+
+		try {
+			return await measureReferenceRepository.getMeasure(slug);
+		}
+		catch {
+			logger.warn("measure-references.unavailable");
+			return null;
+		}
 	}
 
 	async function getPublicCandidatesBySlugs(slugs: string[]) {
@@ -5230,6 +5248,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 
 	registerStateRecordRoutes(app, stateBallotRepository);
 	registerElectionReferenceRoutes(app, electionReferenceRepository);
+	registerMeasureReferenceRoutes(app, measureReferenceRepository);
 
 	app.get("/api/elections", async (_request, response) => {
 		response.json({

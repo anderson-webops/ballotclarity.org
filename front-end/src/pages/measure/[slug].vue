@@ -10,15 +10,15 @@ const { formatDateTime } = useFormatters();
 const measureSlug = useRouteStringParam("slug");
 const { data: measure, error, pending } = await useMeasure(measureSlug);
 const effectiveBallotPlan = computed(() => isHydrated.value ? ballotPlan.value : {});
-const sectionLinks = [
+const sectionLinks = computed(() => [
 	{ href: "#at-a-glance", label: "Summary" },
 	{ href: "#outcomes", label: "YES / NO" },
 	{ href: "#baseline", label: "Current law" },
-	{ href: "#implementation", label: "Timeline" },
+	...(measure.value?.implementationOverview || measure.value?.implementationTimeline.length ? [{ href: "#implementation", label: "Timeline" }] : []),
 	{ href: "#fiscal", label: "Fiscal impact" },
 	{ href: "#arguments", label: "Arguments" },
 	{ href: "#sources", label: "Sources" }
-] as const;
+]);
 
 function uniqueSources(sources: Source[]) {
 	const seen = new Map<string, Source>();
@@ -29,9 +29,14 @@ function uniqueSources(sources: Source[]) {
 	return [...seen.values()];
 }
 
+// Measures from an official state voter guide aren't part of a saved ballot; their slugs start with the state code.
+const stateMeasuresLink = computed(() => measure.value && !measure.value.contestSlug
+	? { label: "Statewide measures", to: `/records?state=${measure.value.slug.slice(0, 2).toUpperCase()}#state-measures-heading` }
+	: null);
+const backLink = computed(() => stateMeasuresLink.value ?? backToLayerLink.value);
 const measureBreadcrumbs = computed(() => [
 	{ label: "Home", to: "/" },
-	layerBreadcrumbLink.value,
+	stateMeasuresLink.value ?? layerBreadcrumbLink.value,
 	{ label: measure.value?.title ?? "Measure explainer" }
 ]);
 const officialSources = computed(() => {
@@ -165,7 +170,7 @@ function saveMeasure(decision: "no" | "review" | "yes") {
 						<SourceDrawer :sources="measure.sources" :title="`${measure.title} sources`" button-label="Sources" />
 					</div>
 					<div class="mt-6 flex flex-wrap gap-x-6 gap-y-3 items-center">
-						<div class="measure-decision" role="group" aria-label="Save your choice to your ballot plan">
+						<div v-if="measure.contestSlug" class="measure-decision" role="group" aria-label="Save your choice to your ballot plan">
 							<button
 								type="button"
 								class="measure-decision__option focus-ring"
@@ -191,8 +196,8 @@ function saveMeasure(decision: "no" | "review" | "yes") {
 								No
 							</button>
 						</div>
-						<NuxtLink :to="backToLayerLink.to" class="btn-secondary">
-							{{ backToLayerLink.label }}
+						<NuxtLink :to="backLink.to" class="btn-secondary">
+							{{ backLink.label }}
 						</NuxtLink>
 					</div>
 				</header>
@@ -276,7 +281,7 @@ function saveMeasure(decision: "no" | "review" | "yes") {
 						<SourceDrawer :sources="baselineSources.length ? baselineSources : measure.sources" :title="`${measure.title} current-law and proposal sources`" button-label="Baseline sources" />
 					</template>
 					<div class="mt-6 gap-6 grid lg:grid-cols-2">
-						<article class="content-block">
+						<article v-if="measure.currentPractice.length" class="content-block">
 							<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 								Current practice
 							</p>
@@ -310,6 +315,7 @@ function saveMeasure(decision: "no" | "review" | "yes") {
 				</ExpandableSection>
 
 				<ExpandableSection
+					v-if="measure.implementationOverview || measure.implementationTimeline.length"
 					id="implementation"
 					eyebrow="Implementation timeline"
 					title="Implementation"
@@ -346,7 +352,7 @@ function saveMeasure(decision: "no" | "review" | "yes") {
 					<template #meta>
 						<SourceDrawer :sources="fiscalAndTradeoffSources" :title="`${measure.title} fiscal and tradeoff sources`" />
 					</template>
-					<p class="text-base text-app-ink leading-7 mt-3 dark:text-app-text-dark">
+					<p v-if="measure.fiscalContextNote" class="text-base text-app-ink leading-7 mt-3 dark:text-app-text-dark">
 						{{ measure.fiscalContextNote }}
 					</p>
 					<div class="mt-6 gap-4 grid lg:grid-cols-3">
@@ -484,7 +490,7 @@ function saveMeasure(decision: "no" | "review" | "yes") {
 								</p>
 							</div>
 						</div>
-						<div class="content-block">
+						<div v-if="measure.whatWeKnow.length || measure.whatWeDoNotKnow.length" class="content-block">
 							<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 								Verification scope
 							</p>

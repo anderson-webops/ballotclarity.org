@@ -18,7 +18,7 @@ function fixture() {
 		copyFileSync(new URL(`../back-end/scripts/${script}`, import.meta.url), join(root, "scripts", script));
 	}
 	for (const name of ["admin-schema.sql", "admin-schema.postgres.sql", "live-data-schema.sql"]) write(root, name, "SELECT 1;\n");
-	for (const name of ["server.js", "manage-election-references.js", "congressional-biographies.js", "prepare-congressional-biographies.js", "manage-state-ballot-data.js", "export-state-ballot-sources.js", "check-state-ballot-sources.js"]) write(root, `dist/${name}`, "export {};\n");
+	for (const name of ["server.js", "manage-election-references.js", "congressional-biographies.js", "prepare-congressional-biographies.js", "washington-statements.js", "washington-statement-sources.js", "prepare-washington-statements.js", "manage-state-ballot-data.js", "export-state-ballot-sources.js", "check-state-ballot-sources.js"]) write(root, `dist/${name}`, "export {};\n");
 	return root;
 }
 
@@ -47,7 +47,7 @@ test("compiled runtime verification independently refuses bundled election data 
 		assert.notEqual(refused.status, 0);
 		assert.match(refused.stderr, /outside the compiled runtime/u);
 		rmSync(join(root, "dist/data/state-ballots"), { recursive: true });
-		for (const name of ["congressional-biographies.js", "prepare-congressional-biographies.js"]) {
+		for (const name of ["congressional-biographies.js", "prepare-congressional-biographies.js", "washington-statements.js", "washington-statement-sources.js", "prepare-washington-statements.js"]) {
 			rmSync(join(root, `dist/${name}`));
 			assert.match(spawnSync(process.execPath, [join(root, "scripts/verify-runtime-build.mjs")], { encoding: "utf8" }).stderr, /missing required runtime files/u);
 			write(root, `dist/${name}`, "export {};\n");

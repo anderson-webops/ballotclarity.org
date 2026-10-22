@@ -18,6 +18,7 @@ const hash = (value: string) => createHash("sha256").update(value).digest("hex")
 const retrievedAt = "2026-10-20T12:00:00.000Z";
 const congressional = electionReferenceSources.find(source => source.id === "wa-congressional-statements-2026")!;
 const legislative = electionReferenceSources.find(source => source.id === "wa-ld1-statements-2026")!;
+const statewide = electionReferenceSources.find(source => source.id === "wa-state-statements-2026")!;
 
 function fixture(source: ElectionReferenceSource, prefix = "Profile") {
 	const documents = source.documents.map(document => ({ url: document.url, sha256: hash(document.url), capturedAt: retrievedAt, includedRecordCount: 1 }));
@@ -26,7 +27,7 @@ function fixture(source: ElectionReferenceSource, prefix = "Profile") {
 }
 
 test("legislative collection is additive and pins two observed anonymous public races", () => {
-	assert.equal(electionReferenceSources.filter(source => source.stateCode === "WA").length, 2);
+	assert.equal(electionReferenceSources.filter(source => source.stateCode === "WA").length, 3);
 	assert.equal(congressional.documents.length, 10);
 	assert.equal(legislative.electionDate, "2026-11-03");
 	assert.equal(legislative.documents.length, 2);
@@ -115,7 +116,8 @@ test("earliest active election is isolated from future and expired collections",
 test("public aggregation exposes partial availability without hiding healthy profiles", async (context) => {
 	const first = fixture(congressional);
 	const second = fixture(legislative);
-	let snapshots = [first, second];
+	const third = fixture(statewide, "Statewide");
+	let snapshots = [first, second, third];
 	let fail = false;
 	const app = express();
 	registerElectionReferenceRoutes(app, {
@@ -130,13 +132,17 @@ test("public aggregation exposes partial availability without hiding healthy pro
 	await once(server, "listening");
 	const origin = `http://127.0.0.1:${(server.address() as { port: number }).port}/api/election-references/WA`;
 	const complete = await (await fetch(origin)).json();
-	assert.equal(complete.total, 12);
+	assert.equal(complete.total, 137);
 	assert.equal(complete.incomplete, undefined);
-	assert.deepEqual(complete.collections, [congressional.id, legislative.id]);
-	assert.equal(new Set(complete.records.map((record: { source: { collectionId: string } }) => record.source.collectionId)).size, 2);
+	assert.deepEqual(complete.collections, [congressional.id, legislative.id, statewide.id]);
+	assert.equal(new Set(complete.records.map((record: { source: { collectionId: string } }) => record.source.collectionId)).size, 3);
 	const page = await (await fetch(`${origin}?offset=9&limit=3`)).json();
 	assert.equal(page.records.length, 3);
 	assert.equal(page.records[1].source.collectionId, legislative.id);
+	snapshots = [first, second];
+	const missingNew = await (await fetch(origin)).json();
+	assert.equal(missingNew.total, 12);
+	assert.equal(missingNew.incomplete, true);
 	snapshots = [first];
 	const partial = await (await fetch(origin)).json();
 	assert.equal(partial.available, true);

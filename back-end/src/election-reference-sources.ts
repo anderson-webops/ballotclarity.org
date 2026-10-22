@@ -1,4 +1,5 @@
 import { congressionalBiographySources } from "./congressional-biographies.js";
+import { washingtonStateStatementSources } from "./washington-statement-sources.js";
 
 export interface ElectionReferenceSource {
 	id: string;
@@ -203,4 +204,5 @@ export const electionReferenceSources: readonly ElectionReferenceSource[] = [
 			{ url: "https://dccouncil.gov/council/elissa-silverman/", title: "Elissa Silverman service history", publisher: "Council of the District of Columbia", kind: "official-biography" },
 		],
 	},
+	...washingtonStateStatementSources,
 ];

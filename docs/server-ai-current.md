@@ -1,6 +1,6 @@
 # Current server-AI instructions
 
-Code target: **v1.12.1**. Reviewed data package: **v1.12.0**, November 3, 2026 election. This handoff is not proof of runtime
+Code target: **v1.13.0**. Reviewed data package: **v1.13.0**, November 3, 2026 election. This handoff is not proof of runtime
 or data activation. Nationwide/local collection remains unfinished.
 
 ## Authority and release acceptance
@@ -15,8 +15,9 @@ Resolve the annotated tag from main. Verify the five immutable workflow assets:
 the Linux ARM64 runtime archive, runtime-manifest.json, acceptance-receipt.json,
 SHA256SUMS and attestation-bundle.jsonl. Verify exact tag/commit/tree, checksums,
 GitHub provenance, receipt, complete unpacked inventory, runtime/architecture and
-host contract under the existing trust policy. The two biography preparation
-modules are independently required runtime files, not optional source helpers.
+host contract under the existing trust policy. The two congressional biography
+modules and three Washington statement preparation/configuration modules are
+independently required runtime files, not optional source helpers.
 Rehearse readiness, dependency failure, graceful shutdown and recovery from the
 retained artifact; promote only through the protected host adapter.
 
@@ -28,9 +29,10 @@ not npm, tsx, development dependencies or a server-side source installation.
 
 ## Durable state and rollback
 
-The UI-only v1.12.1 update preserves every v1.12.0 collection configuration and
-snapshot. Retain v1.12.0 as the immediate code rollback. Do not regenerate or
-relabel the unchanged v1.12.0 data package for this UI release. The older
+The v1.13.0 update adds one Washington reference collection without changing any
+preceding configuration or snapshot. Retain v1.12.1 as the immediate code rollback
+and preserve the byte-exact v1.12.0 data package. The older runtime ignores the
+new collection ID; do not force its import into an older configuration. The older
 v1.11.2 data/parser compatibility boundary below remains relevant for deeper rollback.
 
 STATE_BALLOT_DATA_DIR must be absolute, writable by the existing application
@@ -60,11 +62,13 @@ automatic publishers remain excluded; seventeen are currently permitted.
 Brunswick NC's 39 records and Santa Fe NM's 46 retain separate IDs/documents and
 do not replace primary feeds. Unverified local/legislative matching stays withheld.
 
-Reference data: 60 collections across all 50 states plus DC, 307 profiles and 670
-factual items. This update adds fourteen local Louisiana references and ten
-background/position summaries. Seven new references contain names, offices and
+Reference data: 61 collections across all 50 states plus DC, 534 profiles and 1,120
+factual items. This update adds 227 Washington statewide/legislative profiles and
+450 candidate-provided background facts. The preceding update added fourteen
+local Louisiana references and ten
+background/position summaries. Seven Louisiana references contain names, offices and
 attribution only, without invented background or repeated candidacy sentences.
-All preceding 293 profiles and 59 configurations remain unchanged. Louisiana has
+All preceding 307 profiles and 60 configurations remain unchanged. Louisiana has
 25 references: two Senate reports, nineteen local candidate submissions and four
 local forum-report identities, not an accepted official qualification dataset. This is geographic reference coverage, not all candidates,
 races, local areas or complete ballots. No directory, office
@@ -130,27 +134,33 @@ separate profiles, not extra choices. OR retains five county profiles, including
 three without independently matched filings. UT's sixteen congressional submissions
 do not imply other candidates withdrew. AZ's five executive profiles correspond to
 four ticket rows; honorary commander is not active military service. Joe/Joseph
-Lombardo in NV is not Risa Lombardo in AZ. WA retains 887 official records and 24
-profiles: twenty congressional and four LD1 House profiles, not a complete state
-legislative slate. Question companions are not imported application measures.
+Lombardo in NV is not Risa Lombardo in AZ. WA retains 887 official records and now
+has 251 profiles: twenty congressional, four LD1 House and 227 additional
+statewide/legislative profiles. The selected House identities for Kerry Hills
+and Chris Elder have no nonempty normal-public statement. Joseph Segault and John P Gibbons have no usable
+submitted factual sections. Keep all four official identity records; missing
+background is not withdrawal or disqualification. A separate local official
+record also uses the name Chris Elder; never join those race identities by name
+alone. Most local profiles remain
+uncollected. Question companions are not imported application measures.
 
 ## Reviewed-data transfer
 
 Use the cumulative source-computer package:
-back-end/data/state-ballots/server-reviewed-election-data-2026-v1.12.0.tar.gz
+back-end/data/state-ballots/server-reviewed-election-data-2026-v1.13.0.tar.gz
 
-It is 759,088 bytes with exactly 94 flat members: 33 reviewed official snapshots/
-17,662 records, 60 reference snapshots/307 profiles/670 facts, and
-server-reviewed-election-data-2026-v1.12.0-manifest.json.
+It is 789,533 bytes with exactly 95 flat members: 33 reviewed official snapshots/
+17,662 records, 61 reference snapshots/534 profiles/1,120 facts, and
+server-reviewed-election-data-2026-v1.13.0-manifest.json.
 
 Archive SHA-256:
-e211e56d8ac04465c234e26aaa1e6f5ca051df386fe0184c8f9d3d78dc38f90e
+fa4c7a4d929d5dae23d2b46cc453ec7e14cc0b8c3ecf8e417a426a6e827d7f53
 
 Manifest SHA-256:
-bd97ee1e5abaa61a54218fad8ba77d098758ba08a0b6aa9b2e52da15fa6b1b85
+948123f44610d9684f14645691fddc0602f8ffd4e7bee75386accc715ba386db
 
-This supersedes the v1.11.2 transfer procedure, not nine preceding packages,
-published tags or durable data. All 354 preceding canonical files remain byte-exact.
+This supersedes the v1.12.0 transfer procedure, not preceding packages,
+published tags or durable data. All 362 preceding canonical files remain byte-exact.
 Use the current manifest's single full snapshot per source ID. Original
 configuration fingerprints and capture dates are preserved. Seventeen permitted
 automatic sources refresh separately; their raw snapshots are not in this archive.
@@ -330,6 +340,29 @@ publisher permission, format/identity tests and an accepted runtime. Never point
 a 2026 source ID at 2028, guess new endpoints or treat prior membership as nomination.
 Archive prior configurations/runtime/data and reassess edition-specific holds.
 
+## Washington statement preparation
+
+```bash
+node back-end/dist/manage-election-references.js prepare-washington /approved/staging/plan.json
+```
+
+Follow [Washington statement preparation](washington-statement-preparation.md)
+for exact plan/review schemas, resource bounds, local-file and identity checks,
+publisher-policy renewal, future elections and separate import acceptance.
+The configured 125 normal public races exclude the two preceding LD1 races.
+The source-computer factual companions are
+`washington-state-candidate-backgrounds-2026.csv`, `.jsonl`, and the corresponding
+`-manifest.json` and `-SHA256SUMS` under the same external local data directory.
+They contain factual paraphrases and attribution, not raw statements, photos or
+contacts; the runtime-ready snapshot is the new member of the cumulative package.
+
+Preparation performs zero publisher requests and no imports. A separately
+approved host job may stage permitted normal-public captures in external storage,
+but capture does not approve facts or publish them. Review every changed fact;
+attendance, coursework, institutional lists, in-progress degrees and ABD are not
+completed qualifications. Never bypass the previous CSV-export or King County
+publisher exclusions. Preserve the four holds and all preceding data.
+
 ## Runtime and data acceptance
 
 Reference reads combine the earliest unexpired election in registry order before
@@ -345,13 +378,13 @@ independent.
 1. Verify source tag/assets and served release identity separately from data.
    Check health/readiness and the affected directory pages.
 2. Reconcile all imported official snapshots and full paginated reference totals
-   by state/source against the verified manifest. Expected references total 307
-   across 50 states plus DC. There are 60 source collections, not one per state.
+   by state/source against the verified manifest. Expected references total 534
+   across 50 states plus DC. There are 61 source collections, not one per state.
 3. Check AR 2, DE 2, ID 2, ND 1, VT 1, WY 1 and DC 8 profiles; CA now has 37,
    MI 8, VA 8 and NJ 5. Verify correct election
    offices/ticket slots, GPO source links, publication dates and capture times.
-   Existing NC/NM totals become 9/3, AZ 6, NV 5, OR 17, ME 4; WA 24, AK 15 and UT 16
-   remain unchanged. No missing biography implies withdrawal.
+   Existing NC/NM totals are 9/3, AZ 6, NV 5, OR 17, ME 4; WA becomes 251, while
+   AK 15 and UT 16 remain unchanged. No missing biography implies withdrawal.
    Louisiana has 25 total references, 23 under scope=local and two under
    scope=statewide; local records retain Webster Parish/Minden/Springhill geography.
    Seven new identities have facts:[]: Hanson, Lindsey-Keener, Franklin, Raborn,

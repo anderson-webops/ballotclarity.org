@@ -2,10 +2,16 @@ import process from "node:process";
 import { electionReferenceSources } from "./election-reference-sources.js";
 import { createElectionReferenceStorage, parseElectionReferenceSnapshot } from "./election-references.js";
 import { prepareCongressionalBiographyFiles } from "./prepare-congressional-biographies.js";
+import { prepareWashingtonStatementFiles } from "./prepare-washington-statements.js";
 import { readBoundedStateData } from "./state-ballot-storage.js";
 
 async function main() {
 	const [command, ...requested] = process.argv.slice(2);
+	if (command === "prepare-washington") {
+		if (requested.length !== 1) throw new Error("Use prepare-washington PLAN.json. Preparation does not import or download data.");
+		console.log(JSON.stringify(await prepareWashingtonStatementFiles(requested[0]!)));
+		return;
+	}
 	if (command === "prepare-congressional") {
 		if (requested.length !== 1) throw new Error("Use prepare-congressional PLAN.json. Preparation does not import or download data.");
 		console.log(JSON.stringify(await prepareCongressionalBiographyFiles(requested[0]!)));

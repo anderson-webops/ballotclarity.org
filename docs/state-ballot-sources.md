@@ -712,8 +712,9 @@ to manufacture a biography. The trusted registry explicitly opts this new ID int
 allowIdentityOnly; all 59 earlier configurations retain their one-to-six-item
 requirement. Public facts remains an array. Empty arrays render no empty list or
 placeholder explanation. Unknown fields, invalid names, missing/null facts and
-unbounded strings are still rejected. The combined 60 collections contain 307
-profiles/670 factual items across 50 states plus DC, not complete ballots.
+unbounded strings are still rejected. Before the Washington expansion below,
+the combined 60 collections contained 307 profiles/670 factual items across
+50 states plus DC, not complete ballots.
 
 Forum attendance establishes neither qualification nor a complete slate, and the
 article contains no question transcript. A later District A special-election
@@ -725,7 +726,7 @@ requests were made; no candidate directory, member portal, mirror or cached copy
 was used. These original newspaper submissions/reports are not a proxy for it.
 See `docs/audits/2026-10-22-sparse-local-references.md` for the current expansion.
 
-The cumulative v1.12.0 operator package supersedes the v1.11.2 transfer procedure:
+The preceding cumulative v1.12.0 operator package superseded the v1.11.2 transfer procedure:
 33 unchanged reviewed official snapshots, all 60 reference snapshots and one
 manifest, exactly 94 flat members and 759,088 compressed bytes. It retains 17,662
 reviewed official records and 307 profiles/670 facts, not all election data.
@@ -963,6 +964,40 @@ are retained; the downloaded original and derived extracts were removed. The
 Washington state export restriction is not bypassed through that county source.
 
 ## Canonical transfer exports
+
+### Washington statewide and legislative background
+
+`wa-state-statements-2026` adds 227 candidate-provided profiles and 450 reviewed
+facts from 125 observed normal-public guide races. They cover 176 House
+candidates outside the preceding LD1 collection, 41 Senate candidates and ten
+Supreme Court candidates. The twenty congressional and four LD1 profiles remain
+byte-exact. Washington now has 251 background profiles alongside the unchanged
+887 official records, not complete local coverage or personal ballot assignment.
+
+The nine-page roster was captured again and reconciled before statement
+collection. Eight field-capitalization differences across seven rows changed no
+identity, office, election or status; the preceding canonical snapshot is
+preserved. Of 231 selected identities, Kerry Hills and Chris Elder have no
+nonempty public statement for their selected House records. Joseph Segault and
+John P Gibbons provide no usable factual sections. Their official records remain
+available; another local record also uses the name Chris Elder. No name-only join
+or negative education/experience inference is made.
+
+The compiled `prepare-washington PLAN.json` flow binds explicitly reviewed
+paraphrases to exact official associations, source documents, statement hashes and
+factual-section evidence. It has no network, scheduling or import side effects.
+See [Washington statement preparation](washington-statement-preparation.md).
+Future downloads may be staged under separately approved host authority and
+renewed publisher review, but changed claims still need semantic review.
+
+The resulting 61 collections contain 534 profiles and 1,120 facts across all fifty
+states plus DC. The v1.13.0 cumulative operator package has 95 flat members and
+789,533 compressed bytes, retaining 33 reviewed official snapshots/17,662 records.
+All 362 preceding canonical files and sixty source configurations are preserved.
+The new factual CSV/JSONL, snapshots and transfer package remain outside Git and
+runtime artifacts; raw statements, encoded images and contact fields are excluded.
+No source-agent production upload or import occurs. See
+[the source and acceptance review](audits/2026-10-22-washington-state-profiles.md).
 
 ### Washington automatic collection and Rhode Island question companions
 

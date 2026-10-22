@@ -118,6 +118,22 @@ export const electionReferenceSources: readonly ElectionReferenceSource[] = [
 		}],
 	},
 	{
+		id: "la-webster-statements-2026",
+		stateCode: "LA",
+		electionDate: "2026-11-03",
+		documents: [
+			{ url: "https://websterparishjournal.com/2026/08/19/davis-qualifies-to-run-for-school-board-dist-9-seat/", title: "Lloyd Davis, Jr. candidate statement", publisher: "Webster Parish Journal", kind: "candidate-statement", publishedDate: "2026-08-19" },
+			{ url: "https://websterparishjournal.com/2026/08/31/mcmurray-running-for-district-3-school-board-seat/", title: "Patricia Ann McMurray candidate statement", publisher: "Webster Parish Journal", kind: "candidate-statement", publishedDate: "2026-08-31" },
+			{ url: "https://websterparishjournal.com/2026/08/17/terry-combs-announces-run-for-webster-parish-school-board-district-7/", title: "Terry Combs candidate statement", publisher: "Webster Parish Journal", kind: "candidate-statement", publishedDate: "2026-08-17" },
+			{ url: "https://websterparishjournal.com/2026/08/17/tina-douglas-announces-candidacy-for-webster-parish-school-board-district-7/", title: "Tina Douglas candidate statement", publisher: "Webster Parish Journal", kind: "candidate-statement", publishedDate: "2026-08-17" },
+			{ url: "https://websterparishjournal.com/2026/08/17/tamara-tanner-announces-candidacy-for-webster-parish-school-board-district-11/", title: "Tamara Tanner candidate statement", publisher: "Webster Parish Journal", kind: "candidate-statement", publishedDate: "2026-08-17" },
+			{ url: "https://websterparishjournal.com/2026/08/17/gary-cooper-announces-campaign-for-webster-parish-school-board-district-11/", title: "Gary Cooper candidate statement", publisher: "Webster Parish Journal", kind: "candidate-statement", publishedDate: "2026-08-17" },
+			{ url: "https://websterparishjournal.com/2026/08/17/javelin-hardy-announces-run-for-minden-city-council-district-c/", title: "Javelin Hardy candidate statement", publisher: "Webster Parish Journal", kind: "candidate-statement", publishedDate: "2026-08-17" },
+			{ url: "https://websterparishjournal.com/2026/08/18/melancon-announces-candidacy-for-springhill-mayor/", title: "Derek Melancon candidate statement", publisher: "Webster Parish Journal", kind: "candidate-statement", publishedDate: "2026-08-18" },
+			{ url: "https://websterparishjournal.com/2026/08/18/mitchell-running-for-re-election-minden-city-council-district-c/", title: "Latasha Anderson Mitchell candidate statement", publisher: "Webster Parish Journal", kind: "candidate-statement", publishedDate: "2026-08-18" },
+		],
+	},
+	{
 		id: "me-orono-statements-2026",
 		stateCode: "ME",
 		electionDate: "2026-11-03",

@@ -41,6 +41,23 @@ test("references preserve candidate, reporting and official biography authorship
 	}
 });
 
+test("Webster Parish statements retain candidate authorship and publication dates without official qualification", () => {
+	const collection = electionReferenceSources.find(item => item.id === "la-webster-statements-2026")!;
+	assert.equal(collection.stateCode, "LA");
+	assert.equal(collection.electionDate, "2026-11-03");
+	assert.equal(collection.documents.length, 9);
+	assert.deepEqual(collection.documents.map(document => document.publishedDate), ["2026-08-19", "2026-08-31", "2026-08-17", "2026-08-17", "2026-08-17", "2026-08-17", "2026-08-17", "2026-08-18", "2026-08-18"]);
+	assert.ok(collection.documents.every(document => document.kind === "candidate-statement" && document.publisher === "Webster Parish Journal" && new URL(document.url).hostname === "websterparishjournal.com"));
+	const snapshot = parseElectionReferenceSnapshot(collection, JSON.stringify(fixture(collection)));
+	const page = buildElectionReferencePage(collection, snapshot, { search: "", scope: "local", offset: 6, limit: 3 });
+	assert.equal(page.total, 9);
+	assert.equal(page.matched, 9);
+	assert.equal(page.records.length, 3);
+	assert.ok(page.records.every(record => record.source.kind === "candidate-statement" && !Object.hasOwn(record, "status") && !Object.hasOwn(record, "party")));
+	assert.equal(newsSource.id, "la-senate-reporting-2026");
+	assert.equal(newsSource.documents[0]!.kind, "news-report");
+});
+
 test("DC background keeps independent council and attorney-general attribution without invented publication dates", () => {
 	const collection = electionReferenceSources.find(item => item.id === "dc-local-biographies-2026")!;
 	assert.equal(collection.stateCode, "DC");

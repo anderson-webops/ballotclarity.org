@@ -359,7 +359,7 @@ not change the access boundary of its blocked state portal.
 | --- | --- | --- |
 | Iowa | [General election](https://sos.iowa.gov/general-election) | Direct public retrieval returned HTTP 403. |
 | Maine | [Upcoming elections](https://www.maine.gov/sos/elections-voting/upcoming-elections) | Current general workbook, September withdrawal/replacement PDF and October declared-write-in PDF are identified. Direct requests for all three files returned HTTP 403. No alternate identity or host-alias workaround was used. |
-| Louisiana | [Voter portal](https://voterportal.sos.la.gov/) | The October 21 policy review found explicit disallows for statewide and parish candidate-inquiry routes; neither was queried. A future permitted source must distinguish the Senate general election from House open-primary and local stages. No validated official candidate contract is claimed. |
+| Louisiana | [Voter portal](https://voterportal.sos.la.gov/) | Candidate-inquiry paths remain excluded. October 22 also found www.sos.la.gov wildcard denial, Jefferson Parish policy 403 and Calcasieu's document-destination policy 403. Independently permitted clerk pages did not yield an accepted named slate. Nine original Webster candidate statements add local background only. Senate general-election, House open-primary and local stages must stay distinct. No validated official candidate contract is claimed. |
 | Minnesota | [Candidate filings](https://candidates.sos.mn.gov/) | Normal public export redirected to an anti-bot challenge. No bypass attempted. |
 | New York | [Ballot certifications](https://elections.ny.gov/ballot-certifications-elections) | The October 7 amended general certification is published, but normal direct download returned HTTP 403, as did the earlier candidate-data POST. No bypass attempted. Official county sources remain a potential path; fusion endorsements, joint tickets and regional Supreme Court districts require explicit reconciliation. |
 | Oregon | [Run for office](https://sos.oregon.gov/elections/get-involved/Pages/run-for-office.aspx) | Replaces the old 404 candidate-filing path. Public search and the November pamphlet are identified, but finance registration and optional pamphlet participation do not establish ballot qualification. The search host's robots redirect to HTTP was refused rather than weakening HTTPS. |
@@ -689,18 +689,33 @@ changed counts, source drift, missing matches or unknown editions require review
 before separate imports. Current configuration and future-edition/election gates
 are documented in `server-ai-current.md`.
 
-The cumulative v1.11.1 operator package supersedes the v1.11.0 transfer procedure:
-33 unchanged reviewed official snapshots, all 58 reference snapshots and one
-manifest, exactly 92 flat members and 754,597 compressed bytes. It retains 17,662
-reviewed official records and 284 profiles/639 facts, not all election data.
-Seventeen permitted automatic sources refresh separately. The seven earlier
+Webster Parish Journal supplies nine additional local candidate statements and
+21 short background facts. Six profiles concern school-board Districts 3/7/9/11,
+two concern Minden City Council District C and one concerns Springhill mayor.
+These original submissions retain candidate authorship, publisher, publication
+date and byte-exact capture fingerprints, not independent-news or qualification
+status. Studies/credit hours are not degrees; dated role assertions are not
+current-role verification. Generic announcements without substantive facts,
+campaign appeals, family/religion, contacts, images and ballot numbers are omitted.
+The existing two Louisiana Senate reports remain separate and unchanged. All
+59 reference sources now total 293 profiles/660 facts across 50 states plus DC.
+No official Louisiana slate or personal local assignment is added. The new
+research-louisiana-webster-background-2026 CSV/JSONL and review manifest are
+durable, ignored operator companions, not official-import inputs. See
+`docs/audits/2026-10-22-louisiana-local-background.md` for policies and exclusions.
+
+The cumulative v1.11.2 operator package supersedes the v1.11.1 transfer procedure:
+33 unchanged reviewed official snapshots, all 59 reference snapshots and one
+manifest, exactly 93 flat members and 756,803 compressed bytes. It retains 17,662
+reviewed official records and 293 profiles/660 facts, not all election data.
+Seventeen permitted automatic sources refresh separately. The eight earlier
 packages and published tags remain immutable; every preceding file retains its
 original timestamp, source/configuration hashes and schema. Publisher documents,
 research CSV/JSONL and secrets are not packaged. The archive is outside Git/runtime
 and still needs independently approved operator transfer/import. Current server
-instructions contain exact hashes and all 91 import prerequisites. Nine expanded
+instructions contain exact hashes and all 92 import prerequisites. Nine expanded
 Directory transfer files use versioned filenames; the manifest selects exactly
-one full snapshot per source ID. All 323 preceding canonical files remain byte-exact.
+one full snapshot per source ID. All 346 preceding canonical files remain byte-exact.
 See `docs/audits/2026-10-22-reference-coverage-gaps.md` for this expansion.
 See `docs/audits/2026-10-22-national-congressional-biographies.md` for reconciliation,
 source-quality holds and local acceptance; earlier AZ/NV evidence remains in

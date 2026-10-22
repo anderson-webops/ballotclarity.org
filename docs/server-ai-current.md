@@ -1,6 +1,6 @@
 # Current server-AI instructions
 
-Target: **v1.11.1**, November 3, 2026 election. This handoff is not proof of runtime
+Target: **v1.11.2**, November 3, 2026 election. This handoff is not proof of runtime
 or data activation. Nationwide/local collection remains unfinished.
 
 ## Authority and release acceptance
@@ -34,15 +34,12 @@ independently. Also preserve the existing database, ADMIN_DB_PATH,
 LIVE_COVERAGE_FILE and metadata sidecar, and optional
 BALLOTCLARITY_ZIP_LOOKUP_LOG_PATH. Credentials/logs never belong in artifacts.
 
-Retain v1.11.0, its reviewed environment, manifest, transfer package and durable-
+Retain v1.11.1, its reviewed environment, manifest, transfer package and durable-
 state backup before activation/import. Snapshot schema remains 1; no database
-migration is introduced. All 51 preceding collection configurations and
-fingerprints remain unchanged. During rollback, v1.11.0 ignores the six new
-us-cdir AR/DE/ID/ND/VT/WY cache files and references-dc-local-biographies-2026.json.
-Its 51 known collections remain compatible, including the nine expanded snapshots
-whose old records are unchanged. For exact prior data, use the retained pre-import
-backup and v1.11.0 manifest. Its older preparation command lacks the new reviewed
-identity, heading and at-large cases; do not use it to overwrite expanded data.
+migration is introduced. All 58 preceding collection configurations, fingerprints
+and snapshots remain unchanged. During rollback, v1.11.1 ignores
+references-la-webster-statements-2026.json and retains its 58 compatible collections.
+For exact prior data, use the retained pre-import backup and v1.11.1 manifest.
 Never rename sources, relabel snapshots, delete older data or
 restore a bundled-data fallback to force compatibility. Older official allowlist
 semantics also require their compatible reviewed environment.
@@ -56,16 +53,26 @@ automatic publishers remain excluded; seventeen are currently permitted.
 Brunswick NC's 39 records and Santa Fe NM's 46 retain separate IDs/documents and
 do not replace primary feeds. Unverified local/legislative matching stays withheld.
 
-Reference data: 58 collections across all 50 states plus DC, 284 profiles and 639
-factual items. This update adds 22 Directory profiles/43 facts in fifteen states
-and eight DC profiles/23 facts. All preceding 254 profiles remain unchanged.
-Six new Directory collections cover AR/DE/ID/ND/VT/WY; nine preceding collections
-gain thirteen further exact matches. DC adds independent council/AG biographies,
-including three ward candidates. This is geographic reference coverage, not all
-candidates, races, local areas or complete ballots. Louisiana has two attributed Senate
-reports, not an accepted official qualification dataset. No directory, office
+Reference data: 59 collections across all 50 states plus DC, 293 profiles and 660
+factual items. This update adds nine local Louisiana profiles/21 facts from
+candidate-provided Webster Parish Journal announcements. All preceding 284
+profiles and 58 configurations remain unchanged. Louisiana has eleven references:
+two Senate reports and nine local statements, not an accepted official
+qualification dataset. This is geographic reference coverage, not all candidates,
+races, local areas or complete ballots. No directory, office
 biography, news report or candidate submission establishes ballot qualification,
 withdrawal, personal eligibility or a complete slate.
+
+Webster's statements cover six school-board profiles in Districts 3/7/9/11,
+two Minden District C council profiles and one Springhill mayoral profile. Preserve
+candidate-statement authorship even when a submission uses third person or a
+newspaper editor's byline. Only education, professional history, military service,
+public service and volunteering are included. Studies/credit hours are not degrees;
+employment and service assertions belong to their dated statement, not a claim of
+current employment or independently verified licensure. Several scheduled posts
+have modification dates before publication; preserve the actual publication date.
+No campaign appeals, family/religion, personal contacts, ballot numbers or images
+are imported. Bare generic announcements were omitted, not padded with slogans.
 
 The GPO/Joint Committee on Printing Directory is issued 2026-02-20 but states a
 printed compilation cutoff of 2025-10-01. It supplies historical background, not
@@ -102,24 +109,23 @@ legislative slate. Question companions are not imported application measures.
 ## Reviewed-data transfer
 
 Use the cumulative source-computer package:
-back-end/data/state-ballots/server-reviewed-election-data-2026-v1.11.1.tar.gz
+back-end/data/state-ballots/server-reviewed-election-data-2026-v1.11.2.tar.gz
 
-It is 754,597 bytes with exactly 92 flat members: 33 reviewed official snapshots/
-17,662 records, 58 reference snapshots/284 profiles/639 facts, and
-server-reviewed-election-data-2026-v1.11.1-manifest.json.
+It is 756,803 bytes with exactly 93 flat members: 33 reviewed official snapshots/
+17,662 records, 59 reference snapshots/293 profiles/660 facts, and
+server-reviewed-election-data-2026-v1.11.2-manifest.json.
 
 Archive SHA-256:
-3c9cb7a75005883ca098571cad0118b8dbe6b3c80535c3e7be4f1933e9b351f0
+8d5b508e33901ab10f3c5ec52f18e5f7e00c48c3fe7b27b1ddf0f6e3dd88a7a8
 
 Manifest SHA-256:
-6643cf51e4a9cac682fb6b99593ad9c35aa2c354b62fc7cd4d61e455931e374b
+cb202f0119e3a1dd57d20a3d9c1862ef9b7b526944a4ed16ae49c9efc2871dcd
 
-This supersedes the v1.11.0 transfer procedure, not seven preceding packages,
-published tags or durable data. All 323 preceding canonical files remain byte-exact.
-Nine expanded Directory snapshots have new versioned transfer filenames; use the
-current manifest instead of importing both old and new files for one source ID.
-Original configuration fingerprints and capture dates are preserved. Seventeen permitted automatic sources refresh
-separately; their raw snapshots are not included in this archive.
+This supersedes the v1.11.1 transfer procedure, not eight preceding packages,
+published tags or durable data. All 346 preceding canonical files remain byte-exact.
+Use the current manifest's single full snapshot per source ID. Original
+configuration fingerprints and capture dates are preserved. Seventeen permitted
+automatic sources refresh separately; their raw snapshots are not in this archive.
 
 The source agent has not uploaded/imported this package. An independently
 authorized operator must arrange an approved transfer. No source-agent SSH/SCP,
@@ -130,7 +136,7 @@ report reviewed data unavailable rather than claiming code activation populated 
 Before extraction, verify both hashes and the exact member allowlist. Reject
 traversal, links, extra members, wrong sizes/hashes or mismatched source/election/
 configuration fingerprints. Use officialSnapshots only with the official importer
-and referenceSnapshots only with the reference importer. Import all 91 snapshots
+and referenceSnapshots only with the reference importer. Import all 92 snapshots
 separately, retaining source ID, status, count and original capture time.
 Research CSV/JSONL, publisher text/PDF, images, contacts and credentials are not
 importer inputs and are not members of this package.
@@ -147,7 +153,30 @@ Keep nc-sbe-2026 excluded: its distribution-host policy returned 403. Keep
 nm-sos-2026 excluded: the state candidate host explicitly excludes OpenAI agents.
 Independent county sources were assessed on their own authority, not as proxies.
 Louisiana candidate-inquiry paths, denied exports, King County reuse-restricted
-publications and other earlier exclusions remain excluded.
+publications and other earlier exclusions remain excluded. The October 22 review
+also found www.sos.la.gov wildcard Disallow:/; named search-engine exceptions do
+not authorize this agent. www.jeffparish.gov policy returned 403. Calcasieu's own
+candidate documents redirected to 0fed7ada-ffd6-448a-9d77-f7f552b92923.filesusr.com,
+whose policy returned 403; neither destination document was requested. Do not use
+alternate Wix hosts, mirrors, screenshots or cached copies to bypass these limits.
+Caddo's selected publisher was robots-blocked in discovery. West Carroll returned
+HTML instead of a usable policy, so no election content was accepted there.
+
+The independently permitted Lafayette, Jefferson Clerk, St. Tammany, Iberia and
+West Baton Rouge pages supplied calendars/office information, not named slates.
+Honor Jefferson Clerk/St. Tammany's ten-second spacing. Calcasieu's public HTML
+lists offices and partial question headings, not candidate names/full measures;
+its candidate-page date label is inconsistent. West Baton Rouge mixes old
+elections and a 2006 typo with 2026 dates. Do not infer names, stages, deadlines,
+qualification or complete measures from these pages. See the Louisiana audit.
+
+Webster Parish Journal's public article policy allowed the reviewed original
+statements, independently of excluded government lists. This release adds no
+automatic news collector or scheduler. Renew exact-host/path policy and authorship
+review before fetching changed statements; stage them for human review. Check
+later withdrawal/disqualification reporting without using a search miss as proof
+of qualification. Future elections need new reviewed IDs, dates and imports;
+never change this 2026 collection to another election or auto-approve raw prose.
 
 The CA voter-guide host returned 403 on October 22; do not request that guide,
 its CDN or a mirror. The independent national congressional publication is not a
@@ -180,6 +209,7 @@ node back-end/dist/manage-election-references.js import /approved/staging/review
 node back-end/dist/manage-election-references.js export WA --source wa-congressional-statements-2026
 node back-end/dist/manage-election-references.js export CA --source us-cdir-ca-2026
 node back-end/dist/manage-election-references.js export DC --source dc-local-biographies-2026
+node back-end/dist/manage-election-references.js export LA --source la-webster-statements-2026
 node back-end/dist/manage-state-ballot-data.js refresh WA MT KS SC UT MS SD HI CO KY ND VA MI WY MD FL DE
 ```
 
@@ -271,13 +301,17 @@ independent.
 1. Verify source tag/assets and served release identity separately from data.
    Check health/readiness and the affected directory pages.
 2. Reconcile all imported official snapshots and full paginated reference totals
-   by state/source against the verified manifest. Expected references total 284
-   across 50 states plus DC. There are 58 source collections, not one per state.
+   by state/source against the verified manifest. Expected references total 293
+   across 50 states plus DC. There are 59 source collections, not one per state.
 3. Check AR 2, DE 2, ID 2, ND 1, VT 1, WY 1 and DC 8 profiles; CA now has 37,
    MI 8, VA 8 and NJ 5. Verify correct election
    offices/ticket slots, GPO source links, publication dates and capture times.
    Existing NC/NM totals become 9/3, AZ 6, NV 5, OR 17, ME 4; WA 24, AK 15 and UT 16
    remain unchanged. No missing biography implies withdrawal.
+   Louisiana has eleven total references, nine under scope=local and two under
+   scope=statewide; local records retain Webster Parish/Minden/Springhill geography.
+   Its official-record API remains unavailable. Querying Webster backgrounds must
+   not create official candidate rows, local assignment or personal ballot choices.
 4. Confirm all fifteen held fields/clauses/ranges do not appear. DC keeps distinct
    council/AG attribution and actual capture dates, without invented publication
    dates or current-term claims. Ward 3/5/6 profiles filter as local; Robert White's

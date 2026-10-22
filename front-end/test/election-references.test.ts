@@ -7,6 +7,8 @@ test("candidate information keeps source attribution and dates without qualifica
 	const component = readFileSync(new URL("../src/components/ElectionReferences.vue", import.meta.url), "utf8");
 	assert.match(component, /Candidate-provided/u);
 	assert.match(component, /News report/u);
+	assert.match(component, /"official-biography": "Official biography"/u);
+	assert.match(component, /sourceLabels\[record.source.kind\]/u);
 	assert.match(component, /Reporting does not establish ballot qualification/u);
 	assert.match(component, /record.source.publisher/u);
 	assert.match(component, /record.source.publishedDate/u);

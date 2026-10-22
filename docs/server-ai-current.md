@@ -1,6 +1,6 @@
 # Current server-AI instructions
 
-Target: **v1.10.0**, November 3, 2026 election. This is the current operating
+Target: **v1.10.1**, November 3, 2026 election. This is the current operating
 handoff, not proof of deployment or data activation. Further collection continues.
 
 ## Release and authority
@@ -49,8 +49,11 @@ publishers remain excluded from AI collection. Brunswick NC's 39 records and
 Santa Fe NM's 46 retain separate IDs, dates and documents, without replacing primary
 feeds. New local/unverified legislative matching remains withheld.
 
-Three reference collections retain 25 entries and 72 factual items. Candidate
-statements are not independent verification. Louisiana's two reported Senate
+Five reference collections retain 35 entries and 94 factual items. North Carolina's
+eight judicial submissions are candidate-provided; New Mexico's two Supreme Court
+retention profiles use official court biographies. Neither source establishes
+qualification or personal eligibility. Candidate statements are not independent
+verification. Louisiana's two reported Senate
 references are not official qualification; Louisiana still lacks an accepted
 official candidate dataset. Question companions are not application measures.
 
@@ -80,6 +83,28 @@ to owned staging outside the release, and verify every input hash and configured
 source fingerprint before import. Preserve original source dates/hashes. Imports
 are atomic per file, not a transactional batch; retain the prior backup and check
 each command before continuing.
+
+The separately prepared `server-reviewed-judicial-addendum-2026-v1.10.1.tar.gz`
+adds two reference snapshots, ten profiles and 22 facts. It has exactly three
+members: the NC and NM snapshots and its `-manifest.json`. It requires the
+v1.10.1 runtime and separately approved operator transfer, just like the retained
+v1.10.0 package. Do not replace the earlier package or import into an older runtime.
+
+Addendum archive SHA-256:
+`2008a225e0e6b92ead5921d84e10f5b2d8bac5703207b60c4f13925b244197ee`.
+
+Addendum manifest SHA-256:
+`e804e9db3e3f72512f6ec33ab59e0e3a91842602054c285af4353a943ab89009`.
+
+Verify both hashes, the exact regular-file members and every source/input
+fingerprint before using the existing reference importer on
+`election-references-north-carolina-judicial-2026.json` and
+`election-references-new-mexico-supreme-2026.json`. The factual CSV/JSONL companions
+are not importer inputs. Earlier reference configuration fingerprints and data
+remain unchanged, so missing addendum imports must not hide LA/ME/WA references.
+Rollback to v1.10.0 ignores these new collection files; retain rather than relabel
+them and restore the retained compatible environment. Profiles never enter personal
+lookup previews or change official record totals.
 
 ## Publisher policy and configuration
 
@@ -142,9 +167,11 @@ automatic OCR approval, repeated invalid imports or news/profile extraction.
    source. Confirm 39/46 records, local scope, retention choices and source/state/
    filter isolation. Explicit missing sources stay unavailable. Default fallback
    must retain the actual returned source's attribution, not its primary's label.
-3. Check `/api/election-references/LA`, `/ME`, `/WA` and the directory sections.
-   Retain authorship/reporting labels; never turn these into official qualification
-   or personal lookup content.
+3. Check `/api/election-references/LA`, `/ME`, `/WA`, `/NC`, `/NM` and the directory
+   sections. Expected totals are 2, 3, 20, 8 and 2, respectively. Retain distinct
+   candidate-provided, news-report and official-biography labels, original capture
+   dates and source links. Missing/corrupt profiles must not disable official data.
+   Never turn references into qualification or personal lookup content.
 4. Using synthetic state-only locations, check twelve NC/eighteen NM preview
    entries, no new unverified legislative/local assignment, and limited-coverage
    feedback. Never use a real person's address for acceptance.

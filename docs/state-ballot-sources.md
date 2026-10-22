@@ -450,7 +450,7 @@ See `docs/audits/2026-10-21-vermont-city-ballots.md` for source reconciliation,
 scope and local verification. No hosted transfer, scheduler or activation is
 performed by the source change.
 
-## Candidate statements and reported references
+## Candidate statements, biographies and reporting
 
 The Git-ignored `back-end/data/state-ballots/louisiana-reported-2026.jsonl` and
 its checksum list preserve two dated Senate references from Louisiana Radio
@@ -477,6 +477,8 @@ snapshot importer. Import it through its own compiled command:
 node back-end/dist/manage-election-references.js import /absolute/reviewed-data/election-references-louisiana-2026.json
 node back-end/dist/manage-election-references.js import /absolute/reviewed-data/election-references-maine-orono-2026.json
 node back-end/dist/manage-election-references.js import /absolute/reviewed-data/election-references-washington-congressional-2026.json
+node back-end/dist/manage-election-references.js import /absolute/reviewed-data/election-references-north-carolina-judicial-2026.json
+node back-end/dist/manage-election-references.js import /absolute/reviewed-data/election-references-new-mexico-supreme-2026.json
 node back-end/dist/manage-election-references.js export LA
 ```
 
@@ -493,7 +495,7 @@ reviewed reference collections. The read-only API has its own bounded throttle.
 The directory uses a separate `referenceOffset` for information pages; it never
 changes official totals or pagination. Source kind, publisher, publication date
 when known, capture time and a safe source link accompany every displayed record.
-The UI labels candidate-provided claims and reporting, with a local qualification
+The UI labels candidate-provided claims, official biographies and reporting, with a local qualification
 limitation for reports. Reference failures do not disable official records.
 
 Washington's independent `election-references-washington-congressional-2026.json`
@@ -509,6 +511,28 @@ contacts, family/medical details and campaign prose are excluded. This remains a
 reviewed import, not automatic statement scraping. Its companion
 `washington-congressional-profile-facts-2026.csv` and JSONL preserve factual review
 material in a different schema, not accepted directly by the application importer.
+
+North Carolina's judicial collection adds eight candidate submissions and sixteen
+background facts from the separately published 2026 NCSBE judicial guide. All eight
+names and statewide offices reconcile with the reviewed Brunswick sample. The
+guide explicitly identifies its submissions as candidate-provided, not the board's
+opinions. It does not access or substitute for the excluded distribution-host feed.
+
+New Mexico's Supreme Court collection adds two retention profiles and six background
+facts from independently authored court biographies. Name/office identities reconcile
+with the reviewed Santa Fe sample, including Bacon's additional initial in the
+biography. Official biography is a distinct source kind, not a news report,
+candidate-authored statement, qualification or recommendation. Other judges are
+not inferred from a court roster. Both new collections preserve their October 22
+capture times and exact original-byte hashes without inventing publication dates.
+
+The new factual CSV/JSONL, review and manifest companions remain in the ignored
+data directory. The three-member v1.10.1 operator addendum contains only the two
+supported snapshots and its manifest; it supplements, not replaces, the immutable
+v1.10.0 data package. Neither package is included in Git or runtime release assets,
+and both require separately approved operator transfer/import. Court copyright
+and candidate authorship are preserved: no campaign prose, media, personal contact
+or family details are redistributed. No automatic profile refresh is introduced.
 
 Do not relabel references `listed` or `qualified`, merge them into personal ballot
 previews, infer an outcome, or claim a complete Louisiana ballot. Collections are

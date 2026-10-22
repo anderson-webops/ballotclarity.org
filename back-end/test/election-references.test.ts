@@ -26,8 +26,8 @@ function fixture(collection: ElectionReferenceSource = source) {
 	return { schemaVersion: 1, type: "election-references", stateCode: collection.stateCode, sourceId: collection.id, electionDate: collection.electionDate, retrievedAt, sourceSha256: hash(JSON.stringify(documents.map(({ url, sha256 }) => ({ url, sha256 })))), recordCount: records.length, documents, records };
 }
 
-test("references preserve candidate-provided versus reported authorship and never invent ballot statuses", () => {
-	for (const collection of [source, newsSource]) {
+test("references preserve candidate, reporting and official biography authorship without ballot statuses", () => {
+	for (const collection of electionReferenceSources) {
 		const snapshot = parseElectionReferenceSnapshot(collection, JSON.stringify(fixture(collection)));
 		const page = buildElectionReferencePage(collection, snapshot, { search: "", scope: "all", offset: 0, limit: 50 });
 		assert.equal(page.records[0]!.source.kind, collection.documents[0]!.kind);
@@ -39,6 +39,27 @@ test("references preserve candidate-provided versus reported authorship and neve
 		assert.equal("sourceSha256" in page.records[0]!, false);
 		assert.equal("sourceDocumentIndex" in page.records[0]!, false);
 	}
+});
+
+test("judicial references pin independent public publications without using excluded distribution hosts", () => {
+	const candidateSource = electionReferenceSources.find(item => item.id === "nc-judicial-statements-2026")!;
+	const biographySource = electionReferenceSources.find(item => item.id === "nm-supreme-biographies-2026")!;
+	for (const collection of [candidateSource, biographySource]) {
+		assert.equal(collection.electionDate, "2026-11-03");
+		assert.equal(collection.documents.length, 1);
+		assert.equal(collection.documents[0]!.publishedDate, undefined);
+		assert.equal(collection.documents[0]!.pageUrl, undefined);
+		const snapshot = parseElectionReferenceSnapshot(collection, JSON.stringify(fixture(collection)));
+		const otherCollection = collection === candidateSource ? biographySource : candidateSource;
+		assert.throws(() => parseElectionReferenceSnapshot(otherCollection, JSON.stringify(snapshot)), /configured collection/u);
+	}
+	assert.equal(candidateSource.stateCode, "NC");
+	assert.equal(candidateSource.documents[0]!.url, "https://www.ncsbe.gov/voting/upcoming-election/judicial-voter-guide-2026-general-election");
+	assert.equal(candidateSource.documents[0]!.kind, "candidate-statement");
+	assert.equal(biographySource.stateCode, "NM");
+	assert.equal(biographySource.documents[0]!.url, "https://supremecourt.nmcourts.gov/about-this-court/supreme-court-justices/");
+	assert.equal(biographySource.documents[0]!.kind, "official-biography");
+	assert.equal(new Set(electionReferenceSources.map(collection => collection.stateCode)).size, electionReferenceSources.length);
 });
 
 test("references reject different elections, states, collections and unreviewed fields", () => {

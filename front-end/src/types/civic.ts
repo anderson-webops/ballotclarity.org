@@ -213,7 +213,7 @@ export interface PublicElectionReference {
 	jurisdiction?: string;
 	facts: string[];
 	source: {
-		kind: "candidate-statement" | "news-report";
+		kind: "candidate-statement" | "news-report" | "official-biography";
 		title: string;
 		publisher: string;
 		url: string;

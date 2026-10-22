@@ -7,6 +7,7 @@ const route = useRoute();
 const { formatDate, formatDateTime } = useFormatters();
 const range = computed(() => props.data?.matched ? `${props.data.offset + 1}–${Math.min(props.data.offset + props.data.records.length, props.data.matched)} of ${props.data.matched}` : "0 references");
 const hasReporting = computed(() => props.data?.records.some(record => record.source.kind === "news-report"));
+const sourceLabels = { "candidate-statement": "Candidate-provided", "news-report": "News report", "official-biography": "Official biography" };
 
 async function changePage(offset: number) {
 	await navigateTo({ path: "/records", query: { ...route.query, referenceOffset: offset ? String(offset) : undefined } });
@@ -48,7 +49,7 @@ async function changePage(offset: number) {
 						</template>
 					</p>
 					<p class="text-sm text-app-muted dark:text-app-muted-dark">
-						{{ record.source.kind === 'candidate-statement' ? 'Candidate-provided' : 'News report' }} · {{ record.source.publisher }}<template v-if="record.source.publishedDate">
+						{{ sourceLabels[record.source.kind] }} · {{ record.source.publisher }}<template v-if="record.source.publishedDate">
 							· <time :datetime="record.source.publishedDate">{{ formatDate(record.source.publishedDate) }}</time>
 						</template>
 					</p>

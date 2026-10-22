@@ -7,12 +7,34 @@ export interface ElectionReferenceSource {
 		pageUrl?: string;
 		title: string;
 		publisher: string;
-		kind: "candidate-statement" | "news-report";
+		kind: "candidate-statement" | "news-report" | "official-biography";
 		publishedDate?: string;
 	}[];
 }
 
 export const electionReferenceSources: readonly ElectionReferenceSource[] = [
+	{
+		id: "nc-judicial-statements-2026",
+		stateCode: "NC",
+		electionDate: "2026-11-03",
+		documents: [{
+			url: "https://www.ncsbe.gov/voting/upcoming-election/judicial-voter-guide-2026-general-election",
+			title: "2026 judicial candidate submissions",
+			publisher: "North Carolina State Board of Elections",
+			kind: "candidate-statement",
+		}],
+	},
+	{
+		id: "nm-supreme-biographies-2026",
+		stateCode: "NM",
+		electionDate: "2026-11-03",
+		documents: [{
+			url: "https://supremecourt.nmcourts.gov/about-this-court/supreme-court-justices/",
+			title: "New Mexico Supreme Court biographies",
+			publisher: "New Mexico Judicial Branch",
+			kind: "official-biography",
+		}],
+	},
 	{
 		id: "la-senate-reporting-2026",
 		stateCode: "LA",

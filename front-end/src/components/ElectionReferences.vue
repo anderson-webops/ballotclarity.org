@@ -76,7 +76,7 @@ async function changePage(offset: number) {
 							· <time :datetime="record.source.publishedDate">{{ formatDate(record.source.publishedDate) }}</time>
 						</template>
 					</p>
-					<ul class="text-sm text-app-ink pl-5 list-disc space-y-2 dark:text-app-text-dark">
+					<ul v-if="record.facts.length" class="text-sm text-app-ink pl-5 list-disc space-y-2 dark:text-app-text-dark">
 						<li v-for="fact in record.facts" :key="fact">
 							{{ fact }}
 						</li>

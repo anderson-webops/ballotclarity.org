@@ -704,18 +704,39 @@ research-louisiana-webster-background-2026 CSV/JSONL and review manifest are
 durable, ignored operator companions, not official-import inputs. See
 `docs/audits/2026-10-22-louisiana-local-background.md` for policies and exclusions.
 
-The cumulative v1.11.2 operator package supersedes the v1.11.1 transfer procedure:
-33 unchanged reviewed official snapshots, all 59 reference snapshots and one
-manifest, exactly 93 flat members and 756,803 compressed bytes. It retains 17,662
-reviewed official records and 293 profiles/660 facts, not all election data.
-Seventeen permitted automatic sources refresh separately. The eight earlier
+The additional Webster collection supplies fourteen further identities and ten
+background/position summaries: school-board, Minden council/police-chief and
+Springhill council references. Seven retain only names, offices and attribution;
+generic promises and duplicate candidacy sentences are omitted rather than used
+to manufacture a biography. The trusted registry explicitly opts this new ID into
+allowIdentityOnly; all 59 earlier configurations retain their one-to-six-item
+requirement. Public facts remains an array. Empty arrays render no empty list or
+placeholder explanation. Unknown fields, invalid names, missing/null facts and
+unbounded strings are still rejected. The combined 60 collections contain 307
+profiles/670 factual items across 50 states plus DC, not complete ballots.
+
+Forum attendance establishes neither qualification nor a complete slate, and the
+article contains no question transcript. A later District A special-election
+report concerns 2027 and has inconsistent year/name text; it is not imported into
+2026. Broussard remains held because its announcement body omits the given name;
+no identity is inferred from an image filename. The independently mentioned
+Greater Minden Chamber's GPTBot/AI-agent policy excludes collection. Only policy
+requests were made; no candidate directory, member portal, mirror or cached copy
+was used. These original newspaper submissions/reports are not a proxy for it.
+See `docs/audits/2026-10-22-sparse-local-references.md` for the current expansion.
+
+The cumulative v1.12.0 operator package supersedes the v1.11.2 transfer procedure:
+33 unchanged reviewed official snapshots, all 60 reference snapshots and one
+manifest, exactly 94 flat members and 759,088 compressed bytes. It retains 17,662
+reviewed official records and 307 profiles/670 facts, not all election data.
+Seventeen permitted automatic sources refresh separately. The nine earlier
 packages and published tags remain immutable; every preceding file retains its
 original timestamp, source/configuration hashes and schema. Publisher documents,
 research CSV/JSONL and secrets are not packaged. The archive is outside Git/runtime
 and still needs independently approved operator transfer/import. Current server
-instructions contain exact hashes and all 92 import prerequisites. Nine expanded
+instructions contain exact hashes and all 93 import prerequisites. Nine expanded
 Directory transfer files use versioned filenames; the manifest selects exactly
-one full snapshot per source ID. All 346 preceding canonical files remain byte-exact.
+one full snapshot per source ID. All 354 preceding canonical files remain byte-exact.
 See `docs/audits/2026-10-22-reference-coverage-gaps.md` for this expansion.
 See `docs/audits/2026-10-22-national-congressional-biographies.md` for reconciliation,
 source-quality holds and local acceptance; earlier AZ/NV evidence remains in

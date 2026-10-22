@@ -4,6 +4,7 @@ export interface ElectionReferenceSource {
 	id: string;
 	stateCode: string;
 	electionDate: string;
+	allowIdentityOnly?: boolean;
 	documents: readonly {
 		url: string;
 		pageUrl?: string;
@@ -131,6 +132,25 @@ export const electionReferenceSources: readonly ElectionReferenceSource[] = [
 			{ url: "https://websterparishjournal.com/2026/08/17/javelin-hardy-announces-run-for-minden-city-council-district-c/", title: "Javelin Hardy candidate statement", publisher: "Webster Parish Journal", kind: "candidate-statement", publishedDate: "2026-08-17" },
 			{ url: "https://websterparishjournal.com/2026/08/18/melancon-announces-candidacy-for-springhill-mayor/", title: "Derek Melancon candidate statement", publisher: "Webster Parish Journal", kind: "candidate-statement", publishedDate: "2026-08-18" },
 			{ url: "https://websterparishjournal.com/2026/08/18/mitchell-running-for-re-election-minden-city-council-district-c/", title: "Latasha Anderson Mitchell candidate statement", publisher: "Webster Parish Journal", kind: "candidate-statement", publishedDate: "2026-08-18" },
+		],
+	},
+	{
+		id: "la-webster-additional-references-2026",
+		stateCode: "LA",
+		electionDate: "2026-11-03",
+		allowIdentityOnly: true,
+		documents: [
+			{ url: "https://websterparishjournal.com/2026/01/30/ryan-barnette-announces-candidacy-for-minden-chief-of-police/", title: "Ryan Barnette candidacy announcement", publisher: "Webster Parish Journal", kind: "candidate-statement", publishedDate: "2026-01-30" },
+			{ url: "https://websterparishjournal.com/2026/09/14/hanson-announces-for-springhill-city-council/", title: "Marla Smith Hanson candidacy announcement", publisher: "Webster Parish Journal", kind: "candidate-statement", publishedDate: "2026-09-14" },
+			{ url: "https://websterparishjournal.com/2026/09/14/rice-runs-for-springhill-city-council-dist-2/", title: "Reva Rice candidate statement", publisher: "Webster Parish Journal", kind: "candidate-statement", publishedDate: "2026-09-14" },
+			{ url: "https://websterparishjournal.com/2026/09/21/lee-announces-for-district-c-minden-city-council/", title: "Eric Lee candidate statement", publisher: "Webster Parish Journal", kind: "candidate-statement", publishedDate: "2026-09-21" },
+			{ url: "https://websterparishjournal.com/2026/08/17/janice-louise-lindsey-keener-announces-for-minden-city-council-district-c/", title: "Janice Louise Lindsey-Keener candidacy announcement", publisher: "Webster Parish Journal", kind: "candidate-statement", publishedDate: "2026-08-17" },
+			{ url: "https://websterparishjournal.com/2026/08/19/phenix-running-for-webster-parish-school-board-district-10/", title: "Danielle Phenix candidate statement", publisher: "Webster Parish Journal", kind: "candidate-statement", publishedDate: "2026-08-19" },
+			{ url: "https://websterparishjournal.com/2026/08/20/franklin-announces-for-wpsb-district-10/", title: "Jeanine Major Franklin candidacy announcement", publisher: "Webster Parish Journal", kind: "candidate-statement", publishedDate: "2026-08-20" },
+			{ url: "https://websterparishjournal.com/2026/08/24/evans-announces-for-wpsb-district-9-seat/", title: "Belinda Neloms Evans candidate statement", publisher: "Webster Parish Journal", kind: "candidate-statement", publishedDate: "2026-08-24" },
+			{ url: "https://websterparishjournal.com/2026/08/24/stewart-runs-for-dist-10-school-board/", title: "Robert Louis Stewart Jr. candidate statement", publisher: "Webster Parish Journal", kind: "candidate-statement", publishedDate: "2026-08-24" },
+			{ url: "https://websterparishjournal.com/2026/08/26/shaw-announces-run-for-wpsb-district-5/", title: "Yolanda Shaw Palmer candidate statement", publisher: "Webster Parish Journal", kind: "candidate-statement", publishedDate: "2026-08-26" },
+			{ url: "https://websterparishjournal.com/2026/10/15/council-police-chief-candidates-answer-questions-at-forum/", title: "Minden council and police-chief candidate forum report", publisher: "Webster Parish Journal", kind: "news-report", publishedDate: "2026-10-15" },
 		],
 	},
 	{

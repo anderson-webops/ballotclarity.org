@@ -37,6 +37,15 @@ test("information pagination has its own bounded offset and does not move offici
 	assert.match(official, /JSON.stringify\(filters.value\)/u);
 });
 
+test("identity-only references omit empty fact lists without placeholder explanations", () => {
+	const component = readFileSync(new URL("../src/components/ElectionReferences.vue", import.meta.url), "utf8");
+	assert.match(component, /<ul v-if="record.facts.length"/u);
+	assert.match(component, /record.name/u);
+	assert.match(component, /record.office/u);
+	assert.match(component, /sourceLabels\[record.source.kind\]/u);
+	assert.doesNotMatch(component, /No background|Biography unavailable|More information coming/u);
+});
+
 test("references render even when official candidate data is unavailable", () => {
 	const page = readFileSync(new URL("../src/pages/records.vue", import.meta.url), "utf8");
 	assert.match(page, /<ElectionReferences v-if="filters.stateCode"/u);

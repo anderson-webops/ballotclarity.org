@@ -58,6 +58,35 @@ test("Webster Parish statements retain candidate authorship and publication date
 	assert.equal(newsSource.documents[0]!.kind, "news-report");
 });
 
+test("identity-only references require a reviewed collection opt-in and preserve source meaning", () => {
+	const collection = electionReferenceSources.find(item => item.id === "la-webster-additional-references-2026")!;
+	assert.equal(collection.allowIdentityOnly, true);
+	assert.equal(collection.documents.length, 11);
+	assert.ok(electionReferenceSources.filter(item => item.id !== collection.id).every(item => item.allowIdentityOnly === undefined));
+	const data = fixture(collection);
+	data.records[0]!.facts = [];
+	const snapshot = parseElectionReferenceSnapshot(collection, JSON.stringify(data));
+	const page = buildElectionReferencePage(collection, snapshot, { search: "example 0", scope: "local", offset: 0, limit: 50 });
+	assert.equal(page.matched, 1);
+	assert.deepEqual(page.records[0]!.facts, []);
+	assert.equal(page.records[0]!.source.kind, "candidate-statement");
+	assert.equal(page.records[0]!.source.publishedDate, "2026-01-30");
+	assert.equal(Object.hasOwn(page.records[0]!, "status"), false);
+	assert.throws(() => parseElectionReferenceSnapshot({ ...collection, allowIdentityOnly: false }, JSON.stringify(data)), /fields/u);
+	assert.throws(() => parseElectionReferenceSnapshot({ ...collection, allowIdentityOnly: undefined }, JSON.stringify(data)), /fields/u);
+});
+
+test("identity-only opt-in does not allow missing, malformed or unbounded factual fields", () => {
+	const collection = electionReferenceSources.find(item => item.id === "la-webster-additional-references-2026")!;
+	const data = fixture(collection);
+	for (const facts of [undefined, null, "", [""], [" "], ["line\nbreak"], ["x".repeat(601)], Array.from({ length: 7 }).fill("Example")]) {
+		const changed = { ...data, records: data.records.map(record => ({ ...record, facts })) };
+		assert.throws(() => parseElectionReferenceSnapshot(collection, JSON.stringify(changed)), /fields/u);
+	}
+	assert.throws(() => parseElectionReferenceSnapshot(source, JSON.stringify({ ...fixture(), allowIdentityOnly: true })), /configured collection/u);
+	assert.throws(() => parseElectionReferenceSnapshot(collection, JSON.stringify({ ...data, records: data.records.map(record => ({ ...record, allowIdentityOnly: true })) })), /fields/u);
+});
+
 test("DC background keeps independent council and attorney-general attribution without invented publication dates", () => {
 	const collection = electionReferenceSources.find(item => item.id === "dc-local-biographies-2026")!;
 	assert.equal(collection.stateCode, "DC");

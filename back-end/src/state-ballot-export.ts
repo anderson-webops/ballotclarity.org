@@ -1,22 +1,25 @@
 import type { StateBallotSnapshot } from "./state-ballot-repository.js";
 
 export function serializeStateBallotSnapshots(snapshots: readonly StateBallotSnapshot[]) {
-	if (!snapshots.length || new Set(snapshots.map(snapshot => snapshot.source.stateCode)).size !== snapshots.length)
-		throw new Error("A candidate export requires distinct, available state snapshots.");
+	if (!snapshots.length || new Set(snapshots.map(snapshot => snapshot.source.id)).size !== snapshots.length)
+		throw new Error("A candidate export requires distinct, available source snapshots.");
+	const multipleSourcesPerState = new Set(snapshots.map(snapshot => snapshot.source.stateCode)).size !== snapshots.length;
 	const manifest = {
 		type: "manifest",
-		schemaVersion: 1,
+		schemaVersion: multipleSourcesPerState ? 2 : 1,
 		purpose: "official-candidate-records-not-a-personal-ballot",
-		states: snapshots.map(snapshot => ({
+		[multipleSourcesPerState ? "sources" : "states"]: snapshots.map(snapshot => ({
 			stateCode: snapshot.source.stateCode,
 			electionDate: snapshot.source.electionDate,
 			sourceId: snapshot.source.id,
 			sourceUrl: snapshot.source.pageUrl,
 			documentUrls: snapshot.source.documentUrls,
 			retrievalPolicy: snapshot.source.retrievalPolicy ?? "automatic",
+			scopeNotice: snapshot.source.scopeNotice,
 			retrievedAt: snapshot.retrievedAt,
 			sourceSha256: snapshot.sha256,
 			recordCount: snapshot.records.length,
+			documents: snapshot.documents,
 		})),
 	};
 	const lines = [JSON.stringify(manifest)];
@@ -26,6 +29,7 @@ export function serializeStateBallotSnapshots(snapshots: readonly StateBallotSna
 				type: "candidate",
 				stateCode: snapshot.source.stateCode,
 				electionDate: snapshot.source.electionDate,
+				...(multipleSourcesPerState ? { sourceId: snapshot.source.id } : {}),
 				id: record.id,
 				name: record.name,
 				party: record.party,
@@ -35,7 +39,12 @@ export function serializeStateBallotSnapshots(snapshots: readonly StateBallotSna
 				scope: record.scope,
 				status: record.status,
 				sourceStatus: record.sourceStatus,
+				ballotDesignation: record.ballotDesignation,
 				candidateUrl: record.candidateUrl,
+				sourceCandidateId: record.sourceCandidateId,
+				sourceDistrictLabel: record.sourceDistrictLabel,
+				sourceDivision: record.sourceDivision,
+				sourceAreaLabel: record.sourceAreaLabel,
 			}));
 		}
 	}

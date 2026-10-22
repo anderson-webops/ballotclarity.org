@@ -29,17 +29,15 @@ const isPending = ref(false);
 const errorMessage = ref("");
 const lookupResult = ref<NationwideLookupResultContext | null>(null);
 const inputId = `address-lookup-${useId()}`;
-const privacyId = `${inputId}-privacy`;
 const errorId = `${inputId}-error`;
 const actionsId = `${inputId}-actions`;
 const lookupInput = ref<HTMLInputElement | null>(null);
 let activeRequest: AbortController | null = null;
 const shouldShowInlineResults = computed(() => props.showInlineResults !== false);
 const inputDescribedBy = computed(() => [
-	privacyId,
 	lookupResult.value && shouldShowInlineResults.value ? actionsId : "",
 	errorMessage.value ? errorId : ""
-].filter(Boolean).join(" "));
+].filter(Boolean).join(" ") || undefined);
 
 watch(query, () => {
 	cancelLookup();
@@ -171,19 +169,6 @@ async function selectLookupOption(option: LocationLookupSelectionOption) {
 				</span>
 			</button>
 		</div>
-		<p v-if="compact" :id="privacyId" class="text-xs text-app-muted leading-6 mt-3 dark:text-app-muted-dark">
-			Lookup data is used only to load civic results. If you enter only a 5-digit ZIP code, that ZIP may be counted in a ZIP-only operations log; street addresses and ZIP+4 entries are not added to that log.
-			<NuxtLink to="/privacy" class="underline underline-offset-3" prefetch-on="interaction">
-				Privacy notice
-			</NuxtLink>.
-		</p>
-		<p v-else :id="privacyId" class="text-sm text-app-muted leading-6 mt-3 dark:text-app-muted-dark">
-			Data use: your lookup is sent only to match ballot coverage. If you enter only a 5-digit ZIP code, that ZIP may be counted in a ZIP-only operations log, but raw lookup text, full street addresses, ZIP+4 entries, IP address, and user agent are not added to that log. The raw lookup is not added to public content records or used for advertising, and the app saves only your selected location label and ballot-plan preferences locally in your browser. Read the
-			<NuxtLink to="/privacy" class="underline underline-offset-3" prefetch-on="interaction">
-				privacy notice
-			</NuxtLink>.
-		</p>
-
 		<p
 			v-if="errorMessage"
 			:id="errorId"

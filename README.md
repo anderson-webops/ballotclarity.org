@@ -431,10 +431,13 @@ These endpoints live on the Express service, but they are intended to be reached
 - Production roadmap: see `docs/production-readiness-roadmap.md` for the staged path from fixture-backed development data to a real operated civic-information service
 - Runtime artifact contract: see `docs/runtime-artifact.md` for the hashed two-service bundle, clean-directory acceptance test, external writable-state declarations, and promotion/rollback boundary
 - Live-data sequence: see `docs/live-data-implementation-sequence.md` for the concrete schema, env, provider, and rollout order for replacing fixture coverage with reviewed civic data
-- Official state candidates: see `docs/state-ballot-sources.md` for sixteen state datasets (fifteen live sources and one dated snapshot), research inventory, coverage limits, source verification, and server-transfer export
+- Official candidate sources: see `docs/state-ballot-sources.md` for forty-nine states plus DC, with nineteen automatic and thirty-three reviewed sources. Additive Brunswick NC and Santa Fe NM sources retain independent selection and attribution without replacing primary feeds; `STATE_BALLOT_ENABLED_SOURCES` can restrict collection to exact permitted source IDs. All reviewed sources require persistent external imports; production datasets and transfer packages stay outside Git and code artifacts. `/records` separately displays reviewed candidate-provided information and attributed reporting, never as official qualification or personal ballot eligibility. Broader local/profile coverage remains incomplete. Kansas, Montana and Washington support automatic download and persistent caching. Tennessee's congressional records remain browsable but are not address-matched pending boundary verification. Original source links and capture dates remain visible.
 - Launch brief: see `docs/fulton-county-ga-launch.md` for the selected official systems and provider stack
 
 ## Production mode
+
+Current election deployment, external-data import, source-policy and future-election
+instructions for the protected server operator are in [`docs/server-ai-current.md`](docs/server-ai-current.md).
 
 - Set `NUXT_PUBLIC_SITE_URL` to the final public origin so metadata, schema, and canonical URLs match the deployed domain.
 - Set `NUXT_PUBLIC_API_BASE` to the public API origin used by the browser.

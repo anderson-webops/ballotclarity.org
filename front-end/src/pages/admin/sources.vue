@@ -90,7 +90,7 @@ usePageSeo({
 			eyebrow="No monitored sources"
 			message="No source-health records are configured for the admin monitor. Public source records may still exist, but operational monitoring should be added before relying on freshness warnings."
 			secondary-label="Open methodology"
-			secondary-to="/methodology"
+			secondary-to="/about#methodology"
 			title="Source monitor has no entries"
 		/>
 

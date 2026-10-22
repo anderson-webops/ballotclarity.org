@@ -23,6 +23,7 @@ const coreTerms = [
 ];
 
 const operatorAndNoticeRules = [
+	"Ballot Clarity does not currently claim tax-exempt status.",
 	`Ballot Clarity is currently operated by ${currentOperatorName}.`,
 	"Operational questions, corrections, and formal notices can be sent through the public contact page or protected email link below.",
 	...(operatorNoticeAddress
@@ -218,10 +219,10 @@ usePageSeo({
 					</li>
 				</ul>
 				<div class="mt-6 flex flex-wrap gap-3">
-					<NuxtLink to="/methodology" class="btn-secondary">
+					<NuxtLink to="/about#methodology" class="btn-secondary">
 						Read methodology
 					</NuxtLink>
-					<NuxtLink to="/neutrality" class="btn-secondary">
+					<NuxtLink to="/about#neutrality" class="btn-secondary">
 						Read neutrality policy
 					</NuxtLink>
 				</div>

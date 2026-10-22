@@ -4,11 +4,14 @@ import { dirname, extname, resolve } from "node:path";
 const projectRoot = resolve(import.meta.dirname, "..");
 const distRoot = resolve(projectRoot, "dist");
 const requiredRuntimeFiles = [
-	"data/state-ballots/illinois-2026.json",
 	"admin-schema.postgres.sql",
 	"admin-schema.sql",
 	"live-data-schema.sql",
 	"server.js",
+	"manage-election-references.js",
+	"manage-state-ballot-data.js",
+	"export-state-ballot-sources.js",
+	"check-state-ballot-sources.js",
 ];
 const importPatterns = [
 	/\b(?:import|export)\s+(?:[^"'()]*?\s+from\s+)?["'](\.[^"']+)["']/gu,
@@ -17,6 +20,9 @@ const importPatterns = [
 
 if (!existsSync(distRoot))
 	throw new Error(`Missing compiled backend directory: ${distRoot}`);
+
+if (existsSync(resolve(distRoot, "data", "state-ballots")))
+	throw new Error("Election datasets must remain outside the compiled runtime.");
 
 const missingFiles = [];
 

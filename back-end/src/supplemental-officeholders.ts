@@ -11,6 +11,7 @@ import type {
 	Source,
 	VoteRecordSummary,
 } from "./types/civic.js";
+import { getStateAbbreviationForName } from "./official-election-tools.js";
 import { classifyRepresentative } from "./representative-classification.js";
 
 export interface SupplementalOfficeholderEnrichment {
@@ -1011,16 +1012,19 @@ export function findSupplementalOfficeholdersByDistrictSlug(slug: string) {
 	return supplementalOfficeholders.filter(record => record.districtSlug === normalizedSlug);
 }
 
-export function listSupplementalOfficeholdersForDistrictMatches(districtMatches: LocationDistrictMatch[]) {
+export function listSupplementalOfficeholdersForDistrictMatches(districtMatches: LocationDistrictMatch[], stateCode: string) {
 	const districtSlugs = new Set(districtMatches.map(buildDistrictSlug));
-	return supplementalOfficeholders.filter(record => districtSlugs.has(record.districtSlug));
+	const state = typeof stateCode === "string" ? stateCode.trim() : "";
+	const normalizedStateCode = getStateAbbreviationForName(state) ?? state.toUpperCase();
+	return supplementalOfficeholders.filter(record => record.stateCode === normalizedStateCode && districtSlugs.has(record.districtSlug));
 }
 
 export function mergeRepresentativeMatchesWithSupplementalRecords(
 	representativeMatches: LocationRepresentativeMatch[],
 	districtMatches: LocationDistrictMatch[],
+	stateCode: string,
 ) {
-	const supplementalMatches = listSupplementalOfficeholdersForDistrictMatches(districtMatches)
+	const supplementalMatches = listSupplementalOfficeholdersForDistrictMatches(districtMatches, stateCode)
 		.map(buildSupplementalRepresentativeMatch);
 
 	return uniqueById([

@@ -12,6 +12,10 @@ export interface StateCandidateValues {
 	district?: string;
 	jurisdiction?: string;
 	candidateUrl?: string;
+	sourceCandidateId?: string;
+	sourceDistrictLabel?: string;
+	sourceDivision?: string;
+	sourceAreaLabel?: string;
 	scope?: StateContestScope;
 }
 
@@ -79,7 +83,7 @@ function readExport(source: StateBallotSource, body: string) {
 		if (values.length !== headers.length) throw new Error("The official export has an inconsistent row layout.");
 		return Object.fromEntries(headers.map((header, index) => [header, clean(values[index])])) as Record<string, string>;
 	});
-	if (["hawaii-csv", "south-dakota-csv"].includes(source.format)) {
+	if (["hawaii-csv", "south-dakota-csv", "montana-csv"].includes(source.format)) {
 		const total = clean(stateHtmlText(parseStateHtml(envelope.page))).match(/(\d+) items in \d+ pages/u)?.[1];
 		if (!total || Number(total) !== rows.length) throw new Error("The official export does not match its complete public record count.");
 	}
@@ -93,6 +97,75 @@ function requireColumns(headers: string[], expected: string[]) {
 function publishedWebsite(value: string | undefined) {
 	const website = clean(value);
 	return /^[a-z0-9][a-z0-9.-]+\.[a-z]{2,}(?:[/?#]\S*)?$/iu.test(website) ? `https://${website}` : website;
+}
+
+function parseMontana(source: StateBallotSource, headers: string[], rows: Record<string, string>[], factory: RecordFactory) {
+	const expected = ["Status", "District Type", "District", "Race", "Term Type", "Term Length", "Name", "Mailing Address", "Email/Web Address", "Phone", "Filing Date", "Party Preference", "Ballot Order"];
+	if (headers.length !== expected.length || expected.some(column => !headers.includes(column))) throw new Error("The Montana public export columns have changed.");
+	const parties: Record<string, string> = { DEM: "Democratic", REP: "Republican", IND: "Independent", LIB: "Libertarian", NON: "Nonpartisan" };
+	const identifiers = new Set<string>();
+	return rows.map((row) => {
+		if (!["FILED", "WITHDRAWN"].includes(row.Status!) || !["REGULAR", "UNEXPIRED"].includes(row["Term Type"]!))
+			throw new Error("The Montana public candidate status or term vocabulary has changed.");
+		const office = row.Race!;
+		const type = row["District Type"]!;
+		const label = row.District!;
+		const party = parties[row["Party Preference"]!];
+		if (!party) throw new Error("The Montana party-preference vocabulary has changed.");
+		let scope: StateContestScope;
+		let district = "";
+		let jurisdiction: string | undefined;
+		let expectedTerm: string;
+		if (type === "Statewide" && label === "STATE" && office === "UNITED STATES SENATOR") {
+			scope = "statewide";
+			expectedTerm = "6";
+		}
+		else if (type === "Supreme Court Justice" && label === "SUPREME COURT JUSTICE" && /^SUPREME COURT JUSTICE #[1-9]\d*$/u.test(office) && row["Party Preference"] === "NON") {
+			scope = "statewide";
+			expectedTerm = "8";
+		}
+		else if (type === "Congressional" && office === "UNITED STATES REPRESENTATIVE" && /^(?:1ST|2ND) CONGRESSIONAL$/u.test(label)) {
+			scope = "congressional";
+			district = label.slice(0, 1);
+			expectedTerm = "2";
+		}
+		else if (["Senate", "House"].includes(type)) {
+			const match = label.match(new RegExp(`^${type.toUpperCase()} DISTRICT ([1-9]\\d*)$`, "u"));
+			if (!match || office !== `${type === "Senate" ? "STATE SENATOR" : "STATE REPRESENTATIVE"} DISTRICT ${match[1]}` || Number(match[1]) > (type === "Senate" ? 50 : 100))
+				throw new Error("The Montana legislative district or office has changed.");
+			scope = type === "Senate" ? "state-senate" : "state-house";
+			district = match[1]!;
+			expectedTerm = type === "Senate" ? "4" : "2";
+		}
+		else if (type === "Public Service Commission") {
+			const match = label.match(/^PUBLIC SERVICE COMMISSIONER DISTRICT ([1-5])$/u);
+			if (!match || office !== `PUBLIC SERVICE COMMISSIONER, DISTRICT ${match[1]}`) throw new Error("The Montana commission district has changed.");
+			scope = "local";
+			district = match[1]!;
+			jurisdiction = `Public Service Commission District ${district}`;
+			expectedTerm = "4";
+		}
+		else if (type === "Judicial" && row["Party Preference"] === "NON") {
+			const match = office.match(/^DISTRICT COURT JUDGE DISTRICT ([1-9]\d*), DEPT [1-9]\d*( UNEXPIRED)?$/u);
+			if (!match || label !== `JUDICIAL DISTRICT ${match[1]}` || Boolean(match[2]) !== (row["Term Type"] === "UNEXPIRED")) throw new Error("The Montana judicial district or term has changed.");
+			scope = "local";
+			district = match[1]!;
+			jurisdiction = `Judicial District ${district}`;
+			expectedTerm = "6";
+		}
+		else {
+			throw new Error("The Montana public office or district vocabulary has changed.");
+		}
+		if (row["Term Length"] !== expectedTerm || (row["Term Type"] === "UNEXPIRED" && type !== "Judicial")) throw new Error("The Montana public term has changed.");
+		const incumbent = row.Name!.startsWith("*");
+		const name = incumbent ? row.Name!.slice(1).trim() : row.Name!;
+		if (name.includes("*")) throw new Error("The Montana candidate name marker has changed.");
+		const record = requiredRecord(source, { name, office, party, scope, district, jurisdiction, status: row.Status, sourceDistrictLabel: label }, factory);
+		if (identifiers.has(record.id)) throw new Error("The Montana public export contains duplicate candidate identities.");
+		identifiers.add(record.id);
+		record.ballotDesignation = [incumbent ? "Incumbent" : "", row["Term Type"] === "UNEXPIRED" ? `Unexpired; listed term length: ${expectedTerm} years` : `${expectedTerm}-year term`].filter(Boolean).join("; ");
+		return record;
+	});
 }
 
 function parseIllinois(source: StateBallotSource, rows: Record<string, string>[], factory: RecordFactory) {
@@ -141,6 +214,7 @@ function parseIllinois(source: StateBallotSource, rows: Record<string, string>[]
 export function parseAdditionalStateRecords(source: StateBallotSource, body: string, factory: RecordFactory): StateCandidateRecord[] {
 	if (source.format === "utah-html") return parseUtah(source, body, factory);
 	const { headers, rows } = readExport(source, body);
+	if (source.format === "montana-csv") return parseMontana(source, headers, rows, factory);
 	if (source.format === "illinois-tsv") {
 		requireColumns(headers, ["CandidateID", "BracketID", "FirstName", "LastName", "CandidateStatus", "WebSiteAddress", "ElecDate", "ElectionType", "PartyName", "OfficeName"]);
 		return parseIllinois(source, rows, factory);

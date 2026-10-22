@@ -1,17 +1,11 @@
 <script setup lang="ts">
-import { formatSourcePublicationKind, formatSourcePublisherType, groupSourceDirectoryItems } from "~/utils/source-directory";
+import { groupSourceDirectoryItems } from "~/utils/source-directory";
 
 const searchQuery = ref("");
-const { data, pending } = await useSourceDirectory();
-const isSearching = computed(() => Boolean(searchQuery.value.trim()));
-
+const { data, error, pending } = await useSourceDirectory();
 const filteredSources = computed(() => {
 	const query = searchQuery.value.trim().toLowerCase();
-
-	if (!query)
-		return data.value?.sources ?? [];
-
-	return (data.value?.sources ?? []).filter(source => [
+	return (data.value?.sources ?? []).filter(source => !query || [
 		source.summary,
 		source.title,
 		source.publisher,
@@ -24,140 +18,74 @@ const filteredSources = computed(() => {
 		source.limitations.join(" ")
 	].join(" ").toLowerCase().includes(query));
 });
-
 const sections = computed(() => groupSourceDirectoryItems(filteredSources.value));
 
 usePageSeo({
-	description: "Browse Ballot Clarity’s public source directory for official systems, public-interest providers, and published source records used across the site.",
-	jsonLd: {
-		"@context": "https://schema.org",
-		"@type": "CollectionPage",
-		"name": "Ballot Clarity source directory"
-	},
+	description: "Public source records and data providers used by Ballot Clarity.",
+	jsonLd: { "@context": "https://schema.org", "@type": "CollectionPage", "name": "Ballot Clarity sources" },
 	path: "/sources",
-	title: "Source Directory"
+	title: "Sources"
 });
 </script>
 
 <template>
-	<section class="app-shell section-gap space-y-8">
-		<header class="max-w-4xl">
-			<h1 class="text-5xl text-app-ink font-serif dark:text-app-text-dark">
-				Source directory
-			</h1>
-		</header>
-
-		<div class="surface-row">
-			<label for="source-search" class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
-				Search sources
-			</label>
-			<div class="mt-4 relative">
-				<span class="i-carbon-search text-app-muted pointer-events-none left-4 top-1/2 absolute dark:text-app-muted-dark -translate-y-1/2" />
-				<input
-					id="source-search"
-					v-model="searchQuery"
-					type="search"
-					placeholder="Search by source title, publisher, or system"
-					class="text-sm text-app-ink pl-11 pr-4 border border-app-line rounded-full bg-white h-13 w-full shadow-sm dark:text-app-text-dark placeholder:text-app-muted dark:border-app-line-dark dark:bg-app-panel-dark focus-ring dark:placeholder:text-app-muted-dark"
-				>
-			</div>
-		</div>
-
-		<div v-if="pending" class="space-y-6">
-			<div v-for="index in 4" :key="index" class="rounded-lg bg-app-bg h-40 animate-pulse dark:bg-app-bg-dark" />
-		</div>
-
-		<div v-else-if="!filteredSources.length" class="surface-panel">
-			<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
-				No sources match the current search.
-			</h2>
-		</div>
-
-		<div v-else class="space-y-8">
-			<section
-				v-for="section in sections"
-				:key="section.kind"
-				class="space-y-4"
-			>
-				<header class="max-w-4xl">
-					<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
-						{{ section.heading }}
-					</h2>
-					<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
-						{{ section.description }}
-					</p>
-				</header>
-
-				<div v-if="section.kind === 'published-provenance' && !isSearching" class="surface-row">
-					<details>
-						<summary class="collapsible-card-summary cursor-pointer focus-ring">
-							<div class="flex flex-wrap gap-3 items-center justify-between">
-								<div>
-									<p class="text-lg text-app-ink font-semibold dark:text-app-text-dark">
-										{{ section.items.length }} published page source record{{ section.items.length === 1 ? "" : "s" }}
-									</p>
-									<p class="text-sm text-app-muted leading-7 mt-2 dark:text-app-muted-dark">
-										Open this list when you need a specific page-level citation. Use search to filter the full directory.
-									</p>
-								</div>
-								<TrustBadge label="Collapsed by default" />
-							</div>
+	<section class="app-shell section-gap">
+		<div class="max-w-4xl space-y-8">
+			<header>
+				<h1 class="text-5xl text-app-ink font-serif dark:text-app-text-dark">
+					Sources
+				</h1>
+				<nav class="text-sm font-semibold mt-5 flex flex-wrap gap-x-6 gap-y-2" aria-label="Sources">
+					<NuxtLink to="/records" class="text-app-accent rounded-sm underline underline-offset-3 focus-ring">
+						Candidate records
+					</NuxtLink>
+					<a href="#directory" class="text-app-accent rounded-sm underline underline-offset-3 focus-ring">Source directory</a>
+					<a href="#providers" class="text-app-accent rounded-sm underline underline-offset-3 focus-ring">Data providers</a>
+					<NuxtLink to="/about#methodology" class="text-app-accent rounded-sm underline underline-offset-3 focus-ring">
+						Editorial standards
+					</NuxtLink>
+				</nav>
+			</header>
+			<section id="directory" class="scroll-mt-24" aria-labelledby="directory-heading">
+				<h2 id="directory-heading" class="sr-only">
+					Source directory
+				</h2>
+				<label for="source-search" class="text-sm text-app-ink font-semibold dark:text-app-text-dark">Search sources</label>
+				<input id="source-search" v-model="searchQuery" type="search" placeholder="Title, publisher, or system" class="text-base text-app-ink mt-2 px-4 border border-app-line rounded-full bg-app-panel h-12 w-full dark:text-app-text-dark dark:border-app-line-dark dark:bg-app-panel-dark focus-ring">
+				<p v-if="pending" class="text-sm text-app-muted mt-4 dark:text-app-muted-dark" role="status">
+					Loading sources…
+				</p>
+				<p v-else-if="error" class="text-sm text-app-muted mt-4 dark:text-app-muted-dark" role="status">
+					Source directory unavailable.
+				</p>
+				<p v-else-if="!filteredSources.length" class="text-sm text-app-muted mt-4 dark:text-app-muted-dark" role="status">
+					No sources match the current search.
+				</p>
+				<div v-else class="mt-6 space-y-6">
+					<details v-for="section in sections" :key="section.kind" :open="section.kind === 'curated-global' || Boolean(searchQuery.trim())">
+						<summary class="text-xl text-app-ink font-serif rounded-sm cursor-pointer dark:text-app-text-dark focus-ring">
+							{{ section.heading }}
 						</summary>
-						<div class="mt-5 gap-3 grid md:grid-cols-2">
-							<NuxtLink
-								v-for="source in section.items"
-								:key="source.id"
-								:to="`/sources/${source.id}`"
-								class="p-4 border border-app-line/80 rounded-2xl transition dark:border-app-line-dark hover:border-app-accent focus-ring"
-							>
-								<p class="text-base text-app-ink font-semibold dark:text-app-text-dark">
+						<ul class="mt-3 divide-app-line divide-y dark:divide-app-line-dark">
+							<li v-for="source in section.items" :key="source.id" class="py-4">
+								<NuxtLink :to="`/sources/${source.id}`" class="text-base text-app-accent font-semibold rounded-sm underline underline-offset-3 focus-ring">
 									{{ source.title }}
-								</p>
-								<p class="text-xs text-app-muted leading-6 mt-2 dark:text-app-muted-dark">
+								</NuxtLink>
+								<p class="text-sm text-app-muted leading-6 mt-1 dark:text-app-muted-dark">
 									{{ source.publisher }} · {{ source.sourceSystem }}
 								</p>
-							</NuxtLink>
-						</div>
-					</details>
-				</div>
-
-				<div v-else class="space-y-3">
-					<NuxtLink
-						v-for="source in section.items"
-						:key="source.id"
-						:to="`/sources/${source.id}`"
-						class="surface-row block transition hover:border-app-accent focus-ring"
-					>
-						<div class="flex flex-wrap gap-3 items-start justify-between">
-							<div class="max-w-4xl min-w-0">
-								<div class="flex flex-wrap gap-2 items-center">
-									<SourceAuthorityBadge :authority="source.authority" />
-									<TrustBadge :label="formatSourcePublisherType(source.publisherType)" />
-									<TrustBadge :label="formatSourcePublicationKind(source.publicationKind)" tone="accent" />
-								</div>
-								<h3 class="text-xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-									{{ source.title }}
-								</h3>
 								<p class="text-sm text-app-muted leading-6 mt-2 dark:text-app-muted-dark">
 									{{ source.summary }}
 								</p>
 								<p class="text-xs text-app-muted leading-6 mt-2 dark:text-app-muted-dark">
-									{{ source.publisher }} · {{ source.sourceSystem }}
+									{{ source.geographicScope }} · {{ source.citationCount }} citation{{ source.citationCount === 1 ? '' : 's' }}
 								</p>
-								<p class="text-sm text-app-muted leading-6 mt-2 dark:text-app-muted-dark">
-									{{ source.usedFor }}
-								</p>
-							</div>
-							<div class="flex flex-col gap-3 items-start sm:items-end">
-								<TrustBadge :label="`${source.citationCount} citation${source.citationCount === 1 ? '' : 's'}`" />
-								<p class="text-xs text-app-muted leading-6 text-left max-w-[14rem] dark:text-app-muted-dark sm:text-right">
-									{{ source.geographicScope }}
-								</p>
-							</div>
-						</div>
-					</NuxtLink>
+							</li>
+						</ul>
+					</details>
 				</div>
 			</section>
+			<SourceProviders />
 		</div>
 	</section>
 </template>

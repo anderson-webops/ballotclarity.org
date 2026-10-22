@@ -614,6 +614,7 @@ export function buildLocationLookupResponse(
 		);
 
 		if (geoContext || officialLookup || addressEnrichment?.normalizedAddress || addressEnrichment?.districtMatches?.length || addressEnrichment?.representativeMatches?.length) {
+			const stateName = getStateNameForAbbreviation(geoContext?.stateAbbreviation);
 			return {
 				actions: officialActions,
 				availability: buildAvailabilitySummary(
@@ -631,6 +632,16 @@ export function buildLocationLookupResponse(
 				inputKind,
 				districtMatches: addressEnrichment?.districtMatches,
 				electionLogistics: officialLookup?.logistics ?? null,
+				location: stateName
+					? {
+							coverageLabel: "Civic results available",
+							displayName: stateName,
+							lookupMode: officialLookup?.verified ? "address-verified" : "address-submitted",
+							requiresOfficialConfirmation: !officialLookup?.verified,
+							slug: buildLocationLookupSlug(stateName),
+							state: stateName,
+						}
+					: undefined,
 				lookupQuery: rawQuery,
 				note: buildGuideUnavailableNote(rawQuery, inputKind, geoContext, Boolean(officialActions.length), addressEnrichment),
 				normalizedAddress: addressEnrichment?.normalizedAddress,

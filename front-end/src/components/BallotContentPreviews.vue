@@ -13,7 +13,7 @@ const statusLabels: Record<string, string> = { "filed": "Filed", "qualified": "Q
 				{{ preview.providerId.startsWith('official-state-') ? 'State candidate records' : 'Ballot records' }}
 			</h2>
 			<p v-if="preview.electionDate" class="text-sm text-app-muted mt-2 dark:text-app-muted-dark">
-				Election: {{ formatDate(preview.electionDate) }}
+				Election: <span class="attention-date">{{ formatDate(preview.electionDate) }}</span>
 			</p>
 			<p class="text-sm text-app-muted leading-6 mt-2 dark:text-app-muted-dark">
 				{{ preview.providerLabel }} · Retrieved {{ formatDateTime(preview.generatedAt) }}
@@ -45,6 +45,9 @@ const statusLabels: Record<string, string> = { "filed": "Filed", "qualified": "Q
 							<span v-else class="text-app-ink font-semibold dark:text-app-text-dark">{{ candidate.name }}</span>
 							<span v-if="candidate.party"> · {{ candidate.party }}</span>
 							<span v-if="candidate.ballotStatus && statusLabels[candidate.ballotStatus]"> · {{ statusLabels[candidate.ballotStatus] }}</span>
+							<p v-if="candidate.ballotDesignation">
+								Ballot designation: {{ candidate.ballotDesignation }}
+							</p>
 						</li>
 					</ul>
 					<div v-if="contest.referendum" class="text-sm text-app-muted leading-6 mt-3 space-y-2 dark:text-app-muted-dark">

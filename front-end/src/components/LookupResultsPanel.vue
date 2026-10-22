@@ -13,6 +13,7 @@ import { buildLookupPresentation, filterLookupActionsForPresentation } from "~/u
 import { buildNationwideDistrictHref, buildNationwideRepresentativeHref } from "~/utils/lookup-links";
 import { buildNationwideRouteTarget } from "~/utils/nationwide-route-context";
 import { resolveRepresentativePresentation } from "~/utils/representative-presentation";
+import { limitedBallotNotice } from "~/utils/results-summary";
 
 const props = defineProps<{
 	compact?: boolean;
@@ -224,6 +225,9 @@ function getRepresentativePresentation(match: NationwideLookupResultContext["rep
 
 <template>
 	<div :class="resultsPage ? 'lookup-results-page' : 'mt-5 p-4 border border-app-line rounded-xl bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/60'">
+		<p v-if="lookup.result === 'resolved' && !lookup.guideContent?.verifiedContestPackage" class="text-sm text-app-ink leading-6 mb-4 pl-3 border-app-line border-l-2 dark:text-app-text-dark dark:border-app-line-dark">
+			{{ limitedBallotNotice }}
+		</p>
 		<p v-if="!resultsPage" class="text-xs text-app-muted tracking-[0.2em] font-semibold uppercase dark:text-app-muted-dark">
 			{{ lookupPresentation.heading }}
 		</p>
@@ -319,6 +323,9 @@ function getRepresentativePresentation(match: NationwideLookupResultContext["rep
 			</li>
 		</ol>
 		<BallotContentPreviews v-if="hasBallotContentPreviews" :previews="ballotContentPreviews" class="mt-8" />
+		<NuxtLink v-if="lookup.result === 'resolved'" :to="lookup.location?.state ? { path: '/records', query: { state: lookup.location.state } } : '/records'" class="text-sm text-app-accent font-semibold mt-4 underline underline-offset-3 inline-block focus-ring">
+			Browse candidate records
+		</NuxtLink>
 		<div v-if="visibleLookupActions.length" :id="resultsPage ? 'official-tools' : undefined" class="mt-6 gap-3 grid">
 			<div v-if="resultsPage">
 				<h2 class="text-2xl text-app-ink font-serif dark:text-app-text-dark">
@@ -401,7 +408,7 @@ function getRepresentativePresentation(match: NationwideLookupResultContext["rep
 							{{ electionLogistics.electionName }}
 						</p>
 						<p v-if="electionLogistics.electionDay" class="text-sm text-app-muted dark:text-app-muted-dark">
-							{{ formatDate(electionLogistics.electionDay) }}
+							<span class="attention-date">{{ formatDate(electionLogistics.electionDay) }}</span>
 						</p>
 						<VerificationBadge v-if="electionLogistics.mailOnly" label="Mail-only precinct" tone="warning" />
 					</div>

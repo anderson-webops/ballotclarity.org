@@ -9,6 +9,7 @@ import { existsSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test, { after, before } from "node:test";
+import { readActiveNationwideLookupContext } from "../src/active-nationwide-lookup.js";
 import { createAdminLoginThrottle } from "../src/admin-login-throttle.js";
 import { createAdminMfaCode } from "../src/admin-mfa.js";
 import { defaultContentSeed } from "../src/admin-store.js";
@@ -32,6 +33,20 @@ function findRepoRoot() {
 test("state candidate records populate lookup and active-cookie routes without promoting guide coverage", async () => {
 	let sourceReads = 0;
 	const isolatedApp = await createApp({
+		addressEnrichmentService: {
+			async lookupAddress() {
+				return {
+					benchmark: "Public_AR_Current",
+					districtMatches: [{ id: "house:7", label: "House 7", districtCode: "7", districtType: "state-house", sourceSystem: "Fixture" }],
+					fromCache: false,
+					normalizedAddress: "100 CONTROLLED REVIEW ST, RALEIGH, NC, 27601",
+					representativeMatches: [],
+					state: "NC",
+					vintage: "Current_Current",
+					zip5: "27601",
+				};
+			},
+		},
 		adminDbPath: ":memory:",
 		congressClient: null,
 		googleCivicClient: null,
@@ -82,6 +97,22 @@ test("state candidate records populate lookup and active-cookie routes without p
 		assert.equal(restored.ballotContentPreviews[0].candidateCount, 1);
 		assert.equal(restored.ballotContentPreviews[0].contests[0].candidates[0].name, "State Candidate");
 		assert.equal(restored.guideAvailability, "not-published");
+		const addressResponse = await fetch(`${origin}/api/location`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ q: "100 Controlled Review St, Raleigh, NC 27601" }) });
+		assert.equal(addressResponse.status, 200);
+		const addressBody = await addressResponse.json();
+		assert.equal(addressBody.location.state, "North Carolina");
+		assert.equal(addressBody.location.lookupMode, "address-submitted");
+		assert.equal(addressBody.guideAvailability, "not-published");
+		assert.equal(addressBody.ballotContentPreviews[0].candidateCount, 2);
+		assert.equal(addressBody.availability.ballotCandidates.status, "limited");
+		const addressCookie = addressResponse.headers.getSetCookie().map(value => value.split(";", 1)[0]).join("; ");
+		const cookiePayload = readActiveNationwideLookupContext(addressCookie, "test-active-lookup-cookie-secret-that-is-long-enough");
+		assert.ok(cookiePayload);
+		assert.doesNotMatch(JSON.stringify(cookiePayload), /100|Controlled|Review/iu);
+		const restoredAddress = await (await fetch(`${origin}/api/location/active`, { headers: { cookie: addressCookie } })).json();
+		assert.equal(restoredAddress.inputKind, "address");
+		assert.equal(restoredAddress.location.state, "North Carolina");
+		assert.deepEqual(restoredAddress.ballotContentPreviews, addressBody.ballotContentPreviews);
 		assert.equal(sourceReads, 1);
 		assert.match(active.headers.get("cache-control") ?? "", /no-store/u);
 	}
@@ -110,6 +141,7 @@ function createApp(options: Parameters<typeof createApplication>[0] = {}) {
 		activeLookupCookieSecret: "test-active-lookup-cookie-secret-that-is-long-enough",
 		adminMfaEncryptionKey: "test-admin-mfa-encryption-key-that-is-long-enough",
 		allowLegacyAdminActorHeadersForTesting: true,
+		stateBallotRepository: null,
 		...options
 	});
 }
@@ -2149,7 +2181,10 @@ test("POST /api/location returns district lookup results without a published gui
 	assert.equal(body.result, "resolved");
 	assert.equal(body.guideAvailability, "not-published");
 	assert.equal(body.inputKind, "address");
-	assert.equal(body.location, undefined);
+	assert.equal(body.location.state, "Utah");
+	assert.equal(body.location.displayName, "Utah");
+	assert.equal(body.location.lookupMode, "address-verified");
+	assert.equal(body.location.requiresOfficialConfirmation, false);
 	assert.equal(body.electionSlug, undefined);
 	assert.equal(body.actions.some((item: { kind: string }) => item.kind === "ballot-guide"), false);
 	assert.equal(body.actions.some((item: { title: string }) => /Utah voter registration portal|Registration and voter status/i.test(item.title)), true);

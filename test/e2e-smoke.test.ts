@@ -216,7 +216,8 @@ const nationwideLookupSnapshot = {
 Object.assign(nationwideLookupSnapshot.nationwideLookupResult, {
 	representativeMatches: mergeRepresentativeMatchesWithSupplementalRecords(
 		nationwideLookupSnapshot.nationwideLookupResult.representativeMatches,
-		nationwideLookupSnapshot.nationwideLookupResult.districtMatches
+		nationwideLookupSnapshot.nationwideLookupResult.districtMatches,
+		nationwideLookupSnapshot.nationwideLookupResult.location.state
 	)
 });
 
@@ -732,6 +733,12 @@ test("voter resilience: Escape closes navigation and returns focus on mobile and
 				window.navTrigger.click();
 			` });
 			await waitForRuntimeCondition(cdp, "window.navTrigger.getAttribute('aria-expanded')", value => value === "true", "navigation opens");
+			if (width === 1280) {
+				const links = await cdp.send("Runtime.evaluate", { expression: "Array.from(document.getElementById(window.navTrigger.getAttribute('aria-controls')).querySelectorAll('a')).map(link => link.textContent.trim())", returnByValue: true });
+				assert.deepEqual(links.result.value, ["About", "Sources", "Coverage", "Voting help", "Contact"]);
+			}
+			const legalLinks = await cdp.send("Runtime.evaluate", { expression: "document.querySelectorAll('header a[href=\"/privacy\"], header a[href=\"/terms\"]').length", returnByValue: true });
+			assert.equal(legalLinks.result.value, 0);
 			await cdp.send("Runtime.evaluate", { expression: "document.getElementById(window.navTrigger.getAttribute('aria-controls')).querySelector('a').focus()" });
 			await cdp.send("Input.dispatchKeyEvent", { type: "keyDown", key: "Escape", code: "Escape", windowsVirtualKeyCode: 27 });
 			await cdp.send("Input.dispatchKeyEvent", { type: "keyUp", key: "Escape", code: "Escape", windowsVirtualKeyCode: 27 });
@@ -1125,14 +1132,15 @@ test("built app renders the key ballot guide pages against the built API", async
 	assert.doesNotMatch(homeHtml, /Choose the page you need\./i);
 	assert.match(homeHtml, /autocomplete="street-address"/);
 	assert.match(homeHtml, />\s*Look up\s*</);
-	assert.match(homeHtml, /Lookup data is used only to load civic results/i);
+	assert.doesNotMatch(homeHtml, /Lookup data is used only to load civic results|ZIP-only operations log/i);
+	assert.match(homeHtml, /href="\/privacy"[^>]*>Privacy<\/a>/);
 	assert.match(homeHtml, /og:image/);
 	assert.match(homeHtml, /twitter:image/);
 	assert.match(homeHtml, /social-card\.svg/);
 	assert.match(ballotPage.headers.get("content-security-policy") ?? "", /default-src 'self'/);
 	assert.match(ballotPage.headers.get("content-security-policy") ?? "", /frame-ancestors 'none'/);
 	assert.match(ballotHtml, /Key dates and official links/);
-	assert.match(ballotHtml, /Contest pages are still under local review\./);
+	assert.match(ballotHtml, /Ballot information for your area is currently limited\./);
 	assert.doesNotMatch(ballotHtml, /Need a page reviewed/);
 	assert.doesNotMatch(ballotHtml, /Ballot-plan tools open after verified contest pages are published/);
 	assert.doesNotMatch(ballotHtml, /Questions to ask before you vote/);
@@ -1144,19 +1152,18 @@ test("built app renders the key ballot guide pages against the built API", async
 	assert.match(ballotHtml, /Fulton County, Georgia/);
 	assert.match(ballotHtml, /unverified review material|local review|verified Fulton-specific ballot content/i);
 	assert.match(electionHtml, /Official links and notices/);
-	assert.match(electionHtml, /Contest pages are still under local review/);
+	assert.match(electionHtml, /Ballot information for your area is currently limited/);
 	assert.doesNotMatch(electionHtml, /Contest index/);
 	assert.doesNotMatch(electionHtml, /Open canonical contest page/);
-	assert.match(electionHtml, /Data sources/);
+	assert.match(electionHtml, /href="\/sources"/);
 	assert.match(locationHtml, /Key election dates/);
 	assert.match(locationHtml, /Official election office/);
 	assert.match(locationHtml, /Official links and notices/);
 	assert.doesNotMatch(locationHtml, /Voting methods in this area/);
 	assert.equal(dataSourcesPage.status, 200);
-	assert.match(dataSourcesHtml, /Data sources/);
-	assert.match(dataSourcesHtml, /Core source rules/);
-	assert.match(dataSourcesHtml, /What each source class is used for/);
-	assert.match(dataSourcesHtml, /Fulton County, Georgia/);
+	assert.match(dataSourcesHtml, /Data providers/);
+	assert.match(dataSourcesHtml, /Source directory/);
+	assert.equal(new URL(dataSourcesPage.url).pathname, "/sources");
 	assert.match(dataSourcesHtml, /Census Geocoder with geoLookup/);
 	assert.match(dataSourcesHtml, /FEC OpenFEC API and bulk files/);
 	assert.match(dataSourcesHtml, /Google Representatives API ended on April 30, 2025/);
@@ -1210,21 +1217,23 @@ test("built app renders the key ballot guide pages against the built API", async
 	assert.equal(measurePage.status, 200);
 	assert.match(helpHtml, /Voting help and ballot basics/);
 	assert.match(helpHtml, /What is the difference between an official ballot listing and a voter guide/);
-	assert.match(helpHtml, /What happens to the address or ZIP code I enter/);
-	assert.match(helpHtml, /Neutrality policy/);
+	assert.doesNotMatch(helpHtml, /What happens to the address or ZIP code I enter/);
 	assert.match(helpHtml, /Accessibility/);
-	assert.match(neutralityHtml, /Neutrality policy/);
-	assert.match(neutralityHtml, /Source hierarchy/);
-	assert.match(neutralityHtml, /Red-flag review/);
-	assert.match(neutralityHtml, /Claims that need extra scrutiny/);
-	assert.match(neutralityHtml, /Guardrails around candidate and measure coverage/);
+	assert.equal(new URL(neutralityPage.url).pathname, "/about");
+	assert.match(neutralityHtml, /Neutrality/);
+	assert.match(neutralityHtml, /does not endorse, rank, or score candidates or measures/);
 	assert.equal(accessibilityPage.status, 200);
 	assert.match(accessibilityHtml, /Accessibility and print standards/);
 	assert.match(accessibilityHtml, /WCAG 2\.2 Level AA/);
 	assert.match(accessibilityHtml, /44 by 44 pixel minimum target|44 x 44 pixel minimum target|44 x 44 px/);
 	assert.match(accessibilityHtml, /does not generate a downloadable tagged PDF/);
-	assert.match(methodologyHtml, /How to read page signals/);
-	assert.match(methodologyHtml, /How summaries are generated/);
+	assert.equal(new URL(methodologyPage.url).pathname, "/about");
+	assert.match(methodologyHtml, /Sources and editorial standards/);
+	for (const [path, location] of [["/methodology", "/about#methodology"], ["/neutrality", "/about#neutrality"], ["/data-sources", "/sources#providers"]]) {
+		const response = await fetch(`${appBaseUrl}${path}`, { redirect: "manual" });
+		assert.equal(response.status, 301);
+		assert.equal(response.headers.get("location"), location);
+	}
 	assert.equal(privacyPage.status, 200);
 	assert.match(privacyHtml, /Privacy Policy/);
 	assert.match(privacyHtml, /What data Ballot Clarity currently handles/);
@@ -1248,7 +1257,9 @@ test("built app renders the key ballot guide pages against the built API", async
 	assert.match(termsHtml, /The site is provided on an (?:\"|&quot;)as is(?:\"|&quot;) and (?:\"|&quot;)as available(?:\"|&quot;) basis/);
 	assert.match(contactHtml, /Contact and corrections/);
 	assert.match(contactHtml, /acknowledge correction requests within 2 business days/);
-	assert.match(contactHtml, /What to include in a correction request/);
+	assert.doesNotMatch(contactHtml, /What to include in a correction request/);
+	assert.match(contactHtml, /Page URL or site path/);
+	assert.match(contactHtml, /Supporting links/);
 	assert.match(planHtml, /My ballot plan/);
 	assert.match(planHtml, /id="change-location"/);
 	assert.match(planHtml, /Street address or ZIP code/);
@@ -1993,6 +2004,7 @@ test("public district and representative routes resolve direct loads without gen
 test("sitemap returns 200 and only advertises valid source-backed public routes", async () => {
 	const response = await fetch(`${appBaseUrl}/sitemap.xml`);
 	const body = await response.text();
+	assert.doesNotMatch(body, /<loc>[^<]*\/(?:methodology|neutrality|data-sources)<\/loc>/u);
 
 	assert.equal(response.status, 200);
 	assert.match(body, /<urlset[^>]*>/);

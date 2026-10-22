@@ -14,6 +14,9 @@ back-end/data/*.sqlite
 back-end/data/*.sqlite-shm
 back-end/data/*.sqlite-wal
 back-end/data/launch-directory.local.json
+/back-end/data/state-ballots/
+/back-end/src/data/state-ballots/
+/docs/data/
 data/live-coverage.local.json
 data/live-coverage.local.json.meta.json
 .env

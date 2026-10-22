@@ -121,7 +121,7 @@ usePageSeo(() => ({
 				<NuxtLink to="/sources" class="btn-secondary">
 					Browse sources
 				</NuxtLink>
-				<NuxtLink to="/methodology" class="btn-secondary">
+				<NuxtLink to="/about#methodology" class="btn-secondary">
 					Read methodology
 				</NuxtLink>
 			</div>

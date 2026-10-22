@@ -14,11 +14,14 @@
 			"name": "backend",
 			"entrypoint": "back-end/dist/server.js",
 			"requiredPaths": [
-				"back-end/dist/data/state-ballots/illinois-2026.json",
 				"back-end/dist/admin-schema.postgres.sql",
 				"back-end/dist/admin-schema.sql",
 				"back-end/dist/live-data-schema.sql",
 				"back-end/dist/server.js",
+				"back-end/dist/manage-election-references.js",
+				"back-end/dist/manage-state-ballot-data.js",
+				"back-end/dist/export-state-ballot-sources.js",
+				"back-end/dist/check-state-ballot-sources.js",
 				"back-end/node_modules",
 				"back-end/package-lock.json",
 				"back-end/package.json"
@@ -26,6 +29,11 @@
 		}
 	],
 	"externalWritableState": [
+		{
+			"configuration": "STATE_BALLOT_DATA_DIR",
+			"purpose": "Validated public candidate records and separately attributed election references, with source fingerprints and original capture dates",
+			"preservation": "Keep outside immutable releases and preserve independently across promotion and rollback"
+		},
 		{
 			"configuration": "ADMIN_DB_PATH",
 			"purpose": "SQLite fallback database when a deliberate single-instance deployment does not use Postgres",
@@ -47,6 +55,7 @@
 		"environment files",
 		"private configuration",
 		"database files",
-		"logs and writable queues"
+		"logs and writable queues",
+		"public election bulk datasets and reviewed transfer packages"
 	]
 }

@@ -174,7 +174,7 @@ function clearFilters() {
 						{{ data.election.name }}
 					</h1>
 					<p class="text-sm mt-3">
-						{{ data.location.displayName }} · {{ formatDate(data.election.date) }}
+						{{ data.location.displayName }} · <span class="attention-date">{{ formatDate(data.election.date) }}</span>
 					</p>
 				</header>
 

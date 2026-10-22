@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useNow } from "@vueuse/core";
 import { buildKeyDateTimeline, calendarDaysUntil, describeDaysAway } from "~/utils/election-timeline";
+import { limitedBallotNotice } from "~/utils/results-summary";
 
 const civicStore = useCivicStore();
 const { displayTimeZone, formatDate, formatDateTime } = useFormatters();
@@ -8,7 +9,7 @@ const electionSlug = useRouteStringParam("slug");
 const { data, error, pending } = await useBallot(electionSlug);
 // Only a guide that is still under review needs a status line; a verified guide speaks for itself.
 const guideStatusNote = computed(() => !data.value?.guideContent?.verifiedContestPackage && data.value?.guideContent?.publishedGuideShell
-	? "Contest pages are still under local review."
+	? limitedBallotNotice
 	: "");
 
 // Ticks each minute so "Today" and "Next" move on when a deadline passes while the page stays open.
@@ -88,7 +89,7 @@ usePageSeo({
 					</h1>
 					<p class="text-lg text-app-ink font-semibold mt-5 flex flex-wrap gap-x-3 gap-y-1 items-center dark:text-app-text-dark">
 						<span class="i-carbon-calendar text-app-accent" aria-hidden="true" />
-						Election Day {{ formatDate(data.election.date) }}
+						Election Day <span class="attention-date">{{ formatDate(data.election.date) }}</span>
 						<span v-if="electionDayLabel" class="text-sm text-app-accent font-semibold px-2 py-0.5 rounded-md bg-app-accent/10">{{ electionDayLabel }}</span>
 					</p>
 					<p v-if="guideStatusNote" class="text-sm text-[#8a5b0a] font-semibold mt-3 inline-flex gap-1.5 items-center dark:text-[#efc77b]">
@@ -118,8 +119,8 @@ usePageSeo({
 							{{ nextKeyDate.label }}
 						</p>
 						<p class="text-base text-app-ink mt-1 flex flex-wrap gap-x-2 items-center dark:text-app-text-dark">
-							{{ formatKeyDate(nextKeyDate.date) }}
-							<span class="text-sm text-app-accent font-semibold">· {{ nextKeyDate.relativeLabel }}</span>
+							<span class="attention-date">{{ formatKeyDate(nextKeyDate.date) }}</span>
+							<span class="attention-date text-sm font-semibold">· {{ nextKeyDate.relativeLabel }}</span>
 						</p>
 						<p v-if="nextKeyDate.note" class="text-sm text-app-muted leading-6 mt-2 dark:text-app-muted-dark">
 							{{ nextKeyDate.note }}
@@ -149,7 +150,7 @@ usePageSeo({
 					>
 						<div class="election-timeline__when">
 							<p class="text-base text-app-ink font-semibold dark:text-app-text-dark">
-								{{ formatKeyDate(item.date) }}
+								<span :class="{ 'attention-date': item.status !== 'passed' }">{{ formatKeyDate(item.date) }}</span>
 							</p>
 							<p class="election-timeline__status">
 								{{ item.isNext ? `Next · ${item.relativeLabel}` : item.relativeLabel }}

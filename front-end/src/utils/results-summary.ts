@@ -1,6 +1,8 @@
 import type { NationwideLookupResultContext } from "~/types/civic";
 import { buildNationwideRouteTarget } from "./nationwide-route-context";
 
+export const limitedBallotNotice = "Ballot information for your area is currently limited.";
+
 type ResultsSummaryContext = Pick<
 	NationwideLookupResultContext,
 	"districtMatches" | "guideAvailability" | "guideContent" | "lookupQuery" | "representativeMatches" | "selectionId"
@@ -48,12 +50,12 @@ export function buildResultsSummaryItems(
 			note: activeResult?.guideContent?.verifiedContestPackage
 				? "Verified local contest pages are available for this area."
 				: activeResult?.guideAvailability === "published"
-					? "Official links are available. Contest pages are still under local review."
+					? limitedBallotNotice
 					: "Detailed ballot pages open when a local guide is published.",
 			value: activeResult?.guideContent?.verifiedContestPackage
 				? "Verified"
 				: activeResult?.guideAvailability === "published"
-					? "In review"
+					? "Limited"
 					: "Not published"
 		}
 	];

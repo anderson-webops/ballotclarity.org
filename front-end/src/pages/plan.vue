@@ -155,7 +155,7 @@ function printPlan() {
 				My ballot plan
 			</h1>
 			<p v-if="data" class="text-base text-app-muted mt-3 dark:text-app-muted-dark">
-				{{ data.election.name }} · {{ data.location.displayName }} · {{ formatDate(data.election.date) }}
+				{{ data.election.name }} · {{ data.location.displayName }} · <span class="attention-date">{{ formatDate(data.election.date) }}</span>
 			</p>
 			<p v-else class="text-base text-app-muted mt-3 dark:text-app-muted-dark">
 				The ballot plan opens after Ballot Clarity publishes a local guide for this area.
@@ -226,7 +226,7 @@ function printPlan() {
 					{{ data.election.name }}
 				</h2>
 				<p class="text-sm mt-4">
-					{{ data.location.displayName }} · {{ formatDate(data.election.date) }}
+					{{ data.location.displayName }} · <span class="attention-date">{{ formatDate(data.election.date) }}</span>
 				</p>
 			</section>
 

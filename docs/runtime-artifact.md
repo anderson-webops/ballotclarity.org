@@ -18,7 +18,15 @@ The verifier refuses a dirty source checkout, creates a detached temporary Git w
 - sends `SIGTERM` to both services and requires a clean bounded shutdown;
 - verifies the artifact hashes again so runtime startup cannot mutate the release tree.
 
-The artifact never contains environment files, credentials, databases, logs, queues, or live coverage state. `ADMIN_DB_PATH`, `LIVE_COVERAGE_FILE`, and `BALLOTCLARITY_ZIP_LOOKUP_LOG_PATH` must resolve outside immutable releases and be preserved independently during both promotion and rollback. Production Postgres state likewise remains external.
+The artifact never contains environment files, credentials, databases, logs, queues, live coverage state or public election bulk datasets. `STATE_BALLOT_DATA_DIR`, `ADMIN_DB_PATH`, `LIVE_COVERAGE_FILE`, and `BALLOTCLARITY_ZIP_LOOKUP_LOG_PATH` must resolve outside immutable releases and be preserved independently during both promotion and rollback. Production Postgres state likewise remains external.
+
+All reviewed candidate sources need validated external imports before their data
+can appear; code artifacts do not bootstrap them. Automatic sources download only
+through their reviewed adapters. The copier removes obsolete generated candidate
+bundles, and independent build/artifact inspection rejects their reintroduction.
+The external-storage migration preserves source fingerprints and cache envelopes;
+it does not authorize changing host paths, importing test fixtures or weakening
+activation checks. See `state-ballot-sources.md` for data commands and provenance.
 
 This contract does not prescribe server paths, ports, users, reverse-proxy settings, or deployment topology. The existing direct Node and Nginx topology remains authoritative, and the local Compose stack remains development-only.
 

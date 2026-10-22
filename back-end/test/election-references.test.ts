@@ -1,0 +1,224 @@
+import type { ElectionReferenceSource } from "../src/election-reference-sources.js";
+import assert from "node:assert/strict";
+import { execFileSync, spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
+import { once } from "node:events";
+import { mkdtemp, readFile, rm, symlink, unlink, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import process from "node:process";
+import test from "node:test";
+import { fileURLToPath } from "node:url";
+import express from "express";
+import { registerElectionReferenceRoutes } from "../src/election-reference-routes.js";
+import { electionReferenceSources } from "../src/election-reference-sources.js";
+import { buildElectionReferencePage, createElectionReferenceRepository, createElectionReferenceStorage, parseElectionReferenceSnapshot } from "../src/election-references.js";
+import { createPublicRequestThrottle } from "../src/public-request-throttle.js";
+
+const hash = (value: string) => createHash("sha256").update(value).digest("hex");
+const retrievedAt = "2026-10-20T12:00:00.000Z";
+const source = electionReferenceSources.find(item => item.stateCode === "ME")!;
+const newsSource = electionReferenceSources.find(item => item.stateCode === "LA")!;
+
+function fixture(collection: ElectionReferenceSource = source) {
+	const records = collection.documents.map((document, index) => ({ id: hash(`${collection.id}/${index}`).slice(0, 24), name: `Example ${index}`, office: "School Board", scope: "local" as const, jurisdiction: "Example town", facts: [`Reported academic advising experience ${index}.`], sourceDocumentIndex: index }));
+	const documents = collection.documents.map(document => ({ url: document.url, sha256: hash(document.url), capturedAt: retrievedAt, includedRecordCount: 1 }));
+	return { schemaVersion: 1, type: "election-references", stateCode: collection.stateCode, sourceId: collection.id, electionDate: collection.electionDate, retrievedAt, sourceSha256: hash(JSON.stringify(documents.map(({ url, sha256 }) => ({ url, sha256 })))), recordCount: records.length, documents, records };
+}
+
+test("references preserve candidate-provided versus reported authorship and never invent ballot statuses", () => {
+	for (const collection of [source, newsSource]) {
+		const snapshot = parseElectionReferenceSnapshot(collection, JSON.stringify(fixture(collection)));
+		const page = buildElectionReferencePage(collection, snapshot, { search: "", scope: "all", offset: 0, limit: 50 });
+		assert.equal(page.records[0]!.source.kind, collection.documents[0]!.kind);
+		assert.equal(page.records[0]!.source.publisher, collection.documents[0]!.publisher);
+		assert.equal(page.records[0]!.source.url, collection.documents[0]!.url);
+		assert.equal(page.records[0]!.source.publishedDate, collection.documents[0]!.publishedDate);
+		assert.equal(page.records[0]!.source.capturedAt, retrievedAt);
+		assert.equal("status" in page.records[0]!, false);
+		assert.equal("sourceSha256" in page.records[0]!, false);
+		assert.equal("sourceDocumentIndex" in page.records[0]!, false);
+	}
+});
+
+test("references reject different elections, states, collections and unreviewed fields", () => {
+	const data = fixture();
+	for (const invalid of [{ ...data, electionDate: "2028-11-07" }, { ...data, stateCode: "LA" }, { ...data, sourceId: newsSource.id }, { ...data, type: "official-candidates" }, { ...data, address: "Excluded" }]) assert.throws(() => parseElectionReferenceSnapshot(source, JSON.stringify(invalid)), /configured collection/u);
+	for (const field of ["status", "party", "candidateUrl", "email", "photos", "candidateId"]) assert.throws(() => parseElectionReferenceSnapshot(source, JSON.stringify({ ...data, records: data.records.map(record => ({ ...record, [field]: "Excluded" })) })), /fields/u);
+});
+
+test("public reference pages are independently pinned, safe and separate from captured data URLs", () => {
+	const collection = { ...source, documents: source.documents.map(document => ({ ...document, pageUrl: "https://example.test/public-guide" })) };
+	const snapshot = parseElectionReferenceSnapshot(collection, JSON.stringify(fixture(collection)));
+	const page = buildElectionReferencePage(collection, snapshot, { search: "", scope: "all", offset: 0, limit: 50 });
+	assert.equal(page.records[0]!.source.pageUrl, "https://example.test/public-guide");
+	assert.equal(page.records[0]!.source.url, source.documents[0]!.url);
+	for (const pageUrl of ["javascript:alert(1)", "//example.test/guide", "http://example.test/guide", "https://user:password@example.test/guide", "https://127.0.0.1/guide", "https://example.test/guide\n"]) {
+		const invalid = { ...collection, documents: collection.documents.map(document => ({ ...document, pageUrl })) };
+		assert.throws(() => parseElectionReferenceSnapshot(invalid, JSON.stringify(fixture(invalid))), /public page links/u);
+	}
+	assert.throws(() => parseElectionReferenceSnapshot(collection, JSON.stringify({ ...snapshot, documents: snapshot.documents.map(document => ({ ...document, pageUrl: "https://unreviewed.example.test/" })) })), /provenance/u);
+});
+
+test("Washington references pin the ten observed public congressional race requests without voter or preview parameters", () => {
+	const collection = electionReferenceSources.find(item => item.stateCode === "WA")!;
+	assert.equal(collection.electionDate, "2026-11-03");
+	assert.equal(collection.documents.length, 10);
+	for (const [index, document] of collection.documents.entries()) {
+		const url = new URL(document.url);
+		assert.equal(url.origin, "https://voter.votewa.gov");
+		assert.equal(url.pathname, "/elections/candidate.ashx");
+		assert.equal(url.searchParams.get("e"), "899");
+		assert.equal(url.searchParams.get("b"), "0");
+		assert.equal(url.searchParams.get("c"), "");
+		assert.deepEqual([...url.searchParams.keys()], ["e", "r", "b", "la", "c"]);
+		assert.equal(new URL(document.pageUrl!).hash, `#/candidates/${url.searchParams.get("r")}`);
+		assert.equal(document.title, `Congressional District ${index + 1} candidate statements`);
+		assert.equal(document.kind, "candidate-statement");
+		assert.equal(document.publishedDate, undefined);
+	}
+});
+
+test("references require all document fingerprints, original dates and exact per-document contributions", () => {
+	const data = fixture();
+	assert.throws(() => parseElectionReferenceSnapshot(source, JSON.stringify({ ...data, documents: data.documents.slice(1) })), /document set/u);
+	assert.throws(() => parseElectionReferenceSnapshot(source, JSON.stringify({ ...data, sourceSha256: "f".repeat(64) })), /capture provenance/u);
+	assert.throws(() => parseElectionReferenceSnapshot(source, JSON.stringify({ ...data, retrievedAt: "2026-10-21T00:00:00Z" })), /capture provenance/u);
+	for (const update of [{ capturedAt: "2099-01-01T00:00:00Z" }, { url: "https://unreviewed.example.test/file.pdf" }, { sha256: "not-a-hash" }, { includedRecordCount: -1 }]) assert.throws(() => parseElectionReferenceSnapshot(source, JSON.stringify({ ...data, documents: [{ ...data.documents[0], ...update }, ...data.documents.slice(1)] })), /provenance/u);
+	assert.throws(() => parseElectionReferenceSnapshot(source, JSON.stringify({ ...data, documents: data.documents.map(document => ({ ...document, includedRecordCount: 0 })) })), /contributions/u);
+});
+
+test("reference records remain positive, unique, bounded plain text with valid document identities", () => {
+	const data = fixture();
+	assert.throws(() => parseElectionReferenceSnapshot(source, JSON.stringify({ ...data, records: [], recordCount: 0 })), /record count/u);
+	assert.throws(() => parseElectionReferenceSnapshot(source, JSON.stringify({ ...data, recordCount: 100 })), /record count/u);
+	assert.throws(() => parseElectionReferenceSnapshot(source, JSON.stringify({ ...data, records: data.records.map(record => ({ ...record, id: data.records[0]!.id })) })), /identities/u);
+	for (const update of [{ name: "" }, { name: "Name\nline" }, { facts: [] }, { facts: ["x".repeat(601)] }, { sourceDocumentIndex: -1 }, { sourceDocumentIndex: 999 }, { scope: "ward" }]) assert.throws(() => parseElectionReferenceSnapshot(source, JSON.stringify({ ...data, records: data.records.map(record => ({ ...record, ...update })) })), /fields/u);
+	assert.throws(() => parseElectionReferenceSnapshot(source, " ".repeat(12 * 1024 * 1024 + 1)), /size limit/u);
+});
+
+test("reference search and pagination are independent of official record counts and expose no private fields", () => {
+	const snapshot = parseElectionReferenceSnapshot(source, JSON.stringify(fixture()));
+	const first = buildElectionReferencePage(source, snapshot, { search: "", scope: "all", offset: 0, limit: 2 });
+	assert.equal(first.total, 3);
+	assert.equal(first.records.length, 2);
+	const last = buildElectionReferencePage(source, snapshot, { search: "", scope: "all", offset: 200, limit: 2 });
+	assert.equal(last.offset, 2);
+	assert.equal(last.records[0]!.name, "Example 2");
+	assert.equal(buildElectionReferencePage(source, snapshot, { search: "academic", scope: "local", offset: 0, limit: 50 }).matched, 3);
+	assert.equal(buildElectionReferencePage(source, snapshot, { search: "", scope: "statewide", offset: 0, limit: 50 }).matched, 0);
+	assert.equal(buildElectionReferencePage(source, snapshot, { search: "no-match", scope: "all", offset: 200, limit: 50 }).offset, 0);
+});
+
+test("external reference storage survives restart and rejects invalid updates without changing the cache", async (context) => {
+	const directory = await mkdtemp(join(tmpdir(), "ballot-reference-storage-"));
+	context.after(() => rm(directory, { recursive: true, force: true }));
+	const storage = createElectionReferenceStorage(directory);
+	assert.equal(await storage.read(source), null);
+	const snapshot = parseElectionReferenceSnapshot(source, JSON.stringify(fixture()));
+	await storage.write(source, snapshot);
+	assert.deepEqual(await createElectionReferenceStorage(directory).read(source), snapshot);
+	const file = join(directory, `references-${source.id}.json`);
+	const before = await readFile(file, "utf8");
+	await assert.rejects(storage.write(source, { ...snapshot, sourceSha256: "f".repeat(64) }), /provenance/u);
+	assert.equal(await readFile(file, "utf8"), before);
+	await assert.rejects(storage.read({ ...source, documents: source.documents.map(document => ({ ...document, title: "Changed review" })) }), /configured collection/u);
+});
+
+test("reference storage reuses external-directory, symlink and regular-file safety gates", async (context) => {
+	const directory = await mkdtemp(join(tmpdir(), "ballot-reference-safety-"));
+	context.after(() => rm(directory, { recursive: true, force: true }));
+	assert.throws(() => createElectionReferenceStorage("relative"), /absolute directory/u);
+	const root = fileURLToPath(new URL("../../", import.meta.url));
+	assert.throws(() => createElectionReferenceStorage(root), /outside/u);
+	const alias = join(directory, "checkout");
+	await symlink(root, alias);
+	await assert.rejects(createElectionReferenceStorage(alias).read(source), /outside/u);
+	const storage = createElectionReferenceStorage(directory);
+	const target = join(directory, "unrelated.json");
+	await writeFile(target, "test-owned unrelated bytes");
+	await symlink(target, join(directory, `references-${source.id}.json`));
+	await assert.rejects(storage.read(source));
+	assert.equal(await readFile(target, "utf8"), "test-owned unrelated bytes");
+	await unlink(join(directory, `references-${source.id}.json`));
+	await assert.rejects(storage.read({ ...source, id: "../escape" }), /identifier/u);
+});
+
+test("reference repositories never fetch, carry records into another state or show an expired election", async (context) => {
+	const directory = await mkdtemp(join(tmpdir(), "ballot-reference-repository-"));
+	context.after(() => rm(directory, { recursive: true, force: true }));
+	const snapshot = parseElectionReferenceSnapshot(source, JSON.stringify(fixture()));
+	await createElectionReferenceStorage(directory).write(source, snapshot);
+	const repository = createElectionReferenceRepository({ dataDirectory: directory, now: () => Date.parse("2026-10-21T00:00:00Z") });
+	assert.deepEqual(await repository.getSnapshot("ME"), snapshot);
+	assert.equal(await repository.getSnapshot("LA"), null);
+	assert.equal(await repository.getSnapshot("NY"), null);
+	assert.equal(await createElectionReferenceRepository({ dataDirectory: null }).getSnapshot("ME"), null);
+	assert.equal(await createElectionReferenceRepository({ dataDirectory: directory, now: () => Date.parse("2026-11-05T00:00:00Z") }).getSnapshot("ME"), null);
+});
+
+test("reference management imports and exports reviewed data but refuses automatic refresh", async (context) => {
+	const directory = await mkdtemp(join(tmpdir(), "ballot-reference-command-"));
+	context.after(() => rm(directory, { recursive: true, force: true }));
+	const file = join(directory, "input.json");
+	const data = fixture();
+	await writeFile(file, JSON.stringify(data));
+	const script = fileURLToPath(new URL("../src/manage-election-references.ts", import.meta.url));
+	const environment = { ...process.env, STATE_BALLOT_DATA_DIR: directory };
+	const imported = execFileSync(process.execPath, ["--import", "tsx", script, "import", file], { env: environment, encoding: "utf8" });
+	assert.equal(JSON.parse(imported).references, 3);
+	const exported = execFileSync(process.execPath, ["--import", "tsx", script, "export", "ME"], { env: environment, encoding: "utf8" });
+	assert.deepEqual(JSON.parse(exported), data);
+	const cache = join(directory, `references-${source.id}.json`);
+	const before = await readFile(cache, "utf8");
+	assert.notEqual(spawnSync(process.execPath, ["--import", "tsx", script, "refresh", "ME"], { env: environment }).status, 0);
+	await writeFile(file, JSON.stringify({ ...data, electionDate: "2028-11-07" }));
+	assert.notEqual(spawnSync(process.execPath, ["--import", "tsx", script, "import", file], { env: environment }).status, 0);
+	assert.equal(await readFile(cache, "utf8"), before);
+});
+
+test("public reference routes remain available independently of official candidate coverage", async (context) => {
+	const app = express();
+	const snapshot = parseElectionReferenceSnapshot(newsSource, JSON.stringify(fixture(newsSource)));
+	registerElectionReferenceRoutes(app, {
+		async getSnapshot(code) {
+			return code === "LA" ? snapshot : null;
+		},
+	});
+	const server = app.listen(0, "127.0.0.1");
+	context.after(() => new Promise<void>(resolve => server.close(() => resolve())));
+	await once(server, "listening");
+	const origin = `http://127.0.0.1:${(server.address() as { port: number }).port}`;
+	const response = await fetch(`${origin}/api/election-references/LA`);
+	const body = await response.json();
+	assert.equal(response.status, 200);
+	assert.equal(response.headers.get("cache-control"), "no-store");
+	assert.equal(body.available, true);
+	assert.equal(body.records[0].source.kind, "news-report");
+	assert.equal("status" in body.records[0], false);
+	assert.equal((await (await fetch(`${origin}/api/election-references/RI`)).json()).available, false);
+	for (const query of ["?scope=ward", "?limit=101", "?offset=-1", "?status=qualified", "?q=one&q=two", "?q=%0Aprivate"]) assert.equal((await fetch(`${origin}/api/election-references/LA${query}`)).status, 400);
+	assert.equal((await fetch(`${origin}/api/election-references/XX`)).status, 400);
+});
+
+test("public reference failures remain isolated and rate limiting happens before loading data", async (context) => {
+	let reads = 0;
+	const app = express();
+	registerElectionReferenceRoutes(app, {
+		async getSnapshot() {
+			reads++;
+			throw new Error("Private file path must not leak.");
+		},
+	}, createPublicRequestThrottle({ windowMs: 60_000, maxRequests: 1, maxBuckets: 10 }));
+	const server = app.listen(0, "127.0.0.1");
+	context.after(() => new Promise<void>(resolve => server.close(() => resolve())));
+	await once(server, "listening");
+	const origin = `http://127.0.0.1:${(server.address() as { port: number }).port}`;
+	const response = await fetch(`${origin}/api/election-references/LA`);
+	assert.equal(response.status, 503);
+	assert.deepEqual(await response.json(), { message: "Candidate information is temporarily unavailable." });
+	const limited = await fetch(`${origin}/api/election-references/LA`);
+	assert.equal(limited.status, 429);
+	assert.ok(Number(limited.headers.get("retry-after")) > 0);
+	assert.equal(reads, 1);
+});

@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 
-const dataSourcesPage = readFileSync(new URL("../src/pages/data-sources.vue", import.meta.url), "utf8");
+const dataSourcesPage = readFileSync(new URL("../src/components/SourceProviders.vue", import.meta.url), "utf8");
 
 test("public data-sources page avoids operator-only provider setup details", () => {
 	assert.doesNotMatch(dataSourcesPage, /Environment placeholders/i);
@@ -15,7 +15,7 @@ test("public data-sources page avoids operator-only provider setup details", () 
 });
 
 test("public data-sources page still explains provider access status and links to source material", () => {
-	assert.match(dataSourcesPage, /Access status:/);
+	assert.match(dataSourcesPage, /provider.connectionStatus === 'active' \? 'Connected' : 'Not connected'/);
 	assert.match(dataSourcesPage, /Provider site/);
 	assert.match(dataSourcesPage, /Technical docs/);
 });

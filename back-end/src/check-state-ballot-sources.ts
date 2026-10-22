@@ -1,10 +1,14 @@
 import process from "node:process";
-import { createStateBallotRepository } from "./state-ballot-repository.js";
-import { stateBallotSources } from "./state-ballot-sources.js";
+import { parseArgs } from "node:util";
+import { createStateBallotRepository, resolveStateBallotConfiguration } from "./state-ballot-repository.js";
 
 async function main() {
-	const requestedStates = process.argv.slice(2).map(value => value.toUpperCase());
-	const sources = requestedStates.length ? stateBallotSources.filter(source => requestedStates.includes(source.stateCode)) : stateBallotSources;
+	const { positionals, values } = parseArgs({ options: { source: { type: "string", multiple: true } }, allowPositionals: true });
+	const requestedStates = positionals.map(value => value.toUpperCase());
+	const configuration = resolveStateBallotConfiguration();
+	if (values.source?.some(id => !configuration.sources.some(source => source.id === id && (!requestedStates.length || requestedStates.includes(source.stateCode)))))
+		throw new Error("Every requested source must match an enabled state and source.");
+	const sources = configuration.sources.filter(source => (!requestedStates.length || requestedStates.includes(source.stateCode)) && (!values.source || values.source.includes(source.id)));
 	const unknownStates = requestedStates.filter(state => !sources.some(source => source.stateCode === state));
 	if (unknownStates.length) throw new Error(`No configured candidate source for: ${unknownStates.join(", ")}`);
 	const repository = createStateBallotRepository({
@@ -12,10 +16,11 @@ async function main() {
 	});
 	let failed = 0;
 	for (const source of sources) {
-		const snapshot = await repository.getSnapshot(source.stateCode);
+		const snapshot = await repository.getSnapshot(source.stateCode, source.id);
 		if (!snapshot) failed += 1;
 		console.log(JSON.stringify({
 			state: source.stateCode,
+			sourceId: source.id,
 			sourceUrl: source.pageUrl,
 			retrievalPolicy: source.retrievalPolicy ?? "automatic",
 			electionDate: source.electionDate,

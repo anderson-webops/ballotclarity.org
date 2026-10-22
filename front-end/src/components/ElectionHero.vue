@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Election, GuideContentSummary, LocationSelection } from "~/types/civic";
+import { limitedBallotNotice } from "~/utils/results-summary";
 
 const props = defineProps<{
 	election: Election;
@@ -16,7 +17,7 @@ const isGuideShellOnly = computed(() => Boolean(props.guideContent?.publishedGui
 const guideStatus = computed(() => hasVerifiedContestPackage.value
 	? { label: "Verified guide", tone: "success" as const }
 	: isGuideShellOnly.value
-		? { label: "Contest pages are still under local review.", tone: "warning" as const }
+		? { label: limitedBallotNotice, tone: "warning" as const }
 		: { label: props.note, tone: "warning" as const });
 const facts = computed(() => hasVerifiedContestPackage.value
 	? [
@@ -55,7 +56,7 @@ function printBallot() {
 			<dl class="election-hero__facts">
 				<div class="election-hero__fact election-hero__fact--wide">
 					<dt>Election Day</dt>
-					<dd>{{ formatDate(props.election.date) }}</dd>
+					<dd><span class="attention-date">{{ formatDate(props.election.date) }}</span></dd>
 				</div>
 				<div v-for="fact in facts" :key="fact.label" class="election-hero__fact">
 					<dt>{{ fact.label }}</dt>

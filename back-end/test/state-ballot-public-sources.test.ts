@@ -1,11 +1,11 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
 import test from "node:test";
 import { buildPublicStateExportForm, fetchStateBallotSourceText } from "../src/state-ballot-fetch.js";
 import { parseStateCandidateRecords } from "../src/state-ballot-records.js";
-import { buildStateBallotPreview, createStateBallotRepository } from "../src/state-ballot-repository.js";
+import { buildStateBallotPreview } from "../src/state-ballot-repository.js";
 import { parseBundledStateSnapshot } from "../src/state-ballot-snapshot.js";
 import { stateBallotSources } from "../src/state-ballot-sources.js";
+import { createReviewedFixtureRepository, readReviewedStateFixture, readReviewedTransferFixture } from "./helpers/reviewed-state-fixtures.js";
 
 function source(code: string) {
 	const item = stateBallotSources.find(source => source.stateCode === code);
@@ -52,24 +52,24 @@ test("public export forms retain only observed election fields and the supported
 	assert.throws(() => buildPublicStateExportForm(source("HI"), hawaiiPage.replace(" selected", "")), /select/u);
 });
 
-test("Illinois uses its captured snapshot without crawling or relabeling the original retrieval date", async () => {
-	const body = readFileSync(new URL("../src/data/state-ballots/illinois-2026.json", import.meta.url), "utf8");
+test("Illinois uses its captured snapshot without crawling or relabeling the original retrieval date", async (context) => {
+	const body = readReviewedStateFixture("illinois-2026.json");
 	const metadata = JSON.parse(body);
 	let requests = 0;
 	let now = Date.parse("2026-10-22T00:00:00Z");
-	const repository = createStateBallotRepository({
+	const repository = (await createReviewedFixtureRepository(context, {
 		now: () => now,
 		fetchText: async () => {
 			requests += 1;
 			throw new Error("No network request is permitted.");
 		},
-	});
+	}));
 	const snapshot = await repository.getSnapshot("IL");
 	assert.ok(snapshot);
 	assert.equal(snapshot.records.length, 523);
 	assert.equal(snapshot.retrievedAt, metadata.retrievedAt);
 	assert.equal(snapshot.sha256, metadata.sourceSha256);
-	const transferred = readFileSync(new URL("../../docs/data/2026-11-03-public-export-candidates.jsonl", import.meta.url), "utf8").trim().split("\n").map(line => JSON.parse(line) as Record<string, unknown>).filter(row => row.type === "candidate" && row.stateCode === "IL").map(row => Object.fromEntries(Object.entries(row).filter(([key]) => !["type", "stateCode", "electionDate"].includes(key))));
+	const transferred = readReviewedTransferFixture("2026-11-03-public-export-candidates.jsonl").trim().split("\n").map(line => JSON.parse(line) as Record<string, unknown>).filter(row => row.type === "candidate" && row.stateCode === "IL").map(row => Object.fromEntries(Object.entries(row).filter(([key]) => !["type", "stateCode", "electionDate"].includes(key))));
 	assert.deepEqual(snapshot.records, transferred);
 	now += 24 * 60 * 60 * 1000;
 	assert.equal((await repository.getSnapshot("IL"))?.retrievedAt, metadata.retrievedAt);

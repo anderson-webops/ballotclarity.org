@@ -42,11 +42,9 @@ const guideLinks = computed(() => hasVerifiedGuideContext.value
 			]);
 
 const howItWorksLinks = [
-	{ label: "Methodology", to: "/methodology" },
-	{ label: "Neutrality policy", to: "/neutrality" },
-	{ label: "Data sources", to: "/data-sources" },
+	{ label: "Candidate records", to: "/records" },
+	{ label: "Sources", to: "/sources" },
 	{ label: "Coverage", to: "/coverage" },
-	{ label: "Source directory", to: "/sources" },
 ];
 
 const projectLinks = [
@@ -95,9 +93,9 @@ function resolveGuideLinkTo(path: string) {
 					</ul>
 				</nav>
 
-				<nav aria-label="How it works">
+				<nav aria-label="Sources and coverage">
 					<p class="text-sm text-app-muted font-semibold dark:text-app-muted-dark">
-						How it works
+						Sources and coverage
 					</p>
 					<ul class="text-sm mt-3 space-y-2">
 						<li v-for="link in howItWorksLinks" :key="link.to">

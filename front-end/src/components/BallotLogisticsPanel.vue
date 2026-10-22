@@ -22,7 +22,7 @@ const { formatDate, formatDateTime } = useFormatters();
 					{{ item.label }}
 				</p>
 				<p class="ballot-logistics__date-value">
-					{{ item.date.includes("T") ? formatDateTime(item.date) : formatDate(item.date) }}
+					<span class="attention-date">{{ item.date.includes("T") ? formatDateTime(item.date) : formatDate(item.date) }}</span>
 				</p>
 				<p v-if="item.note" class="ballot-logistics__date-note">
 					{{ item.note }}

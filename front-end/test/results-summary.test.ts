@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { buildResultsSummaryItems } from "../src/utils/results-summary.ts";
+import { buildResultsSummaryItems, limitedBallotNotice } from "../src/utils/results-summary.ts";
 
 test("results summary cards keep lookup-aware links for district and representative routes", () => {
 	const items = buildResultsSummaryItems(
@@ -41,4 +41,24 @@ test("results summary cards still fall back to route roots without a selected ar
 	assert.equal(items[0]?.href, "/districts");
 	assert.equal(items[1]?.href, "/representatives");
 	assert.equal(items[3]?.value, "Not published");
+});
+
+test("an unverified published overview describes limited information rather than an editorial review", () => {
+	const items = buildResultsSummaryItems({ districtMatches: [], guideAvailability: "published", lookupQuery: "30022", representativeMatches: [] }, 1);
+	assert.equal(limitedBallotNotice, "Ballot information for your area is currently limited.");
+	assert.equal(items[3]?.note, limitedBallotNotice);
+	assert.equal(items[3]?.value, "Limited");
+});
+
+test("verified ballot information does not receive a limited-information status", () => {
+	const layer = { count: 1, detail: "Reviewed record", hasContent: true, label: "Reviewed", status: "verified_local" as const };
+	const items = buildResultsSummaryItems({
+		districtMatches: [],
+		guideAvailability: "published",
+		guideContent: { candidates: layer, contests: layer, guideShell: layer, measures: layer, mixedContent: false, officialLogistics: layer, publishedGuideShell: true, summary: "Reviewed guide", verifiedContestPackage: true },
+		lookupQuery: "30022",
+		representativeMatches: []
+	}, 1);
+	assert.equal(items[3]?.value, "Verified");
+	assert.notEqual(items[3]?.note, limitedBallotNotice);
 });

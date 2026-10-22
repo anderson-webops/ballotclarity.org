@@ -10,11 +10,6 @@ interface HeaderLink {
 	to: string;
 }
 
-interface HeaderGroup {
-	label: string;
-	links: HeaderLink[];
-}
-
 const civicStore = useCivicStore();
 const route = useRoute();
 const { activeNationwideResult, hasGuideShellContext, hasNationwideResultContext, hasVerifiedGuideContext } = useGuideEntryGate();
@@ -55,26 +50,12 @@ const taskLinks = computed<HeaderLink[]>(() => {
 	return [{ label: "Look up", to: "/" }, ...shared];
 });
 
-const aboutGroups: HeaderGroup[] = [
-	{
-		label: "How it works",
-		links: [
-			{ label: "Methodology", to: "/methodology" },
-			{ label: "Neutrality", to: "/neutrality" },
-			{ label: "Data sources", to: "/data-sources" },
-			{ label: "Coverage", to: "/coverage" },
-			{ label: "Source directory", to: "/sources" }
-		]
-	},
-	{
-		label: "Help and project",
-		links: [
-			{ label: "Voting help", to: "/help" },
-			{ label: "Corrections", to: "/corrections" },
-			{ label: "About", to: "/about" },
-			{ label: "Contact", to: "/contact" }
-		]
-	}
+const aboutLinks: HeaderLink[] = [
+	{ label: "About", to: "/about" },
+	{ label: "Sources", to: "/sources" },
+	{ label: "Coverage", to: "/coverage" },
+	{ label: "Voting help", to: "/help" },
+	{ label: "Contact", to: "/contact" }
 ];
 
 const effectiveBallotPlanCount = computed(() => isHydrated.value ? ballotPlanCount.value : 0);
@@ -95,7 +76,7 @@ const locationLookupHref = computed(() => {
 
 	return hasNationwideResultContext.value ? "/results#change-location" : "/#location-lookup";
 });
-const isAboutSectionActive = computed(() => aboutGroups.some(group => group.links.some(link => isActive(link.to))));
+const isAboutSectionActive = computed(() => aboutLinks.some(link => isActive(link.to)));
 
 watch(() => route.fullPath, () => {
 	isMenuOpen.value = false;
@@ -223,25 +204,20 @@ onBeforeUnmount(() => {
 							<div
 								v-if="isAboutOpen"
 								:id="aboutPanelId"
-								class="mt-px p-4 border border-app-line rounded-xl bg-app-panel gap-6 grid grid-cols-2 w-[min(26rem,calc(100vw-2rem))] shadow-[0_16px_40px_-20px_rgba(13,37,62,0.35)] right-0 top-full absolute dark:border-app-line-dark dark:bg-app-panel-dark"
+								class="mt-px p-2 border border-app-line rounded-xl bg-app-panel w-52 shadow-[0_16px_40px_-20px_rgba(13,37,62,0.35)] right-0 top-full absolute dark:border-app-line-dark dark:bg-app-panel-dark"
 							>
-								<div v-for="group in aboutGroups" :key="group.label">
-									<p class="eyebrow px-2">
-										{{ group.label }}
-									</p>
-									<ul class="mt-2 space-y-0.5">
-										<li v-for="link in group.links" :key="link.to">
-											<NuxtLink
-												:to="link.to"
-												:aria-current="isActive(link.to) ? 'page' : undefined"
-												prefetch-on="interaction"
-												class="px-2 py-2 rounded-lg block transition hover:bg-app-bg focus-ring dark:hover:bg-app-bg-dark"
-											>
-												<span class="text-sm text-app-ink block dark:text-app-text-dark">{{ link.label }}</span>
-											</NuxtLink>
-										</li>
-									</ul>
-								</div>
+								<ul class="space-y-0.5">
+									<li v-for="link in aboutLinks" :key="link.to">
+										<NuxtLink
+											:to="link.to"
+											:aria-current="isActive(link.to) ? 'page' : undefined"
+											prefetch-on="interaction"
+											class="px-2 py-2 rounded-lg block transition hover:bg-app-bg focus-ring dark:hover:bg-app-bg-dark"
+										>
+											<span class="text-sm text-app-ink block dark:text-app-text-dark">{{ link.label }}</span>
+										</NuxtLink>
+									</li>
+								</ul>
 							</div>
 						</li>
 					</ul>
@@ -319,12 +295,12 @@ onBeforeUnmount(() => {
 					</li>
 				</ul>
 
-				<section v-for="group in aboutGroups" :key="group.label">
+				<section>
 					<p class="eyebrow px-4">
-						{{ group.label }}
+						About
 					</p>
 					<ul class="mt-2 gap-x-2 grid grid-cols-2">
-						<li v-for="link in group.links" :key="link.to">
+						<li v-for="link in aboutLinks" :key="link.to">
 							<NuxtLink
 								:to="link.to"
 								:aria-current="isActive(link.to) ? 'page' : undefined"

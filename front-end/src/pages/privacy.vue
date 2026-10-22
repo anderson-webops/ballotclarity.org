@@ -325,20 +325,16 @@ usePageSeo({
 					</li>
 				</ul>
 			</div>
-
-			<InfoCallout title="Address lookup sensitivity" tone="warning">
-				An address lookup can reveal precise household or location context. Ballot Clarity therefore treats the lookup flow as a narrow, high-sensitivity feature and keeps the explanation near the lookup form instead of burying it only in legal copy.
-			</InfoCallout>
 		</section>
 
 		<section class="surface-panel">
 			<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
 				Retention and deletion
 			</p>
-			<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
+			<h2 id="retention-heading" class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
 				How long information lasts and who can access it
 			</h2>
-			<div class="mt-6 overflow-x-auto">
+			<div class="mt-6 overflow-x-auto focus-ring" role="region" aria-labelledby="retention-heading" tabindex="0">
 				<table class="text-left min-w-full">
 					<thead>
 						<tr class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
@@ -457,7 +453,7 @@ usePageSeo({
 					<NuxtLink to="/contact" class="btn-primary">
 						Open contact page
 					</NuxtLink>
-					<NuxtLink to="/methodology" class="btn-secondary">
+					<NuxtLink to="/about#methodology" class="btn-secondary">
 						Review methodology
 					</NuxtLink>
 				</div>

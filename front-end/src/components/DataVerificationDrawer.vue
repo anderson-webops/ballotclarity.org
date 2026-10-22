@@ -168,7 +168,7 @@ onBeforeUnmount(() => {
 								<NuxtLink to="/status" class="text-xs btn-secondary px-4 py-2" @click="closeDrawer">
 									Public status
 								</NuxtLink>
-								<NuxtLink to="/methodology" class="text-xs btn-secondary px-4 py-2" @click="closeDrawer">
+								<NuxtLink to="/about#methodology" class="text-xs btn-secondary px-4 py-2" @click="closeDrawer">
 									Methodology
 								</NuxtLink>
 								<NuxtLink to="/coverage" class="text-xs btn-secondary px-4 py-2" @click="closeDrawer">

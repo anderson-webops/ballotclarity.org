@@ -151,7 +151,7 @@ usePageSeo({
 					<NuxtLink to="/contact" class="btn-secondary">
 						Open contact page
 					</NuxtLink>
-					<NuxtLink to="/methodology" class="btn-secondary">
+					<NuxtLink to="/about#methodology" class="btn-secondary">
 						Read methodology
 					</NuxtLink>
 				</div>

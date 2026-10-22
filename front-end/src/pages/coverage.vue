@@ -2,13 +2,10 @@
 const { formatDate } = useFormatters();
 const { data, error, pending } = await useCoverage();
 const publicCapabilities = computed(() => (data.value?.supportedContentTypes ?? []).filter(capability => capability.id !== "editorial-ops" && capability.status !== "planned"));
-const hasPublishedGuideShell = computed(() => Boolean(data.value?.guideContent?.publishedGuideShell));
 const hasVerifiedContestPackage = computed(() => Boolean(data.value?.guideContent?.verifiedContestPackage));
 const coverageIntro = computed(() => hasVerifiedContestPackage.value
 	? "Verified local guide published."
-	: hasPublishedGuideShell.value
-		? "Official election links published. Contest pages are still under local review."
-		: "Official election links published.");
+	: "Official election links published.");
 
 usePageSeo({
 	description: "Guide availability, official election links, and known limits for Ballot Clarity coverage.",
@@ -75,7 +72,7 @@ function capabilityLabel(status: "in-build" | "live-now" | "planned") {
 					<NuxtLink to="/status" class="btn-secondary">
 						Open public status
 					</NuxtLink>
-					<NuxtLink to="/data-sources" class="btn-secondary">
+					<NuxtLink to="/sources" class="btn-secondary">
 						Open data sources
 					</NuxtLink>
 				</div>
@@ -191,7 +188,7 @@ function capabilityLabel(status: "in-build" | "live-now" | "planned") {
 						<NuxtLink to="/status" class="btn-secondary">
 							Open public status
 						</NuxtLink>
-						<NuxtLink to="/data-sources" class="btn-secondary">
+						<NuxtLink to="/sources" class="btn-secondary">
 							Open data sources
 						</NuxtLink>
 					</div>

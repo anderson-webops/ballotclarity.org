@@ -4,6 +4,7 @@ import type { AddressEnrichmentService } from "./address-enrichment.js";
 import type { AdminAuditActor } from "./admin-store.js";
 import type { CongressClient, CongressMemberDetail, CongressMemberRecord } from "./congress.js";
 import type { CoverageRepository } from "./coverage-repository.js";
+import type { ElectionReferenceRepository } from "./election-references.js";
 import type { OpenStatesRepresentativeRecord } from "./openstates.js";
 import type { PublicRequestThrottle } from "./public-request-throttle.js";
 import type { StateBallotRepository } from "./state-ballot-repository.js";
@@ -105,6 +106,8 @@ import { BoundedRateLimitStore } from "./bounded-rate-limit-store.js";
 import { createCensusGeocoderClient } from "./census-geocoder.js";
 import { createCongressClient, isCurrentCongressMemberRecord } from "./congress.js";
 import { createCoverageRepository } from "./coverage-repository.js";
+import { registerElectionReferenceRoutes } from "./election-reference-routes.js";
+import { createElectionReferenceRepository } from "./election-references.js";
 import { normalizeCorrectionSubmission } from "./feedback-submission.js";
 import { createGoogleCivicClient } from "./google-civic.js";
 import {
@@ -129,6 +132,7 @@ import { classifyRepresentative } from "./representative-classification.js";
 import { createRepresentativeModuleResolver } from "./representative-modules.js";
 import { createSourceAssetStore } from "./source-asset-store.js";
 import { attachStateBallotPreview, createStateBallotRepository } from "./state-ballot-repository.js";
+import { registerStateRecordRoutes } from "./state-records.js";
 import {
 	findSupplementalOfficeholderByRepresentativeSlug,
 	findSupplementalOfficeholdersByDistrictSlug,
@@ -171,6 +175,7 @@ interface CreateAppOptions {
 	zipLocationService?: ZipLocationService | null;
 	zipLookupLogger?: ZipLookupLogger;
 	stateBallotRepository?: StateBallotRepository | null;
+	electionReferenceRepository?: ElectionReferenceRepository | null;
 }
 
 export interface BallotClarityApplication extends Express {
@@ -2076,7 +2081,7 @@ async function augmentRepresentativeMatchesForLookup(
 	representativeMatches: LocationRepresentativeMatch[],
 ) {
 	const withSupplemental = mergeRepresentativeMatches(
-		mergeRepresentativeMatchesWithSupplementalRecords(representativeMatches, districtMatches),
+		mergeRepresentativeMatchesWithSupplementalRecords(representativeMatches, districtMatches, stateCode),
 	);
 	const congressionalFallbackMatches = await buildCongressRepresentativeMatchesFromDistrictContext(
 		congressClient,
@@ -2996,8 +3001,12 @@ export async function createApp(options: CreateAppOptions = {}) {
 			? null
 			: createStateBallotRepository({
 					onUnavailable: stateCode => logger.warn("state-ballot.source-unavailable", { stateCode }),
+					onPersistenceError: stateCode => logger.warn("state-ballot.persistence-unavailable", { stateCode }),
 				})
 		: options.stateBallotRepository;
+	const electionReferenceRepository = options.electionReferenceRepository === undefined
+		? process.env.STATE_BALLOT_LOOKUP_ENABLED === "false" ? null : createElectionReferenceRepository()
+		: options.electionReferenceRepository;
 	const adminApiRateLimitWindowMs = resolvePositiveIntegerEnv(
 		"ADMIN_API_RATE_LIMIT_WINDOW_MS",
 		15 * 60 * 1000,
@@ -5218,6 +5227,9 @@ export async function createApp(options: CreateAppOptions = {}) {
 			});
 		}
 	});
+
+	registerStateRecordRoutes(app, stateBallotRepository);
+	registerElectionReferenceRoutes(app, electionReferenceRepository);
 
 	app.get("/api/elections", async (_request, response) => {
 		response.json({

@@ -2,10 +2,12 @@ import type { StateBallotSource } from "./state-ballot-sources.js";
 import { Buffer } from "node:buffer";
 import { fetchRemoteSourceText } from "./remote-json-source.js";
 import { parseStateHtml, stateHtmlAttribute, stateHtmlDescendants, stateHtmlText } from "./state-ballot-html.js";
+import { buildSouthCarolinaSearchForm } from "./state-ballot-portal-records.js";
+import { fetchWashingtonCandidatePages } from "./state-ballot-washington.js";
 
 type SourceTextRequest = (url: string, options: { allowedHosts: string[]; maxBytes: number; maxRedirects: number; postBody?: string; timeoutMs: number }) => Promise<string>;
 
-export const publicStateExportFormats = ["mississippi-csv", "south-dakota-csv", "hawaii-csv", "illinois-tsv"];
+export const publicStateExportFormats = ["mississippi-csv", "south-dakota-csv", "hawaii-csv", "illinois-tsv", "montana-csv"];
 
 export function buildPublicStateExportForm(source: StateBallotSource, body: string) {
 	const document = parseStateHtml(body);
@@ -17,7 +19,35 @@ export function buildPublicStateExportForm(source: StateBallotSource, body: stri
 			fields.set(name, stateHtmlAttribute(input, "value"));
 	}
 	let control: string;
-	if (source.format === "mississippi-csv") {
+	if (source.format === "montana-csv") {
+		if (source.electionDate !== "2026-11-03") throw new Error("The Montana public export election date is not configured.");
+		if (!content.includes("* = Incumbent")) throw new Error("The Montana public candidate marker legend has changed.");
+		const forms = stateHtmlDescendants(document, node => node.nodeName === "form" && stateHtmlAttribute(node, "id") === "frmMain");
+		if (forms.length !== 1 || stateHtmlAttribute(forms[0]!, "method").toLowerCase() !== "post") throw new Error("The Montana public export form has changed.");
+		const action = new URL(stateHtmlAttribute(forms[0]!, "action"), source.url);
+		if (action.href !== source.url) throw new Error("The Montana public export target has changed.");
+		if (stateHtmlDescendants(forms[0]!, node => node.nodeName === "select").length !== 2) throw new Error("The Montana public export filters have changed.");
+		for (const [name, value] of [["hidElectionDate", "FEDERAL GENERAL 2026"], ["hidElectionType", "General"]]) {
+			const key = `ctl00$ContentPlaceHolder1$${name}`;
+			const inputs = stateHtmlDescendants(forms[0]!, node => node.nodeName === "input" && stateHtmlAttribute(node, "type") === "hidden" && stateHtmlAttribute(node, "name") === key);
+			if (inputs.length !== 1 || stateHtmlAttribute(inputs[0]!, "value") !== value) throw new Error("The Montana public export election identity has changed.");
+			fields.set(key, value!);
+		}
+		for (const [name, value, label] of [["ddlElection", "450002987", "FEDERAL GENERAL 2026 (11/03/2026) (General)"], ["ddlCounty", "99", "STATE"]]) {
+			const key = `ctl00$ContentPlaceHolder1$${name}`;
+			const selects = stateHtmlDescendants(forms[0]!, node => node.nodeName === "select" && stateHtmlAttribute(node, "name") === key);
+			const selected = selects.length === 1 ? stateHtmlDescendants(selects[0]!, node => node.nodeName === "option" && Boolean(node.attrs?.some(attribute => attribute.name === "selected"))) : [];
+			if (selected.length !== 1 || stateHtmlAttribute(selected[0]!, "value") !== value || stateHtmlText(selected[0]!).replace(/\s+/gu, " ").trim() !== label)
+				throw new Error("The Montana public export does not select the unfiltered general election.");
+			fields.set(key, value!);
+		}
+		control = "ctl00$ContentPlaceHolder1$grdCandidates$ctl00$ctl02$ctl00$ExportToCsvButton";
+		const controls = stateHtmlDescendants(forms[0]!, node => node.nodeName === "input" && stateHtmlAttribute(node, "name") === control && stateHtmlAttribute(node, "type") === "button" && stateHtmlAttribute(node, "onclick") === `javascript:__doPostBack('${control}','')`);
+		if (controls.length !== 1) throw new Error("The Montana public CSV control has changed.");
+		fields.set("__EVENTTARGET", control);
+		fields.set("__EVENTARGUMENT", "");
+	}
+	else if (source.format === "mississippi-csv") {
 		if (!/Candidate Qualifying List/u.test(content) || !/November 3, 2026/u.test(content))
 			throw new Error("The public candidate export does not identify the configured election.");
 		control = "btnDownloadExcel";
@@ -93,6 +123,15 @@ export async function fetchStateBallotSourceText(source: StateBallotSource, requ
 	if (source.retrievalPolicy === "manual-snapshot")
 		throw new Error("This publisher requires a manually supplied candidate snapshot; automatic retrieval is disabled.");
 	const options = { allowedHosts: [new URL(source.url).hostname], maxBytes: 12 * 1024 * 1024, maxRedirects: 2, timeoutMs: 12_000 };
+	if (source.format === "washington-html")
+		return fetchWashingtonCandidatePages(source, request, options);
+	if (source.format === "south-carolina-html") {
+		const page = await request(source.url, options);
+		const records = await request(new URL("/Candidate/CandidateSearch/", source.url).href, { ...options, postBody: buildSouthCarolinaSearchForm(page) });
+		if (Buffer.byteLength(page) + Buffer.byteLength(records) > options.maxBytes)
+			throw new Error("The public candidate search exceeds its size limit.");
+		return JSON.stringify({ page, records });
+	}
 	if (publicStateExportFormats.includes(source.format)) {
 		const page = await request(source.url, options);
 		const records = await request(source.url, { ...options, postBody: buildPublicStateExportForm(source, page) });

@@ -21,14 +21,6 @@ const isSubmitting = ref(false);
 const formMessage = ref("");
 const formTone = ref<"error" | "success">("success");
 
-const correctionChecklist = [
-	"The page URL or site path where you found the issue.",
-	"The specific sentence, claim, quote, or label that needs review.",
-	"A short explanation of what seems incorrect, incomplete, or unevenly framed.",
-	"Supporting documentation or links, preferably primary sources such as filings, official records, transcripts, or public notices.",
-	"Any timing note that matters, such as a recent filing, late correction, or new election-office notice."
-];
-
 async function submitForm() {
 	isSubmitting.value = true;
 	formMessage.value = "";
@@ -76,182 +68,113 @@ usePageSeo({
 			</h1>
 		</header>
 
-		<section id="contact-form" class="surface-panel scroll-mt-28">
-			<div class="gap-6 grid lg:grid-cols-[minmax(0,1fr)_minmax(0,0.95fr)]">
-				<div>
-					<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
-						Submit online
-					</p>
-					<h2 class="text-3xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-						Send a correction request or feedback
-					</h2>
+		<section id="contact-form" class="max-w-2xl scroll-mt-28">
+			<form class="space-y-4" @submit.prevent="submitForm">
+				<label class="block">
+					<span class="text-sm text-app-ink font-semibold dark:text-app-text-dark">Request type</span>
+					<select
+						v-model="form.submissionType"
+						class="text-sm text-app-ink mt-2 px-4 border border-app-line rounded-md bg-app-panel h-12 w-full dark:text-app-text-dark dark:border-app-line-dark dark:bg-app-panel-dark focus-ring"
+					>
+						<option value="correction">
+							correction
+						</option>
+						<option value="feedback">
+							feedback
+						</option>
+					</select>
+				</label>
+
+				<div class="gap-4 grid sm:grid-cols-2">
+					<label class="block">
+						<span class="text-sm text-app-ink font-semibold dark:text-app-text-dark">Name</span>
+						<input
+							v-model="form.name"
+							autocomplete="name"
+							maxlength="120"
+							type="text"
+							class="text-sm text-app-ink mt-2 px-4 border border-app-line rounded-md bg-app-panel h-12 w-full dark:text-app-text-dark dark:border-app-line-dark dark:bg-app-panel-dark focus-ring"
+						>
+					</label>
+					<label class="block">
+						<span class="text-sm text-app-ink font-semibold dark:text-app-text-dark">Email</span>
+						<input
+							v-model="form.email"
+							autocomplete="email"
+							maxlength="254"
+							type="email"
+							required
+							class="text-sm text-app-ink mt-2 px-4 border border-app-line rounded-md bg-app-panel h-12 w-full dark:text-app-text-dark dark:border-app-line-dark dark:bg-app-panel-dark focus-ring"
+						>
+					</label>
 				</div>
 
-				<form class="space-y-4" @submit.prevent="submitForm">
-					<label class="block">
-						<span class="text-sm text-app-ink font-semibold dark:text-app-text-dark">Request type</span>
-						<select
-							v-model="form.submissionType"
-							class="text-sm text-app-ink mt-2 px-4 border border-app-line rounded-md bg-app-panel h-12 w-full dark:text-app-text-dark dark:border-app-line-dark dark:bg-app-panel-dark focus-ring"
-						>
-							<option value="correction">
-								correction
-							</option>
-							<option value="feedback">
-								feedback
-							</option>
-						</select>
-					</label>
-
-					<div class="gap-4 grid sm:grid-cols-2">
-						<label class="block">
-							<span class="text-sm text-app-ink font-semibold dark:text-app-text-dark">Name</span>
-							<input
-								v-model="form.name"
-								autocomplete="name"
-								maxlength="120"
-								type="text"
-								class="text-sm text-app-ink mt-2 px-4 border border-app-line rounded-md bg-app-panel h-12 w-full dark:text-app-text-dark dark:border-app-line-dark dark:bg-app-panel-dark focus-ring"
-							>
-						</label>
-						<label class="block">
-							<span class="text-sm text-app-ink font-semibold dark:text-app-text-dark">Email</span>
-							<input
-								v-model="form.email"
-								autocomplete="email"
-								maxlength="254"
-								type="email"
-								required
-								class="text-sm text-app-ink mt-2 px-4 border border-app-line rounded-md bg-app-panel h-12 w-full dark:text-app-text-dark dark:border-app-line-dark dark:bg-app-panel-dark focus-ring"
-							>
-						</label>
-					</div>
-
-					<label class="block">
-						<span class="text-sm text-app-ink font-semibold dark:text-app-text-dark">Subject</span>
-						<input
-							v-model="form.subject"
-							maxlength="160"
-							type="text"
-							required
-							class="text-sm text-app-ink mt-2 px-4 border border-app-line rounded-md bg-app-panel h-12 w-full dark:text-app-text-dark dark:border-app-line-dark dark:bg-app-panel-dark focus-ring"
-						>
-					</label>
-
-					<label class="block">
-						<span class="text-sm text-app-ink font-semibold dark:text-app-text-dark">Page URL or site path</span>
-						<input
-							v-model="form.pageUrl"
-							maxlength="1024"
-							type="text"
-							placeholder="/representatives/jon-ossoff"
-							class="text-sm text-app-ink mt-2 px-4 border border-app-line rounded-md bg-app-panel h-12 w-full dark:text-app-text-dark dark:border-app-line-dark dark:bg-app-panel-dark focus-ring"
-						>
-					</label>
-
-					<label class="block">
-						<span class="text-sm text-app-ink font-semibold dark:text-app-text-dark">Message</span>
-						<textarea
-							v-model="form.message"
-							maxlength="5000"
-							required
-							rows="5"
-							class="text-sm text-app-ink mt-2 px-4 py-3 border border-app-line rounded-md bg-app-panel min-h-32 w-full dark:text-app-text-dark dark:border-app-line-dark dark:bg-app-panel-dark focus-ring"
-						/>
-					</label>
-
-					<label class="block">
-						<span class="text-sm text-app-ink font-semibold dark:text-app-text-dark">Supporting links</span>
-						<textarea
-							v-model="form.sourceLinks"
-							maxlength="20489"
-							rows="3"
-							placeholder="One link per line"
-							class="text-sm text-app-ink mt-2 px-4 py-3 border border-app-line rounded-md bg-app-panel min-h-24 w-full dark:text-app-text-dark dark:border-app-line-dark dark:bg-app-panel-dark focus-ring"
-						/>
-					</label>
-
-					<p
-						v-if="formMessage"
-						class="text-sm px-4 py-3 rounded-2xl"
-						:class="formTone === 'success'
-							? 'text-[#0f5b45] bg-[#e6f4ef] dark:text-[#9ae6c2] dark:bg-[#11352c]'
-							: 'text-[#8B3A2E] bg-[#F8E6E1] dark:text-[#FFD4CB] dark:bg-[#472722]'"
+				<label class="block">
+					<span class="text-sm text-app-ink font-semibold dark:text-app-text-dark">Subject</span>
+					<input
+						v-model="form.subject"
+						maxlength="160"
+						type="text"
+						required
+						class="text-sm text-app-ink mt-2 px-4 border border-app-line rounded-md bg-app-panel h-12 w-full dark:text-app-text-dark dark:border-app-line-dark dark:bg-app-panel-dark focus-ring"
 					>
-						{{ formMessage }}
-					</p>
+				</label>
 
-					<button type="submit" class="btn-primary w-full" :disabled="isSubmitting">
-						{{ isSubmitting ? "Submitting..." : "Send request" }}
-					</button>
-				</form>
-			</div>
+				<label class="block">
+					<span class="text-sm text-app-ink font-semibold dark:text-app-text-dark">Page URL or site path</span>
+					<input
+						v-model="form.pageUrl"
+						maxlength="1024"
+						type="text"
+						placeholder="/representatives/jon-ossoff"
+						class="text-sm text-app-ink mt-2 px-4 border border-app-line rounded-md bg-app-panel h-12 w-full dark:text-app-text-dark dark:border-app-line-dark dark:bg-app-panel-dark focus-ring"
+					>
+				</label>
+
+				<label class="block">
+					<span class="text-sm text-app-ink font-semibold dark:text-app-text-dark">Message</span>
+					<textarea
+						v-model="form.message"
+						maxlength="5000"
+						required
+						rows="5"
+						class="text-sm text-app-ink mt-2 px-4 py-3 border border-app-line rounded-md bg-app-panel min-h-32 w-full dark:text-app-text-dark dark:border-app-line-dark dark:bg-app-panel-dark focus-ring"
+					/>
+				</label>
+
+				<label class="block">
+					<span class="text-sm text-app-ink font-semibold dark:text-app-text-dark">Supporting links</span>
+					<textarea
+						v-model="form.sourceLinks"
+						maxlength="20489"
+						rows="3"
+						placeholder="One link per line"
+						class="text-sm text-app-ink mt-2 px-4 py-3 border border-app-line rounded-md bg-app-panel min-h-24 w-full dark:text-app-text-dark dark:border-app-line-dark dark:bg-app-panel-dark focus-ring"
+					/>
+				</label>
+
+				<p
+					v-if="formMessage"
+					class="text-sm px-4 py-3 rounded-2xl"
+					:class="formTone === 'success'
+						? 'text-[#0f5b45] bg-[#e6f4ef] dark:text-[#9ae6c2] dark:bg-[#11352c]'
+						: 'text-[#8B3A2E] bg-[#F8E6E1] dark:text-[#FFD4CB] dark:bg-[#472722]'"
+				>
+					{{ formMessage }}
+				</p>
+
+				<button type="submit" class="btn-primary w-full" :disabled="isSubmitting">
+					{{ isSubmitting ? "Submitting..." : "Send request" }}
+				</button>
+			</form>
 		</section>
 
-		<section class="gap-6 grid lg:grid-cols-3">
-			<div class="surface-panel">
-				<h2 class="text-2xl text-app-ink font-serif dark:text-app-text-dark">
-					Report an error or dispute
-				</h2>
-				<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-					Use this when a page appears inaccurate, incomplete, unevenly framed, misquoted, or missing an important public record.
-				</p>
-				<a href="#contact-form" class="btn-primary mt-6">
-					Use correction form
-				</a>
-			</div>
-
-			<div class="surface-panel">
-				<h2 class="text-2xl text-app-ink font-serif dark:text-app-text-dark">
-					Volunteer or research
-				</h2>
-				<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-					Use this if you want to volunteer, collaborate, or help review public records.
-				</p>
-				<ProtectedEmailLink
-					loading-label="Email link loads in your browser."
-					loading-class="text-sm text-app-muted leading-7 mt-6 block dark:text-app-muted-dark"
-					link-class="btn-secondary mt-6"
-					subject="Ballot Clarity volunteer or research inquiry"
-				/>
-			</div>
-
-			<div class="surface-panel">
-				<h2 class="text-2xl text-app-ink font-serif dark:text-app-text-dark">
-					General contact
-				</h2>
-				<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-					For general questions about Ballot Clarity, use the form above or the protected project email link.
-				</p>
-				<ProtectedEmailLink
-					loading-label="Email link loads in your browser."
-					loading-class="text-sm text-app-muted leading-7 mt-6 block dark:text-app-muted-dark"
-					link-class="btn-secondary mt-6"
-					subject="Ballot Clarity general inquiry"
-				/>
-			</div>
-		</section>
-
-		<section class="gap-6 grid lg:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)]">
-			<div class="surface-panel">
-				<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
-					What to include in a correction request
-				</h2>
-				<ul class="text-sm text-app-muted leading-7 mt-6 space-y-3 dark:text-app-muted-dark">
-					<li v-for="item in correctionChecklist" :key="item" class="content-block">
-						{{ item }}
-					</li>
-				</ul>
-			</div>
-
-			<div class="space-y-4">
-				<InfoCallout title="Response target">
-					We aim to acknowledge correction requests within 2 business days and resolve straightforward factual issues within 7 business days.
-				</InfoCallout>
-				<InfoCallout title="Good-faith standard" tone="warning">
-					Ballot Clarity will not remove accurate, well-sourced information solely because it is unfavorable. The purpose of the correction path is accuracy and fairness, not reputation management.
-				</InfoCallout>
-			</div>
-		</section>
+		<div class="text-sm text-app-muted leading-7 max-w-2xl space-y-4 dark:text-app-muted-dark">
+			<ProtectedEmailLink loading-label="Email link loads in your browser." loading-class="text-app-muted dark:text-app-muted-dark" link-class="text-app-accent rounded-sm underline underline-offset-3 focus-ring" subject="Ballot Clarity inquiry" />
+			<p>We aim to acknowledge correction requests within 2 business days and resolve straightforward factual issues within 7 business days.</p>
+			<NuxtLink to="/corrections" class="text-app-accent rounded-sm underline underline-offset-3 focus-ring">
+				Corrections log
+			</NuxtLink>
+		</div>
 	</section>
 </template>

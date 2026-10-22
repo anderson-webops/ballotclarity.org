@@ -99,6 +99,8 @@ function assertNoPrivateOrWritableContent(root, files) {
 		const relativePath = normalizePath(root, path);
 		const fileName = basename(path).toLowerCase();
 		const extension = extname(fileName);
+		if (["back-end/src/data/state-ballots/", "back-end/dist/data/state-ballots/", "back-end/data/state-ballots/", "docs/data/"].some(prefix => relativePath.startsWith(prefix)))
+			throw new Error(`Runtime artifact contains external election data: ${relativePath}`);
 
 		if (fileName === ".env" || fileName.startsWith(".env."))
 			throw new Error(`Runtime artifact contains an environment file: ${relativePath}`);

@@ -204,7 +204,7 @@ test("public project identity avoids unverified nonprofit status claims", () => 
 	assert.doesNotMatch(identityText, /501\(c\)\(3\)-style operating model/i);
 	assert.match(identityText, /public-interest civic-information site/);
 	assert.doesNotMatch(footer, /Nonpartisan public-interest project/);
-	assert.match(identityText, /does not currently claim tax-exempt status/);
+	assert.match(readPublicSource("pages/terms.vue"), /does not currently claim tax-exempt status/);
 });
 
 test("public contact copy stays aligned with the protected email route", () => {

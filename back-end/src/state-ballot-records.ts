@@ -6,7 +6,12 @@ import { createHash } from "node:crypto";
 import { parse as parseCsv } from "csv-parse/sync";
 import { normalizePublicHref } from "./public-href.js";
 import { parseAdditionalStateRecords } from "./state-ballot-additional-records.js";
+import { parseArkansasCandidateRecords } from "./state-ballot-arkansas.js";
+import { parseConnecticutCandidateRecords } from "./state-ballot-connecticut.js";
 import { stateHtmlAttribute as attribute, stateHtmlDescendants as descendants, parseStateHtml as parseHtml, stateHtmlTableRows, stateHtmlText as textContent } from "./state-ballot-html.js";
+import { parseOregonCandidateRecords } from "./state-ballot-oregon.js";
+import { parseStatePortalRecords } from "./state-ballot-portal-records.js";
+import { parseWashingtonCandidateRecords } from "./state-ballot-washington.js";
 
 export type StateCandidateStatus = "listed" | "filed" | "qualified" | "write-in" | "withdrawn" | "disqualified" | "defeated" | "elected" | "unopposed" | "inactive" | "unrecognized";
 export type StateContestScope = "statewide" | "congressional" | "state-senate" | "state-house" | "local";
@@ -20,8 +25,13 @@ export interface StateCandidateRecord {
 	scope: StateContestScope;
 	status: StateCandidateStatus;
 	sourceStatus?: string;
+	ballotDesignation?: string;
 	jurisdiction?: string;
 	candidateUrl?: string;
+	sourceCandidateId?: string;
+	sourceDistrictLabel?: string;
+	sourceDivision?: string;
+	sourceAreaLabel?: string;
 }
 
 function clean(value: unknown) {
@@ -77,6 +87,8 @@ function makeRecord(source: StateBallotSource, values: StateCandidateValues): St
 	const jurisdiction = geography.scope === "local" ? clean(values.jurisdiction) || undefined : undefined;
 	const keyParts = [source.stateCode, source.electionDate, office.toLowerCase(), geography.district, name.toLowerCase(), party.toLowerCase()];
 	if (jurisdiction) keyParts.push(jurisdiction.toLowerCase());
+	const sourceCandidateId = clean(values.sourceCandidateId) || undefined;
+	if (sourceCandidateId) keyParts.push(sourceCandidateId);
 	const key = JSON.stringify(keyParts);
 	return {
 		id: createHash("sha256").update(key).digest("hex").slice(0, 24),
@@ -88,6 +100,10 @@ function makeRecord(source: StateBallotSource, values: StateCandidateValues): St
 		sourceStatus: clean(values.status) || undefined,
 		jurisdiction,
 		candidateUrl: /^https?:\/\//iu.test(values.candidateUrl ?? "") ? normalizePublicHref(values.candidateUrl) || undefined : undefined,
+		sourceCandidateId,
+		sourceDistrictLabel: clean(values.sourceDistrictLabel) || undefined,
+		sourceDivision: clean(values.sourceDivision) || undefined,
+		sourceAreaLabel: clean(values.sourceAreaLabel) || undefined,
 	};
 }
 
@@ -334,8 +350,22 @@ const requiredColumns: Record<string, string[]> = {
 };
 
 export function parseStateCandidateRecords(source: StateBallotSource, body: string): StateCandidateRecord[] {
+	if (["reviewed-pdf", "reviewed-xlsx", "reviewed-image"].includes(source.format))
+		throw new Error("Reviewed document sources require a validated snapshot.");
 	let records: StateCandidateRecord[];
-	if (source.format === "delaware-html") {
+	if (source.format === "arkansas-html") {
+		records = parseArkansasCandidateRecords(source, body, makeRecord);
+	}
+	else if (source.format === "washington-html") {
+		records = parseWashingtonCandidateRecords(source, body, makeRecord);
+	}
+	else if (source.format === "oregon-ballots") {
+		records = parseOregonCandidateRecords(source, body, makeRecord);
+	}
+	else if (source.format === "connecticut-ballots") {
+		records = parseConnecticutCandidateRecords(source, body, makeRecord);
+	}
+	else if (source.format === "delaware-html") {
 		records = parseDelaware(source, body);
 	}
 	else if (source.format === "michigan-html") {
@@ -353,8 +383,11 @@ export function parseStateCandidateRecords(source: StateBallotSource, body: stri
 	else if (source.format === "kentucky-html") {
 		records = parseKentucky(source, body);
 	}
-	else if (["utah-html", "mississippi-csv", "south-dakota-csv", "hawaii-csv", "illinois-tsv"].includes(source.format)) {
+	else if (["utah-html", "mississippi-csv", "south-dakota-csv", "hawaii-csv", "illinois-tsv", "montana-csv"].includes(source.format)) {
 		records = parseAdditionalStateRecords(source, body, makeRecord);
+	}
+	else if (["pennsylvania-html", "west-virginia-json", "alaska-html", "south-carolina-html", "kansas-html"].includes(source.format)) {
+		records = parseStatePortalRecords(source, body, makeRecord);
 	}
 	else {
 		const table = parseCsv(body, {
@@ -386,6 +419,10 @@ export function parseStateCandidateRecords(source: StateBallotSource, body: stri
 			unique.set(record.id, record);
 	}
 	return [...unique.values()];
+}
+
+export function isActiveStateCandidateRecord(record: StateCandidateRecord) {
+	return ["listed", "filed", "qualified", "write-in"].includes(record.status);
 }
 
 export function stateRecordMatchesDistricts(record: StateCandidateRecord, matches: LocationDistrictMatch[]) {

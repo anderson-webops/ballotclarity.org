@@ -162,6 +162,7 @@ export interface ElectionLogisticsCandidate {
 export type BallotContentPreviewStatus = "official_source_unverified" | "provider_unverified";
 
 export interface BallotContentPreviewCandidate {
+	ballotDesignation?: string;
 	ballotStatus?: "listed" | "filed" | "qualified" | "write-in" | "withdrawn" | "disqualified" | "defeated" | "elected" | "unopposed" | "inactive" | "unrecognized";
 	sourceStatus?: string;
 	candidateUrl?: string;
@@ -172,6 +173,76 @@ export interface BallotContentPreviewCandidate {
 	party?: string;
 	phone?: string;
 	profileImages?: ProfileImage[];
+}
+
+export type StateRecordScope = "statewide" | "congressional" | "state-senate" | "state-house" | "local";
+
+export interface StateRecordState {
+	stateCode: string;
+	stateName: string;
+	configured: boolean;
+	electionDate?: string;
+	sources?: { id: string; label: string; electionDate: string }[];
+}
+
+export interface StateRecordStatesResponse {
+	states: StateRecordState[];
+}
+
+export interface PublicStateCandidateRecord {
+	id: string;
+	name: string;
+	office: string;
+	district: string;
+	scope: StateRecordScope;
+	status: NonNullable<BallotContentPreviewCandidate["ballotStatus"]>;
+	party?: string;
+	jurisdiction?: string;
+	sourceStatus?: string;
+	ballotDesignation?: string;
+	candidateUrl?: string;
+	sourceDistrictLabel?: string;
+	sourceAreaLabel?: string;
+}
+
+export interface PublicElectionReference {
+	id: string;
+	name: string;
+	office: string;
+	scope: StateRecordScope;
+	jurisdiction?: string;
+	facts: string[];
+	source: {
+		kind: "candidate-statement" | "news-report";
+		title: string;
+		publisher: string;
+		url: string;
+		pageUrl?: string;
+		publishedDate?: string;
+		capturedAt: string;
+	};
+}
+
+export interface ElectionReferencesResponse {
+	available: boolean;
+	stateCode: string;
+	electionDate?: string;
+	total: number;
+	matched: number;
+	offset: number;
+	limit: number;
+	records: PublicElectionReference[];
+}
+
+export interface StateRecordsResponse {
+	available: boolean;
+	source: StateRecordState & { id?: string; label?: string; url?: string; retrievedAt?: string; scopeNotice?: string; documentLinks?: { label: string; url: string }[] };
+	total: number;
+	matched: number;
+	inactive: number;
+	offset: number;
+	limit: number;
+	records: PublicStateCandidateRecord[];
 }
 
 export interface BallotContentPreviewReferendum {

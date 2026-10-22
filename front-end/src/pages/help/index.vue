@@ -20,35 +20,6 @@ const faqItems = [
 			"Ballot Clarity is designed to show what changed and when, but official election offices remain the final authority."
 		],
 		question: "What should I do if election information changes close to voting?"
-	},
-	{
-		answer: [
-			"No. Ballot Clarity is not an official government website.",
-			"Use it to understand the landscape, then confirm final deadlines, locations, and ballot rules with the election office."
-		],
-		question: "Is Ballot Clarity an official government site?"
-	},
-	{
-		answer: [
-			"A location guess or ZIP code can help you get started, but it is still approximate. A full street address is the right input for exact district and ballot matching.",
-			"The lookup is used only to match ballot coverage. Ballot Clarity does not create public user accounts or advertising profiles from that lookup.",
-			"The app does save your selected location label, compare list, and ballot-plan choices in your browser so the guide stays usable across refreshes. The privacy page explains that boundary in more detail."
-		],
-		question: "What happens to the address or ZIP code I enter?"
-	},
-	{
-		answer: [
-			"Coverage varies by place.",
-			"Some areas have a fuller local guide, and others currently have lookup results, district pages, representative pages, and official links only."
-		],
-		question: "Why is one area more complete than another?"
-	},
-	{
-		answer: [
-			"The product is designed to show factual summaries, source links, and uncertainty notes without ranking or recommending candidates or measures.",
-			"Methodology, neutrality, and sourcing notes are published so users can inspect how information is gathered and displayed."
-		],
-		question: "How does Ballot Clarity try to stay neutral?"
 	}
 ];
 
@@ -69,11 +40,6 @@ usePageSeo({
 	path: "/help",
 	title: "Voting Help and FAQ"
 });
-
-const accordionItems = faqItems.map(item => ({
-	body: item.answer,
-	title: item.question
-}));
 </script>
 
 <template>
@@ -86,6 +52,17 @@ const accordionItems = faqItems.map(item => ({
 			</div>
 		</header>
 
-		<MethodologyAccordion :items="accordionItems" />
+		<div class="max-w-3xl divide-app-line divide-y dark:divide-app-line-dark">
+			<details v-for="item in faqItems" :key="item.question" class="py-4">
+				<summary class="text-base text-app-ink font-semibold rounded-sm cursor-pointer dark:text-app-text-dark focus-ring">
+					{{ item.question }}
+				</summary>
+				<div class="text-sm text-app-muted leading-7 mt-3 space-y-3 dark:text-app-muted-dark">
+					<p v-for="paragraph in item.answer" :key="paragraph">
+						{{ paragraph }}
+					</p>
+				</div>
+			</details>
+		</div>
 	</section>
 </template>

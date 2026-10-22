@@ -1,0 +1,2193 @@
+[
+  {
+    "state": "OH",
+    "sourceUrl": "https://www.vote.franklincountyohio.gov/election-info/2026",
+    "documentUrl": "https://www.vote.franklincountyohio.gov/getmedia/e0a4ca45-6893-45c1-8190-87696f8804b4/2026-General-Candidate-List-5",
+    "documentSha256": "9e5bf3d402e67499caa918f900e35e3950beb6bd169ebb6cf1e7fb1ae7c4b62d",
+    "retrievedAt": "2026-10-21T11:49:36.945Z",
+    "pages": 2,
+    "rows": [
+      {
+        "page": 1,
+        "name": "Amy Acton and David Pepper",
+        "party": "Democratic",
+        "office": "GOVERNOR AND LIEUTENANT GOVERNOR",
+        "term": "Full Term",
+        "termDate": "",
+        "writeIn": false
+      },
+      {
+        "page": 1,
+        "name": "Don Kissick and James L. Mills",
+        "party": "Libertarian",
+        "office": "GOVERNOR AND LIEUTENANT GOVERNOR",
+        "term": "Full Term",
+        "termDate": "",
+        "writeIn": false
+      },
+      {
+        "page": 1,
+        "name": "Vivek Ramaswamy and Robert A. McColley",
+        "party": "Republican",
+        "office": "GOVERNOR AND LIEUTENANT GOVERNOR",
+        "term": "Full Term",
+        "termDate": "",
+        "writeIn": false
+      },
+      {
+        "page": 1,
+        "name": "Timothy Grady and Andrea Neutzling",
+        "party": "N/A",
+        "office": "GOVERNOR AND LIEUTENANT GOVERNOR",
+        "term": "Full Term",
+        "termDate": "",
+        "writeIn": true
+      },
+      {
+        "page": 1,
+        "name": "Heather Hill and Patrick Manley",
+        "party": "N/A",
+        "office": "GOVERNOR AND LIEUTENANT GOVERNOR",
+        "term": "Full Term",
+        "termDate": "",
+        "writeIn": true
+      },
+      {
+        "page": 1,
+        "name": "Renea Turner and Jalen Turner",
+        "party": "N/A",
+        "office": "GOVERNOR AND LIEUTENANT GOVERNOR",
+        "term": "Full Term",
+        "termDate": "",
+        "writeIn": true
+      },
+      {
+        "page": 1,
+        "name": "Keith Faber",
+        "party": "Republican",
+        "office": "ATTORNEY GENERAL",
+        "term": "Full Term",
+        "termDate": "",
+        "writeIn": false
+      },
+      {
+        "page": 1,
+        "name": "John J. Kulewicz",
+        "party": "Democratic",
+        "office": "ATTORNEY GENERAL",
+        "term": "Full Term",
+        "termDate": "",
+        "writeIn": false
+      },
+      {
+        "page": 1,
+        "name": "Annette Blackwell",
+        "party": "Democratic",
+        "office": "AUDITOR OF STATE",
+        "term": "Full Term",
+        "termDate": "",
+        "writeIn": false
+      },
+      {
+        "page": 1,
+        "name": "Frank LaRose",
+        "party": "Republican",
+        "office": "AUDITOR OF STATE",
+        "term": "Full Term",
+        "termDate": "",
+        "writeIn": false
+      },
+      {
+        "page": 1,
+        "name": "Tom Pruss",
+        "party": "Libertarian",
+        "office": "SECRETARY OF STATE",
+        "term": "Full Term",
+        "termDate": "",
+        "writeIn": false
+      },
+      {
+        "page": 1,
+        "name": "Allison Russo",
+        "party": "Democratic",
+        "office": "SECRETARY OF STATE",
+        "term": "Full Term",
+        "termDate": "",
+        "writeIn": false
+      },
+      {
+        "page": 1,
+        "name": "Robert Sprague",
+        "party": "Republican",
+        "office": "SECRETARY OF STATE",
+        "term": "Full Term",
+        "termDate": "",
+        "writeIn": false
+      },
+      {
+        "page": 1,
+        "name": "Jay Edwards",
+        "party": "Republican",
+        "office": "TREASURER OF STATE",
+        "term": "Full Term",
+        "termDate": "",
+        "writeIn": false
+      },
+      {
+        "page": 1,
+        "name": "Seth Walsh",
+        "party": "Democratic",
+        "office": "TREASURER OF STATE",
+        "term": "Full Term",
+        "termDate": "",
+        "writeIn": false
+      },
+      {
+        "page": 1,
+        "name": "Daniel R. Hawkins",
+        "party": "Republican",
+        "office": "JUSTICE OF THE SUPREME COURT",
+        "term": "Full Term Commencing",
+        "termDate": "1-1-2027",
+        "writeIn": false
+      },
+      {
+        "page": 1,
+        "name": "Marilyn Zayas",
+        "party": "Democratic",
+        "office": "JUSTICE OF THE SUPREME COURT",
+        "term": "Full Term Commencing",
+        "termDate": "1-1-2027",
+        "writeIn": false
+      },
+      {
+        "page": 1,
+        "name": "Jennifer Brunner",
+        "party": "Democratic",
+        "office": "JUSTICE OF THE SUPREME COURT",
+        "term": "Full Term Commencing",
+        "termDate": "1-2-2027",
+        "writeIn": false
+      },
+      {
+        "page": 1,
+        "name": "Colleen O'Donnell",
+        "party": "Republican",
+        "office": "JUSTICE OF THE SUPREME COURT",
+        "term": "Full Term Commencing",
+        "termDate": "1-2-2027",
+        "writeIn": false
+      },
+      {
+        "page": 1,
+        "name": "Sherrod Brown",
+        "party": "Democratic",
+        "office": "U.S. SENATOR",
+        "term": "Unexpired Term Ending",
+        "termDate": "1-3-2029",
+        "writeIn": false
+      },
+      {
+        "page": 1,
+        "name": "Jon Husted",
+        "party": "Republican",
+        "office": "U.S. SENATOR",
+        "term": "Unexpired Term Ending",
+        "termDate": "1-3-2029",
+        "writeIn": false
+      },
+      {
+        "page": 1,
+        "name": "Greg Levy",
+        "party": "Other-party c",
+        "office": "U.S. SENATOR",
+        "term": "Unexpired Term Ending",
+        "termDate": "1-3-2029",
+        "writeIn": false
+      },
+      {
+        "page": 1,
+        "name": "William B. Redpath",
+        "party": "Libertarian",
+        "office": "U.S. SENATOR",
+        "term": "Unexpired Term Ending",
+        "termDate": "1-3-2029",
+        "writeIn": false
+      },
+      {
+        "page": 1,
+        "name": "Stephen Faris",
+        "party": "N/A",
+        "office": "U.S. SENATOR",
+        "term": "Unexpired Term Ending",
+        "termDate": "1-3-2029",
+        "writeIn": true
+      },
+      {
+        "page": 1,
+        "name": "Anthony Holliman",
+        "party": "N/A",
+        "office": "U.S. SENATOR",
+        "term": "Unexpired Term Ending",
+        "termDate": "1-3-2029",
+        "writeIn": true
+      },
+      {
+        "page": 1,
+        "name": "Timothy Telymonde",
+        "party": "N/A",
+        "office": "U.S. SENATOR",
+        "term": "Unexpired Term Ending",
+        "termDate": "1-3-2029",
+        "writeIn": true
+      },
+      {
+        "page": 1,
+        "name": "Joyce Beatty",
+        "party": "Democratic",
+        "office": "REPRESENTATIVE TO CONGRESS 03RD CONGRESSIONAL DISTRICT",
+        "term": "Full Term",
+        "termDate": "",
+        "writeIn": false,
+        "website": "www.BeattyforCongress.com"
+      },
+      {
+        "page": 1,
+        "name": "Cleophus Dulaney",
+        "party": "Republican",
+        "office": "REPRESENTATIVE TO CONGRESS 03RD CONGRESSIONAL DISTRICT",
+        "term": "Full Term",
+        "termDate": "",
+        "writeIn": false,
+        "website": "www.votedulaney.org"
+      },
+      {
+        "page": 1,
+        "name": "Brennan Barrington",
+        "party": "Libertarian",
+        "office": "REPRESENTATIVE TO CONGRESS 15TH CONGRESSIONAL DISTRICT",
+        "term": "Full Term",
+        "termDate": "",
+        "writeIn": false,
+        "website": "www.barrington.lpo.org"
+      },
+      {
+        "page": 1,
+        "name": "Mike Carey",
+        "party": "Republican",
+        "office": "REPRESENTATIVE TO CONGRESS 15TH CONGRESSIONAL DISTRICT",
+        "term": "Full Term",
+        "termDate": "",
+        "writeIn": false,
+        "website": "www.careyforcongress.com"
+      },
+      {
+        "page": 1,
+        "name": "Don Leonard",
+        "party": "Democratic",
+        "office": "REPRESENTATIVE TO CONGRESS 15TH CONGRESSIONAL DISTRICT",
+        "term": "Full Term",
+        "termDate": "",
+        "writeIn": false,
+        "website": "www.DonforOhio.com"
+      },
+      {
+        "page": 1,
+        "name": "Gary Josephson",
+        "party": "N/A",
+        "office": "REPRESENTATIVE TO CONGRESS 15TH CONGRESSIONAL DISTRICT",
+        "term": "Full Term",
+        "termDate": "",
+        "writeIn": false
+      },
+      {
+        "page": 1,
+        "name": "Samuel Ronan",
+        "party": "N/A",
+        "office": "REPRESENTATIVE TO CONGRESS 15TH CONGRESSIONAL DISTRICT",
+        "term": "Full Term",
+        "termDate": "",
+        "writeIn": true,
+        "website": "www.samronan.com"
+      },
+      {
+        "page": 1,
+        "name": "Stacie A. Baker",
+        "party": "Democratic",
+        "office": "STATE SENATOR OHIO SENATE DISTRICT 03",
+        "term": "Full Term",
+        "termDate": "",
+        "writeIn": false
+      },
+      {
+        "page": 1,
+        "name": "Michele Reynolds",
+        "party": "Republican",
+        "office": "STATE SENATOR OHIO SENATE DISTRICT 03",
+        "term": "Full Term",
+        "termDate": "",
+        "writeIn": false,
+        "website": "www.michelereynolds.org"
+      },
+      {
+        "page": 1,
+        "name": "Joseph Healy",
+        "party": "Republican",
+        "office": "STATE SENATOR OHIO SENATE DISTRICT 15",
+        "term": "Full Term",
+        "termDate": "",
+        "writeIn": false
+      },
+      {
+        "page": 1,
+        "name": "Latyna M. Humphrey",
+        "party": "Democratic",
+        "office": "STATE SENATOR OHIO SENATE DISTRICT 15",
+        "term": "Full Term",
+        "termDate": "",
+        "writeIn": false
+      },
+      {
+        "page": 1,
+        "name": "Raisheda D. Angus",
+        "party": "N/A",
+        "office": "STATE SENATOR OHIO SENATE DISTRICT 25",
+        "term": "Full Term",
+        "termDate": "",
+        "writeIn": true
+      },
+      {
+        "page": 1,
+        "name": "Bill DeMora",
+        "party": "Democratic",
+        "office": "STATE SENATOR OHIO SENATE DISTRICT 25",
+        "term": "Full Term",
+        "termDate": "",
+        "writeIn": false
+      },
+      {
+        "page": 1,
+        "name": "Don Roberts",
+        "party": "Republican",
+        "office": "STATE SENATOR OHIO SENATE DISTRICT 25",
+        "term": "Full Term",
+        "termDate": "",
+        "writeIn": false
+      },
+      {
+        "page": 1,
+        "name": "Joel A. Greff",
+        "party": "Republican",
+        "office": "STATE REPRESENTATIVE OHIO HOUSE DISTRICT 01",
+        "term": "Full Term",
+        "termDate": "",
+        "writeIn": false
+      },
+      {
+        "page": 1,
+        "name": "Dontavius Jarrells",
+        "party": "Democratic",
+        "office": "STATE REPRESENTATIVE OHIO HOUSE DISTRICT 01",
+        "term": "Full Term",
+        "termDate": "",
+        "writeIn": false,
+        "website": "www.jarrellsforohio.us"
+      },
+      {
+        "page": 1,
+        "name": "Charity Martin King",
+        "party": "Democratic",
+        "office": "STATE REPRESENTATIVE OHIO HOUSE DISTRICT 02",
+        "term": "Full Term",
+        "termDate": "",
+        "writeIn": false,
+        "website": "www.campaign4charity.com"
+      },
+      {
+        "page": 1,
+        "name": "Elegant Afriyie",
+        "party": "N/A",
+        "office": "STATE REPRESENTATIVE OHIO HOUSE DISTRICT 03",
+        "term": "Full Term",
+        "termDate": "",
+        "writeIn": true
+      },
+      {
+        "page": 1,
+        "name": "Bernadine Kennedy Kent",
+        "party": "Republican",
+        "office": "STATE REPRESENTATIVE OHIO HOUSE DISTRICT 03",
+        "term": "Full Term",
+        "termDate": "",
+        "writeIn": false
+      },
+      {
+        "page": 1,
+        "name": "Ismail Mohamed",
+        "party": "Democratic",
+        "office": "STATE REPRESENTATIVE OHIO HOUSE DISTRICT 03",
+        "term": "Full Term",
+        "termDate": "",
+        "writeIn": false,
+        "website": "www.ismailforohio.com"
+      },
+      {
+        "page": 1,
+        "name": "Beryl Brown Piccolantonio",
+        "party": "Democratic",
+        "office": "STATE REPRESENTATIVE OHIO HOUSE DISTRICT 04",
+        "term": "Full Term",
+        "termDate": "",
+        "writeIn": false,
+        "website": "www.berylforohio.com"
+      },
+      {
+        "page": 1,
+        "name": "Richard Cole",
+        "party": "Republican",
+        "office": "STATE REPRESENTATIVE OHIO HOUSE DISTRICT 05",
+        "term": "Full Term",
+        "termDate": "",
+        "writeIn": false
+      },
+      {
+        "page": 2,
+        "name": "Eboney C. Eldridge",
+        "party": "N/A",
+        "office": "STATE REPRESENTATIVE OHIO HOUSE DISTRICT 05",
+        "term": "Full Term",
+        "termDate": "",
+        "writeIn": true
+      },
+      {
+        "page": 2,
+        "name": "Meredith R. Lawson-Rowe",
+        "party": "Democratic",
+        "office": "STATE REPRESENTATIVE OHIO HOUSE DISTRICT 05",
+        "term": "Full Term",
+        "termDate": "",
+        "writeIn": false
+      },
+      {
+        "page": 2,
+        "name": "Christine Cockley",
+        "party": "Democratic",
+        "office": "STATE REPRESENTATIVE OHIO HOUSE DISTRICT 06",
+        "term": "Full Term",
+        "termDate": "",
+        "writeIn": false,
+        "website": "www.cockleyforohio.com"
+      },
+      {
+        "page": 2,
+        "name": "Matthew Jackson",
+        "party": "Republican",
+        "office": "STATE REPRESENTATIVE OHIO HOUSE DISTRICT 06",
+        "term": "Full Term",
+        "termDate": "",
+        "writeIn": false,
+        "website": "www.votematthewjackson.com"
+      },
+      {
+        "page": 2,
+        "name": "Ukeme Awakessien Jeter",
+        "party": "Democratic",
+        "office": "STATE REPRESENTATIVE OHIO HOUSE DISTRICT 07",
+        "term": "Full Term",
+        "termDate": "",
+        "writeIn": false,
+        "website": "www.ukemeforus.com"
+      },
+      {
+        "page": 2,
+        "name": "Cameron Koffel",
+        "party": "\"nonparty\"",
+        "office": "STATE REPRESENTATIVE OHIO HOUSE DISTRICT 07",
+        "term": "Full Term",
+        "termDate": "",
+        "writeIn": false,
+        "website": "www.cameronkoffel.com"
+      },
+      {
+        "page": 2,
+        "name": "William Mercier",
+        "party": "Republican",
+        "office": "STATE REPRESENTATIVE OHIO HOUSE DISTRICT 07",
+        "term": "Full Term",
+        "termDate": "",
+        "writeIn": false
+      },
+      {
+        "page": 2,
+        "name": "Kelly Hunter-Kalagidis",
+        "party": "Republican",
+        "office": "STATE REPRESENTATIVE OHIO HOUSE DISTRICT 08",
+        "term": "Full Term",
+        "termDate": "",
+        "writeIn": false
+      },
+      {
+        "page": 2,
+        "name": "Anita Somani",
+        "party": "Democratic",
+        "office": "STATE REPRESENTATIVE OHIO HOUSE DISTRICT 08",
+        "term": "Full Term",
+        "termDate": "",
+        "writeIn": false,
+        "website": "www.drsomani4ohio.com"
+      },
+      {
+        "page": 2,
+        "name": "Munira Yasin Abdullahi",
+        "party": "Democratic",
+        "office": "STATE REPRESENTATIVE OHIO HOUSE DISTRICT 09",
+        "term": "Full Term",
+        "termDate": "",
+        "writeIn": false,
+        "website": "www.muniraforohio.com"
+      },
+      {
+        "page": 2,
+        "name": "Bruce Euans",
+        "party": "Republican",
+        "office": "STATE REPRESENTATIVE OHIO HOUSE DISTRICT 09",
+        "term": "Full Term",
+        "termDate": "",
+        "writeIn": false
+      },
+      {
+        "page": 2,
+        "name": "Denise D'Angelo",
+        "party": "Republican",
+        "office": "STATE REPRESENTATIVE OHIO HOUSE DISTRICT 10",
+        "term": "Full Term",
+        "termDate": "",
+        "writeIn": false
+      },
+      {
+        "page": 2,
+        "name": "Mark Sigrist",
+        "party": "Democratic",
+        "office": "STATE REPRESENTATIVE OHIO HOUSE DISTRICT 10",
+        "term": "Full Term",
+        "termDate": "",
+        "writeIn": false
+      },
+      {
+        "page": 2,
+        "name": "Shawn Kaeser",
+        "party": "Republican",
+        "office": "STATE REPRESENTATIVE OHIO HOUSE DISTRICT 11",
+        "term": "Full Term",
+        "termDate": "",
+        "writeIn": false,
+        "website": "www.shawnkaeser.com"
+      },
+      {
+        "page": 2,
+        "name": "Crystal Lett",
+        "party": "Democratic",
+        "office": "STATE REPRESENTATIVE OHIO HOUSE DISTRICT 11",
+        "term": "Full Term",
+        "termDate": "",
+        "writeIn": false,
+        "website": "www.letsgoohio.com"
+      },
+      {
+        "page": 2,
+        "name": "Brian Stewart",
+        "party": "Republican",
+        "office": "STATE REPRESENTATIVE OHIO HOUSE DISTRICT 12",
+        "term": "Full Term",
+        "termDate": "",
+        "writeIn": false
+      },
+      {
+        "page": 2,
+        "name": "Lee Yarsky",
+        "party": "Democratic",
+        "office": "STATE REPRESENTATIVE OHIO HOUSE DISTRICT 12",
+        "term": "Full Term",
+        "termDate": "",
+        "writeIn": false
+      },
+      {
+        "page": 2,
+        "name": "Michael C. Mentel",
+        "party": "Democratic",
+        "office": "JUDGE OF COURT OF APPEALS 10TH DISTRICT",
+        "term": "Full Term Commencing",
+        "termDate": "02/09/2027",
+        "writeIn": false
+      },
+      {
+        "page": 2,
+        "name": "Terri Jamison",
+        "party": "Democratic",
+        "office": "JUDGE OF COURT OF APPEALS 10TH DISTRICT",
+        "term": "Full Term Commencing",
+        "termDate": "07/01/2027",
+        "writeIn": false,
+        "website": "www.votejudgejamison.com"
+      },
+      {
+        "page": 2,
+        "name": "Carl Aveni",
+        "party": "",
+        "office": "JUDGE OF THE COURT OF COMMON PLEAS (General Division)",
+        "term": "Full Term Commencing",
+        "termDate": "01/01/2027",
+        "writeIn": false,
+        "website": "www.aveniforjudge.com"
+      },
+      {
+        "page": 2,
+        "name": "Andy Miller",
+        "party": "",
+        "office": "JUDGE OF THE COURT OF COMMON PLEAS (General Division)",
+        "term": "Full Term Commencing",
+        "termDate": "02/09/2027",
+        "writeIn": false
+      },
+      {
+        "page": 2,
+        "name": "David Young",
+        "party": "",
+        "office": "JUDGE OF THE COURT OF COMMON PLEAS (General Division)",
+        "term": "Full Term Commencing",
+        "termDate": "07/01/2027",
+        "writeIn": false
+      },
+      {
+        "page": 2,
+        "name": "Chris Brown",
+        "party": "",
+        "office": "JUDGE OF THE COURT OF COMMON PLEAS (General Division)",
+        "term": "Full Term Commencing",
+        "termDate": "07/02/2027",
+        "writeIn": false,
+        "website": "www.chrisbrownforohio.com"
+      },
+      {
+        "page": 2,
+        "name": "Kelley Gabrielle Boller",
+        "party": "",
+        "office": "JUDGE OF THE COURT OF COMMON PLEAS (Domestic Relations Division)",
+        "term": "Full Term Commencing",
+        "termDate": "01/02/2027",
+        "writeIn": false
+      },
+      {
+        "page": 2,
+        "name": "Lasheyl N. Stroud",
+        "party": "",
+        "office": "JUDGE OF THE COURT OF COMMON PLEAS (Domestic Relations Division)",
+        "term": "Full Term Commencing",
+        "termDate": "01/03/2027",
+        "writeIn": false
+      },
+      {
+        "page": 2,
+        "name": "Kelly Green",
+        "party": "",
+        "office": "JUDGE OF THE COURT OF COMMON PLEAS-Probate",
+        "term": "Full Term Commencing",
+        "termDate": "02/09/2027",
+        "writeIn": false,
+        "website": "www.kellygreenforjudge.com"
+      },
+      {
+        "page": 2,
+        "name": "Chris Junga",
+        "party": "",
+        "office": "JUDGE OF THE COURT OF COMMON PLEAS-Probate",
+        "term": "Full Term Commencing",
+        "termDate": "02/09/2027",
+        "writeIn": false,
+        "website": "www.electjungajudge.com"
+      },
+      {
+        "page": 2,
+        "name": "Michael Stinziano",
+        "party": "Democratic",
+        "office": "COUNTY AUDITOR",
+        "term": "Full Term",
+        "termDate": "",
+        "writeIn": false,
+        "website": "www.michaelstinziano.com"
+      },
+      {
+        "page": 2,
+        "name": "Erica C. Crawley",
+        "party": "Democratic",
+        "office": "COUNTY COMMISSIONER",
+        "term": "Full Term Commencing",
+        "termDate": "01/01/2027",
+        "writeIn": false,
+        "website": "www.ericacrawley.com"
+      },
+      {
+        "page": 2,
+        "name": "Eric Terford",
+        "party": "Libertarian",
+        "office": "COUNTY COMMISSIONER",
+        "term": "Full Term Commencing",
+        "termDate": "01/01/2027",
+        "writeIn": false
+      }
+    ],
+    "records": [
+      {
+        "id": "ee201583f8a9a09603da3073",
+        "name": "Amy Acton and David Pepper",
+        "office": "GOVERNOR AND LIEUTENANT GOVERNOR",
+        "party": "Democratic",
+        "scope": "statewide",
+        "district": "",
+        "status": "listed",
+        "sourceStatus": "Published general-election candidate"
+      },
+      {
+        "id": "6a9f52b72e107ab3c7bc1043",
+        "name": "Don Kissick and James L. Mills",
+        "office": "GOVERNOR AND LIEUTENANT GOVERNOR",
+        "party": "Libertarian",
+        "scope": "statewide",
+        "district": "",
+        "status": "listed",
+        "sourceStatus": "Published general-election candidate"
+      },
+      {
+        "id": "6a8ae90ce314e5ef9bfb1c53",
+        "name": "Vivek Ramaswamy and Robert A. McColley",
+        "office": "GOVERNOR AND LIEUTENANT GOVERNOR",
+        "party": "Republican",
+        "scope": "statewide",
+        "district": "",
+        "status": "listed",
+        "sourceStatus": "Published general-election candidate"
+      },
+      {
+        "id": "4c4595f838d7db0bbcff8a64",
+        "name": "Timothy Grady and Andrea Neutzling",
+        "office": "GOVERNOR AND LIEUTENANT GOVERNOR",
+        "party": "N/A",
+        "scope": "statewide",
+        "district": "",
+        "status": "write-in",
+        "sourceStatus": "Registered write-in"
+      },
+      {
+        "id": "8580d6fff1ea8f2ed97f13cd",
+        "name": "Heather Hill and Patrick Manley",
+        "office": "GOVERNOR AND LIEUTENANT GOVERNOR",
+        "party": "N/A",
+        "scope": "statewide",
+        "district": "",
+        "status": "write-in",
+        "sourceStatus": "Registered write-in"
+      },
+      {
+        "id": "7b1dabb890aed543c1484396",
+        "name": "Renea Turner and Jalen Turner",
+        "office": "GOVERNOR AND LIEUTENANT GOVERNOR",
+        "party": "N/A",
+        "scope": "statewide",
+        "district": "",
+        "status": "write-in",
+        "sourceStatus": "Registered write-in"
+      },
+      {
+        "id": "7aa9872815c89136877511e0",
+        "name": "Keith Faber",
+        "office": "ATTORNEY GENERAL",
+        "party": "Republican",
+        "scope": "statewide",
+        "district": "",
+        "status": "listed",
+        "sourceStatus": "Published general-election candidate"
+      },
+      {
+        "id": "6bf802e6ea81614e894b2e2f",
+        "name": "John J. Kulewicz",
+        "office": "ATTORNEY GENERAL",
+        "party": "Democratic",
+        "scope": "statewide",
+        "district": "",
+        "status": "listed",
+        "sourceStatus": "Published general-election candidate"
+      },
+      {
+        "id": "7b47a0ecdb6ad2af7199f871",
+        "name": "Annette Blackwell",
+        "office": "AUDITOR OF STATE",
+        "party": "Democratic",
+        "scope": "statewide",
+        "district": "",
+        "status": "listed",
+        "sourceStatus": "Published general-election candidate"
+      },
+      {
+        "id": "81fd1f78fd5c92703d025449",
+        "name": "Frank LaRose",
+        "office": "AUDITOR OF STATE",
+        "party": "Republican",
+        "scope": "statewide",
+        "district": "",
+        "status": "listed",
+        "sourceStatus": "Published general-election candidate"
+      },
+      {
+        "id": "eef0caf8b65443c7fd5bccc0",
+        "name": "Tom Pruss",
+        "office": "SECRETARY OF STATE",
+        "party": "Libertarian",
+        "scope": "statewide",
+        "district": "",
+        "status": "listed",
+        "sourceStatus": "Published general-election candidate"
+      },
+      {
+        "id": "81294faa03cb0d9af697a2b3",
+        "name": "Allison Russo",
+        "office": "SECRETARY OF STATE",
+        "party": "Democratic",
+        "scope": "statewide",
+        "district": "",
+        "status": "listed",
+        "sourceStatus": "Published general-election candidate"
+      },
+      {
+        "id": "4125085c806a16cf7bc448ae",
+        "name": "Robert Sprague",
+        "office": "SECRETARY OF STATE",
+        "party": "Republican",
+        "scope": "statewide",
+        "district": "",
+        "status": "listed",
+        "sourceStatus": "Published general-election candidate"
+      },
+      {
+        "id": "5edf3ac2514402d621e4e727",
+        "name": "Jay Edwards",
+        "office": "TREASURER OF STATE",
+        "party": "Republican",
+        "scope": "statewide",
+        "district": "",
+        "status": "listed",
+        "sourceStatus": "Published general-election candidate"
+      },
+      {
+        "id": "96bb4ca7a5727774e5dba874",
+        "name": "Seth Walsh",
+        "office": "TREASURER OF STATE",
+        "party": "Democratic",
+        "scope": "statewide",
+        "district": "",
+        "status": "listed",
+        "sourceStatus": "Published general-election candidate"
+      },
+      {
+        "id": "d1c0228a2f7755a0aa79fe95",
+        "name": "Daniel R. Hawkins",
+        "office": "JUSTICE OF THE SUPREME COURT (full term commencing 1-1-2027)",
+        "party": "Republican",
+        "scope": "statewide",
+        "district": "",
+        "status": "listed",
+        "sourceStatus": "Published general-election candidate"
+      },
+      {
+        "id": "c2e6d4d9f5292681ce2ec8c8",
+        "name": "Marilyn Zayas",
+        "office": "JUSTICE OF THE SUPREME COURT (full term commencing 1-1-2027)",
+        "party": "Democratic",
+        "scope": "statewide",
+        "district": "",
+        "status": "listed",
+        "sourceStatus": "Published general-election candidate"
+      },
+      {
+        "id": "5f5ede7f2424e3722cbe23b0",
+        "name": "Jennifer Brunner",
+        "office": "JUSTICE OF THE SUPREME COURT (full term commencing 1-2-2027)",
+        "party": "Democratic",
+        "scope": "statewide",
+        "district": "",
+        "status": "listed",
+        "sourceStatus": "Published general-election candidate"
+      },
+      {
+        "id": "6d83d97dd70625f560461912",
+        "name": "Colleen O'Donnell",
+        "office": "JUSTICE OF THE SUPREME COURT (full term commencing 1-2-2027)",
+        "party": "Republican",
+        "scope": "statewide",
+        "district": "",
+        "status": "listed",
+        "sourceStatus": "Published general-election candidate"
+      },
+      {
+        "id": "06c676a715244d72830b9cbc",
+        "name": "Sherrod Brown",
+        "office": "U.S. SENATOR (unexpired term ending 1-3-2029)",
+        "party": "Democratic",
+        "scope": "statewide",
+        "district": "",
+        "status": "listed",
+        "sourceStatus": "Published general-election candidate"
+      },
+      {
+        "id": "fe92cee1727d9ed3bbe897ac",
+        "name": "Jon Husted",
+        "office": "U.S. SENATOR (unexpired term ending 1-3-2029)",
+        "party": "Republican",
+        "scope": "statewide",
+        "district": "",
+        "status": "listed",
+        "sourceStatus": "Published general-election candidate"
+      },
+      {
+        "id": "be6dde38e266f70d68277713",
+        "name": "Greg Levy",
+        "office": "U.S. SENATOR (unexpired term ending 1-3-2029)",
+        "party": "Other-party",
+        "scope": "statewide",
+        "district": "",
+        "status": "listed",
+        "sourceStatus": "Published general-election candidate"
+      },
+      {
+        "id": "c2da55e7803f792a6e125312",
+        "name": "William B. Redpath",
+        "office": "U.S. SENATOR (unexpired term ending 1-3-2029)",
+        "party": "Libertarian",
+        "scope": "statewide",
+        "district": "",
+        "status": "listed",
+        "sourceStatus": "Published general-election candidate"
+      },
+      {
+        "id": "6b51ee8c97317ec0e00bbd52",
+        "name": "Stephen Faris",
+        "office": "U.S. SENATOR (unexpired term ending 1-3-2029)",
+        "party": "N/A",
+        "scope": "statewide",
+        "district": "",
+        "status": "write-in",
+        "sourceStatus": "Registered write-in"
+      },
+      {
+        "id": "e73417264deb60d025a080d5",
+        "name": "Anthony Holliman",
+        "office": "U.S. SENATOR (unexpired term ending 1-3-2029)",
+        "party": "N/A",
+        "scope": "statewide",
+        "district": "",
+        "status": "write-in",
+        "sourceStatus": "Registered write-in"
+      },
+      {
+        "id": "2e85a030668afc328180bb08",
+        "name": "Timothy Telymonde",
+        "office": "U.S. SENATOR (unexpired term ending 1-3-2029)",
+        "party": "N/A",
+        "scope": "statewide",
+        "district": "",
+        "status": "write-in",
+        "sourceStatus": "Registered write-in"
+      },
+      {
+        "id": "6ff4411ab2b43f4fd2a7fa19",
+        "name": "Joyce Beatty",
+        "office": "REPRESENTATIVE TO CONGRESS 03RD CONGRESSIONAL DISTRICT",
+        "party": "Democratic",
+        "scope": "congressional",
+        "district": "3",
+        "status": "listed",
+        "sourceStatus": "Published general-election candidate",
+        "candidateUrl": "https://www.beattyforcongress.com/",
+        "sourceDistrictLabel": "REPRESENTATIVE TO CONGRESS 03RD CONGRESSIONAL DISTRICT"
+      },
+      {
+        "id": "d349acc8b06aa445ddbc7c72",
+        "name": "Cleophus Dulaney",
+        "office": "REPRESENTATIVE TO CONGRESS 03RD CONGRESSIONAL DISTRICT",
+        "party": "Republican",
+        "scope": "congressional",
+        "district": "3",
+        "status": "listed",
+        "sourceStatus": "Published general-election candidate",
+        "candidateUrl": "https://www.votedulaney.org/",
+        "sourceDistrictLabel": "REPRESENTATIVE TO CONGRESS 03RD CONGRESSIONAL DISTRICT"
+      },
+      {
+        "id": "d48e8832f6f7dfd5d041d0e2",
+        "name": "Brennan Barrington",
+        "office": "REPRESENTATIVE TO CONGRESS 15TH CONGRESSIONAL DISTRICT",
+        "party": "Libertarian",
+        "scope": "congressional",
+        "district": "15",
+        "status": "listed",
+        "sourceStatus": "Published general-election candidate",
+        "candidateUrl": "https://www.barrington.lpo.org/",
+        "sourceDistrictLabel": "REPRESENTATIVE TO CONGRESS 15TH CONGRESSIONAL DISTRICT"
+      },
+      {
+        "id": "c0803c1db5c891b387a38df2",
+        "name": "Mike Carey",
+        "office": "REPRESENTATIVE TO CONGRESS 15TH CONGRESSIONAL DISTRICT",
+        "party": "Republican",
+        "scope": "congressional",
+        "district": "15",
+        "status": "listed",
+        "sourceStatus": "Published general-election candidate",
+        "candidateUrl": "https://www.careyforcongress.com/",
+        "sourceDistrictLabel": "REPRESENTATIVE TO CONGRESS 15TH CONGRESSIONAL DISTRICT"
+      },
+      {
+        "id": "10527c1ea19c8ee2a7188ccb",
+        "name": "Don Leonard",
+        "office": "REPRESENTATIVE TO CONGRESS 15TH CONGRESSIONAL DISTRICT",
+        "party": "Democratic",
+        "scope": "congressional",
+        "district": "15",
+        "status": "listed",
+        "sourceStatus": "Published general-election candidate",
+        "candidateUrl": "https://www.donforohio.com/",
+        "sourceDistrictLabel": "REPRESENTATIVE TO CONGRESS 15TH CONGRESSIONAL DISTRICT"
+      },
+      {
+        "id": "2746b2b0f53e80a96087c039",
+        "name": "Gary Josephson",
+        "office": "REPRESENTATIVE TO CONGRESS 15TH CONGRESSIONAL DISTRICT",
+        "party": "N/A",
+        "scope": "congressional",
+        "district": "15",
+        "status": "write-in",
+        "sourceStatus": "Registered write-in in county FWAB notice",
+        "sourceDistrictLabel": "REPRESENTATIVE TO CONGRESS 15TH CONGRESSIONAL DISTRICT"
+      },
+      {
+        "id": "cd392ceb91eb1eece7d50c3d",
+        "name": "Samuel Ronan",
+        "office": "REPRESENTATIVE TO CONGRESS 15TH CONGRESSIONAL DISTRICT",
+        "party": "N/A",
+        "scope": "congressional",
+        "district": "15",
+        "status": "write-in",
+        "sourceStatus": "Registered write-in",
+        "candidateUrl": "https://www.samronan.com/",
+        "sourceDistrictLabel": "REPRESENTATIVE TO CONGRESS 15TH CONGRESSIONAL DISTRICT"
+      },
+      {
+        "id": "38b3adf0ce4fb3132c634ea0",
+        "name": "Stacie A. Baker",
+        "office": "STATE SENATOR OHIO SENATE DISTRICT 03",
+        "party": "Democratic",
+        "scope": "state-senate",
+        "district": "3",
+        "status": "listed",
+        "sourceStatus": "Published general-election candidate",
+        "sourceDistrictLabel": "STATE SENATOR OHIO SENATE DISTRICT 03"
+      },
+      {
+        "id": "a6bac57500e6cfb1f7a18c32",
+        "name": "Michele Reynolds",
+        "office": "STATE SENATOR OHIO SENATE DISTRICT 03",
+        "party": "Republican",
+        "scope": "state-senate",
+        "district": "3",
+        "status": "listed",
+        "sourceStatus": "Published general-election candidate",
+        "candidateUrl": "https://www.michelereynolds.org/",
+        "sourceDistrictLabel": "STATE SENATOR OHIO SENATE DISTRICT 03"
+      },
+      {
+        "id": "3d85277afa065e95118d792e",
+        "name": "Joseph Healy",
+        "office": "STATE SENATOR OHIO SENATE DISTRICT 15",
+        "party": "Republican",
+        "scope": "state-senate",
+        "district": "15",
+        "status": "listed",
+        "sourceStatus": "Published general-election candidate",
+        "sourceDistrictLabel": "STATE SENATOR OHIO SENATE DISTRICT 15"
+      },
+      {
+        "id": "fa57d2a91c45a5b99a4d34f8",
+        "name": "Latyna M. Humphrey",
+        "office": "STATE SENATOR OHIO SENATE DISTRICT 15",
+        "party": "Democratic",
+        "scope": "state-senate",
+        "district": "15",
+        "status": "listed",
+        "sourceStatus": "Published general-election candidate",
+        "sourceDistrictLabel": "STATE SENATOR OHIO SENATE DISTRICT 15"
+      },
+      {
+        "id": "3fee256b9cf40746675421ac",
+        "name": "Raisheda D. Angus",
+        "office": "STATE SENATOR OHIO SENATE DISTRICT 25",
+        "party": "N/A",
+        "scope": "state-senate",
+        "district": "25",
+        "status": "write-in",
+        "sourceStatus": "Registered write-in",
+        "sourceDistrictLabel": "STATE SENATOR OHIO SENATE DISTRICT 25"
+      },
+      {
+        "id": "48102a5d30f6e4183c629353",
+        "name": "Bill DeMora",
+        "office": "STATE SENATOR OHIO SENATE DISTRICT 25",
+        "party": "Democratic",
+        "scope": "state-senate",
+        "district": "25",
+        "status": "listed",
+        "sourceStatus": "Published general-election candidate",
+        "sourceDistrictLabel": "STATE SENATOR OHIO SENATE DISTRICT 25"
+      },
+      {
+        "id": "3547deac96e4ed584d84c89b",
+        "name": "Don Roberts",
+        "office": "STATE SENATOR OHIO SENATE DISTRICT 25",
+        "party": "Republican",
+        "scope": "state-senate",
+        "district": "25",
+        "status": "listed",
+        "sourceStatus": "Published general-election candidate",
+        "sourceDistrictLabel": "STATE SENATOR OHIO SENATE DISTRICT 25"
+      },
+      {
+        "id": "e7dad5fcb193078c5e4e9181",
+        "name": "Joel A. Greff",
+        "office": "STATE REPRESENTATIVE OHIO HOUSE DISTRICT 01",
+        "party": "Republican",
+        "scope": "state-house",
+        "district": "1",
+        "status": "listed",
+        "sourceStatus": "Published general-election candidate",
+        "sourceDistrictLabel": "STATE REPRESENTATIVE OHIO HOUSE DISTRICT 01"
+      },
+      {
+        "id": "6188691d4a47663c7a98ebdf",
+        "name": "Dontavius Jarrells",
+        "office": "STATE REPRESENTATIVE OHIO HOUSE DISTRICT 01",
+        "party": "Democratic",
+        "scope": "state-house",
+        "district": "1",
+        "status": "listed",
+        "sourceStatus": "Published general-election candidate",
+        "candidateUrl": "https://www.jarrellsforohio.us/",
+        "sourceDistrictLabel": "STATE REPRESENTATIVE OHIO HOUSE DISTRICT 01"
+      },
+      {
+        "id": "54fe0c7a774f7258ddfbdcbb",
+        "name": "Charity Martin King",
+        "office": "STATE REPRESENTATIVE OHIO HOUSE DISTRICT 02",
+        "party": "Democratic",
+        "scope": "state-house",
+        "district": "2",
+        "status": "listed",
+        "sourceStatus": "Published general-election candidate",
+        "candidateUrl": "https://www.campaign4charity.com/",
+        "sourceDistrictLabel": "STATE REPRESENTATIVE OHIO HOUSE DISTRICT 02"
+      },
+      {
+        "id": "644a3d778d6af2c8624aa73c",
+        "name": "Elegant Afriyie",
+        "office": "STATE REPRESENTATIVE OHIO HOUSE DISTRICT 03",
+        "party": "N/A",
+        "scope": "state-house",
+        "district": "3",
+        "status": "write-in",
+        "sourceStatus": "Registered write-in",
+        "sourceDistrictLabel": "STATE REPRESENTATIVE OHIO HOUSE DISTRICT 03"
+      },
+      {
+        "id": "bbefccd40799b5ae2445a105",
+        "name": "Bernadine Kennedy Kent",
+        "office": "STATE REPRESENTATIVE OHIO HOUSE DISTRICT 03",
+        "party": "Republican",
+        "scope": "state-house",
+        "district": "3",
+        "status": "listed",
+        "sourceStatus": "Published general-election candidate",
+        "sourceDistrictLabel": "STATE REPRESENTATIVE OHIO HOUSE DISTRICT 03"
+      },
+      {
+        "id": "3cacdda1612d7d9d44d726a3",
+        "name": "Ismail Mohamed",
+        "office": "STATE REPRESENTATIVE OHIO HOUSE DISTRICT 03",
+        "party": "Democratic",
+        "scope": "state-house",
+        "district": "3",
+        "status": "listed",
+        "sourceStatus": "Published general-election candidate",
+        "candidateUrl": "https://www.ismailforohio.com/",
+        "sourceDistrictLabel": "STATE REPRESENTATIVE OHIO HOUSE DISTRICT 03"
+      },
+      {
+        "id": "8e5cad75bc39a2666da196b1",
+        "name": "Beryl Brown Piccolantonio",
+        "office": "STATE REPRESENTATIVE OHIO HOUSE DISTRICT 04",
+        "party": "Democratic",
+        "scope": "state-house",
+        "district": "4",
+        "status": "listed",
+        "sourceStatus": "Published general-election candidate",
+        "candidateUrl": "https://www.berylforohio.com/",
+        "sourceDistrictLabel": "STATE REPRESENTATIVE OHIO HOUSE DISTRICT 04"
+      },
+      {
+        "id": "bd310d2b848c7d75663480af",
+        "name": "Richard Cole",
+        "office": "STATE REPRESENTATIVE OHIO HOUSE DISTRICT 05",
+        "party": "Republican",
+        "scope": "state-house",
+        "district": "5",
+        "status": "listed",
+        "sourceStatus": "Published general-election candidate",
+        "sourceDistrictLabel": "STATE REPRESENTATIVE OHIO HOUSE DISTRICT 05"
+      },
+      {
+        "id": "277010f5b2d32c3cd36396d6",
+        "name": "Eboney C. Eldridge",
+        "office": "STATE REPRESENTATIVE OHIO HOUSE DISTRICT 05",
+        "party": "N/A",
+        "scope": "state-house",
+        "district": "5",
+        "status": "write-in",
+        "sourceStatus": "Registered write-in",
+        "sourceDistrictLabel": "STATE REPRESENTATIVE OHIO HOUSE DISTRICT 05"
+      },
+      {
+        "id": "22f35db03f405fef68abd278",
+        "name": "Meredith R. Lawson-Rowe",
+        "office": "STATE REPRESENTATIVE OHIO HOUSE DISTRICT 05",
+        "party": "Democratic",
+        "scope": "state-house",
+        "district": "5",
+        "status": "listed",
+        "sourceStatus": "Published general-election candidate",
+        "sourceDistrictLabel": "STATE REPRESENTATIVE OHIO HOUSE DISTRICT 05"
+      },
+      {
+        "id": "84b8d6396359228dcf2a4e79",
+        "name": "Christine Cockley",
+        "office": "STATE REPRESENTATIVE OHIO HOUSE DISTRICT 06",
+        "party": "Democratic",
+        "scope": "state-house",
+        "district": "6",
+        "status": "listed",
+        "sourceStatus": "Published general-election candidate",
+        "candidateUrl": "https://www.cockleyforohio.com/",
+        "sourceDistrictLabel": "STATE REPRESENTATIVE OHIO HOUSE DISTRICT 06"
+      },
+      {
+        "id": "d3ce3e0ea8c62a96f41f2111",
+        "name": "Matthew Jackson",
+        "office": "STATE REPRESENTATIVE OHIO HOUSE DISTRICT 06",
+        "party": "Republican",
+        "scope": "state-house",
+        "district": "6",
+        "status": "listed",
+        "sourceStatus": "Published general-election candidate",
+        "candidateUrl": "https://www.votematthewjackson.com/",
+        "sourceDistrictLabel": "STATE REPRESENTATIVE OHIO HOUSE DISTRICT 06"
+      },
+      {
+        "id": "77aa36c51a61baf67e927dc3",
+        "name": "Ukeme Awakessien Jeter",
+        "office": "STATE REPRESENTATIVE OHIO HOUSE DISTRICT 07",
+        "party": "Democratic",
+        "scope": "state-house",
+        "district": "7",
+        "status": "listed",
+        "sourceStatus": "Published general-election candidate",
+        "candidateUrl": "https://www.ukemeforus.com/",
+        "sourceDistrictLabel": "STATE REPRESENTATIVE OHIO HOUSE DISTRICT 07"
+      },
+      {
+        "id": "2b1379b255445834a6c39dfb",
+        "name": "Cameron Koffel",
+        "office": "STATE REPRESENTATIVE OHIO HOUSE DISTRICT 07",
+        "party": "\"nonparty\"",
+        "scope": "state-house",
+        "district": "7",
+        "status": "listed",
+        "sourceStatus": "Published general-election candidate",
+        "candidateUrl": "https://www.cameronkoffel.com/",
+        "sourceDistrictLabel": "STATE REPRESENTATIVE OHIO HOUSE DISTRICT 07"
+      },
+      {
+        "id": "72ac0e79b11cbb3c4a9e2200",
+        "name": "William Mercier",
+        "office": "STATE REPRESENTATIVE OHIO HOUSE DISTRICT 07",
+        "party": "Republican",
+        "scope": "state-house",
+        "district": "7",
+        "status": "listed",
+        "sourceStatus": "Published general-election candidate",
+        "sourceDistrictLabel": "STATE REPRESENTATIVE OHIO HOUSE DISTRICT 07"
+      },
+      {
+        "id": "a2d46111665b58de1677f7c0",
+        "name": "Kelly Hunter-Kalagidis",
+        "office": "STATE REPRESENTATIVE OHIO HOUSE DISTRICT 08",
+        "party": "Republican",
+        "scope": "state-house",
+        "district": "8",
+        "status": "listed",
+        "sourceStatus": "Published general-election candidate",
+        "sourceDistrictLabel": "STATE REPRESENTATIVE OHIO HOUSE DISTRICT 08"
+      },
+      {
+        "id": "38bda4025839c7b3c91e4c9e",
+        "name": "Anita Somani",
+        "office": "STATE REPRESENTATIVE OHIO HOUSE DISTRICT 08",
+        "party": "Democratic",
+        "scope": "state-house",
+        "district": "8",
+        "status": "listed",
+        "sourceStatus": "Published general-election candidate",
+        "candidateUrl": "https://www.drsomani4ohio.com/",
+        "sourceDistrictLabel": "STATE REPRESENTATIVE OHIO HOUSE DISTRICT 08"
+      },
+      {
+        "id": "31a3bbe9a6925ec22272f8c1",
+        "name": "Munira Yasin Abdullahi",
+        "office": "STATE REPRESENTATIVE OHIO HOUSE DISTRICT 09",
+        "party": "Democratic",
+        "scope": "state-house",
+        "district": "9",
+        "status": "listed",
+        "sourceStatus": "Published general-election candidate",
+        "candidateUrl": "https://www.muniraforohio.com/",
+        "sourceDistrictLabel": "STATE REPRESENTATIVE OHIO HOUSE DISTRICT 09"
+      },
+      {
+        "id": "871cf1bb7d5405b0f35f088d",
+        "name": "Bruce Euans",
+        "office": "STATE REPRESENTATIVE OHIO HOUSE DISTRICT 09",
+        "party": "Republican",
+        "scope": "state-house",
+        "district": "9",
+        "status": "listed",
+        "sourceStatus": "Published general-election candidate",
+        "sourceDistrictLabel": "STATE REPRESENTATIVE OHIO HOUSE DISTRICT 09"
+      },
+      {
+        "id": "3814cd3adcbac1fb0e31a354",
+        "name": "Denise D'Angelo",
+        "office": "STATE REPRESENTATIVE OHIO HOUSE DISTRICT 10",
+        "party": "Republican",
+        "scope": "state-house",
+        "district": "10",
+        "status": "listed",
+        "sourceStatus": "Published general-election candidate",
+        "sourceDistrictLabel": "STATE REPRESENTATIVE OHIO HOUSE DISTRICT 10"
+      },
+      {
+        "id": "650c2e8128940c6b948ab1f0",
+        "name": "Mark Sigrist",
+        "office": "STATE REPRESENTATIVE OHIO HOUSE DISTRICT 10",
+        "party": "Democratic",
+        "scope": "state-house",
+        "district": "10",
+        "status": "listed",
+        "sourceStatus": "Published general-election candidate",
+        "sourceDistrictLabel": "STATE REPRESENTATIVE OHIO HOUSE DISTRICT 10"
+      },
+      {
+        "id": "fd33c3ff272cf295a19bae1f",
+        "name": "Shawn Kaeser",
+        "office": "STATE REPRESENTATIVE OHIO HOUSE DISTRICT 11",
+        "party": "Republican",
+        "scope": "state-house",
+        "district": "11",
+        "status": "listed",
+        "sourceStatus": "Published general-election candidate",
+        "candidateUrl": "https://www.shawnkaeser.com/",
+        "sourceDistrictLabel": "STATE REPRESENTATIVE OHIO HOUSE DISTRICT 11"
+      },
+      {
+        "id": "d346fda29b8fc8768b4b7b2f",
+        "name": "Crystal Lett",
+        "office": "STATE REPRESENTATIVE OHIO HOUSE DISTRICT 11",
+        "party": "Democratic",
+        "scope": "state-house",
+        "district": "11",
+        "status": "listed",
+        "sourceStatus": "Published general-election candidate",
+        "candidateUrl": "https://www.letsgoohio.com/",
+        "sourceDistrictLabel": "STATE REPRESENTATIVE OHIO HOUSE DISTRICT 11"
+      },
+      {
+        "id": "04e1c49e4fce18f2923727f1",
+        "name": "Brian Stewart",
+        "office": "STATE REPRESENTATIVE OHIO HOUSE DISTRICT 12",
+        "party": "Republican",
+        "scope": "state-house",
+        "district": "12",
+        "status": "listed",
+        "sourceStatus": "Published general-election candidate",
+        "sourceDistrictLabel": "STATE REPRESENTATIVE OHIO HOUSE DISTRICT 12"
+      },
+      {
+        "id": "cb2977fbbd43b398346626bb",
+        "name": "Lee Yarsky",
+        "office": "STATE REPRESENTATIVE OHIO HOUSE DISTRICT 12",
+        "party": "Democratic",
+        "scope": "state-house",
+        "district": "12",
+        "status": "listed",
+        "sourceStatus": "Published general-election candidate",
+        "sourceDistrictLabel": "STATE REPRESENTATIVE OHIO HOUSE DISTRICT 12"
+      },
+      {
+        "id": "536105245fb0f0bb3b8983fe",
+        "name": "Michael C. Mentel",
+        "office": "JUDGE OF COURT OF APPEALS 10TH DISTRICT (full term commencing 02/09/2027)",
+        "party": "Democratic",
+        "scope": "local",
+        "district": "",
+        "status": "listed",
+        "sourceStatus": "Published general-election candidate",
+        "jurisdiction": "Ohio Court of Appeals, 10th District"
+      },
+      {
+        "id": "5de3b2ae9f303816c9734896",
+        "name": "Terri Jamison",
+        "office": "JUDGE OF COURT OF APPEALS 10TH DISTRICT (full term commencing 07/01/2027)",
+        "party": "Democratic",
+        "scope": "local",
+        "district": "",
+        "status": "listed",
+        "sourceStatus": "Published general-election candidate",
+        "jurisdiction": "Ohio Court of Appeals, 10th District",
+        "candidateUrl": "https://www.votejudgejamison.com/"
+      },
+      {
+        "id": "7f65c4a8eefeabe648aef1c3",
+        "name": "Carl Aveni",
+        "office": "JUDGE OF THE COURT OF COMMON PLEAS (General Division) (full term commencing 01/01/2027)",
+        "scope": "local",
+        "district": "",
+        "status": "listed",
+        "sourceStatus": "Published general-election candidate",
+        "jurisdiction": "Franklin County",
+        "candidateUrl": "https://www.aveniforjudge.com/"
+      },
+      {
+        "id": "0b8ca91d3a4c2e665b67f644",
+        "name": "Andy Miller",
+        "office": "JUDGE OF THE COURT OF COMMON PLEAS (General Division) (full term commencing 02/09/2027)",
+        "scope": "local",
+        "district": "",
+        "status": "listed",
+        "sourceStatus": "Published general-election candidate",
+        "jurisdiction": "Franklin County"
+      },
+      {
+        "id": "9a9e65fcc97898ea5242da80",
+        "name": "David Young",
+        "office": "JUDGE OF THE COURT OF COMMON PLEAS (General Division) (full term commencing 07/01/2027)",
+        "scope": "local",
+        "district": "",
+        "status": "listed",
+        "sourceStatus": "Published general-election candidate",
+        "jurisdiction": "Franklin County"
+      },
+      {
+        "id": "868149c10e4c1de9b62309b8",
+        "name": "Chris Brown",
+        "office": "JUDGE OF THE COURT OF COMMON PLEAS (General Division) (full term commencing 07/02/2027)",
+        "scope": "local",
+        "district": "",
+        "status": "listed",
+        "sourceStatus": "Published general-election candidate",
+        "jurisdiction": "Franklin County",
+        "candidateUrl": "https://www.chrisbrownforohio.com/"
+      },
+      {
+        "id": "b9d17b83a3dc97aeef045c27",
+        "name": "Kelley Gabrielle Boller",
+        "office": "JUDGE OF THE COURT OF COMMON PLEAS (Domestic Relations Division) (full term commencing 01/02/2027)",
+        "scope": "local",
+        "district": "",
+        "status": "listed",
+        "sourceStatus": "Published general-election candidate",
+        "jurisdiction": "Franklin County"
+      },
+      {
+        "id": "36f2af672f0b4f92d2911c7d",
+        "name": "Lasheyl N. Stroud",
+        "office": "JUDGE OF THE COURT OF COMMON PLEAS (Domestic Relations Division) (full term commencing 01/03/2027)",
+        "scope": "local",
+        "district": "",
+        "status": "listed",
+        "sourceStatus": "Published general-election candidate",
+        "jurisdiction": "Franklin County"
+      },
+      {
+        "id": "d098afffa232ce75cf01aa7d",
+        "name": "Kelly Green",
+        "office": "JUDGE OF THE COURT OF COMMON PLEAS-Probate (full term commencing 02/09/2027)",
+        "scope": "local",
+        "district": "",
+        "status": "listed",
+        "sourceStatus": "Published general-election candidate",
+        "jurisdiction": "Franklin County",
+        "candidateUrl": "https://www.kellygreenforjudge.com/"
+      },
+      {
+        "id": "5c5715c05f8e17eaf0de5328",
+        "name": "Chris Junga",
+        "office": "JUDGE OF THE COURT OF COMMON PLEAS-Probate (full term commencing 02/09/2027)",
+        "scope": "local",
+        "district": "",
+        "status": "listed",
+        "sourceStatus": "Published general-election candidate",
+        "jurisdiction": "Franklin County",
+        "candidateUrl": "https://www.electjungajudge.com/"
+      },
+      {
+        "id": "5231e2476d36e3e7903655bc",
+        "name": "Michael Stinziano",
+        "office": "COUNTY AUDITOR",
+        "party": "Democratic",
+        "scope": "local",
+        "district": "",
+        "status": "listed",
+        "sourceStatus": "Published general-election candidate",
+        "jurisdiction": "Franklin County",
+        "candidateUrl": "https://www.michaelstinziano.com/"
+      },
+      {
+        "id": "b0e5e407fc6f4f2c0be729e3",
+        "name": "Erica C. Crawley",
+        "office": "COUNTY COMMISSIONER (full term commencing 01/01/2027)",
+        "party": "Democratic",
+        "scope": "local",
+        "district": "",
+        "status": "listed",
+        "sourceStatus": "Published general-election candidate",
+        "jurisdiction": "Franklin County",
+        "candidateUrl": "https://www.ericacrawley.com/"
+      },
+      {
+        "id": "290ff983ac3fff1ccb6fc833",
+        "name": "Eric Terford",
+        "office": "COUNTY COMMISSIONER (full term commencing 01/01/2027)",
+        "party": "Libertarian",
+        "scope": "local",
+        "district": "",
+        "status": "listed",
+        "sourceStatus": "Published general-election candidate",
+        "jurisdiction": "Franklin County"
+      }
+    ],
+    "additionalDocuments": [
+      {
+        "url": "https://www.vote.franklincountyohio.gov/getmedia/352b644d-b348-447e-b60d-aa9b9193a297/2026-General-Form-No-120-FWAB-Notice-46-Day",
+        "sha256": "dc69b2b2243507bc84e4dda490d77b8a1f2f96f61b7a90aeaa8f5a8c869bce29",
+        "retrievedAt": "2026-10-21T12:02:28.707Z",
+        "includedRecordCount": 2,
+        "evidence": [
+          {
+            "page": 2,
+            "name": "Greg Levy",
+            "party": "Other-party",
+            "office": "U. S. Senate (UTE 1-3-2029)"
+          },
+          {
+            "page": 3,
+            "name": "Gary Josephson",
+            "party": "N/A",
+            "office": "U. S. House of Representatives (15th District)",
+            "writeIn": true
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "state": "MA",
+    "sourceUrl": "https://www.cambridgema.gov/departments/electioncommission/news/2026/10/november32026stateelectionvotingoptions",
+    "documentUrl": "https://www.cambridgema.gov/-/media/Files/electioncommission/2026stateelection/candidatesincambridgedistricts.pdf",
+    "documentSha256": "f295146bd0d96e738343a7c83ad4a3ee76dbdd74baf0de11d4e613a15611509b",
+    "retrievedAt": "2026-10-21T11:49:39.783Z",
+    "pages": 3,
+    "rows": [
+      {
+        "page": 1,
+        "name": "EDWARD J. MARKEY",
+        "party": "Democratic",
+        "office": "Senator in Congress",
+        "districtLabel": ""
+      },
+      {
+        "page": 1,
+        "name": "JOHN DEATON",
+        "party": "Republican",
+        "office": "Senator in Congress",
+        "districtLabel": ""
+      },
+      {
+        "page": 1,
+        "name": "SHIVA AYYADURAI",
+        "party": "Independent",
+        "office": "Senator in Congress",
+        "districtLabel": ""
+      },
+      {
+        "page": 1,
+        "name": "JOE TACHE",
+        "party": "Socialism and Liberation",
+        "office": "Senator in Congress",
+        "districtLabel": ""
+      },
+      {
+        "page": 1,
+        "name": "HEALEY AND DRISCOLL",
+        "party": "Democratic",
+        "office": "Governor and Lieutenant Governor",
+        "districtLabel": ""
+      },
+      {
+        "page": 1,
+        "name": "MINOGUE AND OLIVER",
+        "party": "Republican",
+        "office": "Governor and Lieutenant Governor",
+        "districtLabel": ""
+      },
+      {
+        "page": 1,
+        "name": "JAMES AND KITTREDGE",
+        "party": "Independent",
+        "office": "Governor and Lieutenant Governor",
+        "districtLabel": ""
+      },
+      {
+        "page": 1,
+        "name": "ANDREA JOY CAMPBELL",
+        "party": "Democratic",
+        "office": "Attorney General",
+        "districtLabel": ""
+      },
+      {
+        "page": 1,
+        "name": "MICHAEL C. WALSH",
+        "party": "Republican",
+        "office": "Attorney General",
+        "districtLabel": ""
+      },
+      {
+        "page": 1,
+        "name": "WILLIAM FRANCIS GALVIN",
+        "party": "Democratic",
+        "office": "Secretary of State",
+        "districtLabel": ""
+      },
+      {
+        "page": 1,
+        "name": "ANNE R. BRENSLEY",
+        "party": "Republican",
+        "office": "Secretary of State",
+        "districtLabel": ""
+      },
+      {
+        "page": 1,
+        "name": "DEBORAH B. GOLDBERG",
+        "party": "Democratic",
+        "office": "Treasurer",
+        "districtLabel": ""
+      },
+      {
+        "page": 1,
+        "name": "ELIZABETH DIONNE",
+        "party": "Republican",
+        "office": "Treasurer",
+        "districtLabel": ""
+      },
+      {
+        "page": 1,
+        "name": "DIANA DiZOGLIO",
+        "party": "Democratic",
+        "office": "Auditor",
+        "districtLabel": ""
+      },
+      {
+        "page": 1,
+        "name": "AL OZONOFF",
+        "party": "Libertarian",
+        "office": "Auditor",
+        "districtLabel": ""
+      },
+      {
+        "page": 1,
+        "name": "KATHERINE M. CLARK",
+        "party": "Democratic",
+        "office": "Representative in Congress",
+        "districtLabel": "Fifth District"
+      },
+      {
+        "page": 1,
+        "name": "AYANNA S. PRESSLEY",
+        "party": "Democratic",
+        "office": "Representative in Congress",
+        "districtLabel": "Seventh District"
+      },
+      {
+        "page": 1,
+        "name": "MARA DOLAN",
+        "party": "Democratic",
+        "office": "Councillor",
+        "districtLabel": "Third District"
+      },
+      {
+        "page": 1,
+        "name": "TERRENCE W. KENNEDY",
+        "party": "Democratic",
+        "office": "Councillor",
+        "districtLabel": "Sixth District"
+      },
+      {
+        "page": 2,
+        "name": "ERIKA UYTERHOEVEN",
+        "party": "Democratic",
+        "office": "Senator in General Court",
+        "districtLabel": "Second Middlesex District"
+      },
+      {
+        "page": 2,
+        "name": "SAL N. DiDOMENICO",
+        "party": "Democratic",
+        "office": "Senator in General Court",
+        "districtLabel": "Middlesex & Suffolk District"
+      },
+      {
+        "page": 2,
+        "name": "WILLIAM N. BROWNSBERGER",
+        "party": "Democratic",
+        "office": "Senator in General Court",
+        "districtLabel": "Suffolk & Middlesex District"
+      },
+      {
+        "page": 2,
+        "name": "BRANDON CHARLES WOOD",
+        "party": "Unenrolled",
+        "office": "Senator in General Court",
+        "districtLabel": "Suffolk & Middlesex District"
+      },
+      {
+        "page": 2,
+        "name": "DAVID M. ROGERS",
+        "party": "Democratic",
+        "office": "Representative in General Court",
+        "districtLabel": "Twenty-Fourth Middlesex District"
+      },
+      {
+        "page": 2,
+        "name": "MARJORIE C. DECKER",
+        "party": "Democratic",
+        "office": "Representative in General Court",
+        "districtLabel": "Twenty-Fifth Middlesex District"
+      },
+      {
+        "page": 2,
+        "name": "MIKE CONNOLLY",
+        "party": "Democratic",
+        "office": "Representative in General Court",
+        "districtLabel": "Twenty-Sixth Middlesex District"
+      },
+      {
+        "page": 2,
+        "name": "STEVEN CHARLES OWENS",
+        "party": "Democratic",
+        "office": "Representative in General Court",
+        "districtLabel": "Twenty-Ninth Middlesex District"
+      },
+      {
+        "page": 2,
+        "name": "DANIEL J. RYAN",
+        "party": "Democratic",
+        "office": "Representative in General Court",
+        "districtLabel": "Second Suffolk District"
+      },
+      {
+        "page": 2,
+        "name": "MICHAEL J. MORAN",
+        "party": "Democratic",
+        "office": "Representative in General Court",
+        "districtLabel": "Eighteenth Suffolk District"
+      },
+      {
+        "page": 2,
+        "name": "MARIAN T. RYAN",
+        "party": "Democratic",
+        "office": "District Attorney",
+        "districtLabel": "Northern District"
+      },
+      {
+        "page": 2,
+        "name": "TARA E. DeCRISTOFARO",
+        "party": "Democratic",
+        "office": "Register of Probate",
+        "districtLabel": "Middlesex County"
+      },
+      {
+        "page": 2,
+        "name": "TARA MARTORELLA",
+        "party": "Justice for All",
+        "office": "Register of Probate",
+        "districtLabel": "Middlesex County"
+      }
+    ],
+    "records": [
+      {
+        "id": "c99453c2c8c3a1b81624503c",
+        "name": "EDWARD J. MARKEY",
+        "office": "Senator in Congress",
+        "party": "Democratic",
+        "scope": "statewide",
+        "district": "",
+        "status": "listed",
+        "sourceStatus": "Published general-election candidate"
+      },
+      {
+        "id": "6db9e91a02f81852b45e4708",
+        "name": "JOHN DEATON",
+        "office": "Senator in Congress",
+        "party": "Republican",
+        "scope": "statewide",
+        "district": "",
+        "status": "listed",
+        "sourceStatus": "Published general-election candidate"
+      },
+      {
+        "id": "3041db4df652db23be5ffa17",
+        "name": "SHIVA AYYADURAI",
+        "office": "Senator in Congress",
+        "party": "Independent",
+        "scope": "statewide",
+        "district": "",
+        "status": "listed",
+        "sourceStatus": "Published general-election candidate"
+      },
+      {
+        "id": "bcfacbf9b44ef9675ca21b66",
+        "name": "JOE TACHE",
+        "office": "Senator in Congress",
+        "party": "Socialism and Liberation",
+        "scope": "statewide",
+        "district": "",
+        "status": "listed",
+        "sourceStatus": "Published general-election candidate"
+      },
+      {
+        "id": "7fa1c234c1be08b3a5481bb9",
+        "name": "HEALEY AND DRISCOLL",
+        "office": "Governor and Lieutenant Governor",
+        "party": "Democratic",
+        "scope": "statewide",
+        "district": "",
+        "status": "listed",
+        "sourceStatus": "Published general-election candidate"
+      },
+      {
+        "id": "e82f87bfac103ea93030c102",
+        "name": "MINOGUE AND OLIVER",
+        "office": "Governor and Lieutenant Governor",
+        "party": "Republican",
+        "scope": "statewide",
+        "district": "",
+        "status": "listed",
+        "sourceStatus": "Published general-election candidate"
+      },
+      {
+        "id": "04c5df2424dea6c58ca3cbfe",
+        "name": "JAMES AND KITTREDGE",
+        "office": "Governor and Lieutenant Governor",
+        "party": "Independent",
+        "scope": "statewide",
+        "district": "",
+        "status": "listed",
+        "sourceStatus": "Published general-election candidate"
+      },
+      {
+        "id": "f63dd344f578b6632ce2d744",
+        "name": "ANDREA JOY CAMPBELL",
+        "office": "Attorney General",
+        "party": "Democratic",
+        "scope": "statewide",
+        "district": "",
+        "status": "listed",
+        "sourceStatus": "Published general-election candidate"
+      },
+      {
+        "id": "9e87a11b96f858eb8849d303",
+        "name": "MICHAEL C. WALSH",
+        "office": "Attorney General",
+        "party": "Republican",
+        "scope": "statewide",
+        "district": "",
+        "status": "listed",
+        "sourceStatus": "Published general-election candidate"
+      },
+      {
+        "id": "88c1aeab10a6aedd6ce912e3",
+        "name": "WILLIAM FRANCIS GALVIN",
+        "office": "Secretary of State",
+        "party": "Democratic",
+        "scope": "statewide",
+        "district": "",
+        "status": "listed",
+        "sourceStatus": "Published general-election candidate"
+      },
+      {
+        "id": "db4215e3213ea4cc830a16a5",
+        "name": "ANNE R. BRENSLEY",
+        "office": "Secretary of State",
+        "party": "Republican",
+        "scope": "statewide",
+        "district": "",
+        "status": "listed",
+        "sourceStatus": "Published general-election candidate"
+      },
+      {
+        "id": "c27abc8163b47c2c4528edd5",
+        "name": "DEBORAH B. GOLDBERG",
+        "office": "Treasurer",
+        "party": "Democratic",
+        "scope": "statewide",
+        "district": "",
+        "status": "listed",
+        "sourceStatus": "Published general-election candidate"
+      },
+      {
+        "id": "7435e99c6dbf218ef13b15f1",
+        "name": "ELIZABETH DIONNE",
+        "office": "Treasurer",
+        "party": "Republican",
+        "scope": "statewide",
+        "district": "",
+        "status": "listed",
+        "sourceStatus": "Published general-election candidate"
+      },
+      {
+        "id": "7e450a78df4d250807a73b9b",
+        "name": "DIANA DiZOGLIO",
+        "office": "Auditor",
+        "party": "Democratic",
+        "scope": "statewide",
+        "district": "",
+        "status": "listed",
+        "sourceStatus": "Published general-election candidate"
+      },
+      {
+        "id": "643ada6988ee13f8bb4d0bd6",
+        "name": "AL OZONOFF",
+        "office": "Auditor",
+        "party": "Libertarian",
+        "scope": "statewide",
+        "district": "",
+        "status": "listed",
+        "sourceStatus": "Published general-election candidate"
+      },
+      {
+        "id": "49f9612289ef30878fb040b3",
+        "name": "KATHERINE M. CLARK",
+        "office": "Representative in Congress",
+        "party": "Democratic",
+        "scope": "congressional",
+        "district": "5",
+        "status": "listed",
+        "sourceStatus": "Published general-election candidate",
+        "sourceDistrictLabel": "Fifth District"
+      },
+      {
+        "id": "d1de6052636a4b48c3580919",
+        "name": "AYANNA S. PRESSLEY",
+        "office": "Representative in Congress",
+        "party": "Democratic",
+        "scope": "congressional",
+        "district": "7",
+        "status": "listed",
+        "sourceStatus": "Published general-election candidate",
+        "sourceDistrictLabel": "Seventh District"
+      },
+      {
+        "id": "2027676b4ffe635833f67903",
+        "name": "MARA DOLAN",
+        "office": "Councillor",
+        "party": "Democratic",
+        "scope": "local",
+        "district": "",
+        "status": "listed",
+        "sourceStatus": "Published general-election candidate",
+        "jurisdiction": "Massachusetts, Third District",
+        "sourceDistrictLabel": "Third District"
+      },
+      {
+        "id": "08723a4af0949302842c6dbf",
+        "name": "TERRENCE W. KENNEDY",
+        "office": "Councillor",
+        "party": "Democratic",
+        "scope": "local",
+        "district": "",
+        "status": "listed",
+        "sourceStatus": "Published general-election candidate",
+        "jurisdiction": "Massachusetts, Sixth District",
+        "sourceDistrictLabel": "Sixth District"
+      },
+      {
+        "id": "314f614e7c34b46b4aa39c6f",
+        "name": "ERIKA UYTERHOEVEN",
+        "office": "Senator in General Court",
+        "party": "Democratic",
+        "scope": "state-senate",
+        "district": "SECOND MIDDLESEX",
+        "status": "listed",
+        "sourceStatus": "Published general-election candidate",
+        "sourceDistrictLabel": "Second Middlesex District"
+      },
+      {
+        "id": "254b8dda1b706f8e2e51249d",
+        "name": "SAL N. DiDOMENICO",
+        "office": "Senator in General Court",
+        "party": "Democratic",
+        "scope": "state-senate",
+        "district": "MIDDLESEX & SUFFOLK",
+        "status": "listed",
+        "sourceStatus": "Published general-election candidate",
+        "sourceDistrictLabel": "Middlesex & Suffolk District"
+      },
+      {
+        "id": "ab4d1381e25be7001fbc210a",
+        "name": "WILLIAM N. BROWNSBERGER",
+        "office": "Senator in General Court",
+        "party": "Democratic",
+        "scope": "state-senate",
+        "district": "SUFFOLK & MIDDLESEX",
+        "status": "listed",
+        "sourceStatus": "Published general-election candidate",
+        "sourceDistrictLabel": "Suffolk & Middlesex District"
+      },
+      {
+        "id": "37583a6267f34ebbf2643031",
+        "name": "BRANDON CHARLES WOOD",
+        "office": "Senator in General Court",
+        "party": "Unenrolled",
+        "scope": "state-senate",
+        "district": "SUFFOLK & MIDDLESEX",
+        "status": "listed",
+        "sourceStatus": "Published general-election candidate",
+        "sourceDistrictLabel": "Suffolk & Middlesex District"
+      },
+      {
+        "id": "f7d9931123234f1bbe15916b",
+        "name": "DAVID M. ROGERS",
+        "office": "Representative in General Court",
+        "party": "Democratic",
+        "scope": "state-house",
+        "district": "TWENTY-FOURTH MIDDLESEX",
+        "status": "listed",
+        "sourceStatus": "Published general-election candidate",
+        "sourceDistrictLabel": "Twenty-Fourth Middlesex District"
+      },
+      {
+        "id": "94eee0a22fd79f94cf1372ee",
+        "name": "MARJORIE C. DECKER",
+        "office": "Representative in General Court",
+        "party": "Democratic",
+        "scope": "state-house",
+        "district": "TWENTY-FIFTH MIDDLESEX",
+        "status": "listed",
+        "sourceStatus": "Published general-election candidate",
+        "sourceDistrictLabel": "Twenty-Fifth Middlesex District"
+      },
+      {
+        "id": "676f5af1c0398163af2f3c9e",
+        "name": "MIKE CONNOLLY",
+        "office": "Representative in General Court",
+        "party": "Democratic",
+        "scope": "state-house",
+        "district": "TWENTY-SIXTH MIDDLESEX",
+        "status": "listed",
+        "sourceStatus": "Published general-election candidate",
+        "sourceDistrictLabel": "Twenty-Sixth Middlesex District"
+      },
+      {
+        "id": "fe202a5f4a4584e21a159363",
+        "name": "STEVEN CHARLES OWENS",
+        "office": "Representative in General Court",
+        "party": "Democratic",
+        "scope": "state-house",
+        "district": "TWENTY-NINTH MIDDLESEX",
+        "status": "listed",
+        "sourceStatus": "Published general-election candidate",
+        "sourceDistrictLabel": "Twenty-Ninth Middlesex District"
+      },
+      {
+        "id": "ffae4b7d0b6a85e91b850222",
+        "name": "DANIEL J. RYAN",
+        "office": "Representative in General Court",
+        "party": "Democratic",
+        "scope": "state-house",
+        "district": "SECOND SUFFOLK",
+        "status": "listed",
+        "sourceStatus": "Published general-election candidate",
+        "sourceDistrictLabel": "Second Suffolk District"
+      },
+      {
+        "id": "b1ed41efddb0804357dde787",
+        "name": "MICHAEL J. MORAN",
+        "office": "Representative in General Court",
+        "party": "Democratic",
+        "scope": "state-house",
+        "district": "EIGHTEENTH SUFFOLK",
+        "status": "listed",
+        "sourceStatus": "Published general-election candidate",
+        "sourceDistrictLabel": "Eighteenth Suffolk District"
+      },
+      {
+        "id": "201f7a3121d383b7bd242f57",
+        "name": "MARIAN T. RYAN",
+        "office": "District Attorney",
+        "party": "Democratic",
+        "scope": "local",
+        "district": "",
+        "status": "listed",
+        "sourceStatus": "Published general-election candidate",
+        "jurisdiction": "Massachusetts, Northern District",
+        "sourceDistrictLabel": "Northern District"
+      },
+      {
+        "id": "ef2a206864e4154ff84f0a12",
+        "name": "TARA E. DeCRISTOFARO",
+        "office": "Register of Probate",
+        "party": "Democratic",
+        "scope": "local",
+        "district": "",
+        "status": "listed",
+        "sourceStatus": "Published general-election candidate",
+        "jurisdiction": "Massachusetts, Middlesex County",
+        "sourceDistrictLabel": "Middlesex County"
+      },
+      {
+        "id": "8d19b21e13fcc2dd44dc36a9",
+        "name": "TARA MARTORELLA",
+        "office": "Register of Probate",
+        "party": "Justice for All",
+        "scope": "local",
+        "district": "",
+        "status": "listed",
+        "sourceStatus": "Published general-election candidate",
+        "jurisdiction": "Massachusetts, Middlesex County",
+        "sourceDistrictLabel": "Middlesex County"
+      }
+    ]
+  }
+]

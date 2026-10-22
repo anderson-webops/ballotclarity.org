@@ -143,7 +143,7 @@ async function selectHomeLookupOption(option: LocationLookupSelectionOption) {
 				<NuxtLink v-if="upcomingElection" :to="`/elections/${upcomingElection.slug}`" class="home-election-banner group focus-ring" prefetch-on="interaction">
 					<span class="text-sm text-app-muted dark:text-app-muted-dark">{{ upcomingElection.locationName }}</span>
 					<span class="text-base text-app-ink font-semibold dark:text-app-text-dark">
-						Election Day {{ formatDate(upcomingElection.date) }}
+						Election Day <span class="attention-date">{{ formatDate(upcomingElection.date) }}</span>
 						<span class="home-election-banner__count">{{ upcomingElection.relativeLabel }}</span>
 					</span>
 				</NuxtLink>

@@ -76,7 +76,8 @@ h6 {
 }
 
 ::selection {
-  background: rgba(var(--app-accent-rgb), 0.22);
+  background: var(--app-action);
+  color: var(--app-action-text);
 }
 
 .skip-link {
@@ -1948,4 +1949,12 @@ html.dark .election-hero__status--warning {
 
 .home-entry .home-lookup-card {
   margin-top: 1.75rem;
+}
+
+.attention-date {
+  color: #b91c1c;
+}
+
+html.dark .attention-date {
+  color: #fca5a5;
 }

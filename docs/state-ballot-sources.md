@@ -450,6 +450,15 @@ See `docs/audits/2026-10-21-vermont-city-ballots.md` for source reconciliation,
 scope and local verification. No hosted transfer, scheduler or activation is
 performed by the source change.
 
+## Statewide measures from official voter guides
+
+`co-blue-book-2026` summarizes all 14 Colorado statewide measures from the
+Legislative Council Staff's 2026 Blue Book. Ballot titles and "yes"/"no"
+statements are verbatim; analyses, fiscal estimates and the staff-written
+arguments are short page-linked paraphrases. The snapshot is a reviewed import
+(`manage-election-references.js import-measures`), never fetched automatically.
+See [the Colorado Blue Book review](audits/2026-10-22-colorado-blue-book.md).
+
 ## Candidate statements, biographies and reporting
 
 The Git-ignored `back-end/data/state-ballots/louisiana-reported-2026.jsonl` and

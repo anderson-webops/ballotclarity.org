@@ -264,9 +264,14 @@ node back-end/dist/manage-election-references.js export CA --source us-cdir-ca-2
 node back-end/dist/manage-election-references.js export DC --source dc-local-biographies-2026
 node back-end/dist/manage-election-references.js export LA --source la-webster-statements-2026
 node back-end/dist/manage-election-references.js export LA --source la-webster-additional-references-2026
+node back-end/dist/manage-election-references.js import-measures /approved/staging/colorado-blue-book-2026-measures.json
+node back-end/dist/manage-election-references.js export-measures CO
 node back-end/dist/manage-state-ballot-data.js refresh WA MT KS SC UT MS SD HI CO KY ND VA MI WY MD FL DE
 ```
 
+Measure imports accept only the configured `co-blue-book-2026` collection; verify
+the file against `colorado-blue-book-2026-manifest.json` first (see
+[the Colorado Blue Book review](audits/2026-10-22-colorado-blue-book.md)).
 Use exact verified manifest lists, never an unreviewed directory glob. Use
 --source for every reference export; more states now have multiple collections,
 and ambiguous exports fail explicitly. Imports remain atomic and are reread on

@@ -143,14 +143,14 @@ usePageSeo({
 				</ul>
 			</section>
 
-			<details class="contest-sources">
-				<summary class="text-base text-app-ink font-semibold cursor-pointer dark:text-app-text-dark focus-ring">
-					Sources ({{ data.sources.length }})
-				</summary>
+			<section class="contest-sources" aria-labelledby="contest-sources-heading">
+				<h2 id="contest-sources-heading" class="text-2xl text-app-ink font-serif dark:text-app-text-dark">
+					Sources
+				</h2>
 				<div class="mt-4">
 					<SourceList :sources="data.sources" />
 				</div>
-			</details>
+			</section>
 		</div>
 	</section>
 </template>

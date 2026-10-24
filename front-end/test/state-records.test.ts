@@ -69,11 +69,9 @@ test("the public directory exposes only necessary labels and source limits", () 
 	assert.match(lookup, /path: '\/records', query: \{ state: lookup.location.state \}/u);
 });
 
-test("multiple source documents use a native disclosure without hiding the single-source link", () => {
+test("source documents are listed as visible links", () => {
 	const page = readFileSync(new URL("../src/pages/records.vue", import.meta.url), "utf8");
-	assert.match(page, /<details\s+v-if="data.source.documentLinks && data.source.documentLinks.length > 1"\s+class="source-documents"/u);
-	assert.match(page, /<summary[^>]*class="[^"]*min-h-11/u);
-	assert.match(page, /Sources \(\{\{ data.source.documentLinks.length \}\}\)/u);
-	assert.match(page, /:href="data.source.documentLinks\[0\]\?\.url"/u);
-	assert.doesNotMatch(page, /<details[^>]*\sopen(?:\s|>)/u);
+	assert.match(page, /v-if="data.source.documentLinks\?\.length" class="source-documents/u);
+	assert.match(page, /v-for="document in data.source.documentLinks"/u);
+	assert.doesNotMatch(page, /<details|<summary/u);
 });

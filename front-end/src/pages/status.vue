@@ -137,19 +137,14 @@ const hasPublicIncidents = computed(() => Boolean(data.value?.incidents.length))
 						{{ note }}
 					</li>
 				</ul>
-				<details class="mt-6 surface-row">
-					<summary class="text-sm text-app-ink font-semibold cursor-pointer dark:text-app-text-dark focus-ring">
-						Review and publish timing
-					</summary>
-					<div class="mt-4 space-y-3">
-						<p class="text-sm text-app-muted dark:text-app-muted-dark">
-							<strong class="text-app-ink dark:text-app-text-dark">Next source review:</strong> {{ data.nextReviewAt ? formatDateTime(data.nextReviewAt) : "Not scheduled" }}
-						</p>
-						<p class="text-sm text-app-muted dark:text-app-muted-dark">
-							<strong class="text-app-ink dark:text-app-text-dark">Next publish window:</strong> {{ data.nextPublishWindow || "Not scheduled" }}
-						</p>
-					</div>
-				</details>
+				<div class="mt-6 space-y-2">
+					<p class="text-sm text-app-muted dark:text-app-muted-dark">
+						<strong class="text-app-ink dark:text-app-text-dark">Next source review:</strong> {{ data.nextReviewAt ? formatDateTime(data.nextReviewAt) : "Not scheduled" }}
+					</p>
+					<p class="text-sm text-app-muted dark:text-app-muted-dark">
+						<strong class="text-app-ink dark:text-app-text-dark">Next publish window:</strong> {{ data.nextPublishWindow || "Not scheduled" }}
+					</p>
+				</div>
 			</section>
 		</div>
 	</section>

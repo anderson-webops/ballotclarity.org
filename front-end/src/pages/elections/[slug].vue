@@ -4,7 +4,7 @@ import { buildKeyDateTimeline, calendarDaysUntil, describeDaysAway } from "~/uti
 import { limitedBallotNotice } from "~/utils/results-summary";
 
 const civicStore = useCivicStore();
-const { displayTimeZone, formatDate, formatDateTime } = useFormatters();
+const { displayTimeZone, formatDate } = useFormatters();
 const electionSlug = useRouteStringParam("slug");
 const { data, error, pending } = await useBallot(electionSlug);
 // Only a guide that is still under review needs a status line; a verified guide speaks for itself.
@@ -16,7 +16,6 @@ const guideStatusNote = computed(() => !data.value?.guideContent?.verifiedContes
 const now = useNow({ interval: 60_000 });
 const keyDateTimeline = computed(() => data.value ? buildKeyDateTimeline(data.value.election.keyDates, now.value, displayTimeZone.value) : []);
 const upcomingKeyDates = computed(() => keyDateTimeline.value.filter(entry => entry.status !== "passed"));
-const pastKeyDates = computed(() => keyDateTimeline.value.filter(entry => entry.status === "passed"));
 const electionDayLabel = computed(() => {
 	if (!data.value?.election.date)
 		return "";
@@ -118,12 +117,6 @@ usePageSeo({
 					<UpdatedAt :value="data.election.updatedAt" label="Updated" />
 				</div>
 				<ElectionKeyDates v-if="upcomingKeyDates.length" :entries="upcomingKeyDates" />
-				<details v-if="pastKeyDates.length" class="mt-6">
-					<summary class="text-sm text-app-muted cursor-pointer dark:text-app-muted-dark focus-ring">
-						Past dates ({{ pastKeyDates.length }})
-					</summary>
-					<ElectionKeyDates :entries="pastKeyDates" />
-				</details>
 			</section>
 
 			<section class="surface-panel">
@@ -133,21 +126,6 @@ usePageSeo({
 				<div class="mt-6">
 					<OfficialResourceList :resources="data.election.officialResources" />
 				</div>
-				<details v-if="data.election.changeLog.length" class="mt-6 surface-row">
-					<summary class="text-sm text-app-ink font-semibold cursor-pointer dark:text-app-text-dark focus-ring">
-						Change log
-					</summary>
-					<ul class="mt-4 space-y-3">
-						<li v-for="entry in data.election.changeLog" :key="entry.id" class="content-block">
-							<p class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
-								{{ formatDateTime(entry.date) }}
-							</p>
-							<p class="text-sm text-app-muted leading-7 mt-2 dark:text-app-muted-dark">
-								{{ entry.summary }}
-							</p>
-						</li>
-					</ul>
-				</details>
 			</section>
 
 			<section v-if="data.guideContent?.verifiedContestPackage && data.election.contests.length" class="surface-panel">

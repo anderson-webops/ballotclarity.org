@@ -1,11 +1,9 @@
 <script setup lang="ts">
 import type { Source } from "~/types/civic";
 import { storeToRefs } from "pinia";
-import FinanceBreakdownChart from "~/components/graphics/FinanceBreakdownChart.vue";
 import TimelineList from "~/components/graphics/TimelineList.vue";
 import { buildCompareLaunchSlugs, buildCompareRoute } from "~/stores/civic";
 import {
-	buildCandidateFinanceCategoryBreakdown,
 	buildCandidateTimeline
 } from "~/utils/graphics-schema";
 
@@ -14,10 +12,9 @@ const siteUrl = useSiteUrl();
 const { backToLayerLink, layerBreadcrumbLink, openLayerLink } = useRouteLayerNavigation();
 const { ballotPlan, compareList, isHydrated } = storeToRefs(civicStore);
 const candidateSlug = useRouteStringParam("slug");
-const { formatCompactNumber, formatCurrency, formatDate, formatDateTime, formatPercent } = useFormatters();
+const { formatCompactNumber, formatCurrency, formatDate, formatPercent } = useFormatters();
 const { data: candidate, error, pending } = await useCandidate(candidateSlug);
 const candidateTimeline = computed(() => candidate.value ? buildCandidateTimeline(candidate.value) : []);
-const financeBreakdown = computed(() => candidate.value ? buildCandidateFinanceCategoryBreakdown(candidate.value, formatDate) : null);
 const sectionLinks = [
 	{ href: "#biography", label: "Bio" },
 	{ href: "#issues", label: "Issues" },
@@ -261,7 +258,6 @@ function saveToPlan() {
 
 				<ExpandableSection
 					id="biography"
-					:collapsible="false"
 					eyebrow="Biography"
 					title="Background"
 				>
@@ -287,7 +283,6 @@ function saveToPlan() {
 					id="issues"
 					eyebrow="Issue positions"
 					title="Positions"
-					open
 				>
 					<template #meta>
 						<SourceDrawer :sources="issuePositionSources" :title="`${candidate.name} issue position sources`" />
@@ -438,27 +433,9 @@ function saveToPlan() {
 							</p>
 						</div>
 					</div>
-					<div v-if="financeBreakdown?.categories.length" class="mt-6">
-						<FinanceBreakdownChart :breakdown="financeBreakdown" />
-					</div>
 					<p class="text-base text-app-ink leading-7 mt-6 dark:text-app-text-dark">
 						{{ candidate.funding.summary }}
 					</p>
-					<ul class="mt-5">
-						<li v-for="funder in candidate.funding.topFunders" :key="funder.name" class="text-sm py-3 border-b border-app-line flex gap-4 items-start justify-between dark:border-app-line-dark last:border-b-0">
-							<div>
-								<p class="text-app-ink font-semibold dark:text-app-text-dark">
-									{{ funder.name }}
-								</p>
-								<p class="text-app-muted mt-1 dark:text-app-muted-dark">
-									{{ funder.category }}
-								</p>
-							</div>
-							<span class="text-app-ink font-semibold dark:text-app-text-dark">
-								{{ formatCurrency(funder.amount) }}
-							</span>
-						</li>
-					</ul>
 				</ExpandableSection>
 
 				<ExpandableSection
@@ -477,85 +454,18 @@ function saveToPlan() {
 					<p class="text-sm text-app-muted mt-3 dark:text-app-muted-dark">
 						Context only. Not proof that any donor or organization influenced a decision.
 					</p>
-					<div class="mt-6 space-y-4">
-						<article v-for="block in candidate.lobbyingContext" :key="block.id" class="content-block">
-							<div class="flex flex-wrap gap-3 items-start justify-between">
-								<h3 class="text-lg text-app-ink font-semibold dark:text-app-text-dark">
-									{{ block.title }}
-								</h3>
-								<SourceDrawer :sources="block.sources" :title="block.title" button-label="Sources" />
-							</div>
-							<p class="text-base text-app-ink leading-7 mt-2 dark:text-app-text-dark">
-								{{ block.summary }}
-							</p>
-						</article>
-					</div>
 				</ExpandableSection>
 
 				<ExpandableSection
 					id="sources"
-					eyebrow="Sources & methods"
-					title="Sources and review status"
+					title="Sources"
 				>
-					<template #meta>
-						<SourceDrawer :sources="candidate.sources" :title="`${candidate.name} full source list`" />
-					</template>
 					<NuxtLink :to="reportIssueTo" class="text-sm btn-secondary mt-4 xl:hidden">
 						Report an issue
 					</NuxtLink>
-					<div class="mt-6 gap-4 grid lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
-						<div class="content-block">
-							<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
-								Review timing
-							</p>
-							<div class="mt-3 space-y-3">
-								<p class="text-sm text-app-muted leading-6 dark:text-app-muted-dark">
-									<strong class="text-app-ink dark:text-app-text-dark">Status:</strong> {{ candidate.freshness.statusLabel }}
-								</p>
-								<p class="text-sm text-app-muted leading-6 dark:text-app-muted-dark">
-									<strong class="text-app-ink dark:text-app-text-dark">Last verified:</strong> {{ formatDateTime(candidate.freshness.contentLastVerifiedAt) }}
-								</p>
-								<p class="text-sm text-app-muted leading-6 dark:text-app-muted-dark">
-									<strong class="text-app-ink dark:text-app-text-dark">Next review:</strong> {{ formatDateTime(candidate.freshness.nextReviewAt) }}
-								</p>
-								<p class="text-sm text-app-muted leading-6 dark:text-app-muted-dark">
-									{{ candidate.freshness.statusNote }}
-								</p>
-							</div>
-						</div>
-						<div class="content-block">
-							<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
-								Verification scope
-							</p>
-							<div class="mt-3 gap-3 grid md:grid-cols-2">
-								<div>
-									<p class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
-										What we know
-									</p>
-									<ul class="mt-2 space-y-2">
-										<li v-for="item in candidate.whatWeKnow" :key="item.id" class="text-sm text-app-muted leading-6 dark:text-app-muted-dark">
-											{{ item.text }}
-										</li>
-									</ul>
-								</div>
-								<div>
-									<p class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
-										Still checking
-									</p>
-									<ul class="mt-2 space-y-2">
-										<li v-for="item in candidate.whatWeDoNotKnow" :key="item.id" class="text-sm text-app-muted leading-6 dark:text-app-muted-dark">
-											{{ item.text }}
-										</li>
-									</ul>
-								</div>
-							</div>
-						</div>
+					<div class="mt-6">
+						<SourceList :sources="candidate.sources" />
 					</div>
-					<ul class="text-sm text-app-muted leading-7 mt-6 space-y-3 dark:text-app-muted-dark">
-						<li v-for="note in candidate.methodologyNotes" :key="note" class="content-block">
-							{{ note }}
-						</li>
-					</ul>
 				</ExpandableSection>
 			</div>
 

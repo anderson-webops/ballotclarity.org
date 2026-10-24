@@ -22,7 +22,6 @@ const displayTitle = computed(() => props.contest.type === "measure" && props.co
 <template>
 	<ExpandableSection
 		:id="contest.slug"
-		:open="open"
 		:eyebrow="contest.jurisdiction"
 		:title="displayTitle"
 		:description="contest.description"

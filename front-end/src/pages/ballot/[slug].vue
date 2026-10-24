@@ -6,7 +6,7 @@ import { buildCompareRoute } from "~/stores/civic";
 const civicStore = useCivicStore();
 const route = useRoute();
 const { formatDate } = useFormatters();
-const { ballotPlan, ballotPlanCount, ballotViewMode, compareList, isHydrated, selectedIssues } = storeToRefs(civicStore);
+const { ballotPlan, ballotPlanCount, ballotViewMode, compareList, isHydrated } = storeToRefs(civicStore);
 
 const ballotSlug = useRouteStringParam("slug");
 const locationSlug = computed(() => typeof route.query.location === "string" ? route.query.location : undefined);
@@ -16,7 +16,6 @@ const effectiveBallotPlan = computed(() => isHydrated.value ? ballotPlan.value :
 const effectiveBallotPlanCount = computed(() => isHydrated.value ? ballotPlanCount.value : 0);
 const effectiveBallotViewMode = computed(() => isHydrated.value ? ballotViewMode.value : "quick");
 const effectiveCompareList = computed(() => isHydrated.value ? compareList.value : []);
-const effectiveSelectedIssues = computed(() => isHydrated.value ? selectedIssues.value : []);
 const hasContestContent = computed(() => Boolean(data.value?.election.contests.length));
 
 watchEffect(() => {
@@ -42,20 +41,6 @@ usePageSeo({
 
 const searchQuery = ref("");
 
-const issueOptions = computed(() => {
-	const options = new Map<string, string>();
-
-	data.value?.election.contests.forEach((contest) => {
-		contest.candidates?.forEach((candidate) => {
-			candidate.topIssues.forEach((issue) => {
-				options.set(issue.slug, issue.label);
-			});
-		});
-	});
-
-	return Array.from(options.entries()).map(([slug, label]) => ({ label, slug }));
-});
-
 const filteredContests = computed<Contest[]>(() => {
 	if (!data.value)
 		return [];
@@ -74,10 +59,7 @@ const filteredContests = computed<Contest[]>(() => {
 						candidate.topIssues.map(issue => issue.label).join(" "),
 					].join(" ").toLowerCase().includes(query);
 
-					const matchesIssue = !effectiveSelectedIssues.value.length
-						|| candidate.topIssues.some(issue => effectiveSelectedIssues.value.includes(issue.slug));
-
-					return matchesQuery && matchesIssue;
+					return matchesQuery;
 				}) ?? [];
 
 				return {
@@ -150,7 +132,6 @@ const ballotContentsGroups = computed(() => {
 
 function clearFilters() {
 	searchQuery.value = "";
-	civicStore.clearIssues();
 }
 </script>
 
@@ -284,37 +265,6 @@ function clearFilters() {
 								class="text-sm text-app-ink pl-11 pr-4 border border-app-line rounded-full bg-white h-[3.25rem] w-full dark:text-app-text-dark placeholder:text-app-muted dark:border-app-line-dark dark:bg-app-panel-dark focus-ring dark:placeholder:text-app-muted-dark"
 							>
 						</div>
-
-						<details v-if="issueOptions.length" class="ballot-controls__filters" :open="effectiveSelectedIssues.length > 0">
-							<summary class="ballot-controls__filters-summary focus-ring">
-								Filter by issue
-								<span v-if="effectiveSelectedIssues.length" class="ballot-controls__count">{{ effectiveSelectedIssues.length }} selected</span>
-							</summary>
-							<div class="mt-3 flex flex-wrap gap-2">
-								<button
-									v-for="issue in issueOptions"
-									:key="issue.slug"
-									type="button"
-									class="text-xs font-semibold px-3 py-2 border rounded-full transition focus-ring"
-									:class="effectiveSelectedIssues.includes(issue.slug)
-										? 'border-app-accent bg-app-accent text-app-action-text'
-										: 'border-app-line bg-white text-app-muted hover:border-app-accent hover:text-app-accent dark:border-app-line-dark dark:bg-app-panel-dark dark:text-app-muted-dark'"
-									:aria-pressed="effectiveSelectedIssues.includes(issue.slug)"
-									@click="civicStore.toggleIssue(issue.slug)"
-								>
-									<span v-if="effectiveSelectedIssues.includes(issue.slug)" class="i-carbon-checkmark mr-1" aria-hidden="true" />
-									{{ issue.label }}
-								</button>
-							</div>
-							<button
-								v-if="effectiveSelectedIssues.length || searchQuery"
-								type="button"
-								class="text-sm text-app-accent font-semibold mt-3 rounded-full focus-ring"
-								@click="clearFilters"
-							>
-								Clear filters
-							</button>
-						</details>
 					</section>
 
 					<div v-if="pending" class="space-y-6">
@@ -361,10 +311,10 @@ function clearFilters() {
 
 					<div v-else class="text-center surface-panel">
 						<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
-							No ballot items match the current filters.
+							No ballot items match your search.
 						</h2>
 						<button type="button" class="btn-primary mt-6" @click="clearFilters">
-							Clear filters
+							Clear search
 						</button>
 					</div>
 

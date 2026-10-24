@@ -251,14 +251,14 @@ usePageSeo({
 					</div>
 				</section>
 
-				<details id="sources" class="surface-panel scroll-mt-28">
-					<summary class="text-2xl text-app-ink font-serif cursor-pointer dark:text-app-text-dark focus-ring">
+				<section id="sources" class="surface-panel scroll-mt-28">
+					<h2 class="text-2xl text-app-ink font-serif dark:text-app-text-dark">
 						District sources
-					</summary>
+					</h2>
 					<div class="mt-6">
 						<SourceList :sources="districtPageData.sources" />
 					</div>
-				</details>
+				</section>
 			</div>
 
 			<div class="space-y-6 xl:pt-[4.5rem]">

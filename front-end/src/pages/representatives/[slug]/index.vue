@@ -13,7 +13,7 @@ const civicStore = useCivicStore();
 const { isHydrated, nationwideLookupResult } = storeToRefs(civicStore);
 const representativeSlug = useRouteStringParam("slug");
 const { backToLayerLink, layerBreadcrumbLink } = useRouteLayerNavigation();
-const { formatCurrency, formatDate, formatDateTime, formatPercent } = useFormatters();
+const { formatCurrency, formatDate, formatPercent } = useFormatters();
 const activeNationwideLookupResult = computed(() => isHydrated.value ? nationwideLookupResult.value : null);
 const activeLookupQuery = computed(() => buildNationwideLookupRouteQuery(
 	buildLookupContextFromNationwideResult(activeNationwideLookupResult.value),
@@ -168,17 +168,6 @@ const moduleStatusItems = computed(() => {
 	];
 });
 const availableModuleStatusItems = computed(() => moduleStatusItems.value.filter(item => item.status === "available"));
-const unavailableModuleStatusItems = computed(() => moduleStatusItems.value.filter(item => item.status !== "available"));
-const pageNotes = computed(() => {
-	if (!person.value)
-		return [];
-
-	return [
-		...person.value.whatWeKnow.map(item => item.text),
-		...person.value.whatWeDoNotKnow.map(item => item.text),
-		...person.value.methodologyNotes.slice(0, 1),
-	].filter(Boolean);
-});
 const fundingHighlights = computed(() => {
 	if (!person.value?.funding)
 		return [];
@@ -192,16 +181,6 @@ const fundingHighlights = computed(() => {
 			: null,
 	].filter((item): item is { label: string; value: string } => Boolean(item));
 });
-const fundingLineItems = computed(() => {
-	if (!person.value?.funding)
-		return [];
-
-	if (person.value.funding.receiptBreakdown?.length)
-		return person.value.funding.receiptBreakdown.slice(0, 4);
-
-	return person.value.funding.topFunders.slice(0, 4);
-});
-const fundingLineItemsTitle = computed(() => person.value?.funding?.receiptBreakdown?.length ? "Receipt breakdown" : "Top funders");
 function formatInfluenceMatchMode(matchMode: "committee" | "honoree" | undefined) {
 	if (matchMode === "committee")
 		return "Committee crosswalk";
@@ -388,16 +367,6 @@ usePageSeo({
 									</p>
 								</li>
 							</ul>
-							<details v-if="unavailableModuleStatusItems.length" class="mt-4">
-								<summary class="text-sm text-app-ink font-semibold cursor-pointer dark:text-app-text-dark focus-ring">
-									{{ unavailableModuleStatusItems.length }} section{{ unavailableModuleStatusItems.length === 1 ? "" : "s" }} not available yet
-								</summary>
-								<ul class="text-sm text-app-muted leading-7 mt-3 space-y-3 dark:text-app-muted-dark">
-									<li v-for="item in unavailableModuleStatusItems" :key="item.label">
-										<strong class="text-app-ink dark:text-app-text-dark">{{ item.label }}:</strong> {{ item.reasonCode || item.summary }}
-									</li>
-								</ul>
-							</details>
 						</div>
 					</div>
 				</section>
@@ -433,10 +402,10 @@ usePageSeo({
 									<IssueChip v-for="issue in person.topIssues" :key="issue.slug" :label="issue.label" />
 								</div>
 							</div>
-							<details v-if="person.publicStatements.length">
-								<summary class="text-lg text-app-ink font-semibold cursor-pointer dark:text-app-text-dark focus-ring">
+							<div v-if="person.publicStatements.length">
+								<h3 class="text-lg text-app-ink font-semibold dark:text-app-text-dark">
 									Public statements
-								</summary>
+								</h3>
 								<div class="mt-4 space-y-3">
 									<article v-for="statement in person.publicStatements" :key="statement.id">
 										<h4 class="text-base text-app-ink font-semibold dark:text-app-text-dark">
@@ -447,7 +416,7 @@ usePageSeo({
 										</p>
 									</article>
 								</div>
-							</details>
+							</div>
 						</div>
 					</div>
 				</section>
@@ -509,38 +478,7 @@ usePageSeo({
 									</p>
 								</div>
 							</div>
-							<p class="text-xs text-app-muted tracking-[0.06em] font-semibold px-1 pt-2 uppercase dark:text-app-muted-dark">
-								{{ fundingLineItemsTitle }}
-							</p>
-							<ul class="space-y-3">
-								<li v-for="funder in fundingLineItems" :key="`${funder.name}-${funder.category}`" class="content-block">
-									<div class="flex flex-wrap gap-4 items-center justify-between">
-										<div>
-											<p class="text-lg text-app-ink font-semibold dark:text-app-text-dark">
-												{{ funder.name }}
-											</p>
-											<p class="text-sm text-app-muted mt-2 dark:text-app-muted-dark">
-												{{ funder.category }}
-											</p>
-										</div>
-										<p class="text-lg text-app-ink font-semibold dark:text-app-text-dark">
-											{{ formatCurrency(funder.amount) }}
-										</p>
-									</div>
-								</li>
-							</ul>
 						</div>
-						<details>
-							<summary class="text-lg text-app-ink font-semibold cursor-pointer dark:text-app-text-dark focus-ring">
-								Finance record details
-							</summary>
-							<ul class="text-sm text-app-muted leading-7 mt-4 space-y-2 dark:text-app-muted-dark">
-								<li><strong class="text-app-ink dark:text-app-text-dark">Committee:</strong> {{ person.funding.committeeName || "Current matched committee not published in this summary." }}</li>
-								<li><strong class="text-app-ink dark:text-app-text-dark">Coverage:</strong> {{ person.funding.coverageLabel || person.funding.provenanceLabel || "Source-backed finance summary" }}</li>
-								<li><strong class="text-app-ink dark:text-app-text-dark">Data through:</strong> {{ dataThroughLabel }}</li>
-								<li>{{ person.freshness.statusNote }}</li>
-							</ul>
-						</details>
 					</div>
 				</section>
 
@@ -567,88 +505,26 @@ usePageSeo({
 									</p>
 								</div>
 							</div>
-							<article v-for="block in person.lobbyingContext.slice(0, 3)" :key="block.id" class="content-block">
-								<div class="flex flex-wrap gap-3 items-start justify-between">
-									<h3 class="text-lg text-app-ink font-semibold dark:text-app-text-dark">
-										{{ block.title }}
-									</h3>
-									<SourceDrawer :sources="block.sources" :title="block.title" button-label="Sources" />
-								</div>
-								<p class="text-base text-app-ink leading-7 mt-3 dark:text-app-text-dark">
-									{{ block.summary }}
-								</p>
-							</article>
-							<div v-if="influence?.topRegistrants?.length" class="content-block">
-								<h3 class="text-lg text-app-ink font-semibold dark:text-app-text-dark">
-									Top reporting registrants
-								</h3>
-								<ul class="mt-4 space-y-3">
-									<li v-for="registrant in influence.topRegistrants" :key="registrant.name" class="text-sm text-app-muted flex flex-wrap gap-3 items-center justify-between dark:text-app-muted-dark">
-										<span class="text-app-ink font-semibold dark:text-app-text-dark">{{ registrant.name }}</span>
-										<span>{{ formatCurrency(registrant.amount) }}</span>
-									</li>
-								</ul>
-							</div>
+							<p class="text-sm text-app-muted leading-6 dark:text-app-muted-dark">
+								Context only. Not proof of causation.
+							</p>
 						</div>
-						<details>
-							<summary class="text-lg text-app-ink font-semibold cursor-pointer dark:text-app-text-dark focus-ring">
-								Influence record details
-							</summary>
-							<ul class="text-sm text-app-muted leading-7 mt-4 space-y-2 dark:text-app-muted-dark">
-								<li><strong class="text-app-ink dark:text-app-text-dark">Coverage:</strong> {{ influence?.coverageLabel || "Public disclosures, donor context, and source-backed statements where available." }}</li>
-								<li><strong class="text-app-ink dark:text-app-text-dark">Match mode:</strong> {{ influence?.matchMode ? formatInfluenceMatchMode(influence.matchMode) : "Not published" }}</li>
-								<li><strong class="text-app-ink dark:text-app-text-dark">Data through:</strong> {{ dataThroughLabel }}</li>
-								<li>Context is not proof of causation. {{ person.freshness.statusNote }}</li>
-							</ul>
-						</details>
 					</div>
 				</section>
 
-				<details id="sources" class="surface-panel scroll-mt-28">
-					<summary class="text-2xl text-app-ink font-serif cursor-pointer dark:text-app-text-dark focus-ring">
-						Sources and review status
-					</summary>
-					<div class="mt-5 flex flex-wrap gap-4 items-center justify-between">
+				<section id="sources" class="surface-panel scroll-mt-28">
+					<div class="flex flex-wrap gap-4 items-center justify-between">
+						<h2 class="text-2xl text-app-ink font-serif dark:text-app-text-dark">
+							Sources
+						</h2>
 						<NuxtLink :to="reportIssueTo" class="btn-secondary">
 							Report an issue
 						</NuxtLink>
 					</div>
-					<div class="mt-6 gap-6 grid xl:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)]">
-						<div>
-							<SourceList :sources="person.sources" />
-						</div>
-						<div>
-							<h3 class="text-lg text-app-ink font-semibold dark:text-app-text-dark">
-								Review status
-							</h3>
-							<dl class="text-sm text-app-muted leading-7 mt-4 space-y-2 dark:text-app-muted-dark">
-								<div>
-									<dt class="text-app-ink font-semibold dark:text-app-text-dark">
-										Profile reviewed
-									</dt>
-									<dd>{{ formatDateTime(person.provenance.asOf) }}</dd>
-								</div>
-								<div>
-									<dt class="text-app-ink font-semibold dark:text-app-text-dark">
-										Data through
-									</dt>
-									<dd>{{ formatDateTime(person.freshness.dataLastUpdatedAt ?? person.updatedAt) }}</dd>
-								</div>
-								<div>
-									<dt class="text-app-ink font-semibold dark:text-app-text-dark">
-										Coverage
-									</dt>
-									<dd>{{ person.freshness.statusNote }}</dd>
-								</div>
-							</dl>
-							<ul v-if="pageNotes.length" class="mt-5 space-y-2">
-								<li v-for="note in pageNotes" :key="note" class="text-sm text-app-muted leading-6 dark:text-app-muted-dark">
-									{{ note }}
-								</li>
-							</ul>
-						</div>
+					<div class="mt-6">
+						<SourceList :sources="person.sources" />
 					</div>
-				</details>
+				</section>
 			</div>
 
 			<div class="detail-layout__aside space-y-6" data-representative-sidebar="record-details">

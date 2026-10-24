@@ -6,7 +6,6 @@ const civicStore = useCivicStore();
 const siteUrl = useSiteUrl();
 const { backToLayerLink, layerBreadcrumbLink, openLayerLink } = useRouteLayerNavigation();
 const { ballotPlan, isHydrated } = storeToRefs(civicStore);
-const { formatDateTime } = useFormatters();
 const measureSlug = useRouteStringParam("slug");
 const { data: measure, error, pending } = await useMeasure(measureSlug);
 const effectiveBallotPlan = computed(() => isHydrated.value ? ballotPlan.value : {});
@@ -221,10 +220,8 @@ function saveMeasure(decision: "no" | "review" | "yes") {
 
 				<ExpandableSection
 					id="outcomes"
-					:collapsible="false"
 					eyebrow="YES / NO outcomes"
 					title="If you vote YES or NO"
-					open
 				>
 					<template #meta>
 						<SourceDrawer :sources="officialSources.length ? officialSources : measure.sources" :title="`${measure.title} yes and no meanings`" button-label="Outcome sources" />
@@ -270,7 +267,6 @@ function saveMeasure(decision: "no" | "review" | "yes") {
 					eyebrow="Current law and proposed change"
 					title="Current law and proposed change"
 					:description="measure.currentLawOverview"
-					open
 				>
 					<template #meta>
 						<SourceDrawer :sources="baselineSources.length ? baselineSources : measure.sources" :title="`${measure.title} current-law and proposal sources`" button-label="Baseline sources" />
@@ -455,65 +451,13 @@ function saveMeasure(decision: "no" | "review" | "yes") {
 
 				<ExpandableSection
 					id="sources"
-					eyebrow="Full text and official sources"
-					title="Sources and review status"
+					title="Sources"
 				>
-					<template #meta>
-						<SourceDrawer :sources="measure.sources" :title="`${measure.title} full source list`" />
-					</template>
 					<NuxtLink :to="reportIssueTo" class="text-sm btn-secondary mt-4 xl:hidden">
 						Report an issue
 					</NuxtLink>
-					<div class="mt-6 gap-4 grid lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
-						<div class="content-block">
-							<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
-								Review timing
-							</p>
-							<div class="mt-3 space-y-3">
-								<p class="text-sm text-app-muted leading-6 dark:text-app-muted-dark">
-									<strong class="text-app-ink dark:text-app-text-dark">Status:</strong> {{ measure.freshness.statusLabel }}
-								</p>
-								<p class="text-sm text-app-muted leading-6 dark:text-app-muted-dark">
-									<strong class="text-app-ink dark:text-app-text-dark">Last verified:</strong> {{ formatDateTime(measure.freshness.contentLastVerifiedAt) }}
-								</p>
-								<p class="text-sm text-app-muted leading-6 dark:text-app-muted-dark">
-									<strong class="text-app-ink dark:text-app-text-dark">Next review:</strong> {{ formatDateTime(measure.freshness.nextReviewAt) }}
-								</p>
-								<p class="text-sm text-app-muted leading-6 dark:text-app-muted-dark">
-									{{ measure.freshness.statusNote }}
-								</p>
-							</div>
-						</div>
-						<div class="content-block">
-							<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
-								Verification scope
-							</p>
-							<div class="mt-3 gap-3 grid md:grid-cols-2">
-								<div>
-									<p class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
-										What we know
-									</p>
-									<ul class="mt-2 space-y-2">
-										<li v-for="item in measure.whatWeKnow" :key="item.id" class="text-sm text-app-muted leading-6 dark:text-app-muted-dark">
-											{{ item.text }}
-										</li>
-									</ul>
-								</div>
-								<div>
-									<p class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
-										Still checking
-									</p>
-									<ul class="mt-2 space-y-2">
-										<li v-for="item in measure.whatWeDoNotKnow" :key="item.id" class="text-sm text-app-muted leading-6 dark:text-app-muted-dark">
-											{{ item.text }}
-										</li>
-									</ul>
-								</div>
-							</div>
-						</div>
-					</div>
 					<div class="mt-6">
-						<SourceList :sources="officialSources.length ? officialSources : measure.sources" title="Official source trail in this guide" />
+						<SourceList :sources="officialSources.length ? officialSources : measure.sources" />
 					</div>
 				</ExpandableSection>
 			</div>

@@ -16,6 +16,6 @@ test("public data-sources page avoids operator-only provider setup details", () 
 
 test("public data-sources page still explains provider access status and links to source material", () => {
 	assert.match(dataSourcesPage, /provider.connectionStatus === 'active' \? 'Connected' : 'Not connected'/);
-	assert.match(dataSourcesPage, /Provider site/);
-	assert.match(dataSourcesPage, /Technical docs/);
+	assert.match(dataSourcesPage, /:href="provider.setupUrl"/);
+	assert.match(dataSourcesPage, /:href="option.links\[0\]!.url"/);
 });

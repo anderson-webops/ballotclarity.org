@@ -45,8 +45,9 @@ test("source search, provider data and failures remain independent without overs
 	assert.doesNotMatch(directory, /surface-panel|surface-row|Collapsed by default|Open this list when/);
 	const providers = source("components/SourceProviders.vue");
 	assert.match(providers, /useDataSources\(\)/);
-	assert.match(providers, /option.notes/);
-	assert.match(providers, /provider.limitations/);
+	assert.match(providers, /provider.bestUse/);
+	assert.match(providers, /option.summary/);
+	assert.doesNotMatch(providers, /provider.limitations|option.notes|<details/);
 	assert.doesNotMatch(providers, /surface-panel|surface-row|roadmap|architectureStages|migrationWatch/);
 });
 

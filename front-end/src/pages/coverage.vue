@@ -167,32 +167,22 @@ function capabilityLabel(status: "in-build" | "live-now" | "planned") {
 						</p>
 					</article>
 				</div>
-				<details class="mt-6 surface-row">
-					<summary class="text-sm text-app-ink font-semibold cursor-pointer dark:text-app-text-dark focus-ring">
-						Known limits and final checks
-					</summary>
-					<ul class="mt-5 space-y-4">
-						<li v-for="item in data.limitations" :key="item.id" class="content-block">
-							<p class="text-lg text-app-ink font-semibold dark:text-app-text-dark">
-								{{ item.title }}
-							</p>
-							<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
-								{{ item.summary }}
-							</p>
-						</li>
-					</ul>
-					<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-						Ballot Clarity can organize sources and public records, but official election offices remain the final authority for deadlines, precincts, polling places, and the exact ballot you receive.
-					</p>
-					<div class="mt-6 flex flex-wrap gap-3">
-						<NuxtLink to="/status" class="btn-secondary">
-							Open public status
-						</NuxtLink>
-						<NuxtLink to="/sources" class="btn-secondary">
-							Open data sources
-						</NuxtLink>
-					</div>
-				</details>
+				<h3 class="text-xl text-app-ink font-serif mt-8 dark:text-app-text-dark">
+					Known limits
+				</h3>
+				<ul class="mt-4 space-y-4">
+					<li v-for="item in data.limitations" :key="item.id" class="content-block">
+						<p class="text-lg text-app-ink font-semibold dark:text-app-text-dark">
+							{{ item.title }}
+						</p>
+						<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
+							{{ item.summary }}
+						</p>
+					</li>
+				</ul>
+				<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
+					Official election offices remain the final authority for deadlines, precincts, polling places, and the exact ballot you receive.
+				</p>
 			</section>
 		</div>
 	</section>

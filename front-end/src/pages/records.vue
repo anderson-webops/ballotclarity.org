@@ -137,19 +137,11 @@ usePageSeo({
 				<p v-if="data.available">
 					These records are not a personalized ballot. Later changes may be missing.
 				</p>
-				<details v-if="data.source.documentLinks && data.source.documentLinks.length > 1" class="source-documents">
-					<summary class="text-app-accent py-2 rounded-md underline underline-offset-3 min-h-11 cursor-pointer focus-ring">
-						Sources ({{ data.source.documentLinks.length }})
-					</summary>
-					<div class="flex flex-wrap gap-x-5 gap-y-2">
-						<SafeExternalLink v-for="document in data.source.documentLinks" :key="document.url" :href="document.url" class="text-app-accent underline underline-offset-3 focus-ring">
-							{{ document.label }}
-						</SafeExternalLink>
-					</div>
-				</details>
-				<SafeExternalLink v-else-if="data.source.documentLinks?.length" :href="data.source.documentLinks[0]?.url" class="text-app-accent underline underline-offset-3 inline-block focus-ring">
-					{{ data.source.documentLinks[0]?.label }}
-				</SafeExternalLink>
+				<p v-if="data.source.documentLinks?.length" class="source-documents flex flex-wrap gap-x-5 gap-y-2">
+					<SafeExternalLink v-for="document in data.source.documentLinks" :key="document.url" :href="document.url" class="text-app-accent underline underline-offset-3 focus-ring">
+						{{ document.label }}
+					</SafeExternalLink>
+				</p>
 				<SafeExternalLink v-else-if="data.source.url" :href="data.source.url" class="text-app-accent underline underline-offset-3 inline-block focus-ring">
 					Official source
 				</SafeExternalLink>

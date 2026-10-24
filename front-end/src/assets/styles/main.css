@@ -332,39 +332,6 @@ html.dark .home-step {
   gap: 1.5rem;
 }
 
-.home-faq {
-  border-bottom: 1px solid var(--app-line);
-}
-
-.home-faq:first-of-type {
-  border-top: 1px solid var(--app-line);
-}
-
-.home-faq summary {
-  display: flex;
-  gap: 1rem;
-  align-items: center;
-  justify-content: space-between;
-  min-height: var(--app-target-min);
-  padding: 0.9rem 0;
-  cursor: pointer;
-  list-style: none;
-}
-
-.home-faq summary::-webkit-details-marker {
-  display: none;
-}
-
-.home-faq__chevron {
-  flex: 0 0 auto;
-  color: var(--app-muted);
-  transition: transform 0.18s ease;
-}
-
-.home-faq[open] .home-faq__chevron {
-  transform: rotate(180deg);
-}
-
 .mobile-navigation-panel {
   max-height: calc(100dvh - 4.5rem);
   overflow-y: auto;
@@ -759,38 +726,6 @@ html.dark .section-nav-link__note {
   max-width: 42rem;
 }
 
-.collapsible-card-summary {
-  position: relative;
-  padding-right: 5.5rem;
-  list-style: none;
-}
-
-.collapsible-card-summary::-webkit-details-marker {
-  display: none;
-}
-
-.collapsible-card-summary::after {
-  content: 'Open';
-  position: absolute;
-  right: 0;
-  top: 0.05rem;
-  padding: 0.35rem 0.7rem;
-  border: 1px solid rgb(var(--app-line-rgb));
-  border-radius: 0.4rem;
-  color: var(--app-muted);
-  font-size: 0.8rem;
-  font-weight: 650;
-}
-
-details[open] > .collapsible-card-summary::after {
-  content: 'Close';
-}
-
-html.dark .collapsible-card-summary::after {
-  border-color: rgba(51, 68, 88, 0.9);
-  color: var(--app-muted-dark);
-}
-
 .legal-page .surface-panel li[class*="rounded-2xl"],
 .legal-page .surface-panel article[class*="rounded-xl"],
 .reading-page .surface-panel li[class*="rounded-2xl"],
@@ -821,19 +756,10 @@ html.dark .reading-page .surface-panel article[class*="rounded-xl"] {
 }
 
 .expandable-section__summary {
-  list-style: none;
   display: flex;
   gap: 1rem;
   align-items: flex-start;
   justify-content: space-between;
-}
-
-summary.expandable-section__summary {
-  cursor: pointer;
-}
-
-.expandable-section__summary::-webkit-details-marker {
-  display: none;
 }
 
 .expandable-section__meta {
@@ -843,20 +769,6 @@ summary.expandable-section__summary {
   justify-content: flex-end;
   flex-wrap: wrap;
   flex-shrink: 0;
-}
-
-.expandable-section__chevron {
-  font-size: 1rem;
-  color: var(--app-muted);
-  transition: transform 0.18s ease;
-}
-
-html.dark .expandable-section__chevron {
-  color: var(--app-muted-dark);
-}
-
-.expandable-section[open] .expandable-section__chevron {
-  transform: rotate(180deg);
 }
 
 .expandable-section__body {
@@ -1422,56 +1334,10 @@ html.dark .ballot-toc__footer {
   border-color: var(--app-line-dark);
 }
 
-.ballot-controls__filters {
-  margin-top: 0.75rem;
-}
-
-.ballot-controls__filters-summary {
-  display: inline-flex;
-  gap: 0.5rem;
-  align-items: center;
-  min-height: 44px;
-  cursor: pointer;
-  font-size: 0.9375rem;
-  font-weight: 600;
-  color: var(--app-ink);
-}
-
-.ballot-controls__filters-summary::-webkit-details-marker {
-  display: none;
-}
-
-.ballot-controls__filters-summary::after {
-  content: "";
-  width: 0.5rem;
-  height: 0.5rem;
-  margin-left: 0.15rem;
-  border-right: 2px solid currentColor;
-  border-bottom: 2px solid currentColor;
-  transform: translateY(-0.15rem) rotate(45deg);
-  transition: transform 0.18s ease;
-}
-
-.ballot-controls__filters[open] > .ballot-controls__filters-summary::after {
-  transform: translateY(0.1rem) rotate(-135deg);
-}
-
 .election-hero__status .primary-link,
 .ballot-toc__footer .primary-link {
   font-size: 0.9375rem;
   font-weight: 600;
-}
-
-.ballot-controls__count {
-  padding: 0.1rem 0.55rem;
-  border-radius: 9999px;
-  background: rgb(var(--app-accent-rgb));
-  color: rgb(var(--app-action-text-rgb));
-  font-size: 0.8125rem;
-}
-
-html.dark .ballot-controls__filters-summary {
-  color: var(--app-text-dark);
 }
 
 .ballot-group-heading {
@@ -1796,20 +1662,6 @@ html.dark .expandable-section__body {
   margin-top: 0.5rem;
   padding-top: 0;
   border-top: 0;
-}
-
-.collapsible-card-summary::after,
-html.dark .collapsible-card-summary::after {
-  content: '+';
-  padding: 0;
-  border: 0;
-  font-size: 1.25rem;
-  font-weight: 400;
-  line-height: 1;
-}
-
-details[open] > .collapsible-card-summary::after {
-  content: '−';
 }
 
 .election-hero {

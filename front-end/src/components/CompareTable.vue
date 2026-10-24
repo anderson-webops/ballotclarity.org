@@ -307,11 +307,10 @@ const mobileSections = computed(() => {
 				Turn off “Show only differences” to see every row.
 			</InfoCallout>
 
-			<details v-for="section in mobileSections" :key="section.key" class="group surface-panel">
-				<summary class="text-xl text-app-ink font-serif list-none flex gap-4 cursor-pointer items-center justify-between dark:text-app-text-dark focus-ring">
-					<span>{{ section.label }}</span>
-					<span class="i-carbon-add group-open:i-carbon-subtract text-lg text-app-muted dark:text-app-muted-dark" />
-				</summary>
+			<section v-for="section in mobileSections" :key="section.key" class="surface-panel">
+				<h2 class="text-xl text-app-ink font-serif dark:text-app-text-dark">
+					{{ section.label }}
+				</h2>
 
 				<div class="mt-5 space-y-4">
 					<article v-for="candidate in sortedCandidates" :key="`${section.key}-${candidate.slug}`" class="content-block">
@@ -378,7 +377,7 @@ const mobileSections = computed(() => {
 						</div>
 					</article>
 				</div>
-			</details>
+			</section>
 		</div>
 	</div>
 </template>

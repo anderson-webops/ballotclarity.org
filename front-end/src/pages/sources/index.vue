@@ -62,27 +62,21 @@ usePageSeo({
 					No sources match the current search.
 				</p>
 				<div v-else class="mt-6 space-y-6">
-					<details v-for="section in sections" :key="section.kind" :open="section.kind === 'curated-global' || Boolean(searchQuery.trim())">
-						<summary class="text-xl text-app-ink font-serif rounded-sm cursor-pointer dark:text-app-text-dark focus-ring">
+					<section v-for="section in sections" :key="section.kind">
+						<h3 class="text-xl text-app-ink font-serif dark:text-app-text-dark">
 							{{ section.heading }}
-						</summary>
+						</h3>
 						<ul class="mt-3 divide-app-line divide-y dark:divide-app-line-dark">
 							<li v-for="source in section.items" :key="source.id" class="py-4">
 								<NuxtLink :to="`/sources/${source.id}`" class="text-base text-app-accent font-semibold rounded-sm underline underline-offset-3 focus-ring">
 									{{ source.title }}
 								</NuxtLink>
 								<p class="text-sm text-app-muted leading-6 mt-1 dark:text-app-muted-dark">
-									{{ source.publisher }} · {{ source.sourceSystem }}
-								</p>
-								<p class="text-sm text-app-muted leading-6 mt-2 dark:text-app-muted-dark">
-									{{ source.summary }}
-								</p>
-								<p class="text-xs text-app-muted leading-6 mt-2 dark:text-app-muted-dark">
-									{{ source.geographicScope }} · {{ source.citationCount }} citation{{ source.citationCount === 1 ? '' : 's' }}
+									{{ source.publisher }}
 								</p>
 							</li>
 						</ul>
-					</details>
+					</section>
 				</div>
 			</section>
 			<SourceProviders />

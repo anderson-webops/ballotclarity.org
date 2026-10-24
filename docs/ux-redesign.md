@@ -264,3 +264,28 @@ passes the unit, e2e and a11y suites.
 - **Nested-card radius rule:** it set nested panels back to 1rem after the flattening in section 6. Its new
   hero and contents-list radii were also brought down to match (1rem and 0.75rem).
 - **Header changes:** that branch only proposed them. Section 4's header is already implemented here.
+
+## 10. Information density limits
+
+These limits come from an October 2026 research review: working-memory studies
+(Cowan's three-to-five chunks, and visual-memory work showing capacity drops as
+items get more complex), glanceable-display and dashboard experiments, NN/g
+eye-tracking, and NIST ballot usability research. They are conservative design
+limits, not laws of cognition. A visible page acts as external memory, so lists
+can be longer than cards.
+
+| Object | Limit |
+| --- | --- |
+| Card, initial view | One identity line (name or title) plus two to three facts. A fifth fact means part of the card belongs on a detail page. |
+| Actions per card | One primary and at most one secondary. |
+| Group of cards | About four to seven on mobile and six to ten on desktop before another heading. |
+| Critical information | Within the first two screens; never only below the third. |
+| Measure card | Title, one-sentence summary, what Yes does, what No does. |
+| Comparison views | Every candidate shows the same fields, side by side, with nothing hidden. |
+| Ballot overview | Every contest is listed from the start; no "show more" to discover contests. |
+
+**Disclosure.** The review found accordions acceptable for genuinely secondary
+detail. This site deliberately goes further and uses no collapsible sections
+except FAQs: content is either shown, moved to its own page, or removed. A test
+(`front-end/test/no-toggle-sections.test.ts`) enforces this. Detail pages hold
+long material such as full measure text, funding records and source lists.

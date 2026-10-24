@@ -59,17 +59,12 @@ const displayTitle = computed(() => props.contest.type === "measure" && props.co
 					/>
 				</div>
 
-				<div class="space-y-4">
-					<div>
-						<p class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
-							What this office does
-						</p>
-						<div class="mt-1">
-							<ContestRoleGuide :contest="contest" />
-						</div>
-					</div>
-					<NuxtLink :to="`/contest/${contest.slug}`" class="btn-secondary">
-						Full contest page
+				<div>
+					<p class="text-base text-app-ink leading-7 dark:text-app-text-dark">
+						{{ contest.roleGuide.summary }}
+					</p>
+					<NuxtLink :to="`/contest/${contest.slug}`" class="btn-secondary mt-2">
+						About this office
 					</NuxtLink>
 				</div>
 			</div>

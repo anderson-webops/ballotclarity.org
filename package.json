@@ -25,7 +25,7 @@
 		"artifact:build": "node scripts/runtime-artifact.mjs build",
 		"artifact:verify": "node scripts/runtime-artifact.mjs verify",
 		"audit-fix": "npm audit fix --workspaces",
-    "build": "node scripts/write-release-identity.mjs public && npm run -w front-end build && npm run -w back-end build",
+		"build": "node scripts/write-release-identity.mjs public && npm run -w front-end build && npm run -w back-end build",
 		"db:down": "docker compose down",
 		"db:up": "docker compose up -d postgres",
 		"env:local": "node ./scripts/create-local-env.mjs",
@@ -106,6 +106,9 @@
 		"vite": {
 			".": "^8.3.4",
 			"esbuild": "^0.28.2"
+		},
+		"nuxt": {
+			"unimport": "7.0.1"
 		},
 		"nitropack": {
 			".": "2.13.4",

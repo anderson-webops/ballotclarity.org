@@ -40,7 +40,7 @@
 		"providers:test:local": "DOTENV_CONFIG_PATH=../.env node -r dotenv/config dist/test-providers.js",
 		"start": "node dist/server.js",
 		"start:local": "DOTENV_CONFIG_PATH=../.env node -r dotenv/config dist/server.js",
-    "build": "tsc -p tsconfig.json && node ./scripts/copy-runtime-assets.mjs && node ../scripts/write-release-identity.mjs backend && node ./scripts/verify-runtime-build.mjs",
+		"build": "tsc -p tsconfig.json && node ./scripts/copy-runtime-assets.mjs && node ../scripts/write-release-identity.mjs backend && node ./scripts/verify-runtime-build.mjs",
 		"watch": "tsc -w",
 		"dev": "DOTENV_CONFIG_PATH=../.env tsx watch -r dotenv/config src/server.ts",
 		"lint": "eslint \"src/**/*.{js,ts}\" \"test/**/*.ts\"",
@@ -54,7 +54,7 @@
 		"cors": "^2.8.5",
 		"csv-parse": "^7.0.3",
 		"dotenv": "^17.4.2",
-		"express": "^5.1.0",
+		"express": "^5.3.0",
 		"express-rate-limit": "^8.7.0",
 		"parse5": "^8.0.1",
 		"pg": "^8.23.0"
@@ -68,7 +68,7 @@
 		"typescript": "^6.0.3"
 	},
 	"overrides": {
-		"body-parser": "2.3.0",
+		"body-parser": "2.4.0",
 		"esbuild": "0.28.2",
 		"qs": "6.16.0",
 		"proxy-addr": "2.0.8"

@@ -114,7 +114,7 @@
 		"simple-git": "4.0.2",
 		"braces": "$braces",
 		"listhen": "$listhen",
-		"fast-uri": "3.1.8",
+		"fast-uri": "3.1.9",
 		"postcss": "8.5.26",
 		"shell-quote": "1.12.0",
 		"qs": "6.16.0",
@@ -133,6 +133,6 @@
 		"@parcel/watcher@2.5.6": true,
 		"unrs-resolver@1.12.2": true,
 		"fsevents@2.3.3": true,
-		"puppeteer@25.11.0": false
+		"puppeteer@25.16.0": false
 	}
 }

@@ -93,8 +93,7 @@ function readDocuments(body: string) {
 	});
 }
 
-export function extractOregonBallots(body: string) {
-	const documents = readDocuments(body);
+export function extractOregonCandidatePages(documents: Array<Array<{ number: number; text: string }>>, year = "2026") {
 	const claims: OregonBallotClaim[] = [];
 	const contests: Array<{ documentIndex: number; page: number; office: string; count: number }> = [];
 	function emit(office: string, candidates: Candidate[], documentIndex: number, page: number, group?: string, count = candidates.length) {
@@ -121,7 +120,7 @@ export function extractOregonBallots(body: string) {
 				const text = clean(line);
 				if (!text) continue;
 				if (documentIndex === 0) {
-					if (/^(?:Secretary of State Elections Division|255 Capitol St|Candidate Ballot Statement|2026 General Election|September 3, 2026|Page \d+ of 18)/u.test(text)) continue;
+					if (/^(?:Secretary of State Elections Division|255 Capitol St|Candidate Ballot Statement|Page \d+ of \d+)/u.test(text) || text === `${year} General Election` || new RegExp(`^[A-Z][a-z]+ [1-9]\\d?, ${year}$`, "u").test(text)) continue;
 					const heading = line.trim().split(/\s{2,}/u);
 					if (heading.length === 2 && heading[1] === "Vote for one") {
 						if (office) emit(office, candidates, documentIndex, firstPage);
@@ -136,7 +135,7 @@ export function extractOregonBallots(body: string) {
 					candidates.push({ name: clean(name!), party: party === "Incumbent" ? "" : party, ballotDesignation: party === "Incumbent" ? "Incumbent" : undefined });
 					continue;
 				}
-				if (/^(?:County: MULTNOMAH|Ballot Content(?: RCV)? Date : 9\/22\/2026 \d{1,2}:\d{2}:\d{2} PM|Report No\. : E-019|Election : 11\/03\/2026 - November (?:General|RCV) Election 2026|Oregon Centralized Voter Registration Page : \d+|Federal Offices|Partisan State Offices|Nonpartisan State Offices|City Offices|District Offices|County Offices)$/u.test(text) || text === ":") continue;
+				if (/^(?:County: MULTNOMAH|Ballot Content(?: RCV)? Date : \d{1,2}\/\d{1,2}\/20\d{2} \d{1,2}:\d{2}:\d{2} [AP]M|Report No\. : E-019|Election : 11\/0[2-8]\/20\d{2} - November (?:General|RCV) Election 20\d{2}|Oregon Centralized Voter Registration Page : \d+|Federal Offices|Partisan State Offices|Nonpartisan State Offices|City Offices|District Offices|County Offices)$/u.test(text) || text === ":") continue;
 				const count = text.match(/^Number Candidates Filed:\s*(\d+)$/u);
 				if (count) {
 					emit(office, candidates, documentIndex, firstPage, group, Number(count[1]));
@@ -155,7 +154,7 @@ export function extractOregonBallots(body: string) {
 				if (indent === 3) {
 					requireValue(!office, "jurisdiction starts inside another contest");
 					group = text;
-					requireValue(localGroups.has(group) || /^(?:Federal|Statewide Partisan|US Representative [135](?:st|rd|th) District|Senate District \d+|House District \d+|Circuit Court District 04)$/u.test(group), "county jurisdiction label has changed");
+					requireValue(localGroups.has(group) || /^(?:Federal|Statewide Partisan|US Representative [1-6](?:st|nd|rd|th) District|Senate District \d+|House District \d+|Circuit Court District 04)$/u.test(group), "county jurisdiction label has changed");
 					if (documentIndex === 2 && /^City of Portland, Councilor, District [34]$/u.test(group)) {
 						office = group;
 						firstPage = page.number;
@@ -194,13 +193,18 @@ export function extractOregonBallots(body: string) {
 		else requireValue(!office && !groupContests, "county report ends inside a contest");
 	}
 	const stateContests = contests.filter(contest => contest.documentIndex === 0);
-	requireValue(stateContests.length === 93 && new Set(stateContests.map(contest => contest.office)).size === 93, "state statement office set is incomplete");
-	for (const [index, expected] of [183, 109, 46].entries()) requireValue(claims.filter(claim => claim.documentIndex === index).length === expected, "captured candidate set is incomplete");
+	requireValue(stateContests.length > 0 && new Set(stateContests.map(contest => contest.office)).size === stateContests.length, "state statement office set is incomplete");
 	return { claims, contests, candidatePageCount: documents.reduce((total, pages) => total + pages.length, 0) };
 }
 
-export function reconcileOregonBallots(body: string) {
-	const extracted = extractOregonBallots(body);
+export function extractOregonBallots(body: string) {
+	const extracted = extractOregonCandidatePages(readDocuments(body));
+	requireValue(extracted.contests.filter(contest => contest.documentIndex === 0).length === 93, "state statement office set is incomplete");
+	for (const [index, expected] of [183, 109, 46].entries()) requireValue(extracted.claims.filter(claim => claim.documentIndex === index).length === expected, "captured candidate set is incomplete");
+	return extracted;
+}
+
+export function reconcileOregonCandidatePages(extracted: ReturnType<typeof extractOregonCandidatePages>) {
 	const groups = new Map<string, { value: StateCandidateValues; ballotDesignation?: string; claimIndexes: number[] }>();
 	const singleChoice = new Map<string, string>();
 	for (const [index, claim] of extracted.claims.entries()) {
@@ -224,6 +228,10 @@ export function reconcileOregonBallots(body: string) {
 		}
 	}
 	return { ...extracted, records: [...groups.values()] };
+}
+
+export function reconcileOregonBallots(body: string) {
+	return reconcileOregonCandidatePages(extractOregonBallots(body));
 }
 
 export function parseOregonCandidateRecords(source: StateBallotSource, body: string, factory: (source: StateBallotSource, values: StateCandidateValues) => StateCandidateRecord | null) {

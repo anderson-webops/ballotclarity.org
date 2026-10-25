@@ -4,10 +4,11 @@ External election catalogs opt the automatic candidate repository into reusable
 source families. The current 61 source definitions retain explicit source/state
 allowlists; reusable discovery does not widen an exact-source allowlist.
 
-Twenty-five families across twenty-one states are supported:
+Twenty-six families across twenty-two states are supported:
 
 | Family | Discovery | Elections |
 | --- | --- | --- |
+| `or-sos-multnomah-2026` | [Multnomah County current/upcoming elections](https://multco.us/info/current-and-upcoming-elections-multnomah-county-elections) and each actually offered general-election page | Explicit even-year November dates, the independently published state directive and both county ballot-content reports; current 279 facts/IDs retained, unknown formats held for review |
 | `tx-sos-2026` | [Texas election index](https://www.sos.state.tx.us/elections/index.shtml) and its actually offered regular-general page | Explicit even-year November dates, final county certification and optional declared-write-in certification; separate special elections stay excluded |
 | `vt-sos-2026` | [Vermont general-election candidates](https://sos.vermont.gov/elections/election-info-resources/candidates) | Actual active even-year general date and published qualified-candidate workbook; legislative codes remain unmapped and local rows are not personal ballot matches |
 | `mo-sos-2026` | [Missouri official homepage](https://www.sos.mo.gov/) and [election calendar](https://www.sos.mo.gov/elections/calendar) | Offered November certification PDFs paired with the calendar's explicit regular-general date; current 425 identities retained, including individual regional retention questions |

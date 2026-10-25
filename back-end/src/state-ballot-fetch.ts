@@ -22,6 +22,7 @@ import {
 } from "./state-ballot-maryland.js";
 import { fetchMichiganCandidateCapture } from "./state-ballot-michigan.js";
 import { fetchNorthCarolinaCandidateCapture } from "./state-ballot-north-carolina.js";
+import { fetchOregonCandidateCapture } from "./state-ballot-oregon-collection.js";
 import { buildSouthCarolinaSearchForm } from "./state-ballot-portal-records.js";
 import {
 	buildFloridaCandidateForm,
@@ -174,6 +175,7 @@ export async function fetchStateBallotSourceText(source: StateBallotSource, requ
 	if (source.stateCode === "MI") return fetchMichiganCandidateCapture(source, request);
 	if (source.format === "kansas-html") return fetchKansasCandidateCapture(source, request);
 	if (source.stateCode === "VA") return fetchVirginiaCandidateCapture(source, request);
+	if (source.format === "oregon-pdf") return fetchOregonCandidateCapture(source, { requestText: request });
 	if (source.format === "fulton-pdf") return fetchFultonCandidateCapture(source, { requestText: request });
 	if (source.format === "vermont-xlsx") return fetchVermontCandidateCapture(source, undefined, { requestText: request });
 	if (source.format === "texas-certified-pdf") return fetchTexasCandidateCapture(source, undefined, { requestText: request });

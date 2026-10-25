@@ -20,7 +20,9 @@ import {
 } from "./state-ballot-cycles.js";
 import { fetchStateBallotSourceText } from "./state-ballot-fetch.js";
 import { FultonCollectorCapabilityError, parseFultonCandidateCapture } from "./state-ballot-fulton.js";
+import { parseOregonCandidateCapture } from "./state-ballot-oregon-collection.js";
 import {
+	createStateCandidateRecord,
 	isActiveStateCandidateRecord,
 	parseStateCandidateRecords,
 	stateRecordMatchesDistricts
@@ -179,7 +181,7 @@ export function createStateBallotRepository(options: StateBallotRepositoryOption
 				body = await fetchText(source);
 				capturedAt = new Date(now()).toISOString();
 				failureReason = "format";
-				const documentCapture = source.format === "texas-certified-pdf" ? parseTexasCandidateCapture(source, body) : source.format === "vermont-xlsx" ? parseVermontCandidateCapture(source, body) : source.format === "fulton-pdf" ? parseFultonCandidateCapture(source, body) : source.format === "certified-pdf" ? parseCertifiedPdfCapture(source, body) : null;
+				const documentCapture = source.format === "oregon-pdf" ? parseOregonCandidateCapture(source, body, createStateCandidateRecord, now()) : source.format === "texas-certified-pdf" ? parseTexasCandidateCapture(source, body) : source.format === "vermont-xlsx" ? parseVermontCandidateCapture(source, body) : source.format === "fulton-pdf" ? parseFultonCandidateCapture(source, body) : source.format === "certified-pdf" ? parseCertifiedPdfCapture(source, body) : null;
 				const snapshot: StateBallotSnapshot = {
 					source,
 					retrievedAt: capturedAt,
@@ -306,7 +308,7 @@ export function buildStateBallotPreview(snapshot: StateBallotSnapshot, lookup: P
 		return null;
 	const disclaimer = snapshot.source.stateCode === "VA"
 		? "Federal candidates only; state and local contests are not included. This is not an address-specific ballot."
-		: ["reviewed-pdf", "reviewed-image", "fulton-pdf", "certified-pdf", "texas-certified-pdf", "vermont-xlsx", "alaska-html", "connecticut-ballots", "oregon-ballots"].includes(snapshot.source.format)
+		: ["reviewed-pdf", "reviewed-image", "fulton-pdf", "certified-pdf", "oregon-pdf", "texas-certified-pdf", "vermont-xlsx", "alaska-html", "connecticut-ballots", "oregon-ballots"].includes(snapshot.source.format)
 				? "Dated snapshot; later changes and local contests may be missing."
 				: snapshot.source.retrievalPolicy === "manual-snapshot"
 					? "Dated snapshot; later changes and local contests may be missing. Filing does not establish ballot qualification."

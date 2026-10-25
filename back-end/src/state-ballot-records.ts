@@ -27,6 +27,7 @@ import {
 	validateMichiganSource
 } from "./state-ballot-michigan.js";
 import { readNorthCarolinaCandidateCapture } from "./state-ballot-north-carolina.js";
+import { parseOregonCandidateCapture } from "./state-ballot-oregon-collection.js";
 import { parseOregonCandidateRecords } from "./state-ballot-oregon.js";
 import { parseStatePortalRecords } from "./state-ballot-portal-records.js";
 import { StateBallotAwaitingRecordsError } from "./state-ballot-source-state.js";
@@ -145,6 +146,8 @@ function makeRecord(source: StateBallotSource, values: StateCandidateValues): St
 		...(values.seats !== undefined ? { seats: values.seats } : {}),
 	};
 }
+
+export { makeRecord as createStateCandidateRecord };
 
 function candidateFromCsv(source: StateBallotSource, row: Record<string, string>): StateCandidateRecord | null {
 	switch (source.stateCode) {
@@ -417,7 +420,10 @@ export function parseStateCandidateRecords(source: StateBallotSource, body: stri
 	if (["reviewed-pdf", "reviewed-xlsx", "reviewed-image"].includes(source.format))
 		throw new Error("Reviewed document sources require a validated snapshot.");
 	let records: StateCandidateRecord[];
-	if (source.format === "texas-certified-pdf") {
+	if (source.format === "oregon-pdf") {
+		records = parseOregonCandidateCapture(source, body, makeRecord).records;
+	}
+	else if (source.format === "texas-certified-pdf") {
 		records = parseTexasCandidateCapture(source, body).records;
 	}
 	else if (source.format === "vermont-xlsx") {

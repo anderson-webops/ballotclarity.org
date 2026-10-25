@@ -1,17 +1,18 @@
 <script setup lang="ts">
 import type { AdminCorrectionStatus, AdminPriority } from "~/types/civic";
 import { FetchError } from "ofetch";
+import { getAdminCorrectionsState } from "~/utils/admin-corrections-state";
 
 definePageMeta({
 	layout: "admin",
 	middleware: "admin"
 });
 
-const [{ data: session }, { data, error, pending, refresh }, { data: contentData }] = await Promise.all([
-	useAdminSession("admin-corrections-session"),
-	useAdminCorrections(),
-	useAdminContent()
-]);
+const [
+	{ data: session, error: sessionError, pending: sessionPending, refresh: refreshSession },
+	{ data, error, pending, refresh },
+	{ data: contentData }
+] = await Promise.all([useAdminSession("admin-corrections-session"), useAdminCorrections(), useAdminContent()]);
 const statusOptions: AdminCorrectionStatus[] = ["new", "triaged", "researching", "resolved"];
 const route = useRoute();
 const visibleCorrections = computed(() => (data.value?.corrections ?? []).filter(item => typeof route.query.id !== "string" || item.id === route.query.id));
@@ -21,6 +22,19 @@ const contentOptions = computed(() => [...(contentData.value?.items ?? [])].sort
 const savingId = ref<string | null>(null);
 const feedbackMessage = ref("");
 const feedbackTone = ref<"error" | "success">("success");
+const queueState = computed(() =>
+	getAdminCorrectionsState({
+		authenticated: session.value?.authenticated,
+		corrections: data.value?.corrections,
+		failed: Boolean(sessionError.value || error.value),
+		pending: sessionPending.value || pending.value,
+		unauthorized: sessionError.value?.statusCode === 401 || error.value?.statusCode === 401
+	})
+);
+
+async function retryQueue() {
+	await Promise.all([refreshSession(), refresh()]);
+}
 
 function canEditCorrection(item: { status: AdminCorrectionStatus }) {
 	return item.status === "new" || canManagePublicCorrections.value;
@@ -83,9 +97,14 @@ usePageSeo({
 				Reader and internal reports stay visible here from submission through resolution. The goal is traceability, not silent edits.
 			</p>
 		</header>
-		<AdminLoadState :pending="pending" :error="Boolean(error)" label="records" @retry="refresh()" />
+		<AdminLoadState :pending="queueState === 'loading'" :error="queueState === 'error'" label="corrections" @retry="retryQueue" />
+		<p v-if="queueState === 'authentication-required'" role="alert" class="text-sm text-app-ink dark:text-app-text-dark">
+			Sign in to view corrections. <NuxtLink to="/admin/login?redirect=/admin/corrections" class="font-semibold underline focus-ring">
+				Sign in
+			</NuxtLink>
+		</p>
 
-		<InfoCallout v-if="!canManagePublicCorrections" title="Public correction approval" tone="warning">
+		<InfoCallout v-if="queueState === 'ready' && !canManagePublicCorrections" title="Public correction approval" tone="warning">
 			New submissions remain private while they are reviewed. An admin with multi-factor authentication must promote a record out of the new state before it appears publicly, and must approve any later public change or removal.
 		</InfoCallout>
 
@@ -99,18 +118,11 @@ usePageSeo({
 			{{ feedbackMessage }}
 		</p>
 
-		<AdminEmptyState
-			v-if="!pending && !error && !(data?.corrections?.length ?? 0)"
-			action-label="Open public contact page"
-			action-to="/contact"
-			eyebrow="No open reports"
-			message="No reader or internal correction reports are currently active. When a report arrives, this page should show the affected record, source attachments, owner, and next step."
-			secondary-label="Review public status"
-			secondary-to="/status"
-			title="Corrections queue is clear"
-		/>
+		<p v-if="queueState === 'empty'" role="status" class="text-sm text-app-muted dark:text-app-muted-dark">
+			Corrections queue is clear.
+		</p>
 
-		<div v-else class="space-y-5">
+		<div v-else-if="queueState === 'ready'" class="space-y-5">
 			<article v-for="item in visibleCorrections" :key="item.id" class="surface-panel">
 				<div class="gap-6 grid xl:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
 					<div class="min-w-0">

@@ -935,6 +935,14 @@ The question companions retain source facts but are not application measure payl
 See `docs/audits/2026-10-21-minnesota-iowa.md` for scope and acceptance evidence.
 
 Kansas uses the existing automatic-source repository and management commands.
+Reusable Johnson County discovery now pairs its actual upcoming November general
+election links, public candidate IDs and explicit county election-page dates.
+Both odd and even years are supported without annual source edits; county records
+remain separate from statewide completeness and voter-specific local eligibility.
+The original current descriptor and IDs are unchanged. Future empty pages wait
+durably only after their exact election and unfiltered empty layout are verified.
+See [reusable election cycles](state-ballot-cycles.md) for the external-catalog
+contract and the separate publication/receiving-host acceptance boundaries.
 Its explicitly selected public page is downloaded in one bounded request; no
 voter identity, login, form token or private API is used. The parser refuses a
 different election, restricted filters, pagination, empty/incomplete cards,

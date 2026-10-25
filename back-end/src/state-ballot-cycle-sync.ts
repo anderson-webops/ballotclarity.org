@@ -4,6 +4,7 @@ import { Buffer } from "node:buffer";
 import { fetchRemoteSourceText } from "./remote-json-source.js";
 import { discoverStateBallotElectionCycles, getStateBallotCycleFamily, readStateBallotCycleCatalog, stateBallotCycleSources, writeStateBallotCycleCatalog } from "./state-ballot-cycles.js";
 import { readDakotaElectionIndex } from "./state-ballot-dakota.js";
+import { fetchKansasCandidateCapture, fetchKansasCycleDiscovery } from "./state-ballot-kansas.js";
 import { fetchKentuckyCandidateCapture, fetchKentuckyCycleDiscovery } from "./state-ballot-kentucky.js";
 import { fetchMarylandCycleDiscovery } from "./state-ballot-maryland.js";
 import { fetchMichiganCycleDiscovery, michiganCandidateCapture } from "./state-ballot-michigan.js";
@@ -25,6 +26,7 @@ interface StateBallotCycleSyncOptions {
 
 export async function fetchStateBallotCycleDiscovery(request: typeof fetchRemoteSourceText = fetchRemoteSourceText, familyId = "wa-general-2026") {
 	const family = getStateBallotCycleFamily(familyId);
+	if (family.format === "kansas-html") return fetchKansasCycleDiscovery(request);
 	if (family.source.stateCode === "MI") return fetchMichiganCycleDiscovery(request);
 	if (family.source.stateCode === "UT") return fetchUtahCycleDiscovery(request);
 	if (family.source.stateCode === "KY") return fetchKentuckyCycleDiscovery(request);
@@ -74,7 +76,8 @@ export async function syncStateBallotCycles(options: StateBallotCycleSyncOptions
 	const sources = [...(catalog.elections.some(election => election.electionDate === original.electionDate) ? [original] : []), ...stateBallotCycleSources(catalog, now())]
 		.filter(source => !options.enabledSourceIds || options.enabledSourceIds.includes(source.id));
 	let persistenceFailed = false;
-	const repository = createStateBallotRepository({ sources, dataDirectory: options.dataDirectory, now, fetchText: options.fetchCandidates ?? (family.source.stateCode === "MI" ? async source => michiganCandidateCapture(source, body) : family.source.stateCode === "NC" ? async source => northCarolinaCandidateCapture(source, body) : family.source.stateCode === "KY" ? async source => fetchKentuckyCandidateCapture(source, fetchRemoteSourceText, body) : undefined), onPersistenceError: () => {
+	const fetchCandidates = options.fetchCandidates ?? (family.format === "kansas-html" ? async (source: StateBallotSource) => fetchKansasCandidateCapture(source, fetchRemoteSourceText, body) : undefined);
+	const repository = createStateBallotRepository({ sources, dataDirectory: options.dataDirectory, now, fetchText: fetchCandidates ?? (family.source.stateCode === "MI" ? async source => michiganCandidateCapture(source, body) : family.source.stateCode === "NC" ? async source => northCarolinaCandidateCapture(source, body) : family.source.stateCode === "KY" ? async source => fetchKentuckyCandidateCapture(source, fetchRemoteSourceText, body) : undefined), onPersistenceError: () => {
 		persistenceFailed = true;
 	} });
 	const results: { sourceId: string; electionDate: string; status: "available" | "awaiting-records" | "unavailable" | "persistence-failed" | "expired"; records: number; retrievedAt: string | null; imported: boolean }[] = [];

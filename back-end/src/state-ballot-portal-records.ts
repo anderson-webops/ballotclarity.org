@@ -3,6 +3,8 @@ import type { StateCandidateRecord, StateContestScope } from "./state-ballot-rec
 import type { StateBallotSource } from "./state-ballot-sources.js";
 import { normalizePublicHref } from "./public-href.js";
 import { parseStateHtml, stateHtmlAttribute, stateHtmlDescendants, stateHtmlTableRows, stateHtmlText } from "./state-ballot-html.js";
+import { kansasElectionLabel, kansasSourceElectionId, readKansasCandidateCapture } from "./state-ballot-kansas.js";
+import { StateBallotAwaitingRecordsError } from "./state-ballot-source-state.js";
 import { southCarolinaSourceElectionId } from "./state-ballot-southern.js";
 
 type RecordFactory = (source: StateBallotSource, values: StateCandidateValues) => StateCandidateRecord | null;
@@ -139,7 +141,8 @@ export function parseStatePortalRecords(source: StateBallotSource, body: string,
 }
 
 function parseKansas(source: StateBallotSource, body: string, factory: RecordFactory) {
-	const document = parseStateHtml(body);
+	const electionId = kansasSourceElectionId(source);
+	const document = parseStateHtml(readKansasCandidateCapture(source, body));
 	const hasClass = (node: ReturnType<typeof parseStateHtml>, name: string) => stateHtmlAttribute(node, "class").split(/\s+/u).includes(name);
 	const selection = (name: string) => {
 		const controls = stateHtmlDescendants(document, node => node.nodeName === "select" && stateHtmlAttribute(node, "name") === name);
@@ -149,12 +152,15 @@ function parseKansas(source: StateBallotSource, body: string, factory: RecordFac
 		return { value: stateHtmlAttribute(selected[0]!, "value"), label: text(stateHtmlText(selected[0]!)) };
 	};
 	const election = selection("field_election_reference_target_id");
-	if (source.electionDate !== "2026-11-03" || election.value !== "6023" || election.label !== "November 3, 2026 General Election" || selection("field_office_jurisdiction_target_id_1").value !== "All" || selection("field_office_level_target_id_1").value !== "All")
+	if (election.value !== electionId || election.label !== kansasElectionLabel(source.electionDate) || selection("field_office_jurisdiction_target_id_1").value !== "All" || selection("field_office_level_target_id_1").value !== "All")
 		throw new Error("The Kansas candidate page is not the complete configured general-election selection.");
 	if (stateHtmlDescendants(document, node => stateHtmlAttribute(node, "class").split(/\s+/u).some(value => /^pager(?:$|__|-)/u.test(value)) || stateHtmlAttribute(node, "rel").split(/\s+/u).includes("next")).length)
 		throw new Error("The Kansas candidate page is paginated; a complete source is required.");
 	const containers = stateHtmlDescendants(document, node => hasClass(node, "view-content"));
 	const indicators = stateHtmlDescendants(document, node => hasClass(node, "view-filters-info"));
+	const empty = stateHtmlDescendants(document, node => hasClass(node, "view-empty"));
+	if (source.id !== "ks-johnson-2026" && !containers.length && !indicators.length && empty.length === 1 && text(stateHtmlText(empty[0]!)) === "There are no results found for the criteria specified. Please try again with different filter criteria." && !stateHtmlDescendants(document, node => hasClass(node, "candidate--teaser")).length) throw new StateBallotAwaitingRecordsError(source.id);
+	if (empty.length) throw new Error("The Kansas candidate empty-result layout is missing or changed.");
 	if (containers.length !== 1 || indicators.length !== 1 || text(stateHtmlText(indicators[0]!)) !== "Showing All Candidates")
 		throw new Error("The Kansas candidate result layout has changed.");
 	const content = containers[0]!;
@@ -223,7 +229,7 @@ function parseKansas(source: StateBallotSource, body: string, factory: RecordFac
 			const record = requiredRecord(source, { name, office: statewideJudicial || localJudicial ? `${office}, Judicial retention` : office, party, scope, district, jurisdiction, status: "listed", candidateUrl: websites[0] ? campaignUrl(text(stateHtmlText(websites[0])).replace(/^Website:\s*/u, "")) : undefined }, factory);
 			if (incumbent === "Yes") record.ballotDesignation = "Incumbent";
 			if (statewideJudicial || localJudicial) record.sourceStatus = "Judicial retention election";
-			if (heading === "Spring Hill Township" && name === "Tara A. Combs") record.sourceStatus = "Revised notice: Tara A. Combes";
+			if (source.electionDate === "2026-11-03" && heading === "Spring Hill Township" && name === "Tara A. Combs") record.sourceStatus = "Revised notice: Tara A. Combes";
 			records.push(record);
 		};
 		visit(group);

@@ -4,7 +4,7 @@ External election catalogs opt the automatic candidate repository into reusable
 source families. Without them, the current 59 source
 definitions, source ordering and source/state allowlists remain unchanged.
 
-Seventeen families across fourteen states are supported:
+Eighteen families across fifteen states are supported:
 
 | Family | Discovery | Elections |
 | --- | --- | --- |
@@ -25,6 +25,21 @@ Seventeen families across fourteen states are supported:
 | `ky-courts-2026` | The same public selector/calendar and its separately published court/prosecutor controls | Full regional district/division labels and lifecycle evidence, not personalized ballot eligibility |
 | `ut-lg-2026` | [Utah candidate resources](https://vote.utah.gov/resources-for-candidates-political-groups-parties/) and [current election information](https://vote.utah.gov/current-election-information/) | Actually offered even-year candidate links paired with an explicit same-cycle regular general-election date; existing 255 records/IDs retained |
 | `mi-dos-2026` | [Michigan election homepage](https://www.michigan.gov/en/sos/elections) | Published November General Candidate Listing links paired with matching official report headers and explicit dates; original 716 entries/IDs retained |
+| `ks-johnson-2026` | [Johnson County upcoming elections](https://www.jocoelection.org/events-elections/upcoming-elections) and its public candidate selector | Explicit November general-election links, matching offered candidate IDs and dated Johnson County election pages, including odd years; county publication is not statewide completeness or voter-specific eligibility |
+
+Johnson County retains the existing 98-record current source and its original IDs.
+Future `ks-johnson-general-YYYY-MM-DD` sources require the complete published
+index/selector/election-page capture before a selected candidate page is accepted.
+No election IDs or dates are guessed, and primary or special-election controls
+are not imported as regular general elections. Empty future pages require the
+publisher's exact empty-result layout, validated election identity and unfiltered
+controls; they remain durable waiting receipts rather than successful imports.
+Unknown office/status layouts still need review. The dated 2026 spelling note
+does not carry into later elections. One normal current-source GET remains
+compatible with existing snapshots; all new future captures bind discovery.
+Discovery and selected reports use bounded normal HTTPS with zero redirects.
+Persistent external catalogs and a single collection owner support unattended
+refresh; source publication alone does not install or verify a receiving-host job.
 
 Stable family identifiers retain their original descriptor bindings; future
 instances do not require editing those descriptors. Discovery reads the official election selector or an explicit published general-election date,

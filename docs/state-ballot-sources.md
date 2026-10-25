@@ -1,5 +1,25 @@
 # Official state candidate records
 
+## Florida local filings
+
+The [official candidate-download utility](https://dos.elections.myflorida.com/candidates/downloadcanlist.asp)
+also offers an explicit local-candidate TSV and county-code download. The separate
+`fl-doe-local-2026` source/family normalizes 2,656 November 3 records from the
+reviewed capture, including 742 qualified records (17 write-ins), 1,403 unopposed,
+350 defeated, 103 withdrawn, 56 not qualified and two deceased. Nonblank reported
+county codes cover all 67 codebook entries; 244 records have no county label.
+These are filings and source statuses, not complete county/municipal ballots or
+proof of voter eligibility. The publisher's [tracking-system notice](https://dos.elections.myflorida.com/candidates/index.asp)
+directs county/municipal inquiries to local supervisors. No local nominee,
+winner, geographic match or missing county is inferred.
+
+The actual offered 2028 and 2030 local exports currently contain their complete
+header and no rows. They are retained as validated awaiting-records probes and
+rechecked automatically, not imported as empty datasets or reported as broken
+sources. The separate state-filed family and its existing IDs/facts are unchanged.
+The [cycle contract](state-ballot-cycles.md) documents the reviewed legacy encoding,
+strict source/form/header bindings, privacy exclusions, probe expiry and rollback.
+
 ## Enabled sources
 
 These adapters read official public candidate lists for the November 3, 2026

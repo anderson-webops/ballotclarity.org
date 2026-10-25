@@ -67,7 +67,7 @@ export async function refreshApprovedCandidateData(
 				for (const result of family.results) {
 					handled.add(result.sourceId);
 					if (result.status === "expired") continue;
-					const failed = result.status !== "available";
+					const failed = !["available", "awaiting-records"].includes(result.status);
 					results.push({
 						sourceId: result.sourceId,
 						status: failed
@@ -101,19 +101,19 @@ export async function refreshApprovedCandidateData(
 			now,
 			fetchText: options.fetchText,
 			ttlMs: configuration.ttlMs,
-			onPersistenceError: state => persistenceErrors.add(state)
+			onPersistenceError: (_state, sourceId) => persistenceErrors.add(sourceId)
 		});
 		for (const source of sources) {
-			persistenceErrors.delete(source.stateCode);
+			persistenceErrors.delete(source.id);
 			const snapshot = await repository.getSnapshot(source.stateCode, source.id);
-			const failed = !snapshot || persistenceErrors.has(source.stateCode);
+			const failed = (!snapshot && !repository.isAwaitingRecords!(source.id)) || persistenceErrors.has(source.id);
 			const observation = (await repository.inspectSources!()).find(item => item.id === source.id);
 			results.push({
 				sourceId: source.id,
 				status: failed ? "failed" : observation?.lastImportAt ? "imported" : "cached",
 				records: snapshot?.records.length ?? 0,
 				reason: failed
-					? persistenceErrors.has(source.stateCode)
+					? persistenceErrors.has(source.id)
 						? "persistence-failed"
 						: "source-unavailable"
 					: null

@@ -5,10 +5,10 @@ import { delawareCandidateRosterUrl, getStateBallotCycleFamily, readMississippiG
 import { dakotaCandidateRosterUrl, validateDakotaCandidatePage } from "./state-ballot-dakota.js";
 import { parseStateHtml, stateHtmlAttribute, stateHtmlDescendants, stateHtmlText } from "./state-ballot-html.js";
 import { buildSouthCarolinaSearchForm } from "./state-ballot-portal-records.js";
-import { buildFloridaCandidateForm, floridaSourceElectionId, southCarolinaCandidateRosterUrl } from "./state-ballot-southern.js";
+import { buildFloridaCandidateForm, buildFloridaCountyForm, floridaCountyCodesUrl, floridaSourceElectionId, southCarolinaCandidateRosterUrl } from "./state-ballot-southern.js";
 import { fetchWashingtonCandidatePages } from "./state-ballot-washington.js";
 
-type SourceTextRequest = (url: string, options: { allowedHosts: string[]; maxBytes: number; maxRedirects: number; postBody?: string; timeoutMs: number }) => Promise<string>;
+type SourceTextRequest = (url: string, options: { allowedHosts: string[]; maxBytes: number; maxRedirects: number; postBody?: string; timeoutMs: number; textEncoding?: "utf-8" | "utf-8-or-windows-1252" }) => Promise<string>;
 
 export const publicStateExportFormats = ["mississippi-csv", "south-dakota-csv", "hawaii-csv", "illinois-tsv", "montana-csv"];
 
@@ -145,7 +145,7 @@ export async function fetchStateBallotSourceText(source: StateBallotSource, requ
 	if (source.stateCode === "WY" && (source.format !== "csv" || !validStateBallotGeneralDate(source.electionDate) || Number(source.electionDate.slice(0, 4)) % 2 || source.url !== wyomingCandidateRosterUrl(source.electionDate))) throw new Error("The Wyoming roster must retain its exact official election URL.");
 	if (["south-dakota-csv", "north-dakota-html"].includes(source.format)) assertDakotaSourceIdentity(source);
 	if (source.stateCode === "FL" || source.format === "south-carolina-html") {
-		const family = getStateBallotCycleFamily(source.stateCode === "FL" ? "fl-doe-2026" : "sc-sec-2026");
+		const family = getStateBallotCycleFamily(source.stateCode === "FL" ? source.format === "florida-local-tsv" ? "fl-doe-local-2026" : "fl-doe-2026" : "sc-sec-2026");
 		const electionId = source.stateCode === "FL" ? floridaSourceElectionId(source) : new URL(source.url).searchParams.get("electionId") ?? "";
 		if (source.stateCode !== family.source.stateCode || source.retrievalPolicy || source.documentUrls?.length || source.documentLinks?.length || !validStateBallotGeneralDate(source.electionDate) || source.electionDate < family.source.electionDate || Number(source.electionDate.slice(0, 4)) % 2 || source.id !== (source.electionDate === family.source.electionDate ? family.source.id : `${family.prefix}-${source.electionDate}`) || (source.stateCode === "SC" && (source.postBody || source.url !== southCarolinaCandidateRosterUrl(electionId) || source.pageUrl !== source.url || ((electionId === "22596") !== (source.electionDate === family.source.electionDate))))) throw new Error("The public candidate source does not identify the approved state and general election.");
 	}
@@ -156,7 +156,15 @@ export async function fetchStateBallotSourceText(source: StateBallotSource, requ
 	const options = { allowedHosts: [new URL(source.url).hostname], maxBytes: 12 * 1024 * 1024, maxRedirects: ["WY", "FL"].includes(source.stateCode) || ["montana-csv", "mississippi-csv", "delaware-html", "south-dakota-csv", "north-dakota-html", "south-carolina-html"].includes(source.format) ? 0 : 2, timeoutMs: 12_000 };
 	if (source.stateCode === "FL") {
 		const page = await request(source.pageUrl, options);
-		return request(source.url, { ...options, postBody: buildFloridaCandidateForm(source, page) });
+		const postBody = buildFloridaCandidateForm(source, page);
+		if (source.format === "florida-local-tsv") {
+			const countyCodes = await request(floridaCountyCodesUrl, { ...options, postBody: buildFloridaCountyForm(page) });
+			const records = await request(source.url, { ...options, postBody, textEncoding: "utf-8-or-windows-1252" });
+			const envelope = JSON.stringify({ schemaVersion: 1, type: "florida-local-export", page, countyCodes, records });
+			if (Buffer.byteLength(envelope) > options.maxBytes) throw new Error("The combined Florida local export exceeds its bounds.");
+			return envelope;
+		}
+		return request(source.url, { ...options, postBody });
 	}
 	if (source.format === "washington-html")
 		return fetchWashingtonCandidatePages(source, request, options);

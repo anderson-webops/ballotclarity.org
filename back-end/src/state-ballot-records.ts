@@ -9,6 +9,7 @@ import { parseAdditionalStateRecords } from "./state-ballot-additional-records.j
 import { parseArkansasCandidateRecords } from "./state-ballot-arkansas.js";
 import { parseConnecticutCandidateRecords } from "./state-ballot-connecticut.js";
 import { validateDakotaCandidatePage } from "./state-ballot-dakota.js";
+import { parseFloridaLocalCandidateRecords } from "./state-ballot-florida-local.js";
 import { stateHtmlAttribute as attribute, stateHtmlDescendants as descendants, parseStateHtml as parseHtml, stateHtmlTableRows, stateHtmlText as textContent } from "./state-ballot-html.js";
 import { parseOregonCandidateRecords } from "./state-ballot-oregon.js";
 import { parseStatePortalRecords } from "./state-ballot-portal-records.js";
@@ -372,7 +373,10 @@ export function parseStateCandidateRecords(source: StateBallotSource, body: stri
 	if (["reviewed-pdf", "reviewed-xlsx", "reviewed-image"].includes(source.format))
 		throw new Error("Reviewed document sources require a validated snapshot.");
 	let records: StateCandidateRecord[];
-	if (source.format === "arkansas-html") {
+	if (source.format === "florida-local-tsv") {
+		records = parseFloridaLocalCandidateRecords(source, body, makeRecord);
+	}
+	else if (source.format === "arkansas-html") {
 		records = parseArkansasCandidateRecords(source, body, makeRecord);
 	}
 	else if (source.format === "washington-html") {

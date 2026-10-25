@@ -33,7 +33,7 @@ usePageSeo({ title: "Dataset", path: "/admin/datasets", robots: "noindex,nofollo
 				</div><div>
 					<dt class="font-semibold">
 						Status
-					</dt><dd>{{ item.status }} · {{ item.records === null ? 'Not imported' : `${item.records} records` }}</dd>
+					</dt><dd>{{ item.status === 'pending' ? 'Awaiting records' : `${item.status} · ${item.records === null ? 'Not imported' : `${item.records} records`}` }}</dd>
 				</div>
 			</dl><p v-if="item.failure" role="alert">
 				{{ item.failure }}

@@ -13,6 +13,15 @@ import {
 
 const publicResolver = async () => [{ address: "93.184.216.34", family: 4 }];
 
+test("legacy text decoding is an explicit source option, keeps valid UTF-8 and rejects invalid default or undefined legacy bytes", async () => {
+	const legacy = Buffer.from([0x46, 0xE9, 0x6C, 0x69, 0x78]);
+	const options = { allowedHosts: ["example.com"], resolveAddresses: publicResolver, maxRedirects: 0, transport: async () => ({ statusCode: 200, headers: { "content-type": "application/tab-separated-values" }, body: Readable.from([legacy]) }) };
+	await assert.rejects(fetchRemoteSourceText("https://example.com/export", options));
+	assert.equal(await fetchRemoteSourceText("https://example.com/export", { ...options, textEncoding: "utf-8-or-windows-1252" }), "Félix");
+	for (const name of ["Félix", "王 Example"]) assert.equal(await fetchRemoteSourceText("https://example.com/export", { ...options, textEncoding: "utf-8-or-windows-1252", transport: async () => ({ statusCode: 200, headers: {}, body: Readable.from([Buffer.from(name)]) }) }), name);
+	for (const bytes of [Buffer.from([0x81]), Buffer.from([0xEF, 0xBB, 0xBF, 0xFF])]) await assert.rejects(fetchRemoteSourceText("https://example.com/export", { ...options, textEncoding: "utf-8-or-windows-1252", transport: async () => ({ statusCode: 200, headers: {}, body: Readable.from([bytes]) }) }));
+});
+
 test("public document captures preserve binary bytes and never follow redirects", async () => {
 	const bytes = Buffer.from([37, 80, 68, 70, 45, 255, 0, 128]);
 	const result = await fetchRemoteSourceDocument("https://example.com/file.pdf", { allowedHosts: ["example.com"], resolveAddresses: publicResolver, etag: "\"old\"", transport: async (input) => {

@@ -1,11 +1,13 @@
 import type { StateCandidateRecord } from "./state-ballot-records.js";
 import type { StateBallotSource } from "./state-ballot-sources.js";
+import type { StateBallotPendingReceipt } from "./state-ballot-storage.js";
 import type { AdminOperationDataset, BallotContentPreview, BallotContentPreviewContest, LocationLookupResponse } from "./types/civic.js";
 import { createHash } from "node:crypto";
 import process from "node:process";
 import { getStateAbbreviationForName } from "./official-election-tools.js";
 import { getStateBallotCycleFamily, readConfiguredStateBallotCycleCatalogs, StateBallotCycleCatalogError, stateBallotCycleSources } from "./state-ballot-cycles.js";
 import { fetchStateBallotSourceText } from "./state-ballot-fetch.js";
+import { StateBallotAwaitingRecordsError } from "./state-ballot-florida-local.js";
 import { isActiveStateCandidateRecord, parseStateCandidateRecords, stateRecordMatchesDistricts } from "./state-ballot-records.js";
 import { configuredStateBallotSources } from "./state-ballot-registry.js";
 import { createStateBallotStorage } from "./state-ballot-storage.js";
@@ -21,6 +23,7 @@ export interface StateBallotSnapshot {
 export interface StateBallotRepository {
 	sources?: readonly StateBallotSource[];
 	inspectSources?: () => Promise<AdminOperationDataset[]>;
+	isAwaitingRecords?: (sourceId: string) => boolean;
 	getSnapshot: (stateCode: string, sourceId?: string) => Promise<StateBallotSnapshot | null>;
 }
 
@@ -29,7 +32,7 @@ interface StateBallotRepositoryOptions {
 	fetchText?: (source: StateBallotSource) => Promise<string>;
 	now?: () => number;
 	onUnavailable?: (stateCode: string, reason: "transport" | "format") => void;
-	onPersistenceError?: (stateCode: string) => void;
+	onPersistenceError?: (stateCode: string, sourceId: string) => void;
 	sources?: readonly StateBallotSource[];
 	ttlMs?: number;
 }
@@ -93,6 +96,16 @@ export function createStateBallotRepository(options: StateBallotRepositoryOption
 	const cached = new Map<string, { expiresAt: number; snapshot: StateBallotSnapshot | null }>();
 	const pending = new Map<string, Promise<StateBallotSnapshot | null>>();
 	const observations = new Map<string, { lastAttemptAt: string; lastImportAt: string | null; failure: string | null }>();
+	const awaitingRecords = new Map<string, { expiresAt: number; receipt: StateBallotPendingReceipt }>();
+	const pendingExpiry = (source: StateBallotSource, receipt: StateBallotPendingReceipt) => Math.min(Date.parse(receipt.retrievedAt) + ttlMs, Date.parse(`${source.electionDate}T00:00:00Z`));
+	function rememberPending(source: StateBallotSource, receipt: StateBallotPendingReceipt) {
+		const expiresAt = pendingExpiry(source, receipt);
+		if (expiresAt <= now()) return false;
+		awaitingRecords.set(source.id, { expiresAt, receipt });
+		cached.set(source.id, { expiresAt, snapshot: null });
+		observations.set(source.id, { lastAttemptAt: receipt.retrievedAt, lastImportAt: null, failure: null });
+		return true;
+	}
 	const fetchText = options.fetchText ?? fetchStateBallotSourceText;
 	if (new Set(sources.map(source => source.id)).size !== sources.length)
 		throw new Error("Official source identifiers must be unique.");
@@ -111,16 +124,23 @@ export function createStateBallotRepository(options: StateBallotRepositoryOption
 			return active;
 		const operation = Promise.resolve().then(async () => {
 			let failureReason: "transport" | "format" = "transport";
+			let stored: StateBallotSnapshot | null = null;
+			let body: string | undefined;
+			let capturedAt: string | undefined;
 			try {
 				if (storage) {
 					failureReason = "format";
-					const stored = await storage.read(source);
+					stored = await storage.read(source);
 					if (stored && Date.parse(stored.retrievedAt) > now())
 						throw new Error("Stored state ballot data has a future capture time.");
 					if (stored && (source.retrievalPolicy === "manual-snapshot" || Date.parse(stored.retrievedAt) + ttlMs > now())) {
 						if (source.retrievalPolicy !== "manual-snapshot")
 							cached.set(source.id, { expiresAt: Date.parse(stored.retrievedAt) + ttlMs, snapshot: stored });
 						return stored;
+					}
+					if (!stored) {
+						const receipt = await storage.readPending(source, now());
+						if (receipt && rememberPending(source, receipt)) return null;
 					}
 				}
 				if (source.retrievalPolicy === "manual-snapshot") {
@@ -129,11 +149,12 @@ export function createStateBallotRepository(options: StateBallotRepositoryOption
 				}
 				failureReason = "transport";
 				observations.set(source.id, { lastAttemptAt: new Date(now()).toISOString(), lastImportAt: observations.get(source.id)?.lastImportAt ?? null, failure: null });
-				const body = await fetchText(source);
+				body = await fetchText(source);
+				capturedAt = new Date(now()).toISOString();
 				failureReason = "format";
 				const snapshot: StateBallotSnapshot = {
 					source,
-					retrievedAt: new Date(now()).toISOString(),
+					retrievedAt: capturedAt,
 					sha256: createHash("sha256").update(body).digest("hex"),
 					records: parseStateCandidateRecords(source, body),
 				};
@@ -144,13 +165,27 @@ export function createStateBallotRepository(options: StateBallotRepositoryOption
 					}
 					catch {
 						observations.get(source.id)!.failure = "Snapshot persistence failed.";
-						options.onPersistenceError?.(source.stateCode);
+						options.onPersistenceError?.(source.stateCode, source.id);
 					}
 				}
 				cached.set(source.id, { expiresAt: now() + ttlMs, snapshot });
+				awaitingRecords.delete(source.id);
 				return snapshot;
 			}
-			catch {
+			catch (error) {
+				if (error instanceof StateBallotAwaitingRecordsError && error.sourceId === source.id && source.format === "florida-local-tsv" && body !== undefined && capturedAt && !stored && now() < Date.parse(`${source.electionDate}T00:00:00Z`)) {
+					const receipt = { retrievedAt: capturedAt, sourceSha256: createHash("sha256").update(body).digest("hex") };
+					try {
+						if (storage) await storage.writePending(source, receipt, now());
+						if (rememberPending(source, receipt)) return null;
+					}
+					catch {
+						observations.get(source.id)!.failure = "Pending source evidence could not be persisted.";
+						options.onPersistenceError?.(source.stateCode, source.id);
+						return null;
+					}
+				}
+				awaitingRecords.delete(source.id);
 				const observation = observations.get(source.id);
 				if (observation) observation.failure = failureReason === "format" ? "Source format requires review." : "Source collection failed.";
 				if (source.retrievalPolicy !== "manual-snapshot")
@@ -168,6 +203,7 @@ export function createStateBallotRepository(options: StateBallotRepositoryOption
 
 	return {
 		get sources() { return currentSources(); },
+		isAwaitingRecords(sourceId) { return (awaitingRecords.get(sourceId)?.expiresAt ?? 0) > now(); },
 		async inspectSources() {
 			return Promise.all(currentSources().map(async (source): Promise<AdminOperationDataset> => {
 				const observation = observations.get(source.id);
@@ -179,6 +215,13 @@ export function createStateBallotRepository(options: StateBallotRepositoryOption
 						item.records = snapshot.records.length;
 						item.retrievedAt = snapshot.retrievedAt;
 						item.status = Date.parse(`${source.electionDate}T00:00:00Z`) + 2 * 86400000 <= now() ? "archived" : !source.retrievalPolicy && Date.parse(snapshot.retrievedAt) + ttlMs <= now() ? "stale" : "current";
+					}
+					else {
+						const receipt = storage ? await storage.readPending(source, now()) : awaitingRecords.get(source.id)?.receipt;
+						if (receipt) {
+							item.lastAttemptAt ??= receipt.retrievedAt;
+							if (pendingExpiry(source, receipt) > now()) item.status = "pending";
+						}
 					}
 				}
 				catch { item.failure = "Stored data could not be validated."; }

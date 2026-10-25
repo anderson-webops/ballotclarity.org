@@ -29,7 +29,7 @@ usePageSeo({ title: "Datasets", path: "/admin/datasets", robots: "noindex,nofoll
 							<h3 class="text-xl font-semibold">
 								{{ item.label }}
 							</h3><p class="text-app-muted mt-2 dark:text-app-muted-dark">
-								{{ item.stateCode }} · {{ item.records === null ? 'Not imported' : `${item.records} records` }} · {{ item.status }}
+								{{ item.stateCode }} · {{ item.status === 'pending' ? 'Awaiting records' : `${item.records === null ? 'Not imported' : `${item.records} records`} · ${item.status}` }}
 							</p>
 						</NuxtLink>
 					</li>

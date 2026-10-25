@@ -12,6 +12,37 @@ const maximumBytes = 12 * 1024 * 1024;
 const releaseRoot = fileURLToPath(new URL("../../", import.meta.url));
 const digest = (value: string) => createHash("sha256").update(value).digest("hex");
 
+export interface StateBallotPendingReceipt {
+	retrievedAt: string;
+	sourceSha256: string;
+}
+
+function parsePendingReceipt(source: StateBallotSource, body: string, now: number): StateBallotPendingReceipt {
+	const value = JSON.parse(body);
+	if (source.format !== "florida-local-tsv" || source.retrievalPolicy || !value || Object.keys(value).sort().join(",") !== "retrievedAt,schemaVersion,sourceConfigurationSha256,sourceSha256,type" || value.schemaVersion !== 1 || value.type !== "state-ballot-pending" || value.sourceConfigurationSha256 !== digest(JSON.stringify(source)) || typeof value.retrievedAt !== "string" || !Number.isFinite(Date.parse(value.retrievedAt)) || new Date(value.retrievedAt).toISOString() !== value.retrievedAt || Date.parse(value.retrievedAt) > now || typeof value.sourceSha256 !== "string" || !/^[a-f0-9]{64}$/u.test(value.sourceSha256) || Date.parse(value.retrievedAt) >= Date.parse(`${source.electionDate}T00:00:00Z`)) throw new Error("The pending state ballot evidence is invalid or belongs to another source.");
+	return { retrievedAt: value.retrievedAt, sourceSha256: value.sourceSha256 };
+}
+
+async function writeAtomic(target: string, body: string) {
+	const temporary = `${target}.${randomUUID()}.tmp`;
+	try {
+		const handle = await open(temporary, "wx");
+		try {
+			await handle.writeFile(body);
+			await handle.sync();
+		}
+		finally {
+			await handle.close();
+		}
+		await rename(temporary, target);
+	}
+	finally {
+		await unlink(temporary).catch((error: NodeJS.ErrnoException) => {
+			if (error.code !== "ENOENT") throw error;
+		});
+	}
+}
+
 export function assertExternalStateDataDirectory(directory: string) {
 	const relation = relative(releaseRoot, resolve(directory));
 	if (!isAbsolute(directory) || (relation !== ".." && !relation.startsWith(`..${sep}`) && !isAbsolute(relation)))
@@ -73,6 +104,23 @@ export function createStateBallotStorage(directory: string) {
 		return join(canonical, `${source.id}.json`);
 	}
 	return {
+		async readPending(source: StateBallotSource, now = Date.now()): Promise<StateBallotPendingReceipt | null> {
+			if (source.format !== "florida-local-tsv") return null;
+			try {
+				const body = await readBoundedStateDataBytes(`${await location(source)}.pending`, 16 * 1024);
+				return parsePendingReceipt(source, body.toString("utf8"), now);
+			}
+			catch (error) {
+				if ((error as NodeJS.ErrnoException).code === "ENOENT") return null;
+				throw error;
+			}
+		},
+		async writePending(source: StateBallotSource, receipt: StateBallotPendingReceipt, now = Date.now()) {
+			const body = JSON.stringify({ schemaVersion: 1, type: "state-ballot-pending", sourceConfigurationSha256: digest(JSON.stringify(source)), ...receipt });
+			parsePendingReceipt(source, body, now);
+			if (await this.read(source)) throw new Error("An empty report cannot replace accepted candidate data.");
+			await writeAtomic(`${await location(source)}.pending`, body);
+		},
 		async read(source: StateBallotSource): Promise<StateBallotSnapshot | null> {
 			try {
 				const body = await readBoundedStateData(await location(source));
@@ -93,24 +141,7 @@ export function createStateBallotStorage(directory: string) {
 			const body = JSON.stringify({ sourceConfigurationSha256: digest(JSON.stringify(snapshot.source)), snapshot: snapshotBody });
 			if (Buffer.byteLength(body) > maximumBytes)
 				throw new Error("Stored state ballot data exceeds its size limit.");
-			const target = await location(snapshot.source);
-			const temporary = `${target}.${randomUUID()}.tmp`;
-			try {
-				const handle = await open(temporary, "wx");
-				try {
-					await handle.writeFile(body);
-					await handle.sync();
-				}
-				finally {
-					await handle.close();
-				}
-				await rename(temporary, target);
-			}
-			finally {
-				await unlink(temporary).catch((error: NodeJS.ErrnoException) => {
-					if (error.code !== "ENOENT") throw error;
-				});
-			}
+			await writeAtomic(await location(snapshot.source), body);
 		},
 	};
 }

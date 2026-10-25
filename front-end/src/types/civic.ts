@@ -251,6 +251,7 @@ export interface ElectionReferencesResponse {
 }
 
 export interface StateRecordsResponse {
+	awaitingRecords?: boolean;
 	available: boolean;
 	source: StateRecordState & { id?: string; label?: string; url?: string; retrievedAt?: string; scopeNotice?: string; documentLinks?: { label: string; url: string }[] };
 	total: number;
@@ -1813,7 +1814,7 @@ export interface AdminOperationDataset {
 	electionDate: string;
 	kind: "candidates" | "references";
 	mode: "automatic" | "reviewed";
-	status: "current" | "stale" | "missing" | "error" | "archived";
+	status: "current" | "stale" | "missing" | "pending" | "error" | "archived";
 	records: number | null;
 	retrievedAt: string | null;
 	lastAttemptAt: string | null;

@@ -111,6 +111,19 @@ export const additionalStateBallotSources: readonly StateBallotSource[] = [
 		withheldDistrictScopes: ["congressional", "state-senate", "state-house"],
 		scopeNotice: "Local coverage: Pulaski County.",
 	},
+	{
+		stateCode: "FL",
+		id: "fl-doe-local-2026",
+		label: "Florida local candidate filings",
+		electionDate: "2026-11-03",
+		url: "https://dos.elections.myflorida.com/candidates/extractCanList.asp",
+		pageUrl: "https://dos.elections.myflorida.com/candidates/downloadcanlist.asp",
+		format: "florida-local-tsv",
+		delimiter: "\t",
+		postBody: "elecID=20261103-GEN&office=All&status=All&cantype=LOC&FormSubmit=Download+Candidate+List",
+		snapshotStorage: "external",
+		scopeNotice: "Local filings are not a complete ballot. Reported county and district labels do not establish voter eligibility; some county labels are missing.",
+	},
 ];
 
 export const configuredStateBallotSources: readonly StateBallotSource[] = [...stateBallotSources, ...additionalStateBallotSources];

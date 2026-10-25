@@ -6,6 +6,7 @@ import { stateHtmlAttribute as attribute, stateHtmlDescendants as descendants, p
 
 export const floridaDiscoveryUrl = "https://dos.elections.myflorida.com/candidates/downloadcanlist.asp";
 export const floridaCandidateUrl = "https://dos.elections.myflorida.com/candidates/extractCanList.asp";
+export const floridaCountyCodesUrl = "https://dos.elections.myflorida.com/candidates/extractCountyCodes.asp";
 export const southCarolinaDiscoveryUrl = "https://vrems.scvotes.sc.gov/Candidate/SelectElection";
 export const southCarolinaScriptUrl = "https://vrems.scvotes.sc.gov/js/Candidate/SelectElection.js";
 export const southCarolinaYearsUrl = "https://vrems.scvotes.sc.gov/Candidate/GetYearsByElectionType?electionType=General";
@@ -26,22 +27,22 @@ export function floridaElectionDate(electionId: string) {
 	return generalDate(`${match[1]}-${match[2]}-${match[3]}`);
 }
 
-export function floridaCandidatePostBody(electionId: string) {
+export function floridaCandidatePostBody(electionId: string, candidateType: "STA" | "LOC" = "STA") {
 	floridaElectionDate(electionId);
-	return new URLSearchParams({ elecID: electionId, office: "All", status: "All", cantype: "STA", FormSubmit: "Download Candidate List" }).toString();
+	return new URLSearchParams({ elecID: electionId, office: "All", status: "All", cantype: candidateType, FormSubmit: "Download Candidate List" }).toString();
 }
 
 export function floridaSourceElectionId(source: StateBallotSource) {
 	const identifier = new URLSearchParams(source.postBody).get("elecID") ?? "";
-	if (source.stateCode !== "FL" || source.format !== "csv" || source.delimiter !== "\t" || source.url !== floridaCandidateUrl || source.pageUrl !== floridaDiscoveryUrl || source.postBody !== floridaCandidatePostBody(identifier) || source.electionDate !== floridaElectionDate(identifier)) throw new Error("The Florida source does not retain its exact state-candidate download contract.");
+	if (source.stateCode !== "FL" || !["csv", "florida-local-tsv"].includes(source.format) || source.delimiter !== "\t" || source.url !== floridaCandidateUrl || source.pageUrl !== floridaDiscoveryUrl || source.postBody !== floridaCandidatePostBody(identifier, source.format === "florida-local-tsv" ? "LOC" : "STA") || source.electionDate !== floridaElectionDate(identifier)) throw new Error("The Florida source does not retain its exact candidate download contract.");
 	return identifier;
 }
 
-function floridaDownloadForm(body: string) {
+function floridaPublicForm(body: string, name: string, target: string) {
 	if (Buffer.byteLength(body) > 2 * 1024 * 1024) throw new Error("The Florida election index exceeds its bounds.");
 	const document = parse(body, { sourceCodeLocationInfo: true }) as unknown as StateHtmlNode;
-	const forms = descendants(document, node => node.nodeName === "form" && attribute(node, "name") === "CanDownload");
-	if (forms.length !== 1 || attribute(forms[0]!, "method").toLowerCase() !== "post" || new URL(attribute(forms[0]!, "action"), floridaDiscoveryUrl).href !== floridaCandidateUrl) throw new Error("The Florida public download form has changed.");
+	const forms = descendants(document, node => node.nodeName === "form" && attribute(node, "name") === name);
+	if (forms.length !== 1 || attribute(forms[0]!, "method").toLowerCase() !== "post" || new URL(attribute(forms[0]!, "action"), floridaDiscoveryUrl).href !== target) throw new Error("The Florida public download form has changed.");
 	const location = (forms[0] as StateHtmlNode & { sourceCodeLocation?: { startTag?: { startOffset: number; endOffset: number } } }).sourceCodeLocation?.startTag;
 	if (!location) throw new Error("The Florida public download form has no source boundary.");
 	const remainder = body.slice(location.endOffset);
@@ -50,10 +51,14 @@ function floridaDownloadForm(body: string) {
 	const bounded = parseStateHtml(body.slice(location.startOffset, location.endOffset + closing.index + closing[0].length));
 	const scoped = descendants(bounded, node => node.nodeName === "form");
 	if (scoped.length !== 1) throw new Error("The Florida public download form boundary is ambiguous.");
-	const form = scoped[0]!;
+	return scoped[0]!;
+}
+
+function floridaDownloadForm(body: string, candidateType: "STA" | "LOC") {
+	const form = floridaPublicForm(body, "CanDownload", floridaCandidateUrl);
 	const selectors = descendants(form, node => node.nodeName === "select");
 	if (selectors.length !== 4 || selectors.filter(node => attribute(node, "name") === "elecID").length !== 1) throw new Error("The Florida public download filters have changed.");
-	for (const [name, value, label] of [["office", "All", "ALL"], ["status", "All", "ALL"], ["cantype", "STA", "State Candidates"]]) {
+	for (const [name, value, label] of [["office", "All", "ALL"], ["status", "All", "ALL"], ["cantype", candidateType, candidateType === "STA" ? "State Candidates" : "Local Candidates"]]) {
 		const matches = selectors.filter(node => attribute(node, "name") === name);
 		if (matches.length !== 1 || descendants(matches[0]!, node => node.nodeName === "option" && attribute(node, "value") === value && clean(node) === label).length !== 1) throw new Error("The Florida public download no longer supports the approved unfiltered state request.");
 	}
@@ -62,8 +67,8 @@ function floridaDownloadForm(body: string) {
 	return selectors.find(node => attribute(node, "name") === "elecID")!;
 }
 
-export function readFloridaElectionDiscovery(body: string, minimumYear: string) {
-	const selector = floridaDownloadForm(body);
+export function readFloridaElectionDiscovery(body: string, minimumYear: string, candidateType: "STA" | "LOC" = "STA") {
+	const selector = floridaDownloadForm(body, candidateType);
 	const options = descendants(selector, node => node.nodeName === "option");
 	if (!options.length || options.length > 200) throw new Error("The Florida published election list exceeds its bounds.");
 	return options.flatMap((option) => {
@@ -79,9 +84,17 @@ export function readFloridaElectionDiscovery(body: string, minimumYear: string) 
 
 export function buildFloridaCandidateForm(source: StateBallotSource, body: string) {
 	const electionId = floridaSourceElectionId(source);
-	const elections = readFloridaElectionDiscovery(body, source.electionDate.slice(0, 4));
+	const candidateType = source.format === "florida-local-tsv" ? "LOC" : "STA";
+	const elections = readFloridaElectionDiscovery(body, source.electionDate.slice(0, 4), candidateType);
 	if (elections.filter(item => item.electionId === electionId && item.electionDate === source.electionDate).length !== 1) throw new Error("The configured Florida general election is not uniquely published in its public form.");
-	return floridaCandidatePostBody(electionId);
+	return floridaCandidatePostBody(electionId, candidateType);
+}
+
+export function buildFloridaCountyForm(body: string) {
+	const form = floridaPublicForm(body, "CountyDownload", floridaCountyCodesUrl);
+	const inputs = descendants(form, node => node.nodeName === "input");
+	if (inputs.length !== 1 || attribute(inputs[0]!, "type") !== "submit" || attribute(inputs[0]!, "name") !== "FormSubmitCounty" || attribute(inputs[0]!, "value") !== "Download County Codes") throw new Error("The Florida public county-code control has changed.");
+	return new URLSearchParams({ FormSubmitCounty: "Download County Codes" }).toString();
 }
 
 export function southCarolinaCandidateRosterUrl(electionId: string) {

@@ -28,6 +28,7 @@ interface FetchRemoteJsonOptions {
 	maxRedirects?: number;
 	postBody?: string;
 	requireJson?: boolean;
+	textEncoding?: "utf-8" | "utf-8-or-windows-1252";
 	resolveAddresses?: (hostname: string) => Promise<LookupAddress[]>;
 	timeoutMs?: number;
 	transport?: (input: RemoteJsonTransportInput) => Promise<RemoteJsonResponse>;
@@ -215,6 +216,7 @@ async function readBoundedJsonBody(
 	timeoutMs: number,
 	requireJson = true,
 	bytesOnly = false,
+	textEncoding: "utf-8" | "utf-8-or-windows-1252" = "utf-8",
 ) {
 	const contentLength = Number(response.headers["content-length"]);
 
@@ -255,7 +257,14 @@ async function readBoundedJsonBody(
 
 		const body = Buffer.concat(chunks);
 		if (bytesOnly) return body;
-		return requireJson ? body.toString("utf8") : new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(body);
+		if (requireJson) return body.toString("utf8");
+		try {
+			return new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(body);
+		}
+		catch (error) {
+			if (textEncoding !== "utf-8-or-windows-1252" || body.subarray(0, 3).equals(Buffer.from([0xEF, 0xBB, 0xBF])) || body.some(byte => [0x81, 0x8D, 0x8F, 0x90, 0x9D].includes(byte))) throw error;
+			return new TextDecoder("windows-1252", { fatal: true, ignoreBOM: true }).decode(body);
+		}
 	})(), timeoutMs);
 }
 
@@ -312,7 +321,7 @@ export async function fetchRemoteJsonText(
 			throw new Error(`Unable to fetch live coverage snapshot: HTTP ${response.statusCode}.`);
 		}
 
-		return await readBoundedJsonBody(response, maxBytes, timeoutMs, options.requireJson ?? true) as string;
+		return await readBoundedJsonBody(response, maxBytes, timeoutMs, options.requireJson ?? true, false, options.textEncoding) as string;
 	}
 }
 

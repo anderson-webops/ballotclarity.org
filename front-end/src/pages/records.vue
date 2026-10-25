@@ -136,7 +136,10 @@ usePageSeo({
 					<p>{{ data.source.scopeNotice }}</p>
 				</aside>
 			</div>
-			<p v-if="!data.available" class="text-sm text-app-muted dark:text-app-muted-dark" role="status">
+			<p v-if="data.awaitingRecords" class="text-sm text-app-muted dark:text-app-muted-dark" role="status">
+				No records yet.
+			</p>
+			<p v-else-if="!data.available" class="text-sm text-app-muted dark:text-app-muted-dark" role="status">
 				Official candidate records are unavailable for this {{ data.source.id ? "source" : "state" }}.
 			</p>
 			<template v-else>

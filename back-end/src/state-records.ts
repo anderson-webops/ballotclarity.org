@@ -151,6 +151,9 @@ export function registerStateRecordRoutes(app: Express, repository: StateBallotR
 				payload.available = true;
 				payload.source.retrievedAt = snapshot.retrievedAt;
 			}
+			else if (source && repository?.isAwaitingRecords?.(source.id)) {
+				payload.awaitingRecords = true;
+			}
 			response.json(payload);
 		}
 		catch {

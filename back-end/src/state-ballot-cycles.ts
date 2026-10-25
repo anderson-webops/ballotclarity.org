@@ -25,6 +25,7 @@ const cycleFamilies = [
 	{ source: configuredStateBallotSources.find(source => source.id === "sd-sos-2026")!, format: "south-dakota-csv", discoveryUrl: dakotaDiscoveryUrl("SD"), prefix: "sd-general", electionLabel: "General Election", formId: "Form1" },
 	{ source: configuredStateBallotSources.find(source => source.id === "nd-sos-2026")!, format: "north-dakota-html", discoveryUrl: dakotaDiscoveryUrl("ND"), prefix: "nd-general", electionLabel: "General Election", formId: "aspnetForm" },
 	{ source: configuredStateBallotSources.find(source => source.id === "fl-doe-2026")!, format: "csv", discoveryUrl: floridaDiscoveryUrl, prefix: "fl-general", electionLabel: "Election", formId: "CanDownload" },
+	{ source: configuredStateBallotSources.find(source => source.id === "fl-doe-local-2026")!, format: "florida-local-tsv", discoveryUrl: floridaDiscoveryUrl, prefix: "fl-local-general", electionLabel: "Election", formId: "CanDownload" },
 	{ source: configuredStateBallotSources.find(source => source.id === "sc-sec-2026")!, format: "south-carolina-html", discoveryUrl: southCarolinaDiscoveryUrl, prefix: "sc-general", electionLabel: "Statewide General Election", formId: "SelectElectionForm" },
 ] as const;
 
@@ -223,7 +224,7 @@ export function discoverWashingtonElectionCycles(body: string, now = Date.now())
 export function discoverStateBallotElectionCycles(body: string, familyId: string, now = Date.now()): StateBallotCycleCatalog {
 	const family = getStateBallotCycleFamily(familyId);
 	if (Buffer.byteLength(body) > 2 * 1024 * 1024) throw new Error("The election discovery page exceeds its size limit.");
-	if (family.source.stateCode === "FL") return parseStateBallotCycleCatalog({ schemaVersion: 1, type: "state-ballot-cycle-catalog", familyId, sourceConfigurationSha256: digest(JSON.stringify(family.source)), discovery: { url: family.discoveryUrl, sha256: digest(body), retrievedAt: new Date(now).toISOString() }, elections: readFloridaElectionDiscovery(body, family.source.electionDate.slice(0, 4)) }, now);
+	if (family.source.stateCode === "FL") return parseStateBallotCycleCatalog({ schemaVersion: 1, type: "state-ballot-cycle-catalog", familyId, sourceConfigurationSha256: digest(JSON.stringify(family.source)), discovery: { url: family.discoveryUrl, sha256: digest(body), retrievedAt: new Date(now).toISOString() }, elections: readFloridaElectionDiscovery(body, family.source.electionDate.slice(0, 4), family.format === "florida-local-tsv" ? "LOC" : "STA") }, now);
 	if (family.format === "south-carolina-html") return parseStateBallotCycleCatalog({ schemaVersion: 1, type: "state-ballot-cycle-catalog", familyId, sourceConfigurationSha256: digest(JSON.stringify(family.source)), discovery: { url: family.discoveryUrl, sha256: digest(body), retrievedAt: new Date(now).toISOString() }, elections: readSouthCarolinaElectionDiscovery(body, family.source.electionDate.slice(0, 4)) }, now);
 	if (family.format === "mississippi-csv") return parseStateBallotCycleCatalog({ schemaVersion: 1, type: "state-ballot-cycle-catalog", familyId, sourceConfigurationSha256: digest(JSON.stringify(family.source)), discovery: { url: family.discoveryUrl, sha256: digest(body), retrievedAt: new Date(now).toISOString() }, elections: [{ electionId: null, electionDate: readMississippiGeneralElectionDate(body) }] }, now);
 	if (family.format === "csv") return parseStateBallotCycleCatalog({ schemaVersion: 1, type: "state-ballot-cycle-catalog", familyId, sourceConfigurationSha256: digest(JSON.stringify(family.source)), discovery: { url: family.discoveryUrl, sha256: digest(body), retrievedAt: new Date(now).toISOString() }, elections: [{ electionId: null, electionDate: readWyomingGeneralElectionDate(body) }] }, now);
@@ -259,7 +260,7 @@ export function stateBallotCycleSources(catalog: StateBallotCycleCatalog, now = 
 	parseStateBallotCycleCatalog(catalog, now);
 	const family = getStateBallotCycleFamily(catalog.familyId);
 	return catalog.elections.filter(election => election.electionDate !== family.source.electionDate).map((election) => {
-		if (family.source.stateCode === "FL") return { ...family.source, id: `${family.prefix}-${election.electionDate}`, label: `${family.source.label} (${election.electionDate.slice(0, 4)})`, electionDate: election.electionDate, postBody: floridaCandidatePostBody(election.electionId!) };
+		if (family.source.stateCode === "FL") return { ...family.source, id: `${family.prefix}-${election.electionDate}`, label: `${family.source.label} (${election.electionDate.slice(0, 4)})`, electionDate: election.electionDate, postBody: floridaCandidatePostBody(election.electionId!, family.format === "florida-local-tsv" ? "LOC" : "STA") };
 		if (family.format === "south-carolina-html") {
 			const url = southCarolinaCandidateRosterUrl(election.electionId!);
 			return { ...family.source, id: `${family.prefix}-${election.electionDate}`, label: `${family.source.label} (${election.electionDate.slice(0, 4)})`, electionDate: election.electionDate, url, pageUrl: url };

@@ -15,6 +15,14 @@ export interface StateBallotGridPage {
 	cells: Array<{ bounds: Rectangle; text: string; logicalText: string; tags: Array<{ text: string; top: number; bottom: number }> }>;
 }
 
+export interface StateBallotTablePage {
+	number: number;
+	width: number;
+	height: number;
+	text: string;
+	cells: Array<{ bounds: Rectangle; text: string; logicalText: string }>;
+}
+
 export const stateBallotPdfGridContract = Object.freeze({
 	configuration: "STATE_BALLOT_PDFTOCAIRO",
 	executable: "absolute path to maintained Poppler pdftocairo",
@@ -26,7 +34,7 @@ export const stateBallotPdfGridContract = Object.freeze({
 	role: "bounded collection worker; no network or script execution while reading geometry",
 });
 
-function svgRectangles(body: string, width: number, height: number, minimumCells = 30): Rectangle[] {
+function svgRectangles(body: string, width: number, height: number, minimumCells = 30, allowFilledRules = false): Rectangle[] {
 	if (Buffer.byteLength(body) > stateBallotPdfGridContract.maximumSvgBytes) throw new Error("The ballot grid SVG exceeds its bounds.");
 	const document = parseStateHtml(body);
 	const roots = stateHtmlDescendants(document, node => node.nodeName === "svg");
@@ -37,7 +45,9 @@ function svgRectangles(body: string, width: number, height: number, minimumCells
 	const edges: Edge[] = [];
 	for (const path of paths) {
 		const stroke = stateHtmlAttribute(path, "stroke") || /(?:^|;)\s*stroke:\s*([^;]+)/u.exec(stateHtmlAttribute(path, "style"))?.[1];
-		if (!stroke || stroke === "none") continue;
+		const fill = stateHtmlAttribute(path, "fill") || /(?:^|;)\s*fill:\s*([^;]+)/u.exec(stateHtmlAttribute(path, "style"))?.[1];
+		const filled = (!stroke || stroke === "none") && allowFilledRules && ["black", "#000", "#000000", "rgb(0%, 0%, 0%)", "rgb(0, 0, 0)"].includes(fill ?? "") && ["", "1"].includes(stateHtmlAttribute(path, "fill-opacity"));
+		if ((!stroke || stroke === "none") && !filled) continue;
 		const definition = stateHtmlAttribute(path, "d");
 		if (!/^[MLZ\s,\deE.+-]+$/u.test(definition)) continue;
 		if (stateHtmlAttribute(roots[0]!, "transform") || inheritedTransforms.has(path)) throw new Error("The ballot grid has an unsupported ancestor transform.");
@@ -51,6 +61,17 @@ function svgRectangles(body: string, width: number, height: number, minimumCells
 		};
 		const tokens = definition.match(/[MLZ]|[-+]?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?/gu) ?? [];
 		if (tokens.length > 20000) throw new Error("The ballot grid path exceeds its bounds.");
+		if (filled) {
+			if (![13, 16].includes(tokens.length) || tokens[0] !== "M" || [3, 6, 9].some(index => tokens[index] !== "L") || tokens[12] !== "Z" || (tokens.length === 16 && tokens[13] !== "M")) continue;
+			const corners = [0, 3, 6, 9].map(index => point(Number(tokens[index + 1]), Number(tokens[index + 2])));
+			const horizontal = [...new Set(corners.map(corner => corner[0]))];
+			const vertical = [...new Set(corners.map(corner => corner[1]))];
+			if (horizontal.length !== 2 || vertical.length !== 2 || new Set(corners.map(corner => corner.join(","))).size !== 4 || corners.some((corner, index) => corner[0] !== corners[(index + 1) % 4]![0] && corner[1] !== corners[(index + 1) % 4]![1])) continue;
+			const rectangleWidth = Math.abs(horizontal[0]! - horizontal[1]!);
+			const rectangleHeight = Math.abs(vertical[0]! - vertical[1]!);
+			if (Math.min(rectangleWidth, rectangleHeight) > 2 || Math.max(rectangleWidth, rectangleHeight) <= 10) continue;
+			if (tokens.length === 16) point(Number(tokens[14]), Number(tokens[15]));
+		}
 		let previous: readonly [number, number] | undefined;
 		let beginning: readonly [number, number] | undefined;
 		let command: string | undefined;
@@ -216,7 +237,21 @@ export function readStateBallotPdfGrid(wordCorpus: string, drawings: string[], o
 	});
 }
 
-export async function extractStateBallotPdfGrid(bytes: Buffer, options: { textExecutable?: string; svgExecutable?: string } & GridOptions = {}) {
+export function readStateBallotPdfTables(wordCorpus: string, drawings: string[]): StateBallotTablePage[] {
+	const pages = readWordPages(wordCorpus);
+	if (drawings.length !== pages.length) throw new Error("The ballot table drawing set is incomplete.");
+	return pages.map(({ width, height, words }, index) => {
+		const entries = svgRectangles(drawings[index]!, width, height, 0, true).map((bounds) => {
+			const inside = words.filter(word => (word.left + word.right) / 2 > bounds[0] - 0.2 && (word.left + word.right) / 2 < bounds[2] + 0.2 && (word.top + word.bottom) / 2 > bounds[1] - 0.2 && (word.top + word.bottom) / 2 < bounds[3] + 0.2);
+			return { bounds, text: lines(inside), logicalText: inside.map(word => word.text).join(" ") };
+		});
+		const cells = entries.filter(cell => entries.filter(other => other !== cell && other.bounds[0] >= cell.bounds[0] - 0.1 && other.bounds[1] >= cell.bounds[1] - 0.1 && other.bounds[2] <= cell.bounds[2] + 0.1 && other.bounds[3] <= cell.bounds[3] + 0.1).length < 2);
+		if (cells.some(cell => cell.text.length > 3000 || cell.logicalText.length > 3000)) throw new Error("The ballot table cell exceeds its bounds.");
+		return { number: index + 1, width, height, text: lines(words), cells };
+	});
+}
+
+async function extractStateBallotPdfGeometry<Result>(bytes: Buffer, options: { textExecutable?: string; svgExecutable?: string }, reader: (wordCorpus: string, drawings: string[]) => Result) {
 	const startedAt = Date.now();
 	const textExecutable = options.textExecutable ?? await resolveStateBallotPdfExtractor();
 	const svgExecutable = options.svgExecutable ?? await resolveStateBallotPdfSvgExtractor();
@@ -228,7 +263,15 @@ export async function extractStateBallotPdfGrid(bytes: Buffer, options: { textEx
 		if (remaining <= 0) throw new Error("The ballot grid document exceeded its time budget.");
 		drawings.push(await extractStateBallotPdfSvg(bytes, svgExecutable, index + 1, Math.min(remaining, stateBallotPdfCollectorContract.timeoutMs)));
 	}
-	const result = readStateBallotPdfGrid(wordCorpus, drawings, options);
+	const result = reader(wordCorpus, drawings);
 	if (Date.now() - startedAt > stateBallotPdfGridContract.maximumDocumentMs) throw new Error("The ballot grid document exceeded its time budget.");
 	return result;
+}
+
+export function extractStateBallotPdfGrid(bytes: Buffer, options: { textExecutable?: string; svgExecutable?: string } & GridOptions = {}) {
+	return extractStateBallotPdfGeometry(bytes, options, (words, drawings) => readStateBallotPdfGrid(words, drawings, options));
+}
+
+export function extractStateBallotPdfTables(bytes: Buffer, options: { textExecutable?: string; svgExecutable?: string } = {}) {
+	return extractStateBallotPdfGeometry(bytes, options, readStateBallotPdfTables);
 }

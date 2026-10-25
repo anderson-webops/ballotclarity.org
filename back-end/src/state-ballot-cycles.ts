@@ -1,6 +1,7 @@
 import type { CertifiedPdfElection } from "./state-ballot-certified-pdf.js";
 import type { FultonElection } from "./state-ballot-fulton.js";
 import type { StateBallotSource } from "./state-ballot-sources.js";
+import type { TexasElection } from "./state-ballot-texas.js";
 import type { VirginiaElection } from "./state-ballot-virginia.js";
 import { Buffer } from "node:buffer";
 import { createHash, randomUUID } from "node:crypto";
@@ -65,6 +66,7 @@ import {
 	southCarolinaDiscoveryUrl
 } from "./state-ballot-southern.js";
 import { assertExternalStateDataDirectory } from "./state-ballot-storage.js";
+import { readTexasElectionDiscovery, texasDiscoveryUrl, validateTexasElection, validateTexasSource } from "./state-ballot-texas.js";
 import {
 	readUtahElectionDiscovery,
 	utahCandidateRosterUrl,
@@ -90,6 +92,7 @@ const washington = configuredStateBallotSources.find(source => source.id === "wa
 export const stateBallotCycleDiscoveryUrl = "https://voter.votewa.gov/CandidateList.aspx";
 const digest = (value: string) => createHash("sha256").update(value).digest("hex");
 const cycleFamilies = [
+	{ source: configuredStateBallotSources.find(source => source.id === "tx-sos-2026")!, format: "texas-certified-pdf", discoveryUrl: texasDiscoveryUrl, prefix: "tx-general", electionLabel: "General Election", formId: null },
 	{ source: configuredStateBallotSources.find(source => source.id === "vt-sos-2026")!, format: "vermont-xlsx", discoveryUrl: vermontDiscoveryUrl, prefix: "vt-general", electionLabel: "General Election", formId: null },
 	{ source: configuredStateBallotSources.find(source => source.id === "mo-sos-2026")!, format: "certified-pdf", discoveryUrl: certifiedPdfDiscoveryUrls.MO, prefix: "mo-general", electionLabel: "General Election", formId: null },
 	{ source: configuredStateBallotSources.find(source => source.id === "nj-doe-2026-federal")!, format: "certified-pdf", discoveryUrl: certifiedPdfDiscoveryUrls.NJ, prefix: "nj-federal-general", electionLabel: "General Election", formId: null },
@@ -129,7 +132,11 @@ export function getStateBallotCycleFamily(familyId: string) {
 	const family = cycleFamilies.find(item => item.source.id === familyId);
 	if (!family) throw new Error("The automatic election source family is unsupported or has changed.");
 	let targetValid = family.source.pageUrl === family.source.url;
-	if (family.format === "vermont-xlsx") {
+	if (family.format === "texas-certified-pdf") {
+		validateTexasSource(family.source);
+		targetValid = true;
+	}
+	else if (family.format === "vermont-xlsx") {
 		validateVermontSource(family.source);
 		targetValid = true;
 	}
@@ -184,7 +191,7 @@ export function getStateBallotCycleFamily(familyId: string) {
 	else {
 		targetValid = targetValid && new RegExp(`^${family.discoveryUrl.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&")}\\?e=[1-9]\\d{0,8}$`, "u").test(family.source.url);
 	}
-	if (!targetValid || family.source.format !== family.format || family.source.retrievalPolicy || (family.source.stateCode !== "FL" && family.source.postBody) || (family.source.documentUrls?.length && !["KY", "VA", "GA", "MO", "NJ", "VT"].includes(family.source.stateCode)) || (family.source.documentLinks?.length && family.source.stateCode !== "GA"))
+	if (!targetValid || family.source.format !== family.format || family.source.retrievalPolicy || (family.source.stateCode !== "FL" && family.source.postBody) || (family.source.documentUrls?.length && !["KY", "VA", "GA", "MO", "NJ", "VT", "TX"].includes(family.source.stateCode)) || (family.source.documentLinks?.length && family.source.stateCode !== "GA"))
 		throw new Error("The automatic election source family is unsupported or has changed.");
 	return family;
 }
@@ -232,7 +239,7 @@ export interface StateBallotCycleCatalog {
 	familyId: string;
 	sourceConfigurationSha256: string;
 	discovery: { url: string; sha256: string; retrievedAt: string };
-	elections: { electionId: string | null; electionDate: string; reports?: VirginiaElection["reports"]; allOfficesUrl?: string | null; documents?: FultonElection["documents"]; pageUrl?: string; pdfDocuments?: CertifiedPdfElection["pdfDocuments"]; workbookUrl?: string }[];
+	elections: { electionId: string | null; electionDate: string; reports?: VirginiaElection["reports"]; allOfficesUrl?: string | null; documents?: FultonElection["documents"]; pageUrl?: string; pdfDocuments?: CertifiedPdfElection["pdfDocuments"]; workbookUrl?: string; texasDocuments?: TexasElection["texasDocuments"] }[];
 }
 
 function exactKeys(value: unknown, names: string[]): value is Record<string, unknown> {
@@ -327,6 +334,14 @@ export function parseStateBallotCycleCatalog(value: unknown, now = Date.now()): 
 	const dates = new Set<string>();
 	const florida = original.stateCode === "FL";
 	const maryland = original.stateCode === "MD";
+	if (original.format === "texas-certified-pdf") {
+		for (const election of value.elections) {
+			validateTexasElection(election);
+			if (dates.has(election.electionDate) || (election.electionDate === original.electionDate && (election.pageUrl !== original.pageUrl || election.texasDocuments.map(item => item.url).join("|") !== original.documentUrls!.join("|")))) throw new Error("The Texas documents conflict with the original configured source.");
+			dates.add(election.electionDate);
+		}
+		return value as unknown as StateBallotCycleCatalog;
+	}
 	if (original.format === "vermont-xlsx") {
 		for (const election of value.elections) {
 			validateVermontElection(election);
@@ -385,6 +400,7 @@ export function discoverStateBallotElectionCycles(body: string, familyId: string
 		return parseStateBallotCycleCatalog({ schemaVersion: 1, type: "state-ballot-cycle-catalog", familyId, sourceConfigurationSha256: digest(JSON.stringify(family.source)), discovery: { url: family.discoveryUrl, sha256: digest(body), retrievedAt: new Date(now).toISOString() }, elections: readNorthCarolinaElectionDiscovery(body) }, now);
 	}
 	const family = getStateBallotCycleFamily(familyId);
+	if (family.format === "texas-certified-pdf") return parseStateBallotCycleCatalog({ schemaVersion: 1, type: "state-ballot-cycle-catalog", familyId, sourceConfigurationSha256: digest(JSON.stringify(family.source)), discovery: { url: family.discoveryUrl, sha256: digest(body), retrievedAt: new Date(now).toISOString() }, elections: readTexasElectionDiscovery(body) }, now);
 	if (family.format === "vermont-xlsx") return parseStateBallotCycleCatalog({ schemaVersion: 1, type: "state-ballot-cycle-catalog", familyId, sourceConfigurationSha256: digest(JSON.stringify(family.source)), discovery: { url: family.discoveryUrl, sha256: digest(body), retrievedAt: new Date(now).toISOString() }, elections: readVermontElectionDiscovery(body) }, now);
 	if (family.format === "certified-pdf") return parseStateBallotCycleCatalog({ schemaVersion: 1, type: "state-ballot-cycle-catalog", familyId, sourceConfigurationSha256: digest(JSON.stringify(family.source)), discovery: { url: family.discoveryUrl, sha256: digest(body), retrievedAt: new Date(now).toISOString() }, elections: readCertifiedPdfElectionDiscovery(body) }, now);
 	if (family.source.stateCode === "GA") return parseStateBallotCycleCatalog({ schemaVersion: 1, type: "state-ballot-cycle-catalog", familyId, sourceConfigurationSha256: digest(JSON.stringify(family.source)), discovery: { url: family.discoveryUrl, sha256: digest(body), retrievedAt: new Date(now).toISOString() }, elections: readFultonElectionDiscovery(body) }, now);
@@ -430,6 +446,10 @@ export function stateBallotCycleSources(catalog: StateBallotCycleCatalog, now = 
 	parseStateBallotCycleCatalog(catalog, now);
 	const family = getStateBallotCycleFamily(catalog.familyId);
 	return catalog.elections.filter(election => election.electionDate !== family.source.electionDate).map((election) => {
+		if (family.format === "texas-certified-pdf") {
+			validateTexasElection(election);
+			return { ...family.source, id: `${family.prefix}-${election.electionDate}`, label: `${family.source.label} (${election.electionDate.slice(0, 4)})`, electionDate: election.electionDate, url: election.pageUrl, pageUrl: election.pageUrl, documentUrls: election.texasDocuments.map(item => item.url), scopeNotice: "Separate special elections are not included." };
+		}
 		if (family.format === "vermont-xlsx") {
 			validateVermontElection(election);
 			return { ...family.source, id: `${family.prefix}-${election.electionDate}`, label: `${family.source.label} (${election.electionDate.slice(0, 4)})`, electionDate: election.electionDate, url: election.workbookUrl, documentUrls: [election.workbookUrl] };

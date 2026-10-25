@@ -31,6 +31,7 @@ import {
 	supportsPendingStateBallotRecords
 } from "./state-ballot-source-state.js";
 import { createStateBallotStorage } from "./state-ballot-storage.js";
+import { parseTexasCandidateCapture } from "./state-ballot-texas.js";
 import { parseVermontCandidateCapture } from "./state-ballot-vermont.js";
 
 export interface StateBallotSnapshot {
@@ -177,7 +178,7 @@ export function createStateBallotRepository(options: StateBallotRepositoryOption
 				body = await fetchText(source);
 				capturedAt = new Date(now()).toISOString();
 				failureReason = "format";
-				const documentCapture = source.format === "vermont-xlsx" ? parseVermontCandidateCapture(source, body) : source.format === "fulton-pdf" ? parseFultonCandidateCapture(source, body) : source.format === "certified-pdf" ? parseCertifiedPdfCapture(source, body) : null;
+				const documentCapture = source.format === "texas-certified-pdf" ? parseTexasCandidateCapture(source, body) : source.format === "vermont-xlsx" ? parseVermontCandidateCapture(source, body) : source.format === "fulton-pdf" ? parseFultonCandidateCapture(source, body) : source.format === "certified-pdf" ? parseCertifiedPdfCapture(source, body) : null;
 				const snapshot: StateBallotSnapshot = {
 					source,
 					retrievedAt: capturedAt,
@@ -278,12 +279,13 @@ export function createStateBallotRepository(options: StateBallotRepositoryOption
 
 export function buildStateBallotPreview(snapshot: StateBallotSnapshot, lookup: Pick<LocationLookupResponse, "districtMatches">): BallotContentPreview | null {
 	const contests = new Map<string, BallotContentPreviewContest>();
+	const configured = configuredStateBallotSources.find(source => source.id === snapshot.source.id && source.stateCode === snapshot.source.stateCode && source.electionDate === snapshot.source.electionDate);
 	for (const record of snapshot.records) {
 		if (!isActiveStateCandidateRecord(record) || !stateRecordMatchesDistricts(record, lookup.districtMatches ?? []))
 			continue;
-		if (record.scope !== "statewide" && record.scope !== "local" && snapshot.source.withheldDistrictScopes?.includes(record.scope))
+		if (record.scope !== "statewide" && record.scope !== "local" && (snapshot.source.withheldDistrictScopes?.includes(record.scope) || configured?.withheldDistrictScopes?.includes(record.scope)))
 			continue;
-		if (record.scope === "statewide" && snapshot.source.withheldStatewideOffices?.includes(record.office))
+		if (record.scope === "statewide" && (snapshot.source.withheldStatewideOffices?.includes(record.office) || configured?.withheldStatewideOffices?.includes(record.office)))
 			continue;
 		const key = JSON.stringify([record.office, record.scope, record.district]);
 		let contest = contests.get(key);
@@ -303,7 +305,7 @@ export function buildStateBallotPreview(snapshot: StateBallotSnapshot, lookup: P
 		return null;
 	const disclaimer = snapshot.source.stateCode === "VA"
 		? "Federal candidates only; state and local contests are not included. This is not an address-specific ballot."
-		: ["reviewed-pdf", "reviewed-image", "fulton-pdf", "certified-pdf", "vermont-xlsx", "alaska-html", "connecticut-ballots", "oregon-ballots"].includes(snapshot.source.format)
+		: ["reviewed-pdf", "reviewed-image", "fulton-pdf", "certified-pdf", "texas-certified-pdf", "vermont-xlsx", "alaska-html", "connecticut-ballots", "oregon-ballots"].includes(snapshot.source.format)
 				? "Dated snapshot; later changes and local contests may be missing."
 				: snapshot.source.retrievalPolicy === "manual-snapshot"
 					? "Dated snapshot; later changes and local contests may be missing. Filing does not establish ballot qualification."

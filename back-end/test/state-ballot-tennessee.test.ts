@@ -78,7 +78,9 @@ test("withheld congressional records remain browsable but never enter an address
 	const matched = buildStateBallotPreview(snapshot, { districtMatches: [typed("congressional", "9"), typed("state-senate", "27"), typed("state-house", "61")] })!;
 	assert.equal(matched.candidateCount, 4);
 	assert.ok(!matched.contests.some(contest => contest.candidates.some(candidate => candidate.name === "Local Example" || candidate.name === "Congress Example")));
-	const unaffected = buildStateBallotPreview({ ...snapshot, source: { ...source, withheldDistrictScopes: undefined } }, { districtMatches: [typed("congressional", "9")] })!;
+	const stalePolicy = buildStateBallotPreview({ ...snapshot, source: { ...source, withheldDistrictScopes: undefined } }, { districtMatches: [typed("congressional", "9")] })!;
+	assert.equal(stalePolicy.candidateCount, 2);
+	const unaffected = buildStateBallotPreview({ ...snapshot, source: { ...source, id: "unregistered-controlled-fixture", withheldDistrictScopes: undefined } }, { districtMatches: [typed("congressional", "9")] })!;
 	assert.equal(unaffected.candidateCount, 3);
 });
 

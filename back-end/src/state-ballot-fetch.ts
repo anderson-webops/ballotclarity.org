@@ -30,6 +30,7 @@ import {
 	floridaSourceElectionId,
 	southCarolinaCandidateRosterUrl
 } from "./state-ballot-southern.js";
+import { fetchTexasCandidateCapture } from "./state-ballot-texas.js";
 import { fetchUtahCandidatePage } from "./state-ballot-utah.js";
 import { fetchVermontCandidateCapture } from "./state-ballot-vermont.js";
 import { fetchVirginiaCandidateCapture } from "./state-ballot-virginia.js";
@@ -175,6 +176,7 @@ export async function fetchStateBallotSourceText(source: StateBallotSource, requ
 	if (source.stateCode === "VA") return fetchVirginiaCandidateCapture(source, request);
 	if (source.format === "fulton-pdf") return fetchFultonCandidateCapture(source, { requestText: request });
 	if (source.format === "vermont-xlsx") return fetchVermontCandidateCapture(source, undefined, { requestText: request });
+	if (source.format === "texas-certified-pdf") return fetchTexasCandidateCapture(source, undefined, { requestText: request });
 	if (source.format === "certified-pdf") return fetchCertifiedPdfCapture(source, undefined, { requestText: request });
 	if (source.stateCode === "WY" && (source.format !== "csv" || !validStateBallotGeneralDate(source.electionDate) || Number(source.electionDate.slice(0, 4)) % 2 || source.url !== wyomingCandidateRosterUrl(source.electionDate))) throw new Error("The Wyoming roster must retain its exact official election URL.");
 	if (["south-dakota-csv", "north-dakota-html"].includes(source.format)) assertDakotaSourceIdentity(source);

@@ -4,10 +4,11 @@ External election catalogs opt the automatic candidate repository into reusable
 source families. The current 61 source definitions retain explicit source/state
 allowlists; reusable discovery does not widen an exact-source allowlist.
 
-Twenty-four families across twenty states are supported:
+Twenty-five families across twenty-one states are supported:
 
 | Family | Discovery | Elections |
 | --- | --- | --- |
+| `tx-sos-2026` | [Texas election index](https://www.sos.state.tx.us/elections/index.shtml) and its actually offered regular-general page | Explicit even-year November dates, final county certification and optional declared-write-in certification; separate special elections stay excluded |
 | `vt-sos-2026` | [Vermont general-election candidates](https://sos.vermont.gov/elections/election-info-resources/candidates) | Actual active even-year general date and published qualified-candidate workbook; legislative codes remain unmapped and local rows are not personal ballot matches |
 | `mo-sos-2026` | [Missouri official homepage](https://www.sos.mo.gov/) and [election calendar](https://www.sos.mo.gov/elections/calendar) | Offered November certification PDFs paired with the calendar's explicit regular-general date; current 425 identities retained, including individual regional retention questions |
 | `nj-doe-2026-federal` | [New Jersey election-year archive](https://www.nj.gov/state/elections/election-information.shtml) and each actually offered even-year page | Published Senate/House lists and explicit district amendments; every PDF identifies the selected general date, published party totals reconcile and only the amended district is replaced |
@@ -32,6 +33,20 @@ Twenty-four families across twenty states are supported:
 | `ut-lg-2026` | [Utah candidate resources](https://vote.utah.gov/resources-for-candidates-political-groups-parties/) and [current election information](https://vote.utah.gov/current-election-information/) | Actually offered even-year candidate links paired with an explicit same-cycle regular general-election date; existing 255 records/IDs retained |
 | `mi-dos-2026` | [Michigan election homepage](https://www.michigan.gov/en/sos/elections) | Published November General Candidate Listing links paired with matching official report headers and explicit dates; original 716 entries/IDs retained |
 | `ks-johnson-2026` | [Johnson County upcoming elections](https://www.jocoelection.org/events-elections/upcoming-elections) and its public candidate selector | Explicit November general-election links, matching offered candidate IDs and dated Johnson County election pages, including odd years; county publication is not statewide completeness or voter-specific eligibility |
+
+Texas reconciles all 1,395 numbered report pages and 254 counties, retaining all
+3,840 current facts/IDs, seventeen declared write-ins and the original PDF hashes.
+Candidate repetition does not make a county office statewide. Legislative,
+regional and county contexts stay distinct; unverified local eligibility stays
+withheld. Congressional previews also require verified election-map boundaries;
+directory records stay available, and latest configured safety holds protect
+retained snapshots too. Current visually reviewed OCR corrections bind the exact write-in PDF
+hash, not every later document. The bounded optional Poppler invocation permits
+up to 2,000 Texas pages with unchanged byte/output/time bounds; other sources keep
+the 50-page default. Original reviewed Texas files stay readable without the
+extractor. Future dates/URLs must actually be offered. Unknown tickets, empty
+certifications and changed unexpired document sets require review. Future cases
+are synthetic. See the [Texas source review](audits/2026-10-25-texas-candidates.md).
 
 Vermont's packaged Node workbook reader requires no host conversion tool. It
 bounds compressed/expanded ZIP bytes, entries, XML, dimensions, cells, output,

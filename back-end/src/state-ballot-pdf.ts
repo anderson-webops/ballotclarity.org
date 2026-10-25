@@ -28,8 +28,8 @@ export async function resolveStateBallotPdfExtractor(value = process.env.STATE_B
 	}
 	catch { throw new StateBallotPdfCapabilityError("The configured PDF text extractor is unavailable."); }
 }
-export async function extractStateBallotPdfText(bytes: Buffer, executable: string, timeoutMs: number = stateBallotPdfCollectorContract.timeoutMs, format: "layout" | "bbox-layout" = "layout") {
-	if (!bytes.subarray(0, 5).equals(Buffer.from("%PDF-")) || bytes.length > stateBallotPdfCollectorContract.maximumPdfBytes || !Number.isInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > stateBallotPdfCollectorContract.timeoutMs || !["layout", "bbox-layout"].includes(format)) throw new Error("The PDF extraction input exceeds its reviewed bounds.");
+export async function extractStateBallotPdfText(bytes: Buffer, executable: string, timeoutMs: number = stateBallotPdfCollectorContract.timeoutMs, format: "layout" | "bbox-layout" = "layout", maximumPages: number = stateBallotPdfCollectorContract.maximumPages) {
+	if (!bytes.subarray(0, 5).equals(Buffer.from("%PDF-")) || bytes.length > stateBallotPdfCollectorContract.maximumPdfBytes || !Number.isInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > stateBallotPdfCollectorContract.timeoutMs || !["layout", "bbox-layout"].includes(format) || !Number.isInteger(maximumPages) || maximumPages < 1 || maximumPages > 2000) throw new Error("The PDF extraction input exceeds its reviewed bounds.");
 	return new Promise<string>((resolve, reject) => {
 		const child = spawn(executable, [`-${format}`, "-enc", "UTF-8", "-eol", "unix", "-", "-"], { stdio: ["pipe", "pipe", "pipe"], env: { PATH: process.env.PATH, LANG: "C.UTF-8" } });
 		const chunks: Buffer[] = [];
@@ -65,7 +65,7 @@ export async function extractStateBallotPdfText(bytes: Buffer, executable: strin
 			else {
 				const body = Buffer.concat(chunks).toString("utf8");
 				const pages = format === "bbox-layout" ? [...body.matchAll(/<page\b/gu)].length : body.split("\f").filter(page => page.trim()).length;
-				if (!body.trim() || body.includes("\uFFFD") || !pages || pages > stateBallotPdfCollectorContract.maximumPages) reject(new Error("The PDF has no supported bounded UTF-8 text."));
+				if (!body.trim() || body.includes("\uFFFD") || !pages || pages > maximumPages) reject(new Error("The PDF has no supported bounded UTF-8 text."));
 				else resolve(body);
 			}
 		});

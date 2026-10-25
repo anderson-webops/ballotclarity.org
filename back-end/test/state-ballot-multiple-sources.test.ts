@@ -49,7 +49,7 @@ async function serve(repository: StateBallotRepository) {
 test("county sources are additive and their reviewed configuration retains each original document", () => {
 	assert.equal(stateBallotSources.length, 50);
 	assert.equal(configuredStateBallotSources.length, 61);
-	assert.deepEqual(configuredStateBallotSources.slice(0, 50).filter(source => !["GA", "MO", "NJ", "TX", "OR"].includes(source.stateCode)), stateBallotSources.filter(source => !["GA", "MO", "NJ", "TX", "OR"].includes(source.stateCode)));
+	assert.deepEqual(configuredStateBallotSources.slice(0, 50).filter(source => !["CT", "GA", "MO", "NJ", "TX", "OR"].includes(source.stateCode)), stateBallotSources.filter(source => !["CT", "GA", "MO", "NJ", "TX", "OR"].includes(source.stateCode)));
 	const oregon = configuredStateBallotSources.find(source => source.id === "or-sos-multnomah-2026")!;
 	const oregonOriginal = stateBallotSources.find(source => source.id === oregon.id)!;
 	assert.equal(oregon.format, "oregon-pdf");

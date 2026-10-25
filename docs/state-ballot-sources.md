@@ -39,6 +39,16 @@ Idaho source holds. Existing reviewed records and independent sources are preser
 
 ## Reusable certified PDF collection
 
+Connecticut now joins the configurable automatic families with policy-bound
+town-PDF discovery and bounded text/vector extraction. Its 169-document retained
+replay yields 813 candidate/context records while preserving all 709 existing
+IDs and fields. The candidate worker additionally uses `STATE_BALLOT_PDFTOCAIRO`;
+persisted API reads remain converter-free. Rolling index digests trigger fresh
+imports when towns or revision URLs change, and the first migration retains an
+exact compatible legacy envelope. Unknown future layouts and 47 claims lacking
+printed district identifiers remain review holds. See
+`docs/audits/2026-10-25-connecticut-automatic-imports.md`.
+
 Missouri and New Jersey now support policy-bound automatic candidate collection
 and reusable election catalogs. All 425 Missouri and 39 New Jersey facts and IDs
 remain exact. Original PDF hashes and contribution counts remain independently

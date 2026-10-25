@@ -12,6 +12,8 @@ import process from "node:process";
 import { electionDistrictMatches } from "./congressional-boundaries.js";
 import { getStateAbbreviationForName } from "./official-election-tools.js";
 import { parseCertifiedPdfCapture } from "./state-ballot-certified-pdf.js";
+import { parseConnecticutCandidateCapture } from "./state-ballot-connecticut-collection.js";
+import { connecticutBallotDocuments } from "./state-ballot-connecticut-documents.js";
 import {
 	getStateBallotCycleFamily,
 	readConfiguredStateBallotCycleCatalogs,
@@ -42,7 +44,8 @@ export interface StateBallotSnapshot {
 	retrievedAt: string;
 	sha256: string;
 	records: StateCandidateRecord[];
-	documents?: { url: string; sha256: string; retrievedAt: string; includedRecordCount: number }[];
+	documents?: { url: string; sha256: string; retrievedAt: string; includedRecordCount: number; town?: string }[];
+	collectionIndexSha256?: string;
 }
 
 export interface StateBallotRepository {
@@ -53,6 +56,7 @@ export interface StateBallotRepository {
 }
 
 interface StateBallotRepositoryOptions {
+	collectionIndexSha256?: Readonly<Record<string, string>>;
 	refreshReviewedLegacy?: boolean;
 	dataDirectory?: string | null;
 	fetchText?: (source: StateBallotSource) => Promise<string>;
@@ -133,6 +137,7 @@ export function createStateBallotRepository(options: StateBallotRepositoryOption
 		return true;
 	}
 	const fetchText = options.fetchText ?? fetchStateBallotSourceText;
+	const indexMatches = (source: StateBallotSource, snapshot: StateBallotSnapshot | null) => !options.collectionIndexSha256?.[source.id] || snapshot?.collectionIndexSha256 === options.collectionIndexSha256[source.id];
 	if (new Set(sources.map(source => source.id)).size !== sources.length)
 		throw new Error("Official source identifiers must be unique.");
 	if (!Number.isSafeInteger(ttlMs) || ttlMs <= 0 || ttlMs > 24 * 60 * 60 * 1000)
@@ -143,7 +148,7 @@ export function createStateBallotRepository(options: StateBallotRepositoryOption
 		if (!Number.isFinite(electionEnd) || now() >= electionEnd)
 			return null;
 		const entry = cached.get(source.id);
-		if (source.retrievalPolicy !== "manual-snapshot" && entry && entry.expiresAt > now())
+		if (source.retrievalPolicy !== "manual-snapshot" && entry && entry.expiresAt > now() && indexMatches(source, entry.snapshot))
 			return entry.snapshot;
 		const active = pending.get(source.id);
 		if (active)
@@ -162,7 +167,7 @@ export function createStateBallotRepository(options: StateBallotRepositoryOption
 						throw new Error("Stored state ballot data has a future capture time.");
 					if (stored && legacyReviewedStateBallotSource(source) && stored.source.retrievalPolicy === "manual-snapshot") reviewedFallback = stored;
 					if (stored && legacyReviewedStateBallotSource(source) && stored.source.retrievalPolicy === "manual-snapshot" && !options.refreshReviewedLegacy) return stored;
-					if (stored && (source.retrievalPolicy === "manual-snapshot" || Date.parse(stored.retrievedAt) + ttlMs > now())) {
+					if (stored && indexMatches(source, stored) && !(options.refreshReviewedLegacy && reviewedFallback) && (source.retrievalPolicy === "manual-snapshot" || Date.parse(stored.retrievedAt) + ttlMs > now())) {
 						if (source.retrievalPolicy !== "manual-snapshot")
 							cached.set(source.id, { expiresAt: Date.parse(stored.retrievedAt) + ttlMs, snapshot: stored });
 						return stored;
@@ -181,7 +186,7 @@ export function createStateBallotRepository(options: StateBallotRepositoryOption
 				body = await fetchText(source);
 				capturedAt = new Date(now()).toISOString();
 				failureReason = "format";
-				const documentCapture = source.format === "oregon-pdf" ? parseOregonCandidateCapture(source, body, createStateCandidateRecord, now()) : source.format === "texas-certified-pdf" ? parseTexasCandidateCapture(source, body) : source.format === "vermont-xlsx" ? parseVermontCandidateCapture(source, body) : source.format === "fulton-pdf" ? parseFultonCandidateCapture(source, body) : source.format === "certified-pdf" ? parseCertifiedPdfCapture(source, body) : null;
+				const documentCapture = source.format === "connecticut-pdf" ? parseConnecticutCandidateCapture(source, body, createStateCandidateRecord, now(), stored?.records) : source.format === "oregon-pdf" ? parseOregonCandidateCapture(source, body, createStateCandidateRecord, now()) : source.format === "texas-certified-pdf" ? parseTexasCandidateCapture(source, body) : source.format === "vermont-xlsx" ? parseVermontCandidateCapture(source, body) : source.format === "fulton-pdf" ? parseFultonCandidateCapture(source, body) : source.format === "certified-pdf" ? parseCertifiedPdfCapture(source, body) : null;
 				const snapshot: StateBallotSnapshot = {
 					source,
 					retrievedAt: capturedAt,
@@ -189,6 +194,13 @@ export function createStateBallotRepository(options: StateBallotRepositoryOption
 					records: documentCapture?.records ?? parseStateCandidateRecords(source, body),
 					...(documentCapture ?? {}),
 				};
+				if (!indexMatches(source, snapshot)) throw new Error("The collected candidate documents do not match the discovered index.");
+				if (source.format === "connecticut-pdf" && stored?.documents?.some((document) => {
+					const town = document.town ?? connecticutBallotDocuments.find(item => item.url === document.url)?.town;
+					return !town || !snapshot.documents?.some(item => item.town === town);
+				})) {
+					throw new Error("An accepted Connecticut town disappeared; retain its snapshot for review.");
+				}
 				if (storage) {
 					try {
 						await storage.write(snapshot);
@@ -197,6 +209,7 @@ export function createStateBallotRepository(options: StateBallotRepositoryOption
 					catch {
 						observations.get(source.id)!.failure = "Snapshot persistence failed.";
 						options.onPersistenceError?.(source.stateCode, source.id);
+						if (source.format === "connecticut-pdf") return stored;
 					}
 				}
 				cached.set(source.id, { expiresAt: now() + ttlMs, snapshot });
@@ -308,7 +321,7 @@ export function buildStateBallotPreview(snapshot: StateBallotSnapshot, lookup: P
 		return null;
 	const disclaimer = snapshot.source.stateCode === "VA"
 		? "Federal candidates only; state and local contests are not included. This is not an address-specific ballot."
-		: ["reviewed-pdf", "reviewed-image", "fulton-pdf", "certified-pdf", "oregon-pdf", "texas-certified-pdf", "vermont-xlsx", "alaska-html", "connecticut-ballots", "oregon-ballots"].includes(snapshot.source.format)
+		: ["connecticut-pdf", "reviewed-pdf", "reviewed-image", "fulton-pdf", "certified-pdf", "oregon-pdf", "texas-certified-pdf", "vermont-xlsx", "alaska-html", "connecticut-ballots", "oregon-ballots"].includes(snapshot.source.format)
 				? "Dated snapshot; later changes and local contests may be missing."
 				: snapshot.source.retrievalPolicy === "manual-snapshot"
 					? "Dated snapshot; later changes and local contests may be missing. Filing does not establish ballot qualification."

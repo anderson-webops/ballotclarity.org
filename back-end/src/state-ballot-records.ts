@@ -8,6 +8,7 @@ import { normalizePublicHref } from "./public-href.js";
 import { parseAdditionalStateRecords } from "./state-ballot-additional-records.js";
 import { parseArkansasCandidateRecords } from "./state-ballot-arkansas.js";
 import { parseCertifiedPdfCapture } from "./state-ballot-certified-pdf.js";
+import { parseConnecticutCandidateCapture } from "./state-ballot-connecticut-collection.js";
 import { parseConnecticutCandidateRecords } from "./state-ballot-connecticut.js";
 import { validateDakotaCandidatePage } from "./state-ballot-dakota.js";
 import { parseFloridaLocalCandidateRecords } from "./state-ballot-florida-local.js";
@@ -455,6 +456,9 @@ export function parseStateCandidateRecords(source: StateBallotSource, body: stri
 	}
 	else if (source.format === "connecticut-ballots") {
 		records = parseConnecticutCandidateRecords(source, body, makeRecord);
+	}
+	else if (source.format === "connecticut-pdf") {
+		records = parseConnecticutCandidateCapture(source, body, makeRecord).records;
 	}
 	else if (source.format === "delaware-html") {
 		records = parseDelaware(source, body);

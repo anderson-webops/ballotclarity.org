@@ -65,6 +65,7 @@ export function serializeStoredStateSnapshot(snapshot: StateBallotSnapshot) {
 		recordCount: snapshot.records.length,
 		records: snapshot.source.stateCode === "MI" && snapshot.source.format === "michigan-html" ? snapshot.records.map(serializeMichiganCandidateRecord) : snapshot.records,
 		...(snapshot.documents ? { documents: snapshot.documents } : {}),
+		...(snapshot.collectionIndexSha256 ? { collectionIndexSha256: snapshot.collectionIndexSha256 } : {}),
 	});
 }
 
@@ -146,7 +147,23 @@ export function createStateBallotStorage(directory: string) {
 			const body = JSON.stringify({ sourceConfigurationSha256: digest(JSON.stringify(snapshot.source)), snapshot: snapshotBody });
 			if (Buffer.byteLength(body) > maximumBytes)
 				throw new Error("Stored state ballot data exceeds its size limit.");
-			await writeAtomic(await location(snapshot.source), body);
+			const target = await location(snapshot.source);
+			if (snapshot.source.format === "connecticut-pdf" && (await this.read(snapshot.source))?.source.retrievalPolicy === "manual-snapshot") {
+				const original = await readBoundedStateData(target);
+				const backup = `${target}.legacy-${digest(original)}`;
+				try {
+					const handle = await open(backup, constants.O_WRONLY | constants.O_CREAT | constants.O_EXCL | constants.O_NOFOLLOW, 0o600);
+					try {
+						await handle.writeFile(original);
+						await handle.sync();
+					}
+					finally { await handle.close(); }
+				}
+				catch (error) {
+					if ((error as NodeJS.ErrnoException).code !== "EEXIST" || await readBoundedStateData(backup) !== original) throw error;
+				}
+			}
+			await writeAtomic(target, body);
 		},
 	};
 }

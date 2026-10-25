@@ -16,6 +16,7 @@ import {
 	validateCertifiedPdfElection,
 	validateCertifiedPdfSource
 } from "./state-ballot-certified-pdf.js";
+import { connecticutDiscoveryUrl, readConnecticutElectionDiscovery, validateConnecticutElection, validateConnecticutSource } from "./state-ballot-connecticut-discovery.js";
 import { dakotaCandidateRosterUrl, dakotaDiscoveryUrl, readDakotaElectionDiscovery } from "./state-ballot-dakota.js";
 import {
 	fultonDiscoveryUrl,
@@ -94,6 +95,7 @@ const washington = configuredStateBallotSources.find(source => source.id === "wa
 export const stateBallotCycleDiscoveryUrl = "https://voter.votewa.gov/CandidateList.aspx";
 const digest = (value: string) => createHash("sha256").update(value).digest("hex");
 const cycleFamilies = [
+	{ source: configuredStateBallotSources.find(source => source.id === "ct-sots-2026")!, format: "connecticut-pdf", discoveryUrl: connecticutDiscoveryUrl, prefix: "ct-general", electionLabel: "General Election", formId: null },
 	{ source: configuredStateBallotSources.find(source => source.id === "or-sos-multnomah-2026")!, format: "oregon-pdf", discoveryUrl: oregonDiscoveryUrl, prefix: "or-multnomah-general", electionLabel: "General Election", formId: null },
 	{ source: configuredStateBallotSources.find(source => source.id === "tx-sos-2026")!, format: "texas-certified-pdf", discoveryUrl: texasDiscoveryUrl, prefix: "tx-general", electionLabel: "General Election", formId: null },
 	{ source: configuredStateBallotSources.find(source => source.id === "vt-sos-2026")!, format: "vermont-xlsx", discoveryUrl: vermontDiscoveryUrl, prefix: "vt-general", electionLabel: "General Election", formId: null },
@@ -135,7 +137,10 @@ export function getStateBallotCycleFamily(familyId: string) {
 	const family = cycleFamilies.find(item => item.source.id === familyId);
 	if (!family) throw new Error("The automatic election source family is unsupported or has changed.");
 	let targetValid = family.source.pageUrl === family.source.url;
-	if (family.format === "oregon-pdf") {
+	if (family.format === "connecticut-pdf") {
+		validateConnecticutSource(family.source);
+	}
+	else if (family.format === "oregon-pdf") {
 		validateOregonSource(family.source);
 		targetValid = true;
 	}
@@ -341,6 +346,14 @@ export function parseStateBallotCycleCatalog(value: unknown, now = Date.now()): 
 	const dates = new Set<string>();
 	const florida = original.stateCode === "FL";
 	const maryland = original.stateCode === "MD";
+	if (original.format === "connecticut-pdf") {
+		for (const election of value.elections) {
+			validateConnecticutElection(election);
+			if (dates.has(election.electionDate) || (election.electionDate === original.electionDate && election.pageUrl !== original.pageUrl)) throw new Error("The Connecticut elections are duplicate or conflict with the original source.");
+			dates.add(election.electionDate);
+		}
+		return value as unknown as StateBallotCycleCatalog;
+	}
 	if (original.format === "oregon-pdf") {
 		for (const election of value.elections) {
 			validateOregonElection(election);
@@ -406,6 +419,10 @@ export function discoverWashingtonElectionCycles(body: string, now = Date.now())
 }
 
 export function discoverStateBallotElectionCycles(body: string, familyId: string, now = Date.now()): StateBallotCycleCatalog {
+	if (familyId === "ct-sots-2026") {
+		const family = getStateBallotCycleFamily(familyId);
+		return parseStateBallotCycleCatalog({ schemaVersion: 1, type: "state-ballot-cycle-catalog", familyId, sourceConfigurationSha256: digest(JSON.stringify(family.source)), discovery: { url: family.discoveryUrl, sha256: digest(body), retrievedAt: new Date(now).toISOString() }, elections: readConnecticutElectionDiscovery(body) }, now);
+	}
 	if (["ky-sos-2026", "ky-courts-2026"].includes(familyId)) {
 		const family = getStateBallotCycleFamily(familyId);
 		return parseStateBallotCycleCatalog({ schemaVersion: 1, type: "state-ballot-cycle-catalog", familyId, sourceConfigurationSha256: digest(JSON.stringify(family.source)), discovery: { url: family.discoveryUrl, sha256: digest(body), retrievedAt: new Date(now).toISOString() }, elections: readKentuckyElectionDiscovery(body) }, now);
@@ -462,6 +479,10 @@ export function stateBallotCycleSources(catalog: StateBallotCycleCatalog, now = 
 	parseStateBallotCycleCatalog(catalog, now);
 	const family = getStateBallotCycleFamily(catalog.familyId);
 	return catalog.elections.filter(election => election.electionDate !== family.source.electionDate).map((election) => {
+		if (family.format === "connecticut-pdf") {
+			validateConnecticutElection(election);
+			return { ...family.source, id: `${family.prefix}-${election.electionDate}`, label: `${family.source.label} (${election.electionDate.slice(0, 4)})`, electionDate: election.electionDate, url: election.pageUrl, pageUrl: election.pageUrl };
+		}
 		if (family.format === "oregon-pdf") {
 			validateOregonElection(election);
 			return { ...family.source, id: `${family.prefix}-${election.electionDate}`, label: `${family.source.label} (${election.electionDate.slice(0, 4)})`, electionDate: election.electionDate, url: election.pageUrl, pageUrl: election.pageUrl, documentUrls: election.oregonDocuments.map(item => item.url), scopeNotice: "County-filed contests outside Multnomah County are not included." };

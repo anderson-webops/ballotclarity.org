@@ -3,6 +3,8 @@ import type { StateBallotSource } from "./state-ballot-sources.js";
 import { Buffer } from "node:buffer";
 import { fetchRemoteSourceText } from "./remote-json-source.js";
 import { fetchCertifiedPdfCapture, fetchCertifiedPdfCycleDiscovery } from "./state-ballot-certified-pdf.js";
+import { fetchConnecticutCandidateCapture } from "./state-ballot-connecticut-collection.js";
+import { connecticutIndexDigest, fetchConnecticutCycleDiscovery, readConnecticutDiscovery } from "./state-ballot-connecticut-discovery.js";
 import {
 	discoverStateBallotElectionCycles,
 	getStateBallotCycleFamily,
@@ -44,6 +46,7 @@ interface StateBallotCycleSyncOptions {
 
 export async function fetchStateBallotCycleDiscovery(request: typeof fetchRemoteSourceText = fetchRemoteSourceText, familyId = "wa-general-2026") {
 	const family = getStateBallotCycleFamily(familyId);
+	if (family.format === "connecticut-pdf") return fetchConnecticutCycleDiscovery({ requestText: request });
 	if (family.format === "oregon-pdf") return fetchOregonCycleDiscovery({ requestText: request });
 	if (family.format === "texas-certified-pdf") return fetchTexasCycleDiscovery({ requestText: request });
 	if (family.format === "vermont-xlsx") return fetchVermontCycleDiscovery({ requestText: request });
@@ -91,7 +94,7 @@ export async function syncStateBallotCycles(options: StateBallotCycleSyncOptions
 	if (previous && previous.familyId !== family.source.id) throw new Error("The configured catalog belongs to a different election family.");
 	const body = await (options.fetchDiscovery ?? (() => fetchStateBallotCycleDiscovery(undefined, family.source.id)))();
 	const discovered = discoverStateBallotElectionCycles(body, family.source.id, now());
-	if (previous?.elections.some(election => Date.parse(`${election.electionDate}T00:00:00Z`) + 2 * 86400000 > now() && !discovered.elections.some(item => item.electionDate === election.electionDate && item.electionId === election.electionId && (!["VA", "GA", "MO", "NJ", "VT", "TX", "OR"].includes(family.source.stateCode) || JSON.stringify(item) === JSON.stringify(election)))))
+	if (previous?.elections.some(election => Date.parse(`${election.electionDate}T00:00:00Z`) + 2 * 86400000 > now() && !discovered.elections.some(item => item.electionDate === election.electionDate && item.electionId === election.electionId && (!["CT", "VA", "GA", "MO", "NJ", "VT", "TX", "OR"].includes(family.source.stateCode) || JSON.stringify(item) === JSON.stringify(election)))))
 		throw new Error("An unexpired official election disappeared or changed identity; retain the accepted catalog for review.");
 	const catalog: StateBallotCycleCatalog = previous?.discovery.sha256 === discovered.discovery.sha256 ? previous : discovered;
 	const catalogChanged = await writeStateBallotCycleCatalog(options.catalogPath, catalog, now());
@@ -99,8 +102,8 @@ export async function syncStateBallotCycles(options: StateBallotCycleSyncOptions
 	const sources = [...(catalog.elections.some(election => election.electionDate === original.electionDate) ? [original] : []), ...stateBallotCycleSources(catalog, now())]
 		.filter(source => !options.enabledSourceIds || options.enabledSourceIds.includes(source.id));
 	let persistenceFailed = false;
-	const fetchCandidates = options.fetchCandidates ?? (family.format === "oregon-pdf" ? async (source: StateBallotSource) => fetchOregonCandidateCapture(source, { discovery: body }) : family.format === "texas-certified-pdf" ? async (source: StateBallotSource) => fetchTexasCandidateCapture(source, body) : family.format === "vermont-xlsx" ? async (source: StateBallotSource) => fetchVermontCandidateCapture(source, body) : family.format === "certified-pdf" ? async (source: StateBallotSource) => fetchCertifiedPdfCapture(source, body) : family.source.stateCode === "GA" ? async (source: StateBallotSource) => fetchFultonCandidateCapture(source, { discovery: body }) : family.source.stateCode === "VA" ? async (source: StateBallotSource) => fetchVirginiaCandidateCapture(source, fetchRemoteSourceText, body) : family.format === "kansas-html" ? async (source: StateBallotSource) => fetchKansasCandidateCapture(source, fetchRemoteSourceText, body) : undefined);
-	const repository = createStateBallotRepository({ refreshReviewedLegacy: true, sources, dataDirectory: options.dataDirectory, now, fetchText: fetchCandidates ?? (family.source.stateCode === "MI" ? async source => michiganCandidateCapture(source, body) : family.source.stateCode === "NC" ? async source => northCarolinaCandidateCapture(source, body) : family.source.stateCode === "KY" ? async source => fetchKentuckyCandidateCapture(source, fetchRemoteSourceText, body) : undefined), onPersistenceError: () => {
+	const fetchCandidates = options.fetchCandidates ?? (family.format === "connecticut-pdf" ? async (source: StateBallotSource) => fetchConnecticutCandidateCapture(source, { discovery: body }) : family.format === "oregon-pdf" ? async (source: StateBallotSource) => fetchOregonCandidateCapture(source, { discovery: body }) : family.format === "texas-certified-pdf" ? async (source: StateBallotSource) => fetchTexasCandidateCapture(source, body) : family.format === "vermont-xlsx" ? async (source: StateBallotSource) => fetchVermontCandidateCapture(source, body) : family.format === "certified-pdf" ? async (source: StateBallotSource) => fetchCertifiedPdfCapture(source, body) : family.source.stateCode === "GA" ? async (source: StateBallotSource) => fetchFultonCandidateCapture(source, { discovery: body }) : family.source.stateCode === "VA" ? async (source: StateBallotSource) => fetchVirginiaCandidateCapture(source, fetchRemoteSourceText, body) : family.format === "kansas-html" ? async (source: StateBallotSource) => fetchKansasCandidateCapture(source, fetchRemoteSourceText, body) : undefined);
+	const repository = createStateBallotRepository({ collectionIndexSha256: family.format === "connecticut-pdf" ? Object.fromEntries(sources.map(source => [source.id, connecticutIndexDigest(readConnecticutDiscovery(body).find(item => item.election.electionDate === source.electionDate)!.documents)])) : undefined, refreshReviewedLegacy: true, sources, dataDirectory: options.dataDirectory, now, fetchText: fetchCandidates ?? (family.source.stateCode === "MI" ? async source => michiganCandidateCapture(source, body) : family.source.stateCode === "NC" ? async source => northCarolinaCandidateCapture(source, body) : family.source.stateCode === "KY" ? async source => fetchKentuckyCandidateCapture(source, fetchRemoteSourceText, body) : undefined), onPersistenceError: () => {
 		persistenceFailed = true;
 	} });
 	const results: { sourceId: string; electionDate: string; status: "available" | "awaiting-records" | "unavailable" | "persistence-failed" | "expired"; records: number; retrievedAt: string | null; imported: boolean }[] = [];

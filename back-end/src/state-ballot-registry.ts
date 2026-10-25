@@ -162,6 +162,23 @@ export const additionalStateBallotSources: readonly StateBallotSource[] = [
 		withheldDistrictScopes: ["state-house"],
 		scopeNotice: "Reported seats are vacancies, not voting instructions.",
 	},
+	{
+		stateCode: "VT",
+		id: "vt-sos-2026",
+		label: "Vermont Secretary of State",
+		electionDate: "2026-11-03",
+		url: "https://outside.vermont.gov/dept/sos/Elections_Division/election_info_resources/candidates/2026_general_election_qualified_candidates.xlsx",
+		pageUrl: "https://sos.vermont.gov/elections/election-info-resources/candidates",
+		format: "vermont-xlsx",
+		defaultPriority: 1,
+		snapshotStorage: "external",
+		documentUrls: [
+			"https://outside.vermont.gov/dept/sos/Elections_Division/election_info_resources/candidates/2026_general_election_qualified_candidates.xlsx"
+		],
+		withheldDistrictScopes: ["state-senate", "state-house"],
+		scopeNotice:
+			"State-filed candidates; town and school races may be missing. District and local eligibility is unverified."
+	},
 ];
 
 function automaticReviewedSource(source: StateBallotSource): StateBallotSource {

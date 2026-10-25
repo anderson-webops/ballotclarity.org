@@ -66,6 +66,7 @@ function publicRecord(record: StateCandidateRecord): PublicStateCandidateRecord 
 		termYears: record.termYears,
 		termEnd: record.termEnd,
 		seats: record.seats,
+		voteLimit: record.voteLimit,
 	};
 }
 

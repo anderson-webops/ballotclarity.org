@@ -1,5 +1,22 @@
 # Official state candidate records
 
+## Vermont statewide workbook
+
+The [official candidate index](https://sos.vermont.gov/elections/election-info-resources/candidates)
+supports the `vt-sos-2026` reusable family alongside the retained South Burlington
+sample source. Its 2,619 current rows include 23 statewide/at-large, 55 Senate,
+241 House and 2,300 county/town candidacies. Published compound party labels,
+terms and vote limits remain factual fields, not inferred outcomes. All 58 older
+sample names also occur in the workbook; their original records/IDs are unchanged.
+
+Named/abbreviated legislative codes remain unmapped. Local jurisdictions and
+residence columns do not establish voter eligibility. Of 35 website-field values,
+33 public links are retained and two emails are excluded. Residential, telephone,
+email and financial-disclosure fields are not imported. The source's September 23
+revision is distinct from retrieval time. The [source review](audits/2026-10-25-vermont-candidates.md)
+records evidence, automation bounds and separate Massachusetts, New Hampshire and
+Idaho source holds. Existing reviewed records and independent sources are preserved.
+
 ## Reusable certified PDF collection
 
 Missouri and New Jersey now support policy-bound automatic candidate collection

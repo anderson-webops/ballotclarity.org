@@ -12,15 +12,26 @@ import { parseConnecticutCandidateRecords } from "./state-ballot-connecticut.js"
 import { validateDakotaCandidatePage } from "./state-ballot-dakota.js";
 import { parseFloridaLocalCandidateRecords } from "./state-ballot-florida-local.js";
 import { parseFultonCandidateCapture } from "./state-ballot-fulton.js";
-import { stateHtmlAttribute as attribute, stateHtmlDescendants as descendants, parseStateHtml as parseHtml, stateHtmlTableRows, stateHtmlText as textContent } from "./state-ballot-html.js";
+import {
+	stateHtmlAttribute as attribute,
+	stateHtmlDescendants as descendants,
+	parseStateHtml as parseHtml,
+	stateHtmlTableRows,
+	stateHtmlText as textContent
+} from "./state-ballot-html.js";
 import { kentuckySourceElectionId, parseKentuckyCandidateRecords } from "./state-ballot-kentucky.js";
 import { parseMarylandCandidateRecords } from "./state-ballot-maryland.js";
-import { normalizeMichiganCandidateRecord, readMichiganCandidateCapture, validateMichiganSource } from "./state-ballot-michigan.js";
+import {
+	normalizeMichiganCandidateRecord,
+	readMichiganCandidateCapture,
+	validateMichiganSource
+} from "./state-ballot-michigan.js";
 import { readNorthCarolinaCandidateCapture } from "./state-ballot-north-carolina.js";
 import { parseOregonCandidateRecords } from "./state-ballot-oregon.js";
 import { parseStatePortalRecords } from "./state-ballot-portal-records.js";
 import { StateBallotAwaitingRecordsError } from "./state-ballot-source-state.js";
 import { floridaSourceElectionId } from "./state-ballot-southern.js";
+import { parseVermontCandidateCapture } from "./state-ballot-vermont.js";
 import { parseVirginiaCandidateRecords, validateVirginiaSource } from "./state-ballot-virginia.js";
 import { parseWashingtonCandidateRecords } from "./state-ballot-washington.js";
 
@@ -47,6 +58,7 @@ export interface StateCandidateRecord {
 	termYears?: number;
 	termEnd?: string;
 	seats?: number;
+	voteLimit?: number;
 }
 
 function clean(value: unknown) {
@@ -404,7 +416,10 @@ export function parseStateCandidateRecords(source: StateBallotSource, body: stri
 	if (["reviewed-pdf", "reviewed-xlsx", "reviewed-image"].includes(source.format))
 		throw new Error("Reviewed document sources require a validated snapshot.");
 	let records: StateCandidateRecord[];
-	if (source.format === "certified-pdf") {
+	if (source.format === "vermont-xlsx") {
+		records = parseVermontCandidateCapture(source, body).records;
+	}
+	else if (source.format === "certified-pdf") {
 		records = parseCertifiedPdfCapture(source, body).records;
 	}
 	else if (source.format === "fulton-pdf") {

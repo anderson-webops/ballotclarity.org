@@ -1,13 +1,14 @@
 # Reusable election cycles
 
 External election catalogs opt the automatic candidate repository into reusable
-source families. The current 60 source definitions retain explicit source/state
+source families. The current 61 source definitions retain explicit source/state
 allowlists; reusable discovery does not widen an exact-source allowlist.
 
-Twenty-three families across nineteen states are supported:
+Twenty-four families across twenty states are supported:
 
 | Family | Discovery | Elections |
 | --- | --- | --- |
+| `vt-sos-2026` | [Vermont general-election candidates](https://sos.vermont.gov/elections/election-info-resources/candidates) | Actual active even-year general date and published qualified-candidate workbook; legislative codes remain unmapped and local rows are not personal ballot matches |
 | `mo-sos-2026` | [Missouri official homepage](https://www.sos.mo.gov/) and [election calendar](https://www.sos.mo.gov/elections/calendar) | Offered November certification PDFs paired with the calendar's explicit regular-general date; current 425 identities retained, including individual regional retention questions |
 | `nj-doe-2026-federal` | [New Jersey election-year archive](https://www.nj.gov/state/elections/election-information.shtml) and each actually offered even-year page | Published Senate/House lists and explicit district amendments; every PDF identifies the selected general date, published party totals reconcile and only the amended district is replaced |
 | `ga-fulton-2026` | [Fulton County sample-ballot index](https://fultoncountyga.gov/inside-fulton-county/fulton-county-departments/registration-and-elections/sample-ballots), reviewed current policies and [official PSC scope](https://georgia.gov/organization/public-service-commission) | Actual dated November general/special-on-general-day PDF links, including qualified county write-in notices; county-published records, not statewide completeness |
@@ -31,6 +32,20 @@ Twenty-three families across nineteen states are supported:
 | `ut-lg-2026` | [Utah candidate resources](https://vote.utah.gov/resources-for-candidates-political-groups-parties/) and [current election information](https://vote.utah.gov/current-election-information/) | Actually offered even-year candidate links paired with an explicit same-cycle regular general-election date; existing 255 records/IDs retained |
 | `mi-dos-2026` | [Michigan election homepage](https://www.michigan.gov/en/sos/elections) | Published November General Candidate Listing links paired with matching official report headers and explicit dates; original 716 entries/IDs retained |
 | `ks-johnson-2026` | [Johnson County upcoming elections](https://www.jocoelection.org/events-elections/upcoming-elections) and its public candidate selector | Explicit November general-election links, matching offered candidate IDs and dated Johnson County election pages, including odd years; county publication is not statewide completeness or voter-specific eligibility |
+
+Vermont's packaged Node workbook reader requires no host conversion tool. It
+bounds compressed/expanded ZIP bytes, entries, XML, dimensions, cells, output,
+memory and duration, rejecting formulas, entities, encryption and active content.
+The current 2,619 candidacy rows include 2,197 justices of the peace and 33 usable
+published websites. Residential/contact and financial-disclosure fields are
+excluded, as are ten unknown party labels. The source's September 23, 2026
+revision remains distinct from retrieval time. Per-host starts are at least one
+second apart. The statewide source has same-date default priority; all 58 prior
+South Burlington records remain independently available and unchanged. District
+codes stay unmapped. Unexpired identity drift requires review, and empty validated
+future workbooks wait rather than import zero records. Future tests are synthetic;
+new office layouts and presidential tickets still require review. See the
+[Vermont source review](audits/2026-10-25-vermont-candidates.md).
 
 Missouri and New Jersey use the shared, optional bounded-worker Poppler capability
 in `stateBallotPdfCollectorContract`. New Jersey uses positional text rather than

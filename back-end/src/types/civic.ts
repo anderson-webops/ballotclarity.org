@@ -207,6 +207,7 @@ export interface PublicStateCandidateRecord {
 	termYears?: number;
 	termEnd?: string;
 	seats?: number;
+	voteLimit?: number;
 }
 
 export interface PublicJudicialEvaluation {

@@ -42,7 +42,7 @@ test("Vermont requires an external reviewed five-ballot import without network o
 		requests += 1;
 		throw new Error("No publisher request is permitted.");
 	};
-	assert.equal(await createStateBallotRepository({ dataDirectory: null, now: () => now, fetchText }).getSnapshot("VT"), null);
+	assert.equal(await createStateBallotRepository({ sources: [source], dataDirectory: null, now: () => now, fetchText }).getSnapshot("VT"), null);
 	await assert.rejects(fetchStateBallotSourceText(source, fetchText), /manually supplied/u);
 	assert.equal(requests, 0);
 });
@@ -52,7 +52,7 @@ test("Vermont retains at-large Congress, separate governor offices and literal c
 	context.after(() => rm(directory, { recursive: true, force: true }));
 	const original = parseBundledStateSnapshot(source, JSON.stringify(payload()));
 	await createStateBallotStorage(directory).write(original);
-	const loaded = await createStateBallotRepository({ dataDirectory: directory, now: () => now }).getSnapshot("VT");
+	const loaded = await createStateBallotRepository({ sources: [source], dataDirectory: directory, now: () => now }).getSnapshot("VT");
 	assert.deepEqual(loaded, original);
 	const preview = buildStateBallotPreview(loaded!, { districtMatches: [] })!;
 	assert.equal(preview.candidateCount, 3);
@@ -92,7 +92,7 @@ test("Vermont management import preserves reviewed source dates and refuses auto
 	for (const document of data.documents) document.retrievedAt = data.retrievedAt;
 	await writeFile(file, JSON.stringify(data));
 	const script = fileURLToPath(new URL("../src/manage-state-ballot-data.ts", import.meta.url));
-	const env = { ...process.env, STATE_BALLOT_DATA_DIR: directory, STATE_BALLOT_ENABLED_STATES: "VT" };
+	const env = { ...process.env, STATE_BALLOT_DATA_DIR: directory, STATE_BALLOT_ENABLED_STATES: "VT", STATE_BALLOT_ENABLED_SOURCES: source.id };
 	const output = execFileSync(process.execPath, ["--import", "tsx", script, "import", file], { env, encoding: "utf8" });
 	assert.equal(JSON.parse(output).records, 7);
 	assert.equal((await createStateBallotStorage(directory).read(source))?.retrievedAt, data.retrievedAt);

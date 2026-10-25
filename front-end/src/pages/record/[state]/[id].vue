@@ -157,6 +157,11 @@ const documentLinks = computed(() => {
 							Reported seats
 						</dt><dd>{{ data.official.seats }}</dd>
 					</div>
+					<div v-if="data.official.voteLimit">
+						<dt class="font-semibold">
+							Vote limit
+						</dt><dd>{{ data.official.voteLimit }}</dd>
+					</div>
 				</dl>
 				<SafeExternalLink v-if="data.official.candidateUrl" :href="data.official.candidateUrl" class="text-app-accent underline underline-offset-3 focus-ring">
 					Candidate website

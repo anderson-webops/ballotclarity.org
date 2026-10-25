@@ -2,18 +2,36 @@ import type { StateBallotSource } from "./state-ballot-sources.js";
 import { Buffer } from "node:buffer";
 import { fetchRemoteSourceText } from "./remote-json-source.js";
 import { fetchCertifiedPdfCapture } from "./state-ballot-certified-pdf.js";
-import { delawareCandidateRosterUrl, getStateBallotCycleFamily, readMississippiGeneralElectionDate, validStateBallotGeneralDate, wyomingCandidateRosterUrl } from "./state-ballot-cycles.js";
+import {
+	delawareCandidateRosterUrl,
+	getStateBallotCycleFamily,
+	readMississippiGeneralElectionDate,
+	validStateBallotGeneralDate,
+	wyomingCandidateRosterUrl
+} from "./state-ballot-cycles.js";
 import { dakotaCandidateRosterUrl, validateDakotaCandidatePage } from "./state-ballot-dakota.js";
 import { fetchFultonCandidateCapture } from "./state-ballot-fulton.js";
 import { parseStateHtml, stateHtmlAttribute, stateHtmlDescendants, stateHtmlText } from "./state-ballot-html.js";
 import { fetchKansasCandidateCapture } from "./state-ballot-kansas.js";
 import { fetchKentuckyCandidateCapture } from "./state-ballot-kentucky.js";
-import { fetchMarylandCycleDiscovery, marylandSourceElectionId, readMarylandElectionDiscovery, validateMarylandRoster } from "./state-ballot-maryland.js";
+import {
+	fetchMarylandCycleDiscovery,
+	marylandSourceElectionId,
+	readMarylandElectionDiscovery,
+	validateMarylandRoster
+} from "./state-ballot-maryland.js";
 import { fetchMichiganCandidateCapture } from "./state-ballot-michigan.js";
 import { fetchNorthCarolinaCandidateCapture } from "./state-ballot-north-carolina.js";
 import { buildSouthCarolinaSearchForm } from "./state-ballot-portal-records.js";
-import { buildFloridaCandidateForm, buildFloridaCountyForm, floridaCountyCodesUrl, floridaSourceElectionId, southCarolinaCandidateRosterUrl } from "./state-ballot-southern.js";
+import {
+	buildFloridaCandidateForm,
+	buildFloridaCountyForm,
+	floridaCountyCodesUrl,
+	floridaSourceElectionId,
+	southCarolinaCandidateRosterUrl
+} from "./state-ballot-southern.js";
 import { fetchUtahCandidatePage } from "./state-ballot-utah.js";
+import { fetchVermontCandidateCapture } from "./state-ballot-vermont.js";
 import { fetchVirginiaCandidateCapture } from "./state-ballot-virginia.js";
 import { fetchWashingtonCandidatePages } from "./state-ballot-washington.js";
 
@@ -156,6 +174,7 @@ export async function fetchStateBallotSourceText(source: StateBallotSource, requ
 	if (source.format === "kansas-html") return fetchKansasCandidateCapture(source, request);
 	if (source.stateCode === "VA") return fetchVirginiaCandidateCapture(source, request);
 	if (source.format === "fulton-pdf") return fetchFultonCandidateCapture(source, { requestText: request });
+	if (source.format === "vermont-xlsx") return fetchVermontCandidateCapture(source, undefined, { requestText: request });
 	if (source.format === "certified-pdf") return fetchCertifiedPdfCapture(source, undefined, { requestText: request });
 	if (source.stateCode === "WY" && (source.format !== "csv" || !validStateBallotGeneralDate(source.electionDate) || Number(source.electionDate.slice(0, 4)) % 2 || source.url !== wyomingCandidateRosterUrl(source.electionDate))) throw new Error("The Wyoming roster must retain its exact official election URL.");
 	if (["south-dakota-csv", "north-dakota-html"].includes(source.format)) assertDakotaSourceIdentity(source);

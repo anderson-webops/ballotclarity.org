@@ -58,6 +58,7 @@
 		"express-rate-limit": "^8.7.0",
 		"parse5": "^8.0.1",
 		"pg": "^8.23.0",
+		"read-excel-file": "^9.3.12",
 		"tar-stream": "^3.2.2",
 		"yaml": "^2.9.1"
 	},

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { copyFileSync, existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import test from "node:test";
@@ -69,6 +69,21 @@ test("artifact inspection rejects external election paths even before checking a
 			assert.throws(() => verifyRuntimeArtifact(root), /contains external election data/u);
 			rmSync(join(root, directory), { recursive: true });
 		}
+	}
+	finally { rmSync(root, { recursive: true, force: true }); }
+});
+
+test("production artifact installation omits package CLI links without relaxing symlink rejection", () => {
+	const builder = readFileSync(new URL("../scripts/runtime-artifact.mjs", import.meta.url), "utf8");
+	assert.match(builder, /"--bin-links=false"/u);
+	const root = mkdtempSync(join(tmpdir(), "ballot-artifact-links-"));
+	try {
+		write(root, "runtime-artifact-contract.json", JSON.stringify({ services: [] }));
+		write(root, "runtime-manifest.json", JSON.stringify({ files: [] }));
+		write(root, "back-end/node_modules/yaml/bin.mjs", "export {};\n");
+		mkdirSync(join(root, "back-end/node_modules/.bin"));
+		symlinkSync("../yaml/bin.mjs", join(root, "back-end/node_modules/.bin/yaml"));
+		assert.throws(() => verifyRuntimeArtifact(root), /cannot contain symbolic links/u);
 	}
 	finally { rmSync(root, { recursive: true, force: true }); }
 });

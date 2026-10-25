@@ -274,6 +274,7 @@ function buildRuntimeArtifactFromCheckout(sourceRoot, outputRoot, expectedSource
 		"--omit=dev",
 		"--include=optional",
 		"--ignore-scripts",
+		"--bin-links=false",
 		"--workspaces=false",
 		"--no-audit",
 		"--no-fund",

@@ -59,6 +59,7 @@ const partyNames: Readonly<Record<string, string>> = {
 	"independentparty": "Independent",
 	"greenparty": "Green",
 	"newmovementparty": "New Movement",
+	"unitedcommunityparty": "United Community",
 	"workers'voiceparty": "Workers' Voice",
 	"yankeenationalparty": "Yankee National",
 	"petitioningcandidate": "Petitioning Candidate",
@@ -140,9 +141,24 @@ function printedVotingDistrict(header: string) {
 	return clean(value);
 }
 
-export function extractConnecticutBallots(body: string) {
+export interface ConnecticutBallotConfiguration {
+	electionDate: string;
+	documents: ReadonlyArray<{ town: string; url: string; pageCount: number }>;
+	retainUnassignedDistrictClaims?: true;
+}
+
+const reviewedConfiguration: ConnecticutBallotConfiguration = { electionDate: "2026-11-03", documents: connecticutBallotDocuments };
+
+export function extractConnecticutBallots(body: string, configuration = reviewedConfiguration) {
+	if (!/^20\d{2}-11-0[2-8]$/u.test(configuration.electionDate) || new Date(`${configuration.electionDate}T00:00:00Z`).getUTCDay() !== 2 || !configuration.documents.length || configuration.documents.length > 169 || new Set(configuration.documents.map(document => document.town)).size !== configuration.documents.length || configuration.documents.some(document => !/^[A-Z][A-Za-z ]{1,60}$/u.test(document.town) || !Number.isInteger(document.pageCount) || document.pageCount < 1 || document.pageCount > 50)) throw new Error("The Connecticut ballot extraction configuration is invalid.");
+	if (new TextEncoder().encode(body).length > 12 * 1024 * 1024 || new Set(configuration.documents.map(document => document.url)).size !== configuration.documents.length) throw new Error("The Connecticut ballot document set exceeds its bounds or repeats a URL.");
+	if (configuration.retainUnassignedDistrictClaims !== undefined && configuration.retainUnassignedDistrictClaims !== true) throw new Error("The Connecticut unassigned-claim policy requires explicit review.");
+	for (const document of configuration.documents) {
+		const url = new URL(document.url);
+		if (url.origin !== "https://portal.ct.gov" || url.username || url.password || url.hash || !url.pathname.startsWith(`/-/media/sots/electionservices/town_ballots/${configuration.electionDate.slice(0, 4)}/`) || !url.pathname.endsWith(".pdf")) throw new Error("The Connecticut ballot document URL does not match its official election.");
+	}
 	const payload = object(JSON.parse(body), ["documents"]);
-	if (!Array.isArray(payload.documents) || payload.documents.length !== connecticutBallotDocuments.length)
+	if (!Array.isArray(payload.documents) || payload.documents.length !== configuration.documents.length)
 		throw new Error("The Connecticut ballot document set is incomplete.");
 	const claims: ConnecticutBallotClaim[] = [];
 	const questions: ConnecticutBallotQuestion[] = [];
@@ -150,7 +166,7 @@ export function extractConnecticutBallots(body: string) {
 	let pageCount = 0;
 	for (const [documentIndex, value] of payload.documents.entries()) {
 		const document = object(value, ["url", "town", "pageCount", "pages"]);
-		const configured = connecticutBallotDocuments[documentIndex]!;
+		const configured = configuration.documents[documentIndex]!;
 		if (document.url !== configured.url || document.town !== configured.town || document.pageCount !== configured.pageCount || !Array.isArray(document.pages) || document.pages.length !== configured.pageCount)
 			throw new Error("The Connecticut ballot document identity or page count has changed.");
 		for (const [pageIndex, value] of document.pages.entries()) {
@@ -159,13 +175,14 @@ export function extractConnecticutBallots(body: string) {
 				throw new Error("The Connecticut ballot page is incomplete or has changed geometry.");
 			const headerText = text(page.headerText);
 			const header = headerText.split("\n").map(fold).join("\n");
-			const printedTown = configured.town === "Westbrook" ? "Westbroook" : configured.town;
+			const printedTown = configured.town === "Westbrook" && configuration.electionDate === "2026-11-03" ? "Westbroook" : configured.town;
 			const townPattern = new RegExp(`(?:^|\\n)${printedTown.replace(/ /gu, "\\s+")}\\s*(?:,|\\n|Connecticut\\b)`, "iu");
-			if (!header.includes("november3,2026") || !/\bConnecticut\b/u.test(headerText) || !townPattern.test(headerText))
+			if (!header.includes(`november${Number(configuration.electionDate.slice(-2))},${configuration.electionDate.slice(0, 4)}`) || !/\bConnecticut\b/u.test(headerText) || !townPattern.test(headerText))
 				throw new Error("The Connecticut ballot header does not identify its town and configured election.");
-			const congressional = district(header, /congressionaldistrict(?:\/distritocongresional)?(\d+)/gu, 5);
-			const senate = district(header, /senatorialdistrict(?:\/distritosenatorial)?(\d+)/gu, 36);
-			const house = district(header, /assemblydistrict(?:\/distritodelaasamblea)?(\d+)/gu, 151);
+			const unassigned = configuration.retainUnassignedDistrictClaims && !/congressionaldistrict|senatorialdistrict|assemblydistrict/u.test(header);
+			const congressional = unassigned ? "" : district(header, /congressionaldistrict(?:\/distritocongresional)?(\d+)/gu, 5);
+			const senate = unassigned ? "" : district(header, /senatorialdistrict(?:\/distritosenatorial)?(\d+)/gu, 36);
+			const house = unassigned ? "" : district(header, /assemblydistrict(?:\/distritodelaasamblea)?(\d+)/gu, 151);
 			const votingDistrict = printedVotingDistrict(headerText);
 			const cells = page.cells.map(value => readCell(value, page.width as number, page.height as number));
 			const partyHeaders = cells.filter(cell => /office/u.test(fold(cell.text)) && /party/u.test(fold(cell.text)) && cell.text.length < 100);
@@ -182,6 +199,7 @@ export function extractConnecticutBallots(body: string) {
 			}
 			const partyCells = cells.filter(cell => Math.abs(cell.bounds[0] - partyHeader.bounds[0]) < 1 && Math.abs(cell.bounds[2] - partyHeader.bounds[2]) < 1 && cell.bounds[1] > partyHeader.bounds[1] + 1).map((cell) => {
 				const recognized = [...new Set([cell.text, cell.logicalText].map(value => fold(value).replace(/[‘’]/gu, "'")).filter(value => Object.hasOwn(partyNames, value)).map(value => partyNames[value]!))];
+				if (!clean(cell.text) && !clean(cell.logicalText)) return { cell, party: "" };
 				if (recognized.length !== 1) throw new Error("The Connecticut ballot party label is unknown or inconsistent.");
 				return { cell, party: recognized[0]! };
 			});
@@ -235,26 +253,34 @@ export function extractConnecticutBallots(body: string) {
 	return { claims, questions, blankPositions, pageCount };
 }
 
-function printedName(claim: ConnecticutBallotClaim) {
+function printedName(claim: ConnecticutBallotClaim, electionDate: string) {
 	const name = claim.name;
+	if (electionDate !== "2026-11-03") return name;
+	if (claim.office === "Attorney General" && claim.town === "Morris" && claim.party === "Democratic" && name === "Willian Tong") return "William Tong";
+	if (claim.office === "State Representative" && claim.district === "71" && name === "Stephen R. Ferrucci III") return "Stephen R. Ferrucci, III";
 	if (claim.office === "Representative in Congress" && claim.district === "3" && name === "Rosa DeLauro") return "Rosa L. DeLauro";
 	if (claim.office === "State Representative" && claim.district === "6" && name === "James Jimmy Sanchez") return "James Jimmy Sánchez";
 	return name;
 }
 
-export function reconcileConnecticutBallots(body: string) {
-	const extracted = extractConnecticutBallots(body);
+export function reconcileConnecticutBallots(body: string, configuration = reviewedConfiguration) {
+	const extracted = extractConnecticutBallots(body, configuration);
 	const groups = new Map<string, { value: StateCandidateValues; parties: Set<string>; claimIndexes: number[] }>();
 	const singleChoice = new Map<string, Set<string>>();
+	const unassignedClaimIndexes: number[] = [];
 	for (const [index, claim] of extracted.claims.entries()) {
-		const name = printedName(claim);
+		if (!["statewide", "local"].includes(claim.scope) && !claim.district) {
+			unassignedClaimIndexes.push(index);
+			continue;
+		}
+		const name = printedName(claim, configuration.electionDate);
 		const nameKey = name.toLowerCase().replace(/[\s.'’‘"]/gu, "");
 		const key = JSON.stringify([claim.office, claim.district, claim.jurisdiction ?? "", nameKey]);
 		const group = groups.get(key) ?? { value: { name, office: claim.office, party: "", scope: claim.scope, district: claim.district, jurisdiction: claim.jurisdiction, status: "listed" }, parties: new Set<string>(), claimIndexes: [] };
-		group.parties.add(claim.party);
+		if (claim.party) group.parties.add(claim.party);
 		group.claimIndexes.push(index);
 		groups.set(key, group);
-		if (claim.scope !== "local" && !["Petitioning Candidate", "Nonpartisan"].includes(claim.party)) {
+		if (claim.scope !== "local" && claim.party && !["Petitioning Candidate", "Nonpartisan"].includes(claim.party)) {
 			const partyKey = JSON.stringify([claim.office, claim.district, claim.party]);
 			const names = singleChoice.get(partyKey) ?? new Set<string>();
 			names.add(nameKey);
@@ -263,7 +289,7 @@ export function reconcileConnecticutBallots(body: string) {
 		}
 	}
 	const records = [...groups.values()].map(group => ({ value: { ...group.value, party: [...group.parties].join(" / ") }, claimIndexes: group.claimIndexes }));
-	return { ...extracted, records };
+	return { ...extracted, records, unassignedClaimIndexes };
 }
 
 export function parseConnecticutCandidateRecords(source: StateBallotSource, body: string, factory: (source: StateBallotSource, values: StateCandidateValues) => StateCandidateRecord | null) {

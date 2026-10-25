@@ -37,6 +37,90 @@ test("Connecticut reconciles every published document and page without counting 
 	assert.ok(records.every(record => record.status === "listed" && record.sourceStatus === "Printed sample ballot" && !record.candidateUrl));
 });
 
+test("Connecticut accepts an explicitly configured document set without weakening the reviewed default set", () => {
+	const document = fixture().documents[0]!;
+	const data = JSON.stringify({ documents: [document] });
+	const configuration = { electionDate: "2026-11-03", documents: [{ town: document.town, url: document.url, pageCount: document.pages.length }] };
+	assert.throws(() => reconcileConnecticutBallots(data), /document set/u);
+	const result = reconcileConnecticutBallots(data, configuration);
+	assert.equal(result.pageCount, 1);
+	assert.ok(result.records.length > 10);
+	assert.ok(result.claims.every(claim => claim.town === "Andover"));
+	for (const invalid of [
+		{ ...configuration, electionDate: "2026-11-04" },
+		{ ...configuration, documents: [] },
+		{ ...configuration, documents: [...configuration.documents, ...configuration.documents] },
+		{ ...configuration, documents: [{ ...configuration.documents[0]!, url: "https://example.com/ballot.pdf" }] },
+		{ ...configuration, documents: [{ ...configuration.documents[0]!, pageCount: 51 }] },
+	]) assert.throws(() => reconcileConnecticutBallots(data, invalid), /Connecticut/u);
+});
+
+test("Connecticut extraction binds future same-layout ballots to their explicit year, town and documents", () => {
+	const document = fixture().documents[0]!;
+	document.url = document.url.replace("/2026/", "/2030/");
+	document.pages[0]!.headerText = document.pages[0]!.headerText.replace("November 3, 2026", "November 5, 2030");
+	const configuration = { electionDate: "2030-11-05", documents: [{ town: document.town, url: document.url, pageCount: document.pages.length }] };
+	const data = JSON.stringify({ documents: [document] });
+	assert.ok(reconcileConnecticutBallots(data, configuration).records.length > 10);
+	assert.throws(() => reconcileConnecticutBallots(data, { ...configuration, electionDate: "2026-11-03" }), /Connecticut/u);
+	assert.throws(() => reconcileConnecticutBallots(data, { ...configuration, documents: [{ ...configuration.documents[0]!, town: "Manchester" }] }), /Connecticut/u);
+});
+
+test("Connecticut leaves an unlabelled minor-party row unspecified instead of guessing affiliation", () => {
+	const data = fixture();
+	const page = data.documents[0]!.pages[0]!;
+	const row = page.cells.find(cell => cell.text.includes("Independent"))!;
+	row.text = "";
+	row.logicalText = "";
+	const claims = extractConnecticutBallots(JSON.stringify(data)).claims;
+	assert.ok(claims.some(claim => claim.documentIndex === 0 && claim.name === "Ryan Fazio and Matt Corey" && claim.party === ""));
+	assert.equal(claims.some(claim => claim.documentIndex === 0 && claim.party === "Nonpartisan"), false);
+	row.logicalText = "Unrecognized party";
+	assert.throws(() => extractConnecticutBallots(JSON.stringify(data)), /party label/u);
+	row.text = "United Community Party";
+	row.logicalText = "United Community Party";
+	assert.ok(extractConnecticutBallots(JSON.stringify(data)).claims.some(claim => claim.documentIndex === 0 && claim.party === "United Community"));
+});
+
+test("Connecticut reconciles reviewed town-scoped spelling and district-scoped suffix variants without changing raw claims", () => {
+	const document = fixture().documents[0]!;
+	document.town = "Morris";
+	document.url = document.url.replace("andover_sample_ada", "morris_sample");
+	document.pages[0]!.headerText = document.pages[0]!.headerText.replace("Andover", "Morris");
+	const attorneyGeneral = document.pages[0]!.cells.find(cell => cell.text.startsWith("8A") && cell.text.includes("Tong"))!;
+	attorneyGeneral.text = attorneyGeneral.text.replace("William", "Willian");
+	const configuration = { electionDate: "2026-11-03", documents: [{ town: document.town, url: document.url, pageCount: 1 }] };
+	const result = reconcileConnecticutBallots(JSON.stringify({ documents: [document] }), configuration);
+	assert.ok(result.claims.some(claim => claim.name === "Willian Tong"));
+	assert.equal(result.records.some(record => record.value.name === "Willian Tong"), false);
+	assert.ok(result.records.some(record => record.value.name === "William Tong"));
+	const data = fixture();
+	for (const source of data.documents) {
+		for (const page of source.pages) {
+			for (const cell of page.cells) cell.text = cell.text.replace("Ferrucci,", "Ferrucci");
+		}
+	}
+	const suffix = reconcileConnecticutBallots(JSON.stringify(data));
+	assert.ok(suffix.claims.some(claim => claim.name === "Stephen R. Ferrucci III"));
+	assert.ok(suffix.records.some(record => record.value.name === "Stephen R. Ferrucci, III"));
+	assert.equal(suffix.records.length, 709);
+});
+
+test("Connecticut retains explicitly unassigned district evidence without attaching it to a guessed district or candidacy", () => {
+	const document = fixture().documents[0]!;
+	document.pages[0]!.headerText = document.pages[0]!.headerText.split("\n").filter(line => !/Congressional District|Senatorial District|Assembly District/u.test(line)).join("\n");
+	const body = JSON.stringify({ documents: [document] });
+	const configuration = { electionDate: "2026-11-03", documents: [{ town: document.town, url: document.url, pageCount: 1 }] };
+	assert.throws(() => reconcileConnecticutBallots(body, configuration), /legislative districts/u);
+	const result = reconcileConnecticutBallots(body, { ...configuration, retainUnassignedDistrictClaims: true });
+	assert.ok(result.unassignedClaimIndexes.length > 0);
+	assert.ok(result.records.every(record => ["statewide", "local"].includes(record.value.scope!)));
+	assert.ok(result.unassignedClaimIndexes.every(index => result.claims[index]!.district === ""));
+	assert.equal(result.records.flatMap(record => record.claimIndexes).length + result.unassignedClaimIndexes.length, result.claims.length);
+	document.pages[0]!.headerText += "\nAssembly District 55";
+	assert.throws(() => reconcileConnecticutBallots(JSON.stringify({ documents: [document] }), { ...configuration, retainUnassignedDistrictClaims: true }), /legislative districts/u);
+});
+
 test("Connecticut derives parties from physical rows even when the printed slot letter is wrong", () => {
 	const result = extractConnecticutBallots(body);
 	const labriola = result.claims.filter(claim => claim.town === "Bethlehem" && claim.name === "David Labriola");

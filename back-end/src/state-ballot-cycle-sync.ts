@@ -4,6 +4,7 @@ import { Buffer } from "node:buffer";
 import { fetchRemoteSourceText } from "./remote-json-source.js";
 import { discoverStateBallotElectionCycles, getStateBallotCycleFamily, readStateBallotCycleCatalog, stateBallotCycleSources, writeStateBallotCycleCatalog } from "./state-ballot-cycles.js";
 import { readDakotaElectionIndex } from "./state-ballot-dakota.js";
+import { fetchFultonCandidateCapture, fetchFultonCycleDiscovery } from "./state-ballot-fulton.js";
 import { fetchKansasCandidateCapture, fetchKansasCycleDiscovery } from "./state-ballot-kansas.js";
 import { fetchKentuckyCandidateCapture, fetchKentuckyCycleDiscovery } from "./state-ballot-kentucky.js";
 import { fetchMarylandCycleDiscovery } from "./state-ballot-maryland.js";
@@ -27,6 +28,7 @@ interface StateBallotCycleSyncOptions {
 
 export async function fetchStateBallotCycleDiscovery(request: typeof fetchRemoteSourceText = fetchRemoteSourceText, familyId = "wa-general-2026") {
 	const family = getStateBallotCycleFamily(familyId);
+	if (family.source.stateCode === "GA") return fetchFultonCycleDiscovery(request);
 	if (family.format === "kansas-html") return fetchKansasCycleDiscovery(request);
 	if (family.source.stateCode === "MI") return fetchMichiganCycleDiscovery(request);
 	if (family.source.stateCode === "UT") return fetchUtahCycleDiscovery(request);
@@ -69,7 +71,7 @@ export async function syncStateBallotCycles(options: StateBallotCycleSyncOptions
 	if (previous && previous.familyId !== family.source.id) throw new Error("The configured catalog belongs to a different election family.");
 	const body = await (options.fetchDiscovery ?? (() => fetchStateBallotCycleDiscovery(undefined, family.source.id)))();
 	const discovered = discoverStateBallotElectionCycles(body, family.source.id, now());
-	if (previous?.elections.some(election => Date.parse(`${election.electionDate}T00:00:00Z`) + 2 * 86400000 > now() && !discovered.elections.some(item => item.electionDate === election.electionDate && item.electionId === election.electionId && (family.source.stateCode !== "VA" || JSON.stringify(item) === JSON.stringify(election)))))
+	if (previous?.elections.some(election => Date.parse(`${election.electionDate}T00:00:00Z`) + 2 * 86400000 > now() && !discovered.elections.some(item => item.electionDate === election.electionDate && item.electionId === election.electionId && (!["VA", "GA"].includes(family.source.stateCode) || JSON.stringify(item) === JSON.stringify(election)))))
 		throw new Error("An unexpired official election disappeared or changed identity; retain the accepted catalog for review.");
 	const catalog: StateBallotCycleCatalog = previous?.discovery.sha256 === discovered.discovery.sha256 ? previous : discovered;
 	const catalogChanged = await writeStateBallotCycleCatalog(options.catalogPath, catalog, now());
@@ -77,8 +79,8 @@ export async function syncStateBallotCycles(options: StateBallotCycleSyncOptions
 	const sources = [...(catalog.elections.some(election => election.electionDate === original.electionDate) ? [original] : []), ...stateBallotCycleSources(catalog, now())]
 		.filter(source => !options.enabledSourceIds || options.enabledSourceIds.includes(source.id));
 	let persistenceFailed = false;
-	const fetchCandidates = options.fetchCandidates ?? (family.source.stateCode === "VA" ? async (source: StateBallotSource) => fetchVirginiaCandidateCapture(source, fetchRemoteSourceText, body) : family.format === "kansas-html" ? async (source: StateBallotSource) => fetchKansasCandidateCapture(source, fetchRemoteSourceText, body) : undefined);
-	const repository = createStateBallotRepository({ sources, dataDirectory: options.dataDirectory, now, fetchText: fetchCandidates ?? (family.source.stateCode === "MI" ? async source => michiganCandidateCapture(source, body) : family.source.stateCode === "NC" ? async source => northCarolinaCandidateCapture(source, body) : family.source.stateCode === "KY" ? async source => fetchKentuckyCandidateCapture(source, fetchRemoteSourceText, body) : undefined), onPersistenceError: () => {
+	const fetchCandidates = options.fetchCandidates ?? (family.source.stateCode === "GA" ? async (source: StateBallotSource) => fetchFultonCandidateCapture(source, { discovery: body }) : family.source.stateCode === "VA" ? async (source: StateBallotSource) => fetchVirginiaCandidateCapture(source, fetchRemoteSourceText, body) : family.format === "kansas-html" ? async (source: StateBallotSource) => fetchKansasCandidateCapture(source, fetchRemoteSourceText, body) : undefined);
+	const repository = createStateBallotRepository({ refreshReviewedLegacy: true, sources, dataDirectory: options.dataDirectory, now, fetchText: fetchCandidates ?? (family.source.stateCode === "MI" ? async source => michiganCandidateCapture(source, body) : family.source.stateCode === "NC" ? async source => northCarolinaCandidateCapture(source, body) : family.source.stateCode === "KY" ? async source => fetchKentuckyCandidateCapture(source, fetchRemoteSourceText, body) : undefined), onPersistenceError: () => {
 		persistenceFailed = true;
 	} });
 	const results: { sourceId: string; electionDate: string; status: "available" | "awaiting-records" | "unavailable" | "persistence-failed" | "expired"; records: number; retrievedAt: string | null; imported: boolean }[] = [];
@@ -89,7 +91,11 @@ export async function syncStateBallotCycles(options: StateBallotCycleSyncOptions
 		results.push({ sourceId: source.id, electionDate: source.electionDate, status: expired ? "expired" : persistenceFailed ? "persistence-failed" : snapshot ? "available" : repository.isAwaitingRecords!(source.id) ? "awaiting-records" : "unavailable", records: snapshot?.records.length ?? 0, retrievedAt: snapshot?.retrievedAt ?? null, imported: false });
 	}
 	const observations = await repository.inspectSources!();
-	for (const result of results) result.imported = Boolean(observations.find(source => source.id === result.sourceId)?.lastImportAt);
+	for (const result of results) {
+		const observation = observations.find(source => source.id === result.sourceId);
+		result.imported = Boolean(observation?.lastImportAt);
+		if (observation?.failure && result.status !== "expired" && result.status !== "persistence-failed") result.status = "unavailable";
+	}
 	return { familyId: catalog.familyId, catalogChanged, discovery: catalog.discovery, checkedAt: new Date(now()).toISOString(), results };
 }
 

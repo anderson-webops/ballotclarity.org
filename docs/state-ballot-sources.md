@@ -138,7 +138,7 @@ its filing method, withdrawal and inactive-status fields.
 | State | Official source | Format | Scope and qualification evidence |
 | --- | --- | --- | --- |
 | Arkansas | [Washington County general-election and runoff lists](https://www.washingtoncountyar.gov/government/departments-a-e/election-commission/november-3-2026-general-election-information) | Reviewed public HTML; external import only | 182 records across all four tables: sixteen statewide, three Congress, four Senate, sixteen House and 143 local/regional. The first two lists are explicitly unofficial. Office-Elect is unopposed shorthand, never an election outcome. All 79 explicitly unopposed records remain listed; the source says twenty are printed, 58 are not printed and one water-board record has no stated ballot-appearance rule. No single-name office is inferred unopposed. Judicial/school runoffs and four municipal special-vacancy records remain distinct. Literal honorifics, party omissions, source-label variants and filing identifiers are preserved without inferring incumbency, party or personal eligibility. The standard pinned downloader returned HTTP 403; no retry or identity change bypasses it. The earlier permitted dated capture supplies this reviewed import, not a fresh automatic fetch. |
-| Georgia | [Fulton County general-election publications](https://fultoncountyga.gov/inside-fulton-county/fulton-county-departments/registration-and-elections/sample-ballots) and [PSC election scope](https://georgia.gov/organization/public-service-commission) | Two reviewed PDFs and a supporting official scope page; external import only | 98 records in 51 offices: 22 statewide, six Congress, sixteen Senate, 37 House and seventeen local, including two explicitly qualified county write-ins. All six PDF pages were visually reviewed. PSC districts are residency labels; their elections are statewide. The District 4 unexpired term and literal incumbency/party labels are retained without inventing a remaining term, party, unopposed outcome or local eligibility. State/federal write-in names are not included; the state host's denied policy entry is not bypassed. Seven question texts remain external companion material, not application measures. |
+| Georgia | [Fulton County general-election publications](https://fultoncountyga.gov/inside-fulton-county/fulton-county-departments/registration-and-elections/sample-ballots) and [PSC election scope](https://georgia.gov/organization/public-service-commission) | Policy-bound automatic PDF collection with an explicitly configured worker text extractor; existing reviewed facts remain readable | 98 records in 51 offices: 22 statewide, six Congress, sixteen Senate, 37 House and seventeen local, including two explicitly qualified county write-ins. All six PDF pages were visually reviewed. PSC districts are residency labels; their elections are statewide. The District 4 unexpired term and literal incumbency/party labels are retained without inventing a remaining term, party, unopposed outcome or local eligibility. State/federal write-in names are not included; the state host's denied policy entry is not bypassed. Seven question texts remain external companion material, not application measures. |
 | Idaho | [Cassia County general-election samples](https://www.cassia.gov/sample-ballots) | Three reviewed PDFs; external import only | 39 records in nineteen offices: 22 statewide, five Congress, two Senate, two House and eight local. All four pages were visually reviewed. House District 27 seats A/B remain distinct; one named magistrate retention question remains local, and Yes/No are not people. Pro-Life is one printed candidate with a former-name annotation. County terms and literal party codes are retained; blank write-in spaces and single-name offices do not create candidates or unopposed outcomes. Six question texts with ten source occurrences remain external companion material; school/fire precinct labels do not establish eligibility. |
 | Washington | [Selected general-election public candidate list](https://voter.votewa.gov/CandidateList.aspx?e=899) | Automatic, bounded HTML pagination | All 887 records across nine normal public pages: ten statewide Supreme Court choices, twenty Congress, 41 Senate, 184 House and 632 local/regional records. Active is retained as filed, not qualification, an outcome or retention. Literal party preferences, positions, general-election markers, terms, ballot order and public record identifiers are preserved. All filters, form targets, election/date identity, headers, page order/counts and complete totals are checked; no denied export is retried. Some local district labels are only County or otherwise incomplete, so no personal local match is inferred. |
 | Wisconsin | [Town of Dane general-election publications](https://townofdane.gov/2026/09/16/november-3-2026-general-election-information/) | Three reviewed sample PDFs and a Type B notice; external import only | Fifteen candidate/ticket records across nine offices, reconciled from 45 repeated choices and all eight pages. Nine statewide, one CD 2, one Senate 27, two Assembly 81 and two Dane County records. Joint governor/LG tickets and literal party labels are retained. Single-candidate offices are not inferred unopposed. Seven question texts, including four school questions, are retained externally rather than assigned to voters. Overlapping ward labels do not establish school eligibility. |
@@ -366,15 +366,31 @@ directory; eleven transfers retain their exact original bytes under its
 bind all 27 original files. Existing Git history is not rewritten. Source
 configuration fingerprints are unchanged, preserving the existing cache format.
 
-The Fulton and Cassia source sets require reviewed imports, not automatic PDF
-extraction. Each import binds ordered document URLs, capture times, content hashes
+The Cassia source set requires reviewed imports. Fulton additionally supports
+policy-bound automatic extraction from its actual dated publications. Both bind
+ordered document URLs, capture times, content hashes
 and contribution counts, including zero-candidate supporting or question-only
 documents. Their `georgia-2026` and `idaho-2026` data packages remain under the
 ignored `back-end/data/state-ballots/` directory with factual JSON/JSONL,
 manifests, checksums and verified archives. Neither original PDF graphics nor
 contact-bearing HTML belongs in a code artifact. See
-`docs/audits/2026-10-21-fulton-cassia-ballots.md` for source/scope review. Future
-elections require fresh permitted publications and review, not a filename change.
+`docs/audits/2026-10-21-fulton-cassia-ballots.md` for the original source/scope
+review. Cassia future elections still require fresh permitted publications and
+review. Fulton future discovery follows `docs/state-ballot-cycles.md`.
+
+Fulton's `fulton-pdf` collector verifies the current reviewed robots and privacy
+policy fingerprints, official policy-link inventory, election date and complete
+document set before normal, nonredirecting requests. A policy, layout, office,
+party or unexpired publication-set change requires review. Only normalized facts
+and original PDF hashes enter external snapshots; raw publications stay outside
+Git and releases. `fultonCollectorContract` declares the optional worker capability:
+an absolute maintained Poppler `pdftotext` path in `STATE_BALLOT_PDFTOTEXT`, with
+bounded input, output, pages and execution time. Public API reads need no extractor
+when approved retained data is present. Existing 2026 manual bytes remain readable
+without network requests or new timestamps. An explicit worker refresh records a
+missing capability or collection failure even while those retained facts remain
+available. A successful import changes the source fingerprint; rollback therefore
+requires the original reviewed data file alongside its compatible runtime.
 
 Arkansas also uses an external reviewed import. Its one HTML document's URL,
 content hash, capture time and 182-record contribution are bound into the snapshot.

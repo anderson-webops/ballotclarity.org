@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -61,7 +61,7 @@ for (const source of sources) {
 			requests++;
 			throw new Error("No publisher request permitted.");
 		};
-		assert.equal(await createStateBallotRepository({ dataDirectory: null, now: () => now, fetchText }).getSnapshot(source.stateCode), null);
+		assert.equal(await createStateBallotRepository({ sources: [source], dataDirectory: null, now: () => now, fetchText }).getSnapshot(source.stateCode), null);
 		await assert.rejects(fetchStateBallotSourceText(source, fetchText), /manually supplied/u);
 		assert.equal(requests, 0);
 	});
@@ -90,13 +90,13 @@ for (const source of sources) {
 		assert.throws(() => parseBundledStateSnapshot(source, JSON.stringify({ ...original, records: original.records.map(record => ({ ...record, residentialAddress: "excluded" })) })), /layout/u);
 	});
 
-	test(`${source.stateCode} management import survives restart and refuses automatic refresh without altering the accepted cache`, async (context) => {
+	test(`${source.stateCode} reviewed management import survives restart and a failed refresh preserves the accepted cache`, async (context) => {
 		const directory = await mkdtemp(join(tmpdir(), `ballot-${source.stateCode.toLowerCase()}-cli-`));
 		context.after(() => rm(directory, { recursive: true, force: true }));
 		const file = join(directory, "reviewed.json");
 		const body = JSON.stringify(payload(source.stateCode));
 		await writeFile(file, body);
-		const environment = { ...process.env, STATE_BALLOT_DATA_DIR: directory, STATE_BALLOT_ENABLED_STATES: source.stateCode };
+		const environment = { ...process.env, STATE_BALLOT_DATA_DIR: directory, STATE_BALLOT_ENABLED_STATES: source.stateCode, STATE_BALLOT_PDFTOTEXT: "" };
 		const manager = fileURLToPath(new URL("../src/manage-state-ballot-data.ts", import.meta.url));
 		const exporter = fileURLToPath(new URL("../src/export-state-ballot-sources.ts", import.meta.url));
 		const imported = execFileSync(process.execPath, ["--import", "tsx", manager, "import", file], { env: environment, encoding: "utf8" });
@@ -105,7 +105,15 @@ for (const source of sources) {
 		assert.equal(execFileSync(process.execPath, ["--import", "tsx", exporter, source.stateCode], { env: environment, encoding: "utf8" }), expected);
 		const cacheFile = join(directory, `${source.id}.json`);
 		const before = hash(await readFile(cacheFile, "utf8"));
-		assert.throws(() => execFileSync(process.execPath, ["--import", "tsx", manager, "refresh", source.stateCode], { env: environment, encoding: "utf8", stdio: "pipe" }), /manual|reviewed/iu);
+		const refresh = spawnSync(process.execPath, ["--import", "tsx", manager, "refresh", source.stateCode], { env: environment, encoding: "utf8", stdio: "pipe" });
+		assert.equal(refresh.status, 1);
+		if (source.stateCode === "GA") {
+			assert.equal(JSON.parse(refresh.stdout).records, 9);
+			assert.equal(JSON.parse(refresh.stdout).retrievedAt, payload("GA").retrievedAt);
+		}
+		else {
+			assert.match(refresh.stderr, /manual|reviewed/iu);
+		}
 		assert.equal(hash(await readFile(cacheFile, "utf8")), before);
 	});
 }

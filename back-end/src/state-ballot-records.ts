@@ -10,6 +10,7 @@ import { parseArkansasCandidateRecords } from "./state-ballot-arkansas.js";
 import { parseConnecticutCandidateRecords } from "./state-ballot-connecticut.js";
 import { validateDakotaCandidatePage } from "./state-ballot-dakota.js";
 import { parseFloridaLocalCandidateRecords } from "./state-ballot-florida-local.js";
+import { parseFultonCandidateCapture } from "./state-ballot-fulton.js";
 import { stateHtmlAttribute as attribute, stateHtmlDescendants as descendants, parseStateHtml as parseHtml, stateHtmlTableRows, stateHtmlText as textContent } from "./state-ballot-html.js";
 import { kentuckySourceElectionId, parseKentuckyCandidateRecords } from "./state-ballot-kentucky.js";
 import { parseMarylandCandidateRecords } from "./state-ballot-maryland.js";
@@ -402,7 +403,10 @@ export function parseStateCandidateRecords(source: StateBallotSource, body: stri
 	if (["reviewed-pdf", "reviewed-xlsx", "reviewed-image"].includes(source.format))
 		throw new Error("Reviewed document sources require a validated snapshot.");
 	let records: StateCandidateRecord[];
-	if (source.format === "virginia-local-html" || (source.format === "virginia-html" && (source.id !== "va-elect-2026-federal" || body.trimStart().startsWith("{")))) {
+	if (source.format === "fulton-pdf") {
+		records = parseFultonCandidateCapture(source, body).records;
+	}
+	else if (source.format === "virginia-local-html" || (source.format === "virginia-html" && (source.id !== "va-elect-2026-federal" || body.trimStart().startsWith("{")))) {
 		records = parseVirginiaCandidateRecords(source, body, makeRecord);
 	}
 	else if (source.stateCode === "MD") {

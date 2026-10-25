@@ -164,4 +164,13 @@ export const additionalStateBallotSources: readonly StateBallotSource[] = [
 	},
 ];
 
-export const configuredStateBallotSources: readonly StateBallotSource[] = [...stateBallotSources, ...additionalStateBallotSources];
+function automaticFultonSource(source: StateBallotSource): StateBallotSource {
+	return { ...source, format: "fulton-pdf", retrievalPolicy: undefined };
+}
+
+export function legacyFultonReviewedSource(source: StateBallotSource) {
+	const legacy = stateBallotSources.find(item => item.id === "ga-fulton-2026");
+	return legacy && source.id === legacy.id && JSON.stringify(source) === JSON.stringify(automaticFultonSource(legacy)) ? legacy : null;
+}
+
+export const configuredStateBallotSources: readonly StateBallotSource[] = [...stateBallotSources.map(source => source.id === "ga-fulton-2026" ? automaticFultonSource(source) : source), ...additionalStateBallotSources];

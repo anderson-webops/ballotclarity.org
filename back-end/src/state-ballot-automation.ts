@@ -96,6 +96,7 @@ export async function refreshApprovedCandidateData(
 		);
 		const persistenceErrors = new Set<string>();
 		const repository = createStateBallotRepository({
+			refreshReviewedLegacy: true,
 			sources,
 			dataDirectory: directory,
 			now,
@@ -106,8 +107,8 @@ export async function refreshApprovedCandidateData(
 		for (const source of sources) {
 			persistenceErrors.delete(source.id);
 			const snapshot = await repository.getSnapshot(source.stateCode, source.id);
-			const failed = (!snapshot && !repository.isAwaitingRecords!(source.id)) || persistenceErrors.has(source.id);
 			const observation = (await repository.inspectSources!()).find(item => item.id === source.id);
+			const failed = (!snapshot && !repository.isAwaitingRecords!(source.id)) || persistenceErrors.has(source.id) || Boolean(observation?.failure);
 			results.push({
 				sourceId: source.id,
 				status: failed ? "failed" : observation?.lastImportAt ? "imported" : "cached",

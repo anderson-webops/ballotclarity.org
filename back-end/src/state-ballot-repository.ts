@@ -7,8 +7,9 @@ import process from "node:process";
 import { getStateAbbreviationForName } from "./official-election-tools.js";
 import { getStateBallotCycleFamily, readConfiguredStateBallotCycleCatalogs, StateBallotCycleCatalogError, stateBallotCycleSources } from "./state-ballot-cycles.js";
 import { fetchStateBallotSourceText } from "./state-ballot-fetch.js";
+import { FultonCollectorCapabilityError, parseFultonCandidateCapture } from "./state-ballot-fulton.js";
 import { isActiveStateCandidateRecord, parseStateCandidateRecords, stateRecordMatchesDistricts } from "./state-ballot-records.js";
-import { configuredStateBallotSources } from "./state-ballot-registry.js";
+import { configuredStateBallotSources, legacyFultonReviewedSource } from "./state-ballot-registry.js";
 import { orderStateBallotSources, StateBallotAwaitingRecordsError, supportsPendingStateBallotRecords } from "./state-ballot-source-state.js";
 import { createStateBallotStorage } from "./state-ballot-storage.js";
 
@@ -28,6 +29,7 @@ export interface StateBallotRepository {
 }
 
 interface StateBallotRepositoryOptions {
+	refreshReviewedLegacy?: boolean;
 	dataDirectory?: string | null;
 	fetchText?: (source: StateBallotSource) => Promise<string>;
 	now?: () => number;
@@ -125,6 +127,7 @@ export function createStateBallotRepository(options: StateBallotRepositoryOption
 		const operation = Promise.resolve().then(async () => {
 			let failureReason: "transport" | "format" = "transport";
 			let stored: StateBallotSnapshot | null = null;
+			let reviewedFallback: StateBallotSnapshot | null = null;
 			let body: string | undefined;
 			let capturedAt: string | undefined;
 			try {
@@ -133,6 +136,8 @@ export function createStateBallotRepository(options: StateBallotRepositoryOption
 					stored = await storage.read(source);
 					if (stored && Date.parse(stored.retrievedAt) > now())
 						throw new Error("Stored state ballot data has a future capture time.");
+					if (stored && legacyFultonReviewedSource(source) && stored.source.retrievalPolicy === "manual-snapshot") reviewedFallback = stored;
+					if (stored && legacyFultonReviewedSource(source) && stored.source.retrievalPolicy === "manual-snapshot" && !options.refreshReviewedLegacy) return stored;
 					if (stored && (source.retrievalPolicy === "manual-snapshot" || Date.parse(stored.retrievedAt) + ttlMs > now())) {
 						if (source.retrievalPolicy !== "manual-snapshot")
 							cached.set(source.id, { expiresAt: Date.parse(stored.retrievedAt) + ttlMs, snapshot: stored });
@@ -152,11 +157,13 @@ export function createStateBallotRepository(options: StateBallotRepositoryOption
 				body = await fetchText(source);
 				capturedAt = new Date(now()).toISOString();
 				failureReason = "format";
+				const fulton = source.format === "fulton-pdf" ? parseFultonCandidateCapture(source, body) : null;
 				const snapshot: StateBallotSnapshot = {
 					source,
 					retrievedAt: capturedAt,
 					sha256: createHash("sha256").update(body).digest("hex"),
-					records: parseStateCandidateRecords(source, body),
+					records: fulton?.records ?? parseStateCandidateRecords(source, body),
+					...(fulton ?? {}),
 				};
 				if (storage) {
 					try {
@@ -187,7 +194,12 @@ export function createStateBallotRepository(options: StateBallotRepositoryOption
 				}
 				awaitingRecords.delete(source.id);
 				const observation = observations.get(source.id);
-				if (observation) observation.failure = failureReason === "format" ? "Source format requires review." : "Source collection failed.";
+				if (observation) observation.failure = error instanceof FultonCollectorCapabilityError ? "PDF text extractor is not configured or unavailable." : failureReason === "format" ? "Source format requires review." : "Source collection failed.";
+				if (reviewedFallback) {
+					cached.set(source.id, { expiresAt: now() + 5 * 60 * 1000, snapshot: reviewedFallback });
+					options.onUnavailable?.(source.stateCode, failureReason);
+					return reviewedFallback;
+				}
 				if (source.retrievalPolicy !== "manual-snapshot")
 					cached.set(source.id, { expiresAt: now() + 5 * 60 * 1000, snapshot: null });
 				options.onUnavailable?.(source.stateCode, failureReason);
@@ -271,7 +283,7 @@ export function buildStateBallotPreview(snapshot: StateBallotSnapshot, lookup: P
 		return null;
 	const disclaimer = snapshot.source.stateCode === "VA"
 		? "Federal candidates only; state and local contests are not included. This is not an address-specific ballot."
-		: ["reviewed-pdf", "reviewed-image", "alaska-html", "connecticut-ballots", "oregon-ballots"].includes(snapshot.source.format)
+		: ["reviewed-pdf", "reviewed-image", "fulton-pdf", "alaska-html", "connecticut-ballots", "oregon-ballots"].includes(snapshot.source.format)
 				? "Dated snapshot; later changes and local contests may be missing."
 				: snapshot.source.retrievalPolicy === "manual-snapshot"
 					? "Dated snapshot; later changes and local contests may be missing. Filing does not establish ballot qualification."

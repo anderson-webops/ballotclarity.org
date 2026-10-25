@@ -1,4 +1,5 @@
 import process from "node:process";
+import { legacyFultonReviewedSource } from "./state-ballot-registry.js";
 import { createStateBallotRepository, resolveStateBallotConfiguration } from "./state-ballot-repository.js";
 import { parseBundledStateSnapshot } from "./state-ballot-snapshot.js";
 import { createStateBallotStorage, readBoundedStateData } from "./state-ballot-storage.js";
@@ -15,7 +16,8 @@ async function main() {
 		for (const path of requested) {
 			const body = await readBoundedStateData(path);
 			const metadata = JSON.parse(body);
-			const source = configuration.sources.find(item => item.id === metadata.sourceId && item.retrievalPolicy === "manual-snapshot");
+			const enabled = configuration.sources.find(item => item.id === metadata.sourceId);
+			const source = enabled?.retrievalPolicy === "manual-snapshot" ? enabled : enabled ? legacyFultonReviewedSource(enabled) : null;
 			if (!source)
 				throw new Error("Every imported snapshot must match an enabled reviewed source.");
 			const snapshot = parseBundledStateSnapshot(source, body);
@@ -33,6 +35,7 @@ async function main() {
 		throw new Error("Refresh accepts enabled automatic sources only; reviewed sources require import.");
 	const sources = configuration.sources.filter(source => source.retrievalPolicy !== "manual-snapshot" && (!states.length || states.includes(source.stateCode)));
 	const repository = createStateBallotRepository({
+		refreshReviewedLegacy: true,
 		onPersistenceError() {
 			process.exitCode = 1;
 		},
@@ -40,7 +43,7 @@ async function main() {
 	for (const source of sources) {
 		const snapshot = await repository.getSnapshot(source.stateCode, source.id);
 		console.log(JSON.stringify({ state: source.stateCode, sourceId: source.id, action: snapshot ? "available" : "unavailable", records: snapshot?.records.length ?? 0, retrievedAt: snapshot?.retrievedAt ?? null }));
-		if (!snapshot) process.exitCode = 1;
+		if (!snapshot || (await repository.inspectSources!()).find(item => item.id === source.id)?.failure) process.exitCode = 1;
 	}
 }
 

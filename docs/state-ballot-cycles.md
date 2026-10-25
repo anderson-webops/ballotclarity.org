@@ -4,10 +4,11 @@ External election catalogs opt the automatic candidate repository into reusable
 source families. The current 60 source definitions retain explicit source/state
 allowlists; reusable discovery does not widen an exact-source allowlist.
 
-Twenty families across sixteen states are supported:
+Twenty-one families across seventeen states are supported:
 
 | Family | Discovery | Elections |
 | --- | --- | --- |
+| `ga-fulton-2026` | [Fulton County sample-ballot index](https://fultoncountyga.gov/inside-fulton-county/fulton-county-departments/registration-and-elections/sample-ballots), reviewed current policies and [official PSC scope](https://georgia.gov/organization/public-service-commission) | Actual dated November general/special-on-general-day PDF links, including qualified county write-in notices; county-published records, not statewide completeness |
 | `va-elect-2026-federal` | [Virginia candidate index](https://www.elections.virginia.gov/casting-a-ballot/candidate-list/) | Explicit November general-election dates and actual combined or split federal HTML links; separate presidential records do not establish tickets |
 | `va-elect-2026-local` | The same official index and its local/all-office reports | Explicit odd/even November general dates, source locality/district/term facts and any published all-office cross-check; not personal eligibility |
 | `wa-general-2026` | [Washington candidate list](https://voter.votewa.gov/CandidateList.aspx) | General elections, including odd years |
@@ -28,6 +29,19 @@ Twenty families across sixteen states are supported:
 | `ut-lg-2026` | [Utah candidate resources](https://vote.utah.gov/resources-for-candidates-political-groups-parties/) and [current election information](https://vote.utah.gov/current-election-information/) | Actually offered even-year candidate links paired with an explicit same-cycle regular general-election date; existing 255 records/IDs retained |
 | `mi-dos-2026` | [Michigan election homepage](https://www.michigan.gov/en/sos/elections) | Published November General Candidate Listing links paired with matching official report headers and explicit dates; original 716 entries/IDs retained |
 | `ks-johnson-2026` | [Johnson County upcoming elections](https://www.jocoelection.org/events-elections/upcoming-elections) and its public candidate selector | Explicit November general-election links, matching offered candidate IDs and dated Johnson County election pages, including odd years; county publication is not statewide completeness or voter-specific eligibility |
+
+Fulton retains all 98 current facts and their original IDs. Its catalog binds
+actual dated consolidated PDF links, optional qualified county write-in notices
+and the independent official PSC scope page. Future odd/even November dates must
+be explicitly published; separate special dates and primary elections are not
+inferred. Policy fingerprints and relevant policy links are rechecked during
+discovery. Changed unexpired document sets retain the accepted catalog for review.
+The collector requires the optional bounded-worker Poppler capability declared in
+`fultonCollectorContract`; no production tool installation is implied. Original
+reviewed 2026 data remains readable without that capability. Worker failures stay
+visible and never advance successful import clocks. Successful automatic files
+require a compatible runtime; the exact original reviewed file is the rollback
+data target. Future-cycle tests are synthetic, not observed future candidacies.
 
 Johnson County retains the existing 98-record current source and its original IDs.
 Future `ks-johnson-general-YYYY-MM-DD` sources require the complete published

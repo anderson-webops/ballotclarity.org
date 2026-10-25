@@ -7,6 +7,7 @@ import { mkdir, open, realpath, rename, unlink } from "node:fs/promises";
 import { isAbsolute, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { serializeMichiganCandidateRecord } from "./state-ballot-michigan.js";
+import { legacyFultonReviewedSource } from "./state-ballot-registry.js";
 import { parseBundledStateSnapshot } from "./state-ballot-snapshot.js";
 import { supportsPendingStateBallotRecords } from "./state-ballot-source-state.js";
 
@@ -127,9 +128,11 @@ export function createStateBallotStorage(directory: string) {
 			try {
 				const body = await readBoundedStateData(await location(source));
 				const envelope = JSON.parse(body);
-				if (!envelope || Object.keys(envelope).sort().join(",") !== "snapshot,sourceConfigurationSha256" || envelope.sourceConfigurationSha256 !== digest(JSON.stringify(source)) || typeof envelope.snapshot !== "string")
+				const legacy = legacyFultonReviewedSource(source);
+				const selected = legacy && envelope?.sourceConfigurationSha256 === digest(JSON.stringify(legacy)) ? legacy : source;
+				if (!envelope || Object.keys(envelope).sort().join(",") !== "snapshot,sourceConfigurationSha256" || envelope.sourceConfigurationSha256 !== digest(JSON.stringify(selected)) || typeof envelope.snapshot !== "string")
 					throw new Error("Stored state ballot data does not match the configured source.");
-				return parseBundledStateSnapshot(source, envelope.snapshot, source.retrievalPolicy ?? "automatic");
+				return parseBundledStateSnapshot(selected, envelope.snapshot, selected.retrievalPolicy ?? "automatic");
 			}
 			catch (error) {
 				if ((error as NodeJS.ErrnoException).code === "ENOENT")

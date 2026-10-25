@@ -8,7 +8,7 @@ export interface StateBallotSource {
 	electionDate: string;
 	url: string;
 	pageUrl: string;
-	format: "csv" | "maryland-local-csv" | "florida-local-tsv" | "delaware-html" | "michigan-html" | "new-mexico-html" | "virginia-html" | "colorado-html" | "kentucky-html" | "kentucky-courts-html" | "north-dakota-html" | "utah-html" | "mississippi-csv" | "south-dakota-csv" | "hawaii-csv" | "illinois-tsv" | "montana-csv" | "reviewed-pdf" | "reviewed-xlsx" | "reviewed-image" | "pennsylvania-html" | "west-virginia-json" | "alaska-html" | "south-carolina-html" | "kansas-html" | "washington-html" | "arkansas-html" | "connecticut-ballots" | "oregon-ballots";
+	format: "csv" | "maryland-local-csv" | "florida-local-tsv" | "delaware-html" | "michigan-html" | "new-mexico-html" | "virginia-html" | "virginia-local-html" | "colorado-html" | "kentucky-html" | "kentucky-courts-html" | "north-dakota-html" | "utah-html" | "mississippi-csv" | "south-dakota-csv" | "hawaii-csv" | "illinois-tsv" | "montana-csv" | "reviewed-pdf" | "reviewed-xlsx" | "reviewed-image" | "pennsylvania-html" | "west-virginia-json" | "alaska-html" | "south-carolina-html" | "kansas-html" | "washington-html" | "arkansas-html" | "connecticut-ballots" | "oregon-ballots";
 	delimiter?: string;
 	postBody?: string;
 	documentUrls?: readonly string[];
@@ -612,6 +612,9 @@ export const stateBallotSources: readonly StateBallotSource[] = [
 		url: "https://www.sos.state.co.us/pubs/elections/vote/generalCandidates.html",
 		pageUrl: "https://www.sos.state.co.us/pubs/elections/vote/generalCandidates.html",
 		format: "colorado-html",
+		retrievalPolicy: "manual-snapshot",
+		snapshotStorage: "external",
+		documentUrls: ["https://www.sos.state.co.us/pubs/elections/vote/generalCandidates.html"],
 	},
 	{
 		stateCode: "KY",

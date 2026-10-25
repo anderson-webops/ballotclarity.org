@@ -18,6 +18,9 @@ export interface StateCandidateValues {
 	sourceDistrictLabel?: string;
 	sourceDivision?: string;
 	sourceAreaLabel?: string;
+	termYears?: number;
+	termEnd?: string;
+	seats?: number;
 	scope?: StateContestScope;
 }
 

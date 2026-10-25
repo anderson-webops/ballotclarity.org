@@ -1,13 +1,15 @@
 # Reusable election cycles
 
 External election catalogs opt the automatic candidate repository into reusable
-source families. Without them, the current 59 source
-definitions, source ordering and source/state allowlists remain unchanged.
+source families. The current 60 source definitions retain explicit source/state
+allowlists; reusable discovery does not widen an exact-source allowlist.
 
-Eighteen families across fifteen states are supported:
+Twenty families across sixteen states are supported:
 
 | Family | Discovery | Elections |
 | --- | --- | --- |
+| `va-elect-2026-federal` | [Virginia candidate index](https://www.elections.virginia.gov/casting-a-ballot/candidate-list/) | Explicit November general-election dates and actual combined or split federal HTML links; separate presidential records do not establish tickets |
+| `va-elect-2026-local` | The same official index and its local/all-office reports | Explicit odd/even November general dates, source locality/district/term facts and any published all-office cross-check; not personal eligibility |
 | `wa-general-2026` | [Washington candidate list](https://voter.votewa.gov/CandidateList.aspx) | General elections, including odd years |
 | `mt-general-2026` | [Montana candidate list](https://candidatefiling.mt.gov/candidatefiling/CandidateList.aspx) | Federal general elections in even years |
 | `ms-sos-2026` | [Mississippi qualifying list](https://www.sos.ms.gov/content/CandidateQualifying/default.aspx) | Explicitly dated November general-election records |
@@ -44,7 +46,18 @@ refresh; source publication alone does not install or verify a receiving-host jo
 Stable family identifiers retain their original descriptor bindings; future
 instances do not require editing those descriptors. Discovery reads the official election selector or an explicit published general-election date,
 not a predicted URL, numerical election-ID sequence or computed election date.
-Primary, special and conservation elections are outside these families.
+Primary, separate special-election dates and conservation elections are outside
+these families. Virginia's general-day publication explicitly includes special
+offices; their unexpired terms remain distinct and legislative applicability is
+withheld until verified.
+
+Virginia catalogs additionally retain each published report kind/URL and an
+optional all-office URL. Annual paths are never constructed. A currently offered
+date and its links must match again at collection; changing an unexpired report
+set retains the accepted catalog for review. An empty, otherwise validated future
+table waits durably rather than becoming a successful zero-record import. Strict
+HTML category/schema checks cover combined and historical split federal formats.
+Future rollover tests are synthetic, not observed future candidate claims.
 
 Michigan reads actual even-year general-report links in the filing section,
 validates the report's state/judicial scope and explicit regular-general date,

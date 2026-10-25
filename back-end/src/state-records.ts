@@ -63,6 +63,9 @@ function publicRecord(record: StateCandidateRecord): PublicStateCandidateRecord 
 		candidateUrl: candidateUrl && /^https?:\/\//u.test(candidateUrl) ? candidateUrl : undefined,
 		sourceDistrictLabel: record.sourceDistrictLabel,
 		sourceAreaLabel: record.sourceAreaLabel,
+		termYears: record.termYears,
+		termEnd: record.termEnd,
+		seats: record.seats,
 	};
 }
 

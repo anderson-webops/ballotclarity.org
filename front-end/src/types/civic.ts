@@ -204,6 +204,9 @@ export interface PublicStateCandidateRecord {
 	candidateUrl?: string;
 	sourceDistrictLabel?: string;
 	sourceAreaLabel?: string;
+	termYears?: number;
+	termEnd?: string;
+	seats?: number;
 }
 
 export interface PublicJudicialEvaluation {

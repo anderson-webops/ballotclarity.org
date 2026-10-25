@@ -19,6 +19,7 @@ import { parseOregonCandidateRecords } from "./state-ballot-oregon.js";
 import { parseStatePortalRecords } from "./state-ballot-portal-records.js";
 import { StateBallotAwaitingRecordsError } from "./state-ballot-source-state.js";
 import { floridaSourceElectionId } from "./state-ballot-southern.js";
+import { parseVirginiaCandidateRecords, validateVirginiaSource } from "./state-ballot-virginia.js";
 import { parseWashingtonCandidateRecords } from "./state-ballot-washington.js";
 
 export type StateCandidateStatus = "listed" | "filed" | "qualified" | "write-in" | "withdrawn" | "disqualified" | "defeated" | "elected" | "unopposed" | "inactive" | "unrecognized";
@@ -41,6 +42,9 @@ export interface StateCandidateRecord {
 	sourceDistrictLabel?: string;
 	sourceDivision?: string;
 	sourceAreaLabel?: string;
+	termYears?: number;
+	termEnd?: string;
+	seats?: number;
 }
 
 function clean(value: unknown) {
@@ -93,7 +97,7 @@ function makeRecord(source: StateBallotSource, values: StateCandidateValues): St
 		geography.scope = "statewide";
 		geography.district = "";
 	}
-	const jurisdiction = geography.scope === "local" ? clean(values.jurisdiction) || undefined : undefined;
+	const jurisdiction = geography.scope === "local" || source.format === "virginia-local-html" ? clean(values.jurisdiction) || undefined : undefined;
 	const keyParts = [source.stateCode, source.electionDate, office.toLowerCase(), geography.district, name.toLowerCase(), party.toLowerCase()];
 	if (jurisdiction) keyParts.push(jurisdiction.toLowerCase());
 	if (source.format === "kentucky-courts-html") keyParts.push(clean(values.sourceDistrictLabel).toLowerCase());
@@ -103,6 +107,7 @@ function makeRecord(source: StateBallotSource, values: StateCandidateValues): St
 		if (!area) return null;
 		keyParts.push(area.toLowerCase());
 	}
+	if (source.format === "virginia-local-html") keyParts.push(clean(values.sourceAreaLabel).toLowerCase(), clean(values.sourceDistrictLabel).toLowerCase(), String(values.termYears ?? ""), values.termEnd ?? "", String(values.seats ?? ""));
 	const sourceCandidateId = clean(values.sourceCandidateId) || undefined;
 	if (sourceCandidateId) keyParts.push(sourceCandidateId);
 	const key = JSON.stringify(keyParts);
@@ -120,6 +125,9 @@ function makeRecord(source: StateBallotSource, values: StateCandidateValues): St
 		sourceDistrictLabel: clean(values.sourceDistrictLabel) || undefined,
 		sourceDivision: clean(values.sourceDivision) || undefined,
 		sourceAreaLabel: clean(values.sourceAreaLabel) || undefined,
+		...(values.termYears !== undefined ? { termYears: values.termYears } : {}),
+		...(values.termEnd !== undefined ? { termEnd: values.termEnd } : {}),
+		...(values.seats !== undefined ? { seats: values.seats } : {}),
 	};
 }
 
@@ -388,12 +396,16 @@ const requiredColumns: Record<string, string[]> = {
 };
 
 export function parseStateCandidateRecords(source: StateBallotSource, body: string): StateCandidateRecord[] {
+	if (source.format === "virginia-html" && source.id === "va-elect-2026-federal") validateVirginiaSource(source);
 	if (source.stateCode === "MI" && source.format === "michigan-html" && (source.id !== "mi-dos-2026" || body.trimStart().startsWith("{"))) body = readMichiganCandidateCapture(source, body);
 	if (source.stateCode === "NC" && (source.id !== "nc-sbe-2026" || body.trimStart().startsWith("{"))) body = readNorthCarolinaCandidateCapture(source, body);
 	if (["reviewed-pdf", "reviewed-xlsx", "reviewed-image"].includes(source.format))
 		throw new Error("Reviewed document sources require a validated snapshot.");
 	let records: StateCandidateRecord[];
-	if (source.stateCode === "MD") {
+	if (source.format === "virginia-local-html" || (source.format === "virginia-html" && (source.id !== "va-elect-2026-federal" || body.trimStart().startsWith("{")))) {
+		records = parseVirginiaCandidateRecords(source, body, makeRecord);
+	}
+	else if (source.stateCode === "MD") {
 		records = parseMarylandCandidateRecords(source, body, makeRecord);
 	}
 	else if (source.format === "florida-local-tsv") {

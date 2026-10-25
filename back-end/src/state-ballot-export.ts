@@ -45,6 +45,10 @@ export function serializeStateBallotSnapshots(snapshots: readonly StateBallotSna
 				sourceDistrictLabel: record.sourceDistrictLabel,
 				sourceDivision: record.sourceDivision,
 				sourceAreaLabel: record.sourceAreaLabel,
+				incumbent: record.incumbent,
+				termYears: record.termYears,
+				termEnd: record.termEnd,
+				seats: record.seats,
 			}));
 		}
 	}

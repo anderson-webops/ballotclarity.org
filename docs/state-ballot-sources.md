@@ -1,5 +1,59 @@
 # Official state candidate records
 
+## Virginia reusable federal and local collection
+
+The [official candidate index](https://www.elections.virginia.gov/casting-a-ballot/candidate-list/)
+publishes explicitly dated November general and special-election HTML reports.
+`va-elect-2026-federal` preserves all 38 current identities and existing core
+facts, adding 36 validated campaign links and explicit incumbent designations.
+`va-elect-2026-local` adds 1,326 distinct local/regional records across 119 source
+localities: 1,320 local claims and six House of Delegates claims. The 1,327 source
+rows include one name-case-only duplicate; identical facts reconcile into one
+record, while conflicting duplicates fail for review. Counts are candidate/office
+claims, not unique people, complete ballots or elected-office denominators.
+
+The local and all-office reports' first eleven public columns reconcile exactly.
+Term years, unexpired term-end dates, vacancies and published district/locality
+labels survive normalization, storage, exports and dedicated record pages.
+Vacancies are not inferred vote-for instructions. The six legislative claims
+remain outside personal ballot matching. Independent is retained as the source's
+party label, not inferred membership or endorsement. Thirteen source rows have an
+ambiguous missing contact-tail cell: their validated public prefixes are retained
+but no website position is guessed. The 117 accepted local campaign links are
+safe public URLs. Email, phone and street-address columns remain excluded from
+normalized records and release artifacts.
+
+Two reusable families follow actual index links rather than guessing yearly paths.
+Combined federal reports and the publisher's historical president/Senate/House
+layouts are supported. Separate presidential rows never establish running-mate
+tickets. Old current federal raw captures remain readable. Complete future empty
+tables wait for data; changed dates, links, table layouts and inconsistent companion
+reports retain accepted data for review. Current live observations are for 2026;
+future-cycle tests are synthetic. Normal pinned HTTPS and zero redirects apply.
+The [robots policy](https://www.elections.virginia.gov/robots.txt) allows these
+public HTML paths but excludes JSON/CSV/spreadsheet formats, which are not fetched.
+The [privacy policy](https://www.elections.virginia.gov/privacy-policy/) and
+[policies index](https://www.elections.virginia.gov/about-us/policies-and-guidelines/)
+were reviewed; no blanket republication permission is claimed. Only factual
+fields are normalized. Independent ballot-measure and reviewed-profile sources
+remain separate.
+
+## Colorado candidate collection hold
+
+The Secretary of State's [terms of use](https://www.coloradosos.gov/pubs/info_center/terms.html)
+prohibit automated collection without special permission. `co-sos-2026` therefore
+requires an external reviewed manual snapshot, including exact document identity,
+hash, capture time and record count. The automatic fetch path stops before any
+request. Existing automatic captures remain intact but are not reclassified as
+approved manual imports. The previously captured 404 candidate facts can still
+be checked offline; that capture is not permission to refresh. Independent
+Colorado county/measure/reference collections retain their existing policies.
+
+The New Mexico candidate portal separately excludes AI agents in its robots
+policy. Further AI-assisted discovery is held. This observation is not a new
+blanket prohibition on the existing non-AI server importer's wildcard policy;
+no new reusable New Mexico family is enabled by this work.
+
 ## North Carolina reusable general-election discovery
 
 The [official year tables](https://www.ncsbe.gov/results-data/candidate-lists)

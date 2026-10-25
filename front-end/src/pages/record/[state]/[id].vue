@@ -142,14 +142,26 @@ const documentLinks = computed(() => {
 							Ballot designation
 						</dt><dd>{{ data.official.ballotDesignation }}</dd>
 					</div>
+					<div v-if="data.official.termYears">
+						<dt class="font-semibold">
+							Term
+						</dt><dd>{{ data.official.termYears }} years</dd>
+					</div>
+					<div v-if="data.official.termEnd">
+						<dt class="font-semibold">
+							Term ends
+						</dt><dd>{{ formatDate(data.official.termEnd) }}</dd>
+					</div>
+					<div v-if="data.official.seats">
+						<dt class="font-semibold">
+							Reported seats
+						</dt><dd>{{ data.official.seats }}</dd>
+					</div>
 				</dl>
 				<SafeExternalLink v-if="data.official.candidateUrl" :href="data.official.candidateUrl" class="text-app-accent underline underline-offset-3 focus-ring">
 					Candidate website
 				</SafeExternalLink>
 				<section class="pt-5 border-t border-app-line space-y-3 dark:border-app-line-dark" aria-label="Source">
-					<SafeExternalLink v-if="data.official.candidateUrl" :href="data.official.candidateUrl" class="text-app-accent underline underline-offset-3 block focus-ring">
-						Candidate website
-					</SafeExternalLink>
 					<SafeExternalLink v-if="data.source.url" :href="data.source.url" class="text-app-accent underline underline-offset-3 focus-ring">
 						{{ data.source.label ?? 'Official source' }}
 					</SafeExternalLink>

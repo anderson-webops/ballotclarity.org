@@ -139,7 +139,8 @@ test("invalid external reviewed data fails closed instead of relabeling bundled 
 test("every reviewed source requires external data regardless of its retained legacy storage flag", async () => {
 	let requests = 0;
 	const sources = stateBallotSources.filter(source => source.retrievalPolicy === "manual-snapshot");
-	assert.equal(sources.length, 32);
+	assert.equal(sources.length, 33);
+	assert.ok(sources.some(source => source.id === "co-sos-2026"));
 	const repository = createStateBallotRepository({ sources, dataDirectory: null, now: () => now, fetchText: async () => {
 		requests += 1;
 		throw new Error("Reviewed sources cannot download.");

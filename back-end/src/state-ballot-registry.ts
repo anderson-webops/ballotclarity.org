@@ -146,6 +146,22 @@ export const additionalStateBallotSources: readonly StateBallotSource[] = [
 		snapshotStorage: "external",
 		scopeNotice: "Regional districts are source labels, not voter-specific ballot matches.",
 	},
+	{
+		stateCode: "VA",
+		id: "va-elect-2026-local",
+		label: "Virginia local and regional candidates",
+		electionDate: "2026-11-03",
+		url: "https://www.elections.virginia.gov/casting-a-ballot/candidate-list/november-3-2026-gen-elect-local-offices/",
+		pageUrl: "https://www.elections.virginia.gov/casting-a-ballot/candidate-list/november-3-2026-gen-elect-local-offices/",
+		format: "virginia-local-html",
+		snapshotStorage: "external",
+		documentUrls: [
+			"https://www.elections.virginia.gov/casting-a-ballot/candidate-list/november-3-2026-gen-elect-local-offices/",
+			"https://www.elections.virginia.gov/casting-a-ballot/candidate-list/november-3-2026-gen-elect-all-offices/",
+		],
+		withheldDistrictScopes: ["state-house"],
+		scopeNotice: "Reported seats are vacancies, not voting instructions.",
+	},
 ];
 
 export const configuredStateBallotSources: readonly StateBallotSource[] = [...stateBallotSources, ...additionalStateBallotSources];

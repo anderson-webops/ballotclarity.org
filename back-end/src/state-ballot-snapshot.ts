@@ -5,7 +5,7 @@ import { createHash } from "node:crypto";
 import { normalizePublicHref } from "./public-href.js";
 import { normalizeMichiganCandidateRecord } from "./state-ballot-michigan.js";
 
-const recordFields = new Set(["id", "name", "office", "party", "incumbent", "district", "scope", "status", "sourceStatus", "ballotDesignation", "jurisdiction", "candidateUrl", "sourceCandidateId", "sourceDistrictLabel", "sourceDivision", "sourceAreaLabel"]);
+const recordFields = new Set(["id", "name", "office", "party", "incumbent", "district", "scope", "status", "sourceStatus", "ballotDesignation", "jurisdiction", "candidateUrl", "sourceCandidateId", "sourceDistrictLabel", "sourceDivision", "sourceAreaLabel", "termYears", "termEnd", "seats"]);
 const snapshotFields = new Set(["schemaVersion", "stateCode", "sourceId", "electionDate", "sourceUrl", "retrievalPolicy", "retrievedAt", "sourceSha256", "recordCount", "records", "documents"]);
 const documentFields = new Set(["url", "sha256", "retrievedAt", "includedRecordCount"]);
 const scopes = ["statewide", "congressional", "state-senate", "state-house", "local"];
@@ -24,7 +24,7 @@ export function parseBundledStateSnapshot(source: StateBallotSource, body: strin
 	if (!Array.isArray(data.records) || !data.records.length || data.records.length > 25_000 || data.recordCount !== data.records.length)
 		throw new Error("The bundled candidate snapshot has an invalid record count.");
 	let documents: StateBallotSnapshot["documents"];
-	if (["reviewed-pdf", "reviewed-xlsx", "reviewed-image", "pennsylvania-html", "west-virginia-json", "alaska-html", "connecticut-ballots", "oregon-ballots"].includes(source.format) || (source.format === "arkansas-html" && source.retrievalPolicy === "manual-snapshot")) {
+	if (["reviewed-pdf", "reviewed-xlsx", "reviewed-image", "pennsylvania-html", "west-virginia-json", "alaska-html", "connecticut-ballots", "oregon-ballots"].includes(source.format) || (["arkansas-html", "colorado-html"].includes(source.format) && source.retrievalPolicy === "manual-snapshot")) {
 		if (!Array.isArray(data.documents) || data.documents.length !== source.documentUrls?.length || !data.documents.length)
 			throw new Error("The bundled candidate snapshot has an invalid document set.");
 		documents = data.documents.map((value: unknown, index: number) => {
@@ -53,6 +53,10 @@ export function parseBundledStateSnapshot(source: StateBallotSource, body: strin
 		if (row.candidateUrl !== undefined && (typeof row.candidateUrl !== "string" || !/^https?:\/\//u.test(row.candidateUrl) || normalizePublicHref(row.candidateUrl) !== row.candidateUrl))
 			throw new Error("The bundled candidate campaign link is unsafe.");
 		if (row.incumbent !== undefined && (source.stateCode !== "MI" || source.format !== "michigan-html" || row.incumbent !== true || (row.party !== undefined && String(row.party).trim().toUpperCase() !== "INCUMBENT"))) throw new Error("The bundled candidate record has an invalid incumbency field.");
+		for (const [key, maximum] of [["termYears", 12], ["seats", 99]] as const) {
+			if (row[key] !== undefined && (source.stateCode !== "VA" || source.format !== "virginia-local-html" || typeof row[key] !== "number" || !Number.isSafeInteger(row[key]) || row[key] < 1 || row[key] > maximum)) throw new Error("The bundled candidate office metadata is invalid.");
+		}
+		if (row.termEnd !== undefined && (source.stateCode !== "VA" || source.format !== "virginia-local-html" || typeof row.termEnd !== "string" || !/^20\d{2}-\d{2}-\d{2}$/u.test(row.termEnd) || !Number.isFinite(Date.parse(`${row.termEnd}T00:00:00Z`)) || new Date(`${row.termEnd}T00:00:00Z`).toISOString().slice(0, 10) !== row.termEnd || row.termEnd < source.electionDate)) throw new Error("The bundled candidate term end is invalid.");
 		const record = row as unknown as StateCandidateRecord;
 		return source.stateCode === "MI" && source.format === "michigan-html" ? normalizeMichiganCandidateRecord(record) : record;
 	});

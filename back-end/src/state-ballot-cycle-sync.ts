@@ -13,6 +13,7 @@ import { createStateBallotRepository } from "./state-ballot-repository.js";
 import { readSouthCarolinaElectionYears, southCarolinaElectionsUrl, southCarolinaScriptUrl, southCarolinaYearsUrl, validateSouthCarolinaElectionIndex } from "./state-ballot-southern.js";
 import { assertExternalStateDataDirectory } from "./state-ballot-storage.js";
 import { fetchUtahCycleDiscovery } from "./state-ballot-utah.js";
+import { fetchVirginiaCandidateCapture } from "./state-ballot-virginia.js";
 
 interface StateBallotCycleSyncOptions {
 	familyId?: string;
@@ -68,7 +69,7 @@ export async function syncStateBallotCycles(options: StateBallotCycleSyncOptions
 	if (previous && previous.familyId !== family.source.id) throw new Error("The configured catalog belongs to a different election family.");
 	const body = await (options.fetchDiscovery ?? (() => fetchStateBallotCycleDiscovery(undefined, family.source.id)))();
 	const discovered = discoverStateBallotElectionCycles(body, family.source.id, now());
-	if (previous?.elections.some(election => Date.parse(`${election.electionDate}T00:00:00Z`) + 2 * 86400000 > now() && !discovered.elections.some(item => item.electionDate === election.electionDate && item.electionId === election.electionId)))
+	if (previous?.elections.some(election => Date.parse(`${election.electionDate}T00:00:00Z`) + 2 * 86400000 > now() && !discovered.elections.some(item => item.electionDate === election.electionDate && item.electionId === election.electionId && (family.source.stateCode !== "VA" || JSON.stringify(item) === JSON.stringify(election)))))
 		throw new Error("An unexpired official election disappeared or changed identity; retain the accepted catalog for review.");
 	const catalog: StateBallotCycleCatalog = previous?.discovery.sha256 === discovered.discovery.sha256 ? previous : discovered;
 	const catalogChanged = await writeStateBallotCycleCatalog(options.catalogPath, catalog, now());
@@ -76,7 +77,7 @@ export async function syncStateBallotCycles(options: StateBallotCycleSyncOptions
 	const sources = [...(catalog.elections.some(election => election.electionDate === original.electionDate) ? [original] : []), ...stateBallotCycleSources(catalog, now())]
 		.filter(source => !options.enabledSourceIds || options.enabledSourceIds.includes(source.id));
 	let persistenceFailed = false;
-	const fetchCandidates = options.fetchCandidates ?? (family.format === "kansas-html" ? async (source: StateBallotSource) => fetchKansasCandidateCapture(source, fetchRemoteSourceText, body) : undefined);
+	const fetchCandidates = options.fetchCandidates ?? (family.source.stateCode === "VA" ? async (source: StateBallotSource) => fetchVirginiaCandidateCapture(source, fetchRemoteSourceText, body) : family.format === "kansas-html" ? async (source: StateBallotSource) => fetchKansasCandidateCapture(source, fetchRemoteSourceText, body) : undefined);
 	const repository = createStateBallotRepository({ sources, dataDirectory: options.dataDirectory, now, fetchText: fetchCandidates ?? (family.source.stateCode === "MI" ? async source => michiganCandidateCapture(source, body) : family.source.stateCode === "NC" ? async source => northCarolinaCandidateCapture(source, body) : family.source.stateCode === "KY" ? async source => fetchKentuckyCandidateCapture(source, fetchRemoteSourceText, body) : undefined), onPersistenceError: () => {
 		persistenceFailed = true;
 	} });

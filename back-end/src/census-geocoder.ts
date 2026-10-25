@@ -1,5 +1,6 @@
 import type { LocationDistrictMatch } from "./types/civic.js";
 import process from "node:process";
+import { createCensusDistrictContext } from "./census-district-context.js";
 import { readProviderResponseJson } from "./fetch-response.js";
 import { createFetchTimeoutSignal, resolveFetchTimeoutMs } from "./fetch-timeout.js";
 
@@ -22,7 +23,9 @@ interface CensusAddressMatch {
 	geographies?: Record<string, CensusGeographyItem[] | undefined>;
 }
 
-interface CensusGeographyItem {
+export interface CensusGeographyItem {
+	CDSESSN?: string;
+	STUSAB?: string;
 	NAME?: string;
 	GEOID?: string;
 	COUNTY?: string;
@@ -33,6 +36,8 @@ interface CensusGeographyItem {
 }
 
 export interface CensusAddressLookupResult {
+	districtContextCongress?: number;
+	electionDistrictMatches?: LocationDistrictMatch[];
 	benchmark: string;
 	countyFips?: string;
 	districtMatches: LocationDistrictMatch[];
@@ -49,6 +54,7 @@ export interface CensusGeocoderClient {
 }
 
 interface CensusGeocoderClientOptions {
+	now?: () => number;
 	benchmark?: string;
 	fetchImpl?: typeof fetch;
 	timeoutMs?: number;
@@ -116,7 +122,7 @@ function inferDistrictCode(layerName: string, geography: CensusGeographyItem) {
 	}
 }
 
-export function buildDistrictMatches(geographies: Record<string, CensusGeographyItem[] | undefined> | undefined) {
+export function buildDistrictMatches(geographies: Record<string, CensusGeographyItem[] | undefined> | undefined, vintage?: string) {
 	if (!geographies)
 		return [];
 
@@ -131,13 +137,19 @@ export function buildDistrictMatches(geographies: Record<string, CensusGeography
 		const geography = items[0];
 		const label = geography.NAME?.trim() || `${layerName} ${geography.BASENAME || geography.GEOID || ""}`.trim();
 		const districtCode = inferDistrictCode(layerName, geography);
+		const layerSession = /^(\d{3})(?:st|nd|rd|th) Congressional Districts$/u.exec(layerName)?.[1];
+		if (districtType === "congressional" && (!layerSession || (geography.CDSESSN !== undefined && geography.CDSESSN !== layerSession) || items.length !== 1))
+			continue;
 
 		districtMatches.push({
 			districtCode,
 			districtType,
 			id: `${districtType}:${districtCode || geography.GEOID || label}`,
 			label,
-			sourceSystem: "U.S. Census Geocoder"
+			sourceSystem: "U.S. Census Geocoder",
+			congressionalSession: layerSession ? Number(layerSession) : undefined,
+			boundaryVintage: vintage,
+			stateFips: /^\d{2}$/u.test(geography.STATE ?? "") ? geography.STATE : undefined,
 		});
 	}
 
@@ -148,12 +160,14 @@ export function buildDistrictMatches(geographies: Record<string, CensusGeography
 }
 
 export function createCensusGeocoderClient({
+	now = Date.now,
 	benchmark = process.env.CENSUS_GEOCODER_BENCHMARK?.trim() || defaultBenchmark,
 	fetchImpl = fetch,
 	timeoutMs = resolveFetchTimeoutMs(process.env.CENSUS_GEOCODER_FETCH_TIMEOUT_MS),
 	vintage = process.env.CENSUS_GEOCODER_VINTAGE?.trim() || defaultVintage
 }: CensusGeocoderClientOptions = {}): CensusGeocoderClient {
 	const resolvedTimeoutMs = resolveFetchTimeoutMs(timeoutMs);
+	const resolveDistrictContext = createCensusDistrictContext({ benchmark, fetchImpl, now, timeoutMs: resolvedTimeoutMs });
 
 	return {
 		async lookupAddress(address: string) {
@@ -182,7 +196,7 @@ export function createCensusGeocoderClient({
 			return {
 				benchmark,
 				countyFips: match.geographies?.Counties?.[0]?.COUNTY,
-				districtMatches: buildDistrictMatches(match.geographies),
+				...await resolveDistrictContext(match.geographies, match.coordinates?.y, match.coordinates?.x, vintage),
 				latitude: match.coordinates?.y,
 				longitude: match.coordinates?.x,
 				normalizedAddress: match.matchedAddress?.trim() || address.trim(),

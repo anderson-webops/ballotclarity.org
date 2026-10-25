@@ -4430,6 +4430,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 					if (selectedZipMatch) {
 						addressEnrichment = {
 							benchmark: "ZIP_CENTROID",
+							districtContextCongress: selectedZipMatch.districtContextCongress,
 							countyFips: selectedZipMatch.countyFips,
 							districtMatches: selectedZipMatch.districtMatches,
 							fromCache: false,

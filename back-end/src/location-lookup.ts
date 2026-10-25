@@ -597,6 +597,8 @@ export function buildLocationLookupResponse(
 				jurisdiction?.jurisdictionType === "state" || limitedGuide,
 			),
 			districtMatches: addressEnrichment?.districtMatches,
+			electionDistrictMatches: addressEnrichment?.electionDistrictMatches,
+			districtContextCongress: addressEnrichment?.districtContextCongress,
 			electionLogistics: officialLookup?.logistics ?? null,
 			electionSlug: autoSelectedCoverage?.nextElectionSlug,
 			fromCache: addressEnrichment?.fromCache,
@@ -647,6 +649,8 @@ export function buildLocationLookupResponse(
 				guideAvailability: "not-published",
 				inputKind,
 				districtMatches: addressEnrichment?.districtMatches,
+				electionDistrictMatches: addressEnrichment?.electionDistrictMatches,
+				districtContextCongress: addressEnrichment?.districtContextCongress,
 				electionLogistics: officialLookup?.logistics ?? null,
 				location: stateName
 					? {
@@ -672,6 +676,8 @@ export function buildLocationLookupResponse(
 			fromCache: addressEnrichment?.fromCache,
 			inputKind,
 			districtMatches: addressEnrichment?.districtMatches,
+			electionDistrictMatches: addressEnrichment?.electionDistrictMatches,
+			districtContextCongress: addressEnrichment?.districtContextCongress,
 			lookupQuery: rawQuery,
 			note: buildUnsupportedNote(rawQuery, inputKind, geoContext, Boolean(officialActions.length)),
 			normalizedAddress: addressEnrichment?.normalizedAddress,
@@ -710,6 +716,8 @@ export function buildLocationLookupResponse(
 		guideContent: guideContent ?? null,
 		inputKind,
 		districtMatches: addressEnrichment?.districtMatches,
+		electionDistrictMatches: addressEnrichment?.electionDistrictMatches,
+		districtContextCongress: addressEnrichment?.districtContextCongress,
 		lookupQuery: rawQuery,
 		location: {
 			...location,

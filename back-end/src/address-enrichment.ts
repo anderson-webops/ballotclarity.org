@@ -2,6 +2,7 @@ import type { AddressCacheRepository } from "./address-cache-repository.js";
 import type { CensusAddressLookupResult, CensusGeocoderClient } from "./census-geocoder.js";
 import type { OpenStatesClient } from "./openstates.js";
 import type { LocationRepresentativeMatch } from "./types/civic.js";
+import { isCurrentCensusDistrictContext } from "./census-district-context.js";
 
 export interface AddressEnrichmentResult extends CensusAddressLookupResult {
 	fromCache: boolean;
@@ -66,7 +67,7 @@ export function createAddressEnrichmentService(
 			}
 			catch {}
 
-			if (cached) {
+			if (cached && isCurrentCensusDistrictContext(cached)) {
 				return {
 					...cached,
 					fromCache: true,

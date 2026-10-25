@@ -694,6 +694,9 @@ export interface LocationSelection {
 }
 
 export interface LocationDistrictMatch {
+	congressionalSession?: number;
+	boundaryVintage?: string;
+	stateFips?: string;
 	id: string;
 	label: string;
 	districtType: string;
@@ -787,6 +790,8 @@ export interface LocationLookupSelectionOption {
 }
 
 export interface LocationLookupResponse {
+	districtContextCongress?: number;
+	electionDistrictMatches?: LocationDistrictMatch[];
 	result: LocationLookupResult;
 	inputKind: LocationLookupInputKind;
 	note: string;

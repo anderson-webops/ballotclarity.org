@@ -17,12 +17,15 @@ import type {
 	TrustBullet,
 } from "./types/civic.js";
 import process from "node:process";
+import { currentCongress, isCongressionalDistrict, matchesCurrentCongress } from "./congressional-boundaries.js";
 import { buildProfileImage } from "./profile-images.js";
 import { normalizePublicHref } from "./public-href.js";
 import { classifyRepresentative } from "./representative-classification.js";
 import { openSecretJson, sealSecretJson } from "./secret-envelope.js";
 
 export interface ActiveNationwideLookupContext {
+	districtContextCongress?: number;
+	electionDistrictMatches?: LocationDistrictMatch[];
 	actions: LocationLookupAction[];
 	detectedFromIp: boolean;
 	districtMatches: LocationDistrictMatch[];
@@ -198,6 +201,9 @@ function sanitizeDistrictMatch(value: unknown): LocationDistrictMatch | null {
 		id,
 		label,
 		sourceSystem,
+		congressionalSession: typeof value.congressionalSession === "number" && Number.isInteger(value.congressionalSession) && value.congressionalSession > 0 && value.congressionalSession < 1000 ? value.congressionalSession : undefined,
+		boundaryVintage: typeof value.boundaryVintage === "string" && /^\w{1,64}$/u.test(value.boundaryVintage) ? value.boundaryVintage : undefined,
+		stateFips: typeof value.stateFips === "string" && /^\d{2}$/u.test(value.stateFips) ? value.stateFips : undefined,
 	};
 }
 
@@ -344,6 +350,10 @@ function sanitizeActiveNationwideLookupContext(value: unknown): ActiveNationwide
 			: [],
 		detectedFromIp: value.detectedFromIp === true,
 		districtMatches,
+		districtContextCongress: typeof value.districtContextCongress === "number" && Number.isInteger(value.districtContextCongress) ? value.districtContextCongress : undefined,
+		electionDistrictMatches: Array.isArray(value.electionDistrictMatches)
+			? value.electionDistrictMatches.map(sanitizeDistrictMatch).filter((item): item is LocationDistrictMatch => Boolean(item) && isCongressionalDistrict(item!))
+			: undefined,
 		electionSlug: typeof value.electionSlug === "string" ? value.electionSlug : undefined,
 		electionLogistics: isRecord(value.electionLogistics) ? value.electionLogistics as unknown as ElectionLogistics : null,
 		guideAvailability,
@@ -392,6 +402,7 @@ function expandCompactCookiePayload(value: unknown) {
 				}).filter(isPresent)
 			: [],
 		detectedFromIp: value.d === 1,
+		districtContextCongress: value.dc,
 		districtMatches: Array.isArray(value.dm)
 			? value.dm.map((item) => {
 					if (!Array.isArray(item))
@@ -403,10 +414,18 @@ function expandCompactCookiePayload(value: unknown) {
 						id: readCompactString(item, 0),
 						label: readCompactString(item, 1),
 						sourceSystem: readCompactString(item, 4),
+						congressionalSession: item[5],
+						boundaryVintage: readCompactOptionalString(item, 6),
+						stateFips: readCompactOptionalString(item, 7),
 					};
 				}).filter(isPresent)
 			: [],
 		electionSlug: typeof value.es === "string" ? value.es : undefined,
+		electionDistrictMatches: Array.isArray(value.edm)
+			? value.edm.map(item => Array.isArray(item)
+					? { id: readCompactString(item, 0), label: readCompactString(item, 1), districtType: readCompactString(item, 2), districtCode: readCompactString(item, 3), sourceSystem: readCompactString(item, 4), congressionalSession: item[5], boundaryVintage: readCompactOptionalString(item, 6), stateFips: readCompactOptionalString(item, 7) }
+					: null)
+			: undefined,
 		electionLogistics: null,
 		guideAvailability: value.ga === "p" ? "published" : "not-published",
 		inputKind: value.ik === "a" ? "address" : "zip",
@@ -471,13 +490,18 @@ function buildCookiePayload(context: ActiveNationwideLookupContext) {
 				action.description,
 			]),
 		d: context.detectedFromIp ? 1 : 0,
+		dc: context.districtContextCongress,
 		dm: context.districtMatches.map(match => [
 			match.id,
 			match.label,
 			match.districtType,
 			match.districtCode,
 			match.sourceSystem,
+			match.congressionalSession ?? null,
+			match.boundaryVintage ?? "",
+			match.stateFips ?? "",
 		]),
+		edm: context.electionDistrictMatches?.map(match => [match.id, match.label, match.districtType, match.districtCode, match.sourceSystem, match.congressionalSession ?? null, match.boundaryVintage ?? "", match.stateFips ?? ""]),
 		es: context.electionSlug,
 		ga: context.guideAvailability === "published" ? "p" : "n",
 		ik: context.inputKind === "address" ? "a" : "z",
@@ -1006,7 +1030,10 @@ export function readActiveNationwideLookupContext(
 			activeLookupCookiePurpose
 		);
 
-		return sanitizeActiveNationwideLookupContext(expandCompactCookiePayload(payload));
+		const context = sanitizeActiveNationwideLookupContext(expandCompactCookiePayload(payload));
+		if (context?.districtMatches.some(match => match.sourceSystem === "U.S. Census Geocoder" && isCongressionalDistrict(match) && !matchesCurrentCongress(match, currentCongress(), context.districtContextCongress)))
+			return null;
+		return context;
 	}
 	catch {
 		return null;
@@ -1020,6 +1047,8 @@ export function buildActiveNationwideLookupResponse(
 		actions: context.actions,
 		detectedFromIp: context.detectedFromIp,
 		districtMatches: context.districtMatches,
+		electionDistrictMatches: context.electionDistrictMatches,
+		districtContextCongress: context.districtContextCongress,
 		electionLogistics: context.electionLogistics,
 		electionSlug: context.electionSlug,
 		fromCache: false,

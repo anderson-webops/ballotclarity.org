@@ -1,5 +1,11 @@
 # Official state candidate records
 
+Congressional ballot matching uses election-session geography separately from
+current officeholder districts. Census's current geography can describe the next
+Congress before it takes office. Unknown-session matches are not sufficient for
+address-specific congressional candidate attachment; existing source holds remain
+effective. See the [boundary provenance review](audits/2026-10-25-congressional-boundaries.md).
+
 ## Vermont statewide workbook
 
 The [official candidate index](https://sos.vermont.gov/elections/election-info-resources/candidates)

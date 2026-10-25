@@ -50,7 +50,7 @@ test("Oregon lookup, saved context and linked district/official directories neve
 		stateBallotRepository: await createReviewedFixtureRepository(context, { now: () => Date.parse("2026-10-21T12:00:00Z"), fetchText: async () => { throw new Error("No external request"); } }),
 		zipLookupLogger: { enabled: false, logPath: ":memory:", async record() {} },
 		addressEnrichmentService: { async lookupAddress() {
-			return { benchmark: "Public_AR_Current", countyFips: "051", districtMatches: districts, fromCache: false, latitude: 0, longitude: 0, normalizedAddress: "100 Controlled Review St, Portland, OR 97214", representativeMatches: [], state: "OR", vintage: "Current_Current", zip5: "97214" };
+			return { benchmark: "Public_AR_Current", countyFips: "051", districtMatches: districts, electionDistrictMatches: districts.filter(match => match.districtType === "congressional").map(match => ({ ...match, congressionalSession: 120 })), fromCache: false, latitude: 0, longitude: 0, normalizedAddress: "100 Controlled Review St, Portland, OR 97214", representativeMatches: [], state: "OR", vintage: "Current_Current", zip5: "97214" };
 		} },
 	});
 	const server = app.listen(0, "127.0.0.1");

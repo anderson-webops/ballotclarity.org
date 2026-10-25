@@ -1,7 +1,8 @@
+import type { buildDistrictMatches } from "./census-geocoder.js";
 import type { OpenStatesClient } from "./openstates.js";
 import type { LocationRepresentativeMatch } from "./types/civic.js";
 import process from "node:process";
-import { buildDistrictMatches } from "./census-geocoder.js";
+import { createCensusDistrictContext } from "./census-district-context.js";
 import { readProviderResponseJson } from "./fetch-response.js";
 import { createFetchTimeoutSignal, resolveFetchTimeoutMs } from "./fetch-timeout.js";
 
@@ -37,6 +38,7 @@ interface CensusCoordinatesResponse {
 }
 
 export interface ZipLocationMatch {
+	districtContextCongress?: number;
 	id: string;
 	countyFips?: string;
 	countyName?: string;
@@ -61,6 +63,7 @@ export interface ZipLocationService {
 }
 
 interface ZipLocationServiceOptions {
+	now?: () => number;
 	benchmark?: string;
 	fetchImpl?: typeof fetch;
 	openStatesClient?: OpenStatesClient | null;
@@ -112,10 +115,12 @@ async function lookupCoordinatesContext(
 	longitude: number | undefined,
 	benchmark: string,
 	vintage: string,
-	timeoutMs: number
+	timeoutMs: number,
+	resolveDistrictContext: ReturnType<typeof createCensusDistrictContext>,
 ) {
 	if (latitude === undefined || longitude === undefined) {
 		return {
+			districtContextCongress: undefined,
 			countyFips: undefined,
 			countyName: undefined,
 			districtMatches: [],
@@ -145,11 +150,13 @@ async function lookupCoordinatesContext(
 	const geographies = payload.result?.geographies;
 	const county = geographies?.Counties?.[0];
 	const state = geographies?.States?.[0];
+	const districtContext = await resolveDistrictContext(geographies, latitude, longitude, vintage);
 
 	return {
 		countyFips: county?.COUNTY,
 		countyName: county?.NAME,
-		districtMatches: buildDistrictMatches(geographies),
+		districtMatches: districtContext.districtMatches,
+		districtContextCongress: districtContext.districtContextCongress,
 		stateAbbreviation: state?.STUSAB,
 		stateName: state?.NAME
 	};
@@ -172,6 +179,7 @@ async function resolveRepresentativeMatchesSafely(
 }
 
 export function createZipLocationService({
+	now = Date.now,
 	benchmark = process.env.CENSUS_GEOCODER_BENCHMARK?.trim() || defaultBenchmark,
 	fetchImpl = fetch,
 	openStatesClient = null,
@@ -179,6 +187,7 @@ export function createZipLocationService({
 	vintage = process.env.CENSUS_GEOCODER_VINTAGE?.trim() || defaultVintage
 }: ZipLocationServiceOptions = {}): ZipLocationService {
 	const resolvedTimeoutMs = resolveFetchTimeoutMs(timeoutMs);
+	const resolveDistrictContext = createCensusDistrictContext({ benchmark, fetchImpl, now, timeoutMs: resolvedTimeoutMs });
 
 	return {
 		async lookupZip(zipCode: string) {
@@ -210,9 +219,11 @@ export function createZipLocationService({
 					longitude,
 					benchmark,
 					vintage,
-					resolvedTimeoutMs
+					resolvedTimeoutMs,
+					resolveDistrictContext,
 				)
 					.catch(() => ({
+						districtContextCongress: undefined,
 						countyFips: undefined,
 						countyName: undefined,
 						districtMatches: [] as ReturnType<typeof buildDistrictMatches>,
@@ -227,6 +238,7 @@ export function createZipLocationService({
 					countyFips: geoContext.countyFips,
 					countyName: geoContext.countyName,
 					districtMatches: geoContext.districtMatches,
+					districtContextCongress: geoContext.districtContextCongress,
 					id: buildMatchId(postalCode, locality, stateAbbreviation, latitude, longitude),
 					latitude,
 					longitude,

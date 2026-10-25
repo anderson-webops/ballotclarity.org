@@ -10,6 +10,7 @@ import process from "node:process";
 import test, { after, before, type TestContext } from "node:test";
 import { setTimeout as delay } from "node:timers/promises";
 import { buildActiveNationwideLookupCookieFromContext } from "../back-end/src/active-nationwide-lookup.ts";
+import { currentCongress } from "../back-end/src/congressional-boundaries.ts";
 import { mergeRepresentativeMatchesWithSupplementalRecords } from "../back-end/src/supplemental-officeholders.ts";
 import {
 	staleClientBuildStorageKey,
@@ -116,6 +117,7 @@ const nationwideLookupSnapshot = {
 			{
 				districtCode: "03",
 				districtType: "Congressional District",
+				congressionalSession: currentCongress(),
 				id: "ut-cd-03",
 				label: "Congressional District 3",
 				sourceSystem: "U.S. Census Geocoder"

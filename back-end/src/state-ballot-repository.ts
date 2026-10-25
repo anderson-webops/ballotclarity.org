@@ -9,6 +9,7 @@ import type {
 } from "./types/civic.js";
 import { createHash } from "node:crypto";
 import process from "node:process";
+import { electionDistrictMatches } from "./congressional-boundaries.js";
 import { getStateAbbreviationForName } from "./official-election-tools.js";
 import { parseCertifiedPdfCapture } from "./state-ballot-certified-pdf.js";
 import {
@@ -338,7 +339,9 @@ export async function attachStateBallotPreview(lookup: LocationLookupResponse, r
 	const snapshot = await repository.getSnapshot(stateCode);
 	const preview = snapshot
 		? buildStateBallotPreview(snapshot, {
-				districtMatches: lookup.inputKind === "address" && !lookup.detectedFromIp ? lookup.districtMatches : [],
+				districtMatches: lookup.inputKind === "address" && !lookup.detectedFromIp
+					? electionDistrictMatches(stateCode, snapshot.source.electionDate, lookup.districtMatches ?? [], lookup.electionDistrictMatches)
+					: [],
 			})
 		: null;
 	if (!preview)

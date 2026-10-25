@@ -13,6 +13,7 @@ import { readActiveNationwideLookupContext } from "../src/active-nationwide-look
 import { createAdminLoginThrottle } from "../src/admin-login-throttle.js";
 import { createAdminMfaCode } from "../src/admin-mfa.js";
 import { defaultContentSeed } from "../src/admin-store.js";
+import { currentCongress } from "../src/congressional-boundaries.js";
 import {
 	demoAdminCorrections,
 	demoAdminOverview,
@@ -212,6 +213,7 @@ function buildSingleZipLocationService() {
 							{
 								districtCode: "5",
 								districtType: "congressional",
+								congressionalSession: currentCongress(),
 								id: "congressional:5",
 								label: "Congressional District 5",
 								sourceSystem: "U.S. Census Geocoder"
@@ -401,6 +403,7 @@ before(async () => {
 							{
 								districtCode: "3",
 								districtType: "congressional",
+								congressionalSession: currentCongress(),
 								id: "congressional:3",
 								label: "Congressional District 3",
 								sourceSystem: "U.S. Census Geocoder"
@@ -435,6 +438,7 @@ before(async () => {
 						{
 							districtCode: "5",
 							districtType: "congressional",
+							congressionalSession: currentCongress(),
 							id: "congressional:5",
 							label: "Congressional District 5",
 							sourceSystem: "U.S. Census Geocoder"
@@ -1060,6 +1064,7 @@ before(async () => {
 									{
 										districtCode: "3",
 										districtType: "congressional",
+										congressionalSession: currentCongress(),
 										id: "congressional:3",
 										label: "Congressional District 3",
 										sourceSystem: "U.S. Census Geocoder"
@@ -1129,6 +1134,7 @@ before(async () => {
 									{
 										districtCode: "5",
 										districtType: "congressional",
+										congressionalSession: currentCongress(),
 										id: "congressional:5",
 										label: "Congressional District 5",
 										sourceSystem: "U.S. Census Geocoder"
@@ -1177,6 +1183,7 @@ before(async () => {
 									{
 										districtCode: "7",
 										districtType: "congressional",
+										congressionalSession: currentCongress(),
 										id: "congressional:7",
 										label: "Congressional District 7",
 										sourceSystem: "U.S. Census Geocoder"
@@ -1235,6 +1242,7 @@ before(async () => {
 									{
 										districtCode: "3",
 										districtType: "congressional",
+										congressionalSession: currentCongress(),
 										id: "congressional:3",
 										label: "Congressional District 3",
 										sourceSystem: "U.S. Census Geocoder"
@@ -1268,6 +1276,7 @@ before(async () => {
 									{
 										districtCode: "4",
 										districtType: "congressional",
+										congressionalSession: currentCongress(),
 										id: "congressional:4",
 										label: "Congressional District 4",
 										sourceSystem: "U.S. Census Geocoder"
@@ -1757,6 +1766,7 @@ test("POST /api/location records resolved lookups through the ZIP lookup logger 
 								{
 									districtCode: "5",
 									districtType: "congressional",
+									congressionalSession: currentCongress(),
 									id: "congressional:5",
 									label: "Congressional District 5",
 									sourceSystem: "U.S. Census Geocoder"
@@ -2318,6 +2328,7 @@ test("saved nationwide lookup routes share the public provider throttle", async 
 						districtMatches: [{
 							districtCode: "3",
 							districtType: "congressional",
+							congressionalSession: currentCongress(),
 							id: "congressional:3",
 							label: "Congressional District 3",
 							sourceSystem: "U.S. Census Geocoder"
@@ -2392,6 +2403,7 @@ test("matching signed lookup context avoids repeating an external route lookup",
 						districtMatches: [{
 							districtCode: "3",
 							districtType: "congressional",
+							congressionalSession: currentCongress(),
 							id: "congressional:3",
 							label: "Congressional District 3",
 							sourceSystem: "U.S. Census Geocoder"
@@ -3948,6 +3960,7 @@ test("guide package workflow gates local guide publication from draft through ro
 						{
 							districtCode: "7",
 							districtType: "congressional",
+							congressionalSession: currentCongress(),
 							id: "congressional:7",
 							label: "Congressional District 7",
 							sourceSystem: "U.S. Census Geocoder"

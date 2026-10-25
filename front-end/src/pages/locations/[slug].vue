@@ -9,6 +9,7 @@ const { data: nextElectionData } = await useBallot(nextElectionSlug);
 
 const registrationDeadline = computed(() => nextElectionData.value?.election.keyDates.find(item => item.label === "Registration deadline") ?? null);
 const earlyVotingDate = computed(() => nextElectionData.value?.election.keyDates.find(item => item.label === "Early voting opens") ?? null);
+const hasOfficeContact = computed(() => Boolean(jurisdiction.value && [jurisdiction.value.officialOffice.address, jurisdiction.value.officialOffice.phone, jurisdiction.value.officialOffice.email, jurisdiction.value.officialOffice.hours].some(value => value?.trim())));
 
 watchEffect(() => {
 	if (jurisdiction.value) {
@@ -78,7 +79,7 @@ usePageSeo({
 			</InfoCallout>
 		</div>
 
-		<div v-else class="space-y-8">
+		<div v-else class="section-stack print:space-y-8">
 			<header>
 				<div class="surface-panel">
 					<h1 class="text-5xl text-app-ink leading-tight font-serif dark:text-app-text-dark">
@@ -139,7 +140,7 @@ usePageSeo({
 			</section>
 
 			<section class="gap-6 grid xl:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
-				<div class="surface-panel">
+				<div v-if="hasOfficeContact" class="surface-panel">
 					<div class="flex gap-4 items-start justify-between">
 						<div>
 							<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
@@ -151,29 +152,29 @@ usePageSeo({
 						</div>
 					</div>
 					<dl class="text-sm text-app-muted leading-7 mt-6 space-y-3 dark:text-app-muted-dark">
-						<div>
+						<div v-if="jurisdiction.officialOffice.address.trim()">
 							<dt class="text-app-ink font-semibold dark:text-app-text-dark">
 								Address
 							</dt>
 							<dd>{{ jurisdiction.officialOffice.address }}</dd>
 						</div>
-						<div>
+						<div v-if="jurisdiction.officialOffice.phone.trim()">
 							<dt class="text-app-ink font-semibold dark:text-app-text-dark">
 								Phone
 							</dt>
 							<dd>{{ jurisdiction.officialOffice.phone }}</dd>
 						</div>
-						<div>
+						<div v-if="jurisdiction.officialOffice.email.trim()">
 							<dt class="text-app-ink font-semibold dark:text-app-text-dark">
 								Email
 							</dt>
 							<dd>
-								<a :href="`mailto:${jurisdiction.officialOffice.email}`" class="rounded-md hover:text-app-accent focus-ring dark:hover:text-white">
+								<a :href="`mailto:${jurisdiction.officialOffice.email}`" class="rounded-md break-all hover:text-app-accent focus-ring dark:hover:text-white">
 									{{ jurisdiction.officialOffice.email }}
 								</a>
 							</dd>
 						</div>
-						<div>
+						<div v-if="jurisdiction.officialOffice.hours.trim()">
 							<dt class="text-app-ink font-semibold dark:text-app-text-dark">
 								Hours
 							</dt>

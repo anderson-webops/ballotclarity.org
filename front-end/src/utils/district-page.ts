@@ -172,7 +172,7 @@ export function buildNationwideDistrictPageRecord(
 		districtOriginLabel: "Lookup-based district page",
 		districtOriginNote: context.inputKind === "zip"
 			? "Built from this ZIP result. A full street address gives a more precise match when local layers overlap."
-			: "Built from current area results because no local guide is published for this district.",
+			: "",
 		election: context.election ?? {
 			date: updatedAt,
 			jurisdictionSlug: "",
@@ -182,7 +182,7 @@ export function buildNationwideDistrictPageRecord(
 			updatedAt
 		},
 		mode: "nationwide",
-		note: "This page keeps the district, current officials, and official election links together when no local guide is published.",
+		note: "",
 		officialResources,
 		relatedContests: [],
 		representativeAvailabilityNote: buildDistrictRepresentativeAvailabilityNote(district, representatives.length),

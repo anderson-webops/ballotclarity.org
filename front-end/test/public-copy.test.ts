@@ -76,6 +76,33 @@ function readPublicSource(relativePath: string) {
 	return readFileSync(fileURLToPath(new URL(`../src/${relativePath}`, import.meta.url)), "utf8");
 }
 
+test("public UI omits local-guide jargon and page-availability explanations", () => {
+	const failures: string[] = [];
+	for (const root of publicSourceRoots) {
+		for (const file of collectFiles(root, entry => /\.(?:vue|ts)$/u.test(entry))) {
+			const body = readFileSync(file, "utf8");
+			if (/\blocal guides?\b|This (?:district |public )?page is available|local guide to attach/iu.test(body))
+				failures.push(relative(process.cwd(), file));
+		}
+	}
+	assert.deepEqual(failures, []);
+});
+
+test("district headers omit generated copy, candidate workflow notes and unsupported update dates", () => {
+	const page = readPublicSource("pages/districts/[slug].vue");
+	assert.match(page, /v-if="districtPageData.mode === 'guide' && districtPageData.district.description"/u);
+	assert.doesNotMatch(page, /\{\{ districtPageData.candidateAvailabilityNote \}\}|Candidate field:/u);
+	assert.match(page, /<UpdatedAt v-if="districtPageData.representatives.length \|\| districtPageData.candidates.length \|\| districtPageData.relatedContests.length"/u);
+});
+
+test("coverage navigation stays available without presenting unverified election content as data", () => {
+	const page = readPublicSource("pages/coverage.vue");
+	assert.match(page, /v-if="data.launchTarget && data.guideContent\?\.verifiedContestPackage"/u);
+	assert.match(page, /to="\/records"/u);
+	assert.match(page, /to="\/sources"/u);
+	assert.doesNotMatch(page, /publicCapabilities|capabilityTone|guideShell|In build|Planned/iu);
+});
+
 test("public copy does not expose staged reference-archive candidate names", () => {
 	const failures: string[] = [];
 
@@ -96,9 +123,20 @@ test("public source actions only render when a resolved URL is available", () =>
 	const officialResourceList = readPublicSource("components/OfficialResourceList.vue");
 	const sourceDetailPage = readPublicSource("pages/sources/[id].vue");
 
-	assert.match(sourceList, /<SafeExternalLink\s+v-if="source\.url"/);
+	assert.match(sourceList, /<SafeExternalLink\s+v-if="direct && source\.url"/);
+	assert.match(sourceList, /<SafeExternalLink v-if="source\.url && !direct"/);
+	assert.match(sourceList, /<template v-if="source\.date">/);
 	assert.match(officialResourceList, /<SafeExternalLink\s+v-if="resource\.url"/);
 	assert.match(sourceDetailPage, /<SafeExternalLink\s+v-if="data\.source\.url"/);
+});
+
+test("unavailable measure pages use one error heading without repeating publication commentary", () => {
+	const measurePage = readPublicSource("pages/measure/[slug].vue");
+	const unavailableState = readPublicSource("components/GuideUnavailableState.vue");
+	assert.match(measurePage, /title="Measure unavailable"/);
+	assert.match(measurePage, /message=""/);
+	assert.doesNotMatch(measurePage, /isn't published yet|page not published yet|tertiary-label=/);
+	assert.match(unavailableState, /<p v-if="message"/);
 });
 
 test("public source files do not ship staged reference-archive dossier content", () => {
@@ -259,7 +297,7 @@ test("public source copy avoids implementation and archive jargon", () => {
 	assert.deepEqual(failures, []);
 });
 
-test("public status page uses reader-facing coverage package language", () => {
+test("public status page retains incidents and metrics without publication-process commentary", () => {
 	const statusPage = readPublicSource("pages/status.vue");
 
 	assert.doesNotMatch(statusPage, /Snapshot missing/);
@@ -269,8 +307,7 @@ test("public status page uses reader-facing coverage package language", () => {
 	assert.doesNotMatch(statusPage, /Seed snapshot/);
 	assert.doesNotMatch(statusPage, /Unclassified snapshot/);
 	assert.doesNotMatch(statusPage, /snapshot provenance/i);
-	assert.match(statusPage, /Coverage package missing/);
-	assert.match(statusPage, /No local guide package/);
-	assert.match(statusPage, /Production-approved package/);
-	assert.match(statusPage, /local guide package status/);
+	assert.doesNotMatch(statusPage, /coveragePackageLabel|local guide|data.notes/);
+	assert.match(statusPage, /data.incidents/);
+	assert.match(statusPage, /data.sources/);
 });

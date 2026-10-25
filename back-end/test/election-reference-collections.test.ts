@@ -19,15 +19,16 @@ const retrievedAt = "2026-10-20T12:00:00.000Z";
 const congressional = electionReferenceSources.find(source => source.id === "wa-congressional-statements-2026")!;
 const legislative = electionReferenceSources.find(source => source.id === "wa-ld1-statements-2026")!;
 const statewide = electionReferenceSources.find(source => source.id === "wa-state-statements-2026")!;
+const stevens = electionReferenceSources.find(source => source.id === "wa-stevens-statements-2026")!;
 
 function fixture(source: ElectionReferenceSource, prefix = "Profile") {
 	const documents = source.documents.map(document => ({ url: document.url, sha256: hash(document.url), capturedAt: retrievedAt, includedRecordCount: 1 }));
-	const records = source.documents.map((document, index) => ({ id: hash(`${source.id}/${index}`).slice(0, 24), name: `${prefix} ${index}`, office: source.id === congressional.id ? "U.S. Representative" : "State Representative", scope: source.id === congressional.id ? "congressional" : "state-house", jurisdiction: source.id === congressional.id ? "Congressional District 1" : "Legislative District 1", facts: [`Reported experience ${index}.`], sourceDocumentIndex: index }));
+	const records = source.documents.map((document, index) => ({ id: hash(`${source.id}/${index}`).slice(0, 24), name: `${prefix} ${index}`, office: source.washingtonLocality ? "Auditor" : source.id === congressional.id ? "U.S. Representative" : "State Representative", scope: source.washingtonLocality ? "local" : source.id === congressional.id ? "congressional" : "state-house", jurisdiction: source.washingtonLocality ? `${source.washingtonLocality.countyDisplay} County` : source.id === congressional.id ? "Congressional District 1" : "Legislative District 1", facts: [`Reported experience ${index}.`], sourceDocumentIndex: index }));
 	return parseElectionReferenceSnapshot(source, JSON.stringify({ schemaVersion: 1, type: "election-references", stateCode: source.stateCode, sourceId: source.id, electionDate: source.electionDate, retrievedAt, sourceSha256: hash(JSON.stringify(documents.map(({ url, sha256 }) => ({ url, sha256 })))), recordCount: records.length, documents, records }));
 }
 
 test("legislative collection is additive and pins two observed anonymous public races", () => {
-	assert.equal(electionReferenceSources.filter(source => source.stateCode === "WA").length, 3);
+	assert.equal(electionReferenceSources.filter(source => source.stateCode === "WA").length, 5);
 	assert.equal(congressional.documents.length, 10);
 	assert.equal(legislative.electionDate, "2026-11-03");
 	assert.equal(legislative.documents.length, 2);
@@ -113,6 +114,25 @@ test("earliest active election is isolated from future and expired collections",
 	assert.deepEqual(await createElectionReferenceRepository({ dataDirectory: null }).getSnapshots!("WA"), []);
 });
 
+test("optional Stevens imports preserve healthy collections and fingerprint the county context", async (context) => {
+	const directory = await mkdtemp(join(tmpdir(), "ballot-stevens-collections-"));
+	context.after(() => rm(directory, { recursive: true, force: true }));
+	const storage = createElectionReferenceStorage(directory);
+	const first = fixture(congressional);
+	const local = fixture(stevens, "Stevens");
+	const repository = createElectionReferenceRepository({ dataDirectory: directory, sources: [congressional, stevens], now: () => Date.parse("2026-10-23T00:00:00Z") });
+	await storage.write(congressional, first);
+	assert.deepEqual(await repository.getSnapshots!("WA"), [first]);
+	await storage.write(stevens, local);
+	assert.deepEqual(await repository.getSnapshots!("WA"), [first, local]);
+	await assert.rejects(storage.read({ ...stevens, washingtonLocality: { ...stevens.washingtonLocality!, countyDisplay: "Wahkiakum" } }), /configured collection/u);
+	assert.deepEqual(await storage.read(stevens), local);
+	await writeFile(join(directory, `references-${stevens.id}.json`), "{}");
+	assert.deepEqual(await repository.getSnapshots!("WA"), [first]);
+	await storage.write(stevens, local);
+	assert.deepEqual(await repository.getSnapshots!("WA"), [first, local]);
+});
+
 test("public aggregation exposes partial availability without hiding healthy profiles", async (context) => {
 	const first = fixture(congressional);
 	const second = fixture(legislative);
@@ -134,7 +154,7 @@ test("public aggregation exposes partial availability without hiding healthy pro
 	const complete = await (await fetch(origin)).json();
 	assert.equal(complete.total, 137);
 	assert.equal(complete.incomplete, undefined);
-	assert.deepEqual(complete.collections, [congressional.id, legislative.id, statewide.id]);
+	assert.deepEqual(complete.collections, [congressional.id, legislative.id, statewide.id, "openstates-wa-service-2026", stevens.id]);
 	assert.equal(new Set(complete.records.map((record: { source: { collectionId: string } }) => record.source.collectionId)).size, 3);
 	const page = await (await fetch(`${origin}?offset=9&limit=3`)).json();
 	assert.equal(page.records.length, 3);

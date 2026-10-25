@@ -1360,10 +1360,10 @@ export async function createPostgresAdminRepository(options: AdminRepositoryOpti
 						value: String(reviewQueue.length + packageQueue.length)
 					},
 					{
-						helpText: "Tracked source systems passing the latest check cycle.",
+						helpText: "Manually recorded editorial notices, not live collector checks.",
 						id: "healthy-sources",
 						label: "Healthy sources",
-						tone: healthySourceCount === sources.length ? "healthy" : "review",
+						tone: !sources.length ? "attention" : healthySourceCount === sources.length ? "healthy" : "review",
 						value: `${healthySourceCount}/${sources.length}`
 					},
 					{
@@ -1439,7 +1439,7 @@ export async function createPostgresAdminRepository(options: AdminRepositoryOpti
 		},
 		async listReview() {
 			return {
-				items: (await repository.listContent()).items.map(item => ({
+				items: (await repository.listContent()).items.filter(item => item.status !== "published" || !item.published).map(item => ({
 					assignedTo: item.assignedTo,
 					blocker: item.blocker,
 					entityType: item.entityType,
@@ -2148,11 +2148,10 @@ export async function createPostgresAdminRepository(options: AdminRepositoryOpti
 
 				await client.query(`
 					UPDATE admin_source_monitors
-					SET health = $1, last_checked_at = $2, next_check_at = $3, owner = $4, note = $5
-					WHERE id = $6
+					SET health = $1, next_check_at = $2, owner = $3, note = $4
+					WHERE id = $5
 				`, [
 					nextHealth,
-					now,
 					nextCheckAt,
 					nextOwner,
 					nextNote,
@@ -2176,7 +2175,7 @@ export async function createPostgresAdminRepository(options: AdminRepositoryOpti
 						previousNextCheckAt: current.next_check_at,
 						previousOwner: current.owner
 					},
-					summary: `${current.label} source monitor was checked and updated.`,
+					summary: `${current.label} editorial source notice was updated.`,
 					targetId: current.id,
 					targetLabel: current.label,
 					targetType: "source_monitor",

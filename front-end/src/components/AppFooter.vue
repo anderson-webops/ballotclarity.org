@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { storeToRefs } from "pinia";
 import { buildCompareRoute } from "~/stores/civic";
+import { ballotInformationDisclaimer } from "~/utils/ballot-notices";
 
 const year = new Date().getFullYear();
 const civicStore = useCivicStore();
@@ -127,7 +128,7 @@ function resolveGuideLinkTo(path: string) {
 
 			<div class="text-sm text-app-muted mt-10 pt-4 border-t border-app-line flex flex-wrap gap-x-6 gap-y-3 items-center justify-between dark:text-app-muted-dark dark:border-app-line-dark">
 				<p class="max-w-3xl">
-					Not an official election website. Verify election details with your election office.
+					{{ ballotInformationDisclaimer }}
 				</p>
 				<div class="flex flex-wrap gap-x-5 gap-y-2 items-center">
 					<DataVerificationLauncher />

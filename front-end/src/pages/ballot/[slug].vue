@@ -2,11 +2,11 @@
 import type { Contest } from "~/types/civic";
 import { storeToRefs } from "pinia";
 import { buildCompareRoute } from "~/stores/civic";
+import { measureBallotOptions, measureCardSummary } from "~/utils/measure-content";
 
 const civicStore = useCivicStore();
 const route = useRoute();
-const { formatDate } = useFormatters();
-const { ballotPlan, ballotPlanCount, ballotViewMode, compareList, isHydrated } = storeToRefs(civicStore);
+const { ballotPlan, ballotPlanCount, ballotViewMode, compareList, isHydrated, selectedIssues } = storeToRefs(civicStore);
 
 const ballotSlug = useRouteStringParam("slug");
 const locationSlug = computed(() => typeof route.query.location === "string" ? route.query.location : undefined);
@@ -16,7 +16,9 @@ const effectiveBallotPlan = computed(() => isHydrated.value ? ballotPlan.value :
 const effectiveBallotPlanCount = computed(() => isHydrated.value ? ballotPlanCount.value : 0);
 const effectiveBallotViewMode = computed(() => isHydrated.value ? ballotViewMode.value : "quick");
 const effectiveCompareList = computed(() => isHydrated.value ? compareList.value : []);
+const effectiveSelectedIssues = computed(() => isHydrated.value ? selectedIssues.value : []);
 const hasContestContent = computed(() => Boolean(data.value?.election.contests.length));
+const needsGuideNavigation = computed(() => (data.value?.election.contests.reduce((count, contest) => count + (contest.candidates?.length ?? 0) + (contest.measures?.length ?? 0), 0) ?? 0) > 4);
 
 watchEffect(() => {
 	if (data.value) {
@@ -41,6 +43,20 @@ usePageSeo({
 
 const searchQuery = ref("");
 
+const issueOptions = computed(() => {
+	const options = new Map<string, string>();
+
+	data.value?.election.contests.forEach((contest) => {
+		contest.candidates?.forEach((candidate) => {
+			candidate.topIssues.forEach((issue) => {
+				options.set(issue.slug, issue.label);
+			});
+		});
+	});
+
+	return Array.from(options.entries()).map(([slug, label]) => ({ label, slug }));
+});
+
 const filteredContests = computed<Contest[]>(() => {
 	if (!data.value)
 		return [];
@@ -59,7 +75,10 @@ const filteredContests = computed<Contest[]>(() => {
 						candidate.topIssues.map(issue => issue.label).join(" "),
 					].join(" ").toLowerCase().includes(query);
 
-					return matchesQuery;
+					const matchesIssue = !effectiveSelectedIssues.value.length
+						|| candidate.topIssues.some(issue => effectiveSelectedIssues.value.includes(issue.slug));
+
+					return matchesQuery && matchesIssue;
 				}) ?? [];
 
 				return {
@@ -132,39 +151,30 @@ const ballotContentsGroups = computed(() => {
 
 function clearFilters() {
 	searchQuery.value = "";
+	civicStore.clearIssues();
 }
 </script>
 
 <template>
-	<div class="pb-16 space-y-8">
+	<div class="pb-16 section-stack print:space-y-8">
 		<ElectionHero
 			v-if="data"
 			:election="data.election"
+			:coverage-limits="data.coverageLimits"
 			:guide-content="data.guideContent"
 			:location="data.location"
 			:note="data.note"
+			:scope="data.scope"
 		/>
 
 		<section v-if="data && hasContestContent" class="print-only app-shell">
 			<div class="print-guide">
-				<header class="print-guide-header">
-					<p class="print-guide-kicker">
-						Ballot Clarity print guide
-					</p>
-					<h1 class="text-4xl font-serif mt-3">
-						{{ data.election.name }}
-					</h1>
-					<p class="text-sm mt-3">
-						{{ data.location.displayName }} · <span>{{ formatDate(data.election.date) }}</span>
-					</p>
-				</header>
-
 				<div class="print-guide-grid mt-6">
 					<article v-for="contest in filteredContests" :key="contest.slug" class="print-guide-card">
 						<p class="text-xs tracking-[0.2em] font-semibold uppercase">
 							{{ contest.office }}
 						</p>
-						<p class="text-sm mt-2">
+						<p v-if="contest.jurisdiction !== 'Ballot measure'" class="text-sm mt-2">
 							{{ contest.jurisdiction }}
 						</p>
 						<p class="text-sm mt-3">
@@ -174,7 +184,7 @@ function clearFilters() {
 						<ul v-if="contest.type === 'candidate'" class="print-guide-list">
 							<li v-for="candidate in contest.candidates" :key="candidate.slug">
 								<strong>{{ candidate.name }}</strong>
-								<span>{{ candidate.party }}<span v-if="candidate.incumbent"> · Incumbent</span></span>
+								<span><PartyLabel :party="candidate.party" /><span v-if="candidate.incumbent"> · Incumbent</span></span>
 								<span>{{ candidate.ballotSummary }}</span>
 							</li>
 						</ul>
@@ -182,14 +192,14 @@ function clearFilters() {
 						<div v-else class="print-guide-list">
 							<div v-for="measure in contest.measures" :key="measure.slug">
 								<strong>{{ measure.title }}</strong>
-								<p class="mt-2">
-									{{ measure.plainLanguageExplanation }}
+								<p v-if="measureCardSummary(measure)" class="mt-2">
+									{{ measureCardSummary(measure) }}
 								</p>
 								<p class="mt-2">
-									<strong>YES:</strong> {{ measure.yesMeaning }}
+									<strong>{{ measureBallotOptions(measure).yes }}:</strong> {{ measure.yesMeaning }}
 								</p>
 								<p class="mt-1">
-									<strong>NO:</strong> {{ measure.noMeaning }}
+									<strong>{{ measureBallotOptions(measure).no }}:</strong> {{ measure.noMeaning }}
 								</p>
 							</div>
 						</div>
@@ -213,7 +223,7 @@ function clearFilters() {
 
 		<section v-if="data && hasContestContent" class="app-shell print-hidden">
 			<div class="ballot-layout">
-				<aside v-if="ballotContentsGroups.length" class="ballot-layout__toc">
+				<aside v-if="ballotContentsGroups.length && needsGuideNavigation" class="ballot-layout__toc">
 					<nav aria-label="On this ballot" class="ballot-toc">
 						<p class="ballot-toc__title">
 							On this ballot
@@ -250,8 +260,8 @@ function clearFilters() {
 					</nav>
 				</aside>
 
-				<div class="ballot-layout__main">
-					<section id="guide-controls" class="ballot-controls scroll-mt-28">
+				<div class="ballot-layout__main" :class="{ 'xl:col-span-2': !needsGuideNavigation }">
+					<section v-if="needsGuideNavigation" id="guide-controls" class="ballot-controls scroll-mt-28">
 						<label for="ballot-search" class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
 							Search this ballot
 						</label>
@@ -265,6 +275,37 @@ function clearFilters() {
 								class="text-sm text-app-ink pl-11 pr-4 border border-app-line rounded-full bg-white h-[3.25rem] w-full dark:text-app-text-dark placeholder:text-app-muted dark:border-app-line-dark dark:bg-app-panel-dark focus-ring dark:placeholder:text-app-muted-dark"
 							>
 						</div>
+
+						<fieldset v-if="issueOptions.length" class="ballot-controls__filters">
+							<legend class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
+								Filter by issue
+								<span v-if="effectiveSelectedIssues.length" class="ballot-controls__count">{{ effectiveSelectedIssues.length }} selected</span>
+							</legend>
+							<div class="mt-3 flex flex-wrap gap-2">
+								<button
+									v-for="issue in issueOptions"
+									:key="issue.slug"
+									type="button"
+									class="text-xs font-semibold px-3 py-2 border rounded-full transition focus-ring"
+									:class="effectiveSelectedIssues.includes(issue.slug)
+										? 'border-app-accent bg-app-accent text-app-action-text'
+										: 'border-app-line bg-white text-app-muted hover:border-app-accent hover:text-app-accent dark:border-app-line-dark dark:bg-app-panel-dark dark:text-app-muted-dark'"
+									:aria-pressed="effectiveSelectedIssues.includes(issue.slug)"
+									@click="civicStore.toggleIssue(issue.slug)"
+								>
+									<span v-if="effectiveSelectedIssues.includes(issue.slug)" class="i-carbon-checkmark mr-1" aria-hidden="true" />
+									{{ issue.label }}
+								</button>
+							</div>
+							<button
+								v-if="effectiveSelectedIssues.length || searchQuery"
+								type="button"
+								class="text-sm text-app-accent font-semibold mt-3 rounded-full focus-ring"
+								@click="clearFilters"
+							>
+								Clear filters
+							</button>
+						</fieldset>
 					</section>
 
 					<div v-if="pending" class="space-y-6">
@@ -286,10 +327,9 @@ function clearFilters() {
 								<span class="ballot-group-heading__count">{{ filteredCandidateContests.length }}</span>
 							</h2>
 							<ContestSection
-								v-for="(contest, index) in filteredCandidateContests"
+								v-for="contest in filteredCandidateContests"
 								:key="contest.slug"
 								:contest="contest"
-								:open="index === 0"
 								:view-mode="effectiveBallotViewMode"
 							/>
 						</div>
@@ -300,10 +340,10 @@ function clearFilters() {
 								<span class="ballot-group-heading__count">{{ filteredMeasureContests.length }}</span>
 							</h2>
 							<ContestSection
-								v-for="(contest, index) in filteredMeasureContests"
+								v-for="contest in filteredMeasureContests"
 								:key="contest.slug"
 								:contest="contest"
-								:open="index === 0 && !filteredCandidateContests.length"
+								:election-slug="data?.election.slug"
 								:view-mode="effectiveBallotViewMode"
 							/>
 						</div>
@@ -311,10 +351,10 @@ function clearFilters() {
 
 					<div v-else class="text-center surface-panel">
 						<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
-							No ballot items match your search.
+							No ballot items match the current filters.
 						</h2>
 						<button type="button" class="btn-primary mt-6" @click="clearFilters">
-							Clear search
+							Clear filters
 						</button>
 					</div>
 

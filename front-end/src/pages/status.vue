@@ -21,21 +21,6 @@ const statusLabel = computed(() => {
 	}
 });
 
-const coveragePackageLabel = computed(() => {
-	if (data.value?.coverageMode !== "snapshot")
-		return data.value?.snapshotProvenance?.configuredSnapshotMissing ? "Coverage package missing" : "No local guide package";
-
-	switch (data.value?.snapshotProvenance?.status) {
-		case "production_approved":
-			return "Production-approved package";
-		case "reviewed":
-			return "Reviewed package";
-		case "seed":
-			return "Seed package";
-		default:
-			return "Unclassified package";
-	}
-});
 const hasSourceMetrics = computed(() => data.value ? Object.values(data.value.sourceSummary).some(value => value > 0) : false);
 const hasPublishedMonitors = computed(() => Boolean(data.value?.sources.length));
 const hasPublicIncidents = computed(() => Boolean(data.value?.incidents.length));
@@ -62,7 +47,7 @@ const hasPublicIncidents = computed(() => Boolean(data.value?.incidents.length))
 					Public status
 				</h1>
 				<p class="text-lg text-app-ink font-semibold mt-3 dark:text-app-text-dark">
-					{{ statusLabel }} · {{ coveragePackageLabel }}
+					{{ statusLabel }}
 				</p>
 				<div class="mt-3 flex flex-wrap gap-4 items-center">
 					<UpdatedAt :value="data.updatedAt" label="Status updated" />
@@ -77,14 +62,10 @@ const hasPublicIncidents = computed(() => Boolean(data.value?.incidents.length))
 			<section v-else class="surface-panel">
 				<div class="flex flex-wrap gap-2">
 					<TrustBadge :label="hasPublicIncidents ? 'Active notices published' : 'No open public incidents'" :tone="hasPublicIncidents ? 'warning' : 'accent'" />
-					<TrustBadge :label="coveragePackageLabel" />
 				</div>
 				<h2 class="text-3xl text-app-ink font-serif mt-4 dark:text-app-text-dark">
-					No source-monitor metrics are published right now
+					Source metrics unavailable
 				</h2>
-				<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-					The public status page is still showing coverage state and local guide package status. Detailed source-monitor counts appear here only when public monitors are active.
-				</p>
 			</section>
 
 			<section v-if="hasPublicIncidents || hasPublishedMonitors" class="gap-6 grid xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
@@ -128,23 +109,10 @@ const hasPublicIncidents = computed(() => Boolean(data.value?.incidents.length))
 				</div>
 			</section>
 
-			<section class="surface-panel">
-				<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
-					Public notes
-				</h2>
-				<ul class="readable-list text-sm text-app-muted mt-6 pl-5 dark:text-app-muted-dark">
-					<li v-for="note in data.notes" :key="note">
-						{{ note }}
-					</li>
-				</ul>
-				<div class="mt-6 space-y-2">
-					<p class="text-sm text-app-muted dark:text-app-muted-dark">
-						<strong class="text-app-ink dark:text-app-text-dark">Next source review:</strong> {{ data.nextReviewAt ? formatDateTime(data.nextReviewAt) : "Not scheduled" }}
-					</p>
-					<p class="text-sm text-app-muted dark:text-app-muted-dark">
-						<strong class="text-app-ink dark:text-app-text-dark">Next publish window:</strong> {{ data.nextPublishWindow || "Not scheduled" }}
-					</p>
-				</div>
+			<section v-if="hasPublishedMonitors && data.nextReviewAt" class="surface-panel">
+				<p v-if="data.nextReviewAt" class="text-sm text-app-muted mt-6 dark:text-app-muted-dark">
+					<strong class="text-app-ink dark:text-app-text-dark">Next source review:</strong> {{ formatDateTime(data.nextReviewAt) }}
+				</p>
 			</section>
 		</div>
 	</section>

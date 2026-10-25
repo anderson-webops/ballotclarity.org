@@ -1,18 +1,19 @@
 <script setup lang="ts">
-import type { BallotPlanSelection, Contest, PlannedMeasureDecision } from "~/types/civic";
+import type { BallotPlanSelection, Contest } from "~/types/civic";
 import { storeToRefs } from "pinia";
 import { buildCompareRoute } from "~/stores/civic";
+import { fullAreaGuideLabels } from "~/utils/guide-scope";
+import { measureDecisionEffectLabel, measureDecisionLabel, measureDetailPath } from "~/utils/measure-content";
 import { buildPlanUnavailableMessaging } from "~/utils/plan-messaging";
 
 const civicStore = useCivicStore();
 const route = useRoute();
 definePageMeta({ middleware: to => to.hash === "#change-location" ? navigateTo("/#location-lookup", { replace: true }) : undefined });
-const { ballotPlan, ballotPlanCount, compareCount, compareList, isHydrated, selectedElection, selectedLocation } = storeToRefs(civicStore);
+const { ballotPlan, compareCount, compareList, isHydrated, selectedElection, selectedLocation } = storeToRefs(civicStore);
 const { formatDate, formatDateTime } = useFormatters();
 const { activeLookupContext, allowsGuideEntryPoints } = useGuideEntryGate();
 
 const effectiveBallotPlan = computed(() => isHydrated.value ? ballotPlan.value : {});
-const effectiveBallotPlanCount = computed(() => isHydrated.value ? ballotPlanCount.value : 0);
 const effectiveCompareCount = computed(() => isHydrated.value ? compareCount.value : 0);
 const effectiveCompareList = computed(() => isHydrated.value ? compareList.value : []);
 const showPersistedPlanState = computed(() => isHydrated.value);
@@ -34,9 +35,28 @@ usePageSeo({
 	title: "My Ballot Plan"
 });
 
+const plannedEntries = computed(() => {
+	if (!data.value)
+		return [];
+
+	const contestsBySlug = new Map(data.value.election.contests.map(contest => [contest.slug, contest]));
+
+	return Object.values(effectiveBallotPlan.value)
+		.map((selection) => {
+			const contest = contestsBySlug.get(selection.contestSlug);
+
+			if (!contest)
+				return null;
+
+			return buildPlannedEntry(contest, selection);
+		})
+		.filter((entry): entry is NonNullable<typeof entry> => Boolean(entry))
+		.sort((left, right) => left.index - right.index);
+});
+
 const completionStats = computed(() => {
 	const contestCount = data.value?.election.contests.length ?? 0;
-	const savedCount = effectiveBallotPlanCount.value;
+	const savedCount = plannedEntries.value.length;
 
 	return {
 		contestCount,
@@ -60,41 +80,17 @@ const planSummaryItems = computed(() => ([
 		value: data.value ? formatDate(data.value.election.date) : "Not loaded"
 	},
 	{
-		label: "Last guide update",
+		label: "Last updated",
 		value: data.value ? formatDateTime(data.value.updatedAt) : "Not loaded"
 	}
 ]));
-
-const decisionLabels: Record<PlannedMeasureDecision, string> = {
-	no: "Marked NO",
-	review: "Marked for review",
-	yes: "Marked YES"
-};
-
-const plannedEntries = computed(() => {
-	if (!data.value)
-		return [];
-
-	const contestsBySlug = new Map(data.value.election.contests.map(contest => [contest.slug, contest]));
-
-	return Object.values(effectiveBallotPlan.value)
-		.map((selection) => {
-			const contest = contestsBySlug.get(selection.contestSlug);
-
-			if (!contest)
-				return null;
-
-			return buildPlannedEntry(contest, selection);
-		})
-		.filter((entry): entry is NonNullable<typeof entry> => Boolean(entry))
-		.sort((left, right) => left.index - right.index);
-});
 
 const unplannedContests = computed(() => {
 	if (!data.value)
 		return [];
 
-	return data.value.election.contests.filter(contest => !effectiveBallotPlan.value[contest.slug]);
+	const savedContestSlugs = new Set(plannedEntries.value.map(entry => entry.contest.slug));
+	return data.value.election.contests.filter(contest => !savedContestSlugs.has(contest.slug));
 });
 const mostRecentSavedAt = computed(() => plannedEntries.value.at(-1)?.savedAt ?? data.value?.updatedAt ?? "");
 const compareHref = computed(() => buildCompareRoute(effectiveCompareList.value));
@@ -113,7 +109,8 @@ function buildPlannedEntry(contest: Contest, selection: BallotPlanSelection) {
 			href: `/candidate/${candidate.slug}`,
 			index,
 			label: candidate.name,
-			note: `${candidate.party} · ${candidate.officeSought}`,
+			note: candidate.officeSought,
+			party: candidate.party,
 			savedAt: selection.savedAt,
 			selectionLabel: "Saved candidate choice",
 			sourceCount: candidate.sources.length,
@@ -129,14 +126,14 @@ function buildPlannedEntry(contest: Contest, selection: BallotPlanSelection) {
 
 	return {
 		contest,
-		href: `/measure/${measure.slug}`,
+		href: measureDetailPath(measure, data.value?.election.slug),
 		index,
 		label: measure.title,
-		note: measure.location,
+		note: [measure.location, measureDecisionEffectLabel(measure)].filter(Boolean).join(" · "),
 		savedAt: selection.savedAt,
-		selectionLabel: decisionLabels[selection.decision],
+		selectionLabel: measureDecisionLabel(measure, selection.decision),
 		sourceCount: measure.sources.length,
-		summary: measure.plainLanguageExplanation,
+		summary: "",
 		type: "measure" as const
 	};
 }
@@ -144,6 +141,11 @@ function buildPlannedEntry(contest: Contest, selection: BallotPlanSelection) {
 function printPlan() {
 	if (import.meta.client)
 		window.print();
+}
+
+function unplannedContestPath(contest: Contest) {
+	const measure = contest.type === "measure" && contest.measures?.length === 1 ? contest.measures[0] : null;
+	return measure ? measureDetailPath(measure, data.value?.election.slug) : `/contest/${contest.slug}`;
 }
 </script>
 
@@ -156,8 +158,11 @@ function printPlan() {
 			<p v-if="data" class="text-base text-app-muted mt-3 dark:text-app-muted-dark">
 				{{ data.election.name }} · {{ data.location.displayName }} · <span>{{ formatDate(data.election.date) }}</span>
 			</p>
-			<p v-else class="text-base text-app-muted mt-3 dark:text-app-muted-dark">
-				The ballot plan opens after Ballot Clarity publishes a local guide for this area.
+			<p v-if="data?.scope === 'statewide'" class="text-sm text-app-muted mt-2 dark:text-app-muted-dark">
+				{{ fullAreaGuideLabels(data?.location.state).limitation }}
+			</p>
+			<p v-else-if="data?.coverageLimits?.length" class="text-sm text-app-muted mt-2 dark:text-app-muted-dark">
+				{{ data.coverageLimits[0] }}
 			</p>
 			<div class="mt-5 flex flex-wrap gap-x-6 gap-y-3 items-center print-hidden">
 				<button v-if="data" type="button" class="btn-primary" @click="printPlan">
@@ -253,6 +258,9 @@ function printPlan() {
 									{{ entry.label }}
 								</h3>
 								<p class="text-sm text-app-muted mt-2 dark:text-app-muted-dark">
+									<template v-if="entry.type === 'candidate'">
+										<PartyLabel :party="entry.party" /> ·
+									</template>
 									{{ entry.note }}
 								</p>
 							</div>
@@ -261,7 +269,7 @@ function printPlan() {
 								<UpdatedAt :value="entry.savedAt" label="Saved" />
 							</div>
 						</div>
-						<p class="text-base text-app-ink leading-7 mt-4 dark:text-app-text-dark">
+						<p v-if="entry.summary" class="text-base text-app-ink leading-7 mt-4 dark:text-app-text-dark">
 							{{ entry.summary }}
 						</p>
 						<div class="mt-4 flex flex-wrap gap-3 items-center justify-between">
@@ -289,22 +297,15 @@ function printPlan() {
 
 			<ExpandableSection
 				v-if="unplannedContests.length"
-				eyebrow="Still open"
 				title="Not decided yet"
 				class="print-hidden"
 			>
 				<div class="mt-6 gap-4 grid md:grid-cols-2">
-					<article v-for="contest in unplannedContests" :key="contest.slug" class="content-block">
-						<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
-							{{ contest.jurisdiction }}
-						</p>
-						<h3 class="text-xl text-app-ink font-serif mt-2 dark:text-app-text-dark">
-							{{ contest.office }}
+					<NuxtLink v-for="contest in unplannedContests" :key="contest.slug" :to="unplannedContestPath(contest)" class="content-block block focus-ring">
+						<h3 class="text-xl text-app-ink font-serif dark:text-app-text-dark">
+							{{ contest.title }}
 						</h3>
-						<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
-							{{ contest.roleGuide.whyItMatters }}
-						</p>
-					</article>
+					</NuxtLink>
 				</div>
 			</ExpandableSection>
 		</div>

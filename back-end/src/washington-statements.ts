@@ -83,10 +83,13 @@ function documentIdentity(address: string) {
 
 export function prepareWashingtonStatements(options: { source: ElectionReferenceSource; candidates: StateBallotSnapshot; previous: readonly ElectionReferenceSnapshot[]; documents: readonly WashingtonStatementCapture[]; facts: readonly ReviewedWashingtonFact[]; now?: number }) {
 	const { source, candidates } = options;
+	const locality = source.washingtonLocality;
 	const now = options.now ?? Date.now();
 	const officialElectionId = new URL(candidates.source.url).searchParams.get("e");
 	if (source.stateCode !== "WA" || candidates.source.stateCode !== "WA" || candidates.source.electionDate !== source.electionDate || source.documents.some(document => document.kind !== "candidate-statement") || !source.documents.length || source.documents.length > 500 || options.documents.length !== source.documents.length || !Number.isFinite(Date.parse(candidates.retrievedAt)) || Date.parse(candidates.retrievedAt) > now)
 		throw new Error("Washington preparation inputs do not match their configured election.");
+	if (locality !== undefined && (!isObject(locality) || Object.keys(locality).sort().join(",") !== "countyDisplay,rosterJurisdiction,statementJurisdiction,statementJurisdictionType" || typeof locality.countyDisplay !== "string" || !locality.countyDisplay || locality.countyDisplay.length > 100 || clean(locality.countyDisplay) !== locality.countyDisplay || containsControlCharacters(locality.countyDisplay) || locality.rosterJurisdiction !== "County" || locality.statementJurisdiction !== "Countywide" || locality.statementJurisdictionType !== "CTY"))
+		throw new Error("Washington local preparation requires an explicit reviewed county context.");
 	if (!/^\d{1,10}$/u.test(officialElectionId ?? "") || new Set(candidates.records.map(candidate => candidate.sourceCandidateId)).size !== candidates.records.length)
 		throw new Error("Washington preparation requires unique official candidate identities and an explicit election.");
 	if (options.documents.reduce((total, document) => total + Buffer.byteLength(document.body), 0) > 128 * 1024 * 1024)
@@ -103,7 +106,7 @@ export function prepareWashingtonStatements(options: { source: ElectionReference
 		factsByCandidate.set(fact.sourceCandidateId, reviewed);
 	}
 	const records: ElectionReferenceSnapshot["records"] = [];
-	const identities: { sourceCandidateId: string; officialRecordId: string; statementSha256: string; reviewedFacts: number }[] = [];
+	const identities: { sourceCandidateId: string; officialRecordId: string; statementSha256: string; reviewedFacts: number; countyDisplay?: string; officialJurisdiction?: string; publishedRaceJurisdictionName?: string; publishedRaceJurisdictionTypeId?: string }[] = [];
 	const documents: ElectionReferenceSnapshot["documents"] = [];
 	const matched = new Set<string>();
 	const races = new Set<string>();
@@ -123,6 +126,8 @@ export function prepareWashingtonStatements(options: { source: ElectionReference
 		if (new Set(statements.map(statement => String(statement.BallotID))).size !== statements.length) throw new Error("The normal public Washington response repeats an identity.");
 		const eligible = candidates.records.filter(candidate => candidate.sourceCandidateId?.startsWith(`${identity.raceId}/`));
 		if (!eligible.length) throw new Error("A configured Washington statement race has no matching official candidates.");
+		if (locality && (eligible.some(candidate => candidate.scope !== "local" || candidate.sourceDistrictLabel !== locality.rosterJurisdiction) || statements.some(statement => statement.CountyDisplay !== locality.countyDisplay || statement.CountyCode !== "" || statement.RaceJurisdictionName !== locality.statementJurisdiction || statement.RaceJurisdictionTypeID !== locality.statementJurisdictionType || String(statement.ElectionID) !== identity.electionId || String(statement.RaceID) !== identity.raceId)))
+			throw new Error("A local Washington race does not match its explicit county and jurisdiction context.");
 		for (const statement of statements) {
 			if (!/^\d{1,10}$/u.test(String(statement.BallotID))) throw new Error("The normal public Washington response has an invalid identity.");
 			const sourceCandidateId = `${identity.raceId}/${statement.BallotID}`;
@@ -137,18 +142,18 @@ export function prepareWashingtonStatements(options: { source: ElectionReference
 				holds.push({ sourceCandidateId: candidateId, reason: "No factual paraphrases were explicitly reviewed." });
 				continue;
 			}
-			if (!statement || typeof statement.Statement !== "string" || !statement.Statement.trim() || String(statement.ElectionID) !== identity.electionId || String(statement.RaceID) !== identity.raceId || statement.BallotName !== candidate.name || statement.CountyCode !== "" || typeof statement.RaceJurisdictionName !== "string" || statement.RaceJurisdictionName.toUpperCase() !== candidate.sourceDistrictLabel?.toUpperCase() || !["listed", "filed", "qualified", "write-in", "unopposed"].includes(candidate.status))
+			if (!statement || typeof statement.Statement !== "string" || !statement.Statement.trim() || String(statement.ElectionID) !== identity.electionId || String(statement.RaceID) !== identity.raceId || statement.BallotName !== candidate.name || statement.CountyCode !== "" || typeof statement.RaceJurisdictionName !== "string" || (candidate.scope === "local" ? !locality : Boolean(locality) || statement.RaceJurisdictionName.toUpperCase() !== candidate.sourceDistrictLabel?.toUpperCase()) || !["listed", "filed", "qualified", "write-in", "unopposed"].includes(candidate.status))
 				throw new Error("A reviewed Washington statement does not match its exact official identity.");
 			const office = candidate.scope === "statewide" ? `${candidate.sourceDistrictLabel} - ${statement.RaceName}` : statement.RaceName;
 			if (office !== candidate.office.replace(/ \((?:Short & Full|Unexpired|Initial Full)\)$/u, "")) throw new Error("A reviewed Washington statement does not match its official office.");
-			const jurisdiction = candidate.scope === "statewide" ? undefined : candidate.sourceDistrictLabel;
+			const jurisdiction = locality ? `${locality.countyDisplay} County` : candidate.scope === "statewide" ? undefined : candidate.sourceDistrictLabel;
 			if (options.previous.some(snapshot => snapshot.stateCode === "WA" && snapshot.electionDate === source.electionDate && snapshot.records.some(record => record.name === candidate.name && record.office === candidate.office && record.jurisdiction?.toUpperCase() === jurisdiction?.toUpperCase())))
 				throw new Error("A reviewed Washington profile is already present in a preceding collection.");
 			const statementHash = digest(statement.Statement);
 			const sections = parseWashingtonStatementSections(statement.Statement);
 			if (reviewed.some(fact => fact.statementSha256 !== statementHash || !sections[fact.field]?.includes(fact.evidence))) throw new Error("A reviewed Washington fact is not anchored to its captured factual section.");
 			records.push({ id: digest(`${source.id}/${candidate.id}`).slice(0, 24), name: candidate.name, office: candidate.office, scope: candidate.scope, ...(jurisdiction ? { jurisdiction } : {}), facts: reviewed.map(fact => fact.text), sourceDocumentIndex: index });
-			identities.push({ sourceCandidateId: candidateId, officialRecordId: candidate.id, statementSha256: statementHash, reviewedFacts: reviewed.length });
+			identities.push({ sourceCandidateId: candidateId, officialRecordId: candidate.id, statementSha256: statementHash, reviewedFacts: reviewed.length, ...(locality ? { countyDisplay: locality.countyDisplay, officialJurisdiction: candidate.sourceDistrictLabel, publishedRaceJurisdictionName: statement.RaceJurisdictionName, publishedRaceJurisdictionTypeId: locality.statementJurisdictionType } : {}) });
 			matched.add(candidateId);
 			includedRecordCount++;
 		}

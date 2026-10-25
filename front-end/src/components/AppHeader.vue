@@ -152,13 +152,13 @@ onBeforeUnmount(() => {
 					</ul>
 				</nav>
 
-				<div class="ml-auto flex shrink-0 gap-2 items-center">
+				<div class="ml-auto flex gap-2 min-w-0 items-center">
 					<ClientOnly>
 						<NuxtLink
 							v-if="effectiveSelectedLocation"
 							:to="locationLookupHref"
 							prefetch-on="interaction"
-							class="text-sm text-app-ink px-3 border border-app-line rounded-lg max-w-[20rem] min-h-10 hidden transition items-center dark:text-app-text-dark dark:border-app-line-dark hover:border-app-accent xl:inline-flex focus-ring"
+							class="text-sm text-app-ink px-3 border border-app-line rounded-lg max-w-[20rem] min-h-10 min-w-0 hidden transition items-center dark:text-app-text-dark dark:border-app-line-dark hover:border-app-accent xl:inline-flex focus-ring"
 							:title="`Change location (currently ${effectiveSelectedLocation.displayName})`"
 						>
 							<span class="i-carbon-location text-app-accent mr-1.5 shrink-0" aria-hidden="true" />

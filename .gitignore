@@ -25,3 +25,6 @@ data/live-coverage.local.json.meta.json
 .env.*.local
 .idea/
 /.ai-work/
+
+# Added by ggshield
+.cache_ggshield

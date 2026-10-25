@@ -14,11 +14,11 @@ definePageMeta({
 	middleware: "admin"
 });
 
-const { data, refresh } = await useAdminGuidePackages();
+const packageId = useRouteStringParam("id");
+const { data: record, error, pending, refresh } = await useAdminGuidePackage(packageId);
+const data = computed(() => record.value ? { packages: [record.value.package] } : null);
 const { data: session } = await useAdminSession("admin-packages-session");
 
-const draftElectionSlug = ref("2026-fulton-county-general");
-const draftJurisdictionSlug = ref("fulton-county-georgia");
 const savingId = ref<string | null>(null);
 const feedbackMessage = ref("");
 const feedbackTone = ref<"error" | "success">("success");
@@ -161,18 +161,6 @@ async function withPackageAction(id: string | null, action: () => Promise<void>)
 	}
 }
 
-async function createDraft() {
-	await withPackageAction("new-package", async () => {
-		await $fetch("/api/admin/packages", {
-			body: {
-				electionSlug: draftElectionSlug.value,
-				jurisdictionSlug: draftJurisdictionSlug.value || undefined,
-			},
-			method: "POST",
-		});
-	});
-}
-
 async function savePackage(item: GuidePackageRecord) {
 	await withPackageAction(item.workflow.id, async () => {
 		await $fetch(`/api/admin/packages/${item.workflow.id}`, {
@@ -219,17 +207,14 @@ usePageSeo({
 
 <template>
 	<section class="app-shell section-gap space-y-8">
-		<header class="max-w-4xl">
-			<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
-				Guide packages
-			</p>
-			<h1 class="text-5xl text-app-ink font-serif mt-4 dark:text-app-text-dark">
-				Draft, review, and publish local guide packages
+		<header>
+			<NuxtLink to="/admin/packages" class="underline focus-ring">
+				Publication reviews
+			</NuxtLink><h1 class="text-4xl font-serif mt-5">
+				Publication review
 			</h1>
-			<p class="text-base text-app-muted leading-8 mt-5 dark:text-app-muted-dark">
-				Publishing is an editorial decision, not just a successful data assembly step. Use the grouped rubric below to review blockers, warnings, reviewer signoff, and the final publish recommendation before promoting a package.
-			</p>
 		</header>
+		<AdminLoadState :pending="pending" :error="Boolean(error)" label="publication review" @retry="refresh()" />
 
 		<p
 			v-if="feedbackMessage"
@@ -241,39 +226,13 @@ usePageSeo({
 			{{ feedbackMessage }}
 		</p>
 
-		<section class="surface-panel">
-			<div class="gap-4 grid lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
-				<div class="gap-4 grid md:grid-cols-2">
-					<label class="block">
-						<span class="text-sm text-app-ink font-semibold dark:text-app-text-dark">Election slug</span>
-						<input
-							v-model="draftElectionSlug"
-							type="text"
-							class="text-sm text-app-ink mt-2 px-4 border border-app-line rounded-2xl bg-white h-13 w-full shadow-sm dark:text-app-text-dark dark:border-app-line-dark dark:bg-app-panel-dark focus-ring"
-						>
-					</label>
-					<label class="block">
-						<span class="text-sm text-app-ink font-semibold dark:text-app-text-dark">Jurisdiction slug</span>
-						<input
-							v-model="draftJurisdictionSlug"
-							type="text"
-							class="text-sm text-app-ink mt-2 px-4 border border-app-line rounded-2xl bg-white h-13 w-full shadow-sm dark:text-app-text-dark dark:border-app-line-dark dark:bg-app-panel-dark focus-ring"
-						>
-					</label>
-				</div>
-				<button type="button" class="btn-primary" :disabled="savingId === 'new-package'" @click="createDraft">
-					{{ savingId === 'new-package' ? "Generating..." : "Generate draft package" }}
-				</button>
-			</div>
-		</section>
-
-		<section v-if="!(data?.packages?.length ?? 0)" class="surface-panel">
+		<section v-if="!pending && !error && !data" class="surface-panel">
 			<p class="text-sm text-app-muted leading-7 dark:text-app-muted-dark">
-				No guide packages are in the review queue yet. Generate a draft package to start the rubric and publish workflow.
+				Publication review unavailable.
 			</p>
 		</section>
 
-		<div class="space-y-5">
+		<div v-if="!error && !pending" class="space-y-5">
 			<article v-for="item in data?.packages ?? []" :key="item.workflow.id" class="surface-panel">
 				<div class="gap-6 grid xl:grid-cols-[minmax(0,1.18fr)_minmax(0,0.82fr)]">
 					<div class="space-y-6">

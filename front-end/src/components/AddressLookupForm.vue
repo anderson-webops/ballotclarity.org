@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import type {
 	ElectionSummary,
-	LocationLookupAction,
 	LocationLookupResponse,
 	LocationLookupSelectionOption,
 	NationwideLookupResultContext
@@ -57,24 +56,6 @@ function cancelLookup() {
 onBeforeUnmount(cancelLookup);
 
 defineExpose({ focusInput: () => lookupInput.value?.focus({ preventScroll: true }) });
-
-async function openLookupAction(action: LocationLookupAction) {
-	if (action.kind !== "ballot-guide" || !action.location || !action.electionSlug)
-		return;
-
-	const destination = buildPublishedGuideDestination({
-		electionSlug: action.electionSlug,
-		guideAvailability: lookupResult.value?.guideAvailability,
-		guideContent: lookupResult.value?.guideContent,
-		location: action.location,
-		selectionOptions: []
-	});
-
-	if (!destination)
-		return;
-
-	await navigateTo(destination);
-}
 
 async function applyLookup(queryValue: string, selectionId?: string) {
 	cancelLookup();
@@ -183,7 +164,6 @@ async function selectLookupOption(option: LocationLookupSelectionOption) {
 			:id="actionsId"
 			:compact="compact"
 			:lookup="lookupResult"
-			@open-guide="openLookupAction"
 			@select-option="selectLookupOption"
 		/>
 	</form>

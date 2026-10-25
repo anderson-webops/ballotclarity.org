@@ -12,6 +12,7 @@ export default defineConfig({
 	shortcuts: [
 		["app-shell", "mx-auto w-full max-w-[80rem] px-4 sm:px-6 lg:px-8"],
 		["section-gap", "py-8 sm:py-12 lg:py-14"],
+		["section-stack", "space-y-16 lg:space-y-24"],
 		["surface-panel", "min-w-0"],
 		["surface-primary", "rounded-xl border border-app-line bg-app-panel p-5 sm:p-6 dark:border-app-line-dark dark:bg-app-panel-dark"],
 		["surface-row", "border-b border-app-line py-4 last:border-b-0 dark:border-app-line-dark"],

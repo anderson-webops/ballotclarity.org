@@ -4,12 +4,43 @@ import { Readable } from "node:stream";
 import test from "node:test";
 import {
 	fetchRemoteJsonText,
+	fetchRemoteSourceDocument,
 	fetchRemoteSourceText,
 	isPublicRemoteAddress,
 	parseRemoteJsonUrl,
+	RemoteSourceDocumentPolicyError,
 } from "../src/remote-json-source.js";
 
 const publicResolver = async () => [{ address: "93.184.216.34", family: 4 }];
+
+test("public document captures preserve binary bytes and never follow redirects", async () => {
+	const bytes = Buffer.from([37, 80, 68, 70, 45, 255, 0, 128]);
+	const result = await fetchRemoteSourceDocument("https://example.com/file.pdf", { allowedHosts: ["example.com"], resolveAddresses: publicResolver, etag: "\"old\"", transport: async (input) => {
+		assert.equal(input.etag, "\"old\"");
+		assert.equal(input.document, true);
+		return { statusCode: 200, headers: { "content-type": "application/pdf", "etag": "W/\"new\"" }, body: Readable.from([bytes]) };
+	} });
+	assert.deepEqual(result.body, bytes);
+	assert.equal(result.etag, "W/\"new\"");
+	assert.equal(result.contentType, "application/pdf");
+	let requests = 0;
+	const redirect = await fetchRemoteSourceDocument("https://example.com/file.pdf", { allowedHosts: ["example.com"], resolveAddresses: publicResolver, transport: async () => {
+		requests++;
+		return response({ statusCode: 302, location: "https://private.invalid/file.pdf" });
+	} });
+	assert.equal(redirect.status, 302);
+	assert.equal(redirect.body.length, 0);
+	assert.equal(requests, 1);
+});
+
+test("public document requests reject header injection, private DNS, fragments and oversized bodies", async () => {
+	for (const input of [{ etag: "\"old\"\r\nX-Header: injected" }, { maxBytes: 13 * 1024 * 1024 }, { allowedHosts: [] }]) {
+		await assert.rejects(fetchRemoteSourceDocument("https://example.com/file.pdf", { allowedHosts: ["example.com"], resolveAddresses: publicResolver, ...input }), /allowed bounded/u);
+	}
+	await assert.rejects(fetchRemoteSourceDocument("https://example.com/file.pdf#page=1", { allowedHosts: ["example.com"], resolveAddresses: publicResolver }), /allowed bounded/u);
+	await assert.rejects(fetchRemoteSourceDocument("https://example.com/file.pdf", { allowedHosts: ["example.com"], resolveAddresses: async () => [{ address: "127.0.0.1", family: 4 }] }), /private/u);
+	await assert.rejects(fetchRemoteSourceDocument("https://example.com/file.pdf", { allowedHosts: ["example.com"], resolveAddresses: publicResolver, maxBytes: 4, transport: async () => response({ body: "%PDF-too-large" }) }), RemoteSourceDocumentPolicyError);
+});
 
 function response(input: {
 	body?: string;

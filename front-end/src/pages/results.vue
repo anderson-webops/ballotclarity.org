@@ -1,21 +1,24 @@
 <script setup lang="ts">
-import type { LocationLookupAction, LocationLookupResponse, LocationLookupSelectionOption } from "~/types/civic";
+import type { LocationLookupResponse, LocationLookupSelectionOption } from "~/types/civic";
 import { storeToRefs } from "pinia";
 import { buildActiveLookupSummary } from "~/utils/active-lookup";
 import { needsBallotPreviewRefresh, restoreMatchingBallotPreviews } from "~/utils/ballot-preview-refresh";
+import { electionHasPassed } from "~/utils/ballot-view";
 import { buildLocationGuessUiContent } from "~/utils/location-guess";
 import { buildPublishedGuideDestination } from "~/utils/location-lookup";
 import { normalizeLookupResponseForDisplay, resolveLookupDestination } from "~/utils/nationwide-results";
 import { buildLookupContextFromNationwideResult, buildNationwideLookupRouteQuery } from "~/utils/nationwide-route-context";
 
 const api = useApiClient();
+const electionClock = useElectionClock();
 const route = useRoute();
 definePageMeta({ middleware: to => to.hash === "#change-location" ? navigateTo("/#location-lookup", { replace: true }) : undefined });
 const civicStore = useCivicStore();
 const { data: coverageData } = useCoverage();
 const { isHydrated, nationwideLookupResult } = storeToRefs(civicStore);
 const storedNationwideLookupResult = computed(() => isHydrated.value ? nationwideLookupResult.value : null);
-const shouldRefreshBallotPreviews = computed(() => needsBallotPreviewRefresh(storedNationwideLookupResult.value));
+const shouldRefreshBallotPreviews = computed(() => needsBallotPreviewRefresh(storedNationwideLookupResult.value, new Date(electionClock.value)));
+const lookupRefreshWindow = computed(() => shouldRefreshBallotPreviews.value ? `${Math.floor(electionClock.value / 86_400_000)}:${electionHasPassed(storedNationwideLookupResult.value?.election?.date, new Date(electionClock.value))}` : null);
 const activeLookupQuery = computed(() => buildNationwideLookupRouteQuery(
 	buildLookupContextFromNationwideResult(storedNationwideLookupResult.value),
 	route.query
@@ -32,13 +35,13 @@ const { data: savedLookupResult } = await useAsyncData(
 	{
 		default: () => null,
 		getCachedData: (key, nuxtApp, context) => context.cause === "initial" ? nuxtApp.payload.data[key] : undefined,
-		watch: [activeLookupQuery, shouldRefreshBallotPreviews]
+		watch: [activeLookupQuery, lookupRefreshWindow]
 	}
 );
 const { data: routeLookupResult } = await useAsyncData(
 	() => `results:lookup:${activeLookupQuery.value?.lookup ?? "none"}:${activeLookupQuery.value?.selection ?? "none"}`,
 	async () => {
-		if (!activeLookupQuery.value?.lookup || storedNationwideLookupResult.value)
+		if (!activeLookupQuery.value?.lookup || (storedNationwideLookupResult.value && !shouldRefreshBallotPreviews.value))
 			return null;
 
 		const response = await api<LocationLookupResponse>("/location", {
@@ -53,12 +56,13 @@ const { data: routeLookupResult } = await useAsyncData(
 	},
 	{
 		default: () => null,
-		watch: [activeLookupQuery, storedNationwideLookupResult]
+		watch: [activeLookupQuery, storedNationwideLookupResult, lookupRefreshWindow]
 	}
 );
 const activeResult = computed(() => restoreMatchingBallotPreviews(
 	storedNationwideLookupResult.value ?? routeLookupResult.value ?? savedLookupResult.value,
-	savedLookupResult.value,
+	savedLookupResult.value ?? routeLookupResult.value,
+	new Date(electionClock.value),
 ));
 const shouldShowResultsSkeleton = computed(() => !activeResult.value && !isHydrated.value && Boolean(activeLookupQuery.value?.lookup));
 const activeLookupSummary = computed(() => buildActiveLookupSummary({
@@ -77,21 +81,9 @@ const resultsStatusItems = computed(() => {
 		result.detectedFromIp
 			? "Approximate location"
 			: result.inputKind === "address" ? "Matched by street address" : "Matched by ZIP code",
-		...(result.guideContent?.verifiedContestPackage ? ["Verified ballot guide"] : [])
+		...(result.guideContent?.verifiedContestPackage && !electionHasPassed(result.election?.date, new Date(electionClock.value)) ? ["Verified ballot guide"] : [])
 	];
 });
-
-async function openResultGuide(action: LocationLookupAction) {
-	if (!activeResult.value || !action.electionSlug || !action.location)
-		return;
-	const destination = buildPublishedGuideDestination({
-		...activeResult.value,
-		electionSlug: action.electionSlug,
-		location: action.location,
-	});
-	if (destination)
-		await navigateTo(destination);
-}
 
 async function selectLookupOption(option: LocationLookupSelectionOption) {
 	if (!activeResult.value?.lookupQuery)
@@ -167,7 +159,7 @@ usePageSeo({
 					{{ activeLookupSummary.note }}
 				</p>
 			</section>
-			<LookupResultsPanel :lookup="activeResult" results-page @open-guide="openResultGuide" @select-option="selectLookupOption" />
+			<LookupResultsPanel :lookup="activeResult" results-page @select-option="selectLookupOption" />
 		</template>
 	</section>
 </template>

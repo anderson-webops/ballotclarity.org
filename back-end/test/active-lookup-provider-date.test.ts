@@ -54,3 +54,14 @@ test("cached lookups drop missing or malformed provider dates", () => {
 	assert.equal(roundTrip(buildContext())?.representativeMatches[0]?.updatedAt, undefined);
 	assert.equal(roundTrip(buildContext("not-a-date"))?.representativeMatches[0]?.updatedAt, undefined);
 });
+
+test("cached representative websites and portraits survive navigation safely", () => {
+	const context = buildContext();
+	context.representativeMatches[0]!.officialWebsiteUrl = "https://example.org/representative";
+	context.representativeMatches[0]!.profileImages = [{ url: "https://example.org/portrait.jpg", alt: "Alex Example", priority: 20, sourceKind: "official", sourceLabel: "Official portrait", sourceSystem: "Official office" }];
+	const restored = roundTrip(context);
+	assert.equal(restored?.representativeMatches[0]?.officialWebsiteUrl, "https://example.org/representative");
+	assert.equal(restored?.representativeMatches[0]?.profileImages?.[0]?.url, "https://example.org/portrait.jpg");
+	context.representativeMatches[0]!.officialWebsiteUrl = "javascript:alert(1)";
+	assert.equal(roundTrip(context)?.representativeMatches[0]?.officialWebsiteUrl, undefined);
+});

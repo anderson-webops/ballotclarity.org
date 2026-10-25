@@ -8,7 +8,7 @@ test("footer keeps identity, contact, and the official-site disclaimer", () => {
 	assert.match(appFooter, /Ballot Clarity/);
 	assert.doesNotMatch(appFooter, /Nonpartisan public-interest project/);
 	assert.match(appFooter, /<ProtectedEmailLink/);
-	assert.match(appFooter, /Not an official election website\./);
+	assert.match(appFooter, /\{\{ ballotInformationDisclaimer \}\}/);
 	assert.match(appFooter, /to="\/contact"/);
 });
 

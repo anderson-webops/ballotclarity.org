@@ -29,9 +29,8 @@ withDefaults(defineProps<{
 				class="border-b border-app-line dark:border-app-line-dark last:border-b-0"
 				:class="compact ? 'py-2' : 'py-3'"
 			>
-				<SafeExternalLink v-if="resource.url" :href="resource.url" class="text-base text-app-accent font-semibold underline decoration-app-accent/35 underline-offset-4 inline-flex gap-1.5 items-baseline hover:decoration-current focus-ring">
+				<SafeExternalLink v-if="resource.url" :href="resource.url" external-icon class="text-base text-app-accent font-semibold underline decoration-app-accent/35 underline-offset-4 inline-flex gap-1.5 items-baseline hover:decoration-current focus-ring">
 					{{ resource.label }}
-					<span class="i-carbon-launch text-sm" aria-hidden="true" />
 				</SafeExternalLink>
 				<p v-else class="text-base text-app-ink font-semibold dark:text-app-text-dark">
 					{{ resource.label }}

@@ -49,7 +49,7 @@ export function registerElectionReferenceRoutes(app: Express, repository: Electi
 				payload.available = true;
 				payload.electionDate = snapshots[0]!.electionDate;
 				payload.collections = sources.filter(source => source.electionDate === payload.electionDate).map(source => source.id);
-				if (snapshots.length < payload.collections.length) payload.incomplete = true;
+				if (sources.some(source => source.electionDate === payload.electionDate && !source.optional && !snapshots.some(snapshot => snapshot.sourceId === source.id))) payload.incomplete = true;
 			}
 			response.json(payload);
 		}

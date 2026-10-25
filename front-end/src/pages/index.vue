@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import type {
 	ElectionsResponse,
-	LocationLookupAction,
 	LocationLookupResponse,
 	LocationLookupSelectionOption,
 	NationwideLookupResultContext
@@ -96,22 +95,6 @@ function handleHomeLookupResolved(lookup: NationwideLookupResultContext) {
 	homeLookupResult.value = lookup;
 }
 
-async function openHomeLookupAction(action: LocationLookupAction) {
-	if (action.kind !== "ballot-guide" || !action.location || !action.electionSlug)
-		return;
-
-	const destination = buildPublishedGuideDestination({
-		electionSlug: action.electionSlug,
-		guideAvailability: displayedHomeLookupResult.value?.guideAvailability,
-		guideContent: displayedHomeLookupResult.value?.guideContent,
-		location: action.location,
-		selectionOptions: []
-	});
-
-	if (destination)
-		await navigateTo(destination);
-}
-
 async function selectHomeLookupOption(option: LocationLookupSelectionOption) {
 	const currentLookup = displayedHomeLookupResult.value;
 	const queryValue = currentLookup?.lookupQuery || currentLookup?.normalizedAddress || "";
@@ -188,7 +171,6 @@ async function selectHomeLookupOption(option: LocationLookupSelectionOption) {
 					class="home-lookup-results-panel"
 					:compact="false"
 					:lookup="displayedHomeLookupResult"
-					@open-guide="openHomeLookupAction"
 					@select-option="selectHomeLookupOption"
 				/>
 				<p

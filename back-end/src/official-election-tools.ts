@@ -5,9 +5,46 @@ interface StateOfficialToolSet {
 	stateAbbreviation: string;
 	stateName: string;
 	resources: OfficialResource[];
+	includeElectionOfficeDirectory?: boolean;
 }
 
 const stateOfficialToolSets: StateOfficialToolSet[] = [
+	{
+		stateAbbreviation: "KS",
+		stateName: "Kansas",
+		includeElectionOfficeDirectory: true,
+		resources: [{
+			authority: "official-government",
+			label: "Statewide constitutional amendment",
+			sourceLabel: "Kansas Secretary of State",
+			sourceSystem: "Kansas Secretary of State amendment publication",
+			url: "https://www.sos.ks.gov/elections/proposed-constitutional-amendments.html"
+		}]
+	},
+	{
+		stateAbbreviation: "CA",
+		stateName: "California",
+		includeElectionOfficeDirectory: true,
+		resources: [{
+			authority: "official-government",
+			label: "Statewide ballot measures",
+			sourceLabel: "California Secretary of State",
+			sourceSystem: "California Secretary of State qualification register",
+			url: "https://www.sos.ca.gov/elections/ballot-measures/qualified-ballot-measures"
+		}]
+	},
+	{
+		stateAbbreviation: "ND",
+		stateName: "North Dakota",
+		includeElectionOfficeDirectory: true,
+		resources: [{
+			authority: "official-government",
+			label: "Statewide ballot measures",
+			sourceLabel: "North Dakota Secretary of State",
+			sourceSystem: "North Dakota Secretary of State",
+			url: "https://www.sos.nd.gov/elections/voter/ballot-measures/measures-ballot"
+		}]
+	},
 	{
 		stateAbbreviation: "GA",
 		stateName: "Georgia",
@@ -46,15 +83,15 @@ const stateOfficialToolSets: StateOfficialToolSet[] = [
 	}
 ];
 
-export function getOfficialToolsForState(stateAbbreviation?: string) {
+export function getOfficialToolsForState(stateAbbreviation?: string): OfficialResource[] {
 	if (!stateAbbreviation)
 		return [];
 
 	const abbreviation = stateAbbreviation.trim().toUpperCase();
 	const existing = stateOfficialToolSets.find(item => item.stateAbbreviation === abbreviation);
-	if (existing) return existing.resources;
+	if (existing && !existing.includeElectionOfficeDirectory) return existing.resources;
 	const state = usStates.find(item => item[0] === abbreviation);
-	return state
+	const directory = state
 		? [{
 				authority: "official-government" as const,
 				label: `${state[1]} election offices`,
@@ -63,6 +100,7 @@ export function getOfficialToolsForState(stateAbbreviation?: string) {
 				url: `https://www.eac.gov/voters/register-and-vote-in-your-state?field_state_target_id=${state[2]}`,
 			}]
 		: [];
+	return existing ? [...existing.resources, ...directory] : directory;
 }
 
 export function getStateNameForAbbreviation(stateAbbreviation?: string) {

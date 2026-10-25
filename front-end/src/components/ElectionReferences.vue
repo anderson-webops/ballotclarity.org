@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { ElectionReferencesResponse } from "~/types/civic";
+import { referenceJurisdiction } from "~/utils/reference-context";
 
 const props = defineProps<{ stateCode: string; data: ElectionReferencesResponse | null; error: boolean; pending: boolean }>();
 const emit = defineEmits<{ retry: [] }>();
@@ -7,7 +8,7 @@ const route = useRoute();
 const { formatDate } = useFormatters();
 const range = computed(() => props.data?.matched ? `${props.data.offset + 1}–${Math.min(props.data.offset + props.data.records.length, props.data.matched)} of ${props.data.matched}` : "0 references");
 const hasReporting = computed(() => props.data?.records.some(record => record.source.kind === "news-report"));
-const sourceLabels = { "candidate-statement": "Candidate-provided", "news-report": "News report", "official-biography": "Official biography" };
+const sourceLabels = { "candidate-statement": "Candidate-provided", "news-report": "News report", "official-biography": "Official biography", "public-dataset": "Public dataset" };
 const retryRequested = ref(false);
 let retryControl: EventTarget | null = null;
 
@@ -68,8 +69,8 @@ async function changePage(offset: number) {
 							{{ record.name }}
 						</h3>
 						<p class="text-sm text-app-muted leading-6 mt-2 dark:text-app-muted-dark">
-							{{ record.office }}<template v-if="record.jurisdiction">
-								· {{ record.jurisdiction }}
+							{{ record.office }}<template v-if="referenceJurisdiction(record)">
+								· {{ referenceJurisdiction(record) }}
 							</template> · {{ sourceLabels[record.source.kind] }}
 						</p>
 					</NuxtLink>

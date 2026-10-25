@@ -1,6 +1,52 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { buildLookupPresentation, filterLookupActionsForPresentation, hasPublishedGuideResult } from "../src/utils/location-lookup.ts";
+import { buildLookupActionDestination, buildLookupPresentation, filterLookupActionsForPresentation, hasPublishedGuideResult } from "../src/utils/location-lookup.ts";
+
+const choiceLocation = { coverageLabel: "Statewide questions", displayName: "Georgia", slug: "georgia", state: "Georgia" };
+const choiceLayer = { count: 1, detail: "", hasContent: true, label: "", status: "verified_local" as const };
+const choiceContent = { candidates: choiceLayer, contests: choiceLayer, guideShell: choiceLayer, mixedContent: false, measures: choiceLayer, officialLogistics: choiceLayer, publishedGuideShell: true, summary: "", verifiedContestPackage: true };
+const unselectedResult = { guideAvailability: "not-published" as const, result: "resolved" as const };
+const choiceAction = { description: "Statewide questions", electionSlug: "ga-general", guideContent: choiceContent, id: "ga-guide", kind: "ballot-guide" as const, location: choiceLocation, title: "Georgia" };
+
+test("competing published guides remain visible without a selected guide", () => {
+	assert.deepEqual(filterLookupActionsForPresentation([choiceAction], unselectedResult), [choiceAction]);
+});
+
+test("same-title guides for different elections are not collapsed", () => {
+	const other = { ...choiceAction, electionSlug: "ga-special", id: "ga-special-guide" };
+	assert.equal(filterLookupActionsForPresentation([choiceAction, other, choiceAction], unselectedResult).length, 2);
+});
+
+test("unpublished actions and unresolved geographic choices cannot expose a guide", () => {
+	assert.equal(filterLookupActionsForPresentation([{ ...choiceAction, guideContent: { ...choiceContent, publishedGuideShell: false } }], unselectedResult).length, 0);
+	assert.equal(filterLookupActionsForPresentation([choiceAction], { ...unselectedResult, result: "unsupported" }).length, 0);
+	assert.equal(filterLookupActionsForPresentation([choiceAction], { ...unselectedResult, selectionOptions: [{ description: "", guideAvailability: "not-published", id: "area", label: "Area" }] }).length, 0);
+});
+
+test("each published action chooses its own ballot or logistics surface", () => {
+	assert.equal(buildLookupActionDestination(choiceAction, unselectedResult), "/ballot/ga-general?location=georgia");
+	assert.equal(buildLookupActionDestination({ ...choiceAction, guideContent: { ...choiceContent, verifiedContestPackage: false } }, { ...unselectedResult, electionSlug: choiceAction.electionSlug, guideAvailability: "published", guideContent: choiceContent, location: choiceLocation }), "/elections/ga-general");
+});
+
+test("legacy action context is inherited only from the exact selected guide", () => {
+	const legacy = { ...choiceAction, guideContent: undefined };
+	const selected = { ...unselectedResult, electionSlug: choiceAction.electionSlug, guideAvailability: "published" as const, guideContent: choiceContent, location: choiceLocation };
+	assert.equal(buildLookupActionDestination(legacy, selected), "/ballot/ga-general?location=georgia");
+	assert.equal(buildLookupActionDestination({ ...legacy, electionSlug: "other-election" }, selected), null);
+	assert.equal(buildLookupActionDestination({ ...legacy, location: { ...choiceLocation, slug: "other-area" } }, selected), null);
+	assert.equal(buildLookupActionDestination({ ...legacy, guideContent: null }, selected), null);
+});
+
+test("incomplete or external actions never become internal guide links", () => {
+	assert.equal(buildLookupActionDestination({ ...choiceAction, location: undefined }, unselectedResult), null);
+	assert.equal(buildLookupActionDestination({ ...choiceAction, electionSlug: undefined }, unselectedResult), null);
+	assert.equal(buildLookupActionDestination({ ...choiceAction, kind: "official-verification", url: "https://www.eac.gov/" }, unselectedResult), null);
+});
+
+test("duplicate official tools still retain the first named link", () => {
+	const official = { description: "", id: "official", kind: "official-verification" as const, title: "Official tool", url: "https://www.eac.gov/" };
+	assert.deepEqual(filterLookupActionsForPresentation([official, { ...official, id: "duplicate", title: " OFFICIAL TOOL " }], unselectedResult), [official]);
+});
 
 test("location lookup treats nationwide-only resolved coverage as a success state", () => {
 	const response = {
@@ -19,10 +65,10 @@ test("location lookup treats nationwide-only resolved coverage as a success stat
 	assert.deepEqual(buildLookupPresentation(response), {
 		availabilityBadgeLabel: "Civic results available",
 		canOpenGuide: false,
-		footerNote: "Use the district, representative, and official election links here even when a local guide is not available yet.",
+		footerNote: "",
 		guideActionLabel: "Open results",
 		heading: "Civic results ready",
-		supportingNote: "Official tools stay visible below for ballot confirmation, voter status, and polling-place details."
+		supportingNote: ""
 	});
 });
 
@@ -55,9 +101,9 @@ test("location lookup only exposes guide navigation when published guide coverag
 		{ description: "Open guide", electionSlug: "2026-fulton-county-general", id: "guide", kind: "ballot-guide", location: response.location, title: "Fulton County" }
 	], response).length, 1);
 	assert.equal(buildLookupPresentation(response).canOpenGuide, true);
-	assert.equal(buildLookupPresentation(response).heading, "Civic results and election overview ready");
-	assert.equal(buildLookupPresentation(response).availabilityBadgeLabel, "Election overview available");
-	assert.equal(buildLookupPresentation(response).guideActionLabel, "Open election overview");
+	assert.equal(buildLookupPresentation(response).heading, "Results");
+	assert.equal(buildLookupPresentation(response).availabilityBadgeLabel, "Election information available");
+	assert.equal(buildLookupPresentation(response).guideActionLabel, "Election information");
 });
 
 test("location lookup shows a chooser state when a ZIP still needs one more area selection", () => {

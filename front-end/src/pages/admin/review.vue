@@ -4,7 +4,7 @@ definePageMeta({
 	middleware: "admin"
 });
 
-const { data } = await useAdminReview();
+const { data, error, pending, refresh } = await useAdminReview();
 
 usePageSeo({
 	description: "Internal Ballot Clarity review queue.",
@@ -27,9 +27,10 @@ usePageSeo({
 				These are the records currently moving through draft, verification, or publish readiness. Anything blocked here should have an explicit source or process reason attached.
 			</p>
 		</header>
+		<AdminLoadState :pending="pending" :error="Boolean(error)" label="records" @retry="refresh()" />
 
 		<AdminEmptyState
-			v-if="!(data?.items?.length ?? 0)"
+			v-if="!pending && !error && !(data?.items?.length ?? 0)"
 			action-label="Open guide packages"
 			action-to="/admin/packages"
 			eyebrow="Review queue clear"

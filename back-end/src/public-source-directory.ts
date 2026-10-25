@@ -173,7 +173,7 @@ const curatedSourceDefinitions: CuratedSourceDefinition[] = [
 		id: "ctcl-bip",
 		limitations: [
 			"Direct API or bulk access requires CTCL approval.",
-			"Ballot Clarity should still attach official state or county ballot verification before publishing a reviewed local guide.",
+			"These records do not independently confirm your exact ballot.",
 		],
 		note: "Potential trusted ballot-content backbone once Ballot Clarity has direct access to CTCL Ballot Information Project data.",
 		publisher: "Center for Tech and Civic Life",

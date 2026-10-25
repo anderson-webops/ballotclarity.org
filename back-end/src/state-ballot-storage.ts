@@ -4,7 +4,7 @@ import { Buffer } from "node:buffer";
 import { createHash, randomUUID } from "node:crypto";
 import { constants } from "node:fs";
 import { mkdir, open, realpath, rename, unlink } from "node:fs/promises";
-import { isAbsolute, join, relative, resolve } from "node:path";
+import { isAbsolute, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseBundledStateSnapshot } from "./state-ballot-snapshot.js";
 
@@ -14,7 +14,7 @@ const digest = (value: string) => createHash("sha256").update(value).digest("hex
 
 export function assertExternalStateDataDirectory(directory: string) {
 	const relation = relative(releaseRoot, resolve(directory));
-	if (!isAbsolute(directory) || (!relation.startsWith("..") && !isAbsolute(relation)))
+	if (!isAbsolute(directory) || (relation !== ".." && !relation.startsWith(`..${sep}`) && !isAbsolute(relation)))
 		throw new Error("State ballot data must use an absolute directory outside the application checkout or release.");
 }
 
@@ -34,26 +34,32 @@ export function serializeStoredStateSnapshot(snapshot: StateBallotSnapshot) {
 	});
 }
 
-export async function readBoundedStateData(path: string) {
+export async function readBoundedStateDataBytes(path: string, byteLimit = maximumBytes) {
+	if (!Number.isSafeInteger(byteLimit) || byteLimit <= 0 || byteLimit > 32 * 1024 * 1024)
+		throw new Error("State data reads require a bounded positive size limit.");
 	const handle = await open(path, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
 	try {
 		const metadata = await handle.stat();
-		if (!metadata.isFile() || metadata.size > maximumBytes)
+		if (!metadata.isFile() || metadata.size > byteLimit)
 			throw new Error("State ballot data must be a regular file within the size limit.");
-		const buffer = Buffer.alloc(maximumBytes + 1);
+		const buffer = Buffer.alloc(byteLimit + 1);
 		let length = 0;
 		while (length < buffer.length) {
 			const { bytesRead } = await handle.read(buffer, length, buffer.length - length, length);
 			if (!bytesRead) break;
 			length += bytesRead;
 		}
-		if (length > maximumBytes)
+		if (length > byteLimit)
 			throw new Error("State ballot data exceeds its size limit.");
-		return buffer.subarray(0, length).toString("utf8");
+		return Buffer.from(buffer.subarray(0, length));
 	}
 	finally {
 		await handle.close();
 	}
+}
+
+export async function readBoundedStateData(path: string) {
+	return (await readBoundedStateDataBytes(path)).toString("utf8");
 }
 
 export function createStateBallotStorage(directory: string) {

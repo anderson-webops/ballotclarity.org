@@ -1,12 +1,38 @@
 import process from "node:process";
 import { electionReferenceSources } from "./election-reference-sources.js";
 import { createElectionReferenceStorage, parseElectionReferenceSnapshot } from "./election-references.js";
+import { collectOpenStatesFile } from "./openstates-collection.js";
+import { collectOpenStatesProfilesFile } from "./openstates-profile-collection.js";
 import { prepareCongressionalBiographyFiles } from "./prepare-congressional-biographies.js";
+import { prepareOpenStatesProfileFiles } from "./prepare-openstates-profiles.js";
+import { prepareOpenStatesReferenceFiles } from "./prepare-openstates-references.js";
 import { prepareWashingtonStatementFiles } from "./prepare-washington-statements.js";
 import { readBoundedStateData } from "./state-ballot-storage.js";
 
 async function main() {
 	const [command, ...requested] = process.argv.slice(2);
+	if (command === "collect-openstates-profiles") {
+		if (requested.length !== 1) throw new Error("Use collect-openstates-profiles PLAN.json. Collection prepares external files but does not import them.");
+		const result = await collectOpenStatesProfilesFile(requested[0]!);
+		console.log(JSON.stringify(result));
+		if (!result.complete) process.exitCode = 1;
+		return;
+	}
+	if (command === "enrich-openstates") {
+		if (requested.length !== 1) throw new Error("Use enrich-openstates PLAN.json. Enrichment does not import or download data.");
+		console.log(JSON.stringify(await prepareOpenStatesProfileFiles(requested[0]!)));
+		return;
+	}
+	if (command === "collect-openstates") {
+		if (requested.length !== 1) throw new Error("Use collect-openstates PLAN.json. Collection prepares external files but does not import them.");
+		console.log(JSON.stringify(await collectOpenStatesFile(requested[0]!)));
+		return;
+	}
+	if (command === "prepare-openstates") {
+		if (requested.length !== 1) throw new Error("Use prepare-openstates PLAN.json. Preparation does not import or download data.");
+		console.log(JSON.stringify(await prepareOpenStatesReferenceFiles(requested[0]!)));
+		return;
+	}
 	if (command === "prepare-washington") {
 		if (requested.length !== 1) throw new Error("Use prepare-washington PLAN.json. Preparation does not import or download data.");
 		console.log(JSON.stringify(await prepareWashingtonStatementFiles(requested[0]!)));

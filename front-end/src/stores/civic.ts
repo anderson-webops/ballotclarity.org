@@ -14,7 +14,7 @@ import {
 	sanitizeLocationSelectionForStorage,
 	sanitizeNationwideLookupResultForStorage
 } from "~/utils/civic-storage-privacy";
-import { buildLookupContextState, deriveCivicLookupStateUpdate } from "~/utils/nationwide-results";
+import { buildLookupContextState, deriveCivicLookupStateUpdate, shouldRetainLookupForGuide } from "~/utils/nationwide-results";
 
 const civicStorageKey = "ballot-clarity:civic-store";
 
@@ -225,7 +225,7 @@ export const useCivicStore = defineStore("civic", {
 			this.selectedLocation = sanitizeLocationSelectionForStorage(update.selectedLocation);
 
 			if (election)
-				this.selectedElection = election;
+				this.selectedElection = election.slug === response.electionSlug ? election : null;
 
 			this.persist();
 		},
@@ -277,7 +277,6 @@ export const useCivicStore = defineStore("civic", {
 				&& this.nationwideLookupResult?.result === "resolved"
 				&& this.nationwideLookupResult.location?.slug === location.slug
 				&& this.nationwideLookupResult.guideAvailability === "published"
-				&& !this.nationwideLookupResult.guideContent?.verifiedContestPackage
 			);
 
 			this.selectedLocation = location;
@@ -293,13 +292,10 @@ export const useCivicStore = defineStore("civic", {
 			location: LocationSelection | null,
 			guideContent?: LocationLookupResponse["guideContent"] | null
 		) {
-			const shouldPreserveLookupResult = Boolean(
-				location
-				&& this.nationwideLookupResult?.result === "resolved"
-				&& (this.nationwideLookupResult.location?.slug === location.slug || this.nationwideLookupResult.electionSlug === election?.slug)
-				&& guideContent?.publishedGuideShell
-				&& !guideContent.verifiedContestPackage
-			);
+			if (import.meta.client && !this.isHydrated)
+				this.hydrateFromStorage();
+
+			const shouldPreserveLookupResult = shouldRetainLookupForGuide(this.nationwideLookupResult, election, location, guideContent);
 
 			this.selectedElection = election;
 			this.selectedLocation = sanitizeLocationSelectionForStorage(location);

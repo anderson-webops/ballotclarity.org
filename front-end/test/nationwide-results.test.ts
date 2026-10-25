@@ -1,11 +1,14 @@
 import type { ElectionSummary, LocationLookupResponse } from "../src/types/civic.ts";
 import assert from "node:assert/strict";
 import test from "node:test";
+import { sanitizeNationwideLookupResultForStorage } from "../src/utils/civic-storage-privacy.ts";
 import {
 	buildHomeExperienceState,
 	deriveCivicLookupStateUpdate,
 	hasActiveNationwideLookupResult,
-	resolveLookupDestination
+	normalizeLookupResponseForDisplay,
+	resolveLookupDestination,
+	shouldRetainLookupForGuide
 } from "../src/utils/nationwide-results.ts";
 
 const stagedGuideContent = {
@@ -263,7 +266,7 @@ test("successful nationwide lookup builds a persisted nationwide result context"
 	});
 	assert.equal(update.selectedLocation, null);
 	assert.equal(update.nationwideLookupResult?.location?.displayName, "Provo, Utah");
-	assert.equal(update.nationwideLookupResult?.election?.slug, activeElection.slug);
+	assert.equal(update.nationwideLookupResult?.election, null);
 	assert.equal(update.nationwideLookupResult?.actions.length, 1);
 	assert.equal(update.nationwideLookupResult?.electionLogistics?.pollingLocations[0]?.name, "Atlanta City Hall Atrium");
 });
@@ -302,12 +305,43 @@ test("manual shell-only guide lookup keeps representative results while activati
 	assert.equal(update.selectedLocation?.slug, "fulton-county-georgia");
 });
 
-test("manual verified guide lookup activates the guide location without keeping a duplicate representative result", () => {
+test("manual verified guide lookup retains civic results without changing the primary guide experience", () => {
 	const update = deriveCivicLookupStateUpdate(manualVerifiedGuideResponse, activeElection);
 
-	assert.equal(update.nationwideLookupResult, null);
+	assert.deepEqual(update.nationwideLookupResult?.districtMatches, manualVerifiedGuideResponse.districtMatches);
+	assert.deepEqual(update.nationwideLookupResult?.representativeMatches, manualVerifiedGuideResponse.representativeMatches);
+	assert.equal(hasActiveNationwideLookupResult(update.nationwideLookupResult), false);
 	assert.equal(update.selectedLocation?.displayName, "Fulton County, Georgia");
 	assert.equal(update.selectedLocation?.slug, "fulton-county-georgia");
+});
+
+test("verified guide navigation retains only the matching published election lookup", () => {
+	const response = manualVerifiedGuideResponse;
+	const result = deriveCivicLookupStateUpdate(response).nationwideLookupResult!;
+	const election = { ...activeElection, slug: response.electionSlug! };
+	assert.equal(shouldRetainLookupForGuide(result, election, response.location!, response.guideContent), true);
+	assert.equal(shouldRetainLookupForGuide(result, { ...election, slug: "different-election" }, response.location!, response.guideContent), false);
+	assert.equal(shouldRetainLookupForGuide(result, election, { ...response.location!, state: "Missouri" }, response.guideContent), false);
+	assert.equal(shouldRetainLookupForGuide({ ...result, guideAvailability: "not-published" }, election, response.location!, response.guideContent), false);
+	assert.equal(shouldRetainLookupForGuide({ ...result, result: "unsupported" }, election, response.location!, response.guideContent), false);
+	assert.equal(shouldRetainLookupForGuide(result, null, response.location!, response.guideContent), false);
+	assert.equal(shouldRetainLookupForGuide(result, election, null, response.guideContent), false);
+	assert.equal(shouldRetainLookupForGuide(result, election, response.location!, undefined), false);
+});
+
+test("retained verified civic results do not persist the entered street address", () => {
+	const address = "1234 Controlled Private Street, Example, GA 30303";
+	const response: LocationLookupResponse = { ...manualVerifiedGuideResponse, inputKind: "address", lookupQuery: address, normalizedAddress: address, location: { ...manualVerifiedGuideResponse.location!, lookupInput: address } };
+	const result = deriveCivicLookupStateUpdate(response).nationwideLookupResult!;
+	const stored = sanitizeNationwideLookupResultForStorage(result)!;
+	assert.equal(stored.lookupQuery, "");
+	assert.equal(stored.normalizedAddress, "");
+	assert.equal(stored.location?.lookupInput, undefined);
+	assert.equal(stored.electionLogistics, null);
+	assert.deepEqual(stored.districtMatches, result.districtMatches);
+	assert.deepEqual(stored.representativeMatches, result.representativeMatches);
+	assert.ok(!JSON.stringify(stored).includes(address));
+	assert.equal(result.lookupQuery, address);
 });
 
 test("ambiguous ZIP lookups keep their selection options in persisted nationwide context", () => {
@@ -321,7 +355,24 @@ test("ambiguous ZIP lookups keep their selection options in persisted nationwide
 test("nationwide lookups route into the results experience", () => {
 	assert.equal(resolveLookupDestination(nationwideResponse), "/results?lookup=84604");
 	assert.equal(resolveLookupDestination(manualPublishedGuideResponse), "/results?lookup=84604");
-	assert.equal(resolveLookupDestination(manualVerifiedGuideResponse), null);
+	assert.equal(resolveLookupDestination(manualVerifiedGuideResponse), "/ballot/2026-fulton-county-general?location=fulton-county-georgia");
+});
+
+test("verified guide entry keeps IP guesses and unresolved area choices on results", () => {
+	assert.equal(resolveLookupDestination({ ...manualVerifiedGuideResponse, detectedFromIp: true }), "/results?lookup=84604");
+	assert.equal(resolveLookupDestination({ ...manualVerifiedGuideResponse, selectionOptions: ambiguousZipResponse.selectionOptions }), "/results?lookup=84604");
+});
+
+test("lookup display does not inherit another featured election", () => {
+	assert.equal(normalizeLookupResponseForDisplay(nationwideResponse).election, null);
+	assert.equal(normalizeLookupResponseForDisplay(manualPublishedGuideResponse, activeElection).election, null);
+	const matchingElection = { ...activeElection, slug: manualPublishedGuideResponse.electionSlug! };
+	assert.deepEqual(normalizeLookupResponseForDisplay(manualPublishedGuideResponse, matchingElection).election, matchingElection);
+});
+
+test("unsupported or incomplete responses do not navigate into a verified guide", () => {
+	assert.equal(resolveLookupDestination({ ...manualVerifiedGuideResponse, result: "unsupported" }), null);
+	for (const response of [{ ...manualVerifiedGuideResponse, location: undefined }, { ...manualVerifiedGuideResponse, electionSlug: undefined }]) assert.ok(!resolveLookupDestination(response)?.startsWith("/ballot/"));
 });
 
 test("homepage entry state stops promoting the featured guide preview when a nationwide context is active", () => {

@@ -190,7 +190,7 @@ function buildGuideContentLayerStatus(
 	};
 }
 
-function buildGuideContentSummary(
+export function buildGuideContentSummary(
 	workflow: GuidePackageWorkflow,
 	contests: Contest[],
 	candidates: Candidate[],
@@ -284,10 +284,10 @@ function buildGuideContentSummary(
 				: "seeded_demo";
 
 	const guideShellDetailByStatus: Record<GuideContentStatus, string> = {
-		official_logistics_only: "This local guide is published with verified official election links, but the contest pages still need local review.",
-		seeded_demo: "This local guide is published, but its contest pages still read as demo content.",
-		staged_reference: "This local guide is published, but some contest, candidate, or measure pages still need local review before they should be treated as verified.",
-		verified_local: "This local guide is published with verified local contest, candidate, and measure pages.",
+		official_logistics_only: "Official election links are available.",
+		seeded_demo: "Example data is not election information.",
+		staged_reference: "Some ballot information is unverified.",
+		verified_local: "Ballot information is available.",
 	};
 	const draftGuideShellDetailByStatus: Record<GuideContentStatus, string> = {
 		official_logistics_only: "This draft already has verified official election links, but the contest pages still need local review before publication.",
@@ -305,24 +305,14 @@ function buildGuideContentSummary(
 				? guideShellDetailByStatus[guideShellStatus]
 				: draftGuideShellDetailByStatus[guideShellStatus],
 			hasContent: workflow.status === "published",
-			label: "Local guide",
+			label: "Ballot information",
 			status: guideShellStatus,
 		},
 		mixedContent,
 		measures: measuresLayer,
 		officialLogistics,
 		publishedGuideShell: workflow.status === "published",
-		summary: workflow.status === "published"
-			? verifiedContestPackage
-				? "This local guide includes verified official election links and verified contest, candidate, and measure pages."
-				: officialLogistics.status === "verified_local"
-					? "This local guide includes verified official election links, but some contest, candidate, or measure pages are still under local review."
-					: "This local guide is available, but its contest pages still need local verification."
-			: verifiedContestPackage
-				? "This draft already carries verified official election links and verified contest, candidate, and measure pages."
-				: officialLogistics.status === "verified_local"
-					? "This draft has verified official election links, but some contest, candidate, or measure pages are still under local review."
-					: "This draft still needs local verification before it should be promoted as a guide.",
+		summary: "",
 		verifiedContestPackage,
 	};
 }
@@ -1143,11 +1133,22 @@ export function buildDefaultGuidePackageSeed(coverageRepository: CoverageReposit
 	if (coverageRepository.mode !== "snapshot")
 		return [];
 
+	const additionalPackages: GuidePackageWorkflow[] = (coverageRepository.data.additionalGuides ?? []).map(({ election, jurisdiction, coverageLimits }) => ({
+		coverageLimits: [...(coverageLimits ?? [])],
+		coverageNotes: [],
+		createdAt: election.updatedAt,
+		draftedAt: election.updatedAt,
+		electionSlug: election.slug,
+		id: buildPackageId(election.slug),
+		jurisdictionSlug: jurisdiction.slug,
+		status: "draft",
+		updatedAt: election.updatedAt,
+	}));
 	const election = getPrimaryElection(coverageRepository);
 	const jurisdiction = getPrimaryJurisdiction(coverageRepository);
 
 	if (!election || !jurisdiction)
-		return [];
+		return additionalPackages;
 
 	const publishedAt = election.updatedAt;
 	const hasContestRecords = election.contests.length > 0;
@@ -1189,6 +1190,7 @@ export function buildDefaultGuidePackageSeed(coverageRepository: CoverageReposit
 			status: "published",
 			updatedAt: election.updatedAt,
 		},
+		...additionalPackages,
 	];
 }
 

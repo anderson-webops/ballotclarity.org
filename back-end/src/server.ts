@@ -2,9 +2,11 @@ import type { ErrorRequestHandler, Express, Request, RequestHandler, Response } 
 import type { AddressInfo } from "node:net";
 import type { AddressEnrichmentService } from "./address-enrichment.js";
 import type { AdminAuditActor } from "./admin-store.js";
+import type { PublicBallotElection } from "./ballot-guide-scope.js";
 import type { CongressClient, CongressMemberDetail, CongressMemberRecord } from "./congress.js";
 import type { CoverageRepository } from "./coverage-repository.js";
 import type { ElectionReferenceRepository } from "./election-references.js";
+import type { JudicialEvaluationRepository } from "./judicial-evaluations.js";
 import type { OpenStatesRepresentativeRecord } from "./openstates.js";
 import type { PublicRequestThrottle } from "./public-request-throttle.js";
 import type { StateBallotRepository } from "./state-ballot-repository.js";
@@ -97,25 +99,30 @@ import {
 import { createAddressCacheRepository } from "./address-cache-repository.js";
 import { createAddressEnrichmentService } from "./address-enrichment.js";
 import { createAdminLoginThrottle } from "./admin-login-throttle.js";
+import { buildAdminOperations } from "./admin-operations.js";
 import { createAdminRepository } from "./admin-repository.js";
 import { parseAdminSessionToken } from "./admin-session-token.js";
 import { normalizeAdminUsername } from "./admin-store.js";
 import { getPublicBallotContentProviderOptions } from "./ballot-content-providers.js";
+import { hasStatewideMeasureRollup, includeStatewideMeasures } from "./ballot-guide-scope.js";
 import { createBoundedPromiseCache, resolveBoundedCacheInteger } from "./bounded-promise-cache.js";
 import { BoundedRateLimitStore } from "./bounded-rate-limit-store.js";
 import { createCensusGeocoderClient } from "./census-geocoder.js";
 import { createCongressClient, isCurrentCongressMemberRecord } from "./congress.js";
-import { createCoverageRepository } from "./coverage-repository.js";
+import { coverageElections, coverageElectionSummaries, coverageGuideLocation, coverageJurisdictions, coverageJurisdictionSummaries, createCoverageRepository } from "./coverage-repository.js";
 import { registerElectionReferenceRoutes } from "./election-reference-routes.js";
 import { createElectionReferenceRepository } from "./election-references.js";
 import { normalizeCorrectionSubmission } from "./feedback-submission.js";
 import { createGoogleCivicClient } from "./google-civic.js";
 import {
 	buildDefaultGuidePackageSeed,
+	buildGuideContentSummary,
 	buildGuidePackageId,
 	buildGuidePackageList,
 	buildGuidePackageRecord,
 } from "./guide-packages.js";
+import { registerJudicialEvaluationRoutes } from "./judicial-evaluation-routes.js";
+import { createJudicialEvaluationRepository } from "./judicial-evaluations.js";
 import { buildCoverageResponse } from "./launch-profile.js";
 import { createLdaClient } from "./lda.js";
 import { buildLocationGuessNotePrefix, createLocationGuessService } from "./location-guess.js";
@@ -178,6 +185,7 @@ interface CreateAppOptions {
 	zipLookupLogger?: ZipLookupLogger;
 	stateBallotRepository?: StateBallotRepository | null;
 	electionReferenceRepository?: ElectionReferenceRepository | null;
+	judicialEvaluationRepository?: JudicialEvaluationRepository | null;
 	releaseIdentity?: ReturnType<typeof loadReleaseIdentity>;
 }
 
@@ -342,11 +350,7 @@ function buildZipSelectionOption(
 	const representativeCount = match.representativeMatches.length;
 	const displayName = [match.locality, match.stateName || match.stateAbbreviation].filter(Boolean).join(", ")
 		|| match.postalCode;
-	const guideSentence = supportedCoverageSummaries.length
-		? supportedCoverageSummaries.length === 1
-			? "A local guide is available after you choose this area."
-			: `${supportedCoverageSummaries.length} local guide areas still match this ZIP area.`
-		: "No local guide is available for this area yet.";
+	const guideSentence = "";
 
 	return {
 		description: [
@@ -1200,6 +1204,7 @@ function buildSupplementalRepresentativeSummary(record: SupplementalOfficeholder
 		officeholderLabel: "Current officeholder",
 		officeType: classification.officeType,
 		onCurrentBallot: false,
+		officialWebsiteUrl: record.officialWebsiteUrl,
 		openstatesUrl: record.openstatesUrl,
 		party: record.party,
 		profileImages: record.profileImages,
@@ -1607,6 +1612,7 @@ function buildRepresentativeLookupContext(record: OpenStatesRepresentativeRecord
 				officeDisplayLabel: classification.officeDisplayLabel,
 				officeType: classification.officeType,
 				officeTitle: record.officeTitle,
+				officialWebsiteUrl: record.officialWebsiteUrl,
 				openstatesUrl: record.openstatesUrl,
 				party: record.party,
 				profileImages: record.profileImages,
@@ -1947,6 +1953,7 @@ function mergeRepresentativeMatches(representativeMatches: LocationRepresentativ
 		);
 		const mergedMatch = {
 			...preferredMatch,
+			officialWebsiteUrl: preferredMatch.officialWebsiteUrl || existingMatch.officialWebsiteUrl || match.officialWebsiteUrl,
 			profileImages: profileImages.length ? profileImages : undefined,
 		};
 
@@ -2012,10 +2019,11 @@ async function buildCongressRepresentativeMatchesFromDistrictContext(
 		: "";
 	const normalizedExistingNames = new Set(existingMatches.map(match => toLookupSlug(match.name)));
 
-	return stateMembers.flatMap((member) => {
+	return stateMembers.flatMap<LocationRepresentativeMatch>((member) => {
 		const directName = formatCongressLookupName(member.name);
 		if (!directName)
 			return [];
+		const profileImages = buildCongressProfileImages({ ...member, directOrderName: directName });
 
 		const candidateMatch = typeof member.district === "number"
 			? (() => {
@@ -2039,6 +2047,7 @@ async function buildCongressRepresentativeMatchesFromDistrictContext(
 						officeType: classification.officeType,
 						officeTitle: "Representative",
 						party: member.party,
+						profileImages: profileImages.length ? profileImages : undefined,
 						sourceSystem: "Congress.gov",
 					} satisfies LocationRepresentativeMatch;
 				})()
@@ -2060,17 +2069,25 @@ async function buildCongressRepresentativeMatchesFromDistrictContext(
 						officeType: classification.officeType,
 						officeTitle: "Senator",
 						party: member.party,
+						profileImages: profileImages.length ? profileImages : undefined,
 						sourceSystem: "Congress.gov",
 					} satisfies LocationRepresentativeMatch;
 				})();
 
 		if (!candidateMatch)
 			return [];
+		const existingMatch = existingMatches.find(match => representativeMatchesEquivalent(match, candidateMatch));
+		if (existingMatch && profileImages.length) {
+			return [{
+				...existingMatch,
+				profileImages: buildRepresentativeProfileImages(existingMatch.profileImages, profileImages),
+			}];
+		}
 
 		if (normalizedExistingNames.has(toLookupSlug(candidateMatch.name)))
 			return [];
 
-		if (existingMatches.some(match => representativeMatchesEquivalent(match, candidateMatch)))
+		if (existingMatch)
 			return [];
 
 		return [candidateMatch];
@@ -2163,6 +2180,7 @@ function buildRepresentativeProfileFromOpenStates(record: OpenStatesRepresentati
 			officeType: classification.officeType,
 			officeSought: officeContext.officeSought,
 			onCurrentBallot: false,
+			officialWebsiteUrl: record.officialWebsiteUrl,
 			openstatesUrl: record.openstatesUrl,
 			party: record.party || "Unknown",
 			profileImages: record.profileImages,
@@ -2316,6 +2334,7 @@ function buildRepresentativeLookupContextFromCongressMember(
 				officeTitle,
 				party: member.party,
 				profileImages: buildCongressProfileImages(member),
+				officialWebsiteUrl: member.officialWebsiteUrl,
 				sourceSystem: "Congress.gov",
 			},
 		],
@@ -2400,6 +2419,7 @@ function buildRepresentativeProfileFromCongressMember(
 			officeType: classification.officeType,
 			officeSought: officeContext.officeSought,
 			onCurrentBallot: false,
+			officialWebsiteUrl: member.officialWebsiteUrl,
 			party: member.party || "Unknown",
 			profileImages: profileImages.length ? profileImages : undefined,
 			provenance: {
@@ -2652,18 +2672,6 @@ function buildPublicDistrictRecordFromSlug(slug: string): DistrictRecordResponse
 		: districtIdentity.officialResources;
 	const representatives = supplementalOfficeholders.map(buildSupplementalRepresentativeSummary);
 	const sources = [
-		buildRouteSource({
-			authority: "open-data",
-			date: resolvedUpdatedAt,
-			id: `district:${districtIdentity.slug}:identity`,
-			note: supplementalOfficeholders.length
-				? "This district record includes a stable district identity and reviewed officeholder records from Ballot Clarity's public officeholder sources."
-				: "This district record includes a stable district identity that can be refined by entering an address or ZIP.",
-			publisher: "Ballot Clarity public district records",
-			sourceSystem: "Ballot Clarity public district records",
-			title: `${districtIdentity.title} page identity`,
-			url: "/coverage",
-		}),
 		...supplementalOfficeholders.flatMap(record => record.sources),
 		...buildOfficialToolSources(resolvedOfficialResources, resolvedUpdatedAt),
 	];
@@ -2682,7 +2690,7 @@ function buildPublicDistrictRecordFromSlug(slug: string): DistrictRecordResponse
 		: districtIdentity.originNote;
 	const note = supplementalOfficeholders.length
 		? "This district page includes reviewed officeholder records. Entering an address or ZIP can still add exact district confirmation and locality-specific official tools."
-		: "This district page is available without a saved location. Entering an address or ZIP can refine it with exact district confirmation and official tools.";
+		: "";
 
 	return {
 		candidateAvailabilityNote: "Candidate and contest pages are not attached to this district yet, but official links and district details can still appear here.",
@@ -3011,6 +3019,9 @@ export async function createApp(options: CreateAppOptions = {}) {
 	const electionReferenceRepository = options.electionReferenceRepository === undefined
 		? process.env.STATE_BALLOT_LOOKUP_ENABLED === "false" ? null : createElectionReferenceRepository()
 		: options.electionReferenceRepository;
+	const judicialEvaluationRepository = options.judicialEvaluationRepository === undefined
+		? process.env.STATE_BALLOT_LOOKUP_ENABLED === "false" ? null : createJudicialEvaluationRepository()
+		: options.judicialEvaluationRepository;
 	const adminApiRateLimitWindowMs = resolvePositiveIntegerEnv(
 		"ADMIN_API_RATE_LIMIT_WINDOW_MS",
 		15 * 60 * 1000,
@@ -3171,9 +3182,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 		if (!slug)
 			return coverageRepository.data.jurisdictionSummaries[0] ?? null;
 
-		return coverageRepository.data.jurisdictionSummaries.find(item => item.slug === slug)
-			?? coverageRepository.data.jurisdictionSummaries[0]
-			?? null;
+		return coverageJurisdictionSummaries(coverageRepository.data).find(item => item.slug === slug) ?? null;
 	}
 
 	function buildFallbackJurisdictionSummary(election: Election): JurisdictionSummary {
@@ -3185,7 +3194,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 			nextElectionName: election.name,
 			nextElectionSlug: election.slug,
 			slug: election.jurisdictionSlug,
-			state: coverageRepository.data.location?.state ?? "",
+			state: coverageGuideLocation(coverageRepository.data, election.slug)?.state ?? "",
 			updatedAt: election.updatedAt
 		};
 	}
@@ -3364,7 +3373,9 @@ export async function createApp(options: CreateAppOptions = {}) {
 	}
 
 	async function listPublishedGuidePackageRecords() {
-		return (await listGuidePackageRecords()).filter(item => item.workflow.status === "published");
+		return (await listGuidePackageRecords()).filter(item => item.workflow.status === "published"
+			&& coverageRepository.getElectionBySlug(item.workflow.electionSlug)?.jurisdictionSlug === item.workflow.jurisdictionSlug
+			&& coverageRepository.getJurisdictionBySlug(item.workflow.jurisdictionSlug));
 	}
 
 	async function getPublishedGuidePackageByElectionSlug(electionSlug: string) {
@@ -3377,14 +3388,17 @@ export async function createApp(options: CreateAppOptions = {}) {
 
 	async function listPublishedElectionSummaries() {
 		const publishedPackages = await listPublishedGuidePackageRecords();
-		return coverageRepository.data.electionSummaries.filter(summary =>
+		return coverageElectionSummaries(coverageRepository.data).filter(summary =>
 			publishedPackages.some(item => item.workflow.electionSlug === summary.slug));
 	}
 
 	async function listPublishedJurisdictionSummaries() {
-		const publishedPackages = await listPublishedGuidePackageRecords();
-		return coverageRepository.data.jurisdictionSummaries.filter(summary =>
-			publishedPackages.some(item => item.workflow.jurisdictionSlug === summary.slug));
+		const elections = await listPublicElections();
+		return coverageJurisdictionSummaries(coverageRepository.data).flatMap((summary) => {
+			const election = elections.find(item => item.slug === summary.nextElectionSlug && item.jurisdictionSlug === summary.slug)
+				?? elections.find(item => item.jurisdictionSlug === summary.slug);
+			return election ? [{ ...summary, nextElectionSlug: election.slug, nextElectionName: election.name }] : [];
+		});
 	}
 
 	function applyCandidateContent(candidate: Candidate, contentIndex: Map<string, Awaited<ReturnType<typeof adminRepository.listContent>>["items"][number]>): Candidate | null {
@@ -3480,31 +3494,11 @@ export async function createApp(options: CreateAppOptions = {}) {
 	}
 
 	async function listPublicCandidates() {
-		const primaryElectionSlug = getPrimaryElectionSlug();
-
-		if (!primaryElectionSlug)
-			return [];
-
-		const election = await getPublicElection(primaryElectionSlug);
-
-		if (!election)
-			return [];
-
-		return election.contests.flatMap(contest => contest.candidates ?? []);
+		return (await listPublicElections()).flatMap(election => election.contests.flatMap(contest => contest.candidates ?? []));
 	}
 
 	async function listPublicMeasures() {
-		const primaryElectionSlug = getPrimaryElectionSlug();
-
-		if (!primaryElectionSlug)
-			return [];
-
-		const election = await getPublicElection(primaryElectionSlug);
-
-		if (!election)
-			return [];
-
-		return election.contests.flatMap(contest => contest.measures ?? []);
+		return (await listPublicElections()).flatMap(election => election.contests.flatMap(contest => (contest.measures ?? []).map(measure => ({ ...measure, electionDate: election.date, electionSlug: election.slug }))));
 	}
 
 	async function getPublicCandidate(slug: string) {
@@ -3530,9 +3524,20 @@ export async function createApp(options: CreateAppOptions = {}) {
 		const contentIndex = await getContentIndex();
 		const resolvedElection = election ? applyElectionContent(election, contentIndex) : null;
 
-		return resolvedElection
-			? suppressUnverifiedContestContent(resolvedElection, publishedPackage)
-			: null;
+		if (!resolvedElection) return null;
+		const visibleElection = suppressUnverifiedContestContent(resolvedElection, publishedPackage);
+		return includeStatewideMeasures(visibleElection, coverageJurisdictions(coverageRepository.data), await listPublicElections());
+	}
+
+	function publicGuideContent(election: PublicBallotElection | null, publishedPackage: GuidePackageRecord | null) {
+		if (!election || !publishedPackage || !hasStatewideMeasureRollup(election)) return publishedPackage?.contentStatus ?? null;
+		return buildGuideContentSummary(publishedPackage.workflow, election.contests, election.contests.flatMap(contest => contest.candidates ?? []), election.contests.flatMap(contest => contest.measures ?? []), election.officialResources);
+	}
+
+	function publicGuideCoverageLimits(election: PublicBallotElection | null, publishedPackage: GuidePackageRecord | null) {
+		return hasStatewideMeasureRollup(election)
+			? ["Statewide measures and selected local questions; other local races and measures are not included.", ...(publishedPackage?.workflow.coverageLimits ?? []).slice(1)]
+			: publishedPackage?.workflow.coverageLimits ?? [];
 	}
 
 	async function getPublicElectionSummaries() {
@@ -3544,14 +3549,42 @@ export async function createApp(options: CreateAppOptions = {}) {
 		});
 	}
 
+	async function listPublicElections() {
+		const [packages, contentIndex] = await Promise.all([listPublishedGuidePackageRecords(), getContentIndex()]);
+		const elections = coverageElections(coverageRepository.data).map((election) => {
+			const publishedPackage = packages.find(item => item.workflow.electionSlug === election.slug);
+			const resolvedElection = publishedPackage ? applyElectionContent(election, contentIndex) : null;
+			return resolvedElection && publishedPackage ? suppressUnverifiedContestContent(resolvedElection, publishedPackage) : null;
+		});
+		return elections.filter((election): election is Election => Boolean(election));
+	}
+
+	async function selectPublicCoverageSummary(summaries: JurisdictionSummary[]) {
+		if (summaries.length === 1)
+			return summaries[0] ?? null;
+
+		if (summaries.length !== 2)
+			return null;
+
+		const statewide = summaries.find(summary => summary.jurisdictionType === "state");
+		const local = summaries.find(summary => summary.jurisdictionType !== "state");
+
+		if (!statewide || !local)
+			return null;
+
+		const [stateElection, localElection] = await Promise.all([
+			getPublicElection(statewide.nextElectionSlug),
+			getPublicElection(local.nextElectionSlug),
+		]);
+
+		if (!stateElection || !localElection || stateElection.date !== localElection.date) return null;
+		if (localElection.includedStatewideElectionSlugs?.includes(stateElection.slug)) return local;
+		if (localElection.contests.length > 0 && stateElection.contests.length === 0) return local;
+		return stateElection.contests.length > 0 && localElection.contests.length === 0 ? statewide : null;
+	}
+
 	async function listPublicContests() {
-		const primaryElectionSlug = getPrimaryElectionSlug();
-
-		if (!primaryElectionSlug)
-			return [];
-
-		const election = await getPublicElection(primaryElectionSlug);
-		return election?.contests ?? [];
+		return (await listPublicElections()).flatMap(election => election.contests);
 	}
 
 	function normalizeDirectoryAreaQuery(value: unknown) {
@@ -3611,20 +3644,10 @@ export async function createApp(options: CreateAppOptions = {}) {
 	}
 
 	async function listPublicDistricts(areaSlug: string | null = null) {
-		const primaryElectionSlug = getPrimaryElectionSlug();
 		const supplementalDistricts = buildSupplementalDistrictSummariesForDirectory(areaSlug);
-
-		if (!primaryElectionSlug)
-			return uniqueBySlug(supplementalDistricts);
-
-		const election = await getPublicElection(primaryElectionSlug);
-
-		if (!election)
-			return uniqueBySlug(supplementalDistricts);
-
-		const guideDistricts = election.contests
+		const guideDistricts = (await listPublicElections()).flatMap(election => election.contests
 			.filter(contest => contest.type === "candidate")
-			.map(contest => buildDistrictSummary(contest, election));
+			.map(contest => buildDistrictSummary(contest, election)));
 
 		return uniqueBySlug([
 			...guideDistricts,
@@ -3633,47 +3656,16 @@ export async function createApp(options: CreateAppOptions = {}) {
 	}
 
 	async function getPublicDistrict(slug: string) {
-		const primaryElectionSlug = getPrimaryElectionSlug();
-
-		if (!primaryElectionSlug)
-			return null;
-
-		const election = await getPublicElection(primaryElectionSlug);
-
-		if (!election)
-			return null;
-
-		const contest = election.contests.find(item => item.slug === slug && item.type === "candidate");
-
-		if (!contest)
-			return null;
-
-		return {
-			contest,
-			election
-		};
+		const result = await getPublicContest(slug);
+		return result?.contest.type === "candidate" ? result : null;
 	}
 
 	async function getPublicContest(slug: string) {
-		const primaryElectionSlug = getPrimaryElectionSlug();
-
-		if (!primaryElectionSlug)
-			return null;
-
-		const election = await getPublicElection(primaryElectionSlug);
-
-		if (!election)
-			return null;
-
-		const contest = election.contests.find(item => item.slug === slug);
-
-		if (!contest)
-			return null;
-
-		return {
-			contest,
-			election
-		};
+		for (const election of await listPublicElections()) {
+			const contest = election.contests.find(item => item.slug === slug);
+			if (contest) return { contest, election };
+		}
+		return null;
 	}
 
 	const publicFederalRepresentativeCache = createBoundedPromiseCache<string, PersonProfileResponse | null>({
@@ -3971,7 +3963,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 				roleGuide: contest.roleGuide
 			},
 			districtOriginLabel: "Published district page",
-			districtOriginNote: "This district page comes from Ballot Clarity's local guide. Official election links may be current before every contest layer on the page is fully reviewed.",
+			districtOriginNote: "",
 			election: {
 				date: election.date,
 				jurisdictionSlug: election.jurisdictionSlug,
@@ -4383,6 +4375,8 @@ export async function createApp(options: CreateAppOptions = {}) {
 						);
 						geoContext = {
 							countyFips: addressEnrichment.countyFips,
+							countyName: addressEnrichment.districtMatches.find(match => match.districtType === "county")?.label,
+							locality: addressEnrichment.districtMatches.find(match => match.districtType === "place")?.label,
 							normalizedAddress: addressEnrichment.normalizedAddress,
 							postalCode: addressEnrichment.zip5,
 							sourceSystem: "U.S. Census Geocoder",
@@ -4487,21 +4481,41 @@ export async function createApp(options: CreateAppOptions = {}) {
 			}
 		}
 
+		const matchingCoverage = findSupportedCoverageSummaries(publishedJurisdictionSummaries, geoContext);
+		const selectedCoverage = await selectPublicCoverageSummary(matchingCoverage);
+		const selectedPackage = selectedCoverage ? await getPublishedGuidePackageByElectionSlug(selectedCoverage.nextElectionSlug) : null;
+		const selectedJurisdiction = selectedPackage ? coverageRepository.getJurisdictionBySlug(selectedPackage.workflow.jurisdictionSlug) : null;
+		const selectedLocation = selectedPackage ? coverageGuideLocation(coverageRepository.data, selectedPackage.workflow.electionSlug) : null;
+		const selectedElection = selectedPackage ? await getPublicElection(selectedPackage.workflow.electionSlug) : null;
 		const lookupResponse = buildLocationLookupResponse(
 			raw,
-			publishedPrimaryPackage ? coverageRepository.data.jurisdiction : null,
+			selectedJurisdiction,
 			publishedJurisdictionSummaries,
-			publishedPrimaryPackage ? coverageRepository.data.location : null,
-			publishedPrimaryPackage?.workflow.electionSlug,
+			selectedLocation,
+			selectedPackage?.workflow.electionSlug,
 			coverageRepository.mode,
-			coverage,
+			selectedCoverage?.nextElectionSlug === coverageRepository.data.election?.slug ? coverage : { ...coverage, launchTarget: undefined },
 			geoContext,
 			officialLookup,
 			addressEnrichment,
 			selectionOptions,
 			selectionId,
-			publishedPrimaryPackage?.contentStatus ?? null,
+			publicGuideContent(selectedElection, selectedPackage),
+			Boolean(selectedPackage?.workflow.coverageLimits.length),
 		);
+
+		lookupResponse.actions = (await Promise.all((lookupResponse.actions ?? []).map(async (action) => {
+			if (action.kind !== "ballot-guide" || !action.electionSlug)
+				return action;
+
+			const publishedPackage = await getPublishedGuidePackageByElectionSlug(action.electionSlug);
+			const election = await getPublicElection(action.electionSlug);
+			const location = publishedPackage ? coverageGuideLocation(coverageRepository.data, publishedPackage.workflow.electionSlug) : null;
+			if (!publishedPackage || !election || !location)
+				return null;
+
+			return { ...action, description: election.name, electionDate: election.date, guideContent: publicGuideContent(election, publishedPackage), location };
+		}))).flatMap(action => action ? [action] : []);
 
 		await attachStateBallotPreview(lookupResponse, stateBallotRepository);
 		const activeLookupContext = buildActiveNationwideLookupContext(lookupResponse);
@@ -4526,6 +4540,10 @@ export async function createApp(options: CreateAppOptions = {}) {
 	async function resolveActiveNationwideLookup(request: express.Request, response: express.Response) {
 		const routeLookup = typeof request.query.lookup === "string" ? request.query.lookup.trim() : "";
 		const routeSelectionId = typeof request.query.selection === "string" ? request.query.selection.trim() : "";
+
+		if (!routeLookup && normalizeDirectoryAreaQuery(request.query.area))
+			return null;
+
 		const savedLookupContext = readActiveNationwideLookupContext(
 			request.header("cookie"),
 			activeLookupCookieSecret
@@ -5242,6 +5260,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 
 	registerStateRecordRoutes(app, stateBallotRepository);
 	registerElectionReferenceRoutes(app, electionReferenceRepository);
+	registerJudicialEvaluationRoutes(app, judicialEvaluationRepository, stateBallotRepository);
 
 	app.get("/api/elections", async (_request, response) => {
 		response.json({
@@ -5520,7 +5539,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 
 	app.get("/api/ballot", async (request, response) => {
 		const electionSlug = typeof request.query.election === "string" ? request.query.election : "";
-		const defaultLocation = coverageRepository.data.location;
+		const defaultLocation = coverageGuideLocation(coverageRepository.data, electionSlug);
 		const requestedLocationSlug = typeof request.query.location === "string" ? request.query.location : "";
 
 		if (!electionSlug) {
@@ -5549,16 +5568,21 @@ export async function createApp(options: CreateAppOptions = {}) {
 			return;
 		}
 
+		if (coverageRepository.data.election?.slug !== electionSlug && requestedLocationSlug && requestedLocationSlug !== defaultLocation.slug) {
+			response.status(400).json({ message: "The requested location does not match this guide." });
+			return;
+		}
+
 		response.json({
-			guideContent: guidePackage?.contentStatus ?? null,
+			guideContent: publicGuideContent(election, guidePackage),
+			coverageLimits: publicGuideCoverageLimits(election, guidePackage),
+			scope: coverageRepository.getJurisdictionBySlug(election.jurisdictionSlug)?.jurisdictionType === "state" ? "statewide" : "local",
 			election,
 			location: {
 				...defaultLocation,
 				slug: requestedLocationSlug || defaultLocation.slug
 			},
-			note: guidePackage?.contentStatus
-				? `${guidePackage.contentStatus.summary} Verify official election logistics with the linked election office.`
-				: "Current public coverage is running from the latest imported civic-data package. Verify official election logistics with the linked election office.",
+			note: "",
 			updatedAt: election.updatedAt
 		});
 	});
@@ -5590,6 +5614,11 @@ export async function createApp(options: CreateAppOptions = {}) {
 	});
 
 	app.get("/api/measures/:slug", async (request, response) => {
+		const context = request.query.election;
+		if (context !== undefined && (typeof context !== "string" || !/^[a-z0-9][a-z0-9-]{0,100}$/u.test(context))) {
+			response.status(400).json({ message: "Provide one valid election context." });
+			return;
+		}
 		const measure = await getPublicMeasure(request.params.slug);
 
 		if (!measure) {
@@ -5599,6 +5628,15 @@ export async function createApp(options: CreateAppOptions = {}) {
 			return;
 		}
 
+		if (typeof context === "string") {
+			const election = await getPublicElection(context);
+			if (!election?.contests.some(contest => contest.measures?.some(item => item.slug === measure.slug))) {
+				response.status(404).json({ message: "Measure not found in the requested election." });
+				return;
+			}
+			response.json({ ...measure, electionSlug: election.slug, electionDate: election.date });
+			return;
+		}
 		response.json(measure);
 	});
 
@@ -5635,6 +5673,9 @@ export async function createApp(options: CreateAppOptions = {}) {
 
 	app.get("/api/admin/overview", async (_request, response) => {
 		response.json(await adminRepository.getOverview());
+	});
+	app.get("/api/admin/operations", async (_request, response) => {
+		response.json(await buildAdminOperations({ candidates: stateBallotRepository, references: electionReferenceRepository, dataDirectory: process.env.STATE_BALLOT_DATA_DIR || null }));
 	});
 
 	app.get("/api/admin/audit", async (_request, response) => {

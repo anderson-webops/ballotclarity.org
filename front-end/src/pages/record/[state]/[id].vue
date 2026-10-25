@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import type { ElectionReferencesResponse, PublicElectionReference, PublicStateCandidateRecord, StateRecordsResponse } from "~/types/civic";
+import type { ElectionReferencesResponse, PublicElectionReference, PublicJudicialEvaluation, PublicStateCandidateRecord, StateRecordsResponse } from "~/types/civic";
 import { findRecordDetail } from "~/utils/record-detail";
+import { referenceJurisdiction } from "~/utils/reference-context";
 import { stateRecordArea, stateRecordStatusLabels } from "~/utils/state-records";
 
 const route = useRoute();
@@ -11,7 +12,7 @@ const recordId = useRouteStringParam("id");
 const isReference = computed(() => route.query.kind === "reference");
 const sourceId = computed(() => typeof route.query.source === "string" ? route.query.source : undefined);
 const search = computed(() => typeof route.query.name === "string" ? route.query.name.slice(0, 120) : "");
-const sourceLabels = { "candidate-statement": "Candidate-provided", "news-report": "News report", "official-biography": "Official biography" };
+const sourceLabels = { "candidate-statement": "Candidate-provided", "news-report": "News report", "official-biography": "Official biography", "public-dataset": "Public dataset" };
 const { data, error, pending, refresh } = await useAsyncData(
 	() => `record-detail:${stateCode.value}:${recordId.value}:${isReference.value}:${sourceId.value}:${search.value}`,
 	async () => {
@@ -34,8 +35,28 @@ const { data, error, pending, refresh } = await useAsyncData(
 );
 const name = computed(() => data.value?.reference?.name ?? data.value?.official?.name);
 const backTo = computed(() => ({ path: "/records", query: { state: stateCode.value, ...(isReference.value ? {} : { source: sourceId.value }) } }));
+const { data: evaluation, error: evaluationError } = await useAsyncData(
+	() => `judicial-evaluation:${stateCode.value}:${data.value?.source?.id}:${data.value?.official?.id}`,
+	async () => {
+		const record = data.value?.official;
+		const source = data.value?.source;
+		if (!record || !source?.id || !/Judicial retention/iu.test(record.office)) return null;
+		try {
+			return await api<PublicJudicialEvaluation>(`/judicial-evaluations/${stateCode.value}/${record.id}`, { query: { source: source.id } });
+		}
+		catch (error) {
+			if (error && typeof error === "object" && "statusCode" in error && error.statusCode === 404) return null;
+			throw error;
+		}
+	},
+	{ default: () => null }
+);
 
 usePageSeo({ title: name.value ?? "Candidate record", description: "Candidate source record and supporting information.", path: route.path, robots: "noindex,follow" });
+const documentLinks = computed(() => {
+	const source = data.value?.source;
+	return (source?.documentLinks ?? []).filter(document => document.url !== source?.url);
+});
 </script>
 
 <template>
@@ -60,13 +81,17 @@ usePageSeo({ title: name.value ?? "Candidate record", description: "Candidate so
 					{{ name }}
 				</h1>
 				<p class="text-lg text-app-muted mt-3 dark:text-app-muted-dark">
-					{{ data.reference?.office ?? data.official?.office }}<template v-if="data.reference?.jurisdiction || data.official && stateRecordArea(data.official)">
-						· {{ data.reference?.jurisdiction ?? (data.official ? stateRecordArea(data.official) : '') }}
+					{{ data.reference?.office ?? data.official?.office }}<template v-if="data.reference ? referenceJurisdiction(data.reference) : data.official && stateRecordArea(data.official)">
+						· {{ data.reference ? referenceJurisdiction(data.reference) : data.official ? stateRecordArea(data.official) : '' }}
 					</template>
 				</p>
 			</header>
 			<p v-if="data.electionDate" class="text-sm text-app-muted dark:text-app-muted-dark">
 				Election: {{ formatDate(data.electionDate) }}
+			</p>
+			<OfficialJudicialEvaluation v-if="evaluation" :evaluation="evaluation" />
+			<p v-else-if="evaluationError" role="status">
+				Official evaluations are temporarily unavailable.
 			</p>
 			<template v-if="data.reference">
 				<p class="text-sm text-app-muted dark:text-app-muted-dark">
@@ -94,7 +119,7 @@ usePageSeo({ title: name.value ?? "Candidate record", description: "Candidate so
 			</template>
 			<template v-else-if="data.official && data.source">
 				<dl class="space-y-4">
-					<div>
+					<div v-if="data.official.status !== 'listed'">
 						<dt class="font-semibold">
 							Status
 						</dt><dd>{{ stateRecordStatusLabels[data.official.status] }}</dd>
@@ -102,7 +127,7 @@ usePageSeo({ title: name.value ?? "Candidate record", description: "Candidate so
 					<div v-if="data.official.party">
 						<dt class="font-semibold">
 							Party
-						</dt><dd>{{ data.official.party }}</dd>
+						</dt><dd><PartyLabel :party="data.official.party" /></dd>
 					</div>
 					<div v-if="data.official.sourceStatus && data.official.sourceStatus.toLowerCase() !== data.official.status">
 						<dt class="font-semibold">
@@ -119,10 +144,13 @@ usePageSeo({ title: name.value ?? "Candidate record", description: "Candidate so
 					Candidate website
 				</SafeExternalLink>
 				<section class="pt-5 border-t border-app-line space-y-3 dark:border-app-line-dark" aria-label="Source">
+					<SafeExternalLink v-if="data.official.candidateUrl" :href="data.official.candidateUrl" class="text-app-accent underline underline-offset-3 block focus-ring">
+						Candidate website
+					</SafeExternalLink>
 					<SafeExternalLink v-if="data.source.url" :href="data.source.url" class="text-app-accent underline underline-offset-3 focus-ring">
 						{{ data.source.label ?? 'Official source' }}
 					</SafeExternalLink>
-					<SafeExternalLink v-for="document in data.source.documentLinks" :key="document.url" :href="document.url" class="text-app-accent underline underline-offset-3 block focus-ring">
+					<SafeExternalLink v-for="document in documentLinks" :key="document.url" :href="document.url" class="text-app-accent underline underline-offset-3 block focus-ring">
 						{{ document.label }}
 					</SafeExternalLink>
 					<p v-if="data.source.retrievedAt" class="text-sm text-app-muted dark:text-app-muted-dark">
@@ -132,7 +160,7 @@ usePageSeo({ title: name.value ?? "Candidate record", description: "Candidate so
 						{{ data.source.scopeNotice }}
 					</p>
 					<p class="text-sm text-app-muted dark:text-app-muted-dark">
-						These records are not a personalized ballot. Later changes may be missing.
+						These records are not a personalized ballot.
 					</p>
 				</section>
 			</template>

@@ -193,6 +193,7 @@ export function buildNationwidePersonProfileResponse(
 			officeType: classification.officeType,
 			officeSought: representative.officeSought,
 			onCurrentBallot: false,
+			officialWebsiteUrl: representative.officialWebsiteUrl,
 			openstatesUrl: representative.openstatesUrl,
 			party: representative.party,
 			profileImages: representative.profileImages,

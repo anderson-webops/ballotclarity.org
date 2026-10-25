@@ -37,7 +37,7 @@ export function getBallotContentProviderOptions(): BallotContentProviderInternal
 			label: "Google Civic Information API",
 			limitations: [
 				"Coverage is limited to supported elections and addresses.",
-				"Provider ballot previews still need local review before Ballot Clarity treats them as a verified local guide."
+				"Returned records do not independently confirm your exact ballot."
 			],
 			setupUrl: "https://developers.google.com/civic-information"
 		},
@@ -83,7 +83,7 @@ export function getBallotContentProviderOptions(): BallotContentProviderInternal
 			limitations: [
 				"Returned fields can depend on the purchased API package.",
 				"Production browser-origin usage may require domain whitelisting by Ballotpedia.",
-				"Ballot Clarity still needs official-source verification before publishing a reviewed local guide."
+				"Confirm ballot eligibility with official election records."
 			],
 			setupUrl: "https://developer.ballotpedia.org/geographic-apis/getting-started-with-geographic-apis"
 		},

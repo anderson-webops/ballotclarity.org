@@ -37,9 +37,34 @@ export function filterLookupActionsForPresentation(
 	actions: LocationLookupAction[] | undefined,
 	response: LookupResolution
 ) {
-	const canOpenGuide = hasPublishedGuideResult(response);
+	const seen = new Set<string>();
 
-	return (actions ?? []).filter(action => action.kind !== "ballot-guide" || canOpenGuide);
+	return (actions ?? []).filter((action) => {
+		if (action.kind === "ballot-guide" && !buildLookupActionDestination(action, response))
+			return false;
+
+		const key = action.kind === "ballot-guide"
+			? `${action.kind}:${action.electionSlug}:${action.location?.slug}`
+			: `${action.kind}:${action.title.trim().toLowerCase()}`;
+		if (seen.has(key))
+			return false;
+		seen.add(key);
+		return true;
+	});
+}
+
+export function buildLookupActionDestination(action: LocationLookupAction, response: LookupResolution) {
+	if (action.kind !== "ballot-guide" || !action.electionSlug || !action.location || response.result !== "resolved" || response.selectionOptions?.length)
+		return null;
+
+	const matchesSelectedGuide = action.electionSlug === response.electionSlug && action.location.slug === response.location?.slug;
+	const guideContent = action.guideContent !== undefined ? action.guideContent : matchesSelectedGuide ? response.guideContent : null;
+	return buildPublishedGuideDestination({
+		electionSlug: action.electionSlug,
+		guideAvailability: action.guideContent !== undefined ? guideContent?.publishedGuideShell ? "published" : "not-published" : matchesSelectedGuide ? response.guideAvailability : "not-published",
+		guideContent,
+		location: action.location
+	});
 }
 
 export function buildLookupPresentation(response: LookupResolution): LookupPresentation {
@@ -72,26 +97,21 @@ export function buildLookupPresentation(response: LookupResolution): LookupPrese
 		const hasVerifiedContestPackage = hasVerifiedGuideResult(response);
 
 		return {
-			availabilityBadgeLabel: hasVerifiedContestPackage ? "Verified ballot guide" : "Election overview available",
+			availabilityBadgeLabel: hasVerifiedContestPackage ? "Ballot information available" : "Election information available",
 			canOpenGuide: true,
-			footerNote: hasVerifiedContestPackage
-				? "Review the results here first, then open the ballot guide for verified contest, candidate, and measure pages."
-				: "Review the results here first, then open the election overview for official links and the current verification status.",
-			guideActionLabel: hasVerifiedContestPackage ? "Open ballot guide" : "Open election overview",
-			heading: hasVerifiedContestPackage ? "Ballot guide and civic results ready" : "Civic results and election overview ready",
-			supportingNote: hasVerifiedContestPackage
-				? "A verified local guide is available for this lookup. Official tools remain visible below for final ballot confirmation."
-				: response.guideContent?.summary
-					?? "Official election links are current for this area. Verified contest pages are still under local review."
+			footerNote: "",
+			guideActionLabel: hasVerifiedContestPackage ? "View ballot" : "Election information",
+			heading: "Results",
+			supportingNote: ""
 		};
 	}
 
 	return {
 		availabilityBadgeLabel: "Civic results available",
 		canOpenGuide: false,
-		footerNote: "Use the district, representative, and official election links here even when a local guide is not available yet.",
+		footerNote: "",
 		guideActionLabel: "Open results",
 		heading: "Civic results ready",
-		supportingNote: "Official tools stay visible below for ballot confirmation, voter status, and polling-place details."
+		supportingNote: ""
 	};
 }

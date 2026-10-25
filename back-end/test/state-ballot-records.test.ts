@@ -139,6 +139,49 @@ test("every state and DC have a reversible identity and an official election-off
 	assert.match(getOfficialToolsForState("UT")[0]!.url, /vote\.utah\.gov/u);
 });
 
+test("North Dakota offers the official measure guide without losing its election-office directory", () => {
+	const resources = getOfficialToolsForState(" nd ");
+	assert.equal(resources.length, 2);
+	assert.deepEqual(resources[0], {
+		authority: "official-government",
+		label: "Statewide ballot measures",
+		sourceLabel: "North Dakota Secretary of State",
+		sourceSystem: "North Dakota Secretary of State",
+		url: "https://www.sos.nd.gov/elections/voter/ballot-measures/measures-ballot"
+	});
+	assert.equal(resources[0]!.note, undefined);
+	assert.equal(resources[1]!.label, "North Dakota election offices");
+	assert.equal(resources[1]!.url, "https://www.eac.gov/voters/register-and-vote-in-your-state?field_state_target_id=18326");
+	assert.equal(getOfficialToolsForState("SD").length, 1);
+	assert.equal(getOfficialToolsForState("GA").length, 1);
+	assert.equal(getOfficialToolsForState("UT").length, 2);
+});
+
+test("Kansas links the exact amendment publication while retaining election office contacts", () => {
+	const resources = getOfficialToolsForState("KS");
+	assert.equal(resources.length, 2);
+	assert.equal(resources[0]!.label, "Statewide constitutional amendment");
+	assert.equal(resources[0]!.url, "https://www.sos.ks.gov/elections/proposed-constitutional-amendments.html");
+	assert.equal(resources[0]!.note, undefined);
+	assert.equal(resources[1]!.label, "Kansas election offices");
+	assert.match(resources[1]!.url, /www\.eac\.gov/u);
+});
+
+test("California links its qualification register without claiming a native guide or losing office contacts", () => {
+	const resources = getOfficialToolsForState(" ca ");
+	assert.equal(resources.length, 2);
+	assert.deepEqual(resources[0], {
+		authority: "official-government",
+		label: "Statewide ballot measures",
+		sourceLabel: "California Secretary of State",
+		sourceSystem: "California Secretary of State qualification register",
+		url: "https://www.sos.ca.gov/elections/ballot-measures/qualified-ballot-measures"
+	});
+	assert.equal(resources[0]!.note, undefined);
+	assert.equal(resources[1]!.label, "California election offices");
+	assert.match(resources[1]!.url, /www\.eac\.gov/u);
+});
+
 test("inactive, unknown, and unopposed Florida filings never appear as ballot candidates", () => {
 	const statuses = ["Qualified", "Withdrew", "Did Not Qualify", "Defeated", "Elected", "Unopposed", "Deceased", "Removed", "Transferred to Local", "Future Status"];
 	const body = `ElectionID\tOfficeDesc\tStatusCode\tStatusDesc\tNameFirst\tNameLast\n${

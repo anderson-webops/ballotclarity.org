@@ -10,7 +10,7 @@ defineProps<{ candidate: Candidate; viewMode?: "deep" | "quick" }>();
 			{{ candidate.name }}
 		</h3>
 		<p class="text-sm text-app-muted mt-2 dark:text-app-muted-dark">
-			{{ candidate.party }}<template v-if="candidate.incumbent">
+			<PartyLabel :party="candidate.party" /><template v-if="candidate.incumbent">
 				· Incumbent
 			</template>
 		</p>

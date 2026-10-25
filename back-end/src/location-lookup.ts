@@ -35,6 +35,14 @@ function normalizePlaceName(value: string | undefined) {
 		.trim();
 }
 
+function normalizeCoverageArea(value: string | undefined, stateName: string, countyLevel: boolean) {
+	let name = (value ?? "").normalize("NFKD").replace(/\p{M}/gu, "").toLowerCase().replace(/[^a-z0-9]+/gu, " ").trim();
+	if (name.endsWith(` ${stateName}`)) name = name.slice(0, -(stateName.length + 1));
+	return countyLevel
+		? name.replace(/^(?:county|parish|borough) of /u, "").replace(/ (?:county|parish|borough)$/u, "")
+		: name.replace(/^(?:city|town|township|municipality) of /u, "");
+}
+
 export function buildLocationLookupSlug(value: string) {
 	let pendingSeparator = false;
 	let slug = "";
@@ -207,31 +215,38 @@ export function findSupportedCoverageSummaries(jurisdictionSummaries: Jurisdicti
 	if (!geoContext?.stateAbbreviation)
 		return [];
 
-	const geoState = normalizePlaceName(
-		geoContext.stateName
-		|| getStateNameForAbbreviation(geoContext.stateAbbreviation)
-		|| geoContext.stateAbbreviation
-	);
+	const geoState = normalizePlaceName(getStateNameForAbbreviation(geoContext.stateAbbreviation));
+	const stateAbbreviation = geoContext.stateAbbreviation.toLowerCase();
+	if (!geoState || (geoContext.stateName && normalizePlaceName(geoContext.stateName) !== geoState))
+		return [];
 	const matchingStateSummaries = jurisdictionSummaries.filter((summary) => {
 		const summaryState = normalizePlaceName(summary.state);
-		return Boolean(summaryState && geoState && summaryState === geoState);
+		return summaryState === geoState || summaryState === stateAbbreviation;
 	});
 
 	return matchingStateSummaries.filter((summary) => {
+		const jurisdictionType = summary.jurisdictionType.trim().toLowerCase();
+		if (jurisdictionType === "state")
+			return true;
+
+		const countyLevel = ["county", "parish", "borough", "independent-city"].includes(jurisdictionType);
 		const summaryNames = [
-			normalizePlaceName(summary.name),
-			normalizePlaceName(summary.displayName)
+			normalizeCoverageArea(summary.name, geoState, countyLevel),
+			normalizeCoverageArea(summary.displayName, geoState, countyLevel)
 		].filter(Boolean);
-		const countyName = normalizePlaceName(geoContext.countyName);
-		const locality = normalizePlaceName(geoContext.locality);
+		const countyName = normalizeCoverageArea(geoContext.countyName, geoState, true);
+		const locality = normalizeCoverageArea(geoContext.locality, geoState, false);
 
-		if (countyName && summaryNames.some(name => name.includes(countyName) || countyName.includes(name)))
-			return true;
+		if (countyLevel)
+			return Boolean(countyName && summaryNames.includes(countyName));
 
-		if (locality && summaryNames.some(name => name.includes(locality) || locality.includes(name)))
-			return true;
+		if (["city", "municipality"].includes(jurisdictionType) && geoState === "new york" && summaryNames.includes("new york city"))
+			return ["bronx", "kings", "new york", "queens", "richmond"].includes(countyName);
 
-		return !countyName && !locality && matchingStateSummaries.length === 1;
+		if (["city", "town", "municipality"].includes(jurisdictionType))
+			return Boolean(locality && summaryNames.includes(locality));
+
+		return false;
 	});
 }
 
@@ -347,14 +362,10 @@ function buildPublishedZipGuideNote(
 	geoContext: LookupGeoContext | null | undefined,
 	hasOfficialActions: boolean,
 	addressEnrichment?: AddressEnrichmentResult | null,
-	guideContent?: GuideContentSummary | null,
+	_guideContent?: GuideContentSummary | null,
 ) {
 	const locationSentence = describeDetectedLocation("zip", rawQuery, geoContext);
-	const guideSentence = guideContent?.verifiedContestPackage
-		? "Ballot Clarity matched a single guide area for this ZIP and loaded a verified local guide for it."
-		: guideContent?.publishedGuideShell
-			? "Ballot Clarity matched a single published election area for this ZIP and loaded the election overview for it. Official election links are current, and verified contest pages are still under local review."
-			: "Ballot Clarity matched a single guide area for this ZIP and loaded the civic results available for this area.";
+	const guideSentence = "";
 	const districtSentence = addressEnrichment?.districtMatches?.length
 		? `Census geography matched ${addressEnrichment.districtMatches.map(match => match.label).join(", ")}.`
 		: "";
@@ -392,28 +403,30 @@ function buildAvailabilitySummary(
 	guideContent?: GuideContentSummary | null,
 	hasOfficialLogistics = false,
 	providerBallotPreviewCount = 0,
+	limitedGuide = false,
 ) {
 	const representativeCount = addressEnrichment?.representativeMatches?.length ?? 0;
 	const hasRepresentatives = representativeCount > 0;
 	const hasGuide = guideAvailability === "published";
 	const hasGuideShell = hasGuide && Boolean(guideContent?.publishedGuideShell);
 	const hasVerifiedContestPackage = hasGuide && Boolean(guideContent?.verifiedContestPackage);
+	const hasVerifiedCandidates = hasVerifiedContestPackage && Boolean(guideContent?.candidates.hasContent);
 	const hasPublishedShellOnly = hasGuideShell && !hasVerifiedContestPackage;
 	const selectionRequired = inputKind === "zip" && Boolean(selectionOptions?.length);
 	const officialLogisticsAvailable = hasOfficialLogistics
 		|| Boolean(hasGuide && guideContent?.officialLogistics.status === "verified_local");
 	const hasProviderBallotPreview = providerBallotPreviewCount > 0;
 	const financeInfluenceDetail = hasVerifiedContestPackage
-		? "Funding and influence pages are available through the local guide and any linked person profiles for this area."
+		? ""
 		: hasPublishedShellOnly
-			? "Representative funding and influence pages may still be available through linked person profiles, but contest pages in this local guide are still under review."
+			? ""
 			: selectionRequired
 				? "Choose one of the matched areas below to see whether any person-level funding or influence records are attached to this lookup."
 				: hasRepresentatives
 					? "No person-level funding or influence records are attached to this lookup yet. Ballot Clarity only shows those modules when a matched candidate or representative profile has reliable linked data."
 					: "No person-level funding or influence records are attached to this lookup yet.";
 	const nationwideDetail = hasGuide
-		? "Results, district context, and official election links remain available alongside the local guide for this lookup."
+		? ""
 		: selectionRequired
 			? "Civic results for this area are available for this ZIP after you choose one of the matched areas below."
 			: inputKind === "zip"
@@ -437,17 +450,17 @@ function buildAvailabilitySummary(
 			status: officialLogisticsAvailable ? "available" : "unavailable"
 		},
 		ballotCandidates: {
-			detail: hasVerifiedContestPackage
+			detail: hasVerifiedCandidates
 				? inputKind === "zip"
 					? "Ballot Clarity has verified local contest and candidate coverage for the matched ZIP area."
 					: "Ballot Clarity has verified local contest and candidate coverage for this area."
 				: hasProviderBallotPreview
 					? `A provider returned ${providerBallotPreviewCount} ballot preview ${providerBallotPreviewCount === 1 ? "set" : "sets"} for this lookup, but Ballot Clarity has not locally reviewed it as the official ballot package. Verify it with the linked state or local voter tool.`
 					: hasPublishedShellOnly
-						? guideContent?.candidates.detail ?? "Candidate pages are available for this local guide, but they are still under local review."
+						? guideContent?.candidates.detail ?? ""
 						: "Ballot candidate pages are not published for this area yet.",
 			label: "Ballot candidate data",
-			status: hasVerifiedContestPackage ? "available" : hasProviderBallotPreview || hasPublishedShellOnly ? "limited" : "unavailable"
+			status: hasVerifiedCandidates ? "available" : hasProviderBallotPreview || hasPublishedShellOnly ? "limited" : "unavailable"
 		},
 		financeInfluence: {
 			detail: financeInfluenceDetail,
@@ -479,9 +492,9 @@ function buildAvailabilitySummary(
 					? inputKind === "zip"
 						? "A published election overview is available for the matched ZIP area."
 						: "A published election overview is available for this lookup."
-					: "A full local contest and measure guide is not published for this area yet.",
-			label: "Local guide coverage",
-			status: hasVerifiedContestPackage ? "available" : hasPublishedShellOnly ? "limited" : "unavailable"
+					: "",
+			label: "Ballot information",
+			status: hasVerifiedContestPackage && !limitedGuide ? "available" : hasGuide ? "limited" : "unavailable"
 		},
 		representatives: {
 			detail: hasRepresentatives
@@ -534,6 +547,7 @@ export function buildLocationLookupResponse(
 	selectionOptions?: LocationLookupSelectionOption[],
 	selectionId?: string,
 	guideContent?: GuideContentSummary | null,
+	limitedGuide = false,
 ): LocationLookupResponse {
 	const inputKind = classifyLookupInput(rawQuery);
 	const stateOfficialActions = buildOfficialVerificationActions(
@@ -552,15 +566,14 @@ export function buildLocationLookupResponse(
 			};
 		}
 
-		const autoSelectedCoverage = supportedCoverageSummaries.length === 1
-			? supportedCoverageSummaries[0]
-			: null;
+		const autoSelectedCoverage = supportedCoverageSummaries.find(summary => summary.nextElectionSlug === electionSlug)
+			?? (supportedCoverageSummaries.length === 1 ? supportedCoverageSummaries[0] : null);
 		const hasPublishedGuide = Boolean(autoSelectedCoverage);
 		const officialVerification = hasPublishedGuide
 			? buildOfficialVerificationAction(findOfficialVerificationResource(jurisdiction, coverage))
 			: undefined;
 		const actions = dedupeActions([
-			...(supportedCoverageSummaries.length > 1 ? buildCoverageActions(supportedCoverageSummaries) : []),
+			...(supportedCoverageSummaries.length > 1 && !autoSelectedCoverage ? buildCoverageActions(supportedCoverageSummaries) : []),
 			...stateOfficialActions,
 			...(officialVerification ? [officialVerification] : [])
 		]);
@@ -580,6 +593,8 @@ export function buildLocationLookupResponse(
 				selectionOptions,
 				guideContent,
 				Boolean(officialLookup?.logistics || actions.length),
+				0,
+				jurisdiction?.jurisdictionType === "state" || limitedGuide,
 			),
 			districtMatches: addressEnrichment?.districtMatches,
 			electionLogistics: officialLookup?.logistics ?? null,
@@ -605,6 +620,7 @@ export function buildLocationLookupResponse(
 
 	if (!supportedCoverageSummaries.length || !location || !electionSlug) {
 		const officialActions = dedupeActions([
+			...buildCoverageActions(supportedCoverageSummaries),
 			...(officialLookup?.actions ?? []),
 			...stateOfficialActions
 		]);
@@ -684,6 +700,7 @@ export function buildLocationLookupResponse(
 			guideContent,
 			Boolean(officialLookup?.logistics || officialActions.length),
 			ballotContentPreviews?.length ?? 0,
+			jurisdiction?.jurisdictionType === "state" || limitedGuide,
 		),
 		ballotContentPreviews,
 		electionSlug,
@@ -703,9 +720,9 @@ export function buildLocationLookupResponse(
 		note: [
 			officialLookup?.note || (coverageMode === "snapshot"
 				? guideContent?.verifiedContestPackage
-					? "A full address is the right input for exact ballot matching. This area opens a verified local guide, but official election tools still remain the final authority for district-level ballot confirmation."
+					? "Exact ballot matching requires a full address."
 					: "A full address is the right input for exact ballot matching. This area opens an election overview with verified official election links, but verified contest pages are still under local review, so confirm the final ballot in the official election tools."
-				: "A full address is the right input for exact ballot matching. This area may also open a local guide, but confirm the final ballot in the official election tools."),
+				: "Exact ballot matching requires a full address."),
 			addressEnrichment?.districtMatches?.length
 				? `Census geography matched ${addressEnrichment.districtMatches.map(match => match.label).join(", ")}.`
 				: "",

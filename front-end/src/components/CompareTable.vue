@@ -153,7 +153,9 @@ const mobileSections = computed(() => {
 							<div class="space-y-3">
 								<div class="flex flex-wrap gap-2 items-center">
 									<p class="text-2xl text-app-ink font-serif dark:text-app-text-dark">
-										{{ candidate.comparison.displayName }}
+										<NuxtLink :to="`/candidate/${candidate.slug}`" class="rounded-sm underline decoration-app-line underline-offset-4 dark:decoration-app-line-dark focus-ring">
+											{{ candidate.comparison.displayName }}
+										</NuxtLink>
 									</p>
 									<IncumbentBadge v-if="candidate.incumbent" />
 								</div>
@@ -181,7 +183,7 @@ const mobileSections = computed(() => {
 							class="text-sm text-app-muted leading-7 px-6 py-5 border-l border-app-line dark:text-app-muted-dark dark:border-app-line-dark"
 							:class="rowAccent('party-on-ballot')"
 						>
-							{{ candidate.comparison.partyOnBallot }}
+							<PartyLabel :party="candidate.comparison.partyOnBallot" />
 						</td>
 					</tr>
 
@@ -316,12 +318,14 @@ const mobileSections = computed(() => {
 					<article v-for="candidate in sortedCandidates" :key="`${section.key}-${candidate.slug}`" class="content-block">
 						<div class="flex flex-wrap gap-3 items-center">
 							<h3 class="text-xl text-app-ink font-serif dark:text-app-text-dark">
-								{{ candidate.comparison.displayName }}
+								<NuxtLink :to="`/candidate/${candidate.slug}`" class="rounded-sm underline decoration-app-line underline-offset-4 dark:decoration-app-line-dark focus-ring">
+									{{ candidate.comparison.displayName }}
+								</NuxtLink>
 							</h3>
 							<IncumbentBadge v-if="candidate.incumbent" />
 						</div>
 						<p class="text-sm text-app-muted mt-2 dark:text-app-muted-dark">
-							{{ candidate.comparison.partyOnBallot }}
+							<PartyLabel :party="candidate.comparison.partyOnBallot" />
 						</p>
 
 						<div v-if="section.type === 'ballot-status'" class="mt-4">

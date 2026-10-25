@@ -3,6 +3,7 @@ import process from "node:process";
 import { readProviderResponseJson, readProviderResponseText } from "./fetch-response.js";
 import { createFetchTimeoutSignal, resolveFetchTimeoutMs } from "./fetch-timeout.js";
 import { uniqueProfileImages } from "./profile-images.js";
+import { normalizePublicHref } from "./public-href.js";
 import { classifyRepresentative } from "./representative-classification.js";
 
 interface OpenStatesPersonResponse {
@@ -16,6 +17,7 @@ interface OpenStatesPersonResponse {
 
 interface OpenStatesPerson {
 	id?: string;
+	links?: Array<{ note?: string; url?: string }>;
 	image?: string;
 	name?: string;
 	party?: string;
@@ -33,6 +35,7 @@ interface OpenStatesPerson {
 }
 
 export interface OpenStatesRepresentativeRecord {
+	officialWebsiteUrl?: string;
 	currentRoleClassification?: string;
 	currentRoleDistrict?: string;
 	currentRoleDivisionId?: string;
@@ -87,6 +90,10 @@ function mapRepresentative(person: OpenStatesPerson): OpenStatesRepresentativeRe
 		id: person.id?.trim() || `${officeTitle}:${person.name?.trim() || "unknown"}`,
 		jurisdictionName,
 		name: person.name?.trim() || "Unknown representative",
+		officialWebsiteUrl: [...(person.links ?? [])]
+			.sort((left, right) => Number(right.note?.toLowerCase() === "homepage") - Number(left.note?.toLowerCase() === "homepage"))
+			.map(link => normalizePublicHref(link.url))
+			.find(url => /^https?:\/\//u.test(url)),
 		officeTitle,
 		openstatesUrl: person.openstates_url?.trim() || undefined,
 		party: person.party?.trim() || undefined,
@@ -110,6 +117,7 @@ function toLocationRepresentative(person: OpenStatesRepresentativeRecord): Locat
 		officeDisplayLabel: classification.officeDisplayLabel,
 		officeType: classification.officeType,
 		officeTitle: person.officeTitle,
+		officialWebsiteUrl: person.officialWebsiteUrl,
 		openstatesUrl: person.openstatesUrl,
 		party: person.party,
 		profileImages: person.profileImages,
@@ -135,6 +143,7 @@ export function createOpenStatesClient({
 		const requestUrl = new URL(pathname, "https://v3.openstates.org");
 
 		requestUrl.searchParams.set("apikey", apiKeyValue);
+		requestUrl.searchParams.set("include", "links");
 
 		for (const [key, value] of Object.entries(query))
 			requestUrl.searchParams.set(key, value);

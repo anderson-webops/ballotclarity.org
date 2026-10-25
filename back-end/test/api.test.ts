@@ -445,7 +445,8 @@ before(async () => {
 							id: "state-senate:36",
 							label: "State Senate District 36",
 							sourceSystem: "U.S. Census Geocoder"
-						}
+						},
+						...(/unknown county/iu.test(address) ? [] : [{ districtCode: "121", districtType: "county", id: "county:121", label: "Fulton County", sourceSystem: "U.S. Census Geocoder" }])
 					],
 					fromCache: false,
 					latitude: 33.7479,
@@ -683,6 +684,7 @@ before(async () => {
 						party: "Democratic",
 						state: "Georgia",
 						updatedAt: "2026-03-08T10:32:15Z",
+						depiction: { imageUrl: "https://www.congress.gov/img/member/o000174_200.jpg", attribution: "Official portrait" },
 						url: "https://api.congress.gov/v3/member/O000174?format=json",
 					},
 					{
@@ -1571,8 +1573,8 @@ test("GET /api/ballot exposes mixed guide provenance honestly for the published 
 	assert.equal(body.guideContent.candidates.status, "staged_reference");
 	assert.equal(body.guideContent.measures.status, "staged_reference");
 	assert.equal(body.guideContent.verifiedContestPackage, false);
-	assert.match(body.note, /verified official election links/i);
-	assert.match(body.note, /under local review/i);
+	assert.equal(body.note, "");
+	assert.ok(body.election.officialResources.length > 0);
 	assertNoMissingPublicSourceFileUrls(body);
 });
 
@@ -1966,7 +1968,7 @@ test("POST /api/location returns honest shell-only Fulton coverage for ZIPs insi
 	assert.equal(body.availability.fullLocalGuide.status, "limited");
 	assert.equal(body.representativeMatches[0].name, "Jon Ossoff");
 	assert.match(body.note, /Atlanta, Georgia/i);
-	assert.match(body.note, /election overview/i);
+	assert.doesNotMatch(body.note, /local guide|under local review/i);
 });
 
 test("POST /api/location filters former Congress members out of ZIP lookup representative fallback", async () => {
@@ -1983,6 +1985,7 @@ test("POST /api/location filters former Congress members out of ZIP lookup repre
 	const representatives = (body.representativeMatches ?? []) as Array<{
 		governmentLevel?: string;
 		name: string;
+		officialWebsiteUrl?: string;
 		officeDisplayLabel?: string;
 		officeType?: string;
 		profileImages?: Array<{ sourceKind: string; sourceSystem: string; url: string }>;
@@ -2001,6 +2004,7 @@ test("POST /api/location filters former Congress members out of ZIP lookup repre
 	assert.equal(body.representativeMatches.length, 7);
 	assert.match(body.note, /(Alpharetta|Fulton County), Georgia/i);
 	assert.equal(representativeNames.includes("Jon Ossoff"), true);
+	assert.equal(findRepresentative(/^Jon Ossoff$/i)?.profileImages?.[0]?.url, "https://www.congress.gov/img/member/o000174_200.jpg");
 	assert.equal(representativeNames.some((name: string) => /warnock/i.test(name)), true);
 	assert.equal(representativeNames.some((name: string) => /mccormick/i.test(name)), true);
 	assert.equal(representativeNames.includes("Richard Russell"), false);
@@ -2022,6 +2026,7 @@ test("POST /api/location filters former Congress members out of ZIP lookup repre
 	assert.equal(findRepresentative(/^Robb Pitts$/i)?.officeType, "county_commission");
 	assert.equal(findRepresentative(/^John Bradberry$/i)?.governmentLevel, "city");
 	assert.equal(findRepresentative(/^John Bradberry$/i)?.officeType, "mayor");
+	assert.match(findRepresentative(/^John Bradberry$/i)?.officialWebsiteUrl ?? "", /^https:\/\//u);
 	assert.equal(findRepresentative(/^Jon Ossoff$/i)?.officeDisplayLabel, "U.S. Senator for Georgia");
 	assert.equal(findRepresentative(/mccormick/i)?.officeDisplayLabel, "U.S. Representative for Georgia's 7th Congressional District");
 	assert.equal(findRepresentative(/^Scott Hilton$/i)?.officeDisplayLabel, "Georgia State Representative for District 48");
@@ -2110,6 +2115,18 @@ test("POST /api/location accepts a ZIP area selection and loads that area's dist
 	assert.equal(body.representativeMatches[0].name, "Burgess Owens");
 });
 
+test("full-address lookup without local geography does not infer the only county guide", async () => {
+	const response = await fetch(`${baseUrl}/api/location`, {
+		body: JSON.stringify({ q: "100 Unknown County Street, Georgia 30303" }),
+		headers: { "Content-Type": "application/json" },
+		method: "POST"
+	});
+	const body = await response.json();
+	assert.equal(response.status, 200);
+	assert.equal(body.guideAvailability, "not-published");
+	assert.equal(body.electionSlug, undefined);
+});
+
 test("POST /api/location returns the current Fulton County launch location for full addresses", async () => {
 	const response = await fetch(`${baseUrl}/api/location`, {
 		body: JSON.stringify({ q: "5600 Campbellton Fairburn Road, Union City, GA 30213" }),
@@ -2139,6 +2156,8 @@ test("POST /api/location returns the current Fulton County launch location for f
 	assert.equal(body.normalizedAddress, "55 TRINITY AVE SW, ATLANTA, GA, 30303");
 	assert.equal(body.districtMatches[0].label, "Congressional District 5");
 	assert.equal(body.representativeMatches[0].name, "Jon Ossoff");
+	assert.equal(body.representativeMatches.length, 3);
+	assert.ok(body.representativeMatches.some((representative: { name: string }) => representative.name === "Robb Pitts"));
 	assert.equal(body.guideContent.guideShell.status, "official_logistics_only");
 	assert.equal(body.guideContent.verifiedContestPackage, false);
 	assert.equal(body.availability.nationwideCivicResults.status, "available");
@@ -2154,7 +2173,7 @@ test("POST /api/location returns the current Fulton County launch location for f
 	assert.equal(body.availability.verifiedContestPackage.status, "unavailable");
 	assert.equal(body.availability.fullLocalGuide.status, "limited");
 	assert.match(body.note, /Census geography matched/i);
-	assert.match(body.note, /Ballot Clarity attached 2 current official matches for this address from Open States and Congress\.gov/i);
+	assert.match(body.note, /Ballot Clarity attached 3 current official matches for this address from Open States, reviewed official local officeholder sources, and Congress\.gov/i);
 });
 
 test("GET route enrichment refuses street addresses in URLs", async () => {
@@ -2489,8 +2508,8 @@ test("GET /api/ballot returns the shell-only election overview without staged co
 	assert.equal(body.election.contests.length, 0);
 	assert.equal(body.guideContent.guideShell.status, "official_logistics_only");
 	assert.equal(body.guideContent.verifiedContestPackage, false);
-	assert.match(body.note, /verified official election links/i);
-	assert.match(body.note, /under local review/i);
+	assert.equal(body.note, "");
+	assert.ok(body.election.officialResources.length > 0);
 	assert.match(body.election.name, /Fulton County/i);
 });
 
@@ -2641,7 +2660,7 @@ test("GET /api/districts stays empty and guide-backed district slugs fall back t
 	assert.equal(districtBody.districtOriginLabel, "Address or ZIP needed");
 	assert.deepEqual(districtBody.candidates, []);
 	assert.deepEqual(districtBody.representatives, []);
-	assert.match(districtBody.districtOriginNote, /attach the exact geography/i);
+	assert.equal(districtBody.districtOriginNote, "");
 	assertNoReaderRouteWording(districtBody);
 });
 
@@ -2881,7 +2900,7 @@ test("active nationwide lookup cookie backs /api/representatives and /api/repres
 	assert.ok(representativeBody.person.funding);
 	assert.match(representativeBody.person.funding.summary, /MIKE KENNEDY FOR UTAH/i);
 	assert.ok(representativeBody.person.lobbyingContext.length >= 1);
-	assert.match(representativeBody.note, /current area results/i);
+	assert.equal(representativeBody.note, "");
 	assertNoReaderRouteWording(representativeBody);
 });
 
@@ -2894,7 +2913,7 @@ test("lookup query backs /api/representatives/:slug without relying on a saved c
 	assert.equal(body.person.provenance.source, "lookup");
 	assert.ok(body.person.funding);
 	assert.ok(body.person.lobbyingContext.length >= 1);
-	assert.match(body.note, /current area results/i);
+	assert.equal(body.note, "");
 	assertNoReaderRouteWording(body);
 });
 
@@ -2906,7 +2925,8 @@ test("representatives without a reliable finance or influence crosswalk still re
 	assert.equal(body.person.slug, "burgess-owens");
 	assert.equal(body.person.funding, null);
 	assert.deepEqual(body.person.lobbyingContext, []);
-	assert.match(body.person.whatWeDoNotKnow[0]?.text ?? "", /Finance and influence modules appear only when Ballot Clarity can verify a reliable person-level linkage/i);
+	assert.match(body.person.whatWeDoNotKnow[0]?.text ?? "", /ZIP-based lookup/i);
+	assert.doesNotMatch(JSON.stringify(body.person.whatWeDoNotKnow), /Finance and influence modules appear only/i);
 });
 
 test("direct representative routes return a stable provider-backed identity record instead of a lookup-required placeholder", async () => {
@@ -3154,8 +3174,11 @@ test("direct representative routes degrade to a public fallback instead of 500 w
 	assert.equal(body.person.funding, null);
 	assert.deepEqual(body.person.lobbyingContext, []);
 	assert.equal(body.person.provenance.status, "inferred");
-	assert.match(body.person.summary, /representative page is public, but office, district, finance, and influence details are not attached yet/i);
-	assert.match(body.person.whatWeKnow[0]?.text ?? "", /honest unavailable state instead of failing/i);
+	assert.equal(body.person.summary, "");
+	assert.deepEqual(body.person.whatWeKnow, []);
+	assert.deepEqual(body.person.biography, []);
+	assert.deepEqual(body.person.sources, []);
+	assert.equal(body.person.sourceCount, 0);
 	assertNoReaderRouteWording(body);
 });
 
@@ -3169,7 +3192,7 @@ test("GET /api/representatives/:slug returns a public fallback record when the c
 	assert.equal(body.person.provenance.status, "inferred");
 	assert.equal(body.person.funding, null);
 	assert.deepEqual(body.person.lobbyingContext, []);
-	assert.match(body.person.summary, /public, but office, district, finance, and influence details are not attached yet/i);
+	assert.equal(body.person.summary, "");
 	assertNoReaderRouteWording(body);
 });
 
@@ -3247,7 +3270,7 @@ test("GET /api/sources does not publish contest citations while contest pages ar
 	assert.ok(directoryBody.sources.every((item: { citedBy: Array<{ type: string }> }) => item.citedBy.every(citation => citation.type !== "contest")));
 });
 
-test("GET /api/sources publishes stable representative and district route provenance records", async () => {
+test("GET /api/sources publishes real representative and district evidence, not page identity placeholders", async () => {
 	const directoryResponse = await fetch(`${baseUrl}/api/sources`);
 	const directoryBody = await directoryResponse.json();
 	const shawnSource = directoryBody.sources.find((item: { id: string }) => item.id === "supplemental:shawn-still:bio");
@@ -3259,9 +3282,19 @@ test("GET /api/sources publishes stable representative and district route proven
 	assert.ok(shawnSource.citedBy.some((citation: { href: string }) => citation.href === "/representatives/shawn-still"));
 	assert.ok(shawnSource.citedBy.some((citation: { href: string }) => citation.href === "/districts/state-senate-48"));
 
-	assert.ok(districtIdentitySource);
-	assert.equal(districtIdentitySource.publicationKind, "published-provenance");
-	assert.ok(districtIdentitySource.citedBy.some((citation: { href: string }) => citation.href === "/districts/state-senate-48"));
+	assert.equal(districtIdentitySource, undefined);
+	assert.ok(directoryBody.sources.every((item: { title: string }) => !/page identity|page availability/u.test(item.title)));
+});
+
+test("fallback district routes have no invented citations or source-detail records", async () => {
+	const response = await fetch(`${baseUrl}/api/districts/county-033`);
+	const body = await response.json();
+	assert.equal(response.status, 200);
+	assert.deepEqual(body.sources, []);
+	for (const id of ["district:county-033:fallback", "district:state-senate-48:identity"]) {
+		const sourceResponse = await fetch(`${baseUrl}/api/sources/${encodeURIComponent(id)}`);
+		assert.equal(sourceResponse.status, 404);
+	}
 });
 
 test("GET /api/sources/:id resolves curated global source records", async () => {
@@ -3375,10 +3408,21 @@ test("GET /api/admin/review and /api/admin/sources return protected operational 
 
 	assert.equal(reviewResponse.status, 200);
 	assert.equal(sourcesResponse.status, 200);
-	assert.equal(electionItem?.title, "Fulton County launch coverage profile");
+	assert.equal(electionItem, undefined);
+	assert.ok(reviewBody.items.every((item: { status: string; published: boolean }) => item.status !== "published" || !item.published));
 	assert.match(blockedCandidate?.blocker || "", /crosswalk/i);
 	assert.ok(officialSourceLabels.includes("Fulton County Registration and Elections site"));
 	assert.equal(incidentSource?.health, "incident");
+});
+
+test("admin operations uses the protected API boundary and returns typed dataset evidence", async () => {
+	assert.equal((await fetch(`${baseUrl}/api/admin/operations`)).status, 401);
+	const response = await fetch(`${baseUrl}/api/admin/operations`, { headers: { "x-admin-api-key": adminApiKey } });
+	assert.equal(response.status, 200);
+	const body = await response.json();
+	assert.ok(Array.isArray(body.datasets));
+	assert.equal(body.automation.status, "unreported");
+	assert.equal(body.automation.nextRunAt, null);
 });
 
 test("admin corrections can link to content records and auto-link page submissions", async () => {
@@ -3907,7 +3951,8 @@ test("guide package workflow gates local guide publication from draft through ro
 							id: "congressional:7",
 							label: "Congressional District 7",
 							sourceSystem: "U.S. Census Geocoder"
-						}
+						},
+						{ districtCode: "121", districtType: "county", id: "county:121", label: "Fulton County", sourceSystem: "U.S. Census Geocoder" }
 					],
 					fromCache: false,
 					latitude: 33.7479,

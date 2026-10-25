@@ -5,7 +5,7 @@ import {
 	writeDisplayTimeZoneToDocument,
 } from "~/utils/display-time-zone";
 
-export default defineNuxtPlugin((nuxtApp) => {
+export default defineNuxtPlugin(() => {
 	const displayTimeZone = useState<string | null>("display-time-zone");
 	const displayTimeZoneCookie = useCookie<string | null>(displayTimeZoneCookieName, {
 		maxAge: 60 * 60 * 24 * 365,
@@ -18,7 +18,7 @@ export default defineNuxtPlugin((nuxtApp) => {
 		displayTimeZoneCookie.value = browserDisplayTimeZone;
 	}
 
-	nuxtApp.hook("app:mounted", () => {
+	onNuxtReady(() => {
 		const resolvedDisplayTimeZone = readDisplayTimeZoneFromDocument() || detectBrowserDisplayTimeZone();
 
 		if (!resolvedDisplayTimeZone)

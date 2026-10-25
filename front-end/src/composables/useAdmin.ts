@@ -3,6 +3,7 @@ import type {
 	AdminContentHistoryResponse,
 	AdminContentResponse,
 	AdminCorrectionsResponse,
+	AdminOperationsResponse,
 	AdminOverviewResponse,
 	AdminReviewResponse,
 	AdminSessionResponse,
@@ -27,6 +28,10 @@ export function useAdminOverview() {
 	return useFetch<AdminOverviewResponse>("/api/admin/overview", {
 		headers: adminRequestHeaders()
 	});
+}
+
+export function useAdminOperations() {
+	return useFetch<AdminOperationsResponse>("/api/admin/operations", { headers: adminRequestHeaders() });
 }
 
 export function useAdminAudit() {

@@ -133,13 +133,6 @@ export function buildLookupProvenanceSummary(input: {
 			detail: "Current officeholders matched to these districts.",
 			label: "Representatives found",
 			value: input.representativeMatches.length
-		},
-		{
-			detail: input.guideAvailability === "published"
-				? "Open the election overview to see which contest pages are verified."
-				: "Districts and officials are still shown where no local guide is published yet.",
-			label: "Local coverage",
-			value: input.guideAvailability === "published" ? "Overview published" : "Not yet published"
 		}
 	];
 

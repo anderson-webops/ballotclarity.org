@@ -143,6 +143,27 @@ export function normalizeImageHref(value: string | null | undefined) {
 	return href && !href.startsWith("#") ? href : "";
 }
 
+export function resolvePublicLink(value: string | null | undefined, siteUrl = "https://ballotclarity.org") {
+	const href = normalizePublicHref(value);
+	if (!href || href.startsWith("/") || href.startsWith("#"))
+		return { external: false, href };
+
+	try {
+		const target = new URL(href);
+		const site = new URL(siteUrl);
+		if (
+			(site.protocol === "http:" || site.protocol === "https:")
+			&& target.hostname.replace(/\.$/u, "") === site.hostname.replace(/\.$/u, "")
+			&& target.port === site.port
+		) {
+			return { external: false, href: normalizePublicHref(`${target.pathname}${target.search}${target.hash}`) };
+		}
+	}
+	catch {}
+
+	return { external: true, href };
+}
+
 export function isExternalHref(href: string): boolean {
 	return Boolean(normalizeExternalHref(href));
 }

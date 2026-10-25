@@ -3,34 +3,22 @@ const route = useRoute();
 const { data: session } = await useAdminSession(`admin-layout-session-${route.fullPath}`);
 
 const baseLinks = [
-	{ label: "Dashboard", to: "/admin" },
-	{ label: "Guide packages", to: "/admin/packages" },
-	{ label: "Content", to: "/admin/content" },
-	{ label: "Review queue", to: "/admin/review" },
-	{ label: "Corrections", to: "/admin/corrections" },
-	{ label: "Source health", to: "/admin/sources" },
-	{ label: "Account", to: "/admin/account" }
+	{ label: "Operations", to: "/admin" },
+	{ label: "Exceptions", to: "/admin/exceptions" },
+	{ label: "Settings", to: "/admin/settings" }
 ];
 
 const navLinks = computed(() => {
 	if (session.value?.passwordChangeRequiredAt)
 		return [{ label: "Account", to: "/admin/account" }];
 
-	if (session.value?.role === "admin") {
-		return [
-			...baseLinks,
-			{ label: "Audit trail", to: "/admin/audit" },
-			{ label: "Users", to: "/admin/users" }
-		];
-	}
-
 	return baseLinks;
 });
 
 function isActive(path: string) {
-	return path === "/admin"
-		? route.path === path
-		: route.path.startsWith(path);
+	if (path === "/admin") return route.path === path || route.path.startsWith("/admin/datasets");
+	if (path === "/admin/settings") return ["settings", "users", "account", "audit", "sources"].some(section => route.path.startsWith(`/admin/${section}`));
+	return ["exceptions", "review", "content", "corrections", "packages"].some(section => route.path.startsWith(`/admin/${section}`));
 }
 
 async function signOut() {
@@ -43,7 +31,7 @@ async function signOut() {
 </script>
 
 <template>
-	<div class="bg-app-bg min-h-screen dark:bg-app-bg-dark">
+	<div class="text-app-ink bg-app-bg min-h-screen dark:text-app-text-dark dark:bg-app-bg-dark">
 		<a href="#admin-main-content" class="skip-link focus-ring">Skip to content</a>
 
 		<header class="border-b border-app-line/80 bg-app-bg/95 top-0 sticky z-40 dark:border-app-line-dark dark:bg-app-bg-dark/95">
@@ -56,7 +44,6 @@ async function signOut() {
 							</span>
 							<span class="min-w-0">
 								<span class="text-base text-app-ink font-serif block truncate sm:text-lg dark:text-app-text-dark">Ballot Clarity Admin</span>
-								<span class="text-xs text-app-muted mt-1 hidden dark:text-app-muted-dark sm:block">Internal editorial and source operations</span>
 							</span>
 						</NuxtLink>
 					</div>

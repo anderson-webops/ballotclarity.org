@@ -21,7 +21,7 @@ const config = computed(() => {
 		case "ballot-clarity-source-record":
 			return {
 				label: "Ballot Clarity source",
-				tone: "warning" as const
+				tone: "neutral" as const
 			};
 		case "commercial-provider":
 			return {

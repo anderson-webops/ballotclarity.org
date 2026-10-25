@@ -2,23 +2,28 @@
 import type { DistrictsResponse, RepresentativesResponse } from "~/types/civic";
 import { storeToRefs } from "pinia";
 import { buildActiveLookupSummary } from "~/utils/active-lookup";
+import { groupDistrictSummaries } from "~/utils/district-groups";
 import { buildNationwideDirectoryResponses, mergeNationwideDirectoryResponses } from "~/utils/nationwide-directory";
-import { buildLookupContextFromNationwideResult, buildNationwideLookupRouteQuery, buildNationwideRouteTarget } from "~/utils/nationwide-route-context";
+import { buildCivicDirectoryApiQuery, buildLookupContextFromNationwideResult, buildNationwideRouteTarget, lookupContextMatchesDirectoryRoute } from "~/utils/nationwide-route-context";
 
 const route = useRoute();
 const civicStore = useCivicStore();
 const { isHydrated, nationwideLookupResult, selectedLocation } = storeToRefs(civicStore);
-const { hasGuideShellContext, hasNationwideResultContext } = useGuideEntryGate();
+const { hasGuideShellContext } = useGuideEntryGate();
 const activeNationwideLookupResult = computed(() => isHydrated.value ? nationwideLookupResult.value : null);
-const activeLookupQuery = computed(() => buildNationwideLookupRouteQuery(
+const directoryApiQuery = computed(() => buildCivicDirectoryApiQuery(
 	buildLookupContextFromNationwideResult(activeNationwideLookupResult.value),
-	route.query
+	route.query,
+	isHydrated.value && hasGuideShellContext.value ? selectedLocation.value?.slug : undefined
 ));
-const activeGuideAreaQuery = computed(() => isHydrated.value && hasGuideShellContext.value && selectedLocation.value?.slug
-	? { area: selectedLocation.value.slug }
+const activeLookupQuery = computed(() => directoryApiQuery.value?.lookup
+	? { lookup: directoryApiQuery.value.lookup, selection: directoryApiQuery.value.selection }
+	: undefined
+);
+const activeGuideAreaQuery = computed(() => directoryApiQuery.value?.area
+	? { area: directoryApiQuery.value.area }
 	: null
 );
-const directoryApiQuery = computed(() => activeLookupQuery.value ?? activeGuideAreaQuery.value);
 const { data: guideDistrictData, error: guideDistrictError, pending: guideDistrictPending, refresh: refreshGuideDistrictData } = await useDistricts(directoryApiQuery);
 const { data: guideRepresentativesData, refresh: refreshGuideRepresentativesData } = await useRepresentatives(directoryApiQuery);
 
@@ -52,14 +57,7 @@ const emptyGuideDistrictsResponse: DistrictsResponse = { districts: [], mode: "g
 const emptyGuideRepresentativesResponse: RepresentativesResponse = { districts: [], mode: "guide", note: "", representatives: [], updatedAt: "" };
 const apiUsesNationwide = computed(() => guideDistrictData.value?.mode === "nationwide" || guideRepresentativesData.value?.mode === "nationwide");
 const showGuideDirectory = computed(() => hasGuideShellContext.value);
-const storeUsesNationwide = computed(() => {
-	if (!activeNationwideLookupResult.value || activeNationwideLookupResult.value.result !== "resolved")
-		return false;
-
-	return isHydrated.value
-		? hasNationwideResultContext.value && !hasGuideShellContext.value
-		: activeNationwideLookupResult.value.guideAvailability !== "published";
-});
+const storeUsesNationwide = computed(() => lookupContextMatchesDirectoryRoute(activeNationwideLookupResult.value, route.query));
 const directoryUsesNationwide = computed(() => apiUsesNationwide.value || storeUsesNationwide.value);
 const nationwideDirectory = computed(() => buildNationwideDirectoryResponses(activeNationwideLookupResult.value));
 const directoryData = computed(() => {
@@ -89,11 +87,15 @@ const directoriesError = computed(() => showGuideDirectory.value || directoryUse
 	? directoryUsesNationwide.value && directoryData.value ? null : guideDistrictError.value
 	: null);
 const districts = computed(() => directoryData.value?.districts.districts ?? []);
+const districtGroups = computed(() => groupDistrictSummaries(districts.value));
 const representatives = computed(() => directoryData.value?.representatives.representatives ?? []);
 const activeLookupSummary = computed(() => buildActiveLookupSummary({
-	nationwideLookupResult: activeNationwideLookupResult.value,
+	nationwideLookupResult: storeUsesNationwide.value ? activeNationwideLookupResult.value : null,
 	routeLookupQuery: activeLookupQuery.value?.lookup ?? null,
-	selectedLocation: isHydrated.value ? selectedLocation.value : null
+	selectedLocation: isHydrated.value && !activeLookupQuery.value
+		&& (!directoryApiQuery.value?.area || directoryApiQuery.value.area === selectedLocation.value?.slug)
+		? selectedLocation.value
+		: null
 }));
 
 const representativesByDistrict = computed(() => {
@@ -130,6 +132,8 @@ const lookupPrompt = computed(() => activeLookupSummary.value.mode === "none"
 const directorySummary = computed(() => `${districts.value.length} district page${districts.value.length === 1 ? "" : "s"} and ${representatives.value.length} linked official${representatives.value.length === 1 ? "" : "s"} are available for this area.`);
 
 function buildLookupAwareTarget(path: string) {
+	if (route.query.area && directoryApiQuery.value?.area)
+		return { path, query: { area: directoryApiQuery.value.area } };
 	return buildNationwideRouteTarget(path, buildLookupContextFromNationwideResult(activeNationwideLookupResult.value), route.query);
 }
 </script>
@@ -167,22 +171,28 @@ function buildLookupAwareTarget(path: string) {
 			</NuxtLink>
 		</div>
 
-		<div v-else class="space-y-6">
+		<div v-else class="section-stack print:space-y-8">
 			<p class="text-sm text-app-muted leading-7 dark:text-app-muted-dark">
 				{{ directorySummary }}
 			</p>
 
-			<section class="gap-x-10 grid lg:grid-cols-2 xl:grid-cols-3">
-				<NuxtLink v-for="district in districts" :key="district.slug" :to="buildLookupAwareTarget(district.href)" class="py-6 border-t border-app-line block dark:border-app-line-dark focus-ring">
-					<h2 class="text-2xl text-app-ink font-serif dark:text-app-text-dark">
-						{{ district.title }}
-					</h2>
-					<p class="text-sm text-app-muted mt-2 dark:text-app-muted-dark">
-						{{ district.jurisdiction }}<template v-if="getDistrictRepresentatives(district.slug).length">
-							· {{ getDistrictRepresentatives(district.slug).length }} representative{{ getDistrictRepresentatives(district.slug).length === 1 ? '' : 's' }}
-						</template>
-					</p>
-				</NuxtLink>
+			<section v-for="group in districtGroups" :key="group.jurisdiction" :aria-labelledby="`districts-${group.jurisdiction.toLowerCase()}`" class="space-y-5">
+				<h2 :id="`districts-${group.jurisdiction.toLowerCase()}`" class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
+					{{ group.jurisdiction }}
+				</h2>
+				<div v-if="group.districts.length" class="gap-x-10 grid lg:grid-cols-2 xl:grid-cols-3">
+					<NuxtLink v-for="district in group.districts" :key="district.slug" :to="buildLookupAwareTarget(district.href)" class="py-6 border-t border-app-line block dark:border-app-line-dark focus-ring">
+						<h3 class="text-2xl text-app-ink font-serif dark:text-app-text-dark">
+							{{ district.title }}
+						</h3>
+						<p v-if="getDistrictRepresentatives(district.slug).length" class="text-sm text-app-muted mt-2 dark:text-app-muted-dark">
+							{{ getDistrictRepresentatives(district.slug).length }} representative{{ getDistrictRepresentatives(district.slug).length === 1 ? '' : 's' }}
+						</p>
+					</NuxtLink>
+				</div>
+				<p v-else class="text-sm text-app-muted dark:text-app-muted-dark">
+					No records are available yet.
+				</p>
 			</section>
 		</div>
 	</section>

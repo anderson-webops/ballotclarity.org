@@ -1,20 +1,21 @@
 import type { Measure } from "~/types/civic";
 
-export function useMeasure(measureSlug: MaybeRefOrGetter<string | undefined>) {
+export function useMeasure(measureSlug: MaybeRefOrGetter<string | undefined>, electionSlug?: MaybeRefOrGetter<string | undefined>) {
 	const api = useApiClient();
 	const slug = computed(() => toValue(measureSlug));
+	const election = computed(() => toValue(electionSlug));
 
 	return useAsyncData<Measure | null>(
-		() => `measure:${slug.value ?? "unknown"}`,
+		() => `measure:${slug.value ?? "unknown"}:${election.value ?? "default"}`,
 		async () => {
 			if (!slug.value)
 				return null;
 
-			return api<Measure>(`/measures/${slug.value}`);
+			return api<Measure>(`/measures/${slug.value}`, { query: { election: election.value } });
 		},
 		{
 			default: () => null,
-			watch: [slug]
+			watch: [slug, election]
 		}
 	);
 }

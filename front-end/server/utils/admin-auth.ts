@@ -5,6 +5,7 @@ import type {
 	AdminContentResponse,
 	AdminCorrectionsResponse,
 	AdminMfaSetupResponse,
+	AdminOperationsResponse,
 	AdminOverviewResponse,
 	AdminReviewResponse,
 	AdminSessionResponse,
@@ -710,6 +711,11 @@ async function fetchAdminApi<T>(event: H3Event, path: string, options?: {
 export async function getAdminOverview(event: H3Event) {
 	await requireActiveAdminSession(event);
 	return await fetchAdminApi<AdminOverviewResponse>(event, "/admin/overview");
+}
+
+export async function getAdminOperations(event: H3Event) {
+	await requireActiveAdminSession(event);
+	return await fetchAdminApi<AdminOperationsResponse>(event, "/admin/operations");
 }
 
 export async function getAdminAudit(event: H3Event) {

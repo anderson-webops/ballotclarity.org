@@ -226,7 +226,7 @@ const stateQuestionnaire = source("state-questionnaire", "State Senate District 
 });
 
 export const demoLocation: LocationSelection = {
-	coverageLabel: "Live local guide area: Fulton County, Georgia",
+	coverageLabel: "Fulton County, Georgia",
 	displayName: "Fulton County, Georgia",
 	lookupMode: "coverage-selection",
 	requiresOfficialConfirmation: true,

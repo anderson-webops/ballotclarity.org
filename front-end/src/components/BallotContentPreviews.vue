@@ -1,9 +1,12 @@
 <script setup lang="ts">
-import type { BallotContentPreview } from "~/types/civic";
+import type { BallotContentPreview, NationwideLookupResultContext } from "~/types/civic";
+import { ballotSourceNotes } from "~/utils/ballot-notices";
+import { ballotRecordStatusLabels, buildBallotCandidateTarget } from "~/utils/ballot-view";
 
-defineProps<{ previews: BallotContentPreview[] }>();
+const props = defineProps<{ previews: BallotContentPreview[]; lookupContext?: Pick<NationwideLookupResultContext, "lookupQuery" | "selectionId"> }>();
+const sourceNotes = computed(() => ballotSourceNotes(props.previews));
 const { formatDate, formatDateTime } = useFormatters();
-const statusLabels: Record<string, string> = { "filed": "Filed", "qualified": "Qualified", "write-in": "Write-in" };
+const NuxtLinkComponent = resolveComponent("NuxtLink");
 </script>
 
 <template>
@@ -18,9 +21,6 @@ const statusLabels: Record<string, string> = { "filed": "Filed", "qualified": "Q
 			<p class="text-sm text-app-muted leading-6 mt-2 dark:text-app-muted-dark">
 				{{ preview.providerLabel }} · Retrieved {{ formatDateTime(preview.generatedAt) }}
 			</p>
-			<p class="text-sm text-app-muted leading-6 mt-2 dark:text-app-muted-dark">
-				{{ preview.disclaimer }}
-			</p>
 			<div class="mt-3 flex flex-wrap gap-4">
 				<SafeExternalLink v-if="preview.sourceUrl" :href="preview.sourceUrl" class="text-app-accent underline underline-offset-3 focus-ring">
 					Official source
@@ -30,27 +30,37 @@ const statusLabels: Record<string, string> = { "filed": "Filed", "qualified": "Q
 				</SafeExternalLink>
 			</div>
 			<div class="mt-5 gap-6 grid md:grid-cols-2">
-				<article v-for="contest in preview.contests" :key="contest.id" class="content-block">
-					<h3 class="text-lg text-app-ink font-semibold dark:text-app-text-dark">
-						{{ contest.title }}
-					</h3>
-					<p v-if="contest.districtName" class="text-sm text-app-muted mt-1 dark:text-app-muted-dark">
-						{{ contest.districtName }}
-					</p>
-					<ul v-if="contest.candidates.length" class="mt-3 space-y-2">
-						<li v-for="candidate in contest.candidates" :key="candidate.id" class="text-sm text-app-muted leading-6 dark:text-app-muted-dark">
-							<SafeExternalLink v-if="candidate.candidateUrl" :href="candidate.candidateUrl" class="text-app-accent font-semibold underline underline-offset-3 focus-ring">
-								{{ candidate.name }}
-							</SafeExternalLink>
-							<span v-else class="text-app-ink font-semibold dark:text-app-text-dark">{{ candidate.name }}</span>
-							<span v-if="candidate.party"> · {{ candidate.party }}</span>
-							<span v-if="candidate.ballotStatus && statusLabels[candidate.ballotStatus]"> · {{ statusLabels[candidate.ballotStatus] }}</span>
-							<p v-if="candidate.ballotDesignation">
-								Ballot designation: {{ candidate.ballotDesignation }}
-							</p>
+				<article v-for="contest in preview.contests" :key="contest.id" class="border border-app-line border-t-4 rounded-md bg-app-panel break-words dark:border-app-line-dark dark:bg-app-panel-dark">
+					<header class="p-4 border-b border-app-line bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark">
+						<h3 class="text-lg text-app-ink font-semibold dark:text-app-text-dark">
+							{{ contest.title }}
+						</h3>
+						<p v-if="contest.districtName" class="text-sm text-app-muted mt-1 dark:text-app-muted-dark">
+							{{ contest.districtName }}
+						</p>
+					</header>
+					<ul v-if="contest.candidates.length" class="divide-app-line divide-y dark:divide-app-line-dark">
+						<li v-for="candidate in contest.candidates" :key="candidate.id">
+							<component
+								:is="buildBallotCandidateTarget(preview, candidate, lookupContext) ? NuxtLinkComponent : 'div'"
+								v-bind="buildBallotCandidateTarget(preview, candidate, lookupContext) ? { to: buildBallotCandidateTarget(preview, candidate, lookupContext), prefetchOn: 'interaction' } : {}"
+								class="group p-4 flex gap-4 min-h-20 items-center justify-between hover:bg-app-bg focus-ring dark:hover:bg-app-bg-dark"
+							>
+								<div class="min-w-0">
+									<p class="text-base text-app-ink font-semibold break-words dark:text-app-text-dark">
+										{{ candidate.name }}
+									</p>
+									<p v-if="candidate.party || (candidate.ballotStatus && ballotRecordStatusLabels[candidate.ballotStatus])" class="text-sm text-app-muted leading-6 mt-1 dark:text-app-muted-dark">
+										<PartyLabel v-if="candidate.party" :party="candidate.party" /><template v-if="candidate.ballotStatus && ballotRecordStatusLabels[candidate.ballotStatus]">
+											{{ candidate.party ? ' · ' : '' }}{{ ballotRecordStatusLabels[candidate.ballotStatus] }}
+										</template>
+									</p>
+								</div>
+								<span v-if="buildBallotCandidateTarget(preview, candidate, lookupContext)" class="i-carbon-chevron-right text-app-accent shrink-0" aria-hidden="true" />
+							</component>
 						</li>
 					</ul>
-					<div v-if="contest.referendum" class="text-sm text-app-muted leading-6 mt-3 space-y-2 dark:text-app-muted-dark">
+					<div v-if="contest.referendum" class="text-sm text-app-muted leading-6 p-4 space-y-2 dark:text-app-muted-dark">
 						<p v-if="contest.referendum.title && contest.referendum.title !== contest.title" class="text-app-ink font-semibold dark:text-app-text-dark">
 							{{ contest.referendum.title }}
 						</p>
@@ -73,5 +83,10 @@ const statusLabels: Record<string, string> = { "filed": "Filed", "qualified": "Q
 				</article>
 			</div>
 		</section>
+		<aside v-if="sourceNotes.length" aria-label="Ballot source notes" class="text-sm text-app-muted leading-6 pt-4 border-t border-app-line space-y-2 dark:text-app-muted-dark dark:border-app-line-dark">
+			<p v-for="note in sourceNotes" :key="note">
+				{{ note }}
+			</p>
+		</aside>
 	</div>
 </template>

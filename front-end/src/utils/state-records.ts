@@ -2,7 +2,7 @@ import type { PublicStateCandidateRecord, StateRecordState } from "~/types/civic
 
 export const stateRecordScopes = [
 	{ value: "all", label: "All offices" },
-	{ value: "statewide", label: "Statewide" },
+	{ value: "statewide", label: "Statewide and state districts" },
 	{ value: "congressional", label: "Congress" },
 	{ value: "state-senate", label: "State Senate" },
 	{ value: "state-house", label: "State House" },
@@ -45,4 +45,17 @@ export function stateRecordArea(record: PublicStateCandidateRecord) {
 	const office = record.office.toLowerCase();
 	const areas = [record.jurisdiction, record.sourceDistrictLabel, !record.sourceDistrictLabel && record.district && !office.includes(record.district.toLowerCase()) ? `District ${record.district}` : "", record.sourceAreaLabel];
 	return areas.find(area => area && !office.includes(area.toLowerCase())) || "";
+}
+
+export function stateRecordSummaryParts(record: PublicStateCandidateRecord) {
+	return [
+		{ label: record.office, isParty: false },
+		{ label: stateRecordArea(record), isParty: false },
+		{ label: record.party?.trim() ?? "", isParty: true },
+		{ label: record.status === "listed" ? "" : stateRecordStatusLabels[record.status], isParty: false },
+	].filter(part => part.label);
+}
+
+export function stateRecordSummary(record: PublicStateCandidateRecord) {
+	return stateRecordSummaryParts(record).map(part => part.label).join(" · ");
 }

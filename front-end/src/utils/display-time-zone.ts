@@ -1,4 +1,5 @@
 const isoDatePattern = /^\d{4}-\d{2}-\d{2}$/;
+const floatingDateTimePattern = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?$/;
 
 export const displayTimeZoneCookieName = "ballot-clarity-display-time-zone";
 export const displayTimeZoneHtmlAttribute = "data-display-time-zone";
@@ -50,17 +51,24 @@ export function writeDisplayTimeZoneToDocument(doc: Pick<Document, "documentElem
 	return normalizedTimeZone;
 }
 
-function buildIntlTimeZoneOption(timeZone: string | null | undefined) {
+function buildIntlTimeZoneOption(timeZone: string | null | undefined, value: string) {
+	if (floatingDateTimePattern.test(value))
+		return { timeZone: "UTC" };
+
 	return timeZone ? { timeZone } : {};
+}
+
+function parseDisplayDateInput(value: string) {
+	return floatingDateTimePattern.test(value) ? new Date(`${value}Z`) : parseDateInput(value);
 }
 
 export function formatCivicDate(value: string, timeZone: string | null | undefined) {
 	return new Intl.DateTimeFormat("en-US", {
 		day: "numeric",
 		month: "long",
-		...buildIntlTimeZoneOption(timeZone),
+		...buildIntlTimeZoneOption(timeZone, value),
 		year: "numeric",
-	}).format(parseDateInput(value));
+	}).format(parseDisplayDateInput(value));
 }
 
 export function formatCivicDateTime(value: string, timeZone: string | null | undefined) {
@@ -69,9 +77,9 @@ export function formatCivicDateTime(value: string, timeZone: string | null | und
 		hour: "numeric",
 		minute: "2-digit",
 		month: "short",
-		...buildIntlTimeZoneOption(timeZone),
+		...buildIntlTimeZoneOption(timeZone, value),
 		year: "numeric",
-	}).format(parseDateInput(value));
+	}).format(parseDisplayDateInput(value));
 }
 
 export function buildPreHydrationDisplayTimeZoneScript() {

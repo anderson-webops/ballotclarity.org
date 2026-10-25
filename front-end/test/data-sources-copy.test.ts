@@ -14,8 +14,10 @@ test("public data-sources page avoids operator-only provider setup details", () 
 	assert.doesNotMatch(dataSourcesPage, /review and operations/i);
 });
 
-test("public data-sources page still explains provider access status and links to source material", () => {
-	assert.match(dataSourcesPage, /provider.connectionStatus === 'active' \? 'Connected' : 'Not connected'/);
-	assert.match(dataSourcesPage, /:href="provider.setupUrl"/);
-	assert.match(dataSourcesPage, /:href="option.links\[0\]!.url"/);
+test("public sources omit inactive provider setup and retain direct source links", () => {
+	assert.match(dataSourcesPage, /filter\(provider => provider.connectionStatus === "active"\)/u);
+	assert.match(dataSourcesPage, /v-for="provider in activeProviders"/u);
+	assert.match(dataSourcesPage, /:href="provider.setupUrl"/u);
+	assert.match(dataSourcesPage, /:href="option.links\[0\].url"/u);
+	assert.doesNotMatch(dataSourcesPage, /Not connected|Technical docs|<details/u);
 });

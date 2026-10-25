@@ -1,6 +1,7 @@
 import type { StateBallotSource } from "./state-ballot-sources.js";
 import { Buffer } from "node:buffer";
 import { fetchRemoteSourceText } from "./remote-json-source.js";
+import { getStateBallotCycleFamily, readMississippiGeneralElectionDate, validStateBallotGeneralDate } from "./state-ballot-cycles.js";
 import { parseStateHtml, stateHtmlAttribute, stateHtmlDescendants, stateHtmlText } from "./state-ballot-html.js";
 import { buildSouthCarolinaSearchForm } from "./state-ballot-portal-records.js";
 import { fetchWashingtonCandidatePages } from "./state-ballot-washington.js";
@@ -20,24 +21,31 @@ export function buildPublicStateExportForm(source: StateBallotSource, body: stri
 	}
 	let control: string;
 	if (source.format === "montana-csv") {
-		if (source.electionDate !== "2026-11-03") throw new Error("The Montana public export election date is not configured.");
+		const family = getStateBallotCycleFamily("mt-general-2026");
+		const electionId = new URL(source.url).searchParams.get("e");
+		const originalId = new URL(family.source.url).searchParams.get("e");
+		if (source.stateCode !== "MT" || source.retrievalPolicy || !validStateBallotGeneralDate(source.electionDate) || source.electionDate < family.source.electionDate || Number(source.electionDate.slice(0, 4)) % 2 !== 0 || !electionId || !/^[1-9]\d{0,8}$/u.test(electionId) || source.url !== `${family.discoveryUrl}?e=${electionId}` || source.pageUrl !== source.url || source.id !== (source.electionDate === family.source.electionDate ? family.source.id : `${family.prefix}-${source.electionDate}`) || ((electionId === originalId) !== (source.electionDate === family.source.electionDate)))
+			throw new Error("The Montana public export election identity is not configured.");
+		const year = source.electionDate.slice(0, 4);
+		const label = `FEDERAL GENERAL ${year}`;
+		const date = `${source.electionDate.slice(5, 7)}/${source.electionDate.slice(8, 10)}/${year}`;
 		if (!content.includes("* = Incumbent")) throw new Error("The Montana public candidate marker legend has changed.");
 		const forms = stateHtmlDescendants(document, node => node.nodeName === "form" && stateHtmlAttribute(node, "id") === "frmMain");
 		if (forms.length !== 1 || stateHtmlAttribute(forms[0]!, "method").toLowerCase() !== "post") throw new Error("The Montana public export form has changed.");
 		const action = new URL(stateHtmlAttribute(forms[0]!, "action"), source.url);
 		if (action.href !== source.url) throw new Error("The Montana public export target has changed.");
 		if (stateHtmlDescendants(forms[0]!, node => node.nodeName === "select").length !== 2) throw new Error("The Montana public export filters have changed.");
-		for (const [name, value] of [["hidElectionDate", "FEDERAL GENERAL 2026"], ["hidElectionType", "General"]]) {
+		for (const [name, value] of [["hidElectionDate", label], ["hidElectionType", "General"]]) {
 			const key = `ctl00$ContentPlaceHolder1$${name}`;
 			const inputs = stateHtmlDescendants(forms[0]!, node => node.nodeName === "input" && stateHtmlAttribute(node, "type") === "hidden" && stateHtmlAttribute(node, "name") === key);
 			if (inputs.length !== 1 || stateHtmlAttribute(inputs[0]!, "value") !== value) throw new Error("The Montana public export election identity has changed.");
 			fields.set(key, value!);
 		}
-		for (const [name, value, label] of [["ddlElection", "450002987", "FEDERAL GENERAL 2026 (11/03/2026) (General)"], ["ddlCounty", "99", "STATE"]]) {
+		for (const [name, value, selectedLabel] of [["ddlElection", electionId, `${label} (${date}) (General)`], ["ddlCounty", "99", "STATE"]]) {
 			const key = `ctl00$ContentPlaceHolder1$${name}`;
 			const selects = stateHtmlDescendants(forms[0]!, node => node.nodeName === "select" && stateHtmlAttribute(node, "name") === key);
 			const selected = selects.length === 1 ? stateHtmlDescendants(selects[0]!, node => node.nodeName === "option" && Boolean(node.attrs?.some(attribute => attribute.name === "selected"))) : [];
-			if (selected.length !== 1 || stateHtmlAttribute(selected[0]!, "value") !== value || stateHtmlText(selected[0]!).replace(/\s+/gu, " ").trim() !== label)
+			if (selected.length !== 1 || stateHtmlAttribute(selected[0]!, "value") !== value || stateHtmlText(selected[0]!).replace(/\s+/gu, " ").trim() !== selectedLabel)
 				throw new Error("The Montana public export does not select the unfiltered general election.");
 			fields.set(key, value!);
 		}
@@ -48,8 +56,12 @@ export function buildPublicStateExportForm(source: StateBallotSource, body: stri
 		fields.set("__EVENTARGUMENT", "");
 	}
 	else if (source.format === "mississippi-csv") {
-		if (!/Candidate Qualifying List/u.test(content) || !/November 3, 2026/u.test(content))
-			throw new Error("The public candidate export does not identify the configured election.");
+		const family = getStateBallotCycleFamily("ms-sos-2026");
+		try {
+			if (source.stateCode !== "MS" || source.retrievalPolicy || source.url !== family.discoveryUrl || source.pageUrl !== source.url || source.id !== (source.electionDate === family.source.electionDate ? family.source.id : `${family.prefix}-${source.electionDate}`) || readMississippiGeneralElectionDate(body) !== source.electionDate)
+				throw new Error("The Mississippi source identity does not match its report.");
+		}
+		catch (error) { throw new Error("The public candidate export does not identify the configured general election.", { cause: error }); }
 		control = "btnDownloadExcel";
 		if (!stateHtmlDescendants(document, node => node.nodeName === "input" && stateHtmlAttribute(node, "name") === control && stateHtmlAttribute(node, "value") === "Download CSV").length)
 			throw new Error("The public CSV control has changed.");
@@ -122,7 +134,7 @@ export function buildNorthDakotaSearchForm(body: string) {
 export async function fetchStateBallotSourceText(source: StateBallotSource, request: SourceTextRequest = fetchRemoteSourceText) {
 	if (source.retrievalPolicy === "manual-snapshot")
 		throw new Error("This publisher requires a manually supplied candidate snapshot; automatic retrieval is disabled.");
-	const options = { allowedHosts: [new URL(source.url).hostname], maxBytes: 12 * 1024 * 1024, maxRedirects: 2, timeoutMs: 12_000 };
+	const options = { allowedHosts: [new URL(source.url).hostname], maxBytes: 12 * 1024 * 1024, maxRedirects: ["montana-csv", "mississippi-csv"].includes(source.format) ? 0 : 2, timeoutMs: 12_000 };
 	if (source.format === "washington-html")
 		return fetchWashingtonCandidatePages(source, request, options);
 	if (source.format === "south-carolina-html") {

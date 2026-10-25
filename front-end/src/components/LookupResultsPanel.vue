@@ -1,14 +1,15 @@
 <script setup lang="ts">
 import type {
-	LocationLookupAction,
 	LocationLookupSelectionOption,
 	LookupAvailabilityStatus,
 	NationwideLookupResultContext
 } from "~/types/civic";
 import DistrictLadder from "~/components/graphics/DistrictLadder.vue";
 import RepresentativeGrid from "~/components/graphics/RepresentativeGrid.vue";
+import { hasBallotInformation } from "~/utils/ballot-notices";
+import { buildElectionView, civicLookupNeedsRefresh, electionHasPassed } from "~/utils/ballot-view";
 import { buildRepresentativeCards } from "~/utils/graphics-schema";
-import { buildLookupPresentation, filterLookupActionsForPresentation } from "~/utils/location-lookup";
+import { buildLookupActionDestination, buildLookupPresentation, buildPublishedGuideDestination, filterLookupActionsForPresentation } from "~/utils/location-lookup";
 import { buildNationwideDistrictHref, buildNationwideRepresentativeHref } from "~/utils/lookup-links";
 import { buildNationwideRouteTarget } from "~/utils/nationwide-route-context";
 import { resolveRepresentativePresentation } from "~/utils/representative-presentation";
@@ -21,9 +22,14 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-	openGuide: [action: LocationLookupAction];
 	selectOption: [option: LocationLookupSelectionOption];
 }>();
+const { formatDate } = useFormatters();
+const electionClock = useElectionClock();
+const { data: sourceDirectory } = await useStateRecordStates();
+const sourceDates = computed(() => sourceDirectory.value?.states?.find(state => state.stateCode === props.lookup.location?.state || state.stateName === props.lookup.location?.state)?.sources?.map(source => source.electionDate) ?? []);
+const electionView = computed(() => buildElectionView(props.lookup, new Date(electionClock.value), sourceDates.value));
+const displayedLookup = computed(() => ({ ...props.lookup, ballotContentPreviews: electionView.value.previews, guideContent: electionHasPassed(props.lookup.election?.date, new Date(electionClock.value)) ? null : props.lookup.guideContent }));
 const NuxtLinkComponent = resolveComponent("NuxtLink");
 
 const lookupResolution = computed(() => ({
@@ -31,55 +37,50 @@ const lookupResolution = computed(() => ({
 	guideContent: props.lookup.guideContent,
 	guideAvailability: props.lookup.guideAvailability,
 	location: props.lookup.location ?? undefined,
-	result: props.lookup.result
+	result: props.lookup.result,
+	selectionOptions: props.lookup.selectionOptions
 }));
 const lookupPresentation = computed(() => buildLookupPresentation(lookupResolution.value));
-// The same official tool can arrive from more than one source (for example a live portal and its
-// mirrored summary); list each named tool once, keeping the first (live) entry.
-const visibleLookupActions = computed(() => {
-	const seen = new Set<string>();
-
-	return filterLookupActionsForPresentation(props.lookup.actions, lookupResolution.value).filter((action) => {
-		const key = `${action.kind}:${action.title.trim().toLowerCase()}`;
-
-		if (seen.has(key))
-			return false;
-
-		seen.add(key);
-		return true;
-	});
-});
-const representativeCards = computed(() => buildRepresentativeCards(props.lookup.representativeMatches).map((card, index) => {
-	const match = props.lookup.representativeMatches[index]!;
-	const presentation = getRepresentativePresentation(match);
-
-	return {
-		...card,
-		href: buildRepresentativeHref(match),
-		levelLabel: presentation.levelLabel,
-		officeTitle: presentation.officeDisplayLabel
-	};
+const visibleLookupActions = computed(() => filterLookupActionsForPresentation(props.lookup.actions, lookupResolution.value));
+const guideLinks = computed(() => visibleLookupActions.value.flatMap((action) => {
+	const href = buildLookupActionDestination(action, lookupResolution.value);
+	return href ? [{ action, href }] : [];
 }));
+const officialLookupActions = computed(() => visibleLookupActions.value.filter(action => action.kind === "official-verification"));
+const selectedGuideHref = computed(() => props.lookup.result === "resolved" && !props.lookup.selectionOptions.length ? buildPublishedGuideDestination(lookupResolution.value) : null);
+const representativeCards = computed(() => electionView.value.betweenElections && civicLookupNeedsRefresh(props.lookup, new Date(electionClock.value))
+	? []
+	: buildRepresentativeCards(props.lookup.representativeMatches).map((card, index) => {
+			const match = props.lookup.representativeMatches[index]!;
+			const presentation = getRepresentativePresentation(match);
+
+			return {
+				...card,
+				href: buildRepresentativeHref(match),
+				levelLabel: presentation.levelLabel,
+				officeTitle: presentation.officeDisplayLabel
+			};
+		}));
 const districtLinks = computed(() => Object.fromEntries(props.lookup.districtMatches.map(match => [match.id, buildDistrictHref(match)])));
 const selectionOptions = computed(() => props.lookup.selectionOptions ?? []);
 const hasSelectionOptions = computed(() => selectionOptions.value.length > 0);
-const electionLogistics = computed(() => props.lookup.electionLogistics);
-const ballotContentPreviews = computed(() => props.lookup.ballotContentPreviews ?? []);
+const electionLogistics = computed(() => electionHasPassed(props.lookup.electionLogistics?.electionDay, new Date(electionClock.value)) ? null : props.lookup.electionLogistics);
+const ballotContentPreviews = computed(() => electionView.value.previews);
 const hasBallotContentPreviews = computed(() => ballotContentPreviews.value.length > 0);
 const primaryAvailabilityIds = new Set(["official-logistics", "representatives", "local-guide"]);
-// One place per kind keeps "Where to vote" glanceable; the official tools below have the full lists.
-const votingPlaces = computed(() => {
-	const logistics = electionLogistics.value;
-
-	if (!logistics)
-		return [];
-
-	return [
-		{ label: "Polling place", site: logistics.pollingLocations[0] },
-		{ label: "Early voting", site: logistics.earlyVoteSites[0] },
-		{ label: "Ballot drop box", site: logistics.dropOffLocations[0] },
-	].filter((place): place is { label: string; site: NonNullable<typeof place.site> } => Boolean(place.site));
-});
+const hasElectionLogistics = computed(() => Boolean(
+	electionLogistics.value
+	&& (
+		electionLogistics.value.electionName
+		|| electionLogistics.value.electionDay
+		|| electionLogistics.value.pollingLocations.length
+		|| electionLogistics.value.earlyVoteSites.length
+		|| electionLogistics.value.dropOffLocations.length
+		|| electionLogistics.value.candidatePreviews?.length
+		|| electionLogistics.value.additionalElectionNames.length
+		|| electionLogistics.value.mailOnly
+	)
+));
 const availabilityItems = computed(() => {
 	if (!props.lookup.availability)
 		return [];
@@ -121,15 +122,16 @@ const availabilityItems = computed(() => {
 			title: "Money and influence",
 		},
 		{
-			actionLabel: props.lookup.guideContent?.verifiedContestPackage ? "Read your ballot guide" : "Open election overview",
+			actionLabel: props.lookup.guideContent?.verifiedContestPackage ? "View ballot" : "Election information",
 			href: buildLocalGuideHref(),
 			id: "local-guide",
 			item: props.lookup.availability.fullLocalGuide,
-			title: props.lookup.guideContent?.verifiedContestPackage ? "Your ballot guide" : "Your election",
+			title: props.lookup.guideContent?.verifiedContestPackage ? "Ballot" : "Your election",
 		},
 	];
 });
 const visibleAvailabilityItems = computed(() => availabilityItems.value.filter((card) => {
+	if (electionView.value.betweenElections && ["local-guide", "ballot-candidates", "civic-results"].includes(card.id)) return false;
 	if (props.resultsPage && card.id === "civic-results")
 		return false;
 	if (props.resultsPage && (card.id === "representatives" || card.id === "finance-influence"))
@@ -147,13 +149,6 @@ const visibleAvailabilityItems = computed(() => availabilityItems.value.filter((
 
 function availabilityTone(status: LookupAvailabilityStatus) {
 	return status === "available" ? "accent" : status === "partial" || status === "limited" ? "warning" : "neutral";
-}
-
-function openGuideAction(action: LocationLookupAction) {
-	if (action.kind !== "ballot-guide")
-		return;
-
-	emit("openGuide", action);
 }
 
 function selectLookupOption(option: LocationLookupSelectionOption) {
@@ -210,7 +205,13 @@ function getRepresentativePresentation(match: NationwideLookupResultContext["rep
 
 <template>
 	<div :class="resultsPage ? 'lookup-results-page' : 'mt-5 p-4 border border-app-line rounded-xl bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/60'">
-		<p v-if="lookup.result === 'resolved' && !lookup.guideContent?.verifiedContestPackage" class="text-sm text-app-ink leading-6 mb-4 pl-3 border-app-line border-l-2 dark:text-app-text-dark dark:border-app-line-dark">
+		<section v-if="electionView.betweenElections && lookup.result === 'resolved'" aria-label="Representatives" class="mb-8">
+			<RepresentativeGrid v-if="representativeCards.length" :cards="representativeCards" title="Representatives" note="" />
+			<NuxtLink v-else :to="buildLookupAwareTarget('/representatives')" class="text-lg text-app-accent font-semibold underline underline-offset-3 focus-ring">
+				Representatives
+			</NuxtLink>
+		</section>
+		<p v-if="lookup.result === 'resolved' && !electionView.betweenElections && !hasBallotInformation(displayedLookup)" class="text-sm text-app-ink leading-6 mb-4 pl-3 border-app-line border-l-2 dark:text-app-text-dark dark:border-app-line-dark">
 			{{ limitedBallotNotice }}
 		</p>
 		<p v-if="!resultsPage" class="text-xs text-app-muted tracking-[0.2em] font-semibold uppercase dark:text-app-muted-dark">
@@ -277,6 +278,17 @@ function getRepresentativePresentation(match: NationwideLookupResultContext["rep
 				</div>
 			</article>
 		</div>
+		<nav v-if="guideLinks.length" aria-label="Election guides" class="mt-6 gap-3 grid">
+			<NuxtLink v-for="{ action, href } in guideLinks" :key="action.id" :to="href" class="group surface-row block focus-ring">
+				<span class="text-lg text-app-accent font-semibold inline-flex gap-2 items-center">
+					{{ action.title }}
+					<span class="i-carbon-arrow-right transition group-hover:translate-x-0.5" aria-hidden="true" />
+				</span>
+				<span v-if="action.description || action.electionDate" class="text-sm text-app-muted mt-1 block dark:text-app-muted-dark">
+					{{ action.description }}<template v-if="action.description && action.electionDate"> · </template><time v-if="action.electionDate" :datetime="action.electionDate">{{ formatDate(action.electionDate) }}</time>
+				</span>
+			</NuxtLink>
+		</nav>
 		<ol
 			v-if="visibleAvailabilityItems.length"
 			class="lookup-steps"
@@ -307,54 +319,37 @@ function getRepresentativePresentation(match: NationwideLookupResultContext["rep
 				</component>
 			</li>
 		</ol>
-		<BallotContentPreviews v-if="hasBallotContentPreviews" :previews="ballotContentPreviews" class="mt-8" />
+		<BallotContentPreviews v-if="hasBallotContentPreviews" :previews="ballotContentPreviews" :lookup-context="lookup" class="mt-8" />
 		<nav v-if="lookup.result === 'resolved'" aria-label="Area records" class="text-base mt-5 flex flex-wrap gap-x-8 gap-y-3">
-			<NuxtLink :to="lookup.location?.state ? { path: '/records', query: { state: lookup.location.state } } : '/records'" class="text-app-accent font-semibold underline underline-offset-3 focus-ring">
+			<NuxtLink v-if="!electionView.betweenElections" :to="lookup.location?.state ? { path: '/records', query: { state: lookup.location.state } } : '/records'" class="text-app-accent font-semibold underline underline-offset-3 focus-ring">
 				Candidate records
 			</NuxtLink>
-			<NuxtLink v-if="resultsPage && lookup.representativeMatches.length" :to="buildLookupAwareTarget('/representatives')" class="text-app-accent font-semibold underline underline-offset-3 focus-ring">
+			<template v-for="preview in electionView.pastPreviews" :key="preview.id">
+				<SafeExternalLink v-if="preview.sourceUrl" :href="preview.sourceUrl" class="text-app-accent font-semibold underline underline-offset-3 focus-ring">
+					{{ preview.providerLabel }} · {{ preview.electionDate ? formatDate(preview.electionDate) : 'Past election' }}
+				</SafeExternalLink>
+			</template>
+			<NuxtLink v-if="resultsPage && !electionView.betweenElections && lookup.representativeMatches.length" :to="buildLookupAwareTarget('/representatives')" class="text-app-accent font-semibold underline underline-offset-3 focus-ring">
 				{{ lookup.representativeMatches.length }} representatives
 			</NuxtLink>
 			<NuxtLink v-if="resultsPage && lookup.districtMatches.length" :to="buildLookupAwareTarget('/districts')" class="text-app-accent font-semibold underline underline-offset-3 focus-ring">
 				{{ lookup.districtMatches.length }} districts
 			</NuxtLink>
 		</nav>
-		<section v-if="votingPlaces.length || electionLogistics?.mailOnly" class="mt-6" aria-labelledby="where-to-vote-heading">
-			<component :is="resultsPage ? 'h2' : 'h3'" id="where-to-vote-heading" class="text-app-ink font-serif dark:text-app-text-dark" :class="resultsPage ? 'text-2xl' : 'text-lg'">
-				Where to vote
-			</component>
-			<p v-if="electionLogistics?.mailOnly" class="text-base text-app-ink mt-2 dark:text-app-text-dark">
-				This precinct votes by mail.
-			</p>
-			<ul class="mt-2">
-				<li v-for="place in votingPlaces" :key="place.label" class="surface-row">
-					<p class="text-sm text-app-muted dark:text-app-muted-dark">
-						{{ place.label }}
-					</p>
-					<p class="text-base text-app-ink font-semibold mt-1 dark:text-app-text-dark">
-						{{ place.site.name }}
-					</p>
-					<p class="text-sm text-app-muted dark:text-app-muted-dark">
-						{{ place.site.address }}
-					</p>
-				</li>
-			</ul>
-		</section>
-		<div v-if="visibleLookupActions.length" :id="resultsPage ? 'official-tools' : undefined" class="mt-6 gap-3 grid">
+		<div v-if="officialLookupActions.length" :id="resultsPage ? 'official-tools' : undefined" class="mt-6 gap-3 grid">
 			<div v-if="resultsPage">
 				<h2 class="text-2xl text-app-ink font-serif dark:text-app-text-dark">
 					Official election tools
 				</h2>
 			</div>
 			<div
-				v-for="action in visibleLookupActions"
+				v-for="action in officialLookupActions"
 				:key="action.id"
 				class="surface-row"
 			>
 				<div class="flex flex-wrap gap-2 items-center">
-					<SafeExternalLink v-if="action.kind !== 'ballot-guide' && action.url" :href="action.url" class="text-sm text-app-accent font-semibold underline underline-offset-3 inline-flex gap-2 items-center focus-ring">
+					<SafeExternalLink v-if="action.url" :href="action.url" external-icon class="text-sm text-app-accent font-semibold underline underline-offset-3 inline-flex gap-2 items-center focus-ring">
 						{{ action.title }}
-						<span class="i-carbon-launch" aria-hidden="true" />
 					</SafeExternalLink>
 					<p v-else class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
 						{{ action.title }}
@@ -369,21 +364,10 @@ function getRepresentativePresentation(match: NationwideLookupResultContext["rep
 				<p v-if="action.description" class="text-sm text-app-muted leading-6 mt-2 dark:text-app-muted-dark">
 					{{ action.description }}
 				</p>
-				<div v-if="action.kind === 'ballot-guide'" class="mt-4 flex flex-wrap gap-3">
-					<button
-						v-if="action.kind === 'ballot-guide'"
-						type="button"
-						class="btn-primary"
-						@click="openGuideAction(action)"
-					>
-						<span class="i-carbon-arrow-right" />
-						{{ lookupPresentation.guideActionLabel }}
-					</button>
-				</div>
 			</div>
 		</div>
 		<section
-			v-if="!resultsPage && lookup.result === 'resolved' && (representativeCards.length || lookup.districtMatches.length)"
+			v-if="!resultsPage && !electionView.betweenElections && lookup.result === 'resolved' && (representativeCards.length || lookup.districtMatches.length)"
 			class="mt-8 gap-4 grid items-start xl:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]"
 			aria-label="Your officials and districts"
 		>
@@ -396,22 +380,107 @@ function getRepresentativePresentation(match: NationwideLookupResultContext["rep
 				:normalized-address="lookup.normalizedAddress"
 			/>
 		</section>
-		<div v-if="lookupPresentation.canOpenGuide && lookup.location && lookup.electionSlug && !availabilityItems.length" class="mt-4 flex flex-wrap gap-3">
-			<button
-				type="button"
-				class="btn-primary"
-				@click="openGuideAction({
-					description: 'Open the local guide for this lookup.',
-					electionSlug: lookup.electionSlug,
-					id: `lookup-guide-${lookup.location.slug}`,
-					kind: 'ballot-guide',
-					location: lookup.location,
-					title: lookup.location.displayName,
-				})"
-			>
+		<section v-if="hasElectionLogistics && electionLogistics" aria-label="Voting information" class="mt-8">
+			<div v-if="hasElectionLogistics && electionLogistics" class="mt-4 gap-4 grid">
+				<div class="surface-inset">
+					<div class="flex flex-wrap gap-2 items-center">
+						<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
+							Official election logistics
+						</p>
+						<VerificationBadge label="Google Civic" tone="accent" />
+					</div>
+					<div class="mt-4 flex flex-wrap gap-3 items-center">
+						<p v-if="electionLogistics.electionName" class="text-lg text-app-ink font-semibold dark:text-app-text-dark">
+							{{ electionLogistics.electionName }}
+						</p>
+						<p v-if="electionLogistics.electionDay" class="text-sm text-app-muted dark:text-app-muted-dark">
+							<span>{{ formatDate(electionLogistics.electionDay) }}</span>
+						</p>
+						<VerificationBadge v-if="electionLogistics.mailOnly" label="Mail-only precinct" tone="warning" />
+					</div>
+					<p class="text-sm text-app-muted leading-6 mt-3 dark:text-app-muted-dark">
+						{{ electionLogistics.officialSourceNote }}
+					</p>
+					<div class="mt-4 gap-4 grid lg:grid-cols-3">
+						<article
+							v-for="section in [
+								{ id: 'polling', items: electionLogistics.pollingLocations, title: 'Polling locations' },
+								{ id: 'early', items: electionLogistics.earlyVoteSites, title: 'Early vote sites' },
+								{ id: 'dropoff', items: electionLogistics.dropOffLocations, title: 'Ballot drop-off locations' },
+							]"
+							v-show="section.items.length"
+							:key="section.id"
+							class="content-block"
+						>
+							<h3 class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
+								{{ section.title }}
+							</h3>
+							<ul class="mt-3 space-y-3">
+								<li v-for="site in section.items.slice(0, 3)" :key="site.id" class="text-sm text-app-muted leading-6 dark:text-app-muted-dark">
+									<p class="text-app-ink font-semibold dark:text-app-text-dark">
+										{{ site.name }}
+									</p>
+									<p>{{ site.address }}</p>
+									<p v-if="site.note">
+										{{ site.note }}
+									</p>
+								</li>
+							</ul>
+						</article>
+					</div>
+					<div v-if="electionLogistics.additionalElectionNames.length" class="mt-4">
+						<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
+							Additional elections
+						</p>
+						<ul class="mt-2 space-y-2">
+							<li v-for="name in electionLogistics.additionalElectionNames" :key="name" class="text-sm text-app-muted leading-6 dark:text-app-muted-dark">
+								{{ name }}
+							</li>
+						</ul>
+					</div>
+					<div v-if="electionLogistics.candidatePreviews?.length && !hasBallotContentPreviews" class="mt-4">
+						<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
+							Candidate previews from Google Civic
+						</p>
+						<ul class="mt-3 gap-3 grid sm:grid-cols-2">
+							<li
+								v-for="candidate in electionLogistics.candidatePreviews.slice(0, 4)"
+								:key="candidate.id"
+								class="p-3 rounded-2xl bg-app-bg flex gap-3 items-start dark:bg-app-bg-dark/70"
+							>
+								<ProfileImageStack
+									v-if="candidate.profileImages?.length"
+									:images="candidate.profileImages"
+									:name="candidate.name"
+									size="sm"
+								/>
+								<div class="min-w-0">
+									<p class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
+										{{ candidate.name }}
+									</p>
+									<p class="text-sm text-app-muted leading-6 dark:text-app-muted-dark">
+										<PartyLabel v-if="candidate.party" :party="candidate.party" />{{ candidate.party && candidate.office ? ' · ' : '' }}{{ candidate.office }}
+									</p>
+									<SafeExternalLink
+										v-if="candidate.candidateUrl"
+										:href="candidate.candidateUrl"
+										external-icon
+										class="text-app-accent underline underline-offset-3 inline-flex gap-2 items-center"
+									>
+										Candidate link
+									</SafeExternalLink>
+								</div>
+							</li>
+						</ul>
+					</div>
+				</div>
+			</div>
+		</section>
+		<div v-if="selectedGuideHref && !availabilityItems.length" class="mt-4 flex flex-wrap gap-3">
+			<NuxtLink :to="selectedGuideHref" class="btn-primary">
 				<span class="i-carbon-arrow-right" />
-				Open full local guide
-			</button>
+				{{ lookupPresentation.guideActionLabel }}
+			</NuxtLink>
 		</div>
 	</div>
 </template>

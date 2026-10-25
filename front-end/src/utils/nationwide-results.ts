@@ -5,7 +5,7 @@ import type {
 	NationwideLookupResultContext
 } from "../types/civic";
 import type { LookupContextState } from "./guide-entry";
-import { hasPublishedGuideResult, hasVerifiedGuideResult } from "./location-lookup";
+import { buildPublishedGuideDestination, hasPublishedGuideResult, hasVerifiedGuideResult } from "./location-lookup";
 import { buildLookupDestinationFromResponse } from "./nationwide-route-context";
 
 export const nationwideResultsPath = "/results";
@@ -46,7 +46,7 @@ export function normalizeLookupResponseForDisplay(
 		ballotContentPreviews: response.ballotContentPreviews ?? [],
 		detectedFromIp: Boolean(response.detectedFromIp),
 		districtMatches: response.districtMatches ?? [],
-		election: election ?? null,
+		election: election && election.slug === response.electionSlug ? election : null,
 		electionLogistics: response.electionLogistics ?? null,
 		guideContent: response.guideContent ?? null,
 		electionSlug: response.electionSlug,
@@ -79,14 +79,32 @@ export function deriveCivicLookupStateUpdate(
 	response: LocationLookupResponse,
 	election?: ElectionSummary | null
 ): CivicLookupStateUpdate {
-	const canOpenVerifiedGuide = hasVerifiedGuideResult(response) && !response.detectedFromIp;
 	const canOpenPublishedGuideSurface = hasPublishedGuideResult(response) && !response.detectedFromIp;
 
 	return {
 		lookupContext: buildLookupContextState(response),
-		nationwideLookupResult: canOpenVerifiedGuide ? null : buildNationwideLookupResultContext(response, election),
+		nationwideLookupResult: response.result === "resolved" ? normalizeLookupResponseForDisplay(response, election) : null,
 		selectedLocation: canOpenPublishedGuideSurface ? response.location ?? null : null
 	};
+}
+
+export function shouldRetainLookupForGuide(
+	result: NationwideLookupResultContext | null | undefined,
+	election: ElectionSummary | null,
+	location: LocationSelection | null,
+	guideContent: LocationLookupResponse["guideContent"] | null | undefined
+) {
+	if (!location || result?.result !== "resolved" || !guideContent?.publishedGuideShell)
+		return false;
+
+	if (guideContent.verifiedContestPackage) {
+		return Boolean(election?.slug && result.electionSlug === election.slug
+			&& typeof result.location?.state === "string" && typeof location.state === "string"
+			&& location.state.trim() && result.location.state.trim().toLowerCase() === location.state.trim().toLowerCase()
+			&& result.guideAvailability === "published" && result.guideContent?.verifiedContestPackage);
+	}
+
+	return result.location?.slug === location.slug || Boolean(election?.slug && result.electionSlug === election.slug);
 }
 
 export function hasActiveNationwideLookupResult(
@@ -100,6 +118,12 @@ export function hasActiveNationwideLookupResult(
 }
 
 export function resolveLookupDestination(response: LocationLookupResponse) {
+	if (response.result === "resolved" && !response.detectedFromIp && !response.selectionOptions?.length && hasVerifiedGuideResult(response))
+		return buildPublishedGuideDestination(response);
+
+	if (response.result === "resolved" && response.selectionOptions?.length)
+		return buildLookupDestinationFromResponse(response);
+
 	return hasActiveNationwideLookupResult(buildNationwideLookupResultContext(response))
 		? buildLookupDestinationFromResponse(response)
 		: null;

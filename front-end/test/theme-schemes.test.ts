@@ -88,3 +88,8 @@ test("filled controls use contrast-safe action tokens", () => {
 	assert.doesNotMatch(appHeader, /bg-app-ink text-white/);
 	assert.doesNotMatch(adminLayout, /bg-app-ink text-white/);
 });
+
+test("printed ballot content uses readable ink regardless of the screen theme", () => {
+	const printCss = mainCss.slice(mainCss.indexOf("@media print {"));
+	assert.match(printCss, /body \* \{\s*color: #111827 !important;\s*background-color: transparent !important;/u);
+});

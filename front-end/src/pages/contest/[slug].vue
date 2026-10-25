@@ -2,9 +2,16 @@
 import ComparisonMatrix from "~/components/graphics/ComparisonMatrix.vue";
 import { buildContestComparisonMatrix } from "~/utils/graphics-schema";
 
-const { openLayerLink, overviewLink } = useRouteLayerNavigation();
+const { openLayerLink: fallbackOpenLayerLink, overviewLink: fallbackOverviewLink } = useRouteLayerNavigation();
 const contestSlug = useRouteStringParam("slug");
 const { data, error, pending } = await useContest(contestSlug);
+const openLayerLink = computed(() => data.value
+	? { label: "Ballot guide", to: `/ballot/${data.value.election.slug}` }
+	: fallbackOpenLayerLink.value);
+const overviewLink = computed(() => data.value
+	? { label: "Election overview", to: `/elections/${data.value.election.slug}` }
+	: fallbackOverviewLink.value);
+const displayTitle = computed(() => data.value?.contest.type === "measure" ? data.value.contest.title : data.value?.contest.office);
 // A side-by-side matrix only helps when there is more than one option to compare.
 const contestComparisonMatrix = computed(() => {
 	const matrix = data.value ? buildContestComparisonMatrix(data.value.contest) : null;
@@ -41,14 +48,14 @@ const breadcrumbs = computed(() => {
 	return [
 		{ label: "Home", to: "/" },
 		overviewLink.value,
-		{ label: data.value.contest.office }
+		{ label: displayTitle.value ?? "Ballot item" }
 	];
 });
 
 usePageSeo({
 	description: data.value?.contest.description ?? "Canonical contest page with contest context, source-backed records, and links back to the election overview.",
 	path: `/contest/${contestSlug.value}`,
-	title: data.value?.contest.office ?? "Contest"
+	title: displayTitle.value ?? "Ballot item"
 });
 </script>
 
@@ -63,14 +70,10 @@ usePageSeo({
 
 		<GuideUnavailableState
 			v-else-if="error || !data"
-			message="This contest isn't published yet."
+			message=""
 			:primary-label="openLayerLink.label"
 			:primary-to="openLayerLink.to"
-			secondary-label="Coverage"
-			secondary-to="/coverage"
-			tertiary-label="Report missing information"
-			tertiary-to="/contact"
-			title="Contest page not published yet"
+			title="Race information unavailable"
 		/>
 
 		<div v-else class="space-y-8">
@@ -82,7 +85,7 @@ usePageSeo({
 						{{ data.election.name }}
 					</p>
 					<h1 class="text-5xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-						{{ data.contest.office }}
+						{{ displayTitle }}
 					</h1>
 					<p class="text-lg text-app-ink leading-8 mt-4 dark:text-app-text-dark">
 						{{ data.contest.description }}
@@ -143,9 +146,9 @@ usePageSeo({
 				</ul>
 			</section>
 
-			<section class="contest-sources" aria-labelledby="contest-sources-heading">
-				<h2 id="contest-sources-heading" class="text-2xl text-app-ink font-serif dark:text-app-text-dark">
-					Sources
+			<section class="contest-sources">
+				<h2 class="text-base text-app-ink font-semibold dark:text-app-text-dark">
+					Sources ({{ data.sources.length }})
 				</h2>
 				<div class="mt-4">
 					<SourceList :sources="data.sources" />

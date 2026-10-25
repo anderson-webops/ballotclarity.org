@@ -1,16 +1,19 @@
 <script setup lang="ts">
-import { readStateRecordQuery, stateRecordArea, stateRecordScopes, stateRecordStatusLabels } from "~/utils/state-records";
+import { readRecoverableStateRecordQuery, stateRecordSourceMismatch } from "~/utils/state-record-query";
+import { readStateRecordQuery, stateRecordScopes, stateRecordSummaryParts } from "~/utils/state-records";
 
 const route = useRoute();
-const { formatDate, formatDateTime } = useFormatters();
+const { formatDate } = useFormatters();
 const { data: stateData, error: stateError, refresh: refreshStates } = await useStateRecordStates();
-const filters = computed(() => readStateRecordQuery(route.query, stateData.value?.states ?? []));
+const filters = computed(() => readRecoverableStateRecordQuery(route.query, stateData.value?.states ?? []));
 const { data, error, pending, refresh } = await useStateRecords(filters);
+const sourceMismatch = computed(() => stateRecordSourceMismatch(route.query.source, data.value));
 const referenceFilters = computed(() => ({ stateCode: filters.value.stateCode, search: filters.value.search, scope: filters.value.scope, offset: readStateRecordQuery({ offset: route.query.referenceOffset }, []).offset }));
 const { data: referenceData, error: referenceError, pending: referencePending, refresh: refreshReferences } = await useElectionReferences(referenceFilters);
 const selectedState = ref(filters.value.stateCode);
 const selectedSource = ref(filters.value.sourceId ?? "");
 const sourceOptions = computed(() => stateData.value?.states.find(state => state.stateCode === selectedState.value)?.sources ?? []);
+const unavailableSource = computed(() => Boolean(sourceOptions.value.length && filters.value.sourceId && !sourceOptions.value.some(source => source.id === filters.value.sourceId)));
 const searchInput = ref(filters.value.search);
 const selectedScope = ref(filters.value.scope);
 const includeInactive = ref(filters.value.status === "all");
@@ -45,7 +48,7 @@ async function changeState() {
 }
 
 async function retryRecords() {
-	if (stateError.value) await refreshStates();
+	await refreshStates();
 	await refresh();
 }
 
@@ -81,10 +84,13 @@ usePageSeo({
 					</option>
 				</select>
 			</div>
-			<div v-if="sourceOptions.length > 1" class="sm:col-span-2">
+			<div v-if="sourceOptions.length > 1 || unavailableSource" class="sm:col-span-2">
 				<label for="record-source" class="text-sm text-app-ink font-semibold dark:text-app-text-dark">Source</label>
 				<select id="record-source" v-model="selectedSource" class="text-base text-app-ink mt-2 px-3 border border-app-line rounded-lg bg-app-panel h-12 w-full dark:text-app-text-dark dark:border-app-line-dark dark:bg-app-panel-dark focus-ring" @change="applyFilters()">
-					<option value="">
+					<option v-if="unavailableSource" :value="filters.sourceId" disabled>
+						Unavailable source
+					</option>
+					<option v-if="sourceOptions.length > 1" value="">
 						Automatic
 					</option>
 					<option v-for="source in sourceOptions" :key="source.id" :value="source.id">
@@ -106,10 +112,7 @@ usePageSeo({
 				Include inactive records
 			</label>
 		</form>
-		<a v-if="data?.available && referenceData?.available && referenceData.matched" href="#candidate-information-heading" class="text-sm text-app-accent underline underline-offset-3 inline-block focus-ring">
-			Candidate information ({{ referenceData.matched }})
-		</a>
-		<p v-if="stateError || error" class="text-sm text-app-muted dark:text-app-muted-dark" role="status">
+		<p v-if="stateError || error || sourceMismatch" class="text-sm text-app-muted dark:text-app-muted-dark" role="status">
 			Candidate records are temporarily unavailable.
 			<button type="button" class="text-app-accent underline focus-ring" @click="retryRecords()">
 				Retry
@@ -122,29 +125,16 @@ usePageSeo({
 			Loading records…
 		</p>
 		<template v-else-if="data">
-			<div class="text-sm text-app-muted leading-6 space-y-2 dark:text-app-muted-dark">
+			<div class="text-sm text-app-muted leading-6 flex flex-wrap gap-x-4 gap-y-1 items-center dark:text-app-muted-dark">
 				<p v-if="data.source.electionDate">
-					Election: <time :datetime="data.source.electionDate">{{ formatDate(data.source.electionDate) }}</time>
+					<time :datetime="data.source.electionDate">{{ formatDate(data.source.electionDate) }}</time>
 				</p>
-				<p v-if="data.source.label">
-					{{ data.source.label }}<template v-if="data.source.retrievedAt">
-						· Retrieved {{ formatDateTime(data.source.retrievedAt) }}
-					</template>
-				</p>
-				<p v-if="data.source.scopeNotice">
-					{{ data.source.scopeNotice }}
-				</p>
-				<p v-if="data.available">
-					These records are not a personalized ballot. Later changes may be missing.
-				</p>
-				<p v-if="data.source.documentLinks?.length" class="source-documents flex flex-wrap gap-x-5 gap-y-2">
-					<SafeExternalLink v-for="document in data.source.documentLinks" :key="document.url" :href="document.url" class="text-app-accent underline underline-offset-3 focus-ring">
-						{{ document.label }}
-					</SafeExternalLink>
-				</p>
-				<SafeExternalLink v-else-if="data.source.url" :href="data.source.url" class="text-app-accent underline underline-offset-3 inline-block focus-ring">
-					Official source
-				</SafeExternalLink>
+				<NuxtLink v-if="data.source.documentLinks?.length || data.source.url" :to="{ path: '/record-sources', query: { ...route.query, state: filters.stateCode, ...(data.source.id ? { source: data.source.id } : {}) } }" class="text-app-accent py-2 rounded-md underline underline-offset-3 min-h-11 inline-block focus-ring">
+					Sources
+				</NuxtLink>
+				<aside v-if="data.available && data.source.scopeNotice" aria-label="Record limitations" class="basis-full">
+					<p>{{ data.source.scopeNotice }}</p>
+				</aside>
 			</div>
 			<p v-if="!data.available" class="text-sm text-app-muted dark:text-app-muted-dark" role="status">
 				Official candidate records are unavailable for this {{ data.source.id ? "source" : "state" }}.
@@ -160,9 +150,11 @@ usePageSeo({
 								{{ record.name }}
 							</h2>
 							<p class="text-sm text-app-muted leading-6 mt-2 dark:text-app-muted-dark">
-								{{ record.office }}<template v-if="stateRecordArea(record)">
-									· {{ stateRecordArea(record) }}
-								</template> · {{ stateRecordStatusLabels[record.status] }}
+								<template v-for="(part, index) in stateRecordSummaryParts(record)" :key="index">
+									{{ index ? ' · ' : '' }}<PartyLabel v-if="part.isParty" :party="part.label" /><template v-else>
+										{{ part.label }}
+									</template>
+								</template>
 							</p>
 						</NuxtLink>
 					</li>

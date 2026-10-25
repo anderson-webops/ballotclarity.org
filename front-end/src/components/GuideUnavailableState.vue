@@ -28,7 +28,7 @@ const showTertiaryAction = computed(() => Boolean(
 		<h1 class="text-4xl text-app-ink leading-tight font-serif sm:text-5xl dark:text-app-text-dark">
 			{{ title }}
 		</h1>
-		<p class="text-lg text-app-ink leading-8 mt-4 dark:text-app-text-dark">
+		<p v-if="message" class="text-lg text-app-ink leading-8 mt-4 dark:text-app-text-dark">
 			{{ message }}
 		</p>
 		<div class="mt-6 flex flex-wrap gap-x-6 gap-y-3 items-center">

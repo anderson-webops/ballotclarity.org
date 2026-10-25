@@ -188,18 +188,14 @@ function saveToPlan() {
 
 		<GuideUnavailableState
 			v-else-if="error || !candidate"
-			message="This candidate's profile isn't published yet."
+			message=""
 			:primary-label="openLayerLink.label"
 			:primary-to="openLayerLink.to"
-			secondary-label="Coverage"
-			secondary-to="/coverage"
-			tertiary-label="Report missing information"
-			tertiary-to="/contact"
-			title="Candidate profile not published yet"
+			title="Candidate information unavailable"
 		/>
 
 		<div v-else class="detail-layout">
-			<div class="space-y-6">
+			<div class="section-stack print:space-y-6">
 				<header class="surface-panel">
 					<div class="gap-6 grid md:grid-cols-[minmax(0,1fr)_auto] md:items-start">
 						<div>
@@ -213,7 +209,7 @@ function saveToPlan() {
 								<IncumbentBadge v-if="candidate.incumbent" />
 							</div>
 							<p class="text-lg text-app-muted mt-4 dark:text-app-muted-dark">
-								{{ candidate.officeSought }} · {{ candidate.party }}
+								{{ candidate.officeSought }} · <PartyLabel :party="candidate.party" />
 							</p>
 							<p class="text-lg text-app-ink leading-8 mt-5 max-w-3xl dark:text-app-text-dark">
 								{{ candidate.summary }}

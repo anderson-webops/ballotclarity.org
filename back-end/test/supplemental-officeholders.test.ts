@@ -33,6 +33,7 @@ test("state-scoped supplemental merging preserves provider matches without attac
 	const provider: LocationRepresentativeMatch = { id: "controlled:oregon", name: "Controlled Oregon Official", districtLabel: "State Senate 24", officeTitle: "State Senator", governmentLevel: null, officeDisplayLabel: "State Senator", officeType: null, sourceSystem: "Controlled fixture" };
 	assert.deepEqual(mergeRepresentativeMatchesWithSupplementalRecords([provider], districts, "OR"), [provider]);
 	assert.ok(mergeRepresentativeMatchesWithSupplementalRecords([], districts, "UT").some(match => match.id === "supplemental:keven-stratton"));
+	assert.equal(mergeRepresentativeMatchesWithSupplementalRecords([], districts, "UT").find(match => match.id === "supplemental:keven-stratton")?.officialWebsiteUrl, undefined);
 	assert.deepEqual(mergeRepresentativeMatchesWithSupplementalRecords([], districts, ""), []);
 });
 

@@ -50,6 +50,17 @@ export function buildDistrictRepresentativeCountLabel(
 	return "No linked official yet";
 }
 
+export function buildDistrictRepresentativeSection(district: DistrictDescriptorInput, mode: "guide" | "nationwide" = "nationwide") {
+	const kind = mode === "nationwide" ? deriveDistrictPipelineKind(district) : null;
+	const heading = kind === "county" ? "County officials" : kind === "city" ? "City officials" : "District representatives";
+	return {
+		heading,
+		emptyNote: heading === "District representatives"
+			? "Representatives for this district are not listed here yet."
+			: `${heading} are not listed here yet.`
+	};
+}
+
 export function buildDistrictRepresentativeAvailabilityNote(
 	district: DistrictDescriptorInput,
 	representativeCount: number
@@ -78,7 +89,16 @@ export function buildDistrictCandidateAvailabilityNote(candidateCount: number, h
 	if (hasPublishedGuide)
 		return "No candidate field is attached to this district page yet.";
 
-	return "Candidate records and local guide pages are not published for this district yet.";
+	return "Candidate information is not available for this district.";
+}
+
+export function buildDistrictResponsibilitiesHeading(district: DistrictDescriptorInput) {
+	const kind = deriveDistrictPipelineKind(district);
+	if (kind === "county")
+		return "County responsibilities";
+	if (kind === "city")
+		return "City responsibilities";
+	return "Responsibilities";
 }
 
 export function buildNationwideDistrictRoleGuide(district: DistrictDescriptorInput): ContestRoleGuide {
@@ -112,8 +132,7 @@ export function buildNationwideDistrictRoleGuide(district: DistrictDescriptorInp
 		return {
 			decisionAreas: [
 				"County administration and budgeting",
-				"County services and local implementation",
-				"Local verification through county election offices"
+				"County services and local implementation"
 			],
 			summary: "This county geography helps orient the results even when county officeholder records are still limited.",
 			whyItMatters: "County matches help users reach the right official county election tools and verify the local government area for these results."
@@ -123,9 +142,7 @@ export function buildNationwideDistrictRoleGuide(district: DistrictDescriptorInp
 	if (kind === "city") {
 		return {
 			decisionAreas: [
-				"City governance and municipal services",
-				"Council, mayoral, and local administrative context",
-				"Official local verification through municipal or county election tools"
+				"City governance and municipal services"
 			],
 			summary: "This city geography helps orient the results even when city officeholder records are still limited.",
 			whyItMatters: "City matches help users verify locality, official tools, and the local jurisdiction tied to this area."
@@ -133,12 +150,8 @@ export function buildNationwideDistrictRoleGuide(district: DistrictDescriptorInp
 	}
 
 	return {
-		decisionAreas: [
-			"Jurisdiction verification",
-			"District and office matching",
-			"Official election tool discovery"
-		],
+		decisionAreas: [],
 		summary: "This district is part of the results for this location.",
-		whyItMatters: "Even when a local guide is not published, this district layer helps orient users around geography, offices, and official election links."
+		whyItMatters: ""
 	};
 }

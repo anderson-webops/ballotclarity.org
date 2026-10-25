@@ -27,7 +27,7 @@ test("location-guess copy stays manual-only when automatic guessing is disabled"
 	assert.match(uiContent.lookupForm, /full address or ZIP code/i);
 	assert.doesNotMatch(uiContent.lookupForm, /manual lookup only/i);
 	assert.match(uiContent.resultsEmpty, /enter an address or ZIP code/i);
-	assert.match(uiContent.plan, /local guide/i);
+	assert.equal(uiContent.plan, "");
 	assert.equal(buildHomeLocationGuessCopy(locationGuess), uiContent.home);
 	assert.equal(buildLookupFormLocationGuessCopy(locationGuess), uiContent.lookupForm);
 	assert.equal(buildResultsEmptyStateCopy(locationGuess), uiContent.resultsEmpty);
@@ -49,7 +49,7 @@ test("location-guess copy explains the approximate IP-based path when automatic 
 	assert.match(uiContent.home, /approximate location guess/i);
 	assert.match(uiContent.lookupForm, /replace it here/i);
 	assert.match(uiContent.resultsEmpty, /saved results in this browser yet/i);
-	assert.match(uiContent.plan, /local guide/i);
+	assert.equal(uiContent.plan, "");
 	assert.equal(buildHomeLocationGuessCopy(locationGuess), uiContent.home);
 	assert.equal(buildLookupFormLocationGuessCopy(locationGuess), uiContent.lookupForm);
 	assert.equal(buildResultsEmptyStateCopy(locationGuess), uiContent.resultsEmpty);

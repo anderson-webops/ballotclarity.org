@@ -1,21 +1,24 @@
 <script setup lang="ts">
 import { useNow } from "@vueuse/core";
 import { buildKeyDateTimeline, calendarDaysUntil, describeDaysAway } from "~/utils/election-timeline";
+import { fullAreaGuideLabels } from "~/utils/guide-scope";
 import { limitedBallotNotice } from "~/utils/results-summary";
 
 const civicStore = useCivicStore();
-const { displayTimeZone, formatDate } = useFormatters();
+const { displayTimeZone, formatDate, formatDateTime } = useFormatters();
 const electionSlug = useRouteStringParam("slug");
 const { data, error, pending } = await useBallot(electionSlug);
-// Only a guide that is still under review needs a status line; a verified guide speaks for itself.
-const guideStatusNote = computed(() => !data.value?.guideContent?.verifiedContestPackage && data.value?.guideContent?.publishedGuideShell
-	? limitedBallotNotice
-	: "");
+const guideStatusNote = computed(() => data.value?.scope === "statewide"
+	? fullAreaGuideLabels(data.value?.location.state).limitation
+	: !data.value?.guideContent?.verifiedContestPackage && data.value?.guideContent?.publishedGuideShell
+			? limitedBallotNotice
+			: data.value?.coverageLimits?.[0] ?? "");
 
 // Ticks each minute so "Today" and "Next" move on when a deadline passes while the page stays open.
 const now = useNow({ interval: 60_000 });
 const keyDateTimeline = computed(() => data.value ? buildKeyDateTimeline(data.value.election.keyDates, now.value, displayTimeZone.value) : []);
 const upcomingKeyDates = computed(() => keyDateTimeline.value.filter(entry => entry.status !== "passed"));
+const pastKeyDates = computed(() => keyDateTimeline.value.filter(entry => entry.status === "passed"));
 const electionDayLabel = computed(() => {
 	if (!data.value?.election.date)
 		return "";
@@ -74,7 +77,7 @@ usePageSeo({
 			</InfoCallout>
 		</div>
 
-		<div v-else class="space-y-8">
+		<div v-else class="section-stack print:space-y-8">
 			<header class="max-w-4xl">
 				<div>
 					<p class="eyebrow">
@@ -107,7 +110,7 @@ usePageSeo({
 				</div>
 			</header>
 
-			<section id="key-dates" class="surface-panel">
+			<section v-if="data.election.keyDates.length" id="key-dates" class="surface-panel">
 				<div class="flex flex-wrap gap-4 items-start justify-between">
 					<div>
 						<h2 class="text-2xl text-app-ink font-serif sm:text-3xl dark:text-app-text-dark">
@@ -117,6 +120,12 @@ usePageSeo({
 					<UpdatedAt :value="data.election.updatedAt" label="Updated" />
 				</div>
 				<ElectionKeyDates v-if="upcomingKeyDates.length" :entries="upcomingKeyDates" />
+				<section v-if="pastKeyDates.length" class="mt-6">
+					<h3 class="text-sm text-app-muted font-semibold dark:text-app-muted-dark">
+						Past dates ({{ pastKeyDates.length }})
+					</h3>
+					<ElectionKeyDates :entries="pastKeyDates" />
+				</section>
 			</section>
 
 			<section class="surface-panel">
@@ -126,62 +135,41 @@ usePageSeo({
 				<div class="mt-6">
 					<OfficialResourceList :resources="data.election.officialResources" />
 				</div>
+				<section v-if="data.election.changeLog.length" class="mt-6">
+					<h3 class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
+						Updates
+					</h3>
+					<ul class="mt-4 space-y-3">
+						<li v-for="entry in data.election.changeLog" :key="entry.id" class="content-block">
+							<p class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
+								{{ formatDateTime(entry.date) }}
+							</p>
+							<p class="text-sm text-app-muted leading-7 mt-2 dark:text-app-muted-dark">
+								{{ entry.summary }}
+							</p>
+						</li>
+					</ul>
+				</section>
 			</section>
 
 			<section v-if="data.guideContent?.verifiedContestPackage && data.election.contests.length" class="surface-panel">
 				<div class="flex flex-wrap gap-4 items-center justify-between">
 					<div>
 						<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
-							Contest index
+							Ballot items
 						</h2>
 					</div>
-					<NuxtLink :to="`/ballot/${data.election.slug}`" class="btn-secondary">
-						Read the full ballot guide
-					</NuxtLink>
 				</div>
 
 				<div class="mt-6 gap-5 grid xl:grid-cols-2">
-					<article v-for="contest in data.election.contests" :key="contest.slug" class="content-block">
-						<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
-							{{ contest.jurisdiction }}
-						</p>
+					<NuxtLink v-for="contest in data.election.contests" :key="contest.slug" :to="`/contest/${contest.slug}`" class="content-block block focus-ring">
 						<h3 class="text-2xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-							{{ contest.office }}
+							{{ contest.type === 'measure' ? contest.title : contest.office }}
 						</h3>
-						<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
-							{{ contest.description }}
+						<p v-if="contest.description || contest.measures?.[0]?.summary" class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
+							{{ contest.description || contest.measures?.[0]?.summary }}
 						</p>
-						<NuxtLink :to="`/contest/${contest.slug}`" class="text-sm text-app-accent font-semibold mt-4 rounded-lg inline-flex gap-2 items-center focus-ring">
-							<span>Contest page</span>
-							<span class="i-carbon-arrow-right" />
-						</NuxtLink>
-						<NuxtLink
-							v-if="contest.type === 'candidate'"
-							:to="`/districts/${contest.slug}`"
-							class="text-sm text-app-accent font-semibold mt-3 rounded-lg inline-flex gap-2 items-center focus-ring"
-						>
-							<span>District page</span>
-							<span class="i-carbon-arrow-right" />
-						</NuxtLink>
-						<ul class="text-sm text-app-muted leading-7 mt-4 space-y-2 dark:text-app-muted-dark">
-							<template v-if="contest.type === 'candidate'">
-								<li v-for="candidate in contest.candidates" :key="candidate.slug" class="flex gap-3 items-start">
-									<span class="i-carbon-user-avatar text-app-accent mt-1" />
-									<NuxtLink :to="`/candidate/${candidate.slug}`" class="rounded-md hover:text-app-accent focus-ring dark:hover:text-white">
-										{{ candidate.name }}
-									</NuxtLink>
-								</li>
-							</template>
-							<template v-else>
-								<li v-for="measure in contest.measures" :key="measure.slug" class="flex gap-3 items-start">
-									<span class="i-carbon-document text-app-accent mt-1" />
-									<NuxtLink :to="`/measure/${measure.slug}`" class="rounded-md hover:text-app-accent focus-ring dark:hover:text-white">
-										{{ measure.title }}
-									</NuxtLink>
-								</li>
-							</template>
-						</ul>
-					</article>
+					</NuxtLink>
 				</div>
 			</section>
 		</div>

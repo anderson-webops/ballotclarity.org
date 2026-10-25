@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { storeToRefs } from "pinia";
 
+import { buildDistrictRepresentativeSection, buildDistrictResponsibilitiesHeading } from "~/utils/district-availability";
 import { buildGuideDistrictPageRecord, buildNationwideDistrictPageRecord } from "~/utils/district-page";
 import { isExternalHref } from "~/utils/link";
-import { buildLookupContextFromNationwideResult, buildNationwideLookupRouteQuery, buildNationwideRouteTarget } from "~/utils/nationwide-route-context";
-import { resolveRepresentativePresentation } from "~/utils/representative-presentation";
+import { buildCivicDirectoryApiQuery, buildLookupContextFromNationwideResult, buildNationwideLookupRouteQuery, buildNationwideRouteTarget } from "~/utils/nationwide-route-context";
+import { resolveRepresentativeContentSummary, resolveRepresentativePresentation } from "~/utils/representative-presentation";
 
 const route = useRoute();
 const civicStore = useCivicStore();
@@ -33,6 +34,16 @@ const districtPageData = computed(() => {
 });
 const pagePending = computed(() => guidePending.value || (!guideData.value && !lookupFallbackData.value));
 const pageError = computed(() => districtPageData.value ? null : guideError.value);
+const responsibilitiesHeading = computed(() => districtPageData.value?.mode === "nationwide"
+	? buildDistrictResponsibilitiesHeading(districtPageData.value.district)
+	: "Responsibilities");
+const representativeSection = computed(() => districtPageData.value
+	? buildDistrictRepresentativeSection(districtPageData.value.district, districtPageData.value.mode)
+	: { heading: "District representatives", emptyNote: "" });
+const representativeDirectoryTarget = computed(() => ({
+	path: "/representatives",
+	query: { ...buildCivicDirectoryApiQuery(buildLookupContextFromNationwideResult(activeNationwideLookupResult.value), route.query) }
+}));
 function buildLookupAwareTarget(path: string) {
 	return buildNationwideRouteTarget(path, buildLookupContextFromNationwideResult(activeNationwideLookupResult.value), route.query);
 }
@@ -50,14 +61,16 @@ const breadcrumbs = computed(() => [
 const sectionLinks = computed(() => (districtPageData.value
 	? [
 			{ href: "#overview", label: "Overview", note: "District and office context" },
-			{ href: "#representatives", label: "Current representatives", badge: String(districtPageData.value.representatives.length) },
+			{ href: "#representatives", label: representativeSection.value.heading, badge: String(districtPageData.value.representatives.length) },
 			...(districtPageData.value.candidates.length
-				? [{ href: "#candidates", label: "Candidate field", badge: String(districtPageData.value.candidates.length) }]
+				? [{ href: "#candidates", label: "Candidates", badge: String(districtPageData.value.candidates.length) }]
 				: []),
 			...(districtPageData.value.officialResources.length
 				? [{ href: "#official-tools", label: "Official tools", badge: String(districtPageData.value.officialResources.length) }]
 				: []),
-			{ href: "#sources", label: "Sources", badge: String(districtPageData.value.sources.length) }
+			...(districtPageData.value.sources.length
+				? [{ href: "#sources", label: "Sources", badge: String(districtPageData.value.sources.length) }]
+				: [])
 		]
 	: []));
 
@@ -106,7 +119,7 @@ usePageSeo({
 		</div>
 
 		<div v-else class="gap-8 grid xl:grid-cols-[minmax(0,1.1fr)_minmax(18rem,0.9fr)]">
-			<div class="space-y-8">
+			<div class="section-stack print:space-y-8">
 				<header id="overview" class="surface-panel">
 					<AppBreadcrumbs :items="breadcrumbs" />
 					<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
@@ -115,7 +128,7 @@ usePageSeo({
 					<h1 class="text-5xl text-app-ink font-serif mt-2 dark:text-app-text-dark">
 						{{ districtPageData.district.title }}
 					</h1>
-					<p class="text-lg text-app-ink leading-8 mt-4 dark:text-app-text-dark">
+					<p v-if="districtPageData.mode === 'guide' && districtPageData.district.description" class="text-lg text-app-ink leading-8 mt-4 dark:text-app-text-dark">
 						{{ districtPageData.district.description }}
 					</p>
 					<div class="mt-5 flex flex-wrap gap-x-6 gap-y-3 items-center">
@@ -125,22 +138,19 @@ usePageSeo({
 						<NuxtLink :to="buildLookupAwareTarget(districtContextLink.to)" class="btn-secondary">
 							{{ districtContextLink.label }}
 						</NuxtLink>
-						<UpdatedAt :value="districtPageData.updatedAt" label="Updated" />
+						<UpdatedAt v-if="districtPageData.representatives.length || districtPageData.candidates.length || districtPageData.relatedContests.length" :value="districtPageData.updatedAt" label="Updated" />
 					</div>
-					<p v-if="!districtPageData.candidates.length" class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-						<strong class="text-app-ink dark:text-app-text-dark">Candidate field:</strong> {{ districtPageData.candidateAvailabilityNote }}
-					</p>
 				</header>
 
 				<section id="representatives" class="surface-panel">
 					<div class="flex flex-wrap gap-4 items-center justify-between">
 						<div>
 							<h2 class="text-2xl text-app-ink font-serif dark:text-app-text-dark">
-								Current representatives
+								{{ representativeSection.heading }}
 							</h2>
 						</div>
-						<NuxtLink to="/representatives" class="btn-secondary">
-							All representatives
+						<NuxtLink :to="representativeDirectoryTarget" class="btn-secondary">
+							Representative directory
 						</NuxtLink>
 					</div>
 					<div v-if="districtPageData.representatives.length" class="mt-6 gap-5 grid lg:grid-cols-2">
@@ -157,33 +167,26 @@ usePageSeo({
 										{{ representative.name }}
 									</p>
 									<p class="text-sm text-app-muted mt-1 dark:text-app-muted-dark">
-										{{ representative.party }} · {{ getRepresentativePresentation(representative).officeDisplayLabel }}
+										<PartyLabel :party="representative.party" /> · {{ getRepresentativePresentation(representative).officeDisplayLabel }}
 									</p>
 								</div>
 							</div>
-							<p class="text-sm text-app-ink leading-6 mt-3 dark:text-app-text-dark">
-								{{ representative.summary }}
+							<p v-if="resolveRepresentativeContentSummary(representative.summary)" class="text-sm text-app-ink leading-6 mt-3 dark:text-app-text-dark">
+								{{ resolveRepresentativeContentSummary(representative.summary) }}
 							</p>
 							<div class="mt-3 flex flex-wrap gap-x-5 gap-y-1">
 								<SafeExternalLink
 									v-if="isExternalHref(representative.href)"
 									:href="representative.href"
+									external-icon
 									class="btn-secondary inline-flex gap-2 items-center"
 								>
 									Open record
-									<span class="i-carbon-launch" />
 								</SafeExternalLink>
 								<NuxtLink v-else :to="buildLookupAwareTarget(representative.href)" class="btn-secondary">
 									Profile
 								</NuxtLink>
-								<SafeExternalLink
-									v-if="representative.openstatesUrl"
-									:href="representative.openstatesUrl"
-									class="btn-secondary inline-flex gap-2 items-center"
-								>
-									Provider record
-									<span class="i-carbon-launch" />
-								</SafeExternalLink>
+								<RepresentativeWebsite :website-url="representative.officialWebsiteUrl" :provider-url="representative.openstatesUrl" class="btn-secondary" />
 								<NuxtLink
 									v-if="!isExternalHref(representative.href) && representative.fundingAvailable"
 									:to="buildLookupAwareTarget(`${representative.href}/funding`)"
@@ -209,25 +212,17 @@ usePageSeo({
 							</div>
 						</article>
 					</div>
-					<InfoCallout
-						v-else
-						:title="districtPageData.mode === 'nationwide' ? 'No linked official is attached yet' : 'No current representative in this field'"
-						tone="warning"
-						class="mt-6"
-					>
-						{{ districtPageData.representativeAvailabilityNote }}
-					</InfoCallout>
+					<p v-else class="text-sm text-app-muted leading-6 mt-4 dark:text-app-muted-dark">
+						{{ representativeSection.emptyNote }}
+					</p>
 				</section>
 
 				<section v-if="districtPageData.candidates.length" id="candidates" class="surface-panel">
 					<div class="flex flex-wrap gap-4 items-center justify-between">
 						<div>
 							<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
-								Candidate field
+								Candidates
 							</h2>
-							<p class="text-sm text-app-muted leading-7 mt-3 dark:text-app-muted-dark">
-								{{ districtPageData.candidateAvailabilityNote }}
-							</p>
 						</div>
 						<NuxtLink v-if="districtPageData.mode === 'guide'" :to="`/contest/${districtPageData.district.slug}`" class="btn-secondary">
 							Open contest page
@@ -251,7 +246,7 @@ usePageSeo({
 					</div>
 				</section>
 
-				<section id="sources" class="surface-panel scroll-mt-28">
+				<section v-if="districtPageData.sources.length" id="sources" class="surface-panel scroll-mt-28">
 					<h2 class="text-2xl text-app-ink font-serif dark:text-app-text-dark">
 						District sources
 					</h2>
@@ -276,17 +271,18 @@ usePageSeo({
 					</template>
 				</PageSectionNav>
 
-				<section>
-					<h2 class="text-lg text-app-ink font-semibold dark:text-app-text-dark">
-						What this office does
+				<section
+					v-if="districtPageData.district.roleGuide.decisionAreas.length || (districtPageData.mode === 'guide' && districtPageData.district.roleGuide.summary)"
+					aria-labelledby="district-responsibilities"
+					class="text-base text-app-ink leading-7 dark:text-app-text-dark"
+				>
+					<h2 id="district-responsibilities" class="text-lg font-semibold">
+						{{ responsibilitiesHeading }}
 					</h2>
-					<p class="text-base text-app-ink leading-7 mt-2 dark:text-app-text-dark">
+					<p v-if="districtPageData.mode === 'guide' && districtPageData.district.roleGuide.summary" class="mt-2">
 						{{ districtPageData.district.roleGuide.summary }}
 					</p>
-					<p class="text-sm text-app-muted leading-6 mt-2 dark:text-app-muted-dark">
-						{{ districtPageData.district.roleGuide.whyItMatters }}
-					</p>
-					<ul class="text-sm text-app-ink leading-6 mt-2 pl-5 list-disc space-y-1 dark:text-app-text-dark">
+					<ul v-if="districtPageData.district.roleGuide.decisionAreas.length" class="mt-2 pl-5 list-disc space-y-1">
 						<li v-for="area in districtPageData.district.roleGuide.decisionAreas" :key="area">
 							{{ area }}
 						</li>

@@ -5,7 +5,7 @@ export const limitedBallotNotice = "Ballot information for your area is currentl
 
 type ResultsSummaryContext = Pick<
 	NationwideLookupResultContext,
-	"districtMatches" | "guideAvailability" | "guideContent" | "lookupQuery" | "representativeMatches" | "selectionId"
+	"ballotContentPreviews" | "districtMatches" | "guideAvailability" | "guideContent" | "lookupQuery" | "representativeMatches" | "selectionId"
 > | null | undefined;
 
 export interface ResultsSummaryItem {
@@ -44,19 +44,6 @@ export function buildResultsSummaryItems(
 			label: "Official tools",
 			note: "State and county election links for this area.",
 			value: officialToolCount
-		},
-		{
-			label: "Guide status",
-			note: activeResult?.guideContent?.verifiedContestPackage
-				? "Verified local contest pages are available for this area."
-				: activeResult?.guideAvailability === "published"
-					? limitedBallotNotice
-					: "Detailed ballot pages open when a local guide is published.",
-			value: activeResult?.guideContent?.verifiedContestPackage
-				? "Verified"
-				: activeResult?.guideAvailability === "published"
-					? "Limited"
-					: "Not published"
 		}
 	];
 }

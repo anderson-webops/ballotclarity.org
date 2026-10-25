@@ -1,12 +1,15 @@
 <script setup lang="ts">
 import type { Election, GuideContentSummary, LocationSelection } from "~/types/civic";
+import { fullAreaGuideLabels } from "~/utils/guide-scope";
 import { limitedBallotNotice } from "~/utils/results-summary";
 
 const props = defineProps<{
 	election: Election;
+	coverageLimits?: string[];
 	guideContent?: GuideContentSummary | null;
 	location: LocationSelection;
 	note: string;
+	scope?: "statewide" | "local";
 }>();
 
 const { formatDate } = useFormatters();
@@ -14,22 +17,34 @@ const contestCount = computed(() => props.election.contests.length);
 const measureCount = computed(() => props.election.contests.reduce((count, contest) => count + (contest.measures?.length ?? 0), 0));
 const hasVerifiedContestPackage = computed(() => Boolean(props.guideContent?.verifiedContestPackage));
 const isGuideShellOnly = computed(() => Boolean(props.guideContent?.publishedGuideShell) && !hasVerifiedContestPackage.value);
+const areaGuideLabels = computed(() => fullAreaGuideLabels(props.location.state));
 const guideStatus = computed(() => hasVerifiedContestPackage.value
-	? { label: "Verified guide", tone: "success" as const }
+	? props.scope === "statewide"
+		? { label: areaGuideLabels.value.status, tone: "warning" as const }
+		: props.coverageLimits?.length
+			? { label: "Partial ballot information", tone: "warning" as const }
+			: { label: "Verified guide", tone: "success" as const }
 	: isGuideShellOnly.value
 		? { label: limitedBallotNotice, tone: "warning" as const }
 		: { label: props.note, tone: "warning" as const });
 const facts = computed(() => hasVerifiedContestPackage.value
-	? [
-			{ label: "Contests", value: String(contestCount.value) },
-			{ label: "Measures", value: String(measureCount.value) }
-		]
+	? props.election.contests.every(contest => contest.type === "measure")
+		? [{ label: "Measures", value: String(measureCount.value) }]
+		: [
+				{ label: "Contests", value: String(contestCount.value) },
+				{ label: "Measures", value: String(measureCount.value) }
+			]
 	: [
 			{ label: "Official links", value: String(props.election.officialResources.length) },
 			{ label: "Key dates", value: String(props.election.keyDates.length) }
 		]);
 // A guide not matched to a verified address needs one local caveat; ZIP codes get the more specific reason.
 const confirmationCaveat = computed(() => {
+	if (props.scope === "statewide")
+		return `${areaGuideLabels.value.limitation} Confirm your ballot with your election office.`;
+	if (hasVerifiedContestPackage.value && props.coverageLimits?.length)
+		return `${props.coverageLimits[0]} Confirm your ballot with your election office.`;
+
 	if (props.location.lookupMode === "zip-preview")
 		return "ZIP codes can span districts. Confirm your exact ballot with the official election tools.";
 

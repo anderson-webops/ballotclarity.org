@@ -1,17 +1,25 @@
 import { congressionalBiographySources } from "./congressional-biographies.js";
-import { washingtonStateStatementSources } from "./washington-statement-sources.js";
+import { openStatesBulkSources } from "./openstates-bulk.js";
+import { washingtonLocalStatementSources, washingtonStateStatementSources } from "./washington-statement-sources.js";
 
 export interface ElectionReferenceSource {
 	id: string;
 	stateCode: string;
 	electionDate: string;
 	allowIdentityOnly?: boolean;
+	optional?: boolean;
+	washingtonLocality?: {
+		countyDisplay: string;
+		rosterJurisdiction: "County";
+		statementJurisdiction: "Countywide";
+		statementJurisdictionType: "CTY";
+	};
 	documents: readonly {
 		url: string;
 		pageUrl?: string;
 		title: string;
 		publisher: string;
-		kind: "candidate-statement" | "news-report" | "official-biography";
+		kind: "candidate-statement" | "news-report" | "official-biography" | "public-dataset";
 		publishedDate?: string;
 	}[];
 }
@@ -205,4 +213,19 @@ export const electionReferenceSources: readonly ElectionReferenceSource[] = [
 		],
 	},
 	...washingtonStateStatementSources,
+	{
+		id: "id-statewide-biographies-2026",
+		stateCode: "ID",
+		electionDate: "2026-11-03",
+		documents: [
+			{ url: "https://gov.idaho.gov/our-governor/", title: "Brad Little biography", publisher: "Office of the Idaho Governor", kind: "official-biography" },
+			{ url: "https://lgo.idaho.gov/about/", title: "Scott Bedke biography", publisher: "Office of the Idaho Lieutenant Governor", kind: "official-biography" },
+			{ url: "https://sos.idaho.gov/meet-the-secretary/", title: "Phil McGrane biography", publisher: "Idaho Secretary of State", kind: "official-biography" },
+			{ url: "https://www.ag.idaho.gov/about/", title: "Raúl R. Labrador biography", publisher: "Idaho Office of the Attorney General", kind: "official-biography" },
+			{ url: "https://www.sde.idaho.gov/about-us/superintendent/", title: "Debbie Critchfield biography", publisher: "Idaho Department of Education", kind: "official-biography" },
+			{ url: "https://sto.idaho.gov/About/Julie-A-Ellsworth-State-Treasurer", title: "Julie A. Ellsworth biography", publisher: "Idaho State Treasurer's Office", kind: "official-biography" },
+		],
+	},
+	...openStatesBulkSources,
+	...washingtonLocalStatementSources,
 ];

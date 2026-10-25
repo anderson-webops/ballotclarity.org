@@ -4,6 +4,7 @@ import { createFetchTimeoutSignal, resolveFetchTimeoutMs } from "./fetch-timeout
 
 export interface CongressMemberRecord {
 	bioguideId: string;
+	depiction?: CongressMemberDetail["depiction"];
 	currentMember?: boolean;
 	district?: number;
 	name: string;
@@ -67,6 +68,7 @@ interface CongressClientOptions {
 interface CongressMembersResponse {
 	members?: Array<{
 		bioguideId?: string;
+		depiction?: CongressMemberDetail["depiction"];
 		district?: number;
 		name?: string;
 		partyName?: string;
@@ -184,6 +186,9 @@ export function createCongressClient({
 				const pageMembers = (payload.members ?? []).map(member => ({
 					bioguideId: member.bioguideId?.trim() || "unknown-member",
 					currentMember: deriveCurrentMemberFromTerms(member.terms?.item),
+					depiction: member.depiction?.imageUrl?.trim()
+						? { imageUrl: member.depiction.imageUrl.trim(), attribution: member.depiction.attribution?.trim() || undefined }
+						: undefined,
 					district: member.district,
 					name: member.name?.trim() || "Unknown member",
 					party: member.partyName?.trim() || "Unknown party",
@@ -289,6 +294,9 @@ export function createCongressClient({
 			return (payload.members ?? []).map(member => ({
 				bioguideId: member.bioguideId?.trim() || "unknown-member",
 				currentMember: deriveCurrentMemberFromTerms(member.terms?.item),
+				depiction: member.depiction?.imageUrl?.trim()
+					? { imageUrl: member.depiction.imageUrl.trim(), attribution: member.depiction.attribution?.trim() || undefined }
+					: undefined,
 				district: member.district,
 				name: member.name?.trim() || "Unknown member",
 				party: member.partyName?.trim() || "Unknown party",

@@ -8,7 +8,7 @@ definePageMeta({
 });
 
 const { data: session } = await useAdminSession("admin-sources-session");
-const { data, refresh } = await useAdminSourceMonitor();
+const { data, error, pending, refresh } = await useAdminSourceMonitor();
 const canManageSources = computed(() => session.value?.role === "admin" && Boolean(session.value.mfaEnabledAt));
 const healthOptions: AdminSourceHealth[] = ["healthy", "review-soon", "stale", "incident"];
 const savingId = ref<string | null>(null);
@@ -29,7 +29,7 @@ async function saveSource(id: string, payload: {
 			body: payload,
 			method: "PATCH"
 		});
-		feedbackMessage.value = "Source monitor updated.";
+		feedbackMessage.value = "Editorial notice updated.";
 		feedbackTone.value = "success";
 		await refresh();
 	}
@@ -59,12 +59,13 @@ usePageSeo({
 				Source health
 			</p>
 			<h1 class="text-5xl text-app-ink font-serif mt-4 dark:text-app-text-dark">
-				Upstream monitoring and refresh readiness
+				Editorial source notices
 			</h1>
 			<p class="text-base text-app-muted leading-8 mt-5 dark:text-app-muted-dark">
-				These checks are the operational layer behind freshness badges and methodology notes. If a source drifts, the public site should surface caution instead of pretending nothing changed.
+				These notices affect public status. Automatic collection results are in Operations.
 			</p>
 		</header>
+		<AdminLoadState :pending="pending" :error="Boolean(error)" label="records" @retry="refresh()" />
 
 		<InfoCallout v-if="session?.role !== 'admin'" title="Admin-only changes" tone="warning">
 			You can review source health, but only admin users can change operational source status.
@@ -84,7 +85,7 @@ usePageSeo({
 		</p>
 
 		<AdminEmptyState
-			v-if="!(data?.sources?.length ?? 0)"
+			v-if="!pending && !error && !(data?.sources?.length ?? 0)"
 			action-label="Open public sources"
 			action-to="/sources"
 			eyebrow="No monitored sources"
@@ -112,7 +113,7 @@ usePageSeo({
 
 					<form class="space-y-4" @submit.prevent="saveSource(item.id, item)">
 						<div class="px-4 py-4 border border-app-line/80 rounded-xl bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
-							<UpdatedAt :value="item.lastCheckedAt" label="Last checked" />
+							<UpdatedAt :value="item.lastCheckedAt" label="Previously recorded check" />
 						</div>
 						<div class="px-4 py-4 border border-app-line/80 rounded-xl bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
 							<UpdatedAt :value="item.nextCheckAt" label="Next check" />

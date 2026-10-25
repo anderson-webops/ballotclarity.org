@@ -25,7 +25,11 @@ export function useRepresentative(
 		},
 		{
 			default: () => null,
-			watch: [slug, lookupQuery]
+			watch: [
+				slug,
+				() => lookupQuery.value?.lookup,
+				() => lookupQuery.value?.selection
+			]
 		}
 	);
 }

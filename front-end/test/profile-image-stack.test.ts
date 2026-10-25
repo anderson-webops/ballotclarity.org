@@ -12,4 +12,5 @@ test("profile portraits overpaint the rounded frame edge", () => {
 		assert.match(profileImageStack, new RegExp(`class="[^"]*${utility}`));
 
 	assert.match(profileImageStack, /<span v-else class="relative z-10"/);
+	assert.match(profileImageStack, /referrerpolicy="no-referrer"/);
 });

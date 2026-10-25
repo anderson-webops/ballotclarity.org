@@ -205,6 +205,19 @@ export interface PublicStateCandidateRecord {
 	sourceAreaLabel?: string;
 }
 
+export interface PublicJudicialEvaluation {
+	officialRecordId: string;
+	stateCode: string;
+	electionDate: string;
+	issuer: string;
+	courtLabel: string;
+	recommendation: "retain" | "do-not-retain" | "not-made";
+	performanceFinding: "met-standards" | "did-not-meet-standards" | "not-made";
+	criteriaCited: string[];
+	publicationDate: string;
+	source: { url: string; capturedAt: string };
+}
+
 export interface PublicElectionReference {
 	id: string;
 	name: string;
@@ -214,7 +227,7 @@ export interface PublicElectionReference {
 	facts: string[];
 	source: {
 		collectionId?: string;
-		kind: "candidate-statement" | "news-report" | "official-biography";
+		kind: "candidate-statement" | "news-report" | "official-biography" | "public-dataset";
 		title: string;
 		publisher: string;
 		url: string;
@@ -414,6 +427,8 @@ export interface LookupAvailability {
 
 export interface RepresentativeCard {
 	id: string;
+	officialWebsiteUrl?: string;
+	profileImages?: ProfileImage[];
 	name: string;
 	officeTitle: string;
 	districtLabel: string;
@@ -593,6 +608,8 @@ export interface Candidate {
 
 export interface Measure {
 	slug: string;
+	electionSlug?: string;
+	electionDate?: string;
 	title: string;
 	contestSlug: string;
 	location: string;
@@ -604,6 +621,8 @@ export interface Measure {
 	proposedChanges: MeasureChangeItem[];
 	yesMeaning: string;
 	noMeaning: string;
+	ballotOptions?: { yes: string; no: string };
+	decisionEffect?: "advisory";
 	yesHighlights: string[];
 	noHighlights: string[];
 	fiscalContextNote: string;
@@ -746,6 +765,8 @@ export interface LocationLookupAction {
 	description: string;
 	badge?: string;
 	electionSlug?: string;
+	electionDate?: string;
+	guideContent?: GuideContentSummary | null;
 	location?: LocationSelection;
 	url?: string;
 }
@@ -1250,6 +1271,8 @@ export interface RepresentativesResponse {
 }
 
 export interface BallotResponse {
+	coverageLimits?: string[];
+	scope?: "statewide" | "local";
 	guideContent: GuideContentSummary | null;
 	location: LocationSelection;
 	election: Election;
@@ -1739,4 +1762,48 @@ export interface AdminSessionResponse {
 	passwordChangeRequiredAt?: string;
 	role: AdminUserRole | null;
 	username: string | null;
+}
+
+export interface AdminOperationDataset {
+	id: string;
+	label: string;
+	stateCode: string;
+	electionDate: string;
+	kind: "candidates" | "references";
+	mode: "automatic" | "reviewed";
+	status: "current" | "stale" | "missing" | "error" | "archived";
+	records: number | null;
+	retrievedAt: string | null;
+	lastAttemptAt: string | null;
+	lastImportAt: string | null;
+	failure: string | null;
+}
+export interface AdminAutomationResult {
+	sourceId: string;
+	status: "imported" | "cached" | "failed";
+	records: number;
+	reason: "source-unavailable" | "persistence-failed" | "configuration-invalid" | null;
+}
+export interface AdminAutomationRun {
+	schemaVersion: 1;
+	type: "ballot-automation-run";
+	status: "running" | "succeeded" | "failed" | "stopped";
+	startedAt: string;
+	finishedAt: string | null;
+	lastSuccessAt: string | null;
+	lastImportAt: string | null;
+	nextRunAt: string | null;
+	results: AdminAutomationResult[];
+}
+export interface AdminOperationsResponse {
+	checkedAt: string;
+	datasets: AdminOperationDataset[];
+	automation: {
+		status: "unreported" | "invalid" | "running" | "scheduled" | "overdue" | "succeeded" | "failed" | "stopped";
+		lastAttemptAt: string | null;
+		lastSuccessAt: string | null;
+		lastImportAt: string | null;
+		nextRunAt: string | null;
+		results: AdminAutomationResult[];
+	};
 }

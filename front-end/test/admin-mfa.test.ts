@@ -7,8 +7,8 @@ const loginPage = readFileSync(resolve("src/pages/admin/login.vue"), "utf8");
 const accountPage = readFileSync(resolve("src/pages/admin/account.vue"), "utf8");
 const usersPage = readFileSync(resolve("src/pages/admin/users.vue"), "utf8");
 const sourcesPage = readFileSync(resolve("src/pages/admin/sources.vue"), "utf8");
-const packagesPage = readFileSync(resolve("src/pages/admin/packages.vue"), "utf8");
-const dashboardPage = readFileSync(resolve("src/pages/admin/index.vue"), "utf8");
+const packagesPage = readFileSync(resolve("src/pages/admin/packages/[id].vue"), "utf8");
+const settingsPage = readFileSync(resolve("src/pages/admin/settings.vue"), "utf8");
 const adminAuth = readFileSync(resolve("server/utils/admin-auth.ts"), "utf8");
 const adminOriginMiddleware = readFileSync(resolve("server/middleware/admin-origin.ts"), "utf8");
 const sessionPostRoute = readFileSync(resolve("server/api/admin/session.post.ts"), "utf8");
@@ -61,15 +61,13 @@ test("high-impact admin screens require an MFA-enabled admin session", () => {
 	assert.match(adminAuth, /Enable multi-factor authentication before performing this admin action/);
 });
 
-test("admin dashboard exposes MFA coverage from the protected overview", () => {
-	assert.match(dashboardPage, /overview\.value\?\.security/);
-	assert.match(dashboardPage, /Account security/);
-	assert.match(dashboardPage, /Admin account controls/);
-	assert.match(dashboardPage, /security\.mfaEnabledUserCount/);
-	assert.match(dashboardPage, /security\.usersWithoutMfa/);
-	assert.match(dashboardPage, /security\.passwordChangeRequiredUserCount/);
-	assert.match(dashboardPage, /security\.usersRequiringPasswordChange/);
-	assert.match(dashboardPage, /Manage users/);
+test("admin settings retain MFA coverage and link to individual account controls", () => {
+	assert.match(settingsPage, /overview\.value\?\.security/);
+	assert.match(settingsPage, /security\.mfaEnabledUserCount/);
+	assert.match(settingsPage, /security\.passwordChangeRequiredUserCount/);
+	assert.match(settingsPage, /\/admin\/users/);
+	assert.match(usersPage, /MFA not enabled/);
+	assert.match(usersPage, /passwordChangeRequiredAt/);
 });
 
 test("admin sessions use secure cookies, signed backend delegation, and same-origin mutation checks", () => {

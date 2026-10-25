@@ -75,6 +75,7 @@ function handleImageError() {
 				class="h-[calc(100%+2px)] w-[calc(100%+2px)] block inset-[-1px] absolute object-cover object-center"
 				loading="lazy"
 				decoding="async"
+				referrerpolicy="no-referrer"
 				@error="handleImageError"
 			>
 			<span v-else class="relative z-10" aria-hidden="true">{{ initials }}</span>

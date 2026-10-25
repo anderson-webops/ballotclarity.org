@@ -1,4 +1,5 @@
 <script setup lang="ts">
+const { allowsGuideEntryPoints } = useGuideEntryGate();
 const standards = [
 	{
 		description: "Public pages target WCAG 2.2 Level AA, with extra review checks for focus visibility, readable ballot copy, and print output.",
@@ -85,22 +86,44 @@ usePageSeo({
 			<h2 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
 				How the site is designed to work
 			</h2>
-			<h3 class="text-lg text-app-ink font-semibold mt-6 dark:text-app-text-dark">
-				Reading and navigation
-			</h3>
-			<ul class="readable-list text-sm text-app-muted mt-3 pl-5 dark:text-app-muted-dark">
-				<li v-for="item in designPractices" :key="item">
-					{{ item }}
-				</li>
-			</ul>
-			<h3 class="text-lg text-app-ink font-semibold mt-6 dark:text-app-text-dark">
-				Printing
-			</h3>
-			<ul class="readable-list text-sm text-app-muted mt-3 pl-5 dark:text-app-muted-dark">
-				<li v-for="item in printPractices" :key="item">
-					{{ item }}
-				</li>
-			</ul>
+			<section class="mt-6">
+				<h3 class="text-lg text-app-ink font-semibold dark:text-app-text-dark">
+					Design standards
+				</h3>
+				<ul class="readable-list text-sm text-app-muted mt-5 pl-5 dark:text-app-muted-dark">
+					<li v-for="item in designPractices" :key="item">
+						{{ item }}
+					</li>
+				</ul>
+			</section>
+			<section class="mt-6">
+				<h3 class="text-lg text-app-ink font-semibold dark:text-app-text-dark">
+					Print standards
+				</h3>
+				<ul class="readable-list text-sm text-app-muted mt-5 pl-5 dark:text-app-muted-dark">
+					<li v-for="item in printPractices" :key="item">
+						{{ item }}
+					</li>
+				</ul>
+				<div class="mt-6 flex flex-wrap gap-3">
+					<template v-if="allowsGuideEntryPoints">
+						<NuxtLink to="/plan" class="btn-primary">
+							Open my ballot plan
+						</NuxtLink>
+						<NuxtLink to="/ballot" class="btn-secondary">
+							Open ballot guide
+						</NuxtLink>
+					</template>
+					<template v-else>
+						<NuxtLink to="/coverage" class="btn-primary">
+							Open coverage profile
+						</NuxtLink>
+						<NuxtLink to="/help" class="btn-secondary">
+							Open help hub
+						</NuxtLink>
+					</template>
+				</div>
+			</section>
 		</section>
 
 		<section class="surface-panel">
@@ -112,11 +135,6 @@ usePageSeo({
 					{{ item }}
 				</li>
 			</ul>
-			<p class="text-sm text-app-muted leading-7 mt-6 dark:text-app-muted-dark">
-				To report a problem, <NuxtLink to="/contact" class="text-app-accent underline underline-offset-3 focus-ring">
-					contact us
-				</NuxtLink> with the page, the step that failed, and your device or assistive technology.
-			</p>
 		</section>
 	</section>
 </template>

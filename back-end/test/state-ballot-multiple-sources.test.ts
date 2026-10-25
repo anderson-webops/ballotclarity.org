@@ -19,11 +19,13 @@ import { registerStateRecordRoutes } from "../src/state-records.js";
 const now = Date.parse("2026-10-22T03:00:00Z");
 const county = additionalStateBallotSources[0]!;
 const otherCounty = additionalStateBallotSources[1]!;
+const parish = additionalStateBallotSources[2]!;
 const primary = stateBallotSources.find(source => source.stateCode === county.stateCode)!;
 const hash = (value: string) => createHash("sha256").update(value).digest("hex");
 
 function snapshot(source = county): StateBallotSnapshot {
 	const records = (["statewide", "congressional", "state-senate", "state-house", "local"] as const).map(scope => ({ id: hash(source.id + scope).slice(0, 24), name: `Example ${scope}`, office: `Example ${scope} office`, district: scope === "statewide" ? "" : "1", scope, status: "listed" as const, sourceStatus: "Example printed entry" }));
+	if (source.withheldStatewideOffices?.[0]) records.push({ id: hash(`${source.id}regional-state-office`).slice(0, 24), name: "Example regional commissioner", office: source.withheldStatewideOffices[0], district: "", scope: "statewide", status: "listed", sourceStatus: "Example regional state office" });
 	const retrievedAt = new Date(now - 60_000).toISOString();
 	const documents = source.documentUrls?.map((url, index) => ({ url, sha256: hash(String(index)), retrievedAt, includedRecordCount: index ? 0 : records.length }));
 	const sha256 = documents ? hash(JSON.stringify(documents.map(({ url, sha256 }) => ({ url, sha256 })))) : hash("example automatic publication");
@@ -42,23 +44,63 @@ async function serve(repository: StateBallotRepository) {
 
 test("county sources are additive and their reviewed configuration retains each original document", () => {
 	assert.equal(stateBallotSources.length, 50);
-	assert.equal(configuredStateBallotSources.length, 52);
+	assert.equal(configuredStateBallotSources.length, 56);
 	assert.deepEqual(configuredStateBallotSources.slice(0, 50), stateBallotSources);
-	assert.equal(new Set(configuredStateBallotSources.map(source => source.id)).size, 52);
+	assert.equal(new Set(configuredStateBallotSources.map(source => source.id)).size, 56);
+	assert.equal(new Set(configuredStateBallotSources.map(source => source.stateCode)).size, 51);
 	for (const source of additionalStateBallotSources) {
 		assert.equal(source.retrievalPolicy, "manual-snapshot");
 		assert.equal(source.snapshotStorage, "external");
-		assert.equal(source.documentUrls?.length, 2);
+		assert.equal(source.documentUrls?.length, [parish.id, "ky-warren-candidates-2026", "ar-pulaski-candidates-2026"].includes(source.id) ? 1 : 2);
 		assert.deepEqual(source.documentLinks?.map(link => link.url), source.documentUrls);
 		assert.deepEqual(source.withheldDistrictScopes, ["congressional", "state-senate", "state-house"]);
-		assert.match(source.scopeNotice!, /County/u);
+		if (source.id === "ar-pulaski-candidates-2026") assert.equal(source.scopeNotice, "Local coverage: Pulaski County.");
+		else assert.match(source.scopeNotice!, /County|Parish/u);
 	}
 });
 
+test("Tuscola remains a separate external source with no automatic legislative assignment", () => {
+	const tuscola = additionalStateBallotSources.find(source => source.id === "mi-tuscola-candidates-2026")!;
+	const michigan = stateBallotSources.find(source => source.id === "mi-dos-2026")!;
+	assert.deepEqual(resolveStateBallotConfiguration({ STATE_BALLOT_ENABLED_STATES: "MI" }).sources, [michigan, tuscola]);
+	assert.deepEqual(resolveStateBallotConfiguration({ STATE_BALLOT_ENABLED_SOURCES: tuscola.id }).sources, [tuscola]);
+	assert.equal(tuscola.retrievalPolicy, "manual-snapshot");
+	assert.equal(tuscola.snapshotStorage, "external");
+	assert.deepEqual(tuscola.withheldDistrictScopes, ["congressional", "state-senate", "state-house"]);
+	assert.match(tuscola.scopeNotice!, /Township, village, school, library and judicial districts vary by voter/u);
+});
+
+test("Warren County remains separate from the Kentucky filing feed and never assigns local rows by district", () => {
+	const warren = additionalStateBallotSources.find(source => source.id === "ky-warren-candidates-2026")!;
+	const kentucky = stateBallotSources.find(source => source.id === "ky-sos-2026")!;
+	assert.ok(warren && kentucky);
+	assert.equal(warren.format, "reviewed-pdf");
+	assert.equal(warren.retrievalPolicy, "manual-snapshot");
+	assert.equal(warren.snapshotStorage, "external");
+	assert.deepEqual(warren.documentUrls, ["https://warrencountyclerk.ky.gov/wp-content/uploads/2026/09/Warren-2026G.pdf"]);
+	assert.deepEqual(resolveStateBallotConfiguration({ STATE_BALLOT_ENABLED_SOURCES: `${kentucky.id},${warren.id}` }).sources.map(source => source.id).sort(), [kentucky.id, warren.id].sort());
+	const local = snapshot(warren);
+	local.records = local.records.filter(record => record.scope === "local");
+	assert.equal(buildStateBallotPreview(local, { districtMatches: [{ id: "example-house", label: "House 1", districtType: "state-house", districtCode: "1", sourceSystem: "census-geocoder" }] }), null);
+});
+
+test("Pulaski retains Washington County and withholds unverified local and district assignments", () => {
+	const pulaski = additionalStateBallotSources.find(source => source.id === "ar-pulaski-candidates-2026")!;
+	const washington = stateBallotSources.find(source => source.id === "ar-washington-2026")!;
+	assert.equal(pulaski.format, "reviewed-pdf");
+	assert.equal(pulaski.retrievalPolicy, "manual-snapshot");
+	assert.equal(pulaski.snapshotStorage, "external");
+	assert.deepEqual(resolveStateBallotConfiguration({ STATE_BALLOT_ENABLED_STATES: "AR" }).sources, [washington, pulaski]);
+	const local = snapshot(pulaski);
+	local.records = local.records.filter(record => record.scope !== "statewide");
+	assert.equal(buildStateBallotPreview(local, { districtMatches: [{ id: "example-house", label: "House 1", districtType: "state-house", districtCode: "1", sourceSystem: "census-geocoder" }] }), null);
+});
+
 test("state and source allowlists validate independently and intersect without replacing primary entries", () => {
-	assert.equal(resolveStateBallotConfiguration({}).sources.length, 52);
+	assert.equal(resolveStateBallotConfiguration({}).sources.length, 56);
 	assert.equal(resolveStateBallotConfiguration({ STATE_BALLOT_ENABLED_STATES: "NC,NM" }).sources.length, 4);
-	assert.deepEqual(resolveStateBallotConfiguration({ STATE_BALLOT_ENABLED_SOURCES: ` ${county.id},${otherCounty.id} ` }).sources, additionalStateBallotSources);
+	assert.deepEqual(resolveStateBallotConfiguration({ STATE_BALLOT_ENABLED_SOURCES: ` ${county.id},${otherCounty.id} ` }).sources, [county, otherCounty]);
+	assert.deepEqual(resolveStateBallotConfiguration({ STATE_BALLOT_ENABLED_STATES: "LA", STATE_BALLOT_ENABLED_SOURCES: parish.id }).sources, [parish]);
 	assert.deepEqual(resolveStateBallotConfiguration({ STATE_BALLOT_ENABLED_STATES: "nc", STATE_BALLOT_ENABLED_SOURCES: county.id }).sources, [county]);
 	for (const environment of [{ STATE_BALLOT_ENABLED_SOURCES: "unknown" }, { STATE_BALLOT_ENABLED_SOURCES: "" }, { STATE_BALLOT_ENABLED_SOURCES: otherCounty.id, STATE_BALLOT_ENABLED_STATES: "NC" }])
 		assert.throws(() => resolveStateBallotConfiguration(environment), /enabled source/u);
@@ -127,8 +169,28 @@ test("county previews never assign local or unverified legislative records by nu
 		assert.equal(preview?.candidateCount, 1);
 		assert.equal(preview?.id, source.id);
 		assert.equal(preview?.sourceUrl, source.pageUrl);
-		assert.match(preview!.disclaimer, /County/u);
+		assert.match(preview!.disclaimer, /County|Parish/u);
 	}
+});
+
+test("the parish source preserves its unofficial mixed-stage publication without enabling a state portal", async (context) => {
+	assert.equal(parish.stateCode, "LA");
+	assert.match(parish.scopeNotice!, /Senate general and U\.S\. House primary/u);
+	assert.deepEqual(parish.withheldStatewideOffices, ["Member, Louisiana Public Service Commission District 1"]);
+	assert.ok(parish.documentUrls?.every(url => new URL(url).host === "www.stcharlesparish.gov"));
+	const directory = await mkdtemp(join(tmpdir(), "ballot-parish-reviewed-"));
+	context.after(() => rm(directory, { recursive: true, force: true }));
+	let requests = 0;
+	const repository = createStateBallotRepository({ sources: [parish], dataDirectory: directory, now: () => now, fetchText: async () => {
+		requests += 1;
+		throw new Error("No live parish or state requests.");
+	} });
+	assert.equal(await repository.getSnapshot("LA"), null);
+	await createStateBallotStorage(directory).write(snapshot(parish));
+	const loaded = await repository.getSnapshot("LA");
+	assert.deepEqual(loaded, snapshot(parish));
+	assert.equal(buildStateBallotPreview(loaded!, { districtMatches: [] })?.candidateCount, 1);
+	assert.equal(requests, 0);
 });
 
 test("source selection and fallback remain closed after the election window", async (context) => {

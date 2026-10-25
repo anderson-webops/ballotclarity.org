@@ -4,6 +4,7 @@ import type {
 	CoverageSnapshotMetadata,
 } from "./coverage-repository.js";
 import type { AdminContentItem, GuideContentSummary } from "./types/civic.js";
+import { coverageElections, coverageJurisdictions } from "./coverage-repository.js";
 import { buildDefaultGuidePackageSeed, buildGuidePackageRecord } from "./guide-packages.js";
 import { normalizePublicHref } from "./public-href.js";
 
@@ -63,10 +64,10 @@ function buildValidationRepository(
 			return snapshot.candidates.filter(candidate => requested.has(candidate.slug));
 		},
 		getElectionBySlug(slug) {
-			return snapshot.election?.slug === slug ? snapshot.election : null;
+			return coverageElections(snapshot).find(election => election.slug === slug) ?? null;
 		},
 		getJurisdictionBySlug(slug) {
-			return snapshot.jurisdiction?.slug === slug ? snapshot.jurisdiction : null;
+			return coverageJurisdictions(snapshot).find(jurisdiction => jurisdiction.slug === slug) ?? null;
 		},
 		getMeasureBySlug(slug) {
 			return snapshot.measures.find(measure => measure.slug === slug) ?? null;

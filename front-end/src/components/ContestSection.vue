@@ -3,10 +3,9 @@ import type { Contest } from "~/types/civic";
 
 const props = withDefaults(defineProps<{
 	contest: Contest;
-	open?: boolean;
+	electionSlug?: string;
 	viewMode?: "deep" | "quick";
 }>(), {
-	open: false,
 	viewMode: "quick"
 });
 
@@ -20,7 +19,11 @@ const displayTitle = computed(() => props.contest.type === "measure" && props.co
 </script>
 
 <template>
+	<div v-if="contest.type === 'measure'" :id="contest.slug" class="scroll-mt-28">
+		<MeasureCard v-for="measure in contest.measures" :key="measure.slug" :election-slug="electionSlug" :measure="measure" :view-mode="viewMode" />
+	</div>
 	<ExpandableSection
+		v-else
 		:id="contest.slug"
 		:eyebrow="contest.jurisdiction"
 		:title="displayTitle"
@@ -43,18 +46,6 @@ const displayTitle = computed(() => props.contest.type === "measure" && props.co
 						v-for="candidate in contest.candidates"
 						:key="candidate.slug"
 						:candidate="candidate"
-						:view-mode="viewMode"
-					/>
-				</div>
-
-				<div
-					v-else
-					class="contest-section__items"
-				>
-					<MeasureCard
-						v-for="measure in contest.measures"
-						:key="measure.slug"
-						:measure="measure"
 						:view-mode="viewMode"
 					/>
 				</div>

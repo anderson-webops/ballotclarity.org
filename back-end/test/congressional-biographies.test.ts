@@ -31,7 +31,7 @@ function prepare(body: string, candidates = [candidateSnapshot()], previous: Ele
 test("directory collections are additive, dated and pinned to the observed public edition", () => {
 	assert.equal(congressionalBiographySources.length, 46);
 	assert.equal(new Set(congressionalBiographySources.map(source => source.id)).size, 46);
-	assert.equal(electionReferenceSources.length, 61);
+	assert.equal(electionReferenceSources.length, 114);
 	for (const source of congressionalBiographySources) {
 		assert.equal(source.electionDate, "2026-11-03");
 		assert.equal(source.documents.length, 1);

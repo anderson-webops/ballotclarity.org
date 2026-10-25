@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import type { Candidate, Source } from "~/types/civic";
 import { storeToRefs } from "pinia";
 import { buildCompareRoute, normalizeCompareSlugs, parseCompareQuerySlugs } from "~/stores/civic";
 
@@ -64,31 +63,13 @@ const emptyStateTitle = computed(() => {
 });
 const emptyStateBody = computed(() => {
 	if (hasUnavailableSelection.value)
-		return "These candidates aren't published for comparison yet.";
+		return "";
 
 	if (selectedSlugs.value.length === 1)
 		return "Add at least one more candidate from the same race.";
 
 	return "";
 });
-
-function uniqueSources(...groups: Source[][]) {
-	return Array.from(new Map(groups.flat().map(source => [source.id, source])).values());
-}
-
-function publicRecordSources(candidate: Candidate) {
-	return uniqueSources(
-		candidate.sources.filter(source => ["hearing transcript", "official record", "research brief"].includes(source.type)),
-		candidate.keyActions.flatMap(action => action.sources)
-	);
-}
-
-function financeSources(candidate: Candidate) {
-	return uniqueSources(
-		candidate.funding.sources,
-		candidate.lobbyingContext.flatMap(block => block.sources)
-	);
-}
 
 async function clearCompareSelection() {
 	civicStore.clearCompare();
@@ -153,7 +134,7 @@ usePageSeo({
 						<IncumbentBadge v-if="candidate.incumbent" />
 					</div>
 					<p class="text-sm text-app-muted mt-2 dark:text-app-muted-dark">
-						{{ candidate.officeSought }} · {{ candidate.comparison.partyOnBallot }}
+						{{ candidate.officeSought }} · <PartyLabel :party="candidate.comparison.partyOnBallot" />
 					</p>
 					<p class="text-base text-app-ink leading-7 mt-4 dark:text-app-text-dark">
 						{{ candidate.comparison.whyRunning.text }}
@@ -238,79 +219,6 @@ usePageSeo({
 				:show-only-differences="showOnlyDifferences"
 				:show-only-mutual-responses="showOnlyMutualResponses"
 			/>
-
-			<ExpandableSection
-				title="Candidate links and statements"
-			>
-				<div class="gap-6 grid xl:grid-cols-3">
-					<article v-for="candidate in sortedCandidates" :key="candidate.slug" class="min-w-0">
-						<div class="flex flex-wrap gap-3 items-center justify-between">
-							<div>
-								<div class="flex flex-wrap gap-2 items-center">
-									<h3 class="text-2xl text-app-ink font-serif dark:text-app-text-dark">
-										{{ candidate.comparison.displayName }}
-									</h3>
-									<IncumbentBadge v-if="candidate.incumbent" />
-								</div>
-							</div>
-							<NuxtLink :to="`/candidate/${candidate.slug}`" class="btn-secondary">
-								Full profile
-							</NuxtLink>
-						</div>
-
-						<div class="mt-6 space-y-5">
-							<div>
-								<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
-									Campaign links
-								</p>
-								<ul class="mt-3 space-y-2">
-									<li v-for="item in candidate.comparison.contactChannels" :key="item.url">
-										<SafeExternalLink :href="item.url" class="text-sm text-app-accent rounded-md inline-flex gap-2 items-center hover:text-app-ink focus-ring dark:hover:text-white">
-											<span class="i-carbon-launch" />
-											<span>{{ item.label }}</span>
-										</SafeExternalLink>
-									</li>
-								</ul>
-							</div>
-
-							<div>
-								<SourceList
-									:sources="publicRecordSources(candidate)"
-									compact
-									title="Public records"
-								/>
-							</div>
-
-							<div>
-								<SourceList
-									:sources="financeSources(candidate)"
-									compact
-									title="Finance and disclosures"
-								/>
-							</div>
-
-							<div>
-								<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
-									Quoted statements
-								</p>
-								<div class="mt-3 space-y-3">
-									<article v-for="statement in candidate.publicStatements" :key="statement.id" class="content-block">
-										<p class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
-											{{ statement.title }}
-										</p>
-										<p class="text-base text-app-ink leading-7 mt-2 dark:text-app-text-dark">
-											{{ statement.summary }}
-										</p>
-										<div class="mt-3">
-											<SourceDrawer :sources="statement.sources" :title="statement.title" button-label="Sources" />
-										</div>
-									</article>
-								</div>
-							</div>
-						</div>
-					</article>
-				</div>
-			</ExpandableSection>
 		</template>
 	</section>
 </template>

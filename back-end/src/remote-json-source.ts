@@ -15,6 +15,8 @@ interface RemoteJsonResponse {
 
 interface RemoteJsonTransportInput {
 	address: string;
+	document?: boolean;
+	etag?: string;
 	postBody?: string;
 	timeoutMs: number;
 	url: URL;
@@ -142,6 +144,8 @@ async function resolvePublicAddresses(
 
 function requestPinnedRemoteJson({
 	address,
+	document,
+	etag,
 	postBody,
 	timeoutMs,
 	url,
@@ -149,9 +153,10 @@ function requestPinnedRemoteJson({
 	return new Promise((resolve, reject) => {
 		const request = httpsRequest({
 			headers: {
-				"Accept": "application/json, application/*+json, text/csv, text/plain, text/html, application/octet-stream",
+				"Accept": document ? "application/pdf, text/html, text/plain" : "application/json, application/*+json, text/csv, text/plain, text/html, application/octet-stream",
 				"Host": url.host,
 				"User-Agent": "Ballot-Clarity-Coverage-Importer/1.0",
+				...(etag ? { "If-None-Match": etag } : {}),
 				...(postBody ? { "Content-Type": "application/x-www-form-urlencoded", "Content-Length": Buffer.byteLength(postBody) } : {}),
 			},
 			hostname: address,
@@ -209,6 +214,7 @@ async function readBoundedJsonBody(
 	maxBytes: number,
 	timeoutMs: number,
 	requireJson = true,
+	bytesOnly = false,
 ) {
 	const contentLength = Number(response.headers["content-length"]);
 
@@ -248,6 +254,7 @@ async function readBoundedJsonBody(
 		}
 
 		const body = Buffer.concat(chunks);
+		if (bytesOnly) return body;
 		return requireJson ? body.toString("utf8") : new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(body);
 	})(), timeoutMs);
 }
@@ -305,10 +312,31 @@ export async function fetchRemoteJsonText(
 			throw new Error(`Unable to fetch live coverage snapshot: HTTP ${response.statusCode}.`);
 		}
 
-		return await readBoundedJsonBody(response, maxBytes, timeoutMs, options.requireJson ?? true);
+		return await readBoundedJsonBody(response, maxBytes, timeoutMs, options.requireJson ?? true) as string;
 	}
 }
 
 export function fetchRemoteSourceText(source: string | URL, options: FetchRemoteJsonOptions = {}) {
 	return fetchRemoteJsonText(source, { ...options, requireJson: false });
+}
+
+export class RemoteSourceDocumentPolicyError extends Error {}
+
+export async function fetchRemoteSourceDocument(source: string, options: Pick<FetchRemoteJsonOptions, "allowedHosts" | "maxBytes" | "timeoutMs" | "resolveAddresses" | "transport"> & { etag?: string }) {
+	const url = parseRemoteJsonUrl(source);
+	const maxBytes = options.maxBytes ?? 12 * 1024 * 1024;
+	const timeoutMs = options.timeoutMs ?? 30_000;
+	if (!options.allowedHosts?.includes(url.hostname) || new URL(source).hash || url.port || !Number.isSafeInteger(maxBytes) || maxBytes < 1 || maxBytes > 12 * 1024 * 1024 || !Number.isSafeInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > 60_000 || (options.etag !== undefined && (!/^(?:W\/)?"[\x21\x23-\x7E]{0,500}"$/u.test(options.etag))))
+		throw new Error("Provide an allowed bounded public document request.");
+	const addresses = await resolvePublicAddresses(url, options.resolveAddresses ?? (hostname => lookup(hostname, { all: true, verbatim: true })));
+	const response = await withTimeout((options.transport ?? requestPinnedRemoteJson)({ address: addresses[0]!.address, document: true, timeoutMs, url, ...(options.etag ? { etag: options.etag } : {}) }), timeoutMs);
+	try {
+		const body = response.statusCode === 200 ? await readBoundedJsonBody(response, maxBytes, timeoutMs, false, true) as Buffer : Buffer.alloc(0);
+		return { status: response.statusCode, body, contentType: typeof response.headers["content-type"] === "string" ? response.headers["content-type"].split(";")[0]!.trim().toLowerCase() : "", etag: typeof response.headers.etag === "string" && /^(?:W\/)?"[\x21\x23-\x7E]{0,500}"$/u.test(response.headers.etag) ? response.headers.etag : undefined };
+	}
+	catch (error) {
+		if (error instanceof Error && /byte limit|compressed content encoding/u.test(error.message)) throw new RemoteSourceDocumentPolicyError("The public document exceeds its reviewed body or encoding bounds.");
+		throw error;
+	}
+	finally { response.body.destroy?.(); }
 }

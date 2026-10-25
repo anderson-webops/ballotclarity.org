@@ -63,17 +63,15 @@ usePageSeo({
 				</p>
 				<div v-else class="mt-6 space-y-6">
 					<section v-for="section in sections" :key="section.kind">
-						<h3 class="text-xl text-app-ink font-serif dark:text-app-text-dark">
+						<h2 class="text-xl text-app-ink font-serif dark:text-app-text-dark">
 							{{ section.heading }}
-						</h3>
+						</h2>
 						<ul class="mt-3 divide-app-line divide-y dark:divide-app-line-dark">
-							<li v-for="source in section.items" :key="source.id" class="py-4">
-								<NuxtLink :to="`/sources/${source.id}`" class="text-base text-app-accent font-semibold rounded-sm underline underline-offset-3 focus-ring">
-									{{ source.title }}
+							<li v-for="source in section.items" :key="source.id">
+								<NuxtLink :to="`/sources/${source.id}`" class="py-4 rounded-sm block focus-ring">
+									<span class="text-base text-app-accent font-semibold">{{ source.title }}</span>
+									<span class="text-sm text-app-muted leading-6 mt-1 block dark:text-app-muted-dark">{{ source.publisher }}</span>
 								</NuxtLink>
-								<p class="text-sm text-app-muted leading-6 mt-1 dark:text-app-muted-dark">
-									{{ source.publisher }}
-								</p>
 							</li>
 						</ul>
 					</section>

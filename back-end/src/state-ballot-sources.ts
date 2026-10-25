@@ -16,6 +16,7 @@ export interface StateBallotSource {
 	retrievalPolicy?: "manual-snapshot";
 	snapshotStorage?: "external";
 	withheldDistrictScopes?: readonly ("congressional" | "state-senate" | "state-house")[];
+	withheldStatewideOffices?: readonly string[];
 	scopeNotice?: string;
 }
 
@@ -590,6 +591,8 @@ export const stateBallotSources: readonly StateBallotSource[] = [
 		url: "https://olvr.hawaii.gov/Controls/CandidateFiling.aspx?elid=94",
 		pageUrl: "https://elections.hawaii.gov/candidates/candidate-reports/",
 		format: "hawaii-csv",
+		retrievalPolicy: "manual-snapshot",
+		snapshotStorage: "external",
 	},
 	{
 		stateCode: "IL",

@@ -80,7 +80,7 @@ export function buildStateRecordPage(snapshot: StateBallotSnapshot, filters: Ret
 }
 
 export function registerStateRecordRoutes(app: Express, repository: StateBallotRepository | null, throttle: PublicRequestThrottle = createPublicRequestThrottle({ windowMs: 60_000, maxRequests: 120, maxBuckets: 10_000 })) {
-	const sources = repository?.sources ?? configuredStateBallotSources;
+	const currentSources = () => repository?.sources ?? configuredStateBallotSources;
 	app.use("/api/state-records", (request, response, next) => {
 		response.setHeader("Cache-Control", "no-store");
 		const attempt = throttle.attempt(request.ip || request.socket.remoteAddress || "unknown");
@@ -92,12 +92,14 @@ export function registerStateRecordRoutes(app: Express, repository: StateBallotR
 		next();
 	});
 	app.get("/api/state-records", (_request, response) => {
+		const sources = currentSources();
 		response.json({ states: usStates.map(([stateCode, stateName]) => {
 			const options = sources.filter(source => source.stateCode === stateCode);
 			return { stateCode, stateName, configured: Boolean(options.length), electionDate: options[0]?.electionDate, sources: options.map(({ id, label, electionDate }) => ({ id, label, electionDate })) };
 		}) });
 	});
 	app.get("/api/state-records/:stateCode", async (request, response) => {
+		const sources = currentSources();
 		const stateCode = String(request.params.stateCode).toUpperCase();
 		const state = usStates.find(([code]) => code === stateCode);
 		if (!state) {

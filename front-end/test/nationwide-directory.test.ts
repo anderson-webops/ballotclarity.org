@@ -76,6 +76,19 @@ const publishedGuideLookupResult = {
 	availability: null
 } satisfies NationwideLookupResultContext;
 
+test("directory merges preserve supplied portraits and websites when an API summary omits them", () => {
+	const context = structuredClone(nationwideLookupResult) as NationwideLookupResultContext;
+	const match = context.representativeMatches[0]!;
+	match.officialWebsiteUrl = "https://example.org/office";
+	match.profileImages = [{ url: "https://example.org/portrait.jpg", alt: match.name, priority: 10, sourceKind: "official", sourceLabel: "Official office", sourceSystem: "Official office" }];
+	const stored = buildNationwideDirectoryResponses(context);
+	const representative = stored.representatives.representatives[0]!;
+	assert.equal(representative.officialWebsiteUrl, match.officialWebsiteUrl);
+	const merged = mergeNationwideDirectoryResponses(stored, { representatives: { ...stored.representatives, representatives: [{ ...representative, officialWebsiteUrl: undefined, profileImages: undefined }] } });
+	assert.equal(merged.representatives.representatives[0]?.officialWebsiteUrl, match.officialWebsiteUrl);
+	assert.deepEqual(merged.representatives.representatives[0]?.profileImages, match.profileImages);
+});
+
 test("nationwide directory derivation uses district matches and representative matches", () => {
 	const bundle = buildNationwideDirectoryResponses(nationwideLookupResult);
 
@@ -98,6 +111,8 @@ test("nationwide directory derivation uses district matches and representative m
 	assert.equal(bundle.representatives.representatives[0].provenance?.status, "crosswalked");
 	assert.equal(bundle.representatives.representatives[0].sources.length, 1);
 	assert.equal(bundle.representatives.representatives[0].sources[0]?.publisher, "Open States");
+	assert.equal(bundle.representatives.representatives[0].summary, "");
+	assert.equal(bundle.representatives.representatives[1].summary, "");
 	assert.equal(bundle.representatives.representatives[1].sources.length, 0);
 	assert.equal(bundle.representatives.representatives[1].districtSlug, "ut-senate-24");
 	assert.equal(bundle.representatives.representatives[1].governmentLevel, "state");
@@ -204,4 +219,30 @@ test("nationwide directory canonical matching links mismatched provider labels t
 	assert.equal(bundle.districts.districts.find(district => district.slug === "ut-cd-03")?.representativeCount, 1);
 	assert.equal(bundle.districts.districts.find(district => district.slug === "ut-senate-24")?.representativeCount, 1);
 	assert.equal(bundle.districts.districts.find(district => district.slug === "ut-house-60")?.representativeCount, 1);
+});
+
+test("directory merging deduplicates opaque provider district identifiers", () => {
+	const stored = buildNationwideDirectoryResponses({
+		...nationwideLookupResult,
+		districtMatches: [{ id: "opaque-provider-district", districtType: "state-house", districtCode: "1", label: "House District 1", sourceSystem: "Isolated fixture" }],
+		representativeMatches: []
+	});
+	const district = stored.districts.districts[0]!;
+	const merged = mergeNationwideDirectoryResponses(stored, {
+		districts: { ...stored.districts, districts: [{ ...district, slug: "state-house-1", href: "/districts/state-house-1" }] }
+	});
+	assert.equal(merged.districts.districts.length, 1);
+	assert.equal(merged.districts.districts[0]?.slug, "state-house-1");
+});
+
+test("directory label aliases do not merge different chambers", () => {
+	const stored = buildNationwideDirectoryResponses({
+		...nationwideLookupResult,
+		districtMatches: [
+			{ id: "opaque-house", districtType: "state-house", districtCode: "1", label: "District 1", sourceSystem: "Isolated fixture" },
+			{ id: "opaque-senate", districtType: "state-senate", districtCode: "1", label: "District 1", sourceSystem: "Isolated fixture" }
+		],
+		representativeMatches: []
+	});
+	assert.equal(mergeNationwideDirectoryResponses(stored, { districts: stored.districts }).districts.districts.length, 2);
 });

@@ -94,13 +94,14 @@ function buildRepresentativeSummary(
 			status: "crosswalked"
 		},
 		slug: buildNationwideRepresentativeSlug(match),
-		summary: match.sourceSystem ? `Matched from ${match.sourceSystem}` : "Matched from current area results",
+		summary: "",
 		districtLabel: match.districtLabel,
 		districtSlug: toLookupSlug(match.districtLabel),
 		fundingAvailable: false,
 		fundingSummary: "No person-level funding record is attached to this representative yet.",
 		href: `/representatives/${buildNationwideRepresentativeSlug(match)}`,
 		openstatesUrl: match.openstatesUrl,
+		officialWebsiteUrl: match.officialWebsiteUrl,
 		influenceAvailable: false,
 		influenceSummary: "No person-level influence record is attached to this representative yet.",
 		sourceCount: sources.length,
@@ -190,6 +191,7 @@ export function mergeNationwideDirectoryResponses(
 	api: NationwideDirectorySources
 ): NationwideDirectoryBundle {
 	const districtByCanonicalKey = new Map<string, DistrictSummary>();
+	const canonicalKeyByMatchKey = new Map<string, string>();
 	const districtKeyBySlug = new Map<string, string>();
 	const representativeBySlug = new Map(
 		stored.representatives.representatives.map(representative => [representative.slug, representative])
@@ -198,23 +200,31 @@ export function mergeNationwideDirectoryResponses(
 	const apiRepresentatives = api.representatives?.representatives ?? [];
 
 	for (const district of [...stored.districts.districts, ...apiDistricts]) {
-		const matchKeys = buildDistrictMatchKeys({
-			districtCode: district.slug,
+		const matchKeys = [district.slug, district.title].map(districtCode => buildDistrictMatchKeys({
+			districtCode,
 			districtType: district.office,
 			id: district.slug,
 			label: district.title,
 			sourceSystem: "Directory response"
-		}, undefined);
-		const canonicalKey = matchKeys.find(key => districtByCanonicalKey.has(key))
+		}, undefined)[0]!);
+		const canonicalKey = matchKeys.map(key => canonicalKeyByMatchKey.get(key)).find(Boolean)
 			?? matchKeys[0]
 			?? `slug:${district.slug}`;
 
 		districtByCanonicalKey.set(canonicalKey, district);
 		districtKeyBySlug.set(district.slug, canonicalKey);
+		for (const key of matchKeys)
+			canonicalKeyByMatchKey.set(key, canonicalKey);
 	}
 
-	for (const representative of apiRepresentatives)
-		representativeBySlug.set(representative.slug, representative);
+	for (const representative of apiRepresentatives) {
+		const storedRepresentative = representativeBySlug.get(representative.slug);
+		representativeBySlug.set(representative.slug, {
+			...representative,
+			officialWebsiteUrl: representative.officialWebsiteUrl || storedRepresentative?.officialWebsiteUrl,
+			profileImages: representative.profileImages?.length ? representative.profileImages : storedRepresentative?.profileImages,
+		});
+	}
 
 	const districtSlugByCanonicalKey = new Map(
 		Array.from(districtByCanonicalKey, ([key, district]) => [key, district.slug])

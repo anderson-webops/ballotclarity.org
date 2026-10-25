@@ -995,6 +995,7 @@ export function buildSupplementalRepresentativeMatch(record: SupplementalOfficeh
 		officeDisplayLabel: classification.officeDisplayLabel,
 		officeType: classification.officeType,
 		officeTitle: record.officeTitle,
+		officialWebsiteUrl: record.officialWebsiteUrl,
 		openstatesUrl: record.openstatesUrl,
 		party: record.party,
 		profileImages: record.profileImages,

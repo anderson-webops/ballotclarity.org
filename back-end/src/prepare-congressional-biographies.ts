@@ -29,7 +29,7 @@ export async function prepareCongressionalBiographyFiles(path: string) {
 		return parseElectionReferenceSnapshot(source, content);
 	}));
 	const states = new Set(candidates.map(snapshot => snapshot.source.stateCode).filter(state => congressionalBiographySources.some(source => source.stateCode === state)));
-	const required = electionReferenceSources.filter(source => states.has(source.stateCode) && !source.id.startsWith("us-cdir-") && source.electionDate === congressionalDirectory.electionDate);
+	const required = electionReferenceSources.filter(source => states.has(source.stateCode) && !source.id.startsWith("us-cdir-") && source.electionDate === congressionalDirectory.electionDate && source.documents.some(document => document.kind !== "public-dataset"));
 	if (required.some(source => !previous.some(snapshot => snapshot.sourceId === source.id))) throw new Error("Provide the preceding reviewed collections to avoid duplicate profiles.");
 	const prepared = prepareCongressionalBiographies({ body, capturedAt: plan.sourceText.capturedAt, sha256: plan.sourceText.sha256, candidates, previous });
 	if (!prepared.length) throw new Error("No unambiguous new candidate biographies matched.");

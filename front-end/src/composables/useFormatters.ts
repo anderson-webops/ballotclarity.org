@@ -11,7 +11,7 @@ export function useFormatters() {
 	const displayTimeZone = useState<string | null>("display-time-zone", () => {
 		if (import.meta.server) {
 			const cookie = useCookie<string | null>(displayTimeZoneCookieName);
-			return normalizeDisplayTimeZone(cookie.value);
+			return normalizeDisplayTimeZone(cookie.value) ?? "UTC";
 		}
 
 		return readDisplayTimeZoneFromDocument()

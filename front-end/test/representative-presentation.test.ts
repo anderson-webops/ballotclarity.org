@@ -4,8 +4,19 @@ import test from "node:test";
 import { classifyRepresentative } from "../src/utils/representative-classification.ts";
 import {
 	groupRepresentativeSummariesByGovernmentLevel,
+	resolveRepresentativeContentSummary,
 	resolveRepresentativePresentation,
 } from "../src/utils/representative-presentation.ts";
+
+test("representative content summaries omit generated matching commentary", () => {
+	for (const summary of ["Matched from Open States", "Matched from Congress.gov", "Matched from area results", "Matched from current area results", "  Matched from Open States  ", "", "  ", null, undefined])
+		assert.equal(resolveRepresentativeContentSummary(summary), "");
+});
+
+test("representative content summaries preserve substantive descriptions", () => {
+	assert.equal(resolveRepresentativeContentSummary("Serves in the U.S. Senate."), "Serves in the U.S. Senate.");
+	assert.equal(resolveRepresentativeContentSummary("  Served two terms on the city council.  "), "Served two terms on the city council.");
+});
 
 const representatives: RepresentativeSummary[] = [
 	{

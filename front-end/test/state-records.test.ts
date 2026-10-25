@@ -1,9 +1,26 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
-import { readStateRecordQuery, resolveStateRecordCode, stateRecordArea, stateRecordScopes, stateRecordStatusLabels } from "../src/utils/state-records.ts";
+import { readStateRecordQuery, resolveStateRecordCode, stateRecordArea, stateRecordScopes, stateRecordStatusLabels, stateRecordSummary } from "../src/utils/state-records.ts";
 
 const states = [{ stateCode: "ME", stateName: "Maine", configured: true }, { stateCode: "NY", stateName: "New York", configured: true }];
+
+test("candidate summaries use the reported party without inferring missing affiliations", () => {
+	const record = { id: "example", name: "Example", office: "United States Senate", district: "", jurisdiction: "Georgia", scope: "statewide" as const, status: "listed" as const };
+	assert.equal(stateRecordSummary({ ...record, party: "Republican" }), "United States Senate · Georgia · Republican");
+	assert.equal(stateRecordSummary({ ...record, party: "Democrat" }), "United States Senate · Georgia · Democrat");
+	assert.equal(stateRecordSummary({ ...record, party: "Prefers Independent Party" }), "United States Senate · Georgia · Prefers Independent Party");
+	assert.equal(stateRecordSummary({ ...record, party: "Nonpartisan" }), "United States Senate · Georgia · Nonpartisan");
+	assert.equal(stateRecordSummary(record), "United States Senate · Georgia");
+	assert.equal(stateRecordSummary({ ...record, party: "  " }), "United States Senate · Georgia");
+});
+
+test("candidate summaries retain consequential statuses but omit the generic Listed label", () => {
+	const record = { id: "example", name: "Example", office: "Council", district: "", scope: "local" as const, party: "Independent" };
+	assert.equal(stateRecordSummary({ ...record, status: "listed" }), "Council · Independent");
+	for (const status of ["filed", "qualified", "write-in", "withdrawn", "disqualified", "defeated", "elected", "unopposed", "inactive", "unrecognized"] as const)
+		assert.equal(stateRecordSummary({ ...record, status }), `Council · Independent · ${stateRecordStatusLabels[status]}`);
+});
 
 test("record links preserve state context without interpreting a ZIP as eligibility", () => {
 	assert.equal(resolveStateRecordCode("Maine", states), "ME");
@@ -28,7 +45,7 @@ test("source links retain explicit selection, including invalid inputs that must
 	assert.equal(readStateRecordQuery({ source: "x".repeat(200) }, states).sourceId?.length, 120);
 	assert.equal(readStateRecordQuery({ state: "Maine" }, states).sourceId, undefined);
 	const page = readFileSync(new URL("../src/pages/records.vue", import.meta.url), "utf8");
-	assert.match(page, /v-if="sourceOptions.length > 1"/u);
+	assert.match(page, /v-if="sourceOptions.length > 1 \|\| unavailableSource"/u);
 	assert.match(page, /for="record-source"/u);
 	assert.match(page, /selectedSource.value = "";\s+await applyFilters\(\)/u);
 	assert.match(page, /source: selectedSource.value/u);
@@ -57,21 +74,32 @@ test("a printed district label suppresses a redundant internal matching code", (
 
 test("the public directory exposes only necessary labels and source limits", () => {
 	const page = readFileSync(new URL("../src/pages/records.vue", import.meta.url), "utf8");
-	assert.match(page, /These records are not a personalized ballot/u);
+	assert.doesNotMatch(page, /These records are not a personalized ballot/u);
+	assert.match(page, /data.source.scopeNotice/u);
 	assert.match(page, /Include inactive records/u);
 	assert.match(page, /Candidate record pages/u);
 	assert.doesNotMatch(page, /attention-date|attention-relative/u);
 	assert.match(page, /path: `\/record\//u);
-	assert.match(page, /v-for="document in data.source.documentLinks"/u);
-	assert.match(page, /:href="document.url"/u);
+	assert.match(page, /stateRecordSummaryParts\(record\)/u);
+	assert.doesNotMatch(page, /stateRecordStatusLabels\[record.status\]/u);
+	const detail = readFileSync(new URL("../src/pages/record/[state]/[id].vue", import.meta.url), "utf8");
+	assert.match(detail, /v-if="data.official.status !== 'listed'"/u);
+	assert.match(detail, /<PartyLabel :party="data.official.party"/u);
+	const documents = readFileSync(new URL("../src/pages/record-sources.vue", import.meta.url), "utf8");
+	assert.match(documents, /v-for="document in data.source.documentLinks"/u);
+	assert.match(documents, /:href="document.url"/u);
 	assert.doesNotMatch(page, /prototype|under local review|check back later|saved guide area|<table/iu);
 	const lookup = readFileSync(new URL("../src/components/LookupResultsPanel.vue", import.meta.url), "utf8");
 	assert.match(lookup, /path: '\/records', query: \{ state: lookup.location.state \}/u);
 });
 
-test("source documents are listed as visible links", () => {
+test("record metadata uses one short source link for single and multiple publications", () => {
 	const page = readFileSync(new URL("../src/pages/records.vue", import.meta.url), "utf8");
-	assert.match(page, /v-if="data.source.documentLinks\?\.length" class="source-documents/u);
-	assert.match(page, /v-for="document in data.source.documentLinks"/u);
-	assert.doesNotMatch(page, /<details|<summary/u);
+	assert.match(page, /<NuxtLink\s+v-if="data.source.documentLinks\?\.length \|\| data.source.url"/u);
+	assert.match(page, /path: '\/record-sources'/u);
+	assert.match(page, /class="[^"]*min-h-11/u);
+	assert.doesNotMatch(page, /Sources \(|Retrieved|href="#candidate-information-heading"|<SafeExternalLink/u);
+	assert.equal((page.match(/path: '\/record-sources'/gu) ?? []).length, 1);
+	assert.doesNotMatch(page, /\{\{ data.source.label \}\}/u);
+	assert.doesNotMatch(page, /<details/u);
 });

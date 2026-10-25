@@ -2,6 +2,18 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { createCongressClient } from "../src/congress.js";
 
+test("Congress lists retain supplied portraits without requesting each member", async () => {
+	let requests = 0;
+	const client = createCongressClient({ apiKey: "test-congress-key", fetchImpl: (async () => {
+		requests++;
+		return new Response(JSON.stringify({ members: [{ bioguideId: "A000001", name: "Example, Alex", state: "GA", depiction: { imageUrl: "https://example.org/alex.jpg", attribution: "Official portrait" } }] }), { status: 200 });
+	}) as typeof fetch });
+	assert.ok(client);
+	assert.equal((await client.listMembers())[0]?.depiction?.imageUrl, "https://example.org/alex.jpg");
+	assert.equal((await client.listMembersByState("GA"))[0]?.depiction?.attribution, "Official portrait");
+	assert.equal(requests, 2);
+});
+
 test("Congress.gov requests use bounded abort signals across client workflows", async () => {
 	const capturedSignals: Array<AbortSignal | null | undefined> = [];
 	const fetchImpl = (async (resource, init) => {

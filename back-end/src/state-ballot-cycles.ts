@@ -1,0 +1,228 @@
+import type { StateBallotSource } from "./state-ballot-sources.js";
+import { Buffer } from "node:buffer";
+import { createHash, randomUUID } from "node:crypto";
+import { closeSync, constants, fstatSync, openSync, readSync, realpathSync } from "node:fs";
+import { mkdir, open, realpath, rename, unlink } from "node:fs/promises";
+import { dirname, isAbsolute, join, resolve } from "node:path";
+import process from "node:process";
+import { parseStateHtml, stateHtmlAttribute, stateHtmlDescendants, stateHtmlText } from "./state-ballot-html.js";
+import { configuredStateBallotSources } from "./state-ballot-registry.js";
+import { assertExternalStateDataDirectory } from "./state-ballot-storage.js";
+import { containsControlCharacters } from "./text-validation.js";
+
+const maximumBytes = 128 * 1024;
+const washington = configuredStateBallotSources.find(source => source.id === "wa-general-2026")!;
+export const stateBallotCycleDiscoveryUrl = "https://voter.votewa.gov/CandidateList.aspx";
+const digest = (value: string) => createHash("sha256").update(value).digest("hex");
+const cycleFamilies = [
+	{ source: washington, format: "washington-html", discoveryUrl: stateBallotCycleDiscoveryUrl, prefix: "wa-general", electionLabel: "GENERAL", formId: null },
+	{ source: configuredStateBallotSources.find(source => source.id === "mt-general-2026")!, format: "montana-csv", discoveryUrl: "https://candidatefiling.mt.gov/candidatefiling/CandidateList.aspx", prefix: "mt-general", electionLabel: "FEDERAL GENERAL", formId: "frmMain" },
+	{ source: configuredStateBallotSources.find(source => source.id === "ms-sos-2026")!, format: "mississippi-csv", discoveryUrl: "https://www.sos.ms.gov/content/CandidateQualifying/default.aspx", prefix: "ms-general", electionLabel: "General Election:", formId: "form1" },
+] as const;
+
+export function getStateBallotCycleFamily(familyId: string) {
+	const family = cycleFamilies.find(item => item.source.id === familyId);
+	if (!family || family.source.format !== family.format || family.source.retrievalPolicy || family.source.postBody || family.source.documentUrls?.length || family.source.documentLinks?.length || family.source.pageUrl !== family.source.url || (family.format === "mississippi-csv" ? family.source.url !== family.discoveryUrl : !new RegExp(`^${family.discoveryUrl.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&")}\\?e=[1-9]\\d{0,8}$`, "u").test(family.source.url)))
+		throw new Error("The automatic election source family is unsupported or has changed.");
+	return family;
+}
+
+export class StateBallotCycleCatalogError extends Error {
+	constructor(readonly familyId: string, cause: unknown) {
+		super(`The election cycle catalog for ${familyId} could not be loaded.`, { cause });
+	}
+}
+
+export function stateBallotCycleCatalogLocations(environment: NodeJS.ProcessEnv = process.env) {
+	const legacy = environment.STATE_BALLOT_CYCLE_CATALOG;
+	const multiple = environment.STATE_BALLOT_CYCLE_CATALOGS;
+	if (legacy && multiple !== undefined) throw new Error("Configure either one legacy catalog or a family catalog map.");
+	if (multiple === undefined) return legacy ? [{ familyId: washington.id, catalogPath: legacy }] : [];
+	if (Buffer.byteLength(multiple) > 16 * 1024) throw new Error("The election catalog configuration exceeds its bounds.");
+	const value: unknown = JSON.parse(multiple);
+	if (!value || typeof value !== "object" || Array.isArray(value) || !Object.keys(value).length || Object.keys(value).length > cycleFamilies.length)
+		throw new Error("Election catalogs must map approved families to external file paths.");
+	const paths = new Set<string>();
+	return Object.entries(value).map(([familyId, catalogPath]) => {
+		getStateBallotCycleFamily(familyId);
+		if (typeof catalogPath !== "string" || !isAbsolute(catalogPath) || catalogPath.length > 4096 || containsControlCharacters(catalogPath) || paths.has(resolve(catalogPath)))
+			throw new Error("Each election family requires a distinct absolute catalog path.");
+		paths.add(resolve(catalogPath));
+		return { familyId, catalogPath };
+	});
+}
+
+export function readConfiguredStateBallotCycleCatalogs(environment: NodeJS.ProcessEnv = process.env, now = Date.now()) {
+	return stateBallotCycleCatalogLocations(environment).flatMap(({ familyId, catalogPath }) => {
+		try {
+			const catalog = readStateBallotCycleCatalog(catalogPath, now);
+			if (!catalog) return [];
+			if (catalog.familyId !== familyId) throw new Error("The election catalog belongs to a different family.");
+			return [catalog];
+		}
+		catch (error) { throw new StateBallotCycleCatalogError(familyId, error); }
+	});
+}
+
+export interface StateBallotCycleCatalog {
+	schemaVersion: 1;
+	type: "state-ballot-cycle-catalog";
+	familyId: string;
+	sourceConfigurationSha256: string;
+	discovery: { url: string; sha256: string; retrievedAt: string };
+	elections: { electionId: string | null; electionDate: string }[];
+}
+
+function exactKeys(value: unknown, names: string[]): value is Record<string, unknown> {
+	return Boolean(value && typeof value === "object" && !Array.isArray(value) && Object.keys(value).sort().join(",") === names.sort().join(","));
+}
+
+export function validStateBallotGeneralDate(value: unknown): value is string {
+	if (typeof value !== "string" || !/^20\d{2}-11-0[2-8]$/u.test(value)) return false;
+	const date = new Date(`${value}T00:00:00Z`);
+	return Number.isFinite(date.valueOf()) && date.toISOString().slice(0, 10) === value && date.getUTCDay() === 2;
+}
+
+export function readMississippiGeneralElectionDate(body: string) {
+	if (Buffer.byteLength(body) > 2 * 1024 * 1024) throw new Error("The election discovery page exceeds its size limit.");
+	const family = getStateBallotCycleFamily("ms-sos-2026");
+	const document = parseStateHtml(body);
+	const forms = stateHtmlDescendants(document, node => node.nodeName === "form");
+	const headings = stateHtmlDescendants(document, node => node.nodeName === "h1");
+	if (forms.length !== 1 || stateHtmlAttribute(forms[0]!, "id") !== family.formId || stateHtmlAttribute(forms[0]!, "method").toLowerCase() !== "post" || new URL(stateHtmlAttribute(forms[0]!, "action"), family.discoveryUrl).href !== family.discoveryUrl || headings.length !== 1 || stateHtmlText(headings[0]!).trim() !== "Candidate Qualifying List")
+		throw new Error("The Mississippi public candidate form has changed.");
+	const controls = stateHtmlDescendants(forms[0]!, node => node.nodeName === "input" && stateHtmlAttribute(node, "name") === "btnDownloadExcel" && stateHtmlAttribute(node, "type") === "submit" && stateHtmlAttribute(node, "value") === "Download CSV");
+	if (controls.length !== 1 || stateHtmlDescendants(forms[0]!, node => node.nodeName === "select").length) throw new Error("The Mississippi public export controls have changed.");
+	const labels = stateHtmlDescendants(forms[0]!, node => ["div", "p"].includes(node.nodeName)).map(node => stateHtmlText(node).replace(/\s+/gu, " ").trim()).filter(label => label.startsWith("General Election:") && label.length < 150);
+	if (!labels.length || labels.length > 100) throw new Error("The Mississippi report has no bounded explicit general-election date.");
+	const dates = labels.map((label) => {
+		const match = /^General Election:\s*November ([2-8]), (20\d{2})$/u.exec(label);
+		const date = match ? `${match[2]}-11-0${match[1]}` : "";
+		if (!validStateBallotGeneralDate(date) || date < family.source.electionDate) throw new Error("The Mississippi report has an unsupported general-election date.");
+		return date;
+	});
+	if (new Set(dates).size !== 1) throw new Error("The Mississippi report identifies conflicting general-election dates.");
+	return dates[0]!;
+}
+
+export function parseStateBallotCycleCatalog(value: unknown, now = Date.now()): StateBallotCycleCatalog {
+	if (!exactKeys(value, ["schemaVersion", "type", "familyId", "sourceConfigurationSha256", "discovery", "elections"]) || value.schemaVersion !== 1 || value.type !== "state-ballot-cycle-catalog" || typeof value.familyId !== "string")
+		throw new Error("The election cycle catalog must match the approved automatic source family.");
+	const family = getStateBallotCycleFamily(value.familyId);
+	const original = family.source;
+	if (value.sourceConfigurationSha256 !== digest(JSON.stringify(original))) throw new Error("The election cycle catalog must match the approved automatic source family.");
+	const discovery = value.discovery;
+	if (!exactKeys(discovery, ["url", "sha256", "retrievedAt"]) || discovery.url !== family.discoveryUrl || typeof discovery.sha256 !== "string" || !/^[a-f0-9]{64}$/u.test(discovery.sha256) || typeof discovery.retrievedAt !== "string" || !Number.isFinite(Date.parse(discovery.retrievedAt)) || new Date(discovery.retrievedAt).toISOString() !== discovery.retrievedAt || Date.parse(discovery.retrievedAt) > now)
+		throw new Error("The election discovery provenance is invalid.");
+	if (!Array.isArray(value.elections) || !value.elections.length || value.elections.length > 100)
+		throw new Error("The election cycle catalog exceeds its bounds.");
+	const identifiers = new Set<string>();
+	const dates = new Set<string>();
+	const originalElectionId = new URL(original.url).searchParams.get("e");
+	for (const election of value.elections) {
+		if (!exactKeys(election, ["electionId", "electionDate"]) || !validStateBallotGeneralDate(election.electionDate) || election.electionDate < original.electionDate || dates.has(election.electionDate) || (family.format === "mississippi-csv" ? election.electionId !== null : typeof election.electionId !== "string" || !/^[1-9]\d{0,8}$/u.test(election.electionId) || identifiers.has(election.electionId) || ((election.electionId === originalElectionId) !== (election.electionDate === original.electionDate))) || (family.format === "montana-csv" && Number(election.electionDate.slice(0, 4)) % 2 !== 0))
+			throw new Error("The official election identity is duplicate, unsupported or inconsistent.");
+		if (typeof election.electionId === "string") identifiers.add(election.electionId);
+		dates.add(election.electionDate);
+	}
+	return value as unknown as StateBallotCycleCatalog;
+}
+
+export function discoverWashingtonElectionCycles(body: string, now = Date.now()): StateBallotCycleCatalog {
+	return discoverStateBallotElectionCycles(body, washington.id, now);
+}
+
+export function discoverStateBallotElectionCycles(body: string, familyId: string, now = Date.now()): StateBallotCycleCatalog {
+	const family = getStateBallotCycleFamily(familyId);
+	if (Buffer.byteLength(body) > 2 * 1024 * 1024) throw new Error("The election discovery page exceeds its size limit.");
+	if (family.format === "mississippi-csv") return parseStateBallotCycleCatalog({ schemaVersion: 1, type: "state-ballot-cycle-catalog", familyId, sourceConfigurationSha256: digest(JSON.stringify(family.source)), discovery: { url: family.discoveryUrl, sha256: digest(body), retrievedAt: new Date(now).toISOString() }, elections: [{ electionId: null, electionDate: readMississippiGeneralElectionDate(body) }] }, now);
+	const document = parseStateHtml(body);
+	const forms = stateHtmlDescendants(document, node => node.nodeName === "form");
+	const selections = stateHtmlDescendants(document, node => node.nodeName === "select" && stateHtmlAttribute(node, "name") === "ctl00$ContentPlaceHolder1$ddlElection");
+	if (forms.length !== 1 || selections.length !== 1 || !stateHtmlDescendants(forms[0]!, node => node === selections[0]).length || stateHtmlAttribute(forms[0]!, "method").toLowerCase() !== "post" || (family.formId && stateHtmlAttribute(forms[0]!, "id") !== family.formId))
+		throw new Error("The official election discovery controls have changed.");
+	const action = new URL(stateHtmlAttribute(forms[0]!, "action"), family.discoveryUrl);
+	const landing = new URL(family.discoveryUrl);
+	if (action.origin !== landing.origin || action.pathname !== landing.pathname || action.username || action.password || action.hash || (action.search && (!/^\?e=[1-9]\d{0,8}$/u.test(action.search))))
+		throw new Error("The official election discovery form target has changed.");
+	const options = stateHtmlDescendants(selections[0]!, node => node.nodeName === "option");
+	if (!options.length || options.length > 1000) throw new Error("The official election discovery list exceeds its bounds.");
+	const elections: StateBallotCycleCatalog["elections"] = [];
+	for (const option of options) {
+		const label = stateHtmlText(option).replace(/\s+/gu, " ").trim();
+		if (!/\(General\)$/u.test(label)) continue;
+		const identity = /\((\d{2})\/(\d{2})\/((?:19|20)\d{2})\) \(General\)$/u.exec(label);
+		if (!identity) throw new Error("An official general election has no supported date.");
+		const electionDate = `${identity[3]}-${identity[1]}-${identity[2]}`;
+		if (electionDate < family.source.electionDate) continue;
+		if (label !== `${family.electionLabel} ${identity[3]} (${identity[1]}/${identity[2]}/${identity[3]}) (General)`)
+			throw new Error("The official general-election label has changed.");
+		elections.push({ electionId: stateHtmlAttribute(option, "value"), electionDate });
+	}
+	return parseStateBallotCycleCatalog({ schemaVersion: 1, type: "state-ballot-cycle-catalog", familyId: family.source.id, sourceConfigurationSha256: digest(JSON.stringify(family.source)), discovery: { url: family.discoveryUrl, sha256: digest(body), retrievedAt: new Date(now).toISOString() }, elections: elections.sort((first, second) => first.electionDate.localeCompare(second.electionDate)) }, now);
+}
+
+export function stateBallotCycleSources(catalog: StateBallotCycleCatalog, now = Date.now()): StateBallotSource[] {
+	parseStateBallotCycleCatalog(catalog, now);
+	const family = getStateBallotCycleFamily(catalog.familyId);
+	return catalog.elections.filter(election => election.electionDate !== family.source.electionDate).map((election) => {
+		const url = new URL(family.discoveryUrl);
+		if (election.electionId !== null) url.searchParams.set("e", election.electionId);
+		return { ...family.source, id: `${family.prefix}-${election.electionDate}`, label: `${family.source.label} (${election.electionDate.slice(0, 4)})`, electionDate: election.electionDate, url: url.href, pageUrl: url.href };
+	}).sort((first, second) => first.electionDate.localeCompare(second.electionDate));
+}
+
+export function readStateBallotCycleCatalog(path: string, now = Date.now()): StateBallotCycleCatalog | null {
+	assertExternalStateDataDirectory(dirname(path));
+	let handle: number | undefined;
+	try {
+		assertExternalStateDataDirectory(realpathSync(dirname(path)));
+		handle = openSync(path, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
+		const metadata = fstatSync(handle);
+		if (!metadata.isFile() || metadata.size > maximumBytes) throw new Error("The election cycle catalog must be a bounded regular file.");
+		const buffer = Buffer.alloc(maximumBytes + 1);
+		let length = 0;
+		while (length < buffer.length) {
+			const bytes = readSync(handle, buffer, length, buffer.length - length, length);
+			if (!bytes) break;
+			length += bytes;
+		}
+		if (length > maximumBytes) throw new Error("The election cycle catalog exceeds its size limit.");
+		return parseStateBallotCycleCatalog(JSON.parse(buffer.subarray(0, length).toString("utf8")), now);
+	}
+	catch (error) {
+		if ((error as NodeJS.ErrnoException).code === "ENOENT") return null;
+		throw error;
+	}
+	finally {
+		if (handle !== undefined) closeSync(handle);
+	}
+}
+
+export async function writeStateBallotCycleCatalog(path: string, catalog: StateBallotCycleCatalog, now = Date.now()) {
+	parseStateBallotCycleCatalog(catalog, now);
+	assertExternalStateDataDirectory(dirname(path));
+	await mkdir(dirname(path), { recursive: true });
+	const directory = await realpath(dirname(path));
+	assertExternalStateDataDirectory(directory);
+	const target = join(directory, path.slice(path.lastIndexOf("/") + 1));
+	const previous = readStateBallotCycleCatalog(target, now);
+	if (previous && previous.familyId !== catalog.familyId) throw new Error("An election catalog cannot replace a different source family.");
+	if (previous && JSON.stringify(previous) === JSON.stringify(catalog)) return false;
+	const temporary = `${target}.${randomUUID()}.tmp`;
+	try {
+		const handle = await open(temporary, "wx");
+		try {
+			await handle.writeFile(`${JSON.stringify(catalog)}\n`);
+			await handle.sync();
+		}
+		finally { await handle.close(); }
+		await rename(temporary, target);
+	}
+	finally {
+		await unlink(temporary).catch((error: NodeJS.ErrnoException) => {
+			if (error.code !== "ENOENT") throw error;
+		});
+	}
+	return true;
+}

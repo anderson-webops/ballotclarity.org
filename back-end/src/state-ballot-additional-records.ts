@@ -2,7 +2,7 @@ import type { StateCandidateRecord, StateContestScope } from "./state-ballot-rec
 import type { StateBallotSource } from "./state-ballot-sources.js";
 import { parse as parseCsv } from "csv-parse/sync";
 import { buildPublicStateExportForm } from "./state-ballot-fetch.js";
-import { parseStateHtml, stateHtmlDescendants, stateHtmlTableRows, stateHtmlText } from "./state-ballot-html.js";
+import { parseStateHtml, stateHtmlAttribute, stateHtmlDescendants, stateHtmlTableRows, stateHtmlText } from "./state-ballot-html.js";
 
 export interface StateCandidateValues {
 	name: string;
@@ -86,6 +86,31 @@ function readExport(source: StateBallotSource, body: string) {
 	if (["hawaii-csv", "south-dakota-csv", "montana-csv"].includes(source.format)) {
 		const total = clean(stateHtmlText(parseStateHtml(envelope.page))).match(/(\d+) items in \d+ pages/u)?.[1];
 		if (!total || Number(total) !== rows.length) throw new Error("The official export does not match its complete public record count.");
+	}
+	if (source.format === "mississippi-csv") {
+		const document = parseStateHtml(envelope.page);
+		const tables = stateHtmlDescendants(document, node => node.nodeName === "table");
+		if (!tables.length || tables.length > 1000) throw new Error("The Mississippi candidate tables exceed their bounds.");
+		const names = tables.flatMap((table) => {
+			const reportRows = stateHtmlTableRows(table);
+			const cells = (row: typeof table) => (row.childNodes ?? []).filter(node => ["td", "th"].includes(node.nodeName));
+			const columns = reportRows[0] ? cells(reportRows[0]).map(node => clean(stateHtmlText(node))) : [];
+			if (!["Name|Party", "Name|Party|District", "Name|District|Place", "Name|District"].includes(columns.join("|"))) throw new Error("The Mississippi public candidate table columns have changed.");
+			return reportRows.slice(1).map((row) => {
+				const values = cells(row);
+				const name = values[0] ? clean(stateHtmlText(values[0])) : "";
+				if (values.length !== columns.length || !name) throw new Error("The Mississippi public candidate table has changed.");
+				return name;
+			});
+		});
+		const emptyOffices = new Set<string>();
+		for (const row of rows.filter(row => !row["Candidate Name"])) {
+			const cards = stateHtmlDescendants(document, node => node.nodeName === "div" && stateHtmlAttribute(node, "class").split(/\s+/u).includes("officeCard") && stateHtmlDescendants(node, child => stateHtmlAttribute(child, "class") === "officeTitle" && clean(stateHtmlText(child)) === row.Office).length === 1 && clean(stateHtmlText(node)).endsWith("No candidates entered for this office yet.") && !stateHtmlDescendants(node, child => child.nodeName === "table").length);
+			if (!row.Office || emptyOffices.has(row.Office) || cards.length !== 1 || Object.entries(row).some(([key, value]) => key !== "Office" && value)) throw new Error("The Mississippi empty-office row has no matching public notice.");
+			emptyOffices.add(row.Office);
+		}
+		const exportNames = rows.filter(row => row["Candidate Name"]).map(row => row["Candidate Name"]).sort();
+		if (names.length !== exportNames.length || names.sort().some((name, index) => name !== exportNames[index])) throw new Error("The Mississippi export does not match its complete public candidate list.");
 	}
 	return { headers, rows };
 }
@@ -221,12 +246,15 @@ export function parseAdditionalStateRecords(source: StateBallotSource, body: str
 	}
 	if (source.format === "mississippi-csv") {
 		requireColumns(headers, ["Office", "Candidate Name", "Party", "District", "Place", "General Election", "Election"]);
+		const electionLabel = new Intl.DateTimeFormat("en-US", { month: "long", day: "numeric", year: "numeric", timeZone: "UTC" }).format(new Date(`${source.electionDate}T00:00:00Z`));
 		return rows.flatMap((row) => {
-			if (![row["General Election"], row.Election].includes("November 3, 2026")) return [];
+			const dates = [row["General Election"], row.Election].filter(Boolean);
+			if (!dates.includes(electionLabel)) return [];
+			if (dates.some(date => date !== electionLabel)) throw new Error("The Mississippi candidate has conflicting election dates.");
 			let office = row.Office!.replace(/^Candidates for /u, "");
-			if (office.startsWith("State House of Representatives")) office = "State House of Representatives (Special Election)";
+			if (office.startsWith("State House of Representatives") && /Special Election/u.test(office)) office = "State House of Representatives (Special Election)";
 			if (row.Place) office += `, Place ${row.Place}`;
-			return [requiredRecord(source, { name: row["Candidate Name"]!, office, party: row.Party!, district: row.District, jurisdiction: row.District ? `Judicial District ${row.District}` : undefined, status: "listed" }, factory)];
+			return [requiredRecord(source, { name: row["Candidate Name"]!, office, party: row.Party!, district: row.District, jurisdiction: row.District && /Court|Judge|District Attorney/u.test(office) ? `Judicial District ${row.District}` : undefined, status: "listed" }, factory)];
 		});
 	}
 	if (source.format === "hawaii-csv") {

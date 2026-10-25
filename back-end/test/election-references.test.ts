@@ -21,7 +21,7 @@ const source = electionReferenceSources.find(item => item.stateCode === "ME")!;
 const newsSource = electionReferenceSources.find(item => item.stateCode === "LA")!;
 
 function fixture(collection: ElectionReferenceSource = source) {
-	const records = collection.documents.map((document, index) => ({ id: hash(`${collection.id}/${index}`).slice(0, 24), name: `Example ${index}`, office: "School Board", scope: "local" as const, jurisdiction: "Example town", facts: [`Reported academic advising experience ${index}.`], sourceDocumentIndex: index }));
+	const records = collection.documents.map((document, index) => ({ id: hash(`${collection.id}/${index}`).slice(0, 24), name: `Example ${index}`, office: "School Board", scope: "local" as const, jurisdiction: collection.washingtonLocality ? `${collection.washingtonLocality.countyDisplay} County` : "Example town", facts: [`Reported academic advising experience ${index}.`], sourceDocumentIndex: index }));
 	const documents = collection.documents.map(document => ({ url: document.url, sha256: hash(document.url), capturedAt: retrievedAt, includedRecordCount: 1 }));
 	return { schemaVersion: 1, type: "election-references", stateCode: collection.stateCode, sourceId: collection.id, electionDate: collection.electionDate, retrievedAt, sourceSha256: hash(JSON.stringify(documents.map(({ url, sha256 }) => ({ url, sha256 })))), recordCount: records.length, documents, records };
 }
@@ -38,6 +38,38 @@ test("references preserve candidate, reporting and official biography authorship
 		assert.equal("status" in page.records[0]!, false);
 		assert.equal("sourceSha256" in page.records[0]!, false);
 		assert.equal("sourceDocumentIndex" in page.records[0]!, false);
+	}
+});
+
+test("Idaho state biographies retain official attribution without invented publication dates or qualification", () => {
+	const collection = electionReferenceSources.find(item => item.id === "id-statewide-biographies-2026")!;
+	assert.equal(collection.stateCode, "ID");
+	assert.equal(collection.electionDate, "2026-11-03");
+	assert.deepEqual(collection.documents.map(document => document.url), [
+		"https://gov.idaho.gov/our-governor/",
+		"https://lgo.idaho.gov/about/",
+		"https://sos.idaho.gov/meet-the-secretary/",
+		"https://www.ag.idaho.gov/about/",
+		"https://www.sde.idaho.gov/about-us/superintendent/",
+		"https://sto.idaho.gov/About/Julie-A-Ellsworth-State-Treasurer",
+	]);
+	assert.ok(collection.documents.every(document => document.kind === "official-biography" && document.publishedDate === undefined));
+	const page = buildElectionReferencePage(collection, parseElectionReferenceSnapshot(collection, JSON.stringify(fixture(collection))), { search: "", scope: "all", offset: 0, limit: 50 });
+	assert.equal(page.records.length, 6);
+	assert.ok(page.records.every(record => record.source.collectionId === collection.id && record.source.kind === "official-biography" && !("status" in record)));
+});
+
+test("missing Idaho state biographies do not suppress a retained independent collection", async () => {
+	const collection = electionReferenceSources.find(item => item.id === "id-statewide-biographies-2026")!;
+	const independent = electionReferenceSources.find(item => item.id === "us-cdir-id-2026")!;
+	const directory = await mkdtemp(join(tmpdir(), "idaho-reference-absence-"));
+	try {
+		await createElectionReferenceStorage(directory).write(independent, parseElectionReferenceSnapshot(independent, JSON.stringify(fixture(independent))));
+		const snapshots = await createElectionReferenceRepository({ dataDirectory: directory, sources: [independent, collection], now: () => Date.parse(retrievedAt) }).getSnapshots!("ID");
+		assert.deepEqual(snapshots.map(snapshot => snapshot.sourceId), [independent.id]);
+	}
+	finally {
+		await rm(directory, { recursive: true, force: true });
 	}
 });
 

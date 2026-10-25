@@ -7,12 +7,14 @@ definePageMeta({
 	middleware: "admin"
 });
 
-const [{ data: session }, { data, refresh }, { data: contentData }] = await Promise.all([
+const [{ data: session }, { data, error, pending, refresh }, { data: contentData }] = await Promise.all([
 	useAdminSession("admin-corrections-session"),
 	useAdminCorrections(),
 	useAdminContent()
 ]);
 const statusOptions: AdminCorrectionStatus[] = ["new", "triaged", "researching", "resolved"];
+const route = useRoute();
+const visibleCorrections = computed(() => (data.value?.corrections ?? []).filter(item => typeof route.query.id !== "string" || item.id === route.query.id));
 const priorityOptions: AdminPriority[] = ["high", "medium", "low"];
 const canManagePublicCorrections = computed(() => session.value?.role === "admin" && Boolean(session.value.mfaEnabledAt));
 const contentOptions = computed(() => [...(contentData.value?.items ?? [])].sort((left, right) => left.title.localeCompare(right.title)));
@@ -81,6 +83,7 @@ usePageSeo({
 				Reader and internal reports stay visible here from submission through resolution. The goal is traceability, not silent edits.
 			</p>
 		</header>
+		<AdminLoadState :pending="pending" :error="Boolean(error)" label="records" @retry="refresh()" />
 
 		<InfoCallout v-if="!canManagePublicCorrections" title="Public correction approval" tone="warning">
 			New submissions remain private while they are reviewed. An admin with multi-factor authentication must promote a record out of the new state before it appears publicly, and must approve any later public change or removal.
@@ -97,7 +100,7 @@ usePageSeo({
 		</p>
 
 		<AdminEmptyState
-			v-if="!(data?.corrections?.length ?? 0)"
+			v-if="!pending && !error && !(data?.corrections?.length ?? 0)"
 			action-label="Open public contact page"
 			action-to="/contact"
 			eyebrow="No open reports"
@@ -108,7 +111,7 @@ usePageSeo({
 		/>
 
 		<div v-else class="space-y-5">
-			<article v-for="item in data?.corrections ?? []" :key="item.id" class="surface-panel">
+			<article v-for="item in visibleCorrections" :key="item.id" class="surface-panel">
 				<div class="gap-6 grid xl:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
 					<div class="min-w-0">
 						<div class="flex flex-wrap gap-2">

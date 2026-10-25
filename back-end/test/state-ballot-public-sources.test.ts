@@ -18,7 +18,7 @@ function csv(rows: string[][]) {
 }
 
 const publicTokens = "<input type=\"hidden\" name=\"__VIEWSTATE\" value=\"public-form-state\"><input type=\"hidden\" name=\"privateEmail\" value=\"do-not-send@example.test\">";
-const mississippiPage = `<h1>Candidate Qualifying List</h1><p>General Election: November 3, 2026</p>${publicTokens}<input type="submit" name="btnDownloadExcel" value="Download CSV">`;
+const mississippiPage = `<form id="form1" method="post" action="./default.aspx"><h1>Candidate Qualifying List</h1><p>General Election: November 3, 2026</p>${publicTokens}<input type="submit" name="btnDownloadExcel" value="Download CSV"></form>`;
 const hawaiiControl = "ctl00$cphFooter$rdgSearch$ctl00$ctl02$ctl00$ExportToCsvButton";
 const hawaiiPage = `${publicTokens}<select name="ctl00$cphFooter$ddlElection"><option selected value="94">2026 Candidate Report</option></select><input type="submit" name="${hawaiiControl}"><p>6 items in 1 pages</p>`;
 const southDakotaControl = "ctl00$MainContent$grdCandidates$ctl00$ctl02$ctl00$ExportToCsvButton";
@@ -38,7 +38,7 @@ test("public export forms retain only observed election fields and the supported
 			requests.push(url);
 			return options.postBody ? "public-csv-content" : page!;
 		});
-		if (code === "IL") {
+		if (source(code!).retrievalPolicy === "manual-snapshot") {
 			await assert.rejects(retrieve(), /manually supplied candidate snapshot/u);
 			assert.equal(requests.length, 0);
 		}
@@ -92,7 +92,8 @@ test("Mississippi requires explicit November dates and distinguishes judicial pl
 		["Candidates for State House of Representatives District 70 & 77 - Special Election", "House Sample", "Independent", "77", "", "", "November 3, 2026", ""],
 		["Candidates for State Senate 34", "Undated Sample", "", "34", "", "", "", ""],
 	]);
-	const parsed = parseStateCandidateRecords(source("MS"), envelope(mississippiPage, records));
+	const report = mississippiPage.replace("</form>", `<table><tr><th>Name</th><th>Party</th></tr>${["Alex Sample", "Judge One", "Judge Two", "House Sample", "Undated Sample"].map(name => `<tr><td>${name}</td><td></td></tr>`).join("")}</table></form>`);
+	const parsed = parseStateCandidateRecords(source("MS"), envelope(report, records));
 	assert.equal(parsed.length, 4);
 	assert.equal(parsed[0]?.scope, "statewide");
 	assert.equal(parsed[1]?.scope, "local");
@@ -101,7 +102,7 @@ test("Mississippi requires explicit November dates and distinguishes judicial pl
 	assert.equal(parsed[3]?.district, "77");
 	assert.equal(parsed[3]?.office.includes("70 & 77"), false);
 	assert.equal(JSON.stringify(parsed).includes("Private address"), false);
-	assert.throws(() => parseStateCandidateRecords(source("MS"), envelope(mississippiPage, records.replaceAll("November 3, 2026", "November 3, 2027"))), /no records/u);
+	assert.throws(() => parseStateCandidateRecords(source("MS"), envelope(report, records.replaceAll("November 3, 2026", "November 3, 2027"))), /no records/u);
 });
 
 test("South Dakota validates complete export counts, withdrawal timestamps, at-large scope and local county identity", () => {

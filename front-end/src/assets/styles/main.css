@@ -951,6 +951,12 @@ html.dark .expandable-section__body {
     display: none !important;
   }
 
+  body * {
+    color: #111827 !important;
+    background-color: transparent !important;
+    text-shadow: none !important;
+  }
+
   .print-only {
     display: block !important;
   }
@@ -1028,7 +1034,7 @@ html.dark .expandable-section__body {
   .print-guide-grid,
   .print-plan-grid {
     display: block !important;
-    columns: 2;
+    columns: 18rem 2;
     column-gap: 1rem;
   }
 
@@ -1718,6 +1724,23 @@ html.dark .home-step {
 .measure-decision__option[aria-pressed="true"] {
   background: var(--app-action);
   color: var(--app-action-text);
+}
+
+.measure-decision--long {
+  display: grid;
+  width: 100%;
+  min-width: 0;
+}
+
+.measure-decision--long .measure-decision__option {
+  padding: 0.75rem 1rem;
+  white-space: normal;
+  text-align: left;
+}
+
+.measure-decision--long .measure-decision__option + .measure-decision__option {
+  border-top: 1px solid var(--app-line);
+  border-left: 0;
 }
 
 /* Election hero as a single headline block: title, one facts row, one status line. */

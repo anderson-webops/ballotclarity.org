@@ -40,14 +40,14 @@ test("results summary cards still fall back to route roots without a selected ar
 
 	assert.equal(items[0]?.href, "/districts");
 	assert.equal(items[1]?.href, "/representatives");
-	assert.equal(items[3]?.value, "Not published");
+	assert.equal(items.length, 3);
 });
 
 test("an unverified published overview describes limited information rather than an editorial review", () => {
 	const items = buildResultsSummaryItems({ districtMatches: [], guideAvailability: "published", lookupQuery: "30022", representativeMatches: [] }, 1);
 	assert.equal(limitedBallotNotice, "Ballot information for your area is currently limited.");
-	assert.equal(items[3]?.note, limitedBallotNotice);
-	assert.equal(items[3]?.value, "Limited");
+	assert.equal(items.length, 3);
+	assert.ok(items.every(item => !/guide|published|review/i.test(`${item.label} ${item.note} ${item.value}`)));
 });
 
 test("verified ballot information does not receive a limited-information status", () => {
@@ -59,6 +59,6 @@ test("verified ballot information does not receive a limited-information status"
 		lookupQuery: "30022",
 		representativeMatches: []
 	}, 1);
-	assert.equal(items[3]?.value, "Verified");
-	assert.notEqual(items[3]?.note, limitedBallotNotice);
+	assert.equal(items.length, 3);
+	assert.ok(items.every(item => item.note !== limitedBallotNotice));
 });

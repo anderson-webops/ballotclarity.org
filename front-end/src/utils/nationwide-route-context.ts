@@ -5,6 +5,12 @@ export interface NationwideLookupRouteQuery {
 	selection?: string;
 }
 
+export interface CivicDirectoryApiQuery {
+	area?: string;
+	lookup?: string;
+	selection?: string;
+}
+
 type QueryCarrier = {
 	lookupQuery?: string;
 	selectionId?: string;
@@ -94,4 +100,34 @@ export function buildLookupContextFromNationwideResult(context: NationwideLookup
 				selectionId: context.selectionId
 			}
 		: null;
+}
+
+export function lookupContextMatchesDirectoryRoute(
+	context: NationwideLookupResultContext | null | undefined,
+	routeQuery: Record<string, unknown>
+) {
+	if (context?.result !== "resolved" || readTrimmedQueryValue(routeQuery.area))
+		return false;
+
+	if (routeQuery.lookup === undefined && routeQuery.selection === undefined)
+		return true;
+
+	const requested = extractNationwideLookupRouteQuery(routeQuery);
+	const stored = buildNationwideLookupRouteQuery(buildLookupContextFromNationwideResult(context));
+	return Boolean(requested && stored && requested.lookup === stored.lookup
+		&& (requested.selection ?? "") === (stored.selection ?? ""));
+}
+
+export function buildCivicDirectoryApiQuery(
+	context: QueryCarrier,
+	routeQuery: Record<string, unknown>,
+	guideArea?: string
+): CivicDirectoryApiQuery | null {
+	const requestedLookup = extractNationwideLookupRouteQuery(routeQuery);
+	if (requestedLookup)
+		return requestedLookup;
+	const requestedArea = readTrimmedQueryValue(routeQuery.area);
+	if (requestedArea)
+		return { area: requestedArea };
+	return buildNationwideLookupRouteQuery(context) ?? (guideArea ? { area: guideArea } : null);
 }

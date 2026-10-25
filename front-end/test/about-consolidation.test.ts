@@ -45,9 +45,10 @@ test("source search, provider data and failures remain independent without overs
 	assert.doesNotMatch(directory, /surface-panel|surface-row|Collapsed by default|Open this list when/);
 	const providers = source("components/SourceProviders.vue");
 	assert.match(providers, /useDataSources\(\)/);
-	assert.match(providers, /provider.bestUse/);
-	assert.match(providers, /option.summary/);
-	assert.doesNotMatch(providers, /provider.limitations|option.notes|<details/);
+	assert.match(providers, /option.coverage/);
+	assert.match(providers, /:href="option.links\[0\].url"/u);
+	assert.match(providers, /provider.connectionStatus === "active"/u);
+	assert.doesNotMatch(providers, /provider.capabilities|provider.bestUse|Technical docs|<details/u);
 	assert.doesNotMatch(providers, /surface-panel|surface-row|roadmap|architectureStages|migrationWatch/);
 });
 
@@ -60,9 +61,9 @@ test("contact retains the form and protected email without repeated contact card
 	assert.doesNotMatch(contact, /surface-panel|correctionChecklist|Good-faith standard|Submit online/);
 });
 
-test("limited coverage notice is local to resolved unverified results", () => {
+test("limited coverage notice is local to resolved results without ballot information", () => {
 	const panel = source("components/LookupResultsPanel.vue");
-	assert.match(panel, /lookup.result === 'resolved' && !lookup.guideContent\?\.verifiedContestPackage/);
+	assert.match(panel, /!electionView.betweenElections && !hasBallotInformation\(displayedLookup\)/);
 	assert.match(panel, /\{\{ limitedBallotNotice \}\}/);
 	assert.doesNotMatch(source("components/AppHeader.vue"), /limitedBallotNotice|Please check back later/);
 	assert.doesNotMatch(source("pages/coverage.vue"), /limitedBallotNotice|Ballot information for your area/);

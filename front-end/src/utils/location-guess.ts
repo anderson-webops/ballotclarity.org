@@ -16,14 +16,14 @@ export interface ResolvedLocationGuessCapability {
 const automaticGuessUiContent: LocationGuessUiContent = {
 	home: "Ballot Clarity can start with an approximate location guess. Enter a ZIP code for a broader preview, or use a full street address for the most precise match.",
 	lookupForm: "Ballot Clarity can start with an approximate location guess, but you can replace it here at any time with a full address or ZIP code.",
-	plan: "Ballot plan opens when a local guide is available for a ZIP code or full street address.",
+	plan: "",
 	resultsEmpty: "No saved results in this browser yet. Enter an address or ZIP code to see them."
 };
 
 const manualLookupUiContent: LocationGuessUiContent = {
 	home: "Enter a ZIP code for a broader preview, or use a full street address for the most precise match.",
 	lookupForm: "Enter a full address or ZIP code here to load civic results.",
-	plan: "Ballot plan opens when a local guide is available for a ZIP code or full street address.",
+	plan: "",
 	resultsEmpty: "No saved results in this browser yet. Enter an address or ZIP code to see them."
 };
 

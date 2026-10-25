@@ -647,15 +647,20 @@ test("state records: every candidate is visible with election, provenance, and l
 			const heading = Array.from(document.querySelectorAll('h2')).find(node => node.textContent.includes('State candidate records'));
 			const section = heading.closest('section');
 			const candidateLink = section.querySelector('li a');
-			return { count: section.querySelectorAll('li').length, insideDetails: Boolean(section.closest('details')), source: section.querySelector('a').href, candidateUrl: candidateLink.href, candidateName: candidateLink.textContent.trim(), text: document.body.innerText };
+			return { count: section.querySelectorAll('li').length, insideDetails: Boolean(section.closest('details')), source: section.querySelector('a').href, candidateUrl: candidateLink.href, candidateName: candidateLink.querySelector('p').textContent.trim(), text: document.body.innerText };
 		})()`, returnByValue: true });
 		assert.equal(content.result.value.count, 8);
 		assert.equal(content.result.value.insideDetails, false);
-		assert.match(content.result.value.text, /Ballot information for your area is currently limited/u);
+		assert.doesNotMatch(content.result.value.text, /Ballot information for your area is currently limited/u);
+		assert.match(content.result.value.text, /Ballot information may be incomplete, inaccurate or out of date/u);
 		assert.match(content.result.value.text, /November 3, 2026/u);
 		assert.match(content.result.value.text, /Filing does not establish ballot qualification/u);
 		assert.equal(content.result.value.source, "https://www.ncsbe.gov/results-data/candidate-lists");
-		assert.equal(content.result.value.candidateUrl, "https://campaign.example.org/");
+		const candidateTarget = new URL(content.result.value.candidateUrl);
+		assert.equal(candidateTarget.origin, new URL(appBaseUrl).origin);
+		assert.equal(candidateTarget.pathname, "/record/NC/candidate-0");
+		assert.equal(candidateTarget.searchParams.get("source"), "state-fixture");
+		assert.equal(candidateTarget.searchParams.get("name"), "Fixture Candidate 1");
 		assert.equal(content.result.value.candidateName, "Fixture Candidate 1");
 		for (const width of [320, 1280]) {
 			await cdp.send("Emulation.setDeviceMetricsOverride", { width, height: 844, deviceScaleFactor: 1, mobile: false });
@@ -993,6 +998,7 @@ before(async () => {
 
 	const app = startProcess(process.execPath, ["front-end/.output/server/index.mjs"], {
 		...process.env,
+		TZ: "UTC",
 		ADMIN_API_BASE: `${apiBaseUrl}/api`,
 		ADMIN_API_KEY: adminApiKey,
 		ADMIN_SESSION_SECRET: adminSessionSecret,
@@ -1174,17 +1180,16 @@ test("built app renders the key ballot guide pages against the built API", async
 	assert.equal(coveragePage.status, 200);
 	assert.match(coverageHtml, /Coverage/);
 	assert.match(coverageHtml, /Fulton County, Georgia/);
-	assert.match(coverageHtml, /Election coverage/);
-	assert.match(coverageHtml, /official election tools/i);
-	assert.match(coverageHtml, /Known limits/);
+	assert.match(coverageHtml, /href="\/records"/);
+	assert.match(coverageHtml, /href="\/sources"/);
 	assert.equal(statusPage.status, 200);
 	assert.match(statusHtml, /Public status/);
-	assert.match(statusHtml, /No source-monitor metrics are published right now/);
-	assert.match(statusHtml, /Public notes/);
+	assert.match(statusHtml, /Source metrics unavailable/);
+	assert.doesNotMatch(statusHtml, /<h2[^>]*>\s*Public notes\s*<\/h2>/);
 	assert.doesNotMatch(statusHtml, /Tracked public sources/);
 	assert.doesNotMatch(statusHtml, /Active notices/);
 	assert.match(statusHtml, /source health, coverage, and current review notices/i);
-	assert.match(statusHtml, /No published local guide package is active right now|Active coverage package status:/i);
+	assert.match(statusHtml, /Source metrics unavailable|Tracked public sources/i);
 	assert.doesNotMatch(statusHtml, /activeSnapshotPath|configuredSnapshotPath|\/srv\/|\/Users\//);
 	assert.equal(correctionsPage.status, 200);
 	assert.match(correctionsHtml, /Corrections log/);
@@ -1204,13 +1209,13 @@ test("built app renders the key ballot guide pages against the built API", async
 	assert.equal(unpublishedSourcePage.status, 404);
 	assert.doesNotMatch(unpublishedSourceHtml, /Source record unavailable/);
 	assert.equal(contestPage.status, 200);
-	assert.match(contestHtml, /Contest page not published yet|What this office does/);
+	assert.match(contestHtml, /Race information unavailable|What this office does/);
 	assert.equal(districtsPage.status, 200);
 	assert.match(districtsHtml, /District pages/);
 	assert.equal(districtPage.status, 200);
-	assert.match(districtHtml, /Current representatives/);
-	assert.match(districtHtml, /Candidate field/);
-	assert.match(districtHtml, /District sources/);
+	assert.match(districtHtml, /District representatives/);
+	assert.doesNotMatch(districtHtml, /Candidate field:|local guide|needs an address or ZIP result/i);
+	assert.doesNotMatch(districtHtml, /District sources|id="sources"|href="#sources"|page identity|page availability/u);
 	assert.doesNotMatch(districtHtml, /href="\/sources\/district:state-senate-48"/);
 	assert.equal(representativesPage.status, 200);
 	assert.match(representativesHtml, /<h1[^>]*>\s*Representatives\s*<\/h1>/);
@@ -1266,12 +1271,13 @@ test("built app renders the key ballot guide pages against the built API", async
 	assert.match(planHtml, /My ballot plan/);
 	assert.doesNotMatch(planHtml, /id="change-location"/);
 	assert.doesNotMatch(planHtml, /Street address or ZIP code/);
-	assert.match(planHtml, /The ballot plan opens after Ballot Clarity publishes a local guide for this area\./);
+	assert.match(planHtml, /Ballot plan unavailable/);
+	assert.doesNotMatch(planHtml, /local guide/i);
 	assert.equal(compareEmptyPage.status, 200);
 	assert.match(compareEmptyHtml, /No compare candidates selected/);
 	assert.match(compareHtml, /Compare candidates/);
 	assert.match(compareHtml, /Candidate comparison is not available yet/);
-	assert.match(compareHtml, /published for comparison yet/i);
+	assert.doesNotMatch(compareHtml, /published for comparison yet/i);
 });
 
 test("built app exposes a protected admin portal when admin env is configured", async () => {
@@ -1299,7 +1305,7 @@ test("built app exposes a protected admin portal when admin env is configured", 
 	const temporaryDashboardHtml = await temporaryDashboardPage.text();
 
 	assert.equal(loginPage.status, 200);
-	assert.match(loginHtml, /Editorial and source operations/);
+	assert.match(loginHtml, /Admin sign in/);
 	assert.match(loginHtml, /Sign in to admin/);
 	assert.equal(unauthorizedOverview.status, 401);
 	assert.equal(loginResponse.status, 200);
@@ -1307,7 +1313,7 @@ test("built app exposes a protected admin portal when admin env is configured", 
 	assert.ok(loginBody.passwordChangeRequiredAt);
 	assert.equal(temporaryDashboardPage.status, 200);
 	assert.match(temporaryDashboardHtml, /Password change required/);
-	assert.doesNotMatch(temporaryDashboardHtml, /Internal editorial control room/);
+	assert.doesNotMatch(temporaryDashboardHtml, /Candidate records/);
 
 	const passwordChangeResponse = await fetch(`${appBaseUrl}/api/admin/session/password`, {
 		body: JSON.stringify({
@@ -1360,10 +1366,21 @@ test("built app exposes a protected admin portal when admin env is configured", 
 	assert.notEqual(passwordChangeBody.credentialsUpdatedAt, loginBody.credentialsUpdatedAt);
 	assert.equal(staleOverviewResponse.status, 401);
 	assert.equal(dashboardPage.status, 200);
-	assert.match(dashboardHtml, /Internal editorial control room/);
-	assert.match(dashboardHtml, /Current operational priorities/);
-	assert.match(dashboardHtml, /Latest queue and publish events/);
-	assert.match(dashboardHtml, /Open corrections/);
+	assert.match(dashboardHtml, /Candidate records/);
+	assert.match(dashboardHtml, /Operations/);
+	assert.match(dashboardHtml, /Exceptions/);
+	assert.match(dashboardHtml, /Settings/);
+	assert.match(dashboardHtml, /Automation/);
+	assert.match(dashboardHtml, /Latest data/);
+	const reviewsResponse = await fetch(`${appBaseUrl}/api/admin/packages`, { headers: { cookie: changedSessionCookie || "" } });
+	assert.equal(reviewsResponse.status, 200);
+	const reviewsBody = await reviewsResponse.json();
+	assert.ok(reviewsBody.packages.length);
+	const detailPage = await fetch(`${appBaseUrl}/admin/packages/${encodeURIComponent(reviewsBody.packages[0].workflow.id)}`, { headers: { cookie: changedSessionCookie || "" } });
+	assert.equal(detailPage.status, 200);
+	const detailHtml = await detailPage.text();
+	assert.match(detailHtml, /Rubric/);
+	assert.doesNotMatch(detailHtml, /Reviews an existing election; does not import data/);
 	assert.equal(accountPage.status, 200);
 	assert.match(accountHtml, /Change password/);
 	assert.match(accountHtml, /Account security/);
@@ -1497,6 +1514,61 @@ test("built app does not log a hydration mismatch when dark mode is stored befor
 		if (cdp)
 			await cdp.close().catch(() => {});
 
+		await stopChromeProcess(chrome.child, chromeUserDataDir);
+	}
+});
+
+test("first-visit timestamps hydrate without mismatches across browser time zones", async (t) => {
+	const chromeExecutable = findChromeExecutable();
+	if (!chromeExecutable) {
+		t.skip("Chrome is not available for the time-zone hydration regression test.");
+		return;
+	}
+	const chromePort = await getFreePort();
+	const chromeUserDataDir = mkdtempSync(join(tmpdir(), "ballot-clarity-timezone-"));
+	const chrome = startChromeProcess(chromeExecutable, [
+		`--remote-debugging-port=${chromePort}`,
+		`--user-data-dir=${chromeUserDataDir}`,
+		"--headless=new",
+		"--disable-background-networking",
+		"--disable-gpu",
+		"--no-first-run",
+		"about:blank"
+	]);
+	let cdp: CdpSession | null = null;
+	try {
+		await waitForJson(`http://127.0.0.1:${chromePort}/json/version`, "Chrome DevTools version");
+		const targets = await waitForJson(`http://127.0.0.1:${chromePort}/json/list`, "Chrome DevTools targets") as Array<{ type?: string; webSocketDebuggerUrl?: string }>;
+		const target = targets.find(item => item.type === "page" && item.webSocketDebuggerUrl);
+		assert.ok(target?.webSocketDebuggerUrl);
+		cdp = await connectToCdp(target.webSocketDebuggerUrl);
+		const consoleMessages: string[] = [];
+		cdp.on("Runtime.consoleAPICalled", params => consoleMessages.push((params.args ?? []).map((entry: { value?: unknown }) => typeof entry.value === "string" ? entry.value : "").join(" ")));
+		cdp.on("Log.entryAdded", params => consoleMessages.push(String(params.entry?.text ?? "")));
+		await cdp.send("Page.enable");
+		await cdp.send("Runtime.enable");
+		await cdp.send("Log.enable");
+		await cdp.send("Page.addScriptToEvaluateOnNewDocument", { source: "localStorage.clear(); localStorage.setItem('nuxt-color-mode', 'dark');" });
+		const response = await fetch(`${apiBaseUrl}/api/ballot?election=2026-fulton-county-general`);
+		assert.equal(response.status, 200);
+		const data = await response.json() as { election: { updatedAt: string } };
+		for (const timezoneId of ["America/New_York", "Pacific/Honolulu", "Asia/Tokyo"]) {
+			await cdp.send("Emulation.setTimezoneOverride", { timezoneId });
+			await cdp.send("Network.clearBrowserCookies");
+			consoleMessages.length = 0;
+			for (const visit of ["fresh", "return"]) {
+				await navigateAndWait(cdp, `${appBaseUrl}/elections/2026-fulton-county-general`, `${timezoneId} ${visit} visit`);
+				await waitForRuntimeCondition(cdp, `document.body.innerText.includes(new Intl.DateTimeFormat("en-US", { day: "numeric", hour: "numeric", minute: "2-digit", month: "short", timeZone: ${JSON.stringify(timezoneId)}, year: "numeric" }).format(new Date(${JSON.stringify(data.election.updatedAt)})))`, Boolean, `${timezoneId} localized timestamp`);
+				await delay(200);
+				assert.equal(consoleMessages.some(message => browserSecurityConsolePattern.test(message)), false, `${timezoneId} ${visit}:\n${consoleMessages.join("\n")}`);
+			}
+		}
+		await cdp.close();
+		cdp = null;
+	}
+	finally {
+		if (cdp)
+			await cdp.close().catch(() => {});
 		await stopChromeProcess(chrome.child, chromeUserDataDir);
 	}
 });
@@ -1727,7 +1799,9 @@ test("nationwide lookup context survives client navigation across results, distr
 		assert.match(districtsText, /Provo, Utah/);
 		assert.match(districtsText, /Congressional District 3/);
 		assert.match(districtsText, /State House District 60/);
-		const districtRows = await cdp.send("Runtime.evaluate", { expression: "Array.from(document.querySelectorAll('main section.grid > a')).map(link => ({ href: link.getAttribute('href'), nestedControls: link.querySelectorAll('a, button').length }))", returnByValue: true });
+		const districtGroups = await cdp.send("Runtime.evaluate", { expression: "Array.from(document.querySelectorAll('main section[aria-labelledby^=\"districts-\"]')).map(section => ({ heading: section.querySelector('h2').textContent.trim(), count: section.querySelectorAll('a').length }))", returnByValue: true });
+		assert.deepEqual(districtGroups.result.value, [{ heading: "Federal", count: 1 }, { heading: "State", count: 2 }, { heading: "Local", count: 2 }]);
+		const districtRows = await cdp.send("Runtime.evaluate", { expression: "Array.from(document.querySelectorAll('main section[aria-labelledby^=\"districts-\"] a')).map(link => ({ href: link.getAttribute('href'), nestedControls: link.querySelectorAll('a, button').length }))", returnByValue: true });
 		assert.equal(districtRows.result.value.length, 5);
 		assert.ok(districtRows.result.value.every((row: { href: string; nestedControls: number }) => row.href.startsWith("/districts/") && row.nestedControls === 0));
 		assert.doesNotMatch(districtsText, /Local officials not attached yet/);
@@ -1738,7 +1812,7 @@ test("nationwide lookup context survives client navigation across results, distr
 		assert.doesNotMatch(districtDetailText, /District page unavailable/);
 		assert.match(districtDetailText, /Provo city/);
 		assert.match(districtDetailText, /Marsha Judkins/);
-		assert.match(districtDetailText, /Current representatives/);
+		assert.match(districtDetailText, /City officials/);
 
 		await navigateAndWait(cdp, `${appBaseUrl}/representatives`, "nationwide-context representatives navigation");
 		await waitForBodyText(cdp, /7 current officials across 5 district matches/, "nationwide-context representatives hydration");
@@ -1757,6 +1831,28 @@ test("nationwide lookup context survives client navigation across results, distr
 		assert.equal(await countSelectorMatches(cdp, "[data-representative-layout='profile']"), 1);
 		assert.equal(await countSelectorMatches(cdp, "#at-a-glance"), 1);
 		assert.equal(await countSelectorMatches(cdp, "[data-representative-sidebar='record-details']"), 1);
+		await cdp.send("Network.enable");
+		let anchorProfileRequests = 0;
+		const stopAnchorRequests = cdp.on("Network.requestWillBeSent", params => {
+			if (String(params.request?.url ?? "").includes("/api/representatives/mike-kennedy"))
+				anchorProfileRequests++;
+		});
+		const anchorTargets = await cdp.send("Runtime.evaluate", { expression: `(() => {
+			window.anchorProfileRoot = document.querySelector('[data-representative-layout="profile"]');
+			window.anchorDocumentOrigin = performance.timeOrigin;
+			window.anchorLookupQuery = location.search;
+			return Array.from(document.querySelectorAll('.section-nav-list a')).map(link => link.getAttribute('href')).filter(href => href.startsWith('#'));
+		})()`, returnByValue: true });
+		assert.ok(anchorTargets.result.value.includes("#at-a-glance"));
+		for (const hash of anchorTargets.result.value as string[]) {
+			await cdp.send("Runtime.evaluate", { expression: `document.querySelector('.section-nav-list a[href="${hash}"]').click()` });
+			await waitForRuntimeCondition(cdp, `location.hash === ${JSON.stringify(hash)}`, Boolean, `${hash} fragment navigation`);
+			await delay(250);
+			const retained = await cdp.send("Runtime.evaluate", { expression: `({ rootRetained: window.anchorProfileRoot === document.querySelector('[data-representative-layout="profile"]'), documentRetained: window.anchorDocumentOrigin === performance.timeOrigin, queryRetained: window.anchorLookupQuery === location.search, targetPresent: Boolean(document.getElementById(${JSON.stringify(hash.slice(1))})) })`, returnByValue: true });
+			assert.deepEqual(retained.result.value, { rootRetained: true, documentRetained: true, queryRetained: true, targetPresent: true });
+			assert.equal(anchorProfileRequests, 0, `${hash} must not refresh representative data`);
+		}
+		stopAnchorRequests();
 
 		await navigateAndWait(cdp, `${appBaseUrl}/representatives/mike-kennedy/funding`, "nationwide-context funding navigation");
 		await waitForBodyText(cdp, /Mike Kennedy funding/, "nationwide-context funding hydration");
@@ -1988,7 +2084,7 @@ test("public district and representative routes resolve direct loads without gen
 
 	assert.equal(districtPage.status, 200);
 	assert.match(districtHtml, /Congressional District 7/);
-	assert.match(districtHtml, /Current representatives/);
+	assert.match(districtHtml, /District representatives/);
 	assert.doesNotMatch(districtHtml, /District page not found/i);
 
 	assert.equal(representativePage.status, 200);

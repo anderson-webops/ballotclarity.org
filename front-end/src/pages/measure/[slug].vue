@@ -1,117 +1,53 @@
 <script setup lang="ts">
-import type { Source } from "~/types/civic";
 import { storeToRefs } from "pinia";
+import { hasLongMeasureOptions, measureBallotOptions, measureContent, measureDecisionEffectLabel, measureGuideLink } from "~/utils/measure-content";
 
 const civicStore = useCivicStore();
 const siteUrl = useSiteUrl();
-const { backToLayerLink, layerBreadcrumbLink, openLayerLink } = useRouteLayerNavigation();
+const { backToLayerLink: fallbackBackLink, layerBreadcrumbLink: fallbackBreadcrumbLink, openLayerLink } = useRouteLayerNavigation();
 const { ballotPlan, isHydrated } = storeToRefs(civicStore);
+const { formatDate } = useFormatters();
 const measureSlug = useRouteStringParam("slug");
-const { data: measure, error, pending } = await useMeasure(measureSlug);
+const route = useRoute();
+const electionContext = computed(() => route.query.election === undefined ? undefined : typeof route.query.election === "string" ? route.query.election : "");
+const { data: measure, error, pending } = await useMeasure(measureSlug, electionContext);
+const parentGuideLink = computed(() => measureGuideLink(measure.value));
+const backToLayerLink = computed(() => parentGuideLink.value
+	? { label: "Back to ballot", to: parentGuideLink.value.to }
+	: fallbackBackLink.value);
+const content = computed(() => measureContent(measure.value));
+const ballotOptions = computed(() => measureBallotOptions(measure.value));
 const effectiveBallotPlan = computed(() => isHydrated.value ? ballotPlan.value : {});
-const sectionLinks = [
-	{ href: "#at-a-glance", label: "Summary" },
-	{ href: "#outcomes", label: "YES / NO" },
-	{ href: "#baseline", label: "Current law" },
-	{ href: "#implementation", label: "Timeline" },
-	{ href: "#fiscal", label: "Fiscal impact" },
-	{ href: "#arguments", label: "Arguments" },
-	{ href: "#sources", label: "Sources" }
-] as const;
-
-function uniqueSources(sources: Source[]) {
-	const seen = new Map<string, Source>();
-
-	for (const source of sources)
-		seen.set(source.id, source);
-
-	return [...seen.values()];
-}
-
+const hasSection = (id: string) => content.value.sections.some(section => section.href === `#${id}`);
+const baselineTitle = computed(() => content.value.sections.find(section => section.href === "#baseline")?.label ?? "Current law");
 const measureBreadcrumbs = computed(() => [
 	{ label: "Home", to: "/" },
-	layerBreadcrumbLink.value,
-	{ label: measure.value?.title ?? "Measure explainer" }
+	parentGuideLink.value ?? fallbackBreadcrumbLink.value,
+	{ label: measure.value?.title ?? "Measure explainer" },
 ]);
-const officialSources = computed(() => {
-	if (!measure.value)
-		return [];
-
-	return uniqueSources(measure.value.sources.filter(source => ["official record", "voter guide"].includes(source.type)));
-});
-const baselineSources = computed(() => {
-	if (!measure.value)
-		return [];
-
-	return uniqueSources([
-		...measure.value.currentPractice.flatMap(item => item.sources),
-		...measure.value.proposedChanges.flatMap(item => item.sources),
-	]);
-});
-const fiscalAndTradeoffSources = computed(() => {
-	if (!measure.value)
-		return [];
-
-	return uniqueSources([
-		...measure.value.fiscalSummary.flatMap(item => item.sources),
-		...measure.value.potentialImpacts.flatMap(item => item.sources),
-		...measure.value.argumentsAndConsiderations.flatMap(item => item.sources)
-	]);
-});
-const implementationSources = computed(() => {
-	if (!measure.value)
-		return [];
-
-	return uniqueSources(measure.value.implementationTimeline.flatMap(item => item.sources));
-});
-const argumentSources = computed(() => {
-	if (!measure.value)
-		return [];
-
-	return uniqueSources([
-		...measure.value.supportArguments.flatMap(item => item.sources),
-		...measure.value.opposeArguments.flatMap(item => item.sources)
-	]);
-});
-
 const reportIssueTo = computed(() => ({
 	path: "/contact",
-	query: {
-		pageUrl: `/measure/${measure.value?.slug ?? measureSlug.value}`,
-		subject: measure.value
-			? `Ballot Clarity measure review: ${measure.value.title}`
-			: "Ballot Clarity measure review",
-		type: "correction"
-	}
+	query: { pageUrl: `/measure/${measure.value?.slug ?? measureSlug.value}`, subject: measure.value ? `Ballot Clarity measure review: ${measure.value.title}` : "Ballot Clarity measure review", type: "correction" },
 }));
 const currentDecision = computed(() => {
-	if (!measure.value)
-		return null;
-
+	if (!measure.value) return null;
 	const selection = effectiveBallotPlan.value[measure.value.contestSlug];
-
-	return selection?.type === "measure" && selection.measureSlug === measure.value.slug
-		? selection.decision
-		: null;
+	return selection?.type === "measure" && selection.measureSlug === measure.value.slug ? selection.decision : null;
 });
 
 usePageSeo({
-	description: measure.value?.summary ?? "Review a plain-language ballot measure explanation with sources.",
-	jsonLd: measure.value
+	description: measure.value?.summary ?? "Review a ballot measure explanation with sources.",
+	jsonLd: measure.value && measure.value.decisionEffect !== "advisory"
 		? {
 				"@context": "https://schema.org",
 				"@type": "Legislation",
 				"abstract": measure.value.summary,
 				"dateModified": measure.value.updatedAt,
-				"datePublished": measure.value.updatedAt,
 				"legislationIdentifier": measure.value.slug,
-				"legislationJurisdiction": {
-					"@type": "AdministrativeArea",
-					"name": measure.value.location
-				},
+				"legislationJurisdiction": { "@type": "AdministrativeArea", "name": measure.value.location },
 				"legislationType": "BallotMeasure",
 				"name": measure.value.title,
-				"url": `${siteUrl}/measure/${measure.value.slug}`
+				"url": `${siteUrl}/measure/${measure.value.slug}`,
 			}
 		: undefined,
 	ogType: "article",
@@ -120,8 +56,7 @@ usePageSeo({
 });
 
 function saveMeasure(decision: "no" | "review" | "yes") {
-	if (measure.value)
-		civicStore.selectMeasureForPlan(measure.value.contestSlug, measure.value.slug, decision);
+	if (measure.value) civicStore.selectMeasureForPlan(measure.value.contestSlug, measure.value.slug, decision);
 }
 </script>
 
@@ -132,348 +67,213 @@ function saveMeasure(decision: "no" | "review" | "yes") {
 				<div class="rounded-lg bg-app-bg h-72 animate-pulse dark:bg-app-bg-dark" />
 				<div v-for="index in 4" :key="index" class="rounded-lg bg-app-bg h-52 animate-pulse dark:bg-app-bg-dark" />
 			</div>
-			<div class="rounded-lg bg-app-bg h-96 animate-pulse dark:bg-app-bg-dark" />
 		</div>
-
 		<GuideUnavailableState
 			v-else-if="error || !measure"
-			message="This measure isn't published yet."
+			message=""
 			:primary-label="openLayerLink.label"
 			:primary-to="openLayerLink.to"
 			secondary-label="Coverage"
 			secondary-to="/coverage"
-			tertiary-label="Report missing information"
-			tertiary-to="/contact"
-			title="Measure page not published yet"
+			title="Measure unavailable"
 		/>
-
 		<div v-else class="detail-layout">
-			<div class="space-y-6">
-				<header class="surface-panel">
-					<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
-						{{ measure.location }}
-					</p>
-					<h1 class="text-5xl text-app-ink leading-tight font-serif mt-3 dark:text-app-text-dark">
+			<div class="space-y-8">
+				<header>
+					<NuxtLink :to="backToLayerLink.to" class="text-sm text-app-accent underline focus-ring">
+						{{ backToLayerLink.label }}
+					</NuxtLink>
+					<h1 class="text-4xl text-app-ink leading-tight font-serif mt-4 sm:text-5xl dark:text-app-text-dark">
 						{{ measure.title }}
 					</h1>
-					<p class="bc-measure text-lg text-app-ink leading-8 mt-5 dark:text-app-text-dark">
+					<p class="text-base text-app-muted mt-3 dark:text-app-muted-dark">
+						{{ measure.location }}<template v-if="measure.electionDate">
+							· {{ formatDate(measure.electionDate) }}
+						</template>
+						<template v-if="measure.decisionEffect === 'advisory'">
+							· {{ measureDecisionEffectLabel(measure) }}
+						</template>
+					</p>
+					<p v-if="measure.summary" class="bc-measure text-lg text-app-ink leading-8 mt-5 dark:text-app-text-dark">
 						{{ measure.summary }}
 					</p>
-					<div class="mt-6 flex flex-wrap gap-3 items-center">
-						<UpdatedAt :value="measure.freshness.dataLastUpdatedAt ?? measure.updatedAt" label="Data through" />
-						<SourceDrawer :sources="measure.sources" :title="`${measure.title} sources`" button-label="Sources" />
-					</div>
-					<div class="mt-6 flex flex-wrap gap-x-6 gap-y-3 items-center">
-						<div class="measure-decision" role="group" aria-label="Save your choice to your ballot plan">
-							<button
-								type="button"
-								class="measure-decision__option focus-ring"
-								:aria-pressed="currentDecision === 'yes'"
-								@click="saveMeasure('yes')"
-							>
-								Yes
-							</button>
-							<button
-								type="button"
-								class="measure-decision__option focus-ring"
-								:aria-pressed="currentDecision === 'review'"
-								@click="saveMeasure('review')"
-							>
-								Undecided
-							</button>
-							<button
-								type="button"
-								class="measure-decision__option focus-ring"
-								:aria-pressed="currentDecision === 'no'"
-								@click="saveMeasure('no')"
-							>
-								No
-							</button>
-						</div>
-						<NuxtLink :to="backToLayerLink.to" class="btn-secondary">
-							{{ backToLayerLink.label }}
-						</NuxtLink>
-					</div>
 				</header>
 
-				<section id="at-a-glance" class="gap-8 grid scroll-mt-28 lg:grid-cols-2" aria-label="Summary">
-					<article>
-						<div class="flex flex-wrap gap-3 items-baseline justify-between">
-							<h2 class="text-lg text-app-ink font-semibold dark:text-app-text-dark">
-								Official ballot summary
-							</h2>
-							<SourceDrawer :sources="officialSources.length ? officialSources : measure.sources" :title="`${measure.title} official sources`" button-label="Sources" />
+				<ExpandableSection v-if="hasSection('fiscal')" id="fiscal" title="Fiscal impact">
+					<p v-if="measure.fiscalContextNote" class="text-base leading-7 mt-3">
+						{{ measure.fiscalContextNote }}
+					</p>
+					<dl v-if="measure.fiscalSummary.length" class="mt-4 space-y-5">
+						<div v-for="item in measure.fiscalSummary" :key="item.id">
+							<dt class="text-lg font-semibold">
+								{{ item.label }}
+							</dt>
+							<dd class="mt-2">
+								<p class="text-2xl font-serif">
+									{{ item.value }}
+								</p>
+								<p v-if="item.scope || item.horizon" class="text-sm text-app-muted mt-2 dark:text-app-muted-dark">
+									{{ [item.scope, item.horizon].filter(Boolean).join(' · ') }}
+								</p>
+								<p v-if="item.note" class="text-sm leading-7 mt-2">
+									{{ item.note }}
+								</p>
+							</dd>
 						</div>
-						<p class="text-base text-app-ink leading-7 mt-2 dark:text-app-text-dark">
-							{{ measure.ballotSummary }}
+					</dl>
+					<article v-for="item in [...measure.potentialImpacts, ...measure.argumentsAndConsiderations]" :key="item.id" class="mt-5">
+						<h3 class="text-lg font-semibold">
+							{{ item.title }}
+						</h3>
+						<p class="text-base leading-7 mt-2">
+							{{ item.summary }}
 						</p>
 					</article>
-					<article>
-						<h2 class="text-lg text-app-ink font-semibold dark:text-app-text-dark">
-							In plain language
+				</ExpandableSection>
+
+				<section v-if="hasSection('limitations')" id="limitations" class="pl-4 border-app-line border-l-2 scroll-mt-28 dark:border-app-line-dark" aria-labelledby="measure-limitations-title">
+					<h2 id="measure-limitations-title" class="text-base font-semibold">
+						Limitations
+					</h2>
+					<ul class="text-sm leading-7 mt-2 space-y-2">
+						<li v-for="item in measure.whatWeDoNotKnow" :key="item.id">
+							{{ item.text }}
+						</li>
+					</ul>
+				</section>
+
+				<section v-if="hasSection('outcomes')" id="outcomes" class="scroll-mt-28" aria-labelledby="measure-outcomes-title">
+					<div class="flex flex-wrap gap-4 items-center justify-between">
+						<h2 id="measure-outcomes-title" class="text-2xl font-serif">
+							{{ hasLongMeasureOptions(measure) ? 'Vote options' : `${ballotOptions.yes} / ${ballotOptions.no}` }}
 						</h2>
-						<p class="text-base text-app-ink leading-7 mt-2 dark:text-app-text-dark">
-							{{ measure.plainLanguageExplanation }}
+						<div class="measure-decision" :class="{ 'measure-decision--long': hasLongMeasureOptions(measure) }" role="group" aria-label="Save your choice to your ballot plan">
+							<button type="button" class="measure-decision__option focus-ring" :aria-pressed="currentDecision === 'yes'" @click="saveMeasure('yes')">
+								{{ ballotOptions.yes }}
+							</button>
+							<button type="button" class="measure-decision__option focus-ring" :aria-pressed="currentDecision === 'review'" @click="saveMeasure('review')">
+								Undecided
+							</button>
+							<button type="button" class="measure-decision__option focus-ring" :aria-pressed="currentDecision === 'no'" @click="saveMeasure('no')">
+								{{ ballotOptions.no }}
+							</button>
+						</div>
+					</div>
+					<div class="mt-5 gap-6 grid md:grid-cols-2">
+						<article v-for="outcome in [{ label: ballotOptions.yes, meaning: measure.yesMeaning, highlights: measure.yesHighlights }, { label: ballotOptions.no, meaning: measure.noMeaning, highlights: measure.noHighlights }]" :key="outcome.label" class="content-block">
+							<h3 class="text-lg font-semibold">
+								{{ outcome.label }}
+							</h3>
+							<p v-if="outcome.meaning" class="text-base leading-7 mt-2">
+								{{ outcome.meaning }}
+							</p>
+							<p v-else-if="!outcome.highlights.length" class="text-sm text-app-muted mt-2 dark:text-app-muted-dark">
+								No sourced explanation.
+							</p>
+							<ul v-if="outcome.highlights.length" class="text-sm leading-7 mt-3 space-y-2">
+								<li v-for="item in outcome.highlights" :key="item">
+									{{ item }}
+								</li>
+							</ul>
+						</article>
+					</div>
+				</section>
+
+				<section v-if="hasSection('at-a-glance')" id="at-a-glance" class="scroll-mt-28 space-y-5" aria-label="Summary">
+					<article v-for="summary in content.summaries" :key="summary.title">
+						<h2 class="text-2xl font-serif">
+							{{ summary.title }}
+						</h2>
+						<p class="text-base leading-7 mt-3">
+							{{ summary.text }}
 						</p>
 					</article>
 				</section>
 
-				<ExpandableSection
-					id="outcomes"
-					eyebrow="YES / NO outcomes"
-					title="If you vote YES or NO"
-				>
-					<template #meta>
-						<SourceDrawer :sources="officialSources.length ? officialSources : measure.sources" :title="`${measure.title} yes and no meanings`" button-label="Outcome sources" />
-					</template>
-					<div class="mt-6 gap-6 grid md:grid-cols-2">
-						<article class="content-block">
-							<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
-								If you vote YES
-							</p>
-							<h3 class="text-2xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-								Proposed change would take effect
-							</h3>
-							<p class="text-base text-app-ink leading-7 mt-4 dark:text-app-text-dark">
-								{{ measure.yesMeaning }}
-							</p>
-							<ul class="text-sm text-app-muted leading-7 mt-4 space-y-3 dark:text-app-muted-dark">
-								<li v-for="item in measure.yesHighlights" :key="item" class="content-block">
-									{{ item }}
-								</li>
-							</ul>
-						</article>
-						<article class="content-block">
-							<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
-								If you vote NO
-							</p>
-							<h3 class="text-2xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-								Current rules stay in place
-							</h3>
-							<p class="text-base text-app-ink leading-7 mt-4 dark:text-app-text-dark">
-								{{ measure.noMeaning }}
-							</p>
-							<ul class="text-sm text-app-muted leading-7 mt-4 space-y-3 dark:text-app-muted-dark">
-								<li v-for="item in measure.noHighlights" :key="item" class="content-block">
-									{{ item }}
-								</li>
-							</ul>
-						</article>
-					</div>
-				</ExpandableSection>
-
-				<ExpandableSection
-					id="baseline"
-					eyebrow="Current law and proposed change"
-					title="Current law and proposed change"
-					:description="measure.currentLawOverview"
-				>
-					<template #meta>
-						<SourceDrawer :sources="baselineSources.length ? baselineSources : measure.sources" :title="`${measure.title} current-law and proposal sources`" button-label="Baseline sources" />
-					</template>
-					<div class="mt-6 gap-6 grid lg:grid-cols-2">
-						<article class="content-block">
-							<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
-								Current practice
-							</p>
-							<ul class="mt-4 space-y-3">
-								<li v-for="item in measure.currentPractice" :key="item.id" class="content-block">
-									<div class="flex flex-wrap gap-3 items-start justify-between">
-										<p class="text-sm text-app-muted leading-7 max-w-2xl dark:text-app-muted-dark">
-											{{ item.text }}
-										</p>
-										<SourceDrawer :sources="item.sources" :title="item.text" button-label="Sources" />
-									</div>
-								</li>
-							</ul>
-						</article>
-						<article class="content-block">
-							<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
-								Proposed changes
-							</p>
-							<ul class="mt-4 space-y-3">
-								<li v-for="item in measure.proposedChanges" :key="item.id" class="content-block">
-									<div class="flex flex-wrap gap-3 items-start justify-between">
-										<p class="text-sm text-app-muted leading-7 max-w-2xl dark:text-app-muted-dark">
-											{{ item.text }}
-										</p>
-										<SourceDrawer :sources="item.sources" :title="item.text" button-label="Sources" />
-									</div>
-								</li>
-							</ul>
-						</article>
-					</div>
-				</ExpandableSection>
-
-				<ExpandableSection
-					id="implementation"
-					eyebrow="Implementation timeline"
-					title="Implementation"
-					:description="measure.implementationOverview"
-				>
-					<template #meta>
-						<SourceDrawer :sources="implementationSources.length ? implementationSources : measure.sources" :title="`${measure.title} implementation timeline sources`" button-label="Timeline sources" />
-					</template>
-					<div class="mt-6 space-y-4">
-						<article v-for="item in measure.implementationTimeline" :key="item.id" class="content-block">
-							<div class="flex flex-wrap gap-3 items-start justify-between">
-								<div>
-									<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
-										{{ item.label }}
-									</p>
-									<h3 class="text-xl text-app-ink font-serif mt-2 dark:text-app-text-dark">
-										{{ item.timing }}
-									</h3>
-								</div>
-								<SourceDrawer :sources="item.sources" :title="item.label" button-label="Sources" />
-							</div>
-							<p class="text-base text-app-ink leading-7 mt-4 dark:text-app-text-dark">
-								{{ item.summary }}
-							</p>
-						</article>
-					</div>
-				</ExpandableSection>
-
-				<ExpandableSection
-					id="fiscal"
-					eyebrow="Fiscal impact and tradeoffs"
-					title="Fiscal impact"
-				>
-					<template #meta>
-						<SourceDrawer :sources="fiscalAndTradeoffSources" :title="`${measure.title} fiscal and tradeoff sources`" />
-					</template>
-					<p class="text-base text-app-ink leading-7 mt-3 dark:text-app-text-dark">
-						{{ measure.fiscalContextNote }}
+				<ExpandableSection v-if="hasSection('baseline')" id="baseline" :title="baselineTitle">
+					<p v-if="measure.currentLawOverview" class="text-base leading-7 mt-3">
+						{{ measure.currentLawOverview }}
 					</p>
-					<div class="mt-6 gap-4 grid lg:grid-cols-3">
-						<article v-for="item in measure.fiscalSummary" :key="item.id" class="content-block">
-							<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
+					<div class="mt-4 space-y-5">
+						<article v-for="group in [{ title: 'Current practice', items: measure.currentPractice }, { title: 'Proposed changes', items: measure.proposedChanges }].filter(group => group.items.length)" :key="group.title">
+							<h3 v-if="measure.currentPractice.length && measure.proposedChanges.length" class="text-lg font-semibold">
+								{{ group.title }}
+							</h3>
+							<ul class="text-base leading-7 space-y-3">
+								<li v-for="item in group.items" :key="item.id">
+									{{ item.text }}
+								</li>
+							</ul>
+						</article>
+					</div>
+				</ExpandableSection>
+
+				<ExpandableSection v-if="hasSection('implementation')" id="implementation" title="Timeline">
+					<p v-if="measure.implementationOverview" class="text-base leading-7 mt-3">
+						{{ measure.implementationOverview }}
+					</p>
+					<div class="mt-4 space-y-5">
+						<article v-for="item in measure.implementationTimeline" :key="item.id">
+							<h3 class="text-lg font-semibold">
 								{{ item.label }}
+							</h3>
+							<p class="text-base leading-7 mt-2">
+								{{ item.timing }}
 							</p>
-							<p class="text-2xl text-app-ink font-serif mt-3 dark:text-app-text-dark">
-								{{ item.value }}
-							</p>
-							<p class="text-xs text-app-muted mt-3 dark:text-app-muted-dark">
-								{{ item.scope }} · {{ item.horizon }}
-							</p>
-							<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-								{{ item.note }}
-							</p>
-							<div class="mt-4">
-								<SourceDrawer :sources="item.sources" :title="item.label" button-label="Sources" />
-							</div>
-						</article>
-					</div>
-					<div class="mt-6 space-y-4">
-						<article v-for="impact in measure.potentialImpacts" :key="impact.id" class="content-block">
-							<div class="flex flex-wrap gap-3 items-start justify-between">
-								<h3 class="text-lg text-app-ink font-semibold dark:text-app-text-dark">
-									{{ impact.title }}
-								</h3>
-								<SourceDrawer :sources="impact.sources" :title="impact.title" button-label="Sources" />
-							</div>
-							<p class="text-base text-app-ink leading-7 mt-3 dark:text-app-text-dark">
-								{{ impact.summary }}
-							</p>
-						</article>
-					</div>
-					<div class="mt-6 space-y-4">
-						<article v-for="item in measure.argumentsAndConsiderations" :key="item.id" class="content-block">
-							<div class="flex flex-wrap gap-3 items-start justify-between">
-								<h3 class="text-lg text-app-ink font-semibold dark:text-app-text-dark">
-									{{ item.title }}
-								</h3>
-								<SourceDrawer :sources="item.sources" :title="item.title" button-label="Sources" />
-							</div>
-							<p class="text-base text-app-ink leading-7 mt-3 dark:text-app-text-dark">
+							<p v-if="item.summary" class="text-sm leading-7 mt-2">
 								{{ item.summary }}
 							</p>
 						</article>
 					</div>
 				</ExpandableSection>
 
-				<ExpandableSection
-					id="arguments"
-					eyebrow="Arguments in the attached record"
-					title="Arguments for and against"
-				>
-					<template #meta>
-						<SourceDrawer :sources="argumentSources" :title="`${measure.title} support and oppose arguments`" />
-					</template>
-					<p class="text-sm text-app-muted mt-3 dark:text-app-muted-dark">
+				<ExpandableSection v-if="hasSection('arguments')" id="arguments" title="Arguments">
+					<p v-if="measure.argumentsDisclaimer" class="text-sm leading-7 mt-3">
 						{{ measure.argumentsDisclaimer }}
 					</p>
-					<div class="mt-6 gap-6 grid lg:grid-cols-2">
-						<div class="space-y-4">
-							<h3 class="text-lg text-app-ink font-semibold dark:text-app-text-dark">
-								For
+					<div class="mt-4 gap-6 grid md:grid-cols-2">
+						<article v-for="side in [{ title: 'For', items: measure.supportArguments }, { title: 'Against', items: measure.opposeArguments }]" :key="side.title">
+							<h3 class="text-xl font-serif">
+								{{ side.title }}
 							</h3>
-							<article v-for="item in measure.supportArguments" :key="item.id" class="content-block">
-								<div class="flex flex-wrap gap-3 items-start justify-between">
-									<div>
-										<h3 class="text-lg text-app-ink font-semibold dark:text-app-text-dark">
-											{{ item.title }}
-										</h3>
-										<p class="text-xs text-app-muted mt-2 dark:text-app-muted-dark">
-											{{ item.attribution }}
-										</p>
-									</div>
-									<SourceDrawer :sources="item.sources" :title="item.title" button-label="Sources" />
-								</div>
-								<p class="text-base text-app-ink leading-7 mt-3 dark:text-app-text-dark">
+							<p v-if="!side.items.length" class="text-sm text-app-muted mt-3 dark:text-app-muted-dark">
+								No sourced argument included.
+							</p>
+							<div v-for="item in side.items" :key="item.id" class="mt-4">
+								<h4 class="text-base font-semibold">
+									{{ item.title }}
+								</h4>
+								<p class="text-sm text-app-muted mt-1 dark:text-app-muted-dark">
+									{{ item.attribution }}
+								</p>
+								<p class="text-base leading-7 mt-2">
 									{{ item.summary }}
 								</p>
-							</article>
-						</div>
-						<div class="space-y-4">
-							<h3 class="text-lg text-app-ink font-semibold dark:text-app-text-dark">
-								Against
-							</h3>
-							<article v-for="item in measure.opposeArguments" :key="item.id" class="content-block">
-								<div class="flex flex-wrap gap-3 items-start justify-between">
-									<div>
-										<h3 class="text-lg text-app-ink font-semibold dark:text-app-text-dark">
-											{{ item.title }}
-										</h3>
-										<p class="text-xs text-app-muted mt-2 dark:text-app-muted-dark">
-											{{ item.attribution }}
-										</p>
-									</div>
-									<SourceDrawer :sources="item.sources" :title="item.title" button-label="Sources" />
-								</div>
-								<p class="text-base text-app-ink leading-7 mt-3 dark:text-app-text-dark">
-									{{ item.summary }}
-								</p>
-							</article>
-						</div>
+							</div>
+						</article>
 					</div>
 				</ExpandableSection>
 
-				<ExpandableSection
-					id="sources"
-					title="Sources"
-				>
-					<NuxtLink :to="reportIssueTo" class="text-sm btn-secondary mt-4 xl:hidden">
+				<ExpandableSection v-if="hasSection('sources')" id="sources" title="Sources">
+					<div v-if="measure.freshness.contentLastVerifiedAt" class="mt-3">
+						<UpdatedAt :value="measure.freshness.contentLastVerifiedAt" label="Reviewed" />
+					</div>
+					<p v-if="measure.freshness.statusNote" class="text-sm leading-7 mt-2">
+						{{ measure.freshness.statusNote }}
+					</p>
+					<ul v-if="measure.whatWeKnow.length" class="text-sm leading-7 mt-4 space-y-2">
+						<li v-for="item in measure.whatWeKnow" :key="item.id">
+							{{ item.text }}
+						</li>
+					</ul>
+					<SourceList v-if="content.sources.length" :sources="content.sources" direct class="mt-4" />
+					<NuxtLink :to="reportIssueTo" class="text-sm text-app-accent mt-5 underline inline-block focus-ring">
 						Report an issue
 					</NuxtLink>
-					<div class="mt-6">
-						<SourceList :sources="officialSources.length ? officialSources : measure.sources" />
-					</div>
 				</ExpandableSection>
 			</div>
-
 			<aside class="detail-layout__aside">
-				<PageSectionNav
-					title="On this page"
-					:breadcrumbs="measureBreadcrumbs"
-					:items="sectionLinks.map(section => ({ href: section.href, label: section.label }))"
-				>
-					<template #actions>
-						<NuxtLink :to="reportIssueTo" class="text-sm btn-secondary">
-							Report an issue
-						</NuxtLink>
-					</template>
-				</PageSectionNav>
+				<PageSectionNav title="On this page" :breadcrumbs="measureBreadcrumbs" :items="content.sections" />
 			</aside>
 		</div>
 	</section>

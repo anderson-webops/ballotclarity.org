@@ -38,14 +38,10 @@ usePageSeo({
 
 		<GuideUnavailableState
 			v-else-if="error || !candidate"
-			message="Funding details for this candidate aren't published yet."
+			message=""
 			:primary-label="openLayerLink.label"
 			:primary-to="openLayerLink.to"
-			secondary-label="Coverage"
-			secondary-to="/coverage"
-			tertiary-label="Report missing information"
-			tertiary-to="/contact"
-			title="Funding detail not published yet"
+			title="Funding information unavailable"
 		/>
 
 		<div v-else class="space-y-8">

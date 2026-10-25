@@ -1,5 +1,4 @@
 <script setup lang="ts">
-// Page sections are always open: content that isn't worth showing belongs on its own page, not behind a toggle.
 withDefaults(defineProps<{
 	compact?: boolean;
 	description?: string;
@@ -20,7 +19,9 @@ withDefaults(defineProps<{
 	<section
 		:id="id"
 		class="expandable-section scroll-mt-28"
-		:class="nested ? 'expandable-section--nested' : ''"
+		:class="nested
+			? 'expandable-section--nested'
+			: ''"
 	>
 		<header class="expandable-section__summary">
 			<div class="min-w-0">

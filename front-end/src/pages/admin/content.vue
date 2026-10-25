@@ -7,7 +7,7 @@ definePageMeta({
 	middleware: "admin"
 });
 
-const { data, refresh } = await useAdminContent();
+const { data, error, pending, refresh } = await useAdminContent();
 const { data: session } = await useAdminSession("admin-content-session");
 
 const canPublish = computed(() => session.value?.role === "admin" && Boolean(session.value.mfaEnabledAt));
@@ -100,6 +100,7 @@ usePageSeo({
 				Use this page to keep public content operationally coherent: who owns the item, whether it is published, and what summary text the public site should show without requiring a code deploy.
 			</p>
 		</header>
+		<AdminLoadState :pending="pending" :error="Boolean(error)" label="records" @retry="refresh()" />
 
 		<p
 			v-if="feedbackMessage"
@@ -112,7 +113,7 @@ usePageSeo({
 		</p>
 
 		<AdminEmptyState
-			v-if="!(data?.items?.length ?? 0)"
+			v-if="!pending && !error && !(data?.items?.length ?? 0)"
 			action-label="Open guide packages"
 			action-to="/admin/packages"
 			eyebrow="No content records"

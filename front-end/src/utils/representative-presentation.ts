@@ -22,6 +22,11 @@ export interface RepresentativePresentation {
 	officeDisplayLabel: string;
 }
 
+export function resolveRepresentativeContentSummary(value: string | null | undefined) {
+	const summary = value?.trim() ?? "";
+	return summary.startsWith("Matched from ") ? "" : summary;
+}
+
 export function resolveRepresentativePresentation(
 	representative: RepresentativePresentationSource,
 	stateName?: string | null,

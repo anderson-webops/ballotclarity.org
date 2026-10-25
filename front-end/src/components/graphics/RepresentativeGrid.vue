@@ -86,38 +86,34 @@ const levelSegments = computed(() => groupedCards.value.map(group => ({
 					{{ group.level }}
 				</h3>
 				<ul class="mt-2 divide-app-line divide-y dark:divide-app-line-dark">
-					<li v-for="card in group.items" :key="card.id" class="py-3">
-						<div class="flex flex-wrap gap-x-3 gap-y-1 items-baseline">
-							<NuxtLink
-								v-if="card.href && !isExternalHref(card.href)"
-								:to="card.href"
-								class="text-base text-app-ink font-semibold underline decoration-app-line underline-offset-3 transition dark:text-app-text-dark hover:text-app-accent hover:decoration-current focus-ring"
-							>
-								{{ card.name }}
-							</NuxtLink>
-							<p v-else class="text-base text-app-ink font-semibold dark:text-app-text-dark">
-								{{ card.name }}
+					<li v-for="card in group.items" :key="card.id" class="py-3 flex gap-3 items-start">
+						<ProfileImageStack v-if="card.profileImages?.length" :images="card.profileImages" :name="card.name" size="sm" />
+						<div class="min-w-0">
+							<div class="flex flex-wrap gap-x-3 gap-y-1 items-baseline">
+								<NuxtLink
+									v-if="card.href && !isExternalHref(card.href)"
+									:to="card.href"
+									class="text-base text-app-ink font-semibold underline decoration-app-line underline-offset-3 transition dark:text-app-text-dark hover:text-app-accent hover:decoration-current focus-ring"
+								>
+									{{ card.name }}
+								</NuxtLink>
+								<p v-else class="text-base text-app-ink font-semibold dark:text-app-text-dark">
+									{{ card.name }}
+								</p>
+								<PartyLabel v-if="card.party" :party="card.party" class="text-sm text-app-muted dark:text-app-muted-dark" />
+							</div>
+							<p class="text-sm text-app-muted leading-6 mt-0.5 dark:text-app-muted-dark">
+								{{ card.officeTitle }}<span v-if="card.districtLabel && card.districtLabel !== card.officeTitle"> · {{ card.districtLabel }}</span>
 							</p>
-							<span v-if="card.party" class="text-sm text-app-muted dark:text-app-muted-dark">{{ card.party }}</span>
-						</div>
-						<p class="text-sm text-app-muted leading-6 mt-0.5 dark:text-app-muted-dark">
-							{{ card.officeTitle }}<span v-if="card.districtLabel && card.districtLabel !== card.officeTitle"> · {{ card.districtLabel }}</span>
-						</p>
-						<div v-if="card.openstatesUrl || card.sources?.length" class="mt-1.5 flex flex-wrap gap-3 items-center">
-							<SafeExternalLink
-								v-if="card.openstatesUrl"
-								:href="card.openstatesUrl"
-								class="text-sm text-app-accent inline-flex gap-1.5 items-center hover:underline"
-							>
-								Provider record
-								<span class="i-carbon-launch" aria-hidden="true" />
-							</SafeExternalLink>
-							<SourceDrawer
-								v-if="card.sources?.length"
-								:sources="card.sources"
-								:title="card.name"
-								button-label="Sources"
-							/>
+							<div v-if="card.officialWebsiteUrl || card.openstatesUrl || card.sources?.length" class="mt-1.5 flex flex-wrap gap-3 items-center">
+								<RepresentativeWebsite :website-url="card.officialWebsiteUrl" :provider-url="card.openstatesUrl" class="text-sm text-app-accent hover:underline" />
+								<SourceDrawer
+									v-if="card.sources?.length"
+									:sources="card.sources"
+									:title="card.name"
+									button-label="Sources"
+								/>
+							</div>
 						</div>
 					</li>
 				</ul>

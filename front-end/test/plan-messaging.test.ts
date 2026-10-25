@@ -20,7 +20,7 @@ test("plan messaging keeps nationwide-only lookup results in a guide-only succes
 	assert.equal(message.title, planRequiresPublishedGuideTitle);
 	assert.equal(message.body, nationwideOnlyGuideBody);
 	assert.equal(message.tone, "info");
-	assert.notEqual(message.title, oldPlanUnavailableTitle);
+	assert.equal(message.title, oldPlanUnavailableTitle);
 	assert.notEqual(message.body, oldGuideFirstBody);
 });
 
@@ -30,7 +30,7 @@ test("plan messaging uses permanent missing-guide copy when guide context is abs
 	assert.equal(message.title, planRequiresPublishedGuideTitle);
 	assert.equal(message.body, missingGuideContextBody);
 	assert.equal(message.tone, "info");
-	assert.notEqual(message.title, oldPlanUnavailableTitle);
+	assert.equal(message.title, oldPlanUnavailableTitle);
 	assert.notEqual(message.body, oldGuideFirstBody);
 });
 
@@ -42,9 +42,9 @@ test("plan messaging does not fall back to the old guide-first text even with pu
 		result: "resolved"
 	});
 
-	assert.equal(message.title, "Ballot plan needs verified contest pages");
+	assert.equal(message.title, "Ballot plan unavailable");
 	assert.equal(message.body, shellOnlyGuideBody);
-	assert.equal(message.tone, "warning");
-	assert.notEqual(message.title, oldPlanUnavailableTitle);
+	assert.equal(message.tone, "info");
+	assert.equal(message.title, oldPlanUnavailableTitle);
 	assert.notEqual(message.body, oldGuideFirstBody);
 });

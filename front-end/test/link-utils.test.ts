@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { isExternalHref, normalizeExternalHref, normalizeImageHref, normalizePublicHref } from "../src/utils/link.ts";
+import { isExternalHref, normalizeExternalHref, normalizeImageHref, normalizePublicHref, resolvePublicLink } from "../src/utils/link.ts";
 
 test("isExternalHref detects external links", () => {
 	assert.equal(isExternalHref("https://openstates.org/person/test"), true);
@@ -41,4 +41,27 @@ test("normalizeImageHref rejects fragments and local-network image targets", () 
 	assert.equal(normalizeImageHref("#candidate-photo"), "");
 	assert.equal(normalizeImageHref("data:image/svg+xml,test"), "");
 	assert.equal(normalizeImageHref("http://[::ffff:7f00:1]/camera.jpg"), "");
+});
+
+test("public links keep relative, fragment and absolute same-site destinations internal", () => {
+	for (const href of ["/coverage", "#sources", "/source-files/guide.pdf?download=1#page=4"]) {
+		assert.deepEqual(resolvePublicLink(href), { external: false, href });
+	}
+	for (const href of ["https://ballotclarity.org/sources?state=WA#records", "http://ballotclarity.org/sources?state=WA#records", "https://BALLOTCLARITY.ORG./sources?state=WA#records"]) {
+		assert.deepEqual(resolvePublicLink(href), { external: false, href: "/sources?state=WA#records" });
+	}
+	assert.deepEqual(resolvePublicLink("https://preview.example.org/about", "https://preview.example.org"), { external: false, href: "/about" });
+});
+
+test("other websites, subdomains and ports remain external", () => {
+	for (const href of ["https://openstates.org/person/test", "https://analytics.ballotclarity.org/", "https://ballotclarity.org.attacker.example/", "https://ballotclarity.org:8443/about"]) {
+		assert.deepEqual(resolvePublicLink(href), { external: true, href });
+	}
+	assert.deepEqual(resolvePublicLink("https://example.org/", "not a URL"), { external: true, href: "https://example.org/" });
+});
+
+test("link destination classification preserves URL safety checks", () => {
+	for (const href of ["javascript:alert(1)", "//attacker.example/", "https://user:secret@ballotclarity.org/", "http://127.0.0.1/admin", "/source-files/../private.txt", "https://ballotclarity.org//attacker.example/path"]) {
+		assert.deepEqual(resolvePublicLink(href), { external: false, href: "" });
+	}
 });

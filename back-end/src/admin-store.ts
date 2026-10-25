@@ -2533,7 +2533,7 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 
 	function listReview(): AdminReviewResponse {
 		return {
-			items: listContent().items.map(item => ({
+			items: listContent().items.filter(item => item.status !== "published" || !item.published).map(item => ({
 				assignedTo: item.assignedTo,
 				blocker: item.blocker,
 				entityType: item.entityType,
@@ -2798,11 +2798,10 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 
 			database.prepare(`
 			UPDATE admin_source_monitors
-			SET health = ?, last_checked_at = ?, next_check_at = ?, owner = ?, note = ?
+			SET health = ?, next_check_at = ?, owner = ?, note = ?
 			WHERE id = ?
 			`).run(
 				nextHealth,
-				now,
 				nextCheckAt,
 				nextOwner,
 				nextNote,
@@ -2821,7 +2820,7 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 					previousNextCheckAt: current.next_check_at,
 					previousOwner: current.owner
 				},
-				summary: `${current.label} source monitor was checked and updated.`,
+				summary: `${current.label} editorial source notice was updated.`,
 				targetId: current.id,
 				targetLabel: current.label,
 				targetType: "source_monitor",
@@ -2882,10 +2881,10 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 					value: String(reviewQueue.length + packageQueue.length)
 				},
 				{
-					helpText: "Tracked source systems passing the latest check cycle.",
+					helpText: "Manually recorded editorial notices, not live collector checks.",
 					id: "healthy-sources",
 					label: "Healthy sources",
-					tone: healthySourceCount === sources.length ? "healthy" : "review",
+					tone: !sources.length ? "attention" : healthySourceCount === sources.length ? "healthy" : "review",
 					value: `${healthySourceCount}/${sources.length}`
 				},
 				{

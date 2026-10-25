@@ -49,7 +49,7 @@ test("Montana uses only the published selected general CSV control in two bounde
 		assert.equal(url, montana.url);
 		assert.deepEqual(options.allowedHosts, ["candidatefiling.mt.gov"]);
 		assert.equal(options.maxBytes, 12 * 1024 * 1024);
-		assert.equal(options.maxRedirects, 2);
+		assert.equal(options.maxRedirects, 0);
 		requests += 1;
 		if (!options.postBody) return sourcePage();
 		const fields = new URLSearchParams(options.postBody);

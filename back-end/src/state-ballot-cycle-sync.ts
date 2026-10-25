@@ -10,6 +10,7 @@ import { fetchNorthCarolinaCycleDiscovery, northCarolinaCandidateCapture } from 
 import { createStateBallotRepository } from "./state-ballot-repository.js";
 import { readSouthCarolinaElectionYears, southCarolinaElectionsUrl, southCarolinaScriptUrl, southCarolinaYearsUrl, validateSouthCarolinaElectionIndex } from "./state-ballot-southern.js";
 import { assertExternalStateDataDirectory } from "./state-ballot-storage.js";
+import { fetchUtahCycleDiscovery } from "./state-ballot-utah.js";
 
 interface StateBallotCycleSyncOptions {
 	familyId?: string;
@@ -23,6 +24,7 @@ interface StateBallotCycleSyncOptions {
 
 export async function fetchStateBallotCycleDiscovery(request: typeof fetchRemoteSourceText = fetchRemoteSourceText, familyId = "wa-general-2026") {
 	const family = getStateBallotCycleFamily(familyId);
+	if (family.source.stateCode === "UT") return fetchUtahCycleDiscovery(request);
 	if (family.source.stateCode === "KY") return fetchKentuckyCycleDiscovery(request);
 	if (family.source.stateCode === "NC") return fetchNorthCarolinaCycleDiscovery(request);
 	if (family.source.stateCode === "MD") return fetchMarylandCycleDiscovery(request);

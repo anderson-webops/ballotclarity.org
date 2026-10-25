@@ -7,7 +7,7 @@ export class StateBallotAwaitingRecordsError extends Error {
 }
 
 export function supportsPendingStateBallotRecords(source: StateBallotSource) {
-	return !source.retrievalPolicy && ((source.stateCode === "FL" && source.format === "florida-local-tsv") || (source.stateCode === "MD" && ["csv", "maryland-local-csv"].includes(source.format)) || (source.stateCode === "KY" && ["kentucky-html", "kentucky-courts-html"].includes(source.format)));
+	return !source.retrievalPolicy && ((source.stateCode === "FL" && source.format === "florida-local-tsv") || (source.stateCode === "MD" && ["csv", "maryland-local-csv"].includes(source.format)) || (source.stateCode === "KY" && ["kentucky-html", "kentucky-courts-html"].includes(source.format)) || (source.stateCode === "UT" && source.format === "utah-html" && source.id !== "ut-lg-2026"));
 }
 
 export function orderStateBallotSources(sources: readonly StateBallotSource[], now = Date.now()) {

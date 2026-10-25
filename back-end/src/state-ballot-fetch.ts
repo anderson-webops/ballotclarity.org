@@ -9,6 +9,7 @@ import { fetchMarylandCycleDiscovery, marylandSourceElectionId, readMarylandElec
 import { fetchNorthCarolinaCandidateCapture } from "./state-ballot-north-carolina.js";
 import { buildSouthCarolinaSearchForm } from "./state-ballot-portal-records.js";
 import { buildFloridaCandidateForm, buildFloridaCountyForm, floridaCountyCodesUrl, floridaSourceElectionId, southCarolinaCandidateRosterUrl } from "./state-ballot-southern.js";
+import { fetchUtahCandidatePage } from "./state-ballot-utah.js";
 import { fetchWashingtonCandidatePages } from "./state-ballot-washington.js";
 
 type SourceTextRequest = (url: string, options: { allowedHosts: string[]; maxBytes: number; maxRedirects: number; postBody?: string; timeoutMs: number; textEncoding?: "utf-8" | "utf-8-or-windows-1252" }) => Promise<string>;
@@ -145,6 +146,7 @@ export function buildNorthDakotaSearchForm(source: StateBallotSource, body: stri
 export async function fetchStateBallotSourceText(source: StateBallotSource, request: SourceTextRequest = fetchRemoteSourceText) {
 	if (source.retrievalPolicy === "manual-snapshot")
 		throw new Error("This publisher requires a manually supplied candidate snapshot; automatic retrieval is disabled.");
+	if (source.stateCode === "UT") return fetchUtahCandidatePage(source, request);
 	if (source.stateCode === "WY" && (source.format !== "csv" || !validStateBallotGeneralDate(source.electionDate) || Number(source.electionDate.slice(0, 4)) % 2 || source.url !== wyomingCandidateRosterUrl(source.electionDate))) throw new Error("The Wyoming roster must retain its exact official election URL.");
 	if (["south-dakota-csv", "north-dakota-html"].includes(source.format)) assertDakotaSourceIdentity(source);
 	if (source.stateCode === "FL" || source.format === "south-carolina-html") {

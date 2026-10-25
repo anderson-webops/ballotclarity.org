@@ -3,6 +3,8 @@ import type { StateBallotSource } from "./state-ballot-sources.js";
 import { parse as parseCsv } from "csv-parse/sync";
 import { buildPublicStateExportForm } from "./state-ballot-fetch.js";
 import { parseStateHtml, stateHtmlAttribute, stateHtmlDescendants, stateHtmlTableRows, stateHtmlText } from "./state-ballot-html.js";
+import { StateBallotAwaitingRecordsError } from "./state-ballot-source-state.js";
+import { readUtahCandidateTables } from "./state-ballot-utah.js";
 
 export interface StateCandidateValues {
 	name: string;
@@ -32,28 +34,24 @@ function requiredRecord(source: StateBallotSource, values: StateCandidateValues,
 }
 
 function parseUtah(source: StateBallotSource, body: string, factory: RecordFactory) {
-	const document = parseStateHtml(body);
-	const heading = stateHtmlDescendants(document, node => /^h[1-3]$/u.test(node.nodeName) && clean(stateHtmlText(node)) === "2026 Candidate Filings")[0];
-	if (!heading) throw new Error("The official source does not identify the configured election year.");
-	const tables = stateHtmlDescendants(document, node => node.nodeName === "table");
-	if (tables.length !== 5) throw new Error("The official candidate table set has changed.");
+	const tables = readUtahCandidateTables(source, body);
 	const knownStatuses = ["Election Candidate", "Out in Convention", "Out in Primary", "Withdrew", "Write-In", "Disqualified", "Deceased"];
-	return tables.flatMap((table, index) => {
+	const records = tables.flatMap(({ table, judicial }) => {
 		const rows = stateHtmlTableRows(table);
 		const cells = (row: typeof table) => (row.childNodes ?? []).filter(node => ["td", "th"].includes(node.nodeName)).map(node => clean(stateHtmlText(node)));
-		const expected = index === 4 ? "Judicial Retention|Status" : "Candidate|Office|Party|Status";
+		const expected = judicial ? "Judicial Retention|Status" : "Candidate|Office|Party|Status";
 		if (!rows.length || cells(rows[0]!).join("|") !== expected)
 			throw new Error("The official candidate columns have changed.");
 		return rows.slice(1).flatMap((row) => {
 			const values = cells(row);
-			if (values.length !== (index === 4 ? 2 : 4)) throw new Error("The official candidate row layout has changed.");
+			if (values.length !== (judicial ? 2 : 4)) throw new Error("The official candidate row layout has changed.");
 			const status = values.at(-1)!;
 			if (!knownStatuses.includes(status)) throw new Error("The official candidate status vocabulary has changed.");
 			if (!["Election Candidate", "Write-In"].includes(status)) return [];
 			let name = values[0]!;
 			let office = values[1]!;
 			let scope: StateContestScope | undefined;
-			if (index === 4) {
+			if (judicial) {
 				const question = name.match(/^Shall (.+) be retained in the office of (.+)\?$/u);
 				if (!question) throw new Error("The judicial retention question layout has changed.");
 				name = question[1]!;
@@ -61,11 +59,13 @@ function parseUtah(source: StateBallotSource, body: string, factory: RecordFacto
 				scope = /^(?:Judge of the Court of Appeals of Utah|Justice of the Supreme Court of Utah)$/u.test(office) ? "statewide" : "local";
 				office = values[0]!;
 			}
-			const record = requiredRecord(source, { name, office, party: index === 4 ? "" : values[2]!, status: status === "Write-In" ? "write-in" : "listed", scope }, factory);
+			const record = requiredRecord(source, { name, office, party: judicial ? "" : values[2]!, status: status === "Write-In" ? "write-in" : "listed", scope }, factory);
 			record.sourceStatus = status;
 			return [record];
 		});
 	});
+	if (!records.length && source.id !== "ut-lg-2026") throw new StateBallotAwaitingRecordsError(source.id);
+	return records;
 }
 
 function readExport(source: StateBallotSource, body: string) {

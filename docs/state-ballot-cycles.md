@@ -4,7 +4,7 @@ External election catalogs opt the automatic candidate repository into reusable
 source families. Without them, the current 59 source
 definitions, source ordering and source/state allowlists remain unchanged.
 
-Fifteen families across twelve states are supported:
+Sixteen families across thirteen states are supported:
 
 | Family | Discovery | Elections |
 | --- | --- | --- |
@@ -23,11 +23,32 @@ Fifteen families across twelve states are supported:
 | `nc-sbe-2026` | [North Carolina published year tables](https://www.ncsbe.gov/results-data/candidate-lists) | Exact CSV/general-list controls and actual nonprimary November general-election record dates, retaining the combined-year file's separate primary rows |
 | `ky-sos-2026` | [Kentucky candidate selector](https://web.sos.ky.gov/CandidateFilings/) and [State Board calendar](https://elect.ky.gov/Pages/default.aspx) | Offered general-election IDs paired with explicit November dates, including odd years; original 210 records/IDs retained |
 | `ky-courts-2026` | The same public selector/calendar and its separately published court/prosecutor controls | Full regional district/division labels and lifecycle evidence, not personalized ballot eligibility |
+| `ut-lg-2026` | [Utah candidate resources](https://vote.utah.gov/resources-for-candidates-political-groups-parties/) and [current election information](https://vote.utah.gov/current-election-information/) | Actually offered even-year candidate links paired with an explicit same-cycle regular general-election date; existing 255 records/IDs retained |
 
 Stable family identifiers retain their original descriptor bindings; future
 instances do not require editing those descriptors. Discovery reads the official election selector or an explicit published general-election date,
 not a predicted URL, numerical election-ID sequence or computed election date.
 Primary, special and conservation elections are outside these families.
+
+Utah reads the candidate link from Candidate Essentials and pairs its year with
+Election Day in the same published regular-general cycle. It does not discover
+municipal elections or invent future URLs/dates. The current five section tables
+and an optional explicitly headed State Offices table are validated in order;
+unknown headings, statuses, missing tables or conflicting years fail closed.
+Only Election Candidate and Write-In rows enter the general roster. Judicial
+retention and school districts retain their existing geography safeguards.
+Complete future table sets without eligible records enter durable waiting, not a
+successful empty import. A changed unexpired election retains the accepted catalog.
+
+The normal Utah transport shares a process-local request queue with at least ten
+seconds between request starts, matching its observed robots crawl interval.
+Discovery fetches two pages; a cache miss downloads the candidate page separately.
+Use one approved collector owner per external dataset and scheduled cache warming:
+the queue is not a cross-process lock, and cold or concurrent requests may exceed
+the public API request deadline. This source validation does not install a host
+scheduler or authorize additional collection. The initial candidate request timed
+out; an unchanged, interval-respecting retry succeeded. No future Utah cycle was
+observed in the live evidence; future-cycle tests are synthetic.
 
 Kentucky intersects explicitly published general-election dates with the candidate
 selector's offered general IDs. Overlapping published years are retained; neither
@@ -299,7 +320,7 @@ provide archive browsing, and this work adds no archival API.
 
 ## Boundaries
 
-These are fifteen source families, not nationwide future-election automation.
+These are sixteen source families, not nationwide future-election automation.
 Other adapters still have cycle-specific discovery or parsing work. Reviewed
 PDF/image conversion, measure interpretation, independently verified geography,
 rights review, ballot publication, archival browsing, host scheduling, monitoring

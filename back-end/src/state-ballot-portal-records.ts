@@ -3,6 +3,7 @@ import type { StateCandidateRecord, StateContestScope } from "./state-ballot-rec
 import type { StateBallotSource } from "./state-ballot-sources.js";
 import { normalizePublicHref } from "./public-href.js";
 import { parseStateHtml, stateHtmlAttribute, stateHtmlDescendants, stateHtmlTableRows, stateHtmlText } from "./state-ballot-html.js";
+import { southCarolinaSourceElectionId } from "./state-ballot-southern.js";
 
 type RecordFactory = (source: StateBallotSource, values: StateCandidateValues) => StateCandidateRecord | null;
 
@@ -232,24 +233,31 @@ function parseKansas(source: StateBallotSource, body: string, factory: RecordFac
 	return records;
 }
 
-export function buildSouthCarolinaSearchForm(body: string) {
+export function buildSouthCarolinaSearchForm(source: StateBallotSource, body: string) {
+	const electionId = southCarolinaSourceElectionId(source);
 	const document = parseStateHtml(body);
 	const forms = stateHtmlDescendants(document, node => node.nodeName === "form" && stateHtmlAttribute(node, "id") === "searchForm");
-	if (forms.length !== 1 || !stateHtmlDescendants(forms[0]!, node => node.nodeName === "h2" && text(stateHtmlText(node)) === "11/3/2026 Statewide General Election").length)
+	const label = `${Number(source.electionDate.slice(5, 7))}/${Number(source.electionDate.slice(8))}/${source.electionDate.slice(0, 4)} Statewide General Election`;
+	if (forms.length !== 1 || stateHtmlDescendants(forms[0]!, node => node.nodeName === "h2" && text(stateHtmlText(node)) === label).length !== 1)
 		throw new Error("The public search does not identify the configured general election.");
 	const inputs = stateHtmlDescendants(forms[0]!, node => node.nodeName === "input");
 	const field = (name: string) => inputs.filter(node => stateHtmlAttribute(node, "name") === name);
-	if (field("ElectionId").length !== 1 || stateHtmlAttribute(field("ElectionId")[0]!, "value") !== "22596" || field("ExportFileName").length !== 1)
+	if (field("ElectionId").length !== 1 || stateHtmlAttribute(field("ElectionId")[0]!, "value") !== electionId || field("ExportFileName").length !== 1)
 		throw new Error("The public search election identity has changed.");
 	const filename = stateHtmlAttribute(field("ExportFileName")[0]!, "value");
-	if (!filename.includes("22596_11_03_2026") || filename.length > 300)
+	if (!filename.includes(`${electionId}_${source.electionDate.slice(5, 7)}_${source.electionDate.slice(8)}_${source.electionDate.slice(0, 4)}`) || filename.length > 300)
 		throw new Error("The public search export identity has changed.");
-	const fields = new URLSearchParams({ ElectionId: "22596", ExportFileName: filename, CandidateFirstName: "", CandidateLastName: "" });
+	const fields = new URLSearchParams({ ElectionId: electionId, ExportFileName: filename, CandidateFirstName: "", CandidateLastName: "" });
+	const selectors = stateHtmlDescendants(forms[0]!, node => node.nodeName === "select");
+	const counties = selectors.filter(node => stateHtmlAttribute(node, "name") === "SelectedAssociatedCounties");
+	if (selectors.length !== 4 + counties.length || counties.length > 1 || counties.some(node => stateHtmlDescendants(node, child => child.nodeName === "option" && Boolean(child.attrs?.some(attribute => attribute.name === "selected")) && stateHtmlAttribute(child, "value") !== "").length > 0)) throw new Error("The public candidate search contains changed or filtered controls.");
 	for (const name of ["SelectedOffice", "SelectedCandidateStatus", "SelectedPoliticalParty", "SelectedFilingLocation"]) {
 		const select = stateHtmlDescendants(forms[0]!, node => node.nodeName === "select" && stateHtmlAttribute(node, "name") === name);
 		const options = select.length === 1 && stateHtmlDescendants(select[0]!, node => node.nodeName === "option" && text(stateHtmlText(node)) === "All");
 		if (!options || options.length !== 1)
 			throw new Error("The public search no longer supports an unfiltered request.");
+		const selected = stateHtmlDescendants(select[0]!, node => node.nodeName === "option" && Boolean(node.attrs?.some(attribute => attribute.name === "selected")));
+		if (selected.length > 1 || (selected[0] ?? stateHtmlDescendants(select[0]!, node => node.nodeName === "option")[0]) !== options[0]) throw new Error("The public candidate search has a selected filter.");
 		fields.set(name, stateHtmlAttribute(options[0]!, "value"));
 	}
 	return fields.toString();
@@ -257,13 +265,14 @@ export function buildSouthCarolinaSearchForm(body: string) {
 
 function parseSouthCarolina(source: StateBallotSource, body: string, factory: RecordFactory) {
 	const envelope = object(JSON.parse(body));
-	if (source.electionDate !== "2026-11-03" || typeof envelope.page !== "string" || typeof envelope.records !== "string")
+	const electionId = southCarolinaSourceElectionId(source);
+	if (Object.keys(envelope).sort().join(",") !== "page,records" || typeof envelope.page !== "string" || typeof envelope.records !== "string")
 		throw new Error("The public search envelope is invalid.");
-	buildSouthCarolinaSearchForm(envelope.page);
+	buildSouthCarolinaSearchForm(source, envelope.page);
 	const document = parseStateHtml(envelope.records);
 	const election = stateHtmlDescendants(document, node => node.nodeName === "input" && stateHtmlAttribute(node, "id") === "ElectionId");
 	const tables = stateHtmlDescendants(document, node => node.nodeName === "table");
-	if (election.length !== 1 || stateHtmlAttribute(election[0]!, "value") !== "22596" || tables.length !== 1 || stateHtmlAttribute(tables[0]!, "id") !== "gridCandidateSearch" || !/<\/tbody\s*>[\s\S]*<\/table\s*>/iu.test(envelope.records))
+	if (election.length !== 1 || stateHtmlAttribute(election[0]!, "value") !== electionId || tables.length !== 1 || stateHtmlAttribute(tables[0]!, "id") !== "gridCandidateSearch" || !/<\/tbody\s*>[\s\S]*<\/table\s*>/iu.test(envelope.records))
 		throw new Error("The public candidate results are incomplete or identify a different election.");
 	const rows = stateHtmlTableRows(tables[0]!);
 	const cells = (row: typeof document) => (row.childNodes ?? []).filter(node => ["td", "th"].includes(node.nodeName));
@@ -289,7 +298,7 @@ function parseSouthCarolina(source: StateBallotSource, body: string, factory: Re
 		"Withdrew Before Primary": "withdrawn",
 		"Elected": "elected",
 	};
-	const statewide = ["Governor and Lieutenant Governor", "Secretary of State", "State Treasurer", "Attorney General", "Comptroller General", "State Superintendent of Education", "Commissioner of Agriculture", "U.S. Senate"];
+	const statewide = ["President and Vice President", "Governor and Lieutenant Governor", "Secretary of State", "State Treasurer", "Attorney General", "Comptroller General", "State Superintendent of Education", "Commissioner of Agriculture", "U.S. Senate"];
 	const identifiers = new Set<string>();
 	return rows.slice(1).map((row, index) => {
 		const columns = cells(row);
@@ -301,26 +310,27 @@ function parseSouthCarolina(source: StateBallotSource, body: string, factory: Re
 		const office = values[0]!;
 		const federal = office.match(/^U\.S\. House of Representatives, District ([1-7])$/u);
 		const house = office.match(/^State House of Representatives, District (\d+)$/u);
-		if ((office.startsWith("U.S. House") && !federal) || (office.startsWith("State House") && (!house || Number(house[1]) < 1 || Number(house[1]) > 124)))
+		const senate = office.match(/^State Senate, District (\d+)$/u);
+		if ((office.startsWith("U.S. House") && !federal) || (office.startsWith("State House") && (!house || Number(house[1]) < 1 || Number(house[1]) > 124)) || (office.startsWith("State Senate") && (!senate || Number(senate[1]) < 1 || Number(senate[1]) > 46)))
 			throw new Error("The public legislative office does not identify a recognized district.");
 		let name = values[2]!;
 		const runningMate = values[3]!;
-		if (office === "Governor and Lieutenant Governor" && values[6] === "Active") {
+		if (["President and Vice President", "Governor and Lieutenant Governor"].includes(office) && values[6] === "Active") {
 			const activeMate = runningMate.match(/^(.+) \(Active\)$/u);
-			if (!activeMate) throw new Error("The active governor ticket does not identify its active running mate.");
-			name += ` / ${activeMate[1]}`;
+			if (!activeMate && (office !== "President and Vice President" || runningMate !== "Not Designated")) throw new Error("The public candidate ticket does not identify its running mate or explicit missing designation.");
+			if (activeMate) name += ` / ${activeMate[1]}`;
 		}
 		const links = stateHtmlDescendants(columns[2]!, node => node.nodeName === "a" && Boolean(stateHtmlAttribute(node, "href")));
 		if (links.length !== 1) throw new Error("The public candidate detail link is missing or ambiguous.");
 		const candidateUrl = new URL(stateHtmlAttribute(links[0]!, "href"), source.pageUrl);
-		if (candidateUrl.origin !== new URL(source.pageUrl).origin || candidateUrl.pathname !== "/Candidate/CandidateDetail/" || candidateUrl.searchParams.get("candidateId") !== identifier || candidateUrl.searchParams.get("electionId") !== "22596")
+		if (candidateUrl.origin !== new URL(source.pageUrl).origin || candidateUrl.pathname !== "/Candidate/CandidateDetail/" || candidateUrl.searchParams.get("candidateId") !== identifier || candidateUrl.searchParams.get("electionId") !== electionId)
 			throw new Error("The public candidate detail identity does not match its row.");
 		const record = requiredRecord(source, {
 			name,
 			office,
 			party: values[4]!,
-			scope: statewide.includes(office) ? "statewide" : federal ? "congressional" : house ? "state-house" : "local",
-			district: federal?.[1] ?? house?.[1],
+			scope: statewide.includes(office) ? "statewide" : federal ? "congressional" : house ? "state-house" : senate ? "state-senate" : "local",
+			district: federal?.[1] ?? house?.[1] ?? senate?.[1],
 			jurisdiction: values[1],
 			candidateUrl: candidateUrl.href,
 			sourceCandidateId: identifier,

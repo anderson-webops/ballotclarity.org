@@ -132,7 +132,7 @@ test("South Carolina preserves public general-election source identities while w
 
 test("South Carolina uses only the published anonymous unfiltered search contract", async () => {
 	const original = carolina();
-	const fields = new URLSearchParams(buildSouthCarolinaSearchForm(original.page));
+	const fields = new URLSearchParams(buildSouthCarolinaSearchForm(source("SC"), original.page));
 	assert.equal(fields.get("ElectionId"), "22596");
 	assert.equal(fields.get("SelectedOffice"), "-1");
 	for (const name of ["CandidateFirstName", "CandidateLastName", "SelectedCandidateStatus", "SelectedPoliticalParty", "SelectedFilingLocation"]) assert.equal(fields.get(name), "");
@@ -140,7 +140,7 @@ test("South Carolina uses only the published anonymous unfiltered search contrac
 	const requests: Array<{ url: string; postBody?: string }> = [];
 	const body = await fetchStateBallotSourceText(source("SC"), async (url, options) => {
 		assert.deepEqual(options.allowedHosts, ["vrems.scvotes.sc.gov"]);
-		assert.equal(options.maxRedirects, 2);
+		assert.equal(options.maxRedirects, 0);
 		requests.push({ url, postBody: options.postBody });
 		return options.postBody ? original.records : original.page;
 	});

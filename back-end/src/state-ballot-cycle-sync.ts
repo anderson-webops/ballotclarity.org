@@ -5,6 +5,7 @@ import { fetchRemoteSourceText } from "./remote-json-source.js";
 import { discoverStateBallotElectionCycles, getStateBallotCycleFamily, readStateBallotCycleCatalog, stateBallotCycleSources, writeStateBallotCycleCatalog } from "./state-ballot-cycles.js";
 import { readDakotaElectionIndex } from "./state-ballot-dakota.js";
 import { createStateBallotRepository } from "./state-ballot-repository.js";
+import { readSouthCarolinaElectionYears, southCarolinaElectionsUrl, southCarolinaScriptUrl, southCarolinaYearsUrl, validateSouthCarolinaElectionIndex } from "./state-ballot-southern.js";
 import { assertExternalStateDataDirectory } from "./state-ballot-storage.js";
 
 interface StateBallotCycleSyncOptions {
@@ -19,6 +20,20 @@ interface StateBallotCycleSyncOptions {
 
 export async function fetchStateBallotCycleDiscovery(request: typeof fetchRemoteSourceText = fetchRemoteSourceText, familyId = "wa-general-2026") {
 	const family = getStateBallotCycleFamily(familyId);
+	if (family.format === "south-carolina-html") {
+		const options = { allowedHosts: [new URL(family.discoveryUrl).hostname], maxBytes: 2 * 1024 * 1024, maxRedirects: 0, timeoutMs: 12000 };
+		const page = await request(family.discoveryUrl, options);
+		const script = await request(southCarolinaScriptUrl, options);
+		validateSouthCarolinaElectionIndex(page, script);
+		const years = await request(southCarolinaYearsUrl, options);
+		const elections = [];
+		for (const year of readSouthCarolinaElectionYears(years, family.source.electionDate.slice(0, 4))) {
+			const url = southCarolinaElectionsUrl(year);
+			elections.push({ url, body: await request(url, options) });
+			if (Buffer.byteLength(JSON.stringify({ page, script, years, elections })) > options.maxBytes) throw new Error("The combined South Carolina discovery exceeds its bounds.");
+		}
+		return JSON.stringify({ page, script, years, elections });
+	}
 	if (["south-dakota-csv", "north-dakota-html"].includes(family.format)) {
 		const options = { allowedHosts: [new URL(family.discoveryUrl).hostname], maxBytes: 2 * 1024 * 1024, maxRedirects: 0, timeoutMs: 12000 };
 		const page = await request(family.discoveryUrl, options);

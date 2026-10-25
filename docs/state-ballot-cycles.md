@@ -4,7 +4,7 @@ External election catalogs opt the automatic candidate repository into reusable
 source families. Without them, the existing 56 source
 definitions, source ordering and source/state allowlists remain unchanged.
 
-Seven families are supported:
+Nine families are supported:
 
 | Family | Discovery | Elections |
 | --- | --- | --- |
@@ -15,6 +15,8 @@ Seven families are supported:
 | `de-doe-2026` | [Delaware candidate index](https://elections.delaware.gov/candidates/candidatelist/) | Explicitly dated even-year statewide general-election roster links |
 | `sd-sos-2026` | [South Dakota election index](https://sdsos.gov/elections-voting/default.aspx) and its published yearly calendar | Even-year general elections with matching public candidate IDs and explicit calendar dates |
 | `nd-sos-2026` | [North Dakota candidate index](https://www.sos.nd.gov/elections/candidate) and its published candidate calendar | Even-year general elections with matching public candidate IDs and explicit calendar dates |
+| `fl-doe-2026` | [Florida public candidate download](https://dos.elections.myflorida.com/candidates/downloadcanlist.asp) | Published even-year `-GEN` election codes and matching year labels; state-filed candidates only |
+| `sc-sec-2026` | [South Carolina public election selector](https://vrems.scvotes.sc.gov/Candidate/SelectElection) | Published even-year statewide general elections with matching IDs, dates and display labels |
 
 Stable family identifiers retain their original descriptor bindings; future
 instances do not require editing those descriptors. Discovery reads the official election selector or an explicit published general-election date,
@@ -26,6 +28,28 @@ zero redirects. Candidate-specific downloads retain their zero-redirect,
 exact-election checks.
 
 ## Data contract
+
+Florida discovery reads the actual public download form, including its approved
+state-candidate type, all-office/status controls and submit target. The published
+`YYYYMMDD-GEN` value supplies the full date; neither the date nor election ID is
+predicted. Its index currently offers 2026, 2028 and 2030 regular elections.
+An offered future election is not evidence of a qualified or complete ballot.
+Collection revalidates the form before posting its exact selected identifier;
+the TSV retains existing status, literal-name and other-election exclusion rules.
+County/municipal candidate collection is outside this state-filed family.
+
+South Carolina discovery uses the ordinary public selector's reviewed year and
+election-list endpoints. Only years offered by that selector are requested.
+The bounded internal capture contains the index, linked selection script, year
+response and each selected year's election response. Its hash binds the complete
+capture, not a claim that the publisher exposes this envelope. Explicit dates,
+IDs and display labels must agree; primary, presidential-primary and special
+entries do not become regular general elections. Candidate headings, hidden IDs,
+export labels, filters, complete result tables and detail links are independently
+bound to that election. Published state-Senate districts and presidential tickets
+are supported for later cycles. An explicitly undesignated presidential running
+mate remains missing, not an inferred ticket. Local county identities, inactive
+history, literal party labels and current normalized identifiers remain intact.
 
 The Dakota families pair officially published candidate IDs with explicit dates
 in linked election calendars. South Dakota's year-scoped election-information
@@ -178,7 +202,7 @@ provide archive browsing, and this work adds no archival API.
 
 ## Boundaries
 
-These are seven source families, not nationwide future-election automation.
+These are nine source families, not nationwide future-election automation.
 Other adapters still have cycle-specific discovery or parsing work. Reviewed
 PDF/image conversion, measure interpretation, independently verified geography,
 rights review, ballot publication, archival browsing, host scheduling, monitoring

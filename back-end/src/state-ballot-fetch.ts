@@ -5,6 +5,7 @@ import { delawareCandidateRosterUrl, getStateBallotCycleFamily, readMississippiG
 import { dakotaCandidateRosterUrl, validateDakotaCandidatePage } from "./state-ballot-dakota.js";
 import { parseStateHtml, stateHtmlAttribute, stateHtmlDescendants, stateHtmlText } from "./state-ballot-html.js";
 import { buildSouthCarolinaSearchForm } from "./state-ballot-portal-records.js";
+import { buildFloridaCandidateForm, floridaSourceElectionId, southCarolinaCandidateRosterUrl } from "./state-ballot-southern.js";
 import { fetchWashingtonCandidatePages } from "./state-ballot-washington.js";
 
 type SourceTextRequest = (url: string, options: { allowedHosts: string[]; maxBytes: number; maxRedirects: number; postBody?: string; timeoutMs: number }) => Promise<string>;
@@ -143,16 +144,25 @@ export async function fetchStateBallotSourceText(source: StateBallotSource, requ
 		throw new Error("This publisher requires a manually supplied candidate snapshot; automatic retrieval is disabled.");
 	if (source.stateCode === "WY" && (source.format !== "csv" || !validStateBallotGeneralDate(source.electionDate) || Number(source.electionDate.slice(0, 4)) % 2 || source.url !== wyomingCandidateRosterUrl(source.electionDate))) throw new Error("The Wyoming roster must retain its exact official election URL.");
 	if (["south-dakota-csv", "north-dakota-html"].includes(source.format)) assertDakotaSourceIdentity(source);
+	if (source.stateCode === "FL" || source.format === "south-carolina-html") {
+		const family = getStateBallotCycleFamily(source.stateCode === "FL" ? "fl-doe-2026" : "sc-sec-2026");
+		const electionId = source.stateCode === "FL" ? floridaSourceElectionId(source) : new URL(source.url).searchParams.get("electionId") ?? "";
+		if (source.stateCode !== family.source.stateCode || source.retrievalPolicy || source.documentUrls?.length || source.documentLinks?.length || !validStateBallotGeneralDate(source.electionDate) || source.electionDate < family.source.electionDate || Number(source.electionDate.slice(0, 4)) % 2 || source.id !== (source.electionDate === family.source.electionDate ? family.source.id : `${family.prefix}-${source.electionDate}`) || (source.stateCode === "SC" && (source.postBody || source.url !== southCarolinaCandidateRosterUrl(electionId) || source.pageUrl !== source.url || ((electionId === "22596") !== (source.electionDate === family.source.electionDate))))) throw new Error("The public candidate source does not identify the approved state and general election.");
+	}
 	if (source.format === "delaware-html") {
 		const family = getStateBallotCycleFamily("de-doe-2026");
 		if (source.stateCode !== "DE" || !validStateBallotGeneralDate(source.electionDate) || source.electionDate < family.source.electionDate || Number(source.electionDate.slice(0, 4)) % 2 || source.id !== (source.electionDate === family.source.electionDate ? family.source.id : `${family.prefix}-${source.electionDate}`) || source.url !== delawareCandidateRosterUrl(source.electionDate) || source.pageUrl !== source.url) throw new Error("The Delaware roster must retain its exact official election identity and URL.");
 	}
-	const options = { allowedHosts: [new URL(source.url).hostname], maxBytes: 12 * 1024 * 1024, maxRedirects: source.stateCode === "WY" || ["montana-csv", "mississippi-csv", "delaware-html", "south-dakota-csv", "north-dakota-html"].includes(source.format) ? 0 : 2, timeoutMs: 12_000 };
+	const options = { allowedHosts: [new URL(source.url).hostname], maxBytes: 12 * 1024 * 1024, maxRedirects: ["WY", "FL"].includes(source.stateCode) || ["montana-csv", "mississippi-csv", "delaware-html", "south-dakota-csv", "north-dakota-html", "south-carolina-html"].includes(source.format) ? 0 : 2, timeoutMs: 12_000 };
+	if (source.stateCode === "FL") {
+		const page = await request(source.pageUrl, options);
+		return request(source.url, { ...options, postBody: buildFloridaCandidateForm(source, page) });
+	}
 	if (source.format === "washington-html")
 		return fetchWashingtonCandidatePages(source, request, options);
 	if (source.format === "south-carolina-html") {
 		const page = await request(source.url, options);
-		const records = await request(new URL("/Candidate/CandidateSearch/", source.url).href, { ...options, postBody: buildSouthCarolinaSearchForm(page) });
+		const records = await request(new URL("/Candidate/CandidateSearch/", source.url).href, { ...options, postBody: buildSouthCarolinaSearchForm(source, page) });
 		if (Buffer.byteLength(page) + Buffer.byteLength(records) > options.maxBytes)
 			throw new Error("The public candidate search exceeds its size limit.");
 		return JSON.stringify({ page, records });

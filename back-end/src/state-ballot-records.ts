@@ -12,6 +12,7 @@ import { validateDakotaCandidatePage } from "./state-ballot-dakota.js";
 import { stateHtmlAttribute as attribute, stateHtmlDescendants as descendants, parseStateHtml as parseHtml, stateHtmlTableRows, stateHtmlText as textContent } from "./state-ballot-html.js";
 import { parseOregonCandidateRecords } from "./state-ballot-oregon.js";
 import { parseStatePortalRecords } from "./state-ballot-portal-records.js";
+import { floridaSourceElectionId } from "./state-ballot-southern.js";
 import { parseWashingtonCandidateRecords } from "./state-ballot-washington.js";
 
 export type StateCandidateStatus = "listed" | "filed" | "qualified" | "write-in" | "withdrawn" | "disqualified" | "defeated" | "elected" | "unopposed" | "inactive" | "unrecognized";
@@ -142,7 +143,7 @@ function candidateFromCsv(source: StateBallotSource, row: Record<string, string>
 			});
 		}
 		case "FL":
-			if (row.ElectionID !== "20261103-GEN") return null;
+			if (row.ElectionID !== floridaSourceElectionId(source)) return null;
 			return makeRecord(source, {
 				name: [row.NameFirst, row.NameMiddle, row.NameLast].filter(Boolean).join(" "),
 				office: row.OfficeDesc ?? "",

@@ -52,8 +52,13 @@ export function stateRecordSummaryParts(record: PublicStateCandidateRecord) {
 		{ label: record.office, isParty: false },
 		{ label: stateRecordArea(record), isParty: false },
 		{ label: record.party?.trim() ?? "", isParty: true },
+		{ label: stateRecordIncumbency(record), isParty: false },
 		{ label: record.status === "listed" ? "" : stateRecordStatusLabels[record.status], isParty: false },
 	].filter(part => part.label);
+}
+
+export function stateRecordIncumbency(record: PublicStateCandidateRecord) {
+	return record.incumbent && !/\bincumbent\b/iu.test(record.office) ? "Incumbent" : "";
 }
 
 export function stateRecordSummary(record: PublicStateCandidateRecord) {

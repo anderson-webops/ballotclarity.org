@@ -56,6 +56,7 @@ function publicRecord(record: StateCandidateRecord): PublicStateCandidateRecord 
 		scope: record.scope,
 		status: record.status,
 		party: record.party,
+		incumbent: record.incumbent,
 		jurisdiction: record.jurisdiction,
 		sourceStatus: record.sourceStatus,
 		ballotDesignation: record.ballotDesignation,
@@ -68,7 +69,7 @@ function publicRecord(record: StateCandidateRecord): PublicStateCandidateRecord 
 export function buildStateRecordPage(snapshot: StateBallotSnapshot, filters: ReturnType<typeof parseStateRecordFilters>) {
 	const matching = snapshot.records.filter(record => (filters.status === "all" || isActiveStateCandidateRecord(record))
 		&& (filters.scope === "all" || record.scope === filters.scope)
-		&& (!filters.search || [record.name, record.office, record.party, record.district, record.jurisdiction, record.sourceAreaLabel, record.sourceDistrictLabel, record.sourceStatus].join(" ").toLowerCase().includes(filters.search)));
+		&& (!filters.search || [record.name, record.office, record.party, record.incumbent ? "incumbent" : "", record.district, record.jurisdiction, record.sourceAreaLabel, record.sourceDistrictLabel, record.sourceStatus].join(" ").toLowerCase().includes(filters.search)));
 	const offset = filters.offset >= matching.length ? Math.max(0, Math.floor((matching.length - 1) / filters.limit) * filters.limit) : filters.offset;
 	return {
 		total: snapshot.records.length,

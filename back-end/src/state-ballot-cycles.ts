@@ -9,6 +9,7 @@ import { dakotaCandidateRosterUrl, dakotaDiscoveryUrl, readDakotaElectionDiscove
 import { parseStateHtml, stateHtmlAttribute, stateHtmlDescendants, stateHtmlText } from "./state-ballot-html.js";
 import { kentuckyCandidatePostBody, kentuckyDiscoveryUrl, kentuckyOriginalElectionId, kentuckySourceElectionId, readKentuckyElectionDiscovery } from "./state-ballot-kentucky.js";
 import { marylandCandidateRosterUrl, marylandDiscoveryUrl, marylandSourceElectionId, readMarylandElectionDiscovery } from "./state-ballot-maryland.js";
+import { michiganCandidateRosterUrl, michiganDiscoveryUrl, readMichiganElectionDiscovery, validateMichiganSource } from "./state-ballot-michigan.js";
 import { northCarolinaCandidateCsvUrl, northCarolinaDiscoveryUrl, readNorthCarolinaElectionDiscovery } from "./state-ballot-north-carolina.js";
 import { configuredStateBallotSources } from "./state-ballot-registry.js";
 import { floridaCandidatePostBody, floridaDiscoveryUrl, floridaElectionDate, floridaSourceElectionId, readFloridaElectionDiscovery, readSouthCarolinaElectionDiscovery, southCarolinaCandidateRosterUrl, southCarolinaDiscoveryUrl } from "./state-ballot-southern.js";
@@ -37,6 +38,7 @@ const cycleFamilies = [
 	{ source: configuredStateBallotSources.find(source => source.id === "ky-sos-2026")!, format: "kentucky-html", discoveryUrl: kentuckyDiscoveryUrl, prefix: "ky-general-core", electionLabel: "General Election", formId: "aspnetForm" },
 	{ source: configuredStateBallotSources.find(source => source.id === "ky-courts-2026")!, format: "kentucky-courts-html", discoveryUrl: kentuckyDiscoveryUrl, prefix: "ky-general-courts", electionLabel: "General Election", formId: "aspnetForm" },
 	{ source: configuredStateBallotSources.find(source => source.id === "ut-lg-2026")!, format: "utah-html", discoveryUrl: utahDiscoveryUrl, prefix: "ut-general", electionLabel: "Regular General Election", formId: null },
+	{ source: configuredStateBallotSources.find(source => source.id === "mi-dos-2026")!, format: "michigan-html", discoveryUrl: michiganDiscoveryUrl, prefix: "mi-general", electionLabel: "November General Candidate Listing", formId: null },
 ] as const;
 
 export function wyomingCandidateRosterUrl(electionDate: string) {
@@ -69,6 +71,9 @@ export function getStateBallotCycleFamily(familyId: string) {
 	}
 	else if (family.source.stateCode === "UT") {
 		validateUtahSource(family.source);
+	}
+	else if (family.source.stateCode === "MI") {
+		validateMichiganSource(family.source);
 	}
 	else if (family.format === "csv") {
 		targetValid = family.source.stateCode === "WY" && family.source.url === wyomingCandidateRosterUrl(family.source.electionDate) && family.source.pageUrl === `https://sos.wyo.gov/Elections/${family.source.electionDate.slice(0, 4)}ElectionInformation.aspx`;
@@ -229,10 +234,10 @@ export function parseStateBallotCycleCatalog(value: unknown, now = Date.now()): 
 	const dates = new Set<string>();
 	const florida = original.stateCode === "FL";
 	const maryland = original.stateCode === "MD";
-	const dateOnly = !florida && !maryland && ["mississippi-csv", "csv", "delaware-html", "utah-html"].includes(family.format);
+	const dateOnly = !florida && !maryland && ["mississippi-csv", "csv", "delaware-html", "utah-html", "michigan-html"].includes(family.format);
 	const originalElectionId = florida ? floridaSourceElectionId(original) : maryland ? marylandSourceElectionId(original) : original.stateCode === "KY" ? kentuckyOriginalElectionId : new URL(original.url).searchParams.get(family.format === "south-carolina-html" ? "electionId" : ["south-dakota-csv", "north-dakota-html"].includes(family.format) ? "eid" : "e");
 	for (const election of value.elections) {
-		if (!exactKeys(election, ["electionId", "electionDate"]) || !validStateBallotGeneralDate(election.electionDate) || election.electionDate < original.electionDate || dates.has(election.electionDate) || (dateOnly ? election.electionId !== null : typeof election.electionId !== "string" || (florida ? floridaElectionDate(election.electionId) !== election.electionDate : maryland ? !new RegExp(`^${election.electionDate.slice(0, 4)}_(GG|PG)$`, "u").test(election.electionId) : !/^[1-9]\d{0,8}$/u.test(election.electionId)) || identifiers.has(election.electionId) || ((election.electionId === originalElectionId) !== (election.electionDate === original.electionDate))) || ((maryland || ["montana-csv", "csv", "delaware-html", "south-dakota-csv", "north-dakota-html", "south-carolina-html", "utah-html"].includes(family.format)) && Number(election.electionDate.slice(0, 4)) % 2 !== 0))
+		if (!exactKeys(election, ["electionId", "electionDate"]) || !validStateBallotGeneralDate(election.electionDate) || election.electionDate < original.electionDate || dates.has(election.electionDate) || (dateOnly ? election.electionId !== null : typeof election.electionId !== "string" || (florida ? floridaElectionDate(election.electionId) !== election.electionDate : maryland ? !new RegExp(`^${election.electionDate.slice(0, 4)}_(GG|PG)$`, "u").test(election.electionId) : !/^[1-9]\d{0,8}$/u.test(election.electionId)) || identifiers.has(election.electionId) || ((election.electionId === originalElectionId) !== (election.electionDate === original.electionDate))) || ((maryland || ["montana-csv", "csv", "delaware-html", "south-dakota-csv", "north-dakota-html", "south-carolina-html", "utah-html", "michigan-html"].includes(family.format)) && Number(election.electionDate.slice(0, 4)) % 2 !== 0))
 			throw new Error("The official election identity is duplicate, unsupported or inconsistent.");
 		if (typeof election.electionId === "string") identifiers.add(election.electionId);
 		dates.add(election.electionDate);
@@ -254,6 +259,7 @@ export function discoverStateBallotElectionCycles(body: string, familyId: string
 		return parseStateBallotCycleCatalog({ schemaVersion: 1, type: "state-ballot-cycle-catalog", familyId, sourceConfigurationSha256: digest(JSON.stringify(family.source)), discovery: { url: family.discoveryUrl, sha256: digest(body), retrievedAt: new Date(now).toISOString() }, elections: readNorthCarolinaElectionDiscovery(body) }, now);
 	}
 	const family = getStateBallotCycleFamily(familyId);
+	if (family.source.stateCode === "MI") return parseStateBallotCycleCatalog({ schemaVersion: 1, type: "state-ballot-cycle-catalog", familyId, sourceConfigurationSha256: digest(JSON.stringify(family.source)), discovery: { url: family.discoveryUrl, sha256: digest(body), retrievedAt: new Date(now).toISOString() }, elections: readMichiganElectionDiscovery(body) }, now);
 	if (family.source.stateCode === "UT") return parseStateBallotCycleCatalog({ schemaVersion: 1, type: "state-ballot-cycle-catalog", familyId, sourceConfigurationSha256: digest(JSON.stringify(family.source)), discovery: { url: family.discoveryUrl, sha256: digest(body), retrievedAt: new Date(now).toISOString() }, elections: readUtahElectionDiscovery(body) }, now);
 	if (Buffer.byteLength(body) > 2 * 1024 * 1024) throw new Error("The election discovery page exceeds its size limit.");
 	if (family.source.stateCode === "MD") return parseStateBallotCycleCatalog({ schemaVersion: 1, type: "state-ballot-cycle-catalog", familyId, sourceConfigurationSha256: digest(JSON.stringify(family.source)), discovery: { url: family.discoveryUrl, sha256: digest(body), retrievedAt: new Date(now).toISOString() }, elections: readMarylandElectionDiscovery(body, family.format === "csv" ? "state" : "local").map(({ electionId, electionDate }) => ({ electionId, electionDate })) }, now);
@@ -293,6 +299,7 @@ export function stateBallotCycleSources(catalog: StateBallotCycleCatalog, now = 
 	parseStateBallotCycleCatalog(catalog, now);
 	const family = getStateBallotCycleFamily(catalog.familyId);
 	return catalog.elections.filter(election => election.electionDate !== family.source.electionDate).map((election) => {
+		if (family.source.stateCode === "MI") return { ...family.source, id: `${family.prefix}-${election.electionDate}`, label: `${family.source.label} (${election.electionDate.slice(0, 4)})`, electionDate: election.electionDate, url: michiganCandidateRosterUrl(election.electionDate), pageUrl: michiganCandidateRosterUrl(election.electionDate) };
 		if (family.source.stateCode === "UT") return { ...family.source, id: `${family.prefix}-${election.electionDate}`, label: `${family.source.label} (${election.electionDate.slice(0, 4)})`, electionDate: election.electionDate, url: utahCandidateRosterUrl(election.electionDate), pageUrl: utahCandidateRosterUrl(election.electionDate) };
 		if (family.source.stateCode === "KY") return { ...family.source, id: `${family.prefix}-${election.electionDate}`, label: `${family.source.label} (${election.electionDate.slice(0, 4)})`, electionDate: election.electionDate, documentUrls: undefined, postBody: kentuckyCandidatePostBody(election.electionId!) };
 		if (family.source.stateCode === "NC") return { ...family.source, id: `${family.prefix}-${election.electionDate}`, label: `${family.source.label} (${election.electionDate.slice(0, 4)})`, electionDate: election.electionDate, url: northCarolinaCandidateCsvUrl(election.electionDate) };

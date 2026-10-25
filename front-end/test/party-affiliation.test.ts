@@ -34,6 +34,13 @@ test("party labels retain their wording and defer to print and forced-color sett
 	assert.doesNotMatch(component, /aria-hidden|role="alert"|background:/u);
 });
 
+test("candidate summaries keep explicit incumbency separate from party and avoid repeating the office label", () => {
+	const record = { id: "example", name: "Example", office: "Justice of Supreme Court", district: "", scope: "statewide" as const, status: "listed" as const, incumbent: true as const };
+	assert.deepEqual(stateRecordSummaryParts(record), [{ label: record.office, isParty: false }, { label: "Incumbent", isParty: false }]);
+	assert.deepEqual(stateRecordSummaryParts({ ...record, office: "Judge of Court of Appeals Incumbent" }), [{ label: "Judge of Court of Appeals Incumbent", isParty: false }]);
+	assert.equal(stateRecordSummaryParts({ ...record, incumbent: undefined }).some(part => part.label === "Incumbent"), false);
+});
+
 function luminance(hex: string) {
 	const channels = hex.slice(1).match(/../gu)!.map(channel => Number.parseInt(channel, 16) / 255).map(channel => channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4);
 	return channels[0]! * 0.2126 + channels[1]! * 0.7152 + channels[2]! * 0.0722;

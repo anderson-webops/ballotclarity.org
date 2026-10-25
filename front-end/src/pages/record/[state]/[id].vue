@@ -2,7 +2,7 @@
 import type { ElectionReferencesResponse, PublicElectionReference, PublicJudicialEvaluation, PublicStateCandidateRecord, StateRecordsResponse } from "~/types/civic";
 import { findRecordDetail } from "~/utils/record-detail";
 import { referenceJurisdiction } from "~/utils/reference-context";
-import { stateRecordArea, stateRecordStatusLabels } from "~/utils/state-records";
+import { stateRecordArea, stateRecordIncumbency, stateRecordStatusLabels } from "~/utils/state-records";
 
 const route = useRoute();
 const api = useApiClient();
@@ -83,6 +83,9 @@ const documentLinks = computed(() => {
 				<p class="text-lg text-app-muted mt-3 dark:text-app-muted-dark">
 					{{ data.reference?.office ?? data.official?.office }}<template v-if="data.reference ? referenceJurisdiction(data.reference) : data.official && stateRecordArea(data.official)">
 						· {{ data.reference ? referenceJurisdiction(data.reference) : data.official ? stateRecordArea(data.official) : '' }}
+					</template>
+					<template v-if="data.official && stateRecordIncumbency(data.official)">
+						· {{ stateRecordIncumbency(data.official) }}
 					</template>
 				</p>
 			</header>

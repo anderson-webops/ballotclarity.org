@@ -13,9 +13,11 @@ import { parseFloridaLocalCandidateRecords } from "./state-ballot-florida-local.
 import { stateHtmlAttribute as attribute, stateHtmlDescendants as descendants, parseStateHtml as parseHtml, stateHtmlTableRows, stateHtmlText as textContent } from "./state-ballot-html.js";
 import { kentuckySourceElectionId, parseKentuckyCandidateRecords } from "./state-ballot-kentucky.js";
 import { parseMarylandCandidateRecords } from "./state-ballot-maryland.js";
+import { normalizeMichiganCandidateRecord, readMichiganCandidateCapture, validateMichiganSource } from "./state-ballot-michigan.js";
 import { readNorthCarolinaCandidateCapture } from "./state-ballot-north-carolina.js";
 import { parseOregonCandidateRecords } from "./state-ballot-oregon.js";
 import { parseStatePortalRecords } from "./state-ballot-portal-records.js";
+import { StateBallotAwaitingRecordsError } from "./state-ballot-source-state.js";
 import { floridaSourceElectionId } from "./state-ballot-southern.js";
 import { parseWashingtonCandidateRecords } from "./state-ballot-washington.js";
 
@@ -26,6 +28,7 @@ export interface StateCandidateRecord {
 	id: string;
 	name: string;
 	party?: string;
+	incumbent?: true;
 	office: string;
 	district: string;
 	scope: StateContestScope;
@@ -195,9 +198,10 @@ function parseDelaware(source: StateBallotSource, body: string) {
 }
 
 function parseMichigan(source: StateBallotSource, body: string) {
+	validateMichiganSource(source);
 	const document = parseHtml(body) as unknown as HtmlNode;
 	const reportText = clean(textContent(document));
-	if (!/General Election\s+Tuesday, November 3, 2026/iu.test(reportText))
+	if (!new RegExp(`General Election\\s+Tuesday, November ${Number(source.electionDate.slice(8))}, ${source.electionDate.slice(0, 4)}`, "iu").test(reportText) || /\b(?:Special General|Primary) Election\b/iu.test(reportText))
 		throw new Error("The official source does not identify the configured general election.");
 	let office = "";
 	let schemaSeen = false;
@@ -211,23 +215,27 @@ function parseMichigan(source: StateBallotSource, body: string) {
 		}
 		const columns = cells.flatMap(cell => Array.from({ length: Math.min(20, Math.max(1, Number(attribute(cell, "colspan")) || 1)) }, () => clean(textContent(cell))));
 		if (columns[6] === "Candidate Name" && columns[4] === "Party / Incumbent" && columns[1] === "Status") {
+			if (columns.join("|") !== "|Status|Status||Party / Incumbent|Party / Incumbent|Candidate Name|Candidate Name|Candidate Name|Filed On|Filed On|Filed On|Filing Method|") throw new Error("The official candidate report columns have changed.");
 			schemaSeen = true;
 			continue;
 		}
 		if (!/^\d{2}\/\d{2}\/\d{4}$/u.test(columns[9] ?? "")) continue;
 		if (!schemaSeen || columns.length !== 14 || !office || !columns[6])
 			throw new Error("The official candidate report has an unexpected layout.");
+		if (!["", "DISQ", "WITHD"].includes(columns[1] ?? "")) throw new Error("The Michigan candidate status vocabulary has changed.");
 		const record = makeRecord(source, { name: columns[6], office, party: columns[4] ?? "", status: columns[1] });
 		if (record) {
 			if (/^(?:Justice of (?:the )?Supreme Court|Member of (?:the )?State Board of Education|Regent of (?:the )?University of Michigan|Trustee of Michigan State University|Governor of Wayne State University)/iu.test(office))
 				record.scope = "statewide";
-			records.push(record);
+			records.push(normalizeMichiganCandidateRecord(record));
 		}
 	}
-	const expectedCount = reportText.match(/(\d+)\s+Candidates as of/iu)?.[1];
+	const counts = [...reportText.matchAll(/(\d+)\s+Candidates as of/giu)];
+	const expectedCount = counts[0]?.[1];
 	const individualCount = records.reduce((total, record) => total + record.name.split(/\s\/\s/u).length, 0);
-	if (!expectedCount || individualCount !== Number(expectedCount))
+	if (!schemaSeen || counts.length !== 1 || !expectedCount || Number(expectedCount) > 25000 || individualCount !== Number(expectedCount))
 		throw new Error("The official candidate report is incomplete.");
+	if (!records.length && source.id !== "mi-dos-2026") throw new StateBallotAwaitingRecordsError(source.id);
 	return records;
 }
 
@@ -380,6 +388,7 @@ const requiredColumns: Record<string, string[]> = {
 };
 
 export function parseStateCandidateRecords(source: StateBallotSource, body: string): StateCandidateRecord[] {
+	if (source.stateCode === "MI" && source.format === "michigan-html" && (source.id !== "mi-dos-2026" || body.trimStart().startsWith("{"))) body = readMichiganCandidateCapture(source, body);
 	if (source.stateCode === "NC" && (source.id !== "nc-sbe-2026" || body.trimStart().startsWith("{"))) body = readNorthCarolinaCandidateCapture(source, body);
 	if (["reviewed-pdf", "reviewed-xlsx", "reviewed-image"].includes(source.format))
 		throw new Error("Reviewed document sources require a validated snapshot.");

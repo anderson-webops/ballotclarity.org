@@ -3,8 +3,9 @@ import type { StateBallotSnapshot } from "./state-ballot-repository.js";
 import type { StateBallotSource } from "./state-ballot-sources.js";
 import { createHash } from "node:crypto";
 import { normalizePublicHref } from "./public-href.js";
+import { normalizeMichiganCandidateRecord } from "./state-ballot-michigan.js";
 
-const recordFields = new Set(["id", "name", "office", "party", "district", "scope", "status", "sourceStatus", "ballotDesignation", "jurisdiction", "candidateUrl", "sourceCandidateId", "sourceDistrictLabel", "sourceDivision", "sourceAreaLabel"]);
+const recordFields = new Set(["id", "name", "office", "party", "incumbent", "district", "scope", "status", "sourceStatus", "ballotDesignation", "jurisdiction", "candidateUrl", "sourceCandidateId", "sourceDistrictLabel", "sourceDivision", "sourceAreaLabel"]);
 const snapshotFields = new Set(["schemaVersion", "stateCode", "sourceId", "electionDate", "sourceUrl", "retrievalPolicy", "retrievedAt", "sourceSha256", "recordCount", "records", "documents"]);
 const documentFields = new Set(["url", "sha256", "retrievedAt", "includedRecordCount"]);
 const scopes = ["statewide", "congressional", "state-senate", "state-house", "local"];
@@ -51,7 +52,9 @@ export function parseBundledStateSnapshot(source: StateBallotSource, body: strin
 		}
 		if (row.candidateUrl !== undefined && (typeof row.candidateUrl !== "string" || !/^https?:\/\//u.test(row.candidateUrl) || normalizePublicHref(row.candidateUrl) !== row.candidateUrl))
 			throw new Error("The bundled candidate campaign link is unsafe.");
-		return row as unknown as StateCandidateRecord;
+		if (row.incumbent !== undefined && (source.stateCode !== "MI" || source.format !== "michigan-html" || row.incumbent !== true || (row.party !== undefined && String(row.party).trim().toUpperCase() !== "INCUMBENT"))) throw new Error("The bundled candidate record has an invalid incumbency field.");
+		const record = row as unknown as StateCandidateRecord;
+		return source.stateCode === "MI" && source.format === "michigan-html" ? normalizeMichiganCandidateRecord(record) : record;
 	});
 	if (new Set(records.map(record => record.id)).size !== records.length)
 		throw new Error("The bundled candidate snapshot has duplicate identities.");

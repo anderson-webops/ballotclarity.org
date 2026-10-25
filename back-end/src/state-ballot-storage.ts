@@ -6,6 +6,7 @@ import { constants } from "node:fs";
 import { mkdir, open, realpath, rename, unlink } from "node:fs/promises";
 import { isAbsolute, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
+import { serializeMichiganCandidateRecord } from "./state-ballot-michigan.js";
 import { parseBundledStateSnapshot } from "./state-ballot-snapshot.js";
 import { supportsPendingStateBallotRecords } from "./state-ballot-source-state.js";
 
@@ -61,7 +62,7 @@ export function serializeStoredStateSnapshot(snapshot: StateBallotSnapshot) {
 		retrievedAt: snapshot.retrievedAt,
 		sourceSha256: snapshot.sha256,
 		recordCount: snapshot.records.length,
-		records: snapshot.records,
+		records: snapshot.source.stateCode === "MI" && snapshot.source.format === "michigan-html" ? snapshot.records.map(serializeMichiganCandidateRecord) : snapshot.records,
 		...(snapshot.documents ? { documents: snapshot.documents } : {}),
 	});
 }

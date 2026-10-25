@@ -4,7 +4,7 @@ External election catalogs opt the automatic candidate repository into reusable
 source families. Without them, the current 59 source
 definitions, source ordering and source/state allowlists remain unchanged.
 
-Sixteen families across thirteen states are supported:
+Seventeen families across fourteen states are supported:
 
 | Family | Discovery | Elections |
 | --- | --- | --- |
@@ -24,11 +24,41 @@ Sixteen families across thirteen states are supported:
 | `ky-sos-2026` | [Kentucky candidate selector](https://web.sos.ky.gov/CandidateFilings/) and [State Board calendar](https://elect.ky.gov/Pages/default.aspx) | Offered general-election IDs paired with explicit November dates, including odd years; original 210 records/IDs retained |
 | `ky-courts-2026` | The same public selector/calendar and its separately published court/prosecutor controls | Full regional district/division labels and lifecycle evidence, not personalized ballot eligibility |
 | `ut-lg-2026` | [Utah candidate resources](https://vote.utah.gov/resources-for-candidates-political-groups-parties/) and [current election information](https://vote.utah.gov/current-election-information/) | Actually offered even-year candidate links paired with an explicit same-cycle regular general-election date; existing 255 records/IDs retained |
+| `mi-dos-2026` | [Michigan election homepage](https://www.michigan.gov/en/sos/elections) | Published November General Candidate Listing links paired with matching official report headers and explicit dates; original 716 entries/IDs retained |
 
 Stable family identifiers retain their original descriptor bindings; future
 instances do not require editing those descriptors. Discovery reads the official election selector or an explicit published general-election date,
 not a predicted URL, numerical election-ID sequence or computed election date.
 Primary, special and conservation elections are outside these families.
+
+Michigan reads actual even-year general-report links in the filing section,
+validates the report's state/judicial scope and explicit regular-general date,
+then reuses those captured report bytes during import. A source cache miss reads
+the published index and only its selected report. Future instances require the
+index/report evidence envelope; legacy current raw captures remain compatible.
+Only 2026 was observed live. Future overlap, waiting, cached recovery and hot/cold
+runtime rollover are tested with synthetic evidence, not future candidacies.
+
+All 716 existing Michigan identities remain exact. The report counts 721
+individuals because five governor tickets include running mates. Exact columns,
+known status codes, complete report totals and regional judicial geography stay
+validated. In 187 judicial records, the combined column's literal INCUMBENT is
+now an explicit incumbency fact, not a party. No political party is inferred.
+Existing cached records receive the same correction without rewriting their bytes
+or advancing capture clocks. Standard storage retains the compatible legacy
+encoding, so older runtimes can still read rollback data; the public API exposes
+incumbency separately. All other normalized fields and IDs remain unchanged.
+A complete future report with zero candidates waits durably; format,
+status, date or unexpired-election drift retains accepted data for review. The
+publisher's current as-of label is September 4 without an explicit year; capture
+time proves retrieval, not later publisher revision or a complete local ballot.
+County reports, including the separately reviewed Tuscola source, remain separate.
+
+Normal pinned transport verifies both publishers with no redirects. Michigan's
+wildcard robots exclusions do not cover the election homepage; the candidate
+host's robots request returns 404. Neither observation grants republication
+rights. Only normalized factual records enter this adapter; raw reports remain
+external/private and broader collection/publication approvals remain distinct.
 
 Utah reads the candidate link from Candidate Essentials and pairs its year with
 Election Day in the same published regular-general cycle. It does not discover
@@ -320,7 +350,7 @@ provide archive browsing, and this work adds no archival API.
 
 ## Boundaries
 
-These are sixteen source families, not nationwide future-election automation.
+These are seventeen source families, not nationwide future-election automation.
 Other adapters still have cycle-specific discovery or parsing work. Reviewed
 PDF/image conversion, measure interpretation, independently verified geography,
 rights review, ballot publication, archival browsing, host scheduling, monitoring

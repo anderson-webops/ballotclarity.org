@@ -197,6 +197,7 @@ export interface PublicStateCandidateRecord {
 	scope: StateRecordScope;
 	status: NonNullable<BallotContentPreviewCandidate["ballotStatus"]>;
 	party?: string;
+	incumbent?: true;
 	jurisdiction?: string;
 	sourceStatus?: string;
 	ballotDesignation?: string;

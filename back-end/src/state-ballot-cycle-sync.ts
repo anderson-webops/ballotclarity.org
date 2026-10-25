@@ -1,7 +1,9 @@
 import type { StateBallotCycleCatalog } from "./state-ballot-cycles.js";
 import type { StateBallotSource } from "./state-ballot-sources.js";
+import { Buffer } from "node:buffer";
 import { fetchRemoteSourceText } from "./remote-json-source.js";
 import { discoverStateBallotElectionCycles, getStateBallotCycleFamily, readStateBallotCycleCatalog, stateBallotCycleSources, writeStateBallotCycleCatalog } from "./state-ballot-cycles.js";
+import { readDakotaElectionIndex } from "./state-ballot-dakota.js";
 import { createStateBallotRepository } from "./state-ballot-repository.js";
 import { assertExternalStateDataDirectory } from "./state-ballot-storage.js";
 
@@ -15,8 +17,19 @@ interface StateBallotCycleSyncOptions {
 	now?: () => number;
 }
 
-export function fetchStateBallotCycleDiscovery(request: typeof fetchRemoteSourceText = fetchRemoteSourceText, familyId = "wa-general-2026") {
+export async function fetchStateBallotCycleDiscovery(request: typeof fetchRemoteSourceText = fetchRemoteSourceText, familyId = "wa-general-2026") {
 	const family = getStateBallotCycleFamily(familyId);
+	if (["south-dakota-csv", "north-dakota-html"].includes(family.format)) {
+		const options = { allowedHosts: [new URL(family.discoveryUrl).hostname], maxBytes: 2 * 1024 * 1024, maxRedirects: 0, timeoutMs: 12000 };
+		const page = await request(family.discoveryUrl, options);
+		const entries = readDakotaElectionIndex(family.format === "south-dakota-csv" ? "SD" : "ND", page, family.source.electionDate.slice(0, 4));
+		const calendars = [];
+		for (const url of new Set(entries.map(entry => entry.calendarUrl))) {
+			calendars.push({ url, body: await request(url, options) });
+			if (Buffer.byteLength(JSON.stringify({ page, calendars })) > options.maxBytes) throw new Error("The combined Dakota discovery exceeds its bounds.");
+		}
+		return JSON.stringify({ page, calendars });
+	}
 	return request(family.discoveryUrl, { allowedHosts: [new URL(family.discoveryUrl).hostname], maxBytes: 2 * 1024 * 1024, maxRedirects: ["csv", "delaware-html"].includes(family.format) ? 0 : 1, timeoutMs: 12000 });
 }
 

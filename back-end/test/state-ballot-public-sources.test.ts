@@ -22,7 +22,7 @@ const mississippiPage = `<form id="form1" method="post" action="./default.aspx">
 const hawaiiControl = "ctl00$cphFooter$rdgSearch$ctl00$ctl02$ctl00$ExportToCsvButton";
 const hawaiiPage = `${publicTokens}<select name="ctl00$cphFooter$ddlElection"><option selected value="94">2026 Candidate Report</option></select><input type="submit" name="${hawaiiControl}"><p>6 items in 1 pages</p>`;
 const southDakotaControl = "ctl00$MainContent$grdCandidates$ctl00$ctl02$ctl00$ExportToCsvButton";
-const southDakotaPage = `${publicTokens}<h1>2026 General Election Candidate List</h1><input type="button" onclick="javascript:__doPostBack('${southDakotaControl}','')"><p>3 items in 1 pages</p>`;
+const southDakotaPage = `<form id="Form1" method="post" action="./candidatelist.aspx?eid=774">${publicTokens}<span id="MainContent_lblFormHeader">2026 General Election Candidate List</span><input type="hidden" name="ctl00$MainContent$hidElectionDate" value="2026 General Election Candidate List"><input type="hidden" name="ctl00$MainContent$hidElectionType" value="General"><input type="button" onclick="javascript:__doPostBack('${southDakotaControl}','')"><p>3 items in 1 pages</p></form>`;
 const illinoisPage = `${publicTokens}<h1>GENERAL ELECTION - 11/3/2026</h1><a href="javascript:__doPostBack('ctl00$ContentPlaceHolder1$btnText','')">Tab-Delimited Text File</a>`;
 const envelope = (page: string, records: string) => JSON.stringify({ page, records });
 
@@ -122,7 +122,7 @@ test("South Dakota validates complete export counts, withdrawal timestamps, at-l
 	assert.equal(parsed[2]?.sourceStatus, "No ballot order published");
 	assert.equal(JSON.stringify(parsed).includes("Private address"), false);
 	assert.throws(() => parseStateCandidateRecords(source("SD"), envelope(southDakotaPage.replace("3 items", "4 items"), records)), /complete public record count/u);
-	assert.throws(() => parseStateCandidateRecords(source("SD"), envelope(southDakotaPage, records.replace("8/4/2026", "8/4/2027"))), /withdrawal marker/u);
+	assert.throws(() => parseStateCandidateRecords(source("SD"), envelope(southDakotaPage, records.replace("8/4/2026", "8/4/2027"))), /withdrawal date/u);
 });
 
 test("Hawaii includes only explicit general-election candidates and retains safe campaign links", () => {

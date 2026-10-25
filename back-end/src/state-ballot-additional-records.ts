@@ -272,8 +272,12 @@ export function parseAdditionalStateRecords(source: StateBallotSource, body: str
 	if (source.format === "south-dakota-csv") {
 		requireColumns(headers, ["Contest", "Name", "Party", "District/County", "Ballot Order"]);
 		return rows.map((row) => {
-			const withdrawn = row.Name!.match(/\s*\(Withdrawn \d{1,2}\/\d{1,2}\/2026(?: 12:00:00 AM)?\)$/u);
+			const withdrawn = row.Name!.match(/\s*\(Withdrawn (\d{1,2})\/(\d{1,2})\/(20\d{2})(?: 12:00:00 AM)?\)$/u);
 			if (/\(withdrawn/iu.test(row.Name!) && !withdrawn) throw new Error("The official withdrawal marker has changed.");
+			if (withdrawn) {
+				const date = `${withdrawn[3]}-${withdrawn[1]!.padStart(2, "0")}-${withdrawn[2]!.padStart(2, "0")}`;
+				if (!Number.isFinite(Date.parse(date)) || new Date(date).toISOString().slice(0, 10) !== date || date > source.electionDate) throw new Error("The official withdrawal date is invalid or later than its election.");
+			}
 			const district = row["District/County"]!.match(/^District (\d+[A-Z]?)$/u)?.[1];
 			const record = requiredRecord(source, { name: withdrawn ? row.Name!.slice(0, withdrawn.index) : row.Name!, office: row.Contest!, party: row.Party!, district, jurisdiction: row["District/County"], status: withdrawn ? "withdrawn" : "listed", scope: ["Commissioner of School and Public Lands", "Public Utilities Commissioner"].includes(row.Contest!) ? "statewide" : undefined }, factory);
 			if (!withdrawn && record.scope === "local" && !row["Ballot Order"]) {

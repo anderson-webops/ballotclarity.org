@@ -11,10 +11,11 @@ import { usStates } from "../src/us-states.js";
 
 const source = (state: string) => stateBallotSources.find(source => source.stateCode === state)!;
 const colorado = "<title>2026 General Election Official Candidate List</title><table><tr><th>Candidate name</th><th>Office</th><th>District</th><th>Party</th><th>Write in?</th></tr><tr><td>Alex Sample</td><td>US Senate</td><td>State</td><td>Example</td><td>N</td></tr><tr><td><span style=\"text-decoration: line-through\">Withdrawn Sample</span></td><td>US Senate</td><td>State</td><td>Other</td><td>N</td></tr><tr><td>Write-in Sample</td><td>US Senate</td><td>State</td><td>Other</td><td>Y</td></tr><tr><td>Board Sample</td><td>State Board of Education</td><td>1</td><td>Example</td><td>N</td></tr></table>";
-const northDakota = "<title>2026 General Election Contest/Candidate List</title><table><tr><th>Contest</th><th>Term Length</th><th>Contest</th><th>District</th><th>County</th><th>Name</th><th>First Name</th><th>Last Name</th><th>Party</th><th>Mailing Address</th></tr><tr><td>County Auditor</td><td>4</td><td>County Auditor</td><td></td><td>Alpha County</td><td>Same Name</td><td>Same</td><td>Name</td><td>Example</td><td>Private address</td></tr><tr><td>County Auditor</td><td>4</td><td>County Auditor</td><td></td><td>Beta County</td><td>Same Name</td><td>Same</td><td>Name</td><td>Example</td><td>Private address</td></tr><tr><td>County Auditor</td><td>4</td><td>County Auditor</td><td></td><td>Gamma County</td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>Representative in Congress</td><td>2</td><td>Representative in Congress</td><td></td><td></td><td>At Large</td><td>At</td><td>Large</td><td>Example</td><td></td></tr></table>";
-const searchForm = `<title>2026 General Election Contest/Candidate List</title><input type="hidden" name="__VIEWSTATE" value="public-state-token"><input type="hidden" name="unexpected" value="do-not-send">${
-	["ddlJursdiction", "ddlDistrict", "ddlContest", "ddlCandidate"].map(name => `<select name="ctl00$ContentPlaceHolder1$${name}"><option value="${name === "ddlJursdiction" ? "AL" : "0"}">All</option></select>`).join("")
-}<input type="submit" name="ctl00$ContentPlaceHolder1$btnSearch" value="Search">`;
+const northDakotaTable = "<table><tr><th>Contest</th><th>Term Length</th><th>Contest</th><th>District</th><th>County</th><th>Name</th><th>First Name</th><th>Last Name</th><th>Party</th><th>Mailing Address</th></tr><tr><td>County Auditor</td><td>4</td><td>County Auditor</td><td></td><td>Alpha County</td><td>Same Name</td><td>Same</td><td>Name</td><td>Example</td><td>Private address</td></tr><tr><td>County Auditor</td><td>4</td><td>County Auditor</td><td></td><td>Beta County</td><td>Same Name</td><td>Same</td><td>Name</td><td>Example</td><td>Private address</td></tr><tr><td>County Auditor</td><td>4</td><td>County Auditor</td><td></td><td>Gamma County</td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>Representative in Congress</td><td>2</td><td>Representative in Congress</td><td></td><td></td><td>At Large</td><td>At</td><td>Large</td><td>Example</td><td></td></tr></table>";
+const searchForm = `<title>2026 General Election Contest/Candidate List</title><form id="aspnetForm" method="post" action="./candidatelist.aspx?eid=348"><input type="hidden" name="__VIEWSTATE" value="public-state-token"><input type="hidden" name="unexpected" value="do-not-send">${
+	["ddlJursdiction", "ddlDistrict", "ddlContest", "ddlCandidate"].map(name => `<select name="ctl00$ContentPlaceHolder1$${name}"><option selected value="${name === "ddlJursdiction" ? "AL" : "0"}">${["ddlJursdiction", "ddlDistrict"].includes(name) ? "All" : ""}</option></select>`).join("")
+}<input type="submit" name="ctl00$ContentPlaceHolder1$btnSearch" value="Search"></form>`;
+const northDakota = searchForm.replace("</form>", `${northDakotaTable}</form>`);
 
 test("Colorado retains withdrawal and certified write-in evidence without assigning education districts", () => {
 	const records = parseStateCandidateRecords(source("CO"), colorado);
@@ -39,12 +40,12 @@ test("North Dakota ignores unnamed vacancies but retains separate county contest
 });
 
 test("North Dakota only posts observed public search tokens and unfiltered selectors", async () => {
-	const form = new URLSearchParams(buildNorthDakotaSearchForm(searchForm));
+	const form = new URLSearchParams(buildNorthDakotaSearchForm(source("ND"), searchForm));
 	assert.equal(form.get("__VIEWSTATE"), "public-state-token");
 	assert.equal(form.has("unexpected"), false);
 	assert.equal(form.get("ctl00$ContentPlaceHolder1$ddlContest"), "0");
-	assert.throws(() => buildNorthDakotaSearchForm(searchForm.replace("2026", "2027")), /configured general election/u);
-	assert.throws(() => buildNorthDakotaSearchForm(searchForm.replace("value=\"AL\"", "value=\"filtered\"")), /unfiltered request/u);
+	assert.throws(() => buildNorthDakotaSearchForm(source("ND"), searchForm.replace("2026", "2027")), /configured general election/u);
+	assert.throws(() => buildNorthDakotaSearchForm(source("ND"), searchForm.replace("value=\"AL\"", "value=\"filtered\"")), /unfiltered request/u);
 	const requests: Array<{ url: string; body?: string }> = [];
 	const body = await fetchStateBallotSourceText(source("ND"), async (url, options) => {
 		requests.push({ url, body: options.postBody });

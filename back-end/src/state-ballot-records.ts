@@ -8,6 +8,7 @@ import { normalizePublicHref } from "./public-href.js";
 import { parseAdditionalStateRecords } from "./state-ballot-additional-records.js";
 import { parseArkansasCandidateRecords } from "./state-ballot-arkansas.js";
 import { parseConnecticutCandidateRecords } from "./state-ballot-connecticut.js";
+import { validateDakotaCandidatePage } from "./state-ballot-dakota.js";
 import { stateHtmlAttribute as attribute, stateHtmlDescendants as descendants, parseStateHtml as parseHtml, stateHtmlTableRows, stateHtmlText as textContent } from "./state-ballot-html.js";
 import { parseOregonCandidateRecords } from "./state-ballot-oregon.js";
 import { parseStatePortalRecords } from "./state-ballot-portal-records.js";
@@ -295,10 +296,13 @@ function parseColorado(source: StateBallotSource, body: string) {
 
 function parseNorthDakota(source: StateBallotSource, body: string) {
 	const document = parseHtml(body);
-	const title = descendants(document, node => node.nodeName === "title")[0];
-	if (!title || clean(textContent(title)) !== "2026 General Election Contest/Candidate List")
-		throw new Error("The official source does not identify the configured general election.");
-	const table = findCandidateTable(document, ["Contest", "District", "Name", "Party", "Term Length"]);
+	validateDakotaCandidatePage(source, document);
+	const tables = descendants(document, node => node.nodeName === "table").filter((table) => {
+		const heading = stateHtmlTableRows(table)[0];
+		const columns = heading ? tableCells(heading).map(cell => clean(textContent(cell))) : [];
+		return ["Contest", "District", "Name", "Party", "Term Length"].every(column => columns.includes(column));
+	});
+	const table = tables.length === 1 ? tables[0] : undefined;
 	if (!table || descendants(table, node => /rgPager/u.test(attribute(node, "class"))).length)
 		throw new Error("The official candidate table is missing or paginated.");
 	const rows = stateHtmlTableRows(table);

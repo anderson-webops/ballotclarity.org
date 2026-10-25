@@ -4,7 +4,7 @@ External election catalogs opt the automatic candidate repository into reusable
 source families. Without them, the existing 56 source
 definitions, source ordering and source/state allowlists remain unchanged.
 
-Five families are supported:
+Seven families are supported:
 
 | Family | Discovery | Elections |
 | --- | --- | --- |
@@ -13,17 +13,45 @@ Five families are supported:
 | `ms-sos-2026` | [Mississippi qualifying list](https://www.sos.ms.gov/content/CandidateQualifying/default.aspx) | Explicitly dated November general-election records |
 | `wy-sos-2026` | [Wyoming election center](https://sos.wyo.gov/elections/default.aspx) | Explicitly dated even-year general elections with matching CSV/PDF roster links |
 | `de-doe-2026` | [Delaware candidate index](https://elections.delaware.gov/candidates/candidatelist/) | Explicitly dated even-year statewide general-election roster links |
+| `sd-sos-2026` | [South Dakota election index](https://sdsos.gov/elections-voting/default.aspx) and its published yearly calendar | Even-year general elections with matching public candidate IDs and explicit calendar dates |
+| `nd-sos-2026` | [North Dakota candidate index](https://www.sos.nd.gov/elections/candidate) and its published candidate calendar | Even-year general elections with matching public candidate IDs and explicit calendar dates |
 
 Stable family identifiers retain their original descriptor bindings; future
 instances do not require editing those descriptors. Discovery reads the official election selector or an explicit published general-election date,
 not a predicted URL, numerical election-ID sequence or computed election date.
 Primary, special and conservation elections are outside these families.
 Selector-based discovery permits one HTTPS redirect within the approved official
-host to its current election. Wyoming and Delaware discovery and candidate reads use
+host to its current election. Wyoming, Delaware and Dakota discovery and candidate reads use
 zero redirects. Candidate-specific downloads retain their zero-redirect,
 exact-election checks.
 
 ## Data contract
+
+The Dakota families pair officially published candidate IDs with explicit dates
+in linked election calendars. South Dakota's year-scoped election-information
+sections bind each calendar and candidate link; identical desktop/mobile menus
+are reconciled, while conflicting identities fail closed. North Dakota's current
+candidate card and calendar supply its year, public election ID and full date.
+Its older voter-portal landing page is not used as the current discovery index.
+Neither family calculates an election date or enumerates numeric IDs.
+
+Dakota discovery is a bounded internal JSON capture containing exactly `page`
+and `calendars`, with each calendar containing only its observed `url` and `body`.
+The catalog's discovery URL remains the fixed official index; its SHA-256 binds
+the complete capture, not a claim that the publisher provides this JSON API.
+Only the exact approved index/calendar hosts and paths are requested, without
+redirects. An unexpired election disappearing or changing identity preserves the
+accepted catalog for review. North Dakota's shared current calendar may omit an
+older, expired-year card without requiring an invented historical date.
+
+Candidate collection independently checks the exact form target, selected
+election year/type, public controls and unfiltered selections. South Dakota's
+complete CSV count must match the public report; valid withdrawal dates may
+precede the election year but cannot follow the election. North Dakota retains
+its unpaginated complete table, excludes unnamed vacancies and keeps county
+identities distinct. The verified current rosters contain 745 and 717 records,
+respectively; all normalized facts and IDs remain unchanged by cycle support.
+Contacts remain excluded and local records do not establish personal eligibility.
 
 Delaware discovery requires the official candidate-index heading and dated
 `Statewide General` links to matching year-specific HTML rosters. Collection
@@ -63,7 +91,7 @@ The version-one catalog contains exactly:
 
 - `schemaVersion: 1`, `type: "state-ballot-cycle-catalog"` and `familyId`.
 - `sourceConfigurationSha256`, binding the reviewed compiled source descriptor.
-- `discovery`: the fixed official landing URL, response SHA-256 and original
+- `discovery`: the fixed official landing URL, discovery-payload SHA-256 and original
   retrieval time.
 - `elections`: explicit official `electionId` and ISO `electionDate` pairs.
   Mississippi, Wyoming and Delaware have no published numeric election ID in these reports,
@@ -116,7 +144,7 @@ family/file contents are rejected. The existing enabled-state and exact enabled-
 remain operative. An exact source-ID allowlist intentionally does not opt into
 all future elections.
 
-`STATE_BALLOT_ENABLED_FAMILIES=wa-general-2026,mt-general-2026,ms-sos-2026,wy-sos-2026,de-doe-2026` explicitly opts into
+`STATE_BALLOT_ENABLED_FAMILIES=wa-general-2026,mt-general-2026,ms-sos-2026,wy-sos-2026,de-doe-2026,sd-sos-2026,nd-sos-2026` explicitly opts into
 those families' current and future instances alongside an existing exact source-ID
 allowlist. Each family's state must remain in any enabled-state filter. One family
 cannot widen another family's exact source filter and
@@ -150,7 +178,7 @@ provide archive browsing, and this work adds no archival API.
 
 ## Boundaries
 
-These are five source families, not nationwide future-election automation.
+These are seven source families, not nationwide future-election automation.
 Other adapters still have cycle-specific discovery or parsing work. Reviewed
 PDF/image conversion, measure interpretation, independently verified geography,
 rights review, ballot publication, archival browsing, host scheduling, monitoring

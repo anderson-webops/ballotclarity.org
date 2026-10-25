@@ -2,6 +2,7 @@ import type { StateBallotSource } from "./state-ballot-sources.js";
 import { Buffer } from "node:buffer";
 import { fetchRemoteSourceText } from "./remote-json-source.js";
 import { delawareCandidateRosterUrl, getStateBallotCycleFamily, readMississippiGeneralElectionDate, validStateBallotGeneralDate, wyomingCandidateRosterUrl } from "./state-ballot-cycles.js";
+import { dakotaCandidateRosterUrl, validateDakotaCandidatePage } from "./state-ballot-dakota.js";
 import { parseStateHtml, stateHtmlAttribute, stateHtmlDescendants, stateHtmlText } from "./state-ballot-html.js";
 import { buildSouthCarolinaSearchForm } from "./state-ballot-portal-records.js";
 import { fetchWashingtonCandidatePages } from "./state-ballot-washington.js";
@@ -9,6 +10,13 @@ import { fetchWashingtonCandidatePages } from "./state-ballot-washington.js";
 type SourceTextRequest = (url: string, options: { allowedHosts: string[]; maxBytes: number; maxRedirects: number; postBody?: string; timeoutMs: number }) => Promise<string>;
 
 export const publicStateExportFormats = ["mississippi-csv", "south-dakota-csv", "hawaii-csv", "illinois-tsv", "montana-csv"];
+
+function assertDakotaSourceIdentity(source: StateBallotSource) {
+	const state = source.format === "south-dakota-csv" ? "SD" : "ND";
+	const family = getStateBallotCycleFamily(state === "SD" ? "sd-sos-2026" : "nd-sos-2026");
+	const electionId = new URL(source.url).searchParams.get("eid") ?? "";
+	if (source.stateCode !== state || source.retrievalPolicy || source.postBody || source.documentUrls?.length || source.documentLinks?.length || !validStateBallotGeneralDate(source.electionDate) || source.electionDate < family.source.electionDate || Number(source.electionDate.slice(0, 4)) % 2 || source.id !== (source.electionDate === family.source.electionDate ? family.source.id : `${family.prefix}-${source.electionDate}`) || source.url !== dakotaCandidateRosterUrl(state, electionId) || source.pageUrl !== source.url || ((electionId === new URL(family.source.url).searchParams.get("eid")) !== (source.electionDate === family.source.electionDate))) throw new Error("The Dakota candidate source does not identify the configured general election.");
+}
 
 export function buildPublicStateExportForm(source: StateBallotSource, body: string) {
 	const document = parseStateHtml(body);
@@ -80,8 +88,8 @@ export function buildPublicStateExportForm(source: StateBallotSource, body: stri
 	}
 	else {
 		if (source.format === "south-dakota-csv") {
-			if (!/2026 General Election Candidate List/u.test(content))
-				throw new Error("The public candidate export does not identify the configured general election.");
+			assertDakotaSourceIdentity(source);
+			validateDakotaCandidatePage(source, document);
 			control = "ctl00$MainContent$grdCandidates$ctl00$ctl02$ctl00$ExportToCsvButton";
 		}
 		else if (source.format === "illinois-tsv") {
@@ -103,13 +111,12 @@ export function buildPublicStateExportForm(source: StateBallotSource, body: stri
 	return fields.toString();
 }
 
-export function buildNorthDakotaSearchForm(body: string) {
+export function buildNorthDakotaSearchForm(source: StateBallotSource, body: string) {
+	assertDakotaSourceIdentity(source);
 	const document = parseStateHtml(body);
-	const title = stateHtmlDescendants(document, node => node.nodeName === "title")[0];
-	if (!title || stateHtmlText(title).trim() !== "2026 General Election Contest/Candidate List")
-		throw new Error("The public search form does not identify the configured general election.");
+	const form = validateDakotaCandidatePage(source, document);
 	const fields = new URLSearchParams();
-	for (const input of stateHtmlDescendants(document, node => node.nodeName === "input" && stateHtmlAttribute(node, "type") === "hidden")) {
+	for (const input of stateHtmlDescendants(form, node => node.nodeName === "input" && stateHtmlAttribute(node, "type") === "hidden")) {
 		const name = stateHtmlAttribute(input, "name");
 		if (/^__(?:VIEWSTATE(?:\d*|GENERATOR|FIELDCOUNT)|EVENTVALIDATION|EVENTTARGET|EVENTARGUMENT)$/u.test(name))
 			fields.set(name, stateHtmlAttribute(input, "value"));
@@ -135,11 +142,12 @@ export async function fetchStateBallotSourceText(source: StateBallotSource, requ
 	if (source.retrievalPolicy === "manual-snapshot")
 		throw new Error("This publisher requires a manually supplied candidate snapshot; automatic retrieval is disabled.");
 	if (source.stateCode === "WY" && (source.format !== "csv" || !validStateBallotGeneralDate(source.electionDate) || Number(source.electionDate.slice(0, 4)) % 2 || source.url !== wyomingCandidateRosterUrl(source.electionDate))) throw new Error("The Wyoming roster must retain its exact official election URL.");
+	if (["south-dakota-csv", "north-dakota-html"].includes(source.format)) assertDakotaSourceIdentity(source);
 	if (source.format === "delaware-html") {
 		const family = getStateBallotCycleFamily("de-doe-2026");
 		if (source.stateCode !== "DE" || !validStateBallotGeneralDate(source.electionDate) || source.electionDate < family.source.electionDate || Number(source.electionDate.slice(0, 4)) % 2 || source.id !== (source.electionDate === family.source.electionDate ? family.source.id : `${family.prefix}-${source.electionDate}`) || source.url !== delawareCandidateRosterUrl(source.electionDate) || source.pageUrl !== source.url) throw new Error("The Delaware roster must retain its exact official election identity and URL.");
 	}
-	const options = { allowedHosts: [new URL(source.url).hostname], maxBytes: 12 * 1024 * 1024, maxRedirects: source.stateCode === "WY" || ["montana-csv", "mississippi-csv", "delaware-html"].includes(source.format) ? 0 : 2, timeoutMs: 12_000 };
+	const options = { allowedHosts: [new URL(source.url).hostname], maxBytes: 12 * 1024 * 1024, maxRedirects: source.stateCode === "WY" || ["montana-csv", "mississippi-csv", "delaware-html", "south-dakota-csv", "north-dakota-html"].includes(source.format) ? 0 : 2, timeoutMs: 12_000 };
 	if (source.format === "washington-html")
 		return fetchWashingtonCandidatePages(source, request, options);
 	if (source.format === "south-carolina-html") {
@@ -171,7 +179,7 @@ export async function fetchStateBallotSourceText(source: StateBallotSource, requ
 	}
 	if (source.format === "north-dakota-html") {
 		const form = await request(source.url, options);
-		return request(source.url, { ...options, postBody: buildNorthDakotaSearchForm(form) });
+		return request(source.url, { ...options, postBody: buildNorthDakotaSearchForm(source, form) });
 	}
 	return request(source.url, { ...options, postBody: source.postBody });
 }

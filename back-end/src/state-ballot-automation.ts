@@ -16,7 +16,7 @@ export async function refreshApprovedCandidateData(
 ) {
 	const environment = options.environment ?? process.env;
 	const now = options.now ?? Date.now;
-	const configuration = resolveStateBallotConfiguration(environment);
+	const configuration = resolveStateBallotConfiguration(environment, now());
 	if (!configuration.dataDirectory)
 		throw new Error("STATE_BALLOT_DATA_DIR is required for durable unattended imports.");
 	const directory = configuration.dataDirectory;
@@ -72,7 +72,7 @@ export async function refreshApprovedCandidateData(
 						sourceId: result.sourceId,
 						status: failed
 							? "failed"
-							: result.retrievedAt && result.retrievedAt >= startedAt
+							: result.imported
 								? "imported"
 								: "cached",
 						records: result.records,
@@ -107,9 +107,10 @@ export async function refreshApprovedCandidateData(
 			persistenceErrors.delete(source.stateCode);
 			const snapshot = await repository.getSnapshot(source.stateCode, source.id);
 			const failed = !snapshot || persistenceErrors.has(source.stateCode);
+			const observation = (await repository.inspectSources!()).find(item => item.id === source.id);
 			results.push({
 				sourceId: source.id,
-				status: failed ? "failed" : snapshot.retrievedAt >= startedAt ? "imported" : "cached",
+				status: failed ? "failed" : observation?.lastImportAt ? "imported" : "cached",
 				records: snapshot?.records.length ?? 0,
 				reason: failed
 					? persistenceErrors.has(source.stateCode)

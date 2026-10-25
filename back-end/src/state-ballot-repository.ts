@@ -34,9 +34,9 @@ interface StateBallotRepositoryOptions {
 	ttlMs?: number;
 }
 
-export function resolveStateBallotConfiguration(environment: NodeJS.ProcessEnv = process.env) {
-	const catalogs = readConfiguredStateBallotCycleCatalogs(environment);
-	const cycleSources = catalogs.flatMap(catalog => stateBallotCycleSources(catalog));
+export function resolveStateBallotConfiguration(environment: NodeJS.ProcessEnv = process.env, now = Date.now()) {
+	const catalogs = readConfiguredStateBallotCycleCatalogs(environment, now);
+	const cycleSources = catalogs.flatMap(catalog => stateBallotCycleSources(catalog, now));
 	const configuredSources = [...configuredStateBallotSources, ...cycleSources];
 	if (new Set(configuredSources.map(source => source.id)).size !== configuredSources.length) throw new Error("Official source identifiers must be unique.");
 	const ttlMs = environment.STATE_BALLOT_CACHE_TTL_MS === undefined ? 4 * 60 * 60 * 1000 : Number(environment.STATE_BALLOT_CACHE_TTL_MS);
@@ -52,7 +52,7 @@ export function resolveStateBallotConfiguration(environment: NodeJS.ProcessEnv =
 		throw new Error("Every enabled election family must be supported and belong to an enabled state.");
 	if (requestedSources?.some(id => !configuredSources.some(source => source.id === id && (!requested || requested.includes(source.stateCode)))))
 		throw new Error("Every enabled source must match a configured source in an enabled state.");
-	const familySourceIds = new Set(enabledFamilies?.flatMap(family => [family.source.id, ...catalogs.filter(catalog => catalog.familyId === family.source.id).flatMap(catalog => stateBallotCycleSources(catalog).map(source => source.id))]));
+	const familySourceIds = new Set(enabledFamilies?.flatMap(family => [family.source.id, ...catalogs.filter(catalog => catalog.familyId === family.source.id).flatMap(catalog => stateBallotCycleSources(catalog, now).map(source => source.id))]));
 	return {
 		ttlMs,
 		dataDirectory: environment.STATE_BALLOT_DATA_DIR || null,
@@ -61,13 +61,14 @@ export function resolveStateBallotConfiguration(environment: NodeJS.ProcessEnv =
 }
 
 export function createStateBallotRepository(options: StateBallotRepositoryOptions = {}): StateBallotRepository {
-	const configuration = resolveStateBallotConfiguration();
+	const now = options.now ?? Date.now;
+	const configuration = resolveStateBallotConfiguration(process.env, now());
 	let acceptedSources = options.sources ?? configuration.sources;
 	const configurationFailures = new Set<string>();
 	const currentSources = () => {
 		if (options.sources) return options.sources;
 		try {
-			acceptedSources = resolveStateBallotConfiguration().sources;
+			acceptedSources = resolveStateBallotConfiguration(process.env, now()).sources;
 			configurationFailures.clear();
 		}
 		catch (error) {
@@ -86,7 +87,6 @@ export function createStateBallotRepository(options: StateBallotRepositoryOption
 		return acceptedSources;
 	};
 	const sources = currentSources();
-	const now = options.now ?? Date.now;
 	const ttlMs = options.ttlMs ?? configuration.ttlMs;
 	const dataDirectory = options.dataDirectory === undefined ? configuration.dataDirectory : options.dataDirectory;
 	const storage = dataDirectory ? createStateBallotStorage(dataDirectory) : null;

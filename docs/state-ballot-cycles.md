@@ -4,23 +4,45 @@ External election catalogs opt the automatic candidate repository into reusable
 source families. Without them, the existing 56 source
 definitions, source ordering and source/state allowlists remain unchanged.
 
-Three families are supported:
+Four families are supported:
 
 | Family | Discovery | Elections |
 | --- | --- | --- |
 | `wa-general-2026` | [Washington candidate list](https://voter.votewa.gov/CandidateList.aspx) | General elections, including odd years |
 | `mt-general-2026` | [Montana candidate list](https://candidatefiling.mt.gov/candidatefiling/CandidateList.aspx) | Federal general elections in even years |
 | `ms-sos-2026` | [Mississippi qualifying list](https://www.sos.ms.gov/content/CandidateQualifying/default.aspx) | Explicitly dated November general-election records |
+| `wy-sos-2026` | [Wyoming election center](https://sos.wyo.gov/elections/default.aspx) | Explicitly dated even-year general elections with matching CSV/PDF roster links |
 
 Stable family identifiers retain their original descriptor bindings; future
-instances do not require editing those descriptors. Discovery reads the official election selector or Mississippi's explicit general-election date,
+instances do not require editing those descriptors. Discovery reads the official election selector or an explicit published general-election date,
 not a predicted URL, numerical election-ID sequence or computed election date.
 Primary, special and conservation elections are outside these families.
-Discovery permits one HTTPS redirect within the approved official host to its
-current election. Candidate-specific downloads retain their zero-redirect,
+Selector-based discovery permits one HTTPS redirect within the approved official
+host to its current election. Wyoming's landing page and candidate roster use
+zero redirects. Candidate-specific downloads retain their zero-redirect,
 exact-election checks.
 
 ## Data contract
+
+Wyoming discovery reconciles the explicit general-election date, the matching
+election-information section and both published roster links. The roster's
+`Election` column must match the descriptor's year and general-election label on
+every row. Conflicting dates, primary replacements, wrong-year files and altered
+transport endpoints fail closed. Published numbered `STATE SENATOR` and
+`STATE REPRESENTATIVE` labels supply the legislative district; judicial regions
+remain local and are not inferred from an address or ZIP centroid.
+
+The corrected district field changes derived IDs for the 114 legislative rows
+in the verified 151-record 2026 roster. Existing accepted snapshots retain their
+bytes until a normal successful source refresh. A fresh normalized snapshot uses
+the corrected IDs and district matching. The reviewed original descriptor,
+capture metadata and canonical transferred datasets remain unchanged.
+
+Collection results record an explicit `imported` flag from successful durable
+writes, not a comparison between capture and run timestamps. A cached read in
+the same millisecond as an earlier write remains cached. Configuration, catalogs,
+allowlists and snapshots use the same supplied validation clock in rollover
+rehearsals; normal runtime behavior continues to use the real clock.
 
 The version-one catalog contains exactly:
 
@@ -29,8 +51,8 @@ The version-one catalog contains exactly:
 - `discovery`: the fixed official landing URL, response SHA-256 and original
   retrieval time.
 - `elections`: explicit official `electionId` and ISO `electionDate` pairs.
-  Mississippi has no published numeric election ID in this report, so its
-  `electionId` is exactly `null`. A date-derived fake ID is never substituted.
+  Mississippi and Wyoming have no published numeric election ID in these reports,
+  so their `electionId` is exactly `null`. A date-derived fake ID is never substituted.
 
 The family controls the HTTPS origin, path, parser, scope limitations and general
 election label. Catalog entries cannot supply arbitrary URLs, parsers, methods,
@@ -79,7 +101,7 @@ family/file contents are rejected. The existing enabled-state and exact enabled-
 remain operative. An exact source-ID allowlist intentionally does not opt into
 all future elections.
 
-`STATE_BALLOT_ENABLED_FAMILIES=wa-general-2026,mt-general-2026,ms-sos-2026` explicitly opts into
+`STATE_BALLOT_ENABLED_FAMILIES=wa-general-2026,mt-general-2026,ms-sos-2026,wy-sos-2026` explicitly opts into
 those families' current and future instances alongside an existing exact source-ID
 allowlist. Each family's state must remain in any enabled-state filter. One family
 cannot widen another family's exact source filter and

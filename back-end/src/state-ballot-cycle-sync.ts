@@ -17,7 +17,7 @@ interface StateBallotCycleSyncOptions {
 
 export function fetchStateBallotCycleDiscovery(request: typeof fetchRemoteSourceText = fetchRemoteSourceText, familyId = "wa-general-2026") {
 	const family = getStateBallotCycleFamily(familyId);
-	return request(family.discoveryUrl, { allowedHosts: [new URL(family.discoveryUrl).hostname], maxBytes: 2 * 1024 * 1024, maxRedirects: 1, timeoutMs: 12000 });
+	return request(family.discoveryUrl, { allowedHosts: [new URL(family.discoveryUrl).hostname], maxBytes: 2 * 1024 * 1024, maxRedirects: family.format === "csv" ? 0 : 1, timeoutMs: 12000 });
 }
 
 export async function syncStateBallotCycles(options: StateBallotCycleSyncOptions) {
@@ -39,13 +39,15 @@ export async function syncStateBallotCycles(options: StateBallotCycleSyncOptions
 	const repository = createStateBallotRepository({ sources, dataDirectory: options.dataDirectory, now, fetchText: options.fetchCandidates, onPersistenceError: () => {
 		persistenceFailed = true;
 	} });
-	const results: { sourceId: string; electionDate: string; status: "available" | "unavailable" | "persistence-failed" | "expired"; records: number; retrievedAt: string | null }[] = [];
+	const results: { sourceId: string; electionDate: string; status: "available" | "unavailable" | "persistence-failed" | "expired"; records: number; retrievedAt: string | null; imported: boolean }[] = [];
 	for (const source of sources) {
 		const expired = Date.parse(`${source.electionDate}T00:00:00Z`) + 2 * 86400000 <= now();
 		persistenceFailed = false;
 		const snapshot = expired ? null : await repository.getSnapshot(source.stateCode, source.id);
-		results.push({ sourceId: source.id, electionDate: source.electionDate, status: expired ? "expired" : persistenceFailed ? "persistence-failed" : snapshot ? "available" : "unavailable", records: snapshot?.records.length ?? 0, retrievedAt: snapshot?.retrievedAt ?? null });
+		results.push({ sourceId: source.id, electionDate: source.electionDate, status: expired ? "expired" : persistenceFailed ? "persistence-failed" : snapshot ? "available" : "unavailable", records: snapshot?.records.length ?? 0, retrievedAt: snapshot?.retrievedAt ?? null, imported: false });
 	}
+	const observations = await repository.inspectSources!();
+	for (const result of results) result.imported = Boolean(observations.find(source => source.id === result.sourceId)?.lastImportAt);
 	return { familyId: catalog.familyId, catalogChanged, discovery: catalog.discovery, checkedAt: new Date(now()).toISOString(), results };
 }
 

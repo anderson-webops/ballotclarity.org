@@ -115,15 +115,20 @@ function candidateFromCsv(source: StateBallotSource, row: Record<string, string>
 				return null;
 			return makeRecord(source, { name: row.name_on_ballot ?? "", office: row.contest_name ?? "", party: row.party_candidate ?? "", jurisdiction: row.county_name });
 		}
-		case "WY":
-			if (!/2026.*general|general.*2026/iu.test(row.Election ?? "")) return null;
+		case "WY": {
+			if (clean(row.Election).toUpperCase() !== `${source.electionDate.slice(0, 4)} GENERAL ELECTION`) throw new Error("The Wyoming roster election label does not match its configured election.");
+			const office = clean(row["Office Sought"]);
+			const legislativeDistrict = /^STATE (?:SENATOR|REPRESENTATIVE) (\d{1,3})$/iu.exec(office)?.[1];
+			if (/^STATE (?:SENATOR|REPRESENTATIVE)\b/iu.test(office) && (!legislativeDistrict || Number(legislativeDistrict) === 0)) throw new Error("The Wyoming legislative office has no unambiguous district number.");
 			return makeRecord(source, {
 				name: row["Ballot Name"] || [row["Candidate First Name"], row["Candidate Middle Name"], row["Candidate Last Name"], row["Candidate Suffix"]].filter(Boolean).join(" "),
-				office: row["Office Sought"] ?? "",
+				office,
+				district: legislativeDistrict,
 				party: row["Party Affiliation"] ?? "",
 				status: clean(row["Date Withdrawn"]) ? "withdrawn" : "listed",
 				candidateUrl: row["Web Address"],
 			});
+		}
 		case "MD": {
 			const name = [row["Candidate First Name and Middle Name"], row["Candidate Ballot Last Name and Suffix"]].filter(Boolean).join(" ");
 			const runningMate = [row["Related Candidate First Name and Middle Name"], row["Related Candidate Last Name and Suffix"]].filter(Boolean).join(" ");

@@ -12,6 +12,7 @@ import { validateDakotaCandidatePage } from "./state-ballot-dakota.js";
 import { parseFloridaLocalCandidateRecords } from "./state-ballot-florida-local.js";
 import { stateHtmlAttribute as attribute, stateHtmlDescendants as descendants, parseStateHtml as parseHtml, stateHtmlTableRows, stateHtmlText as textContent } from "./state-ballot-html.js";
 import { parseMarylandCandidateRecords } from "./state-ballot-maryland.js";
+import { readNorthCarolinaCandidateCapture } from "./state-ballot-north-carolina.js";
 import { parseOregonCandidateRecords } from "./state-ballot-oregon.js";
 import { parseStatePortalRecords } from "./state-ballot-portal-records.js";
 import { floridaSourceElectionId } from "./state-ballot-southern.js";
@@ -376,6 +377,7 @@ const requiredColumns: Record<string, string[]> = {
 };
 
 export function parseStateCandidateRecords(source: StateBallotSource, body: string): StateCandidateRecord[] {
+	if (source.stateCode === "NC" && (source.id !== "nc-sbe-2026" || body.trimStart().startsWith("{"))) body = readNorthCarolinaCandidateCapture(source, body);
 	if (["reviewed-pdf", "reviewed-xlsx", "reviewed-image"].includes(source.format))
 		throw new Error("Reviewed document sources require a validated snapshot.");
 	let records: StateCandidateRecord[];

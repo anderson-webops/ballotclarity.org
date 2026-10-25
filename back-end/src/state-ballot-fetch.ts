@@ -5,6 +5,7 @@ import { delawareCandidateRosterUrl, getStateBallotCycleFamily, readMississippiG
 import { dakotaCandidateRosterUrl, validateDakotaCandidatePage } from "./state-ballot-dakota.js";
 import { parseStateHtml, stateHtmlAttribute, stateHtmlDescendants, stateHtmlText } from "./state-ballot-html.js";
 import { fetchMarylandCycleDiscovery, marylandSourceElectionId, readMarylandElectionDiscovery, validateMarylandRoster } from "./state-ballot-maryland.js";
+import { fetchNorthCarolinaCandidateCapture } from "./state-ballot-north-carolina.js";
 import { buildSouthCarolinaSearchForm } from "./state-ballot-portal-records.js";
 import { buildFloridaCandidateForm, buildFloridaCountyForm, floridaCountyCodesUrl, floridaSourceElectionId, southCarolinaCandidateRosterUrl } from "./state-ballot-southern.js";
 import { fetchWashingtonCandidatePages } from "./state-ballot-washington.js";
@@ -154,6 +155,7 @@ export async function fetchStateBallotSourceText(source: StateBallotSource, requ
 		const family = getStateBallotCycleFamily("de-doe-2026");
 		if (source.stateCode !== "DE" || !validStateBallotGeneralDate(source.electionDate) || source.electionDate < family.source.electionDate || Number(source.electionDate.slice(0, 4)) % 2 || source.id !== (source.electionDate === family.source.electionDate ? family.source.id : `${family.prefix}-${source.electionDate}`) || source.url !== delawareCandidateRosterUrl(source.electionDate) || source.pageUrl !== source.url) throw new Error("The Delaware roster must retain its exact official election identity and URL.");
 	}
+	if (source.stateCode === "NC") return fetchNorthCarolinaCandidateCapture(source, request);
 	const options = { allowedHosts: [new URL(source.url).hostname], maxBytes: 12 * 1024 * 1024, maxRedirects: ["WY", "FL"].includes(source.stateCode) || ["montana-csv", "mississippi-csv", "delaware-html", "south-dakota-csv", "north-dakota-html", "south-carolina-html"].includes(source.format) ? 0 : 2, timeoutMs: 12_000 };
 	if (source.stateCode === "MD") {
 		const electionId = marylandSourceElectionId(source);

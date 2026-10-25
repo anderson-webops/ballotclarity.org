@@ -4,7 +4,7 @@ External election catalogs opt the automatic candidate repository into reusable
 source families. Without them, the existing 58 source
 definitions, source ordering and source/state allowlists remain unchanged.
 
-Twelve families are supported:
+Thirteen families are supported:
 
 | Family | Discovery | Elections |
 | --- | --- | --- |
@@ -20,6 +20,7 @@ Twelve families are supported:
 | `md-sbe-2026` | [Maryland election navigation](https://elections.maryland.gov/elections/) | Observed year links, explicit General Election Day, statewide category and published general file code; existing current IDs/facts retained |
 | `md-sbe-local-2026` | [Maryland county candidate lists](https://elections.maryland.gov/elections/2026/general_candidates/) | Separate local category, actual HTML/CSV controls and complete county-section reconciliation; no residential-geography inference |
 | `sc-sec-2026` | [South Carolina public election selector](https://vrems.scvotes.sc.gov/Candidate/SelectElection) | Published even-year statewide general elections with matching IDs, dates and display labels |
+| `nc-sbe-2026` | [North Carolina published year tables](https://www.ncsbe.gov/results-data/candidate-lists) | Exact CSV/general-list controls and actual nonprimary November general-election record dates, retaining the combined-year file's separate primary rows |
 
 Stable family identifiers retain their original descriptor bindings; future
 instances do not require editing those descriptors. Discovery reads the official election selector or an explicit published general-election date,
@@ -263,7 +264,7 @@ provide archive browsing, and this work adds no archival API.
 
 ## Boundaries
 
-These are twelve source families, not nationwide future-election automation.
+These are thirteen source families, not nationwide future-election automation.
 Other adapters still have cycle-specific discovery or parsing work. Reviewed
 PDF/image conversion, measure interpretation, independently verified geography,
 rights review, ballot publication, archival browsing, host scheduling, monitoring

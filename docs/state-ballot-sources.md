@@ -1,5 +1,35 @@
 # Official state candidate records
 
+## North Carolina reusable general-election discovery
+
+The [official year tables](https://www.ncsbe.gov/results-data/candidate-lists)
+provide combined-year CSVs and separate general/primary publication links.
+`nc-sbe-2026` now supports reusable catalogs without changing its original
+descriptor or any of its 2,790 current normalized records and IDs. The observed
+8,288-row download includes both March primary and November general records.
+
+Discovery accepts only the exact published CSV control accompanied by the
+corresponding general-list control, then reads and validates the actual row dates
+and primary flags. It supports even-year regular November general elections,
+not inferred future dates, primary nominees, odd-year municipal calendars or
+arbitrary special elections. Primary-only year publications remain undiscovered
+until a matching general publication and dated records exist. No actual future
+North Carolina candidate export was observed; rollover evidence is synthetic.
+
+The same bounded discovery capture supplies candidate normalization during
+scheduled synchronization, avoiding a second download of the same CSV within a
+run. Discovery checks the offered year files each run; a cached accepted snapshot
+does not invent a fresh durable import or advance successful-import clocks.
+Changed controls/schema, missing unexpired elections, contradictory dates and
+empty general data preserve prior catalogs/snapshots and require review.
+
+Residential/contact fields stay outside normalized/public records. Existing
+county grouping, candidate status/party facts and geographic eligibility rules
+remain unchanged. These records are not a complete personalized ballot. The
+current CSV-only legacy parser remains supported; future records require the
+published index and matching year-file evidence. New discovery uses ordinary
+public HTTPS requests with exact paths, pinned public addresses and no redirects.
+
 ## Maryland county records and reusable discovery
 
 The [official general-candidate index](https://elections.maryland.gov/elections/2026/general_candidates/)

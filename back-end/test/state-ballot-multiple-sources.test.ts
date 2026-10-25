@@ -45,8 +45,9 @@ async function serve(repository: StateBallotRepository) {
 test("county sources are additive and their reviewed configuration retains each original document", () => {
 	assert.equal(stateBallotSources.length, 50);
 	assert.equal(configuredStateBallotSources.length, 60);
-	assert.deepEqual(configuredStateBallotSources.slice(0, 50).filter(source => source.stateCode !== "GA"), stateBallotSources.filter(source => source.stateCode !== "GA"));
+	assert.deepEqual(configuredStateBallotSources.slice(0, 50).filter(source => !["GA", "MO", "NJ"].includes(source.stateCode)), stateBallotSources.filter(source => !["GA", "MO", "NJ"].includes(source.stateCode)));
 	assert.equal(configuredStateBallotSources.find(source => source.id === "ga-fulton-2026")!.format, "fulton-pdf");
+	assert.ok(configuredStateBallotSources.filter(source => ["MO", "NJ"].includes(source.stateCode)).every(source => source.format === "certified-pdf"));
 	assert.equal(new Set(configuredStateBallotSources.map(source => source.id)).size, 60);
 	assert.equal(new Set(configuredStateBallotSources.map(source => source.stateCode)).size, 51);
 	const reviewed = additionalStateBallotSources.filter(source => source.retrievalPolicy === "manual-snapshot");

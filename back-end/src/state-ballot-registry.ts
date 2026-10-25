@@ -164,13 +164,17 @@ export const additionalStateBallotSources: readonly StateBallotSource[] = [
 	},
 ];
 
-function automaticFultonSource(source: StateBallotSource): StateBallotSource {
-	return { ...source, format: "fulton-pdf", retrievalPolicy: undefined };
+function automaticReviewedSource(source: StateBallotSource): StateBallotSource {
+	return { ...source, format: source.id === "ga-fulton-2026" ? "fulton-pdf" : "certified-pdf", retrievalPolicy: undefined };
+}
+
+export function legacyReviewedStateBallotSource(source: StateBallotSource) {
+	const legacy = stateBallotSources.find(item => ["ga-fulton-2026", "mo-sos-2026", "nj-doe-2026-federal"].includes(item.id) && item.id === source.id);
+	return legacy && JSON.stringify(source) === JSON.stringify(automaticReviewedSource(legacy)) ? legacy : null;
 }
 
 export function legacyFultonReviewedSource(source: StateBallotSource) {
-	const legacy = stateBallotSources.find(item => item.id === "ga-fulton-2026");
-	return legacy && source.id === legacy.id && JSON.stringify(source) === JSON.stringify(automaticFultonSource(legacy)) ? legacy : null;
+	return source.id === "ga-fulton-2026" ? legacyReviewedStateBallotSource(source) : null;
 }
 
-export const configuredStateBallotSources: readonly StateBallotSource[] = [...stateBallotSources.map(source => source.id === "ga-fulton-2026" ? automaticFultonSource(source) : source), ...additionalStateBallotSources];
+export const configuredStateBallotSources: readonly StateBallotSource[] = [...stateBallotSources.map(source => ["ga-fulton-2026", "mo-sos-2026", "nj-doe-2026-federal"].includes(source.id) ? automaticReviewedSource(source) : source), ...additionalStateBallotSources];

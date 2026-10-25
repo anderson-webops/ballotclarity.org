@@ -4,10 +4,12 @@ External election catalogs opt the automatic candidate repository into reusable
 source families. The current 60 source definitions retain explicit source/state
 allowlists; reusable discovery does not widen an exact-source allowlist.
 
-Twenty-one families across seventeen states are supported:
+Twenty-three families across nineteen states are supported:
 
 | Family | Discovery | Elections |
 | --- | --- | --- |
+| `mo-sos-2026` | [Missouri official homepage](https://www.sos.mo.gov/) and [election calendar](https://www.sos.mo.gov/elections/calendar) | Offered November certification PDFs paired with the calendar's explicit regular-general date; current 425 identities retained, including individual regional retention questions |
+| `nj-doe-2026-federal` | [New Jersey election-year archive](https://www.nj.gov/state/elections/election-information.shtml) and each actually offered even-year page | Published Senate/House lists and explicit district amendments; every PDF identifies the selected general date, published party totals reconcile and only the amended district is replaced |
 | `ga-fulton-2026` | [Fulton County sample-ballot index](https://fultoncountyga.gov/inside-fulton-county/fulton-county-departments/registration-and-elections/sample-ballots), reviewed current policies and [official PSC scope](https://georgia.gov/organization/public-service-commission) | Actual dated November general/special-on-general-day PDF links, including qualified county write-in notices; county-published records, not statewide completeness |
 | `va-elect-2026-federal` | [Virginia candidate index](https://www.elections.virginia.gov/casting-a-ballot/candidate-list/) | Explicit November general-election dates and actual combined or split federal HTML links; separate presidential records do not establish tickets |
 | `va-elect-2026-local` | The same official index and its local/all-office reports | Explicit odd/even November general dates, source locality/district/term facts and any published all-office cross-check; not personal eligibility |
@@ -29,6 +31,28 @@ Twenty-one families across seventeen states are supported:
 | `ut-lg-2026` | [Utah candidate resources](https://vote.utah.gov/resources-for-candidates-political-groups-parties/) and [current election information](https://vote.utah.gov/current-election-information/) | Actually offered even-year candidate links paired with an explicit same-cycle regular general-election date; existing 255 records/IDs retained |
 | `mi-dos-2026` | [Michigan election homepage](https://www.michigan.gov/en/sos/elections) | Published November General Candidate Listing links paired with matching official report headers and explicit dates; original 716 entries/IDs retained |
 | `ks-johnson-2026` | [Johnson County upcoming elections](https://www.jocoelection.org/events-elections/upcoming-elections) and its public candidate selector | Explicit November general-election links, matching offered candidate IDs and dated Johnson County election pages, including odd years; county publication is not statewide completeness or voter-specific eligibility |
+
+Missouri and New Jersey use the shared, optional bounded-worker Poppler capability
+in `stateBallotPdfCollectorContract`. New Jersey uses positional text rather than
+whitespace guesses, excluding address, county-slogan and contact fields from facts.
+Raw PDFs and intermediate text stay outside Git/releases. Every original fact and
+ID remains exact: 425 Missouri and 39 New Jersey records. Existing reviewed files
+and explicit imports remain readable without a tool or fresh capture timestamp.
+An actual worker refresh records capability, policy, transport and format failures
+without claiming cached data is a successful fresh import. Successful automatic
+replacement files require a compatible runtime; original reviewed files remain
+the prior-runtime rollback targets.
+
+New Jersey follows actual archive/year/candidate controls. Senate lists are
+optional when none is published; this family covers federal legislative offices,
+not presidential tickets, odd-year state offices or local ballots. Published
+amendment revision dates and districts govern replacement. A newer complete list
+supersedes older amendments while retaining their zero-contribution provenance;
+ambiguous same-day
+versions require review. Missouri follows the actual certification link and
+explicit calendar date. A changed unexpired publication set retains the accepted
+catalog for review. Only 2026 was observed; future even-year cases are synthetic.
+Neither family constructs a yearly candidate filename or invents an election date.
 
 Fulton retains all 98 current facts and their original IDs. Its catalog binds
 actual dated consolidated PDF links, optional qualified county write-in notices

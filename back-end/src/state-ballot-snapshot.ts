@@ -24,7 +24,7 @@ export function parseBundledStateSnapshot(source: StateBallotSource, body: strin
 	if (!Array.isArray(data.records) || !data.records.length || data.records.length > 25_000 || data.recordCount !== data.records.length)
 		throw new Error("The bundled candidate snapshot has an invalid record count.");
 	let documents: StateBallotSnapshot["documents"];
-	if (["reviewed-pdf", "reviewed-xlsx", "reviewed-image", "fulton-pdf", "pennsylvania-html", "west-virginia-json", "alaska-html", "connecticut-ballots", "oregon-ballots"].includes(source.format) || (["arkansas-html", "colorado-html"].includes(source.format) && source.retrievalPolicy === "manual-snapshot")) {
+	if (["reviewed-pdf", "reviewed-xlsx", "reviewed-image", "fulton-pdf", "certified-pdf", "pennsylvania-html", "west-virginia-json", "alaska-html", "connecticut-ballots", "oregon-ballots"].includes(source.format) || (["arkansas-html", "colorado-html"].includes(source.format) && source.retrievalPolicy === "manual-snapshot")) {
 		if (!Array.isArray(data.documents) || data.documents.length !== source.documentUrls?.length || !data.documents.length)
 			throw new Error("The bundled candidate snapshot has an invalid document set.");
 		documents = data.documents.map((value: unknown, index: number) => {

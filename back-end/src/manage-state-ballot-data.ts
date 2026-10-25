@@ -1,5 +1,5 @@
 import process from "node:process";
-import { legacyFultonReviewedSource } from "./state-ballot-registry.js";
+import { legacyReviewedStateBallotSource } from "./state-ballot-registry.js";
 import { createStateBallotRepository, resolveStateBallotConfiguration } from "./state-ballot-repository.js";
 import { parseBundledStateSnapshot } from "./state-ballot-snapshot.js";
 import { createStateBallotStorage, readBoundedStateData } from "./state-ballot-storage.js";
@@ -17,7 +17,7 @@ async function main() {
 			const body = await readBoundedStateData(path);
 			const metadata = JSON.parse(body);
 			const enabled = configuration.sources.find(item => item.id === metadata.sourceId);
-			const source = enabled?.retrievalPolicy === "manual-snapshot" ? enabled : enabled ? legacyFultonReviewedSource(enabled) : null;
+			const source = enabled?.retrievalPolicy === "manual-snapshot" ? enabled : enabled ? legacyReviewedStateBallotSource(enabled) : null;
 			if (!source)
 				throw new Error("Every imported snapshot must match an enabled reviewed source.");
 			const snapshot = parseBundledStateSnapshot(source, body);

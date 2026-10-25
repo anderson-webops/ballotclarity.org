@@ -1,6 +1,7 @@
 import type { StateBallotSource } from "./state-ballot-sources.js";
 import { Buffer } from "node:buffer";
 import { fetchRemoteSourceText } from "./remote-json-source.js";
+import { fetchCertifiedPdfCapture } from "./state-ballot-certified-pdf.js";
 import { delawareCandidateRosterUrl, getStateBallotCycleFamily, readMississippiGeneralElectionDate, validStateBallotGeneralDate, wyomingCandidateRosterUrl } from "./state-ballot-cycles.js";
 import { dakotaCandidateRosterUrl, validateDakotaCandidatePage } from "./state-ballot-dakota.js";
 import { fetchFultonCandidateCapture } from "./state-ballot-fulton.js";
@@ -155,6 +156,7 @@ export async function fetchStateBallotSourceText(source: StateBallotSource, requ
 	if (source.format === "kansas-html") return fetchKansasCandidateCapture(source, request);
 	if (source.stateCode === "VA") return fetchVirginiaCandidateCapture(source, request);
 	if (source.format === "fulton-pdf") return fetchFultonCandidateCapture(source, { requestText: request });
+	if (source.format === "certified-pdf") return fetchCertifiedPdfCapture(source, undefined, { requestText: request });
 	if (source.stateCode === "WY" && (source.format !== "csv" || !validStateBallotGeneralDate(source.electionDate) || Number(source.electionDate.slice(0, 4)) % 2 || source.url !== wyomingCandidateRosterUrl(source.electionDate))) throw new Error("The Wyoming roster must retain its exact official election URL.");
 	if (["south-dakota-csv", "north-dakota-html"].includes(source.format)) assertDakotaSourceIdentity(source);
 	if (source.stateCode === "FL" || source.format === "south-carolina-html") {

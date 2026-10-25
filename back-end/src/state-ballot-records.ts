@@ -7,6 +7,7 @@ import { parse as parseCsv } from "csv-parse/sync";
 import { normalizePublicHref } from "./public-href.js";
 import { parseAdditionalStateRecords } from "./state-ballot-additional-records.js";
 import { parseArkansasCandidateRecords } from "./state-ballot-arkansas.js";
+import { parseCertifiedPdfCapture } from "./state-ballot-certified-pdf.js";
 import { parseConnecticutCandidateRecords } from "./state-ballot-connecticut.js";
 import { validateDakotaCandidatePage } from "./state-ballot-dakota.js";
 import { parseFloridaLocalCandidateRecords } from "./state-ballot-florida-local.js";
@@ -403,7 +404,10 @@ export function parseStateCandidateRecords(source: StateBallotSource, body: stri
 	if (["reviewed-pdf", "reviewed-xlsx", "reviewed-image"].includes(source.format))
 		throw new Error("Reviewed document sources require a validated snapshot.");
 	let records: StateCandidateRecord[];
-	if (source.format === "fulton-pdf") {
+	if (source.format === "certified-pdf") {
+		records = parseCertifiedPdfCapture(source, body).records;
+	}
+	else if (source.format === "fulton-pdf") {
 		records = parseFultonCandidateCapture(source, body).records;
 	}
 	else if (source.format === "virginia-local-html" || (source.format === "virginia-html" && (source.id !== "va-elect-2026-federal" || body.trimStart().startsWith("{")))) {

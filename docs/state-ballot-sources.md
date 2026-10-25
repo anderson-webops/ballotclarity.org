@@ -1,5 +1,42 @@
 # Official state candidate records
 
+## Reusable certified PDF collection
+
+Missouri and New Jersey now support policy-bound automatic candidate collection
+and reusable election catalogs. All 425 Missouri and 39 New Jersey facts and IDs
+remain exact. Original PDF hashes and contribution counts remain independently
+reconciled, including New Jersey's district-specific amendment replacing the base
+list's earlier district entries rather than adding duplicates. Party labels are
+literal source fields; regional retention questions remain individual local
+questions, not legislative or statewide eligibility.
+
+The optional shared worker uses maintained Poppler through
+`STATE_BALLOT_PDFTOTEXT`, with bounded input, output, page count and process time.
+New Jersey's positional extraction checks page numbering, known columns and every
+published party/total, without importing addresses or county slogans. Missouri
+validates candidate/retention sections and office/geography layouts. Public APIs
+can continue reading approved reviewed files without an extractor. Failed refresh
+attempts remain visible and preserve prior successful import clocks. Compatible
+runtime/data recovery includes the exact original reviewed files.
+
+Both collectors revalidate current robots, stable policy-content fingerprints and
+relevant policy links before normal zero-redirect downloads. New Jersey's actually
+published policy redirect targets resolve over validating HTTPS without executing
+JavaScript. Its [conditions of use](https://www.nj.gov/nj/legal.shtml) permit use
+of State information subject to material-specific restrictions; only factual
+fields are normalized, not seals, graphics or third-party statements. Missouri's
+[privacy policy](https://www.sos.mo.gov/ipolicy) was reviewed without inferring a
+blanket republication license. Actual dated future controls are required; current
+observations cover 2026 and future-cycle tests are synthetic. See
+`docs/state-ballot-cycles.md` for family scope and changed-publication behavior.
+
+Nebraska's election index links [Nebraska.gov policies](https://www.nebraska.gov/policies/index.html#collapseThree),
+whose current use terms explicitly restrict automated monitoring/copying without
+prior written permission. New collection and automatic promotion remain held
+pending publisher clarification or permission. Existing reviewed facts and
+independent Nebraska reference sources remain unchanged; an earlier capture is
+not permission for a new download or an unreviewed republication.
+
 ## Virginia reusable federal and local collection
 
 The [official candidate index](https://www.elections.virginia.gov/casting-a-ballot/candidate-list/)
@@ -177,9 +214,9 @@ its filing method, withdrawal and inactive-status fields.
 | Maryland | [State Board of Elections](https://elections.maryland.gov/elections/2026/general_candidates/2026_GG_statewide_candidatelist.html) | CSV | Federal, statewide, legislative, and local records; joint tickets and source status retained. The publisher's trailing empty header and literal quotes in unquoted fields are handled only in this adapter. |
 | Michigan | [Department of State official candidate report](https://mi-boe.entellitrak.com/etk-mi-boe-prod/page.request.do?page=page.miboePublicReport&electionType=GEN&electionYear=2026) | HTML | All 716 federal, statewide, legislative and judicial IDs remain exact; 721 reported individuals include five running mates. The combined column's 187 INCUMBENT labels are represented as incumbency, not political parties, including cached reads with unchanged provenance and backward-compatible stored encoding. Other normalized facts remain unchanged. The `mi-dos-2026` family binds actual general-report links, explicit dates, exact columns/statuses and complete totals. Its September 4 as-of label has no explicit year; retrieval is not a publisher revision. County records remain separate. |
 | Mississippi | [Secretary of State qualifying list](https://www.sos.ms.gov/content/CandidateQualifying/default.aspx) | Public CSV export | 190 federal, judicial, and legislative special-election records explicitly dated November 3. Judicial places remain separate. Six State Senate 34 entries have no election date in either the page section or export and are withheld pending separate dated evidence. The reusable cycle catalog reads explicit general-election dates and reconciles every CSV name against the complete public tables before import. |
-| Missouri | [Secretary of State certified general candidates](https://www.sos.mo.gov/CMSImages/ElectionCandidates/2026GeneralElectionCertifiedCandidates.pdf) | Reviewed, dated PDF snapshot | 425 certified records. Retention candidates are individual questions; appellate regions, judicial circuits and divisions remain local. Only the Supreme Court retention and statewide auditor contest apply statewide. |
-| Nebraska | [Secretary of State final general and retention lists](https://sos.nebraska.gov/elections) | Reviewed, dated PDF snapshot | 569 records: 521 candidate rows plus 48 retention filings. The unicameral Legislature maps to state-senate geography. Only explicitly statewide judicial retention is statewide; education, power, natural-resource and judicial districts remain local. |
-| New Jersey | [Division of Elections official general candidates](https://www.nj.gov/state/elections/election-information-2026.shtml) | Reviewed, dated PDF snapshot | Federal only: four Senate candidates and 35 House candidates. The September 4 District 7 amendment replaces that district's earlier entries rather than duplicating them. Separate special-election and primary lists are excluded. |
+| Missouri | [Secretary of State certified general candidates](https://www.sos.mo.gov/CMSImages/ElectionCandidates/2026GeneralElectionCertifiedCandidates.pdf) | Policy-bound automatic certification PDF; reviewed fallback retained | 425 certified records. Retention candidates are individual questions; appellate regions, judicial circuits and divisions remain local. Only the Supreme Court retention and statewide auditor contest apply statewide. |
+| Nebraska | [Secretary of State final general and retention lists](https://sos.nebraska.gov/elections) | Reviewed PDF snapshot; new collection held under linked use terms | 569 records: 521 candidate rows plus 48 retention filings. The unicameral Legislature maps to state-senate geography. Only explicitly statewide judicial retention is statewide; education, power, natural-resource and judicial districts remain local. |
+| New Jersey | [Division of Elections official general candidates](https://www.nj.gov/state/elections/election-information-2026.shtml) | Policy-bound automatic federal lists and amendments; reviewed fallback retained | Federal only: four Senate candidates and 35 House candidates. The September 4 District 7 amendment replaces that district's earlier entries rather than duplicating them. Separate special-election and primary lists are excluded. |
 | New Mexico | [Secretary of State candidate list](https://candidateportal.servis.sos.state.nm.us/CandidateList.aspx?cty=99) | HTML | Federal, statewide, legislative, and local records; qualification status retained. Paginated or changed table layouts fail closed. |
 | North Carolina | [State Board of Elections candidate lists](https://www.ncsbe.gov/results-data/candidate-lists) | CSV | Federal, statewide, legislative, and local filings. Exact election date required; cross-county statewide/district duplicates removed while local county identities remain distinct. Listing alone does not establish final ballot qualification. |
 | North Dakota | [Secretary of State contest/candidate list](https://vip.sos.nd.gov/candidatelist.aspx?eid=348) | Public search form, HTML | Federal, statewide, legislative, and local records. Reusable discovery pairs the current official candidate card with its dated calendar. The exact election form and unfiltered selections are required. Unnamed vacancies are not candidates; source county jurisdiction is retained for local records. |

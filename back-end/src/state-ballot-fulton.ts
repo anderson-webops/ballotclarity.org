@@ -1,20 +1,16 @@
 import type { StateCandidateRecord, StateContestScope } from "./state-ballot-records.js";
 import type { StateBallotSource } from "./state-ballot-sources.js";
 import { Buffer } from "node:buffer";
-import { spawn } from "node:child_process";
 import { createHash } from "node:crypto";
-import { constants } from "node:fs";
-import { access, realpath, stat } from "node:fs/promises";
-import { isAbsolute } from "node:path";
-import process from "node:process";
 import { fetchRemoteSourceDocument, fetchRemoteSourceText } from "./remote-json-source.js";
 import { parseStateHtml, stateHtmlAttribute, stateHtmlDescendants, stateHtmlText } from "./state-ballot-html.js";
+import { extractStateBallotPdfText as extractFultonPdfText, StateBallotPdfCapabilityError as FultonCollectorCapabilityError, resolveStateBallotPdfExtractor as resolveFultonExtractor, stateBallotPdfCollectorContract } from "./state-ballot-pdf.js";
 import { containsControlCharacters } from "./text-validation.js";
 
 export const fultonDiscoveryUrl = "https://fultoncountyga.gov/inside-fulton-county/fulton-county-departments/registration-and-elections/sample-ballots";
 export const fultonScopeUrl = "https://georgia.gov/organization/public-service-commission";
-export const fultonCollectorContract = Object.freeze({ schemaVersion: 1, familyId: "ga-fulton-2026", configuration: "STATE_BALLOT_PDFTOTEXT", executable: "absolute path to maintained Poppler pdftotext", role: "bounded collection worker; public API may read persisted facts without this tool", maximumPdfBytes: 12 * 1024 * 1024, maximumTextBytes: 4 * 1024 * 1024, timeoutMs: 12000, maximumPages: 50 });
-export class FultonCollectorCapabilityError extends Error {}
+export const fultonCollectorContract = Object.freeze({ schemaVersion: 1, familyId: "ga-fulton-2026", ...stateBallotPdfCollectorContract });
+export { extractFultonPdfText, FultonCollectorCapabilityError, resolveFultonExtractor };
 export interface FultonElection {
 	electionId: null;
 	electionDate: string;
@@ -126,59 +122,6 @@ export async function fetchFultonCycleDiscovery(request: TextRequest = fetchRemo
 export function validateFultonSource(source: StateBallotSource) {
 	if (source.stateCode !== "GA" || source.format !== "fulton-pdf" || source.retrievalPolicy || source.postBody || source.delimiter || !generalDate(source.electionDate) || source.id !== (source.electionDate === "2026-11-03" ? "ga-fulton-2026" : `ga-fulton-general-${source.electionDate}`) || source.pageUrl !== fultonDiscoveryUrl || !source.documentUrls?.length || source.documentUrls.length < 2 || source.documentUrls.length > 12 || source.url !== (source.electionDate === "2026-11-03" ? source.documentUrls[0] : fultonDiscoveryUrl)) throw new Error("The automatic Fulton source identity is invalid.");
 	validateFultonElection({ electionId: null, electionDate: source.electionDate, documents: source.documentUrls.map((url, position) => ({ kind: position === 0 ? "consolidated" : position === source.documentUrls!.length - 1 ? "psc-scope" : "qualified-writeins", url })) });
-}
-export async function resolveFultonExtractor(value = process.env.STATE_BALLOT_PDFTOTEXT) {
-	if (!value || !isAbsolute(value) || containsControlCharacters(value)) throw new FultonCollectorCapabilityError("Configure an absolute Poppler pdftotext path in the bounded collection worker.");
-	try {
-		const executable = await realpath(value);
-		if (!(await stat(executable)).isFile()) throw new Error("Not a regular executable");
-		await access(executable, constants.X_OK);
-		return executable;
-	}
-	catch { throw new FultonCollectorCapabilityError("The configured PDF text extractor is unavailable."); }
-}
-export async function extractFultonPdfText(bytes: Buffer, executable: string, timeoutMs: number = fultonCollectorContract.timeoutMs) {
-	if (!bytes.subarray(0, 5).equals(Buffer.from("%PDF-")) || bytes.length > fultonCollectorContract.maximumPdfBytes || !Number.isInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > fultonCollectorContract.timeoutMs) throw new Error("The PDF extraction input exceeds its reviewed bounds.");
-	return new Promise<string>((resolve, reject) => {
-		const child = spawn(executable, ["-layout", "-enc", "UTF-8", "-eol", "unix", "-", "-"], { stdio: ["pipe", "pipe", "pipe"], env: { PATH: process.env.PATH, LANG: "C.UTF-8" } });
-		const chunks: Buffer[] = [];
-		let length = 0;
-		let stderrLength = 0;
-		let failed = false;
-		const fail = () => {
-			failed = true;
-			child.kill("SIGKILL");
-		};
-		const timer = setTimeout(fail, timeoutMs);
-		child.stdout.on("data", (chunk: Buffer) => {
-			length += chunk.length;
-			if (length > fultonCollectorContract.maximumTextBytes) fail();
-			else chunks.push(chunk);
-		});
-		child.stderr.on("data", (chunk: Buffer) => {
-			stderrLength += chunk.length;
-			if (stderrLength > 65536) fail();
-		});
-		child.stdin.on("error", () => {
-			failed = true;
-		});
-		child.once("error", () => {
-			clearTimeout(timer);
-			reject(new FultonCollectorCapabilityError("The PDF extractor could not start."));
-		});
-		child.once("close", (code, signal) => {
-			clearTimeout(timer);
-			if (failed || signal || code !== 0) {
-				reject(new Error("PDF text extraction failed or exceeded its bounds."));
-			}
-			else {
-				const body = Buffer.concat(chunks).toString("utf8");
-				if (!body.trim() || body.includes("\uFFFD") || body.split("\f").filter(page => page.trim()).length > fultonCollectorContract.maximumPages) reject(new Error("The PDF has no supported bounded UTF-8 text."));
-				else resolve(body);
-			}
-		});
-		child.stdin.end(bytes);
-	});
 }
 
 interface CapturedFultonDocument { url: string; sha256: string; retrievedAt: string; text: string }

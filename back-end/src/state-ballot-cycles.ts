@@ -1,3 +1,4 @@
+import type { CertifiedPdfElection } from "./state-ballot-certified-pdf.js";
 import type { FultonElection } from "./state-ballot-fulton.js";
 import type { StateBallotSource } from "./state-ballot-sources.js";
 import type { VirginiaElection } from "./state-ballot-virginia.js";
@@ -7,6 +8,7 @@ import { closeSync, constants, fstatSync, openSync, readSync, realpathSync } fro
 import { mkdir, open, realpath, rename, unlink } from "node:fs/promises";
 import { dirname, isAbsolute, join, resolve } from "node:path";
 import process from "node:process";
+import { certifiedPdfDiscoveryUrls, readCertifiedPdfElectionDiscovery, validateCertifiedPdfElection, validateCertifiedPdfSource } from "./state-ballot-certified-pdf.js";
 import { dakotaCandidateRosterUrl, dakotaDiscoveryUrl, readDakotaElectionDiscovery } from "./state-ballot-dakota.js";
 import { fultonDiscoveryUrl, readFultonElectionDiscovery, validateFultonElection, validateFultonSource } from "./state-ballot-fulton.js";
 import { parseStateHtml, stateHtmlAttribute, stateHtmlDescendants, stateHtmlText } from "./state-ballot-html.js";
@@ -27,6 +29,8 @@ const washington = configuredStateBallotSources.find(source => source.id === "wa
 export const stateBallotCycleDiscoveryUrl = "https://voter.votewa.gov/CandidateList.aspx";
 const digest = (value: string) => createHash("sha256").update(value).digest("hex");
 const cycleFamilies = [
+	{ source: configuredStateBallotSources.find(source => source.id === "mo-sos-2026")!, format: "certified-pdf", discoveryUrl: certifiedPdfDiscoveryUrls.MO, prefix: "mo-general", electionLabel: "General Election", formId: null },
+	{ source: configuredStateBallotSources.find(source => source.id === "nj-doe-2026-federal")!, format: "certified-pdf", discoveryUrl: certifiedPdfDiscoveryUrls.NJ, prefix: "nj-federal-general", electionLabel: "General Election", formId: null },
 	{ source: configuredStateBallotSources.find(source => source.id === "ga-fulton-2026")!, format: "fulton-pdf", discoveryUrl: fultonDiscoveryUrl, prefix: "ga-fulton-general", electionLabel: "General / Special Election", formId: null },
 	{ source: washington, format: "washington-html", discoveryUrl: stateBallotCycleDiscoveryUrl, prefix: "wa-general", electionLabel: "GENERAL", formId: null },
 	{ source: configuredStateBallotSources.find(source => source.id === "mt-general-2026")!, format: "montana-csv", discoveryUrl: "https://candidatefiling.mt.gov/candidatefiling/CandidateList.aspx", prefix: "mt-general", electionLabel: "FEDERAL GENERAL", formId: "frmMain" },
@@ -63,7 +67,11 @@ export function getStateBallotCycleFamily(familyId: string) {
 	const family = cycleFamilies.find(item => item.source.id === familyId);
 	if (!family) throw new Error("The automatic election source family is unsupported or has changed.");
 	let targetValid = family.source.pageUrl === family.source.url;
-	if (family.source.stateCode === "GA") {
+	if (family.format === "certified-pdf") {
+		validateCertifiedPdfSource(family.source);
+		targetValid = true;
+	}
+	else if (family.source.stateCode === "GA") {
 		validateFultonSource(family.source);
 		targetValid = true;
 	}
@@ -110,7 +118,7 @@ export function getStateBallotCycleFamily(familyId: string) {
 	else {
 		targetValid = targetValid && new RegExp(`^${family.discoveryUrl.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&")}\\?e=[1-9]\\d{0,8}$`, "u").test(family.source.url);
 	}
-	if (!targetValid || family.source.format !== family.format || family.source.retrievalPolicy || (family.source.stateCode !== "FL" && family.source.postBody) || (family.source.documentUrls?.length && !["KY", "VA", "GA"].includes(family.source.stateCode)) || (family.source.documentLinks?.length && family.source.stateCode !== "GA"))
+	if (!targetValid || family.source.format !== family.format || family.source.retrievalPolicy || (family.source.stateCode !== "FL" && family.source.postBody) || (family.source.documentUrls?.length && !["KY", "VA", "GA", "MO", "NJ"].includes(family.source.stateCode)) || (family.source.documentLinks?.length && family.source.stateCode !== "GA"))
 		throw new Error("The automatic election source family is unsupported or has changed.");
 	return family;
 }
@@ -158,7 +166,7 @@ export interface StateBallotCycleCatalog {
 	familyId: string;
 	sourceConfigurationSha256: string;
 	discovery: { url: string; sha256: string; retrievedAt: string };
-	elections: { electionId: string | null; electionDate: string; reports?: VirginiaElection["reports"]; allOfficesUrl?: string | null; documents?: FultonElection["documents"] }[];
+	elections: { electionId: string | null; electionDate: string; reports?: VirginiaElection["reports"]; allOfficesUrl?: string | null; documents?: FultonElection["documents"]; pageUrl?: string; pdfDocuments?: CertifiedPdfElection["pdfDocuments"] }[];
 }
 
 function exactKeys(value: unknown, names: string[]): value is Record<string, unknown> {
@@ -253,6 +261,14 @@ export function parseStateBallotCycleCatalog(value: unknown, now = Date.now()): 
 	const dates = new Set<string>();
 	const florida = original.stateCode === "FL";
 	const maryland = original.stateCode === "MD";
+	if (original.format === "certified-pdf") {
+		for (const election of value.elections) {
+			validateCertifiedPdfElection(election, original.stateCode as "MO" | "NJ");
+			if (dates.has(election.electionDate) || (election.electionDate === original.electionDate && election.pdfDocuments.map(item => item.url).join("|") !== original.documentUrls!.join("|"))) throw new Error("The certified PDF election documents are duplicate or conflict with the original source.");
+			dates.add(election.electionDate);
+		}
+		return value as unknown as StateBallotCycleCatalog;
+	}
 	if (original.stateCode === "GA") {
 		for (const election of value.elections) {
 			validateFultonElection(election);
@@ -295,6 +311,7 @@ export function discoverStateBallotElectionCycles(body: string, familyId: string
 		return parseStateBallotCycleCatalog({ schemaVersion: 1, type: "state-ballot-cycle-catalog", familyId, sourceConfigurationSha256: digest(JSON.stringify(family.source)), discovery: { url: family.discoveryUrl, sha256: digest(body), retrievedAt: new Date(now).toISOString() }, elections: readNorthCarolinaElectionDiscovery(body) }, now);
 	}
 	const family = getStateBallotCycleFamily(familyId);
+	if (family.format === "certified-pdf") return parseStateBallotCycleCatalog({ schemaVersion: 1, type: "state-ballot-cycle-catalog", familyId, sourceConfigurationSha256: digest(JSON.stringify(family.source)), discovery: { url: family.discoveryUrl, sha256: digest(body), retrievedAt: new Date(now).toISOString() }, elections: readCertifiedPdfElectionDiscovery(body) }, now);
 	if (family.source.stateCode === "GA") return parseStateBallotCycleCatalog({ schemaVersion: 1, type: "state-ballot-cycle-catalog", familyId, sourceConfigurationSha256: digest(JSON.stringify(family.source)), discovery: { url: family.discoveryUrl, sha256: digest(body), retrievedAt: new Date(now).toISOString() }, elections: readFultonElectionDiscovery(body) }, now);
 	if (family.source.stateCode === "VA") return parseStateBallotCycleCatalog({ schemaVersion: 1, type: "state-ballot-cycle-catalog", familyId, sourceConfigurationSha256: digest(JSON.stringify(family.source)), discovery: { url: family.discoveryUrl, sha256: digest(body), retrievedAt: new Date(now).toISOString() }, elections: readVirginiaElectionDiscovery(body, family.format === "virginia-local-html" ? "local" : "federal") }, now);
 	if (family.format === "kansas-html") return parseStateBallotCycleCatalog({ schemaVersion: 1, type: "state-ballot-cycle-catalog", familyId, sourceConfigurationSha256: digest(JSON.stringify(family.source)), discovery: { url: family.discoveryUrl, sha256: digest(body), retrievedAt: new Date(now).toISOString() }, elections: readKansasElectionDiscovery(body) }, now);
@@ -338,6 +355,10 @@ export function stateBallotCycleSources(catalog: StateBallotCycleCatalog, now = 
 	parseStateBallotCycleCatalog(catalog, now);
 	const family = getStateBallotCycleFamily(catalog.familyId);
 	return catalog.elections.filter(election => election.electionDate !== family.source.electionDate).map((election) => {
+		if (family.format === "certified-pdf") {
+			validateCertifiedPdfElection(election, family.source.stateCode as "MO" | "NJ");
+			return { ...family.source, id: `${family.prefix}-${election.electionDate}`, label: `${family.source.label} (${election.electionDate.slice(0, 4)})`, electionDate: election.electionDate, url: family.source.stateCode === "MO" ? election.pdfDocuments[0]!.url : election.pageUrl, pageUrl: election.pageUrl, snapshotStorage: "external" as const, documentUrls: election.pdfDocuments.map(item => item.url) };
+		}
 		if (family.source.stateCode === "GA") {
 			validateFultonElection(election);
 			return { ...family.source, id: `${family.prefix}-${election.electionDate}`, label: `${family.source.label} (${election.electionDate.slice(0, 4)})`, electionDate: election.electionDate, url: fultonDiscoveryUrl, documentUrls: election.documents.map(item => item.url), documentLinks: election.documents.map(item => ({ label: item.kind === "consolidated" ? "Sample ballot" : item.kind === "qualified-writeins" ? "Qualified write-ins" : "PSC elections", url: item.url })) };

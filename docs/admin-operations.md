@@ -33,10 +33,15 @@ durable import, not an unchanged cached read. A watcher records its actual next
 run and clears it when stopped; missing, invalid and overdue evidence are distinct
 from success. A one-shot invocation makes no claim about an external scheduler.
 
-Publication review has a concise index and a dedicated detailed page. Creating a
-review assembles an existing election's publication workflow, not a candidate-data
-import. The detailed rubric, reviewer recommendation, publication/unpublication,
-revision history and immutable audit evidence remain available.
+Publication review selects from loaded elections that do not already have a
+workflow. The authenticated package-list response includes `reviewOptions` with
+election identifiers and human-readable election/jurisdiction names. Creating a
+review assembles that election's publication workflow, not a candidate-data import.
+The decision page shows current findings and review/publication controls. Its
+separate `/admin/packages/rubric/:id` reference retains the complete rubric and
+automated/reviewer evidence, with direct category anchors rather than collapsible
+sections. Existing publication gates, revision history and immutable audit evidence
+remain available.
 
 Backend errors produce a retryable load error, never an empty or healthy queue.
 Release publication ships these source contracts and executable artifacts; it

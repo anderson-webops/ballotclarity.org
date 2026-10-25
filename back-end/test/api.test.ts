@@ -4029,6 +4029,7 @@ test("guide package workflow gates local guide publication from draft through ro
 		assert.equal(compareBeforeResponse.status, 200);
 		assert.deepEqual(compareBeforeBody.candidates, []);
 		assert.deepEqual(packagesBeforeBody.packages, []);
+		assert.ok(packagesBeforeBody.reviewOptions.some((option: { electionSlug: string; name: string }) => option.electionSlug === "2026-fulton-county-general" && option.name));
 
 		const createResponse = await fetch(`${isolatedBaseUrl}/api/admin/packages`, {
 			body: JSON.stringify({

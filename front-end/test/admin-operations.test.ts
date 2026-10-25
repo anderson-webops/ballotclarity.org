@@ -23,10 +23,24 @@ test("publication overview links to a dedicated review, preserving all publicati
 	const detail = source("src/pages/admin/packages/[id].vue");
 	assert.doesNotMatch(list, /checklistCategories|reviewRecommendation|publishPackage/u);
 	assert.match(detail, /useAdminGuidePackage\(packageId\)/u);
-	assert.match(detail, /checklistCategories/u);
+	assert.doesNotMatch(detail, /checklistCategories|whatToCheck|whyItMatters|passStandard/u);
+	assert.match(detail, /\/admin\/packages\/rubric\//u);
+	assert.match(detail, /item\.diagnostics\.blockers/u);
+	const rubric = source("src/pages/admin/packages/rubric/[id].vue");
+	assert.match(rubric, /checklistCategories/u);
+	assert.match(rubric, /check\.passStandard/u);
+	assert.match(rubric, /middleware: "admin"/u);
+	assert.doesNotMatch(rubric, /<details|publishPackage/u);
 	assert.match(detail, /canPublish/u);
 	assert.match(detail, /unpublishPackage/u);
 	assert.match(detail, /reviewRecommendation/u);
+});
+test("new publication reviews select a loaded election rather than asking for internal identifiers", () => {
+	const list = source("src/pages/admin/packages/index.vue");
+	assert.match(list, /data\.reviewOptions/u);
+	assert.match(list, /<select v-model="electionSlug"/u);
+	assert.doesNotMatch(list, /Election ID|Jurisdiction ID|jurisdictionSlug/u);
+	assert.match(list, /data && !error && !pending/u);
 });
 test("automation timestamps have separate rows rather than adjoining inline labels", () => {
 	assert.match(source("src/pages/admin/index.vue"), /<div class="flex flex-col gap-4 items-start">\s*<UpdatedAt/u);

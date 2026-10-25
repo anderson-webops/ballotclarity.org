@@ -31,6 +31,7 @@ import type {
 	OfficialResource,
 	Source,
 } from "./types/civic.js";
+import { coverageElections } from "./coverage-repository.js";
 
 function uniqueById<T extends { id: string }>(items: T[]) {
 	return Array.from(new Map(items.map(item => [item.id, item])).values());
@@ -1063,7 +1064,7 @@ function buildIssues(
 			kind: item.issueKind,
 			pipelineClass: item.pipelineClass,
 			severity: item.status === "fail" && item.blocking ? "error" : "warning",
-			summary: item.status === "fail" ? item.failStandard : item.warningStandard,
+			summary: item.status === "fail" ? item.failStandard : item.reviewerSignal || item.detail,
 			title: item.label,
 		} satisfies GuidePackageIssue];
 	});
@@ -1304,6 +1305,12 @@ export function buildGuidePackageList(
 	const packages = workflows.map(workflow => buildGuidePackageRecord(workflow, coverageRepository, contentItems));
 	return {
 		packages,
+		reviewOptions: coverageElections(coverageRepository.data).flatMap((election) => {
+			const jurisdiction = coverageRepository.getJurisdictionBySlug(election.jurisdictionSlug);
+			return jurisdiction && !workflows.some(workflow => workflow.electionSlug === election.slug)
+				? [{ electionSlug: election.slug, name: election.name, jurisdictionName: jurisdiction.name }]
+				: [];
+		}),
 		updatedAt: packages.map(item => item.workflow.updatedAt).sort((left, right) => right.localeCompare(left))[0] ?? new Date().toISOString(),
 	};
 }

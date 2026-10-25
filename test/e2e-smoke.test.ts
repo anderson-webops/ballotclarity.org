@@ -1379,7 +1379,16 @@ test("built app exposes a protected admin portal when admin env is configured", 
 	const detailPage = await fetch(`${appBaseUrl}/admin/packages/${encodeURIComponent(reviewsBody.packages[0].workflow.id)}`, { headers: { cookie: changedSessionCookie || "" } });
 	assert.equal(detailPage.status, 200);
 	const detailHtml = await detailPage.text();
-	assert.match(detailHtml, /Rubric/);
+	assert.match(detailHtml, /Full rubric and evidence/);
+	assert.doesNotMatch(detailHtml, /What to check|Why it matters/);
+	const rubricPage = await fetch(`${appBaseUrl}/admin/packages/rubric/${encodeURIComponent(reviewsBody.packages[0].workflow.id)}`, { headers: { cookie: changedSessionCookie || "" } });
+	assert.equal(rubricPage.status, 200);
+	const rubricHtml = await rubricPage.text();
+	assert.match(rubricHtml, /What to check/);
+	assert.match(rubricHtml, /Why it matters/);
+	const protectedRubricPage = await fetch(`${appBaseUrl}/admin/packages/rubric/${encodeURIComponent(reviewsBody.packages[0].workflow.id)}`, { redirect: "manual" });
+	assert.equal(protectedRubricPage.status, 302);
+	assert.match(protectedRubricPage.headers.get("location") ?? "", /\/admin\/login/u);
 	assert.doesNotMatch(detailHtml, /Reviews an existing election; does not import data/);
 	assert.equal(accountPage.status, 200);
 	assert.match(accountHtml, /Change password/);

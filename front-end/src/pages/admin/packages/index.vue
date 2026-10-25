@@ -4,14 +4,14 @@ import { FetchError } from "ofetch";
 definePageMeta({ layout: "admin", middleware: "admin" });
 const { data, error, pending, refresh } = await useAdminGuidePackages();
 const electionSlug = ref("");
-const jurisdictionSlug = ref("");
 const saving = ref(false);
 const feedback = ref("");
 async function createReview() {
+	if (!data.value?.reviewOptions.some(option => option.electionSlug === electionSlug.value)) return;
 	saving.value = true;
 	feedback.value = "";
 	try {
-		const result = await $fetch<{ package: { workflow: { id: string } } }>("/api/admin/packages", { method: "POST", body: { electionSlug: electionSlug.value.trim(), jurisdictionSlug: jurisdictionSlug.value.trim() || undefined } });
+		const result = await $fetch<{ package: { workflow: { id: string } } }>("/api/admin/packages", { method: "POST", body: { electionSlug: electionSlug.value } });
 		await navigateTo(`/admin/packages/${result.package.workflow.id}`);
 	}
 	catch (error) {
@@ -46,15 +46,15 @@ usePageSeo({ title: "Publication reviews", path: "/admin/packages", robots: "noi
 		<p v-if="data && !error && !pending && !data.packages.length">
 			No publication reviews.
 		</p>
-		<section class="max-w-xl space-y-5">
+		<section v-if="data && !error && !pending" class="max-w-xl space-y-5">
 			<h2 class="text-3xl font-serif">
 				New review
-			</h2><p class="text-app-muted dark:text-app-muted-dark">
-				Reviews an existing election; does not import data.
-			</p><form class="space-y-5" @submit.prevent="createReview">
-				<label class="block"><span>Election ID</span><input v-model="electionSlug" required class="text-app-ink mt-2 px-4 py-3 border border-app-line rounded-lg bg-white w-full block dark:text-app-text-dark dark:border-app-line-dark dark:bg-app-panel-dark focus-ring"></label><label class="block"><span>Jurisdiction ID (optional)</span><input v-model="jurisdictionSlug" class="text-app-ink mt-2 px-4 py-3 border border-app-line rounded-lg bg-white w-full block dark:text-app-text-dark dark:border-app-line-dark dark:bg-app-panel-dark focus-ring"></label><p v-if="feedback" role="alert">
+			</h2><p v-if="!data.reviewOptions.length">
+				No elections are awaiting a new publication review.
+			</p><form v-else class="space-y-5" @submit.prevent="createReview">
+				<label class="block"><span>Election</span><select v-model="electionSlug" required class="text-app-ink mt-2 px-4 py-3 border border-app-line rounded-lg bg-white w-full block dark:text-app-text-dark dark:border-app-line-dark dark:bg-app-panel-dark focus-ring"><option disabled value="">Select an election</option><option v-for="option in data.reviewOptions" :key="option.electionSlug" :value="option.electionSlug">{{ option.name }} · {{ option.jurisdictionName }}</option></select></label><p v-if="feedback" role="alert">
 					{{ feedback }}
-				</p><button type="submit" class="btn-primary" :disabled="saving">
+				</p><button type="submit" class="btn-primary" :disabled="saving || !electionSlug">
 					{{ saving ? 'Creating…' : 'Create review' }}
 				</button>
 			</form>

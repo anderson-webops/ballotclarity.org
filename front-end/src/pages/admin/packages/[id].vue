@@ -1,8 +1,5 @@
 <script setup lang="ts">
 import type {
-	GuidePackageChecklistCategoryGroup,
-	GuidePackageChecklistItemStatus,
-	GuidePackageIssue,
 	GuidePackageRecord,
 	GuidePackageReviewRecommendation,
 	GuidePackageStatus,
@@ -24,6 +21,7 @@ const feedbackMessage = ref("");
 const feedbackTone = ref<"error" | "success">("success");
 const unpublishReasons = reactive<Record<string, string>>({});
 const canPublish = computed(() => session.value?.role === "admin" && Boolean(session.value.mfaEnabledAt));
+const fieldClass = "text-app-ink mt-2 px-4 py-3 border border-app-line rounded-lg bg-white w-full block dark:text-app-text-dark dark:border-app-line-dark dark:bg-app-panel-dark focus-ring";
 
 const statusOptions: GuidePackageStatus[] = ["draft", "in_review", "ready_to_publish"];
 const recommendationOptions: GuidePackageReviewRecommendation[] = [
@@ -47,20 +45,6 @@ function statusTone(status: GuidePackageStatus) {
 	return "neutral" as const;
 }
 
-function checklistStatusLabel(status: GuidePackageChecklistItemStatus) {
-	return status === "not_applicable" ? "not applicable" : status.replaceAll("_", " ");
-}
-
-function checklistStatusTone(status: GuidePackageChecklistItemStatus) {
-	if (status === "pass")
-		return "accent" as const;
-
-	if (status === "warning" || status === "fail")
-		return "warning" as const;
-
-	return "neutral" as const;
-}
-
 function recommendationLabel(value: GuidePackageReviewRecommendation | undefined) {
 	return value ? value.replaceAll("_", " ") : "not set";
 }
@@ -75,69 +59,11 @@ function recommendationTone(value: GuidePackageReviewRecommendation | undefined)
 	return "neutral" as const;
 }
 
-function guideContentLabel(packageRecord: GuidePackageRecord) {
-	if (packageRecord.contentStatus.verifiedContestPackage)
-		return "verified local content";
-
-	if (packageRecord.contentStatus.publishedGuideShell)
-		return "guide shell published";
-
-	if (packageRecord.contentStatus.officialLogistics)
-		return "official logistics only";
-
-	return "not public";
-}
-
-function guideContentTone(packageRecord: GuidePackageRecord) {
-	return packageRecord.contentStatus.verifiedContestPackage ? "accent" as const : "warning" as const;
-}
-
 function guideContentDetail(packageRecord: GuidePackageRecord) {
 	const contestStatus = packageRecord.contentStatus.contests.status.replaceAll("_", " ");
 	const measureStatus = packageRecord.contentStatus.measures.status.replaceAll("_", " ");
 
 	return `${packageRecord.contentStatus.summary} Contests: ${contestStatus}; measures: ${measureStatus}.`;
-}
-
-function evaluationModeLabel(value: string) {
-	return value.replaceAll("_", " ");
-}
-
-function summarizeBlockingIssues(packageRecord: GuidePackageRecord) {
-	if (!packageRecord.diagnostics.blockingIssueCount)
-		return "No blocking checklist items are open.";
-
-	return `${packageRecord.diagnostics.blockingIssueCount} blocking checklist item${packageRecord.diagnostics.blockingIssueCount === 1 ? "" : "s"} still need resolution.`;
-}
-
-function groupSummary(group: GuidePackageChecklistCategoryGroup) {
-	if (!group.items.length)
-		return "No rubric items are defined for this category yet.";
-
-	if (!group.failCount && !group.warningCount)
-		return "All rubric items currently pass.";
-
-	const parts: string[] = [];
-
-	if (group.failCount)
-		parts.push(`${group.failCount} fail${group.failCount === 1 ? "" : "s"}`);
-
-	if (group.warningCount)
-		parts.push(`${group.warningCount} warning${group.warningCount === 1 ? "" : "s"}`);
-
-	return parts.join(" · ");
-}
-
-function issueTone(issue: GuidePackageIssue) {
-	return issue.blocking || issue.severity === "warning"
-		? "border-[#E7B9AA] bg-[#FBEEE8] dark:border-[#6D433C] dark:bg-[#3A2421]"
-		: "border-app-line/80 bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70";
-}
-
-function issueTextTone(issue: GuidePackageIssue) {
-	return issue.blocking || issue.severity === "warning"
-		? "text-[#8B3A2E] dark:text-[#FFD4CB]"
-		: "text-app-ink dark:text-app-text-dark";
 }
 
 async function withPackageAction(id: string | null, action: () => Promise<void>) {
@@ -198,348 +124,143 @@ async function unpublishPackage(item: GuidePackageRecord) {
 }
 
 usePageSeo({
-	description: "Internal Ballot Clarity guide-package drafting, review, and publication controls.",
-	path: "/admin/packages",
+	path: `/admin/packages/${packageId.value}`,
 	robots: "noindex,nofollow",
-	title: "Admin guide packages"
+	title: "Publication review"
 });
 </script>
 
 <template>
-	<section class="app-shell section-gap space-y-8">
-		<header>
-			<NuxtLink to="/admin/packages" class="underline focus-ring">
-				Publication reviews
-			</NuxtLink><h1 class="text-4xl font-serif mt-5">
-				Publication review
-			</h1>
-		</header>
+	<section class="app-shell max-w-4xl space-y-16">
+		<NuxtLink to="/admin/packages" class="underline focus-ring">
+			Publication reviews
+		</NuxtLink>
 		<AdminLoadState :pending="pending" :error="Boolean(error)" label="publication review" @retry="refresh()" />
-
-		<p
-			v-if="feedbackMessage"
-			class="text-sm px-4 py-3 rounded-2xl"
-			:class="feedbackTone === 'success'
-				? 'text-[#0f5b45] bg-[#e6f4ef] dark:text-[#9ae6c2] dark:bg-[#11352c]'
-				: 'text-[#8B3A2E] bg-[#F8E6E1] dark:text-[#FFD4CB] dark:bg-[#472722]'"
-		>
+		<p v-if="feedbackMessage" role="status">
 			{{ feedbackMessage }}
 		</p>
-
-		<section v-if="!pending && !error && !data" class="surface-panel">
-			<p class="text-sm text-app-muted leading-7 dark:text-app-muted-dark">
-				Publication review unavailable.
-			</p>
-		</section>
-
-		<div v-if="!error && !pending" class="space-y-5">
-			<article v-for="item in data?.packages ?? []" :key="item.workflow.id" class="surface-panel">
-				<div class="gap-6 grid xl:grid-cols-[minmax(0,1.18fr)_minmax(0,0.82fr)]">
-					<div class="space-y-6">
-						<div>
-							<div class="flex flex-wrap gap-2">
-								<TrustBadge :label="statusLabel(item.workflow.status)" :tone="statusTone(item.workflow.status)" />
-								<TrustBadge :label="`${item.diagnostics.completenessScore}% checklist`" :tone="item.diagnostics.readyToPublish ? 'accent' : 'warning'" />
-								<TrustBadge :label="guideContentLabel(item)" :tone="guideContentTone(item)" />
-								<TrustBadge :label="recommendationLabel(item.diagnostics.recommendation.final)" :tone="recommendationTone(item.diagnostics.recommendation.final)" />
-								<TrustBadge :label="item.diagnostics.readyToPublish ? 'Checklist gate passes' : 'Checklist gate blocked'" :tone="item.diagnostics.readyToPublish ? 'accent' : 'warning'" />
-							</div>
-							<h2 class="text-3xl text-app-ink font-serif mt-4 dark:text-app-text-dark">
-								{{ item.coverageScope.label }}
-							</h2>
-							<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-								{{ guideContentDetail(item) }} {{ summarizeBlockingIssues(item) }}
-							</p>
-						</div>
-
-						<div class="mt-5 gap-4 grid md:grid-cols-2 xl:grid-cols-4">
-							<div class="px-4 py-4 border border-app-line/80 rounded-xl bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
-								<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
-									Counts
-								</p>
-								<p class="text-sm text-app-muted leading-7 mt-2 dark:text-app-muted-dark">
-									{{ item.counts.contests }} contests · {{ item.counts.candidates }} candidates · {{ item.counts.measures }} measures
-								</p>
-							</div>
-							<div class="px-4 py-4 border border-app-line/80 rounded-xl bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
-								<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
-									Sources
-								</p>
-								<p class="text-sm text-app-muted leading-7 mt-2 dark:text-app-muted-dark">
-									{{ item.counts.officialResources }} official resources · {{ item.counts.attachedSources }} attached source records
-								</p>
-							</div>
-							<div class="px-4 py-4 border border-app-line/80 rounded-xl bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
-								<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
-									Guide content
-								</p>
-								<p class="text-sm text-app-muted leading-7 mt-2 dark:text-app-muted-dark">
-									{{ item.contentStatus.verifiedContestPackage ? "Verified contest package" : "Verified contest package pending" }}
-								</p>
-							</div>
-							<div class="px-4 py-4 border border-app-line/80 rounded-xl bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
-								<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
-									Rubric
-								</p>
-								<p class="text-sm text-app-muted leading-7 mt-2 dark:text-app-muted-dark">
-									{{ item.diagnostics.blockers.length }} blockers · {{ item.diagnostics.warnings.length }} warnings · {{ item.diagnostics.rubricVersion }}
-								</p>
-							</div>
-						</div>
-
-						<div class="space-y-4">
-							<div
-								v-for="group in item.diagnostics.checklistCategories"
-								:key="group.id"
-								class="px-4 py-4 border border-app-line/80 rounded-xl bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70"
-							>
-								<div class="flex flex-wrap gap-3 items-start justify-between">
-									<div>
-										<p class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
-											{{ group.label }}
-										</p>
-										<p class="text-sm text-app-muted leading-7 mt-2 dark:text-app-muted-dark">
-											{{ group.description }}
-										</p>
-									</div>
-									<div class="flex flex-wrap gap-2">
-										<TrustBadge
-											v-if="group.failCount"
-											:label="`${group.failCount} fail${group.failCount === 1 ? '' : 's'}`"
-											tone="warning"
-										/>
-										<TrustBadge
-											v-if="group.warningCount"
-											:label="`${group.warningCount} warning${group.warningCount === 1 ? '' : 's'}`"
-											tone="warning"
-										/>
-										<TrustBadge
-											v-if="!group.failCount && !group.warningCount"
-											label="All pass"
-											tone="accent"
-										/>
-									</div>
-								</div>
-								<p class="text-xs text-app-muted tracking-[0.06em] font-semibold mt-3 uppercase dark:text-app-muted-dark">
-									{{ groupSummary(group) }}
-								</p>
-
-								<ul class="readable-list mt-4 space-y-3">
-									<li
-										v-for="check in group.items"
-										:key="check.id"
-										class="px-4 py-4 border border-app-line/80 rounded-xl bg-app-panel dark:border-app-line-dark dark:bg-app-panel-dark/70"
-									>
-										<div class="flex flex-wrap gap-3 items-start justify-between">
-											<div>
-												<p class="text-sm text-app-ink font-semibold dark:text-app-text-dark">
-													{{ check.label }}
-												</p>
-												<p class="text-sm text-app-muted leading-7 mt-2 dark:text-app-muted-dark">
-													{{ check.detail }}
-												</p>
-											</div>
-											<div class="flex flex-wrap gap-2">
-												<TrustBadge :label="checklistStatusLabel(check.status)" :tone="checklistStatusTone(check.status)" />
-												<TrustBadge :label="evaluationModeLabel(check.evaluationMode)" tone="neutral" />
-												<TrustBadge :label="check.pipelineClass.replaceAll('_', ' ')" tone="neutral" />
-											</div>
-										</div>
-
-										<div class="mt-4 gap-3 grid md:grid-cols-2">
-											<div class="text-sm text-app-muted leading-7 dark:text-app-muted-dark">
-												<p><span class="text-app-ink font-semibold dark:text-app-text-dark">What to check:</span> {{ check.whatToCheck }}</p>
-												<p class="mt-2">
-													<span class="text-app-ink font-semibold dark:text-app-text-dark">Why it matters:</span> {{ check.whyItMatters }}
-												</p>
-											</div>
-											<div class="text-sm text-app-muted leading-7 dark:text-app-muted-dark">
-												<p><span class="text-app-ink font-semibold dark:text-app-text-dark">Pass:</span> {{ check.passStandard }}</p>
-												<p class="mt-2">
-													<span class="text-app-ink font-semibold dark:text-app-text-dark">Warning:</span> {{ check.warningStandard }}
-												</p>
-												<p class="mt-2">
-													<span class="text-app-ink font-semibold dark:text-app-text-dark">Fail:</span> {{ check.failStandard }}
-												</p>
-											</div>
-										</div>
-
-										<div class="mt-4 gap-3 grid md:grid-cols-2">
-											<p class="text-sm text-app-muted leading-7 dark:text-app-muted-dark">
-												<span class="text-app-ink font-semibold dark:text-app-text-dark">Auto signal:</span>
-												{{ check.autoSignal || "No automated signal is attached." }}
-											</p>
-											<p class="text-sm text-app-muted leading-7 dark:text-app-muted-dark">
-												<span class="text-app-ink font-semibold dark:text-app-text-dark">Reviewer signal:</span>
-												{{ check.reviewerSignal || "No reviewer-specific signal is attached." }}
-											</p>
-										</div>
-									</li>
-								</ul>
-							</div>
-						</div>
-
-						<div class="mt-6 flex flex-wrap gap-3">
-							<NuxtLink v-if="item.election?.slug && item.workflow.status === 'published'" :to="`/ballot/${item.election.slug}`" class="btn-primary">
-								Open public ballot guide
-							</NuxtLink>
-							<NuxtLink v-if="item.jurisdiction?.slug && item.workflow.status === 'published'" :to="`/locations/${item.jurisdiction.slug}`" class="btn-secondary">
-								Open public jurisdiction page
-							</NuxtLink>
-						</div>
+		<h1 v-if="!pending && !error && !data" class="text-4xl font-serif">
+			Publication review unavailable
+		</h1>
+		<template v-if="data && !error && !pending">
+			<article v-for="item in data.packages" :key="item.workflow.id" class="space-y-16">
+				<header class="space-y-6">
+					<h1 class="text-4xl font-serif">
+						{{ item.coverageScope.label }}
+					</h1>
+					<div class="flex flex-wrap gap-3">
+						<TrustBadge :label="statusLabel(item.workflow.status)" :tone="statusTone(item.workflow.status)" />
+						<TrustBadge :label="recommendationLabel(item.diagnostics.recommendation.final)" :tone="recommendationTone(item.diagnostics.recommendation.final)" />
 					</div>
-
-					<div class="space-y-4">
-						<div class="px-4 py-4 border border-app-line/80 rounded-xl bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
-							<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
-								Recommendation summary
-							</p>
-							<div class="mt-3 flex flex-wrap gap-2">
-								<TrustBadge :label="`System: ${recommendationLabel(item.diagnostics.recommendation.system)}`" :tone="recommendationTone(item.diagnostics.recommendation.system)" />
-								<TrustBadge :label="`Reviewer: ${recommendationLabel(item.diagnostics.recommendation.reviewer)}`" :tone="recommendationTone(item.diagnostics.recommendation.reviewer)" />
-								<TrustBadge :label="`Final: ${recommendationLabel(item.diagnostics.recommendation.final)}`" :tone="recommendationTone(item.diagnostics.recommendation.final)" />
-							</div>
-							<p class="text-sm text-app-muted leading-7 mt-4 dark:text-app-muted-dark">
-								{{ item.diagnostics.recommendation.reason }}
-							</p>
-						</div>
-
-						<div v-if="item.diagnostics.blockers.length" class="px-4 py-4 border border-[#E7B9AA] rounded-xl bg-[#FBEEE8] dark:border-[#6D433C] dark:bg-[#3A2421]">
-							<p class="text-xs text-[#8B3A2E] tracking-[0.06em] font-semibold uppercase dark:text-[#FFD4CB]">
-								Blockers
-							</p>
-							<ul class="readable-list mt-4 space-y-3">
-								<li v-for="issue in item.diagnostics.blockers" :key="issue.id" class="text-sm text-[#8B3A2E] leading-7 dark:text-[#FFD4CB]">
-									<p class="font-semibold">
-										{{ issue.title }}
-									</p>
-									<p class="mt-1">
-										{{ issue.summary }}
-									</p>
-								</li>
-							</ul>
-						</div>
-
-						<div v-if="item.diagnostics.warnings.length" class="px-4 py-4 border border-app-line/80 rounded-xl bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark/70">
-							<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
-								Warnings
-							</p>
-							<ul class="readable-list mt-4 space-y-3">
-								<li v-for="issue in item.diagnostics.warnings" :key="issue.id" class="px-4 py-4 border rounded-xl" :class="issueTone(issue)">
-									<p class="text-sm font-semibold" :class="issueTextTone(issue)">
-										{{ issue.title }}
-									</p>
-									<p class="text-xs tracking-[0.06em] font-semibold mt-2 uppercase" :class="issueTextTone(issue)">
-										{{ issue.kind.replaceAll('_', ' ') }} · {{ issue.pipelineClass.replaceAll('_', ' ') }}
-									</p>
-									<p class="text-sm leading-7 mt-3" :class="issueTextTone(issue)">
-										{{ issue.summary }}
-									</p>
-								</li>
-							</ul>
-						</div>
-
-						<form class="space-y-4" @submit.prevent="savePackage(item)">
-							<label class="block">
-								<span class="text-sm text-app-ink font-semibold dark:text-app-text-dark">Status</span>
-								<select
-									v-model="item.workflow.status"
-									:disabled="item.workflow.status === 'published'"
-									class="text-sm text-app-ink mt-2 px-4 border border-app-line rounded-2xl bg-white h-13 w-full shadow-sm dark:text-app-text-dark dark:border-app-line-dark dark:bg-app-panel-dark focus-ring"
-								>
-									<option v-if="item.workflow.status === 'published'" value="published">
-										Published
-									</option>
-									<option v-for="status in statusOptions" :key="status" :value="status">
-										{{ statusLabel(status) }}
-									</option>
-								</select>
-							</label>
-
-							<label class="block">
-								<span class="text-sm text-app-ink font-semibold dark:text-app-text-dark">Reviewer</span>
-								<p class="text-sm text-app-muted mt-2 px-4 py-3 border border-app-line rounded-2xl bg-white min-h-13 shadow-sm dark:text-app-muted-dark dark:border-app-line-dark dark:bg-app-panel-dark">
-									{{ item.workflow.reviewer || "Recorded from the authenticated account when review is saved." }}
+					<p class="text-app-muted dark:text-app-muted-dark">
+						{{ item.counts.contests }} contests · {{ item.counts.candidates }} candidates · {{ item.counts.measures }} measures
+					</p>
+					<p>{{ guideContentDetail(item) }}</p>
+				</header>
+				<section class="space-y-6" aria-labelledby="review-findings">
+					<h2 id="review-findings" class="text-3xl font-serif">
+						Review findings
+					</h2>
+					<p>{{ item.diagnostics.recommendation.reason }}</p>
+					<section v-if="item.diagnostics.blockers.length" class="space-y-4">
+						<h3 class="text-xl font-semibold">
+							Blocking publication
+						</h3>
+						<ul class="space-y-6">
+							<li v-for="issue in item.diagnostics.blockers" :key="issue.id" class="pl-5 border-app-line border-l-2 dark:border-app-line-dark">
+								<h4 class="font-semibold">
+									{{ issue.title }}
+								</h4>
+								<p class="mt-2">
+									{{ issue.summary }}
 								</p>
-							</label>
-
-							<label class="block">
-								<span class="text-sm text-app-ink font-semibold dark:text-app-text-dark">Publish recommendation</span>
-								<select
-									v-model="item.workflow.reviewRecommendation"
-									class="text-sm text-app-ink mt-2 px-4 border border-app-line rounded-2xl bg-white h-13 w-full shadow-sm dark:text-app-text-dark dark:border-app-line-dark dark:bg-app-panel-dark focus-ring"
-								>
-									<option :value="undefined">
-										Not set
-									</option>
-									<option v-for="recommendation in recommendationOptions" :key="recommendation" :value="recommendation">
-										{{ recommendationLabel(recommendation) }}
-									</option>
-								</select>
-							</label>
-
-							<label class="block">
-								<span class="text-sm text-app-ink font-semibold dark:text-app-text-dark">Review notes</span>
-								<textarea
-									v-model="item.workflow.reviewNotes"
-									rows="4"
-									class="text-sm text-app-ink mt-2 px-4 py-3 border border-app-line rounded-2xl bg-white min-h-32 w-full shadow-sm dark:text-app-text-dark dark:border-app-line-dark dark:bg-app-panel-dark focus-ring"
-								/>
-							</label>
-
-							<label class="block">
-								<span class="text-sm text-app-ink font-semibold dark:text-app-text-dark">Coverage notes</span>
-								<textarea
-									:value="item.workflow.coverageNotes.join('\n')"
-									rows="4"
-									class="text-sm text-app-ink mt-2 px-4 py-3 border border-app-line rounded-2xl bg-white min-h-32 w-full shadow-sm dark:text-app-text-dark dark:border-app-line-dark dark:bg-app-panel-dark focus-ring"
-									@input="item.workflow.coverageNotes = String(($event.target as HTMLTextAreaElement).value).split('\n').map(line => line.trim()).filter(Boolean)"
-								/>
-							</label>
-
-							<label class="block">
-								<span class="text-sm text-app-ink font-semibold dark:text-app-text-dark">Coverage limits</span>
-								<textarea
-									:value="item.workflow.coverageLimits.join('\n')"
-									rows="4"
-									class="text-sm text-app-ink mt-2 px-4 py-3 border border-app-line rounded-2xl bg-white min-h-32 w-full shadow-sm dark:text-app-text-dark dark:border-app-line-dark dark:bg-app-panel-dark focus-ring"
-									@input="item.workflow.coverageLimits = String(($event.target as HTMLTextAreaElement).value).split('\n').map(line => line.trim()).filter(Boolean)"
-								/>
-							</label>
-
-							<div class="flex flex-col gap-3">
-								<button type="submit" class="btn-secondary w-full" :disabled="savingId === item.workflow.id">
-									{{ savingId === item.workflow.id ? "Saving..." : "Save workflow state" }}
-								</button>
-								<p v-if="session?.role === 'admin' && !session.mfaEnabledAt" class="text-xs text-app-muted leading-5 dark:text-app-muted-dark">
-									Enable multi-factor authentication on the Account page before publishing or unpublishing.
+							</li>
+						</ul>
+					</section>
+					<section v-if="item.diagnostics.warnings.length" class="space-y-4">
+						<h3 class="text-xl font-semibold">
+							Warnings
+						</h3>
+						<ul class="space-y-6">
+							<li v-for="issue in item.diagnostics.warnings" :key="issue.id" class="pl-5 border-app-line border-l-2 dark:border-app-line-dark">
+								<h4 class="font-semibold">
+									{{ issue.title }}
+								</h4>
+								<p class="mt-2">
+									{{ issue.summary }}
 								</p>
-								<button v-if="item.workflow.status !== 'published' && canPublish" type="button" class="btn-primary w-full" :disabled="savingId === item.workflow.id" @click="publishPackage(item)">
-									Publish package
-								</button>
-								<label v-if="item.workflow.status === 'published' && canPublish" class="block">
-									<span class="text-sm text-app-ink font-semibold dark:text-app-text-dark">Unpublish reason</span>
-									<textarea
-										v-model="unpublishReasons[item.workflow.id]"
-										rows="3"
-										class="text-sm text-app-ink mt-2 px-4 py-3 border border-app-line rounded-2xl bg-white min-h-24 w-full shadow-sm dark:text-app-text-dark dark:border-app-line-dark dark:bg-app-panel-dark focus-ring"
-										placeholder="Explain why this package must return to review."
-									/>
-								</label>
-								<button
-									v-if="item.workflow.status === 'published' && canPublish"
-									type="button"
-									class="btn-secondary w-full"
-									:disabled="savingId === item.workflow.id || !unpublishReasons[item.workflow.id]?.trim()"
-									@click="unpublishPackage(item)"
-								>
-									Unpublish package
-								</button>
-							</div>
-						</form>
-					</div>
-				</div>
+							</li>
+						</ul>
+					</section>
+					<NuxtLink :to="`/admin/packages/rubric/${item.workflow.id}`" class="underline inline-block focus-ring">
+						Full rubric and evidence
+					</NuxtLink>
+				</section>
+				<section class="space-y-6" aria-labelledby="review-decision">
+					<h2 id="review-decision" class="text-3xl font-serif">
+						Decision
+					</h2>
+					<p v-if="item.workflow.reviewer">
+						Reviewer: {{ item.workflow.reviewer }}
+					</p>
+					<form class="space-y-6" @submit.prevent="savePackage(item)">
+						<label class="block">
+							<span class="font-semibold">Status</span>
+							<select v-model="item.workflow.status" :disabled="item.workflow.status === 'published'" :class="fieldClass">
+								<option v-if="item.workflow.status === 'published'" value="published">Published</option>
+								<option v-for="status in statusOptions" :key="status" :value="status">{{ statusLabel(status) }}</option>
+							</select>
+						</label>
+						<label class="block">
+							<span class="font-semibold">Publish recommendation</span>
+							<select v-model="item.workflow.reviewRecommendation" :disabled="item.workflow.status === 'published'" :class="fieldClass">
+								<option :value="undefined">Not set</option>
+								<option v-for="recommendation in recommendationOptions" :key="recommendation" :value="recommendation">{{ recommendationLabel(recommendation) }}</option>
+							</select>
+						</label>
+						<label class="block">
+							<span class="font-semibold">Review notes</span>
+							<textarea v-model="item.workflow.reviewNotes" :disabled="item.workflow.status === 'published'" rows="4" :class="fieldClass" />
+						</label>
+						<label class="block">
+							<span class="font-semibold">Coverage notes</span>
+							<textarea :value="item.workflow.coverageNotes.join('\n')" :disabled="item.workflow.status === 'published'" rows="3" :class="fieldClass" @input="item.workflow.coverageNotes = String(($event.target as HTMLTextAreaElement).value).split('\n').map(line => line.trim()).filter(Boolean)" />
+						</label>
+						<label class="block">
+							<span class="font-semibold">Coverage limits</span>
+							<textarea :value="item.workflow.coverageLimits.join('\n')" :disabled="item.workflow.status === 'published'" rows="3" :class="fieldClass" @input="item.workflow.coverageLimits = String(($event.target as HTMLTextAreaElement).value).split('\n').map(line => line.trim()).filter(Boolean)" />
+						</label>
+						<button v-if="item.workflow.status !== 'published'" type="submit" class="btn-secondary" :disabled="savingId === item.workflow.id">
+							{{ savingId === item.workflow.id ? 'Saving...' : 'Save review' }}
+						</button>
+					</form>
+					<p v-if="session?.role === 'admin' && !session.mfaEnabledAt">
+						Enable <NuxtLink to="/admin/account" class="underline focus-ring">
+							multi-factor authentication
+						</NuxtLink> before publishing or unpublishing.
+					</p>
+					<button v-if="item.workflow.status !== 'published' && canPublish" type="button" class="btn-primary" :disabled="savingId === item.workflow.id || !item.diagnostics.readyToPublish || item.workflow.status !== 'ready_to_publish'" @click="publishPackage(item)">
+						Publish
+					</button>
+					<form v-if="item.workflow.status === 'published' && canPublish" class="space-y-4" @submit.prevent="unpublishPackage(item)">
+						<label class="block">
+							<span class="font-semibold">Unpublish reason</span>
+							<textarea v-model="unpublishReasons[item.workflow.id]" required rows="3" :class="fieldClass" />
+						</label>
+						<button type="submit" class="btn-secondary" :disabled="savingId === item.workflow.id || !unpublishReasons[item.workflow.id]?.trim()">
+							Unpublish
+						</button>
+					</form>
+				</section>
+				<nav v-if="item.workflow.status === 'published'" class="flex flex-wrap gap-6" aria-label="Published pages">
+					<NuxtLink v-if="item.election?.slug" :to="`/ballot/${item.election.slug}`" class="underline focus-ring">
+						Ballot
+					</NuxtLink>
+					<NuxtLink v-if="item.jurisdiction?.slug" :to="`/locations/${item.jurisdiction.slug}`" class="underline focus-ring">
+						Area
+					</NuxtLink>
+				</nav>
 			</article>
-		</div>
+		</template>
 	</section>
 </template>

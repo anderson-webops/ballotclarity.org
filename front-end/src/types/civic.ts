@@ -1483,6 +1483,7 @@ export interface GuidePackageRecord extends GuidePackageSummary {
 
 export interface GuidePackageListResponse {
 	packages: GuidePackageRecord[];
+	reviewOptions: { electionSlug: string; name: string; jurisdictionName: string }[];
 	updatedAt: string;
 }
 

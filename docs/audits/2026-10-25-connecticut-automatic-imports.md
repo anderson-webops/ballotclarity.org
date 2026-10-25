@@ -26,9 +26,12 @@ remain external to the release and repository.
 The `ct-sots-2026` source joins the existing configurable family mechanism.
 Actually offered November election dates produce bounded external catalog
 descriptors; no election paths, names or nominees are guessed. Candidate
-normalization for a synthetic 2030 election exercises the currently reviewed
-state-election layout. Presidential, municipal or otherwise changed office
-sets require layout review rather than extrapolating from current candidates.
+normalization for a synthetic 2030 election exercises the reviewed
+state-election layout. Additional [historical layout checks](2026-10-25-connecticut-future-layouts.md)
+cover printed presidential tickets, selected municipal multi-seat offices,
+small grids, question continuations and a fingerprinted instruction back.
+Unrecognized offices, parties or changed page content still require review
+rather than extrapolating from current candidates.
 
 The ordered town/revision index has its own digest. An added town or revised
 PDF invalidates a fresh candidate cache during cycle synchronization. Reordered

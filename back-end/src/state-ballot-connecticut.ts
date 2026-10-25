@@ -1,9 +1,11 @@
 import type { StateCandidateValues } from "./state-ballot-additional-records.js";
 import type { StateCandidateRecord, StateContestScope } from "./state-ballot-records.js";
 import type { StateBallotSource } from "./state-ballot-sources.js";
+import { createHash } from "node:crypto";
 import { connecticutBallotDocuments } from "./state-ballot-connecticut-documents.js";
 
 type Bounds = [number, number, number, number];
+export const connecticutInstructionPageSha256 = "aba1fa65c0a8fc0e807b1122040f8ddfe27d4904f8da931c06a5245c4da754fe";
 interface BallotCell {
 	bounds: Bounds;
 	text: string;
@@ -25,6 +27,7 @@ export interface ConnecticutBallotClaim {
 	position: string;
 	sourceOfficeLabel: string;
 	sourcePartyLabel: string;
+	ballotDesignation?: string;
 	cellBounds: Bounds;
 }
 
@@ -37,6 +40,8 @@ export interface ConnecticutBallotQuestion {
 }
 
 const offices = [
+	["presidentialelectorsfor", "Presidential Electors", "statewide"],
+	["unitedstatessenator", "United States Senator", "statewide"],
 	["governor", "Governor and Lieutenant Governor", "statewide"],
 	["representativeincongress", "Representative in Congress", "congressional"],
 	["statesenator", "State Senator", "state-senate"],
@@ -51,6 +56,13 @@ const offices = [
 	["registrarofvoters", "Registrar of Voters", "local"],
 	["boardofeducation", "Board of Education", "local"],
 	["representativetownmeeting", "Representative Town Meeting", "local"],
+	["townclerk", "Town Clerk", "local"],
+	["boardoffinance", "Board of Finance", "local"],
+	["planningandzoningcommission", "Planning and Zoning Commission", "local"],
+	["planningandzoningalternate", "Planning and Zoning Alternate", "local"],
+	["zoningboardofappealsalternate", "Zoning Board of Appeals Alternate", "local"],
+	["zoningboardofappeals", "Zoning Board of Appeals", "local"],
+	["boardoffirecommission", "Board of Fire Commission", "local"],
 ] as const;
 const partyNames: Readonly<Record<string, string>> = {
 	"democraticparty": "Democratic",
@@ -58,6 +70,8 @@ const partyNames: Readonly<Record<string, string>> = {
 	"workingfamiliesparty": "Working Families",
 	"independentparty": "Independent",
 	"greenparty": "Green",
+	"libertarianparty": "Libertarian",
+	"cheapergasgroceriesparty": "Cheaper Gas Groceries",
 	"newmovementparty": "New Movement",
 	"unitedcommunityparty": "United Community",
 	"workers'voiceparty": "Workers' Voice",
@@ -66,6 +80,7 @@ const partyNames: Readonly<Record<string, string>> = {
 	"nonpartisan": "Nonpartisan",
 	"write-invotes": "Write-in",
 	"write-invotesvotosporescrito": "Write-in",
+	"write-invotesvotosporescritos": "Write-in",
 };
 
 function object(value: unknown, keys: readonly string[]) {
@@ -94,7 +109,7 @@ function bounds(value: unknown, width: number, height: number): Bounds {
 	return value as Bounds;
 }
 
-function readCell(value: unknown, width: number, height: number): BallotCell {
+function readCell(value: unknown, width: number, height: number, centeredMarkers = false): BallotCell {
 	const cell = object(value, ["bounds", "text", "logicalText", "tags"]);
 	if (!Array.isArray(cell.tags) || cell.tags.length > 25)
 		throw new Error("The Connecticut ballot position markers are invalid.");
@@ -105,7 +120,7 @@ function readCell(value: unknown, width: number, height: number): BallotCell {
 		logicalText: text(cell.logicalText),
 		tags: cell.tags.map((value: unknown) => {
 			const tag = object(value, ["text", "top", "bottom"]);
-			if (typeof tag.top !== "number" || typeof tag.bottom !== "number" || !Number.isFinite(tag.top) || !Number.isFinite(tag.bottom) || tag.top >= tag.bottom || tag.top < rectangle[1] - 1 || tag.bottom > rectangle[3] + 1 || !/^\d{1,2}[A-Z]$/u.test(text(tag.text, 4)))
+			if (typeof tag.top !== "number" || typeof tag.bottom !== "number" || !Number.isFinite(tag.top) || !Number.isFinite(tag.bottom) || tag.top >= tag.bottom || tag.top < 0 || tag.bottom > height + 1 || (centeredMarkers ? (tag.top + tag.bottom) / 2 <= rectangle[1] || (tag.top + tag.bottom) / 2 >= rectangle[3] || tag.bottom - tag.top > rectangle[3] - rectangle[1] : tag.top < rectangle[1] - 1 || tag.bottom > rectangle[3] + 1) || !/^\d{1,2}[A-Z]$/u.test(text(tag.text, 4)))
 				throw new Error("The Connecticut ballot position marker is outside its cell.");
 			return { text: tag.text as string, top: tag.top, bottom: tag.bottom };
 		}),
@@ -122,7 +137,7 @@ function district(header: string, pattern: RegExp, maximum: number) {
 
 function printedVotingDistrict(header: string) {
 	const lines = header.split("\n");
-	const label = /Voting\s*Districts?(?:\/Distritos?\s*Electoral(?:es)?)?/iu;
+	const label = /Voting\s*Districts?(?:\s*\/\s*Distritos?(?:\s*Electoral(?:es)?)?\s*:?)?/iu;
 	const index = lines.findIndex(line => label.test(line));
 	if (index < 0) return undefined;
 	let value = lines[index]!.split(label)[1]?.trim() ?? "";
@@ -142,6 +157,7 @@ function printedVotingDistrict(header: string) {
 }
 
 export interface ConnecticutBallotConfiguration {
+	publishedOfficeSet?: true;
 	electionDate: string;
 	documents: ReadonlyArray<{ town: string; url: string; pageCount: number }>;
 	retainUnassignedDistrictClaims?: true;
@@ -149,10 +165,17 @@ export interface ConnecticutBallotConfiguration {
 
 const reviewedConfiguration: ConnecticutBallotConfiguration = { electionDate: "2026-11-03", documents: connecticutBallotDocuments };
 
+function officeDesignation(label: string) {
+	const vacancy = label.match(/\b(?:To\s+Fill\s+Vacancy|Unexpired)\b[\s\S]*?(?=\bVote\s+for\b|$)/iu)?.[0];
+	const vote = label.match(/\bVote\s+for\b[\s\S]*?(?=\/|\bVot[eo]\s+por\b|$)/iu)?.[0];
+	return [vacancy ? clean(vacancy) : "", vote && !/^votefor(?:one|1)(?:(?:vote|voto)poruno)?\.?$/u.test(fold(vote)) ? clean(vote) : ""].filter(Boolean).join("; ") || undefined;
+}
+
 export function extractConnecticutBallots(body: string, configuration = reviewedConfiguration) {
 	if (!/^20\d{2}-11-0[2-8]$/u.test(configuration.electionDate) || new Date(`${configuration.electionDate}T00:00:00Z`).getUTCDay() !== 2 || !configuration.documents.length || configuration.documents.length > 169 || new Set(configuration.documents.map(document => document.town)).size !== configuration.documents.length || configuration.documents.some(document => !/^[A-Z][A-Za-z ]{1,60}$/u.test(document.town) || !Number.isInteger(document.pageCount) || document.pageCount < 1 || document.pageCount > 50)) throw new Error("The Connecticut ballot extraction configuration is invalid.");
 	if (new TextEncoder().encode(body).length > 12 * 1024 * 1024 || new Set(configuration.documents.map(document => document.url)).size !== configuration.documents.length) throw new Error("The Connecticut ballot document set exceeds its bounds or repeats a URL.");
 	if (configuration.retainUnassignedDistrictClaims !== undefined && configuration.retainUnassignedDistrictClaims !== true) throw new Error("The Connecticut unassigned-claim policy requires explicit review.");
+	if (configuration.publishedOfficeSet !== undefined && configuration.publishedOfficeSet !== true) throw new Error("The Connecticut published office policy is invalid.");
 	for (const document of configuration.documents) {
 		const url = new URL(document.url);
 		if (url.origin !== "https://portal.ct.gov" || url.username || url.password || url.hash || !url.pathname.startsWith(`/-/media/sots/electionservices/town_ballots/${configuration.electionDate.slice(0, 4)}/`) || !url.pathname.endsWith(".pdf")) throw new Error("The Connecticut ballot document URL does not match its official election.");
@@ -170,31 +193,61 @@ export function extractConnecticutBallots(body: string, configuration = reviewed
 		if (document.url !== configured.url || document.town !== configured.town || document.pageCount !== configured.pageCount || !Array.isArray(document.pages) || document.pages.length !== configured.pageCount)
 			throw new Error("The Connecticut ballot document identity or page count has changed.");
 		for (const [pageIndex, value] of document.pages.entries()) {
-			const page = object(value, ["number", "width", "height", "headerText", "cells"]);
-			if (page.number !== pageIndex + 1 || typeof page.width !== "number" || typeof page.height !== "number" || !Number.isFinite(page.width) || !Number.isFinite(page.height) || page.width < 600 || page.width > 1600 || page.height < 400 || page.height > 1200 || !Array.isArray(page.cells) || page.cells.length < 30 || page.cells.length > 300)
+			const page = object(value, ["number", "width", "height", "headerText", "cells", "pageKind"]);
+			const questionPage = configuration.publishedOfficeSet && page.pageKind === "questions-only";
+			const instructionPage = configuration.publishedOfficeSet && page.pageKind === "instructions-only";
+			if (page.pageKind !== undefined && !questionPage && !instructionPage) throw new Error("The Connecticut page classification requires review.");
+			if (page.number !== pageIndex + 1 || typeof page.width !== "number" || typeof page.height !== "number" || !Number.isFinite(page.width) || !Number.isFinite(page.height) || page.width < 600 || page.width > 1600 || page.height < 400 || page.height > 1200 || !Array.isArray(page.cells) || page.cells.length < (instructionPage ? 0 : questionPage ? 1 : configuration.publishedOfficeSet ? 6 : 30) || page.cells.length > 300)
 				throw new Error("The Connecticut ballot page is incomplete or has changed geometry.");
+			if (instructionPage) {
+				if (pageIndex === 0 || pageIndex !== document.pages.length - 1 || page.cells.length || createHash("sha256").update(text(page.headerText, 10000)).digest("hex") !== connecticutInstructionPageSha256) throw new Error("The Connecticut instruction page does not match the reviewed final-page template.");
+				pageCount += 1;
+				continue;
+			}
 			const headerText = text(page.headerText);
 			const header = headerText.split("\n").map(fold).join("\n");
 			const printedTown = configured.town === "Westbrook" && configuration.electionDate === "2026-11-03" ? "Westbroook" : configured.town;
-			const townPattern = new RegExp(`(?:^|\\n)${printedTown.replace(/ /gu, "\\s+")}\\s*(?:,|\\n|Connecticut\\b)`, "iu");
+			const townPattern = new RegExp(`(?:^|${configuration.publishedOfficeSet ? "\\s" : "\\n"})${printedTown.replace(/ /gu, "\\s+")}\\s*(?:,|\\n|Connecticut\\b)`, "iu");
 			if (!header.includes(`november${Number(configuration.electionDate.slice(-2))},${configuration.electionDate.slice(0, 4)}`) || !/\bConnecticut\b/u.test(headerText) || !townPattern.test(headerText))
 				throw new Error("The Connecticut ballot header does not identify its town and configured election.");
+			if (questionPage) {
+				if (!/Questions\s+Continued/iu.test(headerText)) throw new Error("The Connecticut continuation page has no question heading.");
+				for (const value of page.cells) {
+					const cell = readCell(value, page.width, page.height);
+					if (cell.tags.length || !/^\d+\.\s*["“]?Shall\b/iu.test(cell.text) || !/\bYES\b/u.test(cell.text) || !/\bNO\b/u.test(cell.text)) throw new Error("The Connecticut question-only page contains unclassified content.");
+					questions.push({ documentIndex, page: page.number as number, town: configured.town, text: clean(cell.text), cellBounds: cell.bounds });
+				}
+				pageCount += 1;
+				continue;
+			}
 			const unassigned = configuration.retainUnassignedDistrictClaims && !/congressionaldistrict|senatorialdistrict|assemblydistrict/u.test(header);
-			const congressional = unassigned ? "" : district(header, /congressionaldistrict(?:\/distritocongresional)?(\d+)/gu, 5);
-			const senate = unassigned ? "" : district(header, /senatorialdistrict(?:\/distritosenatorial)?(\d+)/gu, 36);
-			const house = unassigned ? "" : district(header, /assemblydistrict(?:\/distritodelaasamblea)?(\d+)/gu, 151);
+			const congressional = unassigned ? "" : district(header, /congressionaldistrict(?:\/distritocongresional|\/distrito:)?(\d+)/gu, 5);
+			const senate = unassigned ? "" : district(header, /senatorialdistrict(?:\/distritosenatorial|\/distrito:)?(\d+)/gu, 36);
+			const house = unassigned ? "" : district(header, /assemblydistrict(?:\/distritodelaasamblea|\/distrito:)?(\d+)/gu, 151);
 			const votingDistrict = printedVotingDistrict(headerText);
-			const cells = page.cells.map(value => readCell(value, page.width as number, page.height as number));
+			const cells = page.cells.map(value => readCell(value, page.width as number, page.height as number, configuration.publishedOfficeSet));
 			const partyHeaders = cells.filter(cell => /office/u.test(fold(cell.text)) && /party/u.test(fold(cell.text)) && cell.text.length < 100);
 			if (partyHeaders.length !== 1) throw new Error("The Connecticut ballot party header is missing or ambiguous.");
 			const partyHeader = partyHeaders[0]!;
-			const officeCells = cells.filter(cell => Math.abs(cell.bounds[1] - partyHeader.bounds[1]) < 1 && Math.abs(cell.bounds[3] - partyHeader.bounds[3]) < 1 && cell.bounds[0] > partyHeader.bounds[2] - 1).map((cell) => {
+			const officeCells = cells.filter(cell => (configuration.publishedOfficeSet ? cell.bounds[1] >= partyHeader.bounds[1] - 1 && cell.bounds[1] < partyHeader.bounds[3] && Boolean(clean(cell.text)) : Math.abs(cell.bounds[1] - partyHeader.bounds[1]) < 1) && Math.abs(cell.bounds[3] - partyHeader.bounds[3]) < 1 && cell.bounds[0] > partyHeader.bounds[2] - 1).map((cell) => {
 				const label = fold(cell.text).replace(/^\d+/u, "");
 				const matched = offices.find(([prefix]) => label.startsWith(prefix));
 				if (!matched) throw new Error("The Connecticut ballot office header has changed.");
-				return { cell, office: matched[1], scope: matched[2] };
+				return { cell, office: matched[1] as string, scope: matched[2], ballotDesignation: configuration.publishedOfficeSet ? officeDesignation(cell.text) : undefined };
 			});
-			for (const office of ["Governor and Lieutenant Governor", "Representative in Congress", "State Senator", "State Representative", "Secretary of the State", "Treasurer", "Comptroller", "Attorney General", "Judge of Probate"]) {
+			if (configuration.publishedOfficeSet) {
+				for (const office of new Set(officeCells.map(item => item.office))) {
+					const repeated = officeCells.filter(item => item.office === office);
+					if (repeated.length < 2) continue;
+					if (new Set(repeated.map(item => item.ballotDesignation ?? "")).size !== repeated.length) throw new Error("The Connecticut repeated office has no distinct printed term or vote designation.");
+					for (const item of repeated) {
+						if (item.ballotDesignation) item.office = `${office} (${item.ballotDesignation})`;
+					}
+				}
+			}
+			const requiredOffices = configuration.publishedOfficeSet ? officeCells.some(item => item.scope !== "local") ? ["Representative in Congress", "State Senator", "State Representative"] : [] : ["Governor and Lieutenant Governor", "Representative in Congress", "State Senator", "State Representative", "Secretary of the State", "Treasurer", "Comptroller", "Attorney General", "Judge of Probate"];
+			if (!officeCells.length) throw new Error("The Connecticut ballot has no named offices.");
+			for (const office of requiredOffices) {
 				if (officeCells.filter(item => item.office === office).length !== 1) throw new Error("The Connecticut ballot office set is incomplete.");
 			}
 			const partyCells = cells.filter(cell => Math.abs(cell.bounds[0] - partyHeader.bounds[0]) < 1 && Math.abs(cell.bounds[2] - partyHeader.bounds[2]) < 1 && cell.bounds[1] > partyHeader.bounds[1] + 1).map((cell) => {
@@ -203,7 +256,7 @@ export function extractConnecticutBallots(body: string, configuration = reviewed
 				if (recognized.length !== 1) throw new Error("The Connecticut ballot party label is unknown or inconsistent.");
 				return { cell, party: recognized[0]! };
 			});
-			if (!partyCells.some(item => item.party === "Write-in") || !["Democratic", "Republican", "Working Families"].every(party => partyCells.some(item => item.party === party)))
+			if (!partyCells.some(item => item.party === "Write-in") || !(configuration.publishedOfficeSet ? partyCells.some(item => item.party && item.party !== "Write-in") : ["Democratic", "Republican", "Working Families"].every(party => partyCells.some(item => item.party === party))))
 				throw new Error("The Connecticut ballot party rows are incomplete.");
 			for (const cell of cells) {
 				if (cell === partyHeader || officeCells.some(item => item.cell === cell) || partyCells.some(item => item.cell === cell) || !clean(cell.text)) continue;
@@ -221,7 +274,7 @@ export function extractConnecticutBallots(body: string, configuration = reviewed
 				const position = body.match(/^(\d{1,2})\s*([A-Z])(?:\s+|$)([\s\S]*)/u);
 				if (!position || !clean(position[3]!)) throw new Error("The Connecticut named ballot cell has no unambiguous position label.");
 				const marker = cell.tags[0];
-				if (!marker || marker.text !== `${position[1]}${position[2]}`) throw new Error("The Connecticut ballot position geometry is inconsistent.");
+				if (!marker || cell.tags.length !== 1 || marker.text !== `${position[1]}${position[2]}`) throw new Error("The Connecticut ballot position geometry is inconsistent.");
 				const markerY = (marker.top + marker.bottom) / 2;
 				const partyMatches = partyCells.filter(item => markerY > item.cell.bounds[1] && markerY < item.cell.bounds[3]);
 				if (officeMatches.length !== 1 || partyMatches.length !== 1 || partyMatches[0]!.party === "Write-in") throw new Error("The Connecticut candidate does not match its physical office and party cell.");
@@ -229,6 +282,7 @@ export function extractConnecticutBallots(body: string, configuration = reviewed
 				const name = clean(position[3]!);
 				if (name.length > 250 || !/\p{L}/u.test(name)) throw new Error("The Connecticut ballot name is invalid.");
 				if (office.office === "Governor and Lieutenant Governor" && !/\band\b/iu.test(name)) throw new Error("The Connecticut governor ticket does not identify its running mate.");
+				if (office.office === "Presidential Electors" && !/\band\b/iu.test(name)) throw new Error("The Connecticut presidential ticket does not identify its paired choice.");
 				if (office.office === "Representative Town Meeting" && !votingDistrict) throw new Error("The local town-meeting ballot is missing its printed voting area.");
 				claims.push({
 					documentIndex,
@@ -244,6 +298,7 @@ export function extractConnecticutBallots(body: string, configuration = reviewed
 					position: `${position[1]}${position[2]}`,
 					sourceOfficeLabel: clean(office.cell.text),
 					sourcePartyLabel: clean(partyMatches[0]!.cell.logicalText),
+					...(office.ballotDesignation ? { ballotDesignation: office.ballotDesignation } : {}),
 					cellBounds: cell.bounds,
 				});
 			}
@@ -265,7 +320,7 @@ function printedName(claim: ConnecticutBallotClaim, electionDate: string) {
 
 export function reconcileConnecticutBallots(body: string, configuration = reviewedConfiguration) {
 	const extracted = extractConnecticutBallots(body, configuration);
-	const groups = new Map<string, { value: StateCandidateValues; parties: Set<string>; claimIndexes: number[] }>();
+	const groups = new Map<string, { value: StateCandidateValues; parties: Set<string>; claimIndexes: number[]; ballotDesignation?: string }>();
 	const singleChoice = new Map<string, Set<string>>();
 	const unassignedClaimIndexes: number[] = [];
 	for (const [index, claim] of extracted.claims.entries()) {
@@ -276,7 +331,8 @@ export function reconcileConnecticutBallots(body: string, configuration = review
 		const name = printedName(claim, configuration.electionDate);
 		const nameKey = name.toLowerCase().replace(/[\s.'’‘"]/gu, "");
 		const key = JSON.stringify([claim.office, claim.district, claim.jurisdiction ?? "", nameKey]);
-		const group = groups.get(key) ?? { value: { name, office: claim.office, party: "", scope: claim.scope, district: claim.district, jurisdiction: claim.jurisdiction, status: "listed" }, parties: new Set<string>(), claimIndexes: [] };
+		const group = groups.get(key) ?? { value: { name, office: claim.office, party: "", scope: claim.scope, district: claim.district, jurisdiction: claim.jurisdiction, status: "listed" }, parties: new Set<string>(), claimIndexes: [], ballotDesignation: claim.ballotDesignation };
+		if (fold(group.ballotDesignation ?? "") !== fold(claim.ballotDesignation ?? "")) throw new Error("The Connecticut repeated candidate has conflicting printed vote or term information.");
 		if (claim.party) group.parties.add(claim.party);
 		group.claimIndexes.push(index);
 		groups.set(key, group);
@@ -288,7 +344,7 @@ export function reconcileConnecticutBallots(body: string, configuration = review
 			singleChoice.set(partyKey, names);
 		}
 	}
-	const records = [...groups.values()].map(group => ({ value: { ...group.value, party: [...group.parties].join(" / ") }, claimIndexes: group.claimIndexes }));
+	const records = [...groups.values()].map(group => ({ value: { ...group.value, party: [...group.parties].join(" / ") }, claimIndexes: group.claimIndexes, ...(group.ballotDesignation ? { ballotDesignation: group.ballotDesignation } : {}) }));
 	return { ...extracted, records, unassignedClaimIndexes };
 }
 

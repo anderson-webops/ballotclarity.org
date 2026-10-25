@@ -76,7 +76,9 @@ export function readConnecticutTownDocuments(body: string, election: Connecticut
 	validateConnecticutElection(election);
 	const region = main(body);
 	const date = `November ${Number(election.electionDate.slice(-2))}, ${election.electionDate.slice(0, 4)}`;
-	if (!stateHtmlDescendants(region, node => node.nodeName === "h1").some(node => text(node) === date) || !/Sample\s+Town Ballots/u.test(text(region))) throw new Error("The Connecticut town index does not identify its election.");
+	const dateHeadings = stateHtmlDescendants(region, node => ["h1", "h3"].includes(node.nodeName) && text(node) === date);
+	const captions = stateHtmlDescendants(region, node => ["h1", "h2"].includes(node.nodeName)).map(text);
+	if (dateHeadings.length !== 1 || !captions.some(caption => ["State Election Sample Town Ballots", "General Election Sample Ballots"].includes(caption))) throw new Error("The Connecticut town index does not identify its election.");
 	const documents: ConnecticutTownDocument[] = [];
 	for (const anchor of stateHtmlDescendants(region, node => node.nodeName === "a")) {
 		const href = stateHtmlAttribute(anchor, "href");

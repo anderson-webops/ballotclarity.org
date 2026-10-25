@@ -45,8 +45,11 @@ replay yields 813 candidate/context records while preserving all 709 existing
 IDs and fields. The candidate worker additionally uses `STATE_BALLOT_PDFTOCAIRO`;
 persisted API reads remain converter-free. Rolling index digests trigger fresh
 imports when towns or revision URLs change, and the first migration retains an
-exact compatible legacy envelope. Unknown future layouts and 47 claims lacking
-printed district identifiers remain review holds. See
+exact compatible legacy envelope. Historical presidential and selected municipal
+layouts additionally retain multi-seat instructions and vacancy terms without
+inventing future candidates. Small grids, question continuations and an exact
+instruction-page template have explicit classifications; other page changes and
+47 claims lacking printed district identifiers remain review holds. See
 `docs/audits/2026-10-25-connecticut-automatic-imports.md`.
 
 Missouri and New Jersey now support policy-bound automatic candidate collection

@@ -1,4 +1,5 @@
 import { Buffer } from "node:buffer";
+import { createHash } from "node:crypto";
 import { parseStateHtml, stateHtmlAttribute, stateHtmlDescendants, stateHtmlText } from "./state-ballot-html.js";
 import { extractStateBallotPdfSvg, extractStateBallotPdfText, resolveStateBallotPdfExtractor, resolveStateBallotPdfSvgExtractor, stateBallotPdfCollectorContract } from "./state-ballot-pdf.js";
 
@@ -6,6 +7,7 @@ type Rectangle = [number, number, number, number];
 interface Edge { axis: "h" | "v"; position: number; start: number; end: number }
 interface Word { text: string; left: number; top: number; right: number; bottom: number }
 export interface StateBallotGridPage {
+	pageKind?: "questions-only" | "instructions-only";
 	number: number;
 	width: number;
 	height: number;
@@ -24,7 +26,7 @@ export const stateBallotPdfGridContract = Object.freeze({
 	role: "bounded collection worker; no network or script execution while reading geometry",
 });
 
-function svgRectangles(body: string, width: number, height: number): Rectangle[] {
+function svgRectangles(body: string, width: number, height: number, minimumCells = 30): Rectangle[] {
 	if (Buffer.byteLength(body) > stateBallotPdfGridContract.maximumSvgBytes) throw new Error("The ballot grid SVG exceeds its bounds.");
 	const document = parseStateHtml(body);
 	const roots = stateHtmlDescendants(document, node => node.nodeName === "svg");
@@ -127,7 +129,7 @@ function svgRectangles(body: string, width: number, height: number): Rectangle[]
 			}
 		}
 	}
-	if (cells.length < 30 || cells.length > 500) throw new Error("The ballot grid cell count is outside its bounds.");
+	if (cells.length < minimumCells || cells.length > 500) throw new Error("The ballot grid cell count is outside its bounds.");
 	return cells;
 }
 
@@ -158,16 +160,39 @@ function readWordPages(body: string) {
 	});
 }
 
-export function readStateBallotPdfGrid(wordCorpus: string, drawings: string[]): StateBallotGridPage[] {
+interface GridOptions { allowSmallCandidateGrids?: true; allowQuestionPages?: true; instructionPageTextSha256?: string }
+
+export function readStateBallotPdfGrid(wordCorpus: string, drawings: string[], options: GridOptions = {}): StateBallotGridPage[] {
+	if ((options.allowSmallCandidateGrids !== undefined && options.allowSmallCandidateGrids !== true) || (options.allowQuestionPages !== undefined && options.allowQuestionPages !== true)) throw new Error("The ballot grid layout policy is invalid.");
+	if (options.instructionPageTextSha256 !== undefined && !/^[a-f0-9]{64}$/u.test(options.instructionPageTextSha256)) throw new Error("The ballot instruction-page policy is invalid.");
 	const pages = readWordPages(wordCorpus);
 	if (drawings.length !== pages.length) throw new Error("The ballot grid drawing set is incomplete.");
 	return pages.map(({ width, height, words }, index) => {
-		const entries = svgRectangles(drawings[index]!, width, height).map((bounds) => {
+		const entries = svgRectangles(drawings[index]!, width, height, options.allowSmallCandidateGrids || options.allowQuestionPages ? 3 : 30).map((bounds) => {
 			const inside = words.filter(word => (word.left + word.right) / 2 > bounds[0] - 0.2 && (word.left + word.right) / 2 < bounds[2] + 0.2 && (word.top + word.bottom) / 2 > bounds[1] - 0.2 && (word.top + word.bottom) / 2 < bounds[3] + 0.2);
 			return { bounds, text: lines(inside), logicalText: inside.map(word => word.text).join(" "), tags: inside.filter(word => /^\d{1,2}[A-Z]$/u.test(word.text)).map(word => ({ text: word.text, top: word.top, bottom: word.bottom })) };
 		});
 		const anchors = entries.filter(cell => /office/iu.test(cell.text) && /party/iu.test(cell.text) && cell.text.length < 100);
-		if (anchors.length !== 1) throw new Error("The ballot grid has no unique Office/Party anchor.");
+		const pageText = lines(words);
+		if (options.instructionPageTextSha256 && createHash("sha256").update(pageText).digest("hex") === options.instructionPageTextSha256) {
+			return { number: index + 1, width, height, pageKind: "instructions-only", headerText: pageText, cells: [] };
+		}
+		if (!anchors.length && options.allowQuestionPages && /Questions\s+Continued/iu.test(lines(words))) {
+			const questions = entries.filter(cell => /^\d+\.\s*["“]?Shall\b/iu.test(cell.text) && /\bYES\b/u.test(cell.text) && /\bNO\b/u.test(cell.text) && !cell.tags.length);
+			const cells = questions.filter(cell => !questions.some(other => other !== cell && other.bounds[0] >= cell.bounds[0] - 0.1 && other.bounds[1] >= cell.bounds[1] - 0.1 && other.bounds[2] <= cell.bounds[2] + 0.1 && other.bounds[3] <= cell.bounds[3] + 0.1));
+			if (!cells.length || cells.length > 99 || cells.some(cell => cell.text.length > 2000) || words.some(word => /^\d{1,2}[A-Z]$/u.test(word.text))) throw new Error("The continued-question page requires review.");
+			const firstQuestion = Math.min(...cells.map(cell => cell.bounds[1]));
+			const lastQuestion = Math.max(...cells.map(cell => cell.bounds[3]));
+			const footer = words.filter(word => (word.top + word.bottom) / 2 > lastQuestion);
+			if (footer.length && lines(footer) !== "YOU HAVE NOW COMPLETED VOTING") throw new Error("The continued-question page has an unrecognized footer.");
+			for (const word of words.filter(word => (word.top + word.bottom) / 2 >= firstQuestion)) {
+				if (footer.includes(word)) continue;
+				const matches = cells.filter(cell => (word.left + word.right) / 2 > cell.bounds[0] - 0.2 && (word.left + word.right) / 2 < cell.bounds[2] + 0.2 && (word.top + word.bottom) / 2 > cell.bounds[1] - 0.2 && (word.top + word.bottom) / 2 < cell.bounds[3] + 0.2);
+				if (matches.length !== 1) throw new Error("The continued-question page has unaccounted or ambiguous text.", { cause: { page: index + 1, word: word.text, bounds: [word.left, word.top, word.right, word.bottom], matches: matches.length } });
+			}
+			return { number: index + 1, width, height, pageKind: "questions-only", headerText: lines(words.filter(word => word.bottom < firstQuestion + 0.5)), cells };
+		}
+		if (anchors.length !== 1) throw new Error("The ballot grid has no unique Office/Party anchor.", { cause: { page: index + 1, header: lines(words).slice(0, 200) } });
 		const anchor = anchors[0]!;
 		const frames = entries.filter(cell => cell !== anchor && cell.bounds[0] <= anchor.bounds[0] && cell.bounds[1] < anchor.bounds[1] && entries.filter(other => other !== cell && other.bounds[0] >= cell.bounds[0] - 0.1 && other.bounds[1] >= cell.bounds[1] - 0.1 && other.bounds[2] <= cell.bounds[2] + 0.1 && other.bounds[3] <= cell.bounds[3] + 0.1).length >= 30);
 		const eligible = entries.filter(cell => !frames.includes(cell));
@@ -178,7 +203,7 @@ export function readStateBallotPdfGrid(wordCorpus: string, drawings: string[]): 
 				if (!selected.has(cell) && corners(current.bounds).some(first => corners(cell.bounds).some(second => Math.abs(first[0]! - second[0]!) < 1 && Math.abs(first[1]! - second[1]!) < 1))) selected.add(cell);
 			}
 		}
-		if (selected.size < 30 || selected.size > 300) throw new Error("The connected ballot grid cell count requires review.");
+		if (selected.size < (options.allowSmallCandidateGrids ? 6 : 30) || selected.size > 300) throw new Error("The connected ballot grid cell count requires review.");
 		const cells = eligible.filter(cell => selected.has(cell));
 		for (const cell of cells) {
 			if (cell.text.length > 2000 || cell.logicalText.length > 2000 || cell.tags.length > 25 || cells.some(other => other !== cell && other.bounds[0] > cell.bounds[0] + 1 && other.bounds[1] > cell.bounds[1] + 1 && other.bounds[2] < cell.bounds[2] - 1 && other.bounds[3] < cell.bounds[3] - 1)) throw new Error("The connected ballot grid has ambiguous or oversized cells.");
@@ -191,7 +216,7 @@ export function readStateBallotPdfGrid(wordCorpus: string, drawings: string[]): 
 	});
 }
 
-export async function extractStateBallotPdfGrid(bytes: Buffer, options: { textExecutable?: string; svgExecutable?: string } = {}) {
+export async function extractStateBallotPdfGrid(bytes: Buffer, options: { textExecutable?: string; svgExecutable?: string } & GridOptions = {}) {
 	const startedAt = Date.now();
 	const textExecutable = options.textExecutable ?? await resolveStateBallotPdfExtractor();
 	const svgExecutable = options.svgExecutable ?? await resolveStateBallotPdfSvgExtractor();
@@ -203,7 +228,7 @@ export async function extractStateBallotPdfGrid(bytes: Buffer, options: { textEx
 		if (remaining <= 0) throw new Error("The ballot grid document exceeded its time budget.");
 		drawings.push(await extractStateBallotPdfSvg(bytes, svgExecutable, index + 1, Math.min(remaining, stateBallotPdfCollectorContract.timeoutMs)));
 	}
-	const result = readStateBallotPdfGrid(wordCorpus, drawings);
+	const result = readStateBallotPdfGrid(wordCorpus, drawings, options);
 	if (Date.now() - startedAt > stateBallotPdfGridContract.maximumDocumentMs) throw new Error("The ballot grid document exceeded its time budget.");
 	return result;
 }

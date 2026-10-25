@@ -5,7 +5,7 @@ import type { StateCandidateRecord } from "./state-ballot-records.js";
 import type { StateBallotSource } from "./state-ballot-sources.js";
 import { Buffer } from "node:buffer";
 import { connecticutDigest, connecticutExactKeys, connecticutIndexDigest, fetchConnecticutCycleDiscovery, readConnecticutDiscovery, validateConnecticutSource } from "./state-ballot-connecticut-discovery.js";
-import { reconcileConnecticutBallots } from "./state-ballot-connecticut.js";
+import { connecticutInstructionPageSha256, reconcileConnecticutBallots } from "./state-ballot-connecticut.js";
 import { extractStateBallotPdfGrid } from "./state-ballot-pdf-grid.js";
 import { fetchStateBallotPdfDocument, resolveStateBallotPdfExtractor, resolveStateBallotPdfSvgExtractor } from "./state-ballot-pdf.js";
 
@@ -21,7 +21,7 @@ function capturedPages(document: CapturedDocument, electionDate: string) {
 	const pages = JSON.parse(document.text) as StateBallotGridPage[];
 	if (!Array.isArray(pages) || !pages.length || pages.length > 50) throw new Error("The Connecticut captured page set exceeds its bounds.");
 	const ballot = { town: document.town, url: document.url, pageCount: pages.length, pages };
-	reconcileConnecticutBallots(JSON.stringify({ documents: [ballot] }), { electionDate, documents: [{ town: ballot.town, url: ballot.url, pageCount: ballot.pageCount }], retainUnassignedDistrictClaims: true });
+	reconcileConnecticutBallots(JSON.stringify({ documents: [ballot] }), { electionDate, documents: [{ town: ballot.town, url: ballot.url, pageCount: ballot.pageCount }], retainUnassignedDistrictClaims: true, publishedOfficeSet: true });
 	return ballot;
 }
 export async function fetchConnecticutCandidateCapture(source: StateBallotSource, options: ConnecticutCaptureOptions = {}) {
@@ -34,7 +34,7 @@ export async function fetchConnecticutCandidateCapture(source: StateBallotSource
 	const documents: CapturedDocument[] = [];
 	for (const document of offered.documents) {
 		await (options.wait ?? (delay => new Promise(resolve => setTimeout(resolve, delay))))(11000);
-		const captured = { town: document.town, ...await fetchStateBallotPdfDocument(document.url, { allowedHosts: ["portal.ct.gov"], request: options.requestDocument, extractor: async bytes => JSON.stringify(await (options.extractor ? options.extractor(bytes) : extractStateBallotPdfGrid(bytes, { textExecutable, svgExecutable }))), now: options.now }) };
+		const captured = { town: document.town, ...await fetchStateBallotPdfDocument(document.url, { allowedHosts: ["portal.ct.gov"], request: options.requestDocument, extractor: async bytes => JSON.stringify(await (options.extractor ? options.extractor(bytes) : extractStateBallotPdfGrid(bytes, { textExecutable, svgExecutable, allowSmallCandidateGrids: true, allowQuestionPages: true, instructionPageTextSha256: connecticutInstructionPageSha256 }))), now: options.now }) };
 		capturedPages(captured, source.electionDate);
 		documents.push(captured);
 		if (Buffer.byteLength(JSON.stringify({ discovery, documents })) > 12 * 1024 * 1024 - 1024) throw new Error("The Connecticut candidate capture exceeds its bounds.");
@@ -54,14 +54,15 @@ export function parseConnecticutCandidateCapture(source: StateBallotSource, body
 		return document as unknown as CapturedDocument;
 	});
 	const documents = captured.map(document => capturedPages(document, source.electionDate));
-	const result = reconcileConnecticutBallots(JSON.stringify({ documents }), { electionDate: source.electionDate, documents: documents.map(({ town, url, pageCount }) => ({ town, url, pageCount })), retainUnassignedDistrictClaims: true });
+	const result = reconcileConnecticutBallots(JSON.stringify({ documents }), { electionDate: source.electionDate, documents: documents.map(({ town, url, pageCount }) => ({ town, url, pageCount })), retainUnassignedDistrictClaims: true, publishedOfficeSet: true });
 	const identity = (record: StateCandidateValues | StateCandidateRecord) => JSON.stringify([record.scope, record.office, record.district, record.jurisdiction ?? "", record.name.toLowerCase().replace(/[\s.'’‘"]/gu, ""), (record.party ?? "").split(" / ").sort()]);
 	const previousValues = new Map(previous.map(record => [identity(record), record]));
-	const records = result.records.map(({ value }) => {
+	const records = result.records.map(({ value, ballotDesignation }) => {
 		const prior = previousValues.get(identity(value));
 		const record = factory(source, prior ? { ...value, name: prior.name, party: prior.party ?? "" } : value);
 		if (!record) throw new Error("The Connecticut candidate record is incomplete.");
 		record.sourceStatus = "Printed sample ballot";
+		if (ballotDesignation) record.ballotDesignation = ballotDesignation;
 		return record;
 	});
 	const provenance = captured.map(({ town, url, sha256, retrievedAt }, position) => ({ town, url, sha256, retrievedAt, includedRecordCount: result.records.filter(record => result.claims[record.claimIndexes[0]!]!.documentIndex === position).length }));

@@ -4,7 +4,7 @@ External election catalogs opt the automatic candidate repository into reusable
 source families. Without them, the existing 56 source
 definitions, source ordering and source/state allowlists remain unchanged.
 
-Four families are supported:
+Five families are supported:
 
 | Family | Discovery | Elections |
 | --- | --- | --- |
@@ -12,17 +12,32 @@ Four families are supported:
 | `mt-general-2026` | [Montana candidate list](https://candidatefiling.mt.gov/candidatefiling/CandidateList.aspx) | Federal general elections in even years |
 | `ms-sos-2026` | [Mississippi qualifying list](https://www.sos.ms.gov/content/CandidateQualifying/default.aspx) | Explicitly dated November general-election records |
 | `wy-sos-2026` | [Wyoming election center](https://sos.wyo.gov/elections/default.aspx) | Explicitly dated even-year general elections with matching CSV/PDF roster links |
+| `de-doe-2026` | [Delaware candidate index](https://elections.delaware.gov/candidates/candidatelist/) | Explicitly dated even-year statewide general-election roster links |
 
 Stable family identifiers retain their original descriptor bindings; future
 instances do not require editing those descriptors. Discovery reads the official election selector or an explicit published general-election date,
 not a predicted URL, numerical election-ID sequence or computed election date.
 Primary, special and conservation elections are outside these families.
 Selector-based discovery permits one HTTPS redirect within the approved official
-host to its current election. Wyoming's landing page and candidate roster use
+host to its current election. Wyoming and Delaware discovery and candidate reads use
 zero redirects. Candidate-specific downloads retain their zero-redirect,
 exact-election checks.
 
 ## Data contract
+
+Delaware discovery requires the official candidate-index heading and dated
+`Statewide General` links to matching year-specific HTML rosters. Collection
+independently checks the roster's exact general-election heading, complete table
+and six public fields. Undated, duplicate, conflicting, primary, redirected and
+off-host replacements fail closed. A year is never used to calculate an election
+date or guess whether an unpublished roster exists.
+
+Delaware's published county field now distinguishes local candidate records.
+This changes derived IDs for the 28 local rows in the verified 128-record 2026
+roster, while preserving the other candidate facts. Accepted snapshots retain
+their bytes until a successful refresh. County labels alone do not establish
+personal ballot eligibility. Private addresses and contact fields remain excluded;
+filing and qualification statuses remain distinct.
 
 Wyoming discovery reconciles the explicit general-election date, the matching
 election-information section and both published roster links. The roster's
@@ -51,7 +66,7 @@ The version-one catalog contains exactly:
 - `discovery`: the fixed official landing URL, response SHA-256 and original
   retrieval time.
 - `elections`: explicit official `electionId` and ISO `electionDate` pairs.
-  Mississippi and Wyoming have no published numeric election ID in these reports,
+  Mississippi, Wyoming and Delaware have no published numeric election ID in these reports,
   so their `electionId` is exactly `null`. A date-derived fake ID is never substituted.
 
 The family controls the HTTPS origin, path, parser, scope limitations and general
@@ -61,8 +76,8 @@ identities, unsupported dates, future capture times, unknown fields, symlinked
 files and oversized/nonregular files are rejected.
 
 The original November 2026 election retains its existing identifier and stored
-snapshot binding. New instance identifiers use `wa-general-YYYY-MM-DD` or
-`mt-general-YYYY-MM-DD` or `ms-general-YYYY-MM-DD`; source
+snapshot binding. New instance identifiers use each family's prefix, followed by
+`YYYY-MM-DD`, for example `de-general-2028-11-07`; source
 labels include the election year to distinguish cycles. Every fetched candidate
 page must independently select the exact official election ID
 and date, expose the expected unfiltered controls and reconcile all pages and
@@ -101,7 +116,7 @@ family/file contents are rejected. The existing enabled-state and exact enabled-
 remain operative. An exact source-ID allowlist intentionally does not opt into
 all future elections.
 
-`STATE_BALLOT_ENABLED_FAMILIES=wa-general-2026,mt-general-2026,ms-sos-2026,wy-sos-2026` explicitly opts into
+`STATE_BALLOT_ENABLED_FAMILIES=wa-general-2026,mt-general-2026,ms-sos-2026,wy-sos-2026,de-doe-2026` explicitly opts into
 those families' current and future instances alongside an existing exact source-ID
 allowlist. Each family's state must remain in any enabled-state filter. One family
 cannot widen another family's exact source filter and
@@ -135,7 +150,7 @@ provide archive browsing, and this work adds no archival API.
 
 ## Boundaries
 
-These are three source families, not nationwide future-election automation.
+These are five source families, not nationwide future-election automation.
 Other adapters still have cycle-specific discovery or parsing work. Reviewed
 PDF/image conversion, measure interpretation, independently verified geography,
 rights review, ballot publication, archival browsing, host scheduling, monitoring
@@ -147,6 +162,7 @@ Validation includes retained Washington and Montana 2026 data, Montana's current
 official landing/selector, Mississippi's current public form/CSV and all 190
 dated records, an explicitly synthetic Mississippi 2027 cycle and synthetic
 Washington/Montana 2028 cycles.
-Synthetic fixtures test discovery through cold API reads, idempotence, election
+Delaware validation reconciles all 128 current public rows and independently
+tests a synthetic 2028 discovery and roster. Synthetic fixtures test discovery through cold API reads, idempotence, election
 isolation and failure preservation; they make no claim about actual 2028
 publication, candidate identities or official election IDs.

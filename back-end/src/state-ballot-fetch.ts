@@ -1,7 +1,7 @@
 import type { StateBallotSource } from "./state-ballot-sources.js";
 import { Buffer } from "node:buffer";
 import { fetchRemoteSourceText } from "./remote-json-source.js";
-import { getStateBallotCycleFamily, readMississippiGeneralElectionDate, validStateBallotGeneralDate, wyomingCandidateRosterUrl } from "./state-ballot-cycles.js";
+import { delawareCandidateRosterUrl, getStateBallotCycleFamily, readMississippiGeneralElectionDate, validStateBallotGeneralDate, wyomingCandidateRosterUrl } from "./state-ballot-cycles.js";
 import { parseStateHtml, stateHtmlAttribute, stateHtmlDescendants, stateHtmlText } from "./state-ballot-html.js";
 import { buildSouthCarolinaSearchForm } from "./state-ballot-portal-records.js";
 import { fetchWashingtonCandidatePages } from "./state-ballot-washington.js";
@@ -135,7 +135,11 @@ export async function fetchStateBallotSourceText(source: StateBallotSource, requ
 	if (source.retrievalPolicy === "manual-snapshot")
 		throw new Error("This publisher requires a manually supplied candidate snapshot; automatic retrieval is disabled.");
 	if (source.stateCode === "WY" && (source.format !== "csv" || !validStateBallotGeneralDate(source.electionDate) || Number(source.electionDate.slice(0, 4)) % 2 || source.url !== wyomingCandidateRosterUrl(source.electionDate))) throw new Error("The Wyoming roster must retain its exact official election URL.");
-	const options = { allowedHosts: [new URL(source.url).hostname], maxBytes: 12 * 1024 * 1024, maxRedirects: source.stateCode === "WY" || ["montana-csv", "mississippi-csv"].includes(source.format) ? 0 : 2, timeoutMs: 12_000 };
+	if (source.format === "delaware-html") {
+		const family = getStateBallotCycleFamily("de-doe-2026");
+		if (source.stateCode !== "DE" || !validStateBallotGeneralDate(source.electionDate) || source.electionDate < family.source.electionDate || Number(source.electionDate.slice(0, 4)) % 2 || source.id !== (source.electionDate === family.source.electionDate ? family.source.id : `${family.prefix}-${source.electionDate}`) || source.url !== delawareCandidateRosterUrl(source.electionDate) || source.pageUrl !== source.url) throw new Error("The Delaware roster must retain its exact official election identity and URL.");
+	}
+	const options = { allowedHosts: [new URL(source.url).hostname], maxBytes: 12 * 1024 * 1024, maxRedirects: source.stateCode === "WY" || ["montana-csv", "mississippi-csv", "delaware-html"].includes(source.format) ? 0 : 2, timeoutMs: 12_000 };
 	if (source.format === "washington-html")
 		return fetchWashingtonCandidatePages(source, request, options);
 	if (source.format === "south-carolina-html") {

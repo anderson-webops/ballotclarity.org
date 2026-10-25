@@ -17,7 +17,7 @@ interface StateBallotCycleSyncOptions {
 
 export function fetchStateBallotCycleDiscovery(request: typeof fetchRemoteSourceText = fetchRemoteSourceText, familyId = "wa-general-2026") {
 	const family = getStateBallotCycleFamily(familyId);
-	return request(family.discoveryUrl, { allowedHosts: [new URL(family.discoveryUrl).hostname], maxBytes: 2 * 1024 * 1024, maxRedirects: family.format === "csv" ? 0 : 1, timeoutMs: 12000 });
+	return request(family.discoveryUrl, { allowedHosts: [new URL(family.discoveryUrl).hostname], maxBytes: 2 * 1024 * 1024, maxRedirects: ["csv", "delaware-html"].includes(family.format) ? 0 : 1, timeoutMs: 12000 });
 }
 
 export async function syncStateBallotCycles(options: StateBallotCycleSyncOptions) {

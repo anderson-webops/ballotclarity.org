@@ -19,6 +19,7 @@ const cycleFamilies = [
 	{ source: configuredStateBallotSources.find(source => source.id === "mt-general-2026")!, format: "montana-csv", discoveryUrl: "https://candidatefiling.mt.gov/candidatefiling/CandidateList.aspx", prefix: "mt-general", electionLabel: "FEDERAL GENERAL", formId: "frmMain" },
 	{ source: configuredStateBallotSources.find(source => source.id === "ms-sos-2026")!, format: "mississippi-csv", discoveryUrl: "https://www.sos.ms.gov/content/CandidateQualifying/default.aspx", prefix: "ms-general", electionLabel: "General Election:", formId: "form1" },
 	{ source: configuredStateBallotSources.find(source => source.id === "wy-sos-2026")!, format: "csv", discoveryUrl: "https://sos.wyo.gov/elections/default.aspx", prefix: "wy-general", electionLabel: "General Election:", formId: null },
+	{ source: configuredStateBallotSources.find(source => source.id === "de-doe-2026")!, format: "delaware-html", discoveryUrl: "https://elections.delaware.gov/candidates/candidatelist/", prefix: "de-general", electionLabel: "Statewide General", formId: null },
 ] as const;
 
 export function wyomingCandidateRosterUrl(electionDate: string) {
@@ -26,11 +27,15 @@ export function wyomingCandidateRosterUrl(electionDate: string) {
 	return `https://sos.wyo.gov/Elections/Docs/${year}/${year}_WY_General_Election_Candidates.csv`;
 }
 
+export function delawareCandidateRosterUrl(electionDate: string) {
+	return `https://elections.delaware.gov/candidates/candidatelist/genl_fcddt_${electionDate.slice(0, 4)}.html`;
+}
+
 export function getStateBallotCycleFamily(familyId: string) {
 	const family = cycleFamilies.find(item => item.source.id === familyId);
 	const targetValid = family && (family.format === "csv"
 		? family.source.stateCode === "WY" && family.source.url === wyomingCandidateRosterUrl(family.source.electionDate) && family.source.pageUrl === `https://sos.wyo.gov/Elections/${family.source.electionDate.slice(0, 4)}ElectionInformation.aspx`
-		: family.source.pageUrl === family.source.url && (family.format === "mississippi-csv" ? family.source.url === family.discoveryUrl : new RegExp(`^${family.discoveryUrl.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&")}\\?e=[1-9]\\d{0,8}$`, "u").test(family.source.url)));
+		: family.source.pageUrl === family.source.url && (family.format === "delaware-html" ? family.source.stateCode === "DE" && family.source.url === delawareCandidateRosterUrl(family.source.electionDate) : family.format === "mississippi-csv" ? family.source.url === family.discoveryUrl : new RegExp(`^${family.discoveryUrl.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&")}\\?e=[1-9]\\d{0,8}$`, "u").test(family.source.url)));
 	if (!family || !targetValid || family.source.format !== family.format || family.source.retrievalPolicy || family.source.postBody || family.source.documentUrls?.length || family.source.documentLinks?.length)
 		throw new Error("The automatic election source family is unsupported or has changed.");
 	return family;
@@ -141,6 +146,24 @@ export function readWyomingGeneralElectionDate(body: string) {
 	return date;
 }
 
+function readDelawareGeneralElections(body: string): StateBallotCycleCatalog["elections"] {
+	const family = getStateBallotCycleFamily("de-doe-2026");
+	const document = parseStateHtml(body);
+	const headings = stateHtmlDescendants(document, node => node.nodeName === "h1");
+	if (headings.length !== 1 || stateHtmlText(headings[0]!).trim() !== "Candidate List") throw new Error("The Delaware official candidate index has changed.");
+	const links = stateHtmlDescendants(document, node => node.nodeName === "a" && stateHtmlText(node).trim().endsWith("Statewide General"));
+	if (!links.length || links.length > 100) throw new Error("The Delaware general-election index exceeds its bounds.");
+	return links.flatMap((link) => {
+		const label = stateHtmlText(link).replace(/\s+/gu, " ").trim();
+		const year = /\b(20\d{2}) Statewide General$/u.exec(label)?.[1];
+		if (year && year < family.source.electionDate.slice(0, 4)) return [];
+		const match = /^11\/(0?[2-8])\/(20\d{2}) Statewide General$/u.exec(label);
+		const date = match ? `${match[2]}-11-${match[1]!.padStart(2, "0")}` : "";
+		if (!validStateBallotGeneralDate(date) || date < family.source.electionDate || Number(date.slice(0, 4)) % 2 || new URL(stateHtmlAttribute(link, "href"), family.discoveryUrl).href !== delawareCandidateRosterUrl(date)) throw new Error("The Delaware published general-election date and roster link do not match.");
+		return [{ electionId: null, electionDate: date }];
+	});
+}
+
 export function parseStateBallotCycleCatalog(value: unknown, now = Date.now()): StateBallotCycleCatalog {
 	if (!exactKeys(value, ["schemaVersion", "type", "familyId", "sourceConfigurationSha256", "discovery", "elections"]) || value.schemaVersion !== 1 || value.type !== "state-ballot-cycle-catalog" || typeof value.familyId !== "string")
 		throw new Error("The election cycle catalog must match the approved automatic source family.");
@@ -156,7 +179,7 @@ export function parseStateBallotCycleCatalog(value: unknown, now = Date.now()): 
 	const dates = new Set<string>();
 	const originalElectionId = new URL(original.url).searchParams.get("e");
 	for (const election of value.elections) {
-		if (!exactKeys(election, ["electionId", "electionDate"]) || !validStateBallotGeneralDate(election.electionDate) || election.electionDate < original.electionDate || dates.has(election.electionDate) || (["mississippi-csv", "csv"].includes(family.format) ? election.electionId !== null : typeof election.electionId !== "string" || !/^[1-9]\d{0,8}$/u.test(election.electionId) || identifiers.has(election.electionId) || ((election.electionId === originalElectionId) !== (election.electionDate === original.electionDate))) || (["montana-csv", "csv"].includes(family.format) && Number(election.electionDate.slice(0, 4)) % 2 !== 0))
+		if (!exactKeys(election, ["electionId", "electionDate"]) || !validStateBallotGeneralDate(election.electionDate) || election.electionDate < original.electionDate || dates.has(election.electionDate) || (["mississippi-csv", "csv", "delaware-html"].includes(family.format) ? election.electionId !== null : typeof election.electionId !== "string" || !/^[1-9]\d{0,8}$/u.test(election.electionId) || identifiers.has(election.electionId) || ((election.electionId === originalElectionId) !== (election.electionDate === original.electionDate))) || (["montana-csv", "csv", "delaware-html"].includes(family.format) && Number(election.electionDate.slice(0, 4)) % 2 !== 0))
 			throw new Error("The official election identity is duplicate, unsupported or inconsistent.");
 		if (typeof election.electionId === "string") identifiers.add(election.electionId);
 		dates.add(election.electionDate);
@@ -173,6 +196,7 @@ export function discoverStateBallotElectionCycles(body: string, familyId: string
 	if (Buffer.byteLength(body) > 2 * 1024 * 1024) throw new Error("The election discovery page exceeds its size limit.");
 	if (family.format === "mississippi-csv") return parseStateBallotCycleCatalog({ schemaVersion: 1, type: "state-ballot-cycle-catalog", familyId, sourceConfigurationSha256: digest(JSON.stringify(family.source)), discovery: { url: family.discoveryUrl, sha256: digest(body), retrievedAt: new Date(now).toISOString() }, elections: [{ electionId: null, electionDate: readMississippiGeneralElectionDate(body) }] }, now);
 	if (family.format === "csv") return parseStateBallotCycleCatalog({ schemaVersion: 1, type: "state-ballot-cycle-catalog", familyId, sourceConfigurationSha256: digest(JSON.stringify(family.source)), discovery: { url: family.discoveryUrl, sha256: digest(body), retrievedAt: new Date(now).toISOString() }, elections: [{ electionId: null, electionDate: readWyomingGeneralElectionDate(body) }] }, now);
+	if (family.format === "delaware-html") return parseStateBallotCycleCatalog({ schemaVersion: 1, type: "state-ballot-cycle-catalog", familyId, sourceConfigurationSha256: digest(JSON.stringify(family.source)), discovery: { url: family.discoveryUrl, sha256: digest(body), retrievedAt: new Date(now).toISOString() }, elections: readDelawareGeneralElections(body) }, now);
 	const document = parseStateHtml(body);
 	const forms = stateHtmlDescendants(document, node => node.nodeName === "form");
 	const selections = stateHtmlDescendants(document, node => node.nodeName === "select" && stateHtmlAttribute(node, "name") === "ctl00$ContentPlaceHolder1$ddlElection");
@@ -204,6 +228,7 @@ export function stateBallotCycleSources(catalog: StateBallotCycleCatalog, now = 
 	const family = getStateBallotCycleFamily(catalog.familyId);
 	return catalog.elections.filter(election => election.electionDate !== family.source.electionDate).map((election) => {
 		if (family.format === "csv") return { ...family.source, id: `${family.prefix}-${election.electionDate}`, label: `${family.source.label} (${election.electionDate.slice(0, 4)})`, electionDate: election.electionDate, url: wyomingCandidateRosterUrl(election.electionDate), pageUrl: family.discoveryUrl };
+		if (family.format === "delaware-html") return { ...family.source, id: `${family.prefix}-${election.electionDate}`, label: `${family.source.label} (${election.electionDate.slice(0, 4)})`, electionDate: election.electionDate, url: delawareCandidateRosterUrl(election.electionDate), pageUrl: delawareCandidateRosterUrl(election.electionDate) };
 		const url = new URL(family.discoveryUrl);
 		if (election.electionId !== null) url.searchParams.set("e", election.electionId);
 		return { ...family.source, id: `${family.prefix}-${election.electionDate}`, label: `${family.source.label} (${election.electionDate.slice(0, 4)})`, electionDate: election.electionDate, url: url.href, pageUrl: url.href };

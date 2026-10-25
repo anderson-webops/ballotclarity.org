@@ -48,9 +48,9 @@ test("Florida TSV retains literal quotes and excludes another election", () => {
 });
 
 test("Delaware reads only the public name and keeps withdrawal evidence authoritative", () => {
-	const row = (status: string) => `<tr><td data-label="Office">Representative in Congress</td><td data-label="Party">Example</td><td data-label="Candidate"><span class="main-span">Alex &amp; Sample</span><span class="sub-span">Private address</span></td><td data-label="Status">${status}</td></tr>`;
+	const row = (status: string) => `<tr><td data-label="Office">Representative in Congress</td><td data-label="County">Statewide</td><td data-label="Party">Example</td><td data-label="Candidate"><span class="main-span">Alex &amp; Sample</span><span class="sub-span">Private address</span></td><td data-label="Status">${status}</td><td data-label="Date Filed">6/12/2026</td></tr>`;
 	for (const rows of [row("Withdrawn") + row("Qualified"), row("Qualified") + row("Withdrawn")]) {
-		const records = parseStateCandidateRecords(source("DE"), `<h1>General Election 11/3/2026</h1><table>${rows}</table>`);
+		const records = parseStateCandidateRecords(source("DE"), `<h1>General Election 11/3/2026</h1><table><tr>${["Office", "County", "Party", "Candidate", "Status", "Filed"].map(label => `<th>${label}</th>`).join("")}</tr>${rows}</table>`);
 		assert.equal(records[0]?.name, "Alex & Sample");
 		assert.equal(records[0]?.status, "withdrawn");
 		assert.equal(records[0]?.scope, "statewide");

@@ -156,19 +156,28 @@ function candidateFromCsv(source: StateBallotSource, row: Record<string, string>
 
 function parseDelaware(source: StateBallotSource, body: string) {
 	const document = parseHtml(body) as unknown as HtmlNode;
-	if (!/General Election\s+11\/3\/2026/iu.test(clean(textContent(document))))
+	const headings = descendants(document, node => node.nodeName === "h1");
+	const identity = headings.length === 1 ? /^General Election 11\/(0?[2-8])\/(20\d{2})$/u.exec(clean(textContent(headings[0]!))) : null;
+	if (!identity || `${identity[2]}-11-${identity[1]!.padStart(2, "0")}` !== source.electionDate)
 		throw new Error("The official source does not identify the configured general election.");
-	return descendants(document, node => node.nodeName === "tr").flatMap((row) => {
-		const cells = descendants(row, node => node.nodeName === "td");
+	const tables = descendants(document, node => node.nodeName === "table");
+	if (tables.length !== 1) throw new Error("The Delaware candidate table set has changed.");
+	const rows = stateHtmlTableRows(tables[0]!);
+	if (!rows.length || (rows[0]!.childNodes ?? []).filter(node => node.nodeName === "th").map(node => clean(textContent(node))).join("|") !== "Office|County|Party|Candidate|Status|Filed") throw new Error("The Delaware candidate columns have changed.");
+	return rows.slice(1).map((row) => {
+		const cells = (row.childNodes ?? []).filter(node => node.nodeName === "td");
+		if (cells.map(cell => attribute(cell, "data-label")).join("|") !== "Office|County|Party|Candidate|Status|Date Filed") throw new Error("The Delaware candidate row layout has changed.");
 		const field = (label: string) => cells.find(cell => attribute(cell, "data-label") === label);
 		const nameCell = field("Candidate");
-		const nameNode = nameCell && descendants(nameCell, node => attribute(node, "class").split(/\s/u).includes("main-span"))[0];
+		const names = nameCell ? descendants(nameCell, node => attribute(node, "class").split(/\s/u).includes("main-span")) : [];
+		if (names.length !== 1) throw new Error("The Delaware candidate name field has changed.");
 		const value = (label: string) => {
 			const cell = field(label);
 			return cell ? clean(textContent(cell)) : "";
 		};
-		const record = nameNode ? makeRecord(source, { name: clean(textContent(nameNode)), office: value("Office"), party: value("Party"), status: value("Status") }) : null;
-		return record ? [record] : [];
+		const record = makeRecord(source, { name: clean(textContent(names[0]!)), office: value("Office"), party: value("Party"), status: value("Status"), jurisdiction: value("County") });
+		if (!record || (record.scope === "local" && !record.jurisdiction)) throw new Error("The Delaware public candidate row is incomplete.");
+		return record;
 	});
 }
 

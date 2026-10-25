@@ -44,13 +44,13 @@ async function serve(repository: StateBallotRepository) {
 
 test("county sources are additive and their reviewed configuration retains each original document", () => {
 	assert.equal(stateBallotSources.length, 50);
-	assert.equal(configuredStateBallotSources.length, 57);
+	assert.equal(configuredStateBallotSources.length, 58);
 	assert.deepEqual(configuredStateBallotSources.slice(0, 50), stateBallotSources);
-	assert.equal(new Set(configuredStateBallotSources.map(source => source.id)).size, 57);
+	assert.equal(new Set(configuredStateBallotSources.map(source => source.id)).size, 58);
 	assert.equal(new Set(configuredStateBallotSources.map(source => source.stateCode)).size, 51);
 	const reviewed = additionalStateBallotSources.filter(source => source.retrievalPolicy === "manual-snapshot");
 	assert.equal(reviewed.length, 6);
-	assert.equal(additionalStateBallotSources.filter(source => !source.retrievalPolicy).length, 1);
+	assert.equal(additionalStateBallotSources.filter(source => !source.retrievalPolicy).length, 2);
 	for (const source of reviewed) {
 		assert.equal(source.retrievalPolicy, "manual-snapshot");
 		assert.equal(source.snapshotStorage, "external");
@@ -100,7 +100,7 @@ test("Pulaski retains Washington County and withholds unverified local and distr
 });
 
 test("state and source allowlists validate independently and intersect without replacing primary entries", () => {
-	assert.equal(resolveStateBallotConfiguration({}).sources.length, 57);
+	assert.equal(resolveStateBallotConfiguration({}).sources.length, 58);
 	assert.equal(resolveStateBallotConfiguration({ STATE_BALLOT_ENABLED_STATES: "NC,NM" }).sources.length, 4);
 	assert.deepEqual(resolveStateBallotConfiguration({ STATE_BALLOT_ENABLED_SOURCES: ` ${county.id},${otherCounty.id} ` }).sources, [county, otherCounty]);
 	assert.deepEqual(resolveStateBallotConfiguration({ STATE_BALLOT_ENABLED_STATES: "LA", STATE_BALLOT_ENABLED_SOURCES: parish.id }).sources, [parish]);

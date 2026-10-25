@@ -1,5 +1,28 @@
 # Official state candidate records
 
+## Maryland county records and reusable discovery
+
+The [official general-candidate index](https://elections.maryland.gov/elections/2026/general_candidates/)
+publishes separate statewide and county lists. `md-sbe-local-2026` adds the latter:
+627 source entries reconcile one-to-one with the HTML county sections, yielding
+623 distinct candidate/office records across 24 reported county/city groups. Four
+active/inactive lifecycle pairs retain the inactive evidence. County context comes
+from the publication sections, not candidates' residences. Treasurer and other
+county offices remain local, alpha district labels and source-provided quoted
+nicknames are retained, and provided valid websites remain available.
+
+The existing statewide descriptor, 369 normalized records and IDs are unchanged.
+Both families follow the [official election navigation](https://elections.maryland.gov/elections/),
+explicit general-election dates, statewide/local category links and actual CSV
+controls. Future presidential/gubernatorial codes are read from those publications,
+never guessed from the year. No actual future Maryland candidacies were observed
+in the current navigation; rollover and empty-report acquisition tests are synthetic.
+The [cycle contract](state-ballot-cycles.md) describes privacy, pending receipts,
+cross-year default selection and source-policy boundaries. Used candidate paths
+are outside the reviewed robots exclusions; VIP, results-data and other excluded paths
+remain outside this collector. Factual candidate data is normalized, not narrative
+or third-party candidate statements republished wholesale.
+
 ## Florida local filings
 
 The [official candidate-download utility](https://dos.elections.myflorida.com/candidates/downloadcanlist.asp)

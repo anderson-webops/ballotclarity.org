@@ -28,3 +28,6 @@ test("publication overview links to a dedicated review, preserving all publicati
 	assert.match(detail, /unpublishPackage/u);
 	assert.match(detail, /reviewRecommendation/u);
 });
+test("automation timestamps have separate rows rather than adjoining inline labels", () => {
+	assert.match(source("src/pages/admin/index.vue"), /<div class="flex flex-col gap-4 items-start">\s*<UpdatedAt/u);
+});

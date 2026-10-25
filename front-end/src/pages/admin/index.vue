@@ -57,7 +57,7 @@ usePageSeo({ title: "Operations", path: "/admin", robots: "noindex,nofollow" });
 				<p v-else class="capitalize" :role="['failed', 'overdue'].includes(data.automation.status) ? 'alert' : undefined">
 					{{ data.automation.status }}
 				</p>
-				<div class="space-y-4">
+				<div class="flex flex-col gap-4 items-start">
 					<UpdatedAt v-if="data.automation.lastAttemptAt" :value="data.automation.lastAttemptAt" label="Last run" /><UpdatedAt v-if="data.automation.lastSuccessAt" :value="data.automation.lastSuccessAt" label="Successful collection" /><UpdatedAt v-if="data.automation.lastImportAt" :value="data.automation.lastImportAt" label="Last import" /><UpdatedAt v-if="data.automation.nextRunAt" :value="data.automation.nextRunAt" label="Next run" />
 				</div>
 			</section>

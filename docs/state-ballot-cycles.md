@@ -1,10 +1,10 @@
 # Reusable election cycles
 
 External election catalogs opt the automatic candidate repository into reusable
-source families. Without them, the existing 57 source
+source families. Without them, the existing 58 source
 definitions, source ordering and source/state allowlists remain unchanged.
 
-Ten families are supported:
+Twelve families are supported:
 
 | Family | Discovery | Elections |
 | --- | --- | --- |
@@ -17,6 +17,8 @@ Ten families are supported:
 | `nd-sos-2026` | [North Dakota candidate index](https://www.sos.nd.gov/elections/candidate) and its published candidate calendar | Even-year general elections with matching public candidate IDs and explicit calendar dates |
 | `fl-doe-2026` | [Florida public candidate download](https://dos.elections.myflorida.com/candidates/downloadcanlist.asp) | Published even-year `-GEN` election codes and matching year labels; state-filed candidates only |
 | `fl-doe-local-2026` | [Florida local candidate download](https://dos.elections.myflorida.com/candidates/downloadcanlist.asp) | The same published election codes, the explicit local-candidate control and downloaded county codebook; local filings, not complete or personalized ballots |
+| `md-sbe-2026` | [Maryland election navigation](https://elections.maryland.gov/elections/) | Observed year links, explicit General Election Day, statewide category and published general file code; existing current IDs/facts retained |
+| `md-sbe-local-2026` | [Maryland county candidate lists](https://elections.maryland.gov/elections/2026/general_candidates/) | Separate local category, actual HTML/CSV controls and complete county-section reconciliation; no residential-geography inference |
 | `sc-sec-2026` | [South Carolina public election selector](https://vrems.scvotes.sc.gov/Candidate/SelectElection) | Published even-year statewide general elections with matching IDs, dates and display labels |
 
 Stable family identifiers retain their original descriptor bindings; future
@@ -48,6 +50,30 @@ failures, changed layouts, mismatched elections and an empty refresh of accepted
 data remain failures that preserve the accepted snapshot. Pending-evidence write
 failures remain persistence failures. Source-pending status is not an imported
 dataset or an exception. No collection/import clock is invented.
+
+Maryland uses the same waiting-receipt protocol after complete discovery, date,
+category, roster identity and CSV validation. A state CSV is empty only when its
+HTML also has no candidate markers; local HTML/CSV counts must reconcile. The
+old current statewide source descriptor and 369 normalized records remain exact.
+Its legacy raw-CSV parser path remains current-source-only; future/local captures
+require the complete evidence envelope. Published navigation, not a guessed next
+year or `GG`/`PG` code, supplies future election identities. A future candidate link
+that is not yet published is not synthesized; subsequent scheduled discovery can
+acquire it when offered, preserving the prior catalog on failure.
+
+County HTML sections establish publication groups for local records. Candidate
+residential jurisdiction is used only to reconcile the two official views and is
+never substituted for office geography. No addresses, phone numbers, gender,
+email, social handles or residence labels enter normalized records. Public facts,
+quoted nicknames, alpha districts and valid provided websites are retained. Four
+duplicate lifecycle pairs prefer the inactive evidence rather than imply ballot
+qualification. Local source-area labels participate in derived IDs without
+changing prior IDs. No personal local-ballot assignment is inferred.
+
+Default browsing orders unexpired sources ahead of expired ones and selects the
+nearest published election. An unavailable/waiting nearest election is not silently
+replaced with later-year filings. Explicit selection can still browse those future
+filings. Catalogs and bulk collection retain all supported published instances.
 
 Version-one automation receipts remain rollback-compatible: a validated pending
 checkpoint uses `cached` with zero records and no failure reason. Only an actual
@@ -237,7 +263,7 @@ provide archive browsing, and this work adds no archival API.
 
 ## Boundaries
 
-These are ten source families, not nationwide future-election automation.
+These are twelve source families, not nationwide future-election automation.
 Other adapters still have cycle-specific discovery or parsing work. Reviewed
 PDF/image conversion, measure interpretation, independently verified geography,
 rights review, ballot publication, archival browsing, host scheduling, monitoring

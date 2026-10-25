@@ -3,18 +3,15 @@ import type { StateCandidateRecord } from "./state-ballot-records.js";
 import type { StateBallotSource } from "./state-ballot-sources.js";
 import { Buffer } from "node:buffer";
 import { parse } from "csv-parse/sync";
+import { StateBallotAwaitingRecordsError } from "./state-ballot-source-state.js";
 import { buildFloridaCandidateForm, buildFloridaCountyForm, floridaSourceElectionId } from "./state-ballot-southern.js";
+
+export { StateBallotAwaitingRecordsError } from "./state-ballot-source-state.js";
 
 const columns = "AcctNum,VoterID,ElectionID,OfficeCode,OfficeDesc,Juris1num,Juris2num,StatusCode,StatusDesc,PartyCode,PartyDesc,NameLast,NameFirst,NameMiddle,SuppressAddress,Addr1,Addr2,City,State,Zip,County,Phone,TrsNameLast,TrsNameFirst,TrsNameMiddle,Email".split(",");
 const statuses: Record<string, string> = { UNO: "Unopposed", DNQ: "Did Not Qualify", QUA: "Qualified", DEF: "Defeated", WIT: "Withdrew", DEC: "Deceased" };
 const clean = (value: string) => value.normalize("NFKC").replace(/\s+/gu, " ").trim();
 const numberLabel = (value: string) => value.replace(/^0+(?=\d)/u, "");
-
-export class StateBallotAwaitingRecordsError extends Error {
-	constructor(readonly sourceId: string) {
-		super("The validated official candidate export has no records yet.");
-	}
-}
 
 function table(body: string, headers: string[], maximum: number) {
 	const rows = parse(body, { bom: true, delimiter: "\t", quote: false, skip_empty_lines: true, max_record_size: 100_000 }) as string[][];

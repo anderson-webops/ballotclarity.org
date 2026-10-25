@@ -8,6 +8,7 @@ import { normalizePublicHref } from "./public-href.js";
 import { createPublicRequestThrottle } from "./public-request-throttle.js";
 import { isActiveStateCandidateRecord } from "./state-ballot-records.js";
 import { configuredStateBallotSources } from "./state-ballot-registry.js";
+import { orderStateBallotSources } from "./state-ballot-source-state.js";
 import { containsControlCharacters } from "./text-validation.js";
 import { usStates } from "./us-states.js";
 
@@ -79,8 +80,8 @@ export function buildStateRecordPage(snapshot: StateBallotSnapshot, filters: Ret
 	};
 }
 
-export function registerStateRecordRoutes(app: Express, repository: StateBallotRepository | null, throttle: PublicRequestThrottle = createPublicRequestThrottle({ windowMs: 60_000, maxRequests: 120, maxBuckets: 10_000 })) {
-	const currentSources = () => repository?.sources ?? configuredStateBallotSources;
+export function registerStateRecordRoutes(app: Express, repository: StateBallotRepository | null, throttle: PublicRequestThrottle = createPublicRequestThrottle({ windowMs: 60_000, maxRequests: 120, maxBuckets: 10_000 }), now: () => number = Date.now) {
+	const currentSources = () => orderStateBallotSources(repository?.sources ?? configuredStateBallotSources, now());
 	app.use("/api/state-records", (request, response, next) => {
 		response.setHeader("Cache-Control", "no-store");
 		const attempt = throttle.attempt(request.ip || request.socket.remoteAddress || "unknown");
@@ -144,7 +145,7 @@ export function registerStateRecordRoutes(app: Express, repository: StateBallotR
 			const snapshot = source && repository ? await repository.getSnapshot(stateCode, sourceId) : null;
 			if (snapshot) {
 				const selected = sources.find(item => item.id === snapshot.source.id && item.stateCode === stateCode && item.electionDate === snapshot.source.electionDate && (sourceId === undefined || item.id === sourceId));
-				if (!selected || snapshot.source.stateCode !== stateCode)
+				if (!selected || snapshot.source.stateCode !== stateCode || (sourceId === undefined && source && snapshot.source.electionDate !== source.electionDate))
 					throw new Error("The repository returned a mismatched candidate source.");
 				payload.source = { stateCode, stateName: state[1], configured: true, id: selected.id, label: selected.label, url: selected.pageUrl, electionDate: selected.electionDate, scopeNotice: selected.scopeNotice, documentLinks: stateRecordDocumentLinks(selected) };
 				Object.assign(payload, buildStateRecordPage(snapshot, filters));

@@ -4,6 +4,7 @@ import { fetchRemoteSourceText } from "./remote-json-source.js";
 import { delawareCandidateRosterUrl, getStateBallotCycleFamily, readMississippiGeneralElectionDate, validStateBallotGeneralDate, wyomingCandidateRosterUrl } from "./state-ballot-cycles.js";
 import { dakotaCandidateRosterUrl, validateDakotaCandidatePage } from "./state-ballot-dakota.js";
 import { parseStateHtml, stateHtmlAttribute, stateHtmlDescendants, stateHtmlText } from "./state-ballot-html.js";
+import { fetchMarylandCycleDiscovery, marylandSourceElectionId, readMarylandElectionDiscovery, validateMarylandRoster } from "./state-ballot-maryland.js";
 import { buildSouthCarolinaSearchForm } from "./state-ballot-portal-records.js";
 import { buildFloridaCandidateForm, buildFloridaCountyForm, floridaCountyCodesUrl, floridaSourceElectionId, southCarolinaCandidateRosterUrl } from "./state-ballot-southern.js";
 import { fetchWashingtonCandidatePages } from "./state-ballot-washington.js";
@@ -154,6 +155,19 @@ export async function fetchStateBallotSourceText(source: StateBallotSource, requ
 		if (source.stateCode !== "DE" || !validStateBallotGeneralDate(source.electionDate) || source.electionDate < family.source.electionDate || Number(source.electionDate.slice(0, 4)) % 2 || source.id !== (source.electionDate === family.source.electionDate ? family.source.id : `${family.prefix}-${source.electionDate}`) || source.url !== delawareCandidateRosterUrl(source.electionDate) || source.pageUrl !== source.url) throw new Error("The Delaware roster must retain its exact official election identity and URL.");
 	}
 	const options = { allowedHosts: [new URL(source.url).hostname], maxBytes: 12 * 1024 * 1024, maxRedirects: ["WY", "FL"].includes(source.stateCode) || ["montana-csv", "mississippi-csv", "delaware-html", "south-dakota-csv", "north-dakota-html", "south-carolina-html"].includes(source.format) ? 0 : 2, timeoutMs: 12_000 };
+	if (source.stateCode === "MD") {
+		const electionId = marylandSourceElectionId(source);
+		const discovery = await fetchMarylandCycleDiscovery(request);
+		const elections = readMarylandElectionDiscovery(discovery, source.format === "csv" ? "state" : "local");
+		if (elections.filter(election => election.electionId === electionId && election.electionDate === source.electionDate && election.rosterUrl === source.pageUrl).length !== 1) throw new Error("The Maryland candidate source is not currently published by its election index.");
+		const bounded = { ...options, maxRedirects: 0 };
+		const roster = await request(source.pageUrl, bounded);
+		validateMarylandRoster(source, roster);
+		const records = await request(source.url, bounded);
+		const body = JSON.stringify({ schemaVersion: 1, type: "maryland-candidate-export", discovery, roster, records });
+		if (Buffer.byteLength(body) > options.maxBytes) throw new Error("The combined Maryland candidate capture exceeds its bounds.");
+		return body;
+	}
 	if (source.stateCode === "FL") {
 		const page = await request(source.pageUrl, options);
 		const postBody = buildFloridaCandidateForm(source, page);

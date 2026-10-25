@@ -124,6 +124,17 @@ export const additionalStateBallotSources: readonly StateBallotSource[] = [
 		snapshotStorage: "external",
 		scopeNotice: "Local filings are not a complete ballot. Reported county and district labels do not establish voter eligibility; some county labels are missing.",
 	},
+	{
+		stateCode: "MD",
+		id: "md-sbe-local-2026",
+		label: "Maryland local candidates",
+		electionDate: "2026-11-03",
+		url: "https://elections.maryland.gov/elections/2026/general_candidates/2026_GG_all_counties_candidatelist.csv",
+		pageUrl: "https://elections.maryland.gov/elections/2026/general_candidates/2026_GG_all_counties_candidatelist.html",
+		format: "maryland-local-csv",
+		snapshotStorage: "external",
+		scopeNotice: "County labels group source records; they are not voter-specific ballot matches.",
+	},
 ];
 
 export const configuredStateBallotSources: readonly StateBallotSource[] = [...stateBallotSources, ...additionalStateBallotSources];

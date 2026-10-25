@@ -7,6 +7,7 @@ import { mkdir, open, realpath, rename, unlink } from "node:fs/promises";
 import { isAbsolute, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseBundledStateSnapshot } from "./state-ballot-snapshot.js";
+import { supportsPendingStateBallotRecords } from "./state-ballot-source-state.js";
 
 const maximumBytes = 12 * 1024 * 1024;
 const releaseRoot = fileURLToPath(new URL("../../", import.meta.url));
@@ -19,7 +20,7 @@ export interface StateBallotPendingReceipt {
 
 function parsePendingReceipt(source: StateBallotSource, body: string, now: number): StateBallotPendingReceipt {
 	const value = JSON.parse(body);
-	if (source.format !== "florida-local-tsv" || source.retrievalPolicy || !value || Object.keys(value).sort().join(",") !== "retrievedAt,schemaVersion,sourceConfigurationSha256,sourceSha256,type" || value.schemaVersion !== 1 || value.type !== "state-ballot-pending" || value.sourceConfigurationSha256 !== digest(JSON.stringify(source)) || typeof value.retrievedAt !== "string" || !Number.isFinite(Date.parse(value.retrievedAt)) || new Date(value.retrievedAt).toISOString() !== value.retrievedAt || Date.parse(value.retrievedAt) > now || typeof value.sourceSha256 !== "string" || !/^[a-f0-9]{64}$/u.test(value.sourceSha256) || Date.parse(value.retrievedAt) >= Date.parse(`${source.electionDate}T00:00:00Z`)) throw new Error("The pending state ballot evidence is invalid or belongs to another source.");
+	if (!supportsPendingStateBallotRecords(source) || !value || Object.keys(value).sort().join(",") !== "retrievedAt,schemaVersion,sourceConfigurationSha256,sourceSha256,type" || value.schemaVersion !== 1 || value.type !== "state-ballot-pending" || value.sourceConfigurationSha256 !== digest(JSON.stringify(source)) || typeof value.retrievedAt !== "string" || !Number.isFinite(Date.parse(value.retrievedAt)) || new Date(value.retrievedAt).toISOString() !== value.retrievedAt || Date.parse(value.retrievedAt) > now || typeof value.sourceSha256 !== "string" || !/^[a-f0-9]{64}$/u.test(value.sourceSha256) || Date.parse(value.retrievedAt) >= Date.parse(`${source.electionDate}T00:00:00Z`)) throw new Error("The pending state ballot evidence is invalid or belongs to another source.");
 	return { retrievedAt: value.retrievedAt, sourceSha256: value.sourceSha256 };
 }
 
@@ -105,7 +106,7 @@ export function createStateBallotStorage(directory: string) {
 	}
 	return {
 		async readPending(source: StateBallotSource, now = Date.now()): Promise<StateBallotPendingReceipt | null> {
-			if (source.format !== "florida-local-tsv") return null;
+			if (!supportsPendingStateBallotRecords(source)) return null;
 			try {
 				const body = await readBoundedStateDataBytes(`${await location(source)}.pending`, 16 * 1024);
 				return parsePendingReceipt(source, body.toString("utf8"), now);

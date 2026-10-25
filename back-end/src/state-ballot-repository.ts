@@ -7,9 +7,9 @@ import process from "node:process";
 import { getStateAbbreviationForName } from "./official-election-tools.js";
 import { getStateBallotCycleFamily, readConfiguredStateBallotCycleCatalogs, StateBallotCycleCatalogError, stateBallotCycleSources } from "./state-ballot-cycles.js";
 import { fetchStateBallotSourceText } from "./state-ballot-fetch.js";
-import { StateBallotAwaitingRecordsError } from "./state-ballot-florida-local.js";
 import { isActiveStateCandidateRecord, parseStateCandidateRecords, stateRecordMatchesDistricts } from "./state-ballot-records.js";
 import { configuredStateBallotSources } from "./state-ballot-registry.js";
+import { orderStateBallotSources, StateBallotAwaitingRecordsError, supportsPendingStateBallotRecords } from "./state-ballot-source-state.js";
 import { createStateBallotStorage } from "./state-ballot-storage.js";
 
 export interface StateBallotSnapshot {
@@ -173,7 +173,7 @@ export function createStateBallotRepository(options: StateBallotRepositoryOption
 				return snapshot;
 			}
 			catch (error) {
-				if (error instanceof StateBallotAwaitingRecordsError && error.sourceId === source.id && source.format === "florida-local-tsv" && body !== undefined && capturedAt && !stored && now() < Date.parse(`${source.electionDate}T00:00:00Z`)) {
+				if (error instanceof StateBallotAwaitingRecordsError && error.sourceId === source.id && supportsPendingStateBallotRecords(source) && body !== undefined && capturedAt && !stored && now() < Date.parse(`${source.electionDate}T00:00:00Z`)) {
 					const receipt = { retrievedAt: capturedAt, sourceSha256: createHash("sha256").update(body).digest("hex") };
 					try {
 						if (storage) await storage.writePending(source, receipt, now());
@@ -232,7 +232,9 @@ export function createStateBallotRepository(options: StateBallotRepositoryOption
 		},
 		async getSnapshot(stateCode, sourceId) {
 			const matching = currentSources().filter(source => source.stateCode === stateCode.toUpperCase() && (sourceId === undefined || source.id === sourceId));
-			for (const source of matching) {
+			const ordered = sourceId === undefined ? orderStateBallotSources(matching, now()) : matching;
+			const currentDate = ordered.find(source => Date.parse(`${source.electionDate}T00:00:00Z`) + 2 * 86400000 > now())?.electionDate;
+			for (const source of ordered.filter(source => sourceId !== undefined || source.electionDate === currentDate)) {
 				const snapshot = await loadSnapshot(source);
 				if (snapshot)
 					return snapshot;

@@ -11,6 +11,7 @@ import { parseConnecticutCandidateRecords } from "./state-ballot-connecticut.js"
 import { validateDakotaCandidatePage } from "./state-ballot-dakota.js";
 import { parseFloridaLocalCandidateRecords } from "./state-ballot-florida-local.js";
 import { stateHtmlAttribute as attribute, stateHtmlDescendants as descendants, parseStateHtml as parseHtml, stateHtmlTableRows, stateHtmlText as textContent } from "./state-ballot-html.js";
+import { parseMarylandCandidateRecords } from "./state-ballot-maryland.js";
 import { parseOregonCandidateRecords } from "./state-ballot-oregon.js";
 import { parseStatePortalRecords } from "./state-ballot-portal-records.js";
 import { floridaSourceElectionId } from "./state-ballot-southern.js";
@@ -90,6 +91,11 @@ function makeRecord(source: StateBallotSource, values: StateCandidateValues): St
 	const jurisdiction = geography.scope === "local" ? clean(values.jurisdiction) || undefined : undefined;
 	const keyParts = [source.stateCode, source.electionDate, office.toLowerCase(), geography.district, name.toLowerCase(), party.toLowerCase()];
 	if (jurisdiction) keyParts.push(jurisdiction.toLowerCase());
+	if (source.format === "maryland-local-csv") {
+		const area = clean(values.sourceAreaLabel);
+		if (!area) return null;
+		keyParts.push(area.toLowerCase());
+	}
 	const sourceCandidateId = clean(values.sourceCandidateId) || undefined;
 	if (sourceCandidateId) keyParts.push(sourceCandidateId);
 	const key = JSON.stringify(keyParts);
@@ -373,7 +379,10 @@ export function parseStateCandidateRecords(source: StateBallotSource, body: stri
 	if (["reviewed-pdf", "reviewed-xlsx", "reviewed-image"].includes(source.format))
 		throw new Error("Reviewed document sources require a validated snapshot.");
 	let records: StateCandidateRecord[];
-	if (source.format === "florida-local-tsv") {
+	if (source.stateCode === "MD") {
+		records = parseMarylandCandidateRecords(source, body, makeRecord);
+	}
+	else if (source.format === "florida-local-tsv") {
 		records = parseFloridaLocalCandidateRecords(source, body, makeRecord);
 	}
 	else if (source.format === "arkansas-html") {

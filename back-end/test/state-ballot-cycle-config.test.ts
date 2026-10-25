@@ -79,7 +79,7 @@ test("running APIs hot-load both families, retain last-good descriptors on a cor
 			await storage.write({ source, retrievedAt: new Date(clock).toISOString(), sha256: "a".repeat(64), records: [{ id: createHash("sha256").update(source.id).digest("hex").slice(0, 24), name: "Synthetic Cycle Candidate", office: "United States Senator", district: "", jurisdiction: source.stateCode, scope: "statewide", party: "Democratic", status: "filed" }] });
 		}
 		const app = express();
-		registerStateRecordRoutes(app, repository);
+		registerStateRecordRoutes(app, repository, undefined, () => clock);
 		const server = app.listen(0, "127.0.0.1");
 		await once(server, "listening");
 		close = () => new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()));

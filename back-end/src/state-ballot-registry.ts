@@ -135,6 +135,17 @@ export const additionalStateBallotSources: readonly StateBallotSource[] = [
 		snapshotStorage: "external",
 		scopeNotice: "County labels group source records; they are not voter-specific ballot matches.",
 	},
+	{
+		stateCode: "KY",
+		id: "ky-courts-2026",
+		label: "Kentucky courts and prosecutors",
+		electionDate: "2026-11-03",
+		url: "https://web.sos.ky.gov/CandidateFilings/",
+		pageUrl: "https://web.sos.ky.gov/CandidateFilings/",
+		format: "kentucky-courts-html",
+		snapshotStorage: "external",
+		scopeNotice: "Regional districts are source labels, not voter-specific ballot matches.",
+	},
 ];
 
 export const configuredStateBallotSources: readonly StateBallotSource[] = [...stateBallotSources, ...additionalStateBallotSources];

@@ -4,6 +4,7 @@ import { fetchRemoteSourceText } from "./remote-json-source.js";
 import { delawareCandidateRosterUrl, getStateBallotCycleFamily, readMississippiGeneralElectionDate, validStateBallotGeneralDate, wyomingCandidateRosterUrl } from "./state-ballot-cycles.js";
 import { dakotaCandidateRosterUrl, validateDakotaCandidatePage } from "./state-ballot-dakota.js";
 import { parseStateHtml, stateHtmlAttribute, stateHtmlDescendants, stateHtmlText } from "./state-ballot-html.js";
+import { fetchKentuckyCandidateCapture } from "./state-ballot-kentucky.js";
 import { fetchMarylandCycleDiscovery, marylandSourceElectionId, readMarylandElectionDiscovery, validateMarylandRoster } from "./state-ballot-maryland.js";
 import { fetchNorthCarolinaCandidateCapture } from "./state-ballot-north-carolina.js";
 import { buildSouthCarolinaSearchForm } from "./state-ballot-portal-records.js";
@@ -156,6 +157,7 @@ export async function fetchStateBallotSourceText(source: StateBallotSource, requ
 		if (source.stateCode !== "DE" || !validStateBallotGeneralDate(source.electionDate) || source.electionDate < family.source.electionDate || Number(source.electionDate.slice(0, 4)) % 2 || source.id !== (source.electionDate === family.source.electionDate ? family.source.id : `${family.prefix}-${source.electionDate}`) || source.url !== delawareCandidateRosterUrl(source.electionDate) || source.pageUrl !== source.url) throw new Error("The Delaware roster must retain its exact official election identity and URL.");
 	}
 	if (source.stateCode === "NC") return fetchNorthCarolinaCandidateCapture(source, request);
+	if (source.stateCode === "KY") return fetchKentuckyCandidateCapture(source, request);
 	const options = { allowedHosts: [new URL(source.url).hostname], maxBytes: 12 * 1024 * 1024, maxRedirects: ["WY", "FL"].includes(source.stateCode) || ["montana-csv", "mississippi-csv", "delaware-html", "south-dakota-csv", "north-dakota-html", "south-carolina-html"].includes(source.format) ? 0 : 2, timeoutMs: 12_000 };
 	if (source.stateCode === "MD") {
 		const electionId = marylandSourceElectionId(source);
@@ -197,19 +199,6 @@ export async function fetchStateBallotSourceText(source: StateBallotSource, requ
 		if (Buffer.byteLength(page) + Buffer.byteLength(records) > options.maxBytes)
 			throw new Error("The combined candidate export exceeds its size limit.");
 		return JSON.stringify({ page, records });
-	}
-	if (source.format === "kentucky-html") {
-		const documents = [];
-		let size = 0;
-		for (const url of source.documentUrls ?? []) {
-			if (new URL(url).hostname !== new URL(source.url).hostname)
-				throw new Error("A candidate document is outside the source host.");
-			const body = await request(url, options);
-			size += new TextEncoder().encode(body).length;
-			if (size > options.maxBytes) throw new Error("The combined candidate documents exceed their size limit.");
-			documents.push({ url, body });
-		}
-		return JSON.stringify({ documents });
 	}
 	if (source.format === "north-dakota-html") {
 		const form = await request(source.url, options);

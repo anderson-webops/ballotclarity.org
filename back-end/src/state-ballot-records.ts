@@ -11,6 +11,7 @@ import { parseConnecticutCandidateRecords } from "./state-ballot-connecticut.js"
 import { validateDakotaCandidatePage } from "./state-ballot-dakota.js";
 import { parseFloridaLocalCandidateRecords } from "./state-ballot-florida-local.js";
 import { stateHtmlAttribute as attribute, stateHtmlDescendants as descendants, parseStateHtml as parseHtml, stateHtmlTableRows, stateHtmlText as textContent } from "./state-ballot-html.js";
+import { kentuckySourceElectionId, parseKentuckyCandidateRecords } from "./state-ballot-kentucky.js";
 import { parseMarylandCandidateRecords } from "./state-ballot-maryland.js";
 import { readNorthCarolinaCandidateCapture } from "./state-ballot-north-carolina.js";
 import { parseOregonCandidateRecords } from "./state-ballot-oregon.js";
@@ -92,6 +93,8 @@ function makeRecord(source: StateBallotSource, values: StateCandidateValues): St
 	const jurisdiction = geography.scope === "local" ? clean(values.jurisdiction) || undefined : undefined;
 	const keyParts = [source.stateCode, source.electionDate, office.toLowerCase(), geography.district, name.toLowerCase(), party.toLowerCase()];
 	if (jurisdiction) keyParts.push(jurisdiction.toLowerCase());
+	if (source.format === "kentucky-courts-html") keyParts.push(clean(values.sourceDistrictLabel).toLowerCase());
+	if (source.stateCode === "KY" && source.id.startsWith("ky-general-core-") && geography.scope === "local") keyParts.push(clean(values.sourceDistrictLabel).toLowerCase());
 	if (source.format === "maryland-local-csv") {
 		const area = clean(values.sourceAreaLabel);
 		if (!area) return null;
@@ -414,8 +417,9 @@ export function parseStateCandidateRecords(source: StateBallotSource, body: stri
 	else if (source.format === "north-dakota-html") {
 		records = parseNorthDakota(source, body);
 	}
-	else if (source.format === "kentucky-html") {
-		records = parseKentucky(source, body);
+	else if (["kentucky-html", "kentucky-courts-html"].includes(source.format)) {
+		kentuckySourceElectionId(source);
+		records = source.id === "ky-sos-2026" && !Object.hasOwn(JSON.parse(body), "type") ? parseKentucky(source, body) : parseKentuckyCandidateRecords(source, body, makeRecord);
 	}
 	else if (["utah-html", "mississippi-csv", "south-dakota-csv", "hawaii-csv", "illinois-tsv", "montana-csv"].includes(source.format)) {
 		records = parseAdditionalStateRecords(source, body, makeRecord);

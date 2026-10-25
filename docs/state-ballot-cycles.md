@@ -1,10 +1,10 @@
 # Reusable election cycles
 
 External election catalogs opt the automatic candidate repository into reusable
-source families. Without them, the existing 58 source
+source families. Without them, the current 59 source
 definitions, source ordering and source/state allowlists remain unchanged.
 
-Thirteen families are supported:
+Fifteen families across twelve states are supported:
 
 | Family | Discovery | Elections |
 | --- | --- | --- |
@@ -21,11 +21,46 @@ Thirteen families are supported:
 | `md-sbe-local-2026` | [Maryland county candidate lists](https://elections.maryland.gov/elections/2026/general_candidates/) | Separate local category, actual HTML/CSV controls and complete county-section reconciliation; no residential-geography inference |
 | `sc-sec-2026` | [South Carolina public election selector](https://vrems.scvotes.sc.gov/Candidate/SelectElection) | Published even-year statewide general elections with matching IDs, dates and display labels |
 | `nc-sbe-2026` | [North Carolina published year tables](https://www.ncsbe.gov/results-data/candidate-lists) | Exact CSV/general-list controls and actual nonprimary November general-election record dates, retaining the combined-year file's separate primary rows |
+| `ky-sos-2026` | [Kentucky candidate selector](https://web.sos.ky.gov/CandidateFilings/) and [State Board calendar](https://elect.ky.gov/Pages/default.aspx) | Offered general-election IDs paired with explicit November dates, including odd years; original 210 records/IDs retained |
+| `ky-courts-2026` | The same public selector/calendar and its separately published court/prosecutor controls | Full regional district/division labels and lifecycle evidence, not personalized ballot eligibility |
 
 Stable family identifiers retain their original descriptor bindings; future
 instances do not require editing those descriptors. Discovery reads the official election selector or an explicit published general-election date,
 not a predicted URL, numerical election-ID sequence or computed election date.
 Primary, special and conservation elections are outside these families.
+
+Kentucky intersects explicitly published general-election dates with the candidate
+selector's offered general IDs. Overlapping published years are retained; neither
+the next year, an ID sequence, a primary election nor the election-date rule
+creates a future source. Each office page uses its own normal public dropdown
+postback when needed, echoing known form state and blank search/party filters.
+Requests remain pinned HTTPS with zero redirects; private form state stays in the
+local capture rather than source configuration or public records.
+
+The original five-page core descriptor and all 210 current record values/IDs are
+unchanged. A separate external court/prosecutor source adds 143 records: 139 listed,
+three write-in filings and one inactive. Court IDs retain full district/division
+labels and distinguish Family Court from Circuit Court. The original core includes
+one historical inactive district-judge record also represented in the new source;
+these are source entries, not a count of unique eligible candidates. Future core
+and court families separate that inactive evidence. Governor tickets and other
+published non-court office controls are discovered rather than fixed to 2026 IDs.
+
+Active office totals and actual section totals must reconcile. The root inactive
+counter currently says 16, while the selected 2026 general inactive page has four
+rows. Its scope is unverified, so that aggregate is not treated as a reconciled
+selected-election total or proof of completeness. The four actual rows remain
+inactive evidence. Missing pages, ambiguous lifecycle mappings, contradictory
+dates or changed controls preserve accepted data and require intervention.
+Fully validated empty future sets use the existing durable waiting protocol;
+accepted nonempty snapshots take precedence over earlier waiting receipts.
+
+Only the 2026 general election is currently offered with a matching calendar date;
+odd-year/overlapping future rollover is synthetic test evidence, not future
+candidacies. The separate county-filings page and binary export have no verified
+explicit election identity and remain outside these families. Filings and raw
+regional labels do not establish qualification or personal eligibility. Addresses,
+phone numbers, emails and filing dates are excluded from normalized records.
 
 Florida local collection uses the published `LOC` control, separately from the
 unchanged `STA` family. The collector validates both public forms, the complete
@@ -264,7 +299,7 @@ provide archive browsing, and this work adds no archival API.
 
 ## Boundaries
 
-These are thirteen source families, not nationwide future-election automation.
+These are fifteen source families, not nationwide future-election automation.
 Other adapters still have cycle-specific discovery or parsing work. Reviewed
 PDF/image conversion, measure interpretation, independently verified geography,
 rights review, ballot publication, archival browsing, host scheduling, monitoring

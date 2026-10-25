@@ -7,6 +7,7 @@ import { dirname, isAbsolute, join, resolve } from "node:path";
 import process from "node:process";
 import { dakotaCandidateRosterUrl, dakotaDiscoveryUrl, readDakotaElectionDiscovery } from "./state-ballot-dakota.js";
 import { parseStateHtml, stateHtmlAttribute, stateHtmlDescendants, stateHtmlText } from "./state-ballot-html.js";
+import { kentuckyCandidatePostBody, kentuckyDiscoveryUrl, kentuckyOriginalElectionId, kentuckySourceElectionId, readKentuckyElectionDiscovery } from "./state-ballot-kentucky.js";
 import { marylandCandidateRosterUrl, marylandDiscoveryUrl, marylandSourceElectionId, readMarylandElectionDiscovery } from "./state-ballot-maryland.js";
 import { northCarolinaCandidateCsvUrl, northCarolinaDiscoveryUrl, readNorthCarolinaElectionDiscovery } from "./state-ballot-north-carolina.js";
 import { configuredStateBallotSources } from "./state-ballot-registry.js";
@@ -32,6 +33,8 @@ const cycleFamilies = [
 	{ source: configuredStateBallotSources.find(source => source.id === "md-sbe-2026")!, format: "csv", discoveryUrl: marylandDiscoveryUrl, prefix: "md-general", electionLabel: "General Election Day", formId: null },
 	{ source: configuredStateBallotSources.find(source => source.id === "md-sbe-local-2026")!, format: "maryland-local-csv", discoveryUrl: marylandDiscoveryUrl, prefix: "md-local-general", electionLabel: "General Election Day", formId: null },
 	{ source: configuredStateBallotSources.find(source => source.id === "nc-sbe-2026")!, format: "csv", discoveryUrl: northCarolinaDiscoveryUrl, prefix: "nc-general", electionLabel: "General Candidate List by Contest", formId: null },
+	{ source: configuredStateBallotSources.find(source => source.id === "ky-sos-2026")!, format: "kentucky-html", discoveryUrl: kentuckyDiscoveryUrl, prefix: "ky-general-core", electionLabel: "General Election", formId: "aspnetForm" },
+	{ source: configuredStateBallotSources.find(source => source.id === "ky-courts-2026")!, format: "kentucky-courts-html", discoveryUrl: kentuckyDiscoveryUrl, prefix: "ky-general-courts", electionLabel: "General Election", formId: "aspnetForm" },
 ] as const;
 
 export function wyomingCandidateRosterUrl(electionDate: string) {
@@ -56,6 +59,9 @@ export function getStateBallotCycleFamily(familyId: string) {
 	else if (family.format === "south-carolina-html") {
 		targetValid = targetValid && family.source.stateCode === "SC" && family.source.url === southCarolinaCandidateRosterUrl("22596");
 	}
+	else if (family.source.stateCode === "KY") {
+		targetValid = kentuckySourceElectionId(family.source) === kentuckyOriginalElectionId;
+	}
 	else if (family.source.stateCode === "NC") {
 		targetValid = family.source.url === northCarolinaCandidateCsvUrl(family.source.electionDate) && family.source.pageUrl === northCarolinaDiscoveryUrl;
 	}
@@ -75,7 +81,7 @@ export function getStateBallotCycleFamily(familyId: string) {
 	else {
 		targetValid = targetValid && new RegExp(`^${family.discoveryUrl.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&")}\\?e=[1-9]\\d{0,8}$`, "u").test(family.source.url);
 	}
-	if (!targetValid || family.source.format !== family.format || family.source.retrievalPolicy || (family.source.stateCode !== "FL" && family.source.postBody) || family.source.documentUrls?.length || family.source.documentLinks?.length)
+	if (!targetValid || family.source.format !== family.format || family.source.retrievalPolicy || (family.source.stateCode !== "FL" && family.source.postBody) || (family.source.documentUrls?.length && family.source.stateCode !== "KY") || family.source.documentLinks?.length)
 		throw new Error("The automatic election source family is unsupported or has changed.");
 	return family;
 }
@@ -219,7 +225,7 @@ export function parseStateBallotCycleCatalog(value: unknown, now = Date.now()): 
 	const florida = original.stateCode === "FL";
 	const maryland = original.stateCode === "MD";
 	const dateOnly = !florida && !maryland && ["mississippi-csv", "csv", "delaware-html"].includes(family.format);
-	const originalElectionId = florida ? floridaSourceElectionId(original) : maryland ? marylandSourceElectionId(original) : new URL(original.url).searchParams.get(family.format === "south-carolina-html" ? "electionId" : ["south-dakota-csv", "north-dakota-html"].includes(family.format) ? "eid" : "e");
+	const originalElectionId = florida ? floridaSourceElectionId(original) : maryland ? marylandSourceElectionId(original) : original.stateCode === "KY" ? kentuckyOriginalElectionId : new URL(original.url).searchParams.get(family.format === "south-carolina-html" ? "electionId" : ["south-dakota-csv", "north-dakota-html"].includes(family.format) ? "eid" : "e");
 	for (const election of value.elections) {
 		if (!exactKeys(election, ["electionId", "electionDate"]) || !validStateBallotGeneralDate(election.electionDate) || election.electionDate < original.electionDate || dates.has(election.electionDate) || (dateOnly ? election.electionId !== null : typeof election.electionId !== "string" || (florida ? floridaElectionDate(election.electionId) !== election.electionDate : maryland ? !new RegExp(`^${election.electionDate.slice(0, 4)}_(GG|PG)$`, "u").test(election.electionId) : !/^[1-9]\d{0,8}$/u.test(election.electionId)) || identifiers.has(election.electionId) || ((election.electionId === originalElectionId) !== (election.electionDate === original.electionDate))) || ((maryland || ["montana-csv", "csv", "delaware-html", "south-dakota-csv", "north-dakota-html", "south-carolina-html"].includes(family.format)) && Number(election.electionDate.slice(0, 4)) % 2 !== 0))
 			throw new Error("The official election identity is duplicate, unsupported or inconsistent.");
@@ -234,6 +240,10 @@ export function discoverWashingtonElectionCycles(body: string, now = Date.now())
 }
 
 export function discoverStateBallotElectionCycles(body: string, familyId: string, now = Date.now()): StateBallotCycleCatalog {
+	if (["ky-sos-2026", "ky-courts-2026"].includes(familyId)) {
+		const family = getStateBallotCycleFamily(familyId);
+		return parseStateBallotCycleCatalog({ schemaVersion: 1, type: "state-ballot-cycle-catalog", familyId, sourceConfigurationSha256: digest(JSON.stringify(family.source)), discovery: { url: family.discoveryUrl, sha256: digest(body), retrievedAt: new Date(now).toISOString() }, elections: readKentuckyElectionDiscovery(body) }, now);
+	}
 	if (familyId === "nc-sbe-2026") {
 		const family = getStateBallotCycleFamily(familyId);
 		return parseStateBallotCycleCatalog({ schemaVersion: 1, type: "state-ballot-cycle-catalog", familyId, sourceConfigurationSha256: digest(JSON.stringify(family.source)), discovery: { url: family.discoveryUrl, sha256: digest(body), retrievedAt: new Date(now).toISOString() }, elections: readNorthCarolinaElectionDiscovery(body) }, now);
@@ -277,6 +287,7 @@ export function stateBallotCycleSources(catalog: StateBallotCycleCatalog, now = 
 	parseStateBallotCycleCatalog(catalog, now);
 	const family = getStateBallotCycleFamily(catalog.familyId);
 	return catalog.elections.filter(election => election.electionDate !== family.source.electionDate).map((election) => {
+		if (family.source.stateCode === "KY") return { ...family.source, id: `${family.prefix}-${election.electionDate}`, label: `${family.source.label} (${election.electionDate.slice(0, 4)})`, electionDate: election.electionDate, documentUrls: undefined, postBody: kentuckyCandidatePostBody(election.electionId!) };
 		if (family.source.stateCode === "NC") return { ...family.source, id: `${family.prefix}-${election.electionDate}`, label: `${family.source.label} (${election.electionDate.slice(0, 4)})`, electionDate: election.electionDate, url: northCarolinaCandidateCsvUrl(election.electionDate) };
 		if (family.source.stateCode === "MD") {
 			const kind = family.format === "csv" ? "state" : "local";

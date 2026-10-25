@@ -58,10 +58,10 @@ test("North Dakota only posts observed public search tokens and unfiltered selec
 	assert.ok(requests[1]?.body?.includes("btnSearch"));
 });
 
-test("Kentucky requires all configured office documents and excludes the closed-status list", async () => {
+test("Kentucky legacy captures require all configured office documents and retain inactive evidence without contacts", async () => {
 	const election = "<select name=\"ctl00$MainContent$ddlElection\"><option selected value=\"87\">2026 General Election</option></select>";
 	const table = (inactive: boolean) => `<table><tr><td>${inactive ? "Name" : "Name / Running Mate"}</td><td>POBox Address / Email</td><td>Office</td><td>District/Division</td><td>Party</td></tr><tr><td>Alex Sample</td><td>Private address</td><td>US Senator</td><td></td><td>Example</td></tr></table>`;
-	const body = await fetchStateBallotSourceText(source("KY"), async url => election + table(url.endsWith("withdrawn=1")));
+	const body = JSON.stringify({ documents: source("KY").documentUrls!.map(url => ({ url, body: election + table(url.endsWith("withdrawn=1")) })) });
 	const records = parseStateCandidateRecords(source("KY"), body);
 	assert.equal(records.length, 1);
 	assert.equal(records[0]?.status, "inactive");
@@ -70,7 +70,7 @@ test("Kentucky requires all configured office documents and excludes the closed-
 	incomplete.documents.pop();
 	assert.throws(() => parseStateCandidateRecords(source("KY"), JSON.stringify(incomplete)), /incomplete/u);
 	assert.throws(() => parseStateCandidateRecords(source("KY"), body.replaceAll("2026 General Election", "2027 General Election")), /configured general election/u);
-	await assert.rejects(fetchStateBallotSourceText({ ...source("KY"), documentUrls: ["https://another.example/list"] }, async () => ""), /source host/u);
+	await assert.rejects(fetchStateBallotSourceText({ ...source("KY"), documentUrls: ["https://another.example/list"] }, async () => ""), /approved general-election identity/u);
 });
 
 test("North Carolina county races are not deduplicated across different counties", () => {

@@ -192,7 +192,19 @@ export const additionalStateBallotSources: readonly StateBallotSource[] = [
 		documentUrls: ["https://www.washoecounty.gov/voters/information/"],
 		scopeNotice: "Other Nevada counties are not included.",
 	},
-
+	{
+		stateCode: "IA",
+		id: "ia-johnson-2026",
+		countyName: "Johnson County",
+		label: "Johnson County general-election candidates",
+		electionDate: "2026-11-03",
+		url: "https://johnsoncountyiowa.gov/november-3-2026-general-election",
+		pageUrl: "https://johnsoncountyiowa.gov/november-3-2026-general-election",
+		format: "iowa-johnson-html",
+		snapshotStorage: "external",
+		documentUrls: ["https://johnsoncountyiowa.gov/november-3-2026-general-election"],
+		scopeNotice: "Johnson County publication only. Other Iowa races may be missing.",
+	},
 ];
 
 function automaticReviewedSource(source: StateBallotSource): StateBallotSource {

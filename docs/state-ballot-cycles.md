@@ -1,12 +1,13 @@
 # Reusable election cycles
 
 External election catalogs opt the automatic candidate repository into reusable
-source families. The current 62 source definitions retain explicit source/state
+source families. The current 63 source definitions retain explicit source/state
 allowlists; reusable discovery does not widen an exact-source allowlist.
 
-Twenty-nine families across twenty-four states are supported:
+Thirty families across twenty-five states are supported:
 
 | Family | Discovery | Elections |
+| `ia-johnson-2026` | [Johnson County, Iowa election index](https://johnsoncountyiowa.gov/auditor/elections) | Actually offered, explicitly dated even-year general pages; complete candidate sections, printed seat/term rules and external durable imports, with questions separate from people |
 | --- | --- | --- |
 | `nv-washoe-2026` | [Washoe County election information](https://www.washoecounty.gov/voters/information/) | Printed even-year November general dates and complete HTML contest tables; policy-bound collection, separate questions/nonperson options, terms, vote limits and the published deceased-candidate notice |
 | `nv-clark-2026` | [Clark County general-election information](https://www.clarkcountynv.gov/government/departments/elections/26g-info) | Actually offered dated general elections with independently reconciled candidate-table and newsletter publications; both remain required |

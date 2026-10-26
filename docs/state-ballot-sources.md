@@ -1,5 +1,16 @@
 # Official state candidate records
 
+## Johnson County, Iowa
+
+The independent [county general-election page](https://johnsoncountyiowa.gov/november-3-2026-general-election)
+adds 102 automatically collected candidate/office records, including seventy
+local/regional entries, while retaining the existing Story County source.
+Six measure references, nine empty offices and a not-on-ballot Senate seat remain
+separate. The reusable `ia-johnson-2026` family uses offered dates/links, current
+policies and durable external imports without a converter. Local eligibility,
+missing parties and regional judicial districts are not inferred. See the
+[source review](audits/2026-10-26-iowa-johnson-candidates.md).
+
 Congressional ballot matching uses election-session geography separately from
 current officeholder districts. Census's current geography can describe the next
 Congress before it takes office. Unknown-session matches are not sufficient for

@@ -59,7 +59,7 @@ function payload(stateCode: "MN" | "IA") {
 }
 
 for (const stateCode of ["MN", "IA"] as const) {
-	test(`${stateCode} requires an external reviewed import without publisher requests or a bundled fallback`, async () => {
+	test(`${sourceFor(stateCode).id} requires an external reviewed import without publisher requests or a bundled fallback`, async () => {
 		const source = sourceFor(stateCode);
 		assert.equal(source.snapshotStorage, "external");
 		assert.equal(source.retrievalPolicy, "manual-snapshot");
@@ -71,7 +71,7 @@ for (const stateCode of ["MN", "IA"] as const) {
 			requests += 1;
 			throw new Error("Publisher requests are not permitted in this test.");
 		};
-		assert.equal(await createStateBallotRepository({ dataDirectory: null, now: () => now, fetchText }).getSnapshot(stateCode), null);
+		assert.equal(await createStateBallotRepository({ sources: [source], dataDirectory: null, now: () => now, fetchText }).getSnapshot(stateCode), null);
 		await assert.rejects(fetchStateBallotSourceText(source, fetchText), /manually supplied/u);
 		assert.equal(requests, 0);
 	});
@@ -81,7 +81,7 @@ for (const stateCode of ["MN", "IA"] as const) {
 		context.after(() => rm(directory, { recursive: true, force: true }));
 		const snapshot = parseBundledStateSnapshot(sourceFor(stateCode), JSON.stringify(payload(stateCode)));
 		await createStateBallotStorage(directory).write(snapshot);
-		const loaded = await createStateBallotRepository({ dataDirectory: directory, now: () => now }).getSnapshot(stateCode);
+		const loaded = await createStateBallotRepository({ sources: [sourceFor(stateCode)], dataDirectory: directory, now: () => now }).getSnapshot(stateCode);
 		assert.deepEqual(loaded, snapshot);
 		const preview = buildStateBallotPreview(loaded!, { districtMatches: [] })!;
 		assert.equal(preview.candidateCount, 3);
@@ -111,13 +111,13 @@ for (const stateCode of ["MN", "IA"] as const) {
 		for (const field of ["residentialAddress", "phone", "email"]) assert.throws(() => parse({ ...original, records: original.records.map(record => ({ ...record, [field]: "excluded" })) }), /layout/u);
 	});
 
-	test(`${stateCode} management import exports exact bytes after restart and refuses automatic refresh`, async (context) => {
+	test(`${sourceFor(stateCode).id} management import exports exact bytes after restart and refuses automatic refresh`, async (context) => {
 		const directory = await mkdtemp(join(tmpdir(), `ballot-${stateCode.toLowerCase()}-cli-`));
 		context.after(() => rm(directory, { recursive: true, force: true }));
 		const file = join(directory, "synthetic-snapshot.json");
 		const data = payload(stateCode);
 		await writeFile(file, JSON.stringify(data));
-		const environment = { ...process.env, STATE_BALLOT_DATA_DIR: directory, STATE_BALLOT_ENABLED_STATES: stateCode };
+		const environment = { ...process.env, STATE_BALLOT_DATA_DIR: directory, STATE_BALLOT_ENABLED_STATES: stateCode, STATE_BALLOT_ENABLED_SOURCES: sourceFor(stateCode).id };
 		const manager = fileURLToPath(new URL("../src/manage-state-ballot-data.ts", import.meta.url));
 		const exporter = fileURLToPath(new URL("../src/export-state-ballot-sources.ts", import.meta.url));
 		const imported = execFileSync(process.execPath, ["--import", "tsx", manager, "import", file], { env: environment, encoding: "utf8" });

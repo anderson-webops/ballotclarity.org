@@ -21,6 +21,7 @@ import {
 	stateHtmlTableRows,
 	stateHtmlText as textContent
 } from "./state-ballot-html.js";
+import { parseIowaJohnsonCandidateCapture } from "./state-ballot-iowa-johnson.js";
 import { kentuckySourceElectionId, parseKentuckyCandidateRecords } from "./state-ballot-kentucky.js";
 import { parseMarylandCandidateRecords } from "./state-ballot-maryland.js";
 import {
@@ -423,7 +424,10 @@ export function parseStateCandidateRecords(source: StateBallotSource, body: stri
 	if (["reviewed-pdf", "reviewed-xlsx", "reviewed-image"].includes(source.format))
 		throw new Error("Reviewed document sources require a validated snapshot.");
 	let records: StateCandidateRecord[];
-	if (source.format === "washoe-html") {
+	if (source.format === "iowa-johnson-html") {
+		records = parseIowaJohnsonCandidateCapture(source, body, makeRecord).records;
+	}
+	else if (source.format === "washoe-html") {
 		records = parseWashoeCandidateCapture(source, body, makeRecord).records;
 	}
 	else if (source.format === "clark-pdf") {

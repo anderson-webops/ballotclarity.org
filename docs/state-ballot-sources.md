@@ -45,6 +45,11 @@ printed claims reconcile to 254 names; eight nonperson options remain separate.
 The migration preserves accepted candidate IDs and keeps the reviewed envelope
 for recovery. Offered future elections wait for both publications without
 fabricating candidates. See `docs/audits/2026-10-25-clark-automation.md`.
+The reader also supports the observed 2024 landscape and joint presidential
+layout, including its thicker printed borders and complete page-count checks.
+Its 195 historical entries are regression evidence, not a new enabled import:
+the Fall 2024 newsletter has no independent candidate roster. Both offered
+rosters remain required. See `docs/audits/2026-10-25-clark-landscape.md`.
 
 Connecticut now joins the configurable automatic families with policy-bound
 town-PDF discovery and bounded text/vector extraction. Its 169-document retained

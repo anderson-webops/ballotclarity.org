@@ -69,7 +69,7 @@ function svgRectangles(body: string, width: number, height: number, minimumCells
 			if (horizontal.length !== 2 || vertical.length !== 2 || new Set(corners.map(corner => corner.join(","))).size !== 4 || corners.some((corner, index) => corner[0] !== corners[(index + 1) % 4]![0] && corner[1] !== corners[(index + 1) % 4]![1])) continue;
 			const rectangleWidth = Math.abs(horizontal[0]! - horizontal[1]!);
 			const rectangleHeight = Math.abs(vertical[0]! - vertical[1]!);
-			if (Math.min(rectangleWidth, rectangleHeight) > 2 || Math.max(rectangleWidth, rectangleHeight) <= 10) continue;
+			if (Math.min(rectangleWidth, rectangleHeight) > 3 || Math.max(rectangleWidth, rectangleHeight) <= 10) continue;
 			if (tokens.length === 16) point(Number(tokens[14]), Number(tokens[15]));
 		}
 		let previous: readonly [number, number] | undefined;

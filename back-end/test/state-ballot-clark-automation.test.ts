@@ -32,6 +32,19 @@ function capture(entry = source, body = discovery(entry.electionDate)) {
 	return JSON.stringify({ schemaVersion: 1, type: "clark-candidate-capture", discovery: body, documents: urls.map((url, index) => ({ url, sha256: fixture[index]!.sha256, retrievedAt: `${entry.electionDate.slice(0, 4)}-10-25T23:00:00.000Z`, text: JSON.stringify(fixture[index]!.pages).replaceAll("2026", entry.electionDate.slice(0, 4)).replaceAll("November 3", `November ${Number(entry.electionDate.slice(-2))}`) })) });
 }
 
+test("Clark County supports a synthetic future presidential layout while requiring both offered rosters", () => {
+	const historical = JSON.parse(readFileSync(new URL("./fixtures/nevada-clark-historical-tables.json", import.meta.url), "utf8")) as { documents: Array<{ pages: StateBallotTablePage[] }> };
+	const future = stateBallotCycleSources(discoverStateBallotElectionCycles(discovery("2028-11-07"), source.id, now), now)[0]!;
+	const value = JSON.parse(capture(future)) as { documents: Array<{ text: string }> };
+	for (const document of value.documents) document.text = JSON.stringify(historical.documents[0]!.pages).replaceAll("2024", "2028");
+	const records = parseClarkCandidateCapture(future, JSON.stringify(value), createStateCandidateRecord, Date.parse("2028-11-08T00:00:00Z")).records;
+	assert.equal(records.length, 195);
+	assert.equal(records.filter(record => record.name.includes(" / ")).length, 4);
+	assert.ok(records.every(record => /^[a-f\d]{24}$/u.test(record.id) && !previous.some(accepted => accepted.id === record.id)));
+	value.documents[1]!.text = JSON.stringify(historical.documents[1]!.pages).replaceAll("2024", "2028");
+	assert.throws(() => parseClarkCandidateCapture(future, JSON.stringify(value), createStateCandidateRecord, Date.parse("2028-11-08T00:00:00Z")), /empty/u);
+});
+
 test("Clark County binds its offered election and independent documents without guessing future URLs", () => {
 	validateClarkSource(source);
 	assert.equal(source.retrievalPolicy, undefined);

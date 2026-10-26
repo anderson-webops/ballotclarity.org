@@ -15,8 +15,9 @@ import { StateBallotAwaitingRecordsError } from "./state-ballot-source-state.js"
 const parties: Record<string, string> = { DEM: "Democratic", REP: "Republican", NP: "Nonpartisan", NPP: "No Political Party", IAP: "Independent American Party", LPN: "Libertarian Party of Nevada" };
 function officeValues(claim: ClarkCandidateClaim): Omit<StateCandidateValues, "name" | "party"> {
 	const raw = claim.officeParts.join(" ");
-	const label = raw.replace(/ NOTE: This office covers areas in multiple Counties, i\.e\., [A-Za-z ,;.]+$/u, "").replace(/ \(See NRS 396\.040; AB118 \[2023\]\)/u, "").replace(/ Vote for not more than \d{1,2}$/u, "");
+	const label = raw.replace(/ NOTE: This office covers areas in multiple Counties, i\.e\., [A-Za-z ,;.]+$/u, "").replace(/ \(NOTE: This office covers areas in multiple Counties, i\.e\., [A-Za-z ,;.]+\)$/u, "").replace(/ \(See NRS 396\.040; AB118 \[2023\]\)/u, "").replace(/ Vote for not more than \d{1,2}$/u, "");
 	let match: RegExpExecArray | null;
+	if (claim.section === "FEDERAL PARTISAN" && ["President / Vice President of the United States", "United States Senate"].includes(label)) return { office: label, scope: "statewide" };
 	match = /^(Representative in Congress|State Senate|State Assembly) District ([1-9]\d?)$/u.exec(label);
 	if (match) {
 		const scope = match[1] === "Representative in Congress" ? "congressional" : match[1] === "State Senate" ? "state-senate" : "state-house";
@@ -34,20 +35,26 @@ function officeValues(claim: ClarkCandidateClaim): Omit<StateCandidateValues, "n
 		if (match) return { office: `Justice of the Supreme Court, Seat ${match[1]}`, scope: "statewide" };
 		match = /^District Court Judge (Family Division )?Department ([A-Z]|[1-9]\d?)$/u.exec(label);
 		if (match) return { office: `District Court Judge, ${match[1] ?? ""}Department ${match[2]}`, scope: "local" };
-		match = /^Board of Regents District ([1-9]\d?)$/u.exec(label);
+		match = /^(?:Board of Regents|Regent State University) District ([1-9]\d?)$/u.exec(label);
 		if (match) return { office: `Board of Regents, District ${match[1]}`, district: match[1], scope: "local", jurisdiction: "Board of Regents" };
+		match = /^Member State Board of Education District ([1-9]\d?) \(NOTE: Boundaries are the same as Congressional Distr?ict \1\)$/u.exec(label);
+		if (match) return { office: `Member, State Board of Education, District ${match[1]}`, district: match[1], scope: "local", jurisdiction: "State Board of Education" };
 	}
 	if (claim.section === "COUNTY NONPARTISAN") {
 		match = /^Trustee Clark County School District ([A-Z])$/u.exec(label);
 		if (match) return { office: `Trustee, Clark County School District ${match[1]}`, district: match[1], scope: "local", jurisdiction: "Clark County School District" };
 		match = /^Board Member (Moapa Valley Water District) (Logandale|Overton)$/u.exec(label) ?? /^Board Member (Virgin Valley Water District) (Mesquite)$/u.exec(label);
 		if (match) return { office: "Board Member", scope: "local", jurisdiction: `${match[1]}, ${match[2]}` };
-		if (label === "Moapa Valley Town Advisory Board") return { office: label, scope: "local", jurisdiction: "Moapa Valley" };
+		match = /^Trustee Overton Power District ([1-9]\d?) Seat ([1-9]\d?) At Large Within District$/u.exec(label);
+		if (match) return { office: `Trustee, Seat ${match[2]} At Large Within District`, district: match[1], scope: "local", jurisdiction: `Overton Power District ${match[1]}` };
+		match = /^(Moapa Valley|Laughlin) Town Advisory Board$/u.exec(label);
+		if (match) return { office: label, scope: "local", jurisdiction: match[1] };
 	}
 	if (claim.section === "CITY (ALL NONPARTISAN)" && claim.localSection && label.startsWith(`${claim.localSection} `)) {
 		const local = label.slice(claim.localSection.length + 1);
 		const base = { scope: "local" as const, jurisdiction: claim.localSection };
-		if (["Mayor", "Council Member At Large"].includes(local)) return { ...base, office: local };
+		if (local === "Mayor") return { ...base, office: local };
+		if (/^Council Member [Aa]t Large$/u.test(local)) return { ...base, office: "Council Member At Large" };
 		match = /^(City Council|Councilman|Council Member) Ward ([IVX]+|[1-9]\d?)$/u.exec(local);
 		if (match) return { ...base, office: `${match[1]}, Ward ${match[2]}`, district: match[2] };
 		match = /^Councilmember Seat ([1-9]\d?)$/u.exec(local);
@@ -58,8 +65,8 @@ function officeValues(claim: ClarkCandidateClaim): Omit<StateCandidateValues, "n
 	if (claim.section === "TOWNSHIP NONPARTISAN") {
 		match = /^Constable ([A-Za-z ]+ Township)$/u.exec(label);
 		if (match) return { office: "Constable", scope: "local", jurisdiction: match[1] };
-		match = /^Justice of the Peace ([A-Za-z ]+ Township) Department ([1-9]\d?)$/u.exec(label);
-		if (match) return { office: `Justice of the Peace, Department ${match[2]}`, scope: "local", jurisdiction: match[1] };
+		match = /^Justice of the Peace ([A-Za-z ]+ Township)(?: Department ([1-9]\d?))?$/u.exec(label);
+		if (match) return { office: `Justice of the Peace${match[2] ? `, Department ${match[2]}` : ""}`, scope: "local", jurisdiction: match[1] };
 	}
 	throw new Error("The Clark County printed office or section requires review.");
 }

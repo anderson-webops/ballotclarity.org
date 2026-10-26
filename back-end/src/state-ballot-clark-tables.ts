@@ -18,26 +18,28 @@ export interface ClarkCandidateClaim {
 
 const parties = ["DEM", "REP", "NP", "NPP", "IAP", "LPN"];
 const sections = ["FEDERAL PARTISAN", "STATE PARTISAN", "COUNTY PARTISAN", "STATE AND DISTRICT NONPARTISAN", "COUNTY NONPARTISAN", "CITY (ALL NONPARTISAN)", "TOWNSHIP NONPARTISAN"];
+const landscapeLabels: Record<string, string> = { "CITY OFFICES (ALL NONPARTISAN)": "CITY (ALL NONPARTISAN)", "BOULDER CITY": "City of Boulder City", "HENDERSON": "City of Henderson", "LAS VEGAS": "City of Las Vegas", "MESQUITE": "City of Mesquite", "NORTH LAS VEGAS": "City of North Las Vegas" };
 const clean = (value: string) => value.replace(/\s+/gu, " ").trim();
 const fold = (value: string) => value.normalize("NFKC").replace(/[‘’]/gu, "'").replace(/[“”]/gu, "\"").replace(/\s+/gu, "").toLowerCase();
 const close = (first: number, second: number) => Math.abs(first - second) < 1;
+const landscape = (page: StateBallotTablePage) => Math.abs(page.width - 792) < 0.01 && Math.abs(page.height - 612) < 0.01;
 const keys = (value: unknown, fields: string[]): value is Record<string, unknown> => Boolean(value && typeof value === "object" && !Array.isArray(value) && Object.keys(value).sort().join(",") === [...fields].sort().join(","));
 
 function pages(value: unknown): StateBallotTablePage[] {
 	if (Buffer.byteLength(JSON.stringify(value) ?? "") > 4 * 1024 * 1024 || !Array.isArray(value) || !value.length || value.length > 50) throw new Error("The Clark County table document exceeds its bounds.");
 	let previous = 0;
 	for (const page of value) {
-		if (!keys(page, ["number", "width", "height", "text", "cells"]) || !Number.isSafeInteger(page.number) || Number(page.number) <= previous || Number(page.number) > 50 || page.width !== 612 || page.height !== 792 || typeof page.text !== "string" || page.text.length > 50000 || !Array.isArray(page.cells) || page.cells.length > 500) throw new Error("The Clark County table page has changed geometry or content.");
+		if (!keys(page, ["number", "width", "height", "text", "cells"]) || !Number.isSafeInteger(page.number) || Number(page.number) <= previous || Number(page.number) > 50 || typeof page.width !== "number" || typeof page.height !== "number" || !((page.width === 612 && page.height === 792) || landscape(page as unknown as StateBallotTablePage)) || typeof page.text !== "string" || page.text.length > 50000 || !Array.isArray(page.cells) || page.cells.length > 500) throw new Error("The Clark County table page has changed geometry or content.");
 		previous = Number(page.number);
 		for (const cell of page.cells) {
-			if (!keys(cell, ["bounds", "text", "logicalText"]) || !Array.isArray(cell.bounds) || cell.bounds.length !== 4 || cell.bounds.some(value => typeof value !== "number" || !Number.isFinite(value)) || cell.bounds[0] < 0 || cell.bounds[1] < 0 || cell.bounds[2] > 613 || cell.bounds[3] > 793 || cell.bounds[0] >= cell.bounds[2] || cell.bounds[1] >= cell.bounds[3] || typeof cell.text !== "string" || typeof cell.logicalText !== "string" || cell.text.length > 3000 || cell.logicalText.length > 3000) throw new Error("The Clark County table cell is invalid.");
+			if (!keys(cell, ["bounds", "text", "logicalText"]) || !Array.isArray(cell.bounds) || cell.bounds.length !== 4 || cell.bounds.some(value => typeof value !== "number" || !Number.isFinite(value)) || cell.bounds[0] < 0 || cell.bounds[1] < 0 || cell.bounds[2] > page.width + 1 || cell.bounds[3] > page.height + 1 || cell.bounds[0] >= cell.bounds[2] || cell.bounds[1] >= cell.bounds[3] || typeof cell.text !== "string" || typeof cell.logicalText !== "string" || cell.text.length > 3000 || cell.logicalText.length > 3000) throw new Error("The Clark County table cell is invalid.");
 		}
 	}
 	return value as StateBallotTablePage[];
 }
 
 function headerColumns(page: StateBallotTablePage, party: Cell) {
-	const offices = page.cells.filter(cell => clean(cell.text) === "CONTEST");
+	const offices = page.cells.filter(cell => clean(cell.text) === (landscape(page) ? "OFFICE" : "CONTEST"));
 	const terms = page.cells.filter(cell => fold(cell.text) === "term(years)");
 	if (offices.length !== 1 || terms.length !== 1 || !close(offices[0]!.bounds[3], party.bounds[3]) || !close(terms[0]!.bounds[0], party.bounds[2]) || !close(terms[0]!.bounds[3], party.bounds[3])) throw new Error("The Clark County table headers are incomplete.");
 	const office = offices[0]!;
@@ -52,19 +54,24 @@ export function readClarkCandidateTables(value: unknown, electionDate: string, k
 	if (!["candidate-table", "newsletter"].includes(kind) || !/^20\d{2}-11-0[2-8]$/u.test(electionDate) || new Date(`${electionDate}T00:00:00Z`).getUTCDay() !== 2) throw new Error("The Clark County table election is invalid.");
 	const document = pages(value);
 	const date = `November ${Number(electionDate.slice(-2))} ${electionDate.slice(0, 4)}, General Election in Clark County, Nevada`;
-	if (kind === "candidate-table" && !clean(document[0]!.text).replace(/November (\d+),/u, "November $1").includes(date)) throw new Error("The Clark County candidate table does not identify the configured election.");
+	const legacyTitle = `Contests/Candidates in the ${electionDate.slice(0, 4)} General Election in Clark County, Nevada`;
+	if (kind === "candidate-table" && (landscape(document[0]!) ? !clean(document[0]!.text).startsWith(legacyTitle) : !clean(document[0]!.text).replace(/November (\d+),/u, "November $1").includes(date))) throw new Error("The Clark County candidate table does not identify the configured election.");
 	let columns: Columns | undefined;
 	let section: string | undefined;
 	let localSection: string | undefined;
 	const claims: ClarkCandidateClaim[] = [];
 	const nonpersonOptions: Array<{ page: number; text: string; officeParts: string[] }> = [];
 	const tablePages: number[] = [];
-	for (const page of document) {
+	for (const [pageIndex, page] of document.entries()) {
+		if (kind === "candidate-table") {
+			const printedPages = page.text.split("\n").map(clean).filter(line => /^(?:Page )?\d{1,2} of \d{1,2}$/u.test(line));
+			if (page.number !== pageIndex + 1 || printedPages.length !== 1 || printedPages[0]!.replace(/^Page /u, "") !== `${page.number} of ${document.length}` || (landscape(page) && !clean(page.text).startsWith(legacyTitle))) throw new Error("The Clark County printed page set is incomplete or identifies another election.");
+		}
 		const headers = page.cells.filter(cell => clean(cell.text) === "PARTY");
 		if (headers.length > 1) throw new Error("The Clark County party header is ambiguous.");
 		let top = 0;
 		if (headers.length) {
-			if (!fold(page.text).includes("candidatenameonballot")) throw new Error("The Clark County candidate heading requires review.");
+			if (!fold(page.text).includes(landscape(page) ? "candidatenameontheballot" : "candidatenameonballot")) throw new Error("The Clark County candidate heading requires review.");
 			columns = headerColumns(page, headers[0]!);
 			top = headers[0]!.bounds[3];
 		}
@@ -74,6 +81,7 @@ export function readClarkCandidateTables(value: unknown, electionDate: string, k
 		if (!columns) continue;
 		const layout = columns;
 		const partyCells = page.cells.filter(cell => close(cell.bounds[0], layout.party) && close(cell.bounds[2], layout.term) && cell.bounds[1] >= top - 1).sort((first, second) => first.bounds[1] - second.bounds[1]);
+		const termCells = page.cells.filter(cell => close(cell.bounds[0], layout.term) && close(cell.bounds[2], layout.right) && cell.bounds[1] >= top - 1);
 		if (!partyCells.length) {
 			if (kind === "candidate-table") throw new Error("The Clark County candidate page has no table rows.");
 			continue;
@@ -83,11 +91,11 @@ export function readClarkCandidateTables(value: unknown, electionDate: string, k
 		const bands = page.cells.filter(cell => close(cell.bounds[0], layout.left) && close(cell.bounds[2], layout.right) && cell.bounds[1] >= top - 1).sort((first, second) => first.bounds[1] - second.bounds[1]);
 		let bandIndex = 0;
 		const namedCells = new Set<Cell>();
-		const appliedTerms = new Set<Cell>();
 		for (const [row, cell] of partyCells.entries()) {
 			const center = (cell.bounds[1] + cell.bounds[3]) / 2;
 			while (bandIndex < bands.length && bands[bandIndex]!.bounds[3] < center) {
-				const label = clean(bands[bandIndex++]!.text);
+				const raw = clean(bands[bandIndex++]!.text);
+				const label = landscape(page) ? landscapeLabels[raw] ?? raw.replace(/ OFFICES$/u, "") : raw;
 				if (sections.includes(label)) {
 					section = label;
 					localSection = undefined;
@@ -101,18 +109,23 @@ export function readClarkCandidateTables(value: unknown, electionDate: string, k
 			}
 			const office = page.cells.filter(other => other.bounds[0] >= layout.left - 1 && other.bounds[2] <= layout.names + 1 && other.bounds[1] < center && other.bounds[3] > center).sort((first, second) => first.bounds[0] - second.bounds[0]);
 			const names = page.cells.filter(other => close(other.bounds[1], cell.bounds[1]) && close(other.bounds[3], cell.bounds[3]) && other.bounds[0] >= layout.names - 1 && other.bounds[2] <= layout.party + 1).sort((first, second) => first.bounds[0] - second.bounds[0]);
-			const terms = page.cells.filter(other => close(other.bounds[0], layout.term) && close(other.bounds[2], layout.right) && other.bounds[1] < center && other.bounds[3] > center);
+			const terms = termCells.filter(other => other.bounds[1] < center && other.bounds[3] > center);
 			const partyCode = clean(cell.text);
-			if (names.length !== 2 || !close(names[0]!.bounds[0], layout.names) || !close(names[0]!.bounds[2], layout.split) || !close(names[1]!.bounds[0], layout.split) || !close(names[1]!.bounds[2], layout.party) || terms.length !== 1 || !office.length || office.some(cell => !clean(cell.text)) || !section || !parties.includes(partyCode)) throw new Error("The Clark County candidate does not match its complete physical row.");
+			if (names.length !== 2 || !close(names[0]!.bounds[0], layout.names) || !close(names[0]!.bounds[2], layout.split) || !close(names[1]!.bounds[0], layout.split) || !close(names[1]!.bounds[2], layout.party) || terms.length !== 1 || !office.length || office.some(cell => !clean(cell.text)) || !section || !parties.includes(partyCode)) throw new Error(`The Clark County candidate on page ${page.number}, row ${row + 1} does not match its complete physical row.`);
 			const firstName = clean(names[1]!.text);
 			const lastName = clean(names[0]!.text);
-			const term = clean(terms[0]!.text.replace(/Unex-\s*pired/giu, "Unexpired"));
+			const printedTerm = clean(terms[0]!.text.replace(/Unex-\s*pired/giu, "Unexpired"));
+			const term = landscape(page) && printedTerm === "4 (NRS 396.040)" ? "4" : printedTerm;
 			if (!firstName || !lastName || firstName.length > 150 || lastName.length > 150 || !/^\d{1,2}(?:-Year Unexpired Term)?$/u.test(term)) throw new Error("The Clark County candidate name or term requires review.");
 			for (const name of names) namedCells.add(name);
-			appliedTerms.add(terms[0]!);
-			claims.push({ page: page.number, row: row + 1, firstName, lastName, name: `${firstName} ${lastName}`, partyCode, officeParts: office.map(cell => clean(cell.text)), term, section, ...(localSection ? { localSection } : {}) });
+			const presidential = office.length === 1 && clean(office[0]!.text) === "President / Vice President of the United States" && section === "FEDERAL PARTISAN";
+			const firstNames = firstName.split(/\s*\/\s*/u);
+			const lastNames = lastName.split(/\s*\/\s*/u);
+			if (presidential ? firstNames.length !== 2 || lastNames.length !== 2 || [...firstNames, ...lastNames].some(name => !name) : firstNames.length !== 1 || lastNames.length !== 1) throw new Error("The Clark County presidential ticket is incomplete or ambiguous.");
+			const name = presidential ? firstNames.map((name, index) => `${name} ${lastNames[index]}`).join(" / ") : `${firstName} ${lastName}`;
+			claims.push({ page: page.number, row: row + 1, firstName, lastName, name, partyCode, officeParts: office.map(cell => clean(cell.text)), term, section, ...(localSection ? { localSection } : {}) });
 		}
-		const bottom = Math.max(...partyCells.map(cell => cell.bounds[3]), ...[...appliedTerms].map(cell => cell.bounds[3]));
+		const bottom = Math.max(...partyCells.map(cell => cell.bounds[3]), ...termCells.map(cell => cell.bounds[3]));
 		for (const cell of page.cells.filter(cell => cell.bounds[0] >= layout.names - 1 && cell.bounds[2] <= layout.term + 1 && cell.bounds[1] >= top - 1 && cell.bounds[1] < bottom && clean(cell.text))) {
 			if (namedCells.has(cell) || partyCells.includes(cell) || bands.includes(cell)) continue;
 			if (/^None of these candidates$/iu.test(clean(cell.text))) {

@@ -17,5 +17,5 @@ test("East Greenwich enforces wildcard and all named AI restrictions without an 
 test("East Greenwich refuses policy changes, new restrictions and malformed bodies", () => {
 	for (const value of [`${body.toString()}Disallow: /192\n`, body.toString().replace("Disallow: /calendar.aspx", "Disallow: /"), body.toString().replace("Crawl-delay: 10", "Crawl-delay: 30"), body.toString().replace("GPTBot", "DifferentBot"), "", "x".repeat(32001), "\u0000"]) assert.throws(() => eastGreenwichRobotsPolicy(Buffer.from(value)), /requires review/u);
 	assert.throws(() => eastGreenwichRobotsPolicy(Buffer.from([0xFF])), /encoded data/u);
-	assert.equal(eastGreenwichRobotsPolicy(Buffer.from(body.toString().replace(/\n/gu, "\r\n"))).delay, 11000);
+	assert.equal(eastGreenwichRobotsPolicy(Buffer.from(body.toString().replace(/\r?\n/gu, "\r\n"))).delay, 11000);
 });

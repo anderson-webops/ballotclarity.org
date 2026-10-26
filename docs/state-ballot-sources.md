@@ -630,6 +630,17 @@ years speculatively or treats a portal's default election as the requested one.
 
 ## Other sources and access limits
 
+Polk County, Iowa's [dated voter-information publication](https://www.polkcountyiowa.gov/county-auditor/election/news-and-press-releases/general-election-november-3-2026-voter-information/)
+adds an independent `ia-polk-2026` source. Its complete candidate PDF and the first
+listed precinct's sample reconcile 87 records, including 34 local/regional
+choices. The sample establishes joint-ticket pairings only, not other voters'
+ballots. Reusable discovery follows actual offered dates and publication links;
+updated links invalidate cached imports. External facts remain readable without
+the optional bounded PDF collection worker. Source policies, literal parties,
+retention choices, vacancy and vote limits are described in the
+[review](audits/2026-10-26-iowa-polk-candidates.md). Existing Story and Johnson
+County sources and all state-level retrieval holds remain independent.
+
 Research and public export checks on October 20-21, 2026 found these additional
 sources or limitations. The individual sources below are not enabled. A state
 may separately have a reviewed county publication configured above; that does

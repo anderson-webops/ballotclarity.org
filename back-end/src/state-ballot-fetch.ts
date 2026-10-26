@@ -15,6 +15,7 @@ import { dakotaCandidateRosterUrl, validateDakotaCandidatePage } from "./state-b
 import { fetchFultonCandidateCapture } from "./state-ballot-fulton.js";
 import { parseStateHtml, stateHtmlAttribute, stateHtmlDescendants, stateHtmlText } from "./state-ballot-html.js";
 import { fetchIowaJohnsonCandidateCapture } from "./state-ballot-iowa-johnson.js";
+import { fetchIowaPolkCandidateCapture } from "./state-ballot-iowa-polk.js";
 import { fetchKansasCandidateCapture } from "./state-ballot-kansas.js";
 import { fetchKentuckyCandidateCapture } from "./state-ballot-kentucky.js";
 import {
@@ -173,6 +174,7 @@ export function buildNorthDakotaSearchForm(source: StateBallotSource, body: stri
 }
 
 export async function fetchStateBallotSourceText(source: StateBallotSource, request: SourceTextRequest = fetchRemoteSourceText) {
+	if (source.format === "iowa-polk-pdf") return fetchIowaPolkCandidateCapture(source, { requestText: request });
 	if (source.format === "iowa-johnson-html") return fetchIowaJohnsonCandidateCapture(source, { requestText: request });
 	if (source.format === "washoe-html") return fetchWashoeCandidateCapture(source, { requestText: request });
 	if (source.format === "clark-pdf") return fetchClarkCandidateCapture(source, { requestText: request });

@@ -1,5 +1,6 @@
 import type { CertifiedPdfElection } from "./state-ballot-certified-pdf.js";
 import type { FultonElection } from "./state-ballot-fulton.js";
+import type { IowaPolkElection } from "./state-ballot-iowa-polk.js";
 import type { OregonElection } from "./state-ballot-oregon-collection.js";
 import type { StateBallotSource } from "./state-ballot-sources.js";
 import type { TexasElection } from "./state-ballot-texas.js";
@@ -27,6 +28,7 @@ import {
 } from "./state-ballot-fulton.js";
 import { parseStateHtml, stateHtmlAttribute, stateHtmlDescendants, stateHtmlText } from "./state-ballot-html.js";
 import { iowaJohnsonDiscoveryUrl, readIowaJohnsonDiscovery, validateIowaJohnsonElection, validateIowaJohnsonSource } from "./state-ballot-iowa-johnson.js";
+import { iowaPolkDiscoveryUrl, readIowaPolkDiscovery, validateIowaPolkElection, validateIowaPolkSource } from "./state-ballot-iowa-polk.js";
 import {
 	kansasCandidateRosterUrl,
 	kansasDiscoveryUrl,
@@ -98,6 +100,7 @@ const washington = configuredStateBallotSources.find(source => source.id === "wa
 export const stateBallotCycleDiscoveryUrl = "https://voter.votewa.gov/CandidateList.aspx";
 const digest = (value: string) => createHash("sha256").update(value).digest("hex");
 const cycleFamilies = [
+	{ source: configuredStateBallotSources.find(source => source.id === "ia-polk-2026")!, format: "iowa-polk-pdf", discoveryUrl: iowaPolkDiscoveryUrl, prefix: "ia-polk-general", electionLabel: "General Election", formId: null },
 	{ source: configuredStateBallotSources.find(source => source.id === "ia-johnson-2026")!, format: "iowa-johnson-html", discoveryUrl: iowaJohnsonDiscoveryUrl, prefix: "ia-johnson-general", electionLabel: "General Election", formId: null },
 	{ source: configuredStateBallotSources.find(source => source.id === "nv-washoe-2026")!, format: "washoe-html", discoveryUrl: washoeDiscoveryUrl, prefix: "nv-washoe-general", electionLabel: "General Election", formId: null },
 	{ source: configuredStateBallotSources.find(source => source.id === "nv-clark-2026")!, format: "clark-pdf", discoveryUrl: clarkDiscoveryUrl, prefix: "nv-clark-general", electionLabel: "General Election", formId: null },
@@ -143,7 +146,10 @@ export function getStateBallotCycleFamily(familyId: string) {
 	const family = cycleFamilies.find(item => item.source.id === familyId);
 	if (!family) throw new Error("The automatic election source family is unsupported or has changed.");
 	let targetValid = family.source.pageUrl === family.source.url;
-	if (family.format === "iowa-johnson-html") {
+	if (family.format === "iowa-polk-pdf") {
+		validateIowaPolkSource(family.source);
+	}
+	else if (family.format === "iowa-johnson-html") {
 		validateIowaJohnsonSource(family.source);
 	}
 	else if (family.format === "washoe-html") {
@@ -219,7 +225,7 @@ export function getStateBallotCycleFamily(familyId: string) {
 	else {
 		targetValid = targetValid && new RegExp(`^${family.discoveryUrl.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&")}\\?e=[1-9]\\d{0,8}$`, "u").test(family.source.url);
 	}
-	if (!targetValid || family.source.format !== family.format || family.source.retrievalPolicy || (family.source.stateCode !== "FL" && family.source.postBody) || (family.source.documentUrls?.length && !["iowa-johnson-html", "washoe-html"].includes(family.format) && !["KY", "VA", "GA", "MO", "NJ", "VT", "TX", "OR"].includes(family.source.stateCode)) || (family.source.documentLinks?.length && family.source.stateCode !== "GA"))
+	if (!targetValid || family.source.format !== family.format || family.source.retrievalPolicy || (family.source.stateCode !== "FL" && family.source.postBody) || (family.source.documentUrls?.length && !["iowa-polk-pdf", "iowa-johnson-html", "washoe-html"].includes(family.format) && !["KY", "VA", "GA", "MO", "NJ", "VT", "TX", "OR"].includes(family.source.stateCode)) || (family.source.documentLinks?.length && family.source.stateCode !== "GA"))
 		throw new Error("The automatic election source family is unsupported or has changed.");
 	return family;
 }
@@ -267,7 +273,7 @@ export interface StateBallotCycleCatalog {
 	familyId: string;
 	sourceConfigurationSha256: string;
 	discovery: { url: string; sha256: string; retrievedAt: string };
-	elections: { electionId: string | null; electionDate: string; reports?: VirginiaElection["reports"]; allOfficesUrl?: string | null; documents?: FultonElection["documents"]; pageUrl?: string; pdfDocuments?: CertifiedPdfElection["pdfDocuments"]; workbookUrl?: string; texasDocuments?: TexasElection["texasDocuments"]; oregonDocuments?: OregonElection["oregonDocuments"] }[];
+	elections: { electionId: string | null; electionDate: string; reports?: VirginiaElection["reports"]; allOfficesUrl?: string | null; documents?: FultonElection["documents"]; pageUrl?: string; pdfDocuments?: CertifiedPdfElection["pdfDocuments"]; workbookUrl?: string; texasDocuments?: TexasElection["texasDocuments"]; oregonDocuments?: OregonElection["oregonDocuments"]; polkDocuments?: IowaPolkElection["polkDocuments"] }[];
 }
 
 function exactKeys(value: unknown, names: string[]): value is Record<string, unknown> {
@@ -362,6 +368,14 @@ export function parseStateBallotCycleCatalog(value: unknown, now = Date.now()): 
 	const dates = new Set<string>();
 	const florida = original.stateCode === "FL";
 	const maryland = original.stateCode === "MD";
+	if (original.format === "iowa-polk-pdf") {
+		for (const election of value.elections) {
+			validateIowaPolkElection(election);
+			if (dates.has(election.electionDate)) throw new Error("The Polk County elections are duplicated.");
+			dates.add(election.electionDate);
+		}
+		return value as unknown as StateBallotCycleCatalog;
+	}
 	if (original.format === "iowa-johnson-html") {
 		for (const election of value.elections) {
 			validateIowaJohnsonElection(election);
@@ -459,6 +473,11 @@ export function discoverWashingtonElectionCycles(body: string, now = Date.now())
 }
 
 export function discoverStateBallotElectionCycles(body: string, familyId: string, now = Date.now()): StateBallotCycleCatalog {
+	if (familyId === "ia-polk-2026") {
+		const family = getStateBallotCycleFamily(familyId);
+		const capture = readIowaPolkDiscovery(body, now);
+		return parseStateBallotCycleCatalog({ schemaVersion: 1, type: "state-ballot-cycle-catalog", familyId, sourceConfigurationSha256: digest(JSON.stringify(family.source)), discovery: { url: family.discoveryUrl, sha256: digest(body), retrievedAt: capture.index.retrievedAt }, elections: capture.elections }, now);
+	}
 	if (familyId === "ia-johnson-2026") {
 		const family = getStateBallotCycleFamily(familyId);
 		const capture = readIowaJohnsonDiscovery(body, now);
@@ -533,6 +552,10 @@ export function stateBallotCycleSources(catalog: StateBallotCycleCatalog, now = 
 	parseStateBallotCycleCatalog(catalog, now);
 	const family = getStateBallotCycleFamily(catalog.familyId);
 	return catalog.elections.filter(election => election.electionDate !== family.source.electionDate).map((election) => {
+		if (family.format === "iowa-polk-pdf") {
+			validateIowaPolkElection(election);
+			return { ...family.source, id: `${family.prefix}-${election.electionDate}`, label: `${family.source.label} (${election.electionDate.slice(0, 4)})`, electionDate: election.electionDate, url: election.pageUrl, pageUrl: election.pageUrl };
+		}
 		if (family.format === "iowa-johnson-html") {
 			validateIowaJohnsonElection(election);
 			return { ...family.source, id: `${family.prefix}-${election.electionDate}`, label: `${family.source.label} (${election.electionDate.slice(0, 4)})`, electionDate: election.electionDate, url: election.pageUrl, pageUrl: election.pageUrl, documentUrls: [election.pageUrl] };

@@ -1,14 +1,15 @@
 # Reusable election cycles
 
 External election catalogs opt the automatic candidate repository into reusable
-source families. The current 63 source definitions retain explicit source/state
+source families. The current 64 source definitions retain explicit source/state
 allowlists; reusable discovery does not widen an exact-source allowlist.
 
-Thirty families across twenty-five states are supported:
+Thirty-one families across twenty-five states are supported:
 
 | Family | Discovery | Elections |
-| `ia-johnson-2026` | [Johnson County, Iowa election index](https://johnsoncountyiowa.gov/auditor/elections) | Actually offered, explicitly dated even-year general pages; complete candidate sections, printed seat/term rules and external durable imports, with questions separate from people |
 | --- | --- | --- |
+| `ia-polk-2026` | [Polk County election index](https://www.polkcountyiowa.gov/county-auditor/election/) | Actually offered dated voter-information pages, complete candidate PDFs and one explicitly linked precinct sample for joint-ticket verification; publication-link changes invalidate cached imports without an annual source edit |
+| `ia-johnson-2026` | [Johnson County, Iowa election index](https://johnsoncountyiowa.gov/auditor/elections) | Actually offered, explicitly dated even-year general pages; complete candidate sections, printed seat/term rules and external durable imports, with questions separate from people |
 | `nv-washoe-2026` | [Washoe County election information](https://www.washoecounty.gov/voters/information/) | Printed even-year November general dates and complete HTML contest tables; policy-bound collection, separate questions/nonperson options, terms, vote limits and the published deceased-candidate notice |
 | `nv-clark-2026` | [Clark County general-election information](https://www.clarkcountynv.gov/government/departments/elections/26g-info) | Actually offered dated general elections with independently reconciled candidate-table and newsletter publications; both remain required |
 | `ct-sots-2026` | [Connecticut town ballots](https://portal.ct.gov/SOTS/Election-Services/Town-Ballots/Ballots) | Actually offered dated town publications, complete printed page sets and bounded table extraction; unknown layouts and unresolved claims remain held |
@@ -451,7 +452,7 @@ provide archive browsing, and this work adds no archival API.
 
 ## Boundaries
 
-These are seventeen source families, not nationwide future-election automation.
+These supported source families are not nationwide future-election automation.
 Other adapters still have cycle-specific discovery or parsing work. Reviewed
 PDF/image conversion, measure interpretation, independently verified geography,
 rights review, ballot publication, archival browsing, host scheduling, monitoring

@@ -205,6 +205,18 @@ export const additionalStateBallotSources: readonly StateBallotSource[] = [
 		documentUrls: ["https://johnsoncountyiowa.gov/november-3-2026-general-election"],
 		scopeNotice: "Johnson County publication only. Other Iowa races may be missing.",
 	},
+	{
+		stateCode: "IA",
+		id: "ia-polk-2026",
+		label: "Polk County Election Office",
+		electionDate: "2026-11-03",
+		url: "https://www.polkcountyiowa.gov/county-auditor/election/news-and-press-releases/general-election-november-3-2026-voter-information/",
+		pageUrl: "https://www.polkcountyiowa.gov/county-auditor/election/news-and-press-releases/general-election-november-3-2026-voter-information/",
+		format: "iowa-polk-pdf",
+		countyName: "Polk County",
+		snapshotStorage: "external",
+		scopeNotice: "Polk County publications only.",
+	},
 ];
 
 function automaticReviewedSource(source: StateBallotSource): StateBallotSource {

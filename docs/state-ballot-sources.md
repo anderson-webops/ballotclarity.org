@@ -1,5 +1,18 @@
 # Official state candidate records
 
+## Santa Fe County preparation
+
+The local candidate-preparation command now reads the reviewed master PDF
+directly. All 46 existing records and identifiers remain exact, including six
+named retention choices and county-limited offices. It preserves the original
+capture clocks, supporting document and personal-eligibility holds.
+
+This reduces transcription work; it does not enable automatic collection. The
+county's linked website-use policy currently contains unrelated parks content,
+so that policy remains unresolved. The source stays an external manual snapshot,
+and the separate state portal's AI-agent exclusion remains intact. See the
+[preparation and policy review](audits/2026-10-26-santa-fe-preparation.md).
+
 ## District of Columbia
 
 The Board's three general-election publications support automatic discovery,

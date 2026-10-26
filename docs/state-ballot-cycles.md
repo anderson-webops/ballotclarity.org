@@ -450,6 +450,17 @@ published date. Existing snapshots retain their original source/date identities;
 new content is never written into the expired election. The fixed URL does not
 provide archive browsing, and this work adds no archival API.
 
+## Cassia County, Idaho
+
+`id-cassia-2026` discovers explicit November general-election headings and actual
+offered PDFs from the county's rolling sample index. Its publication set and
+source-policy review are part of the capture contract. Future pending pages,
+changed links, freshness-based same-URL refresh, exact durable restart and
+recoverable reviewed-to-automatic replacement use the existing cycle worker.
+Unfamiliar layouts or office types remain review exceptions. Current facts and
+all supporting/question-only documents reconcile with the original packet.
+See `docs/audits/2026-10-26-idaho-cassia-automation.md` for scope and boundaries.
+
 ## Boundaries
 
 These supported source families are not nationwide future-election automation.

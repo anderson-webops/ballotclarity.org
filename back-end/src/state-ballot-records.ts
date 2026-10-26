@@ -7,6 +7,7 @@ import { parse as parseCsv } from "csv-parse/sync";
 import { normalizePublicHref } from "./public-href.js";
 import { parseAdditionalStateRecords } from "./state-ballot-additional-records.js";
 import { parseArkansasCandidateRecords } from "./state-ballot-arkansas.js";
+import { parseCassiaCandidateCapture } from "./state-ballot-cassia.js";
 import { parseCertifiedPdfCapture } from "./state-ballot-certified-pdf.js";
 import { parseClarkCandidateCapture } from "./state-ballot-clark-collection.js";
 import { parseConnecticutCandidateCapture } from "./state-ballot-connecticut-collection.js";
@@ -425,6 +426,7 @@ export function parseStateCandidateRecords(source: StateBallotSource, body: stri
 	if (["reviewed-pdf", "reviewed-xlsx", "reviewed-image"].includes(source.format))
 		throw new Error("Reviewed document sources require a validated snapshot.");
 	let records: StateCandidateRecord[];
+	if (source.format === "cassia-pdf") return parseCassiaCandidateCapture(source, body).records;
 	if (source.format === "iowa-polk-pdf") return parseIowaPolkCandidateCapture(source, body, makeRecord).records;
 	if (source.format === "iowa-johnson-html") {
 		records = parseIowaJohnsonCandidateCapture(source, body, makeRecord).records;

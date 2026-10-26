@@ -1,6 +1,7 @@
 import type { StateBallotSource } from "./state-ballot-sources.js";
 import { Buffer } from "node:buffer";
 import { fetchRemoteSourceText } from "./remote-json-source.js";
+import { fetchCassiaCandidateCapture } from "./state-ballot-cassia.js";
 import { fetchCertifiedPdfCapture } from "./state-ballot-certified-pdf.js";
 import { fetchClarkCandidateCapture } from "./state-ballot-clark-collection.js";
 import { fetchConnecticutCandidateCapture } from "./state-ballot-connecticut-collection.js";
@@ -174,6 +175,7 @@ export function buildNorthDakotaSearchForm(source: StateBallotSource, body: stri
 }
 
 export async function fetchStateBallotSourceText(source: StateBallotSource, request: SourceTextRequest = fetchRemoteSourceText) {
+	if (source.format === "cassia-pdf") return fetchCassiaCandidateCapture(source, { requestText: request });
 	if (source.format === "iowa-polk-pdf") return fetchIowaPolkCandidateCapture(source, { requestText: request });
 	if (source.format === "iowa-johnson-html") return fetchIowaJohnsonCandidateCapture(source, { requestText: request });
 	if (source.format === "washoe-html") return fetchWashoeCandidateCapture(source, { requestText: request });

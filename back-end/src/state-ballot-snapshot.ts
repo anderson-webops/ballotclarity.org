@@ -3,6 +3,7 @@ import type { StateBallotSnapshot } from "./state-ballot-repository.js";
 import type { StateBallotSource } from "./state-ballot-sources.js";
 import { createHash } from "node:crypto";
 import { normalizePublicHref } from "./public-href.js";
+import { cassiaDocumentDigest, validateCassiaElection, validateCassiaSource } from "./state-ballot-cassia.js";
 import { clarkIndexDigest, validateClarkDocumentUrl, validateClarkSource } from "./state-ballot-clark-discovery.js";
 import { connecticutIndexDigest, validateConnecticutDocument, validateConnecticutSource } from "./state-ballot-connecticut-discovery.js";
 import { validateIowaJohnsonSource } from "./state-ballot-iowa-johnson.js";
@@ -35,6 +36,16 @@ export function parseBundledStateSnapshot(source: StateBallotSource, body: strin
 		for (const item of data.documents) validateConnecticutDocument({ town: item?.town, url: item?.url }, source.electionDate);
 		if (new Set(data.documents.map(item => item.town)).size !== data.documents.length || new Set(data.documents.map(item => item.url)).size !== data.documents.length || data.collectionIndexSha256 !== connecticutIndexDigest(data.documents)) throw new Error("The Connecticut stored town index is invalid.");
 	}
+	else if (source.format === "cassia-pdf") {
+		validateCassiaSource(source);
+		if (!Array.isArray(data.documents) || !data.documents.length || data.documents.length > 12) throw new Error("The Cassia stored publication set is invalid.");
+		const publications = data.documents.map((document: unknown, index) => {
+			if (!document || typeof document !== "object" || Array.isArray(document) || !("url" in document) || typeof document.url !== "string") throw new Error("The Cassia stored publication is invalid.");
+			return { kind: index ? "supplement" as const : "general" as const, url: document.url };
+		});
+		validateCassiaElection({ electionId: null, electionDate: source.electionDate, cassiaDocuments: publications });
+		if (data.collectionIndexSha256 !== cassiaDocumentDigest(publications) || data.documents.some((document, index) => document.includedRecordCount !== (index ? 0 : data.recordCount))) throw new Error("The Cassia stored publication index is invalid.");
+	}
 	else if (source.format === "iowa-polk-pdf") {
 		validateIowaPolkSource(source);
 		if (!Array.isArray(data.documents) || data.documents.length !== 2) throw new Error("The stored Polk County document set is invalid.");
@@ -62,13 +73,13 @@ export function parseBundledStateSnapshot(source: StateBallotSource, body: strin
 	else if (data.collectionIndexSha256 !== undefined) {
 		throw new Error("The stored source has an unexpected collection index.");
 	}
-	if (["iowa-polk-pdf", "iowa-johnson-html", "washoe-html", "clark-pdf", "connecticut-pdf", "reviewed-pdf", "reviewed-xlsx", "reviewed-image", "fulton-pdf", "certified-pdf", "oregon-pdf", "texas-certified-pdf", "vermont-xlsx", "pennsylvania-html", "west-virginia-json", "alaska-html", "connecticut-ballots", "oregon-ballots"].includes(source.format) || (["arkansas-html", "colorado-html"].includes(source.format) && source.retrievalPolicy === "manual-snapshot")) {
-		if (!Array.isArray(data.documents) || (!["iowa-polk-pdf", "clark-pdf", "connecticut-pdf"].includes(source.format) && data.documents.length !== source.documentUrls?.length) || !data.documents.length)
+	if (["cassia-pdf", "iowa-polk-pdf", "iowa-johnson-html", "washoe-html", "clark-pdf", "connecticut-pdf", "reviewed-pdf", "reviewed-xlsx", "reviewed-image", "fulton-pdf", "certified-pdf", "oregon-pdf", "texas-certified-pdf", "vermont-xlsx", "pennsylvania-html", "west-virginia-json", "alaska-html", "connecticut-ballots", "oregon-ballots"].includes(source.format) || (["arkansas-html", "colorado-html"].includes(source.format) && source.retrievalPolicy === "manual-snapshot")) {
+		if (!Array.isArray(data.documents) || (!["cassia-pdf", "iowa-polk-pdf", "clark-pdf", "connecticut-pdf"].includes(source.format) && data.documents.length !== source.documentUrls?.length) || !data.documents.length)
 			throw new Error("The bundled candidate snapshot has an invalid document set.");
 		documents = data.documents.map((value: unknown, index: number) => {
 			if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("The bundled candidate document is invalid.");
 			const item = value as Record<string, unknown>;
-			if (Object.keys(item).some(key => !documentFields.has(key) && !(key === "town" && source.format === "connecticut-pdf")) || (!["iowa-polk-pdf", "clark-pdf", "connecticut-pdf"].includes(source.format) && item.url !== source.documentUrls?.[index]) || typeof item.sha256 !== "string" || !/^[a-f0-9]{64}$/u.test(item.sha256) || typeof item.retrievedAt !== "string" || !Number.isFinite(Date.parse(item.retrievedAt)) || typeof item.includedRecordCount !== "number" || !Number.isSafeInteger(item.includedRecordCount) || item.includedRecordCount < 0)
+			if (Object.keys(item).some(key => !documentFields.has(key) && !(key === "town" && source.format === "connecticut-pdf")) || (!["cassia-pdf", "iowa-polk-pdf", "clark-pdf", "connecticut-pdf"].includes(source.format) && item.url !== source.documentUrls?.[index]) || typeof item.sha256 !== "string" || !/^[a-f0-9]{64}$/u.test(item.sha256) || typeof item.retrievedAt !== "string" || !Number.isFinite(Date.parse(item.retrievedAt)) || typeof item.includedRecordCount !== "number" || !Number.isSafeInteger(item.includedRecordCount) || item.includedRecordCount < 0)
 				throw new Error("The bundled candidate document has invalid provenance.");
 			return { url: item.url as string, sha256: item.sha256, retrievedAt: item.retrievedAt, includedRecordCount: item.includedRecordCount, ...(source.format === "connecticut-pdf" ? { town: item.town as string } : {}) };
 		});
@@ -94,14 +105,14 @@ export function parseBundledStateSnapshot(source: StateBallotSource, body: strin
 		for (const [key, maximum] of [["termYears", 12], ["seats", 99]] as const) {
 			if (row[key] !== undefined && (!((source.stateCode === "IA" && source.format === "iowa-johnson-html") || (source.stateCode === "VA" && source.format === "virginia-local-html") || (key === "termYears" && ((source.stateCode === "VT" && source.format === "vermont-xlsx") || (source.stateCode === "NV" && source.format === "washoe-html")))) || typeof row[key] !== "number" || !Number.isSafeInteger(row[key]) || row[key] < 1 || row[key] > maximum)) throw new Error("The bundled candidate office metadata is invalid.");
 		}
-		if (row.voteLimit !== undefined && (!((source.stateCode === "IA" && ["iowa-polk-pdf", "iowa-johnson-html"].includes(source.format)) || (source.stateCode === "VT" && source.format === "vermont-xlsx") || (source.stateCode === "NV" && ["washoe-html", "clark-pdf"].includes(source.format))) || typeof row.voteLimit !== "number" || !Number.isSafeInteger(row.voteLimit) || row.voteLimit < 1 || row.voteLimit > 50)) throw new Error("The bundled candidate vote limit is invalid.");
+		if (row.voteLimit !== undefined && (!((source.stateCode === "IA" && ["cassia-pdf", "iowa-polk-pdf", "iowa-johnson-html"].includes(source.format)) || (source.stateCode === "VT" && source.format === "vermont-xlsx") || (source.stateCode === "NV" && ["washoe-html", "clark-pdf"].includes(source.format))) || typeof row.voteLimit !== "number" || !Number.isSafeInteger(row.voteLimit) || row.voteLimit < 1 || row.voteLimit > 50)) throw new Error("The bundled candidate vote limit is invalid.");
 		if (row.termEnd !== undefined && (source.stateCode !== "VA" || source.format !== "virginia-local-html" || typeof row.termEnd !== "string" || !/^20\d{2}-\d{2}-\d{2}$/u.test(row.termEnd) || !Number.isFinite(Date.parse(`${row.termEnd}T00:00:00Z`)) || new Date(`${row.termEnd}T00:00:00Z`).toISOString().slice(0, 10) !== row.termEnd || row.termEnd < source.electionDate)) throw new Error("The bundled candidate term end is invalid.");
 		const record = row as unknown as StateCandidateRecord;
 		return source.stateCode === "MI" && source.format === "michigan-html" ? normalizeMichiganCandidateRecord(record) : record;
 	});
 	if (new Set(records.map(record => record.id)).size !== records.length)
 		throw new Error("The bundled candidate snapshot has duplicate identities.");
-	return { source, retrievedAt: data.retrievedAt, sha256: data.sourceSha256, records, ...(documents ? { documents } : {}), ...(["iowa-polk-pdf", "iowa-johnson-html", "washoe-html", "clark-pdf", "connecticut-pdf"].includes(source.format) ? { collectionIndexSha256: data.collectionIndexSha256 as string } : {}) };
+	return { source, retrievedAt: data.retrievedAt, sha256: data.sourceSha256, records, ...(documents ? { documents } : {}), ...(["cassia-pdf", "iowa-polk-pdf", "iowa-johnson-html", "washoe-html", "clark-pdf", "connecticut-pdf"].includes(source.format) ? { collectionIndexSha256: data.collectionIndexSha256 as string } : {}) };
 }
 
 export async function loadBundledStateSnapshot(source: StateBallotSource) {

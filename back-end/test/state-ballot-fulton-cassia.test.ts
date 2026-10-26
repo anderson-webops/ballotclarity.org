@@ -107,13 +107,8 @@ for (const source of sources) {
 		const before = hash(await readFile(cacheFile, "utf8"));
 		const refresh = spawnSync(process.execPath, ["--import", "tsx", manager, "refresh", source.stateCode], { env: environment, encoding: "utf8", stdio: "pipe" });
 		assert.equal(refresh.status, 1);
-		if (source.stateCode === "GA") {
-			assert.equal(JSON.parse(refresh.stdout).records, 9);
-			assert.equal(JSON.parse(refresh.stdout).retrievedAt, payload("GA").retrievedAt);
-		}
-		else {
-			assert.match(refresh.stderr, /manual|reviewed/iu);
-		}
+		assert.equal(JSON.parse(refresh.stdout).records, 9);
+		assert.equal(JSON.parse(refresh.stdout).retrievedAt, payload(source.stateCode).retrievedAt);
 		assert.equal(hash(await readFile(cacheFile, "utf8")), before);
 	});
 }

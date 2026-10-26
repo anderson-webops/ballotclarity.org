@@ -1,3 +1,4 @@
+import type { CassiaElection } from "./state-ballot-cassia.js";
 import type { CertifiedPdfElection } from "./state-ballot-certified-pdf.js";
 import type { FultonElection } from "./state-ballot-fulton.js";
 import type { IowaPolkElection } from "./state-ballot-iowa-polk.js";
@@ -11,6 +12,7 @@ import { closeSync, constants, fstatSync, openSync, readSync, realpathSync } fro
 import { mkdir, open, realpath, rename, unlink } from "node:fs/promises";
 import { dirname, isAbsolute, join, resolve } from "node:path";
 import process from "node:process";
+import { cassiaDiscoveryUrl, readCassiaDiscovery, validateCassiaElection, validateCassiaSource } from "./state-ballot-cassia.js";
 import {
 	certifiedPdfDiscoveryUrls,
 	readCertifiedPdfElectionDiscovery,
@@ -100,6 +102,7 @@ const washington = configuredStateBallotSources.find(source => source.id === "wa
 export const stateBallotCycleDiscoveryUrl = "https://voter.votewa.gov/CandidateList.aspx";
 const digest = (value: string) => createHash("sha256").update(value).digest("hex");
 const cycleFamilies = [
+	{ source: configuredStateBallotSources.find(source => source.id === "id-cassia-2026")!, format: "cassia-pdf", discoveryUrl: cassiaDiscoveryUrl, prefix: "id-cassia-general", electionLabel: "General Election", formId: null },
 	{ source: configuredStateBallotSources.find(source => source.id === "ia-polk-2026")!, format: "iowa-polk-pdf", discoveryUrl: iowaPolkDiscoveryUrl, prefix: "ia-polk-general", electionLabel: "General Election", formId: null },
 	{ source: configuredStateBallotSources.find(source => source.id === "ia-johnson-2026")!, format: "iowa-johnson-html", discoveryUrl: iowaJohnsonDiscoveryUrl, prefix: "ia-johnson-general", electionLabel: "General Election", formId: null },
 	{ source: configuredStateBallotSources.find(source => source.id === "nv-washoe-2026")!, format: "washoe-html", discoveryUrl: washoeDiscoveryUrl, prefix: "nv-washoe-general", electionLabel: "General Election", formId: null },
@@ -146,7 +149,10 @@ export function getStateBallotCycleFamily(familyId: string) {
 	const family = cycleFamilies.find(item => item.source.id === familyId);
 	if (!family) throw new Error("The automatic election source family is unsupported or has changed.");
 	let targetValid = family.source.pageUrl === family.source.url;
-	if (family.format === "iowa-polk-pdf") {
+	if (family.format === "cassia-pdf") {
+		validateCassiaSource(family.source);
+	}
+	else if (family.format === "iowa-polk-pdf") {
 		validateIowaPolkSource(family.source);
 	}
 	else if (family.format === "iowa-johnson-html") {
@@ -273,7 +279,7 @@ export interface StateBallotCycleCatalog {
 	familyId: string;
 	sourceConfigurationSha256: string;
 	discovery: { url: string; sha256: string; retrievedAt: string };
-	elections: { electionId: string | null; electionDate: string; reports?: VirginiaElection["reports"]; allOfficesUrl?: string | null; documents?: FultonElection["documents"]; pageUrl?: string; pdfDocuments?: CertifiedPdfElection["pdfDocuments"]; workbookUrl?: string; texasDocuments?: TexasElection["texasDocuments"]; oregonDocuments?: OregonElection["oregonDocuments"]; polkDocuments?: IowaPolkElection["polkDocuments"] }[];
+	elections: { electionId: string | null; electionDate: string; reports?: VirginiaElection["reports"]; allOfficesUrl?: string | null; documents?: FultonElection["documents"]; pageUrl?: string; pdfDocuments?: CertifiedPdfElection["pdfDocuments"]; workbookUrl?: string; texasDocuments?: TexasElection["texasDocuments"]; oregonDocuments?: OregonElection["oregonDocuments"]; cassiaDocuments?: CassiaElection["cassiaDocuments"]; polkDocuments?: IowaPolkElection["polkDocuments"] }[];
 }
 
 function exactKeys(value: unknown, names: string[]): value is Record<string, unknown> {
@@ -368,6 +374,14 @@ export function parseStateBallotCycleCatalog(value: unknown, now = Date.now()): 
 	const dates = new Set<string>();
 	const florida = original.stateCode === "FL";
 	const maryland = original.stateCode === "MD";
+	if (original.format === "cassia-pdf") {
+		for (const election of value.elections) {
+			validateCassiaElection(election);
+			if (dates.has(election.electionDate)) throw new Error("The Cassia elections are duplicated.");
+			dates.add(election.electionDate);
+		}
+		return value as unknown as StateBallotCycleCatalog;
+	}
 	if (original.format === "iowa-polk-pdf") {
 		for (const election of value.elections) {
 			validateIowaPolkElection(election);
@@ -473,6 +487,11 @@ export function discoverWashingtonElectionCycles(body: string, now = Date.now())
 }
 
 export function discoverStateBallotElectionCycles(body: string, familyId: string, now = Date.now()): StateBallotCycleCatalog {
+	if (familyId === "id-cassia-2026") {
+		const family = getStateBallotCycleFamily(familyId);
+		const capture = readCassiaDiscovery(body, now);
+		return parseStateBallotCycleCatalog({ schemaVersion: 1, type: "state-ballot-cycle-catalog", familyId, sourceConfigurationSha256: digest(JSON.stringify(family.source)), discovery: { url: family.discoveryUrl, sha256: digest(body), retrievedAt: capture.index.retrievedAt }, elections: capture.elections }, now);
+	}
 	if (familyId === "ia-polk-2026") {
 		const family = getStateBallotCycleFamily(familyId);
 		const capture = readIowaPolkDiscovery(body, now);
@@ -552,6 +571,10 @@ export function stateBallotCycleSources(catalog: StateBallotCycleCatalog, now = 
 	parseStateBallotCycleCatalog(catalog, now);
 	const family = getStateBallotCycleFamily(catalog.familyId);
 	return catalog.elections.filter(election => election.electionDate !== family.source.electionDate).map((election) => {
+		if (family.format === "cassia-pdf") {
+			validateCassiaElection(election);
+			return { ...family.source, id: `${family.prefix}-${election.electionDate}`, label: `${family.source.label} (${election.electionDate.slice(0, 4)})`, electionDate: election.electionDate };
+		}
 		if (family.format === "iowa-polk-pdf") {
 			validateIowaPolkElection(election);
 			return { ...family.source, id: `${family.prefix}-${election.electionDate}`, label: `${family.source.label} (${election.electionDate.slice(0, 4)})`, electionDate: election.electionDate, url: election.pageUrl, pageUrl: election.pageUrl };

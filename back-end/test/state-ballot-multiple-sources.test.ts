@@ -49,7 +49,11 @@ async function serve(repository: StateBallotRepository) {
 test("county sources are additive and their reviewed configuration retains each original document", () => {
 	assert.equal(stateBallotSources.length, 50);
 	assert.equal(configuredStateBallotSources.length, 64);
-	assert.deepEqual(configuredStateBallotSources.slice(0, 50).filter(source => !["NV", "CT", "GA", "MO", "NJ", "TX", "OR"].includes(source.stateCode)), stateBallotSources.filter(source => !["NV", "CT", "GA", "MO", "NJ", "TX", "OR"].includes(source.stateCode)));
+	assert.deepEqual(configuredStateBallotSources.slice(0, 50).filter(source => !["ID", "NV", "CT", "GA", "MO", "NJ", "TX", "OR"].includes(source.stateCode)), stateBallotSources.filter(source => !["ID", "NV", "CT", "GA", "MO", "NJ", "TX", "OR"].includes(source.stateCode)));
+	const cassia = configuredStateBallotSources.find(source => source.id === "id-cassia-2026")!;
+	assert.equal(cassia.format, "cassia-pdf");
+	assert.equal(cassia.countyName, "Cassia County");
+	assert.deepEqual(legacyReviewedStateBallotSource(cassia), stateBallotSources.find(source => source.id === cassia.id));
 	const nevada = configuredStateBallotSources.find(source => source.id === "nv-clark-2026")!;
 	assert.equal(nevada.format, "clark-pdf");
 	assert.equal(nevada.retrievalPolicy, undefined);

@@ -148,7 +148,7 @@ export function createStateBallotStorage(directory: string) {
 			if (Buffer.byteLength(body) > maximumBytes)
 				throw new Error("Stored state ballot data exceeds its size limit.");
 			const target = await location(snapshot.source);
-			if (["clark-pdf", "connecticut-pdf"].includes(snapshot.source.format) && (await this.read(snapshot.source))?.source.retrievalPolicy === "manual-snapshot") {
+			if (["cassia-pdf", "clark-pdf", "connecticut-pdf"].includes(snapshot.source.format) && (await this.read(snapshot.source))?.source.retrievalPolicy === "manual-snapshot") {
 				const original = await readBoundedStateData(target);
 				const backup = `${target}.legacy-${digest(original)}`;
 				try {

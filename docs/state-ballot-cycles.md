@@ -4,10 +4,11 @@ External election catalogs opt the automatic candidate repository into reusable
 source families. The current 64 source definitions retain explicit source/state
 allowlists; reusable discovery does not widen an exact-source allowlist.
 
-Thirty-five families across twenty-seven states and D.C. are supported:
+Thirty-eight families across thirty states and D.C. are supported:
 
 | Family | Discovery | Elections |
 | --- | --- | --- |
+| `ri-east-greenwich-2026` | [East Greenwich election index](https://www.eastgreenwichri.gov/192/Voter-Registration-Elections) | Offered dated sections and complete precinct styles, native text/SVG and image checks, pending publication, cached imports and exact reviewed-envelope recovery; personal applicability remains unverified |
 | `wi-town-dane-2026` | [Town of Dane news and notices](https://townofdane.gov/news-notices/) | Actually offered dated general-election articles, three distinct school-area samples and an independent Type B notice; bounded native extraction, incomplete-publication holds, cached imports and exact reviewed-envelope recovery |
 | `ar-pulaski-candidates-2026` | [Pulaski County election index](https://votepulaskiar.gov/) | Offered calendar dates and general-election notices, complete native candidate columns, awaiting publication, hash-bound imports and exact legacy recovery; personal applicability remains unverified |
 | `mi-tuscola-candidates-2026` | [Tuscola County election index](https://www.tuscolacounty.org/elections/) | Actual dated November sections, complete candidate/sample reconciliation, pending future publications and hash-bound durable imports; local and legislative applicability remains unverified |

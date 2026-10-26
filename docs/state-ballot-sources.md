@@ -1,5 +1,21 @@
 # Official state candidate records
 
+## East Greenwich, Rhode Island
+
+`ri-east-greenwich-2026` supports policy-bound dated-section discovery, native
+text/visual collection and durable external import. All 33 existing fields/IDs
+and five original PDF hashes remain exact. All ten pages and repeated claims are
+checked; the emblem and instructions are verified as decoded pixels rather than
+assumed absent from text extraction. Supported candidate rows remain dynamic.
+
+Offered dates and links drive compatible future imports. Incomplete styles stay
+pending, changed policies/layouts and disappearing accepted facts require review,
+and same-URL hash changes refresh cached imports. Copyright-year rollover alone
+requires no annual edit. Exact reviewed-envelope recovery and original capture
+clocks are retained. Local voter applicability, other Rhode Island publishers and
+question publication remain separate. See the
+[source and automation review](audits/2026-10-26-east-greenwich-automation.md).
+
 ## Town of Dane, Wisconsin
 
 `wi-town-dane-2026` supports policy-bound discovery, native sample/notice collection
@@ -371,7 +387,7 @@ its filing method, withdrawal and inactive-status fields.
 | New Hampshire | [Bristol](https://www.bristolnh.gov/m/newsflash/home/detail/116), [Goffstown](https://www.goffstownnh.gov/325/Elections) and [Alton](https://alton.nh.gov/absentee-sample-ballot-november-3-2026-state-general-election/) official town sample ballots | Three reviewed, dated PDFs; external import only | 76 candidate/ballot-area records from 92 printed party lines across all six pages. Includes six statewide, seven unmapped congressional, six unmapped Senate, twenty-two House and thirty-five local/regional records. Preserve four Republican/Democratic fusion records and multi-seat House vote limits. Five county-named House districts are not converted into bare Census numbers. Unprinted regional districts remain unmatched. Four ballot questions are retained in a separate external factual companion, not yet application measures. The directory links all three original documents. |
 | Maine, selected towns | [Orono election publications](https://www.orono.org/304/Elections-Voting-Information), [Winthrop samples](https://www.winthropmaine.gov/m/calendar/event/detail/1249), [Bangor municipal sample](https://www.bangormaine.gov/204/Sample-Ballots) | Reviewed, dated image/PDF set; external import only | 63 records: five statewide, two CD 2, four Senate, five House and 47 local/regional. The fifteen earlier Bangor records and IDs are preserved. Senate and Congress retain ranked-choice designation. Two Orono House styles, Winthrop's separate partial school term and library seats remain distinct. No party, unopposed status or local eligibility is inferred. The composite source identity requires a new import; original Bangor files remain unchanged. |
 | Oklahoma, Woodward County | [County general-election samples](https://woodward.okcounties.org/departments/election-board/voting-elections-links) | Reviewed, dated PDF set; external candidate import; separately configured raw-document collection | 40 candidate records: 25 statewide, two CD 3, two House 58, two county assessor and nine judicial retention. The second general sample adds House 58; the city document contributes a proposition, not candidates. Retention names remain non-address-matched pending independent electorate verification. No April filing-book qualification or straight-ticket placeholder is imported. Separate native drafts cover SQ 845, SQ 847 and the city-only hotel-room tax; SQ 845 retains a printed referendum-number discrepancy and editorial hold. See the [measure review](audits/2026-10-23-oklahoma-state-and-city-measures.md). |
-| Rhode Island, East Greenwich | [Five precinct sample ballots](https://www.eastgreenwichri.gov/192/Voter-Registration-Elections) | Reviewed, dated PDF set; external import only | 33 records: fifteen statewide, two CD 2, one Senate 35, two House 24/30 and thirteen municipal. Precinct 0903 supplies House 24; other precincts supply House 30. All five originals are required despite repeated candidates and zero-contribution documents. The literal Micholas A. Credle spelling and multi-seat limits are retained without inferring unopposed outcomes. |
+| Rhode Island, East Greenwich | [Five precinct sample ballots](https://www.eastgreenwichri.gov/192/Voter-Registration-Elections) | Policy-bound dated discovery; native text/visual collection and external durable storage | 33 records: fifteen statewide, two CD 2, one Senate 35, two House 24/30 and thirteen municipal. Precinct 0903 supplies House 24; other precincts supply House 30. All five originals are required despite repeated candidates and zero-contribution documents. The literal Micholas A. Credle spelling and multi-seat limits are retained without inferring unopposed outcomes. |
 | Vermont | [South Burlington official general-election sample ballots](https://www.southburlingtonvt.gov/211/Elections-Voting) | Five reviewed, dated PDFs; external import only | 58 candidate/contest records in 19 contests, reconciled from 266 printed rows across all ten pages. Includes 23 statewide candidates, including the at-large U.S. House race; six House candidates in five named districts; six Senate and 23 local candidates. Named House districts are not converted into Census numbers. Senate/local eligibility is withheld without an authoritative mapping. Printed combined party labels and separate governor/LG offices are preserved. Two constitutional proposals are retained in an external factual companion, not yet in the application. |
 | New York | [Monroe County Board of Elections certification](https://www.monroecounty.gov/elections) | Reviewed, dated PDF; external import only | 106 candidate/contest records across 61 contests, reconciled from 194 printed party lines on all eight candidate pages. Eight statewide, two congressional, eight Senate, eighteen Assembly and seventy local records. Preserves 80 fusion records, separate governor/LG sections and distinct council/trustee terms. County publication is not statewide completeness. No bundled dataset or automatic OCR/crawl fallback is used. |
 | Ohio | [Franklin County Board of Elections general candidate list and FWAB notice](https://www.vote.franklincountyohio.gov/election-info/2026) | Policy-bound automatic PDFs; reviewed fallback retained | 78 records: 26 statewide, seven congressional, seven Senate, 25 House and thirteen local. Reconciles eleven registered write-ins: ten marked in the October 16 list plus Gary Josephson's explicit FWAB designation despite the list's blank cell. The notice also supplies Greg Levy's unclipped Other-party label. Preserves six governor tickets, distinct judicial term dates, the US Senate unexpired term and 26 published campaign links. District coverage is limited to Franklin County; county/appellate courts are not assigned to voters. Other blank or uncertain party cells are not guessed. |
@@ -1207,7 +1223,7 @@ It does not return residential addresses, emails, phones, raw documents or priva
 provider fields. No user location or personal ballot is required to browse.
 
 Maine's current handoff is `back-end/data/state-ballots/maine-local-samples-2026.json`;
-Rhode Island uses `rhode-island-2026.json`, and Oklahoma uses
+Rhode Island's retained reviewed recovery input is `rhode-island-2026.json`, and Oklahoma uses
 `oklahoma-woodward-2026.json` in the same ignored directory. Each has candidate,
 source-line and question-reference JSONL, a manifest, checksums and an exact five-file
 archive. No source graphics, signatures or raw PDFs enter those archives. The old

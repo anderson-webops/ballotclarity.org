@@ -49,7 +49,11 @@ async function serve(repository: StateBallotRepository) {
 test("county sources are additive and their reviewed configuration retains each original document", () => {
 	assert.equal(stateBallotSources.length, 50);
 	assert.equal(configuredStateBallotSources.length, 64);
-	assert.deepEqual(configuredStateBallotSources.slice(0, 50).filter(source => !["WI", "DC", "OH", "ID", "NV", "CT", "GA", "MO", "NJ", "TX", "OR"].includes(source.stateCode)), stateBallotSources.filter(source => !["WI", "DC", "OH", "ID", "NV", "CT", "GA", "MO", "NJ", "TX", "OR"].includes(source.stateCode)));
+	assert.deepEqual(configuredStateBallotSources.slice(0, 50).filter(source => !["RI", "WI", "DC", "OH", "ID", "NV", "CT", "GA", "MO", "NJ", "TX", "OR"].includes(source.stateCode)), stateBallotSources.filter(source => !["RI", "WI", "DC", "OH", "ID", "NV", "CT", "GA", "MO", "NJ", "TX", "OR"].includes(source.stateCode)));
+	const eastGreenwich = configuredStateBallotSources.find(source => source.id === "ri-east-greenwich-2026")!;
+	assert.equal(eastGreenwich.format, "east-greenwich-pdf");
+	assert.equal(eastGreenwich.retrievalPolicy, undefined);
+	assert.deepEqual(legacyReviewedStateBallotSource(eastGreenwich), stateBallotSources.find(source => source.id === eastGreenwich.id));
 	const dane = configuredStateBallotSources.find(source => source.id === "wi-town-dane-2026")!;
 	assert.equal(dane.format, "dane-pdf");
 	assert.equal(dane.retrievalPolicy, undefined);

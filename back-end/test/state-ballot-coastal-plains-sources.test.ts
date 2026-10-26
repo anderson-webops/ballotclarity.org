@@ -39,7 +39,7 @@ for (const [code, sourceId, documentCount] of [["RI", "ri-east-greenwich-2026", 
 			throw new Error("No publisher request permitted.");
 		};
 		await assert.rejects(fetchStateBallotSourceText(source, fetchText), /manually supplied/u);
-		assert.equal(await createStateBallotRepository({ dataDirectory: null, fetchText }).getSnapshot(code), null);
+		assert.equal(await createStateBallotRepository({ sources: [source], dataDirectory: null, fetchText }).getSnapshot(code), null);
 		assert.equal(requests, 0);
 	});
 
@@ -60,6 +60,7 @@ for (const [code, sourceId, documentCount] of [["RI", "ri-east-greenwich-2026", 
 		await createStateBallotStorage(directory).write(original);
 		let requests = 0;
 		const repository = createStateBallotRepository({
+			sources: [source],
 			dataDirectory: directory,
 			now: () => Date.parse("2026-10-22T12:00:00Z"),
 			fetchText: async () => {

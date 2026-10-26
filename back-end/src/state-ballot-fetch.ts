@@ -15,6 +15,7 @@ import {
 import { dakotaCandidateRosterUrl, validateDakotaCandidatePage } from "./state-ballot-dakota.js";
 import { fetchDaneCandidateCapture } from "./state-ballot-dane-collection.js";
 import { fetchDcCandidateCapture } from "./state-ballot-dc-collection.js";
+import { fetchEastGreenwichCandidateCapture } from "./state-ballot-east-greenwich-collection.js";
 import { fetchFranklinCandidateCapture } from "./state-ballot-franklin-collection.js";
 import { fetchFultonCandidateCapture } from "./state-ballot-fulton.js";
 import { parseStateHtml, stateHtmlAttribute, stateHtmlDescendants, stateHtmlText } from "./state-ballot-html.js";
@@ -180,6 +181,7 @@ export function buildNorthDakotaSearchForm(source: StateBallotSource, body: stri
 }
 
 export async function fetchStateBallotSourceText(source: StateBallotSource, request: SourceTextRequest = fetchRemoteSourceText) {
+	if (source.format === "east-greenwich-pdf") return fetchEastGreenwichCandidateCapture(source);
 	if (source.format === "dane-pdf") return fetchDaneCandidateCapture(source);
 	if (source.format === "pulaski-pdf") return fetchPulaskiCandidateCapture(source);
 	if (source.format === "tuscola-pdf") return fetchTuscolaCandidateCapture(source);

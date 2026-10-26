@@ -655,6 +655,12 @@ The snapshot is independently required by the runtime artifact contract and copi
 into the compiled service. Updates require reviewed, publisher-permitted source
 material, not a bypass of the publisher's automation policy.
 
+An independent Winnebago County publication now has a tested offline native reader
+for 58 regular candidate records. It is not yet a configured source or automatic
+import. Its separate write-in publication remains unimported. See the
+[reader assessment](audits/2026-10-26-winnebago-native-preparation.md) for verified
+scope and remaining collection work; the statewide source hold is unchanged.
+
 Requests use HTTPS with certificate verification, public-IP validation and pinned
 DNS, a source-host allowlist on every redirect, a 12 MiB body limit, two redirects,
 and bounded timeouts. Sources must return valid UTF-8 and expected election/schema

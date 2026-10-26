@@ -2,6 +2,7 @@ import type { StateBallotSource } from "./state-ballot-sources.js";
 import { Buffer } from "node:buffer";
 import { fetchRemoteSourceText } from "./remote-json-source.js";
 import { fetchCertifiedPdfCapture } from "./state-ballot-certified-pdf.js";
+import { fetchClarkCandidateCapture } from "./state-ballot-clark-collection.js";
 import { fetchConnecticutCandidateCapture } from "./state-ballot-connecticut-collection.js";
 import {
 	delawareCandidateRosterUrl,
@@ -170,6 +171,7 @@ export function buildNorthDakotaSearchForm(source: StateBallotSource, body: stri
 }
 
 export async function fetchStateBallotSourceText(source: StateBallotSource, request: SourceTextRequest = fetchRemoteSourceText) {
+	if (source.format === "clark-pdf") return fetchClarkCandidateCapture(source, { requestText: request });
 	if (source.format === "connecticut-pdf") return fetchConnecticutCandidateCapture(source, { requestText: request });
 	if (source.retrievalPolicy === "manual-snapshot")
 		throw new Error("This publisher requires a manually supplied candidate snapshot; automatic retrieval is disabled.");

@@ -39,12 +39,12 @@ Idaho source holds. Existing reviewed records and independent sources are preser
 
 ## Reusable certified PDF collection
 
-Clark County, Nevada now has an independently reconciled candidate-table
-reader for both its Excel-produced PDF and newsletter panels. All 508 printed
-claims reconcile to 254 names, with eight nonperson ballot options kept separate.
-This is preparation, not an enabled automatic Nevada family; the reviewed
-source remains unchanged until discovery, normalization and durable import are
-integrated. See `docs/audits/2026-10-25-clark-candidate-tables.md`.
+Clark County, Nevada has configurable election discovery and durable imports
+from its independently reconciled candidate table and newsletter. All 508
+printed claims reconcile to 254 names; eight nonperson options remain separate.
+The migration preserves accepted candidate IDs and keeps the reviewed envelope
+for recovery. Offered future elections wait for both publications without
+fabricating candidates. See `docs/audits/2026-10-25-clark-automation.md`.
 
 Connecticut now joins the configurable automatic families with policy-bound
 town-PDF discovery and bounded text/vector extraction. Its 169-document retained

@@ -7,6 +7,7 @@ export class StateBallotAwaitingRecordsError extends Error {
 }
 
 export function supportsPendingStateBallotRecords(source: StateBallotSource) {
+	if (!source.retrievalPolicy && source.stateCode === "NV" && source.format === "clark-pdf") return true;
 	if (!source.retrievalPolicy && source.stateCode === "VT" && source.format === "vermont-xlsx" && source.id !== "vt-sos-2026") return true;
 	if (!source.retrievalPolicy && source.stateCode === "VA" && ["virginia-html", "virginia-local-html"].includes(source.format) && !source.id.startsWith("va-elect-2026-")) return true;
 	if (!source.retrievalPolicy && source.stateCode === "KS" && source.format === "kansas-html" && source.id !== "ks-johnson-2026") return true;

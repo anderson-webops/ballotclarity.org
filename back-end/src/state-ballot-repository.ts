@@ -12,6 +12,7 @@ import process from "node:process";
 import { electionDistrictMatches } from "./congressional-boundaries.js";
 import { getStateAbbreviationForName } from "./official-election-tools.js";
 import { parseCertifiedPdfCapture } from "./state-ballot-certified-pdf.js";
+import { parseClarkCandidateCapture } from "./state-ballot-clark-collection.js";
 import { parseConnecticutCandidateCapture } from "./state-ballot-connecticut-collection.js";
 import { connecticutBallotDocuments } from "./state-ballot-connecticut-documents.js";
 import {
@@ -174,7 +175,7 @@ export function createStateBallotRepository(options: StateBallotRepositoryOption
 					}
 					if (!stored) {
 						const receipt = await storage.readPending(source, now());
-						if (receipt && rememberPending(source, receipt)) return null;
+						if (receipt && !(source.format === "clark-pdf" && options.collectionIndexSha256?.[source.id]) && rememberPending(source, receipt)) return null;
 					}
 				}
 				if (source.retrievalPolicy === "manual-snapshot") {
@@ -186,7 +187,7 @@ export function createStateBallotRepository(options: StateBallotRepositoryOption
 				body = await fetchText(source);
 				capturedAt = new Date(now()).toISOString();
 				failureReason = "format";
-				const documentCapture = source.format === "connecticut-pdf" ? parseConnecticutCandidateCapture(source, body, createStateCandidateRecord, now(), stored?.records) : source.format === "oregon-pdf" ? parseOregonCandidateCapture(source, body, createStateCandidateRecord, now()) : source.format === "texas-certified-pdf" ? parseTexasCandidateCapture(source, body) : source.format === "vermont-xlsx" ? parseVermontCandidateCapture(source, body) : source.format === "fulton-pdf" ? parseFultonCandidateCapture(source, body) : source.format === "certified-pdf" ? parseCertifiedPdfCapture(source, body) : null;
+				const documentCapture = source.format === "clark-pdf" ? parseClarkCandidateCapture(source, body, createStateCandidateRecord, now(), stored?.records) : source.format === "connecticut-pdf" ? parseConnecticutCandidateCapture(source, body, createStateCandidateRecord, now(), stored?.records) : source.format === "oregon-pdf" ? parseOregonCandidateCapture(source, body, createStateCandidateRecord, now()) : source.format === "texas-certified-pdf" ? parseTexasCandidateCapture(source, body) : source.format === "vermont-xlsx" ? parseVermontCandidateCapture(source, body) : source.format === "fulton-pdf" ? parseFultonCandidateCapture(source, body) : source.format === "certified-pdf" ? parseCertifiedPdfCapture(source, body) : null;
 				const snapshot: StateBallotSnapshot = {
 					source,
 					retrievedAt: capturedAt,
@@ -209,7 +210,7 @@ export function createStateBallotRepository(options: StateBallotRepositoryOption
 					catch {
 						observations.get(source.id)!.failure = "Snapshot persistence failed.";
 						options.onPersistenceError?.(source.stateCode, source.id);
-						if (source.format === "connecticut-pdf") return stored;
+						if (["clark-pdf", "connecticut-pdf"].includes(source.format)) return stored;
 					}
 				}
 				cached.set(source.id, { expiresAt: now() + ttlMs, snapshot });
@@ -321,7 +322,7 @@ export function buildStateBallotPreview(snapshot: StateBallotSnapshot, lookup: P
 		return null;
 	const disclaimer = snapshot.source.stateCode === "VA"
 		? "Federal candidates only; state and local contests are not included. This is not an address-specific ballot."
-		: ["connecticut-pdf", "reviewed-pdf", "reviewed-image", "fulton-pdf", "certified-pdf", "oregon-pdf", "texas-certified-pdf", "vermont-xlsx", "alaska-html", "connecticut-ballots", "oregon-ballots"].includes(snapshot.source.format)
+		: ["clark-pdf", "connecticut-pdf", "reviewed-pdf", "reviewed-image", "fulton-pdf", "certified-pdf", "oregon-pdf", "texas-certified-pdf", "vermont-xlsx", "alaska-html", "connecticut-ballots", "oregon-ballots"].includes(snapshot.source.format)
 				? "Dated snapshot; later changes and local contests may be missing."
 				: snapshot.source.retrievalPolicy === "manual-snapshot"
 					? "Dated snapshot; later changes and local contests may be missing. Filing does not establish ballot qualification."

@@ -180,6 +180,13 @@ test("Nevada compiled-style management import and separate export preserve trans
 	assert.equal(JSON.parse(imported).records, data.records.length);
 	const snapshot = parseBundledStateSnapshot(nevada, JSON.stringify(data));
 	assert.equal(execFileSync(process.execPath, ["--import", "tsx", exporter, "NV"], { env: environment, encoding: "utf8" }), serializeStateBallotSnapshots([snapshot]));
-	assert.throws(() => execFileSync(process.execPath, ["--import", "tsx", manager, "refresh", "NV"], { env: environment, encoding: "utf8", stdio: "pipe" }), /manual|reviewed/iu);
+	assert.throws(() => execFileSync(process.execPath, ["--import", "tsx", manager, "refresh", "NV"], { env: { ...environment, STATE_BALLOT_PDFTOTEXT: "", STATE_BALLOT_PDFTOCAIRO: "" }, encoding: "utf8", stdio: "pipe" }), (error: unknown) => {
+		const failure = error as Error & { status: number; stdout: string };
+		assert.equal(failure.status, 1);
+		const fallback = JSON.parse(String(failure.stdout));
+		assert.equal(fallback.action, "available");
+		assert.equal(fallback.records, data.records.length);
+		return true;
+	});
 	assert.deepEqual((await createStateBallotStorage(directory).read(nevada))!.records, snapshot.records);
 });

@@ -8,6 +8,7 @@ import { normalizePublicHref } from "./public-href.js";
 import { parseAdditionalStateRecords } from "./state-ballot-additional-records.js";
 import { parseArkansasCandidateRecords } from "./state-ballot-arkansas.js";
 import { parseCertifiedPdfCapture } from "./state-ballot-certified-pdf.js";
+import { parseClarkCandidateCapture } from "./state-ballot-clark-collection.js";
 import { parseConnecticutCandidateCapture } from "./state-ballot-connecticut-collection.js";
 import { parseConnecticutCandidateRecords } from "./state-ballot-connecticut.js";
 import { validateDakotaCandidatePage } from "./state-ballot-dakota.js";
@@ -421,7 +422,10 @@ export function parseStateCandidateRecords(source: StateBallotSource, body: stri
 	if (["reviewed-pdf", "reviewed-xlsx", "reviewed-image"].includes(source.format))
 		throw new Error("Reviewed document sources require a validated snapshot.");
 	let records: StateCandidateRecord[];
-	if (source.format === "oregon-pdf") {
+	if (source.format === "clark-pdf") {
+		records = parseClarkCandidateCapture(source, body, makeRecord).records;
+	}
+	else if (source.format === "oregon-pdf") {
 		records = parseOregonCandidateCapture(source, body, makeRecord).records;
 	}
 	else if (source.format === "texas-certified-pdf") {

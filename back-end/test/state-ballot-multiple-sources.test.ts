@@ -9,7 +9,7 @@ import { join } from "node:path";
 import test from "node:test";
 import express from "express";
 import { serializeStateBallotSnapshots } from "../src/state-ballot-export.js";
-import { additionalStateBallotSources, configuredStateBallotSources } from "../src/state-ballot-registry.js";
+import { additionalStateBallotSources, configuredStateBallotSources, legacyReviewedStateBallotSource } from "../src/state-ballot-registry.js";
 import {
 	buildStateBallotPreview,
 	createStateBallotRepository,
@@ -49,7 +49,11 @@ async function serve(repository: StateBallotRepository) {
 test("county sources are additive and their reviewed configuration retains each original document", () => {
 	assert.equal(stateBallotSources.length, 50);
 	assert.equal(configuredStateBallotSources.length, 61);
-	assert.deepEqual(configuredStateBallotSources.slice(0, 50).filter(source => !["CT", "GA", "MO", "NJ", "TX", "OR"].includes(source.stateCode)), stateBallotSources.filter(source => !["CT", "GA", "MO", "NJ", "TX", "OR"].includes(source.stateCode)));
+	assert.deepEqual(configuredStateBallotSources.slice(0, 50).filter(source => !["NV", "CT", "GA", "MO", "NJ", "TX", "OR"].includes(source.stateCode)), stateBallotSources.filter(source => !["NV", "CT", "GA", "MO", "NJ", "TX", "OR"].includes(source.stateCode)));
+	const nevada = configuredStateBallotSources.find(source => source.id === "nv-clark-2026")!;
+	assert.equal(nevada.format, "clark-pdf");
+	assert.equal(nevada.retrievalPolicy, undefined);
+	assert.deepEqual(legacyReviewedStateBallotSource(nevada), stateBallotSources.find(source => source.id === nevada.id));
 	const oregon = configuredStateBallotSources.find(source => source.id === "or-sos-multnomah-2026")!;
 	const oregonOriginal = stateBallotSources.find(source => source.id === oregon.id)!;
 	assert.equal(oregon.format, "oregon-pdf");

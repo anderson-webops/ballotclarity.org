@@ -124,10 +124,17 @@ test("Pulaski retains Washington County and withholds unverified local and distr
 	assert.equal(pulaski.format, "reviewed-pdf");
 	assert.equal(pulaski.retrievalPolicy, "manual-snapshot");
 	assert.equal(pulaski.snapshotStorage, "external");
-	assert.deepEqual(resolveStateBallotConfiguration({ STATE_BALLOT_ENABLED_STATES: "AR" }).sources, [washington, pulaski]);
+	const configured = resolveStateBallotConfiguration({ STATE_BALLOT_ENABLED_STATES: "AR" }).sources;
+	assert.deepEqual(configured.map(source => source.id), [washington.id, pulaski.id]);
+	assert.deepEqual(configured[0], washington);
+	assert.equal(configured[1]!.format, "pulaski-pdf");
+	assert.equal(configured[1]!.retrievalPolicy, undefined);
+	assert.equal(configured[1]!.countyName, "Pulaski County");
+	assert.deepEqual(configured[1]!.withheldDistrictScopes, pulaski.withheldDistrictScopes);
 	const local = snapshot(pulaski);
 	local.records = local.records.filter(record => record.scope !== "statewide");
 	assert.equal(buildStateBallotPreview(local, { districtMatches: [{ id: "example-house", label: "House 1", districtType: "state-house", districtCode: "1", sourceSystem: "census-geocoder" }] }), null);
+	assert.equal(buildStateBallotPreview({ ...local, source: configured[1]! }, { districtMatches: [{ id: "example-house", label: "House 1", districtType: "state-house", districtCode: "1", sourceSystem: "census-geocoder" }] }), null);
 });
 
 test("state and source allowlists validate independently and intersect without replacing primary entries", () => {

@@ -8,6 +8,7 @@ Thirty-five families across twenty-seven states and D.C. are supported:
 
 | Family | Discovery | Elections |
 | --- | --- | --- |
+| `ar-pulaski-candidates-2026` | [Pulaski County election index](https://votepulaskiar.gov/) | Offered calendar dates and general-election notices, complete native candidate columns, awaiting publication, hash-bound imports and exact legacy recovery; personal applicability remains unverified |
 | `mi-tuscola-candidates-2026` | [Tuscola County election index](https://www.tuscolacounty.org/elections/) | Actual dated November sections, complete candidate/sample reconciliation, pending future publications and hash-bound durable imports; local and legislative applicability remains unverified |
 | `dc-boe-2026` | [D.C. Board of Elections navigation](https://dcboe.org/) | Actually offered year pages and explicit general-election dates; complete general, ANC and write-in publications, source-status amendments and hash-bound durable imports |
 | `oh-franklin-2026` | [Franklin County election navigation](https://www.vote.franklincountyohio.gov/home) | Actually offered year pages and explicit general-election dates from the complete FWAB notice or general schedule; complete candidate/notice reconciliation, pending future publications and hash-bound durable imports |

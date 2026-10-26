@@ -1,5 +1,21 @@
 # Official state candidate records
 
+## Pulaski County, Arkansas
+
+`ar-pulaski-candidates-2026` now supports policy-bound election discovery and
+native notice collection with an independent offered calendar. All 170 previously
+reviewed fields/IDs remain exact. The full candidate columns also recover Dwight
+Townsend's omitted bottom-row entry, bringing the current count to 171. This is
+an extraction correction, not evidence of a new filing or ballot qualification.
+
+The county's actually offered dates and links drive the reusable family; missing
+notices remain awaiting records. Same-URL hashes, unknown layouts, changed policies
+and disappearing accepted identities preserve review gates. The exact manual
+descriptor and accepted envelope remain recovery targets. Washington County stays
+independent, and personal ward, township and legislative applicability remains
+unverified. Research questions are not newly imported measures. See the
+[source and correction review](audits/2026-10-26-pulaski-automation.md).
+
 ## Tuscola County, Michigan
 
 The county's dated election index now supports automatic discovery, bounded PDF

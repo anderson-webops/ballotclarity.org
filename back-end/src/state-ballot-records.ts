@@ -37,6 +37,7 @@ import { readNorthCarolinaCandidateCapture } from "./state-ballot-north-carolina
 import { parseOregonCandidateCapture } from "./state-ballot-oregon-collection.js";
 import { parseOregonCandidateRecords } from "./state-ballot-oregon.js";
 import { parseStatePortalRecords } from "./state-ballot-portal-records.js";
+import { parsePulaskiCandidateCapture } from "./state-ballot-pulaski-collection.js";
 import { StateBallotAwaitingRecordsError } from "./state-ballot-source-state.js";
 import { floridaSourceElectionId } from "./state-ballot-southern.js";
 import { parseTexasCandidateCapture } from "./state-ballot-texas.js";
@@ -429,6 +430,7 @@ export function parseStateCandidateRecords(source: StateBallotSource, body: stri
 	if (["reviewed-pdf", "reviewed-xlsx", "reviewed-image"].includes(source.format))
 		throw new Error("Reviewed document sources require a validated snapshot.");
 	let records: StateCandidateRecord[];
+	if (source.format === "pulaski-pdf") return parsePulaskiCandidateCapture(source, body).records;
 	if (source.format === "tuscola-pdf") return parseTuscolaCandidateCapture(source, body).records;
 	if (source.format === "dc-pdf") return parseDcCandidateCapture(source, body, makeRecord).records;
 	if (source.format === "franklin-pdf") return parseFranklinCandidateCapture(source, body, makeRecord).records;

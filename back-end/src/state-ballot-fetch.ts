@@ -31,6 +31,7 @@ import { fetchMichiganCandidateCapture } from "./state-ballot-michigan.js";
 import { fetchNorthCarolinaCandidateCapture } from "./state-ballot-north-carolina.js";
 import { fetchOregonCandidateCapture } from "./state-ballot-oregon-collection.js";
 import { buildSouthCarolinaSearchForm } from "./state-ballot-portal-records.js";
+import { fetchPulaskiCandidateCapture } from "./state-ballot-pulaski-collection.js";
 import {
 	buildFloridaCandidateForm,
 	buildFloridaCountyForm,
@@ -178,6 +179,7 @@ export function buildNorthDakotaSearchForm(source: StateBallotSource, body: stri
 }
 
 export async function fetchStateBallotSourceText(source: StateBallotSource, request: SourceTextRequest = fetchRemoteSourceText) {
+	if (source.format === "pulaski-pdf") return fetchPulaskiCandidateCapture(source);
 	if (source.format === "tuscola-pdf") return fetchTuscolaCandidateCapture(source);
 	if (source.format === "dc-pdf") return fetchDcCandidateCapture(source, { requestText: request });
 	if (source.format === "franklin-pdf") return fetchFranklinCandidateCapture(source, { requestText: request });

@@ -103,7 +103,7 @@ test("discovery refuses changed controls, duplicate identities, false dates and 
 
 test("catalog contracts preserve parser, source approvals, manual source boundaries and provenance", () => {
 	const catalog = discoverWashingtonElectionCycles(discovery(), now);
-	for (const value of [{ ...catalog, familyId: "ar-pulaski-candidates-2026" }, { ...catalog, url: "https://example.com/" }, { ...catalog, sourceConfigurationSha256: "0".repeat(64) }, { ...catalog, discovery: { ...catalog.discovery, retrievedAt: "2027-01-01T00:00:00.000Z" } }, { ...catalog, elections: [{ electionId: "../escape", electionDate: "2027-11-02" }] }, { ...catalog, elections: [{ electionId: "906", electionDate: "2027-11-02", url: "http://localhost/" }] }, { ...catalog, elections: [] }])
+	for (const value of [{ ...catalog, familyId: "ar-washington-2026" }, { ...catalog, url: "https://example.com/" }, { ...catalog, sourceConfigurationSha256: "0".repeat(64) }, { ...catalog, discovery: { ...catalog.discovery, retrievedAt: "2027-01-01T00:00:00.000Z" } }, { ...catalog, elections: [{ electionId: "../escape", electionDate: "2027-11-02" }] }, { ...catalog, elections: [{ electionId: "906", electionDate: "2027-11-02", url: "http://localhost/" }] }, { ...catalog, elections: [] }])
 		assert.throws(() => parseStateBallotCycleCatalog(value, now));
 });
 
@@ -119,7 +119,7 @@ test("external catalogs are bounded, atomic, strict and opt-in; legacy source al
 		assert.equal(enabled.sources.length, 2);
 		assert.equal(resolveStateBallotConfiguration({ STATE_BALLOT_CYCLE_CATALOG: path, STATE_BALLOT_ENABLED_SOURCES: original.id }).sources.length, 1);
 		assert.deepEqual(resolveStateBallotConfiguration({ STATE_BALLOT_CYCLE_CATALOG: path, STATE_BALLOT_ENABLED_SOURCES: "ut-lg-2026", STATE_BALLOT_ENABLED_FAMILIES: original.id }).sources.map(source => source.id).sort(), ["ut-lg-2026", original.id, "wa-general-2027-11-02"].sort());
-		assert.throws(() => resolveStateBallotConfiguration({ STATE_BALLOT_CYCLE_CATALOG: path, STATE_BALLOT_ENABLED_FAMILIES: "ar-pulaski-candidates-2026" }));
+		assert.throws(() => resolveStateBallotConfiguration({ STATE_BALLOT_CYCLE_CATALOG: path, STATE_BALLOT_ENABLED_FAMILIES: "ar-washington-2026" }));
 		assert.throws(() => resolveStateBallotConfiguration({ STATE_BALLOT_CYCLE_CATALOG: path, STATE_BALLOT_ENABLED_STATES: "UT", STATE_BALLOT_ENABLED_FAMILIES: original.id }));
 		assert.equal(resolveStateBallotConfiguration({ STATE_BALLOT_CYCLE_CATALOG: path, STATE_BALLOT_ENABLED_STATES: "UT" }).sources.length, 1);
 		assert.throws(() => readStateBallotCycleCatalog(join(import.meta.dirname, "cycles.json")));

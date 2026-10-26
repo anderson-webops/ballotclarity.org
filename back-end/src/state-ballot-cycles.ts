@@ -5,6 +5,7 @@ import type { FranklinElection } from "./state-ballot-franklin-collection.js";
 import type { FultonElection } from "./state-ballot-fulton.js";
 import type { IowaPolkElection } from "./state-ballot-iowa-polk.js";
 import type { OregonElection } from "./state-ballot-oregon-collection.js";
+import type { PulaskiElection } from "./state-ballot-pulaski-collection.js";
 import type { StateBallotSource } from "./state-ballot-sources.js";
 import type { TexasElection } from "./state-ballot-texas.js";
 import type { TuscolaElection } from "./state-ballot-tuscola-collection.js";
@@ -68,6 +69,7 @@ import {
 	readNorthCarolinaElectionDiscovery
 } from "./state-ballot-north-carolina.js";
 import { oregonDiscoveryUrl, readOregonElectionDiscovery, validateOregonElection, validateOregonSource } from "./state-ballot-oregon-collection.js";
+import { pulaskiDiscoveryUrl, readPulaskiDiscovery, validatePulaskiElection, validatePulaskiSource } from "./state-ballot-pulaski-collection.js";
 import { configuredStateBallotSources } from "./state-ballot-registry.js";
 import {
 	floridaCandidatePostBody,
@@ -108,6 +110,7 @@ const washington = configuredStateBallotSources.find(source => source.id === "wa
 export const stateBallotCycleDiscoveryUrl = "https://voter.votewa.gov/CandidateList.aspx";
 const digest = (value: string) => createHash("sha256").update(value).digest("hex");
 const cycleFamilies = [
+	{ source: configuredStateBallotSources.find(source => source.id === "ar-pulaski-candidates-2026")!, format: "pulaski-pdf", discoveryUrl: pulaskiDiscoveryUrl, prefix: "ar-pulaski-general", electionLabel: "General Election", formId: null },
 	{ source: configuredStateBallotSources.find(source => source.id === "mi-tuscola-candidates-2026")!, format: "tuscola-pdf", discoveryUrl: tuscolaDiscoveryUrl, prefix: "mi-tuscola-general", electionLabel: "General Election", formId: null },
 	{ source: configuredStateBallotSources.find(source => source.id === "dc-boe-2026")!, format: "dc-pdf", discoveryUrl: dcDiscoveryUrl, prefix: "dc-general", electionLabel: "General Election", formId: null },
 	{ source: configuredStateBallotSources.find(source => source.id === "oh-franklin-2026")!, format: "franklin-pdf", discoveryUrl: franklinDiscoveryUrl, prefix: "oh-franklin-general", electionLabel: "General Election", formId: null },
@@ -158,7 +161,10 @@ export function getStateBallotCycleFamily(familyId: string) {
 	const family = cycleFamilies.find(item => item.source.id === familyId);
 	if (!family) throw new Error("The automatic election source family is unsupported or has changed.");
 	let targetValid = family.source.pageUrl === family.source.url;
-	if (family.format === "tuscola-pdf") {
+	if (family.format === "pulaski-pdf") {
+		validatePulaskiSource(family.source);
+	}
+	else if (family.format === "tuscola-pdf") {
 		validateTuscolaSource(family.source);
 	}
 	else if (family.format === "dc-pdf") {
@@ -297,7 +303,7 @@ export interface StateBallotCycleCatalog {
 	familyId: string;
 	sourceConfigurationSha256: string;
 	discovery: { url: string; sha256: string; retrievedAt: string };
-	elections: { electionId: string | null; electionDate: string; reports?: VirginiaElection["reports"]; allOfficesUrl?: string | null; documents?: FultonElection["documents"]; pageUrl?: string; pdfDocuments?: CertifiedPdfElection["pdfDocuments"]; workbookUrl?: string; texasDocuments?: TexasElection["texasDocuments"]; oregonDocuments?: OregonElection["oregonDocuments"]; cassiaDocuments?: CassiaElection["cassiaDocuments"]; polkDocuments?: IowaPolkElection["polkDocuments"]; franklinDocuments?: FranklinElection["franklinDocuments"]; tuscolaDocuments?: TuscolaElection["tuscolaDocuments"]; dcDocuments?: DcElection["dcDocuments"] }[];
+	elections: { electionId: string | null; electionDate: string; reports?: VirginiaElection["reports"]; allOfficesUrl?: string | null; documents?: FultonElection["documents"]; pageUrl?: string; pdfDocuments?: CertifiedPdfElection["pdfDocuments"]; workbookUrl?: string; texasDocuments?: TexasElection["texasDocuments"]; oregonDocuments?: OregonElection["oregonDocuments"]; cassiaDocuments?: CassiaElection["cassiaDocuments"]; polkDocuments?: IowaPolkElection["polkDocuments"]; franklinDocuments?: FranklinElection["franklinDocuments"]; pulaskiDocuments?: PulaskiElection["pulaskiDocuments"]; tuscolaDocuments?: TuscolaElection["tuscolaDocuments"]; dcDocuments?: DcElection["dcDocuments"] }[];
 }
 
 function exactKeys(value: unknown, names: string[]): value is Record<string, unknown> {
@@ -392,6 +398,14 @@ export function parseStateBallotCycleCatalog(value: unknown, now = Date.now()): 
 	const dates = new Set<string>();
 	const florida = original.stateCode === "FL";
 	const maryland = original.stateCode === "MD";
+	if (original.format === "pulaski-pdf") {
+		for (const election of value.elections) {
+			validatePulaskiElection(election);
+			if (dates.has(election.electionDate)) throw new Error("The Pulaski elections are duplicated.");
+			dates.add(election.electionDate);
+		}
+		return value as unknown as StateBallotCycleCatalog;
+	}
 	if (original.format === "tuscola-pdf") {
 		for (const election of value.elections) {
 			validateTuscolaElection(election);
@@ -529,6 +543,11 @@ export function discoverWashingtonElectionCycles(body: string, now = Date.now())
 }
 
 export function discoverStateBallotElectionCycles(body: string, familyId: string, now = Date.now()): StateBallotCycleCatalog {
+	if (familyId === "ar-pulaski-candidates-2026") {
+		const family = getStateBallotCycleFamily(familyId);
+		const capture = readPulaskiDiscovery(body, now);
+		return parseStateBallotCycleCatalog({ schemaVersion: 1, type: "state-ballot-cycle-catalog", familyId, sourceConfigurationSha256: digest(JSON.stringify(family.source)), discovery: { url: family.discoveryUrl, sha256: digest(body), retrievedAt: capture.index.retrievedAt }, elections: capture.elections }, now);
+	}
 	if (familyId === "mi-tuscola-candidates-2026") {
 		const family = getStateBallotCycleFamily(familyId);
 		const capture = readTuscolaDiscovery(body, now);
@@ -628,6 +647,10 @@ export function stateBallotCycleSources(catalog: StateBallotCycleCatalog, now = 
 	parseStateBallotCycleCatalog(catalog, now);
 	const family = getStateBallotCycleFamily(catalog.familyId);
 	return catalog.elections.filter(election => election.electionDate !== family.source.electionDate).map((election) => {
+		if (family.format === "pulaski-pdf") {
+			validatePulaskiElection(election);
+			return { ...family.source, id: `${family.prefix}-${election.electionDate}`, label: `${family.source.label} (${election.electionDate.slice(0, 4)})`, electionDate: election.electionDate };
+		}
 		if (family.format === "tuscola-pdf") {
 			validateTuscolaElection(election);
 			return { ...family.source, id: `${family.prefix}-${election.electionDate}`, label: `${family.source.label} (${election.electionDate.slice(0, 4)})`, electionDate: election.electionDate, url: election.pageUrl, pageUrl: election.pageUrl };

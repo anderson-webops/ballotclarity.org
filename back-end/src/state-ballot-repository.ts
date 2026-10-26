@@ -11,6 +11,7 @@ import { createHash } from "node:crypto";
 import process from "node:process";
 import { electionDistrictMatches } from "./congressional-boundaries.js";
 import { getStateAbbreviationForName } from "./official-election-tools.js";
+import { RemoteSourceAccessChallengeError } from "./remote-json-source.js";
 import { parseCassiaCandidateCapture } from "./state-ballot-cassia.js";
 import { parseCertifiedPdfCapture } from "./state-ballot-certified-pdf.js";
 import { parseClarkCandidateCapture } from "./state-ballot-clark-collection.js";
@@ -242,7 +243,7 @@ export function createStateBallotRepository(options: StateBallotRepositoryOption
 				}
 				awaitingRecords.delete(source.id);
 				const observation = observations.get(source.id);
-				if (observation) observation.failure = error instanceof FultonCollectorCapabilityError ? "PDF text extractor is not configured or unavailable." : failureReason === "format" ? "Source format requires review." : "Source collection failed.";
+				if (observation) observation.failure = error instanceof RemoteSourceAccessChallengeError ? "Publisher access challenge requires review." : error instanceof FultonCollectorCapabilityError ? "PDF text extractor is not configured or unavailable." : failureReason === "format" ? "Source format requires review." : "Source collection failed.";
 				if (reviewedFallback) {
 					cached.set(source.id, { expiresAt: now() + 5 * 60 * 1000, snapshot: reviewedFallback });
 					options.onUnavailable?.(source.stateCode, failureReason);

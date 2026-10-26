@@ -210,6 +210,21 @@ function isJsonContentType(value: string | string[] | undefined) {
 	return mediaType === "application/json" || mediaType.endsWith("+json");
 }
 
+export class RemoteSourceAccessChallengeError extends Error {
+	constructor() {
+		super("The publisher returned an automated-access challenge.");
+	}
+}
+
+function assertNotAccessChallenge(body: Buffer, contentType: string | string[] | undefined) {
+	const mediaType = (Array.isArray(contentType) ? contentType[0] : contentType)?.split(";", 1)[0]?.trim().toLowerCase();
+	if (!["text/html", "application/xhtml+xml"].includes(mediaType ?? "") || body.length > 32000) return;
+	const html = body.toString("utf8");
+	if (!/^\s*(?:<!doctype[^>]{0,160}>\s*)?<html(?:\s|>)/iu.test(html) || html.match(/<body\b/giu)?.length !== 1) return;
+	const frame = /<body\b[^>]{0,2048}>\s*<iframe\b([^>]{0,8192})>\s*Request unsuccessful\.\s*Incapsula incident ID:[^<]{1,200}<\/iframe\s*>\s*<\/body\s*>\s*<\/html\s*>\s*$/iu.exec(html);
+	if (frame && /\bid\s*=\s*["']main-iframe["']/iu.test(frame[1]!) && /\bsrc\s*=\s*["']\/_Incapsula_Resource\?/iu.test(frame[1]!)) throw new RemoteSourceAccessChallengeError();
+}
+
 async function readBoundedJsonBody(
 	response: RemoteJsonResponse,
 	maxBytes: number,
@@ -256,6 +271,7 @@ async function readBoundedJsonBody(
 		}
 
 		const body = Buffer.concat(chunks);
+		if (!requireJson) assertNotAccessChallenge(body, response.headers["content-type"]);
 		if (bytesOnly) return body;
 		if (requireJson) return body.toString("utf8");
 		try {

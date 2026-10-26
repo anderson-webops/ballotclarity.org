@@ -8,10 +8,34 @@ import {
 	fetchRemoteSourceText,
 	isPublicRemoteAddress,
 	parseRemoteJsonUrl,
+	RemoteSourceAccessChallengeError,
 	RemoteSourceDocumentPolicyError,
 } from "../src/remote-json-source.js";
 
 const publicResolver = async () => [{ address: "93.184.216.34", family: 4 }];
+
+const challenge = "<html><head><meta name=\"ROBOTS\" content=\"NOINDEX, NOFOLLOW\"></head><body><iframe id=\"main-iframe\" src=\"/_Incapsula_Resource?incident_id=synthetic\">Request unsuccessful. Incapsula incident ID: synthetic</iframe></body></html>";
+
+test("challenge-only HTTP 200 pages are access failures before text or document parsing", async () => {
+	for (const contentType of ["text/html", "TEXT/HTML; charset=utf-8", "application/xhtml+xml"]) {
+		for (const capture of [fetchRemoteSourceText, fetchRemoteSourceDocument]) {
+			let requests = 0;
+			await assert.rejects(capture("https://example.com/elections", { allowedHosts: ["example.com"], resolveAddresses: publicResolver, transport: async () => {
+				requests++;
+				return response({ body: challenge, contentType });
+			} }), error => error instanceof RemoteSourceAccessChallengeError && error.message === "The publisher returned an automated-access challenge.");
+			assert.equal(requests, 1);
+		}
+	}
+});
+
+test("access challenge detection preserves real application pages, ordinary text and binary bytes", async () => {
+	for (const [body, contentType] of [[challenge.replace("<body>", "<body><main>Candidate records</main>"), "text/html"], [challenge.replace("<body>", "<body><div>Candidate records</div>"), "text/html"], ["<html><body><a href=\"/_Incapsula_Resource\">Security documentation</a></body></html>", "text/html"], [challenge.replace("id=\"main-iframe\"", "id=\"example-frame\""), "text/html"], [challenge, "text/plain"], [challenge, "application/pdf"]] as const) {
+		const options = { allowedHosts: ["example.com"], resolveAddresses: publicResolver, transport: async () => response({ body, contentType }) };
+		assert.equal(await fetchRemoteSourceText("https://example.com/export", options), body);
+		assert.deepEqual((await fetchRemoteSourceDocument("https://example.com/export", options)).body, Buffer.from(body));
+	}
+});
 
 test("legacy text decoding is an explicit source option, keeps valid UTF-8 and rejects invalid default or undefined legacy bytes", async () => {
 	const legacy = Buffer.from([0x46, 0xE9, 0x6C, 0x69, 0x78]);

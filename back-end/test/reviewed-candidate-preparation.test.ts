@@ -10,13 +10,13 @@ import { fileURLToPath } from "node:url";
 import { parse } from "csv-parse/sync";
 import { prepareReviewedCandidateFiles } from "../src/reviewed-candidate-preparation.js";
 import { readReviewedSantaFeCandidates } from "../src/reviewed-santa-fe-candidates.js";
-import { configuredStateBallotSources } from "../src/state-ballot-registry.js";
+import { configuredStateBallotSources, legacyReviewedStateBallotSource } from "../src/state-ballot-registry.js";
 import { parseBundledStateSnapshot } from "../src/state-ballot-snapshot.js";
 import { santaFeFixture } from "./helpers/santa-fe-fixture.js";
 
 const now = Date.parse("2026-10-24T02:00:00Z");
 const hash = (value: Uint8Array | string) => createHash("sha256").update(value).digest("hex");
-const source = configuredStateBallotSources.find(source => source.id === "mi-tuscola-candidates-2026")!;
+const source = legacyReviewedStateBallotSource(configuredStateBallotSources.find(source => source.id === "mi-tuscola-candidates-2026")!)!;
 const columns = ["name", "office", "party", "district", "scope", "status", "jurisdiction", "ballotDesignation", "sourceStatus", "sourceDistrictLabel", "sourceAreaLabel", "documentUrl", "page"];
 const csv = (rows: Record<string, string>[], header = columns) => `${[header, ...rows.map(row => header.map(column => row[column] ?? ""))].map(row => row.map(value => `"${value.replaceAll("\"", "\"\"")}"`).join(",")).join("\n")}\n`;
 const sample = (overrides: Record<string, string> = {}) => ({ name: "Cassie Piché", office: "School board", party: "NP", district: "", scope: "local", status: "listed", jurisdiction: "Example School District", ballotDesignation: "4 Year Term - Vote for not more than 4", sourceStatus: "Official candidate list", sourceDistrictLabel: "Printed school board office", sourceAreaLabel: "Tuscola County", documentUrl: source.documentUrls![0]!, page: "1", ...overrides });

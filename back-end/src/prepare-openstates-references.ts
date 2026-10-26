@@ -3,7 +3,7 @@ import { lstat, mkdir, realpath, writeFile } from "node:fs/promises";
 import { isAbsolute, join } from "node:path";
 import { parseElectionReferenceSnapshot } from "./election-references.js";
 import { openStatesBulkPublication, openStatesBulkSources, prepareOpenStatesReferences } from "./openstates-bulk.js";
-import { configuredStateBallotSources } from "./state-ballot-registry.js";
+import { configuredStateBallotSources, legacyReviewedStateBallotSource } from "./state-ballot-registry.js";
 import { parseBundledStateSnapshot } from "./state-ballot-snapshot.js";
 import { assertExternalStateDataDirectory, readBoundedStateData } from "./state-ballot-storage.js";
 
@@ -22,7 +22,8 @@ export async function readOpenStatesCandidateInputs(files: readonly string[], al
 		const stored = typeof envelope?.snapshot === "string";
 		const snapshotBody = stored ? envelope.snapshot as string : content;
 		const metadata = JSON.parse(snapshotBody);
-		const source = configuredStateBallotSources.find(item => item.id === metadata?.sourceId && allowedSourceIds.includes(item.id));
+		const configured = configuredStateBallotSources.find(item => item.id === metadata?.sourceId && allowedSourceIds.includes(item.id));
+		const source = configured && metadata.retrievalPolicy === "manual-snapshot" ? legacyReviewedStateBallotSource(configured) ?? configured : configured;
 		if (!source || !["manual-snapshot", "automatic"].includes(metadata.retrievalPolicy))
 			throw new Error("Each candidate input must match an explicitly reviewed source and retrieval policy.");
 		if (stored && (Object.keys(envelope).sort().join(",") !== "snapshot,sourceConfigurationSha256" || envelope.sourceConfigurationSha256 !== hash(JSON.stringify(source))))

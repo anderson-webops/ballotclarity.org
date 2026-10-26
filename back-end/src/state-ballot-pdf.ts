@@ -72,10 +72,10 @@ async function runPdfExtractor(bytes: Buffer, executable: string, arguments_: st
 	});
 }
 
-export async function extractStateBallotPdfText(bytes: Buffer, executable: string, timeoutMs: number = stateBallotPdfCollectorContract.timeoutMs, format: "layout" | "bbox-layout" | "raw-bbox" = "layout", maximumPages: number = stateBallotPdfCollectorContract.maximumPages) {
-	if (!["layout", "bbox-layout", "raw-bbox"].includes(format) || !Number.isInteger(maximumPages) || maximumPages < 1 || maximumPages > 2000) throw new Error("The PDF extraction input exceeds its reviewed bounds.");
+export async function extractStateBallotPdfText(bytes: Buffer, executable: string, timeoutMs: number = stateBallotPdfCollectorContract.timeoutMs, format: "layout" | "raw" | "bbox-layout" | "raw-bbox" = "layout", maximumPages: number = stateBallotPdfCollectorContract.maximumPages) {
+	if (!["layout", "raw", "bbox-layout", "raw-bbox"].includes(format) || !Number.isInteger(maximumPages) || maximumPages < 1 || maximumPages > 2000) throw new Error("The PDF extraction input exceeds its reviewed bounds.");
 	const body = await runPdfExtractor(bytes, executable, [...(format === "raw-bbox" ? ["-raw", "-bbox"] : [`-${format}`]), "-enc", "UTF-8", "-eol", "unix", "-", "-"], timeoutMs);
-	const pages = format !== "layout" ? [...body.matchAll(/<page\b/gu)].length : body.split("\f").filter(page => page.trim()).length;
+	const pages = format === "layout" || format === "raw" ? body.split("\f").filter(page => page.trim()).length : [...body.matchAll(/<page\b/gu)].length;
 	if (!pages || pages > maximumPages) throw new Error("The PDF has no supported bounded UTF-8 text.");
 	return body;
 }

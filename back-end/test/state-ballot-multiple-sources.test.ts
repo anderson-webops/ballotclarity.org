@@ -92,12 +92,13 @@ test("county sources are additive and their reviewed configuration retains each 
 	}
 });
 
-test("Tuscola remains a separate external source with no automatic legislative assignment", () => {
-	const tuscola = additionalStateBallotSources.find(source => source.id === "mi-tuscola-candidates-2026")!;
+test("Tuscola supports automatic external imports without automatic legislative assignment", () => {
+	const tuscola = configuredStateBallotSources.find(source => source.id === "mi-tuscola-candidates-2026")!;
 	const michigan = stateBallotSources.find(source => source.id === "mi-dos-2026")!;
 	assert.deepEqual(resolveStateBallotConfiguration({ STATE_BALLOT_ENABLED_STATES: "MI" }).sources, [michigan, tuscola]);
 	assert.deepEqual(resolveStateBallotConfiguration({ STATE_BALLOT_ENABLED_SOURCES: tuscola.id }).sources, [tuscola]);
-	assert.equal(tuscola.retrievalPolicy, "manual-snapshot");
+	assert.equal(tuscola.retrievalPolicy, undefined);
+	assert.equal(tuscola.format, "tuscola-pdf");
 	assert.equal(tuscola.snapshotStorage, "external");
 	assert.deepEqual(tuscola.withheldDistrictScopes, ["congressional", "state-senate", "state-house"]);
 	assert.match(tuscola.scopeNotice!, /Township, village, school, library and judicial districts vary by voter/u);

@@ -1,5 +1,19 @@
 # Official state candidate records
 
+## Tuscola County, Michigan
+
+The county's dated election index now supports automatic discovery, bounded PDF
+collection and durable external import for `mi-tuscola-candidates-2026`. All 191
+records and IDs remain exact. The complete 21-page listing reconciles 196 printed
+people against the 140-page sample, preserving five joint tickets, three empty
+offices, literal party/marker fields and all personal-eligibility holds.
+
+Current policies precede downloads; offered future dates and both publications
+drive imports. Changed document hashes invalidate cached imports, and the first
+automatic replacement retains its exact reviewed recovery envelope. The separate
+716-record Michigan state source and original reviewed packet remain unchanged.
+See the [collection and cycle review](audits/2026-10-26-tuscola-automation.md).
+
 ## Santa Fe County preparation
 
 The local candidate-preparation command now reads the reviewed master PDF

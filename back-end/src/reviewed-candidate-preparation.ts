@@ -8,7 +8,7 @@ import { parse } from "csv-parse/sync";
 import { readReviewedSantaFeCandidates } from "./reviewed-santa-fe-candidates.js";
 import { serializeStateBallotSnapshots } from "./state-ballot-export.js";
 import { extractStateBallotPdfText, resolveStateBallotPdfExtractor } from "./state-ballot-pdf.js";
-import { configuredStateBallotSources } from "./state-ballot-registry.js";
+import { configuredStateBallotSources, legacyReviewedStateBallotSource } from "./state-ballot-registry.js";
 import { parseBundledStateSnapshot } from "./state-ballot-snapshot.js";
 import { assertExternalStateDataDirectory, readBoundedStateDataBytes, serializeStoredStateSnapshot } from "./state-ballot-storage.js";
 
@@ -67,7 +67,8 @@ function parsePlan(value: unknown, now: number): PreparationPlan {
 export async function prepareReviewedCandidateFiles(planPath: string, now = Date.now(), options: { extractSantaFePdf?: (bytes: Buffer) => Promise<string> } = {}) {
 	if (!absolutePath(planPath)) throw new Error("Use an absolute candidate preparation plan path.");
 	const plan = parsePlan(JSON.parse((await readBoundedStateDataBytes(planPath)).toString("utf8")), now);
-	const source = configuredStateBallotSources.find(source => source.id === plan.sourceId);
+	const configured = configuredStateBallotSources.find(source => source.id === plan.sourceId);
+	const source = configured ? legacyReviewedStateBallotSource(configured) ?? configured : undefined;
 	if (!source || source.format !== "reviewed-pdf" || source.retrievalPolicy !== "manual-snapshot" || source.snapshotStorage !== "external"
 		|| !source.documentUrls?.length || digest(JSON.stringify(source)) !== plan.sourceConfigurationSha256
 		|| plan.documents.map(document => document.url).join("\n") !== source.documentUrls.join("\n")) {

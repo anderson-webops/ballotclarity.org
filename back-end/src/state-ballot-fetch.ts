@@ -39,6 +39,7 @@ import {
 	southCarolinaCandidateRosterUrl
 } from "./state-ballot-southern.js";
 import { fetchTexasCandidateCapture } from "./state-ballot-texas.js";
+import { fetchTuscolaCandidateCapture } from "./state-ballot-tuscola-collection.js";
 import { fetchUtahCandidatePage } from "./state-ballot-utah.js";
 import { fetchVermontCandidateCapture } from "./state-ballot-vermont.js";
 import { fetchVirginiaCandidateCapture } from "./state-ballot-virginia.js";
@@ -177,6 +178,7 @@ export function buildNorthDakotaSearchForm(source: StateBallotSource, body: stri
 }
 
 export async function fetchStateBallotSourceText(source: StateBallotSource, request: SourceTextRequest = fetchRemoteSourceText) {
+	if (source.format === "tuscola-pdf") return fetchTuscolaCandidateCapture(source);
 	if (source.format === "dc-pdf") return fetchDcCandidateCapture(source, { requestText: request });
 	if (source.format === "franklin-pdf") return fetchFranklinCandidateCapture(source, { requestText: request });
 	if (source.format === "cassia-pdf") return fetchCassiaCandidateCapture(source, { requestText: request });

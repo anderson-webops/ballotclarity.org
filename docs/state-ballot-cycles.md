@@ -4,10 +4,11 @@ External election catalogs opt the automatic candidate repository into reusable
 source families. The current 64 source definitions retain explicit source/state
 allowlists; reusable discovery does not widen an exact-source allowlist.
 
-Thirty-four families across twenty-seven states and D.C. are supported:
+Thirty-five families across twenty-seven states and D.C. are supported:
 
 | Family | Discovery | Elections |
 | --- | --- | --- |
+| `mi-tuscola-candidates-2026` | [Tuscola County election index](https://www.tuscolacounty.org/elections/) | Actual dated November sections, complete candidate/sample reconciliation, pending future publications and hash-bound durable imports; local and legislative applicability remains unverified |
 | `dc-boe-2026` | [D.C. Board of Elections navigation](https://dcboe.org/) | Actually offered year pages and explicit general-election dates; complete general, ANC and write-in publications, source-status amendments and hash-bound durable imports |
 | `oh-franklin-2026` | [Franklin County election navigation](https://www.vote.franklincountyohio.gov/home) | Actually offered year pages and explicit general-election dates from the complete FWAB notice or general schedule; complete candidate/notice reconciliation, pending future publications and hash-bound durable imports |
 | `id-cassia-2026` | [Cassia County sample-ballot index](https://www.cassia.gov/sample-ballots) | Actual dated general-election sections, complete general and supplemental PDFs, separate questions and retained local applicability limits |
@@ -157,7 +158,10 @@ A complete future report with zero candidates waits durably; format,
 status, date or unexpired-election drift retains accepted data for review. The
 publisher's current as-of label is September 4 without an explicit year; capture
 time proves retrieval, not later publisher revision or a complete local ballot.
-County reports, including the separately reviewed Tuscola source, remain separate.
+County reports remain separate. Tuscola now has its own policy-bound automatic
+family; its original reviewed packet remains an exact recovery target. The
+[county review](audits/2026-10-26-tuscola-automation.md) covers the complete
+21-page listing, sample reconciliation and future-cycle boundaries.
 
 Normal pinned transport verifies both publishers with no redirects. Michigan's
 wildcard robots exclusions do not cover the election homepage; the candidate

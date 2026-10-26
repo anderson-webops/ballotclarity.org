@@ -106,6 +106,7 @@ test("raw bounding-box and SVG workers retain bounded pipes, exact arguments and
 	try {
 		await writeFile(executable, `#!${process.execPath}\nprocess.stdin.resume();process.stdin.on('end',()=>process.stdout.write(process.argv.slice(2).join(' ')+'<page></page>'));\n`, { mode: 0o700 });
 		assert.match(await extractStateBallotPdfText(bytes, executable, 12000, "raw-bbox"), /^-raw -bbox -enc UTF-8 -eol unix - -/u);
+		assert.match(await extractStateBallotPdfText(bytes, executable, 12000, "raw", 200), /^-raw -enc UTF-8 -eol unix - -/u);
 		assert.match(await extractStateBallotPdfSvg(bytes, executable, 3), /^-svg -f 3 -l 3 - -/u);
 		for (const page of [0, 51, 1.5, NaN]) await assert.rejects(extractStateBallotPdfSvg(bytes, executable, page), /bounds/u);
 		await assert.rejects(extractStateBallotPdfSvg(Buffer.from("not-pdf"), executable, 1), /bounds/u);

@@ -1,13 +1,19 @@
 # Official state candidate records
 
-## Franklin County reader preparation
+## Franklin County, Ohio
 
-A bounded reader reconciles all 78 accepted Ohio candidate records, including
-eleven write-ins, six joint tickets and 26 published websites. Its source remains
-a reviewed external snapshot: offered-election discovery, policy checks and
-complete unattended-import acceptance are still pending. No collector is enabled
-and no records or capture clocks change. See the
-[reader review](audits/2026-10-26-franklin-reader-preparation.md).
+The county's rolling index supports policy-bound discovery, PDF collection and
+durable external imports. All 78 accepted records and IDs remain exact, including
+eleven write-ins, six joint tickets and 26 websites. The complete FWAB notice
+accounts for 79 names: those 78 plus one explicitly withdrawn entry. Two reviewed
+name variants are election/office-bound; other discrepancies require review.
+
+The actually offered 2027 schedule establishes November 2 without establishing
+any candidates. Future publications move from pending to available only when both
+required reports reconcile. Changed same-URL document hashes invalidate cached
+imports, and the first automatic replacement retains its reviewed recovery envelope.
+The original raw-document collector's policy hold remains separate. See the
+[automation review](audits/2026-10-26-franklin-automation.md).
 
 ## Johnson County, Iowa
 
@@ -291,7 +297,7 @@ its filing method, withdrawal and inactive-status fields.
 | Rhode Island, East Greenwich | [Five precinct sample ballots](https://www.eastgreenwichri.gov/192/Voter-Registration-Elections) | Reviewed, dated PDF set; external import only | 33 records: fifteen statewide, two CD 2, one Senate 35, two House 24/30 and thirteen municipal. Precinct 0903 supplies House 24; other precincts supply House 30. All five originals are required despite repeated candidates and zero-contribution documents. The literal Micholas A. Credle spelling and multi-seat limits are retained without inferring unopposed outcomes. |
 | Vermont | [South Burlington official general-election sample ballots](https://www.southburlingtonvt.gov/211/Elections-Voting) | Five reviewed, dated PDFs; external import only | 58 candidate/contest records in 19 contests, reconciled from 266 printed rows across all ten pages. Includes 23 statewide candidates, including the at-large U.S. House race; six House candidates in five named districts; six Senate and 23 local candidates. Named House districts are not converted into Census numbers. Senate/local eligibility is withheld without an authoritative mapping. Printed combined party labels and separate governor/LG offices are preserved. Two constitutional proposals are retained in an external factual companion, not yet in the application. |
 | New York | [Monroe County Board of Elections certification](https://www.monroecounty.gov/elections) | Reviewed, dated PDF; external import only | 106 candidate/contest records across 61 contests, reconciled from 194 printed party lines on all eight candidate pages. Eight statewide, two congressional, eight Senate, eighteen Assembly and seventy local records. Preserves 80 fusion records, separate governor/LG sections and distinct council/trustee terms. County publication is not statewide completeness. No bundled dataset or automatic OCR/crawl fallback is used. |
-| Ohio | [Franklin County Board of Elections general candidate list and FWAB notice](https://www.vote.franklincountyohio.gov/election-info/2026) | Reviewed, dated county PDF snapshot | 78 records: 26 statewide, seven congressional, seven Senate, 25 House and thirteen local. Reconciles eleven registered write-ins: ten marked in the October 16 list plus Gary Josephson's explicit FWAB designation despite the list's blank cell. The notice also supplies Greg Levy's unclipped Other-party label. Preserves six governor tickets, distinct judicial term dates, the US Senate unexpired term and 26 published campaign links. District coverage is limited to Franklin County; county/appellate courts are not assigned to voters. Other blank or uncertain party cells are not guessed. |
+| Ohio | [Franklin County Board of Elections general candidate list and FWAB notice](https://www.vote.franklincountyohio.gov/election-info/2026) | Policy-bound automatic PDFs; reviewed fallback retained | 78 records: 26 statewide, seven congressional, seven Senate, 25 House and thirteen local. Reconciles eleven registered write-ins: ten marked in the October 16 list plus Gary Josephson's explicit FWAB designation despite the list's blank cell. The notice also supplies Greg Levy's unclipped Other-party label. Preserves six governor tickets, distinct judicial term dates, the US Senate unexpired term and 26 published campaign links. District coverage is limited to Franklin County; county/appellate courts are not assigned to voters. Other blank or uncertain party cells are not guessed. |
 | Massachusetts | [Cambridge Election Commission candidate list](https://www.cambridgema.gov/departments/electioncommission/news/2026/10/november32026stateelectionvotingoptions) | Reviewed, dated municipal PDF snapshot | 32 records: fifteen statewide, two congressional, four Senate, six House and five council/county records. Preserves printed joint-ticket labels and full named legislative districts, including the distinct Middlesex & Suffolk and Suffolk & Middlesex districts. No numeric district conversion or statewide district completeness is inferred. Other districts, local contests and complete write-in coverage remain missing. |
 | Oregon | [Secretary of State directive and Multnomah County ballot reports](https://multco.us/info/november-3-2026-general-election) | Policy-bound automatic PDFs; reviewed fallback retained | 279 records from the full state-filed general-election ballot statement and both Multnomah candidate reports. Reconciles 338 claims and 59 exact overlaps without replacing conflicting evidence. All six congressional districts, fifteen Senate contests and all sixty House districts are represented. Preserves 63 fusion records, four judicial incumbent designations and 112 regional/local records. Other counties' county-filed contests are absent; regional/local records stay out of voter previews until jurisdiction mapping exists. The separate state search blocks access; no access/CSRF/identity workaround is enabled. |
 | Connecticut | [Secretary of the State town sample ballots](https://portal.ct.gov/sots/election-services/town-ballots/2026-november-town-election-ballots) | Reviewed, dated PDF-grid snapshot | 709 candidacy/context records from 134 published town PDFs and all 509 pages. Retains 15,517 printed party-line claims separately, coalesces fusion endorsements and keeps governor tickets paired. Covers all five congressional districts, all 36 Senate districts and 139 of 151 House districts. Town probate, registrar, school-board and town-meeting entries remain local and are not assigned to voters. Some towns and declared write-ins are missing; the rolling index is not statewide completeness. |

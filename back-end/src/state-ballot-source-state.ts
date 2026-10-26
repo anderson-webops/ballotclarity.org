@@ -7,6 +7,7 @@ export class StateBallotAwaitingRecordsError extends Error {
 }
 
 export function supportsPendingStateBallotRecords(source: StateBallotSource) {
+	if (!source.retrievalPolicy && source.stateCode === "OH" && source.format === "franklin-pdf") return true;
 	if (!source.retrievalPolicy && source.stateCode === "ID" && source.format === "cassia-pdf") return true;
 	if (!source.retrievalPolicy && source.stateCode === "IA" && ["iowa-polk-pdf", "iowa-johnson-html"].includes(source.format)) return true;
 	if (!source.retrievalPolicy && source.stateCode === "NV" && source.format === "washoe-html") return true;

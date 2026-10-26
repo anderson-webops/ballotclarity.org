@@ -136,55 +136,90 @@ export interface FranklinNoticeAlias {
 	noticeName: string;
 	office: string;
 }
+function noticeKey(value: string) {
+	return value.normalize("NFKC").replace(/[’‘]/gu, "'").replace(/[“”]/gu, "\u0022");
+}
 function noticeFacts(body: string, electionDate: string, rows: CandidateRow[], aliases: FranklinNoticeAlias[]) {
 	const wordPages = pages(body, "notice");
 	const content = wordPages.map(words => joined(words)).join(" ");
 	const dates = [...content.matchAll(/November ([2-8]), (20\d{2}) GENERAL ELECTION/gu)];
 	if (dates.length !== 1 || `${dates[0]![2]}-11-0${dates[0]![1]}` !== electionDate || !content.includes("Issued by the Franklin County Board of Elections") || !content.includes("Election Notice for use with the Federal Write-In Absentee Ballot"))
 		throw new Error("The Franklin County FWAB election identity requires review.");
-	if (aliases.length > 20 || new Set(aliases.map(alias => alias.name)).size !== aliases.length || aliases.some(alias => alias.electionDate !== electionDate || alias.name === alias.noticeName || !rows.some(row => row.name === alias.name && row.office === alias.office)))
+	if (aliases.length > 20 || new Set(aliases.map(alias => noticeKey(alias.name))).size !== aliases.length || aliases.some(alias => alias.electionDate !== electionDate || alias.name === alias.noticeName || (rows.some(row => row.name === alias.name) && !rows.some(row => row.name === alias.name && row.office === alias.office))))
 		throw new Error("The reviewed Franklin County spelling evidence does not match this election and office.");
 	for (const alias of aliases) name(alias.noticeName);
-	const identities = rows.map(row => ({ name: row.name, printed: (aliases.find(alias => alias.name === row.name)?.noticeName ?? row.name).split(" ") }));
-	if (new Set(identities.map(identity => identity.printed.join(" "))).size !== identities.length)
-		throw new Error("The Franklin County notice names are ambiguous.");
-	const facts = new Map<string, { party: string; writeIn: boolean }>();
+	const entries: { name: string; party: string; writeIn: boolean; withdrawn: boolean; page: number }[] = [];
 	let questionSection = false;
 	let started = false;
-	for (const words of wordPages) {
+	for (const [pageIndex, words] of wordPages.entries()) {
 		const question = words.find(word => word.text === "Number" && word.left < 100);
 		const end = questionSection ? 0 : question?.top ?? 792;
 		if (question) questionSection = true;
 		const header = words.find(word => word.text === "Candidate" && word.left < 100);
 		if (!started && !header) continue;
+		if (questionSection && header && end === 0) throw new Error("The Franklin County notice sections are out of order.");
 		const top = started ? 0 : header!.top + 1;
 		started = true;
-		const candidateWords = words.filter(word => word.top >= top && word.top < end);
-		const nameWords = lines(candidateWords.filter(word => word.left >= 40 && word.left < 179)).flatMap(line => line.words);
-		const markers = nameWords.filter(word => /^\(write-in\)$/iu.test(word.text));
-		if (nameWords.some(word => /write.in/iu.test(word.text) && !markers.includes(word)))
-			throw new Error("The Franklin County notice write-in notation requires review.");
-		const assigned = new Set<Word>();
-		for (const identity of identities) {
-			for (let index = 0; index < nameWords.length; index++) {
-				if (!identity.printed.every((value, offset) => nameWords[index + offset]?.text === value)) continue;
-				const first = nameWords[index]!;
-				const last = nameWords[index + identity.printed.length - 1]!;
-				if (last.top - first.top > 40) throw new Error("The Franklin County notice name crosses candidate rows.");
-				const next = nameWords[index + identity.printed.length];
-				if (next && !markers.includes(next) && next.top <= last.top + 18) continue;
-				const marker = next && markers.includes(next) && next.top >= last.top - 1 && next.top <= last.top + 18 ? next : undefined;
-				const partyWords = candidateWords.filter(word => word.left >= 307 && word.left < 365 && Math.abs(word.top - first.top) < 1);
-				const party = joined(partyWords.sort((first, second) => first.left - second.left));
-				if (!parties.includes(party) && party !== "nonparty") throw new Error("The Franklin County notice party requires review.");
-				if (facts.has(identity.name)) throw new Error("The Franklin County FWAB candidate evidence is duplicated.");
-				if (marker) assigned.add(marker);
-				facts.set(identity.name, { party, writeIn: Boolean(marker) });
+		let current: { name: string; party: string; writeIn: boolean; withdrawn: boolean; page: number; lastTop: number } | undefined;
+		const finish = () => {
+			if (!current) return;
+			const { lastTop: _lastTop, ...entry } = current;
+			name(entry.name);
+			entries.push(entry);
+			current = undefined;
+		};
+		for (const line of lines(words.filter(word => word.left >= 40 && word.left < 179 && word.top >= top && word.top < end))) {
+			const value = joined(line.words);
+			const left = line.words[0]!.left;
+			if (value === "Name of Candidate") {
+				finish();
+				continue;
+			}
+			if (/^\(write-in\)$|^withdrawn$/iu.test(value)) {
+				if (!current || line.top < current.lastTop - 1 || line.top > current.lastTop + 18 || (/write-in/iu.test(value) ? current.writeIn : current.withdrawn)) throw new Error("The Franklin County notice status is detached or duplicated.");
+				if (/write-in/iu.test(value)) current.writeIn = true;
+				else current.withdrawn = true;
+			}
+			else if (left >= 42 && left < 43) {
+				if (current && line.top - current.lastTop < 18) {
+					current.name += ` ${value}`;
+					current.lastTop = line.top;
+				}
+				else {
+					finish();
+					const party = joined(words.filter(word => word.left >= 307 && word.left < 365 && Math.abs(word.top - line.top) < 1).sort((first, second) => first.left - second.left));
+					if (!parties.includes(party) && party !== "nonparty") throw new Error("The Franklin County notice party requires review.");
+					current = { name: value, party, writeIn: false, withdrawn: false, page: pageIndex + 1, lastTop: line.top };
+				}
+			}
+			else if (left >= 45 && left < 48 && current && line.top - current.lastTop < 18) {
+				current.name += ` ${value}`;
+				current.lastTop = line.top;
+			}
+			else if (/write.in|withdrawn/iu.test(value)) {
+				throw new Error("The Franklin County notice status requires review.");
 			}
 		}
-		if (markers.some(word => !assigned.has(word))) throw new Error("The Franklin County FWAB write-in evidence cannot be reconciled to the candidate list.");
+		finish();
 	}
-	return facts;
+	if (!entries.length || entries.length > 2500 || new Set(entries.map(entry => noticeKey(entry.name))).size !== entries.length)
+		throw new Error("The Franklin County notice inventory is empty, excessive or duplicated.");
+	const printed = new Set(entries.map(entry => noticeKey(entry.name)));
+	const applicable = aliases.filter(alias => rows.some(row => row.name === alias.name && row.office === alias.office) && !printed.has(noticeKey(alias.name)) && printed.has(noticeKey(alias.noticeName)));
+	const identities = new Map(rows.map(row => [noticeKey(applicable.find(alias => alias.name === row.name)?.noticeName ?? row.name), row]));
+	if (identities.size !== rows.length) throw new Error("The Franklin County notice names are ambiguous.");
+	const facts = new Map<string, { party: string; writeIn: boolean }>();
+	for (const entry of entries) {
+		const row = identities.get(noticeKey(entry.name));
+		if (entry.withdrawn) {
+			if (row || entry.writeIn) throw new Error("The Franklin County candidate and withdrawal sources disagree.");
+			continue;
+		}
+		if (!row || facts.has(row.name)) throw new Error("The Franklin County FWAB inventory cannot be reconciled to the candidate list.");
+		facts.set(row.name, { party: entry.party, writeIn: entry.writeIn });
+	}
+	if (facts.size !== rows.length) throw new Error("The Franklin County candidate list and notice are incomplete.");
+	return { facts, audit: { namedClaims: entries.length, activeClaims: facts.size, writeIns: entries.filter(entry => entry.writeIn).length, withdrawn: entries.filter(entry => entry.withdrawn), reviewedSpelling: applicable } };
 }
 function officeValues(row: CandidateRow): Omit<StateCandidateValues, "name" | "party"> {
 	const office = row.office;
@@ -203,7 +238,7 @@ export function readFranklinCandidateDocuments(source: StateBallotSource, candid
 	if (source.stateCode !== "OH" || !/^20\d{2}-11-0[2-8]$/u.test(source.electionDate) || new Date(`${source.electionDate}T00:00:00Z`).getUTCDay() !== 2)
 		throw new Error("The Franklin County source election is invalid.");
 	const parsed = readRows(candidateWords, source.electionDate);
-	const evidence = noticeFacts(noticeWords, source.electionDate, parsed.rows, reviewedAliases);
+	const { facts: evidence, audit } = noticeFacts(noticeWords, source.electionDate, parsed.rows, reviewedAliases);
 	const records = parsed.rows.map((row) => {
 		const supplemental = evidence.get(row.name);
 		if (row.writeIn && !supplemental?.writeIn) throw new Error("The Franklin County write-in sources disagree.");
@@ -220,5 +255,5 @@ export function readFranklinCandidateDocuments(source: StateBallotSource, candid
 		return record;
 	});
 	if (new Set(records.map(record => record.id)).size !== records.length) throw new Error("The Franklin County candidate identities are duplicated.");
-	return { records, revision: parsed.revision };
+	return { records, revision: parsed.revision, noticeAudit: { ...audit, supplementedNames: parsed.rows.filter(row => row.party === "Other-party c" || (!row.writeIn && evidence.get(row.name)?.writeIn)).map(row => row.name) } };
 }

@@ -4,10 +4,12 @@ External election catalogs opt the automatic candidate repository into reusable
 source families. The current 64 source definitions retain explicit source/state
 allowlists; reusable discovery does not widen an exact-source allowlist.
 
-Thirty-one families across twenty-five states are supported:
+Thirty-three families across twenty-seven states are supported:
 
 | Family | Discovery | Elections |
 | --- | --- | --- |
+| `oh-franklin-2026` | [Franklin County election navigation](https://www.vote.franklincountyohio.gov/home) | Actually offered year pages and explicit general-election dates from the complete FWAB notice or general schedule; complete candidate/notice reconciliation, pending future publications and hash-bound durable imports |
+| `id-cassia-2026` | [Cassia County sample-ballot index](https://www.cassia.gov/sample-ballots) | Actual dated general-election sections, complete general and supplemental PDFs, separate questions and retained local applicability limits |
 | `ia-polk-2026` | [Polk County election index](https://www.polkcountyiowa.gov/county-auditor/election/) | Actually offered dated voter-information pages, complete candidate PDFs and one explicitly linked precinct sample for joint-ticket verification; publication-link changes invalidate cached imports without an annual source edit |
 | `ia-johnson-2026` | [Johnson County, Iowa election index](https://johnsoncountyiowa.gov/auditor/elections) | Actually offered, explicitly dated even-year general pages; complete candidate sections, printed seat/term rules and external durable imports, with questions separate from people |
 | `nv-washoe-2026` | [Washoe County election information](https://www.washoecounty.gov/voters/information/) | Printed even-year November general dates and complete HTML contest tables; policy-bound collection, separate questions/nonperson options, terms, vote limits and the published deceased-candidate notice |

@@ -220,6 +220,7 @@ export const additionalStateBallotSources: readonly StateBallotSource[] = [
 ];
 
 function automaticReviewedSource(source: StateBallotSource): StateBallotSource {
+	if (source.id === "oh-franklin-2026") return { ...source, format: "franklin-pdf", countyName: "Franklin County", url: source.pageUrl, retrievalPolicy: undefined, documentUrls: undefined, snapshotStorage: "external", scopeNotice: "District and local coverage is limited to Franklin County." };
 	if (source.id === "id-cassia-2026") return { ...source, format: "cassia-pdf", countyName: "Cassia County", url: source.pageUrl, retrievalPolicy: undefined, documentUrls: undefined, documentLinks: undefined, snapshotStorage: "external" };
 	if (source.id === "nv-clark-2026") return { ...source, format: "clark-pdf", url: source.pageUrl, retrievalPolicy: undefined, documentUrls: undefined, documentLinks: undefined, snapshotStorage: "external" };
 	if (source.id === "ct-sots-2026") return { ...source, format: "connecticut-pdf", retrievalPolicy: undefined, documentUrls: undefined, snapshotStorage: "external", scopeNotice: "Town samples may omit races or district identifiers; personal ballot matching is unverified." };
@@ -227,7 +228,7 @@ function automaticReviewedSource(source: StateBallotSource): StateBallotSource {
 }
 
 export function legacyReviewedStateBallotSource(source: StateBallotSource) {
-	const legacy = stateBallotSources.find(item => ["id-cassia-2026", "nv-clark-2026", "ct-sots-2026", "ga-fulton-2026", "mo-sos-2026", "nj-doe-2026-federal", "tx-sos-2026", "or-sos-multnomah-2026"].includes(item.id) && item.id === source.id);
+	const legacy = stateBallotSources.find(item => ["oh-franklin-2026", "id-cassia-2026", "nv-clark-2026", "ct-sots-2026", "ga-fulton-2026", "mo-sos-2026", "nj-doe-2026-federal", "tx-sos-2026", "or-sos-multnomah-2026"].includes(item.id) && item.id === source.id);
 	return legacy && JSON.stringify(source) === JSON.stringify(automaticReviewedSource(legacy)) ? legacy : null;
 }
 
@@ -235,4 +236,4 @@ export function legacyFultonReviewedSource(source: StateBallotSource) {
 	return source.id === "ga-fulton-2026" ? legacyReviewedStateBallotSource(source) : null;
 }
 
-export const configuredStateBallotSources: readonly StateBallotSource[] = [...stateBallotSources.map(source => ["id-cassia-2026", "nv-clark-2026", "ct-sots-2026", "ga-fulton-2026", "mo-sos-2026", "nj-doe-2026-federal", "tx-sos-2026", "or-sos-multnomah-2026"].includes(source.id) ? automaticReviewedSource(source) : source), ...additionalStateBallotSources];
+export const configuredStateBallotSources: readonly StateBallotSource[] = [...stateBallotSources.map(source => ["oh-franklin-2026", "id-cassia-2026", "nv-clark-2026", "ct-sots-2026", "ga-fulton-2026", "mo-sos-2026", "nj-doe-2026-federal", "tx-sos-2026", "or-sos-multnomah-2026"].includes(source.id) ? automaticReviewedSource(source) : source), ...additionalStateBallotSources];

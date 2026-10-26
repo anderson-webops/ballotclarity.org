@@ -1,5 +1,9 @@
 # Franklin County candidate-reader preparation
 
+This records the preparatory source checkpoint `0e68908`. The
+[completed automation review](2026-10-26-franklin-automation.md) supersedes its
+pending-integration status and preliminary notice-completeness assessment.
+
 ## Scope
 
 The bounded PDF reader in `back-end/src/state-ballot-franklin.ts` reproduces all
@@ -46,13 +50,13 @@ The current review identifies `Eboney C. Eldridge` in the main list and
 no new alias or person is inferred. That reviewed mapping is supplied by the
 local reconciliation, not embedded as a timeless candidate rule.
 
-The FWAB document is supporting evidence, not an identical second roster. Its
-ordinary entries include omissions, variants and a separate withdrawn candidate.
-Matching write-ins and the clipped label does not independently establish complete
-future coverage. Unattended import remains disabled until discovery, source-policy
-checks, completeness/revision reconciliation, durable migration/recovery and
-connected-page acceptance are verified together. Unknown layouts or unresolved
-evidence require review instead of publishing guessed facts.
+The preliminary matching did not establish notice completeness. Independent
+enumeration now accounts for 79 named claims: all 78 main-list records plus one
+explicitly withdrawn candidate. Missing matches were not evidence of omitted
+candidates; two reviewed name variants resolve the substantive spelling differences.
+The successor review verifies complete reconciliation, policy-bound discovery,
+durable migration/recovery and connected-page acceptance together. Unknown layouts
+or unresolved evidence require review instead of publishing guessed facts.
 
 ## Checks
 

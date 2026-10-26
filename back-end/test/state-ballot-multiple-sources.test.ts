@@ -49,7 +49,12 @@ async function serve(repository: StateBallotRepository) {
 test("county sources are additive and their reviewed configuration retains each original document", () => {
 	assert.equal(stateBallotSources.length, 50);
 	assert.equal(configuredStateBallotSources.length, 64);
-	assert.deepEqual(configuredStateBallotSources.slice(0, 50).filter(source => !["ID", "NV", "CT", "GA", "MO", "NJ", "TX", "OR"].includes(source.stateCode)), stateBallotSources.filter(source => !["ID", "NV", "CT", "GA", "MO", "NJ", "TX", "OR"].includes(source.stateCode)));
+	assert.deepEqual(configuredStateBallotSources.slice(0, 50).filter(source => !["OH", "ID", "NV", "CT", "GA", "MO", "NJ", "TX", "OR"].includes(source.stateCode)), stateBallotSources.filter(source => !["OH", "ID", "NV", "CT", "GA", "MO", "NJ", "TX", "OR"].includes(source.stateCode)));
+	const franklin = configuredStateBallotSources.find(source => source.id === "oh-franklin-2026")!;
+	assert.equal(franklin.format, "franklin-pdf");
+	assert.equal(franklin.countyName, "Franklin County");
+	assert.equal(franklin.retrievalPolicy, undefined);
+	assert.deepEqual(legacyReviewedStateBallotSource(franklin), stateBallotSources.find(source => source.id === franklin.id));
 	const cassia = configuredStateBallotSources.find(source => source.id === "id-cassia-2026")!;
 	assert.equal(cassia.format, "cassia-pdf");
 	assert.equal(cassia.countyName, "Cassia County");

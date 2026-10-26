@@ -13,6 +13,7 @@ import {
 	wyomingCandidateRosterUrl
 } from "./state-ballot-cycles.js";
 import { dakotaCandidateRosterUrl, validateDakotaCandidatePage } from "./state-ballot-dakota.js";
+import { fetchFranklinCandidateCapture } from "./state-ballot-franklin-collection.js";
 import { fetchFultonCandidateCapture } from "./state-ballot-fulton.js";
 import { parseStateHtml, stateHtmlAttribute, stateHtmlDescendants, stateHtmlText } from "./state-ballot-html.js";
 import { fetchIowaJohnsonCandidateCapture } from "./state-ballot-iowa-johnson.js";
@@ -175,6 +176,7 @@ export function buildNorthDakotaSearchForm(source: StateBallotSource, body: stri
 }
 
 export async function fetchStateBallotSourceText(source: StateBallotSource, request: SourceTextRequest = fetchRemoteSourceText) {
+	if (source.format === "franklin-pdf") return fetchFranklinCandidateCapture(source, { requestText: request });
 	if (source.format === "cassia-pdf") return fetchCassiaCandidateCapture(source, { requestText: request });
 	if (source.format === "iowa-polk-pdf") return fetchIowaPolkCandidateCapture(source, { requestText: request });
 	if (source.format === "iowa-johnson-html") return fetchIowaJohnsonCandidateCapture(source, { requestText: request });

@@ -173,7 +173,7 @@ test("Nevada compiled-style management import and separate export preserve trans
 	const data = nevadaPayload();
 	const file = join(directory, "synthetic-nevada.json");
 	await writeFile(file, JSON.stringify(data));
-	const environment = { ...process.env, STATE_BALLOT_DATA_DIR: directory, STATE_BALLOT_ENABLED_STATES: "NV" };
+	const environment = { ...process.env, STATE_BALLOT_DATA_DIR: directory, STATE_BALLOT_ENABLED_STATES: "NV", STATE_BALLOT_ENABLED_SOURCES: nevada.id };
 	const manager = fileURLToPath(new URL("../src/manage-state-ballot-data.ts", import.meta.url));
 	const exporter = fileURLToPath(new URL("../src/export-state-ballot-sources.ts", import.meta.url));
 	const imported = execFileSync(process.execPath, ["--import", "tsx", manager, "import", file], { env: environment, encoding: "utf8" });

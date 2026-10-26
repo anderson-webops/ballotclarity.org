@@ -89,6 +89,7 @@ import {
 	validateVirginiaSource,
 	virginiaDiscoveryUrl
 } from "./state-ballot-virginia.js";
+import { readWashoeDiscovery, validateWashoeElection, validateWashoeSource, washoeDiscoveryUrl } from "./state-ballot-washoe.js";
 import { containsControlCharacters } from "./text-validation.js";
 
 const maximumBytes = 128 * 1024;
@@ -96,6 +97,7 @@ const washington = configuredStateBallotSources.find(source => source.id === "wa
 export const stateBallotCycleDiscoveryUrl = "https://voter.votewa.gov/CandidateList.aspx";
 const digest = (value: string) => createHash("sha256").update(value).digest("hex");
 const cycleFamilies = [
+	{ source: configuredStateBallotSources.find(source => source.id === "nv-washoe-2026")!, format: "washoe-html", discoveryUrl: washoeDiscoveryUrl, prefix: "nv-washoe-general", electionLabel: "General Election", formId: null },
 	{ source: configuredStateBallotSources.find(source => source.id === "nv-clark-2026")!, format: "clark-pdf", discoveryUrl: clarkDiscoveryUrl, prefix: "nv-clark-general", electionLabel: "General Election", formId: null },
 	{ source: configuredStateBallotSources.find(source => source.id === "ct-sots-2026")!, format: "connecticut-pdf", discoveryUrl: connecticutDiscoveryUrl, prefix: "ct-general", electionLabel: "General Election", formId: null },
 	{ source: configuredStateBallotSources.find(source => source.id === "or-sos-multnomah-2026")!, format: "oregon-pdf", discoveryUrl: oregonDiscoveryUrl, prefix: "or-multnomah-general", electionLabel: "General Election", formId: null },
@@ -139,7 +141,10 @@ export function getStateBallotCycleFamily(familyId: string) {
 	const family = cycleFamilies.find(item => item.source.id === familyId);
 	if (!family) throw new Error("The automatic election source family is unsupported or has changed.");
 	let targetValid = family.source.pageUrl === family.source.url;
-	if (family.format === "clark-pdf") {
+	if (family.format === "washoe-html") {
+		validateWashoeSource(family.source);
+	}
+	else if (family.format === "clark-pdf") {
 		validateClarkSource(family.source);
 		targetValid = true;
 	}
@@ -209,7 +214,7 @@ export function getStateBallotCycleFamily(familyId: string) {
 	else {
 		targetValid = targetValid && new RegExp(`^${family.discoveryUrl.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&")}\\?e=[1-9]\\d{0,8}$`, "u").test(family.source.url);
 	}
-	if (!targetValid || family.source.format !== family.format || family.source.retrievalPolicy || (family.source.stateCode !== "FL" && family.source.postBody) || (family.source.documentUrls?.length && !["KY", "VA", "GA", "MO", "NJ", "VT", "TX", "OR"].includes(family.source.stateCode)) || (family.source.documentLinks?.length && family.source.stateCode !== "GA"))
+	if (!targetValid || family.source.format !== family.format || family.source.retrievalPolicy || (family.source.stateCode !== "FL" && family.source.postBody) || (family.source.documentUrls?.length && family.format !== "washoe-html" && !["KY", "VA", "GA", "MO", "NJ", "VT", "TX", "OR"].includes(family.source.stateCode)) || (family.source.documentLinks?.length && family.source.stateCode !== "GA"))
 		throw new Error("The automatic election source family is unsupported or has changed.");
 	return family;
 }
@@ -352,6 +357,14 @@ export function parseStateBallotCycleCatalog(value: unknown, now = Date.now()): 
 	const dates = new Set<string>();
 	const florida = original.stateCode === "FL";
 	const maryland = original.stateCode === "MD";
+	if (original.format === "washoe-html") {
+		for (const election of value.elections) {
+			validateWashoeElection(election);
+			if (dates.has(election.electionDate)) throw new Error("The Washoe County elections are duplicated.");
+			dates.add(election.electionDate);
+		}
+		return value as unknown as StateBallotCycleCatalog;
+	}
 	if (original.format === "clark-pdf") {
 		for (const election of value.elections) {
 			validateClarkElection(election);
@@ -433,6 +446,11 @@ export function discoverWashingtonElectionCycles(body: string, now = Date.now())
 }
 
 export function discoverStateBallotElectionCycles(body: string, familyId: string, now = Date.now()): StateBallotCycleCatalog {
+	if (familyId === "nv-washoe-2026") {
+		const family = getStateBallotCycleFamily(familyId);
+		const capture = readWashoeDiscovery(body, now);
+		return parseStateBallotCycleCatalog({ schemaVersion: 1, type: "state-ballot-cycle-catalog", familyId, sourceConfigurationSha256: digest(JSON.stringify(family.source)), discovery: { url: family.discoveryUrl, sha256: capture.page.sha256, retrievedAt: capture.page.retrievedAt }, elections: [capture.election] }, now);
+	}
 	if (familyId === "nv-clark-2026") {
 		const family = getStateBallotCycleFamily(familyId);
 		return parseStateBallotCycleCatalog({ schemaVersion: 1, type: "state-ballot-cycle-catalog", familyId, sourceConfigurationSha256: digest(JSON.stringify(family.source)), discovery: { url: family.discoveryUrl, sha256: digest(body), retrievedAt: new Date(now).toISOString() }, elections: readClarkElectionDiscovery(body) }, now);
@@ -497,6 +515,10 @@ export function stateBallotCycleSources(catalog: StateBallotCycleCatalog, now = 
 	parseStateBallotCycleCatalog(catalog, now);
 	const family = getStateBallotCycleFamily(catalog.familyId);
 	return catalog.elections.filter(election => election.electionDate !== family.source.electionDate).map((election) => {
+		if (family.format === "washoe-html") {
+			validateWashoeElection(election);
+			return { ...family.source, id: `${family.prefix}-${election.electionDate}`, label: `${family.source.label} (${election.electionDate.slice(0, 4)})`, electionDate: election.electionDate };
+		}
 		if (family.format === "clark-pdf") {
 			validateClarkElection(election);
 			return { ...family.source, id: `${family.prefix}-${election.electionDate}`, label: `${family.source.label} (${election.electionDate.slice(0, 4)})`, electionDate: election.electionDate, url: election.pageUrl, pageUrl: election.pageUrl };

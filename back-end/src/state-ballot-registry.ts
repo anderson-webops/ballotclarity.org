@@ -179,6 +179,20 @@ export const additionalStateBallotSources: readonly StateBallotSource[] = [
 		scopeNotice:
 			"State-filed candidates; town and school races may be missing. District and local eligibility is unverified."
 	},
+	{
+		stateCode: "NV",
+		id: "nv-washoe-2026",
+		countyName: "Washoe County",
+		label: "Washoe County general-election contests",
+		electionDate: "2026-11-03",
+		url: "https://www.washoecounty.gov/voters/information/",
+		pageUrl: "https://www.washoecounty.gov/voters/information/",
+		format: "washoe-html",
+		snapshotStorage: "external",
+		documentUrls: ["https://www.washoecounty.gov/voters/information/"],
+		scopeNotice: "Other Nevada counties are not included.",
+	},
+
 ];
 
 function automaticReviewedSource(source: StateBallotSource): StateBallotSource {

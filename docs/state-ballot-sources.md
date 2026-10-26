@@ -6,6 +6,23 @@ Congress before it takes office. Unknown-session matches are not sufficient for
 address-specific congressional candidate attachment; existing source holds remain
 effective. See the [boundary provenance review](audits/2026-10-25-congressional-boundaries.md).
 
+## Washoe County, Nevada
+
+The [official election roster](https://www.washoecounty.gov/voters/information/)
+adds the `nv-washoe-2026` automatic family. Its current HTML has 103 candidate
+entries across 57 offices: 102 active and one deceased candidate whose name
+remains printed on the ballot. Eight nonperson options and three questions remain
+separate from candidate records. Printed party labels, terms and multi-seat vote
+limits are preserved; nonpartisan offices do not imply personal party affiliation.
+
+Current policy checks precede bounded downloads and durable external imports.
+Actually published future general-election dates reuse the same discovery page;
+unknown layouts and policy changes require review. An unambiguous Washoe County
+lookup prefers its available publication, without assigning local eligibility.
+The source also supplies Nevada congressional district 2, absent from the Clark
+publication. The workbook and sample booklet remain held by existing format and
+download guards. See the [source review](audits/2026-10-25-washoe-candidates.md).
+
 ## Oregon state and Multnomah publications
 
 The county's current/upcoming election catalog supports the

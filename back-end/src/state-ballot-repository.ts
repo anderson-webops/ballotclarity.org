@@ -39,6 +39,7 @@ import {
 import { createStateBallotStorage } from "./state-ballot-storage.js";
 import { parseTexasCandidateCapture } from "./state-ballot-texas.js";
 import { parseVermontCandidateCapture } from "./state-ballot-vermont.js";
+import { parseWashoeCandidateCapture } from "./state-ballot-washoe.js";
 
 export interface StateBallotSnapshot {
 	source: StateBallotSource;
@@ -175,7 +176,7 @@ export function createStateBallotRepository(options: StateBallotRepositoryOption
 					}
 					if (!stored) {
 						const receipt = await storage.readPending(source, now());
-						if (receipt && !(source.format === "clark-pdf" && options.collectionIndexSha256?.[source.id]) && rememberPending(source, receipt)) return null;
+						if (receipt && !(["washoe-html", "clark-pdf"].includes(source.format) && options.collectionIndexSha256?.[source.id]) && rememberPending(source, receipt)) return null;
 					}
 				}
 				if (source.retrievalPolicy === "manual-snapshot") {
@@ -187,7 +188,7 @@ export function createStateBallotRepository(options: StateBallotRepositoryOption
 				body = await fetchText(source);
 				capturedAt = new Date(now()).toISOString();
 				failureReason = "format";
-				const documentCapture = source.format === "clark-pdf" ? parseClarkCandidateCapture(source, body, createStateCandidateRecord, now(), stored?.records) : source.format === "connecticut-pdf" ? parseConnecticutCandidateCapture(source, body, createStateCandidateRecord, now(), stored?.records) : source.format === "oregon-pdf" ? parseOregonCandidateCapture(source, body, createStateCandidateRecord, now()) : source.format === "texas-certified-pdf" ? parseTexasCandidateCapture(source, body) : source.format === "vermont-xlsx" ? parseVermontCandidateCapture(source, body) : source.format === "fulton-pdf" ? parseFultonCandidateCapture(source, body) : source.format === "certified-pdf" ? parseCertifiedPdfCapture(source, body) : null;
+				const documentCapture = source.format === "washoe-html" ? parseWashoeCandidateCapture(source, body, createStateCandidateRecord, now()) : source.format === "clark-pdf" ? parseClarkCandidateCapture(source, body, createStateCandidateRecord, now(), stored?.records) : source.format === "connecticut-pdf" ? parseConnecticutCandidateCapture(source, body, createStateCandidateRecord, now(), stored?.records) : source.format === "oregon-pdf" ? parseOregonCandidateCapture(source, body, createStateCandidateRecord, now()) : source.format === "texas-certified-pdf" ? parseTexasCandidateCapture(source, body) : source.format === "vermont-xlsx" ? parseVermontCandidateCapture(source, body) : source.format === "fulton-pdf" ? parseFultonCandidateCapture(source, body) : source.format === "certified-pdf" ? parseCertifiedPdfCapture(source, body) : null;
 				const snapshot: StateBallotSnapshot = {
 					source,
 					retrievedAt: capturedAt,
@@ -210,7 +211,7 @@ export function createStateBallotRepository(options: StateBallotRepositoryOption
 					catch {
 						observations.get(source.id)!.failure = "Snapshot persistence failed.";
 						options.onPersistenceError?.(source.stateCode, source.id);
-						if (["clark-pdf", "connecticut-pdf"].includes(source.format)) return stored;
+						if (["washoe-html", "clark-pdf", "connecticut-pdf"].includes(source.format)) return stored;
 					}
 				}
 				cached.set(source.id, { expiresAt: now() + ttlMs, snapshot });
@@ -322,7 +323,7 @@ export function buildStateBallotPreview(snapshot: StateBallotSnapshot, lookup: P
 		return null;
 	const disclaimer = snapshot.source.stateCode === "VA"
 		? "Federal candidates only; state and local contests are not included. This is not an address-specific ballot."
-		: ["clark-pdf", "connecticut-pdf", "reviewed-pdf", "reviewed-image", "fulton-pdf", "certified-pdf", "oregon-pdf", "texas-certified-pdf", "vermont-xlsx", "alaska-html", "connecticut-ballots", "oregon-ballots"].includes(snapshot.source.format)
+		: ["washoe-html", "clark-pdf", "connecticut-pdf", "reviewed-pdf", "reviewed-image", "fulton-pdf", "certified-pdf", "oregon-pdf", "texas-certified-pdf", "vermont-xlsx", "alaska-html", "connecticut-ballots", "oregon-ballots"].includes(snapshot.source.format)
 				? "Dated snapshot; later changes and local contests may be missing."
 				: snapshot.source.retrievalPolicy === "manual-snapshot"
 					? "Dated snapshot; later changes and local contests may be missing. Filing does not establish ballot qualification."
@@ -352,7 +353,14 @@ export async function attachStateBallotPreview(lookup: LocationLookupResponse, r
 	const stateCode = /^[A-Z]{2}$/u.test(state) ? state : getStateAbbreviationForName(state);
 	if (!stateCode)
 		return lookup;
-	const snapshot = await repository.getSnapshot(stateCode);
+	const countyNames = new Set((lookup.districtMatches ?? []).filter(match => match.districtType.toLowerCase() === "county").map(match => match.label.normalize("NFKC").trim().toLowerCase()));
+	const preferred = orderStateBallotSources((repository.sources ?? []).filter(source => countyNames.size === 1 && !lookup.detectedFromIp && source.stateCode === stateCode && Date.parse(`${source.electionDate}T00:00:00Z`) + 2 * 86400000 > Date.now() && source.countyName && countyNames.has(source.countyName.normalize("NFKC").trim().toLowerCase())));
+	let snapshot: StateBallotSnapshot | null = null;
+	for (const source of preferred) {
+		snapshot = await repository.getSnapshot(stateCode, source.id);
+		if (snapshot) break;
+	}
+	snapshot ??= await repository.getSnapshot(stateCode);
 	const preview = snapshot
 		? buildStateBallotPreview(snapshot, {
 				districtMatches: lookup.inputKind === "address" && !lookup.detectedFromIp

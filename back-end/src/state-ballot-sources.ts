@@ -8,8 +8,9 @@ export interface StateBallotSource {
 	electionDate: string;
 	url: string;
 	pageUrl: string;
-	format: "clark-pdf" | "connecticut-pdf" | "oregon-pdf" | "texas-certified-pdf" | "vermont-xlsx" | "csv" | "maryland-local-csv" | "florida-local-tsv" | "delaware-html" | "michigan-html" | "new-mexico-html" | "virginia-html" | "virginia-local-html" | "fulton-pdf" | "certified-pdf" | "colorado-html" | "kentucky-html" | "kentucky-courts-html" | "north-dakota-html" | "utah-html" | "mississippi-csv" | "south-dakota-csv" | "hawaii-csv" | "illinois-tsv" | "montana-csv" | "reviewed-pdf" | "reviewed-xlsx" | "reviewed-image" | "pennsylvania-html" | "west-virginia-json" | "alaska-html" | "south-carolina-html" | "kansas-html" | "washington-html" | "arkansas-html" | "connecticut-ballots" | "oregon-ballots";
+	format: "washoe-html" | "clark-pdf" | "connecticut-pdf" | "oregon-pdf" | "texas-certified-pdf" | "vermont-xlsx" | "csv" | "maryland-local-csv" | "florida-local-tsv" | "delaware-html" | "michigan-html" | "new-mexico-html" | "virginia-html" | "virginia-local-html" | "fulton-pdf" | "certified-pdf" | "colorado-html" | "kentucky-html" | "kentucky-courts-html" | "north-dakota-html" | "utah-html" | "mississippi-csv" | "south-dakota-csv" | "hawaii-csv" | "illinois-tsv" | "montana-csv" | "reviewed-pdf" | "reviewed-xlsx" | "reviewed-image" | "pennsylvania-html" | "west-virginia-json" | "alaska-html" | "south-carolina-html" | "kansas-html" | "washington-html" | "arkansas-html" | "connecticut-ballots" | "oregon-ballots";
 	defaultPriority?: number;
+	countyName?: string;
 	delimiter?: string;
 	postBody?: string;
 	documentUrls?: readonly string[];

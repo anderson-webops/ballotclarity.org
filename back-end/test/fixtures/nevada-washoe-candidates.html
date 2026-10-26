@@ -1,0 +1,1956 @@
+<main>
+
+ <div class="text" id="subpageText">
+<h2>2026 General Election</h2>
+
+<p>&nbsp;</p>
+<style><!--
+/* GENERAL ELECTION CALLOUT */
+
+.general-election-callout {
+  max-width: 1000px;
+  margin: 10px auto !important;
+  padding: 5px 15px 18px !important;
+  border: 0 !important;
+  text-align: center;
+  font-family: Arial, Helvetica, sans-serif;
+  color: #263746;
+  box-sizing: border-box;
+}
+
+.general-election-callout h2,
+.general-election-callout h3,
+.general-election-callout p {
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+}
+
+.general-election-callout .election-label {
+  margin-bottom: 3px !important;
+  color: #2F6588;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  line-height: 1.1;
+  text-transform: uppercase;
+}
+
+.general-election-callout .election-title {
+  margin-bottom: 8px !important;
+  color: #1f6da1;
+  font-size: clamp(40px, 5vw, 62px);
+  font-weight: 400;
+  line-height: 1;
+}
+
+.general-election-callout .election-date {
+  margin-bottom: 4px !important;
+  color: #2F6588;
+  font-size: clamp(27px, 4vw, 39px);
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.general-election-callout .election-time {
+  color: #263746;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.general-election-callout .early-voting {
+  margin: 13px 0 0 !important;
+  padding: 12px 0 0 !important;
+  border: 0 !important;
+  position: relative;
+}
+
+.general-election-callout .early-voting::before {
+  display: block;
+  width: 70px;
+  height: 2px;
+  margin: 0 auto 10px;
+  background: #c7d6df;
+  content: "";
+}
+
+.general-election-callout .early-voting-title {
+  margin-bottom: 5px !important;
+  color: #1f6da1;
+  font-size: 30px;
+  font-weight: 400;
+  line-height: 1.05;
+}
+
+.general-election-callout .early-voting-dates {
+  margin-bottom: 4px !important;
+  color: #263746;
+  font-size: 21px;
+  font-weight: 700;
+  line-height: 1.15;
+}
+
+.general-election-callout .early-voting-time {
+  color: #263746;
+  font-size: 19px;
+  font-weight: 600;
+  line-height: 1.1;
+}
+
+.general-election-callout .election-buttons {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  margin: 14px 0 0 0 !important;
+}
+
+.general-election-callout .election-btn,
+.general-election-callout .election-btn:link,
+.general-election-callout .election-btn:visited,
+.general-election-callout .election-btn:hover,
+.general-election-callout .election-btn:active,
+.general-election-callout .election-btn:focus {
+  display: inline-block;
+  background-color: #38668C;
+  color: #ffffff !important;
+  border: none;
+  padding: 8px 16px;
+  font-size: 14px;
+  line-height: 1.2;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  text-decoration: none !important;
+  text-align: center;
+}
+
+.general-election-callout .election-btn:hover,
+.general-election-callout .election-btn:active,
+.general-election-callout .election-btn:focus {
+  background-color: #2F526F;
+  color: #ffffff !important;
+}
+
+/* LANCE WHITE CANDIDATE NOTICE */
+
+.candidate-death-notice {
+  max-width: 1000px;
+  margin: 10px auto 25px !important;
+  padding: 16px 24px !important;
+  background-color: #eef4f8;
+  border: 1px solid #c7d6df;
+  border-left: 5px solid #2F6588;
+  border-radius: 8px;
+  box-sizing: border-box;
+  font-family: Arial, Helvetica, sans-serif;
+  text-align: center;
+  color: #263746;
+}
+
+.candidate-death-notice h2,
+.candidate-death-notice p {
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+}
+
+.candidate-death-notice h2 {
+  margin-bottom: 8px !important;
+  color: #2F6588;
+  font-size: 21px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.candidate-death-notice p {
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+/* MOBILE STYLING */
+
+@media (max-width: 600px) {
+  .general-election-callout {
+    padding: 5px 10px 14px !important;
+  }
+
+  .general-election-callout .election-title {
+    font-size: 42px;
+  }
+
+  .general-election-callout .election-date {
+    font-size: 27px;
+  }
+
+  .general-election-callout .early-voting-dates {
+    font-size: 18px;
+  }
+
+  .general-election-callout .election-buttons {
+    gap: 8px;
+  }
+
+  .general-election-callout .election-btn,
+  .general-election-callout .election-btn:link,
+  .general-election-callout .election-btn:visited,
+  .general-election-callout .election-btn:hover,
+  .general-election-callout .election-btn:active,
+  .general-election-callout .election-btn:focus {
+    font-size: 12px;
+    padding: 8px 12px;
+  }
+
+  .candidate-death-notice {
+    margin: 10px 12px 20px !important;
+    padding: 14px 16px !important;
+  }
+
+  .candidate-death-notice h2 {
+    font-size: 19px;
+  }
+
+  .candidate-death-notice p {
+    font-size: 14px;
+  }
+}
+
+/* NEWS SLIDER STYLING */
+
+.swiper-container {
+  margin: 0 auto !important;
+  max-width: 900px;
+}
+
+.swiper-slide {
+  display: flex;
+  justify-content: center;
+}
+
+.news-slide-content {
+  width: 100%;
+  max-width: 900px;
+  box-sizing: border-box;
+}
+
+.news-slide-description {
+  margin-bottom: 10px !important;
+}
+
+.news-slide-description img {
+  float: left;
+  margin-right: 15px;
+}
+
+.news-slide-buttons {
+  text-align: left;
+  clear: both;
+}
+
+.news-slide-buttons .btn.text {
+  white-space: nowrap;
+}
+
+body {
+  margin: 0 !important;
+}
+--></style>
+<!-- GENERAL ELECTION INFORMATION -->
+<section aria-labelledby="general-election-heading" class="general-election-callout">
+<h2 class="election-title" id="general-election-heading">Election Day</h2>
+<p class="election-date"><time datetime="2026-11-03"> Tuesday, November 3, 2026 </time></p>
+<p class="election-time">7 a.m. – 7 p.m.</p>
+<div class="early-voting">
+<h3 class="early-voting-title">Early Voting</h3>
+<p class="early-voting-dates"><time datetime="2026-10-17"> Saturday, October 17 </time> – <time datetime="2026-10-30"> Friday, October 30, 2026 </time></p>
+<p class="early-voting-time">10 a.m. – 6 p.m.</p>
+<p class="early-voting-time">&nbsp;</p>
+</div>
+<div class="election-buttons"><a class="election-btn" href="../files/Washoe General Sample Ballot Booklet English.pdf"> Download the Sample Ballot Book </a> <a class="election-btn" href="../files/2026 General Ballot Questions.pdf"> Download the Ballot Question Guide </a></div>
+</section>
+<!-- CANDIDATE DEATH NOTICE -->
+<section aria-labelledby="candidate-death-heading" class="candidate-death-notice">
+<h2 id="candidate-death-heading">Notice of Death of Candidate</h2>
+<p>Voters are advised that <strong>Lance White</strong>, candidate for <strong>District Court Judge, Department 13, Family Court</strong>, has passed away. His name will remain on the ballot for the November 3, 2026 General Election.</p>
+</section>
+            <style><!--
+.candidate-download-wrap {
+  text-align: center;
+  margin: 0 0 28px 0;
+}
+
+.more-info-btn,
+.more-info-btn:link,
+.more-info-btn:visited,
+.more-info-btn:hover,
+.more-info-btn:active,
+.more-info-btn:focus {
+  display: inline-block;
+  background-color: #38668C;
+  color: #ffffff !important;
+  border: none;
+  padding: 8px 16px;
+  font-size: 14px;
+  line-height: 1.2;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  text-decoration: none !important;
+}
+
+.more-info-btn:hover,
+.more-info-btn:active,
+.more-info-btn:focus {
+  background-color: #2F526F;
+  color: #ffffff !important;
+}
+
+.office-type-title {
+  margin: 32px 0 12px 0;
+  font-size: 1rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.office-table-wrap {
+  width: 100%;
+  margin: 0 0 36px 0;
+}
+
+.office-table-scroll {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.office-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  min-width: 320px;
+}
+
+.office-table td,
+.office-table th {
+  padding: 10px 12px;
+  text-align: center;
+  vertical-align: top;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+.office-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  text-align: center;
+  padding: 14px 12px;
+}
+
+.party-header {
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+.office-table.two-column td,
+.office-table.two-column th {
+  width: 50%;
+}
+
+.office-table.single-column td,
+.office-table.single-column th {
+  width: 100%;
+}
+
+@media (max-width: 768px) {
+  .candidate-download-wrap {
+    margin-bottom: 24px;
+  }
+
+  .more-info-btn,
+  .more-info-btn:link,
+  .more-info-btn:visited,
+  .more-info-btn:hover,
+  .more-info-btn:active,
+  .more-info-btn:focus {
+    font-size: 13px;
+    padding: 8px 14px;
+  }
+
+  .office-type-title {
+    margin: 28px 0 10px 0;
+    font-size: 0.98rem;
+    line-height: 1.3;
+  }
+
+  .office-table-wrap {
+    margin-bottom: 28px;
+  }
+
+  .office-table td,
+  .office-table th {
+    padding: 8px 10px;
+    font-size: 0.95rem;
+  }
+
+  .office-title {
+    font-size: 1.05rem;
+    line-height: 1.3;
+  }
+}
+
+@media (max-width: 480px) {
+  .more-info-btn,
+  .more-info-btn:link,
+  .more-info-btn:visited,
+  .more-info-btn:hover,
+  .more-info-btn:active,
+  .more-info-btn:focus {
+    font-size: 12px;
+    padding: 8px 12px;
+  }
+
+  .office-table td,
+  .office-table th {
+    padding: 7px 8px;
+    font-size: 0.9rem;
+  }
+
+  .office-title {
+    font-size: 0.98rem;
+  }
+
+  .office-type-title {
+    font-size: 0.92rem;
+  }
+}
+--></style>
+<div class="candidate-download-wrap"><a class="more-info-btn" download="" href="../files/Washoe County 2026 General Election Contests.xlsx">Download the full list of 2026 General Election Contests</a></div>
+<h1 class="office-type-title">All Election Contests</h1>
+<h2 class="office-type-title">Federal District Partisan Offices</h2>
+<div class="office-table-wrap">
+<div class="office-table-scroll">
+<table class="office-table two-column">
+<tbody>
+<tr>
+<td class="office-title" colspan="2">
+<h3 style="margin: 0;">REPRESENTATIVE IN CONGRESS, DISTRICT 2</h3>
+<p class="office-term" style="margin: 4px 0 0;">Two (2) Year Term / Vote for One</p>
+</td>
+</tr>
+<tr>
+<td class="party-header"><strong>Candidate</strong></td>
+<td class="party-header"><strong>Party</strong></td>
+</tr>
+<tr>
+<td>Benitez-Thompson, Teresa F.</td>
+<td>DEM</td>
+</tr>
+<tr>
+<td>Chapman, Lynn</td>
+<td>IAP</td>
+</tr>
+<tr>
+<td>Flippo, David</td>
+<td>REP</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<h2 class="office-type-title">Statewide Partisan Offices</h2>
+<div class="office-table-wrap">
+<div class="office-table-scroll">
+<table class="office-table two-column">
+<tbody>
+<tr>
+<td class="office-title" colspan="2">
+<h3 style="margin: 0;">GOVERNOR</h3>
+<p class="office-term" style="margin: 4px 0 0;">Four (4) Year Term / Vote for One</p>
+</td>
+</tr>
+<tr>
+<td class="party-header"><strong>Candidate</strong></td>
+<td class="party-header"><strong>Party</strong></td>
+</tr>
+<tr>
+<td>Ford, Aaron D.</td>
+<td>DEM</td>
+</tr>
+<tr>
+<td>Ford, Danielle</td>
+<td>NPP</td>
+</tr>
+<tr>
+<td>Lombardo, Joseph</td>
+<td>REP</td>
+</tr>
+<tr>
+<td>None of these candidates</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="office-table-wrap">
+<div class="office-table-scroll">
+<table class="office-table two-column">
+<tbody>
+<tr>
+<td class="office-title" colspan="2">
+<h3 style="margin: 0;">LIEUTENANT GOVERNOR</h3>
+<p class="office-term" style="margin: 4px 0 0;">Four (4) Year Term / Vote for One</p>
+</td>
+</tr>
+<tr>
+<td class="party-header"><strong>Candidate</strong></td>
+<td class="party-header"><strong>Party</strong></td>
+</tr>
+<tr>
+<td>Anthony, Stavros</td>
+<td>REP</td>
+</tr>
+<tr>
+<td>Hansen, Janine</td>
+<td>IAP</td>
+</tr>
+<tr>
+<td>Jauregui, Sandra</td>
+<td>DEM</td>
+</tr>
+<tr>
+<td>None of these candidates</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="office-table-wrap">
+<div class="office-table-scroll">
+<table class="office-table two-column">
+<tbody>
+<tr>
+<td class="office-title" colspan="2">
+<h3 style="margin: 0;">SECRETARY OF STATE</h3>
+<p class="office-term" style="margin: 4px 0 0;">Four (4) Year Term / Vote for One</p>
+</td>
+</tr>
+<tr>
+<td class="party-header"><strong>Candidate</strong></td>
+<td class="party-header"><strong>Party</strong></td>
+</tr>
+<tr>
+<td>Aguilar, Francisco "Cisco"</td>
+<td>DEM</td>
+</tr>
+<tr>
+<td>Barnhill, Brad Lee</td>
+<td>IAP</td>
+</tr>
+<tr>
+<td>Kennedy, John T.</td>
+<td>LPN</td>
+</tr>
+<tr>
+<td>Marchant, Jim</td>
+<td>REP</td>
+</tr>
+<tr>
+<td>None of these candidates</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="office-table-wrap">
+<div class="office-table-scroll">
+<table class="office-table two-column">
+<tbody>
+<tr>
+<td class="office-title" colspan="2">
+<h3 style="margin: 0;">STATE TREASURER</h3>
+<p class="office-term" style="margin: 4px 0 0;">Four (4) Year Term / Vote for One</p>
+</td>
+</tr>
+<tr>
+<td class="party-header"><strong>Candidate</strong></td>
+<td class="party-header"><strong>Party</strong></td>
+</tr>
+<tr>
+<td>Johnson, Drew</td>
+<td>REP</td>
+</tr>
+<tr>
+<td>Mathis-Coleman, Tya</td>
+<td>DEM</td>
+</tr>
+<tr>
+<td>None of these candidates</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="office-table-wrap">
+<div class="office-table-scroll">
+<table class="office-table two-column">
+<tbody>
+<tr>
+<td class="office-title" colspan="2">
+<h3 style="margin: 0;">STATE CONTROLLER</h3>
+<p class="office-term" style="margin: 4px 0 0;">Four (4) Year Term / Vote for One</p>
+</td>
+</tr>
+<tr>
+<td class="party-header"><strong>Candidate</strong></td>
+<td class="party-header"><strong>Party</strong></td>
+</tr>
+<tr>
+<td>MacDougall, Michael</td>
+<td>DEM</td>
+</tr>
+<tr>
+<td>Matthews, Andy</td>
+<td>REP</td>
+</tr>
+<tr>
+<td>None of these candidates</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="office-table-wrap">
+<div class="office-table-scroll">
+<table class="office-table two-column">
+<tbody>
+<tr>
+<td class="office-title" colspan="2">
+<h3 style="margin: 0;">ATTORNEY GENERAL</h3>
+<p class="office-term" style="margin: 4px 0 0;">Four (4) Year Term / Vote for One</p>
+</td>
+</tr>
+<tr>
+<td class="party-header"><strong>Candidate</strong></td>
+<td class="party-header"><strong>Party</strong></td>
+</tr>
+<tr>
+<td>Cannizzaro, Nicole Jeanette</td>
+<td>DEM</td>
+</tr>
+<tr>
+<td>Guzmán Fralick, Adriana</td>
+<td>REP</td>
+</tr>
+<tr>
+<td>None of these candidates</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<h2 class="office-type-title">District Partisan Offices</h2>
+<div class="office-table-wrap">
+<div class="office-table-scroll">
+<table class="office-table two-column">
+<tbody>
+<tr>
+<td class="office-title" colspan="2">
+<h3 style="margin: 0;">STATE SENATE, DISTRICT 13</h3>
+<p class="office-term" style="margin: 4px 0 0;">Four (4) Year Term / Vote for One</p>
+</td>
+</tr>
+<tr>
+<td class="party-header"><strong>Candidate</strong></td>
+<td class="party-header"><strong>Party</strong></td>
+</tr>
+<tr>
+<td>Buehler, Matthew R.</td>
+<td>REP</td>
+</tr>
+<tr>
+<td>Daly, Richard "Skip"</td>
+<td>DEM</td>
+</tr>
+<tr>
+<td>Young, Charlene</td>
+<td>IAP</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="office-table-wrap">
+<div class="office-table-scroll">
+<table class="office-table two-column">
+<tbody>
+<tr>
+<td class="office-title" colspan="2">
+<h3 style="margin: 0;">STATE SENATE, DISTRICT 14</h3>
+<p class="office-term" style="margin: 4px 0 0;">Four (4) Year Term / Vote for One</p>
+</td>
+</tr>
+<tr>
+<td class="party-header"><strong>Candidate</strong></td>
+<td class="party-header"><strong>Party</strong></td>
+</tr>
+<tr>
+<td>Hansen, Ira D.</td>
+<td>REP</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="office-table-wrap">
+<div class="office-table-scroll">
+<table class="office-table two-column">
+<tbody>
+<tr>
+<td class="office-title" colspan="2">
+<h3 style="margin: 0;">STATE SENATE, DISTRICT 16</h3>
+<p class="office-term" style="margin: 4px 0 0;">Four (4) Year Term / Vote for One</p>
+</td>
+</tr>
+<tr>
+<td class="party-header"><strong>Candidate</strong></td>
+<td class="party-header"><strong>Party</strong></td>
+</tr>
+<tr>
+<td>Krasner, Lisa</td>
+<td>REP</td>
+</tr>
+<tr>
+<td>Roll, Chrystal L.</td>
+<td>DEM</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="office-table-wrap">
+<div class="office-table-scroll">
+<table class="office-table two-column">
+<tbody>
+<tr>
+<td class="office-title" colspan="2">
+<h3 style="margin: 0;">STATE ASSEMBLY, DISTRICT 24</h3>
+<p class="office-term" style="margin: 4px 0 0;">Two (2) Year Term / Vote for One</p>
+</td>
+</tr>
+<tr>
+<td class="party-header"><strong>Candidate</strong></td>
+<td class="party-header"><strong>Party</strong></td>
+</tr>
+<tr>
+<td>Roth, Erica</td>
+<td>DEM</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="office-table-wrap">
+<div class="office-table-scroll">
+<table class="office-table two-column">
+<tbody>
+<tr>
+<td class="office-title" colspan="2">
+<h3 style="margin: 0;">STATE ASSEMBLY, DISTRICT 25</h3>
+<p class="office-term" style="margin: 4px 0 0;">Two (2) Year Term / Vote for One</p>
+</td>
+</tr>
+<tr>
+<td class="party-header"><strong>Candidate</strong></td>
+<td class="party-header"><strong>Party</strong></td>
+</tr>
+<tr>
+<td>Ginsburg, Michael A.</td>
+<td>REP</td>
+</tr>
+<tr>
+<td>La Rue Hatch, Selena</td>
+<td>DEM</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="office-table-wrap">
+<div class="office-table-scroll">
+<table class="office-table two-column">
+<tbody>
+<tr>
+<td class="office-title" colspan="2">
+<h3 style="margin: 0;">STATE ASSEMBLY, DISTRICT 26</h3>
+<p class="office-term" style="margin: 4px 0 0;">Two (2) Year Term / Vote for One</p>
+</td>
+</tr>
+<tr>
+<td class="party-header"><strong>Candidate</strong></td>
+<td class="party-header"><strong>Party</strong></td>
+</tr>
+<tr>
+<td>Baugh, Sam</td>
+<td>DEM</td>
+</tr>
+<tr>
+<td>DeLong, Richard</td>
+<td>REP</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="office-table-wrap">
+<div class="office-table-scroll">
+<table class="office-table two-column">
+<tbody>
+<tr>
+<td class="office-title" colspan="2">
+<h3 style="margin: 0;">STATE ASSEMBLY, DISTRICT 27</h3>
+<p class="office-term" style="margin: 4px 0 0;">Two (2) Year Term / Vote for One</p>
+</td>
+</tr>
+<tr>
+<td class="party-header"><strong>Candidate</strong></td>
+<td class="party-header"><strong>Party</strong></td>
+</tr>
+<tr>
+<td>Cortes, Veronica "Lunch Lady"</td>
+<td>REP</td>
+</tr>
+<tr>
+<td>Goulding, Heather</td>
+<td>DEM</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="office-table-wrap">
+<div class="office-table-scroll">
+<table class="office-table two-column">
+<tbody>
+<tr>
+<td class="office-title" colspan="2">
+<h3 style="margin: 0;">STATE ASSEMBLY, DISTRICT 30</h3>
+<p class="office-term" style="margin: 4px 0 0;">Two (2) Year Term / Vote for One</p>
+</td>
+</tr>
+<tr>
+<td class="party-header"><strong>Candidate</strong></td>
+<td class="party-header"><strong>Party</strong></td>
+</tr>
+<tr>
+<td>Anderson, Natha C.</td>
+<td>DEM</td>
+</tr>
+<tr>
+<td>Gomez, Trista</td>
+<td>REP</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="office-table-wrap">
+<div class="office-table-scroll">
+<table class="office-table two-column">
+<tbody>
+<tr>
+<td class="office-title" colspan="2">
+<h3 style="margin: 0;">STATE ASSEMBLY, DISTRICT 31</h3>
+<p class="office-term" style="margin: 4px 0 0;">Two (2) Year Term / Vote for One</p>
+</td>
+</tr>
+<tr>
+<td class="party-header"><strong>Candidate</strong></td>
+<td class="party-header"><strong>Party</strong></td>
+</tr>
+<tr>
+<td>Dickman, Jill</td>
+<td>REP</td>
+</tr>
+<tr>
+<td>Schwartz, Neal</td>
+<td>DEM</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="office-table-wrap">
+<div class="office-table-scroll">
+<table class="office-table two-column">
+<tbody>
+<tr>
+<td class="office-title" colspan="2">
+<h3 style="margin: 0;">STATE ASSEMBLY, DISTRICT 32</h3>
+<p class="office-term" style="margin: 4px 0 0;">Two (2) Year Term / Vote for One</p>
+</td>
+</tr>
+<tr>
+<td class="party-header"><strong>Candidate</strong></td>
+<td class="party-header"><strong>Party</strong></td>
+</tr>
+<tr>
+<td>Hansen, Alexis M.</td>
+<td>REP</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="office-table-wrap">
+<div class="office-table-scroll">
+<table class="office-table two-column">
+<tbody>
+<tr>
+<td class="office-title" colspan="2">
+<h3 style="margin: 0;">STATE ASSEMBLY, DISTRICT 40</h3>
+<p class="office-term" style="margin: 4px 0 0;">Two (2) Year Term / Vote for One</p>
+</td>
+</tr>
+<tr>
+<td class="party-header"><strong>Candidate</strong></td>
+<td class="party-header"><strong>Party</strong></td>
+</tr>
+<tr>
+<td>Butler, Julie A.</td>
+<td>REP</td>
+</tr>
+<tr>
+<td>Fuentes, Oscar</td>
+<td>DEM</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<h2 class="office-type-title">County Partisan Offices</h2>
+<div class="office-table-wrap">
+<div class="office-table-scroll">
+<table class="office-table two-column">
+<tbody>
+<tr>
+<td class="office-title" colspan="2">
+<h3 style="margin: 0;">COUNTY COMMISSIONER, DISTRICT 2</h3>
+<p class="office-term" style="margin: 4px 0 0;">Four (4) Year Term / Vote for One</p>
+</td>
+</tr>
+<tr>
+<td class="party-header"><strong>Candidate</strong></td>
+<td class="party-header"><strong>Party</strong></td>
+</tr>
+<tr>
+<td>Killoran, Jon</td>
+<td>REP</td>
+</tr>
+<tr>
+<td>Rodriguez, Marie</td>
+<td>DEM</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="office-table-wrap">
+<div class="office-table-scroll">
+<table class="office-table two-column">
+<tbody>
+<tr>
+<td class="office-title" colspan="2">
+<h3 style="margin: 0;">COUNTY COMMISSIONER, DISTRICT 3</h3>
+<p class="office-term" style="margin: 4px 0 0;">Four (4) Year Term / Vote for One</p>
+</td>
+</tr>
+<tr>
+<td class="party-header"><strong>Candidate</strong></td>
+<td class="party-header"><strong>Party</strong></td>
+</tr>
+<tr>
+<td>Garcia, Mariluz</td>
+<td>DEM</td>
+</tr>
+<tr>
+<td>Regas, Troy P.</td>
+<td>REP</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="office-table-wrap">
+<div class="office-table-scroll">
+<table class="office-table two-column">
+<tbody>
+<tr>
+<td class="office-title" colspan="2">
+<h3 style="margin: 0;">COUNTY COMMISSIONER, DISTRICT 5</h3>
+<p class="office-term" style="margin: 4px 0 0;">Four (4) Year Term / Vote for One</p>
+</td>
+</tr>
+<tr>
+<td class="party-header"><strong>Candidate</strong></td>
+<td class="party-header"><strong>Party</strong></td>
+</tr>
+<tr>
+<td>Lee, Lisa</td>
+<td>LPN</td>
+</tr>
+<tr>
+<td>Pierce, Rob</td>
+<td>REP</td>
+</tr>
+<tr>
+<td>Wadsworth, Brian</td>
+<td>DEM</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="office-table-wrap">
+<div class="office-table-scroll">
+<table class="office-table two-column">
+<tbody>
+<tr>
+<td class="office-title" colspan="2">
+<h3 style="margin: 0;">COUNTY ASSESSOR</h3>
+<p class="office-term" style="margin: 4px 0 0;">Four (4) Year Term / Vote for One</p>
+</td>
+</tr>
+<tr>
+<td class="party-header"><strong>Candidate</strong></td>
+<td class="party-header"><strong>Party</strong></td>
+</tr>
+<tr>
+<td>Sarman, Chris</td>
+<td>REP</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="office-table-wrap">
+<div class="office-table-scroll">
+<table class="office-table two-column">
+<tbody>
+<tr>
+<td class="office-title" colspan="2">
+<h3 style="margin: 0;">COUNTY CLERK</h3>
+<p class="office-term" style="margin: 4px 0 0;">Four (4) Year Term / Vote for One</p>
+</td>
+</tr>
+<tr>
+<td class="party-header"><strong>Candidate</strong></td>
+<td class="party-header"><strong>Party</strong></td>
+</tr>
+<tr>
+<td>McDowell, Sean</td>
+<td>DEM</td>
+</tr>
+<tr>
+<td>Meyer, Duane</td>
+<td>REP</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="office-table-wrap">
+<div class="office-table-scroll">
+<table class="office-table two-column">
+<tbody>
+<tr>
+<td class="office-title" colspan="2">
+<h3 style="margin: 0;">COUNTY DISTRICT ATTORNEY</h3>
+<p class="office-term" style="margin: 4px 0 0;">Four (4) Year Term / Vote for One</p>
+</td>
+</tr>
+<tr>
+<td class="party-header"><strong>Candidate</strong></td>
+<td class="party-header"><strong>Party</strong></td>
+</tr>
+<tr>
+<td>Duncan, Wes</td>
+<td>REP</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="office-table-wrap">
+<div class="office-table-scroll">
+<table class="office-table two-column">
+<tbody>
+<tr>
+<td class="office-title" colspan="2">
+<h3 style="margin: 0;">COUNTY PUBLIC ADMINISTRATOR</h3>
+<p class="office-term" style="margin: 4px 0 0;">Four (4) Year Term / Vote for One</p>
+</td>
+</tr>
+<tr>
+<td class="party-header"><strong>Candidate</strong></td>
+<td class="party-header"><strong>Party</strong></td>
+</tr>
+<tr>
+<td>Jorgensen, Blaise</td>
+<td>DEM</td>
+</tr>
+<tr>
+<td>Klitzke, Nicole</td>
+<td>REP</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="office-table-wrap">
+<div class="office-table-scroll">
+<table class="office-table two-column">
+<tbody>
+<tr>
+<td class="office-title" colspan="2">
+<h3 style="margin: 0;">COUNTY RECORDER</h3>
+<p class="office-term" style="margin: 4px 0 0;">Four (4) Year Term / Vote for One</p>
+</td>
+</tr>
+<tr>
+<td class="party-header"><strong>Candidate</strong></td>
+<td class="party-header"><strong>Party</strong></td>
+</tr>
+<tr>
+<td>Work, Kalie</td>
+<td>DEM</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="office-table-wrap">
+<div class="office-table-scroll">
+<table class="office-table two-column">
+<tbody>
+<tr>
+<td class="office-title" colspan="2">
+<h3 style="margin: 0;">COUNTY TREASURER</h3>
+<p class="office-term" style="margin: 4px 0 0;">Four (4) Year Term / Vote for One</p>
+</td>
+</tr>
+<tr>
+<td class="party-header"><strong>Candidate</strong></td>
+<td class="party-header"><strong>Party</strong></td>
+</tr>
+<tr>
+<td>Taylor, Justin</td>
+<td>REP</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<h2 class="office-type-title">Statewide Nonpartisan Offices</h2>
+<div class="office-table-wrap">
+<div class="office-table-scroll">
+<table class="office-table single-column">
+<tbody>
+<tr>
+<td class="office-title">
+<h3 style="margin: 0;">SUPREME COURT JUSTICE, SEAT B</h3>
+<p class="office-term" style="margin: 4px 0 0;">Six (6) Year Term / Vote for One</p>
+</td>
+</tr>
+<tr>
+<td class="party-header"><strong>Candidate</strong></td>
+</tr>
+<tr>
+<td>Pickering, Kristina</td>
+</tr>
+<tr>
+<td>None of these candidates</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="office-table-wrap">
+<div class="office-table-scroll">
+<table class="office-table single-column">
+<tbody>
+<tr>
+<td class="office-title">
+<h3 style="margin: 0;">SUPREME COURT JUSTICE, SEAT D</h3>
+<p class="office-term" style="margin: 4px 0 0;">Six (6) Year Term / Vote for One</p>
+</td>
+</tr>
+<tr>
+<td class="party-header"><strong>Candidate</strong></td>
+</tr>
+<tr>
+<td>Herndon, Douglas</td>
+</tr>
+<tr>
+<td>None of these candidates</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<h2 class="office-type-title">District Nonpartisan Offices</h2>
+<div class="office-table-wrap">
+<div class="office-table-scroll">
+<table class="office-table single-column">
+<tbody>
+<tr>
+<td class="office-title">
+<h3 style="margin: 0;">DISTRICT COURT JUDGE, DEPARTMENT 1</h3>
+<p class="office-term" style="margin: 4px 0 0;">Six (6) Year Term / Vote for One</p>
+</td>
+</tr>
+<tr>
+<td class="party-header"><strong>Candidate</strong></td>
+</tr>
+<tr>
+<td>Dreiling, Derek C.</td>
+</tr>
+<tr>
+<td>Gorman, Edmund "Joe"</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="office-table-wrap">
+<div class="office-table-scroll">
+<table class="office-table single-column">
+<tbody>
+<tr>
+<td class="office-title">
+<h3 style="margin: 0;">DISTRICT COURT JUDGE, DEPARTMENT 2, FAMILY COURT</h3>
+<p class="office-term" style="margin: 4px 0 0;">Six (6) Year Term / Vote for One</p>
+</td>
+</tr>
+<tr>
+<td class="party-header"><strong>Candidate</strong></td>
+</tr>
+<tr>
+<td>Grossman, Dixie</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="office-table-wrap">
+<div class="office-table-scroll">
+<table class="office-table single-column">
+<tbody>
+<tr>
+<td class="office-title">
+<h3 style="margin: 0;">DISTRICT COURT JUDGE, DEPARTMENT 3</h3>
+<p class="office-term" style="margin: 4px 0 0;">Six (6) Year Term / Vote for One</p>
+</td>
+</tr>
+<tr>
+<td class="party-header"><strong>Candidate</strong></td>
+</tr>
+<tr>
+<td>Riggs, Tammy M.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="office-table-wrap">
+<div class="office-table-scroll">
+<table class="office-table single-column">
+<tbody>
+<tr>
+<td class="office-title">
+<h3 style="margin: 0;">DISTRICT COURT JUDGE, DEPARTMENT 4</h3>
+<p class="office-term" style="margin: 4px 0 0;">Six (6) Year Term / Vote for One</p>
+</td>
+</tr>
+<tr>
+<td class="party-header"><strong>Candidate</strong></td>
+</tr>
+<tr>
+<td>Steinheimer, Connie</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="office-table-wrap">
+<div class="office-table-scroll">
+<table class="office-table single-column">
+<tbody>
+<tr>
+<td class="office-title">
+<h3 style="margin: 0;">DISTRICT COURT JUDGE, DEPARTMENT 5, FAMILY COURT</h3>
+<p class="office-term" style="margin: 4px 0 0;">Six (6) Year Term / Vote for One</p>
+</td>
+</tr>
+<tr>
+<td class="party-header"><strong>Candidate</strong></td>
+</tr>
+<tr>
+<td>Riley, Kristine E. "Kris"</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="office-table-wrap">
+<div class="office-table-scroll">
+<table class="office-table single-column">
+<tbody>
+<tr>
+<td class="office-title">
+<h3 style="margin: 0;">DISTRICT COURT JUDGE, DEPARTMENT 6</h3>
+<p class="office-term" style="margin: 4px 0 0;">Six (6) Year Term / Vote for One</p>
+</td>
+</tr>
+<tr>
+<td class="party-header"><strong>Candidate</strong></td>
+</tr>
+<tr>
+<td>Jones, Lynne</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="office-table-wrap">
+<div class="office-table-scroll">
+<table class="office-table single-column">
+<tbody>
+<tr>
+<td class="office-title">
+<h3 style="margin: 0;">DISTRICT COURT JUDGE, DEPARTMENT 7</h3>
+<p class="office-term" style="margin: 4px 0 0;">Six (6) Year Term / Vote for One</p>
+</td>
+</tr>
+<tr>
+<td class="party-header"><strong>Candidate</strong></td>
+</tr>
+<tr>
+<td>Walker, Egan K.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="office-table-wrap">
+<div class="office-table-scroll">
+<table class="office-table single-column">
+<tbody>
+<tr>
+<td class="office-title">
+<h3 style="margin: 0;">DISTRICT COURT JUDGE, DEPARTMENT 8</h3>
+<p class="office-term" style="margin: 4px 0 0;">Six (6) Year Term / Vote for One</p>
+</td>
+</tr>
+<tr>
+<td class="party-header"><strong>Candidate</strong></td>
+</tr>
+<tr>
+<td>Breslow, Barry</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="office-table-wrap">
+<div class="office-table-scroll">
+<table class="office-table single-column">
+<tbody>
+<tr>
+<td class="office-title">
+<h3 style="margin: 0;">DISTRICT COURT JUDGE, DEPARTMENT 9</h3>
+<p class="office-term" style="margin: 4px 0 0;">Six (6) Year Term / Vote for One</p>
+</td>
+</tr>
+<tr>
+<td class="party-header"><strong>Candidate</strong></td>
+</tr>
+<tr>
+<td>Freeman, Scott</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="office-table-wrap">
+<div class="office-table-scroll">
+<table class="office-table single-column">
+<tbody>
+<tr>
+<td class="office-title">
+<h3 style="margin: 0;">DISTRICT COURT JUDGE, DEPARTMENT 10</h3>
+<p class="office-term" style="margin: 4px 0 0;">Six (6) Year Term / Vote for One</p>
+</td>
+</tr>
+<tr>
+<td class="party-header"><strong>Candidate</strong></td>
+</tr>
+<tr>
+<td>Sigurdson, Kathleen A.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="office-table-wrap">
+<div class="office-table-scroll">
+<table class="office-table single-column">
+<tbody>
+<tr>
+<td class="office-title">
+<h3 style="margin: 0;">DISTRICT COURT JUDGE, DEPARTMENT 11, FAMILY COURT</h3>
+<p class="office-term" style="margin: 4px 0 0;">Six (6) Year Term / Vote for One</p>
+</td>
+</tr>
+<tr>
+<td class="party-header"><strong>Candidate</strong></td>
+</tr>
+<tr>
+<td>Dollinger, Paige</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="office-table-wrap">
+<div class="office-table-scroll">
+<table class="office-table single-column">
+<tbody>
+<tr>
+<td class="office-title">
+<h3 style="margin: 0;">DISTRICT COURT JUDGE, DEPARTMENT 12, FAMILY COURT</h3>
+<p class="office-term" style="margin: 4px 0 0;">Six (6) Year Term / Vote for One</p>
+</td>
+</tr>
+<tr>
+<td class="party-header"><strong>Candidate</strong></td>
+</tr>
+<tr>
+<td>Unsworth, Sandra A.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="office-table-wrap">
+<div class="office-table-scroll">
+<table class="office-table single-column">
+<tbody>
+<tr>
+<td class="office-title">
+<h3 style="margin: 0;">DISTRICT COURT JUDGE, DEPARTMENT 13, FAMILY COURT</h3>
+<p class="office-term" style="margin: 4px 0 0;">Six (6) Year Term / Vote for One</p>
+</td>
+</tr>
+<tr>
+<td class="party-header"><strong>Candidate</strong></td>
+</tr>
+<tr>
+<td>Morey, Alexander C.</td>
+</tr>
+<tr>
+<td>White, Lance</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="office-table-wrap">
+<div class="office-table-scroll">
+<table class="office-table single-column">
+<tbody>
+<tr>
+<td class="office-title">
+<h3 style="margin: 0;">DISTRICT COURT JUDGE, DEPARTMENT 14, FAMILY COURT</h3>
+<p class="office-term" style="margin: 4px 0 0;">Six (6) Year Term / Vote for One</p>
+</td>
+</tr>
+<tr>
+<td class="party-header"><strong>Candidate</strong></td>
+</tr>
+<tr>
+<td>Schreinert, Tamatha</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="office-table-wrap">
+<div class="office-table-scroll">
+<table class="office-table single-column">
+<tbody>
+<tr>
+<td class="office-title">
+<h3 style="margin: 0;">DISTRICT COURT JUDGE, DEPARTMENT 15</h3>
+<p class="office-term" style="margin: 4px 0 0;">Six (6) Year Term / Vote for One</p>
+</td>
+</tr>
+<tr>
+<td class="party-header"><strong>Candidate</strong></td>
+</tr>
+<tr>
+<td>Hardy, David A.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="office-table-wrap">
+<div class="office-table-scroll">
+<table class="office-table single-column">
+<tbody>
+<tr>
+<td class="office-title">
+<h3 style="margin: 0;">DISTRICT COURT JUDGE, DEPARTMENT 16, FAMILY COURT</h3>
+<p class="office-term" style="margin: 4px 0 0;">Six (6) Year Term / Vote for One</p>
+</td>
+</tr>
+<tr>
+<td class="party-header"><strong>Candidate</strong></td>
+</tr>
+<tr>
+<td>Banales, Aimee E.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="office-table-wrap">
+<div class="office-table-scroll">
+<table class="office-table single-column">
+<tbody>
+<tr>
+<td class="office-title">
+<h3 style="margin: 0;">NEVADA BOARD OF REGENTS, DISTRICT 10</h3>
+<p class="office-term" style="margin: 4px 0 0;">Six (6) Year Term / Vote for One</p>
+</td>
+</tr>
+<tr>
+<td class="party-header"><strong>Candidate</strong></td>
+</tr>
+<tr>
+<td>Arrascada, Joseph "Joe"</td>
+</tr>
+<tr>
+<td>Reed, Peter</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="office-table-wrap">
+<div class="office-table-scroll">
+<table class="office-table single-column">
+<tbody>
+<tr>
+<td class="office-title">
+<h3 style="margin: 0;">WASHOE COUNTY SCHOOL BOARD, DISTRICT F AT-LARGE</h3>
+<p class="office-term" style="margin: 4px 0 0;">Four (4) Year Term / Vote for One</p>
+</td>
+</tr>
+<tr>
+<td class="party-header"><strong>Candidate</strong></td>
+</tr>
+<tr>
+<td>Harvey, Sheena R.</td>
+</tr>
+<tr>
+<td>Westlake, Brooke M.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="office-table-wrap">
+<div class="office-table-scroll">
+<table class="office-table single-column">
+<tbody>
+<tr>
+<td class="office-title">
+<h3 style="margin: 0;">INCLINE VILLAGE GENERAL IMPROVEMENT DISTRICT</h3>
+<p class="office-term" style="margin: 4px 0 0;">Four (4) Year Term / Vote for Two</p>
+</td>
+</tr>
+<tr>
+<td class="party-header"><strong>Candidate</strong></td>
+</tr>
+<tr>
+<td>Brooks, Ryan "RB"</td>
+</tr>
+<tr>
+<td>Noble, David S.</td>
+</tr>
+<tr>
+<td>Swenson, Harry</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="office-table-wrap">
+<div class="office-table-scroll">
+<table class="office-table single-column">
+<tbody>
+<tr>
+<td class="office-title">
+<h3 style="margin: 0;">PALOMINO VALLEY GENERAL IMPROVEMENT DISTRICT</h3>
+<p class="office-term" style="margin: 4px 0 0;">Four (4) Year Term / Vote for Three</p>
+</td>
+</tr>
+<tr>
+<td class="party-header"><strong>Candidate</strong></td>
+</tr>
+<tr>
+<td>Baker, Tom</td>
+</tr>
+<tr>
+<td>Black, David</td>
+</tr>
+<tr>
+<td>Breitmeyer, III, Martin W.</td>
+</tr>
+<tr>
+<td>Dennis, Greg</td>
+</tr>
+<tr>
+<td>DiMambro, Brian L.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="office-table-wrap">
+<div class="office-table-scroll">
+<table class="office-table single-column">
+<tbody>
+<tr>
+<td class="office-title">
+<h3 style="margin: 0;">VERDI TV DISTRICT</h3>
+<p class="office-term" style="margin: 4px 0 0;">Four (4) Year Term / Vote for Two</p>
+</td>
+</tr>
+<tr>
+<td class="party-header"><strong>Candidate</strong></td>
+</tr>
+<tr>
+<td>Bandoni, Stephany</td>
+</tr>
+<tr>
+<td>Horton, Hud</td>
+</tr>
+<tr>
+<td>Leppek, Trevor J.</td>
+</tr>
+<tr>
+<td>Monson, Wayne</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<h2 class="office-type-title">City of Reno Offices</h2>
+<div class="office-table-wrap">
+<div class="office-table-scroll">
+<table class="office-table single-column">
+<tbody>
+<tr>
+<td class="office-title">
+<h3 style="margin: 0;">RENO CITY MAYOR</h3>
+<p class="office-term" style="margin: 4px 0 0;">Four (4) Year Term / Vote for One</p>
+</td>
+</tr>
+<tr>
+<td class="party-header"><strong>Candidate</strong></td>
+</tr>
+<tr>
+<td>Marshall, Kate</td>
+</tr>
+<tr>
+<td>Taylor, Kathleen</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="office-table-wrap">
+<div class="office-table-scroll">
+<table class="office-table single-column">
+<tbody>
+<tr>
+<td class="office-title">
+<h3 style="margin: 0;">RENO CITY COUNCIL, WARD 2</h3>
+<p class="office-term" style="margin: 4px 0 0;">Four (4) Year Term / Vote for One</p>
+</td>
+</tr>
+<tr>
+<td class="party-header"><strong>Candidate</strong></td>
+</tr>
+<tr>
+<td>Johnson, Matt</td>
+</tr>
+<tr>
+<td>Pellett, Summer</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="office-table-wrap">
+<div class="office-table-scroll">
+<table class="office-table single-column">
+<tbody>
+<tr>
+<td class="office-title">
+<h3 style="margin: 0;">RENO CITY COUNCIL, WARD 4</h3>
+<p class="office-term" style="margin: 4px 0 0;">Four (4) Year Term / Vote for One</p>
+</td>
+</tr>
+<tr>
+<td class="party-header"><strong>Candidate</strong></td>
+</tr>
+<tr>
+<td>Ebert, Meghan</td>
+</tr>
+<tr>
+<td>Gomez, Eddie</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="office-table-wrap">
+<div class="office-table-scroll">
+<table class="office-table single-column">
+<tbody>
+<tr>
+<td class="office-title">
+<h3 style="margin: 0;">RENO CITY ATTORNEY</h3>
+<p class="office-term" style="margin: 4px 0 0;">Four (4) Year Term / Vote for One</p>
+</td>
+</tr>
+<tr>
+<td class="party-header"><strong>Candidate</strong></td>
+</tr>
+<tr>
+<td>Bogale, Zee</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="office-table-wrap">
+<div class="office-table-scroll">
+<table class="office-table single-column">
+<tbody>
+<tr>
+<td class="office-title">
+<h3 style="margin: 0;">RENO MUNICIPAL COURT JUDGE, DEPARTMENT 1</h3>
+<p class="office-term" style="margin: 4px 0 0;">Six (6) Year Term / Vote for One</p>
+</td>
+</tr>
+<tr>
+<td class="party-header"><strong>Candidate</strong></td>
+</tr>
+<tr>
+<td>Gianoli, Angela "Angie"</td>
+</tr>
+<tr>
+<td>Hubach, Jenny Diane</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<h2 class="office-type-title">City of Sparks Offices</h2>
+<div class="office-table-wrap">
+<div class="office-table-scroll">
+<table class="office-table single-column">
+<tbody>
+<tr>
+<td class="office-title">
+<h3 style="margin: 0;">SPARKS CITY MAYOR</h3>
+<p class="office-term" style="margin: 4px 0 0;">Four (4) Year Term / Vote for One</p>
+</td>
+</tr>
+<tr>
+<td class="party-header"><strong>Candidate</strong></td>
+</tr>
+<tr>
+<td>Lawson, Ed</td>
+</tr>
+<tr>
+<td>Rawson, Wendi M.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="office-table-wrap">
+<div class="office-table-scroll">
+<table class="office-table single-column">
+<tbody>
+<tr>
+<td class="office-title">
+<h3 style="margin: 0;">SPARKS CITY COUNCIL, WARD 2</h3>
+<p class="office-term" style="margin: 4px 0 0;">Four (4) Year Term / Vote for One</p>
+</td>
+</tr>
+<tr>
+<td class="party-header"><strong>Candidate</strong></td>
+</tr>
+<tr>
+<td>O’Connell, Jamie</td>
+</tr>
+<tr>
+<td>VanderWell, Dian</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<h2 class="office-type-title">Statewide Ballot Questions</h2>
+<div class="office-table-wrap">
+<div class="office-table-scroll">
+<table class="office-table single-column">
+<tbody>
+<tr>
+<td class="office-title">
+<h3 style="margin: 0;">STATE QUESTION NO. 6</h3>
+<p><strong>&nbsp;</strong>Amendment to the <em>Nevada Constitution</em></p>
+<p>Initiative Petition C-05-2023</p>
+</td>
+</tr>
+<tr>
+<td style="text-align: left;">Should the Nevada Constitution be amended to create an individual’s fundamental right to an abortion, without interference by state or local governments, whenever the abortion is performed by a qualified healthcare professional until fetal viability or when necessary to protect the health or life of the pregnant individual at any point during the pregnancy?</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="office-table-wrap">
+<div class="office-table-scroll">
+<table class="office-table single-column">
+<tbody>
+<tr>
+<td class="office-title">
+<h3 style="margin: 0;">STATE QUESTION NO. 7</h3>
+<p>Amendment to the <em>Nevada Constitution</em></p>
+<p>Initiative Petition C-02-2023</p>
+</td>
+</tr>
+<tr>
+<td style="text-align: left;">Should the Nevada Constitution be amended to require voters to either present photo identification to verify their identity when voting in-person or to provide certain personal information to verify their identity when voting by mail ballot?</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<h2 class="office-type-title">County Ballot Questions</h2>
+<div class="office-table-wrap">
+<div class="office-table-scroll">
+<table class="office-table single-column">
+<tbody>
+<tr>
+<td class="office-title">
+<h3 style="margin: 0;">WASHOE COUNTY QUESTION NO. 1</h3>
+<p>Streets and Highways Funding Advisory Question</p>
+</td>
+</tr>
+<tr>
+<td style="text-align: left;">THIS QUESTION IS ADVISORY AND NON-BINDING: Do you support an annual road use fee on all electric and hybrid passenger vehicles registered in Washoe County, which would be adjusted annually for inflation? These fees are intended to approximate the annual contribution that owners of gasoline powered vehicles pay per year in local fuel taxes to support local transportation infrastructure. The revenue from these fees would be dedicated to the Regional Transportation Commission of Washoe County subject to annual audits and public disclosure of spending, and the revenue would be used solely for the funding of transportation projects that will reduce traffic congestion, repair and maintain roads, improve air quality, and increase safety.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+
+</div><div class="text"></div>
+<div class="text"></div>
+
+</main>
+<footer class="main-footer">
+<div class="callout-bar">
+<div class="row">
+<div class="columns large-12">
+<div class="callout-bar-content"><img alt="311" class="callout-bar-logo" height="87" src="https://www.washoecounty.gov/_files/img/311-logo.svg" width="150">
+<div class="callout-bar-text-large">Call 311 to find resources, ask questions, and utilize Washoe County services. <a href="https://www.washoecounty.gov/contact.php" title="Learn more about 311">Learn More »</a></div>
+<div class="callout-bar-text-small">Call 311 to find resources, ask questions, and utilize Washoe County services. <a href="https://www.washoecounty.gov/contact.php" title="Learn more about 311">Learn More »</a></div>
+</div>
+</div>
+</div>
+</div>
+<div class="footer-blocks">
+<div class="row">
+
+
+
+
+    <div class="large-4 columns">
+<h3 class="underline">Title VI &amp; Language Access</h3>
+<p class="about-washoe">Washoe County is committed to ensuring that all persons have equal access to and benefit from our programs and services.&nbsp; <a href="https://www.washoecounty.gov/mgrsoff/civil-rights/title-vi-civil-rights-act/index.php">Learn more about our commitment to Title VI</a> compliance and language access, or to file a complaint.</p>
+<p>&nbsp;</p>
+</div>
+
+
+
+
+
+    <div class="large-4 columns">
+<div class="footer-subscribe">
+<h3 class="underline">Accessibility</h3>
+<form action="/county_news_update_subscription.php" method="post">
+<p style="text-align: justify;">Washoe County is committed to making its information and communications universal in design and accessible to all individuals, including individuals with disabilities.</p>
+<p style="text-align: justify;"><a href="https://www.washoecounty.gov/accessibility/index.php"><em>Learn more about our accessibility guidelines</em></a></p>
+</form></div>
+</div>
+
+
+
+
+
+    <div class="large-4 columns">
+<div class="contact-us">
+<div class="about-washoe">
+<h3 class="underline"><strong>Connect with us</strong></h3>
+<p><strong>Phone</strong>: 311 or 775.328.2003<br><strong>Online:</strong> <a href="https://washoecountynv.qscend.com/311/request/add" rel="noopener" target="_blank">Submit a Service Request Online</a></p>
+</div>
+<div class="about-washoe">
+<p>1001 E. Ninth Street<br>Reno, NV 89512</p>
+<p><a href="https://www.washoecounty.gov/subscribe.php" target="_parent">Sign up</a><span>&nbsp;for email updates that interest you.</span></p>
+</div>
+<ul class="icon-links wc-social">
+<li>&nbsp;</li>
+<li>&nbsp;</li>
+<li>&nbsp;</li>
+<li>&nbsp;</li>
+</ul>
+</div>
+</div>
+
+</div>
+</div>
+</footer>
+<a href="https://www.washoecounty.gov/animal/Licenses/index.php" target="_parent">Licenses</a>
+<a href="https://www.washoecounty.gov/csd/planning_and_development/business_license/index.php" target="_parent">Business Licenses</a>
+<a href="https://www.washoecounty.gov/csd/planning_and_development/business_license/bl_special_events/index.php" target="_parent">Special Events Permit</a>
+<a href="https://icris.washoecounty.us/ssrecorder/user/disclaimer" target="_blank">Search Property Records</a>
+<a class="footer-privacy-link" href="https://www.washoecounty.gov/Privacy">
+            Privacy Policy
+        </a>

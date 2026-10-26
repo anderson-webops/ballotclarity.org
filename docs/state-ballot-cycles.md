@@ -1,13 +1,16 @@
 # Reusable election cycles
 
 External election catalogs opt the automatic candidate repository into reusable
-source families. The current 61 source definitions retain explicit source/state
+source families. The current 62 source definitions retain explicit source/state
 allowlists; reusable discovery does not widen an exact-source allowlist.
 
-Twenty-six families across twenty-two states are supported:
+Twenty-nine families across twenty-four states are supported:
 
 | Family | Discovery | Elections |
 | --- | --- | --- |
+| `nv-washoe-2026` | [Washoe County election information](https://www.washoecounty.gov/voters/information/) | Printed even-year November general dates and complete HTML contest tables; policy-bound collection, separate questions/nonperson options, terms, vote limits and the published deceased-candidate notice |
+| `nv-clark-2026` | [Clark County general-election information](https://www.clarkcountynv.gov/government/departments/elections/26g-info) | Actually offered dated general elections with independently reconciled candidate-table and newsletter publications; both remain required |
+| `ct-sots-2026` | [Connecticut town ballots](https://portal.ct.gov/SOTS/Election-Services/Town-Ballots/Ballots) | Actually offered dated town publications, complete printed page sets and bounded table extraction; unknown layouts and unresolved claims remain held |
 | `or-sos-multnomah-2026` | [Multnomah County current/upcoming elections](https://multco.us/info/current-and-upcoming-elections-multnomah-county-elections) and each actually offered general-election page | Explicit even-year November dates, the independently published state directive and both county ballot-content reports; current 279 facts/IDs retained, unknown formats held for review |
 | `tx-sos-2026` | [Texas election index](https://www.sos.state.tx.us/elections/index.shtml) and its actually offered regular-general page | Explicit even-year November dates, final county certification and optional declared-write-in certification; separate special elections stay excluded |
 | `vt-sos-2026` | [Vermont general-election candidates](https://sos.vermont.gov/elections/election-info-resources/candidates) | Actual active even-year general date and published qualified-candidate workbook; legislative codes remain unmapped and local rows are not personal ballot matches |

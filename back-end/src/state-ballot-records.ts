@@ -38,6 +38,7 @@ import { parseTexasCandidateCapture } from "./state-ballot-texas.js";
 import { parseVermontCandidateCapture } from "./state-ballot-vermont.js";
 import { parseVirginiaCandidateRecords, validateVirginiaSource } from "./state-ballot-virginia.js";
 import { parseWashingtonCandidateRecords } from "./state-ballot-washington.js";
+import { parseWashoeCandidateCapture } from "./state-ballot-washoe.js";
 
 export type StateCandidateStatus = "listed" | "filed" | "qualified" | "write-in" | "withdrawn" | "disqualified" | "defeated" | "elected" | "unopposed" | "inactive" | "unrecognized";
 export type StateContestScope = "statewide" | "congressional" | "state-senate" | "state-house" | "local";
@@ -422,7 +423,10 @@ export function parseStateCandidateRecords(source: StateBallotSource, body: stri
 	if (["reviewed-pdf", "reviewed-xlsx", "reviewed-image"].includes(source.format))
 		throw new Error("Reviewed document sources require a validated snapshot.");
 	let records: StateCandidateRecord[];
-	if (source.format === "clark-pdf") {
+	if (source.format === "washoe-html") {
+		records = parseWashoeCandidateCapture(source, body, makeRecord).records;
+	}
+	else if (source.format === "clark-pdf") {
 		records = parseClarkCandidateCapture(source, body, makeRecord).records;
 	}
 	else if (source.format === "oregon-pdf") {

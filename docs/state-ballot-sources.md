@@ -1,5 +1,14 @@
 # Official state candidate records
 
+## Franklin County reader preparation
+
+A bounded reader reconciles all 78 accepted Ohio candidate records, including
+eleven write-ins, six joint tickets and 26 published websites. Its source remains
+a reviewed external snapshot: offered-election discovery, policy checks and
+complete unattended-import acceptance are still pending. No collector is enabled
+and no records or capture clocks change. See the
+[reader review](audits/2026-10-26-franklin-reader-preparation.md).
+
 ## Johnson County, Iowa
 
 The independent [county general-election page](https://johnsoncountyiowa.gov/november-3-2026-general-election)

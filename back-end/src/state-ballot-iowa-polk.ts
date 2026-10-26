@@ -221,7 +221,7 @@ function officeValues(office: string, group: string): Omit<StateCandidateValues,
 	const legislative = /^State (Senate|Representative) District ([1-9]\d{0,2})$/u.exec(office);
 	if (legislative && group === (legislative[1] === "Senate" ? "senate" : "house"))
 		return { ...base, office: legislative[1] === "Senate" ? "State Senate" : "State House", district: legislative[2]!, scope: legislative[1] === "Senate" ? "state-senate" : "state-house" };
-	if (group === "county" && /^(?:County (?:Treasurer|Recorder|Attorney)|Board of Supervisors - District [1-9]\d?)$/u.test(office))
+	if (group === "county" && /^(?:County (?:Auditor|Sheriff|Treasurer|Recorder|Attorney)|Board of Supervisors - District [1-9]\d?)$/u.test(office))
 		return { ...base, scope: "local", jurisdiction: office.startsWith("Board") ? `Polk County, ${office}` : "Polk County" };
 	if (group === "nonpartisan" && /^(?:County Hospital Trustees|Soil & Water Commission|Agricultural Extension Council(?: \(Vacancy\))?)(?: - Vote for no more than [1-9]\d?)?$/u.test(office))
 		return { ...base, scope: "local", jurisdiction: "Polk County" };

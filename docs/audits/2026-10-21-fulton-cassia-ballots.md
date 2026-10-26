@@ -93,6 +93,18 @@ restart, invalid imports/private fields, typed district isolation, statewide PSC
 scope, distinct House seats, retention, terms and former names. Local acceptance
 evidence is in `.ai-work/runs/20261021-remaining-general-publications/`.
 
+## October 26 Cassia recheck
+
+The sample index still offers the same three PDFs. Fresh normal HTTPS captures
+match all three original document hashes exactly, so there is no changed
+candidate packet to transfer. The full robots policy is unchanged. The current
+index and homepage link an accessibility statement, which was reviewed without
+finding an automated-access restriction; neither inventory offers separate
+website-use terms. This county review does not lift the separate Idaho state
+portal hold or imply unrestricted republication rights. Cassia's source remains
+a reviewed external import until its document parser and future discovery are
+implemented and validated.
+
 ## Remaining-source findings
 
 - Washington County, Arkansas has permitted federal through municipal and runoff

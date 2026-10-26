@@ -64,3 +64,16 @@ Current evidence concerns 2026. Future presidential/pending/link-update tests ar
 synthetic compatibility checks, not future candidate evidence. The registry has
 64 source definitions and 31 reusable families across 25 states. This does not
 establish complete county, statewide or personalized ballot coverage.
+
+## Future county-office compatibility
+
+The county's [2024 Johnston 4 sample](https://www.polkcountyiowa.gov/media/5q0hilnv/johnston-4.pdf)
+prints county auditor and sheriff races. The collector now accepts those office
+labels alongside treasurer, recorder, attorney and district supervisors, only
+inside the county-office section. Unknown or misplaced offices still require
+review. This changes recognized published labels, not an inferred election
+calendar or future candidate roster.
+
+The synthetic presidential-cycle example includes both auditor and sheriff.
+Its pending-to-available import, exact durable restart and unchanged cached
+capture time verify together. All current 2026 facts remain unchanged.

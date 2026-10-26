@@ -65,11 +65,17 @@ Candidate Name  Candidate Party  Email
 Ada Legislator  Republican  private@example.test
 Bea Housemember  Democratic  private@example.test
 \fCountywide Offices
-County Attorney
+${president ? "County Auditor" : "County Attorney"}
 Candidate Name  Candidate Party  Email
 Ada County  Republican  private@example.test
 Bea County  Democratic  private@example.test
-Board of Supervisors
+${president
+	? `County Sheriff
+Candidate Name  Candidate Party  Email
+Cam Sheriff  Republican  private@example.test
+Dee Sheriff  Democratic  private@example.test
+`
+	: ""}Board of Supervisors
 Board of Supervisors - District 1
 Candidate Name  Candidate Party  Email
 (No candidate)  Republican
@@ -144,8 +150,30 @@ test("Polk's future offered date, actual document links and presidential pairing
 	assert.equal(future.pageUrl, pageUrl(date));
 	assert.deepEqual(catalog.elections[0]!.polkDocuments!.map(document => document.url), documents(date));
 	assert.equal(parsed(date).records.find(record => record.office === "President and Vice President")!.name, "Ada Nominee / Ada Runningmate");
+	assert.deepEqual(parsed(date).records.filter(record => ["County Auditor", "County Sheriff"].includes(record.office)).map(record => ({ name: record.name, office: record.office, party: record.party, scope: record.scope, jurisdiction: record.jurisdiction })), [
+		{ name: "Ada County", office: "County Auditor", party: "Republican", scope: "local", jurisdiction: "Polk County" },
+		{ name: "Bea County", office: "County Auditor", party: "Democratic", scope: "local", jurisdiction: "Polk County" },
+		{ name: "Cam Sheriff", office: "County Sheriff", party: "Republican", scope: "local", jurisdiction: "Polk County" },
+		{ name: "Dee Sheriff", office: "County Sheriff", party: "Democratic", scope: "local", jurisdiction: "Polk County" },
+	]);
 	assert.equal(getStateBallotCycleFamily(source.id).discoveryUrl, iowaPolkDiscoveryUrl);
 	assert.equal(parseStateBallotCycleCatalog(catalog, now).elections.length, 1);
+});
+test("Polk county offices preserve their printed identity without accepting unknown or misgrouped offices", () => {
+	for (const office of ["County Auditor", "County Sheriff", "County Treasurer", "County Recorder", "County Attorney"]) {
+		const value = capture();
+		value.documents[0]!.text = roster().replace("County Attorney\n", `${office}\n`);
+		const records = parseIowaPolkCandidateCapture(source, JSON.stringify(value), createStateCandidateRecord, now).records.filter(record => record.office === office);
+		assert.deepEqual(records.map(record => ({ name: record.name, party: record.party, scope: record.scope, jurisdiction: record.jurisdiction })), [
+			{ name: "Ada County", party: "Republican", scope: "local", jurisdiction: "Polk County" },
+			{ name: "Bea County", party: "Democratic", scope: "local", jurisdiction: "Polk County" },
+		]);
+	}
+	for (const text of [roster().replace("County Attorney\n", "County Marshal\n"), roster().replace("State Senate District 15\n", "County Auditor\n"), roster().replace("State Senate District 15\n", "County Sheriff\n")]) {
+		const value = capture();
+		value.documents[0]!.text = text;
+		assert.throws(() => parseIowaPolkCandidateCapture(source, JSON.stringify(value), createStateCandidateRecord, now), /office or section requires review/u);
+	}
 });
 test("Polk access-policy review distinguishes absent robots, employee policies, service licenses and actual site terms", async () => {
 	assert.equal(iowaPolkPolicyFingerprint(footer, "legal-inventory"), iowaPolkPolicyReceipts[3].sha256);
@@ -255,7 +283,7 @@ test("Polk future pending catalogs import when actual documents arrive while cac
 			requested++;
 			return JSON.stringify(capture(date));
 		} });
-		assert.equal(available.results.find(result => result.sourceId === future.id)!.records, 23);
+		assert.equal(available.results.find(result => result.sourceId === future.id)!.records, 25);
 		assert.equal(available.results.find(result => result.sourceId === future.id)!.status, "available");
 		assert.equal(available.results.find(result => result.sourceId === future.id)!.imported, true);
 		const afterImport = requested;
@@ -269,7 +297,9 @@ test("Polk future pending catalogs import when actual documents arrive while cac
 		const reader = createStateBallotRepository({ sources: [selected(date)], dataDirectory: directory, now: () => now, fetchText: async () => {
 			throw new Error("Converter/network unavailable");
 		} });
-		assert.equal((await reader.getSnapshot("IA"))!.records.length, 23);
+		const restored = (await reader.getSnapshot("IA"))!;
+		assert.equal(restored.records.length, 25);
+		assert.deepEqual(restored.records, JSON.parse(JSON.stringify(parsed(date).records)));
 		const config = resolveStateBallotConfiguration({ STATE_BALLOT_DATA_DIR: directory, STATE_BALLOT_ENABLED_FAMILIES: source.id }, now);
 		assert.ok(config.sources.some(item => item.id === source.id));
 		await assert.rejects(syncStateBallotCycles({ familyId: source.id, catalogPath, dataDirectory: directory, now: () => now, fetchDiscovery: async () => JSON.stringify(waiting) }), /disappeared/u);

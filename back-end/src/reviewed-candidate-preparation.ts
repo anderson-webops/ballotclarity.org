@@ -6,8 +6,10 @@ import { mkdir, realpath, writeFile } from "node:fs/promises";
 import { basename, dirname, isAbsolute, join, resolve } from "node:path";
 import { parse } from "csv-parse/sync";
 import { readReviewedSantaFeCandidates } from "./reviewed-santa-fe-candidates.js";
+import { readCambridgeCandidateDocument } from "./state-ballot-cambridge.js";
 import { serializeStateBallotSnapshots } from "./state-ballot-export.js";
 import { extractStateBallotPdfText, resolveStateBallotPdfExtractor } from "./state-ballot-pdf.js";
+import { createStateCandidateRecord } from "./state-ballot-records.js";
 import { configuredStateBallotSources, legacyReviewedStateBallotSource } from "./state-ballot-registry.js";
 import { parseBundledStateSnapshot } from "./state-ballot-snapshot.js";
 import { assertExternalStateDataDirectory, readBoundedStateDataBytes, serializeStoredStateSnapshot } from "./state-ballot-storage.js";
@@ -26,7 +28,7 @@ interface PreparationPlan {
 	type: "reviewed-candidate-preparation";
 	sourceId: string;
 	sourceConfigurationSha256: string;
-	input: { path: string; sha256: string; format?: "santa-fe-master-pdf" };
+	input: { path: string; sha256: string; format?: "santa-fe-master-pdf" | "cambridge-candidates-pdf" };
 	documents: ReviewedDocument[];
 	outputDirectory: string;
 	outputName: string;
@@ -46,7 +48,7 @@ const quote = (value: string) => `"${(/^\s*[=+@-]/u.test(value) ? `'${value}` : 
 function parsePlan(value: unknown, now: number): PreparationPlan {
 	if (!objectValue(value) || !exactKeys(value, ["schemaVersion", "type", "sourceId", "sourceConfigurationSha256", "input", "documents", "outputDirectory", "outputName"])
 		|| value.schemaVersion !== 1 || value.type !== "reviewed-candidate-preparation" || typeof value.sourceId !== "string" || !sha256Value(value.sourceConfigurationSha256)
-		|| !objectValue(value.input) || !exactKeys(value.input, value.input.format === "santa-fe-master-pdf" ? ["path", "sha256", "format"] : ["path", "sha256"]) || !absolutePath(value.input.path) || !sha256Value(value.input.sha256)
+		|| !objectValue(value.input) || !exactKeys(value.input, ["santa-fe-master-pdf", "cambridge-candidates-pdf"].includes(String(value.input.format)) ? ["path", "sha256", "format"] : ["path", "sha256"]) || !absolutePath(value.input.path) || !sha256Value(value.input.sha256)
 		|| !absolutePath(value.outputDirectory) || typeof value.outputName !== "string" || !/^[a-z0-9][a-z0-9-]{0,99}$/u.test(value.outputName)
 		|| !Array.isArray(value.documents) || !value.documents.length || value.documents.length > 100 || !Number.isFinite(now)) {
 		throw new Error("Candidate preparation requires an exact, pinned local review plan.");
@@ -64,12 +66,12 @@ function parsePlan(value: unknown, now: number): PreparationPlan {
 	return value as unknown as PreparationPlan;
 }
 
-export async function prepareReviewedCandidateFiles(planPath: string, now = Date.now(), options: { extractSantaFePdf?: (bytes: Buffer) => Promise<string> } = {}) {
+export async function prepareReviewedCandidateFiles(planPath: string, now = Date.now(), options: { extractSantaFePdf?: (bytes: Buffer) => Promise<string>; extractCambridgePdf?: (bytes: Buffer) => Promise<string> } = {}) {
 	if (!absolutePath(planPath)) throw new Error("Use an absolute candidate preparation plan path.");
 	const plan = parsePlan(JSON.parse((await readBoundedStateDataBytes(planPath)).toString("utf8")), now);
 	const configured = configuredStateBallotSources.find(source => source.id === plan.sourceId);
 	const source = configured ? legacyReviewedStateBallotSource(configured) ?? configured : undefined;
-	if (!source || source.format !== "reviewed-pdf" || source.retrievalPolicy !== "manual-snapshot" || source.snapshotStorage !== "external"
+	if (!source || source.format !== "reviewed-pdf" || source.retrievalPolicy !== "manual-snapshot" || (source.snapshotStorage !== "external" && !(plan.input.format === "cambridge-candidates-pdf" && source.id === "ma-cambridge-2026"))
 		|| !source.documentUrls?.length || digest(JSON.stringify(source)) !== plan.sourceConfigurationSha256
 		|| plan.documents.map(document => document.url).join("\n") !== source.documentUrls.join("\n")) {
 		throw new Error("Candidate preparation requires the exact configured manual PDF source and document set.");
@@ -87,6 +89,14 @@ export async function prepareReviewedCandidateFiles(planPath: string, now = Date
 		const extract = options.extractSantaFePdf ?? (async (bytes: Buffer) => extractStateBallotPdfText(bytes, await resolveStateBallotPdfExtractor(), undefined, "raw-bbox", 100));
 		native = readReviewedSantaFeCandidates(await extract(input), source.electionDate);
 		if (native.pageCount !== master.pageCount || native.evidence.some(item => !master.reviewedPages.includes(item.page))) throw new Error("The Santa Fe master requires the exact page count and reviewed candidate pages.");
+	}
+	else if (plan.input.format === "cambridge-candidates-pdf") {
+		const document = plan.documents[0]!;
+		if (source.stateCode !== "MA" || source.id !== `ma-cambridge-${source.electionDate.slice(0, 4)}` || plan.documents.length !== 1 || document.url !== source.url || document.path !== plan.input.path || document.sha256 !== plan.input.sha256 || document.url !== `https://www.cambridgema.gov/-/media/Files/electioncommission/${source.electionDate.slice(0, 4)}stateelection/candidatesincambridgedistricts.pdf`) throw new Error("Native Cambridge preparation requires its exact reviewed candidate PDF.");
+		const extract = options.extractCambridgePdf ?? (async (bytes: Buffer) => extractStateBallotPdfText(bytes, await resolveStateBallotPdfExtractor(), undefined, "layout", 30));
+		const parsed = readCambridgeCandidateDocument(source, await extract(input), createStateCandidateRecord);
+		native = { pageCount: parsed.pageCount, evidence: parsed.records.map((record, index) => ({ record, page: parsed.claims[index]!.page })) };
+		if (native.pageCount !== document.pageCount || native.evidence.some(item => !document.reviewedPages.includes(item.page))) throw new Error("The Cambridge publication requires the exact page count and reviewed candidate pages.");
 	}
 	const rows = native
 		? []

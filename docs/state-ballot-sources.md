@@ -1,5 +1,21 @@
 # Official state candidate records
 
+## District of Columbia
+
+The Board's three general-election publications support automatic discovery,
+collection and external durable import. The October 23 write-in revision adds
+nine names and amends two earlier claims, including an explicit withdrawal.
+The current set contains 445 records: 36 general, 356 ANC and 53 write-in-list
+claims. Three withdrawn claims remain evidence, not active ballot choices.
+
+All 436 prior identities are accounted for; 434 retain every field and ID.
+Ilsy Bu-Orellana's changed party cell is retained literally as `N/A`, not inferred
+affiliation, and Scott Marshall Seamon's October 22 withdrawal is explicit. The
+original reviewed packet remains unchanged and recoverable. Districtwide, ward
+and ANC jurisdictions and the citizenship notice remain distinct. The
+[automation review](audits/2026-10-26-dc-automation.md) covers policy, revisions,
+future-cycle bounds and persistence.
+
 ## Franklin County, Ohio
 
 The county's rolling index supports policy-bound discovery, PDF collection and
@@ -309,7 +325,7 @@ its filing method, withdrawal and inactive-status fields.
 | Indiana | [Election Division general-election workbook](https://www.in.gov/sos/elections/) | Reviewed, dated XLSX snapshot | 7,392 records from 7,394 candidate rows, including 19 declared write-ins and 19 rows without filing dates. Only two identical source-row repeats are removed. Unknown party fields remain unset. Filings are not promoted to certified ballot access; county, township, town, school and other local records are retained for export without inferred voter eligibility. Later measure discovery is separate: portal reuse terms and Allen County robots prevent new canonical capture in the [source-lead review](audits/2026-10-23-indiana-wv-source-leads.md). Original candidate files are unchanged. |
 | Texas | [Secretary of State general certification and declared write-ins](https://www.sos.state.tx.us/elections/laws/2026-november-general-election.shtml) | Reusable policy-bound PDF certification collection; original reviewed data remains compatible | 3,840 records, including seventeen declared write-ins. All 1,395 report pages and 254 counties reconcile with original facts/IDs and PDF hashes exact. A bounded optional Poppler worker follows actual offered general dates/documents; unknown OCR/tickets and changed unexpired document sets require review. County contexts and statewide Fifteenth Court of Appeals stay distinct. The two separate 2026 special elections remain excluded. [Source review](audits/2026-10-25-texas-candidates.md). |
 | Alabama | [Secretary of State certifications and amendments](https://www.sos.alabama.gov/alabama-votes/voter/election-information/2026) | Reviewed, dated PDF snapshot | 300 records: 114 Democratic, 180 Republican and six independent. Reconciles the August 28 and September 2 amendments, including House 51, Senate 25 and special-primary congressional nominees. Party executive-committee elections and superseded attachments are excluded. Late amendments do not establish what was printed on a ballot. |
-| District of Columbia | [Board of Elections general, ANC and write-in lists](https://dcboe.org/elections/2026-elections) | Reviewed, dated PDF snapshot | 436 records, including 44 registered write-ins and two explicitly withdrawn ANC candidates. Districtwide, ward and ANC-SMD jurisdictions remain separate. Federal and shadow-delegation contests require U.S. citizenship; ward/ANC eligibility is not inferred from ZIP or legislative districts. |
+| District of Columbia | [Board of Elections general, ANC and write-in lists](https://dcboe.org/elections/2026-elections) | Policy-bound automatic PDFs; reviewed fallback retained | 445 records from 36 general, 356 ANC and 53 write-in-list claims. Three explicit withdrawals are inactive. The October 23 revision adds nine names and amends two earlier claims. Districtwide, ward and ANC-SMD jurisdictions remain separate. Federal and shadow-delegation contests require U.S. citizenship; ward/ANC eligibility is not inferred from ZIP or legislative districts. |
 | Colorado | [Secretary of State official general list](https://www.sos.state.co.us/pubs/elections/vote/generalCandidates.html) | HTML | Federal, statewide, legislative, judicial, and other official records; strike-through withdrawals and certified write-ins retained. Education/regent district numbers are not assumed to establish voter eligibility. |
 | Delaware | [Department of Elections candidate index](https://elections.delaware.gov/candidates/candidatelist/) | HTML | Federal, statewide, legislative, and local records; filing/qualification status and local county identities retained. Reusable discovery uses explicit dated general-election links, with exact roster dates and complete-table validation. |
 | Florida | [Division of Elections candidate download](https://dos.elections.myflorida.com/candidates/downloadcanlist.asp) | Public form POST, TSV | Reusable discovery reads published general-election codes and revalidates exact state-candidate download controls before collection. State-filed federal, statewide, legislative and other offices retain explicit status. Unopposed, withdrawn, defeated, deceased, removed and unrecognized statuses are not active ballot candidates; future filings do not establish nominations. County/municipal downloads remain outside this family. |

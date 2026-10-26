@@ -4,10 +4,11 @@ External election catalogs opt the automatic candidate repository into reusable
 source families. The current 64 source definitions retain explicit source/state
 allowlists; reusable discovery does not widen an exact-source allowlist.
 
-Thirty-three families across twenty-seven states are supported:
+Thirty-four families across twenty-seven states and D.C. are supported:
 
 | Family | Discovery | Elections |
 | --- | --- | --- |
+| `dc-boe-2026` | [D.C. Board of Elections navigation](https://dcboe.org/) | Actually offered year pages and explicit general-election dates; complete general, ANC and write-in publications, source-status amendments and hash-bound durable imports |
 | `oh-franklin-2026` | [Franklin County election navigation](https://www.vote.franklincountyohio.gov/home) | Actually offered year pages and explicit general-election dates from the complete FWAB notice or general schedule; complete candidate/notice reconciliation, pending future publications and hash-bound durable imports |
 | `id-cassia-2026` | [Cassia County sample-ballot index](https://www.cassia.gov/sample-ballots) | Actual dated general-election sections, complete general and supplemental PDFs, separate questions and retained local applicability limits |
 | `ia-polk-2026` | [Polk County election index](https://www.polkcountyiowa.gov/county-auditor/election/) | Actually offered dated voter-information pages, complete candidate PDFs and one explicitly linked precinct sample for joint-ticket verification; publication-link changes invalidate cached imports without an annual source edit |
@@ -451,6 +452,25 @@ After an election expires, Mississippi can roll its fixed URL to a later
 published date. Existing snapshots retain their original source/date identities;
 new content is never written into the expired election. The fixed URL does not
 provide archive browsing, and this work adds no archival API.
+
+## District of Columbia
+
+`dc-boe-2026` follows actually offered election-year controls and explicit general
+dates. All three general, ANC and registered-write-in publications are required;
+partial future sets stay pending. Primary and special elections remain separate.
+No dates, paths or future candidates are predicted.
+
+The complete policy footer/link inventory and linked accessibility statement
+are bound to reviewed fingerprints. The source-specific reviewed robots 404
+leaves other policy gates intact. Collection uses the maintained absolute-path
+PDF text worker; persisted API reads are converter-independent.
+
+Original PDF hashes and URLs drive refreshes, including same-URL revisions. The
+first automatic replacement retains the exact reviewed envelope. Failed collection,
+backup or persistence preserves accepted data and clocks. Disappearing accepted
+candidates/publications require review. See the [source review](audits/2026-10-26-dc-automation.md)
+for actual 2026 acquisition and separately synthetic future compatibility. Federal/
+shadow citizenship rules and distinct ward/ANC applicability remain intact.
 
 ## Cassia County, Idaho
 

@@ -49,7 +49,11 @@ async function serve(repository: StateBallotRepository) {
 test("county sources are additive and their reviewed configuration retains each original document", () => {
 	assert.equal(stateBallotSources.length, 50);
 	assert.equal(configuredStateBallotSources.length, 64);
-	assert.deepEqual(configuredStateBallotSources.slice(0, 50).filter(source => !["DC", "OH", "ID", "NV", "CT", "GA", "MO", "NJ", "TX", "OR"].includes(source.stateCode)), stateBallotSources.filter(source => !["DC", "OH", "ID", "NV", "CT", "GA", "MO", "NJ", "TX", "OR"].includes(source.stateCode)));
+	assert.deepEqual(configuredStateBallotSources.slice(0, 50).filter(source => !["WI", "DC", "OH", "ID", "NV", "CT", "GA", "MO", "NJ", "TX", "OR"].includes(source.stateCode)), stateBallotSources.filter(source => !["WI", "DC", "OH", "ID", "NV", "CT", "GA", "MO", "NJ", "TX", "OR"].includes(source.stateCode)));
+	const dane = configuredStateBallotSources.find(source => source.id === "wi-town-dane-2026")!;
+	assert.equal(dane.format, "dane-pdf");
+	assert.equal(dane.retrievalPolicy, undefined);
+	assert.deepEqual(legacyReviewedStateBallotSource(dane), stateBallotSources.find(source => source.id === dane.id));
 	const franklin = configuredStateBallotSources.find(source => source.id === "oh-franklin-2026")!;
 	assert.equal(franklin.format, "franklin-pdf");
 	assert.equal(franklin.countyName, "Franklin County");

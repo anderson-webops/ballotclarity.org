@@ -45,7 +45,7 @@ function payload(stateCode: "WI" | "AZ") {
 }
 
 for (const stateCode of ["WI", "AZ"] as const) {
-	test(`${stateCode} is external-only and refuses automatic publisher requests or a bundled fallback`, async () => {
+	test(`${stateCode} reviewed recovery is external-only and refuses publisher requests or a bundled fallback`, async () => {
 		const source = sourceFor(stateCode);
 		assert.equal(source.retrievalPolicy, "manual-snapshot");
 		assert.equal(source.snapshotStorage, "external");
@@ -58,7 +58,7 @@ for (const stateCode of ["WI", "AZ"] as const) {
 			requests += 1;
 			throw new Error("No live source request permitted.");
 		};
-		assert.equal(await createStateBallotRepository({ dataDirectory: null, now: () => now, fetchText }).getSnapshot(stateCode), null);
+		assert.equal(await createStateBallotRepository({ sources: [source], dataDirectory: null, now: () => now, fetchText }).getSnapshot(stateCode), null);
 		await assert.rejects(fetchStateBallotSourceText(source, fetchText), /manually supplied/u);
 		assert.equal(requests, 0);
 	});

@@ -341,7 +341,7 @@ export async function fetchRemoteSourceDocument(source: string, options: Pick<Fe
 	const response = await withTimeout((options.transport ?? requestPinnedRemoteJson)({ address: addresses[0]!.address, document: true, timeoutMs, url, ...(options.etag ? { etag: options.etag } : {}) }), timeoutMs);
 	try {
 		const body = response.statusCode === 200 ? await readBoundedJsonBody(response, maxBytes, timeoutMs, false, true) as Buffer : Buffer.alloc(0);
-		return { status: response.statusCode, body, contentType: typeof response.headers["content-type"] === "string" ? response.headers["content-type"].split(";")[0]!.trim().toLowerCase() : "", etag: typeof response.headers.etag === "string" && /^(?:W\/)?"[\x21\x23-\x7E]{0,500}"$/u.test(response.headers.etag) ? response.headers.etag : undefined };
+		return { status: response.statusCode, body, contentType: typeof response.headers["content-type"] === "string" ? response.headers["content-type"].split(";")[0]!.trim().toLowerCase() : "", etag: typeof response.headers.etag === "string" && /^(?:W\/)?"[\x21\x23-\x7E]{0,500}"$/u.test(response.headers.etag) ? response.headers.etag : undefined, ...(typeof response.headers.location === "string" && /^[\x21-\x7E]{1,2048}$/u.test(response.headers.location) ? { location: response.headers.location } : {}) };
 	}
 	catch (error) {
 		if (error instanceof Error && /byte limit|compressed content encoding/u.test(error.message)) throw new RemoteSourceDocumentPolicyError("The public document exceeds its reviewed body or encoding bounds.");

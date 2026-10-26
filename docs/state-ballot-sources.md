@@ -1,5 +1,23 @@
 # Official state candidate records
 
+## Town of Dane, Wisconsin
+
+`wi-town-dane-2026` supports policy-bound discovery, native sample/notice collection
+and durable external import. All fifteen existing fields and IDs are retained.
+Each of the three school-area samples supplies the same fifteen choices, including
+two joint governor/lieutenant-governor tickets; the separate Type B notice
+independently reconciles all three state-legislative candidates. All eight pages
+remain required, including the Sauk reverse side without a school question.
+
+Actually offered dated articles and PDF links drive compatible future imports.
+Incomplete document sets stay pending; changed policies, unsupported templates,
+conflicting claims and disappearing accepted publications remain review exceptions.
+Same-URL document hashes invalidate cached imports; unchanged imports preserve
+capture clocks. The exact reviewed envelope remains an older-runtime recovery
+target. Native extraction does not infer personal school-area, ward or legislative
+eligibility, turn blank write-ins into people, or promote questions into measures.
+See the [source and automation review](audits/2026-10-26-wisconsin-automation.md).
+
 ## Pulaski County, Arkansas
 
 `ar-pulaski-candidates-2026` now supports policy-bound election discovery and

@@ -38,8 +38,23 @@ test("public document captures preserve binary bytes and never follow redirects"
 		return response({ statusCode: 302, location: "https://private.invalid/file.pdf" });
 	} });
 	assert.equal(redirect.status, 302);
+	assert.equal(redirect.location, "https://private.invalid/file.pdf");
 	assert.equal(redirect.body.length, 0);
 	assert.equal(requests, 1);
+});
+
+test("public document redirect observations expose bounded metadata without following it", async () => {
+	for (const location of ["https://example.com/canonical-policy", "/relative-policy", `https://example.com/${"a".repeat(2048)}`, "https://example.com/\r\nInjected: value"]) {
+		let requests = 0;
+		const result = await fetchRemoteSourceDocument("https://example.com/policy", { allowedHosts: ["example.com"], resolveAddresses: publicResolver, transport: async () => {
+			requests++;
+			return response({ statusCode: 301, location });
+		} });
+		assert.equal(result.status, 301);
+		assert.equal(result.body.length, 0);
+		assert.equal(requests, 1);
+		assert.equal(result.location, /^[\x21-\x7E]{1,2048}$/u.test(location) ? location : undefined);
+	}
 });
 
 test("public document requests reject header injection, private DNS, fragments and oversized bodies", async () => {

@@ -1,5 +1,17 @@
 # Official state candidate records
 
+## Orange County report preparation
+
+The county's actually offered general-election filing proof has a bounded reader
+that reconciles all 430 qualified candidate references in 169 contests across
+188 pages. It preserves party labels, ballot designations, qualification dates,
+vote limits, district labels and separate source civil clocks. Per-contest
+all-filer counts total 449; the unnamed difference is not imported. Contextual
+incumbents do not become candidates. Native-font/rendered fidelity, reusable
+collection and durable import acceptance remain required before enabling this
+family. This preparation changes no accepted data or personal-ballot coverage.
+See `docs/audits/2026-10-27-orange-candidate-proof.md`.
+
 ## Maine House candidate references
 
 `me-house-clerk-2026` follows the House Clerk's independently published candidate

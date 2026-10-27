@@ -28,6 +28,8 @@ function assertWorkbookArchive(bytes: Buffer) {
 	let expanded = 0;
 	const names = new Set<string>();
 	const ranges: [number, number][] = [];
+	const metadata = new Map<string, string>();
+	let printerSettings = false;
 	for (let index = 0; index < entries; index++) {
 		if (offset + 46 > end || bytes.readUInt32LE(offset) !== 0x02014B50) throw workbookError();
 		const flags = bytes.readUInt16LE(offset + 8);
@@ -51,6 +53,7 @@ function assertWorkbookArchive(bytes: Buffer) {
 		}
 		const nameBytes = bytes.subarray(offset + 46, offset + 46 + nameLength);
 		const name = new TextDecoder("utf-8", { fatal: true }).decode(nameBytes);
+		const passivePrinter = process.argv[2] === "boone-candidates" && name === "xl/printerSettings/printerSettings1.bin";
 		if (
 			!name
 			|| name.startsWith("/")
@@ -58,7 +61,8 @@ function assertWorkbookArchive(bytes: Buffer) {
 			|| name.includes("\0")
 			|| name.split("/").some(part => part === ".." || part === ".")
 			|| names.has(name)
-			|| !/\.(?:xml|rels)$/u.test(name)
+			|| (!/\.(?:xml|rels)$/u.test(name) && !passivePrinter)
+			|| (passivePrinter && (!size || size > 16384))
 			|| /vba|activex|embeddings|externallinks|connections/iu.test(name)
 		) {
 			throw workbookError();
@@ -98,8 +102,15 @@ function assertWorkbookArchive(bytes: Buffer) {
 				? bytes.subarray(dataStart, dataEnd)
 				: inflateRawSync(bytes.subarray(dataStart, dataEnd), { maxOutputLength: Math.max(1, size) });
 		if (content.length !== size || crc32(content) !== checksum) throw workbookError();
+		if (passivePrinter) {
+			printerSettings = true;
+			offset += 46 + nameLength + extraLength + commentLength;
+			continue;
+		}
 		const xml = new TextDecoder("utf-8", { fatal: true }).decode(content);
+		if (["[Content_Types].xml", "xl/worksheets/_rels/sheet1.xml.rels"].includes(name)) metadata.set(name, xml);
 		if (/<!DOCTYPE|<!ENTITY/iu.test(xml)) throw workbookError();
+		if (process.argv[2] === "boone-candidates" && /^xl\/(?:worksheets\/sheet1|workbook|styles)\.xml$/u.test(name) && /\bhidden="(?:1|true)"|\bstate="(?:hidden|veryHidden)"|<(?:strike|conditionalFormatting|drawing|legacyDrawing|rPh)[\s/>]/u.test(xml)) throw workbookError();
 		if (/^xl\/worksheets\/sheet\d+\.xml$/u.test(name)) {
 			if (/<f(?:\s|>)/u.test(xml)) throw workbookError();
 			const dimension = /<dimension\s[^>]*\bref="([A-Z]+\d+)(?::([A-Z]+\d+))?"/u.exec(xml);
@@ -122,9 +133,11 @@ function assertWorkbookArchive(bytes: Buffer) {
 	) {
 		throw workbookError();
 	}
+	if (printerSettings && (!(metadata.get("[Content_Types].xml") ?? "").includes("<Default Extension=\"bin\" ContentType=\"application/vnd.openxmlformats-officedocument.spreadsheetml.printerSettings\"/>") || !/<Relationship Id="[\w-]+" Type="http:\/\/schemas\.openxmlformats\.org\/officeDocument\/2006\/relationships\/printerSettings" Target="\.\.\/printerSettings\/printerSettings1\.bin"\/>/u.test(metadata.get("xl/worksheets/_rels/sheet1.xml.rels") ?? ""))) throw workbookError();
 }
 
 async function run() {
+	if (process.argv.length > 3 || (process.argv[2] !== undefined && process.argv[2] !== "boone-candidates")) throw workbookError();
 	const chunks: Buffer[] = [];
 	let length = 0;
 	for await (const chunk of process.stdin) {

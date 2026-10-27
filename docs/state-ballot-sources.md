@@ -366,6 +366,19 @@ were reviewed; no blanket republication permission is claimed. Only factual
 fields are normalized. Independent ballot-measure and reviewed-profile sources
 remain separate.
 
+## Additional collection reviews
+
+The Massachusetts Secretary's linked [terms](https://www.sec.state.ma.us/divisions/terms.htm)
+also prohibit scraping or crawling. The October 27 review establishes a reuse
+and acquisition hold beyond the previously observed protection response. Search
+visibility is not collection permission. Its independent Cambridge source keeps
+its separately reviewed use restriction and existing facts unchanged.
+
+Boone County, Indiana has a [native workbook preparation prerequisite](audits/2026-10-27-boone-candidate-preparation.md)
+for 86 filing entries, including an explicit ballot exclusion. This is not an
+enabled source family or personal ballot. Date/context binding and persistent
+automatic collection/import remain pending; current source counts are unchanged.
+
 ## Colorado candidate collection hold
 
 The Secretary of State's [terms of use](https://www.coloradosos.gov/pubs/info_center/terms.html)

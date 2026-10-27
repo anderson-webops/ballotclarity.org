@@ -19,9 +19,10 @@ export interface StateBallotWorkbookSheet {
 	data: (string | number | boolean | null)[][];
 }
 
-export async function readStateBallotWorkbook(bytes: Buffer): Promise<StateBallotWorkbookSheet[]> {
+export async function readStateBallotWorkbook(bytes: Buffer, profile: "standard" | "boone-candidates" = "standard"): Promise<StateBallotWorkbookSheet[]> {
 	if (
-		bytes.length < 4
+		!["standard", "boone-candidates"].includes(profile)
+		|| bytes.length < 4
 		|| bytes.length > stateBallotWorkbookContract.maximumBytes
 		|| bytes.readUInt32LE(0) !== 0x04034B50
 	) {
@@ -32,7 +33,7 @@ export async function readStateBallotWorkbook(bytes: Buffer): Promise<StateBallo
 		import.meta.url
 	);
 	return new Promise((resolve, reject) => {
-		const child = spawn(process.execPath, ["--max-old-space-size=128", fileURLToPath(worker)], {
+		const child = spawn(process.execPath, ["--max-old-space-size=128", fileURLToPath(worker), ...(profile === "boone-candidates" ? [profile] : [])], {
 			stdio: ["pipe", "pipe", "pipe"],
 			env: { PATH: process.env.PATH, LANG: "C.UTF-8", TZ: "UTC" }
 		});

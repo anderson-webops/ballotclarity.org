@@ -150,6 +150,42 @@ function workbookFiles() {
 	};
 }
 
+function printerWorkbookFiles() {
+	const files: Record<string, string> = workbookFiles();
+	files["[Content_Types].xml"] = files["[Content_Types].xml"]!.replace("</Types>", "<Default Extension=\"bin\" ContentType=\"application/vnd.openxmlformats-officedocument.spreadsheetml.printerSettings\"/></Types>");
+	files["xl/worksheets/_rels/sheet1.xml.rels"] = "<Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\"><Relationship Id=\"print1\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/printerSettings\" Target=\"../printerSettings/printerSettings1.bin\"/></Relationships>";
+	files["xl/printerSettings/printerSettings1.bin"] = "\0".repeat(11400);
+	return files;
+}
+
+test("only the Boone workbook profile ignores bounded internal printer metadata", async () => {
+	const bytes = archive(printerWorkbookFiles());
+	await assert.rejects(readStateBallotWorkbook(bytes), /failed/u);
+	assert.deepEqual(await readStateBallotWorkbook(bytes, "boone-candidates"), capture().workbook.sheets);
+	await assert.rejects(readStateBallotWorkbook(bytes, "unsupported" as "boone-candidates"), /format or size/u);
+});
+
+test("Boone printer metadata requires its exact internal role and keeps binary bounds", async () => {
+	for (const change of [
+		(files: Record<string, string>) => { files["xl/printerSettings/printerSettings1.bin"] = ""; },
+		(files: Record<string, string>) => { files["xl/printerSettings/printerSettings1.bin"] = "x".repeat(16385); },
+		(files: Record<string, string>) => { files["xl/printerSettings/other.bin"] = "not allowed"; },
+		(files: Record<string, string>) => { files["xl/vbaProject.bin"] = "not allowed"; },
+		(files: Record<string, string>) => { delete files["xl/worksheets/_rels/sheet1.xml.rels"]; },
+		(files: Record<string, string>) => { files["[Content_Types].xml"] = files["[Content_Types].xml"]!.replace("Extension=\"bin\"", "Extension=\"other\""); },
+		(files: Record<string, string>) => { files["xl/worksheets/_rels/sheet1.xml.rels"] = files["xl/worksheets/_rels/sheet1.xml.rels"]!.replace(" Id=", " TargetMode=\"External\" Id="); },
+		(files: Record<string, string>) => { files["xl/worksheets/sheet1.xml"] = files["xl/worksheets/sheet1.xml"]!.replace("<sheetData>", "<sheetData><f>1+1</f>"); },
+		(files: Record<string, string>) => { files["xl/worksheets/sheet1.xml"] = files["xl/worksheets/sheet1.xml"]!.replace("<row ", "<row hidden=\"1\" "); },
+		(files: Record<string, string>) => { files["xl/workbook.xml"] = files["xl/workbook.xml"]!.replace("<sheet ", "<sheet state=\"veryHidden\" "); },
+		(files: Record<string, string>) => { files["xl/styles.xml"] = "<styleSheet><fonts><font><strike/></font></fonts></styleSheet>"; },
+		(files: Record<string, string>) => { files["custom.xml"] = "<!DOCTYPE x [<!ENTITY hidden 'value'>]><x/>"; },
+	]) {
+		const files = printerWorkbookFiles();
+		change(files);
+		await assert.rejects(readStateBallotWorkbook(archive(files), "boone-candidates"), /failed/u);
+	}
+});
+
 test("the bounded workbook worker reads all sheets without a host conversion tool", async () => {
 	assert.deepEqual(await readStateBallotWorkbook(archive(workbookFiles())), capture().workbook.sheets);
 	assert.equal(stateBallotWorkbookContract.timeoutMs, 12000);

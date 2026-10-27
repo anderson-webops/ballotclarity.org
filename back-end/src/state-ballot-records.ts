@@ -20,6 +20,7 @@ import { parseEastGreenwichCandidateCapture } from "./state-ballot-east-greenwic
 import { parseFloridaLocalCandidateRecords } from "./state-ballot-florida-local.js";
 import { parseFranklinCandidateCapture } from "./state-ballot-franklin-collection.js";
 import { parseFultonCandidateCapture } from "./state-ballot-fulton.js";
+import { parseGoffstownCandidateCapture } from "./state-ballot-goffstown-collection.js";
 import {
 	stateHtmlAttribute as attribute,
 	stateHtmlDescendants as descendants,
@@ -434,6 +435,7 @@ export function parseStateCandidateRecords(source: StateBallotSource, body: stri
 	if (["reviewed-pdf", "reviewed-xlsx", "reviewed-image"].includes(source.format))
 		throw new Error("Reviewed document sources require a validated snapshot.");
 	let records: StateCandidateRecord[];
+	if (source.format === "goffstown-pdf") return parseGoffstownCandidateCapture(source, body).records;
 	if (source.format === "chicago-pdf") return parseChicagoCandidateCapture(source, body, makeRecord).records;
 	if (source.format === "winnebago-pdf") return parseWinnebagoCandidateCapture(source, body, makeRecord).records;
 	if (source.format === "east-greenwich-pdf") return parseEastGreenwichCandidateCapture(source, body).records;

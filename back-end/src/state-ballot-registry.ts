@@ -3,6 +3,19 @@ import { stateBallotSources } from "./state-ballot-sources.js";
 
 export const additionalStateBallotSources: readonly StateBallotSource[] = [
 	{
+		stateCode: "NH",
+		id: "nh-goffstown-2026",
+		label: "Goffstown general-election sample",
+		electionDate: "2026-11-03",
+		url: "https://www.goffstownnh.gov/325/Elections",
+		pageUrl: "https://www.goffstownnh.gov/325/Elections",
+		format: "goffstown-pdf",
+		snapshotStorage: "external",
+		defaultPriority: -10,
+		withheldDistrictScopes: ["congressional", "state-senate", "state-house"],
+		scopeNotice: "Goffstown sample only; district applicability is unverified.",
+	},
+	{
 		stateCode: "IL",
 		id: "il-chicago-2026",
 		label: "Chicago candidate filings",

@@ -498,16 +498,24 @@ Unfamiliar layouts or office types remain review exceptions. Current facts and
 all supporting/question-only documents reconcile with the original packet.
 See `docs/audits/2026-10-26-idaho-cassia-automation.md` for scope and boundaries.
 
-## Boundaries
+## Goffstown, New Hampshire
 
-Goffstown, New Hampshire has a separately tested discovery module for its rolling
-elections page. It binds the explicit November general-election heading to the
-actual offered, date-matched document URL and rechecks robots and linked policies.
-This is preparation, not an enabled collection family or automatic import. Its
-native PDF text misencodes some quotation marks; candidate/question parsing and
-visible-glyph reconciliation remain required before registration. Existing reviewed
-New Hampshire records are unchanged. See the
-[source review](audits/2026-10-27-goffstown-discovery.md).
+`nh-goffstown-2026` adds offered-date/document discovery, bounded native collection,
+visible-glyph reconciliation and durable automatic imports. Its source-specific
+contract retains printed party columns, fusion entries, House seat limits,
+county-named districts and complete questions. It supplements the existing
+three-town source rather than replacing its records or default priority.
+
+Public readers use stored facts without requesting the publisher or loading PDF
+tools. Changed rules, unrecognized glyphs/layouts, missing accepted publications,
+removed candidates/questions, denials and redirects retain accepted snapshots for
+review. The latest source-agent download self-redirected; that response was not
+followed or treated as successful collection. Earlier verified official bytes
+remain available with their original capture time. Receiving-host access,
+scheduling and acceptance remain separate. See the
+[automation review](audits/2026-10-27-goffstown-automation.md).
+
+## Boundaries
 
 These supported source families are not nationwide future-election automation.
 Other adapters still have cycle-specific discovery or parsing work. Reviewed

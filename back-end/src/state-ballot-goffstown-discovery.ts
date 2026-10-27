@@ -1,7 +1,7 @@
+import type { StateHtmlNode } from "./state-ballot-html.js";
 import { Buffer } from "node:buffer";
 import { createHash } from "node:crypto";
 import { setTimeout as wait } from "node:timers/promises";
-import { electionDocumentPolicyFingerprint } from "./election-document-collection.js";
 import { fetchRemoteSourceDocument } from "./remote-json-source.js";
 import { stateHtmlAttribute as attribute, stateHtmlDescendants as descendants, parseStateHtml, stateHtmlText } from "./state-ballot-html.js";
 
@@ -33,6 +33,7 @@ export function validateGoffstownDocumentUrl(value: string, electionDate: string
 	if (url.href !== value || url.origin !== origin || url.username || url.password || url.port || url.search || url.hash || !new RegExp(`^/DocumentCenter/View/[1-9]\\d{0,8}/Goffstown-SAMPLE-BALLOT---State-General-Election-${date}-PDF$`, "u").test(url.pathname)) return reject();
 }
 export function goffstownPolicyFingerprint(body: Buffer, format: "links" | "region", url: string, region?: string, now = Date.now()) {
+	if (body.byteLength > 2 * 1024 * 1024) return reject();
 	let normalized = new TextDecoder("utf-8", { fatal: true }).decode(body);
 	for (const pattern of [/(1997-)(20\d{2})(\s+CivicPlus\b)/gu, /(2006-)(20\d{2})(\s+Goffstown, NH and its representatives\b)/gu]) {
 		normalized = normalized.replace(pattern, (_match, prefix: string, year: string, suffix: string) => {
@@ -40,7 +41,30 @@ export function goffstownPolicyFingerprint(body: Buffer, format: "links" | "regi
 			return `${prefix}YEAR${suffix}`;
 		});
 	}
-	return electionDocumentPolicyFingerprint(Buffer.from(normalized), format, url, region);
+	const document = parseStateHtml(normalized);
+	const pending = [{ node: document, depth: 0 }];
+	let visited = 0;
+	while (pending.length) {
+		const item = pending.pop()!;
+		if (++visited > 80000 || item.depth > 64) return reject();
+		for (const node of item.node.childNodes ?? []) pending.push({ node, depth: item.depth + 1 });
+	}
+	function text(node: StateHtmlNode): string {
+		if (["script", "style", "noscript", "template", "form"].includes(node.nodeName)) return "";
+		if (node.nodeName === "#text") return node.value ?? "";
+		return (node.nodeName === "a" ? ` ${attribute(node, "href")} ` : "") + (node.childNodes ?? []).map(text).join(" ");
+	}
+	if (format === "links") {
+		const links = [...new Set(descendants(document, node => node.nodeName === "a").filter(node => /privacy|disclaimer|copyright|licen[cs]e|terms|polic(?:y|ies)/iu.test(`${stateHtmlText(node)} ${attribute(node, "href")}`)).map(node => new URL(attribute(node, "href"), url).href))].sort();
+		const footers = descendants(document, node => node.nodeName === "footer" || attribute(node, "role") === "contentinfo" || /(?:^|\s)(?:site-)?footer(?:\s|$)/u.test(attribute(node, "class"))).map(node => text(node).replace(/\s+/gu, " ").trim());
+		return hash(JSON.stringify({ links, footers }));
+	}
+	if (!region || !/^[a-z][\w.-]{0,100}$/iu.test(region)) return reject();
+	const regions = descendants(document, node => attribute(node, "id") === region);
+	if (regions.length !== 1) return reject();
+	const content = text(regions[0]!).replace(/\s+/gu, " ").trim();
+	if (content.length < 50) return reject();
+	return hash(content);
 }
 function checkedRobots(body: string) {
 	if (Buffer.byteLength(body) > 32000 || hash(body.replace(/\r\n?/gu, "\n")) !== goffstownPolicyReceipts.robots) return reject();

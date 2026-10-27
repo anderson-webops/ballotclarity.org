@@ -19,6 +19,7 @@ import { fetchDcCandidateCapture } from "./state-ballot-dc-collection.js";
 import { fetchEastGreenwichCandidateCapture } from "./state-ballot-east-greenwich-collection.js";
 import { fetchFranklinCandidateCapture } from "./state-ballot-franklin-collection.js";
 import { fetchFultonCandidateCapture } from "./state-ballot-fulton.js";
+import { fetchGoffstownCandidateCapture } from "./state-ballot-goffstown-collection.js";
 import { parseStateHtml, stateHtmlAttribute, stateHtmlDescendants, stateHtmlText } from "./state-ballot-html.js";
 import { fetchIowaJohnsonCandidateCapture } from "./state-ballot-iowa-johnson.js";
 import { fetchIowaPolkCandidateCapture } from "./state-ballot-iowa-polk.js";
@@ -183,6 +184,7 @@ export function buildNorthDakotaSearchForm(source: StateBallotSource, body: stri
 }
 
 export async function fetchStateBallotSourceText(source: StateBallotSource, request: SourceTextRequest = fetchRemoteSourceText) {
+	if (source.format === "goffstown-pdf") return fetchGoffstownCandidateCapture(source);
 	if (source.format === "chicago-pdf") return fetchChicagoCandidateCapture(source);
 	if (source.format === "winnebago-pdf") return fetchWinnebagoCandidateCapture(source);
 	if (source.format === "east-greenwich-pdf") return fetchEastGreenwichCandidateCapture(source);

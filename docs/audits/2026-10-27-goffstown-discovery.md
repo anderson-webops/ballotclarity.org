@@ -1,5 +1,9 @@
 # Goffstown election discovery preparation
 
+This records source checkpoint `6f4068b`. The subsequent
+[automation review](2026-10-27-goffstown-automation.md) supersedes its integration
+status; its original access and fidelity observations remain historical evidence.
+
 ## Verified publication
 
 The town's [elections page](https://www.goffstownnh.gov/325/Elections) explicitly

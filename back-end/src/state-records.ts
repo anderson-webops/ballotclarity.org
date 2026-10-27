@@ -7,6 +7,7 @@ import type { PublicStateCandidateRecord, StateQuestionsResponse, StateRecordsRe
 import { normalizePublicHref } from "./public-href.js";
 import { createPublicRequestThrottle } from "./public-request-throttle.js";
 import { validateChicagoDocumentUrl } from "./state-ballot-chicago-collection.js";
+import { validateGoffstownDocumentUrl } from "./state-ballot-goffstown-discovery.js";
 import { isActiveStateCandidateRecord } from "./state-ballot-records.js";
 import { configuredStateBallotSources } from "./state-ballot-registry.js";
 import { orderStateBallotSources } from "./state-ballot-source-state.js";
@@ -16,6 +17,12 @@ import { usStates } from "./us-states.js";
 const scopes = ["all", "statewide", "congressional", "state-senate", "state-house", "local"];
 
 export function stateRecordDocumentLinks(source: StateBallotSource | undefined, snapshot?: StateBallotSnapshot) {
+	if (source?.format === "goffstown-pdf" && snapshot?.documents) {
+		return snapshot.documents.map((document) => {
+			validateGoffstownDocumentUrl(document.url, source.electionDate);
+			return { label: "Sample ballot", url: document.url };
+		});
+	}
 	if (source?.format === "chicago-pdf" && snapshot?.documents) {
 		return snapshot.documents.map((document) => {
 			validateChicagoDocumentUrl(document.url);

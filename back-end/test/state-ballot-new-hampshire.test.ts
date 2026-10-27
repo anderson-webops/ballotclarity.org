@@ -102,5 +102,5 @@ test("New Hampshire management import and restart preserve exact transfer bytes 
 	assert.equal(JSON.parse(imported).records, 10);
 	const expected = serializeStateBallotSnapshots([parseBundledStateSnapshot(source, JSON.stringify(data))]);
 	assert.equal(execFileSync(process.execPath, ["--import", "tsx", exporter, "NH"], { env: environment, encoding: "utf8" }), expected);
-	assert.throws(() => execFileSync(process.execPath, ["--import", "tsx", manager, "refresh", "NH"], { env: environment, encoding: "utf8", stdio: "pipe" }), /manual|reviewed/iu);
+	assert.throws(() => execFileSync(process.execPath, ["--import", "tsx", manager, "refresh", "NH"], { env: { ...environment, STATE_BALLOT_ENABLED_SOURCES: source.id }, encoding: "utf8", stdio: "pipe" }), /manual|reviewed/iu);
 });

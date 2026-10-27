@@ -19,7 +19,8 @@ These normalizations do not replace either original source clock.
 Rendered review also identifies a publisher-layout limitation: some long
 proposal headings are cut off by their printed heading frame. Native text
 and RTF reconciliation do not prove that every extracted character is visible
-in the PDF. This distinction remains part of the worker's pending visual gate.
+in the PDF. The native worker now distinguishes these unused suffixes from
+the meaningful proposal title and citywide scope, which must remain visible.
 
 ## Implemented
 
@@ -44,12 +45,33 @@ election. Discovery uses the mutually consistent visible heading/link labels
 and document election identity, rather than treating that stale attribute as
 the election date.
 
+## Native worker verification
+
+The bounded worker verifies both embedded TrueType programs, all 140 mapped
+characters and every rendered page. Glyph-level approvals survive subset
+inventory changes while retaining outline, composite-component, hint-program
+and character-mapping checks. The publisher's symbolic encoding and unusual
+single-byte Unicode codespace declarations are validated specifically for this
+source; the Chicago profile retains its existing requirements.
+
+All 62,427 rendered nonspace glyphs reconcile with their native fields. Forty
+partially clipped and ten omitted glyphs belong only to the unused trailing
+proposal metadata after the complete title and citywide scope. Candidate
+names, parties, office context, seat counts, proposal wording and choices retain
+full ink and character-sequence checks. Intersections with unused publisher
+column labels are counted separately. The known header seal is bound to its
+reviewed image digest, header placement and size, not republished.
+
+The NYC-only native profile permits 60 pages and four MiB of object inspection.
+The standard 20-page profile remains unchanged. Aggregate SVG output is bounded
+at 32 MiB; public readers will not need these converters after accepted storage.
+
 ## Remaining integration
 
 This reader is preparation, not an enabled collection family or a claim of
-published NYC coverage. The worker still needs bounded font/glyph and visual
-verification, source-policy binding, managed capture/import, durable revision
-recovery and connected route acceptance. Those gates remain intact. Existing
+published NYC coverage. Collection still needs source-policy binding, managed
+capture/import, durable revision recovery and connected route acceptance.
+Those gates remain intact. Existing
 Monroe County data, the canonical data folder and the current server packet
 remain unchanged. Native source files and local reconciliation evidence stay
 outside Git and release assets.

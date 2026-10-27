@@ -35,7 +35,8 @@ export function chicagoUnicodeMappings(body: string) {
 	return mappings;
 }
 
-export function chicagoFontProgram(program: Buffer, mappings: ReadonlyMap<number, string>): ChicagoFontProgram {
+export function chicagoFontProgram(program: Buffer, mappings: ReadonlyMap<number, string>, profile: "chicago" | "nyc" = "chicago"): ChicagoFontProgram {
+	if (!["chicago", "nyc"].includes(profile)) return reject();
 	if (program.length < 64 || program.length > 2 * 1024 * 1024 || program.readUInt32BE(0) !== 0x00010000) return reject();
 	const count = program.readUInt16BE(4);
 	if (!count || count > 64 || 12 + count * 16 > program.length) return reject();
@@ -63,10 +64,11 @@ export function chicagoFontProgram(program: Buffer, mappings: ReadonlyMap<number
 	if (positions.some((position, index) => position > outlines.length || (index > 0 && position < positions[index - 1]!))) return reject();
 	const hints = ["cvt ", "fpgm", "prep", "gasp"].map((name) => {
 		const bytes = tables.get(name);
+		if (!bytes && name === "gasp" && profile === "nyc") return [name, null];
 		if (!bytes || bytes.length > 65536) return reject();
 		return [name, hash(bytes)];
 	});
-	const signature = hash(JSON.stringify({ head: [head.subarray(0, 8).toString("hex"), head.subarray(16, 20).toString("hex"), head.subarray(44, 50).toString("hex")], maximum: hash(maximum), hints }));
+	const signature = hash(JSON.stringify({ head: [head.subarray(0, 8).toString("hex"), head.subarray(16, 20).toString("hex"), head.subarray(44, 50).toString("hex")], ...(profile === "chicago" ? { maximum: hash(maximum) } : {}), hints }));
 	const components: Record<string, Component[]> = {};
 	const checked = new Map<number, string>();
 	function inspect(glyph: number, ancestors: Set<number>): string {

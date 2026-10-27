@@ -12,6 +12,7 @@ import { containsControlCharacters } from "./text-validation.js";
 export const stateBallotPdfCollectorContract = Object.freeze({ configuration: "STATE_BALLOT_PDFTOTEXT", executable: "absolute path to maintained Poppler pdftotext", role: "bounded collection worker; public API may read persisted facts without this tool", maximumPdfBytes: 12 * 1024 * 1024, maximumTextBytes: 4 * 1024 * 1024, timeoutMs: 12000, maximumPages: 50 });
 export const stateBallotNativePdfCollectorContract = Object.freeze({ configurations: ["STATE_BALLOT_PDFTOHTML", "STATE_BALLOT_PDFTOCAIRO", "STATE_BALLOT_QPDF"], role: "bounded collection worker; public readers use persisted facts without native tools or publisher requests", maximumPages: 20, maximumOutputBytes: 4 * 1024 * 1024, timeoutMs: 12000 });
 export const chicagoNativePdfCollectorContract = Object.freeze({ maximumPages: 50, maximumObjectBytes: 16 * 1024 * 1024 });
+export const nycNativePdfCollectorContract = Object.freeze({ maximumPages: 60, maximumObjectBytes: 4 * 1024 * 1024 });
 export class StateBallotPdfCapabilityError extends Error {}
 
 export async function fetchStateBallotPdfDocument(url: string, options: { allowedHosts: string[]; request?: typeof fetchRemoteSourceDocument; extractor: (bytes: Buffer) => Promise<string>; now?: () => number }) {
@@ -91,8 +92,8 @@ export async function resolveStateBallotPdfSvgExtractor(value = process.env.STAT
 	catch { throw new StateBallotPdfCapabilityError("Configure an absolute maintained Poppler pdftocairo path in the bounded grid collection worker."); }
 }
 
-export async function extractStateBallotPdfSvg(bytes: Buffer, executable: string, page: number, timeoutMs: number = stateBallotPdfCollectorContract.timeoutMs) {
-	if (!Number.isInteger(page) || page < 1 || page > stateBallotPdfCollectorContract.maximumPages) throw new Error("The PDF grid page exceeds its reviewed bounds.");
+export async function extractStateBallotPdfSvg(bytes: Buffer, executable: string, page: number, timeoutMs: number = stateBallotPdfCollectorContract.timeoutMs, profile: "standard" | "nyc" = "standard") {
+	if (!["standard", "nyc"].includes(profile) || !Number.isInteger(page) || page < 1 || page > (profile === "nyc" ? nycNativePdfCollectorContract.maximumPages : stateBallotPdfCollectorContract.maximumPages)) throw new Error("The PDF grid page exceeds its reviewed bounds.");
 	return runPdfExtractor(bytes, executable, ["-svg", "-f", String(page), "-l", String(page), "-", "-"], timeoutMs);
 }
 
@@ -106,22 +107,22 @@ export async function resolveStateBallotPdfObjectInspector(value = process.env.S
 	return resolveStateBallotPdfExtractor(value);
 }
 
-export async function extractStateBallotPdfXml(bytes: Buffer, executable: string, profile: "standard" | "chicago" = "standard") {
-	if (!["standard", "chicago"].includes(profile)) throw new Error("The native PDF worker profile is unsupported.");
+export async function extractStateBallotPdfXml(bytes: Buffer, executable: string, profile: "standard" | "chicago" | "nyc" = "standard") {
+	if (!["standard", "chicago", "nyc"].includes(profile)) throw new Error("The native PDF worker profile is unsupported.");
 	const body = await runPdfExtractor(bytes, executable, ["-xml", "-i", "-stdout", "-", "-"], stateBallotPdfCollectorContract.timeoutMs);
 	const pages = [...body.matchAll(/<page\b/gu)].length;
-	if (!pages || pages > (profile === "chicago" ? chicagoNativePdfCollectorContract.maximumPages : stateBallotNativePdfCollectorContract.maximumPages)) throw new Error("The native PDF page inventory exceeds its bounds.");
+	if (!pages || pages > (profile === "chicago" ? chicagoNativePdfCollectorContract.maximumPages : profile === "nyc" ? nycNativePdfCollectorContract.maximumPages : stateBallotNativePdfCollectorContract.maximumPages)) throw new Error("The native PDF page inventory exceeds its bounds.");
 	return body;
 }
 
-export async function inspectStateBallotPdfObjects(bytes: Buffer, executable: string, profile: "standard" | "chicago" = "standard") {
-	if (!["standard", "chicago"].includes(profile)) throw new Error("The native PDF worker profile is unsupported.");
+export async function inspectStateBallotPdfObjects(bytes: Buffer, executable: string, profile: "standard" | "chicago" | "nyc" = "standard") {
+	if (!["standard", "chicago", "nyc"].includes(profile)) throw new Error("The native PDF worker profile is unsupported.");
 	if (!bytes.subarray(0, 5).equals(Buffer.from("%PDF-")) || bytes.length > stateBallotPdfCollectorContract.maximumPdfBytes) throw new Error("The PDF inspection input exceeds its bounds.");
 	const directory = await mkdtemp(join(tmpdir(), "ballot-pdf-inspection-"));
 	try {
 		const filename = join(directory, "document.pdf");
 		await writeFile(filename, bytes, { flag: "wx", mode: 0o600 });
-		return await runPdfExtractor(bytes, executable, ["--json=2", "--json-stream-data=inline", "--decode-level=generalized", filename], stateBallotPdfCollectorContract.timeoutMs, false, profile === "chicago" ? chicagoNativePdfCollectorContract.maximumObjectBytes : stateBallotNativePdfCollectorContract.maximumOutputBytes);
+		return await runPdfExtractor(bytes, executable, ["--json=2", "--json-stream-data=inline", "--decode-level=generalized", filename], stateBallotPdfCollectorContract.timeoutMs, false, profile === "chicago" ? chicagoNativePdfCollectorContract.maximumObjectBytes : profile === "nyc" ? nycNativePdfCollectorContract.maximumObjectBytes : stateBallotNativePdfCollectorContract.maximumOutputBytes);
 	}
 	finally {
 		await rm(directory, { recursive: true, force: true });

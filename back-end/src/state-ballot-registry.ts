@@ -1,9 +1,11 @@
 import type { StateBallotSource } from "./state-ballot-sources.js";
+import { douglasSource } from "./state-ballot-douglas-collection.js";
 import { hamiltonSource } from "./state-ballot-hamilton-collection.js";
 import { pimaSource } from "./state-ballot-pima-collection.js";
 import { stateBallotSources } from "./state-ballot-sources.js";
 
 export const additionalStateBallotSources: readonly StateBallotSource[] = [
+	douglasSource("2026-11-03"),
 	hamiltonSource("2026-11-03"),
 	pimaSource("2026-11-03"),
 	{

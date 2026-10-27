@@ -182,7 +182,7 @@ const documentLinks = computed(() => {
 					<p v-if="data.source.scopeNotice" class="text-sm text-app-muted dark:text-app-muted-dark">
 						{{ data.source.scopeNotice }}
 					</p>
-					<p class="text-sm text-app-muted dark:text-app-muted-dark">
+					<p v-if="!data.source.scopeNotice" class="text-sm text-app-muted dark:text-app-muted-dark">
 						These records are not a personalized ballot.
 					</p>
 				</section>

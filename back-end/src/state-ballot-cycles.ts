@@ -3,6 +3,7 @@ import type { CertifiedPdfElection } from "./state-ballot-certified-pdf.js";
 import type { ChicagoElection } from "./state-ballot-chicago-collection.js";
 import type { DaneElection } from "./state-ballot-dane-collection.js";
 import type { DcElection } from "./state-ballot-dc-collection.js";
+import type { DouglasElection } from "./state-ballot-douglas-collection.js";
 import type { EastGreenwichElection } from "./state-ballot-east-greenwich-collection.js";
 import type { FranklinElection } from "./state-ballot-franklin-collection.js";
 import type { FultonElection } from "./state-ballot-fulton.js";
@@ -36,6 +37,7 @@ import { connecticutDiscoveryUrl, readConnecticutElectionDiscovery, validateConn
 import { dakotaCandidateRosterUrl, dakotaDiscoveryUrl, readDakotaElectionDiscovery } from "./state-ballot-dakota.js";
 import { daneDiscoveryUrl, readDaneDiscovery, validateDaneElection, validateDaneSource } from "./state-ballot-dane-collection.js";
 import { dcDiscoveryUrl, readDcDiscovery, validateDcElection, validateDcSource } from "./state-ballot-dc-collection.js";
+import { douglasDiscoveryUrl, readDouglasCandidateDiscovery, validateDouglasElection, validateDouglasSource } from "./state-ballot-douglas-collection.js";
 import { eastGreenwichDiscoveryUrl, readEastGreenwichDiscovery, validateEastGreenwichElection, validateEastGreenwichSource } from "./state-ballot-east-greenwich-collection.js";
 import { franklinDiscoveryUrl, readFranklinDiscovery, validateFranklinElection, validateFranklinSource } from "./state-ballot-franklin-collection.js";
 import {
@@ -125,6 +127,7 @@ const washington = configuredStateBallotSources.find(source => source.id === "wa
 export const stateBallotCycleDiscoveryUrl = "https://voter.votewa.gov/CandidateList.aspx";
 const digest = (value: string) => createHash("sha256").update(value).digest("hex");
 const cycleFamilies = [
+	{ source: configuredStateBallotSources.find(source => source.id === "ne-douglas-2026")!, format: "douglas-html", discoveryUrl: douglasDiscoveryUrl, prefix: "ne-douglas-general", electionLabel: "General Election", formId: null },
 	{ source: configuredStateBallotSources.find(source => source.id === "tn-hamilton-2026")!, format: "hamilton-html", discoveryUrl: hamiltonDiscoveryUrl, prefix: "tn-hamilton-general", electionLabel: "General Election", formId: null },
 	{ source: configuredStateBallotSources.find(source => source.id === "az-pima-2026")!, format: "pima-pdf", discoveryUrl: pimaDiscoveryUrl, prefix: "az-pima-general", electionLabel: "General Election", formId: null },
 	{ source: configuredStateBallotSources.find(source => source.id === "nh-goffstown-2026")!, format: "goffstown-pdf", discoveryUrl: configuredStateBallotSources.find(source => source.id === "nh-goffstown-2026")!.pageUrl, prefix: "nh-goffstown-general", electionLabel: "General Election", formId: null },
@@ -183,7 +186,11 @@ export function getStateBallotCycleFamily(familyId: string) {
 	const family = cycleFamilies.find(item => item.source.id === familyId);
 	if (!family) throw new Error("The automatic election source family is unsupported or has changed.");
 	let targetValid = family.source.pageUrl === family.source.url;
-	if (family.format === "hamilton-html") {
+	if (family.format === "douglas-html") {
+		validateDouglasSource(family.source);
+		targetValid = true;
+	}
+	else if (family.format === "hamilton-html") {
 		validateHamiltonSource(family.source);
 		targetValid = true;
 	}
@@ -353,7 +360,7 @@ export interface StateBallotCycleCatalog {
 	familyId: string;
 	sourceConfigurationSha256: string;
 	discovery: { url: string; sha256: string; retrievedAt: string };
-	elections: { electionId: string | null; electionDate: string; reports?: VirginiaElection["reports"]; allOfficesUrl?: string | null; documents?: FultonElection["documents"]; pageUrl?: string; pdfDocuments?: CertifiedPdfElection["pdfDocuments"]; workbookUrl?: string; texasDocuments?: TexasElection["texasDocuments"]; oregonDocuments?: OregonElection["oregonDocuments"]; cassiaDocuments?: CassiaElection["cassiaDocuments"]; polkDocuments?: IowaPolkElection["polkDocuments"]; franklinDocuments?: FranklinElection["franklinDocuments"]; hamiltonDocuments?: HamiltonElection["hamiltonDocuments"]; pimaDocuments?: PimaElection["pimaDocuments"]; goffstownDocuments?: GoffstownCandidateElection["goffstownDocuments"]; chicagoDocuments?: ChicagoElection["chicagoDocuments"]; winnebagoDocuments?: WinnebagoElection["winnebagoDocuments"]; eastGreenwichDocuments?: EastGreenwichElection["eastGreenwichDocuments"]; daneDocuments?: DaneElection["daneDocuments"]; pulaskiDocuments?: PulaskiElection["pulaskiDocuments"]; tuscolaDocuments?: TuscolaElection["tuscolaDocuments"]; dcDocuments?: DcElection["dcDocuments"] }[];
+	elections: { electionId: string | null; electionDate: string; reports?: VirginiaElection["reports"]; allOfficesUrl?: string | null; documents?: FultonElection["documents"]; pageUrl?: string; pdfDocuments?: CertifiedPdfElection["pdfDocuments"]; workbookUrl?: string; texasDocuments?: TexasElection["texasDocuments"]; oregonDocuments?: OregonElection["oregonDocuments"]; cassiaDocuments?: CassiaElection["cassiaDocuments"]; polkDocuments?: IowaPolkElection["polkDocuments"]; franklinDocuments?: FranklinElection["franklinDocuments"]; douglasDocuments?: DouglasElection["douglasDocuments"]; hamiltonDocuments?: HamiltonElection["hamiltonDocuments"]; pimaDocuments?: PimaElection["pimaDocuments"]; goffstownDocuments?: GoffstownCandidateElection["goffstownDocuments"]; chicagoDocuments?: ChicagoElection["chicagoDocuments"]; winnebagoDocuments?: WinnebagoElection["winnebagoDocuments"]; eastGreenwichDocuments?: EastGreenwichElection["eastGreenwichDocuments"]; daneDocuments?: DaneElection["daneDocuments"]; pulaskiDocuments?: PulaskiElection["pulaskiDocuments"]; tuscolaDocuments?: TuscolaElection["tuscolaDocuments"]; dcDocuments?: DcElection["dcDocuments"] }[];
 }
 
 function exactKeys(value: unknown, names: string[]): value is Record<string, unknown> {
@@ -442,12 +449,20 @@ export function parseStateBallotCycleCatalog(value: unknown, now = Date.now()): 
 	const discovery = value.discovery;
 	if (!exactKeys(discovery, ["url", "sha256", "retrievedAt"]) || discovery.url !== family.discoveryUrl || typeof discovery.sha256 !== "string" || !/^[a-f0-9]{64}$/u.test(discovery.sha256) || typeof discovery.retrievedAt !== "string" || !Number.isFinite(Date.parse(discovery.retrievedAt)) || new Date(discovery.retrievedAt).toISOString() !== discovery.retrievedAt || Date.parse(discovery.retrievedAt) > now)
 		throw new Error("The election discovery provenance is invalid.");
-	if (!Array.isArray(value.elections) || (!value.elections.length && original.format !== "hamilton-html" && original.format !== "pima-pdf" && original.format !== "chicago-pdf" && original.format !== "goffstown-pdf") || value.elections.length > 100)
+	if (!Array.isArray(value.elections) || (!value.elections.length && original.format !== "douglas-html" && original.format !== "hamilton-html" && original.format !== "pima-pdf" && original.format !== "chicago-pdf" && original.format !== "goffstown-pdf") || value.elections.length > 100)
 		throw new Error("The election cycle catalog exceeds its bounds.");
 	const identifiers = new Set<string>();
 	const dates = new Set<string>();
 	const florida = original.stateCode === "FL";
 	const maryland = original.stateCode === "MD";
+	if (original.format === "douglas-html") {
+		for (const election of value.elections) {
+			validateDouglasElection(election);
+			if (dates.has(election.electionDate)) throw new Error("The Douglas County elections are duplicated.");
+			dates.add(election.electionDate);
+		}
+		return value as unknown as StateBallotCycleCatalog;
+	}
 	if (original.format === "hamilton-html") {
 		for (const election of value.elections) {
 			validateHamiltonElection(election);
@@ -649,6 +664,11 @@ export function discoverWashingtonElectionCycles(body: string, now = Date.now())
 }
 
 export function discoverStateBallotElectionCycles(body: string, familyId: string, now = Date.now()): StateBallotCycleCatalog {
+	if (familyId === "ne-douglas-2026") {
+		const family = getStateBallotCycleFamily(familyId);
+		const capture = readDouglasCandidateDiscovery(body, now);
+		return parseStateBallotCycleCatalog({ schemaVersion: 1, type: "state-ballot-cycle-catalog", familyId, sourceConfigurationSha256: digest(JSON.stringify(family.source)), discovery: { url: family.discoveryUrl, sha256: digest(body), retrievedAt: capture.index.retrievedAt }, elections: capture.elections }, now);
+	}
 	if (familyId === "tn-hamilton-2026") {
 		const family = getStateBallotCycleFamily(familyId);
 		const capture = readHamiltonCandidateDiscovery(body, now);
@@ -788,6 +808,10 @@ export function stateBallotCycleSources(catalog: StateBallotCycleCatalog, now = 
 	parseStateBallotCycleCatalog(catalog, now);
 	const family = getStateBallotCycleFamily(catalog.familyId);
 	return catalog.elections.filter(election => election.electionDate !== family.source.electionDate).map((election) => {
+		if (family.format === "douglas-html") {
+			validateDouglasElection(election);
+			return { ...family.source, id: `${family.prefix}-${election.electionDate}`, label: `${family.source.label} (${election.electionDate.slice(0, 4)})`, electionDate: election.electionDate, pageUrl: election.pageUrl };
+		}
 		if (family.format === "hamilton-html") {
 			validateHamiltonElection(election);
 			return { ...family.source, id: `${family.prefix}-${election.electionDate}`, label: `${family.source.label} (${election.electionDate.slice(0, 4)})`, electionDate: election.electionDate, pageUrl: election.pageUrl };

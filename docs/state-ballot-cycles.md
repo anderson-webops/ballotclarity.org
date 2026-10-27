@@ -9,13 +9,14 @@ converters nor publisher requests. Actual offered future dates generate source
 identities without annual URL edits. See the [collection review](audits/2026-10-27-chicago-automation.md).
 
 External election catalogs opt the automatic candidate repository into reusable
-source families. The current 69 source definitions retain explicit source/state
+source families. The current 70 source definitions retain explicit source/state
 allowlists; reusable discovery does not widen an exact-source allowlist.
 
-Forty-three families across thirty-four states and D.C. are supported:
+Forty-four families across thirty-five states and D.C. are supported:
 
 | Family | Discovery | Elections |
 | --- | --- | --- |
+| `ne-douglas-2026` | [Douglas County candidate index](https://www.votedouglascounty-ne.gov/candidate_info.aspx) | Actual general-election form options, explicit calendar dates and offered profiles; 173 filings with source-bound identities, dates and appropriate party fields. Filing-only records never produce ballot previews. Separate Nebraska SOS permission holds remain intact. See the [source review](audits/2026-10-27-douglas-automation.md). |
 | `tn-hamilton-2026` | [Hamilton County sample ballots](https://elect.hamiltontn.gov/sampleballots.aspx) | Actual offered HTML and mutually agreeing publication dates; complete candidate/question semantics, original choices, policy-bound collection and durable imports. Unfamiliar styles and missing accepted records require review. Williamson County retains its default priority. See the [source review](audits/2026-10-27-hamilton-automation.md). |
 | `az-pima-2026` | [Pima County elections](https://www.pima.gov/elections) | Publicly offered event dates and official candidate/write-in controls; bounded native text and visible-glyph reconciliation, persisted imports, missing-publication and removed-record holds. Unpaired executive entries and uncorroborated judicial rows remain excluded. The broader reviewed Arizona source retains default priority. See the [collection review](audits/2026-10-27-pima-automation.md). |
 | `ri-east-greenwich-2026` | [East Greenwich election index](https://www.eastgreenwichri.gov/192/Voter-Registration-Elections) | Offered dated sections and complete precinct styles, native text/SVG and image checks, pending publication, cached imports and exact reviewed-envelope recovery; personal applicability remains unverified |

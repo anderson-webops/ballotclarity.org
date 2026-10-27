@@ -9,6 +9,7 @@ import { createPublicRequestThrottle } from "./public-request-throttle.js";
 import { validateChicagoDocumentUrl } from "./state-ballot-chicago-collection.js";
 import { validateGoffstownDocumentUrl } from "./state-ballot-goffstown-discovery.js";
 import { validateHamiltonDocumentUrl } from "./state-ballot-hamilton-collection.js";
+import { validateNycDocumentUrl } from "./state-ballot-nyc-collection.js";
 import { validatePimaDocumentUrl } from "./state-ballot-pima-discovery.js";
 import { isActiveStateCandidateRecord } from "./state-ballot-records.js";
 import { configuredStateBallotSources } from "./state-ballot-registry.js";
@@ -35,6 +36,12 @@ export function stateRecordDocumentLinks(source: StateBallotSource | undefined, 
 		return snapshot.documents.map((document) => {
 			validateGoffstownDocumentUrl(document.url, source.electionDate);
 			return { label: "Sample ballot", url: document.url };
+		});
+	}
+	if (source?.format === "nyc-pdf" && snapshot?.documents) {
+		return snapshot.documents.map((document) => {
+			validateNycDocumentUrl(document.url, source.electionDate);
+			return { label: "Candidate and proposal list", url: document.url };
 		});
 	}
 	if (source?.format === "chicago-pdf" && snapshot?.documents) {

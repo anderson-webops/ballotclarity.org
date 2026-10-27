@@ -40,6 +40,7 @@ import {
 	validateMichiganSource
 } from "./state-ballot-michigan.js";
 import { readNorthCarolinaCandidateCapture } from "./state-ballot-north-carolina.js";
+import { parseNycCandidateCapture } from "./state-ballot-nyc-collection.js";
 import { parseOregonCandidateCapture } from "./state-ballot-oregon-collection.js";
 import { parseOregonCandidateRecords } from "./state-ballot-oregon.js";
 import { parsePimaCandidateCapture } from "./state-ballot-pima-collection.js";
@@ -442,6 +443,7 @@ export function parseStateCandidateRecords(source: StateBallotSource, body: stri
 	if (source.format === "hamilton-html") return parseHamiltonCandidateCapture(source, body).records;
 	if (source.format === "pima-pdf") return parsePimaCandidateCapture(source, body).records;
 	if (source.format === "goffstown-pdf") return parseGoffstownCandidateCapture(source, body).records;
+	if (source.format === "nyc-pdf") return parseNycCandidateCapture(source, body, makeRecord).records;
 	if (source.format === "chicago-pdf") return parseChicagoCandidateCapture(source, body, makeRecord).records;
 	if (source.format === "winnebago-pdf") return parseWinnebagoCandidateCapture(source, body, makeRecord).records;
 	if (source.format === "east-greenwich-pdf") return parseEastGreenwichCandidateCapture(source, body).records;

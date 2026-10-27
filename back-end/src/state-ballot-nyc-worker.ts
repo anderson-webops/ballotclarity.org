@@ -28,5 +28,5 @@ export async function verifyNycCandidatePdf(source: StateBallotSource, bytes: Bu
 		pages.push({ page, ...inspectNycVisual(xml, svg, page) });
 		await options.onPage?.(page, svg);
 	}
-	return { xml, result, proof: { schemaVersion: 1 as const, type: "nyc-native-verification" as const, sourceSha256: createHash("sha256").update(bytes).digest("hex"), xmlSha256: createHash("sha256").update(xml).digest("hex"), objectsSha256: createHash("sha256").update(objects).digest("hex"), fonts, pages } };
+	return { xml, objects, result, proof: { schemaVersion: 1 as const, type: "nyc-native-verification" as const, sourceSha256: createHash("sha256").update(bytes).digest("hex"), xmlSha256: createHash("sha256").update(xml).digest("hex"), objectsSha256: createHash("sha256").update(objects).digest("hex"), fonts, pages } };
 }

@@ -66,12 +66,20 @@ The NYC-only native profile permits 60 pages and four MiB of object inspection.
 The standard 20-page profile remains unchanged. Aggregate SVG output is bounded
 at 32 MiB; public readers will not need these converters after accepted storage.
 
-## Remaining integration
+## Managed collection
 
-This reader is preparation, not an enabled collection family or a claim of
-published NYC coverage. Collection still needs source-policy binding, managed
-capture/import, durable revision recovery and connected route acceptance.
-Those gates remain intact. Existing
-Monroe County data, the canonical data folder and the current server packet
-remain unchanged. Native source files and local reconciliation evidence stay
-outside Git and release assets.
+`ny-nyc-2026` registers the independent city family. Four ordinary guarded
+requests recheck robots, the home page, the index and its actually offered PDF.
+The current policy fingerprints and complete native verification bind the
+managed capture. Compatible future general-election dates, including odd years,
+come from offered publications rather than guessed filenames or nominations.
+
+Accepted snapshots retain source and retrieval clocks, document digests, party
+lines, printed seats and proposal page provenance. Backward publication clocks,
+missing accepted candidates or proposals, changed policy and unsupported formats
+hold the update for review. Readers use durable snapshots without collection
+tools or publisher traffic. City preference requires an address-matched New York
+City place; other local applicability remains unverified. Existing Monroe County
+records remain independent. Source delivery, receiving-host data import,
+scheduling and public activation remain separate acceptance boundaries. Native
+source files and local reconciliation evidence stay outside Git and release assets.

@@ -15,14 +15,14 @@ export function nycGeneralDate(value: string) {
 	if (!/^20\d{2}-11-0[2-8]$/u.test(value) || new Date(`${value}T00:00:00Z`).getUTCDay() !== 2) return reject("general-election date");
 	return value;
 }
-function publicationDate(value: string, electionDate: string) {
+export function nycPublicationDate(value: string, electionDate: string) {
 	const found = /^(\d{1,2})\/(\d{1,2})\/(20\d{2}) (\d{1,2}):[0-5]\d:[0-5]\d(?:AM|PM)$/u.exec(value);
 	if (!found || Number(found[4]) < 1 || Number(found[4]) > 12) return reject("printed publication time");
 	const date = `${found[3]}-${found[1]!.padStart(2, "0")}-${found[2]!.padStart(2, "0")}`;
 	if (!Number.isFinite(Date.parse(date)) || new Date(date).toISOString().slice(0, 10) !== date || date > electionDate) return reject("printed publication date");
 	return date;
 }
-function geography(label: string): Pick<StateCandidateValues, "scope" | "district" | "jurisdiction"> {
+export function nycOfficeGeography(label: string): Pick<StateCandidateValues, "scope" | "district" | "jurisdiction"> {
 	if (/^(?:Governor\/Lieutenant Governor|State Comptroller|Attorney General) - Citywide$/u.test(label)) return { scope: "statewide", district: "" };
 	const district = /^(Representative in Congress|State Senator|Member of the Assembly) - ([1-9]\d{0,2})(?:st|nd|rd|th) (Congressional|Senatorial|Assembly) District$/u.exec(label);
 	if (district) {
@@ -51,7 +51,7 @@ export function readNycCandidateDocument(source: StateBallotSource, body: string
 	const cover = pages[0]!;
 	const printed = cover.find(field => field.text.startsWith("Printed On: "))?.text.slice("Printed On: ".length);
 	if (!printed || cover.length !== 3 || cover.filter(field => field.text === "THE CONTEST LIST").length !== 1 || cover.filter(field => field.text === electionLabel).length !== 1 || cover.some(field => !field.bold)) return reject("cover identity");
-	const asOfDate = publicationDate(printed, source.electionDate);
+	const asOfDate = nycPublicationDate(printed, source.electionDate);
 	const lines: Line[] = [];
 	const occurrences: QuestionOccurrence[] = [];
 	const sections: { borough: string; firstPage: number; lastPage: number; printedPages: number; candidateLines: number; questions: number }[] = [];
@@ -122,7 +122,7 @@ export function readNycCandidateDocument(source: StateBallotSource, body: string
 					question = { borough, page, number: Number(proposal[1]), title: proposal[2]!, text: "", choices: [] };
 				}
 				else {
-					geography(office.label);
+					nycOfficeGeography(office.label);
 					if (![...declared].some(root => office!.label.startsWith(`${root} - `))) return reject("undeclared office");
 				}
 				continue;
@@ -169,7 +169,7 @@ export function readNycCandidateDocument(source: StateBallotSource, body: string
 	const claims: (Line & { recordId: string })[] = [];
 	const records: StateCandidateRecord[] = [];
 	for (const { line, parties, lines } of groups.values()) {
-		const record = factory(source, { name: line.name, office: line.officeLabel, party: parties.join(" / "), status: "listed", ...geography(line.officeLabel), seats: line.seats, sourceDistrictLabel: line.officeLabel });
+		const record = factory(source, { name: line.name, office: line.officeLabel, party: parties.join(" / "), status: "listed", ...nycOfficeGeography(line.officeLabel), seats: line.seats, sourceDistrictLabel: line.officeLabel });
 		if (!record) return reject("candidate record");
 		record.sourceStatus = "Tentative";
 		records.push(record);

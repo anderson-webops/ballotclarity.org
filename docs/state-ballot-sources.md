@@ -1,5 +1,24 @@
 # Official state candidate records
 
+## New York City general-election collection
+
+`ny-nyc-2026` follows the Board of Elections' offered general-election dates and
+document links, rather than constructing annual filenames. The current PDF
+contains 256 candidates or explicitly paired tickets, 486 fusion-party and
+borough line claims, and five citywide proposals. Its September 11 tentative
+status and printed clock remain distinct from retrieval. All 44 pages reconcile
+native fields, embedded font programs and visible glyphs. Personal mailing
+addresses stay outside normalized records.
+
+Current robots and publication policies are checked before each collection.
+Changed policies, unknown layouts, backward publication clocks and disappearing
+accepted records or proposals require review while retaining accepted data.
+Future empty availability stays empty. Public candidate and question pages read
+durable facts without converters or publisher requests. Only an address-matched
+city can prefer this source; ZIP, county and IP context do not establish a
+personal ballot or eligibility for local races. Monroe County remains independent.
+See the [source review](audits/2026-10-27-nyc-candidate-reader.md).
+
 ## Chicago general-election collection
 
 `il-chicago-2026` follows actual offered full-list dates and links, checks current

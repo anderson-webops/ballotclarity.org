@@ -1,19 +1,23 @@
 # Official state candidate records
 
-## Orange County report preparation
+## Orange County qualified candidates
 
-The county's actually offered general-election filing proof has a bounded reader
-that reconciles all 430 qualified candidate references in 169 contests across
-188 pages. It preserves party labels, ballot designations, qualification dates,
-vote limits, district labels and separate source civil clocks. Per-contest
-all-filer counts total 449; the unnamed difference is not imported. Contextual
-incumbents do not become candidates. The native worker verifies all 188 original
-pages, five embedded font programs and every rendered character against reviewed
-outlines. Forty-three clipped district metadata labels remain evidence only,
-unapproved for voter matching. Reusable discovery, collection and durable import
-acceptance remain required before enabling this family. This preparation changes
-no accepted data or personal-ballot coverage.
-See `docs/audits/2026-10-27-orange-candidate-proof.md`.
+`ca-orange-2026` follows the county's actual election selector and reviewed
+script mapping, verifies the original report and imports durable facts. Future
+general elections use their offered year and explicit report date, not guessed
+publication availability. An offered report returning 404 remains awaiting
+records; access, policy, format, count and missing-accepted-person changes hold
+for review. Public reads use stored facts without contacting the county.
+
+The current report has 430 qualified entries in 169 contests across 188 pages.
+Party labels, ballot designations, vote limits and scoped IDs remain sourced.
+Per-contest all-filer counts total 449; the unnamed difference is not imported.
+Contextual incumbents do not become candidates. Forty-three clipped district
+labels remain evidence only. Unmapped local and other district-limited offices
+do not establish a voter's ballot. Source headings stay searchable internally
+without duplicating office labels in public summaries. See
+`docs/audits/2026-10-27-orange-automation.md` and the original-page verification in
+`docs/audits/2026-10-27-orange-candidate-proof.md`.
 
 ## Maine House candidate references
 

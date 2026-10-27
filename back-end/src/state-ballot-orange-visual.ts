@@ -169,7 +169,7 @@ export function inspectOrangeProofVisual(native: readonly OrangeProofField[], sv
 		}
 		for (const child of [...node.childNodes ?? []].reverse()) pending.push({ node: child, clipping, color, parent: node });
 	}
-	const clippedSourceDistrictLabels: { left: number; top: number; visibleCharacters: number; sourceCharacters: number }[] = [];
+	const clippedSourceDistrictLabels: { left: number; top: number; visibleCharacters: number; renderedCharacters: number; sourceCharacters: number }[] = [];
 	let nonspaceGlyphs = 0;
 	let fullInkClips = 0;
 	for (const field of fields) {
@@ -195,7 +195,7 @@ export function inspectOrangeProofVisual(native: readonly OrangeProofField[], sv
 			if (contrast(glyph.color, covering?.color ?? [255, 255, 255]) < 4.5 || intersecting.some(item => item.paint > (covering?.paint ?? 0) && contrast(glyph.color, item.color) < 4.5)) return reject(`substantive contrast on page ${page}, font ${field.font}`);
 			nonspaceGlyphs++;
 		}
-		if (cropped || partialInkFrom !== undefined) clippedSourceDistrictLabels.push({ left: field.left, top: field.top, visibleCharacters: partialInkFrom ?? field.glyphs.length, sourceCharacters: characters.length });
+		if (cropped || partialInkFrom !== undefined) clippedSourceDistrictLabels.push({ left: field.left, top: field.top, visibleCharacters: partialInkFrom ?? field.glyphs.length, renderedCharacters: field.glyphs.length, sourceCharacters: characters.length });
 	}
 	const captions = fields.filter(field => field.font === 5);
 	if (reinforcements.length !== captions.length) return reject("caption stroke inventory");

@@ -84,7 +84,7 @@ unchanged. Native tools execute only in the bounded worker; no public route is
 connected to this preparation. Raw fonts, document artwork and rendered pages
 remain outside Git and release assets. Approval catalogs contain hashes only.
 
-## Remaining automation work
+## Collection integration
 
 The pure reader has bounded XML/page/DOM/font contracts and rejects changed
 scope, counts, party labels, qualification fields, missing candidates, unknown
@@ -92,8 +92,10 @@ critical text, hidden or active markup and contradictory continuations.
 Future-election fixtures are synthetic and require the new report's explicit
 date; they do not assert that a future publication is available.
 
-This verified native reader is a preparation dependency for a reusable county
-collector, not an enabled family or a new accepted dataset. Discovery,
-policy-change handling, durable import/restart, public routes and receiving-host
-acceptance remain required before enabling the family. Existing California
-records, configured families and the active pending data packet remain unchanged.
+The `ca-orange-2026` family now consumes this native proof through reviewed
+selector discovery and policy-bound collection. Every stored candidate is
+validated again against its office scope, source status, vote limit, scoped ID
+and civil source clock. See `2026-10-27-orange-automation.md` for discovery,
+persistence and public-reader boundaries. Original preparation alone did not
+enable collection. Receiving-host data acceptance and recurring collection
+remain separate from local validation and source release.

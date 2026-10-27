@@ -10,6 +10,7 @@ import { validateChicagoDocumentUrl } from "./state-ballot-chicago-collection.js
 import { validateGoffstownDocumentUrl } from "./state-ballot-goffstown-discovery.js";
 import { validateHamiltonDocumentUrl } from "./state-ballot-hamilton-collection.js";
 import { validateNycDocumentUrl } from "./state-ballot-nyc-collection.js";
+import { validateOrangeDocumentUrl } from "./state-ballot-orange-discovery.js";
 import { validatePimaDocumentUrl } from "./state-ballot-pima-discovery.js";
 import { isActiveStateCandidateRecord } from "./state-ballot-records.js";
 import { configuredStateBallotSources } from "./state-ballot-registry.js";
@@ -20,6 +21,12 @@ import { usStates } from "./us-states.js";
 const scopes = ["all", "statewide", "congressional", "state-senate", "state-house", "local"];
 
 export function stateRecordDocumentLinks(source: StateBallotSource | undefined, snapshot?: StateBallotSnapshot) {
+	if (source?.format === "orange-pdf" && snapshot?.documents) {
+		return snapshot.documents.map((document) => {
+			validateOrangeDocumentUrl(document.url, source.electionDate);
+			return { label: "Candidate list", url: document.url };
+		});
+	}
 	if (source?.format === "hamilton-html" && snapshot?.documents) {
 		return snapshot.documents.map((document) => {
 			validateHamiltonDocumentUrl(document.url);
@@ -81,7 +88,7 @@ export function parseStateRecordFilters(query: Record<string, unknown>) {
 	return { search: search.toLowerCase(), scope, status, limit, offset };
 }
 
-function publicRecord(record: StateCandidateRecord): PublicStateCandidateRecord {
+function publicRecord(record: StateCandidateRecord, source: StateBallotSource): PublicStateCandidateRecord {
 	const candidateUrl = record.candidateUrl ? normalizePublicHref(record.candidateUrl) : undefined;
 	return {
 		id: record.id,
@@ -97,7 +104,7 @@ function publicRecord(record: StateCandidateRecord): PublicStateCandidateRecord 
 		ballotDesignation: record.ballotDesignation,
 		candidateUrl: candidateUrl && /^https?:\/\//u.test(candidateUrl) ? candidateUrl : undefined,
 		sourceDistrictLabel: record.sourceDistrictLabel,
-		sourceAreaLabel: record.sourceAreaLabel,
+		sourceAreaLabel: source.format === "orange-pdf" ? undefined : record.sourceAreaLabel,
 		termYears: record.termYears,
 		termEnd: record.termEnd,
 		seats: record.seats,
@@ -116,7 +123,7 @@ export function buildStateRecordPage(snapshot: StateBallotSnapshot, filters: Ret
 		inactive: snapshot.records.filter(record => !isActiveStateCandidateRecord(record)).length,
 		offset,
 		limit: filters.limit,
-		records: matching.slice(offset, offset + filters.limit).map(publicRecord),
+		records: matching.slice(offset, offset + filters.limit).map(record => publicRecord(record, snapshot.source)),
 	};
 }
 

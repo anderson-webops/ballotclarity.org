@@ -54,7 +54,7 @@ XML captures stay outside Git and release assets; source code contains hashes on
 
 ## Integration boundary
 
-This component does not enable a Chicago collection family or add public
+This preparation checkpoint did not enable a Chicago collection family or add public
 coverage. The reusable collector still needs actual offered-date/link discovery,
 current policy checks, explicit bounded worker capabilities, durable candidate
 and question storage, revision/disappearance recovery and connected acceptance.
@@ -63,4 +63,7 @@ publication must not be selected merely from a Cook County match. Question
 inventory is not a set of reviewed public measure pages.
 
 The Illinois state-publisher hold remains independent. Current canonical data and
-the pending data handoff remain unchanged by reader preparation.
+the pending data handoff remained unchanged by reader preparation. The subsequent
+[collection integration](2026-10-27-chicago-automation.md) records the reusable
+worker, durable-storage and public-question support; production acceptance is
+separate.

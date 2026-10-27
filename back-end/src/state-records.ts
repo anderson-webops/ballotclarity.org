@@ -3,9 +3,10 @@ import type { PublicRequestThrottle } from "./public-request-throttle.js";
 import type { StateCandidateRecord } from "./state-ballot-records.js";
 import type { StateBallotRepository, StateBallotSnapshot } from "./state-ballot-repository.js";
 import type { StateBallotSource } from "./state-ballot-sources.js";
-import type { PublicStateCandidateRecord, StateRecordsResponse } from "./types/civic.js";
+import type { PublicStateCandidateRecord, StateQuestionsResponse, StateRecordsResponse } from "./types/civic.js";
 import { normalizePublicHref } from "./public-href.js";
 import { createPublicRequestThrottle } from "./public-request-throttle.js";
+import { validateChicagoDocumentUrl } from "./state-ballot-chicago-collection.js";
 import { isActiveStateCandidateRecord } from "./state-ballot-records.js";
 import { configuredStateBallotSources } from "./state-ballot-registry.js";
 import { orderStateBallotSources } from "./state-ballot-source-state.js";
@@ -14,7 +15,13 @@ import { usStates } from "./us-states.js";
 
 const scopes = ["all", "statewide", "congressional", "state-senate", "state-house", "local"];
 
-export function stateRecordDocumentLinks(source: StateBallotSource | undefined) {
+export function stateRecordDocumentLinks(source: StateBallotSource | undefined, snapshot?: StateBallotSnapshot) {
+	if (source?.format === "chicago-pdf" && snapshot?.documents) {
+		return snapshot.documents.map((document) => {
+			validateChicagoDocumentUrl(document.url);
+			return { label: "Candidate list", url: document.url };
+		});
+	}
 	if (!source?.documentLinks) return undefined;
 	if (!source.documentLinks.length || source.documentLinks.length !== source.documentUrls?.length) throw new Error("The candidate source document links are invalid.");
 	return source.documentLinks.map((link, index) => {
@@ -152,10 +159,11 @@ export function registerStateRecordRoutes(app: Express, repository: StateBallotR
 				const selected = sources.find(item => item.id === snapshot.source.id && item.stateCode === stateCode && item.electionDate === snapshot.source.electionDate && (sourceId === undefined || item.id === sourceId));
 				if (!selected || snapshot.source.stateCode !== stateCode || (sourceId === undefined && source && snapshot.source.electionDate !== source.electionDate))
 					throw new Error("The repository returned a mismatched candidate source.");
-				payload.source = { stateCode, stateName: state[1], configured: true, id: selected.id, label: selected.label, url: selected.pageUrl, electionDate: selected.electionDate, scopeNotice: selected.scopeNotice, documentLinks: stateRecordDocumentLinks(selected) };
+				payload.source = { stateCode, stateName: state[1], configured: true, id: selected.id, label: selected.label, url: selected.pageUrl, electionDate: selected.electionDate, scopeNotice: selected.scopeNotice, documentLinks: stateRecordDocumentLinks(selected, snapshot), sourceAsOfDate: snapshot.sourceAsOfDate };
 				Object.assign(payload, buildStateRecordPage(snapshot, filters));
 				payload.available = true;
 				payload.source.retrievedAt = snapshot.retrievedAt;
+				payload.questionCount = snapshot.ballotQuestions?.length;
 			}
 			else if (source && repository?.isAwaitingRecords?.(source.id)) {
 				payload.awaitingRecords = true;
@@ -164,6 +172,30 @@ export function registerStateRecordRoutes(app: Express, repository: StateBallotR
 		}
 		catch {
 			response.status(503).json({ message: "Candidate records are temporarily unavailable." });
+		}
+	});
+	app.get("/api/state-records/:stateCode/questions", async (request, response) => {
+		const stateCode = String(request.params.stateCode).toUpperCase();
+		const state = usStates.find(([code]) => code === stateCode);
+		const sourceId = request.query.source;
+		const id = request.query.id;
+		const source = currentSources().find(source => source.id === sourceId && source.stateCode === stateCode);
+		if (!state || !source || typeof sourceId !== "string" || Object.keys(request.query).some(key => !["source", "id"].includes(key)) || (id !== undefined && (typeof id !== "string" || !/^[a-f0-9]{24}$/u.test(id)))) {
+			response.status(400).json({ message: "The question source or identifier is invalid." });
+			return;
+		}
+		try {
+			const snapshot = repository ? await repository.getSnapshot(stateCode, sourceId) : null;
+			if (snapshot && (snapshot.source.id !== source.id || snapshot.source.stateCode !== stateCode || snapshot.source.electionDate !== source.electionDate)) throw new Error("The question source is mismatched.");
+			const payload: StateQuestionsResponse = {
+				available: Boolean(snapshot?.ballotQuestions?.length),
+				source: { stateCode, stateName: state[1], configured: true, id: source.id, label: source.label, url: source.pageUrl, electionDate: source.electionDate, retrievedAt: snapshot?.retrievedAt, sourceAsOfDate: snapshot?.sourceAsOfDate, documentLinks: stateRecordDocumentLinks(source, snapshot ?? undefined) },
+				questions: snapshot?.ballotQuestions?.filter(question => id === undefined || question.id === id) ?? [],
+			};
+			response.json(payload);
+		}
+		catch {
+			response.status(503).json({ message: "Ballot questions are temporarily unavailable." });
 		}
 	});
 }

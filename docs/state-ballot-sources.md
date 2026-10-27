@@ -1,14 +1,17 @@
 # Official state candidate records
 
-## Chicago document preparation
+## Chicago general-election collection
 
-An unconfigured native reader prepares 261 candidate/ticket/retention records and
-29 audience-specific question occurrences from the city's actually offered
-28-page general-election document. Its September 11 printed status date remains
-separate from retrieval time. Glyph-level font checks support compatible changing
-subsets without accepting changed letter mappings or composite programs. This is
-reader preparation, not an enabled collection family or additional public
-coverage. See the [source and integration boundary](audits/2026-10-26-chicago-native-preparation.md).
+`il-chicago-2026` follows actual offered full-list dates and links, checks current
+city/publication-host policies, and imports 261 candidate/ticket/retention records
+plus 29 audience-specific question occurrences. Printed September 11 unofficial
+status remains distinct from retrieval. Native text, embedded glyph programs and
+all 28 rendered pages reconcile. External snapshots retain vote limits, terms,
+question wording, audiences, choices and page evidence; public reads require no
+converter or publisher request. Candidate records link to the question index and
+individual question pages. Cook County, ZIP and IP alone do not select a Chicago
+ballot or assign local races. Source publication remains separate from production
+import and scheduling. See the [collection review](audits/2026-10-27-chicago-automation.md).
 
 ## Winnebago County, Illinois
 

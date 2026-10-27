@@ -258,13 +258,31 @@ export interface ElectionReferencesResponse {
 export interface StateRecordsResponse {
 	awaitingRecords?: boolean;
 	available: boolean;
-	source: StateRecordState & { id?: string; label?: string; url?: string; retrievedAt?: string; scopeNotice?: string; documentLinks?: { label: string; url: string }[] };
+	source: StateRecordState & { id?: string; label?: string; url?: string; retrievedAt?: string; sourceAsOfDate?: string; scopeNotice?: string; documentLinks?: { label: string; url: string }[] };
+	questionCount?: number;
 	total: number;
 	matched: number;
 	inactive: number;
 	offset: number;
 	limit: number;
 	records: PublicStateCandidateRecord[];
+}
+
+export interface PublicBallotQuestion {
+	id: string;
+	audience: string;
+	title: string;
+	officialText: string;
+	choices: ["Yes", "No"];
+	pages: number[];
+	explicitlyAdvisory: boolean;
+	voterApplicabilityVerified: false;
+}
+
+export interface StateQuestionsResponse {
+	available: boolean;
+	source: StateRecordsResponse["source"];
+	questions: PublicBallotQuestion[];
 }
 
 export interface BallotContentPreviewReferendum {

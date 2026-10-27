@@ -65,6 +65,8 @@ export function serializeStoredStateSnapshot(snapshot: StateBallotSnapshot) {
 		recordCount: snapshot.records.length,
 		records: snapshot.source.stateCode === "MI" && snapshot.source.format === "michigan-html" ? snapshot.records.map(serializeMichiganCandidateRecord) : snapshot.records,
 		...(snapshot.documents ? { documents: snapshot.documents } : {}),
+		...(snapshot.ballotQuestions ? { ballotQuestions: snapshot.ballotQuestions } : {}),
+		...(snapshot.sourceAsOfDate ? { sourceAsOfDate: snapshot.sourceAsOfDate, sourceAsOf: snapshot.sourceAsOf } : {}),
 		...(snapshot.collectionIndexSha256 ? { collectionIndexSha256: snapshot.collectionIndexSha256 } : {}),
 	});
 }

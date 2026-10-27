@@ -4,6 +4,19 @@ import { stateBallotSources } from "./state-ballot-sources.js";
 export const additionalStateBallotSources: readonly StateBallotSource[] = [
 	{
 		stateCode: "IL",
+		id: "il-chicago-2026",
+		label: "Chicago candidate filings",
+		electionDate: "2026-11-03",
+		url: "https://chicagoelections.gov/getting-ballot/candidates",
+		pageUrl: "https://chicagoelections.gov/getting-ballot/candidates",
+		format: "chicago-pdf",
+		snapshotStorage: "external",
+		placeName: "Chicago city",
+		defaultPriority: -20,
+		scopeNotice: "Unofficial filings.",
+	},
+	{
+		stateCode: "IL",
 		id: "il-winnebago-2026",
 		label: "Winnebago County candidates",
 		electionDate: "2026-11-03",

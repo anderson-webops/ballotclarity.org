@@ -11,6 +11,7 @@ import { containsControlCharacters } from "./text-validation.js";
 
 export const stateBallotPdfCollectorContract = Object.freeze({ configuration: "STATE_BALLOT_PDFTOTEXT", executable: "absolute path to maintained Poppler pdftotext", role: "bounded collection worker; public API may read persisted facts without this tool", maximumPdfBytes: 12 * 1024 * 1024, maximumTextBytes: 4 * 1024 * 1024, timeoutMs: 12000, maximumPages: 50 });
 export const stateBallotNativePdfCollectorContract = Object.freeze({ configurations: ["STATE_BALLOT_PDFTOHTML", "STATE_BALLOT_PDFTOCAIRO", "STATE_BALLOT_QPDF"], role: "bounded collection worker; public readers use persisted facts without native tools or publisher requests", maximumPages: 20, maximumOutputBytes: 4 * 1024 * 1024, timeoutMs: 12000 });
+export const chicagoNativePdfCollectorContract = Object.freeze({ maximumPages: 50, maximumObjectBytes: 16 * 1024 * 1024 });
 export class StateBallotPdfCapabilityError extends Error {}
 
 export async function fetchStateBallotPdfDocument(url: string, options: { allowedHosts: string[]; request?: typeof fetchRemoteSourceDocument; extractor: (bytes: Buffer) => Promise<string>; now?: () => number }) {
@@ -30,7 +31,7 @@ export async function resolveStateBallotPdfExtractor(value = process.env.STATE_B
 	}
 	catch { throw new StateBallotPdfCapabilityError("The configured PDF text extractor is unavailable."); }
 }
-async function runPdfExtractor(bytes: Buffer, executable: string, arguments_: string[], timeoutMs: number, streamInput = true) {
+async function runPdfExtractor(bytes: Buffer, executable: string, arguments_: string[], timeoutMs: number, streamInput = true, maximumOutputBytes = stateBallotPdfCollectorContract.maximumTextBytes) {
 	if (!bytes.subarray(0, 5).equals(Buffer.from("%PDF-")) || bytes.length > stateBallotPdfCollectorContract.maximumPdfBytes || !Number.isInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > stateBallotPdfCollectorContract.timeoutMs) throw new Error("The PDF extraction input exceeds its reviewed bounds.");
 	return new Promise<string>((resolve, reject) => {
 		const child = spawn(executable, arguments_, { stdio: ["pipe", "pipe", "pipe"], env: { PATH: process.env.PATH, LANG: "C.UTF-8" } });
@@ -45,7 +46,7 @@ async function runPdfExtractor(bytes: Buffer, executable: string, arguments_: st
 		const timer = setTimeout(fail, timeoutMs);
 		child.stdout.on("data", (chunk: Buffer) => {
 			length += chunk.length;
-			if (length > stateBallotPdfCollectorContract.maximumTextBytes) fail();
+			if (length > maximumOutputBytes) fail();
 			else chunks.push(chunk);
 		});
 		child.stderr.on("data", (chunk: Buffer) => {
@@ -105,20 +106,22 @@ export async function resolveStateBallotPdfObjectInspector(value = process.env.S
 	return resolveStateBallotPdfExtractor(value);
 }
 
-export async function extractStateBallotPdfXml(bytes: Buffer, executable: string) {
+export async function extractStateBallotPdfXml(bytes: Buffer, executable: string, profile: "standard" | "chicago" = "standard") {
+	if (!["standard", "chicago"].includes(profile)) throw new Error("The native PDF worker profile is unsupported.");
 	const body = await runPdfExtractor(bytes, executable, ["-xml", "-i", "-stdout", "-", "-"], stateBallotPdfCollectorContract.timeoutMs);
 	const pages = [...body.matchAll(/<page\b/gu)].length;
-	if (!pages || pages > 20) throw new Error("The native PDF page inventory exceeds its bounds.");
+	if (!pages || pages > (profile === "chicago" ? chicagoNativePdfCollectorContract.maximumPages : stateBallotNativePdfCollectorContract.maximumPages)) throw new Error("The native PDF page inventory exceeds its bounds.");
 	return body;
 }
 
-export async function inspectStateBallotPdfObjects(bytes: Buffer, executable: string) {
+export async function inspectStateBallotPdfObjects(bytes: Buffer, executable: string, profile: "standard" | "chicago" = "standard") {
+	if (!["standard", "chicago"].includes(profile)) throw new Error("The native PDF worker profile is unsupported.");
 	if (!bytes.subarray(0, 5).equals(Buffer.from("%PDF-")) || bytes.length > stateBallotPdfCollectorContract.maximumPdfBytes) throw new Error("The PDF inspection input exceeds its bounds.");
 	const directory = await mkdtemp(join(tmpdir(), "ballot-pdf-inspection-"));
 	try {
 		const filename = join(directory, "document.pdf");
 		await writeFile(filename, bytes, { flag: "wx", mode: 0o600 });
-		return await runPdfExtractor(bytes, executable, ["--json=2", "--json-stream-data=inline", "--decode-level=generalized", filename], stateBallotPdfCollectorContract.timeoutMs, false);
+		return await runPdfExtractor(bytes, executable, ["--json=2", "--json-stream-data=inline", "--decode-level=generalized", filename], stateBallotPdfCollectorContract.timeoutMs, false, profile === "chicago" ? chicagoNativePdfCollectorContract.maximumObjectBytes : stateBallotNativePdfCollectorContract.maximumOutputBytes);
 	}
 	finally {
 		await rm(directory, { recursive: true, force: true });

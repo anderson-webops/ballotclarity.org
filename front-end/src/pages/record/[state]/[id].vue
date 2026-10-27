@@ -173,6 +173,9 @@ const documentLinks = computed(() => {
 					<SafeExternalLink v-for="document in documentLinks" :key="document.url" :href="document.url" class="text-app-accent underline underline-offset-3 block focus-ring">
 						{{ document.label }}
 					</SafeExternalLink>
+					<p v-if="data.source.sourceAsOfDate" class="text-sm text-app-muted dark:text-app-muted-dark">
+						Filings as of {{ formatDate(data.source.sourceAsOfDate) }}
+					</p>
 					<p v-if="data.source.retrievedAt" class="text-sm text-app-muted dark:text-app-muted-dark">
 						Retrieved {{ formatDateTime(data.source.retrievedAt) }}
 					</p>

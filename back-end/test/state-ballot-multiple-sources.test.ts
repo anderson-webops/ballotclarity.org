@@ -48,7 +48,7 @@ async function serve(repository: StateBallotRepository) {
 
 test("county sources are additive and their reviewed configuration retains each original document", () => {
 	assert.equal(stateBallotSources.length, 50);
-	assert.equal(configuredStateBallotSources.length, 65);
+	assert.equal(configuredStateBallotSources.length, 66);
 	assert.deepEqual(configuredStateBallotSources.slice(0, 50).filter(source => !["RI", "WI", "DC", "OH", "ID", "NV", "CT", "GA", "MO", "NJ", "TX", "OR"].includes(source.stateCode)), stateBallotSources.filter(source => !["RI", "WI", "DC", "OH", "ID", "NV", "CT", "GA", "MO", "NJ", "TX", "OR"].includes(source.stateCode)));
 	const eastGreenwich = configuredStateBallotSources.find(source => source.id === "ri-east-greenwich-2026")!;
 	assert.equal(eastGreenwich.format, "east-greenwich-pdf");
@@ -84,17 +84,21 @@ test("county sources are additive and their reviewed configuration retains each 
 	assert.deepEqual({ ...texasOriginalFields, format: "reviewed-pdf", retrievalPolicy: "manual-snapshot" }, stateBallotSources.find(source => source.id === texas.id));
 	assert.equal(configuredStateBallotSources.find(source => source.id === "ga-fulton-2026")!.format, "fulton-pdf");
 	assert.ok(configuredStateBallotSources.filter(source => ["MO", "NJ"].includes(source.stateCode)).every(source => source.format === "certified-pdf"));
-	assert.equal(new Set(configuredStateBallotSources.map(source => source.id)).size, 65);
+	assert.equal(new Set(configuredStateBallotSources.map(source => source.id)).size, 66);
 	assert.equal(new Set(configuredStateBallotSources.map(source => source.stateCode)).size, 51);
 	const reviewed = additionalStateBallotSources.filter(source => source.retrievalPolicy === "manual-snapshot");
 	assert.equal(reviewed.length, 6);
-	assert.equal(additionalStateBallotSources.filter(source => !source.retrievalPolicy).length, 9);
+	assert.equal(additionalStateBallotSources.filter(source => !source.retrievalPolicy).length, 10);
 	const winnebago = configuredStateBallotSources.find(source => source.id === "il-winnebago-2026")!;
 	assert.equal(winnebago.format, "winnebago-pdf");
 	assert.equal(winnebago.snapshotStorage, "external");
 	assert.equal(winnebago.retrievalPolicy, undefined);
 	assert.equal(winnebago.countyName, "Winnebago County");
-	assert.deepEqual(resolveStateBallotConfiguration({ STATE_BALLOT_ENABLED_STATES: "IL" }).sources.map(source => source.id), ["il-sbe-2026", winnebago.id]);
+	const chicago = configuredStateBallotSources.find(source => source.id === "il-chicago-2026")!;
+	assert.equal(chicago.format, "chicago-pdf");
+	assert.equal(chicago.placeName, "Chicago city");
+	assert.equal(chicago.countyName, undefined);
+	assert.deepEqual(resolveStateBallotConfiguration({ STATE_BALLOT_ENABLED_STATES: "IL" }).sources.map(source => source.id), ["il-sbe-2026", chicago.id, winnebago.id]);
 	for (const source of reviewed) {
 		assert.equal(source.retrievalPolicy, "manual-snapshot");
 		assert.equal(source.snapshotStorage, "external");
@@ -152,7 +156,7 @@ test("Pulaski retains Washington County and withholds unverified local and distr
 });
 
 test("state and source allowlists validate independently and intersect without replacing primary entries", () => {
-	assert.equal(resolveStateBallotConfiguration({}).sources.length, 65);
+	assert.equal(resolveStateBallotConfiguration({}).sources.length, 66);
 	assert.equal(resolveStateBallotConfiguration({ STATE_BALLOT_ENABLED_STATES: "NC,NM" }).sources.length, 4);
 	assert.deepEqual(resolveStateBallotConfiguration({ STATE_BALLOT_ENABLED_SOURCES: ` ${county.id},${otherCounty.id} ` }).sources, [county, otherCounty]);
 	assert.deepEqual(resolveStateBallotConfiguration({ STATE_BALLOT_ENABLED_STATES: "LA", STATE_BALLOT_ENABLED_SOURCES: parish.id }).sources, [parish]);

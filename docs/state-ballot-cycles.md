@@ -1,5 +1,13 @@
 # Reusable election cycles
 
+Chicago's `il-chicago-2026` family follows explicitly dated full-list controls on
+the city candidate index, independently of newer filing reports and the blocked
+Illinois state portal. Policy-bound collection persists candidates and questions
+with the printed source date and page evidence. The Chicago native worker profile
+is bounded separately from the standard profile; stored public reads run neither
+converters nor publisher requests. Actual offered future dates generate source
+identities without annual URL edits. See the [collection review](audits/2026-10-27-chicago-automation.md).
+
 External election catalogs opt the automatic candidate repository into reusable
 source families. The current 64 source definitions retain explicit source/state
 allowlists; reusable discovery does not widen an exact-source allowlist.

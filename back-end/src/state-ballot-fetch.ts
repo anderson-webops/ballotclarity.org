@@ -3,6 +3,7 @@ import { Buffer } from "node:buffer";
 import { fetchRemoteSourceText } from "./remote-json-source.js";
 import { fetchCassiaCandidateCapture } from "./state-ballot-cassia.js";
 import { fetchCertifiedPdfCapture } from "./state-ballot-certified-pdf.js";
+import { fetchChicagoCandidateCapture } from "./state-ballot-chicago-collection.js";
 import { fetchClarkCandidateCapture } from "./state-ballot-clark-collection.js";
 import { fetchConnecticutCandidateCapture } from "./state-ballot-connecticut-collection.js";
 import {
@@ -182,6 +183,7 @@ export function buildNorthDakotaSearchForm(source: StateBallotSource, body: stri
 }
 
 export async function fetchStateBallotSourceText(source: StateBallotSource, request: SourceTextRequest = fetchRemoteSourceText) {
+	if (source.format === "chicago-pdf") return fetchChicagoCandidateCapture(source);
 	if (source.format === "winnebago-pdf") return fetchWinnebagoCandidateCapture(source);
 	if (source.format === "east-greenwich-pdf") return fetchEastGreenwichCandidateCapture(source);
 	if (source.format === "dane-pdf") return fetchDaneCandidateCapture(source);

@@ -1,5 +1,6 @@
 import type { CassiaElection } from "./state-ballot-cassia.js";
 import type { CertifiedPdfElection } from "./state-ballot-certified-pdf.js";
+import type { ChicagoElection } from "./state-ballot-chicago-collection.js";
 import type { DaneElection } from "./state-ballot-dane-collection.js";
 import type { DcElection } from "./state-ballot-dc-collection.js";
 import type { EastGreenwichElection } from "./state-ballot-east-greenwich-collection.js";
@@ -26,6 +27,7 @@ import {
 	validateCertifiedPdfElection,
 	validateCertifiedPdfSource
 } from "./state-ballot-certified-pdf.js";
+import { chicagoDiscoveryUrl, readChicagoDiscovery, validateChicagoElection, validateChicagoSource } from "./state-ballot-chicago-collection.js";
 import { clarkDiscoveryUrl, readClarkElectionDiscovery, validateClarkElection, validateClarkSource } from "./state-ballot-clark-discovery.js";
 import { connecticutDiscoveryUrl, readConnecticutElectionDiscovery, validateConnecticutElection, validateConnecticutSource } from "./state-ballot-connecticut-discovery.js";
 import { dakotaCandidateRosterUrl, dakotaDiscoveryUrl, readDakotaElectionDiscovery } from "./state-ballot-dakota.js";
@@ -116,6 +118,7 @@ const washington = configuredStateBallotSources.find(source => source.id === "wa
 export const stateBallotCycleDiscoveryUrl = "https://voter.votewa.gov/CandidateList.aspx";
 const digest = (value: string) => createHash("sha256").update(value).digest("hex");
 const cycleFamilies = [
+	{ source: configuredStateBallotSources.find(source => source.id === "il-chicago-2026")!, format: "chicago-pdf", discoveryUrl: chicagoDiscoveryUrl, prefix: "il-chicago-general", electionLabel: "General Election", formId: null },
 	{ source: configuredStateBallotSources.find(source => source.id === "il-winnebago-2026")!, format: "winnebago-pdf", discoveryUrl: winnebagoDiscoveryUrl, prefix: "il-winnebago-general", electionLabel: "General Election", formId: null },
 	{ source: configuredStateBallotSources.find(source => source.id === "ri-east-greenwich-2026")!, format: "east-greenwich-pdf", discoveryUrl: eastGreenwichDiscoveryUrl, prefix: "ri-east-greenwich-general", electionLabel: "General Election", formId: null },
 	{ source: configuredStateBallotSources.find(source => source.id === "wi-town-dane-2026")!, format: "dane-pdf", discoveryUrl: daneDiscoveryUrl, prefix: "wi-town-dane-general", electionLabel: "General Election", formId: null },
@@ -170,7 +173,11 @@ export function getStateBallotCycleFamily(familyId: string) {
 	const family = cycleFamilies.find(item => item.source.id === familyId);
 	if (!family) throw new Error("The automatic election source family is unsupported or has changed.");
 	let targetValid = family.source.pageUrl === family.source.url;
-	if (family.format === "winnebago-pdf") {
+	if (family.format === "chicago-pdf") {
+		validateChicagoSource(family.source);
+		targetValid = true;
+	}
+	else if (family.format === "winnebago-pdf") {
 		validateWinnebagoSource(family.source);
 		targetValid = true;
 	}
@@ -324,7 +331,7 @@ export interface StateBallotCycleCatalog {
 	familyId: string;
 	sourceConfigurationSha256: string;
 	discovery: { url: string; sha256: string; retrievedAt: string };
-	elections: { electionId: string | null; electionDate: string; reports?: VirginiaElection["reports"]; allOfficesUrl?: string | null; documents?: FultonElection["documents"]; pageUrl?: string; pdfDocuments?: CertifiedPdfElection["pdfDocuments"]; workbookUrl?: string; texasDocuments?: TexasElection["texasDocuments"]; oregonDocuments?: OregonElection["oregonDocuments"]; cassiaDocuments?: CassiaElection["cassiaDocuments"]; polkDocuments?: IowaPolkElection["polkDocuments"]; franklinDocuments?: FranklinElection["franklinDocuments"]; winnebagoDocuments?: WinnebagoElection["winnebagoDocuments"]; eastGreenwichDocuments?: EastGreenwichElection["eastGreenwichDocuments"]; daneDocuments?: DaneElection["daneDocuments"]; pulaskiDocuments?: PulaskiElection["pulaskiDocuments"]; tuscolaDocuments?: TuscolaElection["tuscolaDocuments"]; dcDocuments?: DcElection["dcDocuments"] }[];
+	elections: { electionId: string | null; electionDate: string; reports?: VirginiaElection["reports"]; allOfficesUrl?: string | null; documents?: FultonElection["documents"]; pageUrl?: string; pdfDocuments?: CertifiedPdfElection["pdfDocuments"]; workbookUrl?: string; texasDocuments?: TexasElection["texasDocuments"]; oregonDocuments?: OregonElection["oregonDocuments"]; cassiaDocuments?: CassiaElection["cassiaDocuments"]; polkDocuments?: IowaPolkElection["polkDocuments"]; franklinDocuments?: FranklinElection["franklinDocuments"]; chicagoDocuments?: ChicagoElection["chicagoDocuments"]; winnebagoDocuments?: WinnebagoElection["winnebagoDocuments"]; eastGreenwichDocuments?: EastGreenwichElection["eastGreenwichDocuments"]; daneDocuments?: DaneElection["daneDocuments"]; pulaskiDocuments?: PulaskiElection["pulaskiDocuments"]; tuscolaDocuments?: TuscolaElection["tuscolaDocuments"]; dcDocuments?: DcElection["dcDocuments"] }[];
 }
 
 function exactKeys(value: unknown, names: string[]): value is Record<string, unknown> {
@@ -413,12 +420,20 @@ export function parseStateBallotCycleCatalog(value: unknown, now = Date.now()): 
 	const discovery = value.discovery;
 	if (!exactKeys(discovery, ["url", "sha256", "retrievedAt"]) || discovery.url !== family.discoveryUrl || typeof discovery.sha256 !== "string" || !/^[a-f0-9]{64}$/u.test(discovery.sha256) || typeof discovery.retrievedAt !== "string" || !Number.isFinite(Date.parse(discovery.retrievedAt)) || new Date(discovery.retrievedAt).toISOString() !== discovery.retrievedAt || Date.parse(discovery.retrievedAt) > now)
 		throw new Error("The election discovery provenance is invalid.");
-	if (!Array.isArray(value.elections) || !value.elections.length || value.elections.length > 100)
+	if (!Array.isArray(value.elections) || (!value.elections.length && original.format !== "chicago-pdf") || value.elections.length > 100)
 		throw new Error("The election cycle catalog exceeds its bounds.");
 	const identifiers = new Set<string>();
 	const dates = new Set<string>();
 	const florida = original.stateCode === "FL";
 	const maryland = original.stateCode === "MD";
+	if (original.format === "chicago-pdf") {
+		for (const election of value.elections) {
+			validateChicagoElection(election);
+			if (dates.has(election.electionDate)) throw new Error("The Chicago elections are duplicated.");
+			dates.add(election.electionDate);
+		}
+		return value as unknown as StateBallotCycleCatalog;
+	}
 	if (original.format === "winnebago-pdf") {
 		for (const election of value.elections) {
 			validateWinnebagoElection(election);
@@ -588,6 +603,11 @@ export function discoverWashingtonElectionCycles(body: string, now = Date.now())
 }
 
 export function discoverStateBallotElectionCycles(body: string, familyId: string, now = Date.now()): StateBallotCycleCatalog {
+	if (familyId === "il-chicago-2026") {
+		const family = getStateBallotCycleFamily(familyId);
+		const capture = readChicagoDiscovery(body, now);
+		return parseStateBallotCycleCatalog({ schemaVersion: 1, type: "state-ballot-cycle-catalog", familyId, sourceConfigurationSha256: digest(JSON.stringify(family.source)), discovery: { url: family.discoveryUrl, sha256: digest(body), retrievedAt: capture.index.retrievedAt }, elections: capture.elections }, now);
+	}
 	if (familyId === "il-winnebago-2026") {
 		const family = getStateBallotCycleFamily(familyId);
 		const capture = readWinnebagoDiscovery(body, now);
@@ -707,6 +727,10 @@ export function stateBallotCycleSources(catalog: StateBallotCycleCatalog, now = 
 	parseStateBallotCycleCatalog(catalog, now);
 	const family = getStateBallotCycleFamily(catalog.familyId);
 	return catalog.elections.filter(election => election.electionDate !== family.source.electionDate).map((election) => {
+		if (family.format === "chicago-pdf") {
+			validateChicagoElection(election);
+			return { ...family.source, id: `${family.prefix}-${election.electionDate}`, label: `${family.source.label} (${election.electionDate.slice(0, 4)})`, electionDate: election.electionDate, pageUrl: election.pageUrl };
+		}
 		if (family.format === "winnebago-pdf") {
 			validateWinnebagoElection(election);
 			return { ...family.source, id: `${family.prefix}-${election.electionDate}`, label: `${family.source.label} (${election.electionDate.slice(0, 4)})`, electionDate: election.electionDate, pageUrl: election.pageUrl };

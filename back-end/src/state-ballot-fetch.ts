@@ -48,6 +48,7 @@ import { fetchVermontCandidateCapture } from "./state-ballot-vermont.js";
 import { fetchVirginiaCandidateCapture } from "./state-ballot-virginia.js";
 import { fetchWashingtonCandidatePages } from "./state-ballot-washington.js";
 import { fetchWashoeCandidateCapture } from "./state-ballot-washoe.js";
+import { fetchWinnebagoCandidateCapture } from "./state-ballot-winnebago-collection.js";
 
 type SourceTextRequest = (url: string, options: { allowedHosts: string[]; maxBytes: number; maxRedirects: number; postBody?: string; timeoutMs: number; textEncoding?: "utf-8" | "utf-8-or-windows-1252" }) => Promise<string>;
 
@@ -181,6 +182,7 @@ export function buildNorthDakotaSearchForm(source: StateBallotSource, body: stri
 }
 
 export async function fetchStateBallotSourceText(source: StateBallotSource, request: SourceTextRequest = fetchRemoteSourceText) {
+	if (source.format === "winnebago-pdf") return fetchWinnebagoCandidateCapture(source);
 	if (source.format === "east-greenwich-pdf") return fetchEastGreenwichCandidateCapture(source);
 	if (source.format === "dane-pdf") return fetchDaneCandidateCapture(source);
 	if (source.format === "pulaski-pdf") return fetchPulaskiCandidateCapture(source);

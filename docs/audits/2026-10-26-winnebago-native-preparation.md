@@ -43,20 +43,25 @@ layouts, missing ticket partners, malformed dates, duplicated identities and
 unclassified text require review. Synthetic 2028 tests establish matching-date
 parser reuse, not the existence of a future publication.
 
-## Remaining collection work
+## Historical collection checkpoint
 
-This is an offline reader checkpoint, not a configured source, unattended import,
+This was an offline reader checkpoint, not a configured source, unattended import,
 new public coverage, or an additional reusable collection family. The current
 canonical data and data handoff remain unchanged. The separate write-in list
 contains fourteen people and has not been imported. Its two explicit pairs must
 not be generalized to unpaired governor/lieutenant-governor rows.
 
-Collection integration still needs actual offered-election/link discovery,
+At this checkpoint, collection integration still needed actual offered-election/link discovery,
 reviewed policy fingerprints, bounded local XML extraction with original-PDF
 checks, revision/disappearance handling, durable storage, and connected acceptance.
 Page rendering and source review remain necessary; native text alone is not proof
 of publication fidelity. Raw publications and source-recovery material stay out
 of Git and release assets.
+
+The subsequent [automation review](2026-10-26-winnebago-automation.md) supersedes
+this remaining-work inventory. It integrates discovery, durable collection and
+six write-in records while retaining all 58 regular fields and identities. Six
+unpaired executive entries remain held rather than being paired by inference.
 
 Other independent leads were assessed separately: Chicago offers a dated full
 general-election list as well as a newer *filing* report, which must not be

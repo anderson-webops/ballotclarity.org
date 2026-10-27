@@ -48,6 +48,7 @@ import { parseVermontCandidateCapture } from "./state-ballot-vermont.js";
 import { parseVirginiaCandidateRecords, validateVirginiaSource } from "./state-ballot-virginia.js";
 import { parseWashingtonCandidateRecords } from "./state-ballot-washington.js";
 import { parseWashoeCandidateCapture } from "./state-ballot-washoe.js";
+import { parseWinnebagoCandidateCapture } from "./state-ballot-winnebago-collection.js";
 
 export type StateCandidateStatus = "listed" | "filed" | "qualified" | "write-in" | "withdrawn" | "disqualified" | "defeated" | "elected" | "unopposed" | "inactive" | "unrecognized";
 export type StateContestScope = "statewide" | "congressional" | "state-senate" | "state-house" | "local";
@@ -432,6 +433,7 @@ export function parseStateCandidateRecords(source: StateBallotSource, body: stri
 	if (["reviewed-pdf", "reviewed-xlsx", "reviewed-image"].includes(source.format))
 		throw new Error("Reviewed document sources require a validated snapshot.");
 	let records: StateCandidateRecord[];
+	if (source.format === "winnebago-pdf") return parseWinnebagoCandidateCapture(source, body, makeRecord).records;
 	if (source.format === "east-greenwich-pdf") return parseEastGreenwichCandidateCapture(source, body).records;
 	if (source.format === "dane-pdf") return parseDaneCandidateCapture(source, body).records;
 	if (source.format === "pulaski-pdf") return parsePulaskiCandidateCapture(source, body).records;

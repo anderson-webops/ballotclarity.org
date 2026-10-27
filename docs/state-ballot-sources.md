@@ -1,5 +1,29 @@
 # Official state candidate records
 
+## Winnebago County, Illinois
+
+`il-winnebago-2026` adds an independent county-published collection family. The
+offered candidate list and write-in supplement supply 64 records: the original
+58 regular records remain exact, and six write-in records preserve only printed
+ticket pairings. Six unpaired executive write-ins remain held for review. County,
+regional and judicial records are not assigned to voters from a ZIP or county
+match alone. This does not change the Illinois state publisher's access hold.
+
+Actually offered general-election dates and links drive compatible future
+imports. Robots, index policy and linked accessibility content are checked before
+PDF acquisition. Bounded native XML, PDF font/object inspection and rendered
+glyph/ink checks reconcile all six pages. Changed policies, unknown layouts,
+disappearing accepted publications and lost identities require review; same-URL
+hash changes refresh durable imports without changing unchanged capture clocks.
+
+Collection workers require maintained Poppler `pdftohtml` and `pdftocairo`, plus
+qpdf. The executable settings are `STATE_BALLOT_PDFTOHTML`,
+`STATE_BALLOT_PDFTOCAIRO` and `STATE_BALLOT_QPDF`. Public/API reads use only stored
+normalized snapshots, observe later imports without restart and require none of
+these tools or publisher requests. Raw publications, XML and embedded font data
+remain outside Git and release assets. See the
+[collection review](audits/2026-10-26-winnebago-automation.md).
+
 ## East Greenwich, Rhode Island
 
 `ri-east-greenwich-2026` supports policy-bound dated-section discovery, native

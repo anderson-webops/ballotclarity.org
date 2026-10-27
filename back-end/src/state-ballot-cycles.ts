@@ -12,6 +12,7 @@ import type { StateBallotSource } from "./state-ballot-sources.js";
 import type { TexasElection } from "./state-ballot-texas.js";
 import type { TuscolaElection } from "./state-ballot-tuscola-collection.js";
 import type { VirginiaElection } from "./state-ballot-virginia.js";
+import type { WinnebagoElection } from "./state-ballot-winnebago-collection.js";
 import { Buffer } from "node:buffer";
 import { createHash, randomUUID } from "node:crypto";
 import { closeSync, constants, fstatSync, openSync, readSync, realpathSync } from "node:fs";
@@ -107,6 +108,7 @@ import {
 	virginiaDiscoveryUrl
 } from "./state-ballot-virginia.js";
 import { readWashoeDiscovery, validateWashoeElection, validateWashoeSource, washoeDiscoveryUrl } from "./state-ballot-washoe.js";
+import { readWinnebagoDiscovery, validateWinnebagoElection, validateWinnebagoSource, winnebagoDiscoveryUrl } from "./state-ballot-winnebago-collection.js";
 import { containsControlCharacters } from "./text-validation.js";
 
 const maximumBytes = 128 * 1024;
@@ -114,6 +116,7 @@ const washington = configuredStateBallotSources.find(source => source.id === "wa
 export const stateBallotCycleDiscoveryUrl = "https://voter.votewa.gov/CandidateList.aspx";
 const digest = (value: string) => createHash("sha256").update(value).digest("hex");
 const cycleFamilies = [
+	{ source: configuredStateBallotSources.find(source => source.id === "il-winnebago-2026")!, format: "winnebago-pdf", discoveryUrl: winnebagoDiscoveryUrl, prefix: "il-winnebago-general", electionLabel: "General Election", formId: null },
 	{ source: configuredStateBallotSources.find(source => source.id === "ri-east-greenwich-2026")!, format: "east-greenwich-pdf", discoveryUrl: eastGreenwichDiscoveryUrl, prefix: "ri-east-greenwich-general", electionLabel: "General Election", formId: null },
 	{ source: configuredStateBallotSources.find(source => source.id === "wi-town-dane-2026")!, format: "dane-pdf", discoveryUrl: daneDiscoveryUrl, prefix: "wi-town-dane-general", electionLabel: "General Election", formId: null },
 	{ source: configuredStateBallotSources.find(source => source.id === "ar-pulaski-candidates-2026")!, format: "pulaski-pdf", discoveryUrl: pulaskiDiscoveryUrl, prefix: "ar-pulaski-general", electionLabel: "General Election", formId: null },
@@ -167,7 +170,11 @@ export function getStateBallotCycleFamily(familyId: string) {
 	const family = cycleFamilies.find(item => item.source.id === familyId);
 	if (!family) throw new Error("The automatic election source family is unsupported or has changed.");
 	let targetValid = family.source.pageUrl === family.source.url;
-	if (family.format === "east-greenwich-pdf") {
+	if (family.format === "winnebago-pdf") {
+		validateWinnebagoSource(family.source);
+		targetValid = true;
+	}
+	else if (family.format === "east-greenwich-pdf") {
 		validateEastGreenwichSource(family.source);
 		targetValid = true;
 	}
@@ -317,7 +324,7 @@ export interface StateBallotCycleCatalog {
 	familyId: string;
 	sourceConfigurationSha256: string;
 	discovery: { url: string; sha256: string; retrievedAt: string };
-	elections: { electionId: string | null; electionDate: string; reports?: VirginiaElection["reports"]; allOfficesUrl?: string | null; documents?: FultonElection["documents"]; pageUrl?: string; pdfDocuments?: CertifiedPdfElection["pdfDocuments"]; workbookUrl?: string; texasDocuments?: TexasElection["texasDocuments"]; oregonDocuments?: OregonElection["oregonDocuments"]; cassiaDocuments?: CassiaElection["cassiaDocuments"]; polkDocuments?: IowaPolkElection["polkDocuments"]; franklinDocuments?: FranklinElection["franklinDocuments"]; eastGreenwichDocuments?: EastGreenwichElection["eastGreenwichDocuments"]; daneDocuments?: DaneElection["daneDocuments"]; pulaskiDocuments?: PulaskiElection["pulaskiDocuments"]; tuscolaDocuments?: TuscolaElection["tuscolaDocuments"]; dcDocuments?: DcElection["dcDocuments"] }[];
+	elections: { electionId: string | null; electionDate: string; reports?: VirginiaElection["reports"]; allOfficesUrl?: string | null; documents?: FultonElection["documents"]; pageUrl?: string; pdfDocuments?: CertifiedPdfElection["pdfDocuments"]; workbookUrl?: string; texasDocuments?: TexasElection["texasDocuments"]; oregonDocuments?: OregonElection["oregonDocuments"]; cassiaDocuments?: CassiaElection["cassiaDocuments"]; polkDocuments?: IowaPolkElection["polkDocuments"]; franklinDocuments?: FranklinElection["franklinDocuments"]; winnebagoDocuments?: WinnebagoElection["winnebagoDocuments"]; eastGreenwichDocuments?: EastGreenwichElection["eastGreenwichDocuments"]; daneDocuments?: DaneElection["daneDocuments"]; pulaskiDocuments?: PulaskiElection["pulaskiDocuments"]; tuscolaDocuments?: TuscolaElection["tuscolaDocuments"]; dcDocuments?: DcElection["dcDocuments"] }[];
 }
 
 function exactKeys(value: unknown, names: string[]): value is Record<string, unknown> {
@@ -412,6 +419,14 @@ export function parseStateBallotCycleCatalog(value: unknown, now = Date.now()): 
 	const dates = new Set<string>();
 	const florida = original.stateCode === "FL";
 	const maryland = original.stateCode === "MD";
+	if (original.format === "winnebago-pdf") {
+		for (const election of value.elections) {
+			validateWinnebagoElection(election);
+			if (dates.has(election.electionDate)) throw new Error("The Winnebago elections are duplicated.");
+			dates.add(election.electionDate);
+		}
+		return value as unknown as StateBallotCycleCatalog;
+	}
 	if (original.format === "east-greenwich-pdf") {
 		for (const election of value.elections) {
 			validateEastGreenwichElection(election);
@@ -573,6 +588,11 @@ export function discoverWashingtonElectionCycles(body: string, now = Date.now())
 }
 
 export function discoverStateBallotElectionCycles(body: string, familyId: string, now = Date.now()): StateBallotCycleCatalog {
+	if (familyId === "il-winnebago-2026") {
+		const family = getStateBallotCycleFamily(familyId);
+		const capture = readWinnebagoDiscovery(body, now);
+		return parseStateBallotCycleCatalog({ schemaVersion: 1, type: "state-ballot-cycle-catalog", familyId, sourceConfigurationSha256: digest(JSON.stringify(family.source)), discovery: { url: family.discoveryUrl, sha256: digest(body), retrievedAt: capture.index.retrievedAt }, elections: capture.elections }, now);
+	}
 	if (familyId === "ri-east-greenwich-2026") {
 		const family = getStateBallotCycleFamily(familyId);
 		const capture = readEastGreenwichDiscovery(body, now);
@@ -687,6 +707,10 @@ export function stateBallotCycleSources(catalog: StateBallotCycleCatalog, now = 
 	parseStateBallotCycleCatalog(catalog, now);
 	const family = getStateBallotCycleFamily(catalog.familyId);
 	return catalog.elections.filter(election => election.electionDate !== family.source.electionDate).map((election) => {
+		if (family.format === "winnebago-pdf") {
+			validateWinnebagoElection(election);
+			return { ...family.source, id: `${family.prefix}-${election.electionDate}`, label: `${family.source.label} (${election.electionDate.slice(0, 4)})`, electionDate: election.electionDate, pageUrl: election.pageUrl };
+		}
 		if (family.format === "east-greenwich-pdf") {
 			validateEastGreenwichElection(election);
 			return { ...family.source, id: `${family.prefix}-${election.electionDate}`, label: `${family.source.label} (${election.electionDate.slice(0, 4)})`, electionDate: election.electionDate, pageUrl: election.pageUrl };

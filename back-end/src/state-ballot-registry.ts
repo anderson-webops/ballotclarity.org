@@ -3,6 +3,18 @@ import { stateBallotSources } from "./state-ballot-sources.js";
 
 export const additionalStateBallotSources: readonly StateBallotSource[] = [
 	{
+		stateCode: "IL",
+		id: "il-winnebago-2026",
+		label: "Winnebago County candidates",
+		electionDate: "2026-11-03",
+		url: "https://wincoil.gov/departments/clerks-office/election-information",
+		pageUrl: "https://wincoil.gov/departments/clerks-office/election-information",
+		format: "winnebago-pdf",
+		snapshotStorage: "external",
+		countyName: "Winnebago County",
+		scopeNotice: "Unpaired governor and lieutenant-governor write-ins are omitted.",
+	},
+	{
 		stateCode: "NC",
 		id: "nc-brunswick-samples-2026",
 		label: "Brunswick County general-election samples",

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { PublicBallotQuestion, StateQuestionsResponse } from "~/types/civic";
+import { ballotQuestionHeading } from "~/utils/ballot-question-heading";
 
 const route = useRoute();
 const api = useApiClient();
@@ -35,6 +36,9 @@ usePageSeo({ title: "Ballot questions", description: "Official question wording 
 			<p v-if="data?.source.sourceAsOfDate" class="text-sm text-app-muted dark:text-app-muted-dark">
 				Source as of {{ formatDate(data.source.sourceAsOfDate) }}
 			</p>
+			<time v-if="data?.source.electionDate" :datetime="data.source.electionDate" class="text-sm text-app-muted dark:text-app-muted-dark">
+				{{ formatDate(data.source.electionDate) }}
+			</time>
 		</header>
 		<p v-if="pending" role="status">
 			Loading questions…
@@ -50,15 +54,18 @@ usePageSeo({ title: "Ballot questions", description: "Official question wording 
 		</p>
 		<div v-else class="space-y-16">
 			<section v-for="group in groups" :key="group.audience" class="space-y-5">
-				<h2 class="text-2xl text-app-ink font-serif dark:text-app-text-dark">
+				<h2 v-if="groups.length > 1" class="text-2xl text-app-ink font-serif dark:text-app-text-dark">
 					{{ group.label }}
 				</h2>
 				<ul class="border-t border-app-line divide-app-line divide-y dark:border-app-line-dark dark:divide-app-line-dark" aria-label="Ballot questions">
 					<li v-for="question in group.questions" :key="question.id">
 						<NuxtLink :to="{ path: `/question/${state}/${question.id}`, query: { source } }" class="py-7 rounded-md block focus-ring">
-							<h3 class="text-xl text-app-ink font-serif dark:text-app-text-dark">
-								{{ question.title }}
-							</h3>
+							<component :is="groups.length > 1 ? 'h3' : 'h2'" class="text-xl text-app-ink font-serif dark:text-app-text-dark">
+								{{ ballotQuestionHeading(question.title).title }}
+							</component>
+							<p v-if="ballotQuestionHeading(question.title).reference" class="text-sm text-app-muted mt-3 dark:text-app-muted-dark">
+								{{ ballotQuestionHeading(question.title).reference }}
+							</p>
 						</NuxtLink>
 					</li>
 				</ul>

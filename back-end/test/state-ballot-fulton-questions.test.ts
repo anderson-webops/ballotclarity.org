@@ -1,16 +1,19 @@
 import type { StateBallotSource } from "../src/state-ballot-sources.js";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
+import { once } from "node:events";
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
+import express from "express";
 import { fultonQuestionId, parseFultonBallotQuestions, readFultonSnapshotMetadata } from "../src/state-ballot-fulton-questions.js";
 import { fultonPolicyReceipts, fultonScopeUrl, parseFultonCandidateCapture } from "../src/state-ballot-fulton.js";
 import { configuredStateBallotSources } from "../src/state-ballot-registry.js";
 import { createStateBallotRepository } from "../src/state-ballot-repository.js";
 import { parseBundledStateSnapshot } from "../src/state-ballot-snapshot.js";
 import { createStateBallotStorage, serializeStoredStateSnapshot } from "../src/state-ballot-storage.js";
+import { registerStateRecordRoutes } from "../src/state-records.js";
 
 const source = configuredStateBallotSources.find(item => item.id === "ga-fulton-2026")!;
 const timestamp = "2026-10-27T12:00:00.000Z";
@@ -62,7 +65,21 @@ test("Fulton multiline headings and paragraph wrapping preserve the printed word
 	const text = `City of Synthetic Town\nRedevelopment Powers\nYes or No\n${column("Shall the city exercise the specified powers,")}\n\n${column("as amended from time to time?")}\f`;
 	const question = parseFultonBallotQuestions(source, text)[0]!;
 	assert.equal(question.title, "City of Synthetic Town Redevelopment Powers");
-	assert.equal(question.officialText, "Shall the city exercise the specified powers, as amended from time to time?");
+	assert.equal(question.officialText, "Shall the city exercise the specified powers,\n\nas amended from time to time?");
+});
+
+test("Fulton preserves source sections without changing existing flattened question identities", () => {
+	const text = `Synthetic school tax\nYes or No\n${column("Shall the school tax be renewed:")}\n\n${column("For the Synthetic School District:")}\n${column("fund the specified capital projects?")}\f`;
+	const question = parseFultonBallotQuestions(source, text)[0]!;
+	const flattened = { ...question, officialText: question.officialText.replace(/\n\n/gu, " ") };
+	const previousId = hash(JSON.stringify([source.id, source.electionDate, question.audience, question.title, flattened.officialText, question.pages])).slice(0, 24);
+	assert.equal(question.id, previousId);
+	assert.equal(question.id, fultonQuestionId(source, flattened));
+	assert.equal(question.officialText.split("\n\n").length, 2);
+	assert.deepEqual(readFultonSnapshotMetadata(source, { retrievalPolicy: "automatic", ballotQuestions: [question] }), { ballotQuestions: [question] });
+	assert.deepEqual(readFultonSnapshotMetadata(source, { retrievalPolicy: "automatic", ballotQuestions: [flattened] }), { ballotQuestions: [flattened] });
+	for (const officialText of [question.officialText.replace("\n\n", "\n"), question.officialText.replace("\n\n", "\n\n\n"), question.officialText.replace("\n\n", "\t")])
+		assert.throws(() => readFultonSnapshotMetadata(source, { retrievalPolicy: "automatic", ballotQuestions: [{ ...question, officialText }] }));
 });
 
 test("Fulton question layout changes, partial text, unknown choices and cross-page continuations fail closed", () => {
@@ -122,4 +139,46 @@ test("Fulton accepted question imports survive cold restart and failed changes p
 	assert.deepEqual((await changed.getSnapshot("GA"))!.ballotQuestions, imported!.ballotQuestions);
 	assert.equal((await changed.inspectSources!())[0]!.status, "error");
 	assert.equal(await readFile(path, "utf8"), before);
+});
+
+test("Fulton question records remain browsable independently of reviewed measure dossiers", async (context) => {
+	const directory = await mkdtemp(join(tmpdir(), "ballot-fulton-question-routes-"));
+	context.after(() => rm(directory, { recursive: true }));
+	const parsed = parseFultonCandidateCapture(source, capture());
+	await createStateBallotStorage(directory).write({ source, ...parsed });
+	let requests = 0;
+	const now = Date.parse(timestamp) + 1000;
+	const repository = createStateBallotRepository({ sources: [source], dataDirectory: directory, now: () => now, fetchText: async () => {
+		requests++;
+		throw new Error("Question browsing uses retained records.");
+	} });
+	const app = express();
+	registerStateRecordRoutes(app, repository, undefined, () => now);
+	const server = app.listen(0, "127.0.0.1");
+	await once(server, "listening");
+	context.after(() => new Promise<void>((resolve) => {
+		server.closeAllConnections();
+		server.close(() => resolve());
+	}));
+	const address = server.address();
+	assert.ok(address && typeof address !== "string");
+	const origin = `http://127.0.0.1:${address.port}`;
+	const records = await (await fetch(`${origin}/api/state-records/GA?source=${source.id}`)).json();
+	assert.equal(records.total, 2);
+	assert.equal(records.questionCount, 5);
+	const response = await fetch(`${origin}/api/state-records/GA/questions?source=${source.id}`);
+	assert.equal(response.status, 200);
+	assert.equal(response.headers.get("cache-control"), "no-store");
+	const payload = await response.json();
+	assert.deepEqual(payload.questions, parsed.ballotQuestions);
+	assert.equal(payload.source.documentLinks[0].url, source.documentUrls![0]);
+	for (const question of parsed.ballotQuestions) {
+		const detail = await (await fetch(`${origin}/api/state-records/GA/questions?source=${source.id}&id=${question.id}`)).json();
+		assert.deepEqual(detail.questions, [question]);
+		assert.equal(detail.questions[0].voterApplicabilityVerified, false);
+		assert.equal(detail.measures, undefined);
+	}
+	assert.equal((await fetch(`${origin}/api/state-records/WA/questions?source=${source.id}`)).status, 400);
+	assert.equal((await fetch(`${origin}/api/state-records/GA/questions?source=${source.id}&id=invalid`)).status, 400);
+	assert.equal(requests, 0);
 });

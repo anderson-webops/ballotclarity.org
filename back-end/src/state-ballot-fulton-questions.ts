@@ -10,7 +10,7 @@ const clean = (value: string) => value.replace(/\s+/gu, " ").trim();
 const fields = "audience,choices,explicitlyAdvisory,id,officialText,pages,title,voterApplicabilityVerified";
 
 export function fultonQuestionId(source: StateBallotSource, question: Omit<StateBallotQuestion, "id">) {
-	return createHash("sha256").update(JSON.stringify([source.id, source.electionDate, question.audience, question.title, question.officialText, question.pages])).digest("hex").slice(0, 24);
+	return createHash("sha256").update(JSON.stringify([source.id, source.electionDate, question.audience, question.title, clean(question.officialText), question.pages])).digest("hex").slice(0, 24);
 }
 
 function precedingHeading(lines: string[], marker: number) {
@@ -29,11 +29,21 @@ function precedingHeading(lines: string[], marker: number) {
 }
 
 function questionParagraph(lines: string[]) {
+	const paragraphs: string[] = [];
+	let paragraph: string[] = [];
 	for (const line of lines) {
 		if (line.trim() && (line.search(/\S/u) < 40 || line.search(/\S/u) > 150))
 			throw new Error("The Fulton question text columns require review.");
+		if (line.trim()) {
+			paragraph.push(line.trim());
+		}
+		else if (paragraph.length) {
+			paragraphs.push(clean(paragraph.join(" ")));
+			paragraph = [];
+		}
 	}
-	return clean(lines.join(" "));
+	if (paragraph.length) paragraphs.push(clean(paragraph.join(" ")));
+	return paragraphs.join("\n\n");
 }
 
 export function parseFultonBallotQuestions(source: StateBallotSource, body: string): StateBallotQuestion[] {
@@ -68,14 +78,15 @@ export function parseFultonBallotQuestions(source: StateBallotSource, body: stri
 			const next = markers[position + 1];
 			const end = next ? headings[position + 1]?.start ?? next.index : lines.length;
 			const remainder = questionParagraph(lines.slice(marker.index + 1, end));
-			const printed = clean(`${marker.first} ${remainder}`);
+			const printed = `${marker.first}${marker.first && remainder ? " " : ""}${remainder}`.trim();
 			let title = headings[position]?.title ?? "";
 			let officialText = printed;
 			if (marker.constitutional) {
-				const match = /^([1-9]\d?\. .+?) (House Resolution [1-9]\d{0,5}) Ga\. L\. 20\d{2}, p\. \d+ ([“"]?Shall .+)$/u.exec(printed);
+				const match = /^([1-9]\d?\. .+?) (House Resolution [1-9]\d{0,5}) Ga\. L\. 20\d{2}, p\. \d+ ([“"]?Shall .+)$/u.exec(clean(printed));
 				if (!match || !/Constitution of Georgia/u.test(match[3]!)) throw new Error("The Fulton constitutional question wording requires review.");
 				title = `${match[1]} (${match[2]})`;
-				officialText = match[3]!;
+				officialText = printed.slice(printed.search(/[“"]?Shall /u));
+				if (clean(officialText) !== match[3]) throw new Error("The Fulton constitutional question paragraphs require review.");
 			}
 			else if (!officialText.startsWith("Shall ")) {
 				throw new Error("The Fulton question text has no recognized opening.");
@@ -101,7 +112,7 @@ export function readFultonSnapshotMetadata(source: StateBallotSource, data: Reco
 		if (!value || typeof value !== "object" || Array.isArray(value) || Object.keys(value).sort().join(",") !== fields)
 			throw new Error("The stored Fulton question fields require review.");
 		const question = value as StateBallotQuestion;
-		if (question.audience !== audience || typeof question.title !== "string" || question.title.length < 5 || question.title.length > 350 || typeof question.officialText !== "string" || question.officialText.length < 20 || question.officialText.length > 20000 || containsControlCharacters(question.title + question.officialText) || question.officialText.includes("\uFFFD") || JSON.stringify(question.choices) !== "[\"Yes\",\"No\"]" || question.explicitlyAdvisory !== /\badvisory\b/iu.test(question.title) || question.voterApplicabilityVerified !== false || !Array.isArray(question.pages) || question.pages.length !== 1 || !Number.isInteger(question.pages[0]) || question.pages[0]! < 1 || question.pages[0]! > 100 || question.id !== fultonQuestionId(source, question))
+		if (question.audience !== audience || typeof question.title !== "string" || question.title.length < 5 || question.title.length > 350 || typeof question.officialText !== "string" || question.officialText.length < 20 || question.officialText.length > 20000 || containsControlCharacters(question.title + question.officialText.replace(/\n\n/gu, "")) || question.officialText.includes("\uFFFD") || JSON.stringify(question.choices) !== "[\"Yes\",\"No\"]" || question.explicitlyAdvisory !== /\badvisory\b/iu.test(question.title) || question.voterApplicabilityVerified !== false || !Array.isArray(question.pages) || question.pages.length !== 1 || !Number.isInteger(question.pages[0]) || question.pages[0]! < 1 || question.pages[0]! > 100 || question.id !== fultonQuestionId(source, question))
 			throw new Error("The stored Fulton question wording, identity or applicability requires review.");
 		return question;
 	});

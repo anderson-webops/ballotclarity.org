@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { StateQuestionsResponse } from "~/types/civic";
+import { ballotQuestionHeading } from "~/utils/ballot-question-heading";
 
 const route = useRoute();
 const api = useApiClient();
@@ -13,6 +14,7 @@ const { data, error, pending, refresh } = await useAsyncData(
 	{ default: () => null }
 );
 const question = computed(() => data.value?.questions.find(item => item.id === id.value));
+const heading = computed(() => ballotQuestionHeading(question.value?.title ?? "Ballot question"));
 const paragraphs = computed(() => question.value?.officialText.split(/\n\s*\n/u).filter(Boolean) ?? []);
 const backTo = computed(() => ({ path: "/questions", query: { state: state.value, source: source.value } }));
 const documentUrl = computed(() => {
@@ -20,7 +22,7 @@ const documentUrl = computed(() => {
 	const url = link?.url;
 	return url && question.value ? `${url}#${link?.pageAnchor === "page-" ? "page-" : "page="}${question.value.pages[0]}` : data.value?.source.url;
 });
-usePageSeo({ title: question.value?.title ?? "Ballot question", description: "Official ballot question wording and source.", path: route.path, robots: "noindex,follow" });
+usePageSeo({ title: heading.value.title, description: "Official ballot question wording and source.", path: route.path, robots: "noindex,follow" });
 </script>
 
 <template>
@@ -42,8 +44,11 @@ usePageSeo({ title: question.value?.title ?? "Ballot question", description: "Of
 		<template v-else>
 			<header class="space-y-5">
 				<h1 class="text-3xl text-app-ink font-serif dark:text-app-text-dark">
-					{{ question.title }}
+					{{ heading.title }}
 				</h1>
+				<p v-if="heading.reference" class="text-sm text-app-muted dark:text-app-muted-dark">
+					{{ heading.reference }}
+				</p>
 				<p class="text-app-muted dark:text-app-muted-dark">
 					{{ question.audience }}
 				</p>

@@ -155,7 +155,7 @@ test("an unpublished election stays empty and accepted content cannot be replace
 });
 test("source and future cycle contracts are additive and preserve Williamson County", () => {
 	assert.deepEqual(configuredStateBallotSources.find(item => item.id === source.id), source);
-	assert.equal(configuredStateBallotSources.length, 71);
+	assert.equal(configuredStateBallotSources.length, 72);
 	assert(configuredStateBallotSources.some(item => item.stateCode === "TN" && item.id !== source.id));
 	validateHamiltonSource(source);
 	for (const change of [{ countyName: "Other County" }, { retrievalPolicy: "manual-snapshot" }, { url: "https://other.example" }, { electionDate: "2026-11-04" }])

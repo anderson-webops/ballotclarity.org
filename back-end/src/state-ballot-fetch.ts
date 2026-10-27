@@ -27,6 +27,7 @@ import { fetchIowaJohnsonCandidateCapture } from "./state-ballot-iowa-johnson.js
 import { fetchIowaPolkCandidateCapture } from "./state-ballot-iowa-polk.js";
 import { fetchKansasCandidateCapture } from "./state-ballot-kansas.js";
 import { fetchKentuckyCandidateCapture } from "./state-ballot-kentucky.js";
+import { fetchMaineHouseCapture } from "./state-ballot-maine-house.js";
 import {
 	fetchMarylandCycleDiscovery,
 	marylandSourceElectionId,
@@ -192,6 +193,7 @@ export async function fetchStateBallotSourceText(source: StateBallotSource, requ
 	if (source.format === "hamilton-html") return fetchHamiltonCandidateCapture(source);
 	if (source.format === "pima-pdf") return fetchPimaCandidateCapture(source);
 	if (source.format === "goffstown-pdf") return fetchGoffstownCandidateCapture(source);
+	if (source.format === "maine-house-html") return fetchMaineHouseCapture(source);
 	if (source.format === "nyc-pdf") return fetchNycCandidateCapture(source);
 	if (source.format === "chicago-pdf") return fetchChicagoCandidateCapture(source);
 	if (source.format === "winnebago-pdf") return fetchWinnebagoCandidateCapture(source);

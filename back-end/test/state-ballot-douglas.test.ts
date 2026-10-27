@@ -236,7 +236,7 @@ test("managed imports are idempotent and disappearing accepted publications reta
 });
 test("the county family is independent of the held statewide publisher and validates exact scope", () => {
 	assert.deepEqual(configuredStateBallotSources.find(item => item.id === source.id), source);
-	assert.equal(configuredStateBallotSources.length, 71);
+	assert.equal(configuredStateBallotSources.length, 72);
 	assert.equal(configuredStateBallotSources.find(item => item.id === "ne-sos-2026")!.retrievalPolicy, "manual-snapshot");
 	assert.equal(getStateBallotCycleFamily(source.id).prefix, "ne-douglas-general");
 	for (const change of [{ countyName: "Other County" }, { stateCode: "IA" }, { snapshotStorage: undefined }, { retrievalPolicy: "manual-snapshot" }]) assert.throws(() => validateDouglasSource({ ...source, ...change } as StateBallotSource), /review/u);

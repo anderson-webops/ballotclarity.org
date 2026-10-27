@@ -1,5 +1,23 @@
 # Official state candidate records
 
+## Maine House candidate references
+
+`me-house-clerk-2026` follows the House Clerk's independently published candidate
+list: 276 names across all 151 House districts, five source party labels and 95
+explicit incumbency markers. These are unofficial references, not certified
+ballot choices. Their intrinsic ballot-preview exclusion also applies to future
+cycles. The existing reviewed town ballots remain independent.
+
+Discovery binds the posted legislature number to the constitutional biennial
+election schedule using the reviewed 133rd Legislature/2026 anchor. Dates are
+calculated from that rule, not printed election dates on the candidate page.
+Robots, linked policies and the exact constitutional source are checked before
+collection. Changed rules, policies, unknown layouts or missing accepted people
+require review. The page's regenerating header clock is not a publication date;
+semantic fingerprints avoid importing unchanged facts repeatedly. Public reads
+use stored facts without publisher requests. See the
+[collection review](audits/2026-10-27-maine-house-automation.md).
+
 ## New York City general-election collection
 
 `ny-nyc-2026` follows the Board of Elections' offered general-election dates and

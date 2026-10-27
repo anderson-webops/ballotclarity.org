@@ -1,5 +1,15 @@
 # Official state candidate records
 
+## Chicago document preparation
+
+An unconfigured native reader prepares 261 candidate/ticket/retention records and
+29 audience-specific question occurrences from the city's actually offered
+28-page general-election document. Its September 11 printed status date remains
+separate from retrieval time. Glyph-level font checks support compatible changing
+subsets without accepting changed letter mappings or composite programs. This is
+reader preparation, not an enabled collection family or additional public
+coverage. See the [source and integration boundary](audits/2026-10-26-chicago-native-preparation.md).
+
 ## Winnebago County, Illinois
 
 `il-winnebago-2026` adds an independent county-published collection family. The

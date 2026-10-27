@@ -1,11 +1,12 @@
 import type { StateCandidateValues } from "./state-ballot-additional-records.js";
+import type { StateBallotQuestion as ChicagoQuestion } from "./state-ballot-questions.js";
 import type { StateCandidateRecord } from "./state-ballot-records.js";
 import type { StateBallotSource } from "./state-ballot-sources.js";
 import { createHash } from "node:crypto";
 import { chicagoNativePages, chicagoNativeRows } from "./state-ballot-chicago-native.js";
 
 type Factory = (source: StateBallotSource, values: StateCandidateValues) => StateCandidateRecord | null;
-export interface ChicagoQuestion { id: string; audience: string; title: string; officialText: string; choices: ["Yes", "No"]; pages: number[]; explicitlyAdvisory: boolean; voterApplicabilityVerified: false }
+export type { StateBallotQuestion as ChicagoQuestion } from "./state-ballot-questions.js";
 function reject(detail: string): never {
 	throw new Error(`The Chicago ${detail} requires review.`);
 }

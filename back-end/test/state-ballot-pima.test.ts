@@ -137,7 +137,7 @@ test("native XML bounds, font family, styling and visible geometry fail closed",
 test("source and cycle contracts are additive, bind exact assets, and preserve the broader Arizona default", () => {
 	const configured = configuredStateBallotSources.find(item => item.id === source.id)!;
 	assert.deepEqual(configured, source);
-	assert.equal(configuredStateBallotSources.length, 68);
+	assert.equal(configuredStateBallotSources.length, 69);
 	assert.equal(configuredStateBallotSources.find(item => item.stateCode === "AZ" && item.id !== source.id)!.retrievalPolicy, "manual-snapshot");
 	validatePimaSource(source);
 	for (const change of [{ countyName: "Other County" }, { retrievalPolicy: "manual-snapshot" }, { url: "https://other.example/" }, { electionDate: "2026-11-04" }])

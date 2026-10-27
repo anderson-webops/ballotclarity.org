@@ -258,7 +258,7 @@ export interface ElectionReferencesResponse {
 export interface StateRecordsResponse {
 	awaitingRecords?: boolean;
 	available: boolean;
-	source: StateRecordState & { id?: string; label?: string; url?: string; retrievedAt?: string; sourceAsOfDate?: string; scopeNotice?: string; documentLinks?: { label: string; url: string }[] };
+	source: StateRecordState & { id?: string; label?: string; url?: string; retrievedAt?: string; sourceAsOfDate?: string; scopeNotice?: string; documentLinks?: { label: string; url: string; pageAnchor?: "page-" }[] };
 	questionCount?: number;
 	total: number;
 	matched: number;
@@ -273,7 +273,7 @@ export interface PublicBallotQuestion {
 	audience: string;
 	title: string;
 	officialText: string;
-	choices: ["Yes", "No"];
+	choices: [string, string];
 	pages: number[];
 	explicitlyAdvisory: boolean;
 	voterApplicabilityVerified: false;

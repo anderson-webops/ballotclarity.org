@@ -13,10 +13,12 @@ const { data, error, pending, refresh } = await useAsyncData(
 	{ default: () => null }
 );
 const question = computed(() => data.value?.questions.find(item => item.id === id.value));
+const paragraphs = computed(() => question.value?.officialText.split(/\n\s*\n/u).filter(Boolean) ?? []);
 const backTo = computed(() => ({ path: "/questions", query: { state: state.value, source: source.value } }));
 const documentUrl = computed(() => {
-	const url = data.value?.source.documentLinks?.[0]?.url;
-	return url && question.value ? `${url}#page=${question.value.pages[0]}` : data.value?.source.url;
+	const link = data.value?.source.documentLinks?.[0];
+	const url = link?.url;
+	return url && question.value ? `${url}#${link?.pageAnchor === "page-" ? "page-" : "page="}${question.value.pages[0]}` : data.value?.source.url;
 });
 usePageSeo({ title: question.value?.title ?? "Ballot question", description: "Official ballot question wording and source.", path: route.path, robots: "noindex,follow" });
 </script>
@@ -50,9 +52,11 @@ usePageSeo({ title: question.value?.title ?? "Ballot question", description: "Of
 				</p>
 			</header>
 			<section class="space-y-6" aria-label="Official question">
-				<p class="text-lg leading-8">
-					{{ question.officialText }}
-				</p>
+				<div class="text-lg leading-8 space-y-6">
+					<p v-for="(paragraph, index) in paragraphs" :key="index">
+						{{ paragraph }}
+					</p>
+				</div>
 				<ul class="pl-5 list-disc space-y-2" aria-label="Ballot choices">
 					<li v-for="choice in question.choices" :key="choice">
 						{{ choice }}

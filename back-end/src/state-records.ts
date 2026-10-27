@@ -8,6 +8,7 @@ import { normalizePublicHref } from "./public-href.js";
 import { createPublicRequestThrottle } from "./public-request-throttle.js";
 import { validateChicagoDocumentUrl } from "./state-ballot-chicago-collection.js";
 import { validateGoffstownDocumentUrl } from "./state-ballot-goffstown-discovery.js";
+import { validateHamiltonDocumentUrl } from "./state-ballot-hamilton-collection.js";
 import { validatePimaDocumentUrl } from "./state-ballot-pima-discovery.js";
 import { isActiveStateCandidateRecord } from "./state-ballot-records.js";
 import { configuredStateBallotSources } from "./state-ballot-registry.js";
@@ -18,6 +19,12 @@ import { usStates } from "./us-states.js";
 const scopes = ["all", "statewide", "congressional", "state-senate", "state-house", "local"];
 
 export function stateRecordDocumentLinks(source: StateBallotSource | undefined, snapshot?: StateBallotSnapshot) {
+	if (source?.format === "hamilton-html" && snapshot?.documents) {
+		return snapshot.documents.map((document) => {
+			validateHamiltonDocumentUrl(document.url);
+			return { label: "Sample ballot", url: document.url, pageAnchor: "page-" as const };
+		});
+	}
 	if (source?.format === "pima-pdf" && snapshot?.documents) {
 		return snapshot.documents.map((document, index) => {
 			validatePimaDocumentUrl(document.url);

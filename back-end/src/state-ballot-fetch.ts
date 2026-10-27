@@ -34,6 +34,7 @@ import {
 import { fetchMichiganCandidateCapture } from "./state-ballot-michigan.js";
 import { fetchNorthCarolinaCandidateCapture } from "./state-ballot-north-carolina.js";
 import { fetchOregonCandidateCapture } from "./state-ballot-oregon-collection.js";
+import { fetchPimaCandidateCapture } from "./state-ballot-pima-collection.js";
 import { buildSouthCarolinaSearchForm } from "./state-ballot-portal-records.js";
 import { fetchPulaskiCandidateCapture } from "./state-ballot-pulaski-collection.js";
 import {
@@ -184,6 +185,7 @@ export function buildNorthDakotaSearchForm(source: StateBallotSource, body: stri
 }
 
 export async function fetchStateBallotSourceText(source: StateBallotSource, request: SourceTextRequest = fetchRemoteSourceText) {
+	if (source.format === "pima-pdf") return fetchPimaCandidateCapture(source);
 	if (source.format === "goffstown-pdf") return fetchGoffstownCandidateCapture(source);
 	if (source.format === "chicago-pdf") return fetchChicagoCandidateCapture(source);
 	if (source.format === "winnebago-pdf") return fetchWinnebagoCandidateCapture(source);

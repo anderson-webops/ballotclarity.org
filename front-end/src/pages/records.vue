@@ -136,7 +136,7 @@ usePageSeo({
 					<p>{{ data.source.scopeNotice }}</p>
 				</aside>
 				<p v-if="data.source.sourceAsOfDate" class="basis-full">
-					Filings as of {{ formatDate(data.source.sourceAsOfDate) }}
+					As of {{ formatDate(data.source.sourceAsOfDate) }}
 				</p>
 				<NuxtLink v-if="data.questionCount" :to="{ path: '/questions', query: { state: filters.stateCode, source: data.source.id } }" class="text-app-accent py-2 rounded-md underline underline-offset-3 min-h-11 inline-block focus-ring">
 					Questions ({{ data.questionCount }})

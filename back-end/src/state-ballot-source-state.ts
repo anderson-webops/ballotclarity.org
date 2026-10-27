@@ -7,6 +7,7 @@ export class StateBallotAwaitingRecordsError extends Error {
 }
 
 export function supportsPendingStateBallotRecords(source: StateBallotSource) {
+	if (!source.retrievalPolicy && source.format === "pima-pdf" && source.stateCode === "AZ") return true;
 	if (!source.retrievalPolicy && source.format === "goffstown-pdf" && source.stateCode === "NH") return true;
 	if (!source.retrievalPolicy && ["chicago-pdf", "winnebago-pdf"].includes(source.format) && source.stateCode === "IL") return true;
 	if (!source.retrievalPolicy && source.format === "east-greenwich-pdf" && source.stateCode === "RI") return true;

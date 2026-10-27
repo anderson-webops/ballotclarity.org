@@ -1,7 +1,9 @@
 import type { StateBallotSource } from "./state-ballot-sources.js";
+import { pimaSource } from "./state-ballot-pima-collection.js";
 import { stateBallotSources } from "./state-ballot-sources.js";
 
 export const additionalStateBallotSources: readonly StateBallotSource[] = [
+	pimaSource("2026-11-03"),
 	{
 		stateCode: "NH",
 		id: "nh-goffstown-2026",

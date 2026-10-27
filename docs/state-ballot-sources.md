@@ -734,6 +734,14 @@ discovery follow `docs/audits/2026-10-26-idaho-cassia-automation.md`. Both famil
 future discovery follows `docs/state-ballot-cycles.md`.
 
 Fulton's `fulton-pdf` collector verifies the current reviewed robots and privacy
+policies and now retains the seven printed questions in its external candidate
+snapshot as unassigned research inventory. Existing state/city/county measure
+drafts retain their independent review/publication gates; transportation's
+county-minus-Atlanta eligibility remains held. Future question titles and
+resolution numbers come from actual publications. See
+`docs/audits/2026-10-27-fulton-question-automation.md`.
+
+The collector verifies the current reviewed robots and privacy
 policy fingerprints, official policy-link inventory, election date and complete
 document set before normal, nonredirecting requests. A policy, layout, office,
 party or unexpired publication-set change requires review. Only normalized facts

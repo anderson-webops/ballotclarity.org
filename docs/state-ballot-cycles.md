@@ -129,6 +129,14 @@ visible and never advance successful import clocks. Successful automatic files
 require a compatible runtime; the exact original reviewed file is the rollback
 data target. Future-cycle tests are synthetic, not observed future candidacies.
 
+Fulton also retains each printed ballot question, its page and Yes/No choices
+through the same external snapshot/import path. Question wording and identities
+are checked on refresh; changed or missing accepted questions require review
+while the last good snapshot remains readable. New titles and constitutional
+resolution numbers are not hardcoded to 2026. Inventories remain unassigned to
+voters and separate from reviewed measure dossiers and their publication gates.
+See `docs/audits/2026-10-27-fulton-question-automation.md`.
+
 Johnson County retains the existing 98-record current source and its original IDs.
 Future `ks-johnson-general-YYYY-MM-DD` sources require the complete published
 index/selector/election-page capture before a selected candidate page is accepted.

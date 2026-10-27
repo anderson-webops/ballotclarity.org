@@ -1,8 +1,10 @@
+import type { StateBallotQuestion } from "./state-ballot-questions.js";
 import type { StateCandidateRecord, StateContestScope } from "./state-ballot-records.js";
 import type { StateBallotSource } from "./state-ballot-sources.js";
 import { Buffer } from "node:buffer";
 import { createHash } from "node:crypto";
 import { fetchRemoteSourceDocument, fetchRemoteSourceText } from "./remote-json-source.js";
+import { parseFultonBallotQuestions } from "./state-ballot-fulton-questions.js";
 import { parseStateHtml, stateHtmlAttribute, stateHtmlDescendants, stateHtmlText } from "./state-ballot-html.js";
 import { extractStateBallotPdfText as extractFultonPdfText, StateBallotPdfCapabilityError as FultonCollectorCapabilityError, resolveStateBallotPdfExtractor as resolveFultonExtractor, stateBallotPdfCollectorContract } from "./state-ballot-pdf.js";
 import { containsControlCharacters } from "./text-validation.js";
@@ -247,7 +249,7 @@ function writeInRecords(source: StateBallotSource, body: string) {
 		return { id: recordIdentity(source, office, name), name, office, district, scope: "local" as const, status: "write-in" as const, sourceStatus: "Qualified write-in", sourceDistrictLabel: `District ${district}`, sourceAreaLabel: "Fulton County" };
 	});
 }
-export function parseFultonCandidateCapture(source: StateBallotSource, body: string) {
+export function parseFultonCandidateCapture(source: StateBallotSource, body: string, previousQuestions?: readonly StateBallotQuestion[]) {
 	validateFultonSource(source);
 	if (Buffer.byteLength(body) > 12 * 1024 * 1024) throw new Error("The Fulton candidate capture exceeds its bounds.");
 	const value: unknown = JSON.parse(body);
@@ -256,14 +258,17 @@ export function parseFultonCandidateCapture(source: StateBallotSource, body: str
 	const election = readFultonElectionDiscovery(value.discovery).find(entry => entry.electionDate === source.electionDate);
 	if (!election || election.documents.map(item => item.url).join("|") !== source.documentUrls!.join("|") || value.documents.length !== election.documents.length) throw new Error("The Fulton document evidence is incomplete or no longer published.");
 	const records: StateCandidateRecord[] = [];
+	const ballotQuestions: StateBallotQuestion[] = [];
 	const documents = value.documents.map((item: unknown, position: number) => {
 		const expected = election.documents[position]!;
 		if (!keys(item, ["url", "sha256", "retrievedAt", "text"]) || item.url !== expected.url || typeof item.sha256 !== "string" || !/^[a-f0-9]{64}$/u.test(item.sha256) || typeof item.retrievedAt !== "string" || !Number.isFinite(Date.parse(item.retrievedAt)) || new Date(item.retrievedAt).toISOString() !== item.retrievedAt || typeof item.text !== "string" || Buffer.byteLength(item.text) > 4 * 1024 * 1024 || item.text.includes("\uFFFD")) throw new Error("The Fulton document provenance or text is invalid.");
 		const selected = expected.kind === "consolidated" ? consolidatedRecords(source, item.text) : expected.kind === "qualified-writeins" ? writeInRecords(source, item.text) : [];
+		if (expected.kind === "consolidated") ballotQuestions.push(...parseFultonBallotQuestions(source, item.text));
 		if (expected.kind === "psc-scope" && (item.text !== discovery.scope || item.sha256 !== digest(item.text))) throw new Error("The Fulton PSC evidence changed within the capture.");
 		records.push(...selected);
 		return { url: expected.url, sha256: item.sha256, retrievedAt: item.retrievedAt, includedRecordCount: selected.length };
 	});
 	if (new Set(records.map(record => record.id)).size !== records.length || records.length > 25000) throw new Error("The Fulton candidate identities conflict or exceed their bounds.");
-	return { records, documents, retrievedAt: new Date(Math.min(...documents.map(item => Date.parse(item.retrievedAt)))).toISOString(), sha256: digest(JSON.stringify(documents.map(({ url, sha256 }) => ({ url, sha256 })))) };
+	if (previousQuestions?.some(question => !ballotQuestions.some(current => current.id === question.id))) throw new Error("An accepted Fulton question changed or disappeared; retain its snapshot for review.");
+	return { records, ballotQuestions, documents, retrievedAt: new Date(Math.min(...documents.map(item => Date.parse(item.retrievedAt)))).toISOString(), sha256: digest(JSON.stringify(documents.map(({ url, sha256 }) => ({ url, sha256 })))) };
 }

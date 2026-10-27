@@ -13,6 +13,7 @@ import { dcDocumentDigest, validateDcDocumentUrl, validateDcSource } from "./sta
 import { validateDouglasStoredSnapshot } from "./state-ballot-douglas-snapshot.js";
 import { eastGreenwichDocumentDigest, validateEastGreenwichDocumentUrl, validateEastGreenwichElection, validateEastGreenwichSource } from "./state-ballot-east-greenwich-collection.js";
 import { franklinDocumentDigest, validateFranklinDocumentUrl, validateFranklinSource } from "./state-ballot-franklin-collection.js";
+import { readFultonSnapshotMetadata } from "./state-ballot-fulton-questions.js";
 import { readGoffstownSnapshotMetadata } from "./state-ballot-goffstown-snapshot.js";
 import { readHamiltonSnapshotMetadata } from "./state-ballot-hamilton-snapshot.js";
 import { validateIowaJohnsonSource } from "./state-ballot-iowa-johnson.js";
@@ -48,8 +49,8 @@ export function parseBundledStateSnapshot(source: StateBallotSource, body: strin
 	let documents: StateBallotSnapshot["documents"];
 	if (source.format === "maine-house-html") validateMaineHouseSnapshot(source, data);
 	if (source.format === "douglas-html") validateDouglasStoredSnapshot(source, data);
-	const metadata = source.format === "orange-pdf" ? readOrangeSnapshotMetadata(source, data) : source.format === "nyc-pdf" ? readNycSnapshotMetadata(source, data) : source.format === "hamilton-html" ? readHamiltonSnapshotMetadata(source, data) : source.format === "pima-pdf" ? readPimaSnapshotMetadata(source, data) : source.format === "goffstown-pdf" ? readGoffstownSnapshotMetadata(source, data) : source.format === "chicago-pdf" ? readChicagoSnapshotMetadata(source, data) : {};
-	if (!["boone-xlsx", "orange-pdf", "maine-house-html", "nyc-pdf", "hamilton-html", "pima-pdf", "goffstown-pdf", "chicago-pdf"].includes(source.format) && ["ballotQuestions", "sourceAsOfDate", "sourceAsOf"].some(key => data[key] !== undefined)) throw new Error("This source does not support Chicago snapshot metadata.");
+	const metadata = source.format === "fulton-pdf" ? readFultonSnapshotMetadata(source, data) : source.format === "orange-pdf" ? readOrangeSnapshotMetadata(source, data) : source.format === "nyc-pdf" ? readNycSnapshotMetadata(source, data) : source.format === "hamilton-html" ? readHamiltonSnapshotMetadata(source, data) : source.format === "pima-pdf" ? readPimaSnapshotMetadata(source, data) : source.format === "goffstown-pdf" ? readGoffstownSnapshotMetadata(source, data) : source.format === "chicago-pdf" ? readChicagoSnapshotMetadata(source, data) : {};
+	if (!["boone-xlsx", "orange-pdf", "maine-house-html", "nyc-pdf", "hamilton-html", "pima-pdf", "goffstown-pdf", "chicago-pdf", "fulton-pdf"].includes(source.format) && ["ballotQuestions", "sourceAsOfDate", "sourceAsOf"].some(key => data[key] !== undefined)) throw new Error("This source does not support Chicago snapshot metadata.");
 	if (["boone-xlsx", "orange-pdf", "maine-house-html", "nyc-pdf", "douglas-html", "hamilton-html", "pima-pdf", "goffstown-pdf", "chicago-pdf"].includes(source.format)) {
 		if (!data.collectionIndexSha256) throw new Error("The Chicago publication fingerprint is missing.");
 	}

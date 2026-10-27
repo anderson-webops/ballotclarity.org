@@ -500,6 +500,15 @@ See `docs/audits/2026-10-26-idaho-cassia-automation.md` for scope and boundaries
 
 ## Boundaries
 
+Goffstown, New Hampshire has a separately tested discovery module for its rolling
+elections page. It binds the explicit November general-election heading to the
+actual offered, date-matched document URL and rechecks robots and linked policies.
+This is preparation, not an enabled collection family or automatic import. Its
+native PDF text misencodes some quotation marks; candidate/question parsing and
+visible-glyph reconciliation remain required before registration. Existing reviewed
+New Hampshire records are unchanged. See the
+[source review](audits/2026-10-27-goffstown-discovery.md).
+
 These supported source families are not nationwide future-election automation.
 Other adapters still have cycle-specific discovery or parsing work. Reviewed
 PDF/image conversion, measure interpretation, independently verified geography,

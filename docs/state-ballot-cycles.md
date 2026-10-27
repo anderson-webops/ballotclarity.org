@@ -9,13 +9,21 @@ converters nor publisher requests. Actual offered future dates generate source
 identities without annual URL edits. See the [collection review](audits/2026-10-27-chicago-automation.md).
 
 External election catalogs opt the automatic candidate repository into reusable
-source families. The current 70 source definitions retain explicit source/state
+source families. The current 74 source definitions retain explicit source/state
 allowlists; reusable discovery does not widen an exact-source allowlist.
 
-Forty-four families across thirty-five states and D.C. are supported:
+Forty-eight families across thirty-nine states and D.C. are supported. Some
+families cover only a county, municipality or one chamber, not an entire state:
 
 | Family | Discovery | Elections |
 | --- | --- | --- |
+| `in-boone-2026` | [Boone County election index](https://boonecounty.in.gov/offices/clerk/election-information/) | Actually offered filing workbook and sample ballots, with the general date read from consistent official ballot headers; 86 filing entries, including one explicit exclusion, not certified or personalized ballots. See the [collection review](audits/2026-10-27-boone-automation.md). |
+| `ca-orange-2026` | [Orange County filing log](https://ocvote.gov/candidates/candidate-filing-log-printable-version) | Published election controls and complete dated candidate reports; native visible-content reconciliation, durable imports and source-bound future cycles. See the [collection review](audits/2026-10-27-orange-automation.md). |
+| `me-house-clerk-2026` | [Maine House Clerk candidate list](https://mainelegislature.org/house/Documents/CandidateList) | Unofficial House references, with legislature numbers mapped to the reviewed constitutional schedule; not a printed candidate-page election date or ballot qualification. See the [collection review](audits/2026-10-27-maine-house-automation.md). |
+| `ny-nyc-2026` | [NYC candidate index](https://www.vote.nyc/page/list-candidates) | Actually offered dated tentative PDF/RTF publications, borough-level reconciliation and separate citywide questions. See the [source review](audits/2026-10-27-nyc-candidate-reader.md). |
+| `nh-goffstown-2026` | [Goffstown election index](https://www.goffstownnh.gov/325/Elections) | Published general-election headings and sample-ballot controls; bounded native/visible-glyph agreement and durable imports. New fonts/layouts and the observed intermittent redirect remain review boundaries. See the [collection review](audits/2026-10-27-goffstown-automation.md). |
+| `il-chicago-2026` | [Chicago candidate index](https://chicagoelections.gov/getting-ballot/candidates) | Explicitly dated full-list controls, candidates and separate questions; independent of the state portal's access hold. See the [collection review](audits/2026-10-27-chicago-automation.md). |
+| `il-winnebago-2026` | [Winnebago County election index](https://wincoil.gov/departments/clerks-office/election-information) | Actually offered general-election publications, bounded native extraction and retained geography/applicability limits. See the [collection review](audits/2026-10-26-winnebago-automation.md). |
 | `ne-douglas-2026` | [Douglas County candidate index](https://www.votedouglascounty-ne.gov/candidate_info.aspx) | Actual general-election form options, explicit calendar dates and offered profiles; 173 filings with source-bound identities, dates and appropriate party fields. Filing-only records never produce ballot previews. Separate Nebraska SOS permission holds remain intact. See the [source review](audits/2026-10-27-douglas-automation.md). |
 | `tn-hamilton-2026` | [Hamilton County sample ballots](https://elect.hamiltontn.gov/sampleballots.aspx) | Actual offered HTML and mutually agreeing publication dates; complete candidate/question semantics, original choices, policy-bound collection and durable imports. Unfamiliar styles and missing accepted records require review. Williamson County retains its default priority. See the [source review](audits/2026-10-27-hamilton-automation.md). |
 | `az-pima-2026` | [Pima County elections](https://www.pima.gov/elections) | Publicly offered event dates and official candidate/write-in controls; bounded native text and visible-glyph reconciliation, persisted imports, missing-publication and removed-record holds. Unpaired executive entries and uncorroborated judicial rows remain excluded. The broader reviewed Arizona source retains default priority. See the [collection review](audits/2026-10-27-pima-automation.md). |

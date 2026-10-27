@@ -374,10 +374,15 @@ and acquisition hold beyond the previously observed protection response. Search
 visibility is not collection permission. Its independent Cambridge source keeps
 its separately reviewed use restriction and existing facts unchanged.
 
-Boone County, Indiana has a [native workbook preparation prerequisite](audits/2026-10-27-boone-candidate-preparation.md)
-for 86 filing entries, including an explicit ballot exclusion. This is not an
-enabled source family or personal ballot. Date/context binding and persistent
-automatic collection/import remain pending; current source counts are unchanged.
+Boone County, Indiana's `in-boone-2026` family now binds its actually offered
+filing workbook to the general-election date printed in official sample ballots.
+It preserves 86 filing entries: 85 filed and one explicit `Do not put on ballot`
+exclusion. Filing is not qualification, and school/township labels do not become
+personal ballot matches. Private address/contact columns remain excluded.
+Policy changes, inconsistent dates, removed entries and reversed exclusions hold
+the accepted data for review. Future unpublished or empty validated workbooks
+wait durably. See the [collection review](audits/2026-10-27-boone-automation.md)
+and earlier [native preparation](audits/2026-10-27-boone-candidate-preparation.md).
 
 ## Colorado candidate collection hold
 

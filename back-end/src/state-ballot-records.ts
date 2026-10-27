@@ -7,6 +7,7 @@ import { parse as parseCsv } from "csv-parse/sync";
 import { normalizePublicHref } from "./public-href.js";
 import { parseAdditionalStateRecords } from "./state-ballot-additional-records.js";
 import { parseArkansasCandidateRecords } from "./state-ballot-arkansas.js";
+import { parseBooneCandidateCapture } from "./state-ballot-boone-collection.js";
 import { parseCassiaCandidateCapture } from "./state-ballot-cassia.js";
 import { parseCertifiedPdfCapture } from "./state-ballot-certified-pdf.js";
 import { parseChicagoCandidateCapture } from "./state-ballot-chicago-collection.js";
@@ -472,6 +473,9 @@ export function parseStateCandidateRecords(source: StateBallotSource, body: stri
 	}
 	else if (source.format === "texas-certified-pdf") {
 		records = parseTexasCandidateCapture(source, body).records;
+	}
+	else if (source.format === "boone-xlsx") {
+		records = parseBooneCandidateCapture(source, body, makeRecord).records;
 	}
 	else if (source.format === "vermont-xlsx") {
 		records = parseVermontCandidateCapture(source, body).records;

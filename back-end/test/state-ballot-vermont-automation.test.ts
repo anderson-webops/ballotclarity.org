@@ -163,6 +163,10 @@ test("only the Boone workbook profile ignores bounded internal printer metadata"
 	await assert.rejects(readStateBallotWorkbook(bytes), /failed/u);
 	assert.deepEqual(await readStateBallotWorkbook(bytes, "boone-candidates"), capture().workbook.sheets);
 	await assert.rejects(readStateBallotWorkbook(bytes, "unsupported" as "boone-candidates"), /format or size/u);
+	const metadata = printerWorkbookFiles();
+	metadata["customXml/item1.xml"] = "<metadata hidden=\"true\"/>";
+	metadata["xl/worksheets/sheet1.xml"] = metadata["xl/worksheets/sheet1.xml"]!.replace("<sheetData>", "<sheetViews><sheetView workbookViewId=\"0\"><pane state=\"frozen\"/></sheetView></sheetViews><sheetData>");
+	assert.deepEqual(await readStateBallotWorkbook(archive(metadata), "boone-candidates"), capture().workbook.sheets);
 });
 
 test("Boone printer metadata requires its exact internal role and keeps binary bounds", async () => {
@@ -176,8 +180,14 @@ test("Boone printer metadata requires its exact internal role and keeps binary b
 		(files: Record<string, string>) => { files["xl/worksheets/_rels/sheet1.xml.rels"] = files["xl/worksheets/_rels/sheet1.xml.rels"]!.replace(" Id=", " TargetMode=\"External\" Id="); },
 		(files: Record<string, string>) => { files["xl/worksheets/sheet1.xml"] = files["xl/worksheets/sheet1.xml"]!.replace("<sheetData>", "<sheetData><f>1+1</f>"); },
 		(files: Record<string, string>) => { files["xl/worksheets/sheet1.xml"] = files["xl/worksheets/sheet1.xml"]!.replace("<row ", "<row hidden=\"1\" "); },
+		(files: Record<string, string>) => { files["xl/worksheets/sheet1.xml"] = files["xl/worksheets/sheet1.xml"]!.replace("<row ", "<row hidden='1' "); },
+		(files: Record<string, string>) => { files["xl/worksheets/sheet1.xml"] = files["xl/worksheets/sheet1.xml"]!.replace("<row ", "<row hidden = \"true\" "); },
+		(files: Record<string, string>) => { files["xl/worksheets/sheet1.xml"] = files["xl/worksheets/sheet1.xml"]!.replace("<row ", "<row hidden=\"&#49;\" "); },
 		(files: Record<string, string>) => { files["xl/workbook.xml"] = files["xl/workbook.xml"]!.replace("<sheet ", "<sheet state=\"veryHidden\" "); },
+		(files: Record<string, string>) => { files["xl/workbook.xml"] = files["xl/workbook.xml"]!.replace("<sheet ", "<sheet state='veryHidden' "); },
+		(files: Record<string, string>) => { files["xl/workbook.xml"] = files["xl/workbook.xml"]!.replace("<sheet ", "<sheet state=\"veryHidd&#101;n\" "); },
 		(files: Record<string, string>) => { files["xl/styles.xml"] = "<styleSheet><fonts><font><strike/></font></fonts></styleSheet>"; },
+		(files: Record<string, string>) => { files["xl/styles2.xml"] = "<styleSheet><fonts><font><x:strike xmlns:x=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\"/></font></fonts></styleSheet>"; },
 		(files: Record<string, string>) => { files["custom.xml"] = "<!DOCTYPE x [<!ENTITY hidden 'value'>]><x/>"; },
 	]) {
 		const files = printerWorkbookFiles();

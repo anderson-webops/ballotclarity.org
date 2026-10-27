@@ -30,8 +30,8 @@ function section(value: string) {
 const divisions = new Set(["At-Large", "Adams", "Center", "Clinton", "Eagle", "Harrison", "Jackson", "Jefferson", "Marion", "Perry", "Sugar Creek", "Union", "Washington", "Worth"]);
 const parties: Readonly<Record<string, string>> = { R: "Republican", D: "Democratic", I: "Independent" };
 
-export function parseBooneCandidateSheets(sheets: StateBallotWorkbookSheet[]) {
-	if (!Array.isArray(sheets) || sheets.length !== 1 || sheets[0]?.sheet !== "Sheet1" || !Array.isArray(sheets[0].data) || sheets[0].data.length < 3 || sheets[0].data.length > 2000) return reject();
+export function parseBooneCandidateSheets(sheets: StateBallotWorkbookSheet[], options: { allowEmpty?: boolean } = {}) {
+	if (!Array.isArray(sheets) || sheets.length !== 1 || sheets[0]?.sheet !== "Sheet1" || !Array.isArray(sheets[0].data) || sheets[0].data.length < (options.allowEmpty ? 1 : 3) || sheets[0].data.length > 2000) return reject();
 	const rows = sheets[0].data;
 	if (JSON.stringify(rows[0]) !== JSON.stringify(["Candidate Name", null, "Office", "Party", "Address", "Contact"])) return reject();
 	const claims: BooneCandidateClaim[] = [];
@@ -75,7 +75,7 @@ export function parseBooneCandidateSheets(sheets: StateBallotWorkbookSheet[]) {
 		identities.add(key);
 		claims.push({ name: name!, office: current.path.join(" / "), officePath: [...current.path], sourceRow: index + 1, ...(party ? { sourcePartyCode: party, party: parties[party]! } : {}), ...(district ? { sourceDistrictLabel: office } : {}), ...(instruction ? { ballotExclusion: true, ballotInstruction: "Do not put on ballot" as const } : {}) });
 	}
-	if (!claims.length || claims.length > 1000) return reject();
+	if ((!claims.length && !options.allowEmpty) || claims.length > 1000) return reject();
 	return { claims, offices, sourceRows: rows.length };
 }
 

@@ -1,6 +1,7 @@
 import type { StateBallotSource } from "./state-ballot-sources.js";
 import { Buffer } from "node:buffer";
 import { fetchRemoteSourceText } from "./remote-json-source.js";
+import { fetchBooneCandidateCapture } from "./state-ballot-boone-collection.js";
 import { fetchCassiaCandidateCapture } from "./state-ballot-cassia.js";
 import { fetchCertifiedPdfCapture } from "./state-ballot-certified-pdf.js";
 import { fetchChicagoCandidateCapture } from "./state-ballot-chicago-collection.js";
@@ -219,6 +220,7 @@ export async function fetchStateBallotSourceText(source: StateBallotSource, requ
 	if (source.stateCode === "VA") return fetchVirginiaCandidateCapture(source, request);
 	if (source.format === "oregon-pdf") return fetchOregonCandidateCapture(source, { requestText: request });
 	if (source.format === "fulton-pdf") return fetchFultonCandidateCapture(source, { requestText: request });
+	if (source.format === "boone-xlsx") return fetchBooneCandidateCapture(source);
 	if (source.format === "vermont-xlsx") return fetchVermontCandidateCapture(source, undefined, { requestText: request });
 	if (source.format === "texas-certified-pdf") return fetchTexasCandidateCapture(source, undefined, { requestText: request });
 	if (source.format === "certified-pdf") return fetchCertifiedPdfCapture(source, undefined, { requestText: request });

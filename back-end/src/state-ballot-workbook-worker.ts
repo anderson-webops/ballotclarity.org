@@ -8,6 +8,19 @@ const maximumExpandedBytes = 24 * 1024 * 1024;
 const maximumEntryBytes = 8 * 1024 * 1024;
 const workbookError = () => new Error("The official workbook archive is invalid.");
 
+function assertBooneDisplay(xml: string) {
+	for (const tag of xml.matchAll(/<(?:[^"'<>]|"[^"]*"|'[^']*')+>/gu)) {
+		const element = /^<(?:[A-Za-z_][\w.-]*:)?([A-Za-z_][\w.-]*)/u.exec(tag[0])?.[1];
+		if (!element) continue;
+		if (["f", "strike", "conditionalFormatting", "drawing", "legacyDrawing", "rPh"].includes(element)) throw workbookError();
+		for (const attribute of tag[0].matchAll(/\b(hidden|state)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/gu)) {
+			if (attribute[1] === "state" && element !== "sheet") continue;
+			const value = attribute[2] ?? attribute[3] ?? attribute[4];
+			if (!(attribute[1] === "hidden" ? ["0", "false"] : ["visible"]).includes(value!)) throw workbookError();
+		}
+	}
+}
+
 function assertWorkbookArchive(bytes: Buffer) {
 	let end = bytes.length - 22;
 	while (end >= Math.max(0, bytes.length - 65557) && bytes.readUInt32LE(end) !== 0x06054B50) end--;
@@ -110,7 +123,7 @@ function assertWorkbookArchive(bytes: Buffer) {
 		const xml = new TextDecoder("utf-8", { fatal: true }).decode(content);
 		if (["[Content_Types].xml", "xl/worksheets/_rels/sheet1.xml.rels"].includes(name)) metadata.set(name, xml);
 		if (/<!DOCTYPE|<!ENTITY/iu.test(xml)) throw workbookError();
-		if (process.argv[2] === "boone-candidates" && /^xl\/(?:worksheets\/sheet1|workbook|styles)\.xml$/u.test(name) && /\bhidden="(?:1|true)"|\bstate="(?:hidden|veryHidden)"|<(?:strike|conditionalFormatting|drawing|legacyDrawing|rPh)[\s/>]/u.test(xml)) throw workbookError();
+		if (process.argv[2] === "boone-candidates" && name.startsWith("xl/")) assertBooneDisplay(xml);
 		if (/^xl\/worksheets\/sheet\d+\.xml$/u.test(name)) {
 			if (/<f(?:\s|>)/u.test(xml)) throw workbookError();
 			const dimension = /<dimension\s[^>]*\bref="([A-Z]+\d+)(?::([A-Z]+\d+))?"/u.exec(xml);

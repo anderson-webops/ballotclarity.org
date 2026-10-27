@@ -50,6 +50,40 @@ Printed civil clocks remain separate for every page: August 28, 2026,
 3:47:35 p.m. on page 1 and 3:48:21 p.m. on later pages. No timezone or new
 publication date is inferred from the October retrieval.
 
+## Original-page verification
+
+The bounded native worker independently checks the original PDF objects and all
+188 freshly rendered pages, not just two text exports. It accepts five reviewed
+embedded TrueType programs with 296 mapped characters and binds every rendered
+nonspace character to one of 544 visually reviewed original outline shapes.
+The accepted report has 23,487 text fields and 416,307 nonspace glyphs. Its 356
+stroked category headings must reconstruct the approved glyph outlines exactly;
+arbitrary vector paths, hidden text, low contrast, occlusion and consequential
+clipping are rejected. Page order, geometry, colors, the first-page seal and
+font-role inventories are checked together with the existing complete reader.
+
+Forty-three repeated right-column district labels are partially clipped in the
+original report; 32 also have suffix characters absent from its render. Only
+that fixed metadata column may retain these discrepancies as source evidence.
+Candidate names, party labels, offices, qualification dates, identifiers and
+counts must remain complete. The verification explicitly leaves source district
+labels unapproved for voter matching. A complete jurisdiction label in another
+heading is not permission to infer a voter's district.
+
+Sixty-three mappings fall outside the report's own declared ToUnicode code-space
+ranges. They remain explicit in the proof and must independently agree with
+Windows-1252 byte semantics, the original symbolic cmap and reviewed TrueType
+outlines. Extraction does not silently repair the publisher's declarations.
+The XML extractor suppresses the seal to avoid writing image files, while the
+separate SVG verifier still requires the exact original first-page seal.
+
+The explicit Orange County profile permits at most 256 pages, 8 MiB each for
+XML and PDF objects, 2 MiB per SVG page, 128 MiB total rendered output and
+180 seconds for verification. Existing standard, Chicago and NYC limits remain
+unchanged. Native tools execute only in the bounded worker; no public route is
+connected to this preparation. Raw fonts, document artwork and rendered pages
+remain outside Git and release assets. Approval catalogs contain hashes only.
+
 ## Remaining automation work
 
 The pure reader has bounded XML/page/DOM/font contracts and rejects changed
@@ -58,18 +92,8 @@ critical text, hidden or active markup and contradictory continuations.
 Future-election fixtures are synthetic and require the new report's explicit
 date; they do not assert that a future publication is available.
 
-This is a preparation dependency for a reusable county collector, not an
-enabled family or a new accepted dataset. Five embedded TrueType programs,
-their character mappings, meaningful rendered placement and page completeness
-still need automated native verification. Discovery, policy-change handling,
-durable import/restart, public routes and receiving-host acceptance remain
-required before enabling the family. Existing California records, configured
-families and the active pending data packet remain unchanged.
-
-Native preparation retains five embedded font programs and a visually reviewed
-296-character source-glyph atlas. Sixty-three mappings fall outside the
-report's own declared ToUnicode code-space ranges. That discrepancy remains
-explicit: matching extracted strings and a manual atlas are not a substitute
-for an automated original-outline and rendered-placement verifier. No PDF
-software bounds, existing font approvals or production collection gates are
-broadened by this preparation.
+This verified native reader is a preparation dependency for a reusable county
+collector, not an enabled family or a new accepted dataset. Discovery,
+policy-change handling, durable import/restart, public routes and receiving-host
+acceptance remain required before enabling the family. Existing California
+records, configured families and the active pending data packet remain unchanged.

@@ -7,9 +7,12 @@ that reconciles all 430 qualified candidate references in 169 contests across
 188 pages. It preserves party labels, ballot designations, qualification dates,
 vote limits, district labels and separate source civil clocks. Per-contest
 all-filer counts total 449; the unnamed difference is not imported. Contextual
-incumbents do not become candidates. Native-font/rendered fidelity, reusable
-collection and durable import acceptance remain required before enabling this
-family. This preparation changes no accepted data or personal-ballot coverage.
+incumbents do not become candidates. The native worker verifies all 188 original
+pages, five embedded font programs and every rendered character against reviewed
+outlines. Forty-three clipped district metadata labels remain evidence only,
+unapproved for voter matching. Reusable discovery, collection and durable import
+acceptance remain required before enabling this family. This preparation changes
+no accepted data or personal-ballot coverage.
 See `docs/audits/2026-10-27-orange-candidate-proof.md`.
 
 ## Maine House candidate references

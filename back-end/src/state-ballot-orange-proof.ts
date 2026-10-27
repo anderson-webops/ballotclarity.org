@@ -52,7 +52,7 @@ export function orangeProofPages(body: string) {
 			fonts.set(id, family);
 		}
 		const images = descendants(page, node => node.nodeName === "img");
-		if (images.length !== Number(index === 0) || images.some(node => node.attrs?.some(item => !["top", "left", "width", "height", "src"].includes(item.name)) || attribute(node, "left") !== "37" || attribute(node, "top") !== "35" || attribute(node, "width") !== "41" || attribute(node, "height") !== "38")) return reject("unexpected image");
+		if (images.length > Number(index === 0) || images.some(node => node.attrs?.some(item => !["top", "left", "width", "height", "src"].includes(item.name)) || attribute(node, "left") !== "37" || attribute(node, "top") !== "35" || attribute(node, "width") !== "41" || attribute(node, "height") !== "38")) return reject("unexpected image");
 		const fields = descendants(page, node => node.nodeName === "text").map((node): OrangeProofField => {
 			const font = Number(attribute(node, "font"));
 			if (String(font) !== attribute(node, "font") || !fonts.has(font) || ["top", "left", "width", "height"].some(key => !/^\d{1,4}$/u.test(attribute(node, key))) || node.attrs?.some(item => !["top", "left", "width", "height", "font"].includes(item.name)) || descendants(node, child => !["#text", "b", "i"].includes(child.nodeName)).length || descendants(node, child => child.nodeName === "b").length !== Number(boldFonts.has(font)) || descendants(node, child => child.nodeName === "i").length !== Number(italicFonts.has(font))) return reject("text style or visibility");

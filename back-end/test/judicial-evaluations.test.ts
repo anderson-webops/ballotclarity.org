@@ -7,6 +7,7 @@ import { mkdtemp, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 import express from "express";
 import { registerJudicialEvaluationRoutes } from "../src/judicial-evaluation-routes.js";
 import { createJudicialEvaluationRepository, judicialEvaluationContentSha256, judicialEvaluationSources, parseJudicialEvaluationSnapshot } from "../src/judicial-evaluations.js";
@@ -124,9 +125,9 @@ test("evaluation storage rejects linked files and linked application directories
 	await writeFile(join(input.directory, "target.json"), JSON.stringify(snapshot));
 	await symlink(join(input.directory, "target.json"), input.file);
 	await assert.rejects(input.repository.getEvaluation(roster, roster.records[0]!.id));
-	assert.throws(() => createJudicialEvaluationRepository({ dataDirectory: new URL("../data", import.meta.url).pathname }), /outside/u);
+	assert.throws(() => createJudicialEvaluationRepository({ dataDirectory: fileURLToPath(new URL("../data", import.meta.url)) }), /outside/u);
 	const alias = join(input.directory, "application-alias");
-	await symlink(new URL("../data", import.meta.url).pathname, alias);
+	await symlink(fileURLToPath(new URL("../data", import.meta.url)), alias);
 	await assert.rejects(createJudicialEvaluationRepository({ dataDirectory: alias, now: () => epoch }).getEvaluation(roster, roster.records[0]!.id), /outside/u);
 });
 

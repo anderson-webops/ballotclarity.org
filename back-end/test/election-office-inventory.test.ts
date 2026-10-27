@@ -6,6 +6,7 @@ import { mkdtemp, readdir, readFile, rm, symlink, writeFile } from "node:fs/prom
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 import { collectHennepinOfficeCapture, hennepinOfficePolicies, hennepinOfficePolicyFingerprint, hennepinOfficePolicyReceipts, persistOfficeInventory, readOfficeInventoryCapture, readOfficeInventoryState } from "../src/election-office-collection.js";
 import { auditOfficeInventory, hennepinOfficeSource, parseHennepinOfficeInventory, serializeOfficeInventoryCsv } from "../src/election-office-inventory.js";
 import { createStateCandidateRecord } from "../src/state-ballot-records.js";
@@ -189,7 +190,7 @@ test("Corrupt, locked, symlinked and in-checkout inventory storage never replace
 		await symlink(join(directory, "target.json"), path);
 		await assert.rejects(persistOfficeInventory(directory, capture(), [], now), /ELOOP/u);
 		assert.equal(result.state.inventory.rows.length, 91);
-		await assert.rejects(persistOfficeInventory(new URL("../", import.meta.url).pathname, capture(), [], now), /outside/u);
+		await assert.rejects(persistOfficeInventory(fileURLToPath(new URL("../", import.meta.url)), capture(), [], now), /outside/u);
 	}
 	finally { await rm(directory, { recursive: true, force: true }); }
 });

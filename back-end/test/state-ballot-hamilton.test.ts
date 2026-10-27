@@ -47,7 +47,7 @@ function snapshot() {
 	return { source, records: parsed.records, ballotQuestions: parsed.ballotQuestions, documents, sha256, collectionIndexSha256: sha256, retrievedAt: documents[0]!.retrievedAt };
 }
 async function pendingDiscovery() {
-	const robots = await readFile(new URL("fixtures/hamilton-robots.txt", import.meta.url), "utf8");
+	const robots = (await readFile(new URL("fixtures/hamilton-robots.txt", import.meta.url), "utf8")).replace(/\r\n/gu, "\n");
 	const policies: Record<string, string> = JSON.parse(await readFile(new URL("fixtures/hamilton-policy.json", import.meta.url), "utf8"));
 	const calls: string[] = [];
 	const body = await fetchHamiltonCandidateDiscovery({ now: () => clock, sleep: async () => {}, requestDocument: async (url, options) => {

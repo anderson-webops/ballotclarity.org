@@ -12,7 +12,7 @@ External election catalogs opt the automatic candidate repository into reusable
 source families. The current 69 source definitions retain explicit source/state
 allowlists; reusable discovery does not widen an exact-source allowlist.
 
-Forty-three families across thirty-three states and D.C. are supported:
+Forty-three families across thirty-four states and D.C. are supported:
 
 | Family | Discovery | Elections |
 | --- | --- | --- |

@@ -368,6 +368,14 @@ remain separate.
 
 ## Additional collection reviews
 
+Kanawha County, West Virginia has an independently offered pre-election test
+report covering 110 candidate/office records, 60 contests and four question
+headings. The [bounded native prerequisite](audits/2026-10-27-kanawha-preparation.md)
+retains source parties, unexpired terms, municipal context and voting limits
+without importing zero vote counts as results or question headings as measures.
+Recurring collection/import and rendering acceptance remain pending; the
+statewide publisher's existing hold and all current source counts remain intact.
+
 The Massachusetts Secretary's linked [terms](https://www.sec.state.ma.us/divisions/terms.htm)
 also prohibit scraping or crawling. The October 27 review establishes a reuse
 and acquisition hold beyond the previously observed protection response. Search

@@ -57,6 +57,7 @@ test("Fulton county and individual district pages expose all current board recor
 		assert.equal(profile.person.profileImages[0].url, person.portraitUrl);
 		assert.equal(profile.person.party, "");
 		assert.equal(profile.person.onCurrentBallot, false);
+		assert.equal(profile.person.officeContext?.chamberLabel, "County commission");
 		assert.equal(profile.person.provenance.status, "direct");
 		assert.deepEqual(profile.person.biography, []);
 		assert(profile.person.sources.some((source: { url: string }) => source.url === snapshot.documents[2]!.url));

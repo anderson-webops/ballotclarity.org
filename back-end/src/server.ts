@@ -433,7 +433,7 @@ function inferSupplementalChamberLabel(
 			return "State House";
 	}
 
-	if (classification.governmentLevel === "county")
+	if (classification.officeType === "county_commission")
 		return "County commission";
 
 	if (classification.governmentLevel === "city")

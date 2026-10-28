@@ -38,6 +38,7 @@ test("current county offices join the county page and exact county lookup withou
 		assert.equal(profile.person.name, office.person!.name);
 		assert.equal(profile.person.party, "");
 		assert.equal(profile.person.onCurrentBallot, false);
+		assert.equal(profile.person.officeContext?.chamberLabel, undefined);
 		assert.deepEqual(profile.person.biography, []);
 		assert.equal(profile.person.profileImages[0].url, office.person!.portraitUrl);
 		assert.equal(profile.person.officialWebsiteUrl, office.person!.officialWebsiteUrl);
@@ -89,6 +90,7 @@ test("expanded county departments become public without a restart, fabricated po
 		assert.equal(person.name, office.person!.name);
 		assert.equal(person.party, "");
 		assert.equal(person.onCurrentBallot, false);
+		assert.equal(person.officeContext?.chamberLabel, undefined);
 		assert.deepEqual(person.profileImages ?? [], []);
 		assert.deepEqual(person.biography, []);
 		assert.equal(person.officialWebsiteUrl, office.person!.officialWebsiteUrl);

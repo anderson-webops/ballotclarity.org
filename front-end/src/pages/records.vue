@@ -3,9 +3,10 @@ import { readRecoverableStateRecordQuery, stateRecordSourceMismatch } from "~/ut
 import { readStateRecordQuery, stateRecordScopes, stateRecordSummaryParts } from "~/utils/state-records";
 
 const route = useRoute();
+const civicStore = useCivicStore();
 const { formatDate } = useFormatters();
 const { data: stateData, error: stateError, refresh: refreshStates } = await useStateRecordStates();
-const filters = computed(() => readRecoverableStateRecordQuery(route.query, stateData.value?.states ?? []));
+const filters = computed(() => readRecoverableStateRecordQuery(route.query, stateData.value?.states ?? [], civicStore.isHydrated ? civicStore.selectedLocation?.state : undefined));
 const { data, error, pending, refresh } = await useStateRecords(filters);
 const sourceMismatch = computed(() => stateRecordSourceMismatch(route.query.source, data.value));
 const referenceFilters = computed(() => ({ stateCode: filters.value.stateCode, search: filters.value.search, scope: filters.value.scope, offset: readStateRecordQuery({ offset: route.query.referenceOffset }, []).offset }));
@@ -32,7 +33,7 @@ async function applyFilters(offset = 0) {
 	await navigateTo({
 		path: "/records",
 		query: {
-			...(selectedState.value ? { state: selectedState.value } : {}),
+			state: selectedState.value,
 			...(selectedSource.value ? { source: selectedSource.value } : {}),
 			...(searchInput.value.trim() ? { q: searchInput.value.trim() } : {}),
 			...(selectedScope.value !== "all" ? { scope: selectedScope.value } : {}),

@@ -1162,7 +1162,9 @@ test("built app renders the key ballot guide pages against the built API", async
 	assert.doesNotMatch(ballotHtml, /How verification is handled/);
 	assert.match(ballotHtml, /Fulton County, Georgia/);
 	assert.match(ballotHtml, /unverified review material|local review|verified Fulton-specific ballot content/i);
-	assert.match(electionHtml, /Official links and notices/);
+	assert.match(electionHtml, /Voting information/);
+	assert.match(electionHtml, /href="\/election-dates\/2026-fulton-county-general"/);
+	assert.doesNotMatch(electionHtml, /Open location hub/);
 	assert.match(electionHtml, /Ballot information for your area is currently limited/);
 	assert.doesNotMatch(electionHtml, /Contest index/);
 	assert.doesNotMatch(electionHtml, /Open canonical contest page/);
@@ -1568,7 +1570,7 @@ test("first-visit timestamps hydrate without mismatches across browser time zone
 			await cdp.send("Network.clearBrowserCookies");
 			consoleMessages.length = 0;
 			for (const visit of ["fresh", "return"]) {
-				await navigateAndWait(cdp, `${appBaseUrl}/elections/2026-fulton-county-general`, `${timezoneId} ${visit} visit`);
+				await navigateAndWait(cdp, `${appBaseUrl}/election-dates/2026-fulton-county-general`, `${timezoneId} ${visit} visit`);
 				await waitForRuntimeCondition(cdp, `document.body.innerText.includes(new Intl.DateTimeFormat("en-US", { day: "numeric", hour: "numeric", minute: "2-digit", month: "short", timeZone: ${JSON.stringify(timezoneId)}, year: "numeric" }).format(new Date(${JSON.stringify(data.election.updatedAt)})))`, Boolean, `${timezoneId} localized timestamp`);
 				await delay(200);
 				assert.equal(consoleMessages.some(message => browserSecurityConsolePattern.test(message)), false, `${timezoneId} ${visit}:\n${consoleMessages.join("\n")}`);

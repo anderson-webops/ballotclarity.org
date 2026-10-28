@@ -51,7 +51,8 @@ test("a state with an offered publisher does not fall back from an explicit sour
 
 test("the records page uses disabled-state recovery without adding explanatory interface copy", () => {
 	const page = readFileSync(new URL("../src/pages/records.vue", import.meta.url), "utf8");
-	assert.match(page, /computed\(\(\) => readRecoverableStateRecordQuery\(route.query, stateData.value\?\.states \?\? \[\]\)\)/u);
+	assert.match(page, /computed\(\(\) => readRecoverableStateRecordQuery\(route.query, stateData.value\?\.states \?\? \[\],/u);
+	assert.match(page, /civicStore.isHydrated \? civicStore.selectedLocation\?\.state : undefined/u);
 	assert.match(page, /Official candidate records are unavailable/u);
 });
 

@@ -122,7 +122,7 @@ test("Fulton accepted question imports survive cold restart and failed changes p
 	const directory = await mkdtemp(join(tmpdir(), "ballot-fulton-questions-"));
 	context.after(() => rm(directory, { recursive: true }));
 	const now = Date.parse(timestamp) + 1000;
-	const repository = createStateBallotRepository({ sources: [source], dataDirectory: directory, now: () => now, fetchText: async () => capture() });
+	const repository = createStateBallotRepository({ sources: [source], dataDirectory: directory, refreshReviewedLegacy: true, now: () => now, fetchText: async () => capture() });
 	const imported = await repository.getSnapshot("GA");
 	assert.equal(imported!.ballotQuestions!.length, 5);
 	const path = join(directory, `${source.id}.json`);
@@ -135,7 +135,7 @@ test("Fulton accepted question imports survive cold restart and failed changes p
 	} });
 	assert.deepEqual((await cold.getSnapshot("GA"))!.ballotQuestions, imported!.ballotQuestions);
 	assert.equal(requests, 0);
-	const changed = createStateBallotRepository({ sources: [source], dataDirectory: directory, now: () => now + 86400000, fetchText: async () => capture(questionsText.replace("limited local tax", "changed local tax")) });
+	const changed = createStateBallotRepository({ sources: [source], dataDirectory: directory, refreshReviewedLegacy: true, now: () => now + 86400000, fetchText: async () => capture(questionsText.replace("limited local tax", "changed local tax")) });
 	assert.deepEqual((await changed.getSnapshot("GA"))!.ballotQuestions, imported!.ballotQuestions);
 	assert.equal((await changed.inspectSources!())[0]!.status, "error");
 	assert.equal(await readFile(path, "utf8"), before);

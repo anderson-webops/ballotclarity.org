@@ -1301,6 +1301,7 @@ export interface RepresentativesResponse {
 }
 
 export interface BallotResponse {
+	candidateRecordSource?: { stateCode: string; sourceId: string };
 	coverageLimits?: string[];
 	scope?: "statewide" | "local";
 	guideContent: GuideContentSummary | null;

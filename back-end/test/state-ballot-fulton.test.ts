@@ -166,6 +166,30 @@ test("legacy approved Fulton facts remain readable without network or relabeling
 	finally { await rm(directory, { recursive: true }); }
 });
 
+test("cold and stale Fulton public readers retain native records without publisher work or clock changes", async () => {
+	const directory = await mkdtemp(join(tmpdir(), "ballot-fulton-public-reader-"));
+	try {
+		const snapshot = { source, ...parseFultonCandidateCapture(source, capture()) };
+		await createStateBallotStorage(directory).write(snapshot);
+		const path = join(directory, `${source.id}.json`);
+		const before = await readFile(path, "utf8");
+		let requests = 0;
+		const options = { sources: [source], dataDirectory: directory, now: () => now + 12 * 60 * 60 * 1000, fetchText: async () => {
+			requests++;
+			throw new Error("Public reads must not collect.");
+		} };
+		for (const repository of [createStateBallotRepository(options), createStateBallotRepository(options)]) {
+			assert.deepEqual((await repository.getSnapshot("GA"))!.records, snapshot.records);
+			assert.equal((await repository.inspectSources!())[0]!.status, "stale");
+			assert.equal((await repository.inspectSources!())[0]!.lastAttemptAt, null);
+		}
+		assert.equal(await createStateBallotRepository({ ...options, dataDirectory: null }).getSnapshot("GA"), null);
+		assert.equal(requests, 0);
+		assert.equal(await readFile(path, "utf8"), before);
+	}
+	finally { await rm(directory, { recursive: true }); }
+});
+
 test("a failed routine refresh with readable reviewed fallback is still a failed run and preserves success/import clocks", async () => {
 	const directory = await mkdtemp(join(tmpdir(), "ballot-fulton-run-"));
 	try {
@@ -219,7 +243,7 @@ test("unexpired Fulton publication changes retain the accepted catalog and hot/c
 		process.env.STATE_BALLOT_ENABLED_SOURCES = source.id;
 		process.env.STATE_BALLOT_ENABLED_FAMILIES = source.id;
 		process.env.STATE_BALLOT_CYCLE_CATALOGS = JSON.stringify({ [source.id]: path });
-		const hot = createStateBallotRepository({ dataDirectory: directory, now: () => now, fetchText: async (entry: StateBallotSource) => capture(entry) });
+		const hot = createStateBallotRepository({ dataDirectory: directory, refreshReviewedLegacy: true, now: () => now, fetchText: async (entry: StateBallotSource) => capture(entry) });
 		assert.equal(await hot.getSnapshot("GA", instance.id), null);
 		await writeStateBallotCycleCatalog(path, catalog, now);
 		assert.equal((await hot.getSnapshot("GA", instance.id))!.records.length, 7);

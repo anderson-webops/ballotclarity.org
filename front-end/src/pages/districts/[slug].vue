@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { storeToRefs } from "pinia";
+import { groupCountyOfficeholders } from "~/utils/county-officeholder-groups";
 
 import { buildDistrictRepresentativeSection, buildDistrictResponsibilitiesHeading } from "~/utils/district-availability";
 import { buildGuideDistrictPageRecord, buildNationwideDistrictPageRecord } from "~/utils/district-page";
@@ -37,8 +38,9 @@ const pageError = computed(() => districtPageData.value ? null : guideError.valu
 const responsibilitiesHeading = computed(() => districtPageData.value?.mode === "nationwide"
 	? buildDistrictResponsibilitiesHeading(districtPageData.value.district)
 	: "Responsibilities");
+const representativeGroups = computed(() => groupCountyOfficeholders(districtPageData.value?.representatives ?? [], districtPageData.value?.officeVacancies));
 const representativeSection = computed(() => districtPageData.value?.officeVacancies !== undefined
-	? { heading: "County commission", emptyNote: "" }
+	? { heading: representativeGroups.value.length === 1 && representativeGroups.value[0]?.id === "commission" ? "County commission" : "County officials", emptyNote: "" }
 	: districtPageData.value ? buildDistrictRepresentativeSection(districtPageData.value.district, districtPageData.value.mode) : { heading: "District representatives", emptyNote: "" });
 const representativeDirectoryTarget = computed(() => ({
 	path: "/representatives",
@@ -153,72 +155,79 @@ usePageSeo({
 							Representative directory
 						</NuxtLink>
 					</div>
-					<div v-if="districtPageData.representatives.length || districtPageData.officeVacancies?.length" class="mt-6 gap-5 grid lg:grid-cols-2">
-						<article v-for="representative in districtPageData.representatives" :key="representative.slug">
-							<div class="flex gap-4 items-start">
-								<ProfileImageStack
-									v-if="representative.profileImages?.length"
-									:images="representative.profileImages"
-									:name="representative.name"
-									size="md"
-								/>
-								<div class="min-w-0">
+					<div v-if="districtPageData.representatives.length || districtPageData.officeVacancies?.length" class="mt-8 space-y-16">
+						<section v-for="group in representativeGroups" :key="group.id">
+							<h3 v-if="group.label" class="text-xl text-app-muted font-serif dark:text-app-muted-dark">
+								{{ group.label }}
+							</h3>
+							<div class="mt-6 gap-8 grid lg:grid-cols-2">
+								<article v-for="representative in group.people" :key="representative.slug">
+									<div class="flex gap-4 items-start">
+										<ProfileImageStack
+											v-if="representative.profileImages?.length"
+											:images="representative.profileImages"
+											:name="representative.name"
+											size="md"
+										/>
+										<div class="min-w-0">
+											<p class="text-xl text-app-ink font-serif dark:text-app-text-dark">
+												{{ representative.name }}
+											</p>
+											<p class="text-sm text-app-muted mt-1 dark:text-app-muted-dark">
+												{{ getRepresentativePresentation(representative).officeDisplayLabel }}<span v-if="representative.party"> · <PartyLabel :party="representative.party" /></span>
+											</p>
+										</div>
+									</div>
+									<p v-if="resolveRepresentativeContentSummary(representative.summary)" class="text-sm text-app-ink leading-6 mt-3 dark:text-app-text-dark">
+										{{ resolveRepresentativeContentSummary(representative.summary) }}
+									</p>
+									<div class="mt-3 flex flex-wrap gap-x-5 gap-y-1">
+										<SafeExternalLink
+											v-if="isExternalHref(representative.href)"
+											:href="representative.href"
+											external-icon
+											class="btn-secondary inline-flex gap-2 items-center"
+										>
+											Open record
+										</SafeExternalLink>
+										<NuxtLink v-else :to="buildLookupAwareTarget(representative.href)" class="btn-secondary">
+											Profile
+										</NuxtLink>
+										<RepresentativeWebsite :website-url="representative.officialWebsiteUrl" :provider-url="representative.openstatesUrl" class="btn-secondary" />
+										<NuxtLink
+											v-if="!isExternalHref(representative.href) && representative.fundingAvailable"
+											:to="buildLookupAwareTarget(`${representative.href}/funding`)"
+											class="btn-secondary"
+										>
+											Funding
+										</NuxtLink>
+										<NuxtLink
+											v-if="!isExternalHref(representative.href) && representative.influenceAvailable"
+											:to="buildLookupAwareTarget(`${representative.href}/influence`)"
+											class="btn-secondary"
+										>
+											Influence
+										</NuxtLink>
+									</div>
+									<div v-if="representative.fundingAvailable || representative.influenceAvailable" class="mt-4 space-y-2">
+										<p v-if="representative.fundingAvailable" class="text-sm text-app-muted leading-6 dark:text-app-muted-dark">
+											<strong class="text-app-ink dark:text-app-text-dark">Funding:</strong> {{ representative.fundingSummary }}
+										</p>
+										<p v-if="representative.influenceAvailable" class="text-sm text-app-muted leading-6 dark:text-app-muted-dark">
+											<strong class="text-app-ink dark:text-app-text-dark">Influence:</strong> {{ representative.influenceSummary }}
+										</p>
+									</div>
+								</article>
+								<article v-for="office in group.vacancies" :key="office" class="py-4">
 									<p class="text-xl text-app-ink font-serif dark:text-app-text-dark">
-										{{ representative.name }}
+										{{ office }}
 									</p>
 									<p class="text-sm text-app-muted mt-1 dark:text-app-muted-dark">
-										{{ getRepresentativePresentation(representative).officeDisplayLabel }}<span v-if="representative.party"> · <PartyLabel :party="representative.party" /></span>
+										Vacant
 									</p>
-								</div>
+								</article>
 							</div>
-							<p v-if="resolveRepresentativeContentSummary(representative.summary)" class="text-sm text-app-ink leading-6 mt-3 dark:text-app-text-dark">
-								{{ resolveRepresentativeContentSummary(representative.summary) }}
-							</p>
-							<div class="mt-3 flex flex-wrap gap-x-5 gap-y-1">
-								<SafeExternalLink
-									v-if="isExternalHref(representative.href)"
-									:href="representative.href"
-									external-icon
-									class="btn-secondary inline-flex gap-2 items-center"
-								>
-									Open record
-								</SafeExternalLink>
-								<NuxtLink v-else :to="buildLookupAwareTarget(representative.href)" class="btn-secondary">
-									Profile
-								</NuxtLink>
-								<RepresentativeWebsite :website-url="representative.officialWebsiteUrl" :provider-url="representative.openstatesUrl" class="btn-secondary" />
-								<NuxtLink
-									v-if="!isExternalHref(representative.href) && representative.fundingAvailable"
-									:to="buildLookupAwareTarget(`${representative.href}/funding`)"
-									class="btn-secondary"
-								>
-									Funding
-								</NuxtLink>
-								<NuxtLink
-									v-if="!isExternalHref(representative.href) && representative.influenceAvailable"
-									:to="buildLookupAwareTarget(`${representative.href}/influence`)"
-									class="btn-secondary"
-								>
-									Influence
-								</NuxtLink>
-							</div>
-							<div v-if="representative.fundingAvailable || representative.influenceAvailable" class="mt-4 space-y-2">
-								<p v-if="representative.fundingAvailable" class="text-sm text-app-muted leading-6 dark:text-app-muted-dark">
-									<strong class="text-app-ink dark:text-app-text-dark">Funding:</strong> {{ representative.fundingSummary }}
-								</p>
-								<p v-if="representative.influenceAvailable" class="text-sm text-app-muted leading-6 dark:text-app-muted-dark">
-									<strong class="text-app-ink dark:text-app-text-dark">Influence:</strong> {{ representative.influenceSummary }}
-								</p>
-							</div>
-						</article>
-						<article v-for="office in districtPageData.officeVacancies ?? []" :key="office" class="py-4">
-							<p class="text-xl text-app-ink font-serif dark:text-app-text-dark">
-								{{ office }}
-							</p>
-							<p class="text-sm text-app-muted mt-1 dark:text-app-muted-dark">
-								Vacant
-							</p>
-						</article>
+						</section>
 					</div>
 					<p v-else class="text-sm text-app-muted leading-6 mt-4 dark:text-app-muted-dark">
 						{{ representativeSection.emptyNote }}

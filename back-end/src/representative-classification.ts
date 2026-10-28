@@ -173,8 +173,11 @@ function buildOfficeDisplayLabel(
 			const role = /\bvice\s+chair\b/i.test(officeTitle || officeSought) ? "Commission Vice Chair" : /\bchair\b/i.test(officeTitle || officeSought) ? "Commission Chair" : "Commissioner";
 			return `${countyName ? `${countyName} County` : "County"} ${role}${districtNumber ? `, District ${districtNumber}` : ""}`;
 		}
-		case "county_official":
+		case "county_official": {
+			const role = officeTitle || officeSought;
+			if (["Sheriff", "District Attorney"].includes(role)) return countyName ? `${countyName} County ${role}` : role;
 			return countyName ? `${countyName} County official` : "County official";
+		}
 		case "mayor":
 			return cityName ? `Mayor of ${cityName}` : "Mayor";
 		case "city_official":

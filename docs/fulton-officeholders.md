@@ -36,7 +36,8 @@ not contact the publisher or advance successful clocks. Scheduling belongs to
 the existing protected automation system; this CLI does not install a scheduler.
 
 Public requests read retained data without contacting the publisher. County
-pages show the full commission and explicit vacancies. District members have
+pages show the full commission and explicit vacancies, grouped separately from
+available [county offices](fulton-county-officeholders.md). District members have
 individual public profiles and district pages. A generic Fulton county location
 matches only the at-large chair until trusted commission-district geography is
 available. Officeholder records never establish current ballot candidacy.

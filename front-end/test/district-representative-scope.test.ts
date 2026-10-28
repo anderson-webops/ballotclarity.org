@@ -27,8 +27,10 @@ test("directory navigation retains ZIP selection or guide area without exposing 
 
 test("the district section has no contradictory all-representatives link or coverage warning", () => {
 	const page = readFileSync(new URL("../src/pages/districts/[slug].vue", import.meta.url), "utf8");
-	const section = page.match(/<section id="representatives"[\s\S]*?<\/section>/u)?.[0];
-	assert.ok(section);
+	const start = page.indexOf("<section id=\"representatives\"");
+	const end = page.indexOf("<section v-if=\"districtPageData.candidates.length\" id=\"candidates\"", start);
+	assert.ok(start >= 0 && end > start);
+	const section = page.slice(start, end);
 	assert.match(section, /\{\{ representativeSection.heading \}\}/u);
 	assert.match(section, /Representative directory/u);
 	assert.match(section, /:to="representativeDirectoryTarget"/u);

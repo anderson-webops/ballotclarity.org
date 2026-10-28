@@ -1,4 +1,5 @@
 import type { ElectionReferenceRepository } from "./election-references.js";
+import type { FultonCountyOfficeholderRepository } from "./fulton-county-officeholder-storage.js";
 import type { FultonOfficeholderRepository } from "./fulton-officeholder-storage.js";
 import type { StateBallotRepository } from "./state-ballot-repository.js";
 import type { AdminAutomationRun, AdminOperationsResponse } from "./types/civic.js";
@@ -106,6 +107,7 @@ export async function writeAutomationRun(directory: string, run: AdminAutomation
 }
 
 export async function buildAdminOperations(options: {
+	countyOfficeholders?: FultonCountyOfficeholderRepository | null;
 	officeholders?: FultonOfficeholderRepository | null;
 	candidates: StateBallotRepository | null;
 	references: ElectionReferenceRepository | null;
@@ -116,7 +118,8 @@ export async function buildAdminOperations(options: {
 	const datasets = [
 		...((await options.candidates?.inspectSources?.()) ?? []),
 		...((await options.references?.inspectSources?.()) ?? []),
-		...((await options.officeholders?.inspectSources?.()) ?? [])
+		...((await options.officeholders?.inspectSources?.()) ?? []),
+		...((await options.countyOfficeholders?.inspectSources?.()) ?? [])
 	];
 	let run: AdminAutomationRun | null = null;
 	let invalid = false;

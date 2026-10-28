@@ -11,7 +11,7 @@ const registrationDeadline = computed(() => nextElectionData.value?.election.key
 const earlyVotingDate = computed(() => nextElectionData.value?.election.keyDates.find(item => item.label === "Early voting opens") ?? null);
 const hasOfficeContact = computed(() => Boolean(jurisdiction.value && [jurisdiction.value.officialOffice.address, jurisdiction.value.officialOffice.phone, jurisdiction.value.officialOffice.email, jurisdiction.value.officialOffice.hours].some(value => value?.trim())));
 
-watchEffect(() => {
+watch([jurisdiction, nextElectionData], () => {
 	if (jurisdiction.value) {
 		civicStore.setLocation({
 			coverageLabel: `Current area: ${jurisdiction.value.displayName}`,
@@ -38,7 +38,7 @@ watchEffect(() => {
 			state: nextElectionData.value.location.state
 		}, nextElectionData.value.guideContent);
 	}
-});
+}, { immediate: true });
 
 usePageSeo({
 	description: jurisdiction.value?.description ?? "Jurisdiction hub with official election office links, key dates, and current election pages.",
@@ -93,6 +93,7 @@ usePageSeo({
 					</div>
 				</div>
 			</header>
+			<ElectionCandidateRecords v-if="nextElectionData?.candidateRecordSource" :source="nextElectionData.candidateRecordSource" />
 
 			<section class="surface-panel">
 				<div class="flex flex-wrap gap-4 items-start justify-between">

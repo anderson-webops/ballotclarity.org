@@ -7,7 +7,7 @@ export const countyOfficeHash = (value: string) => createHash("sha256").update(v
 const footer = `<footer><a href="/Privacy-Statement">Privacy Statement</a></footer>`;
 
 export function exampleCountyOfficePages(sheriffName = "Avery First", vacant = false) {
-	return fultonCountyOfficeholderPublication.offices.map((definition) => {
+	return fultonCountyOfficeholderPublication.offices.filter(definition => "profilePrefix" in definition).map((definition) => {
 		const name = definition.id === "sheriff" ? sheriffName : "Jordan Second";
 		const sourceName = definition.id === "sheriff" ? `Sheriff ${name}` : name;
 		const profileUrl = `https://fultoncountyga.gov${definition.profilePrefix}${name.replaceAll(" ", "-")}`;
@@ -27,4 +27,19 @@ export function exampleCountyOfficeholders(sheriffName = "Avery First", vacant =
 		...pages.flatMap((row, index) => [{ url: row.definition.pageUrl, capturedAt, sha256: countyOfficeHash(row.page) }, ...(offices[index]!.person ? [{ url: row.profileUrl, capturedAt, sha256: countyOfficeHash(row.profile) }] : [])])
 	];
 	return { schemaVersion: 1, type: "fulton-county-officeholders", sourceId: "ga-fulton-county-offices", countyFips: "13121", retrievedAt: capturedAt, sourceSha256: countyOfficeHash(JSON.stringify(documents)), documents, offices };
+}
+
+export function exampleExpandedCountyOfficeholders() {
+	const value = exampleCountyOfficeholders();
+	value.schemaVersion = 2;
+	const pages = [
+		`<main><p>Fulton County</p><h1 class="h3">morgan Future, Solicitor - General</h1><img alt="Office of the Solicitor‑General banner with text reading “Morgan Future” and the department seal."></main>${footer}`,
+		`<main><h1 class="h3">Tax Commissioner</h1><p>Fulton County Tax Commissioner Dr. Taylor Future is elected by the voters of Fulton County.</p></main>${footer}`
+	];
+	for (const [index, definition] of fultonCountyOfficeholderPublication.offices.slice(2).entries()) {
+		value.offices.push(parseFultonCountyOffice(pages[index]!, definition));
+		value.documents.push({ url: definition.pageUrl, capturedAt: value.retrievedAt, sha256: countyOfficeHash(pages[index]!) });
+	}
+	value.sourceSha256 = countyOfficeHash(JSON.stringify(value.documents));
+	return value;
 }

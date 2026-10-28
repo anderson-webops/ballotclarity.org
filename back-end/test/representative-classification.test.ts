@@ -3,7 +3,7 @@ import test from "node:test";
 import { classifyRepresentative } from "../src/representative-classification.js";
 
 test("countywide agency roles retain their sourced identity", () => {
-	for (const officeTitle of ["Sheriff", "District Attorney"]) assert.equal(classifyRepresentative({ officeTitle, districtLabel: "Fulton County", districtType: "county", stateCode: "GA" }).officeDisplayLabel, `Fulton County ${officeTitle}`);
+	for (const officeTitle of ["Sheriff", "District Attorney", "Solicitor General", "Tax Commissioner"]) assert.equal(classifyRepresentative({ officeTitle, districtLabel: "Fulton County", districtType: "county", stateCode: "GA" }).officeDisplayLabel, `Fulton County ${officeTitle}`);
 });
 
 test("county commission members retain their distinct sourced roles and district numbers", () => {

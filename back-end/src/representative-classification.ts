@@ -175,7 +175,7 @@ function buildOfficeDisplayLabel(
 		}
 		case "county_official": {
 			const role = officeTitle || officeSought;
-			if (["Sheriff", "District Attorney"].includes(role)) return countyName ? `${countyName} County ${role}` : role;
+			if (["Sheriff", "District Attorney", "Solicitor General", "Tax Commissioner"].includes(role)) return countyName ? `${countyName} County ${role}` : role;
 			return countyName ? `${countyName} County official` : "County official";
 		}
 		case "mayor":

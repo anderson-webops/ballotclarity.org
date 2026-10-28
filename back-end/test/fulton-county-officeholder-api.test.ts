@@ -7,7 +7,7 @@ import process from "node:process";
 import test from "node:test";
 import { FultonCountyOfficeholderUnavailableError } from "../src/fulton-county-officeholder-storage.js";
 import { createApp } from "../src/server.js";
-import { exampleCountyOfficeholders } from "./helpers/fulton-county-officeholders.js";
+import { exampleCountyOfficeholders, exampleExpandedCountyOfficeholders } from "./helpers/fulton-county-officeholders.js";
 import { exampleFultonOfficeholders } from "./helpers/fulton-officeholders.js";
 
 process.env.ADMIN_STORE_DRIVER = "sqlite";
@@ -72,6 +72,33 @@ test("county-office refresh replaces current profiles and source inventory witho
 	snapshot = exampleCountyOfficeholders("Morgan Successor", true, Date.now() - 1000);
 	const vacant = await fetch(`${base}/api/districts/fulton-county`).then(result => result.json());
 	assert.deepEqual(vacant.officeVacancies, ["County Commissioner, District 4", "Sheriff"]);
+});
+
+test("expanded county departments become public without a restart, fabricated portraits or ballot claims", async (context) => {
+	let snapshot = exampleCountyOfficeholders();
+	const base = await fixture(context, () => snapshot);
+	assert.equal((await fetch(`${base}/api/districts/fulton-county`).then(result => result.json())).representatives.length, 8);
+	snapshot = exampleExpandedCountyOfficeholders();
+	const county = await fetch(`${base}/api/districts/fulton-county`).then(result => result.json());
+	assert.equal(county.representatives.length, 10);
+	assert.deepEqual(county.officeVacancies, ["County Commissioner, District 4"]);
+	for (const office of snapshot.offices.slice(2)) {
+		const response = await fetch(`${base}/api/representatives/${office.person!.slug}`);
+		assert.equal(response.status, 200);
+		const { person } = await response.json();
+		assert.equal(person.name, office.person!.name);
+		assert.equal(person.party, "");
+		assert.equal(person.onCurrentBallot, false);
+		assert.deepEqual(person.profileImages ?? [], []);
+		assert.deepEqual(person.biography, []);
+		assert.equal(person.officialWebsiteUrl, office.person!.officialWebsiteUrl);
+		const sources = person.sources.filter((source: { id: string }) => source.id.startsWith("fulton-county-offices:"));
+		assert.equal(sources.length, 1);
+		assert.equal(sources[0].url, office.person!.officialWebsiteUrl);
+		assert.equal((await fetch(`${base}/api/sources/${encodeURIComponent(sources[0].id)}`)).status, 200);
+	}
+	const lookup = await fetch(`${base}/api/representatives?lookup=30022`).then(result => result.json());
+	assert.deepEqual(new Set(lookup.representatives.map((person: { name: string }) => person.name)), new Set(["Avery Chair", "Avery First", "Jordan Second", "Morgan Future", "Taylor Future"]));
 });
 
 test("county-office failure is explicit and never attaches Georgia officials to a same-named county in another state", async (context) => {

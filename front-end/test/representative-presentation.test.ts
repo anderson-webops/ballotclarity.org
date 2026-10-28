@@ -10,7 +10,7 @@ import {
 } from "../src/utils/representative-presentation.ts";
 
 test("countywide agency roles retain their sourced identity", () => {
-	for (const officeTitle of ["Sheriff", "District Attorney"]) assert.equal(classifyRepresentative({ officeTitle, districtLabel: "Fulton County", districtType: "county", stateCode: "GA" }).officeDisplayLabel, `Fulton County ${officeTitle}`);
+	for (const officeTitle of ["Sheriff", "District Attorney", "Solicitor General", "Tax Commissioner"]) assert.equal(classifyRepresentative({ officeTitle, districtLabel: "Fulton County", districtType: "county", stateCode: "GA" }).officeDisplayLabel, `Fulton County ${officeTitle}`);
 });
 
 test("county commission labels distinguish members, chair and vice chair without repeating the district", () => {

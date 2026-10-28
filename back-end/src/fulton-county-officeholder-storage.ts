@@ -29,6 +29,7 @@ interface FultonCountyOfficeholderEnvelope {
 
 const digest = (value: string) => createHash("sha256").update(value).digest("hex");
 export const fultonCountyOfficeholderConfigurationSha256 = digest(JSON.stringify(fultonCountyOfficeholderPublication));
+const legacyConfigurationSha256 = digest(JSON.stringify({ ...fultonCountyOfficeholderPublication, offices: fultonCountyOfficeholderPublication.offices.slice(0, 2) }));
 
 export function readFultonCountyOfficeholderEnvelope(directory: string, now = Date.now()): FultonCountyOfficeholderEnvelope {
 	assertExternalStateDataDirectory(directory);
@@ -46,7 +47,7 @@ export function readFultonCountyOfficeholderEnvelope(directory: string, now = Da
 	}
 	finally { closeSync(descriptor); }
 	const value = JSON.parse(body) as FultonCountyOfficeholderEnvelope;
-	if (!value || Array.isArray(value) || Object.keys(value).sort().join(",") !== "acquisition,importedAt,snapshot,sourceConfigurationSha256" || value.sourceConfigurationSha256 !== fultonCountyOfficeholderConfigurationSha256 || !["collected", "imported"].includes(value.acquisition) || typeof value.importedAt !== "string" || !Number.isFinite(Date.parse(value.importedAt)) || Date.parse(value.importedAt) > now)
+	if (!value || Array.isArray(value) || Object.keys(value).sort().join(",") !== "acquisition,importedAt,snapshot,sourceConfigurationSha256" || !(value.sourceConfigurationSha256 === fultonCountyOfficeholderConfigurationSha256 || (value.sourceConfigurationSha256 === legacyConfigurationSha256 && value.snapshot?.schemaVersion === 1)) || !["collected", "imported"].includes(value.acquisition) || typeof value.importedAt !== "string" || !Number.isFinite(Date.parse(value.importedAt)) || Date.parse(value.importedAt) > now)
 		throw new Error("The Fulton county-office storage envelope is invalid.");
 	validateFultonCountyOfficeholderSnapshot(value.snapshot, now);
 	if (Date.parse(value.importedAt) < Date.parse(value.snapshot.retrievedAt)) throw new Error("The Fulton county-office import clock precedes its source.");
@@ -75,7 +76,7 @@ export function createFultonCountyOfficeholderRepository(directory = process.env
 		}
 		catch { failure = "Officeholder collection evidence is invalid."; }
 		if (run?.status === "failed" && (run.finishedAt ?? "") >= (current?.importedAt ?? "")) failure = run.results[0]?.reason ?? "source-unavailable";
-		return [{ id: "ga-fulton-county-offices", label: "Fulton County sheriff and district attorney", stateCode: "GA", electionDate: "", kind: "officeholders", mode: "automatic", status: failure ? "error" : Date.parse(current!.snapshot.retrievedAt) + fultonCountyOfficeholderPublication.minimumRefreshIntervalMs < Date.now() ? "stale" : "current", records: current?.snapshot.offices.filter(office => office.person).length ?? null, retrievedAt: current?.snapshot.retrievedAt ?? null, lastAttemptAt: run?.startedAt ?? null, lastImportAt: current?.importedAt ?? null, failure }];
+		return [{ id: "ga-fulton-county-offices", label: "Fulton County offices", stateCode: "GA", electionDate: "", kind: "officeholders", mode: "automatic", status: failure ? "error" : Date.parse(current!.snapshot.retrievedAt) + fultonCountyOfficeholderPublication.minimumRefreshIntervalMs < Date.now() ? "stale" : "current", records: current?.snapshot.offices.filter(office => office.person).length ?? null, retrievedAt: current?.snapshot.retrievedAt ?? null, lastAttemptAt: run?.startedAt ?? null, lastImportAt: current?.importedAt ?? null, failure }];
 	} };
 }
 
@@ -127,7 +128,9 @@ export async function writeFultonCountyOfficeholders(directory: string, snapshot
 	if (Buffer.byteLength(body) > 128 * 1024) throw new Error("The Fulton county-office snapshot exceeds its bounds.");
 	let previous: string | null = null;
 	try {
-		readFultonCountyOfficeholderEnvelope(directory, now);
+		const current = readFultonCountyOfficeholderEnvelope(directory, now);
+		if (current.snapshot.schemaVersion > snapshot.schemaVersion) throw new Error("The accepted county-office inventory cannot be downgraded.");
+		if (Date.parse(current.snapshot.retrievedAt) > Date.parse(snapshot.retrievedAt)) throw new Error("An older county-office capture cannot replace accepted records.");
 		previous = await readFile(join(directory, "fulton-county-offices.json"), "utf8");
 	}
 	catch (error) { if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error; }

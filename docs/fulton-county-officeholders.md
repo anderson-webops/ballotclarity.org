@@ -1,11 +1,14 @@
-# Fulton County sheriff and district attorney
+# Fulton County offices
 
-This year-independent source reads the current leadership cards on the two
-official department pages and corroborates each person's identity against the
-linked official profile. Names, roles, profile links, portrait references and
+This year-independent source reads sheriff and district-attorney leadership
+cards and their linked profiles, plus the solicitor-general and tax-commissioner
+department publications. Names, roles, official links, available portrait references and
 capture evidence are normalized. Deputy staff, promotional biography text,
 political party, election qualification and inferred term dates are excluded.
-These two offices are not a complete county-office inventory.
+These four offices are not a complete county-office inventory. The solicitor's
+role heading must agree with the named banner. The tax commissioner's name must
+come from the explicit elected-office statement under the department heading.
+Department graphics and seals are not treated as portraits.
 
 ## Collection and storage contract
 
@@ -23,6 +26,17 @@ eleven-second spacing apply. Refreshes and failed retries have a six-hour
 minimum interval. Ambiguous leadership, changed policy links, mismatched profile
 identities or changed layouts retain last-good state for review. Explicitly
 vacant cards produce vacancy records, not fabricated people.
+
+Version 2 captures and snapshots contain all four configured offices. Version 1
+two-office captures, snapshots and their original configuration-bound envelopes
+remain readable without changing their bytes or clocks. A successful expanded
+collection atomically replaces the retained envelope and keeps its exact
+predecessor for recovery. A legacy configuration digest cannot authorize a
+version 2 inventory. An unavailable new publication retains the last accepted
+inventory rather than silently omitting its office.
+Imports preserve monotonic source clocks and cannot downgrade an accepted
+four-office inventory to two offices. Recovery retains the exact predecessor
+alongside its matching runtime contract.
 
 `fulton-county-offices.json` contains an atomically written, configuration-bound
 envelope; its exact predecessor is `fulton-county-offices.previous.json`.
@@ -48,3 +62,5 @@ are publisher references, not copied image assets or a blanket reuse license.
 
 - [Sheriff's office](https://fultoncountyga.gov/Inside-Fulton-County/Fulton-County-Departments/Sheriff)
 - [District attorney](https://fultoncountyga.gov/Inside-Fulton-County/Fulton-County-Departments/District-Attorney)
+- [Solicitor general](https://fultoncountyga.gov/Inside-Fulton-County/Fulton-County-Departments/Solicitor-General)
+- [Tax commissioner](https://fultoncountyga.gov/Inside-Fulton-County/Fulton-County-Departments/Tax-Commissioner)

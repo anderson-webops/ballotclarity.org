@@ -48,9 +48,9 @@ export async function collectFultonCountyOfficeholders({ directory, now = Date.n
 			}
 			for (const definition of fultonCountyOfficeholderPublication.offices) {
 				const office = parseFultonCountyOffice(await get(definition.pageUrl), definition);
-				if (office.person) await get(office.person.officialWebsiteUrl);
+				if (office.person && "profilePrefix" in definition) await get(office.person.officialWebsiteUrl);
 			}
-			const capture: FultonCountyOfficeholderCapture = { schemaVersion: 1, type: "fulton-county-officeholder-capture", documents };
+			const capture: FultonCountyOfficeholderCapture = { schemaVersion: 2, type: "fulton-county-officeholder-capture", documents };
 			const snapshot = prepareFultonCountyOfficeholders(capture, now());
 			prepared = true;
 			const captures = join(canonical, "county-office-captures");

@@ -69,6 +69,9 @@ usePageSeo(() => ({
 				</button>
 			</div>
 		</form>
+		<NuxtLink to="/records" class="text-app-accent underline underline-offset-3 focus-ring">
+			Candidate records list
+		</NuxtLink>
 
 		<div v-if="pending" class="space-y-6" role="status" aria-label="Searching public records">
 			<div class="rounded-lg bg-app-bg h-56 animate-pulse dark:bg-app-bg-dark" />

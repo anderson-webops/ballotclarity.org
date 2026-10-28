@@ -1,5 +1,6 @@
 import type { Express } from "express";
 import type { PublicRequestThrottle } from "./public-request-throttle.js";
+import type { RecordPortraitResolver } from "./record-portraits.js";
 import type { StateCandidateRecord } from "./state-ballot-records.js";
 import type { StateBallotRepository, StateBallotSnapshot } from "./state-ballot-repository.js";
 import type { StateBallotSource } from "./state-ballot-sources.js";
@@ -127,7 +128,7 @@ export function buildStateRecordPage(snapshot: StateBallotSnapshot, filters: Ret
 	};
 }
 
-export function registerStateRecordRoutes(app: Express, repository: StateBallotRepository | null, throttle: PublicRequestThrottle = createPublicRequestThrottle({ windowMs: 60_000, maxRequests: 120, maxBuckets: 10_000 }), now: () => number = Date.now) {
+export function registerStateRecordRoutes(app: Express, repository: StateBallotRepository | null, throttle: PublicRequestThrottle = createPublicRequestThrottle({ windowMs: 60_000, maxRequests: 120, maxBuckets: 10_000 }), now: () => number = Date.now, portraits?: RecordPortraitResolver) {
 	const currentSources = () => orderStateBallotSources(repository?.sources ?? configuredStateBallotSources, now());
 	app.use("/api/state-records", (request, response, next) => {
 		response.setHeader("Cache-Control", "no-store");
@@ -196,6 +197,7 @@ export function registerStateRecordRoutes(app: Express, repository: StateBallotR
 					throw new Error("The repository returned a mismatched candidate source.");
 				payload.source = { stateCode, stateName: state[1], configured: true, id: selected.id, label: selected.label, url: selected.pageUrl, electionDate: selected.electionDate, scopeNotice: selected.scopeNotice, documentLinks: stateRecordDocumentLinks(selected, snapshot), sourceAsOfDate: snapshot.sourceAsOfDate };
 				Object.assign(payload, buildStateRecordPage(snapshot, filters));
+				if (portraits) payload.records = await portraits(stateCode, payload.records);
 				payload.available = true;
 				payload.source.retrievedAt = snapshot.retrievedAt;
 				payload.questionCount = snapshot.ballotQuestions?.length;

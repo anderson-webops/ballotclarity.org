@@ -1,6 +1,7 @@
 import type { Express } from "express";
 import type { ElectionReferenceRepository } from "./election-references.js";
 import type { PublicRequestThrottle } from "./public-request-throttle.js";
+import type { RecordPortraitResolver } from "./record-portraits.js";
 import type { ElectionReferencesResponse } from "./types/civic.js";
 import { electionReferenceSources } from "./election-reference-sources.js";
 import { buildElectionReferencePages, selectElectionReferenceSources } from "./election-references.js";
@@ -8,7 +9,7 @@ import { createPublicRequestThrottle } from "./public-request-throttle.js";
 import { parseStateRecordFilters } from "./state-records.js";
 import { usStates } from "./us-states.js";
 
-export function registerElectionReferenceRoutes(app: Express, repository: ElectionReferenceRepository | null, throttle: PublicRequestThrottle = createPublicRequestThrottle({ windowMs: 60_000, maxRequests: 120, maxBuckets: 10_000 })) {
+export function registerElectionReferenceRoutes(app: Express, repository: ElectionReferenceRepository | null, throttle: PublicRequestThrottle = createPublicRequestThrottle({ windowMs: 60_000, maxRequests: 120, maxBuckets: 10_000 }), portraits?: RecordPortraitResolver) {
 	app.use("/api/election-references", (request, response, next) => {
 		response.setHeader("Cache-Control", "no-store");
 		const attempt = throttle.attempt(request.ip || request.socket.remoteAddress || "unknown");
@@ -51,6 +52,7 @@ export function registerElectionReferenceRoutes(app: Express, repository: Electi
 				payload.collections = sources.filter(source => source.electionDate === payload.electionDate).map(source => source.id);
 				if (sources.some(source => source.electionDate === payload.electionDate && !source.optional && !snapshots.some(snapshot => snapshot.sourceId === source.id))) payload.incomplete = true;
 			}
+			if (portraits) payload.records = await portraits(stateCode, payload.records);
 			response.json(payload);
 		}
 		catch {

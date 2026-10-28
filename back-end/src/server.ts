@@ -148,6 +148,7 @@ import { buildCongressProfileImages, uniqueProfileImages } from "./profile-image
 import { parseTrustProxySetting } from "./proxy-trust.js";
 import { createPublicRequestThrottle } from "./public-request-throttle.js";
 import { buildCuratedPublicSourceRecords, mapAuthorityToPublisherType } from "./public-source-directory.js";
+import { createRecordPortraitResolver } from "./record-portraits.js";
 import { loadReleaseIdentity } from "./release-identity.js";
 import { classifyRepresentative } from "./representative-classification.js";
 import { createRepresentativeModuleResolver } from "./representative-modules.js";
@@ -5323,8 +5324,9 @@ export async function createApp(options: CreateAppOptions = {}) {
 		}
 	});
 
-	registerStateRecordRoutes(app, stateBallotRepository);
-	registerElectionReferenceRoutes(app, electionReferenceRepository);
+	const recordPortraits = createRecordPortraitResolver({ congress: congressClient, officials: currentSupplementalOfficeholders });
+	registerStateRecordRoutes(app, stateBallotRepository, undefined, undefined, recordPortraits);
+	registerElectionReferenceRoutes(app, electionReferenceRepository, undefined, recordPortraits);
 	registerJudicialEvaluationRoutes(app, judicialEvaluationRepository, stateBallotRepository);
 
 	app.get("/api/elections", async (_request, response) => {

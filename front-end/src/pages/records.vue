@@ -155,17 +155,20 @@ usePageSeo({
 				</p>
 				<ul class="border-t border-app-line divide-app-line divide-y dark:border-app-line-dark dark:divide-app-line-dark" aria-label="Candidate records">
 					<li v-for="record in data.records" :key="record.id" class="min-w-0 break-words">
-						<NuxtLink :to="{ path: `/record/${filters.stateCode}/${record.id}`, query: { name: record.name, source: data.source.id } }" class="py-5 block focus-ring">
-							<h2 class="text-xl text-app-ink font-semibold dark:text-app-text-dark">
-								{{ record.name }}
-							</h2>
-							<p class="text-sm text-app-muted leading-6 mt-2 dark:text-app-muted-dark">
-								<template v-for="(part, index) in stateRecordSummaryParts(record)" :key="index">
-									{{ index ? ' · ' : '' }}<PartyLabel v-if="part.isParty" :party="part.label" /><template v-else>
-										{{ part.label }}
+						<NuxtLink :to="{ path: `/record/${filters.stateCode}/${record.id}`, query: { name: record.name, source: data.source.id } }" class="py-5 flex gap-4 items-center focus-ring">
+							<ProfileImageStack v-if="record.profileImages?.length" :images="record.profileImages" :name="record.name" size="sm" class="shrink-0" />
+							<div class="min-w-0">
+								<h2 class="text-xl text-app-ink font-semibold dark:text-app-text-dark">
+									{{ record.name }}
+								</h2>
+								<p class="text-sm text-app-muted leading-6 mt-2 dark:text-app-muted-dark">
+									<template v-for="(part, index) in stateRecordSummaryParts(record)" :key="index">
+										{{ index ? ' · ' : '' }}<PartyLabel v-if="part.isParty" :party="part.label" /><template v-else>
+											{{ part.label }}
+										</template>
 									</template>
-								</template>
-							</p>
+								</p>
+							</div>
 						</NuxtLink>
 					</li>
 				</ul>

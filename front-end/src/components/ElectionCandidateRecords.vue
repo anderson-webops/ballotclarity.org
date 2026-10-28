@@ -23,7 +23,9 @@ const sourceQuery = computed(() => ({ state: props.source.stateCode, source: pro
 		<h2 id="candidates-heading" class="text-2xl text-app-ink font-serif dark:text-app-text-dark">
 			Candidates
 		</h2>
-		<p class="text-sm text-app-muted mt-2 dark:text-app-muted-dark">Not a personalized ballot.</p>
+		<p class="text-sm text-app-muted mt-2 dark:text-app-muted-dark">
+			Not a personalized ballot.
+		</p>
 		<p v-if="error" class="text-sm text-app-muted mt-4 dark:text-app-muted-dark" role="status">
 			Candidate records are temporarily unavailable.
 			<button type="button" class="text-app-accent underline focus-ring" @click="refresh()">
@@ -50,7 +52,8 @@ const sourceQuery = computed(() => ({ state: props.source.stateCode, source: pro
 							<ul class="mt-3 border-t border-app-line divide-app-line divide-y dark:border-app-line-dark dark:divide-app-line-dark">
 								<li v-for="candidate in office.candidates" :key="candidate.id">
 									<NuxtLink :to="{ path: `/record/${source.stateCode}/${candidate.id}`, query: { source: source.sourceId, name: candidate.name } }" prefetch-on="interaction" class="py-4 flex gap-4 items-center justify-between focus-ring">
-										<span class="min-w-0">
+										<ProfileImageStack v-if="candidate.profileImages?.length" :images="candidate.profileImages" :name="candidate.name" size="sm" class="shrink-0" />
+										<span class="flex-1 min-w-0">
 											<span class="text-base text-app-ink font-semibold block break-words dark:text-app-text-dark">{{ candidate.name }}</span>
 											<span v-if="candidate.party || ballotRecordStatusLabels[candidate.status]" class="text-sm text-app-muted mt-1 block dark:text-app-muted-dark"><PartyLabel v-if="candidate.party" :party="candidate.party" />{{ candidate.party && ballotRecordStatusLabels[candidate.status] ? ' · ' : '' }}{{ ballotRecordStatusLabels[candidate.status] }}</span>
 										</span>

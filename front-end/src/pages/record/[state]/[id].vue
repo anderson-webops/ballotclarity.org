@@ -34,7 +34,7 @@ const { data, error, pending, refresh } = await useAsyncData(
 	{ default: () => null }
 );
 const name = computed(() => data.value?.reference?.name ?? data.value?.official?.name);
-const backTo = computed(() => ({ path: "/records", query: { state: stateCode.value, ...(isReference.value ? {} : { source: sourceId.value }) } }));
+const profileImages = computed(() => data.value?.reference?.profileImages ?? data.value?.official?.profileImages ?? []);
 const { data: evaluation, error: evaluationError } = await useAsyncData(
 	() => `judicial-evaluation:${stateCode.value}:${data.value?.source?.id}:${data.value?.official?.id}`,
 	async () => {
@@ -61,9 +61,6 @@ const documentLinks = computed(() => {
 
 <template>
 	<article class="app-shell section-gap max-w-3xl space-y-7">
-		<NuxtLink :to="backTo" class="text-app-accent underline underline-offset-3 focus-ring">
-			Candidate records
-		</NuxtLink>
 		<p v-if="pending" role="status">
 			Loading record…
 		</p>
@@ -76,18 +73,21 @@ const documentLinks = computed(() => {
 			</button>
 		</div>
 		<template v-else>
-			<header>
-				<h1 class="text-4xl text-app-ink font-serif dark:text-app-text-dark">
-					{{ name }}
-				</h1>
-				<p class="text-lg text-app-muted mt-3 dark:text-app-muted-dark">
-					{{ data.reference?.office ?? data.official?.office }}<template v-if="data.reference ? referenceJurisdiction(data.reference) : data.official && stateRecordArea(data.official)">
-						· {{ data.reference ? referenceJurisdiction(data.reference) : data.official ? stateRecordArea(data.official) : '' }}
-					</template>
-					<template v-if="data.official && stateRecordIncumbency(data.official)">
-						· {{ stateRecordIncumbency(data.official) }}
-					</template>
-				</p>
+			<header class="flex gap-5 items-start">
+				<ProfileImageStack v-if="profileImages.length && name" :images="profileImages" :name="name" size="md" class="shrink-0" />
+				<div class="min-w-0">
+					<h1 class="text-4xl text-app-ink font-serif dark:text-app-text-dark">
+						{{ name }}
+					</h1>
+					<p class="text-lg text-app-muted mt-3 dark:text-app-muted-dark">
+						{{ data.reference?.office ?? data.official?.office }}<template v-if="data.reference ? referenceJurisdiction(data.reference) : data.official && stateRecordArea(data.official)">
+							· {{ data.reference ? referenceJurisdiction(data.reference) : data.official ? stateRecordArea(data.official) : '' }}
+						</template>
+						<template v-if="data.official && stateRecordIncumbency(data.official)">
+							· {{ stateRecordIncumbency(data.official) }}
+						</template>
+					</p>
+				</div>
 			</header>
 			<p v-if="data.electionDate" class="text-sm text-app-muted dark:text-app-muted-dark">
 				Election: {{ formatDate(data.electionDate) }}
@@ -109,6 +109,11 @@ const documentLinks = computed(() => {
 					</li>
 				</ul>
 				<section class="pt-5 border-t border-app-line space-y-3 dark:border-app-line-dark" aria-label="Source">
+					<SafeExternalLink v-for="image in profileImages" :key="image.url" :href="image.sourceUrl ?? image.url" class="text-app-accent underline block focus-ring">
+						{{ image.sourceLabel }}<template v-if="image.attribution">
+							· {{ image.attribution }}
+						</template>
+					</SafeExternalLink>
 					<SafeExternalLink :href="data.reference.source.pageUrl ?? data.reference.source.url" class="text-app-accent underline underline-offset-3 focus-ring">
 						{{ data.reference.source.title }}
 					</SafeExternalLink>
@@ -167,6 +172,11 @@ const documentLinks = computed(() => {
 					Candidate website
 				</SafeExternalLink>
 				<section class="pt-5 border-t border-app-line space-y-3 dark:border-app-line-dark" aria-label="Source">
+					<SafeExternalLink v-for="image in profileImages" :key="image.url" :href="image.sourceUrl ?? image.url" class="text-app-accent underline block focus-ring">
+						{{ image.sourceLabel }}<template v-if="image.attribution">
+							· {{ image.attribution }}
+						</template>
+					</SafeExternalLink>
 					<SafeExternalLink v-if="data.source.url" :href="data.source.url" class="text-app-accent underline underline-offset-3 focus-ring">
 						{{ data.source.label ?? 'Official source' }}
 					</SafeExternalLink>

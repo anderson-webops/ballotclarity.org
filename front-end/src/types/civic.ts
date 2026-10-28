@@ -190,6 +190,7 @@ export interface StateRecordStatesResponse {
 }
 
 export interface PublicStateCandidateRecord {
+	profileImages?: ProfileImage[];
 	id: string;
 	name: string;
 	office: string;
@@ -224,6 +225,7 @@ export interface PublicJudicialEvaluation {
 }
 
 export interface PublicElectionReference {
+	profileImages?: ProfileImage[];
 	id: string;
 	name: string;
 	office: string;

@@ -64,15 +64,18 @@ async function changePage(offset: number) {
 			</p>
 			<ul class="border-t border-app-line divide-app-line divide-y dark:border-app-line-dark dark:divide-app-line-dark" aria-label="Candidate information">
 				<li v-for="record in data.records" :key="`${record.source.collectionId ?? record.source.url}:${record.id}`" class="min-w-0 break-words">
-					<NuxtLink :to="{ path: `/record/${stateCode}/${record.id}`, query: { kind: 'reference', name: record.name, source: record.source.collectionId } }" class="py-5 block focus-ring">
-						<h3 class="text-xl text-app-ink font-semibold dark:text-app-text-dark">
-							{{ record.name }}
-						</h3>
-						<p class="text-sm text-app-muted leading-6 mt-2 dark:text-app-muted-dark">
-							{{ record.office }}<template v-if="referenceJurisdiction(record)">
-								· {{ referenceJurisdiction(record) }}
-							</template> · {{ sourceLabels[record.source.kind] }}
-						</p>
+					<NuxtLink :to="{ path: `/record/${stateCode}/${record.id}`, query: { kind: 'reference', name: record.name, source: record.source.collectionId } }" class="py-5 flex gap-4 items-center focus-ring">
+						<ProfileImageStack v-if="record.profileImages?.length" :images="record.profileImages" :name="record.name" size="sm" class="shrink-0" />
+						<div class="min-w-0">
+							<h3 class="text-xl text-app-ink font-semibold dark:text-app-text-dark">
+								{{ record.name }}
+							</h3>
+							<p class="text-sm text-app-muted leading-6 mt-2 dark:text-app-muted-dark">
+								{{ record.office }}<template v-if="referenceJurisdiction(record)">
+									· {{ referenceJurisdiction(record) }}
+								</template> · {{ sourceLabels[record.source.kind] }}
+							</p>
+						</div>
 					</NuxtLink>
 				</li>
 			</ul>

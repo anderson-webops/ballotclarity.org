@@ -61,6 +61,12 @@ export function stateRecordIncumbency(record: PublicStateCandidateRecord) {
 	return record.incumbent && !/\bincumbent\b/iu.test(record.office) ? "Incumbent" : "";
 }
 
+export function stateRecordStatusBadges(record: PublicStateCandidateRecord, detail = false) {
+	const candidate = detail && ["listed", "filed", "qualified", "write-in", "unopposed"].includes(record.status);
+	const role = candidate ? record.incumbent ? "Incumbent candidate" : "Candidate" : stateRecordIncumbency(record);
+	return [role, record.status === "listed" ? "" : stateRecordStatusLabels[record.status]].filter(Boolean);
+}
+
 export function stateRecordSummary(record: PublicStateCandidateRecord) {
 	return stateRecordSummaryParts(record).map(part => part.label).join(" · ");
 }

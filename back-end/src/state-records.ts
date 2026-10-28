@@ -89,8 +89,13 @@ export function parseStateRecordFilters(query: Record<string, unknown>) {
 	return { search: search.toLowerCase(), scope, status, limit, offset };
 }
 
+function reportedFultonIncumbency(record: StateCandidateRecord, source: StateBallotSource) {
+	return (source.id === "ga-fulton-2026" || source.format === "fulton-pdf") && /^\(Incumbent\)?(?:; |$)/u.test(record.ballotDesignation ?? "");
+}
+
 function publicRecord(record: StateCandidateRecord, source: StateBallotSource): PublicStateCandidateRecord {
 	const candidateUrl = record.candidateUrl ? normalizePublicHref(record.candidateUrl) : undefined;
+	const fultonIncumbent = reportedFultonIncumbency(record, source);
 	return {
 		id: record.id,
 		name: record.name,
@@ -99,10 +104,10 @@ function publicRecord(record: StateCandidateRecord, source: StateBallotSource): 
 		scope: record.scope,
 		status: record.status,
 		party: record.party,
-		incumbent: record.incumbent,
+		incumbent: record.incumbent || fultonIncumbent ? true : undefined,
 		jurisdiction: record.jurisdiction,
 		sourceStatus: record.sourceStatus,
-		ballotDesignation: record.ballotDesignation,
+		ballotDesignation: fultonIncumbent ? record.ballotDesignation!.replace(/^\(Incumbent\)?(?:; )?/u, "") || undefined : record.ballotDesignation,
 		candidateUrl: candidateUrl && /^https?:\/\//u.test(candidateUrl) ? candidateUrl : undefined,
 		sourceDistrictLabel: record.sourceDistrictLabel,
 		sourceAreaLabel: source.format === "orange-pdf" ? undefined : record.sourceAreaLabel,
@@ -116,7 +121,7 @@ function publicRecord(record: StateCandidateRecord, source: StateBallotSource): 
 export function buildStateRecordPage(snapshot: StateBallotSnapshot, filters: ReturnType<typeof parseStateRecordFilters>) {
 	const matching = snapshot.records.filter(record => (filters.status === "all" || isActiveStateCandidateRecord(record))
 		&& (filters.scope === "all" || record.scope === filters.scope)
-		&& (!filters.search || [record.name, record.office, record.party, record.incumbent ? "incumbent" : "", record.district, record.jurisdiction, record.sourceAreaLabel, record.sourceDistrictLabel, record.sourceStatus].join(" ").toLowerCase().includes(filters.search)));
+		&& (!filters.search || [record.name, record.office, record.party, record.incumbent || reportedFultonIncumbency(record, snapshot.source) ? "incumbent" : "", record.district, record.jurisdiction, record.sourceAreaLabel, record.sourceDistrictLabel, record.sourceStatus].join(" ").toLowerCase().includes(filters.search)));
 	const offset = filters.offset >= matching.length ? Math.max(0, Math.floor((matching.length - 1) / filters.limit) * filters.limit) : filters.offset;
 	return {
 		total: snapshot.records.length,

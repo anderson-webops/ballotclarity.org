@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { BallotResponse, StateRecordsResponse } from "~/types/civic";
-import { ballotRecordStatusLabels } from "~/utils/ballot-view";
 import { groupElectionCandidates } from "~/utils/election-candidates";
+import { stateRecordStatusBadges } from "~/utils/state-records";
 
 const props = defineProps<{ source: NonNullable<BallotResponse["candidateRecordSource"]> }>();
 const api = useApiClient();
@@ -24,7 +24,7 @@ const sourceQuery = computed(() => ({ state: props.source.stateCode, source: pro
 			Candidates
 		</h2>
 		<p class="text-sm text-app-muted mt-2 dark:text-app-muted-dark">
-			Not a personalized ballot.
+			Races vary by voting district.
 		</p>
 		<p v-if="error" class="text-sm text-app-muted mt-4 dark:text-app-muted-dark" role="status">
 			Candidate records are temporarily unavailable.
@@ -55,7 +55,9 @@ const sourceQuery = computed(() => ({ state: props.source.stateCode, source: pro
 										<ProfileImageStack v-if="candidate.profileImages?.length" :images="candidate.profileImages" :name="candidate.name" size="sm" class="shrink-0" />
 										<span class="flex-1 min-w-0">
 											<span class="text-base text-app-ink font-semibold block break-words dark:text-app-text-dark">{{ candidate.name }}</span>
-											<span v-if="candidate.party || ballotRecordStatusLabels[candidate.status]" class="text-sm text-app-muted mt-1 block dark:text-app-muted-dark"><PartyLabel v-if="candidate.party" :party="candidate.party" />{{ candidate.party && ballotRecordStatusLabels[candidate.status] ? ' · ' : '' }}{{ ballotRecordStatusLabels[candidate.status] }}</span>
+											<span v-if="candidate.party || stateRecordStatusBadges(candidate).length" class="text-sm text-app-muted mt-1 block dark:text-app-muted-dark">
+												<PartyLabel v-if="candidate.party" :party="candidate.party" /><template v-for="(badge, index) in stateRecordStatusBadges(candidate)" :key="badge">{{ candidate.party || index ? ' · ' : '' }}{{ badge }}</template>
+											</span>
 										</span>
 										<span class="i-carbon-chevron-right text-app-accent shrink-0" aria-hidden="true" />
 									</NuxtLink>
@@ -77,9 +79,6 @@ const sourceQuery = computed(() => ({ state: props.source.stateCode, source: pro
 				</button>
 			</nav>
 			<aside aria-label="Candidate record limitations" class="text-sm text-app-muted leading-6 mt-10 space-y-2 dark:text-app-muted-dark">
-				<p v-if="data?.source.scopeNotice">
-					{{ data.source.scopeNotice }}
-				</p>
 				<div class="flex flex-wrap gap-5">
 					<NuxtLink :to="{ path: '/record-sources', query: sourceQuery }" class="text-app-accent py-2 underline focus-ring">
 						Sources

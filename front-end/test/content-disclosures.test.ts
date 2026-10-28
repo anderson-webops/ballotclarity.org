@@ -44,10 +44,10 @@ test("lookup results omit matching commentary without hiding voting information"
 		assert.ok(panel.includes(`electionLogistics.${field}`));
 });
 
-test("candidate record details avoid repeating their primary source link", () => {
+test("candidate record details move collection documents to the source page", () => {
 	const page = source("pages/record/[state]/[id].vue");
-	assert.match(page, /filter\(document => document\.url !== source\?\.url\)/u);
-	assert.match(page, /v-for="document in documentLinks"/u);
+	assert.match(page, /:to="sourcesTarget"/u);
+	assert.doesNotMatch(page, /v-for="document in documentLinks"/u);
 	assert.doesNotMatch(page, /v-for="document in data\.source\.documentLinks"/u);
 });
 
@@ -63,7 +63,7 @@ test("long record document lists have a reachable source page", () => {
 	const documents = source("pages/record-sources.vue");
 	assert.match(page, /path: '\/record-sources'/u);
 	assert.match(documents, /stateRecordSourceMismatch/u);
-	assert.match(documents, /v-for="document in data.source.documentLinks"/u);
+	assert.match(documents, /v-for="document in documentLinks"/u);
 	assert.match(documents, /:href="document.url"/u);
 	assert.match(documents, /path: "\/records"/u);
 	assert.match(documents, /query: route\.query/u);

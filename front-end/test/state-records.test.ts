@@ -83,10 +83,10 @@ test("the public directory exposes only necessary labels and source limits", () 
 	assert.match(page, /stateRecordSummaryParts\(record\)/u);
 	assert.doesNotMatch(page, /stateRecordStatusLabels\[record.status\]/u);
 	const detail = readFileSync(new URL("../src/pages/record/[state]/[id].vue", import.meta.url), "utf8");
-	assert.match(detail, /v-if="data.official.status !== 'listed'"/u);
+	assert.match(detail, /stateRecordStatusBadges\(data\.official, true\)/u);
 	assert.match(detail, /<PartyLabel :party="data.official.party"/u);
 	const documents = readFileSync(new URL("../src/pages/record-sources.vue", import.meta.url), "utf8");
-	assert.match(documents, /v-for="document in data.source.documentLinks"/u);
+	assert.match(documents, /v-for="document in documentLinks"/u);
 	assert.match(documents, /:href="document.url"/u);
 	assert.doesNotMatch(page, /prototype|under local review|check back later|saved guide area|<table/iu);
 	const lookup = readFileSync(new URL("../src/components/LookupResultsPanel.vue", import.meta.url), "utf8");

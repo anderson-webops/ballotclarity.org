@@ -2,7 +2,7 @@
 import type { ElectionReferencesResponse, PublicElectionReference, PublicJudicialEvaluation, PublicStateCandidateRecord, StateRecordsResponse } from "~/types/civic";
 import { findRecordDetail } from "~/utils/record-detail";
 import { referenceJurisdiction } from "~/utils/reference-context";
-import { stateRecordArea, stateRecordIncumbency, stateRecordStatusLabels } from "~/utils/state-records";
+import { stateRecordArea, stateRecordStatusBadges } from "~/utils/state-records";
 
 const route = useRoute();
 const api = useApiClient();
@@ -53,10 +53,7 @@ const { data: evaluation, error: evaluationError } = await useAsyncData(
 );
 
 usePageSeo({ title: name.value ?? "Candidate record", description: "Candidate source record and supporting information.", path: route.path, robots: "noindex,follow" });
-const documentLinks = computed(() => {
-	const source = data.value?.source;
-	return (source?.documentLinks ?? []).filter(document => document.url !== source?.url);
-});
+const sourcesTarget = computed(() => ({ path: "/record-sources", query: { state: stateCode.value, source: data.value?.source?.id, q: search.value } }));
 </script>
 
 <template>
@@ -83,9 +80,9 @@ const documentLinks = computed(() => {
 						{{ data.reference?.office ?? data.official?.office }}<template v-if="data.reference ? referenceJurisdiction(data.reference) : data.official && stateRecordArea(data.official)">
 							· {{ data.reference ? referenceJurisdiction(data.reference) : data.official ? stateRecordArea(data.official) : '' }}
 						</template>
-						<template v-if="data.official && stateRecordIncumbency(data.official)">
-							· {{ stateRecordIncumbency(data.official) }}
-						</template>
+					</p>
+					<p v-if="data.official" class="text-sm text-app-muted mt-3 flex flex-wrap gap-3 dark:text-app-muted-dark" aria-label="Candidacy status">
+						<span v-for="badge in stateRecordStatusBadges(data.official, true)" :key="badge">{{ badge }}</span>
 					</p>
 				</div>
 			</header>
@@ -127,11 +124,6 @@ const documentLinks = computed(() => {
 			</template>
 			<template v-else-if="data.official && data.source">
 				<dl class="space-y-4">
-					<div v-if="data.official.status !== 'listed'">
-						<dt class="font-semibold">
-							Status
-						</dt><dd>{{ stateRecordStatusLabels[data.official.status] }}</dd>
-					</div>
 					<div v-if="data.official.party">
 						<dt class="font-semibold">
 							Party
@@ -171,29 +163,16 @@ const documentLinks = computed(() => {
 				<SafeExternalLink v-if="data.official.candidateUrl" :href="data.official.candidateUrl" class="text-app-accent underline underline-offset-3 focus-ring">
 					Candidate website
 				</SafeExternalLink>
-				<section class="pt-5 border-t border-app-line space-y-3 dark:border-app-line-dark" aria-label="Source">
-					<SafeExternalLink v-for="image in profileImages" :key="image.url" :href="image.sourceUrl ?? image.url" class="text-app-accent underline block focus-ring">
-						{{ image.sourceLabel }}<template v-if="image.attribution">
+				<section class="text-sm pt-5 border-t border-app-line space-y-3 dark:border-app-line-dark" aria-label="Sources">
+					<NuxtLink :to="sourcesTarget" class="text-app-accent py-2 underline underline-offset-3 inline-block focus-ring">
+						Sources
+					</NuxtLink>
+					<p v-for="image in profileImages" :key="image.url" class="text-xs text-app-muted dark:text-app-muted-dark">
+						<SafeExternalLink :href="image.url" class="text-app-accent underline focus-ring">
+							Photo
+						</SafeExternalLink><template v-if="image.attribution">
 							· {{ image.attribution }}
 						</template>
-					</SafeExternalLink>
-					<SafeExternalLink v-if="data.source.url" :href="data.source.url" class="text-app-accent underline underline-offset-3 focus-ring">
-						{{ data.source.label ?? 'Official source' }}
-					</SafeExternalLink>
-					<SafeExternalLink v-for="document in documentLinks" :key="document.url" :href="document.url" class="text-app-accent underline underline-offset-3 block focus-ring">
-						{{ document.label }}
-					</SafeExternalLink>
-					<p v-if="data.source.sourceAsOfDate" class="text-sm text-app-muted dark:text-app-muted-dark">
-						As of {{ formatDate(data.source.sourceAsOfDate) }}
-					</p>
-					<p v-if="data.source.retrievedAt" class="text-sm text-app-muted dark:text-app-muted-dark">
-						Retrieved {{ formatDateTime(data.source.retrievedAt) }}
-					</p>
-					<p v-if="data.source.scopeNotice" class="text-sm text-app-muted dark:text-app-muted-dark">
-						{{ data.source.scopeNotice }}
-					</p>
-					<p v-if="!data.source.scopeNotice" class="text-sm text-app-muted dark:text-app-muted-dark">
-						These records are not a personalized ballot.
 					</p>
 				</section>
 			</template>

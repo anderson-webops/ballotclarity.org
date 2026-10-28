@@ -71,6 +71,28 @@ test("source browsing exposes local records without assigning a personalized bal
 	assert.equal(buildStateBallotPreview({ ...data, records: data.records.filter(record => record.scope === "local") }, { districtMatches: [] }), null);
 });
 
+test("Fulton ballot annotations expose current-seat incumbency in retained snapshots without changing stored records", () => {
+	const data = snapshot();
+	data.source = { ...data.source, id: "ga-fulton-2026", stateCode: "GA", format: "fulton-pdf" };
+	data.records = [
+		{ id: "incumbent", name: "Incumbent Example", office: "United States Senate", scope: "statewide", district: "", status: "listed", ballotDesignation: "(Incumbent)" },
+		{ id: "running", name: "Different Office Holder", office: "United States Senate", scope: "statewide", district: "", status: "listed" },
+		{ id: "term", name: "Term Example", office: "County Commissioner", scope: "local", district: "4", status: "listed", ballotDesignation: "(Incumbent); (Unexpired Term)" },
+		{ id: "partial", name: "Printed Annotation", office: "State Senate", scope: "state-senate", district: "56", status: "listed", ballotDesignation: "(Incumbent" },
+	];
+	const original = JSON.stringify(data.records);
+	const page = buildStateRecordPage(data, parseStateRecordFilters({}));
+	assert.equal(page.records.find(record => record.id === "incumbent")?.incumbent, true);
+	assert.equal(page.records.find(record => record.id === "running")?.incumbent, undefined);
+	assert.equal(page.records.find(record => record.id === "term")?.ballotDesignation, "(Unexpired Term)");
+	assert.equal(page.records.find(record => record.id === "partial")?.incumbent, true);
+	assert.equal(page.records.find(record => record.id === "incumbent")?.ballotDesignation, undefined);
+	assert.equal(buildStateRecordPage(data, parseStateRecordFilters({ q: "incumbent" })).matched, 3);
+	assert.equal(JSON.stringify(data.records), original);
+	data.source = { ...data.source, id: "unrelated-source", format: "reviewed-pdf" };
+	assert.equal(buildStateRecordPage(data, parseStateRecordFilters({})).records[0]?.incumbent, undefined);
+});
+
 test("bounded pagination remains usable after an old offset no longer has records", () => {
 	const data = snapshot();
 	const first = buildStateRecordPage(data, parseStateRecordFilters({ limit: "2" }));

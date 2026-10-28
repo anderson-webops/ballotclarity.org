@@ -1,3 +1,4 @@
+import type { FultonOfficeholderSnapshot } from "./fulton-officeholders.js";
 import type {
 	EvidenceBlock,
 	FundingLineItem,
@@ -26,6 +27,7 @@ export interface SupplementalOfficeholderEnrichment {
 }
 
 export interface SupplementalOfficeholderRecord {
+	parentDistrictSlug?: string;
 	biographySummary: string;
 	districtLabel: string;
 	districtSlug: string;
@@ -1003,29 +1005,30 @@ export function buildSupplementalRepresentativeMatch(record: SupplementalOfficeh
 	};
 }
 
-export function findSupplementalOfficeholderByRepresentativeSlug(slug: string) {
+export function findSupplementalOfficeholderByRepresentativeSlug(slug: string, records = supplementalOfficeholders) {
 	const normalizedSlug = toLookupSlug(slug);
-	return supplementalOfficeholders.find(record => record.slug === normalizedSlug) ?? null;
+	return records.find(record => record.slug === normalizedSlug) ?? null;
 }
 
-export function findSupplementalOfficeholdersByDistrictSlug(slug: string) {
+export function findSupplementalOfficeholdersByDistrictSlug(slug: string, records = supplementalOfficeholders) {
 	const normalizedSlug = toLookupSlug(slug);
-	return supplementalOfficeholders.filter(record => record.districtSlug === normalizedSlug);
+	return records.filter(record => record.districtSlug === normalizedSlug || record.parentDistrictSlug === normalizedSlug);
 }
 
-export function listSupplementalOfficeholdersForDistrictMatches(districtMatches: LocationDistrictMatch[], stateCode: string) {
+export function listSupplementalOfficeholdersForDistrictMatches(districtMatches: LocationDistrictMatch[], stateCode: string, records = supplementalOfficeholders) {
 	const districtSlugs = new Set(districtMatches.map(buildDistrictSlug));
 	const state = typeof stateCode === "string" ? stateCode.trim() : "";
 	const normalizedStateCode = getStateAbbreviationForName(state) ?? state.toUpperCase();
-	return supplementalOfficeholders.filter(record => record.stateCode === normalizedStateCode && districtSlugs.has(record.districtSlug));
+	return records.filter(record => record.stateCode === normalizedStateCode && districtSlugs.has(record.districtSlug));
 }
 
 export function mergeRepresentativeMatchesWithSupplementalRecords(
 	representativeMatches: LocationRepresentativeMatch[],
 	districtMatches: LocationDistrictMatch[],
 	stateCode: string,
+	records = supplementalOfficeholders,
 ) {
-	const supplementalMatches = listSupplementalOfficeholdersForDistrictMatches(districtMatches, stateCode)
+	const supplementalMatches = listSupplementalOfficeholdersForDistrictMatches(districtMatches, stateCode, records)
 		.map(buildSupplementalRepresentativeMatch);
 
 	return uniqueById([
@@ -1039,4 +1042,46 @@ export function mergeRepresentativeMatchesWithSupplementalRecords(
 
 export function listSupplementalOfficeholders() {
 	return [...supplementalOfficeholders];
+}
+
+export function resolveFultonSupplementalOfficeholders(snapshot: FultonOfficeholderSnapshot | null) {
+	if (!snapshot) return listSupplementalOfficeholders();
+	const existing = listSupplementalOfficeholders();
+	const retained = existing.filter(record => !(record.stateCode === "GA" && record.districtSlug === "fulton-county" && /commission|chair/iu.test(record.officeTitle)));
+	const sources: Source[] = snapshot.documents.slice(2).map((document, index) => ({ authority: "official-government", date: document.capturedAt, id: `fulton-board:${snapshot.sourceSha256}:${index}`, publisher: "Fulton County Government", sourceSystem: "Fulton County Board of Commissioners", title: index === 0 ? "Board of Commissioners" : "Commission districts", type: "official record", url: document.url }));
+	const records: SupplementalOfficeholderRecord[] = snapshot.seats.flatMap((seat) => {
+		if (!seat.person) return [];
+		const person = seat.person;
+		const districtLabel = seat.district === null ? "Fulton County" : `Fulton County Commission District ${seat.district}`;
+		const districtSlug = seat.district === null ? "fulton-county" : `fulton-county-commission-district-${seat.district}`;
+		const officeTitle = seat.district === null ? "County Commission Chair" : `${seat.person.viceChair ? "County Commission Vice Chair" : "County Commissioner"}, District ${seat.district}`;
+		const prior = existing.find(record => record.slug === person.slug);
+		if (prior && (prior.name !== person.name || prior.stateCode !== "GA")) throw new Error("A Fulton officeholder identity conflicts with an existing person record.");
+		return [{
+			biographySummary: prior?.biographySummary ?? "",
+			districtLabel,
+			districtSlug,
+			districtType: seat.district === null ? "county" : "county-commission",
+			parentDistrictSlug: seat.district === null ? undefined : "fulton-county",
+			enrichment: prior?.districtSlug === districtSlug ? prior.enrichment : undefined,
+			jurisdiction: "Local",
+			location: "Fulton County, Georgia",
+			name: person.name,
+			officeSought: officeTitle,
+			officeTitle,
+			officialWebsiteUrl: person.officialWebsiteUrl,
+			party: "",
+			profileImages: [{ alt: person.name, attribution: "Fulton County Government", capturedAt: snapshot.documents[2]!.capturedAt, priority: 1, sourceKind: "official" as const, sourceLabel: "Fulton County Board of Commissioners", sourceSystem: "Fulton County Government", sourceUrl: snapshot.documents[2]!.url, url: person.portraitUrl }],
+			provenanceLabel: "Official county roster",
+			provenanceNote: "Fulton County Board of Commissioners and commission district records.",
+			slug: person.slug,
+			sourceSystem: "Official Fulton County Board of Commissioners",
+			sources: [...sources, ...(prior?.sources ?? [])],
+			stateCode: "GA",
+			stateName: "Georgia",
+			summary: "",
+			updatedAt: snapshot.retrievedAt,
+		}];
+	});
+	return [...retained, ...records];
 }

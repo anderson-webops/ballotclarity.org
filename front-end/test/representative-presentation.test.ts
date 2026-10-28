@@ -2,11 +2,18 @@ import type { RepresentativeSummary } from "../src/types/civic.ts";
 import assert from "node:assert/strict";
 import test from "node:test";
 import { classifyRepresentative } from "../src/utils/representative-classification.ts";
+
 import {
 	groupRepresentativeSummariesByGovernmentLevel,
 	resolveRepresentativeContentSummary,
 	resolveRepresentativePresentation,
 } from "../src/utils/representative-presentation.ts";
+
+test("county commission labels distinguish members, chair and vice chair without repeating the district", () => {
+	for (const [officeTitle, districtLabel, expected] of [["County Commission Chair", "Fulton County", "Fulton County Commission Chair"], ["County Commissioner, District 1", "Fulton County Commission District 1", "Fulton County Commissioner, District 1"], ["County Commission Vice Chair, District 6", "Fulton County Commission District 6", "Fulton County Commission Vice Chair, District 6"]]) {
+		assert.equal(classifyRepresentative({ officeTitle, districtLabel, districtType: "county-commission", stateCode: "GA" }).officeDisplayLabel, expected);
+	}
+});
 
 test("representative content summaries omit generated matching commentary", () => {
 	for (const summary of ["Matched from Open States", "Matched from Congress.gov", "Matched from area results", "Matched from current area results", "  Matched from Open States  ", "", "  ", null, undefined])

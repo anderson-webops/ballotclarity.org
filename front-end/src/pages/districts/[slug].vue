@@ -37,9 +37,9 @@ const pageError = computed(() => districtPageData.value ? null : guideError.valu
 const responsibilitiesHeading = computed(() => districtPageData.value?.mode === "nationwide"
 	? buildDistrictResponsibilitiesHeading(districtPageData.value.district)
 	: "Responsibilities");
-const representativeSection = computed(() => districtPageData.value
-	? buildDistrictRepresentativeSection(districtPageData.value.district, districtPageData.value.mode)
-	: { heading: "District representatives", emptyNote: "" });
+const representativeSection = computed(() => districtPageData.value?.officeVacancies !== undefined
+	? { heading: "County commission", emptyNote: "" }
+	: districtPageData.value ? buildDistrictRepresentativeSection(districtPageData.value.district, districtPageData.value.mode) : { heading: "District representatives", emptyNote: "" });
 const representativeDirectoryTarget = computed(() => ({
 	path: "/representatives",
 	query: { ...buildCivicDirectoryApiQuery(buildLookupContextFromNationwideResult(activeNationwideLookupResult.value), route.query) }
@@ -153,7 +153,7 @@ usePageSeo({
 							Representative directory
 						</NuxtLink>
 					</div>
-					<div v-if="districtPageData.representatives.length" class="mt-6 gap-5 grid lg:grid-cols-2">
+					<div v-if="districtPageData.representatives.length || districtPageData.officeVacancies?.length" class="mt-6 gap-5 grid lg:grid-cols-2">
 						<article v-for="representative in districtPageData.representatives" :key="representative.slug">
 							<div class="flex gap-4 items-start">
 								<ProfileImageStack
@@ -167,7 +167,7 @@ usePageSeo({
 										{{ representative.name }}
 									</p>
 									<p class="text-sm text-app-muted mt-1 dark:text-app-muted-dark">
-										<PartyLabel :party="representative.party" /> · {{ getRepresentativePresentation(representative).officeDisplayLabel }}
+										{{ getRepresentativePresentation(representative).officeDisplayLabel }}<span v-if="representative.party"> · <PartyLabel :party="representative.party" /></span>
 									</p>
 								</div>
 							</div>
@@ -210,6 +210,14 @@ usePageSeo({
 									<strong class="text-app-ink dark:text-app-text-dark">Influence:</strong> {{ representative.influenceSummary }}
 								</p>
 							</div>
+						</article>
+						<article v-for="office in districtPageData.officeVacancies ?? []" :key="office" class="py-4">
+							<p class="text-xl text-app-ink font-serif dark:text-app-text-dark">
+								{{ office }}
+							</p>
+							<p class="text-sm text-app-muted mt-1 dark:text-app-muted-dark">
+								Vacant
+							</p>
 						</article>
 					</div>
 					<p v-else class="text-sm text-app-muted leading-6 mt-4 dark:text-app-muted-dark">

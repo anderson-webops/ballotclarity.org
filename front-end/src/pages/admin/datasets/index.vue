@@ -2,7 +2,7 @@
 definePageMeta({ layout: "admin", middleware: "admin" });
 const { data, error, pending, refresh } = await useAdminOperations();
 const search = ref("");
-const groups = computed(() => ["candidates", "references"].map(kind => ({ kind, items: (data.value?.datasets ?? []).filter(item => item.kind === kind && [item.label, item.stateCode, item.id].join(" ").toLowerCase().includes(search.value.trim().toLowerCase())) })));
+const groups = computed(() => ["officeholders", "candidates", "references"].map(kind => ({ kind, items: (data.value?.datasets ?? []).filter(item => item.kind === kind && [item.label, item.stateCode, item.id].join(" ").toLowerCase().includes(search.value.trim().toLowerCase())) })));
 usePageSeo({ title: "Datasets", path: "/admin/datasets", robots: "noindex,nofollow" });
 </script>
 
@@ -20,7 +20,7 @@ usePageSeo({ title: "Datasets", path: "/admin/datasets", robots: "noindex,nofoll
 		<template v-if="data && !error && !pending">
 			<section v-for="group in groups" :key="group.kind" class="space-y-6">
 				<h2 class="text-3xl font-serif">
-					{{ group.kind === 'candidates' ? 'Candidate data' : 'Reference collections' }}
+					{{ group.kind === 'officeholders' ? 'Current officeholders' : group.kind === 'candidates' ? 'Candidate data' : 'Reference collections' }}
 				</h2><p v-if="!group.items.length">
 					No matching datasets.
 				</p><ul class="divide-app-line divide-y dark:divide-app-line-dark">

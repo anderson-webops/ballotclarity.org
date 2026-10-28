@@ -6,6 +6,8 @@ import type { PublicBallotElection } from "./ballot-guide-scope.js";
 import type { CongressClient, CongressMemberDetail, CongressMemberRecord } from "./congress.js";
 import type { CoverageRepository } from "./coverage-repository.js";
 import type { ElectionReferenceRepository } from "./election-references.js";
+import type { FultonOfficeholderRepository } from "./fulton-officeholder-storage.js";
+import type { FultonOfficeholderSnapshot } from "./fulton-officeholders.js";
 import type { JudicialEvaluationRepository } from "./judicial-evaluations.js";
 import type { OpenStatesRepresentativeRecord } from "./openstates.js";
 import type { PublicRequestThrottle } from "./public-request-throttle.js";
@@ -113,6 +115,8 @@ import { coverageElections, coverageElectionSummaries, coverageGuideLocation, co
 import { registerElectionReferenceRoutes } from "./election-reference-routes.js";
 import { createElectionReferenceRepository } from "./election-references.js";
 import { normalizeCorrectionSubmission } from "./feedback-submission.js";
+import { createFultonOfficeholderRepository, FultonOfficeholderUnavailableError } from "./fulton-officeholder-storage.js";
+import { fultonOfficeholderPublication } from "./fulton-officeholders.js";
 import { createGoogleCivicClient } from "./google-civic.js";
 import {
 	buildDefaultGuidePackageSeed,
@@ -147,12 +151,14 @@ import {
 	findSupplementalOfficeholdersByDistrictSlug,
 	listSupplementalOfficeholders,
 	mergeRepresentativeMatchesWithSupplementalRecords,
+	resolveFultonSupplementalOfficeholders,
 } from "./supplemental-officeholders.js";
 import { containsControlCharacters } from "./text-validation.js";
 import { createZipLocationService } from "./zip-location.js";
 import { createZipLookupLogger } from "./zip-lookup-logger.js";
 
 interface CreateAppOptions {
+	fultonOfficeholderRepository?: FultonOfficeholderRepository | null;
 	activeLookupCookieSecret?: string | null;
 	adminApiKey?: string | null;
 	adminApiRateLimiter?: RequestHandler;
@@ -908,7 +914,8 @@ function isPublishedRouteSource(source: Source) {
 	if (sourceId.startsWith("district:"))
 		return sourceId.endsWith(":identity");
 
-	return sourceId.startsWith("congress:member:")
+	return sourceId.startsWith("fulton-board:")
+		|| sourceId.startsWith("congress:member:")
 		|| sourceId.startsWith("congress:official-site:")
 		|| sourceId.startsWith("lda:")
 		|| sourceId.startsWith("official:")
@@ -1626,6 +1633,7 @@ function buildRepresentativeLookupContext(record: OpenStatesRepresentativeRecord
 
 function buildRepresentativeProfileFromSupplementalOfficeholder(record: SupplementalOfficeholderRecord): PersonProfileResponse {
 	const updatedAt = record.updatedAt || new Date().toISOString();
+	const rosterReviewAt = record.sources.some(source => source.id.startsWith("fulton-board:")) ? new Date(Date.parse(updatedAt) + fultonOfficeholderPublication.minimumRefreshIntervalMs).toISOString() : null;
 	const officialResources = getOfficialToolsForState(record.stateCode);
 	const classification = classifyRepresentative({
 		districtLabel: record.districtLabel,
@@ -1683,7 +1691,7 @@ function buildRepresentativeProfileFromSupplementalOfficeholder(record: Suppleme
 					summary: record.biographySummary,
 					title: "Reviewed officeholder record",
 				},
-			],
+			].filter(block => block.summary.trim()),
 			comparison: null,
 			contestSlug: record.districtSlug,
 			districtLabel: record.districtLabel,
@@ -1691,8 +1699,8 @@ function buildRepresentativeProfileFromSupplementalOfficeholder(record: Suppleme
 			freshness: {
 				contentLastVerifiedAt: updatedAt,
 				dataLastUpdatedAt: updatedAt,
-				nextReviewAt: updatedAt,
-				status: "up-to-date",
+				nextReviewAt: rosterReviewAt ?? updatedAt,
+				status: rosterReviewAt && Date.parse(rosterReviewAt) < Date.now() ? "out-of-date" : "up-to-date",
 				statusLabel: "Reviewed officeholder record",
 				statusNote: record.jurisdiction === "State"
 					? "This page is based on a reviewed current state officeholder record. An address or ZIP lookup can still confirm whether this officeholder matches your exact area."
@@ -1715,7 +1723,7 @@ function buildRepresentativeProfileFromSupplementalOfficeholder(record: Suppleme
 			onCurrentBallot: false,
 			officialWebsiteUrl: record.officialWebsiteUrl,
 			openstatesUrl: record.openstatesUrl,
-			party: record.party || "Unknown",
+			party: record.party,
 			profileImages: profileImages.length ? profileImages : undefined,
 			provenance: {
 				asOf: updatedAt,
@@ -2099,9 +2107,10 @@ async function augmentRepresentativeMatchesForLookup(
 	stateCode: string,
 	districtMatches: LocationDistrictMatch[],
 	representativeMatches: LocationRepresentativeMatch[],
+	supplementalRecords = listSupplementalOfficeholders(),
 ) {
 	const withSupplemental = mergeRepresentativeMatches(
-		mergeRepresentativeMatchesWithSupplementalRecords(representativeMatches, districtMatches, stateCode),
+		mergeRepresentativeMatchesWithSupplementalRecords(representativeMatches, districtMatches, stateCode, supplementalRecords),
 	);
 	const congressionalFallbackMatches = await buildCongressRepresentativeMatchesFromDistrictContext(
 		congressClient,
@@ -2658,23 +2667,37 @@ function buildPublicDistrictRouteIdentity(slug: string): PublicDistrictRouteIden
 	return null;
 }
 
-function buildPublicDistrictRecordFromSlug(slug: string): DistrictRecordResponse | null {
-	const districtIdentity = buildPublicDistrictRouteIdentity(slug);
+function buildPublicDistrictRecordFromSlug(slug: string, records = listSupplementalOfficeholders(), board?: FultonOfficeholderSnapshot | null): DistrictRecordResponse | null {
+	const matched = records.find(record => record.districtSlug === slug && record.districtType === "county-commission");
+	const districtIdentity = buildPublicDistrictRouteIdentity(slug) ?? (matched
+		? {
+				jurisdiction: "Local" as const,
+				locationName: "Fulton County, Georgia",
+				office: matched.officeTitle,
+				officialResources: getOfficialToolsForState("GA"),
+				originLabel: "Fulton County Board of Commissioners",
+				originNote: "",
+				representativeAvailabilityNote: "",
+				slug: matched.districtSlug,
+				summary: matched.districtLabel,
+				title: matched.districtLabel,
+			}
+		: null);
 
 	if (!districtIdentity)
 		return null;
 
-	const supplementalOfficeholders = findSupplementalOfficeholdersByDistrictSlug(districtIdentity.slug);
+	const supplementalOfficeholders = findSupplementalOfficeholdersByDistrictSlug(districtIdentity.slug, records);
 	const updatedAt = new Date().toISOString();
 	const resolvedUpdatedAt = supplementalOfficeholders[0]?.updatedAt || updatedAt;
 	const resolvedOfficialResources = supplementalOfficeholders[0]?.stateCode
 		? getOfficialToolsForState(supplementalOfficeholders[0].stateCode)
 		: districtIdentity.officialResources;
 	const representatives = supplementalOfficeholders.map(buildSupplementalRepresentativeSummary);
-	const sources = [
+	const sources = uniqueSources([
 		...supplementalOfficeholders.flatMap(record => record.sources),
 		...buildOfficialToolSources(resolvedOfficialResources, resolvedUpdatedAt),
-	];
+	]);
 	const representativeAvailabilityNote = supplementalOfficeholders.length
 		? districtIdentity.jurisdiction === "Local"
 			? `${supplementalOfficeholders.length} reviewed local officeholder record${supplementalOfficeholders.length === 1 ? "" : "s"} ${supplementalOfficeholders.length === 1 ? "is" : "are"} attached to this district page. This is the current reviewed local officeholder data attached here, not a claim that all local offices are covered yet.`
@@ -2693,6 +2716,7 @@ function buildPublicDistrictRecordFromSlug(slug: string): DistrictRecordResponse
 		: "";
 
 	return {
+		officeVacancies: board && districtIdentity.slug === "fulton-county" ? board.seats.filter(seat => seat.status === "vacant").map(seat => seat.district === null ? "County Commission Chair" : `County Commissioner, District ${seat.district}`) : undefined,
 		candidateAvailabilityNote: "Candidate and contest pages are not attached to this district yet, but official links and district details can still appear here.",
 		candidates: [],
 		district: {
@@ -2988,6 +3012,9 @@ function buildSearchResponse(
 
 export async function createApp(options: CreateAppOptions = {}) {
 	const app = express() as BallotClarityApplication;
+	const fultonOfficeholderRepository = options.fultonOfficeholderRepository === undefined ? createFultonOfficeholderRepository() : options.fultonOfficeholderRepository;
+	const currentSupplementalOfficeholders = () => resolveFultonSupplementalOfficeholders(fultonOfficeholderRepository?.getSnapshot() ?? null);
+	const lookupSupplementalOfficeholders = (stateCode: string, districts: LocationDistrictMatch[]) => stateCode === "GA" && districts.some(district => district.districtType === "county" && ["121", "13121"].includes(district.districtCode)) ? currentSupplementalOfficeholders() : listSupplementalOfficeholders();
 	const releaseIdentity = options.releaseIdentity ?? loadReleaseIdentity();
 	const activeLookupCookieSecret = options.activeLookupCookieSecret ?? process.env.ACTIVE_LOOKUP_COOKIE_SECRET ?? "";
 	const adminApiKey = options.adminApiKey ?? process.env.ADMIN_API_KEY ?? null;
@@ -3633,13 +3660,13 @@ export async function createApp(options: CreateAppOptions = {}) {
 	}
 
 	function listSupplementalOfficeholdersForDirectory(areaSlug: string | null) {
-		return listSupplementalOfficeholders()
+		return currentSupplementalOfficeholders()
 			.filter(record => supplementalOfficeholderMatchesDirectoryArea(record, areaSlug));
 	}
 
 	function buildSupplementalDistrictSummariesForDirectory(areaSlug: string | null) {
 		return listSupplementalOfficeholdersForDirectory(areaSlug)
-			.map(record => buildPublicDistrictRecordFromSlug(record.districtSlug)?.district ?? null)
+			.map(record => buildPublicDistrictRecordFromSlug(record.districtSlug, currentSupplementalOfficeholders(), fultonOfficeholderRepository?.getSnapshot())?.district ?? null)
 			.filter((district): district is DistrictRecordResponse["district"] => Boolean(district));
 	}
 
@@ -3755,7 +3782,13 @@ export async function createApp(options: CreateAppOptions = {}) {
 			return null;
 
 		let representativeRecord = null;
-		const supplementalOfficeholder = findSupplementalOfficeholderByRepresentativeSlug(slug);
+		let supplementalOfficeholder = null;
+		let officeholderError: unknown;
+		const legacy = findSupplementalOfficeholderByRepresentativeSlug(slug);
+		try {
+			supplementalOfficeholder = legacy && legacy.districtSlug !== "fulton-county" ? legacy : findSupplementalOfficeholderByRepresentativeSlug(slug, currentSupplementalOfficeholders());
+		}
+		catch (error) { officeholderError = error; }
 
 		if (openStatesClient) {
 			try {
@@ -3800,6 +3833,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 			});
 		}
 
+		if (officeholderError) throw officeholderError;
 		return null;
 	}
 
@@ -4008,6 +4042,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 	}
 
 	const publishedRouteSourceDatasetCache: {
+		generation?: string;
 		promise: Promise<{
 			citations: Map<string, SourceDirectoryItem["citedBy"]>;
 			sources: Source[];
@@ -4046,15 +4081,17 @@ export async function createApp(options: CreateAppOptions = {}) {
 	}
 
 	async function getPublishedRouteSourceDataset() {
-		if (publishedRouteSourceDatasetCache.promise)
+		const generation = fultonOfficeholderRepository?.getSnapshot().sourceSha256 ?? "static";
+		if (publishedRouteSourceDatasetCache.promise && publishedRouteSourceDatasetCache.generation === generation)
 			return await publishedRouteSourceDatasetCache.promise;
+		publishedRouteSourceDatasetCache.generation = generation;
 
 		const pending = (async () => {
 			const sourceIndex = new Map<string, Source>();
 			const citations = new Map<string, SourceDirectoryItem["citedBy"]>();
 			const guideRepresentativeSlugs = new Set<string>();
 			const supplementalDistrictSlugs = new Set<string>();
-			const supplementalOfficeholders = listSupplementalOfficeholders();
+			const supplementalOfficeholders = currentSupplementalOfficeholders();
 
 			for (const representative of await listPublicRepresentatives())
 				guideRepresentativeSlugs.add(representative.slug);
@@ -4078,7 +4115,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 			}
 
 			for (const districtSlug of supplementalDistrictSlugs) {
-				const response = buildPublicDistrictRecordFromSlug(districtSlug);
+				const response = buildPublicDistrictRecordFromSlug(districtSlug, supplementalOfficeholders, fultonOfficeholderRepository?.getSnapshot());
 
 				if (!response)
 					continue;
@@ -4372,6 +4409,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 							addressEnrichment.state || "",
 							addressEnrichment.districtMatches,
 							addressEnrichment.representativeMatches,
+							lookupSupplementalOfficeholders(addressEnrichment.state || "", addressEnrichment.districtMatches),
 						);
 						geoContext = {
 							countyFips: addressEnrichment.countyFips,
@@ -4388,6 +4426,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 					}
 				}
 				catch (error) {
+					if (error instanceof FultonOfficeholderUnavailableError) throw error;
 					logger.warn("provider.census-openstates.lookup-failed", {
 						message: error instanceof Error ? error.message : "Unknown provider error.",
 						requestId
@@ -4419,6 +4458,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 							match.stateAbbreviation || "",
 							match.districtMatches,
 							match.representativeMatches,
+							lookupSupplementalOfficeholders(match.stateAbbreviation || "", match.districtMatches),
 						),
 					})));
 					const selectedZipMatch = selectionId
@@ -4475,6 +4515,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 				}
 			}
 			catch (error) {
+				if (error instanceof FultonOfficeholderUnavailableError) throw error;
 				logger.warn("provider.zip-lookup.lookup-failed", {
 					message: error instanceof Error ? error.message : "Unknown provider error.",
 					requestId
@@ -5424,11 +5465,18 @@ export async function createApp(options: CreateAppOptions = {}) {
 			const nationwideDistrict = buildNationwideDistrictRecordResponse(activeNationwideLookup, request.params.slug);
 
 			if (nationwideDistrict) {
+				const countyMatch = activeNationwideLookup.districtMatches.find(match => match.districtType === "county" && ["121", "13121"].includes(match.districtCode) && match.label === nationwideDistrict.district.title);
+				const inGeorgia = /^(?:GA|Georgia)$/iu.test(activeNationwideLookup.location?.state ?? "");
+				const board = fultonOfficeholderRepository && countyMatch && inGeorgia ? fultonOfficeholderRepository.getSnapshot() : null;
+				const boardRecord = board ? buildPublicDistrictRecordFromSlug("fulton-county", currentSupplementalOfficeholders(), board) : null;
 				response.json({
 					...nationwideDistrict,
+					officeVacancies: boardRecord?.officeVacancies,
+					updatedAt: boardRecord?.updatedAt ?? nationwideDistrict.updatedAt,
+					sources: boardRecord ? uniqueSources([...nationwideDistrict.sources, ...boardRecord.sources]) : nationwideDistrict.sources,
 					representatives: await representativeModuleResolver.enrichNationwideDistrictRepresentatives(
 						activeNationwideLookup,
-						nationwideDistrict.representatives
+						boardRecord?.representatives ?? nationwideDistrict.representatives
 					),
 				});
 				return;
@@ -5438,7 +5486,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 		const result = await getPublicDistrict(request.params.slug);
 
 		if (!result) {
-			response.json(buildPublicDistrictRecordFromSlug(request.params.slug) ?? buildRouteFallbackDistrictRecordResponse(request.params.slug));
+			response.json(buildPublicDistrictRecordFromSlug(request.params.slug, currentSupplementalOfficeholders(), fultonOfficeholderRepository?.getSnapshot()) ?? buildRouteFallbackDistrictRecordResponse(request.params.slug));
 			return;
 		}
 
@@ -5676,7 +5724,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 		response.json(await adminRepository.getOverview());
 	});
 	app.get("/api/admin/operations", async (_request, response) => {
-		response.json(await buildAdminOperations({ candidates: stateBallotRepository, references: electionReferenceRepository, dataDirectory: process.env.STATE_BALLOT_DATA_DIR || null }));
+		response.json(await buildAdminOperations({ candidates: stateBallotRepository, references: electionReferenceRepository, officeholders: fultonOfficeholderRepository, dataDirectory: process.env.STATE_BALLOT_DATA_DIR || null }));
 	});
 
 	app.get("/api/admin/audit", async (_request, response) => {
@@ -6210,6 +6258,11 @@ export async function createApp(options: CreateAppOptions = {}) {
 
 		if (response.headersSent)
 			return;
+
+		if (error instanceof FultonOfficeholderUnavailableError) {
+			response.status(503).json({ message: error.message, requestId: response.locals.requestId });
+			return;
+		}
 
 		response.status(500).json({
 			message: "Internal server error.",

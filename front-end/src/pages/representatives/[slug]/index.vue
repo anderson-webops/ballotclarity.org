@@ -291,7 +291,7 @@ usePageSeo({
 								<IncumbentBadge v-if="person.incumbent" />
 							</div>
 							<p class="text-lg text-app-muted mt-4 dark:text-app-muted-dark">
-								{{ representativePresentation?.officeDisplayLabel ?? person.officeSought }} · <PartyLabel :party="person.party" />
+								{{ representativePresentation?.officeDisplayLabel ?? person.officeSought }}<span v-if="person.party"> · <PartyLabel :party="person.party" /></span>
 							</p>
 							<p v-if="profileSummary" class="text-lg text-app-ink leading-8 mt-5 max-w-3xl dark:text-app-text-dark">
 								{{ profileSummary }}

@@ -24,8 +24,12 @@ usePageSeo({ title: "Dataset", path: "/admin/datasets", robots: "noindex,nofollo
 					</dt><dd>{{ item.id }}</dd>
 				</div><div>
 					<dt class="font-semibold">
-						State / election
-					</dt><dd>{{ item.stateCode }} · {{ item.electionDate }}</dd>
+						{{ item.electionDate ? 'State / election' : 'State' }}
+					</dt><dd>
+						{{ item.stateCode }}<template v-if="item.electionDate">
+							· {{ item.electionDate }}
+						</template>
+					</dd>
 				</div><div>
 					<dt class="font-semibold">
 						Import mode
@@ -39,7 +43,7 @@ usePageSeo({ title: "Dataset", path: "/admin/datasets", robots: "noindex,nofollo
 				{{ item.failure }}
 			</p><div class="space-y-4">
 				<UpdatedAt v-if="item.retrievedAt" :value="item.retrievedAt" label="Source retrieved" /><UpdatedAt v-if="item.lastAttemptAt" :value="item.lastAttemptAt" label="Collection attempted" /><UpdatedAt v-if="item.lastImportAt" :value="item.lastImportAt" label="Imported" />
-			</div><NuxtLink :to="{ path: '/records', query: { state: item.stateCode, ...(item.kind === 'candidates' ? { source: item.id } : {}) } }" class="btn-secondary">
+			</div><NuxtLink :to="item.kind === 'officeholders' ? '/districts/fulton-county' : { path: '/records', query: { state: item.stateCode, ...(item.kind === 'candidates' ? { source: item.id } : {}) } }" class="btn-secondary">
 				View records
 			</NuxtLink>
 		</template>

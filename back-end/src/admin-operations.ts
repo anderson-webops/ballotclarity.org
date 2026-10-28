@@ -1,4 +1,5 @@
 import type { ElectionReferenceRepository } from "./election-references.js";
+import type { FultonOfficeholderRepository } from "./fulton-officeholder-storage.js";
 import type { StateBallotRepository } from "./state-ballot-repository.js";
 import type { AdminAutomationRun, AdminOperationsResponse } from "./types/civic.js";
 import { randomUUID } from "node:crypto";
@@ -105,6 +106,7 @@ export async function writeAutomationRun(directory: string, run: AdminAutomation
 }
 
 export async function buildAdminOperations(options: {
+	officeholders?: FultonOfficeholderRepository | null;
 	candidates: StateBallotRepository | null;
 	references: ElectionReferenceRepository | null;
 	dataDirectory: string | null;
@@ -113,7 +115,8 @@ export async function buildAdminOperations(options: {
 	const now = options.now ?? Date.now();
 	const datasets = [
 		...((await options.candidates?.inspectSources?.()) ?? []),
-		...((await options.references?.inspectSources?.()) ?? [])
+		...((await options.references?.inspectSources?.()) ?? []),
+		...((await options.officeholders?.inspectSources?.()) ?? [])
 	];
 	let run: AdminAutomationRun | null = null;
 	let invalid = false;

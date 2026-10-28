@@ -22,7 +22,7 @@ export interface RepresentativeClassification {
 }
 
 const districtNumberPattern = /(\d+)/;
-const countySuffixPattern = /\s+county$/i;
+const countySuffixPattern = /\s+county(?:\s+commission\s+district\s+\d+)?$/i;
 const citySuffixPattern = /\s+city$/i;
 const congressionalCodePattern = /\b[a-z]{2}-\d+\b/;
 const stateDistrictCodePattern = /\b([A-Z]{2})-\d+\b/;
@@ -169,8 +169,10 @@ function buildOfficeDisplayLabel(
 				return `State Representative for District ${districtNumber}`;
 
 			return stateName ? `${stateName} State Representative` : "State Representative";
-		case "county_commission":
-			return countyName ? `${countyName} County Commission Chair` : "County Commission Chair";
+		case "county_commission": {
+			const role = /\bvice\s+chair\b/i.test(officeTitle || officeSought) ? "Commission Vice Chair" : /\bchair\b/i.test(officeTitle || officeSought) ? "Commission Chair" : "Commissioner";
+			return `${countyName ? `${countyName} County` : "County"} ${role}${districtNumber ? `, District ${districtNumber}` : ""}`;
+		}
 		case "county_official":
 			return countyName ? `${countyName} County official` : "County official";
 		case "mayor":

@@ -1285,6 +1285,7 @@ export interface PersonProfileResponse {
 }
 
 export interface DistrictRecordResponse {
+	officeVacancies?: string[];
 	mode: "guide" | "nationwide";
 	districtOriginLabel: string;
 	districtOriginNote: string;
@@ -1841,7 +1842,7 @@ export interface AdminOperationDataset {
 	label: string;
 	stateCode: string;
 	electionDate: string;
-	kind: "candidates" | "references";
+	kind: "candidates" | "references" | "officeholders";
 	mode: "automatic" | "reviewed";
 	status: "current" | "stale" | "missing" | "pending" | "error" | "archived";
 	records: number | null;

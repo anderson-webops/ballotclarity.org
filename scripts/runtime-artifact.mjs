@@ -28,7 +28,7 @@ const copiedPaths = [
 	["back-end/.npmrc", "back-end/.npmrc"],
 	["deploy/runtime-artifact-contract.json", "runtime-artifact-contract.json"],
 ];
-const requiredPrivateHandoffPaths = ["private-handoff-protocol.js", "private-handoff-storage.js", "private-handoff-client.js", "private-handoff-receiver.js", "manage-private-handoff.js"].map(name => `back-end/dist/${name}`);
+const requiredPrivateHandoffPaths = ["private-handoff-protocol.js", "private-handoff-storage.js", "private-handoff-client.js", "private-handoff-receiver.js", "private-handoff-verification.js", "manage-private-handoff.js"].map(name => `back-end/dist/${name}`);
 
 function normalizePath(root, path) {
 	return relative(root, path).split(sep).join("/");

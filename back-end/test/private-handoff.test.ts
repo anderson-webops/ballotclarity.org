@@ -14,6 +14,7 @@ import {
 } from "../src/private-handoff-client.js";
 import {
 	authenticateHandoff,
+	captureHandoffEvidence,
 	HandoffError,
 	handoffHash,
 	handoffKeyId,
@@ -263,19 +264,31 @@ test("private custody survives restart, exact retries and conflicting reuse with
 		keyId: handoffKeyId(fixture.keys.publicKey),
 		payloadSha256: handoffHash(fixture.body)
 	};
-	const inbox = await createHandoffInbox(directory, handoffAudience);
-	const accepted = await inbox.accept(fixture.body, authentication, handoffNow);
+	const keys = new Map([[handoffKeyId(fixture.keys.publicKey), fixture.keys.publicKey]]);
+	const proof = (body = fixture.body, identity = id) =>
+		captureHandoffEvidence(
+			signHandoff(body, handoffAudience, fixture.keys.privateKey, identity, handoffNow),
+			handoffNow
+		);
+	const inbox = await createHandoffInbox(directory, handoffAudience, undefined, undefined, keys);
+	const accepted = await inbox.accept(fixture.body, authentication, handoffNow, proof());
 	assert.equal(accepted.duplicate, false);
 	assert.equal(accepted.receipt.custodyOnly, true);
 	const before = await readFile(join(directory, id, "receipt.json"));
-	const restarted = await createHandoffInbox(directory, handoffAudience);
-	const duplicate = await restarted.accept(fixture.body, authentication, handoffNow + 1000);
+	const restarted = await createHandoffInbox(directory, handoffAudience, undefined, undefined, keys);
+	const duplicate = await restarted.accept(fixture.body, authentication, handoffNow + 1000, proof());
 	assert.deepEqual(duplicate.receipt, accepted.receipt);
 	assert.equal(duplicate.duplicate, true);
 	changeHandoffFile(fixture.envelope, "CURRENT-SERVER-HANDOFF.md", "Changed private handoff");
 	const changed = Buffer.from(JSON.stringify(fixture.envelope));
 	await assert.rejects(
-		() => restarted.accept(changed, { ...authentication, payloadSha256: handoffHash(changed) }, handoffNow),
+		() =>
+			restarted.accept(
+				changed,
+				{ ...authentication, payloadSha256: handoffHash(changed) },
+				handoffNow,
+				proof(changed)
+			),
 		(error: unknown) => error instanceof HandoffError && error.status === 409
 	);
 	assert.deepEqual(await readFile(join(directory, id, "receipt.json")), before);
@@ -288,29 +301,38 @@ test("capacity, interrupted locks, altered files and redirected paths preserve a
 	const directory = await handoffTemporary(context);
 	const fixture = handoffFixture();
 	const inboxDirectory = join(directory, "inbox");
-	const inbox = await createHandoffInbox(inboxDirectory, handoffAudience, undefined, 1);
+	const keys = new Map([[handoffKeyId(fixture.keys.publicKey), fixture.keys.publicKey]]);
+	const inbox = await createHandoffInbox(inboxDirectory, handoffAudience, undefined, 1, keys);
 	const id = randomUUID();
 	const authentication = {
 		id,
 		keyId: handoffKeyId(fixture.keys.publicKey),
 		payloadSha256: handoffHash(fixture.body)
 	};
-	await inbox.accept(fixture.body, authentication, handoffNow);
+	const proof = (identity = id) =>
+		captureHandoffEvidence(
+			signHandoff(fixture.body, handoffAudience, fixture.keys.privateKey, identity, handoffNow),
+			handoffNow
+		);
+	await inbox.accept(fixture.body, authentication, handoffNow, proof());
+	const anotherId = randomUUID();
 	await assert.rejects(
-		() => inbox.accept(fixture.body, { ...authentication, id: randomUUID() }, handoffNow),
+		() => inbox.accept(fixture.body, { ...authentication, id: anotherId }, handoffNow, proof(anotherId)),
 		(error: unknown) => error instanceof HandoffError && error.status === 507
 	);
 	await writeFile(join(inboxDirectory, ".intake.lock"), "interrupted", { mode: 0o600 });
 	await assert.rejects(
-		() => inbox.accept(fixture.body, authentication, handoffNow),
+		() => inbox.accept(fixture.body, authentication, handoffNow, proof()),
 		(error: unknown) => error instanceof HandoffError && error.status === 503
 	);
 	const other = join(directory, "other");
 	await mkdir(other, { mode: 0o700 });
 	await symlink(inboxDirectory, join(other, "redirect"));
-	await assert.rejects(() => createHandoffInbox(join(other, "redirect"), handoffAudience));
+	await assert.rejects(() =>
+		createHandoffInbox(join(other, "redirect"), handoffAudience, undefined, undefined, keys)
+	);
 	await assert.rejects(() => readHandoffFile(join(other, "redirect"), 100));
-	assert.equal((await readdir(join(inboxDirectory, id))).length, 7);
+	assert.equal((await readdir(join(inboxDirectory, id))).length, 8);
 });
 
 test("HTTP ingestion authenticates before staging and exposes neither files nor admin operations", async (context) => {
@@ -427,25 +449,31 @@ test("real active directory packing is snapshot-bound and rejects arbitrary or r
 test("altered or incomplete stored packets never receive a duplicate custody acknowledgement", async (context) => {
 	const fixture = handoffFixture();
 	const directory = join(await handoffTemporary(context), "inbox");
-	const inbox = await createHandoffInbox(directory, handoffAudience);
+	const keys = new Map([[handoffKeyId(fixture.keys.publicKey), fixture.keys.publicKey]]);
+	const inbox = await createHandoffInbox(directory, handoffAudience, undefined, undefined, keys);
 	const authentication = {
 		id: randomUUID(),
 		keyId: handoffKeyId(fixture.keys.publicKey),
 		payloadSha256: handoffHash(fixture.body)
 	};
-	await inbox.accept(fixture.body, authentication, handoffNow);
+	const proof = (identity = authentication.id) =>
+		captureHandoffEvidence(
+			signHandoff(fixture.body, handoffAudience, fixture.keys.privateKey, identity, handoffNow),
+			handoffNow
+		);
+	await inbox.accept(fixture.body, authentication, handoffNow, proof());
 	const receipt = await readFile(join(directory, authentication.id, "receipt.json"));
 	await writeFile(join(directory, authentication.id, "CURRENT-SERVER-HANDOFF.md"), "altered test bytes", {
 		mode: 0o600
 	});
 	await assert.rejects(
-		() => inbox.accept(fixture.body, authentication, handoffNow),
+		() => inbox.accept(fixture.body, authentication, handoffNow, proof()),
 		(error: unknown) => error instanceof HandoffError && error.status === 503
 	);
 	assert.deepEqual(await readFile(join(directory, authentication.id, "receipt.json")), receipt);
 	const incomplete = { ...authentication, id: randomUUID() };
 	await mkdir(join(directory, incomplete.id), { mode: 0o700 });
-	await assert.rejects(() => inbox.accept(fixture.body, incomplete, handoffNow));
+	await assert.rejects(() => inbox.accept(fixture.body, incomplete, handoffNow, proof(incomplete.id)));
 	assert.deepEqual(await readdir(join(directory, incomplete.id)), []);
 });
 

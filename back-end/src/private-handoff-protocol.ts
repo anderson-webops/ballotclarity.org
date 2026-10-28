@@ -40,6 +40,12 @@ export const privateHandoffContract = {
 	method: "POST",
 	path: handoffPath,
 	signatureProfile: "RFC9421-restricted-Ed25519-v1",
+	storedAuthentication: {
+		schemaVersion: 1,
+		filename: "authentication.json",
+		verificationCommand: "manage-private-handoff.js verify PACKET_DIRECTORY TRUST_CONFIG TAG COMMIT ARCHIVE_SHA256",
+		legacyWithoutEvidence: "custody-only; independently unverifiable"
+	},
 	maximumRequestBytes: maximumHandoffBytes,
 	maximumFileBytes: maximumHandoffFileBytes,
 	maximumFiles: handoffNames.length,
@@ -77,6 +83,69 @@ export interface HandoffAuthentication {
 	id: string;
 	keyId: string;
 	payloadSha256: string;
+}
+
+const signedHeaderNames = [
+	"content-type",
+	"content-digest",
+	"signature-input",
+	"signature",
+	"x-handoff-id",
+	"x-handoff-audience"
+] as const;
+export interface HandoffSignedEvidence {
+	schemaVersion: 1;
+	type: "ballot-private-handoff-authentication";
+	method: "POST";
+	path: typeof handoffPath;
+	authenticatedAt: string;
+	headers: Record<(typeof signedHeaderNames)[number], string>;
+}
+
+export function captureHandoffEvidence(headers: IncomingHttpHeaders, now: number): HandoffSignedEvidence {
+	const selected = Object.fromEntries(signedHeaderNames.map(name => [name, headers[name]]));
+	const evidence = {
+		schemaVersion: 1,
+		type: "ballot-private-handoff-authentication",
+		method: "POST",
+		path: handoffPath,
+		authenticatedAt: new Date(now).toISOString(),
+		headers: selected
+	};
+	return validateHandoffEvidence(evidence);
+}
+
+export function validateHandoffEvidence(value: unknown): HandoffSignedEvidence {
+	if (
+		!record(value)
+		|| !exact(value, ["schemaVersion", "type", "method", "path", "authenticatedAt", "headers"])
+		|| value.schemaVersion !== 1
+		|| value.type !== "ballot-private-handoff-authentication"
+		|| value.method !== "POST"
+		|| value.path !== handoffPath
+		|| typeof value.authenticatedAt !== "string"
+		|| !Number.isFinite(Date.parse(value.authenticatedAt))
+		|| new Date(value.authenticatedAt).toISOString() !== value.authenticatedAt
+		|| !record(value.headers)
+		|| !exact(value.headers, [...signedHeaderNames])
+		|| !Object.values(value.headers).every(header => typeof header === "string" && header.length <= 8192)
+		|| Buffer.byteLength(JSON.stringify(value)) > 16 * 1024
+	) {
+		throw new HandoffError(400, "invalid-signature-evidence");
+	}
+	return value as unknown as HandoffSignedEvidence;
+}
+
+export function verifyHandoffEvidence(
+	body: Buffer,
+	evidence: unknown,
+	audience: string,
+	keys: ReadonlyMap<string, KeyObject>
+) {
+	const stored = validateHandoffEvidence(evidence);
+	const authentication = authenticateHandoff(stored.headers, audience, keys, Date.parse(stored.authenticatedAt));
+	if (authentication.payloadSha256 !== handoffHash(body)) throw new HandoffError(400, "signature-body-mismatch");
+	return authentication;
 }
 export interface HandoffReceipt extends HandoffAuthentication {
 	schemaVersion: 1;

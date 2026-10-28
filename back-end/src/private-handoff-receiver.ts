@@ -8,6 +8,7 @@ import process from "node:process";
 import { pathToFileURL } from "node:url";
 import {
 	authenticateHandoff,
+	captureHandoffEvidence,
 	HandoffError,
 	handoffHash,
 	handoffKeyId,
@@ -50,7 +51,8 @@ export async function createHandoffReceiver(options: {
 		options.directory,
 		options.audience,
 		options.maximumBytes,
-		options.maximumEntries
+		options.maximumEntries,
+		keys
 	);
 	let active = 0;
 	const server = createServer(
@@ -74,12 +76,8 @@ export async function createHandoffReceiver(options: {
 			}
 			let admitted = false;
 			try {
-				const authentication = authenticateHandoff(
-					request.headers,
-					options.audience,
-					keys,
-					options.now?.() ?? Date.now()
-				);
+				const authenticatedAt = options.now?.() ?? Date.now();
+				const authentication = authenticateHandoff(request.headers, options.audience, keys, authenticatedAt);
 				const length = request.headers["content-length"];
 				if (length !== undefined && (!/^\d+$/u.test(length) || Number(length) > maximumHandoffBytes))
 					throw new HandoffError(413, "handoff-too-large");
@@ -88,7 +86,8 @@ export async function createHandoffReceiver(options: {
 				admitted = true;
 				const body = await requestBody(request);
 				if (handoffHash(body) !== authentication.payloadSha256) throw new HandoffError(400, "digest-mismatch");
-				const result = await inbox.accept(body, authentication, options.now?.() ?? Date.now());
+				const evidence = captureHandoffEvidence(request.headers, authenticatedAt);
+				const result = await inbox.accept(body, authentication, options.now?.() ?? Date.now(), evidence);
 				response.statusCode = result.duplicate ? 200 : 201;
 				response.end(JSON.stringify(result));
 			}

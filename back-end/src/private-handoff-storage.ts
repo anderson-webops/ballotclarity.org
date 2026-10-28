@@ -1,4 +1,5 @@
-import type { HandoffAuthentication, HandoffReceipt } from "./private-handoff-protocol.js";
+import type { KeyObject } from "node:crypto";
+import type { HandoffAuthentication, HandoffReceipt, HandoffSignedEvidence } from "./private-handoff-protocol.js";
 import { Buffer } from "node:buffer";
 import { constants } from "node:fs";
 import { lstat, mkdir, mkdtemp, open, readdir, realpath, rename, rm, unlink } from "node:fs/promises";
@@ -10,7 +11,8 @@ import {
 	maximumHandoffBytes,
 	maximumHandoffFileBytes,
 	validateHandoff,
-	validateHandoffReceipt
+	validateHandoffReceipt,
+	verifyHandoffEvidence
 } from "./private-handoff-protocol.js";
 
 const applicationRoot = resolve(import.meta.dirname, "../..");
@@ -93,8 +95,10 @@ export async function createHandoffInbox(
 	directory: string,
 	audience: string,
 	maximumBytes = 64 * 1024 * 1024,
-	maximumEntries = 256
+	maximumEntries = 256,
+	keys?: ReadonlyMap<string, KeyObject>
 ) {
+	if (!keys?.size) throw new Error("Trusted verification keys are required for private custody.");
 	if (
 		!Number.isSafeInteger(maximumBytes)
 		|| maximumBytes < maximumHandoffBytes * 2
@@ -124,7 +128,21 @@ export async function createHandoffInbox(
 		return total;
 	}
 	return {
-		async accept(body: Buffer, authentication: HandoffAuthentication, now = Date.now()) {
+		async accept(
+			body: Buffer,
+			authentication: HandoffAuthentication,
+			now = Date.now(),
+			evidence?: HandoffSignedEvidence
+		) {
+			const signed = verifyHandoffEvidence(body, evidence, audience, keys);
+			if (
+				signed.id !== authentication.id
+				|| signed.keyId !== authentication.keyId
+				|| signed.payloadSha256 !== authentication.payloadSha256
+				|| Date.parse(evidence!.authenticatedAt) > now
+			) {
+				throw new HandoffError(400, "signature-authentication-mismatch");
+			}
 			if (
 				!/^[a-f\d]{8}-[a-f\d]{4}-4[a-f\d]{3}-[89ab][a-f\d]{3}-[a-f\d]{12}$/u.test(authentication.id)
 				|| !/^[a-f\d]{64}$/u.test(authentication.keyId)
@@ -171,6 +189,23 @@ export async function createHandoffInbox(
 						throw new HandoffError(409, "handoff-id-conflict");
 					}
 					validateHandoffReceipt(receipt, envelope, authentication);
+					const originalEvidence = await readHandoffFile(
+						join(destination, "authentication.json"),
+						16 * 1024
+					).catch((error: NodeJS.ErrnoException) => {
+						if (error.code === "ENOENT") return null;
+						throw error;
+					});
+					if (originalEvidence) {
+						const original = verifyHandoffEvidence(
+							body,
+							JSON.parse(originalEvidence.toString("utf8")),
+							audience,
+							keys
+						);
+						if (original.id !== authentication.id || original.keyId !== authentication.keyId)
+							throw new HandoffError(503, "stored-handoff-invalid");
+					}
 					if (
 						handoffHash(await readHandoffFile(join(destination, "envelope.json"), maximumHandoffBytes))
 						!== authentication.payloadSha256
@@ -203,11 +238,13 @@ export async function createHandoffInbox(
 					files: envelope.files.map(({ name, bytes, sha256 }) => ({ name, bytes, sha256 }))
 				};
 				const receiptBody = `${JSON.stringify(receipt)}\n`;
+				const evidenceBody = `${JSON.stringify(evidence)}\n`;
 				if (
 					(await occupied(canonical))
 					+ body.length
 					+ envelope.files.reduce((sum, file) => sum + file.bytes, 0)
 					+ Buffer.byteLength(receiptBody)
+					+ Buffer.byteLength(evidenceBody)
 					> maximumBytes
 				) {
 					throw new HandoffError(507, "inbox-capacity");
@@ -221,6 +258,7 @@ export async function createHandoffInbox(
 					);
 				}
 				await writePrivateHandoffFile(join(temporary, "receipt.json"), receiptBody);
+				await writePrivateHandoffFile(join(temporary, "authentication.json"), evidenceBody);
 				await syncDirectory(temporary);
 				await rename(temporary, destination);
 				temporary = null;

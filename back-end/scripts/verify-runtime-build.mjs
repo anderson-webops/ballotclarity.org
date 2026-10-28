@@ -31,6 +31,7 @@ const requiredRuntimeFiles = [
 	"private-handoff-storage.js",
 	"private-handoff-client.js",
 	"private-handoff-receiver.js",
+	"private-handoff-verification.js",
 	"manage-private-handoff.js",
 	"admin-operations.js",
 	"export-state-ballot-sources.js",

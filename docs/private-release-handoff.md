@@ -41,7 +41,7 @@ Limits are 16 MiB for the encoded request, 8 MiB per file and eight files. Archi
 are stored as opaque files, never extracted by this worker. A receipt verifies
 transport custody, not the safety, applicability, approval or import of contents.
 
-After all fixed-name files, the original envelope and receipt are written and
+After all fixed-name files, the original envelope, authentication evidence and receipt are written and
 synced, an atomic directory promotion makes the packet visible. Files are 0600
 inside an owner-only directory outside the application artifact and webroot.
 The receiver never serves stored files, changes deployment pointers, imports
@@ -56,6 +56,48 @@ an exclusive writer lock, a default 64 MiB quota and a default 256-packet limit.
 Capacity exhaustion and abandoned writer locks require explicit owner recovery;
 last accepted packets remain intact. Keys are revoked by removing enrollment
 and restarting the worker. Existing permission requirements remain in force.
+
+## Independent stored-signature verification
+
+New packets retain `authentication.json` alongside the unchanged schema-1 envelope
+and receipt. Its evidence schema is 1, with type
+`ballot-private-handoff-authentication`, method `POST`, the exact intake path,
+`authenticatedAt`, and the six original headers: `content-type`, `content-digest`,
+`signature-input`, `signature`, `x-handoff-id` and `x-handoff-audience`.
+The sidecar is private and committed atomically with its packet. Retries preserve
+the first evidence and receipt instead of replacing them with later signatures.
+
+The standalone verifier accepts an exact release identity and independently
+enrolled public keys:
+
+```sh
+node back-end/dist/manage-private-handoff.js verify \
+  ABSOLUTE_PACKET_DIRECTORY ABSOLUTE_TRUST_CONFIG TAG COMMIT ARCHIVE_SHA256
+```
+
+The external, invoking-owner-only trust file contains `schemaVersion: 1`,
+`audience` and `publicKeys` (PEM Ed25519 public keys). Receiver configuration is
+also accepted when owned by the invoking account. Packet content and receipt key
+assertions never establish trust. Verification checks the original signature,
+exact body digest and requested release, every stored file, the complete private
+inventory and receipt binding. Successful output contains aggregate metadata only.
+
+Archived signature validity is evaluated at the recorded authentication time, so
+independent verification survives expiry of the ingress window and worker restart.
+The signed body proves enrolled-key provenance, not an independently trusted
+arrival timestamp. `authenticatedAt` and receipt time remain custody metadata.
+Protected consumers verify an admitted, access-controlled copy before using it;
+verification does not make a concurrently writable original directory immutable.
+
+Legacy packets without original evidence remain custody-only. Their exact retries
+continue to return the original receipt without manufacturing missing evidence.
+The offline verifier reports `legacy-custody-unverifiable` and exits 76 for absent
+evidence, whether legacy or removed. Other verification failures exit 1. A fresh
+packet received by an evidence-capable worker is necessary for independent proof.
+Keeping a separate persistent source receipt namespace permits that new delivery
+while preserving earlier retry identities. Mandatory host receipt enforcement
+requires separate protected acceptance of the verifier, trusted enrollment and
+fresh delivery; this capability alone changes no deployment policy.
 
 ## Compiled worker configuration
 

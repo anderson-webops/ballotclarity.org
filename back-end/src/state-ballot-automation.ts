@@ -4,6 +4,7 @@ import process from "node:process";
 import { readAutomationRun, writeAutomationRun } from "./admin-operations.js";
 import { syncStateBallotCycleFamilies } from "./state-ballot-cycle-sync.js";
 import { getStateBallotCycleFamily, stateBallotCycleCatalogLocations } from "./state-ballot-cycles.js";
+import { prioritizeStateBallotWork, stateBallotPriorityFamilies } from "./state-ballot-priority.js";
 import { createStateBallotRepository, resolveStateBallotConfiguration } from "./state-ballot-repository.js";
 
 export async function refreshApprovedCandidateData(
@@ -35,7 +36,6 @@ export async function refreshApprovedCandidateData(
 	};
 	await writeAutomationRun(directory, run, now());
 	const results: AdminAutomationResult[] = [];
-	const handled = new Set<string>();
 	try {
 		const families = environment.STATE_BALLOT_ENABLED_FAMILIES?.split(",").map(value => value.trim()) ?? [];
 		const locations = stateBallotCycleCatalogLocations(environment).filter(location =>
@@ -46,51 +46,11 @@ export async function refreshApprovedCandidateData(
 						|| source.id.startsWith(`${getStateBallotCycleFamily(location.familyId).prefix}-`))
 			)
 		);
-		const familyRuns = await syncStateBallotCycleFamilies(
-			locations.map(location => ({
-				...location,
-				dataDirectory: directory,
-				now,
-				fetchCandidates: options.fetchText,
-				...(options.fetchDiscovery ? { fetchDiscovery: () => options.fetchDiscovery!(location.familyId) } : {}),
-				enabledSourceIds: families.includes(location.familyId)
-					? undefined
-					: configuration.sources.map(source => source.id)
-			}))
-		);
-		for (const family of familyRuns) {
-			handled.add(family.familyId);
-			if (family.status === "failed") {
-				results.push({ sourceId: family.familyId, status: "failed", records: 0, reason: "source-unavailable" });
-			}
-			else {
-				for (const result of family.results) {
-					handled.add(result.sourceId);
-					if (result.status === "expired") continue;
-					const failed = !["available", "awaiting-records"].includes(result.status);
-					results.push({
-						sourceId: result.sourceId,
-						status: failed
-							? "failed"
-							: result.imported
-								? "imported"
-								: "cached",
-						records: result.records,
-						reason: failed
-							? result.status === "persistence-failed"
-								? "persistence-failed"
-								: "source-unavailable"
-							: null
-					});
-				}
-			}
-		}
 		const sources = configuration.sources.filter(
 			source =>
 				!source.retrievalPolicy
-				&& !handled.has(source.id)
 				&& !locations.some(location =>
-					source.id.startsWith(`${getStateBallotCycleFamily(location.familyId).prefix}-`)
+					source.id === location.familyId || source.id.startsWith(`${getStateBallotCycleFamily(location.familyId).prefix}-`)
 				)
 				&& Date.parse(`${source.electionDate}T00:00:00Z`) + 2 * 86400000 > now()
 		);
@@ -104,7 +64,34 @@ export async function refreshApprovedCandidateData(
 			ttlMs: configuration.ttlMs,
 			onPersistenceError: (_state, sourceId) => persistenceErrors.add(sourceId)
 		});
-		for (const source of sources) {
+		const work: ({ kind: "family"; id: string; location: typeof locations[number] } | { kind: "source"; id: string; source: StateBallotSource })[] = [
+			...locations.map(location => ({ kind: "family" as const, id: location.familyId, location })),
+			...sources.map(source => ({ kind: "source" as const, id: source.id, source }))
+		];
+		for (const item of prioritizeStateBallotWork(work, item => item.id, stateBallotPriorityFamilies(environment))) {
+			if (item.kind === "family") {
+				const location = item.location;
+				const family = (await syncStateBallotCycleFamilies([{
+					...location,
+					dataDirectory: directory,
+					now,
+					fetchCandidates: options.fetchText,
+					...(options.fetchDiscovery ? { fetchDiscovery: () => options.fetchDiscovery!(location.familyId) } : {}),
+					enabledSourceIds: families.includes(location.familyId) ? undefined : configuration.sources.map(source => source.id)
+				}]))[0]!;
+				if (family.status === "failed") {
+					results.push({ sourceId: family.familyId, status: "failed", records: 0, reason: "source-unavailable" });
+				}
+				else {
+					for (const result of family.results) {
+						if (result.status === "expired") continue;
+						const failed = !["available", "awaiting-records"].includes(result.status);
+						results.push({ sourceId: result.sourceId, status: failed ? "failed" : result.imported ? "imported" : "cached", records: result.records, reason: failed ? result.status === "persistence-failed" ? "persistence-failed" : "source-unavailable" : null });
+					}
+				}
+				continue;
+			}
+			const source = item.source;
 			persistenceErrors.delete(source.id);
 			const snapshot = await repository.getSnapshot(source.stateCode, source.id);
 			const observation = (await repository.inspectSources!()).find(item => item.id === source.id);

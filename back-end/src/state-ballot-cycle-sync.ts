@@ -39,6 +39,7 @@ import { fetchNycCandidateCapture, fetchNycCycleDiscovery, nycDocumentDigest, re
 import { fetchOrangeCandidateCapture, fetchOrangeCycleDiscovery, orangeDocumentDigest, readOrangeDiscovery } from "./state-ballot-orange-collection.js";
 import { fetchOregonCandidateCapture, fetchOregonCycleDiscovery } from "./state-ballot-oregon-collection.js";
 import { fetchPimaCandidateCapture, fetchPimaCandidateDiscovery, pimaDocumentDigest, readPimaCandidateDiscovery } from "./state-ballot-pima-collection.js";
+import { prioritizeStateBallotWork } from "./state-ballot-priority.js";
 import { fetchPulaskiCandidateCapture, fetchPulaskiCycleDiscovery, pulaskiDocumentDigest, readPulaskiDiscovery } from "./state-ballot-pulaski-collection.js";
 import { createStateBallotRepository } from "./state-ballot-repository.js";
 import {
@@ -181,9 +182,9 @@ export async function syncStateBallotCycles(options: StateBallotCycleSyncOptions
 	return { familyId: catalog.familyId, catalogChanged, discovery: catalog.discovery, checkedAt: new Date(now()).toISOString(), results };
 }
 
-export async function syncStateBallotCycleFamilies(options: StateBallotCycleSyncOptions[]) {
+export async function syncStateBallotCycleFamilies(options: StateBallotCycleSyncOptions[], priorityFamilies?: readonly string[]) {
 	const results = [];
-	for (const configuration of options) {
+	for (const configuration of prioritizeStateBallotWork(options, item => item.familyId ?? "wa-general-2026", priorityFamilies)) {
 		try {
 			results.push({ status: "completed" as const, ...await syncStateBallotCycles(configuration) });
 		}

@@ -629,6 +629,16 @@ Protected host automation may invoke permitted sources on a schedule to populate
 data without waiting for a visitor. This source change does not install a
 scheduler or configure the hosted service.
 
+The routine worker and multi-family cycle synchronization process Fulton County
+first by default, including future elections discovered through the same family.
+`STATE_BALLOT_PRIORITY_FAMILIES` optionally lists approved family IDs in priority
+order; an explicitly empty value retains configured order. Unprioritized work
+keeps its existing relative order, and a failed priority source does not prevent
+the remaining independent work. This setting changes collection order only,
+not enabled sources, publisher permission, request spacing, freshness, review,
+ballot applicability or public candidate ordering. Current-officeholder and
+reference collectors keep their separate scheduling and acceptance contracts.
+
 ### Consolidated local factual package
 
 `back-end/data/state-ballots/national-state-candidates-2026-20261022-manifest.json`

@@ -28,6 +28,7 @@ const copiedPaths = [
 	["back-end/.npmrc", "back-end/.npmrc"],
 	["deploy/runtime-artifact-contract.json", "runtime-artifact-contract.json"],
 ];
+const requiredPrivateHandoffPaths = ["private-handoff-protocol.js", "private-handoff-storage.js", "private-handoff-client.js", "private-handoff-receiver.js", "manage-private-handoff.js"].map(name => `back-end/dist/${name}`);
 
 function normalizePath(root, path) {
 	return relative(root, path).split(sep).join("/");
@@ -226,6 +227,9 @@ export function verifyRuntimeArtifact(outputRoot) {
 	assertRequiredPaths(resolvedRoot, contract);
 	const files = listArtifactFiles(resolvedRoot);
 	assertNoPrivateOrWritableContent(resolvedRoot, files);
+	for (const path of requiredPrivateHandoffPaths) {
+		if (!existsSync(resolve(resolvedRoot, path))) throw new Error(`Runtime artifact is missing required private handoff module: ${path}`);
+	}
 	assertReleaseIdentity(resolvedRoot, manifest.source?.commit);
 	const actualPaths = files.map(path => normalizePath(resolvedRoot, path));
 	const expectedPaths = manifest.files.map(file => file.path);

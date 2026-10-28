@@ -31,9 +31,21 @@ a published release from verified live deployment.
 
 Treat this as a standing instruction for this site.
 
-Server-AI prompts and operator handoffs are local-only. Keep them in the ignored
+Server-AI prompts and operator handoffs are private delivery material. Keep source copies in the ignored
 `.ai-work/server-instructions/` folder, never in Git or release assets. Public
 artifact contracts and source documentation remain separate.
+
+## Private Release Handoff Delivery
+
+- After each verified release, finalize the current private packet with
+  `node scripts/finalize-release-handoff.mjs --assets ACCEPTED_ASSETS --active ACTIVE_DIRECTORY --receipts PRIVATE_RECEIPTS --tag TAG --commit COMMIT`.
+- Use the enrolled local sender profile described in `docs/private-release-handoff.md`.
+  Signing credentials stay outside repositories, AI working folders and packets.
+- Report private delivery only after the exact durable receipt verifies. Preserve
+  unresolved delivery outcomes and report unenrolled receiver prerequisites.
+  Use the configured upload-only API rather than routine SCP once enrolled.
+- Private receipt confirms custody only. Existing import, publication, scheduling,
+  protected activation and recovery approvals remain separate.
 
 ## GitGuardian Availability
 

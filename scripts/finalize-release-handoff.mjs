@@ -4,7 +4,7 @@ import { homedir } from "node:os";
 import { resolve } from "node:path";
 import process from "node:process";
 import { parseArgs } from "node:util";
-import { verifyReceipt } from "./runtime-release-receipt.mjs";
+import { verifyPublishedReceipt } from "./runtime-release-receipt.mjs";
 import {
 	buildHandoff,
 	deliverHandoffWithReceipt,
@@ -29,7 +29,7 @@ assert(
 assert.match(values.tag, /^v1\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)$/u);
 assert.match(values.commit, /^[a-f\d]{40}$/u);
 const assets = resolve(values.assets),
-	accepted = verifyReceipt(assets, values.commit);
+	accepted = verifyPublishedReceipt(assets, values.commit);
 const published = JSON.parse(
 	execFileSync(
 		"gh",

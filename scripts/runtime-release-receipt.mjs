@@ -74,8 +74,18 @@ export function writeReceipt(assetRoot) {
 }
 
 export function verifyReceipt(assetRoot, commit) {
+	return verifyAssetReceipt(assetRoot, commit, false);
+}
+
+export function verifyPublishedReceipt(assetRoot, commit) {
+	return verifyAssetReceipt(assetRoot, commit, true);
+}
+
+function verifyAssetReceipt(assetRoot, commit, published) {
 	const expectedNames = [archiveName(commit), "runtime-manifest.json", "acceptance-receipt.json", "SHA256SUMS"];
+	if (published) expectedNames.push("attestation-bundle.jsonl");
 	assert.deepEqual(readdirSync(assetRoot).sort(), [...expectedNames].sort());
+	if (published) assetPath(assetRoot, "attestation-bundle.jsonl");
 	const manifest = readManifest(assetRoot);
 	assert.equal(manifest.source.commit, commit);
 	const receipt = JSON.parse(readFileSync(assetPath(assetRoot, "acceptance-receipt.json"), "utf8"));

@@ -19,6 +19,7 @@ function fixture() {
 	}
 	for (const name of ["admin-schema.sql", "admin-schema.postgres.sql", "live-data-schema.sql"]) write(root, name, "SELECT 1;\n");
 	for (const name of ["server.js", "manage-election-references.js", "manage-election-documents.js", "manage-state-ballot-cycles.js", "manage-state-ballot-automation.js", "admin-operations.js", "prepare-state-measure-guides.js", "state-measure-guides.js", "election-document-collection.js", "election-document-sources.js", "congressional-biographies.js", "prepare-congressional-biographies.js", "washington-statements.js", "washington-statement-sources.js", "prepare-washington-statements.js", "manage-state-ballot-data.js", "export-state-ballot-sources.js", "check-state-ballot-sources.js"]) write(root, `dist/${name}`, "export {};\n");
+	for (const name of ["manage-court-directory.js", "court-directories.js", "court-directory-storage.js", "collect-court-directory.js"]) write(root, `dist/${name}`, "export {};\n");
 	write(root, "dist/release-identity.json", '{"version":"development","commit":"0000000000000000000000000000000000000000"}\n');
 	return root;
 }
@@ -48,6 +49,11 @@ test("compiled runtime verification independently refuses bundled election data 
 		assert.notEqual(refused.status, 0);
 		assert.match(refused.stderr, /outside the compiled runtime/u);
 		rmSync(join(root, "dist/data/state-ballots"), { recursive: true });
+		for (const name of ["manage-court-directory.js", "court-directories.js", "court-directory-storage.js", "collect-court-directory.js"]) {
+			rmSync(join(root, `dist/${name}`));
+			assert.match(spawnSync(process.execPath, [join(root, "scripts/verify-runtime-build.mjs")], { encoding: "utf8" }).stderr, /missing required runtime files/u);
+			write(root, `dist/${name}`, "export {};\n");
+		}
 		for (const name of ["manage-election-documents.js", "manage-state-ballot-cycles.js", "manage-state-ballot-automation.js", "admin-operations.js", "prepare-state-measure-guides.js", "state-measure-guides.js", "election-document-collection.js", "election-document-sources.js", "congressional-biographies.js", "prepare-congressional-biographies.js", "washington-statements.js", "washington-statement-sources.js", "prepare-washington-statements.js"]) {
 			rmSync(join(root, `dist/${name}`));
 			assert.match(spawnSync(process.execPath, [join(root, "scripts/verify-runtime-build.mjs")], { encoding: "utf8" }).stderr, /missing required runtime files/u);

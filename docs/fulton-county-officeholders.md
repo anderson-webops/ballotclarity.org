@@ -64,3 +64,7 @@ are publisher references, not copied image assets or a blanket reuse license.
 - [District attorney](https://fultoncountyga.gov/Inside-Fulton-County/Fulton-County-Departments/District-Attorney)
 - [Solicitor general](https://fultoncountyga.gov/Inside-Fulton-County/Fulton-County-Departments/Solicitor-General)
 - [Tax commissioner](https://fultoncountyga.gov/Inside-Fulton-County/Fulton-County-Departments/Tax-Commissioner)
+
+The separate [State Court directory](audits/2026-10-28-fulton-court-directories.md)
+collects current judges independently, without treating them as county
+commissioners, ballot candidates or a complete judicial roster for the county.

@@ -4,6 +4,7 @@ import type { AddressEnrichmentService } from "./address-enrichment.js";
 import type { AdminAuditActor } from "./admin-store.js";
 import type { PublicBallotElection } from "./ballot-guide-scope.js";
 import type { CongressClient, CongressMemberDetail, CongressMemberRecord } from "./congress.js";
+import type { CourtDirectoryRepository } from "./court-directory-storage.js";
 import type { CoverageRepository } from "./coverage-repository.js";
 import type { ElectionReferenceRepository } from "./election-references.js";
 import type { FultonCountyOfficeholderRepository } from "./fulton-county-officeholder-storage.js";
@@ -113,6 +114,8 @@ import { createBoundedPromiseCache, resolveBoundedCacheInteger } from "./bounded
 import { BoundedRateLimitStore } from "./bounded-rate-limit-store.js";
 import { createCensusGeocoderClient } from "./census-geocoder.js";
 import { createCongressClient, isCurrentCongressMemberRecord } from "./congress.js";
+import { courtDirectoryPublication } from "./court-directories.js";
+import { CourtDirectoryUnavailableError, createCourtDirectoryRepository } from "./court-directory-storage.js";
 import { coverageElections, coverageElectionSummaries, coverageGuideLocation, coverageJurisdictions, coverageJurisdictionSummaries, createCoverageRepository } from "./coverage-repository.js";
 import { electionRecordSource } from "./election-record-source.js";
 import { registerElectionReferenceRoutes } from "./election-reference-routes.js";
@@ -164,6 +167,7 @@ import { createZipLocationService } from "./zip-location.js";
 import { createZipLookupLogger } from "./zip-lookup-logger.js";
 
 interface CreateAppOptions {
+	courtDirectoryRepository?: CourtDirectoryRepository | null;
 	fultonCountyOfficeholderRepository?: FultonCountyOfficeholderRepository | null;
 	fultonOfficeholderRepository?: FultonOfficeholderRepository | null;
 	activeLookupCookieSecret?: string | null;
@@ -3021,6 +3025,15 @@ function buildSearchResponse(
 
 export async function createApp(options: CreateAppOptions = {}) {
 	const app = express() as BallotClarityApplication;
+	const courtDirectoryRepository = options.courtDirectoryRepository === undefined ? createCourtDirectoryRepository() : options.courtDirectoryRepository;
+	const countyCourtDirectory = async () => {
+		if (!courtDirectoryRepository) return undefined;
+		try {
+			const snapshot = await courtDirectoryRepository.getSnapshot();
+			return { slug: snapshot.slug, title: snapshot.title, count: snapshot.judges.length };
+		}
+		catch { return undefined; }
+	};
 	const fultonOfficeholderRepository = options.fultonOfficeholderRepository === undefined ? createFultonOfficeholderRepository() : options.fultonOfficeholderRepository;
 	const fultonCountyOfficeholderRepository = options.fultonCountyOfficeholderRepository === undefined ? createFultonCountyOfficeholderRepository() : options.fultonCountyOfficeholderRepository;
 	const currentSupplementalOfficeholders = () => resolveFultonCountySupplementalOfficeholders(fultonCountyOfficeholderRepository?.getSnapshot() ?? null, resolveFultonSupplementalOfficeholders(fultonOfficeholderRepository?.getSnapshot() ?? null));
@@ -5451,6 +5464,19 @@ export async function createApp(options: CreateAppOptions = {}) {
 		response.json(record);
 	});
 
+	app.get("/api/courts", async (_request, response) => {
+		const snapshot = courtDirectoryRepository ? await courtDirectoryRepository.getSnapshot() : null;
+		response.json({ courts: snapshot ? [{ slug: snapshot.slug, title: snapshot.title, count: snapshot.judges.length }] : [] });
+	});
+
+	app.get("/api/courts/:slug", async (request, response) => {
+		if (!courtDirectoryRepository || request.params.slug !== courtDirectoryPublication.slug) {
+			response.status(404).json({ message: "Court records are not available." });
+			return;
+		}
+		response.json(await courtDirectoryRepository.getSnapshot());
+	});
+
 	app.get("/api/districts", async (request, response) => {
 		const activeNationwideLookup = await resolveActiveNationwideLookup(request, response);
 
@@ -5482,6 +5508,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 				const boardRecord = board || countyOffices ? buildPublicDistrictRecordFromSlug("fulton-county", currentSupplementalOfficeholders(), board, countyOffices) : null;
 				response.json({
 					...nationwideDistrict,
+					courtDirectory: countyMatch && inGeorgia ? await countyCourtDirectory() : undefined,
 					officeVacancies: boardRecord?.officeVacancies,
 					updatedAt: boardRecord?.updatedAt ?? nationwideDistrict.updatedAt,
 					sources: boardRecord ? uniqueSources([...nationwideDistrict.sources, ...boardRecord.sources]) : nationwideDistrict.sources,
@@ -5497,7 +5524,8 @@ export async function createApp(options: CreateAppOptions = {}) {
 		const result = await getPublicDistrict(request.params.slug);
 
 		if (!result) {
-			response.json(buildPublicDistrictRecordFromSlug(request.params.slug, currentSupplementalOfficeholders(), fultonOfficeholderRepository?.getSnapshot(), fultonCountyOfficeholderRepository?.getSnapshot()) ?? buildRouteFallbackDistrictRecordResponse(request.params.slug));
+			const record = buildPublicDistrictRecordFromSlug(request.params.slug, currentSupplementalOfficeholders(), fultonOfficeholderRepository?.getSnapshot(), fultonCountyOfficeholderRepository?.getSnapshot()) ?? buildRouteFallbackDistrictRecordResponse(request.params.slug);
+			response.json({ ...record, courtDirectory: record.district.slug === "fulton-county" ? await countyCourtDirectory() : undefined });
 			return;
 		}
 
@@ -5736,7 +5764,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 		response.json(await adminRepository.getOverview());
 	});
 	app.get("/api/admin/operations", async (_request, response) => {
-		response.json(await buildAdminOperations({ candidates: stateBallotRepository, references: electionReferenceRepository, officeholders: fultonOfficeholderRepository, countyOfficeholders: fultonCountyOfficeholderRepository, dataDirectory: process.env.STATE_BALLOT_DATA_DIR || null }));
+		response.json(await buildAdminOperations({ candidates: stateBallotRepository, references: electionReferenceRepository, officeholders: fultonOfficeholderRepository, countyOfficeholders: fultonCountyOfficeholderRepository, courts: courtDirectoryRepository, dataDirectory: process.env.STATE_BALLOT_DATA_DIR || null }));
 	});
 
 	app.get("/api/admin/audit", async (_request, response) => {
@@ -6271,7 +6299,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 		if (response.headersSent)
 			return;
 
-		if (error instanceof FultonOfficeholderUnavailableError || error instanceof FultonCountyOfficeholderUnavailableError) {
+		if (error instanceof FultonOfficeholderUnavailableError || error instanceof FultonCountyOfficeholderUnavailableError || error instanceof CourtDirectoryUnavailableError) {
 			response.status(503).json({ message: error.message, requestId: response.locals.requestId });
 			return;
 		}

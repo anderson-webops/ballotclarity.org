@@ -1264,6 +1264,7 @@ export interface PersonProfileResponse {
 }
 
 export interface DistrictRecordResponse {
+	courtDirectory?: { slug: string; title: string; count: number };
 	officeVacancies?: string[];
 	mode: "guide" | "nationwide";
 	districtOriginLabel: string;

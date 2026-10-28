@@ -1285,6 +1285,7 @@ export interface PersonProfileResponse {
 }
 
 export interface DistrictRecordResponse {
+	courtDirectory?: { slug: string; title: string; count: number };
 	officeVacancies?: string[];
 	mode: "guide" | "nationwide";
 	districtOriginLabel: string;
@@ -1304,6 +1305,14 @@ export interface DistrictRecordResponse {
 	officialResources: OfficialResource[];
 	sources: Source[];
 	relatedContests: ContestLinkSummary[];
+}
+
+export interface CourtDirectoryResponse {
+	slug: string;
+	title: string;
+	url: string;
+	retrievedAt: string;
+	judges: { name: string; role: "Judge" | "Chief Judge"; division: string; profileUrl: string }[];
 }
 
 export interface DistrictsResponse {

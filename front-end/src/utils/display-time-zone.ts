@@ -72,14 +72,17 @@ export function formatCivicDate(value: string, timeZone: string | null | undefin
 }
 
 export function formatCivicDateTime(value: string, timeZone: string | null | undefined) {
-	return new Intl.DateTimeFormat("en-US", {
+	const parts = new Intl.DateTimeFormat("en-US", {
 		day: "numeric",
 		hour: "numeric",
+		hour12: true,
 		minute: "2-digit",
 		month: "short",
 		...buildIntlTimeZoneOption(timeZone, value),
 		year: "numeric",
-	}).format(parseDisplayDateInput(value));
+	}).formatToParts(parseDisplayDateInput(value));
+	const partValue = (type: Intl.DateTimeFormatPartTypes) => parts.find(part => part.type === type)!.value;
+	return `${partValue("month")} ${partValue("day")}, ${partValue("year")} at ${partValue("hour")}:${partValue("minute")} ${partValue("dayPeriod")}`;
 }
 
 export function buildPreHydrationDisplayTimeZoneScript() {

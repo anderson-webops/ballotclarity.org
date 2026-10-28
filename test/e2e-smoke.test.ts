@@ -615,6 +615,32 @@ async function withResilienceBrowser(t: TestContext, run: (cdp: CdpSession) => P
 
 const hydratedCivicState = "document.querySelector('#__nuxt')?.__vue_app__?.config.globalProperties.$pinia?.state.value.civic?.isHydrated === true";
 
+test("guide startup restores browser context after hydration and keeps navigation responsive", async (context) => {
+	await withResilienceBrowser(context, async (cdp) => {
+		const hydrationMessages: string[] = [];
+		cdp.on("Runtime.consoleAPICalled", (event) => {
+			const text = (event.args ?? []).map((entry: { value?: unknown }) => typeof entry.value === "string" ? entry.value : "").join(" ");
+			if (/hydration|mismatch/iu.test(text)) hydrationMessages.push(text);
+		});
+		await cdp.send("Page.addScriptToEvaluateOnNewDocument", { source: `(() => {
+			window.__guideStorageWrites = 0;
+			const original = Storage.prototype.setItem;
+			Storage.prototype.setItem = function(key, value) {
+				if (key === 'ballot-clarity:civic-store') window.__guideStorageWrites++;
+				return Reflect.apply(original, this, [key, value]);
+			};
+		})()` });
+		for (const route of ["/elections/2026-fulton-county-general", "/locations/fulton-county-georgia", "/elections/2026-fulton-county-general"]) {
+			await navigateAndWait(cdp, `${appBaseUrl}${route}`, "guide context direct load");
+			await waitForRuntimeCondition(cdp, hydratedCivicState, Boolean, "guide context ready");
+			const heartbeat = await cdp.send("Runtime.evaluate", { expression: "new Promise(resolve => setTimeout(() => resolve({ writes: window.__guideStorageWrites, ready: document.readyState }), 50))", awaitPromise: true, returnByValue: true });
+			assert.equal(heartbeat.result.value.ready, "complete");
+			assert.ok(heartbeat.result.value.writes < 20, `Guide persistence remains bounded on ${route}`);
+		}
+		assert.deepEqual(hydrationMessages, []);
+	});
+});
+
 test("state records: every candidate is visible with election, provenance, and limited-coverage disclosure", async (t) => {
 	await withResilienceBrowser(t, async (cdp) => {
 		const snapshot = structuredClone(nationwideLookupSnapshot);
@@ -1566,12 +1592,16 @@ test("first-visit timestamps hydrate without mismatches across browser time zone
 		assert.equal(response.status, 200);
 		const data = await response.json() as { election: { updatedAt: string } };
 		for (const timezoneId of ["America/New_York", "Pacific/Honolulu", "Asia/Tokyo"]) {
+			const timestamp = new Date(data.election.updatedAt);
+			const expectedDate = new Intl.DateTimeFormat("en-US", { day: "numeric", month: "short", timeZone: timezoneId, year: "numeric" }).format(timestamp);
+			const expectedTime = new Intl.DateTimeFormat("en-US", { hour: "numeric", hour12: true, minute: "2-digit", timeZone: timezoneId }).format(timestamp).replace(/\s+/gu, " ");
+			const expectedTimestamp = `${expectedDate} at ${expectedTime}`;
 			await cdp.send("Emulation.setTimezoneOverride", { timezoneId });
 			await cdp.send("Network.clearBrowserCookies");
 			consoleMessages.length = 0;
 			for (const visit of ["fresh", "return"]) {
 				await navigateAndWait(cdp, `${appBaseUrl}/election-dates/2026-fulton-county-general`, `${timezoneId} ${visit} visit`);
-				await waitForRuntimeCondition(cdp, `document.body.innerText.includes(new Intl.DateTimeFormat("en-US", { day: "numeric", hour: "numeric", minute: "2-digit", month: "short", timeZone: ${JSON.stringify(timezoneId)}, year: "numeric" }).format(new Date(${JSON.stringify(data.election.updatedAt)})))`, Boolean, `${timezoneId} localized timestamp`);
+				await waitForRuntimeCondition(cdp, `document.body.innerText.includes(${JSON.stringify(expectedTimestamp)})`, Boolean, `${timezoneId} localized timestamp`);
 				await delay(200);
 				assert.equal(consoleMessages.some(message => browserSecurityConsolePattern.test(message)), false, `${timezoneId} ${visit}:\n${consoleMessages.join("\n")}`);
 			}

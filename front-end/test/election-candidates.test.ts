@@ -2,7 +2,7 @@ import type { PublicStateCandidateRecord } from "../src/types/civic.ts";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
-import { groupElectionCandidates } from "../src/utils/election-candidates.ts";
+import { electionOfficeLabel, groupElectionCandidates } from "../src/utils/election-candidates.ts";
 import { readRecoverableStateRecordQuery } from "../src/utils/state-record-query.ts";
 
 test("election candidates retain every sourced person in federal, state and local office groups", () => {
@@ -19,6 +19,23 @@ test("election candidates retain every sourced person in federal, state and loca
 	assert.equal(groups[1]!.offices[0]!.title, "State Senate, District 48");
 	assert.deepEqual(groups.flatMap(group => group.offices.flatMap(office => office.candidates)), records);
 	assert.deepEqual(records, before);
+	assert.deepEqual(groups.map(group => group.offices[0]!.anchorId), ["candidate-office-federal-one", "candidate-office-state", "candidate-office-local"]);
+});
+
+test("office contents labels stay short while retaining district and unexpired-seat distinctions", () => {
+	for (const [title, label] of [
+		["United States Senate", "U.S. Senate"],
+		["United States House of Representatives - District 5", "U.S. House 5"],
+		["State House of Representatives – District 52", "State House 52"],
+		["Secretary of State", "Secretary of State"],
+		["Public Service Commissioner District 3", "Public Service 3"],
+		["County Commissioner – District 4 (Unexpired Term)", "Commission 4 Unexpired"],
+		["Supreme Court - Justice Position #01 (Unexpired)", "Supreme #01 Unexpired"],
+		["Fulton Soil & Water Conservation District Supervisor", "Soil & Water"]
+	]) {
+		assert.equal(electionOfficeLabel(title!), label);
+		assert(electionOfficeLabel(title!).split(" ").length <= 3);
+	}
 });
 
 test("known state records load automatically while explicit selections and invalid inputs retain precedence", () => {
@@ -49,4 +66,32 @@ test("compact deadlines retain the election's calendar date and consequential vo
 	assert.match(dates, /:datetime="compactDate\(item\)"/u);
 	assert.match(dates, /v-if="compactNote\(item\)"/u);
 	assert.match(dates, /v-if="item.isNext"/u);
+});
+
+test("overview contents use native fragments below deadlines with visible hover and keyboard feedback", () => {
+	const overview = readFileSync(new URL("../src/pages/elections/[slug].vue", import.meta.url), "utf8");
+	const contents = overview.slice(overview.indexOf("<nav v-if=\"sectionLinks.length\""), overview.indexOf("</nav>"));
+	assert(overview.indexOf("id=\"key-dates\"") < overview.indexOf("<nav v-if=\"sectionLinks.length\""));
+	assert.match(contents, /<a :href="section.href"/u);
+	assert.doesNotMatch(contents, /NuxtLink|target=|@click/u);
+	assert.match(contents, /dark:hover:text-white/u);
+	assert.match(contents, /dark:focus-visible:text-white/u);
+	assert.match(overview, /@sections="candidateSections = \$event"/u);
+	for (const target of ["ballot-items", "voting-info"])
+		assert.match(overview, new RegExp(`id="${target}" tabindex="-1"`, "u"));
+});
+
+test("candidate contents follow available groups after mounting without extra source requests", () => {
+	const candidates = readFileSync(new URL("../src/components/ElectionCandidateRecords.vue", import.meta.url), "utf8");
+	assert.match(candidates, /const mounted = useMounted\(\)/u);
+	assert.match(candidates, /watch\(\[mounted, sections\]/u);
+	assert.match(candidates, /if \(ready\) emit\("sections", items\)/u);
+	assert.match(candidates, /data.value\?\.available && !pending.value && !error.value && groups.value.length/u);
+	assert.match(candidates, /href: "#candidates-heading", label: "Candidates"/u);
+	assert.match(candidates, /href: `#candidate-level-\$\{group.id\}`/u);
+	assert.match(candidates, /children: group.offices.map/u);
+	assert.match(candidates, /label: electionOfficeLabel\(office.title\), title: office.title/u);
+	assert.match(candidates, /<h4 :id="office.anchorId" tabindex="-1"/u);
+	assert.match(candidates, /<h3 :id="`candidate-level-\$\{level.id\}`" tabindex="-1"/u);
+	assert.doesNotMatch(candidates, /MutationObserver|watchEffect/u);
 });

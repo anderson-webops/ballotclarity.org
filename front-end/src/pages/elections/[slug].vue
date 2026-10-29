@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { ElectionSectionLink } from "~/utils/election-candidates";
 import { buildKeyDateTimeline, calendarDaysUntil, describeDaysAway } from "~/utils/election-timeline";
 import { fullAreaGuideLabels } from "~/utils/guide-scope";
 import { limitedBallotNotice } from "~/utils/results-summary";
@@ -7,6 +8,15 @@ const civicStore = useCivicStore();
 const { displayTimeZone, formatDate } = useFormatters();
 const electionSlug = useRouteStringParam("slug");
 const { data, error, pending } = await useBallot(electionSlug);
+const candidateSections = ref<ElectionSectionLink[]>([]);
+const sectionLinks = computed<ElectionSectionLink[]>(() => [
+	...(data.value?.candidateRecordSource ? candidateSections.value : []),
+	...(data.value?.guideContent?.verifiedContestPackage && data.value.election.contests.length ? [{ href: "#ballot-items", label: "Ballot items" }] : []),
+	...(data.value?.election.officialResources.length ? [{ href: "#voting-info", label: "Voting info" }] : [])
+]);
+watch(() => data.value?.candidateRecordSource?.sourceId, () => {
+	candidateSections.value = [];
+});
 const guideStatusNote = computed(() => data.value?.candidateRecordSource
 	? ""
 	: data.value?.scope === "statewide"
@@ -85,21 +95,42 @@ usePageSeo({
 						Ballot guide
 					</NuxtLink>
 				</header>
-				<aside v-if="data.election.keyDates.length" id="key-dates" aria-labelledby="key-dates-heading" class="min-w-0 lg:row-span-2 lg:col-start-2 lg:row-start-1">
-					<h2 id="key-dates-heading" class="text-lg text-app-ink font-semibold dark:text-app-text-dark">
-						Dates and deadlines
-					</h2>
-					<ElectionKeyDates v-if="upcomingKeyDates.length" :entries="upcomingKeyDates" :election-date="data.election.date" compact />
-					<NuxtLink :to="`/election-dates/${data.election.slug}`" class="text-sm text-app-accent mt-3 py-2 underline inline-block focus-ring">
-						All dates
-					</NuxtLink>
+				<aside v-if="data.election.keyDates.length || sectionLinks.length" aria-label="Election navigation" class="min-w-0 lg:row-span-2 lg:col-start-2 lg:row-start-1">
+					<section v-if="data.election.keyDates.length" id="key-dates" aria-labelledby="key-dates-heading">
+						<h2 id="key-dates-heading" class="text-lg text-app-ink font-semibold dark:text-app-text-dark">
+							Dates and deadlines
+						</h2>
+						<ElectionKeyDates v-if="upcomingKeyDates.length" :entries="upcomingKeyDates" :election-date="data.election.date" compact />
+						<NuxtLink :to="`/election-dates/${data.election.slug}`" class="text-sm text-app-accent mt-3 py-2 underline inline-block focus-ring">
+							All dates
+						</NuxtLink>
+					</section>
+					<nav v-if="sectionLinks.length" aria-labelledby="election-sections-heading" class="mt-8 pt-6 border-t border-app-line dark:border-app-line-dark">
+						<h2 id="election-sections-heading" class="text-lg text-app-ink font-semibold dark:text-app-text-dark">
+							On this page
+						</h2>
+						<ul class="mt-3 space-y-5">
+							<li v-for="section in sectionLinks" :key="section.href">
+								<a :href="section.href" class="text-app-ink font-semibold px-3 py-2 border-app-line border-l-2 flex min-h-11 transition-colors duration-150 items-center dark:text-app-text-dark focus-visible:text-app-accent hover:text-app-accent dark:border-app-line-dark hover:border-app-accent focus-ring dark:focus-visible:text-white dark:hover:text-white">
+									{{ section.label }}
+								</a>
+								<ul v-if="section.children?.length" class="ml-3 gap-x-3 grid grid-cols-2 lg:grid-cols-1">
+									<li v-for="office in section.children" :key="office.href">
+										<a :href="office.href" :title="office.title" class="text-sm text-app-muted px-3 py-2 border-app-line border-l-2 flex min-h-11 transition-colors duration-150 items-center dark:text-app-muted-dark focus-visible:text-app-ink hover:text-app-ink dark:border-app-line-dark hover:border-app-accent focus-ring dark:focus-visible:text-white dark:hover:text-white">
+											{{ office.label }}
+										</a>
+									</li>
+								</ul>
+							</li>
+						</ul>
+					</nav>
 				</aside>
 				<div v-if="data.candidateRecordSource" class="election-overview-candidates min-w-0">
-					<ElectionCandidateRecords :source="data.candidateRecordSource" />
+					<ElectionCandidateRecords :source="data.candidateRecordSource" @sections="candidateSections = $event" />
 				</div>
 			</div>
-			<section v-if="data.guideContent?.verifiedContestPackage && data.election.contests.length" class="surface-panel">
-				<h2 class="text-2xl text-app-ink font-serif dark:text-app-text-dark">
+			<section v-if="data.guideContent?.verifiedContestPackage && data.election.contests.length" aria-labelledby="ballot-items" class="surface-panel">
+				<h2 id="ballot-items" tabindex="-1" class="text-2xl text-app-ink font-serif dark:text-app-text-dark">
 					Ballot items
 				</h2>
 				<div class="mt-6 gap-8 grid xl:grid-cols-2">
@@ -110,8 +141,8 @@ usePageSeo({
 					</NuxtLink>
 				</div>
 			</section>
-			<section v-if="data.election.officialResources.length" class="surface-panel">
-				<h2 class="text-2xl text-app-ink font-serif dark:text-app-text-dark">
+			<section v-if="data.election.officialResources.length" aria-labelledby="voting-info" class="surface-panel">
+				<h2 id="voting-info" tabindex="-1" class="text-2xl text-app-ink font-serif dark:text-app-text-dark">
 					Voting information
 				</h2>
 				<ul class="mt-5 space-y-3">

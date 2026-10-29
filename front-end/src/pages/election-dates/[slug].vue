@@ -28,7 +28,7 @@ usePageSeo({ title: "Election dates", path: `/election-dates/${slug.value}` });
 				{{ data.location.displayName }}
 			</p>
 			<ElectionKeyDates :entries="entries" />
-			<UpdatedAt :value="data.election.updatedAt" class="mt-8" />
+			<UpdatedAt :value="data.election.updatedAt" label="Ballot data updated on" footer />
 		</template>
 	</section>
 </template>

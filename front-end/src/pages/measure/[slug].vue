@@ -256,7 +256,7 @@ function saveMeasure(decision: "no" | "review" | "yes") {
 
 				<ExpandableSection v-if="hasSection('sources')" id="sources" title="Sources">
 					<div v-if="measure.freshness.contentLastVerifiedAt" class="mt-3">
-						<UpdatedAt :value="measure.freshness.contentLastVerifiedAt" label="Reviewed" />
+						<UpdatedAt :value="measure.freshness.contentLastVerifiedAt" label="Measure reviewed on" footer />
 					</div>
 					<p v-if="measure.freshness.statusNote" class="text-sm leading-7 mt-2">
 						{{ measure.freshness.statusNote }}

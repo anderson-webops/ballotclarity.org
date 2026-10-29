@@ -63,9 +63,9 @@ async function changePage(offset: number) {
 				{{ range }}
 			</p>
 			<ul class="border-t border-app-line divide-app-line divide-y dark:border-app-line-dark dark:divide-app-line-dark" aria-label="Candidate information">
-				<li v-for="record in data.records" :key="`${record.source.collectionId ?? record.source.url}:${record.id}`" class="min-w-0 break-words">
-					<NuxtLink :to="{ path: `/record/${stateCode}/${record.id}`, query: { kind: 'reference', name: record.name, source: record.source.collectionId } }" class="py-5 flex gap-4 items-center focus-ring">
-						<ProfileImageStack v-if="record.profileImages?.length" :images="record.profileImages" :name="record.name" size="sm" class="shrink-0" />
+				<li v-for="record in data.records" :key="`${record.source.collectionId ?? record.source.url}:${record.id}`" class="flex gap-4 min-w-0 break-words items-center">
+					<ProfileImageStack v-if="record.profileImages?.length" :images="record.profileImages" :name="record.name" size="sm" class="shrink-0" />
+					<NuxtLink :to="{ path: `/record/${stateCode}/${record.id}`, query: { kind: 'reference', name: record.name, source: record.source.collectionId } }" class="py-5 flex flex-1 min-w-0 items-center focus-ring">
 						<div class="min-w-0">
 							<h3 class="text-xl text-app-ink font-semibold dark:text-app-text-dark">
 								{{ record.name }}

@@ -37,9 +37,6 @@ usePageSeo({
 				<NuxtLink to="/#location-lookup" class="btn-primary">
 					Look up an address or ZIP
 				</NuxtLink>
-				<NuxtLink to="/records" class="btn-secondary">
-					Candidate records
-				</NuxtLink>
 				<NuxtLink to="/sources" class="btn-secondary">
 					Sources
 				</NuxtLink>

@@ -14,7 +14,7 @@ const sourceId = useRouteStringParam("source");
 const candidateId = useRouteStringParam("id");
 const lookupQuery = computed(() => extractNationwideLookupRouteQuery(route.query));
 const storedCandidate = computed(() => isHydrated.value ? findBallotCandidate(nationwideLookupResult.value, sourceId.value, candidateId.value) : null);
-const { formatDate, formatDateTime } = useFormatters();
+const { formatDate } = useFormatters();
 const { data, error, pending, refresh } = await useAsyncData(
 	() => `ballot-record:${sourceId.value}:${candidateId.value}:${lookupQuery.value?.lookup ?? "active"}:${lookupQuery.value?.selection ?? ""}`,
 	async () => {
@@ -90,7 +90,7 @@ usePageSeo({ title: record.value?.candidate.name ?? "Candidate record", descript
 				<SafeExternalLink v-if="record.preview.sourceUrl" :href="record.preview.sourceUrl" class="text-app-accent underline underline-offset-3 focus-ring">
 					{{ record.preview.providerLabel }}
 				</SafeExternalLink>
-				<p>Retrieved {{ formatDateTime(record.preview.generatedAt) }}</p>
+				<UpdatedAt :value="record.preview.generatedAt" label="Ballot data updated on" footer />
 				<p v-for="note in sourceNotes" :key="note">
 					{{ note }}
 				</p>

@@ -12,7 +12,6 @@ const { data, error, pending, refresh } = await useAsyncData(
 	() => state.value && source.value ? api<StateQuestionsResponse>(`/state-records/${state.value}/questions`, { query: { source: source.value } }) : Promise.resolve(null),
 	{ default: () => null }
 );
-const backTo = computed(() => ({ path: "/records", query: { state: state.value, source: source.value } }));
 const groups = computed(() => {
 	const grouped = new Map<string, PublicBallotQuestion[]>();
 	for (const question of data.value?.questions ?? []) grouped.set(question.audience, [...(grouped.get(question.audience) ?? []), question]);
@@ -23,9 +22,6 @@ usePageSeo({ title: "Ballot questions", description: "Official question wording 
 
 <template>
 	<section class="app-shell section-gap max-w-4xl space-y-10">
-		<NuxtLink :to="backTo" class="text-app-accent underline underline-offset-3 focus-ring">
-			Candidate records
-		</NuxtLink>
 		<header class="space-y-4">
 			<h1 class="text-5xl text-app-ink font-serif dark:text-app-text-dark">
 				Ballot questions

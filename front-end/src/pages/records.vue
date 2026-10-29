@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { isSampleBallotDocument, recordPublications, recordSourceNotice } from "~/utils/record-publications";
 import { readRecoverableStateRecordQuery, stateRecordSourceMismatch } from "~/utils/state-record-query";
 import { readStateRecordQuery, stateRecordScopes, stateRecordSummaryParts } from "~/utils/state-records";
 
@@ -9,6 +10,8 @@ const { data: stateData, error: stateError, refresh: refreshStates } = await use
 const filters = computed(() => readRecoverableStateRecordQuery(route.query, stateData.value?.states ?? [], civicStore.isHydrated ? civicStore.selectedLocation?.state : undefined));
 const { data, error, pending, refresh } = await useStateRecords(filters);
 const sourceMismatch = computed(() => stateRecordSourceMismatch(route.query.source, data.value));
+const sampleBallot = computed(() => sourceMismatch.value ? undefined : recordPublications(data.value?.source).find(isSampleBallotDocument));
+const notice = computed(() => recordSourceNotice(data.value?.source));
 const referenceFilters = computed(() => ({ stateCode: filters.value.stateCode, search: filters.value.search, scope: filters.value.scope, offset: readStateRecordQuery({ offset: route.query.referenceOffset }, []).offset }));
 const { data: referenceData, error: referenceError, pending: referencePending, refresh: refreshReferences } = await useElectionReferences(referenceFilters);
 const selectedState = ref(filters.value.stateCode);
@@ -65,6 +68,7 @@ usePageSeo({
 		<h1 class="text-5xl text-app-ink font-serif dark:text-app-text-dark">
 			Candidate records
 		</h1>
+		<OfficialSampleBallot v-if="sampleBallot" :href="sampleBallot.url" />
 		<form class="gap-4 grid sm:grid-cols-2" aria-label="Filter candidate records" @submit.prevent="applyFilters()">
 			<div>
 				<label for="record-state" class="text-sm text-app-ink font-semibold dark:text-app-text-dark">State</label>
@@ -133,8 +137,8 @@ usePageSeo({
 				<NuxtLink v-if="data.source.documentLinks?.length || data.source.url" :to="{ path: '/record-sources', query: { ...route.query, state: filters.stateCode, ...(data.source.id ? { source: data.source.id } : {}) } }" class="text-app-accent py-2 rounded-md underline underline-offset-3 min-h-11 inline-block focus-ring">
 					Sources
 				</NuxtLink>
-				<aside v-if="data.available && data.source.scopeNotice" aria-label="Record limitations" class="basis-full">
-					<p>{{ data.source.scopeNotice }}</p>
+				<aside v-if="data.available && notice" aria-label="Record limitations" class="basis-full">
+					<p>{{ notice }}</p>
 				</aside>
 				<p v-if="data.source.sourceAsOfDate" class="basis-full">
 					As of {{ formatDate(data.source.sourceAsOfDate) }}
@@ -143,6 +147,7 @@ usePageSeo({
 					Questions ({{ data.questionCount }})
 				</NuxtLink>
 			</div>
+			<UpdatedAt v-if="data.source.retrievedAt" :value="data.source.retrievedAt" label="Ballot data updated on" footer />
 			<p v-if="data.awaitingRecords" class="text-sm text-app-muted dark:text-app-muted-dark" role="status">
 				No records yet.
 			</p>
@@ -154,9 +159,9 @@ usePageSeo({
 					{{ recordRange }}
 				</p>
 				<ul class="border-t border-app-line divide-app-line divide-y dark:border-app-line-dark dark:divide-app-line-dark" aria-label="Candidate records">
-					<li v-for="record in data.records" :key="record.id" class="min-w-0 break-words">
-						<NuxtLink :to="{ path: `/record/${filters.stateCode}/${record.id}`, query: { name: record.name, source: data.source.id } }" class="py-5 flex gap-4 items-center focus-ring">
-							<ProfileImageStack v-if="record.profileImages?.length" :images="record.profileImages" :name="record.name" size="sm" class="shrink-0" />
+					<li v-for="record in data.records" :key="record.id" class="flex gap-4 min-w-0 break-words items-center">
+						<ProfileImageStack v-if="record.profileImages?.length" :images="record.profileImages" :name="record.name" size="sm" class="shrink-0" />
+						<NuxtLink :to="{ path: `/record/${filters.stateCode}/${record.id}`, query: { name: record.name, source: data.source.id } }" class="py-5 flex flex-1 min-w-0 items-center focus-ring">
 							<div class="min-w-0">
 								<h2 class="text-xl text-app-ink font-semibold dark:text-app-text-dark">
 									{{ record.name }}

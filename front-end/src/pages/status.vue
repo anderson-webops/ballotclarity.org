@@ -50,7 +50,7 @@ const hasPublicIncidents = computed(() => Boolean(data.value?.incidents.length))
 					{{ statusLabel }}
 				</p>
 				<div class="mt-3 flex flex-wrap gap-4 items-center">
-					<UpdatedAt :value="data.updatedAt" label="Status updated" />
+					<UpdatedAt :value="data.updatedAt" label="Status updated on" footer />
 					<p class="text-sm text-app-muted dark:text-app-muted-dark">
 						Coverage data updated {{ formatDateTime(data.coverageUpdatedAt) }}
 					</p>

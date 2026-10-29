@@ -6,7 +6,7 @@ import { stateRecordArea, stateRecordStatusBadges } from "~/utils/state-records"
 
 const route = useRoute();
 const api = useApiClient();
-const { formatDate, formatDateTime } = useFormatters();
+const { formatDate } = useFormatters();
 const stateCode = useRouteStringParam("state");
 const recordId = useRouteStringParam("id");
 const isReference = computed(() => route.query.kind === "reference");
@@ -106,23 +106,17 @@ const sourcesTarget = computed(() => ({ path: "/record-sources", query: { state:
 					</li>
 				</ul>
 				<section class="pt-5 border-t border-app-line space-y-3 dark:border-app-line-dark" aria-label="Source">
-					<SafeExternalLink v-for="image in profileImages" :key="image.url" :href="image.sourceUrl ?? image.url" class="text-app-accent underline block focus-ring">
-						{{ image.sourceLabel }}<template v-if="image.attribution">
-							· {{ image.attribution }}
-						</template>
-					</SafeExternalLink>
 					<SafeExternalLink :href="data.reference.source.pageUrl ?? data.reference.source.url" class="text-app-accent underline underline-offset-3 focus-ring">
 						{{ data.reference.source.title }}
 					</SafeExternalLink>
 					<p v-if="data.reference.source.publishedDate" class="text-sm text-app-muted dark:text-app-muted-dark">
 						Published {{ formatDate(data.reference.source.publishedDate) }}
 					</p>
-					<p class="text-sm text-app-muted dark:text-app-muted-dark">
-						Retrieved {{ formatDateTime(data.reference.source.capturedAt) }}
-					</p>
+					<UpdatedAt :value="data.reference.source.capturedAt" label="Profile data updated on" footer />
 				</section>
 			</template>
 			<template v-else-if="data.official && data.source">
+				<UpdatedAt v-if="data.source.retrievedAt" :value="data.source.retrievedAt" label="Ballot data updated on" footer />
 				<dl class="space-y-4">
 					<div v-if="data.official.party">
 						<dt class="font-semibold">
@@ -167,13 +161,6 @@ const sourcesTarget = computed(() => ({ path: "/record-sources", query: { state:
 					<NuxtLink :to="sourcesTarget" class="text-app-accent py-2 underline underline-offset-3 inline-block focus-ring">
 						Sources
 					</NuxtLink>
-					<p v-for="image in profileImages" :key="image.url" class="text-xs text-app-muted dark:text-app-muted-dark">
-						<SafeExternalLink :href="image.url" class="text-app-accent underline focus-ring">
-							Photo
-						</SafeExternalLink><template v-if="image.attribution">
-							· {{ image.attribution }}
-						</template>
-					</p>
 				</section>
 			</template>
 		</template>

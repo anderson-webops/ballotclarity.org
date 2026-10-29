@@ -35,7 +35,7 @@ usePageSeo({
 				<h1 class="text-4xl text-app-ink font-serif mt-6 sm:text-5xl dark:text-app-text-dark">
 					State Court judges
 				</h1>
-				<UpdatedAt :value="data.retrievedAt" label="Checked" class="mt-5" />
+				<UpdatedAt :value="data.retrievedAt" label="Judicial data updated on" footer />
 			</header>
 			<section v-for="(group, index) in groups" :key="index" :aria-labelledby="`divisions-${index}`">
 				<h2 :id="`divisions-${index}`" class="text-lg text-app-ink font-semibold mb-6 dark:text-app-text-dark">

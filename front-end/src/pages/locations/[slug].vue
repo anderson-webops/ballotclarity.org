@@ -89,7 +89,7 @@ usePageSeo({
 						<NuxtLink :to="`/elections/${jurisdiction.nextElectionSlug}`" class="btn-primary">
 							Election overview
 						</NuxtLink>
-						<UpdatedAt :value="jurisdiction.updatedAt" />
+						<UpdatedAt :value="jurisdiction.updatedAt" label="Area data updated on" footer />
 					</div>
 				</div>
 			</header>

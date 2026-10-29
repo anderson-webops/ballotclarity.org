@@ -7,5 +7,5 @@ test("record profiles link to collection sources instead of repeating collection
 	assert.doesNotMatch(page, /data\.source\.scopeNotice|not a personalized ballot/u);
 	assert.match(page, /path: "\/record-sources"/u);
 	const sources = readFileSync(new URL("../src/pages/record-sources.vue", import.meta.url), "utf8");
-	assert.match(sources, /data\.source\.scopeNotice/u);
+	assert.match(sources, /recordSourceNotice/u);
 });

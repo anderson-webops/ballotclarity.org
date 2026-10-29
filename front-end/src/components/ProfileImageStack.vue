@@ -5,15 +5,14 @@ import { normalizeImageHref } from "~/utils/link";
 const props = withDefaults(defineProps<{
 	images?: ProfileImage[];
 	name: string;
-	showCaption?: boolean;
 	size?: "lg" | "md" | "sm";
 }>(), {
 	images: () => [],
-	showCaption: false,
 	size: "md",
 });
 
 const activeIndex = ref(0);
+const viewerOpen = ref(false);
 const orderedImages = computed(() => [...props.images]
 	.map(image => ({
 		...image,
@@ -42,30 +41,26 @@ const frameClass = computed(() => {
 
 	return "h-16 w-16 text-xl";
 });
-const caption = computed(() => {
-	if (!props.showCaption || !activeImage.value)
-		return "";
-
-	return [
-		activeImage.value.sourceLabel,
-		activeImage.value.attribution,
-	].filter(Boolean).join(" · ");
-});
-
 watch(imageSignature, () => {
 	activeIndex.value = 0;
+	viewerOpen.value = false;
 });
 
 function handleImageError() {
+	viewerOpen.value = false;
 	activeIndex.value += 1;
 }
 </script>
 
 <template>
-	<figure class="inline-flex flex-col gap-3 items-center">
-		<div
-			class="profile-image-frame text-app-muted leading-none font-serif border border-app-line rounded-xl bg-app-bg shrink-0 grid shadow-sm place-items-center relative overflow-hidden isolate dark:text-app-muted-dark dark:border-app-line-dark dark:bg-app-bg-dark"
-			:class="frameClass"
+	<div class="inline-flex">
+		<component
+			:is="activeImage ? 'button' : 'div'"
+			:type="activeImage ? 'button' : undefined"
+			:aria-label="activeImage ? `View photo of ${name}` : undefined"
+			class="profile-image-frame text-app-muted leading-none font-serif p-0 border border-app-line rounded-xl bg-app-bg shrink-0 grid shadow-sm place-items-center relative overflow-hidden isolate dark:text-app-muted-dark dark:border-app-line-dark dark:bg-app-bg-dark"
+			:class="[frameClass, activeImage ? 'cursor-zoom-in focus-ring' : '']"
+			@click="viewerOpen = Boolean(activeImage)"
 		>
 			<img
 				v-if="activeImage"
@@ -79,9 +74,7 @@ function handleImageError() {
 				@error="handleImageError"
 			>
 			<span v-else class="relative z-10" aria-hidden="true">{{ initials }}</span>
-		</div>
-		<figcaption v-if="caption" class="text-xs text-app-muted leading-5 text-center max-w-44 dark:text-app-muted-dark">
-			{{ caption }}
-		</figcaption>
-	</figure>
+		</component>
+		<PhotoViewer v-if="viewerOpen && activeImage" :image="activeImage" :name="name" @close="viewerOpen = false" />
+	</div>
 </template>

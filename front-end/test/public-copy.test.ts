@@ -98,7 +98,7 @@ test("district headers omit generated copy, candidate workflow notes and unsuppo
 test("coverage navigation stays available without presenting unverified election content as data", () => {
 	const page = readPublicSource("pages/coverage.vue");
 	assert.match(page, /v-if="data.launchTarget && data.guideContent\?\.verifiedContestPackage"/u);
-	assert.match(page, /to="\/records"/u);
+	assert.doesNotMatch(page, /to="\/records"/u);
 	assert.match(page, /to="\/sources"/u);
 	assert.doesNotMatch(page, /publicCapabilities|capabilityTone|guideShell|In build|Planned/iu);
 });

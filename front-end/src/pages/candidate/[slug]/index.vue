@@ -219,13 +219,11 @@ function saveToPlan() {
 							v-if="candidate.profileImages?.length"
 							:images="candidate.profileImages"
 							:name="candidate.name"
-							show-caption
 							size="lg"
 						/>
 					</div>
 					<div class="mt-6 flex flex-wrap gap-3 items-center">
-						<UpdatedAt :value="candidate.freshness.dataLastUpdatedAt ?? candidate.updatedAt" label="Data through" />
-						<span class="text-app-line dark:text-app-line-dark">•</span>
+						<UpdatedAt :value="candidate.freshness.dataLastUpdatedAt ?? candidate.updatedAt" label="Profile data updated on" footer />
 						<p class="text-sm text-app-muted dark:text-app-muted-dark">
 							{{ candidate.comparison.ballotStatus.label }}
 						</p>
@@ -296,7 +294,8 @@ function saveToPlan() {
 									<UpdatedAt
 										v-if="candidate.comparison.whyRunning.provenance.capturedAt"
 										:value="candidate.comparison.whyRunning.provenance.capturedAt"
-										label="Captured"
+										label="Candidate statement collected on"
+										footer
 									/>
 								</div>
 								<div class="flex flex-wrap gap-3 items-center">

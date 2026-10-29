@@ -4,7 +4,7 @@ const activeProviders = computed(() => data.value?.ballotContentProviders?.filte
 </script>
 
 <template>
-	<section id="providers" class="scroll-mt-24" aria-labelledby="providers-heading">
+	<section v-if="pending || error || activeProviders.length || data?.categories.length" id="providers" class="scroll-mt-24" aria-labelledby="providers-heading">
 		<h2 id="providers-heading" class="text-2xl text-app-ink font-serif dark:text-app-text-dark">
 			Data providers
 		</h2>
@@ -15,10 +15,7 @@ const activeProviders = computed(() => data.value?.ballotContentProviders?.filte
 			Provider details are unavailable.
 		</p>
 		<template v-else>
-			<UpdatedAt v-if="data.updatedAt" :value="data.updatedAt" label="Updated" class="mt-3" />
-			<p v-if="!activeProviders.length && !data.categories.length" class="text-sm text-app-muted mt-4 dark:text-app-muted-dark">
-				No additional provider details published.
-			</p>
+			<UpdatedAt v-if="data.updatedAt" :value="data.updatedAt" label="Source data updated on" footer />
 			<div class="mt-4 divide-app-line divide-y dark:divide-app-line-dark">
 				<SafeExternalLink v-for="provider in activeProviders" :key="provider.id" :href="provider.setupUrl" class="text-base text-app-accent font-semibold py-4 rounded-sm underline underline-offset-3 block focus-ring">
 					{{ provider.label }}

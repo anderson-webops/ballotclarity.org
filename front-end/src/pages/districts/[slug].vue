@@ -140,7 +140,7 @@ usePageSeo({
 						<NuxtLink :to="buildLookupAwareTarget(districtContextLink.to)" class="btn-secondary">
 							{{ districtContextLink.label }}
 						</NuxtLink>
-						<UpdatedAt v-if="districtPageData.representatives.length || districtPageData.candidates.length || districtPageData.relatedContests.length" :value="districtPageData.updatedAt" label="Updated" />
+						<UpdatedAt v-if="districtPageData.representatives.length || districtPageData.candidates.length || districtPageData.relatedContests.length" :value="districtPageData.updatedAt" label="District data updated on" footer />
 					</div>
 					<NuxtLink v-if="districtPageData.courtDirectory" :to="`/courts/${districtPageData.courtDirectory.slug}`" class="text-app-accent mt-6 underline inline-block focus-ring">
 						State Court judges ({{ districtPageData.courtDirectory.count }})

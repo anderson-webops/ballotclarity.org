@@ -5,9 +5,9 @@ defineProps<{ candidate: Candidate; viewMode?: "deep" | "quick" }>();
 </script>
 
 <template>
-	<NuxtLink :to="`/candidate/${candidate.slug}`" class="py-3 flex gap-4 min-w-0 items-center focus-ring">
+	<div class="py-3 flex gap-4 min-w-0 items-center">
 		<ProfileImageStack v-if="candidate.profileImages?.length" :images="candidate.profileImages" :name="candidate.name" size="sm" class="shrink-0" />
-		<div class="min-w-0">
+		<NuxtLink :to="`/candidate/${candidate.slug}`" class="flex-1 min-w-0 focus-ring">
 			<h3 class="text-[1.45rem] text-app-ink leading-tight font-serif dark:text-app-text-dark">
 				{{ candidate.name }}
 			</h3>
@@ -16,6 +16,6 @@ defineProps<{ candidate: Candidate; viewMode?: "deep" | "quick" }>();
 					· Incumbent
 				</template>
 			</p>
-		</div>
-	</NuxtLink>
+		</NuxtLink>
+	</div>
 </template>

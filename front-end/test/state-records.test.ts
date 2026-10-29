@@ -75,7 +75,7 @@ test("a printed district label suppresses a redundant internal matching code", (
 test("the public directory exposes only necessary labels and source limits", () => {
 	const page = readFileSync(new URL("../src/pages/records.vue", import.meta.url), "utf8");
 	assert.doesNotMatch(page, /These records are not a personalized ballot/u);
-	assert.match(page, /data.source.scopeNotice/u);
+	assert.match(page, /recordSourceNotice/u);
 	assert.match(page, /Include inactive records/u);
 	assert.match(page, /Candidate record pages/u);
 	assert.doesNotMatch(page, /attention-date|attention-relative/u);
@@ -86,11 +86,11 @@ test("the public directory exposes only necessary labels and source limits", () 
 	assert.match(detail, /stateRecordStatusBadges\(data\.official, true\)/u);
 	assert.match(detail, /<PartyLabel :party="data.official.party"/u);
 	const documents = readFileSync(new URL("../src/pages/record-sources.vue", import.meta.url), "utf8");
-	assert.match(documents, /v-for="document in documentLinks"/u);
+	assert.match(documents, /v-for="document in group.documents"/u);
 	assert.match(documents, /:href="document.url"/u);
 	assert.doesNotMatch(page, /prototype|under local review|check back later|saved guide area|<table/iu);
 	const lookup = readFileSync(new URL("../src/components/LookupResultsPanel.vue", import.meta.url), "utf8");
-	assert.match(lookup, /path: '\/records', query: \{ state: lookup.location.state \}/u);
+	assert.doesNotMatch(lookup, /path: '\/records', query: \{ state: lookup.location.state \}/u);
 });
 
 test("record metadata uses one short source link for single and multiple publications", () => {

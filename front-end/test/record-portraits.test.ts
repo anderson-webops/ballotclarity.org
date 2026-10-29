@@ -13,9 +13,36 @@ test("candidate summaries and source records render available portraits without 
 	}
 });
 
-test("the candidate directory is reachable from Search rather than individual record headers", () => {
+test("the directory remains in the footer instead of profile and search headers", () => {
 	const detail = source("pages/record/[state]/[id].vue");
 	assert.doesNotMatch(detail, /Candidate records|backTo/u);
-	assert.match(detail, /image\.attribution/u);
-	assert.match(source("pages/search.vue"), /to="\/records"[^>]*>\s*Candidate records list/u);
+	assert.doesNotMatch(detail, /image\.attribution|image\.sourceLabel|:href="image\.url"/u);
+	assert.doesNotMatch(source("pages/search.vue"), /Candidate records list|to="\/records"/u);
+	assert.match(source("components/AppFooter.vue"), /label: "Directory", to: "\/records"/u);
+});
+
+test("photo expansion keeps its source inside a dismissible overlay without links", () => {
+	const viewer = source("components/PhotoViewer.vue");
+	assert.match(viewer, /<dialog/u);
+	assert.match(viewer, /showModal\(\)/u);
+	assert.match(viewer, /aria-label="Close photo"/u);
+	assert.match(viewer, /@cancel\.prevent/u);
+	assert.match(viewer, /@click\.self/u);
+	assert.match(viewer, /@keydown\.tab\.prevent="closeButton\?\.focus\(\)"/u);
+	assert.match(viewer, /useScrollLock/u);
+	assert.match(viewer, /<figcaption v-if="source"/u);
+	assert.doesNotMatch(viewer, /<a\b|<NuxtLink|<SafeExternalLink|target=|window\.open/u);
+	const thumbnail = source("components/ProfileImageStack.vue");
+	assert.match(thumbnail, /activeImage \? 'button' : 'div'/u);
+	assert.match(thumbnail, /View photo of/u);
+	assert.match(thumbnail, /<PhotoViewer v-if="viewerOpen && activeImage"/u);
+	assert.doesNotMatch(thumbnail, /showCaption|<figcaption/u);
+});
+
+test("photo buttons are siblings of navigation links, not nested interactive controls", () => {
+	for (const name of ["components/CandidateCard.vue", "components/ElectionCandidateRecords.vue", "components/ElectionReferences.vue", "pages/records.vue", "pages/representatives/index.vue"]) {
+		const page = source(name);
+		assert.doesNotMatch(page, /<NuxtLink\b[^>]*>(?:(?!<\/NuxtLink>)[\s\S])*?<ProfileImageStack/u, name);
+		assert.doesNotMatch(page, /<component\b[^>]*>(?:(?!<\/component>)[\s\S])*?<ProfileImageStack/u, name);
+	}
 });

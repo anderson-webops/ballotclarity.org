@@ -100,7 +100,7 @@ usePageSeo({
 						<NuxtLink v-if="districtHref" :to="districtHref" class="btn-secondary">
 							District page
 						</NuxtLink>
-						<UpdatedAt :value="data.updatedAt" />
+						<UpdatedAt :value="data.updatedAt" label="Ballot data updated on" footer />
 					</div>
 				</div>
 

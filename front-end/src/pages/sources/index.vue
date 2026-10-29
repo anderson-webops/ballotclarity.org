@@ -36,9 +36,6 @@ usePageSeo({
 					Sources
 				</h1>
 				<nav class="text-sm font-semibold mt-5 flex flex-wrap gap-x-6 gap-y-2" aria-label="Sources">
-					<NuxtLink to="/records" class="text-app-accent rounded-sm underline underline-offset-3 focus-ring">
-						Candidate records
-					</NuxtLink>
 					<a href="#directory" class="text-app-accent rounded-sm underline underline-offset-3 focus-ring">Source directory</a>
 					<a href="#providers" class="text-app-accent rounded-sm underline underline-offset-3 focus-ring">Data providers</a>
 					<NuxtLink to="/about#methodology" class="text-app-accent rounded-sm underline underline-offset-3 focus-ring">

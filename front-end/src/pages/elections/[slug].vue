@@ -90,9 +90,6 @@ usePageSeo({
 						Dates and deadlines
 					</h2>
 					<ElectionKeyDates v-if="upcomingKeyDates.length" :entries="upcomingKeyDates" :election-date="data.election.date" compact />
-					<p v-else class="text-sm text-app-muted mt-3 dark:text-app-muted-dark">
-						No upcoming dates.
-					</p>
 					<NuxtLink :to="`/election-dates/${data.election.slug}`" class="text-sm text-app-accent mt-3 py-2 underline inline-block focus-ring">
 						All dates
 					</NuxtLink>

@@ -321,9 +321,6 @@ function getRepresentativePresentation(match: NationwideLookupResultContext["rep
 		</ol>
 		<BallotContentPreviews v-if="hasBallotContentPreviews" :previews="ballotContentPreviews" :lookup-context="lookup" class="mt-8" />
 		<nav v-if="lookup.result === 'resolved'" aria-label="Area records" class="text-base mt-5 flex flex-wrap gap-x-8 gap-y-3">
-			<NuxtLink v-if="!electionView.betweenElections" :to="lookup.location?.state ? { path: '/records', query: { state: lookup.location.state } } : '/records'" class="text-app-accent font-semibold underline underline-offset-3 focus-ring">
-				Candidate records
-			</NuxtLink>
 			<template v-for="preview in electionView.pastPreviews" :key="preview.id">
 				<SafeExternalLink v-if="preview.sourceUrl" :href="preview.sourceUrl" class="text-app-accent font-semibold underline underline-offset-3 focus-ring">
 					{{ preview.providerLabel }} · {{ preview.electionDate ? formatDate(preview.electionDate) : 'Past election' }}

@@ -22,14 +22,16 @@ test("candidacy labels distinguish incumbent candidates without treating missing
 	}
 });
 
-test("election rows show their source-supported labels and a specific district applicability note", () => {
+test("election rows show source-supported labels without generic applicability commentary", () => {
 	const overview = readFileSync(new URL("../src/components/ElectionCandidateRecords.vue", import.meta.url), "utf8");
-	assert.match(overview, /Races vary by voting district/u);
+	assert.doesNotMatch(overview, /Races vary by voting district/u);
+	assert.match(overview, /text-3xl[^\n]*text-center/u);
+	assert.match(overview, /<OfficialSampleBallot v-if="sampleBallot"/u);
 	assert.match(overview, /stateRecordStatusBadges\(candidate\)/u);
 	assert.doesNotMatch(overview, /Not a personalized ballot|data\.source\.scopeNotice|<details/u);
 	const profile = readFileSync(new URL("../src/pages/record/[state]/[id].vue", import.meta.url), "utf8");
 	assert.match(profile, /stateRecordStatusBadges\(data\.official, true\)/u);
 	assert.doesNotMatch(profile, /Candidate records|data\.source\.documentLinks|data\.source\.scopeNotice/u);
-	const sources = readFileSync(new URL("../src/pages/record-sources.vue", import.meta.url), "utf8");
-	for (const label of ["Sample ballot", "District 5 write-ins", "Public Service Commission"]) assert(sources.includes(label));
+	const sources = readFileSync(new URL("../src/utils/record-publications.ts", import.meta.url), "utf8");
+	for (const label of ["District 5 write-ins", "Public Service Commission"]) assert(sources.includes(label));
 });

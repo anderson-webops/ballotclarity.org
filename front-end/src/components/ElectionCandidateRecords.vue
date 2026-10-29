@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { BallotResponse, StateRecordsResponse } from "~/types/civic";
 import { groupElectionCandidates } from "~/utils/election-candidates";
+import { isSampleBallotDocument, recordPublications } from "~/utils/record-publications";
 import { stateRecordStatusBadges } from "~/utils/state-records";
 
 const props = defineProps<{ source: NonNullable<BallotResponse["candidateRecordSource"]> }>();
@@ -16,16 +17,15 @@ const { data, error, pending, refresh } = await useAsyncData<StateRecordsRespons
 );
 const groups = computed(() => groupElectionCandidates(data.value?.records ?? []));
 const sourceQuery = computed(() => ({ state: props.source.stateCode, source: props.source.sourceId }));
+const sampleBallot = computed(() => recordPublications(data.value?.source).find(isSampleBallotDocument));
 </script>
 
 <template>
-	<section id="candidates" aria-labelledby="candidates-heading" class="min-w-0">
-		<h2 id="candidates-heading" class="text-2xl text-app-ink font-serif dark:text-app-text-dark">
+	<section v-if="sampleBallot || pending || error || data?.available && groups.length" id="candidates" :aria-labelledby="pending || error || groups.length ? 'candidates-heading' : undefined" class="min-w-0">
+		<OfficialSampleBallot v-if="sampleBallot" :href="sampleBallot.url" class="mb-8" />
+		<h2 v-if="pending || error || groups.length" id="candidates-heading" class="text-3xl text-app-ink font-serif text-center dark:text-app-text-dark">
 			Candidates
 		</h2>
-		<p class="text-sm text-app-muted mt-2 dark:text-app-muted-dark">
-			Races vary by voting district.
-		</p>
 		<p v-if="error" class="text-sm text-app-muted mt-4 dark:text-app-muted-dark" role="status">
 			Candidate records are temporarily unavailable.
 			<button type="button" class="text-app-accent underline focus-ring" @click="refresh()">
@@ -35,13 +35,10 @@ const sourceQuery = computed(() => ({ state: props.source.stateCode, source: pro
 		<p v-else-if="pending" class="text-sm text-app-muted mt-4 dark:text-app-muted-dark" role="status">
 			Loading candidates…
 		</p>
-		<p v-else-if="!data?.available || !groups.length" class="text-sm text-app-muted mt-4 dark:text-app-muted-dark" role="status">
-			No candidate records are available yet.
-		</p>
-		<template v-else>
+		<template v-else-if="data?.available && groups.length">
 			<div class="mt-8 space-y-16">
-				<section v-for="level in groups" :key="level.id" :aria-labelledby="`candidate-level-${level.id}`">
-					<h3 :id="`candidate-level-${level.id}`" class="text-xl text-app-muted font-serif dark:text-app-muted-dark">
+				<section v-for="level in groups" :key="level.id" :aria-labelledby="`candidate-level-${level.id}`" class="pt-6 border-t border-app-line dark:border-app-line-dark">
+					<h3 :id="`candidate-level-${level.id}`" class="text-2xl text-app-ink font-semibold dark:text-app-text-dark">
 						{{ level.label }}
 					</h3>
 					<div class="mt-6 space-y-10">
@@ -50,9 +47,9 @@ const sourceQuery = computed(() => ({ state: props.source.stateCode, source: pro
 								{{ office.title }}
 							</h4>
 							<ul class="mt-3 border-t border-app-line divide-app-line divide-y dark:border-app-line-dark dark:divide-app-line-dark">
-								<li v-for="candidate in office.candidates" :key="candidate.id">
-									<NuxtLink :to="{ path: `/record/${source.stateCode}/${candidate.id}`, query: { source: source.sourceId, name: candidate.name } }" prefetch-on="interaction" class="py-4 flex gap-4 items-center justify-between focus-ring">
-										<ProfileImageStack v-if="candidate.profileImages?.length" :images="candidate.profileImages" :name="candidate.name" size="sm" class="shrink-0" />
+								<li v-for="candidate in office.candidates" :key="candidate.id" class="flex gap-4 items-center">
+									<ProfileImageStack v-if="candidate.profileImages?.length" :images="candidate.profileImages" :name="candidate.name" size="sm" class="shrink-0" />
+									<NuxtLink :to="{ path: `/record/${source.stateCode}/${candidate.id}`, query: { source: source.sourceId, name: candidate.name } }" prefetch-on="interaction" class="py-4 flex flex-1 gap-4 min-w-0 items-center justify-between focus-ring">
 										<span class="flex-1 min-w-0">
 											<span class="text-base text-app-ink font-semibold block break-words dark:text-app-text-dark">{{ candidate.name }}</span>
 											<span v-if="candidate.party || stateRecordStatusBadges(candidate).length" class="text-sm text-app-muted mt-1 block dark:text-app-muted-dark">
@@ -89,5 +86,6 @@ const sourceQuery = computed(() => ({ state: props.source.stateCode, source: pro
 				</div>
 			</aside>
 		</template>
+		<UpdatedAt v-if="data?.source.retrievedAt" :value="data.source.retrievedAt" label="Ballot data updated on" footer />
 	</section>
 </template>

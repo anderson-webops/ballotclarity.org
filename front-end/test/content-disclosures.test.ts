@@ -63,13 +63,12 @@ test("long record document lists have a reachable source page", () => {
 	const documents = source("pages/record-sources.vue");
 	assert.match(page, /path: '\/record-sources'/u);
 	assert.match(documents, /stateRecordSourceMismatch/u);
-	assert.match(documents, /v-for="document in documentLinks"/u);
+	assert.match(documents, /v-for="document in group.documents"/u);
 	assert.match(documents, /:href="document.url"/u);
-	assert.match(documents, /path: "\/records"/u);
-	assert.match(documents, /query: route\.query/u);
+	assert.doesNotMatch(documents, /Candidate records list|recordsTarget|path: "\/records"/u);
 	assert.match(documents, /data.source.retrievedAt/u);
-	assert.match(documents, /data.source.scopeNotice/u);
-	assert.match(documents, /data.source.label/u);
+	assert.match(documents, /recordSourceNotice/u);
+	assert.match(documents, /recordSourceTitle/u);
 });
 
 test("comparisons link to profiles instead of repeating their secondary material", () => {

@@ -43,7 +43,7 @@ const guideLinks = computed(() => hasVerifiedGuideContext.value
 			]);
 
 const howItWorksLinks = [
-	{ label: "Candidate records", to: "/records" },
+	{ label: "Directory", to: "/records" },
 	{ label: "Sources", to: "/sources" },
 	{ label: "Coverage", to: "/coverage" },
 ];
@@ -144,6 +144,7 @@ function resolveGuideLinkTo(path: string) {
 					<span>© {{ year }} Ballot Clarity</span>
 				</div>
 			</div>
+			<div id="page-data-updated" class="text-right" />
 		</div>
 	</footer>
 </template>

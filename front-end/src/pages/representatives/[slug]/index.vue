@@ -301,12 +301,11 @@ usePageSeo({
 							v-if="person.profileImages?.length"
 							:images="person.profileImages"
 							:name="person.name"
-							show-caption
 							size="lg"
 						/>
 					</div>
 					<div class="mt-5 flex flex-wrap gap-x-4 gap-y-1 items-center">
-						<UpdatedAt :value="person.freshness.dataLastUpdatedAt ?? person.updatedAt" label="Data through" />
+						<UpdatedAt :value="person.freshness.dataLastUpdatedAt ?? person.updatedAt" label="Profile data updated on" footer />
 						<span class="text-sm text-app-muted dark:text-app-muted-dark">{{ person.ballotStatusLabel }}</span>
 						<SourceDrawer v-if="person.sources.length" :sources="person.sources" :title="`${person.name} sources`" button-label="Sources" />
 					</div>

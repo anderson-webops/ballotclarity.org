@@ -83,7 +83,7 @@ function printBallot() {
 					<span :class="guideStatus.tone === 'success' ? 'i-carbon-checkmark-filled' : 'i-carbon-warning-alt'" aria-hidden="true" />
 					{{ guideStatus.label }}
 				</p>
-				<UpdatedAt :value="props.election.updatedAt" />
+				<UpdatedAt :value="props.election.updatedAt" label="Ballot data updated on" footer />
 				<button type="button" class="text-sm btn-secondary print-hidden" @click="printBallot">
 					Print
 				</button>

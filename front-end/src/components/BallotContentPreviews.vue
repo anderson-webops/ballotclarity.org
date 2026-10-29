@@ -5,7 +5,7 @@ import { ballotRecordStatusLabels, buildBallotCandidateTarget } from "~/utils/ba
 
 const props = defineProps<{ previews: BallotContentPreview[]; lookupContext?: Pick<NationwideLookupResultContext, "lookupQuery" | "selectionId"> }>();
 const sourceNotes = computed(() => ballotSourceNotes(props.previews));
-const { formatDate, formatDateTime } = useFormatters();
+const { formatDate } = useFormatters();
 const NuxtLinkComponent = resolveComponent("NuxtLink");
 </script>
 
@@ -19,8 +19,9 @@ const NuxtLinkComponent = resolveComponent("NuxtLink");
 				Election: <span>{{ formatDate(preview.electionDate) }}</span>
 			</p>
 			<p class="text-sm text-app-muted leading-6 mt-2 dark:text-app-muted-dark">
-				{{ preview.providerLabel }} · Retrieved {{ formatDateTime(preview.generatedAt) }}
+				{{ preview.providerLabel }}
 			</p>
+			<UpdatedAt :value="preview.generatedAt" label="Ballot data updated on" footer />
 			<div class="mt-3 flex flex-wrap gap-4">
 				<SafeExternalLink v-if="preview.sourceUrl" :href="preview.sourceUrl" class="text-app-accent underline underline-offset-3 focus-ring">
 					Official source

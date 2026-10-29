@@ -32,7 +32,7 @@ usePageSeo({
 						Substantive corrections to published pages. Reporter identity withheld; private review notes are not published.
 					</p>
 					<div class="mt-6 flex flex-wrap gap-4 items-center">
-						<UpdatedAt :value="data.updatedAt" label="Corrections log updated" />
+						<UpdatedAt :value="data.updatedAt" label="Corrections log updated on" footer />
 						<NuxtLink to="/contact" class="btn-secondary">
 							Report an issue
 						</NuxtLink>

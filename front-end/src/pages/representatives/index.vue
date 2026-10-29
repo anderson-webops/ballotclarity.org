@@ -184,21 +184,23 @@ usePageSeo({
 							:key="representative.slug"
 							class="py-5 border-t border-app-line block dark:border-app-line-dark focus-ring"
 						>
-							<component
-								:is="representativeLinkIsExternal(representative.href) ? SafeExternalLinkComponent : NuxtLinkComponent"
-								v-bind="representativeLinkIsExternal(representative.href) ? { href: representative.href } : { to: buildLookupAwareTarget(representative.href) }"
-								class="flex gap-3 items-start focus-ring"
-							>
+							<div class="flex gap-3 items-start">
 								<ProfileImageStack v-if="representative.profileImages?.length" :images="representative.profileImages" :name="representative.name" size="sm" />
-								<div class="min-w-0">
-									<h3 class="text-xl text-app-ink font-serif dark:text-app-text-dark">
-										{{ representative.name }}
-									</h3>
-									<p class="text-sm text-app-muted leading-6 mt-2 dark:text-app-muted-dark">
-										{{ getRepresentativePresentation(representative).officeDisplayLabel }}<span v-if="representative.party"> · <PartyLabel :party="representative.party" /></span>
-									</p>
-								</div>
-							</component>
+								<component
+									:is="representativeLinkIsExternal(representative.href) ? SafeExternalLinkComponent : NuxtLinkComponent"
+									v-bind="representativeLinkIsExternal(representative.href) ? { href: representative.href } : { to: buildLookupAwareTarget(representative.href) }"
+									class="flex-1 min-w-0 focus-ring"
+								>
+									<div class="min-w-0">
+										<h3 class="text-xl text-app-ink font-serif dark:text-app-text-dark">
+											{{ representative.name }}
+										</h3>
+										<p class="text-sm text-app-muted leading-6 mt-2 dark:text-app-muted-dark">
+											{{ getRepresentativePresentation(representative).officeDisplayLabel }}<span v-if="representative.party"> · <PartyLabel :party="representative.party" /></span>
+										</p>
+									</div>
+								</component>
+							</div>
 							<RepresentativeWebsite :website-url="representative.officialWebsiteUrl" :provider-url="representative.openstatesUrl" class="text-sm text-app-accent mt-2 hover:underline" />
 						</article>
 					</div>

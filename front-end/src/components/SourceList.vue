@@ -75,7 +75,7 @@ function getSourceRecordHref(source: Source) {
 						{{ source.note }}
 					</p>
 					<SafeExternalLink v-if="source.url && !direct" :href="source.url" external-icon class="text-sm btn-secondary min-h-8">
-						Open source
+						View source
 					</SafeExternalLink>
 				</template>
 			</li>

@@ -43,7 +43,7 @@ export function readStateRecordQuery(query: Record<string, unknown>, states: rea
 
 export function stateRecordArea(record: PublicStateCandidateRecord) {
 	const office = record.office.toLowerCase();
-	const areas = [record.jurisdiction, record.sourceDistrictLabel, !record.sourceDistrictLabel && record.district && !office.includes(record.district.toLowerCase()) ? `District ${record.district}` : "", record.sourceAreaLabel];
+	const areas = [record.jurisdiction, record.sourceDistrictLabel, !record.sourceDistrictLabel && record.district && !office.includes(record.district.toLowerCase()) ? `District ${record.district}` : ""];
 	return areas.find(area => area && !office.includes(area.toLowerCase())) || "";
 }
 

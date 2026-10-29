@@ -9,8 +9,8 @@ const config = computed(() => {
 	switch (props.authority) {
 		case "official-government":
 			return {
-				label: "Official source",
-				tone: "accent" as const
+				label: "Official",
+				tone: "neutral" as const
 			};
 		case "candidate-campaign":
 			return {

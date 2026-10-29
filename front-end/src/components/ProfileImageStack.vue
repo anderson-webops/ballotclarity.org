@@ -5,7 +5,7 @@ import { normalizeImageHref } from "~/utils/link";
 const props = withDefaults(defineProps<{
 	images?: ProfileImage[];
 	name: string;
-	size?: "lg" | "md" | "sm";
+	size?: "portrait" | "lg" | "md" | "sm";
 }>(), {
 	images: () => [],
 	size: "md",
@@ -33,6 +33,9 @@ const initials = computed(() => props.name
 	.map(part => part.charAt(0).toUpperCase())
 	.join("") || "BC");
 const frameClass = computed(() => {
+	if (props.size === "portrait")
+		return "h-60 w-48 text-5xl sm:h-70 sm:w-56";
+
 	if (props.size === "lg")
 		return "h-36 w-36 text-4xl md:h-44 md:w-44";
 

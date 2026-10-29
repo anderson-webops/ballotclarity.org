@@ -21,6 +21,19 @@ test("the directory remains in the footer instead of profile and search headers"
 	assert.match(source("components/AppFooter.vue"), /label: "Directory", to: "\/records"/u);
 });
 
+test("record portraits are prominent without changing list thumbnails or duplicating source navigation", () => {
+	const detail = source("pages/record/[state]/[id].vue");
+	assert.match(detail, /size="portrait"/u);
+	assert.match(detail, /flex-col[^"]*sm:flex-row/u);
+	assert.match(detail, />\s*Citations\s*</u);
+	const portrait = source("components/ProfileImageStack.vue");
+	assert.match(portrait, /props.size === "portrait"/u);
+	assert.match(portrait, /h-60 w-48/u);
+	assert.match(portrait, /sm:h-70 sm:w-56/u);
+	assert.match(portrait, /h-12 w-12 text-sm/u);
+	assert.match(source("components/AppFooter.vue"), /label: "Sources", to: "\/sources"/u);
+});
+
 test("photo expansion keeps its source inside a dismissible overlay without links", () => {
 	const viewer = source("components/PhotoViewer.vue");
 	assert.match(viewer, /<dialog/u);

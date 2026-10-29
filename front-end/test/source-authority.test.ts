@@ -7,9 +7,18 @@ const source = (path: string) => readFileSync(new URL(`../src/${path}`, import.m
 test("site-authored source attribution is neutral, not a warning", () => {
 	const badge = source("components/SourceAuthorityBadge.vue");
 	assert.match(badge, /case "ballot-clarity-archive":\s*case "ballot-clarity-source-record":\s*return \{\s*label: "Ballot Clarity source",\s*tone: "neutral"/u);
-	assert.match(badge, /case "official-government":\s*return \{\s*label: "Official source",\s*tone: "accent"/u);
+	assert.match(badge, /case "official-government":\s*return \{\s*label: "Official",\s*tone: "neutral"/u);
 	assert.match(badge, /case "candidate-campaign":\s*return \{\s*label: "Candidate-supplied",\s*tone: "warning"/u);
 	assert.match(source("components/VerificationBadge.vue"), /v-if="props.tone === 'warning'"/u);
+});
+
+test("source status is metadata while the original publication remains a distinct action", () => {
+	const list = source("components/SourceList.vue");
+	assert.match(list, /<SourceAuthorityBadge :authority="source.authority"/u);
+	assert.match(list, /:href="source.url" external-icon/u);
+	assert.match(list, />\s*View source\s*</u);
+	assert.doesNotMatch(list, /Open source/u);
+	assert.match(list, /:to="getSourceRecordHref\(source\)!"/u);
 });
 
 test("district and representative pages omit empty source sections and navigation", () => {

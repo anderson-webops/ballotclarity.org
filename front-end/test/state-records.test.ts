@@ -67,9 +67,18 @@ test("record context retains a published district when the jurisdiction repeats 
 
 test("a printed district label suppresses a redundant internal matching code", () => {
 	const record = { id: "example", name: "Example", office: "State Representative, Grafton District 10", district: "GRAFTON-10", scope: "state-house" as const, status: "listed" as const, sourceDistrictLabel: "Grafton District 10", sourceAreaLabel: "Bristol sample ballot" };
-	assert.equal(stateRecordArea(record), "Bristol sample ballot");
+	assert.equal(stateRecordArea(record), "");
 	assert.equal(stateRecordArea({ ...record, sourceAreaLabel: undefined }), "");
 	assert.equal(stateRecordArea({ ...record, office: "State Representative" }), "Grafton District 10");
+});
+
+test("publication labels remain evidence metadata rather than a person's geographic area", () => {
+	const record = { id: "example", name: "Nikema Williams", office: "United States House of Representatives - District 5", district: "5", scope: "congressional" as const, status: "listed" as const, party: "Democrat", sourceAreaLabel: "Fulton County consolidated sample ballot" };
+	const before = structuredClone(record);
+	assert.equal(stateRecordArea(record), "");
+	assert.doesNotMatch(stateRecordSummary(record), /sample ballot/iu);
+	assert.equal(stateRecordArea({ ...record, jurisdiction: "Fulton County" }), "Fulton County");
+	assert.deepEqual(record, before);
 });
 
 test("the public directory exposes only necessary labels and source limits", () => {

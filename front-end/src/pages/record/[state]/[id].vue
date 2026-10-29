@@ -70,8 +70,8 @@ const sourcesTarget = computed(() => ({ path: "/record-sources", query: { state:
 			</button>
 		</div>
 		<template v-else>
-			<header class="flex gap-5 items-start">
-				<ProfileImageStack v-if="profileImages.length && name" :images="profileImages" :name="name" size="md" class="shrink-0" />
+			<header class="flex flex-col gap-6 items-start sm:flex-row sm:gap-8">
+				<ProfileImageStack v-if="profileImages.length && name" :images="profileImages" :name="name" size="portrait" class="shrink-0" />
 				<div class="min-w-0">
 					<h1 class="text-4xl text-app-ink font-serif dark:text-app-text-dark">
 						{{ name }}
@@ -159,7 +159,7 @@ const sourcesTarget = computed(() => ({ path: "/record-sources", query: { state:
 				</SafeExternalLink>
 				<section class="text-sm pt-5 border-t border-app-line space-y-3 dark:border-app-line-dark" aria-label="Sources">
 					<NuxtLink :to="sourcesTarget" class="text-app-accent py-2 underline underline-offset-3 inline-block focus-ring">
-						Sources
+						Citations
 					</NuxtLink>
 				</section>
 			</template>

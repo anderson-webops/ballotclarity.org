@@ -114,7 +114,7 @@ usePageSeo({
 								<a :href="section.href" class="text-app-ink font-semibold px-3 py-2 border-app-line border-l-2 flex min-h-11 transition-colors duration-150 items-center dark:text-app-text-dark focus-visible:text-app-accent hover:text-app-accent dark:border-app-line-dark hover:border-app-accent focus-ring dark:focus-visible:text-white dark:hover:text-white">
 									{{ section.label }}
 								</a>
-								<ul v-if="section.children?.length" class="ml-3 gap-x-3 grid grid-cols-2 lg:grid-cols-1">
+								<ul v-if="section.children?.length" class="ml-3 hidden lg:grid">
 									<li v-for="office in section.children" :key="office.href">
 										<a :href="office.href" :title="office.title" class="text-sm text-app-muted px-3 py-2 border-app-line border-l-2 flex min-h-11 transition-colors duration-150 items-center dark:text-app-muted-dark focus-visible:text-app-ink hover:text-app-ink dark:border-app-line-dark hover:border-app-accent focus-ring dark:focus-visible:text-white dark:hover:text-white">
 											{{ office.label }}

@@ -1,8 +1,22 @@
 <script setup lang="ts">
-import type { Contest } from "~/types/civic";
+import type { BallotResponse, Contest } from "~/types/civic";
 import { storeToRefs } from "pinia";
 import { buildCompareRoute } from "~/stores/civic";
 import { measureBallotOptions, measureCardSummary } from "~/utils/measure-content";
+
+definePageMeta({
+	// Without contest content this page would only repeat dates and links, while the election overview
+	// lists the official sample-ballot candidates. Deciding in middleware keeps client-side lookups and
+	// direct loads on the same path; if the ballot can't be read, the page shows its own error state.
+	middleware: async (to) => {
+		const slug = "slug" in to.params && typeof to.params.slug === "string" ? to.params.slug : "";
+		const location = typeof to.query.location === "string" ? to.query.location : undefined;
+		const ballot = slug ? await useApiClient()<BallotResponse>("/ballot", { query: { election: slug, location } }).catch(() => null) : null;
+
+		if (ballot && !ballot.election.contests.length)
+			return navigateTo({ path: `/elections/${slug}`, query: to.query }, { redirectCode: 302 });
+	}
+});
 
 const civicStore = useCivicStore();
 const route = useRoute();

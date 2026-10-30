@@ -1063,8 +1063,7 @@ test("built app renders the key ballot guide pages against the built API", async
 	const homeHtml = await homePage.text();
 	const resultsPage = await fetch(`${appBaseUrl}/results`);
 	const resultsHtml = await resultsPage.text();
-	const ballotPage = await fetch(`${appBaseUrl}/ballot/2026-fulton-county-general`);
-	const ballotHtml = await ballotPage.text();
+	const ballotPage = await fetch(`${appBaseUrl}/ballot/2026-fulton-county-general?location=fulton-county-georgia`, { redirect: "manual" });
 	const electionPage = await fetch(`${appBaseUrl}/elections/2026-fulton-county-general`);
 	const electionHtml = await electionPage.text();
 	const locationPage = await fetch(`${appBaseUrl}/locations/fulton-county-georgia`);
@@ -1176,18 +1175,9 @@ test("built app renders the key ballot guide pages against the built API", async
 	assert.match(homeHtml, /social-card\.svg/);
 	assert.match(ballotPage.headers.get("content-security-policy") ?? "", /default-src 'self'/);
 	assert.match(ballotPage.headers.get("content-security-policy") ?? "", /frame-ancestors 'none'/);
-	assert.match(ballotHtml, /Key dates and official links/);
-	assert.match(ballotHtml, /Ballot information for your area is currently limited\./);
-	assert.doesNotMatch(ballotHtml, /Need a page reviewed/);
-	assert.doesNotMatch(ballotHtml, /Ballot-plan tools open after verified contest pages are published/);
-	assert.doesNotMatch(ballotHtml, /Questions to ask before you vote/);
-	assert.doesNotMatch(ballotHtml, /Ballot contents/);
-	assert.doesNotMatch(ballotHtml, /Reading mode/);
-	assert.doesNotMatch(ballotHtml, /Quick view/);
-	assert.doesNotMatch(ballotHtml, /Recent updates/);
-	assert.doesNotMatch(ballotHtml, /How verification is handled/);
-	assert.match(ballotHtml, /Fulton County, Georgia/);
-	assert.match(ballotHtml, /unverified review material|local review|verified Fulton-specific ballot content/i);
+	// Without contest pages the ballot route sends voters to the election overview, keeping the location.
+	assert.equal(ballotPage.status, 302);
+	assert.match(ballotPage.headers.get("location") ?? "", /\/elections\/2026-fulton-county-general\?location=fulton-county-georgia$/);
 	assert.match(electionHtml, /Voting information/);
 	assert.match(electionHtml, /href="\/election-dates\/2026-fulton-county-general"/);
 	assert.doesNotMatch(electionHtml, /Open location hub/);

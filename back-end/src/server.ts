@@ -146,12 +146,14 @@ import { createOpenStatesClient } from "./openstates.js";
 import { safePostgresErrorCode } from "./postgres-pool-config.js";
 import { buildCongressProfileImages, uniqueProfileImages } from "./profile-images.js";
 import { parseTrustProxySetting } from "./proxy-trust.js";
+import { mergeSearchGroups, searchRetainedRecords } from "./public-record-search.js";
 import { createPublicRequestThrottle } from "./public-request-throttle.js";
 import { buildCuratedPublicSourceRecords, mapAuthorityToPublisherType } from "./public-source-directory.js";
 import { createRecordPortraitResolver } from "./record-portraits.js";
 import { loadReleaseIdentity } from "./release-identity.js";
 import { classifyRepresentative } from "./representative-classification.js";
 import { createRepresentativeModuleResolver } from "./representative-modules.js";
+import { reviewedElectionDates } from "./reviewed-election-dates.js";
 import { createSourceAssetStore } from "./source-asset-store.js";
 import { attachStateBallotPreview, createStateBallotRepository } from "./state-ballot-repository.js";
 import { registerStateRecordRoutes } from "./state-records.js";
@@ -3175,6 +3177,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 	const googleCivicClient = options.googleCivicClient === undefined ? createGoogleCivicClient() : options.googleCivicClient;
 	const ldaClient = options.ldaClient === undefined ? createLdaClient() : options.ldaClient;
 	const congressClient = options.congressClient === undefined ? createCongressClient() : options.congressClient;
+	const recordPortraits = createRecordPortraitResolver({ congress: congressClient, officials: currentSupplementalOfficeholders });
 	const openStatesClient = options.openStatesClient === undefined ? createOpenStatesClient() : options.openStatesClient;
 	const openFecClient = options.openFecClient === undefined ? createOpenFecClient() : options.openFecClient;
 	const representativeModuleResolver = createRepresentativeModuleResolver({
@@ -3576,7 +3579,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 		const resolvedElection = election ? applyElectionContent(election, contentIndex) : null;
 
 		if (!resolvedElection) return null;
-		const visibleElection = suppressUnverifiedContestContent(resolvedElection, publishedPackage);
+		const visibleElection = suppressUnverifiedContestContent(reviewedElectionDates(resolvedElection), publishedPackage);
 		return includeStatewideMeasures(visibleElection, coverageJurisdictions(coverageRepository.data), await listPublicElections());
 	}
 
@@ -3605,7 +3608,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 		const elections = coverageElections(coverageRepository.data).map((election) => {
 			const publishedPackage = packages.find(item => item.workflow.electionSlug === election.slug);
 			const resolvedElection = publishedPackage ? applyElectionContent(election, contentIndex) : null;
-			return resolvedElection && publishedPackage ? suppressUnverifiedContestContent(resolvedElection, publishedPackage) : null;
+			return resolvedElection && publishedPackage ? suppressUnverifiedContestContent(reviewedElectionDates(resolvedElection), publishedPackage) : null;
 		});
 		return elections.filter((election): election is Election => Boolean(election));
 	}
@@ -4583,7 +4586,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 			return { ...action, description: election.name, electionDate: election.date, guideContent: publicGuideContent(election, publishedPackage), location };
 		}))).flatMap(action => action ? [action] : []);
 
-		await attachStateBallotPreview(lookupResponse, stateBallotRepository);
+		await attachStateBallotPreview(lookupResponse, stateBallotRepository, recordPortraits);
 		const activeLookupContext = buildActiveNationwideLookupContext(lookupResponse);
 
 		if (lookupResponse.result === "resolved" && lookupResponse.availability && activeLookupContext) {
@@ -5229,7 +5232,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 			activeLookupCookieSecret
 		);
 
-		response.json(activeLookup ? await attachStateBallotPreview(buildActiveNationwideLookupResponse(activeLookup), stateBallotRepository) : null);
+		response.json(activeLookup ? await attachStateBallotPreview(buildActiveNationwideLookupResponse(activeLookup), stateBallotRepository, recordPortraits) : null);
 	});
 
 	app.get("/api/location/guess", async (request, response) => {
@@ -5324,7 +5327,6 @@ export async function createApp(options: CreateAppOptions = {}) {
 		}
 	});
 
-	const recordPortraits = createRecordPortraitResolver({ congress: congressClient, officials: currentSupplementalOfficeholders });
 	registerStateRecordRoutes(app, stateBallotRepository, undefined, undefined, recordPortraits);
 	registerElectionReferenceRoutes(app, electionReferenceRepository, undefined, recordPortraits);
 	registerJudicialEvaluationRoutes(app, judicialEvaluationRepository, stateBallotRepository);
@@ -5403,7 +5405,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 		);
 		const districts = await listPublicDistricts();
 
-		response.json(buildSearchResponse(
+		const result = buildSearchResponse(
 			query,
 			candidates,
 			measures,
@@ -5412,7 +5414,16 @@ export async function createApp(options: CreateAppOptions = {}) {
 			election ? coverageRepository.data.jurisdiction : null,
 			sourceDirectory,
 			districts
-		));
+		);
+		const retained = await searchRetainedRecords({ query, candidates: stateBallotRepository, references: electionReferenceRepository, portraits: recordPortraits });
+		const representatives = query.trim().length < 2 ? [] : uniqueBySlug([...(await listPublicRepresentatives()), ...currentSupplementalOfficeholders().map(buildSupplementalRepresentativeSummary)]).filter(person => [person.name, person.officeSought, person.districtLabel].join(" ").normalize("NFKC").toLowerCase().includes(query.normalize("NFKC").trim().toLowerCase())).map(person => ({ id: person.slug, type: "representative" as const, title: person.name, href: `/representatives/${person.slug}`, meta: [person.officeDisplayLabel || person.officeSought].filter(Boolean).join(" · "), party: person.party, summary: "", profileImages: person.profileImages, updatedAt: person.updatedAt }));
+		const groups = mergeSearchGroups(result.groups, [{ type: "candidate", label: "Candidates", items: retained.items }, { type: "representative", label: "Representatives", items: representatives }]);
+		const total = groups.reduce((sum, group) => sum + group.items.length, 0);
+		if (retained.incomplete && !total) {
+			response.status(503).json({ message: "Search is temporarily unavailable." });
+			return;
+		}
+		response.json({ ...result, groups, total, ...(retained.incomplete ? { incomplete: true } : {}) });
 	});
 
 	app.get("/api/sources", async (_request, response) => {

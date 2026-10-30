@@ -57,6 +57,17 @@ test("available state portraits are reused with district checks and without prov
 	assert.equal((await resolve("AL", [stateRecord]))[0]?.profileImages, undefined);
 });
 
+test("person profile bridges reuse the verified identity checks rather than names alone", async () => {
+	const resolve = createRecordPortraitResolver({ congress: client(async () => [member]), officials: listSupplementalOfficeholders });
+	assert.equal((await resolve("GA", [record]))[0]?.personProfileSlug, "mike-collins");
+	assert.equal((await resolve("GA", [record]))[0]?.incumbent, undefined);
+	const stateRecord = { ...record, name: "Scott Hilton", office: "State House District 48", scope: "state-house" as const, district: "48" };
+	assert.equal((await resolve("GA", [stateRecord]))[0]?.personProfileSlug, "scott-hilton");
+	for (const candidate of [{ ...stateRecord, district: "49" }, { ...stateRecord, party: "Democrat" }, { ...stateRecord, name: "Another Person" }])
+		assert.equal((await resolve("GA", [candidate]))[0]?.personProfileSlug, undefined);
+	assert.equal((await resolve("AL", [stateRecord]))[0]?.personProfileSlug, undefined);
+});
+
 test("portrait outages leave records available and share a retry cooldown", async () => {
 	let clock = 1;
 	let requests = 0;

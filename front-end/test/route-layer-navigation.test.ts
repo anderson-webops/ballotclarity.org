@@ -21,8 +21,8 @@ test("route layer navigation keeps ballot-guide labels only for published guide 
 			to: "/ballot/2026-utah-county-general"
 		},
 		locationHub: {
-			label: "Location hub",
-			to: "/locations/utah-county-utah"
+			label: "Voting info",
+			to: "/elections/2026-utah-county-general#voting-info"
 		},
 		openLayer: {
 			label: "Open ballot guide",
@@ -54,16 +54,16 @@ test("route layer navigation uses the election overview when only the guide shel
 			to: "/elections/2026-utah-county-general"
 		},
 		locationHub: {
-			label: "Location hub",
-			to: "/locations/utah-county-utah"
+			label: "Voting info",
+			to: "/elections/2026-utah-county-general#voting-info"
 		},
 		openLayer: {
 			label: "Open election overview",
 			to: "/elections/2026-utah-county-general"
 		},
 		overview: {
-			label: "Location hub",
-			to: "/locations/utah-county-utah"
+			label: "Voting info",
+			to: "/elections/2026-utah-county-general#voting-info"
 		}
 	});
 });

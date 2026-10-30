@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import type { KeyDateTimelineEntry } from "~/utils/election-timeline";
+import { formatCivicDate, formatCivicDateTime } from "~/utils/display-time-zone";
 
-const props = defineProps<{ entries: KeyDateTimelineEntry[]; compact?: boolean; electionDate?: string }>();
-const { formatDate, formatDateTime } = useFormatters();
+const props = defineProps<{ entries: KeyDateTimelineEntry[]; compact?: boolean; electionDate?: string; timeZone?: string | null }>();
+const { displayTimeZone } = useFormatters();
+const formatDate = (value: string) => formatCivicDate(value, props.timeZone ?? displayTimeZone.value);
+const formatDateTime = (value: string) => formatCivicDateTime(value, props.timeZone ?? displayTimeZone.value);
 
 function compactNote(item: KeyDateTimelineEntry) {
 	const note = item.note?.trim() ?? "";
@@ -21,7 +24,9 @@ function compactDate(item: KeyDateTimelineEntry) {
 				{{ item.label }}
 			</p>
 			<time :datetime="compactDate(item)" class="text-app-muted dark:text-app-muted-dark">{{ formatDate(compactDate(item)) }}</time>
-			<p v-if="compactNote(item)" class="text-app-muted mt-1 dark:text-app-muted-dark">{{ compactNote(item) }}</p>
+			<p v-if="compactNote(item)" class="text-app-muted mt-1 dark:text-app-muted-dark">
+				{{ compactNote(item) }}
+			</p>
 			<p v-if="item.isNext" class="election-timeline__status" :class="{ 'attention-relative': item.isNext }">
 				{{ item.label === 'Election Day polls close' ? 'Next' : `Next · ${item.relativeLabel}` }}
 			</p>

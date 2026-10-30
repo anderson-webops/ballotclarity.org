@@ -70,8 +70,9 @@ test("compact deadlines retain the election's calendar date and consequential vo
 
 test("overview contents use native fragments below deadlines with visible hover and keyboard feedback", () => {
 	const overview = readFileSync(new URL("../src/pages/elections/[slug].vue", import.meta.url), "utf8");
-	const contents = overview.slice(overview.indexOf("<nav v-if=\"sectionLinks.length\""), overview.indexOf("</nav>"));
-	assert(overview.indexOf("id=\"key-dates\"") < overview.indexOf("<nav v-if=\"sectionLinks.length\""));
+	const desktop = overview.slice(overview.indexOf("<aside"));
+	const contents = desktop.slice(desktop.indexOf("<nav"), desktop.indexOf("</nav>"));
+	assert(desktop.indexOf("id=\"key-dates\"") < desktop.indexOf("<nav"));
 	assert.match(contents, /<a :href="section.href"/u);
 	assert.doesNotMatch(contents, /NuxtLink|target=|@click/u);
 	assert.match(contents, /dark:hover:text-white/u);

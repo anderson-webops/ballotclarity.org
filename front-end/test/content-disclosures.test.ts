@@ -59,7 +59,7 @@ test("source directory rows link to details instead of hiding groups", () => {
 });
 
 test("long record document lists have a reachable source page", () => {
-	const page = source("pages/records.vue");
+	const page = source("components/CandidateDirectory.vue");
 	const documents = source("pages/record-sources.vue");
 	assert.match(page, /path: '\/record-sources'/u);
 	assert.match(documents, /stateRecordSourceMismatch/u);

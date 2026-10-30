@@ -7,20 +7,29 @@ const props = defineProps<{ previews: BallotContentPreview[]; lookupContext?: Pi
 const sourceNotes = computed(() => ballotSourceNotes(props.previews));
 const { formatDate } = useFormatters();
 const NuxtLinkComponent = resolveComponent("NuxtLink");
+function contestGroups(preview: BallotContentPreview) {
+	return [
+		{ label: "Federal", scopes: ["congressional"], senate: true },
+		{ label: "State", scopes: ["statewide", "state-house", "state-senate"], senate: false },
+		{ label: "Local", scopes: ["local"], senate: false },
+		{ label: "Ballot", scopes: [], senate: false }
+	].map(group => ({ label: group.label, contests: preview.contests.filter((contest) => {
+		const senate = contest.scope === "statewide" && /^(?:United States|U\.?S\.?) Senate$/iu.test(contest.title.trim());
+		return group.senate ? senate || contest.scope === "congressional" : group.scopes.length ? !senate && Boolean(contest.scope && group.scopes.includes(contest.scope)) : !contest.scope;
+	}) })).filter(group => group.contests.length);
+}
 </script>
 
 <template>
 	<div class="space-y-8">
 		<section v-for="preview in previews" :key="preview.id">
 			<h2 class="text-2xl text-app-ink font-serif dark:text-app-text-dark">
-				{{ preview.providerId.startsWith('official-state-') ? 'State candidate records' : 'Ballot records' }}
+				Candidates and questions
 			</h2>
 			<p v-if="preview.electionDate" class="text-sm text-app-muted mt-2 dark:text-app-muted-dark">
 				Election: <span>{{ formatDate(preview.electionDate) }}</span>
 			</p>
-			<p class="text-sm text-app-muted leading-6 mt-2 dark:text-app-muted-dark">
-				{{ preview.providerLabel }}
-			</p>
+			<OfficialSampleBallot v-if="preview.sampleBallotUrl" :href="preview.sampleBallotUrl" class="mt-5" />
 			<UpdatedAt :value="preview.generatedAt" label="Ballot data updated on" footer />
 			<div class="mt-3 flex flex-wrap gap-4">
 				<SafeExternalLink v-if="preview.sourceUrl" :href="preview.sourceUrl" class="text-app-accent underline underline-offset-3 focus-ring">
@@ -30,30 +39,37 @@ const NuxtLinkComponent = resolveComponent("NuxtLink");
 					{{ preview.verificationResource.label }}
 				</SafeExternalLink>
 			</div>
-			<div class="mt-5 gap-6 grid md:grid-cols-2">
-				<article v-for="contest in preview.contests" :key="contest.id" class="border border-app-line border-t-4 rounded-md bg-app-panel break-words dark:border-app-line-dark dark:bg-app-panel-dark">
+			<section v-for="group in contestGroups(preview)" :key="group.label" class="mt-10 space-y-6">
+				<h3 class="text-2xl text-app-ink font-semibold dark:text-app-text-dark">
+					{{ group.label }}
+				</h3>
+				<article v-for="contest in group.contests" :key="contest.id" class="border border-app-line rounded-md bg-app-panel break-words dark:border-app-line-dark dark:bg-app-panel-dark">
 					<header class="p-4 border-b border-app-line bg-app-bg dark:border-app-line-dark dark:bg-app-bg-dark">
-						<h3 class="text-lg text-app-ink font-semibold dark:text-app-text-dark">
+						<h4 class="text-lg text-app-ink font-semibold dark:text-app-text-dark">
 							{{ contest.title }}
-						</h3>
+						</h4>
 						<p v-if="contest.districtName" class="text-sm text-app-muted mt-1 dark:text-app-muted-dark">
 							{{ contest.districtName }}
 						</p>
 					</header>
 					<ul v-if="contest.candidates.length" class="divide-app-line divide-y dark:divide-app-line-dark">
-						<li v-for="candidate in contest.candidates" :key="candidate.id">
+						<li v-for="candidate in contest.candidates" :key="candidate.id" class="pl-4 flex gap-4 items-center">
+							<ProfileImageStack v-if="candidate.profileImages?.length" :images="candidate.profileImages" :name="candidate.name" size="sm" class="shrink-0" />
 							<component
 								:is="buildBallotCandidateTarget(preview, candidate, lookupContext) ? NuxtLinkComponent : 'div'"
 								v-bind="buildBallotCandidateTarget(preview, candidate, lookupContext) ? { to: buildBallotCandidateTarget(preview, candidate, lookupContext), prefetchOn: 'interaction' } : {}"
-								class="group p-4 flex gap-4 min-h-20 items-center justify-between hover:bg-app-bg focus-ring dark:hover:bg-app-bg-dark"
+								class="group p-4 flex flex-1 gap-4 min-h-20 items-center justify-between hover:bg-app-bg focus-ring dark:hover:bg-app-bg-dark"
 							>
 								<div class="min-w-0">
 									<p class="text-base text-app-ink font-semibold break-words dark:text-app-text-dark">
 										{{ candidate.name }}
 									</p>
-									<p v-if="candidate.party || (candidate.ballotStatus && ballotRecordStatusLabels[candidate.ballotStatus])" class="text-sm text-app-muted leading-6 mt-1 dark:text-app-muted-dark">
+									<p v-if="candidate.party || candidate.incumbent || (candidate.ballotStatus && ballotRecordStatusLabels[candidate.ballotStatus])" class="text-sm text-app-muted leading-6 mt-1 dark:text-app-muted-dark">
 										<PartyLabel v-if="candidate.party" :party="candidate.party" /><template v-if="candidate.ballotStatus && ballotRecordStatusLabels[candidate.ballotStatus]">
 											{{ candidate.party ? ' · ' : '' }}{{ ballotRecordStatusLabels[candidate.ballotStatus] }}
+										</template>
+										<template v-if="candidate.incumbent">
+											{{ candidate.party || candidate.ballotStatus && ballotRecordStatusLabels[candidate.ballotStatus] ? ' · ' : '' }}Incumbent
 										</template>
 									</p>
 								</div>
@@ -82,7 +98,7 @@ const NuxtLinkComponent = resolveComponent("NuxtLink");
 						</SafeExternalLink>
 					</div>
 				</article>
-			</div>
+			</section>
 		</section>
 		<aside v-if="sourceNotes.length" aria-label="Ballot source notes" class="text-sm text-app-muted leading-6 pt-4 border-t border-app-line space-y-2 dark:text-app-muted-dark dark:border-app-line-dark">
 			<p v-for="note in sourceNotes" :key="note">

@@ -21,9 +21,9 @@ test("candidate information keeps source attribution and dates without qualifica
 
 test("information pagination has its own bounded offset and does not move official records", () => {
 	const component = readFileSync(new URL("../src/components/ElectionReferences.vue", import.meta.url), "utf8");
-	const page = readFileSync(new URL("../src/pages/records.vue", import.meta.url), "utf8");
+	const page = readFileSync(new URL("../src/components/CandidateDirectory.vue", import.meta.url), "utf8");
 	assert.match(page, /route.query.referenceOffset/u);
-	assert.match(component, /\.\.\.route.query, referenceOffset/u);
+	assert.match(component, /\.\.\.route.query, type: "candidate", referenceOffset/u);
 	assert.match(component, /aria-label="Candidate information pages"/u);
 	assert.equal(readStateRecordQuery({ offset: "25001" }, []).offset, 0);
 	assert.equal(readStateRecordQuery({ offset: "-1" }, []).offset, 0);
@@ -49,7 +49,7 @@ test("identity-only references omit empty fact lists without placeholder explana
 });
 
 test("references render even when official candidate data is unavailable", () => {
-	const page = readFileSync(new URL("../src/pages/records.vue", import.meta.url), "utf8");
+	const page = readFileSync(new URL("../src/components/CandidateDirectory.vue", import.meta.url), "utf8");
 	assert.match(page, /<ElectionReferences v-if="filters.stateCode"/u);
 	assert.match(page, /search: filters.value.search, scope: filters.value.scope/u);
 	assert.match(page, /useElectionReferences\(referenceFilters\)/u);

@@ -111,6 +111,12 @@ test('local listhen fork preserves HTTP and certificate modes without node-forge
   const pfxExport = spawnSync('openssl', [
     'pkcs12',
     '-export',
+    '-keypbe',
+    'AES-256-CBC',
+    '-certpbe',
+    'AES-256-CBC',
+    '-macalg',
+    'SHA256',
     '-inkey',
     keyPath,
     '-in',

@@ -1,3 +1,4 @@
+import type { RecordPortraitResolver } from "./record-portraits.js";
 import type { StateBallotQuestion } from "./state-ballot-questions.js";
 import type { StateCandidateRecord } from "./state-ballot-records.js";
 import type { StateBallotSource } from "./state-ballot-sources.js";
@@ -61,6 +62,7 @@ import { parseTuscolaCandidateCapture } from "./state-ballot-tuscola-collection.
 import { parseVermontCandidateCapture } from "./state-ballot-vermont.js";
 import { parseWashoeCandidateCapture } from "./state-ballot-washoe.js";
 import { parseWinnebagoCandidateCapture } from "./state-ballot-winnebago-collection.js";
+import { reportedFultonIncumbency, stateRecordDocumentLinks } from "./state-records.js";
 
 export interface StateBallotSnapshot {
 	source: StateBallotSource;
@@ -75,6 +77,7 @@ export interface StateBallotSnapshot {
 }
 
 export interface StateBallotRepository {
+	getStoredSnapshots?: (stateCode: string) => Promise<StateBallotSnapshot[]>;
 	sources?: readonly StateBallotSource[];
 	inspectSources?: () => Promise<AdminOperationDataset[]>;
 	isAwaitingRecords?: (sourceId: string) => boolean;
@@ -320,6 +323,16 @@ export function createStateBallotRepository(options: StateBallotRepositoryOption
 				return item;
 			}));
 		},
+		async getStoredSnapshots(stateCode) {
+			const snapshots: StateBallotSnapshot[] = [];
+			for (const source of currentSources().filter(item => item.stateCode === stateCode && Date.parse(`${item.electionDate}T00:00:00Z`) + 2 * 86400000 > now())) {
+				if (configurationFailures.has(stateCode)) throw new Error("The state election catalog is unavailable.");
+				const retained = cached.get(source.id);
+				const snapshot = storage ? await storage.read(source) : retained && retained.expiresAt > now() ? retained.snapshot : null;
+				if (snapshot && indexMatches(source, snapshot) && Date.parse(snapshot.retrievedAt) <= now()) snapshots.push(snapshot);
+			}
+			return snapshots;
+		},
 		async getSnapshot(stateCode, sourceId) {
 			const matching = currentSources().filter(source => source.stateCode === stateCode.toUpperCase() && (sourceId === undefined || source.id === sourceId));
 			const ordered = sourceId === undefined ? orderStateBallotSources(matching, now()) : matching;
@@ -351,13 +364,14 @@ export function buildStateBallotPreview(snapshot: StateBallotSnapshot, lookup: P
 			contest = {
 				id: `${snapshot.source.id}:${createHash("sha256").update(key).digest("hex").slice(0, 16)}`,
 				title: record.office,
+				scope: record.scope,
 				districtName: record.district && !/\bdistrict\b/iu.test(record.office) ? `District ${record.district}` : undefined,
 				candidates: [],
 				sourceLabels: [snapshot.source.label],
 			};
 			contests.set(key, contest);
 		}
-		contest.candidates.push({ id: record.id, name: record.name, party: record.party, ballotStatus: record.status, sourceStatus: record.sourceStatus, ballotDesignation: record.ballotDesignation, candidateUrl: record.candidateUrl });
+		contest.candidates.push({ id: record.id, name: record.name, party: record.party, incumbent: record.incumbent || reportedFultonIncumbency(record, snapshot.source) ? true : undefined, ballotStatus: record.status, sourceStatus: record.sourceStatus, ballotDesignation: record.ballotDesignation, candidateUrl: record.candidateUrl });
 	}
 	if (!contests.size)
 		return null;
@@ -374,6 +388,7 @@ export function buildStateBallotPreview(snapshot: StateBallotSnapshot, lookup: P
 		providerLabel: snapshot.source.label,
 		sourceAuthority: "official-government",
 		sourceUrl: snapshot.source.pageUrl,
+		sampleBallotUrl: stateRecordDocumentLinks(snapshot.source, snapshot)?.find(link => /sample ballot/iu.test(link.label))?.url,
 		electionDate: snapshot.source.electionDate,
 		generatedAt: snapshot.retrievedAt,
 		disclaimer: `${disclaimer}${snapshot.source.scopeNotice ? ` ${snapshot.source.scopeNotice}` : ""}`,
@@ -386,7 +401,7 @@ export function buildStateBallotPreview(snapshot: StateBallotSnapshot, lookup: P
 	};
 }
 
-export async function attachStateBallotPreview(lookup: LocationLookupResponse, repository: StateBallotRepository | null) {
+export async function attachStateBallotPreview(lookup: LocationLookupResponse, repository: StateBallotRepository | null, portraits?: RecordPortraitResolver) {
 	if (!repository || lookup.result !== "resolved" || !lookup.location || lookup.selectionOptions?.length)
 		return lookup;
 	const state = lookup.location.state;
@@ -413,6 +428,16 @@ export async function attachStateBallotPreview(lookup: LocationLookupResponse, r
 		: null;
 	if (!preview)
 		return lookup;
+	if (portraits && snapshot) {
+		const selected = new Set(preview.contests.flatMap(contest => contest.candidates.map(candidate => candidate.id)));
+		const images = new Map((await portraits(stateCode, snapshot.records.filter(record => selected.has(record.id)))).map(record => [record.id, record.profileImages]));
+		for (const contest of preview.contests) {
+			for (const candidate of contest.candidates) {
+				const profileImages = images.get(candidate.id);
+				if (profileImages?.length) candidate.profileImages = profileImages;
+			}
+		}
+	}
 	lookup.ballotContentPreviews = [...(lookup.ballotContentPreviews ?? []).filter(item => item.providerId !== preview.providerId), preview];
 	if (lookup.availability && !lookup.guideContent?.verifiedContestPackage) {
 		lookup.availability.ballotCandidates = {

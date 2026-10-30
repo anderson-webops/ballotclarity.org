@@ -38,7 +38,7 @@ function validIdentifier(value: string) {
 export function buildBallotCandidateTarget(preview: BallotContentPreview, candidate: BallotContentPreviewCandidate, context?: Pick<NationwideLookupResultContext, "lookupQuery" | "selectionId">) {
 	if (!validIdentifier(preview.id) || !validIdentifier(candidate.id)) return null;
 	const state = preview.sourceAuthority === "official-government" ? /^official-state-([a-z]{2})$/u.exec(preview.providerId)?.[1]?.toUpperCase() : null;
-	if (state) return { path: `/record/${state}/${encodeURIComponent(candidate.id)}`, query: { source: preview.id, name: candidate.name } };
+	if (state) return { path: `/record/${state}/${encodeURIComponent(candidate.id)}`, query: { ...buildNationwideLookupRouteQuery(context), source: preview.id, name: candidate.name } };
 	return { path: `/ballot-record/${encodeURIComponent(preview.id)}/${encodeURIComponent(candidate.id)}`, query: { ...buildNationwideLookupRouteQuery(context) } };
 }
 

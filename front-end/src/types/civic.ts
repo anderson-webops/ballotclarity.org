@@ -162,6 +162,7 @@ export interface ElectionLogisticsCandidate {
 export type BallotContentPreviewStatus = "official_source_unverified" | "provider_unverified";
 
 export interface BallotContentPreviewCandidate {
+	incumbent?: true;
 	ballotDesignation?: string;
 	ballotStatus?: "listed" | "filed" | "qualified" | "write-in" | "withdrawn" | "disqualified" | "defeated" | "elected" | "unopposed" | "inactive" | "unrecognized";
 	sourceStatus?: string;
@@ -190,6 +191,7 @@ export interface StateRecordStatesResponse {
 }
 
 export interface PublicStateCandidateRecord {
+	personProfileSlug?: string;
 	profileImages?: ProfileImage[];
 	id: string;
 	name: string;
@@ -299,6 +301,7 @@ export interface BallotContentPreviewReferendum {
 }
 
 export interface BallotContentPreviewContest {
+	scope?: StateRecordScope;
 	ballotTitle?: string;
 	candidates: BallotContentPreviewCandidate[];
 	districtName?: string;
@@ -311,6 +314,7 @@ export interface BallotContentPreviewContest {
 }
 
 export interface BallotContentPreview {
+	sampleBallotUrl?: string;
 	electionDate?: string;
 	sourceUrl?: string;
 	candidateCount: number;
@@ -696,6 +700,7 @@ export interface ElectionSummary {
 }
 
 export interface Election extends ElectionSummary {
+	timeZone?: string;
 	description: string;
 	contests: Contest[];
 	freshness: FreshnessMeta;
@@ -1548,9 +1553,12 @@ export interface CompareResponse {
 	note: string;
 }
 
-export type SearchResultType = "candidate" | "contest" | "district" | "election" | "jurisdiction" | "measure" | "source";
+export type SearchResultType = "candidate" | "representative" | "contest" | "district" | "election" | "jurisdiction" | "measure" | "source";
 
 export interface SearchResultItem {
+	party?: string;
+	personProfileSlug?: string;
+	profileImages?: ProfileImage[];
 	id: string;
 	type: SearchResultType;
 	title: string;
@@ -1569,6 +1577,7 @@ export interface SearchResultGroup {
 }
 
 export interface SearchResponse {
+	incomplete?: boolean;
 	query: string;
 	total: number;
 	groups: SearchResultGroup[];

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { ElectionSectionLink } from "~/utils/election-candidates";
+import { electionTimeZone } from "~/utils/election-time-zone";
 import { buildKeyDateTimeline, calendarDaysUntil, describeDaysAway } from "~/utils/election-timeline";
 import { fullAreaGuideLabels } from "~/utils/guide-scope";
 import { limitedBallotNotice } from "~/utils/results-summary";
@@ -8,11 +9,14 @@ const civicStore = useCivicStore();
 const { displayTimeZone, formatDate } = useFormatters();
 const electionSlug = useRouteStringParam("slug");
 const { data, error, pending } = await useBallot(electionSlug);
+const jurisdictionSlug = computed(() => data.value?.election.jurisdictionSlug);
+const { data: jurisdiction } = await useJurisdiction(jurisdictionSlug);
+const officialResources = computed(() => [...new Map([...(data.value?.election.officialResources ?? []), ...(jurisdiction.value?.officialResources ?? [])].map(resource => [resource.url || resource.label, resource])).values()]);
 const candidateSections = ref<ElectionSectionLink[]>([]);
 const sectionLinks = computed<ElectionSectionLink[]>(() => [
 	...(data.value?.candidateRecordSource ? candidateSections.value : []),
 	...(data.value?.guideContent?.verifiedContestPackage && data.value.election.contests.length ? [{ href: "#ballot-items", label: "Ballot items" }] : []),
-	...(data.value?.election.officialResources.length ? [{ href: "#voting-info", label: "Voting info" }] : [])
+	...(officialResources.value.length || jurisdiction.value?.officialOffice.phone ? [{ href: "#voting-info", label: "Voting info" }] : [])
 ]);
 watch(() => data.value?.candidateRecordSource?.sourceId, () => {
 	candidateSections.value = [];
@@ -26,11 +30,12 @@ const guideStatusNote = computed(() => data.value?.candidateRecordSource
 				: data.value?.coverageLimits?.[0] ?? "");
 const clock = useElectionClock();
 const now = computed(() => new Date(clock.value));
-const keyDateTimeline = computed(() => data.value ? buildKeyDateTimeline(data.value.election.keyDates, now.value, displayTimeZone.value) : []);
+const timeZone = computed(() => electionTimeZone(data.value?.election, displayTimeZone.value));
+const keyDateTimeline = computed(() => data.value ? buildKeyDateTimeline(data.value.election.keyDates, now.value, timeZone.value) : []);
 const upcomingKeyDates = computed(() => keyDateTimeline.value.filter(entry => entry.status !== "passed").slice(0, 3));
 const electionDayLabel = computed(() => {
 	if (!data.value?.election.date) return "";
-	const daysAway = calendarDaysUntil(data.value.election.date, now.value, displayTimeZone.value);
+	const daysAway = calendarDaysUntil(data.value.election.date, now.value, timeZone.value);
 	return daysAway < 0 ? "" : describeDaysAway(daysAway);
 });
 
@@ -94,13 +99,22 @@ usePageSeo({
 					<NuxtLink v-if="data.guideContent?.verifiedContestPackage" :to="`/ballot/${data.election.slug}`" class="btn-secondary mt-5 inline-block">
 						Ballot guide
 					</NuxtLink>
+					<div v-if="upcomingKeyDates.length" class="mt-5 lg:hidden">
+						<ElectionKeyDates :entries="upcomingKeyDates.slice(0, 1)" :election-date="data.election.date" :time-zone="timeZone" compact />
+						<NuxtLink :to="`/election-dates/${data.election.slug}`" class="text-sm text-app-accent py-2 underline inline-block focus-ring">
+							All dates
+						</NuxtLink>
+					</div>
+					<nav v-if="sectionLinks.length" aria-label="Election sections" class="mt-5 flex flex-wrap gap-x-5 gap-y-2 lg:hidden">
+						<a v-for="section in sectionLinks" :key="section.href" :href="section.href" class="text-sm text-app-accent py-2 underline focus-ring">{{ section.label }}</a>
+					</nav>
 				</header>
-				<aside v-if="data.election.keyDates.length || sectionLinks.length" aria-label="Election navigation" class="min-w-0 lg:row-span-2 lg:col-start-2 lg:row-start-1">
+				<aside v-if="data.election.keyDates.length || sectionLinks.length" aria-label="Election navigation" class="min-w-0 hidden lg:row-span-2 lg:col-start-2 lg:row-start-1 lg:block">
 					<section v-if="data.election.keyDates.length" id="key-dates" aria-labelledby="key-dates-heading">
 						<h2 id="key-dates-heading" class="text-lg text-app-ink font-semibold dark:text-app-text-dark">
 							Dates and deadlines
 						</h2>
-						<ElectionKeyDates v-if="upcomingKeyDates.length" :entries="upcomingKeyDates" :election-date="data.election.date" compact />
+						<ElectionKeyDates v-if="upcomingKeyDates.length" :entries="upcomingKeyDates" :election-date="data.election.date" :time-zone="timeZone" compact />
 						<NuxtLink :to="`/election-dates/${data.election.slug}`" class="text-sm text-app-accent mt-3 py-2 underline inline-block focus-ring">
 							All dates
 						</NuxtLink>
@@ -141,12 +155,12 @@ usePageSeo({
 					</NuxtLink>
 				</div>
 			</section>
-			<section v-if="data.election.officialResources.length" aria-labelledby="voting-info" class="surface-panel">
+			<section v-if="officialResources.length || jurisdiction?.officialOffice.phone" aria-labelledby="voting-info" class="surface-panel">
 				<h2 id="voting-info" tabindex="-1" class="text-2xl text-app-ink font-serif dark:text-app-text-dark">
 					Voting information
 				</h2>
 				<ul class="mt-5 space-y-3">
-					<li v-for="resource in data.election.officialResources" :key="resource.label">
+					<li v-for="resource in officialResources" :key="resource.label">
 						<SafeExternalLink v-if="resource.url" :href="resource.url" external-icon class="text-app-accent py-2 underline inline-flex gap-2 items-center focus-ring">
 							{{ resource.label }}
 						</SafeExternalLink>
@@ -155,6 +169,19 @@ usePageSeo({
 						</p>
 					</li>
 				</ul>
+				<address v-if="jurisdiction?.officialOffice.phone || jurisdiction?.officialOffice.address" class="text-sm leading-7 mt-8 not-italic space-y-2">
+					<p class="font-semibold">
+						{{ jurisdiction?.officialOffice.name }}
+					</p>
+					<p v-if="jurisdiction?.officialOffice.address">
+						{{ jurisdiction.officialOffice.address }}
+					</p>
+					<a v-if="jurisdiction?.officialOffice.phone" :href="`tel:${jurisdiction.officialOffice.phone.replace(/[^+\d]/g, '')}`" class="text-app-accent underline focus-ring">{{ jurisdiction.officialOffice.phone }}</a>
+					<a v-if="jurisdiction?.officialOffice.email" :href="`mailto:${jurisdiction.officialOffice.email}`" class="text-app-accent underline block break-all focus-ring">{{ jurisdiction.officialOffice.email }}</a>
+					<p v-if="jurisdiction?.officialOffice.hours">
+						{{ jurisdiction.officialOffice.hours }}
+					</p>
+				</address>
 			</section>
 		</div>
 	</section>

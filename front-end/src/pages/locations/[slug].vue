@@ -7,6 +7,10 @@ const { data: jurisdiction, error, pending } = await useJurisdiction(jurisdictio
 const nextElectionSlug = computed(() => jurisdiction.value?.nextElectionSlug);
 const { data: nextElectionData } = await useBallot(nextElectionSlug);
 
+if (jurisdiction.value && nextElectionData.value?.election.jurisdictionSlug === jurisdiction.value.slug) {
+	await navigateTo({ path: `/elections/${nextElectionData.value.election.slug}`, query: { ...useRoute().query, location: jurisdiction.value.slug } }, { redirectCode: 302 });
+}
+
 const registrationDeadline = computed(() => nextElectionData.value?.election.keyDates.find(item => item.label === "Registration deadline") ?? null);
 const earlyVotingDate = computed(() => nextElectionData.value?.election.keyDates.find(item => item.label === "Early voting opens") ?? null);
 const hasOfficeContact = computed(() => Boolean(jurisdiction.value && [jurisdiction.value.officialOffice.address, jurisdiction.value.officialOffice.phone, jurisdiction.value.officialOffice.email, jurisdiction.value.officialOffice.hours].some(value => value?.trim())));

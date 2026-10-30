@@ -9,9 +9,7 @@ const { hasGuideShellContext, hasNationwideResultContext, hasVerifiedGuideContex
 const { compareList, isHydrated } = storeToRefs(civicStore);
 const effectiveCompareList = computed(() => isHydrated.value ? compareList.value : []);
 const selectedElection = computed(() => civicStore.selectedElection);
-const selectedLocation = computed(() => civicStore.selectedLocation);
 const electionOverviewPath = computed(() => selectedElection.value?.slug ? `/elections/${selectedElection.value.slug}` : "/coverage");
-const locationHubPath = computed(() => selectedLocation.value?.slug ? `/locations/${selectedLocation.value.slug}` : "/coverage");
 const primarySectionLabel = computed(() => hasVerifiedGuideContext.value || hasGuideShellContext.value || hasNationwideResultContext.value
 	? "Your guide"
 	: "Get started");
@@ -28,7 +26,6 @@ const guideLinks = computed(() => hasVerifiedGuideContext.value
 	: hasGuideShellContext.value
 		? [
 				{ label: "Election overview", to: electionOverviewPath.value },
-				{ label: "Location hub", to: locationHubPath.value },
 				{ label: "District pages", to: "/districts" },
 				{ label: "Representatives", to: "/representatives" },
 				{ label: "Search", to: "/search" },
@@ -43,7 +40,7 @@ const guideLinks = computed(() => hasVerifiedGuideContext.value
 			]);
 
 const howItWorksLinks = [
-	{ label: "Directory", to: "/records" },
+	{ label: "Directory", to: "/search?type=candidate" },
 	{ label: "Sources", to: "/sources" },
 	{ label: "Coverage", to: "/coverage" },
 ];

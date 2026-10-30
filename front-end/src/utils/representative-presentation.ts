@@ -24,7 +24,11 @@ export interface RepresentativePresentation {
 
 export function resolveRepresentativeContentSummary(value: string | null | undefined) {
 	const summary = value?.trim() ?? "";
-	return summary.startsWith("Matched from ") ? "" : summary;
+	return /^(?:Matched from |Ballot Clarity attached |Congress\.gov attached |Congress\.gov confirmed |Congress\.gov lists |.+ is linked here through area results)/u.test(summary) || /Ballot Clarity (?:can attach|keeps available)|local officeholder layer/u.test(summary) ? "" : summary;
+}
+
+export function substantiveBiography(person: Pick<PersonProfile, "biography"> | null | undefined) {
+	return (person?.biography ?? []).filter(block => Boolean(resolveRepresentativeContentSummary(block.summary)) && !/^(?:Provider-backed officeholder record|Office record|Congress\.gov office context|Federal finance and disclosure crosswalk)$/u.test(block.title));
 }
 
 export function resolveRepresentativePresentation(

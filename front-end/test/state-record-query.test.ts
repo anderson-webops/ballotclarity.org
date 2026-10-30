@@ -50,14 +50,14 @@ test("a state with an offered publisher does not fall back from an explicit sour
 });
 
 test("the records page uses disabled-state recovery without adding explanatory interface copy", () => {
-	const page = readFileSync(new URL("../src/pages/records.vue", import.meta.url), "utf8");
+	const page = readFileSync(new URL("../src/components/CandidateDirectory.vue", import.meta.url), "utf8");
 	assert.match(page, /computed\(\(\) => readRecoverableStateRecordQuery\(route.query, stateData.value\?\.states \?\? \[\],/u);
 	assert.match(page, /civicStore.isHydrated \? civicStore.selectedLocation\?\.state : undefined/u);
 	assert.match(page, /Official candidate records are unavailable/u);
 });
 
 test("Retry refreshes the source catalog before retrying records even with cached state metadata", () => {
-	const page = readFileSync(new URL("../src/pages/records.vue", import.meta.url), "utf8");
+	const page = readFileSync(new URL("../src/components/CandidateDirectory.vue", import.meta.url), "utf8");
 	assert.match(page, /async function retryRecords\(\) \{\s+await refreshStates\(\);\s+await refresh\(\);\s+\}/u);
 });
 
@@ -73,7 +73,7 @@ test("an available response cannot silently substitute another explicitly reques
 });
 
 test("a retired source exposes an explicit replacement choice even with one eligible publisher", () => {
-	const page = readFileSync(new URL("../src/pages/records.vue", import.meta.url), "utf8");
+	const page = readFileSync(new URL("../src/components/CandidateDirectory.vue", import.meta.url), "utf8");
 	assert.match(page, /v-if="sourceOptions.length > 1 \|\| unavailableSource"/u);
 	assert.match(page, /v-if="unavailableSource" :value="filters.sourceId" disabled/u);
 	assert.match(page, /Unavailable source/u);

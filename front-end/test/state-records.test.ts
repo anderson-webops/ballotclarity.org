@@ -44,7 +44,7 @@ test("source links retain explicit selection, including invalid inputs that must
 	assert.equal(readStateRecordQuery({ state: "Maine", source: ["example-county"] }, states).sourceId, "");
 	assert.equal(readStateRecordQuery({ source: "x".repeat(200) }, states).sourceId?.length, 120);
 	assert.equal(readStateRecordQuery({ state: "Maine" }, states).sourceId, undefined);
-	const page = readFileSync(new URL("../src/pages/records.vue", import.meta.url), "utf8");
+	const page = readFileSync(new URL("../src/components/CandidateDirectory.vue", import.meta.url), "utf8");
 	assert.match(page, /v-if="sourceOptions.length > 1 \|\| unavailableSource"/u);
 	assert.match(page, /for="record-source"/u);
 	assert.match(page, /selectedSource.value = "";\s+await applyFilters\(\)/u);
@@ -82,7 +82,7 @@ test("publication labels remain evidence metadata rather than a person's geograp
 });
 
 test("the public directory exposes only necessary labels and source limits", () => {
-	const page = readFileSync(new URL("../src/pages/records.vue", import.meta.url), "utf8");
+	const page = readFileSync(new URL("../src/components/CandidateDirectory.vue", import.meta.url), "utf8");
 	assert.doesNotMatch(page, /These records are not a personalized ballot/u);
 	assert.match(page, /recordSourceNotice/u);
 	assert.match(page, /Include inactive records/u);
@@ -103,7 +103,7 @@ test("the public directory exposes only necessary labels and source limits", () 
 });
 
 test("record metadata uses one short source link for single and multiple publications", () => {
-	const page = readFileSync(new URL("../src/pages/records.vue", import.meta.url), "utf8");
+	const page = readFileSync(new URL("../src/components/CandidateDirectory.vue", import.meta.url), "utf8");
 	assert.match(page, /<NuxtLink\s+v-if="data.source.documentLinks\?\.length \|\| data.source.url"/u);
 	assert.match(page, /path: '\/record-sources'/u);
 	assert.match(page, /class="[^"]*min-h-11/u);

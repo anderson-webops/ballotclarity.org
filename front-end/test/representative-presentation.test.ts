@@ -7,6 +7,7 @@ import {
 	groupRepresentativeSummariesByGovernmentLevel,
 	resolveRepresentativeContentSummary,
 	resolveRepresentativePresentation,
+	substantiveBiography,
 } from "../src/utils/representative-presentation.ts";
 
 test("countywide agency roles retain their sourced identity", () => {
@@ -27,6 +28,15 @@ test("representative content summaries omit generated matching commentary", () =
 test("representative content summaries preserve substantive descriptions", () => {
 	assert.equal(resolveRepresentativeContentSummary("Serves in the U.S. Senate."), "Serves in the U.S. Senate.");
 	assert.equal(resolveRepresentativeContentSummary("  Served two terms on the city council.  "), "Served two terms on the city council.");
+});
+
+test("biography omits provider wiring commentary while keeping sourced person facts", () => {
+	const biography = [
+		{ id: "wiring", title: "Federal finance and disclosure crosswalk", summary: "Ballot Clarity attached federal finance records through a crosswalk.", sources: [] },
+		{ id: "person", title: "Public service", summary: "Served two terms on the city council.", sources: [] }
+	];
+	assert.deepEqual(substantiveBiography({ biography }), [biography[1]]);
+	assert.equal(substantiveBiography(null).length, 0);
 });
 
 const representatives: RepresentativeSummary[] = [

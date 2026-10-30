@@ -71,7 +71,7 @@ test("the source page consolidates its heading, groups publications and keeps on
 	assert.match(page, /<OfficialSampleBallot v-if="sampleBallot"/u);
 	assert.match(page, /v-for="group in groups"/u);
 	assert.doesNotMatch(page, /Candidate records list|recordsTarget|No source documents|<dt>Retrieved/u);
-	assert.match(read("components/AppFooter.vue"), /label: "Directory", to: "\/records"/u);
+	assert.match(read("components/AppFooter.vue"), /label: "Directory", to: "\/search\?type=candidate"/u);
 	for (const filename of ["pages/search.vue", "pages/coverage.vue", "pages/sources/index.vue"])
 		assert.doesNotMatch(read(filename), /to="\/records"/u);
 });

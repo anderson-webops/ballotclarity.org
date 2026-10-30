@@ -86,7 +86,9 @@ test("ballot-style rows navigate, do not cast selections, and leave long designa
 	const component = readFileSync(new URL("../src/components/BallotContentPreviews.vue", import.meta.url), "utf8");
 	const detail = readFileSync(new URL("../src/pages/ballot-record/[source]/[id].vue", import.meta.url), "utf8");
 	assert.match(component, /buildBallotCandidateTarget/u);
-	assert.match(component, /border-t-4/u);
+	assert.match(component, /border border-app-line/u);
+	assert.match(component, /candidate\.profileImages/u);
+	assert.match(component, /candidate\.incumbent/u);
 	assert.doesNotMatch(component, /type="(?:radio|checkbox)"|aria-checked|ballotDesignation|candidate\.candidateUrl|overflow-hidden/u);
 	assert.match(detail, /record\.candidate\.ballotDesignation/u);
 	assert.match(detail, /Candidate website/u);

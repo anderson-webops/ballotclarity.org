@@ -5,7 +5,7 @@ import test from "node:test";
 const source = (name: string) => readFileSync(new URL(`../src/${name}`, import.meta.url), "utf8");
 
 test("candidate summaries and source records render available portraits without extra client requests", () => {
-	for (const name of ["components/ElectionCandidateRecords.vue", "components/CandidateCard.vue", "components/ElectionReferences.vue", "pages/records.vue", "pages/record/[state]/[id].vue"]) {
+	for (const name of ["components/ElectionCandidateRecords.vue", "components/CandidateCard.vue", "components/ElectionReferences.vue", "components/CandidateDirectory.vue", "pages/record/[state]/[id].vue"]) {
 		const page = source(name);
 		assert.match(page, /<ProfileImageStack/u, name);
 		assert.match(page, /profileImages/u, name);
@@ -18,7 +18,7 @@ test("the directory remains in the footer instead of profile and search headers"
 	assert.doesNotMatch(detail, /Candidate records|backTo/u);
 	assert.doesNotMatch(detail, /image\.attribution|image\.sourceLabel|:href="image\.url"/u);
 	assert.doesNotMatch(source("pages/search.vue"), /Candidate records list|to="\/records"/u);
-	assert.match(source("components/AppFooter.vue"), /label: "Directory", to: "\/records"/u);
+	assert.match(source("components/AppFooter.vue"), /label: "Directory", to: "\/search\?type=candidate"/u);
 });
 
 test("record portraits are prominent without changing list thumbnails or duplicating source navigation", () => {
@@ -53,7 +53,7 @@ test("photo expansion keeps its source inside a dismissible overlay without link
 });
 
 test("photo buttons are siblings of navigation links, not nested interactive controls", () => {
-	for (const name of ["components/CandidateCard.vue", "components/ElectionCandidateRecords.vue", "components/ElectionReferences.vue", "pages/records.vue", "pages/representatives/index.vue"]) {
+	for (const name of ["components/CandidateCard.vue", "components/ElectionCandidateRecords.vue", "components/ElectionReferences.vue", "components/CandidateDirectory.vue", "pages/representatives/index.vue"]) {
 		const page = source(name);
 		assert.doesNotMatch(page, /<NuxtLink\b[^>]*>(?:(?!<\/NuxtLink>)[\s\S])*?<ProfileImageStack/u, name);
 		assert.doesNotMatch(page, /<component\b[^>]*>(?:(?!<\/component>)[\s\S])*?<ProfileImageStack/u, name);

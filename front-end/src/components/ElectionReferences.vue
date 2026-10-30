@@ -28,12 +28,12 @@ watch(() => [props.pending, props.data, props.error], async () => {
 });
 
 async function changePage(offset: number) {
-	await navigateTo({ path: "/records", query: { ...route.query, referenceOffset: offset ? String(offset) : undefined } });
+	await navigateTo({ path: "/search", query: { ...route.query, type: "candidate", referenceOffset: offset ? String(offset) : undefined } });
 }
 </script>
 
 <template>
-	<section v-if="error || pending && stateCode || data?.available" class="space-y-5" aria-labelledby="candidate-information-heading">
+	<section v-if="error || pending && stateCode || data?.records.length" class="space-y-5" aria-labelledby="candidate-information-heading">
 		<h2 id="candidate-information-heading" tabindex="-1" class="text-3xl text-app-ink font-serif dark:text-app-text-dark focus-ring">
 			Candidate information
 		</h2>

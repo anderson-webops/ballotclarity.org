@@ -103,7 +103,7 @@ for (const scenario of cases) {
 				assert.match(primary.coverageLimits[0], /other local races and measures are not included/u);
 			}
 			else {
-				assert.deepEqual(primary.election, data.election);
+				assert.deepEqual(primary.election, { ...data.election, timeZone: "America/New_York" });
 			}
 			assert.deepEqual(primary.location, data.location);
 			assert.equal(primary.scope, "local");

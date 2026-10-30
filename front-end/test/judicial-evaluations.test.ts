@@ -20,6 +20,6 @@ test("judicial detail uses the exact official ID and source without changing sum
 	assert.match(page, /<OfficialJudicialEvaluation v-if="evaluation"/u);
 	assert.match(page, /error\.statusCode === 404\) return null/u);
 	assert.match(page, /v-else-if="evaluationError" role="status"/u);
-	const directory = readFileSync(new URL("../src/pages/records.vue", import.meta.url), "utf8");
+	const directory = readFileSync(new URL("../src/components/CandidateDirectory.vue", import.meta.url), "utf8");
 	assert.doesNotMatch(directory, /OfficialJudicialEvaluation|Recommends retention|Recommends against retention/u);
 });

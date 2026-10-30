@@ -25,7 +25,7 @@ export function buildRouteLayerNavigation(input: RouteLayerNavigationInput): Rou
 	if (input.hasVerifiedGuideContext) {
 		const ballotGuidePath = input.selectedElectionSlug ? `/ballot/${input.selectedElectionSlug}` : "/ballot";
 		const electionOverviewPath = input.selectedElectionSlug ? `/elections/${input.selectedElectionSlug}` : "/coverage";
-		const locationHubPath = input.selectedLocationSlug ? `/locations/${input.selectedLocationSlug}` : "/coverage";
+		const locationHubPath = input.selectedElectionSlug ? `${electionOverviewPath}#voting-info` : "/coverage";
 
 		return {
 			backToLayer: {
@@ -37,7 +37,7 @@ export function buildRouteLayerNavigation(input: RouteLayerNavigationInput): Rou
 				to: ballotGuidePath
 			},
 			locationHub: {
-				label: "Location hub",
+				label: input.selectedElectionSlug ? "Voting info" : "Coverage",
 				to: locationHubPath
 			},
 			openLayer: {
@@ -53,7 +53,7 @@ export function buildRouteLayerNavigation(input: RouteLayerNavigationInput): Rou
 
 	if (input.hasGuideShellContext) {
 		const electionOverviewPath = input.selectedElectionSlug ? `/elections/${input.selectedElectionSlug}` : "/coverage";
-		const locationHubPath = input.selectedLocationSlug ? `/locations/${input.selectedLocationSlug}` : "/coverage";
+		const locationHubPath = input.selectedElectionSlug ? `${electionOverviewPath}#voting-info` : "/coverage";
 
 		return {
 			backToLayer: {
@@ -65,7 +65,7 @@ export function buildRouteLayerNavigation(input: RouteLayerNavigationInput): Rou
 				to: electionOverviewPath
 			},
 			locationHub: {
-				label: "Location hub",
+				label: input.selectedElectionSlug ? "Voting info" : "Coverage",
 				to: locationHubPath
 			},
 			openLayer: {
@@ -73,7 +73,7 @@ export function buildRouteLayerNavigation(input: RouteLayerNavigationInput): Rou
 				to: electionOverviewPath
 			},
 			overview: {
-				label: "Location hub",
+				label: input.selectedElectionSlug ? "Voting info" : "Coverage",
 				to: locationHubPath
 			}
 		};

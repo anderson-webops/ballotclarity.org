@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import type { ElectionReferencesResponse, PublicElectionReference, PublicJudicialEvaluation, PublicStateCandidateRecord, StateRecordsResponse } from "~/types/civic";
+import type { ElectionReferencesResponse, PersonProfileResponse, PublicElectionReference, PublicJudicialEvaluation, PublicStateCandidateRecord, StateRecordsResponse } from "~/types/civic";
 import { findRecordDetail } from "~/utils/record-detail";
+import { matchingRecordPerson } from "~/utils/record-person";
 import { referenceJurisdiction } from "~/utils/reference-context";
 import { stateRecordArea, stateRecordStatusBadges } from "~/utils/state-records";
 
@@ -35,6 +36,22 @@ const { data, error, pending, refresh } = await useAsyncData(
 );
 const name = computed(() => data.value?.reference?.name ?? data.value?.official?.name);
 const profileImages = computed(() => data.value?.reference?.profileImages ?? data.value?.official?.profileImages ?? []);
+const personSlug = computed(() => data.value?.official?.personProfileSlug);
+const { data: personData, error: personError, refresh: refreshPerson } = await useAsyncData(
+	() => `record-person:${stateCode.value}:${personSlug.value ?? ""}`,
+	async () => {
+		if (!personSlug.value || !/^[a-z0-9-]{1,160}$/u.test(personSlug.value)) return null;
+		try {
+			const result = await api<PersonProfileResponse>(`/representatives/${personSlug.value}`);
+			return matchingRecordPerson(result, { slug: personSlug.value, name: name.value ?? "", stateCode: stateCode.value, stateName: data.value?.source?.stateName });
+		}
+		catch (error) {
+			if (error && typeof error === "object" && "statusCode" in error && error.statusCode === 404) return null;
+			throw error;
+		}
+	},
+	{ default: () => null }
+);
 const { data: evaluation, error: evaluationError } = await useAsyncData(
 	() => `judicial-evaluation:${stateCode.value}:${data.value?.source?.id}:${data.value?.official?.id}`,
 	async () => {
@@ -157,6 +174,12 @@ const sourcesTarget = computed(() => ({ path: "/record-sources", query: { state:
 				<SafeExternalLink v-if="data.official.candidateUrl" :href="data.official.candidateUrl" class="text-app-accent underline underline-offset-3 focus-ring">
 					Candidate website
 				</SafeExternalLink>
+				<PersonRecordDetails v-if="personData" :person="personData.person" />
+				<p v-else-if="personError" role="status">
+					Profile details are temporarily unavailable. <button type="button" class="text-app-accent underline focus-ring" @click="refreshPerson()">
+						Retry
+					</button>
+				</p>
 				<section class="text-sm pt-5 border-t border-app-line space-y-3 dark:border-app-line-dark" aria-label="Sources">
 					<NuxtLink :to="sourcesTarget" class="text-app-accent py-2 underline underline-offset-3 inline-block focus-ring">
 						Citations

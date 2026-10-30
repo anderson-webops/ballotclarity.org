@@ -89,7 +89,7 @@ export function parseStateRecordFilters(query: Record<string, unknown>) {
 	return { search: search.toLowerCase(), scope, status, limit, offset };
 }
 
-function reportedFultonIncumbency(record: StateCandidateRecord, source: StateBallotSource) {
+export function reportedFultonIncumbency(record: StateCandidateRecord, source: StateBallotSource) {
 	return (source.id === "ga-fulton-2026" || source.format === "fulton-pdf") && /^\(Incumbent\)?(?:; |$)/u.test(record.ballotDesignation ?? "");
 }
 

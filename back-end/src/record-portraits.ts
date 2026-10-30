@@ -1,6 +1,7 @@
 import type { CongressClient, CongressMemberRecord } from "./congress.js";
 import type { SupplementalOfficeholderRecord } from "./supplemental-officeholders.js";
 import type { ProfileImage, StateRecordScope } from "./types/civic.js";
+import { buildNationwideRepresentativeSlug } from "./active-nationwide-lookup.js";
 import { buildCongressProfileImages, uniqueProfileImages } from "./profile-images.js";
 import { usStates } from "./us-states.js";
 
@@ -13,7 +14,7 @@ interface PortraitRecord {
 	jurisdiction?: string;
 }
 
-export type RecordPortraitResolver = <Record extends PortraitRecord>(stateCode: string, records: Record[]) => Promise<Array<Record & { profileImages?: ProfileImage[] }>>;
+export type RecordPortraitResolver = <Record extends PortraitRecord>(stateCode: string, records: Record[]) => Promise<Array<Record & { profileImages?: ProfileImage[]; personProfileSlug?: string }>>;
 
 function normalized(value: string) {
 	return value.normalize("NFKC").toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
@@ -43,14 +44,14 @@ function congressImages(stateCode: string, record: PortraitRecord, members: Cong
 	return buildCongressProfileImages({ ...member, directOrderName: record.name });
 }
 
-function supplementalImages(stateCode: string, record: PortraitRecord, officials: SupplementalOfficeholderRecord[]) {
+function supplementalIdentity(stateCode: string, record: PortraitRecord, officials: SupplementalOfficeholderRecord[]) {
 	const matches = officials.filter(official => official.stateCode === stateCode
 		&& personName(official.name) === personName(record.name)
 		&& (!record.party || !official.party || party(record.party) === party(official.party))
 		&& (record.scope === "state-house" || record.scope === "state-senate"
 			? official.districtType === record.scope && Boolean(record.district) && official.districtLabel.match(/\d+$/u)?.[0] === String(Number(record.district))
 			: record.scope === "local" && Boolean(record.jurisdiction) && normalized(record.jurisdiction!) === normalized(official.districtLabel) && [official.officeTitle, official.officeSought].some(office => normalized(office) === normalized(record.office))));
-	return matches.length === 1 ? uniqueProfileImages(matches[0]!.profileImages ?? []) : [];
+	return matches.length === 1 ? matches[0] : undefined;
 }
 
 export function createRecordPortraitResolver(options: {
@@ -102,8 +103,11 @@ export function createRecordPortraitResolver(options: {
 			officials = [];
 		}
 		return records.map((record) => {
-			const profileImages = uniqueProfileImages([...congressImages(stateCode, record, entry.members), ...supplementalImages(stateCode, record, officials)]);
-			return profileImages.length ? { ...record, profileImages } : record;
+			const official = supplementalIdentity(stateCode, record, officials);
+			const federalImages = congressImages(stateCode, record, entry.members);
+			const profileImages = uniqueProfileImages([...federalImages, ...official?.profileImages ?? []]);
+			const personProfileSlug = official?.slug ?? (federalImages.length ? buildNationwideRepresentativeSlug({ id: "", name: record.name }) : undefined);
+			return { ...record, ...(profileImages.length ? { profileImages } : {}), ...(personProfileSlug ? { personProfileSlug } : {}) };
 		});
 	};
 }

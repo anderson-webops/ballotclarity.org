@@ -581,9 +581,9 @@ async function waitForDocumentReady(
 	throw new Error(`${label}: timed out waiting for ${normalizedExpectedUrl}; last state: ${lastState}`);
 }
 
-async function navigateAndWait(cdp: CdpSession, url: string, label: string) {
+async function navigateAndWait(cdp: CdpSession, url: string, label: string, expectedUrl = url) {
 	await cdp.send("Page.navigate", { url });
-	await waitForDocumentReady(cdp, url, label);
+	await waitForDocumentReady(cdp, expectedUrl, label);
 }
 
 async function withResilienceBrowser(t: TestContext, run: (cdp: CdpSession) => Promise<void>) {
@@ -599,13 +599,24 @@ async function withResilienceBrowser(t: TestContext, run: (cdp: CdpSession) => P
 		"--headless=new", "--disable-gpu", "--no-first-run", "--no-default-browser-check", "about:blank"
 	]);
 	let cdp: CdpSession | undefined;
+	const diagnostics: unknown[] = [];
 	try {
 		const targets = await waitForJson(`http://127.0.0.1:${port}/json/list`, "resilience browser");
 		const target = targets.find((entry: { type: string }) => entry.type === "page");
 		cdp = await connectToCdp(target.webSocketDebuggerUrl);
 		await cdp.send("Page.enable");
 		await cdp.send("Runtime.enable");
+		await cdp.send("Network.enable");
+		cdp.on("Runtime.exceptionThrown", event => diagnostics.push({ exception: event.exceptionDetails?.text, description: event.exceptionDetails?.exception?.description }));
+		cdp.on("Network.responseReceived", event => {
+			if (event.response?.status >= 400) diagnostics.push({ path: new URL(event.response.url).pathname, status: event.response.status });
+		});
 		await run(cdp);
+	}
+	catch (error) {
+		const state = await Promise.race([cdp?.send("Runtime.evaluate", { expression: "({ path: location.pathname, text: document.querySelector('main')?.innerText?.slice(0, 2500), pending: document.querySelector('form.lookup-form')?.getAttribute('aria-busy') })", returnByValue: true }).catch(() => null), delay(2000).then(() => null)]);
+		t.diagnostic(JSON.stringify({ browserFailures: diagnostics.slice(-20), state: state?.result?.value ?? "Browser did not answer" }));
+		throw error;
 	}
 	finally {
 		await cdp?.close();
@@ -631,7 +642,7 @@ test("guide startup restores browser context after hydration and keeps navigatio
 			};
 		})()` });
 		for (const route of ["/elections/2026-fulton-county-general", "/locations/fulton-county-georgia", "/elections/2026-fulton-county-general"]) {
-			await navigateAndWait(cdp, `${appBaseUrl}${route}`, "guide context direct load");
+			await navigateAndWait(cdp, `${appBaseUrl}${route}`, "guide context direct load", route.startsWith("/locations/") ? `${appBaseUrl}/elections/2026-fulton-county-general?location=fulton-county-georgia` : `${appBaseUrl}${route}`);
 			await waitForRuntimeCondition(cdp, hydratedCivicState, Boolean, "guide context ready");
 			const heartbeat = await cdp.send("Runtime.evaluate", { expression: "new Promise(resolve => setTimeout(() => resolve({ writes: window.__guideStorageWrites, ready: document.readyState }), 50))", awaitPromise: true, returnByValue: true });
 			assert.equal(heartbeat.result.value.ready, "complete");
@@ -672,7 +683,7 @@ test("state records: every candidate is visible with election, provenance, and l
 		const persisted = await cdp.send("Runtime.evaluate", { expression: "JSON.parse(localStorage.getItem('ballot-clarity:civic-store')).nationwideLookupResult.ballotContentPreviews.length", returnByValue: true });
 		assert.equal(persisted.result.value, 0);
 		const content = await cdp.send("Runtime.evaluate", { expression: `(() => {
-			const heading = Array.from(document.querySelectorAll('h2')).find(node => node.textContent.includes('State candidate records'));
+			const heading = Array.from(document.querySelectorAll('h2')).find(node => node.textContent.includes('Candidates and questions'));
 			const section = heading.closest('section');
 			const candidateLink = section.querySelector('li a');
 			return { count: section.querySelectorAll('li').length, insideDetails: Boolean(section.closest('details')), source: section.querySelector('a').href, candidateUrl: candidateLink.href, candidateName: candidateLink.querySelector('p').textContent.trim(), text: document.body.innerText };
@@ -1185,9 +1196,9 @@ test("built app renders the key ballot guide pages against the built API", async
 	assert.doesNotMatch(electionHtml, /Contest index/);
 	assert.doesNotMatch(electionHtml, /Open canonical contest page/);
 	assert.match(electionHtml, /href="\/sources"/);
-	assert.match(locationHtml, /Key election dates/);
-	assert.match(locationHtml, /Official election office/);
-	assert.match(locationHtml, /Official links and notices/);
+	assert.equal(locationPage.url, `${appBaseUrl}/elections/2026-fulton-county-general?location=fulton-county-georgia`);
+	assert.match(locationHtml, /Dates and deadlines/);
+	assert.match(locationHtml, /Voting information/);
 	assert.doesNotMatch(locationHtml, /Voting methods in this area/);
 	assert.equal(dataSourcesPage.status, 200);
 	assert.match(dataSourcesHtml, /Data providers/);
@@ -1200,7 +1211,7 @@ test("built app renders the key ballot guide pages against the built API", async
 	assert.equal(coveragePage.status, 200);
 	assert.match(coverageHtml, /Coverage/);
 	assert.match(coverageHtml, /Fulton County, Georgia/);
-	assert.match(coverageHtml, /href="\/records"/);
+	assert.match(coverageHtml, /href="\/search\?type=candidate"/);
 	assert.match(coverageHtml, /href="\/sources"/);
 	assert.equal(statusPage.status, 200);
 	assert.match(statusHtml, /Public status/);

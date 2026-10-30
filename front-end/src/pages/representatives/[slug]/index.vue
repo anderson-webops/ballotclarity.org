@@ -5,7 +5,7 @@ import { storeToRefs } from "pinia";
 import { buildNationwidePersonProfileResponse } from "~/utils/nationwide-person-profile";
 import { buildLookupContextFromNationwideResult, buildNationwideLookupRouteQuery, buildNationwideRouteTarget } from "~/utils/nationwide-route-context";
 import { hasPersonFunding, hasPersonInfluence } from "~/utils/person-profile";
-import { resolveRepresentativeContentSummary, resolveRepresentativePresentation } from "~/utils/representative-presentation";
+import { resolveRepresentativeContentSummary, resolveRepresentativePresentation, substantiveBiography } from "~/utils/representative-presentation";
 
 const route = useRoute();
 const siteUrl = useSiteUrl();
@@ -107,7 +107,8 @@ const campaignLink = computed(() => {
 });
 const hasFunding = computed(() => person.value ? hasPersonFunding(person.value) : false);
 const hasInfluence = computed(() => person.value ? hasPersonInfluence(person.value) : false);
-const hasBackground = computed(() => Boolean(person.value && (person.value.biography.length || person.value.topIssues.length || person.value.publicStatements.length)));
+const biography = computed(() => substantiveBiography(person.value));
+const hasBackground = computed(() => Boolean(person.value && (biography.value.length || person.value.topIssues.length || person.value.publicStatements.length)));
 const officeContext = computed(() => person.value?.officeContext ?? null);
 const influence = computed(() => person.value?.influence ?? null);
 const representativeLayoutKey = computed(() => person.value
@@ -306,7 +307,7 @@ usePageSeo({
 					</div>
 					<div class="mt-5 flex flex-wrap gap-x-4 gap-y-1 items-center">
 						<UpdatedAt :value="person.freshness.dataLastUpdatedAt ?? person.updatedAt" label="Profile data updated on" footer />
-						<span class="text-sm text-app-muted dark:text-app-muted-dark">{{ person.ballotStatusLabel }}</span>
+						<span v-if="person.onCurrentBallot" class="text-sm text-app-muted dark:text-app-muted-dark">{{ person.ballotStatusLabel }}</span>
 						<SourceDrawer v-if="person.sources.length" :sources="person.sources" :title="`${person.name} sources`" button-label="Sources" />
 					</div>
 					<div class="mt-5 flex flex-wrap gap-x-6 gap-y-2 items-center">
@@ -363,7 +364,7 @@ usePageSeo({
 					</div>
 					<div class="mt-6 gap-x-6 gap-y-12 grid print:gap-6 xl:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
 						<div class="space-y-8 lg:space-y-12 print:!space-y-4">
-							<article v-for="block in person.biography" :key="block.id" class="content-block">
+							<article v-for="block in biography" :key="block.id" class="content-block">
 								<div class="flex flex-wrap gap-3 items-start justify-between">
 									<h3 class="text-lg text-app-ink font-semibold dark:text-app-text-dark">
 										{{ block.title }}

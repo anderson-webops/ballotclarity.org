@@ -1,5 +1,6 @@
 import type { StateBallotSource } from "./state-ballot-sources.js";
 import { booneSource } from "./state-ballot-boone-discovery.js";
+import { boulderSource } from "./state-ballot-boulder.js";
 import { douglasSource } from "./state-ballot-douglas-collection.js";
 import { hamiltonSource } from "./state-ballot-hamilton-collection.js";
 import { kanawhaSource } from "./state-ballot-kanawha-discovery.js";
@@ -10,6 +11,7 @@ import { pimaSource } from "./state-ballot-pima-collection.js";
 import { stateBallotSources } from "./state-ballot-sources.js";
 
 export const additionalStateBallotSources: readonly StateBallotSource[] = [
+	boulderSource("2026-11-03"),
 	kanawhaSource("2026-11-03"),
 	booneSource("2026-11-03"),
 	orangeSource("2026-11-03"),

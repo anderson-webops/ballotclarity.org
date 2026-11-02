@@ -34,6 +34,8 @@ import { readAlabamaDiscovery } from "./state-ballot-alabama-collection.js";
 import { alabamaCountySource, alabamaDiscoveryUrl, alabamaOrigin, validateAlabamaElection } from "./state-ballot-alabama-source.js";
 import { readBooneDiscovery } from "./state-ballot-boone-collection.js";
 import { booneDiscoveryUrl, booneSource, validateBooneElection, validateBooneSource } from "./state-ballot-boone-discovery.js";
+import { readBoulderDiscovery, validateBoulderElection } from "./state-ballot-boulder-collection.js";
+import { boulderDiscoveryUrl, boulderSource, validateBoulderSource } from "./state-ballot-boulder.js";
 import { cassiaDiscoveryUrl, readCassiaDiscovery, validateCassiaElection, validateCassiaSource } from "./state-ballot-cassia.js";
 import {
 	certifiedPdfDiscoveryUrls,
@@ -164,6 +166,7 @@ const cycleFamilies = [
 	{ source: configuredStateBallotSources.find(source => source.id === "id-cassia-2026")!, format: "cassia-pdf", discoveryUrl: cassiaDiscoveryUrl, prefix: "id-cassia-general", electionLabel: "General Election", formId: null },
 	{ source: configuredStateBallotSources.find(source => source.id === "ia-polk-2026")!, format: "iowa-polk-pdf", discoveryUrl: iowaPolkDiscoveryUrl, prefix: "ia-polk-general", electionLabel: "General Election", formId: null },
 	{ source: configuredStateBallotSources.find(source => source.id === "ia-johnson-2026")!, format: "iowa-johnson-html", discoveryUrl: iowaJohnsonDiscoveryUrl, prefix: "ia-johnson-general", electionLabel: "General Election", formId: null },
+	{ source: configuredStateBallotSources.find(source => source.id === "co-boulder-2026")!, format: "boulder-html", discoveryUrl: boulderDiscoveryUrl, prefix: "co-boulder-general", electionLabel: "General Election", formId: null },
 	{ source: configuredStateBallotSources.find(source => source.id === "nv-washoe-2026")!, format: "washoe-html", discoveryUrl: washoeDiscoveryUrl, prefix: "nv-washoe-general", electionLabel: "General Election", formId: null },
 	{ source: configuredStateBallotSources.find(source => source.id === "nv-clark-2026")!, format: "clark-pdf", discoveryUrl: clarkDiscoveryUrl, prefix: "nv-clark-general", electionLabel: "General Election", formId: null },
 	{ source: configuredStateBallotSources.find(source => source.id === "ct-sots-2026")!, format: "connecticut-pdf", discoveryUrl: connecticutDiscoveryUrl, prefix: "ct-general", electionLabel: "General Election", formId: null },
@@ -284,6 +287,9 @@ export function getStateBallotCycleFamily(familyId: string) {
 	}
 	else if (family.format === "iowa-johnson-html") {
 		validateIowaJohnsonSource(family.source);
+	}
+	else if (family.format === "boulder-html") {
+		validateBoulderSource(family.source);
 	}
 	else if (family.format === "washoe-html") {
 		validateWashoeSource(family.source);
@@ -406,7 +412,7 @@ export interface StateBallotCycleCatalog {
 	familyId: string;
 	sourceConfigurationSha256: string;
 	discovery: { url: string; sha256: string; retrievedAt: string };
-	elections: { electionId: string | null; electionDate: string; alabamaElection?: AlabamaReferenceElection; kanawhaDocuments?: KanawhaElection["kanawhaDocuments"]; booneDocuments?: BooneElection["booneDocuments"]; reports?: VirginiaElection["reports"]; allOfficesUrl?: string | null; documents?: FultonElection["documents"]; pageUrl?: string; pdfDocuments?: CertifiedPdfElection["pdfDocuments"]; workbookUrl?: string; texasDocuments?: TexasElection["texasDocuments"]; oregonDocuments?: OregonElection["oregonDocuments"]; cassiaDocuments?: CassiaElection["cassiaDocuments"]; polkDocuments?: IowaPolkElection["polkDocuments"]; franklinDocuments?: FranklinElection["franklinDocuments"]; maineHouseLegislature?: MaineHouseElection["maineHouseLegislature"]; maineHouseContentSha256?: MaineHouseElection["maineHouseContentSha256"]; orangeDocuments?: OrangeElection["orangeDocuments"]; nycDocuments?: NycElection["nycDocuments"]; douglasDocuments?: DouglasElection["douglasDocuments"]; hamiltonDocuments?: HamiltonElection["hamiltonDocuments"]; pimaDocuments?: PimaElection["pimaDocuments"]; goffstownDocuments?: GoffstownCandidateElection["goffstownDocuments"]; chicagoDocuments?: ChicagoElection["chicagoDocuments"]; winnebagoDocuments?: WinnebagoElection["winnebagoDocuments"]; eastGreenwichDocuments?: EastGreenwichElection["eastGreenwichDocuments"]; daneDocuments?: DaneElection["daneDocuments"]; pulaskiDocuments?: PulaskiElection["pulaskiDocuments"]; tuscolaDocuments?: TuscolaElection["tuscolaDocuments"]; dcDocuments?: DcElection["dcDocuments"] }[];
+	elections: { electionId: string | null; electionDate: string; alabamaElection?: AlabamaReferenceElection; kanawhaDocuments?: KanawhaElection["kanawhaDocuments"]; booneDocuments?: BooneElection["booneDocuments"]; reports?: VirginiaElection["reports"]; allOfficesUrl?: string | null; documents?: FultonElection["documents"]; pageUrl?: string | null; boulderContentSha256?: string | null; pdfDocuments?: CertifiedPdfElection["pdfDocuments"]; workbookUrl?: string; texasDocuments?: TexasElection["texasDocuments"]; oregonDocuments?: OregonElection["oregonDocuments"]; cassiaDocuments?: CassiaElection["cassiaDocuments"]; polkDocuments?: IowaPolkElection["polkDocuments"]; franklinDocuments?: FranklinElection["franklinDocuments"]; maineHouseLegislature?: MaineHouseElection["maineHouseLegislature"]; maineHouseContentSha256?: MaineHouseElection["maineHouseContentSha256"]; orangeDocuments?: OrangeElection["orangeDocuments"]; nycDocuments?: NycElection["nycDocuments"]; douglasDocuments?: DouglasElection["douglasDocuments"]; hamiltonDocuments?: HamiltonElection["hamiltonDocuments"]; pimaDocuments?: PimaElection["pimaDocuments"]; goffstownDocuments?: GoffstownCandidateElection["goffstownDocuments"]; chicagoDocuments?: ChicagoElection["chicagoDocuments"]; winnebagoDocuments?: WinnebagoElection["winnebagoDocuments"]; eastGreenwichDocuments?: EastGreenwichElection["eastGreenwichDocuments"]; daneDocuments?: DaneElection["daneDocuments"]; pulaskiDocuments?: PulaskiElection["pulaskiDocuments"]; tuscolaDocuments?: TuscolaElection["tuscolaDocuments"]; dcDocuments?: DcElection["dcDocuments"] }[];
 }
 
 function exactKeys(value: unknown, names: string[]): value is Record<string, unknown> {
@@ -668,6 +674,14 @@ export function parseStateBallotCycleCatalog(value: unknown, now = Date.now()): 
 		}
 		return value as unknown as StateBallotCycleCatalog;
 	}
+	if (original.format === "boulder-html") {
+		for (const election of value.elections) {
+			validateBoulderElection(election);
+			if (dates.has(election.electionDate)) throw new Error("The Boulder County elections are duplicated.");
+			dates.add(election.electionDate);
+		}
+		return value as unknown as StateBallotCycleCatalog;
+	}
 	if (original.format === "washoe-html") {
 		for (const election of value.elections) {
 			validateWashoeElection(election);
@@ -862,6 +876,11 @@ export function discoverStateBallotElectionCycles(body: string, familyId: string
 		const capture = readIowaJohnsonDiscovery(body, now);
 		return parseStateBallotCycleCatalog({ schemaVersion: 1, type: "state-ballot-cycle-catalog", familyId, sourceConfigurationSha256: digest(JSON.stringify(family.source)), discovery: { url: family.discoveryUrl, sha256: digest(JSON.stringify(capture.pages.map(page => ({ url: page.url, sha256: page.sha256 })))), retrievedAt: capture.index.retrievedAt }, elections: capture.elections }, now);
 	}
+	if (familyId === "co-boulder-2026") {
+		const family = getStateBallotCycleFamily(familyId);
+		const capture = readBoulderDiscovery(body, now);
+		return parseStateBallotCycleCatalog({ schemaVersion: 1, type: "state-ballot-cycle-catalog", familyId, sourceConfigurationSha256: digest(JSON.stringify(family.source)), discovery: { url: family.discoveryUrl, sha256: digest(body), retrievedAt: capture.index.retrievedAt }, elections: [capture.election] }, now);
+	}
 	if (familyId === "nv-washoe-2026") {
 		const family = getStateBallotCycleFamily(familyId);
 		const capture = readWashoeDiscovery(body, now);
@@ -1016,6 +1035,10 @@ export function stateBallotCycleSources(catalog: StateBallotCycleCatalog, now = 
 		if (family.format === "iowa-johnson-html") {
 			validateIowaJohnsonElection(election);
 			return { ...family.source, id: `${family.prefix}-${election.electionDate}`, label: `${family.source.label} (${election.electionDate.slice(0, 4)})`, electionDate: election.electionDate, url: election.pageUrl, pageUrl: election.pageUrl, documentUrls: [election.pageUrl] };
+		}
+		if (family.format === "boulder-html") {
+			validateBoulderElection(election);
+			return boulderSource(election.electionDate);
 		}
 		if (family.format === "washoe-html") {
 			validateWashoeElection(election);

@@ -7,6 +7,7 @@ import type { StateBallotSource } from "./state-ballot-sources.js";
 import type { PublicStateCandidateRecord, StateQuestionsResponse, StateRecordsResponse } from "./types/civic.js";
 import { normalizePublicHref } from "./public-href.js";
 import { createPublicRequestThrottle } from "./public-request-throttle.js";
+import { validateBoulderCandidateUrl } from "./state-ballot-boulder.js";
 import { validateChicagoDocumentUrl } from "./state-ballot-chicago-collection.js";
 import { validateGoffstownDocumentUrl } from "./state-ballot-goffstown-discovery.js";
 import { validateHamiltonDocumentUrl } from "./state-ballot-hamilton-collection.js";
@@ -24,6 +25,12 @@ import { usStates } from "./us-states.js";
 const scopes = ["all", "statewide", "congressional", "state-senate", "state-house", "state-board-of-education", "local"];
 
 export function stateRecordDocumentLinks(source: StateBallotSource | undefined, snapshot?: StateBallotSnapshot) {
+	if (source?.format === "boulder-html" && snapshot?.documents) {
+		return snapshot.documents.map((document) => {
+			validateBoulderCandidateUrl(document.url, source.electionDate);
+			return { label: "Candidate websites", url: document.url };
+		});
+	}
 	if (source?.format === "kanawha-pdf" && snapshot?.documents) {
 		return snapshot.documents.map((document) => {
 			validateKanawhaDocumentUrl(document.url, source.electionDate.slice(0, 4));

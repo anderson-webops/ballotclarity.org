@@ -17,6 +17,28 @@ preparer and scoped stored-data supplementation. The source remains manual while
 publisher policy is unresolved. See the
 [certificate review](audits/2026-11-01-georgia-certified-writeins.md).
 
+## Boulder County, Colorado
+
+`co-boulder-2026` independently collects the county's published candidate
+directory. The November 2026 publication contains 84 candidate or joint-ticket
+entries, 73 campaign links and three explicitly certified write-ins. No party
+labels, incumbency, eligibility or nomination status are inferred.
+
+Discovery follows the date printed on the rolling election-information page,
+then the candidate link offered by the ballot-information page. Future general
+elections use date-bound source IDs without probing guessed publication URLs.
+The collector checks the reviewed robots/privacy policies, paces requests and
+retains original hashes and capture times. Changed policies, layouts, missing
+accepted candidates and persistence failures retain the accepted snapshot for
+review. Public reads stay offline; collection is an explicit worker operation.
+
+County and municipal entries remain geographically scoped records, not an
+address-specific ballot. Judicial retention and measures stay separate. The
+Colorado Secretary of State acquisition hold and existing county/measure data
+are unchanged. Source selection and host scheduling remain separate approvals.
+
+See [collection review](audits/2026-11-02-boulder-candidate-automation.md).
+
 ## Orange County qualified candidates
 
 `ca-orange-2026` follows the county's actual election selector and reviewed

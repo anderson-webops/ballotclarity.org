@@ -52,8 +52,10 @@ distinguish unconfigured data from an unavailable configured dependency.
   [current-office source](../fulton-magistrate-court.md). A broader staff-directory
   inventory is not substituted for the judge roster. Office records remain
   separate from ballot candidates; elected versus appointed status is not inferred.
-- The Clerk's public legal disclaimer is accessible. Its current identity and
-  document layout remain a separate integration task.
+- The Clerk's homepage, About page and offered personal profile now corroborate
+  the current identity through the independent policies described in the
+  [county-office source](../fulton-county-officeholders.md). The Clerk joins
+  current county offices, independently of judges and election candidates.
 
 ## National scope
 

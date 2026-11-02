@@ -2,10 +2,11 @@
 
 This year-independent source reads sheriff and district-attorney leadership
 cards and their linked profiles, plus the solicitor-general and tax-commissioner
-department publications. Names, roles, official links, available portrait references and
+department publications. The independently published Clerk homepage, About page
+and offered personal profile now supply the fifth office. Names, roles, official links, available portrait references and
 capture evidence are normalized. Deputy staff, promotional biography text,
 political party, election qualification and inferred term dates are excluded.
-These four offices are not a complete county-office inventory. The solicitor's
+These five offices are not a complete county-office inventory. The solicitor's
 role heading must agree with the named banner. The tax commissioner's name must
 come from the explicit elected-office statement under the department heading.
 Department graphics and seals are not treated as portraits.
@@ -38,6 +39,31 @@ Imports preserve monotonic source clocks and cannot downgrade an accepted
 four-office inventory to two offices. Recovery retains the exact predecessor
 alongside its matching runtime contract.
 
+Version 3 adds the Clerk of Superior and Magistrate Courts. Both original
+two-office and four-office snapshots and configuration-bound envelopes remain
+readable without byte or clock changes. A successful expanded import retains
+its exact predecessor. A five-office inventory cannot be downgraded or admitted
+under either older configuration fingerprint. Keep the corresponding source
+configuration and inventory with the recoverable runtime.
+
+The Clerk site has an independently reviewed, exact robots fingerprint. Both
+wildcard and named-AI rules allow these public paths; generic robots review is
+unchanged. All substantive linked copyright and legal-disclaimer content remains
+checked, with only the paired copyright-range end years normalized. Twenty-second
+spacing, the pinned public HTTPS host, zero redirects, document and aggregate
+capture bounds apply. The homepage must actually offer the About page, which
+must offer exactly one matching Clerk profile. Current leadership statements
+must agree, and the profile heading must corroborate that identity. Changes,
+incomplete publications, ambiguous names and interrupted-run cooldown preserve
+last-good records for intervention.
+
+Only the Clerk's name, role and official profile link are published. Promotional
+biography, personal contacts, protected photos, party, appointment/election
+status, terms and ballot qualification are excluded. The homepage's land-record
+Good-Thru date is not a publication date for the officeholder. CSV exports name
+their capture clock `retrievedAt`, not `sourceAsOf`; publisher dating remains
+unknown where not stated. Existing CSV files remain unchanged.
+
 `fulton-county-offices.json` contains an atomically written, configuration-bound
 envelope; its exact predecessor is `fulton-county-offices.previous.json`.
 `county-office-captures/` retains source bodies. `county-office-automation/`
@@ -64,6 +90,7 @@ are publisher references, not copied image assets or a blanket reuse license.
 - [District attorney](https://fultoncountyga.gov/Inside-Fulton-County/Fulton-County-Departments/District-Attorney)
 - [Solicitor general](https://fultoncountyga.gov/Inside-Fulton-County/Fulton-County-Departments/Solicitor-General)
 - [Tax commissioner](https://fultoncountyga.gov/Inside-Fulton-County/Fulton-County-Departments/Tax-Commissioner)
+- [Clerk of Superior and Magistrate Courts](https://www.fultonclerk.org/)
 
 The separate [State Court](audits/2026-10-28-fulton-court-directories.md) and
 [Magistrate Court](fulton-magistrate-court.md) directories collect current judges

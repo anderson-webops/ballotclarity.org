@@ -35,6 +35,7 @@
 				"back-end/dist/collect-magistrate-court.js",
 				"back-end/dist/magistrate-court-directory.js",
 				"back-end/dist/magistrate-court-storage.js",
+				"back-end/dist/fulton-clerk-office.js",
 				"back-end/dist/admin-operations.js",
 				"back-end/dist/export-state-ballot-sources.js",
 				"back-end/dist/check-state-ballot-sources.js",
@@ -45,6 +46,11 @@
 		}
 	],
 	"externalWritableState": [
+		{
+			"configuration": "FULTON_COUNTY_OFFICEHOLDER_DIRECTORY",
+			"purpose": "Optional versioned county-office snapshots, exact predecessors, captures, locks and collection journals",
+			"preservation": "Keep outside immutable releases and retain the matching inventory/configuration with its genuine rollback runtime"
+		},
 		{
 			"configuration": "MAGISTRATE_COURT_DATA_DIR",
 			"purpose": "Optional Magistrate Court snapshots, exact predecessors, captures, locks and collection journals",

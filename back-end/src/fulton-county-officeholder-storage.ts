@@ -7,6 +7,7 @@ import { mkdir, open, readFile, rename, unlink } from "node:fs/promises";
 import { isAbsolute, join } from "node:path";
 import process from "node:process";
 import { readAutomationRun } from "./admin-operations.js";
+import { fultonClerkPublication } from "./fulton-clerk-office.js";
 import { fultonCountyOfficeholderPublication, validateFultonCountyOfficeholderSnapshot } from "./fulton-county-officeholders.js";
 import { assertExternalStateDataDirectory } from "./state-ballot-storage.js";
 
@@ -28,8 +29,9 @@ interface FultonCountyOfficeholderEnvelope {
 }
 
 const digest = (value: string) => createHash("sha256").update(value).digest("hex");
-export const fultonCountyOfficeholderConfigurationSha256 = digest(JSON.stringify(fultonCountyOfficeholderPublication));
+export const fultonCountyOfficeholderConfigurationSha256 = digest(JSON.stringify({ ...fultonCountyOfficeholderPublication, clerk: fultonClerkPublication }));
 const legacyConfigurationSha256 = digest(JSON.stringify({ ...fultonCountyOfficeholderPublication, offices: fultonCountyOfficeholderPublication.offices.slice(0, 2) }));
+const departmentConfigurationSha256 = digest(JSON.stringify({ ...fultonCountyOfficeholderPublication, offices: fultonCountyOfficeholderPublication.offices.slice(0, 4) }));
 
 export function readFultonCountyOfficeholderEnvelope(directory: string, now = Date.now()): FultonCountyOfficeholderEnvelope {
 	assertExternalStateDataDirectory(directory);
@@ -47,7 +49,7 @@ export function readFultonCountyOfficeholderEnvelope(directory: string, now = Da
 	}
 	finally { closeSync(descriptor); }
 	const value = JSON.parse(body) as FultonCountyOfficeholderEnvelope;
-	if (!value || Array.isArray(value) || Object.keys(value).sort().join(",") !== "acquisition,importedAt,snapshot,sourceConfigurationSha256" || !(value.sourceConfigurationSha256 === fultonCountyOfficeholderConfigurationSha256 || (value.sourceConfigurationSha256 === legacyConfigurationSha256 && value.snapshot?.schemaVersion === 1)) || !["collected", "imported"].includes(value.acquisition) || typeof value.importedAt !== "string" || !Number.isFinite(Date.parse(value.importedAt)) || Date.parse(value.importedAt) > now)
+	if (!value || Array.isArray(value) || Object.keys(value).sort().join(",") !== "acquisition,importedAt,snapshot,sourceConfigurationSha256" || !(value.sourceConfigurationSha256 === fultonCountyOfficeholderConfigurationSha256 || (value.sourceConfigurationSha256 === legacyConfigurationSha256 && value.snapshot?.schemaVersion === 1) || (value.sourceConfigurationSha256 === departmentConfigurationSha256 && [1, 2].includes(value.snapshot?.schemaVersion))) || !["collected", "imported"].includes(value.acquisition) || typeof value.importedAt !== "string" || !Number.isFinite(Date.parse(value.importedAt)) || Date.parse(value.importedAt) > now)
 		throw new Error("The Fulton county-office storage envelope is invalid.");
 	validateFultonCountyOfficeholderSnapshot(value.snapshot, now);
 	if (Date.parse(value.importedAt) < Date.parse(value.snapshot.retrievedAt)) throw new Error("The Fulton county-office import clock precedes its source.");

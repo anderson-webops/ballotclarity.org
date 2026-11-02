@@ -1,9 +1,11 @@
 import type { FultonCountyOfficeholderCapture } from "./fulton-county-officeholders.js";
+import { Buffer } from "node:buffer";
 import { createHash } from "node:crypto";
 import { mkdir, realpath, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { setTimeout } from "node:timers/promises";
 import { readAutomationRun, writeAutomationRun } from "./admin-operations.js";
+import { fultonClerkPublication, parseFultonClerk, verifyFultonClerkPolicy } from "./fulton-clerk-office.js";
 import { readFultonCountyOfficeholderEnvelope, withFultonCountyOfficeholderLock, writeFultonCountyOfficeholders } from "./fulton-county-officeholder-storage.js";
 import { fultonCountyOfficeholderPublication, parseFultonCountyOffice, prepareFultonCountyOfficeholders } from "./fulton-county-officeholders.js";
 import { fetchRemoteSourceText } from "./remote-json-source.js";
@@ -24,16 +26,17 @@ export async function collectFultonCountyOfficeholders({ directory, now = Date.n
 		await mkdir(runDirectory, { recursive: true });
 		if (await realpath(runDirectory) !== runDirectory) throw new Error("The county-office collection journal must not be redirected.");
 		const previous = await readAutomationRun(runDirectory, now());
-		if (previous?.status === "failed" && Date.parse(previous.startedAt) + fultonCountyOfficeholderPublication.minimumRefreshIntervalMs > now()) throw new Error("The failed county-office collection is awaiting its next permitted retry.");
+		if (previous && ["failed", "running"].includes(previous.status) && Date.parse(previous.startedAt) + fultonCountyOfficeholderPublication.minimumRefreshIntervalMs > now()) throw new Error("The failed or interrupted county-office collection is awaiting its next permitted retry.");
 		const prior = { schemaVersion: 1 as const, type: "ballot-automation-run" as const, startedAt: new Date(now()).toISOString(), lastImportAt, lastSuccessAt: previous?.lastSuccessAt ?? null, nextRunAt: null };
 		await writeAutomationRun(runDirectory, { ...prior, status: "running", finishedAt: null, results: [] }, now());
 		let prepared = false;
 		try {
 			const documents: FultonCountyOfficeholderCapture["documents"] = [];
 			const get = async (url: string) => {
-				if (documents.length) await pause(11000);
-				const body = await request(url, { allowedHosts: ["fultoncountyga.gov"], maxBytes: fultonCountyOfficeholderPublication.maximumDocumentBytes, maxRedirects: 0, timeoutMs: 15000 });
+				if (documents.length) await pause(new URL(url).hostname === "www.fultonclerk.org" ? fultonClerkPublication.minimumRequestIntervalMs : 11000);
+				const body = await request(url, { allowedHosts: ["fultoncountyga.gov", "www.fultonclerk.org"], maxBytes: fultonCountyOfficeholderPublication.maximumDocumentBytes, maxRedirects: 0, timeoutMs: 15000 });
 				documents.push({ url, body, capturedAt: new Date(now()).toISOString(), sha256: digest(body) });
+				if (Buffer.byteLength(JSON.stringify(documents)) > fultonClerkPublication.maximumCaptureBytes) throw new Error("The Fulton county-office capture exceeds its bounds.");
 				return body;
 			};
 			for (const policy of fultonCountyOfficeholderPublication.policies) {
@@ -47,10 +50,17 @@ export async function collectFultonCountyOfficeholders({ directory, now = Date.n
 				if (digest(region) !== policy.sha256) throw new Error("The county-office publisher policy requires review.");
 			}
 			for (const definition of fultonCountyOfficeholderPublication.offices) {
+				if (definition.id === "clerk") {
+					for (const [index, policy] of fultonClerkPublication.policies.entries()) verifyFultonClerkPolicy(await get(policy.url), index, now());
+					const home = await get(fultonClerkPublication.url);
+					const about = await get(fultonClerkPublication.aboutUrl);
+					await get(parseFultonClerk(home, about).officialWebsiteUrl);
+					continue;
+				}
 				const office = parseFultonCountyOffice(await get(definition.pageUrl), definition);
 				if (office.person && "profilePrefix" in definition) await get(office.person.officialWebsiteUrl);
 			}
-			const capture: FultonCountyOfficeholderCapture = { schemaVersion: 2, type: "fulton-county-officeholder-capture", documents };
+			const capture: FultonCountyOfficeholderCapture = { schemaVersion: 3, type: "fulton-county-officeholder-capture", documents };
 			const snapshot = prepareFultonCountyOfficeholders(capture, now());
 			prepared = true;
 			const captures = join(canonical, "county-office-captures");

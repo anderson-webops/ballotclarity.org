@@ -7,7 +7,7 @@ import process from "node:process";
 import test from "node:test";
 import { FultonCountyOfficeholderUnavailableError } from "../src/fulton-county-officeholder-storage.js";
 import { createApp } from "../src/server.js";
-import { exampleCountyOfficeholders, exampleExpandedCountyOfficeholders } from "./helpers/fulton-county-officeholders.js";
+import { exampleCompleteCountyOfficeholders, exampleCountyOfficeholders, exampleExpandedCountyOfficeholders } from "./helpers/fulton-county-officeholders.js";
 import { exampleFultonOfficeholders } from "./helpers/fulton-officeholders.js";
 
 process.env.ADMIN_STORE_DRIVER = "sqlite";
@@ -112,4 +112,26 @@ test("county-office failure is explicit and never attaches Georgia officials to 
 	const other = await fetch(`${base}/api/representatives?lookup=65251`);
 	assert.equal(other.status, 200);
 	assert.equal((await other.json()).representatives.length, 0);
+});
+
+test("Clerk joins current county officials with its official website, not commission or ballot claims", async (context) => {
+	const snapshot = exampleCompleteCountyOfficeholders();
+	const base = await fixture(context, () => snapshot);
+	const county = await fetch(`${base}/api/districts/fulton-county`).then(result => result.json());
+	assert.equal(county.representatives.length, 11);
+	const clerk = county.representatives.find((person: { slug: string }) => person.slug === "casey-future");
+	assert.equal(clerk.officeDisplayLabel, "Fulton County Clerk of Superior and Magistrate Courts");
+	const { person } = await fetch(`${base}/api/representatives/casey-future`).then(result => result.json());
+	assert.equal(person.name, "Casey Future");
+	assert.equal(person.party, "");
+	assert.equal(person.onCurrentBallot, false);
+	assert.deepEqual(person.biography, []);
+	assert.deepEqual(person.profileImages ?? [], []);
+	assert.equal(person.officeContext?.chamberLabel, undefined);
+	assert.equal(person.officialWebsiteUrl, snapshot.offices[4]!.person!.officialWebsiteUrl);
+	assert.equal(person.sources.filter((source: { id: string }) => source.id.startsWith("fulton-county-offices:")).length, 2);
+	const other = await fetch(`${base}/api/representatives?lookup=65251`).then(result => result.json());
+	assert.equal(other.representatives.length, 0);
+	const district = await fetch(`${base}/api/districts/fulton-county-commission-district-1`).then(result => result.json());
+	assert.equal(district.representatives.some((record: { name: string }) => record.name === "Casey Future"), false);
 });

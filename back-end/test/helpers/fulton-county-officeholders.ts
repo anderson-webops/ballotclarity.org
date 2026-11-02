@@ -36,10 +36,20 @@ export function exampleExpandedCountyOfficeholders() {
 		`<main><p>Fulton County</p><h1 class="h3">morgan Future, Solicitor - General</h1><img alt="Office of the Solicitor‑General banner with text reading “Morgan Future” and the department seal."></main>${footer}`,
 		`<main><h1 class="h3">Tax Commissioner</h1><p>Fulton County Tax Commissioner Dr. Taylor Future is elected by the voters of Fulton County.</p></main>${footer}`
 	];
-	for (const [index, definition] of fultonCountyOfficeholderPublication.offices.slice(2).entries()) {
+	for (const [index, definition] of fultonCountyOfficeholderPublication.offices.slice(2, 4).entries()) {
 		value.offices.push(parseFultonCountyOffice(pages[index]!, definition));
 		value.documents.push({ url: definition.pageUrl, capturedAt: value.retrievedAt, sha256: countyOfficeHash(pages[index]!) });
 	}
+	value.sourceSha256 = countyOfficeHash(JSON.stringify(value.documents));
+	return value;
+}
+
+export function exampleCompleteCountyOfficeholders(name = "Casey Future") {
+	const value = exampleExpandedCountyOfficeholders();
+	value.schemaVersion = 3;
+	const officialWebsiteUrl = `https://www.fultonclerk.org/400/Meet-Clerk-${name.replaceAll(" ", "-")}`;
+	value.offices.push({ id: "clerk", status: "occupied", person: { name, slug: name.toLowerCase().replaceAll(" ", "-"), officialWebsiteUrl } });
+	for (const url of ["https://www.fultonclerk.org/robots.txt", "https://www.fultonclerk.org/site/copyright", "https://www.fultonclerk.org/182/Legal-Disclaimer", "https://www.fultonclerk.org/", "https://www.fultonclerk.org/101/About-Us", officialWebsiteUrl]) value.documents.push({ url, capturedAt: value.retrievedAt, sha256: countyOfficeHash(url) });
 	value.sourceSha256 = countyOfficeHash(JSON.stringify(value.documents));
 	return value;
 }

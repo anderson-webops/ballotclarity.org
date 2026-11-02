@@ -8,9 +8,15 @@ import { prepareOpenStatesProfileFiles } from "./prepare-openstates-profiles.js"
 import { prepareOpenStatesReferenceFiles } from "./prepare-openstates-references.js";
 import { prepareWashingtonStatementFiles } from "./prepare-washington-statements.js";
 import { readBoundedStateData } from "./state-ballot-storage.js";
+import { prepareVoteGaCandidateLeadFiles } from "./votega-candidate-leads.js";
 
 async function main() {
 	const [command, ...requested] = process.argv.slice(2);
+	if (command === "prepare-votega-leads") {
+		if (requested.length !== 1) throw new Error("Use prepare-votega-leads PLAN.json. Leads remain unverified and cannot be imported as references.");
+		console.log(JSON.stringify(await prepareVoteGaCandidateLeadFiles(requested[0]!)));
+		return;
+	}
 	if (command === "collect-openstates-profiles") {
 		if (requested.length !== 1) throw new Error("Use collect-openstates-profiles PLAN.json. Collection prepares external files but does not import them.");
 		const result = await collectOpenStatesProfilesFile(requested[0]!);

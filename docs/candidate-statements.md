@@ -142,3 +142,9 @@ hashes and exact current candidate identities, and hold changed content for revi
 They prepare independent external snapshots, with import, publication and recurring
 activation remaining separate. New cycles require newly reviewed source identity,
 content, access policy and candidate associations.
+
+Reviewed single-page HTML publications may opt into `indexIsDocument: true` with
+explicit one-document bounds and the exact publisher URL. The document remains
+subject to both index and document markers, link-policy fingerprints, publisher
+policies and meaningful-content review. This mode requests neither discovery
+links nor related articles, and remains off for existing sources.

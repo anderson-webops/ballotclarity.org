@@ -86,6 +86,11 @@ export function electionDocumentPublisherHosts(source: ElectionDocumentSource) {
 }
 
 function validateDocumentBounds(source: ElectionDocumentSource) {
+	if (source.indexIsDocument !== undefined) {
+		if (source.indexIsDocument !== true || source.documentFormat !== "html" || source.minimumDocuments !== 1 || source.maximumDocuments !== 1 || source.selectDocumentOptions || source.encodedDocumentPaths || source.reviewedDocumentUrls) throw new CollectionFailure("direct-document-review-required");
+		const url = new URL(source.indexUrl);
+		if (url.protocol !== "https:" || url.hostname !== source.host || url.username || url.password || url.port || url.search || url.hash || url.href !== source.indexUrl || !source.documentPatterns.some(pattern => new RegExp(pattern, "u").test(url.pathname))) throw new CollectionFailure("direct-document-review-required");
+	}
 	if (source.selectDocumentOptions !== undefined && source.selectDocumentOptions !== true) throw new CollectionFailure("document-option-review-required");
 	if (!Number.isSafeInteger(source.maximumDocuments) || source.maximumDocuments < 1 || source.maximumDocuments > 100 || (source.minimumDocuments !== undefined && (!Number.isSafeInteger(source.minimumDocuments) || source.minimumDocuments < 1 || source.minimumDocuments > source.maximumDocuments))) throw new CollectionFailure("document-count-review-required");
 	const paths = source.encodedDocumentPaths ?? [];
@@ -228,6 +233,7 @@ export function discoverElectionDocuments(source: ElectionDocumentSource, body: 
 	const document = html(body);
 	const text = stateHtmlText(document).replace(/\s+/gu, " ");
 	if (!source.dateMarkers.every(marker => text.includes(marker))) throw new CollectionFailure("index-election-changed");
+	if (source.indexIsDocument) return [source.indexUrl];
 	const urls = new Set<string>();
 	const links = stateHtmlDescendants(document, node => node.nodeName === "a").map(anchor => stateHtmlAttribute(anchor, "href"));
 	if (source.selectDocumentOptions) {
@@ -342,7 +348,7 @@ function validateContent(source: ElectionDocumentSource, review: ElectionDocumen
 		if (electionDocumentPolicyFingerprint(body, "links", url) !== review.policyFingerprints.indexLinks) throw new CollectionFailure("publisher-policy-links-changed");
 		discoverElectionDocuments(source, body);
 	}
-	else if (!policy) {
+	if (!policy && (url !== source.indexUrl || source.indexIsDocument)) {
 		if (source.documentFormat === "html") {
 			const document = html(body);
 			if (electionDocumentPolicyFingerprint(body, "links", url) !== review.policyFingerprints.documentLinks) throw new CollectionFailure("publisher-policy-links-changed");

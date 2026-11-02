@@ -40,9 +40,9 @@ async function fixture(context: TestContext, referenceId = "ga-governor-statemen
 		const shared = publisher.robotsLayout?.sharedWildcardAgents.map(agent => `User-agent: ${agent}\n`).join("") ?? "";
 		for (const policy of publisher.policies) bodies.set(policy.url, Buffer.from(policy.format === "robots" ? `${shared}User-agent: *\nDisallow: /private/\n${publisher.repeatWildcardGroup ? "\nUser-agent: *\nDisallow: /other/\n" : ""}` : `<main class="entry-content">Reviewed privacy and messaging policy with explicit publisher access and usage terms.</main>`));
 		bodies.set(publisher.indexUrl, Buffer.from(`<main>${publisher.dateMarkers.join(" ")}<a href="${document.url}">Biography</a></main>`));
-		const body = Buffer.from(`<main class="entry-content">${publisher.documentDateMarkers!.join(" ")} Professional background. Further substantive candidate biography.</main>`);
+		const body = Buffer.from(`<main class="entry-content">${publisher.indexIsDocument ? publisher.dateMarkers.join(" ") : ""}${publisher.documentDateMarkers!.join(" ")} Professional background. Further substantive candidate biography.</main>`);
 		bodies.set(document.url, body);
-		for (const url of [publisher.indexUrl, ...publisher.policies.map(policy => policy.url), document.url]) {
+		for (const url of new Set([publisher.indexUrl, ...publisher.policies.map(policy => policy.url), document.url])) {
 			const path = join(directory, hash(url));
 			await writeFile(path, bodies.get(url)!);
 			seed.captures.push({ sourceId, url, path, sha256: hash(bodies.get(url)!), capturedAt: new Date(epoch).toISOString(), etag: "\"original\"" });
@@ -138,6 +138,18 @@ test("official biography claims reject another candidate with an otherwise valid
 	snapshot.records[0].name = "Someone Else";
 	await writeFile(input.review.candidateFiles[0]!, JSON.stringify(snapshot));
 	await assert.rejects(prepareOfficialCandidateBiographyFiles(input.reviewPath, epoch), /configured name/u);
+});
+
+test("a dated government article prepares background without inferring office or incumbency", async (context) => {
+	const input = await fixture(context, "ga-fulton-ivory-official-biography-2026");
+	assert.equal(input.seed.captures.length, 3);
+	await seedElectionDocuments(input.collection, input.seed, epoch);
+	const result = await collectOfficialCandidateBiographyFiles(input.reviewPath, input.collectionPath, { now: () => epoch, fetchDocument: async () => assert.fail("Retained article preparation must not contact publishers.") });
+	const snapshot = parseElectionReferenceSnapshot(input.reference, await readFile(join(result.outputDirectory, result.file), "utf8"), epoch);
+	assert.equal(snapshot.records[0]!.name, "Mo Ivory");
+	assert.equal(input.reference.documents[0]!.kind, "official-biography");
+	assert.equal(snapshot.records[0]!.officialCandidate!.recordId, input.review.claims[0]!.recordId);
+	for (const key of ["party", "incumbent", "status", "currentOffice"]) assert.equal(key in snapshot.records[0]!, false);
 });
 
 test("changed evidence, unreviewed facts, stale reviews and unknown candidates fail closed", async (context) => {

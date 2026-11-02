@@ -1,6 +1,6 @@
 import { congressionalBiographySources } from "./congressional-biographies.js";
 import { fultonFilingReferenceSource } from "./fulton-filing-context.js";
-import { fultonOfficialBiographyReference } from "./fulton-official-biography-sources.js";
+import { fultonIvoryOfficialBiographyReference, fultonOfficialBiographyReference } from "./fulton-official-biography-sources.js";
 import { georgiaCandidateStatementReferences } from "./georgia-candidate-statement-sources.js";
 import { openStatesBulkSources } from "./openstates-bulk.js";
 import { washingtonLocalStatementSources, washingtonStateStatementSources } from "./washington-statement-sources.js";
@@ -247,4 +247,5 @@ export const electionReferenceSources: readonly ElectionReferenceSource[] = [
 	...georgiaCandidateStatementReferences,
 	fultonFilingReferenceSource,
 	fultonOfficialBiographyReference,
+	fultonIvoryOfficialBiographyReference,
 ];

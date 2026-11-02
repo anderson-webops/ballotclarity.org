@@ -101,7 +101,7 @@ export function reportedFultonIncumbency(record: StateCandidateRecord, source: S
 	return (source.id === "ga-fulton-2026" || source.format === "fulton-pdf") && /^\(Incumbent\)?(?:; |$)/u.test(record.ballotDesignation ?? "");
 }
 
-function publicRecord(record: StateCandidateRecord, source: StateBallotSource): PublicStateCandidateRecord {
+export function publicStateCandidateRecord(record: StateCandidateRecord, source: StateBallotSource): PublicStateCandidateRecord {
 	const candidateUrl = record.candidateUrl ? normalizePublicHref(record.candidateUrl) : undefined;
 	const fultonIncumbent = reportedFultonIncumbency(record, source);
 	return {
@@ -139,7 +139,7 @@ export function buildStateRecordPage(snapshot: StateBallotSnapshot, filters: Ret
 		limit: filters.limit,
 		records: matching.slice(offset, offset + filters.limit).map((record) => {
 			const source = recordSources?.get(record.id) ?? snapshot.source;
-			return { ...publicRecord(record, source), ...(source.id !== snapshot.source.id ? { sourceId: source.id } : {}) };
+			return { ...publicStateCandidateRecord(record, source), ...(source.id !== snapshot.source.id ? { sourceId: source.id } : {}) };
 		}),
 	};
 }

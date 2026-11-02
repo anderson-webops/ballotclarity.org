@@ -159,6 +159,7 @@ import { createRepresentativeModuleResolver } from "./representative-modules.js"
 import { reviewedElectionDates } from "./reviewed-election-dates.js";
 import { createSourceAssetStore } from "./source-asset-store.js";
 import { attachStateBallotPreview, createStateBallotRepository } from "./state-ballot-repository.js";
+import { registerStateRecordDetailRoutes } from "./state-record-detail.js";
 import { registerStateRecordRoutes } from "./state-records.js";
 import {
 	findSupplementalOfficeholderByRepresentativeSlug,
@@ -5346,6 +5347,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 	});
 
 	registerStateRecordRoutes(app, stateBallotRepository, undefined, undefined, recordPortraits);
+	registerStateRecordDetailRoutes(app, stateBallotRepository, electionReferenceRepository, recordPortraits);
 	registerElectionReferenceRoutes(app, electionReferenceRepository, undefined, recordPortraits);
 	registerJudicialEvaluationRoutes(app, judicialEvaluationRepository, stateBallotRepository);
 

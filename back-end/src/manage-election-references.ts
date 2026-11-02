@@ -3,6 +3,7 @@ import { electionReferenceSources } from "./election-reference-sources.js";
 import { createElectionReferenceStorage, parseElectionReferenceSnapshot } from "./election-references.js";
 import { collectOpenStatesFile } from "./openstates-collection.js";
 import { collectOpenStatesProfilesFile } from "./openstates-profile-collection.js";
+import { collectCandidateStatementFiles, prepareCandidateStatementFiles } from "./prepare-candidate-statements.js";
 import { prepareCongressionalBiographyFiles } from "./prepare-congressional-biographies.js";
 import { prepareOpenStatesProfileFiles } from "./prepare-openstates-profiles.js";
 import { prepareOpenStatesReferenceFiles } from "./prepare-openstates-references.js";
@@ -12,6 +13,16 @@ import { prepareVoteGaCandidateLeadFiles } from "./votega-candidate-leads.js";
 
 async function main() {
 	const [command, ...requested] = process.argv.slice(2);
+	if (command === "collect-statements") {
+		if (requested.length !== 2) throw new Error("Use collect-statements REVIEW.json COLLECTION.json. Changed content stops preparation and accepted references remain unchanged.");
+		console.log(JSON.stringify(await collectCandidateStatementFiles(requested[0]!, requested[1]!)));
+		return;
+	}
+	if (command === "prepare-statements") {
+		if (requested.length !== 1) throw new Error("Use prepare-statements PLAN.json. Reviewed statement preparation performs no network requests or imports.");
+		console.log(JSON.stringify(await prepareCandidateStatementFiles(requested[0]!)));
+		return;
+	}
 	if (command === "prepare-votega-leads") {
 		if (requested.length !== 1) throw new Error("Use prepare-votega-leads PLAN.json. Leads remain unverified and cannot be imported as references.");
 		console.log(JSON.stringify(await prepareVoteGaCandidateLeadFiles(requested[0]!)));

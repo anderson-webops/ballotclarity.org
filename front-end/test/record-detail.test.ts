@@ -33,7 +33,8 @@ test("directory rows have one detail link and keep secondary content on the deta
 	assert.match(component, /kind: 'reference', name: record.name, source: record.source.collectionId/u);
 	const detail = readFileSync(new URL("../src/pages/record/[state]/[id].vue", import.meta.url), "utf8");
 	assert.match(detail, /record.id === recordId.value && \(!sourceId.value \|\| record.source.collectionId === sourceId.value\)/u);
-	assert.match(detail, /status: "all"/u);
+	assert.match(detail, /api<StateRecordDetailResponse>\(`\/state-records\/\$\{stateCode.value\}\/\$\{recordId.value\}`/u);
+	assert.match(detail, /:references="data.references"/u);
 	assert.match(detail, /data.official.ballotDesignation/u);
 	assert.match(detail, /Reporting does not establish ballot qualification/u);
 });

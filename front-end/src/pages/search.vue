@@ -76,7 +76,9 @@ usePageSeo(() => ({ description: "Search candidates, representatives, districts 
 								</h3>
 								<p v-if="item.meta" class="text-sm text-app-muted mt-2 dark:text-app-muted-dark">
 									{{ item.meta }}
-									<template v-if="item.party"> · <PartyLabel :party="item.party" /></template>
+									<template v-if="item.party">
+										· <PartyLabel :party="item.party" />
+									</template>
 								</p>
 								<p v-if="item.summary" class="text-sm leading-7 mt-3">
 									{{ item.summary }}

@@ -1,7 +1,9 @@
 import type { ElectionReferenceRepository } from "./election-references.js";
 import type { RecordPortraitResolver } from "./record-portraits.js";
-import type { StateBallotRepository } from "./state-ballot-repository.js";
+import type { StateCandidateRecord } from "./state-ballot-records.js";
+import type { StateBallotRepository, StateBallotSnapshot } from "./state-ballot-repository.js";
 import type { SearchResultGroup, SearchResultItem } from "./types/civic.js";
+import { matchingCandidateReferences } from "./candidate-reference-matching.js";
 import { buildStateRecordPage } from "./state-records.js";
 import { usStates } from "./us-states.js";
 
@@ -19,6 +21,7 @@ export async function searchRetainedRecords(options: {
 	const states = usStates.filter(([stateCode]) => !options.stateCode || stateCode === options.stateCode);
 	for (let offset = 0; offset < states.length && items.length < 100; offset += 4) {
 		await Promise.all(states.slice(offset, offset + 4).map(async ([stateCode, stateName]) => {
+			const visible: { snapshot: StateBallotSnapshot; record: StateCandidateRecord }[] = [];
 			try {
 				for (const snapshot of await options.candidates?.getStoredSnapshots?.(stateCode) ?? []) {
 					const page = buildStateRecordPage(snapshot, { search: query, scope: "all", status: "active", limit: 100, offset: 0 });
@@ -27,15 +30,19 @@ export async function searchRetainedRecords(options: {
 						if (items.length >= 100) break;
 						const parameters = new URLSearchParams({ source: snapshot.source.id, name: record.name });
 						items.push({ id: `${snapshot.source.id}:${record.id}`, type: "candidate", title: record.name, href: `/record/${stateCode}/${record.id}?${parameters}`, meta: [record.office, stateName, record.incumbent ? "Incumbent" : ""].filter(Boolean).join(" · "), party: record.party, personProfileSlug: record.personProfileSlug, summary: "", updatedAt: snapshot.retrievedAt, profileImages: record.profileImages });
+						const original = snapshot.records.find(candidate => candidate.id === record.id);
+						if (original) visible.push({ snapshot, record: original });
 					}
 				}
 			}
 			catch { incomplete = true; }
 			try {
 				const snapshots = options.references?.getSnapshots ? await options.references.getSnapshots(stateCode) : options.references ? [await options.references.getSnapshot(stateCode)].filter(snapshot => snapshot !== null) : [];
+				const linked = new Set(visible.flatMap(({ snapshot, record }) => matchingCandidateReferences(snapshot, record, snapshots).map(reference => `${reference.source.collectionId}:${reference.id}`)));
 				for (const snapshot of snapshots) {
 					for (const record of snapshot.records) {
 						if (items.length >= 100) break;
+						if (linked.has(`${snapshot.sourceId}:${record.id}`)) continue;
 						if (![record.name, record.office, ...record.facts].join(" ").normalize("NFKC").toLowerCase().includes(query)) continue;
 						const parameters = new URLSearchParams({ kind: "reference", source: snapshot.sourceId, name: record.name });
 						items.push({ id: `${snapshot.sourceId}:${record.id}`, type: "candidate", title: record.name, href: `/record/${stateCode}/${record.id}?${parameters}`, meta: [record.office, stateName].join(" · "), summary: record.facts[0] ?? "", updatedAt: snapshot.retrievedAt });

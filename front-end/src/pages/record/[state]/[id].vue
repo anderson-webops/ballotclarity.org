@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { ElectionReferencesResponse, PersonProfileResponse, PublicElectionReference, PublicJudicialEvaluation, PublicStateCandidateRecord, StateRecordsResponse } from "~/types/civic";
+import type { ElectionReferencesResponse, PersonProfileResponse, PublicElectionReference, PublicJudicialEvaluation, StateRecordDetailResponse } from "~/types/civic";
 import { findRecordDetail } from "~/utils/record-detail";
 import { matchingRecordPerson } from "~/utils/record-person";
 import { referenceJurisdiction } from "~/utils/reference-context";
@@ -17,20 +17,18 @@ const sourceLabels = { "candidate-statement": "Candidate-provided", "news-report
 const { data, error, pending, refresh } = await useAsyncData(
 	() => `record-detail:${stateCode.value}:${recordId.value}:${isReference.value}:${sourceId.value}:${search.value}`,
 	async () => {
-		if (!/^[A-Z]{2}$/u.test(stateCode.value) || !/^[a-z\d-]{1,160}$/u.test(recordId.value) || !search.value.trim())
+		if (!/^[A-Z]{2}$/u.test(stateCode.value) || !/^[a-z\d-]{1,160}$/u.test(recordId.value))
 			return null;
 		if (isReference.value) {
+			if (!search.value.trim()) return null;
 			const result = await findRecordDetail<PublicElectionReference, ElectionReferencesResponse>(
 				offset => api(`/election-references/${stateCode.value}`, { query: { q: search.value, scope: "all", offset, limit: 100 } }),
 				record => record.id === recordId.value && (!sourceId.value || record.source.collectionId === sourceId.value)
 			);
-			return result ? { reference: result.record, official: null, source: null, electionDate: result.page.electionDate } : null;
+			return result ? { reference: result.record, official: null, source: null, electionDate: result.page.electionDate, references: [], referencesUnavailable: false } : null;
 		}
-		const result = await findRecordDetail<PublicStateCandidateRecord, StateRecordsResponse>(
-			offset => api(`/state-records/${stateCode.value}`, { query: { source: sourceId.value, q: search.value, scope: "all", status: "all", offset, limit: 100 } }),
-			record => record.id === recordId.value
-		);
-		return result ? { reference: null, official: result.record, source: result.page.source, electionDate: result.page.source.electionDate } : null;
+		const result = await api<StateRecordDetailResponse>(`/state-records/${stateCode.value}/${recordId.value}`, { query: { source: sourceId.value } });
+		return { reference: null, official: result.record, source: result.source, electionDate: result.source.electionDate, references: result.references, referencesUnavailable: result.referencesUnavailable ?? false };
 	},
 	{ default: () => null }
 );
@@ -174,9 +172,14 @@ const sourcesTarget = computed(() => ({ path: "/record-sources", query: { state:
 				<SafeExternalLink v-if="data.official.candidateUrl" :href="data.official.candidateUrl" class="text-app-accent underline underline-offset-3 focus-ring">
 					Candidate website
 				</SafeExternalLink>
-				<PersonRecordDetails v-if="personData" :person="personData.person" />
-				<p v-else-if="personError" role="status">
+				<PersonRecordDetails v-if="personData || data.references.length" :person="personData?.person" :references="data.references" />
+				<p v-if="personError" role="status">
 					Profile details are temporarily unavailable. <button type="button" class="text-app-accent underline focus-ring" @click="refreshPerson()">
+						Retry
+					</button>
+				</p>
+				<p v-if="data.referencesUnavailable" role="status">
+					Background information is temporarily unavailable. <button type="button" class="text-app-accent underline focus-ring" @click="refresh()">
 						Retry
 					</button>
 				</p>

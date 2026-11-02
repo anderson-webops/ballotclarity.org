@@ -21,10 +21,21 @@ export interface ElectionReferenceSource {
 		publisher: string;
 		kind: "candidate-statement" | "news-report" | "official-biography" | "public-dataset";
 		publishedDate?: string;
+		isCampaignWebsite?: true;
 	}[];
 }
 
 export const electionReferenceSources: readonly ElectionReferenceSource[] = [
+	{
+		id: "ga-governor-statements-2026",
+		stateCode: "GA",
+		electionDate: "2026-11-03",
+		optional: true,
+		documents: [
+			{ url: "https://rickjackson.com/about/", title: "Rick Jackson campaign biography", publisher: "Jackson for Governor", kind: "candidate-statement", isCampaignWebsite: true },
+			{ url: "https://www.keishaforgovernor.com/bio", title: "Keisha Lance Bottoms campaign biography", publisher: "Keisha for Governor", kind: "candidate-statement", isCampaignWebsite: true },
+		],
+	},
 	{
 		id: "az-statewide-profiles-2026",
 		stateCode: "AZ",

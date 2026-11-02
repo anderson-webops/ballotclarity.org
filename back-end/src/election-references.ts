@@ -60,6 +60,7 @@ export function parseElectionReferenceSnapshot(source: ElectionReferenceSource, 
 		throw new Error("Election references have an invalid document set or record count.");
 	for (const [index, document] of data.documents.entries()) {
 		const configured = source.documents[index]!;
+		if (configured?.isCampaignWebsite !== undefined && (configured.isCampaignWebsite !== true || configured.kind !== "candidate-statement")) throw new Error("Campaign website attribution requires a reviewed candidate-provided source.");
 		if (configured?.pageUrl !== undefined && (normalizePublicHref(configured.pageUrl) !== configured.pageUrl || !configured.pageUrl.startsWith("https://")))
 			throw new Error("Election reference public page links are invalid.");
 		if (!document || typeof document !== "object" || Array.isArray(document) || !exactKeys(document, configured ? ["url", "sha256", "capturedAt", "includedRecordCount"] : ["url", "sha256", "capturedAt", "includedRecordCount", "member"]) || typeof document.url !== "string" || normalizePublicHref(document.url) !== document.url || !document.url.startsWith("https://") || !validHash(document.sha256) || typeof document.capturedAt !== "string" || !Number.isFinite(Date.parse(document.capturedAt)) || Date.parse(document.capturedAt) > now || !Number.isSafeInteger(document.includedRecordCount) || document.includedRecordCount < 0 || (configured?.publishedDate && Date.parse(document.capturedAt) < Date.parse(configured.publishedDate)))

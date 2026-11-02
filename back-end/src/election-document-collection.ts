@@ -60,6 +60,7 @@ export function electionDocumentPublisherHosts(source: ElectionDocumentSource) {
 	validateRelativeRobotsDisallows(source.relativeRobotsDisallows);
 	validateDocumentBounds(source);
 	if (source.repeatWildcardGroup !== undefined && source.repeatWildcardGroup !== true) throw new CollectionFailure("robots-group-review-required");
+	if (source.preambleCrawlDelay !== undefined && source.preambleCrawlDelay !== true) throw new CollectionFailure("robots-group-review-required");
 	if (source.policies.some(policy => policy.otherRobotsAgents !== undefined && (policy.format !== "robots" || !Array.isArray(policy.otherRobotsAgents)))) throw new CollectionFailure("robots-group-review-required");
 	if (source.documentFormat === undefined && source.documentDateMarkers !== undefined)
 		throw new Error("HTML election markers cannot be applied to a default PDF source.");
@@ -157,9 +158,10 @@ function validateRelativeRobotsDisallows(values: string[] = []) {
 		throw new CollectionFailure("robots-relative-rule-review-required");
 }
 
-export function electionDocumentRobotsPolicy(body: Uint8Array, otherAgents: string[] = [], relativeDisallows: string[] = [], repeatWildcardGroup?: true) {
+export function electionDocumentRobotsPolicy(body: Uint8Array, otherAgents: string[] = [], relativeDisallows: string[] = [], repeatWildcardGroup?: true, preambleCrawlDelay?: true) {
 	validateRelativeRobotsDisallows(relativeDisallows);
 	if (repeatWildcardGroup !== undefined && repeatWildcardGroup !== true) throw new CollectionFailure("robots-group-review-required");
+	if (preambleCrawlDelay !== undefined && preambleCrawlDelay !== true) throw new CollectionFailure("robots-group-review-required");
 	const rules: { allow: boolean; pattern: RegExp; length: number }[] = [];
 	let agents = 0;
 	let wildcardGroups = 0;
@@ -190,9 +192,9 @@ export function electionDocumentRobotsPolicy(body: Uint8Array, otherAgents: stri
 			continue;
 		}
 		else if (key === "crawl-delay" && /^\d+(?:\.\d+)?$/u.test(value)) {
-			if (!agents) throw new CollectionFailure("robots-format-changed");
+			if (!agents && preambleCrawlDelay !== true) throw new CollectionFailure("robots-format-changed");
 			hasDirectives = true;
-			if (applicable) delay = Math.max(delay, Number(value) * 1000);
+			if (!agents || applicable) delay = Math.max(delay, Number(value) * 1000);
 		}
 		else if (["allow", "disallow"].includes(key) && agents) {
 			hasDirectives = true;
@@ -371,7 +373,7 @@ export async function seedElectionDocuments(plan: ElectionDocumentPlan, seed: El
 			const allowed = new Set([source.indexUrl, ...source.policies.map(policy => policy.url), ...discoverElectionDocuments(source, index.body)]);
 			const permissions = new Map(source.policies.filter(policy => policy.format === "robots").map((policy) => {
 				const robots = prepared.find(item => item.source.id === source.id && item.input.url === policy.url)!;
-				return [new URL(policy.url).hostname, electionDocumentRobotsPolicy(robots.body, policy.otherRobotsAgents ?? source.otherRobotsAgents, source.relativeRobotsDisallows, source.repeatWildcardGroup)];
+				return [new URL(policy.url).hostname, electionDocumentRobotsPolicy(robots.body, policy.otherRobotsAgents ?? source.otherRobotsAgents, source.relativeRobotsDisallows, source.repeatWildcardGroup, source.preambleCrawlDelay)];
 			}));
 			for (const item of prepared.filter(item => item.source.id === source.id)) {
 				if (!allowed.has(item.input.url) || !permissions.get(new URL(item.input.url).hostname)?.allowed(item.input.url)) throw new Error("A retained document is outside its permitted observed source links.");
@@ -478,7 +480,7 @@ export async function collectElectionDocuments(plan: ElectionDocumentPlan, optio
 				const permissions = new Map<string, ReturnType<typeof electionDocumentRobotsPolicy>>();
 				for (const policy of source.policies.filter(policy => policy.format === "robots")) {
 					const robots = await capture(policy.url);
-					const permission = electionDocumentRobotsPolicy(robots.body, policy.otherRobotsAgents ?? source.otherRobotsAgents, source.relativeRobotsDisallows, source.repeatWildcardGroup);
+					const permission = electionDocumentRobotsPolicy(robots.body, policy.otherRobotsAgents ?? source.otherRobotsAgents, source.relativeRobotsDisallows, source.repeatWildcardGroup, source.preambleCrawlDelay);
 					const hostname = new URL(policy.url).hostname;
 					publishers.get(hostname)!.delay = permission.delay;
 					permissions.set(hostname, permission);

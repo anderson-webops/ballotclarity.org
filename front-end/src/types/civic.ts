@@ -238,6 +238,7 @@ export interface PublicElectionReference {
 	facts: string[];
 	source: {
 		collectionId?: string;
+		isCampaignWebsite?: true;
 		kind: "candidate-statement" | "news-report" | "official-biography" | "public-dataset";
 		title: string;
 		publisher: string;
@@ -274,6 +275,13 @@ export interface StateRecordsResponse {
 	offset: number;
 	limit: number;
 	records: PublicStateCandidateRecord[];
+}
+
+export interface StateRecordDetailResponse {
+	record: PublicStateCandidateRecord;
+	source: StateRecordsResponse["source"];
+	references: PublicElectionReference[];
+	referencesUnavailable?: true;
 }
 
 export interface PublicBallotQuestion {

@@ -8,6 +8,7 @@ export interface ElectionDocumentSource {
 	policies: { id: string; url: string; format: "robots" | "main" | "region" | "links" | "pdf"; regionId?: string; regionClass?: string; otherRobotsAgents?: string[] }[];
 	otherRobotsAgents?: string[];
 	repeatWildcardGroup?: true;
+	preambleCrawlDelay?: true;
 	relativeRobotsDisallows?: string[];
 	documentPatterns: string[];
 	selectDocumentOptions?: true;
@@ -547,6 +548,43 @@ export const electionDocumentSources: readonly ElectionDocumentSource[] = [
 			{ id: "home-links", url: "https://votepulaskiar.gov/", format: "links" },
 		],
 		documentPatterns: ["^/wp-content/uploads/11032026_Notice-of-Election_v1\\.pdf$"],
+		minimumDocuments: 1,
+		maximumDocuments: 1,
+	},
+	{
+		id: "ga-jackson-campaign-documents-2026",
+		stateCode: "GA",
+		electionDate: "2026-11-03",
+		host: "rickjackson.com",
+		indexUrl: "https://rickjackson.com/",
+		dateMarkers: ["Rick Jackson", "Governor"],
+		policies: [
+			{ id: "robots", url: "https://rickjackson.com/robots.txt", format: "robots" },
+			{ id: "privacy", url: "https://rickjackson.com/privacy-policy/", format: "region", regionClass: "entry-content" },
+			{ id: "messaging-terms", url: "https://rickjackson.com/terms-and-conditions/", format: "region", regionClass: "entry-content" },
+		],
+		repeatWildcardGroup: true,
+		preambleCrawlDelay: true,
+		documentPatterns: ["^/about/$"],
+		documentFormat: "html",
+		documentDateMarkers: ["Rick Jackson", "Governor"],
+		minimumDocuments: 1,
+		maximumDocuments: 1,
+	},
+	{
+		id: "ga-bottoms-campaign-documents-2026",
+		stateCode: "GA",
+		electionDate: "2026-11-03",
+		host: "www.keishaforgovernor.com",
+		indexUrl: "https://www.keishaforgovernor.com/",
+		dateMarkers: ["Keisha Lance Bottoms", "Governor"],
+		policies: [
+			{ id: "robots", url: "https://www.keishaforgovernor.com/robots.txt", format: "robots" },
+			{ id: "privacy", url: "https://www.keishaforgovernor.com/privacy-policy", format: "main" },
+		],
+		documentPatterns: ["^/bio$"],
+		documentFormat: "html",
+		documentDateMarkers: ["Keisha Lance Bottoms", "governor of Georgia"],
 		minimumDocuments: 1,
 		maximumDocuments: 1,
 	},

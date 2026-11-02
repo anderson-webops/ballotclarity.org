@@ -6,7 +6,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { mkdir, open, readdir, realpath, rename, unlink } from "node:fs/promises";
 import { isAbsolute, join } from "node:path";
 import { setTimeout } from "node:timers/promises";
-import { reviewedWildcardRobotsAgents, reviewedWildcardRobotsGroup } from "./election-document-robots-layout.js";
+import { reviewedRestrictiveRobotsGroups, reviewedWildcardRobotsGroup, validateReviewedRobotsLayout } from "./election-document-robots-layout.js";
 import { electionDocumentSources } from "./election-document-sources.js";
 import { fetchRemoteSourceDocument, RemoteSourceDocumentPolicyError } from "./remote-json-source.js";
 import { parseStateHtml, stateHtmlAttribute, stateHtmlDescendants, stateHtmlText } from "./state-ballot-html.js";
@@ -65,7 +65,7 @@ export function electionDocumentPublisherHosts(source: ElectionDocumentSource) {
 	if (source.preambleCrawlDelay !== undefined && source.preambleCrawlDelay !== true) throw new CollectionFailure("robots-group-review-required");
 	if (source.robotsLayout !== undefined) {
 		if (source.otherRobotsAgents?.length || source.repeatWildcardGroup || source.preambleCrawlDelay || source.policies.some(policy => policy.otherRobotsAgents?.length)) throw new CollectionFailure("robots-group-review-required");
-		reviewedWildcardRobotsAgents(source.robotsLayout);
+		validateReviewedRobotsLayout(source.robotsLayout);
 	}
 	if (source.policies.some(policy => policy.otherRobotsAgents !== undefined && (policy.format !== "robots" || !Array.isArray(policy.otherRobotsAgents)))) throw new CollectionFailure("robots-group-review-required");
 	if (source.documentFormat === undefined && source.documentDateMarkers !== undefined)
@@ -169,11 +169,15 @@ function validateRelativeRobotsDisallows(values: string[] = []) {
 		throw new CollectionFailure("robots-relative-rule-review-required");
 }
 
-export function electionDocumentRobotsPolicy(body: Uint8Array, otherAgents: string[] = [], relativeDisallows: string[] = [], repeatWildcardGroup?: true, preambleCrawlDelay?: true, layout?: ElectionDocumentRobotsLayout) {
+export function electionDocumentRobotsPolicy(body: Uint8Array, otherAgents: string[] = [], relativeDisallows: string[] = [], repeatWildcardGroup?: true, preambleCrawlDelay?: true, layout?: ElectionDocumentRobotsLayout): { delay: number; allowed: (address: string) => boolean } {
 	validateRelativeRobotsDisallows(relativeDisallows);
 	if (repeatWildcardGroup !== undefined && repeatWildcardGroup !== true) throw new CollectionFailure("robots-group-review-required");
 	if (preambleCrawlDelay !== undefined && preambleCrawlDelay !== true) throw new CollectionFailure("robots-group-review-required");
 	if (layout && (otherAgents.length || repeatWildcardGroup || preambleCrawlDelay)) throw new CollectionFailure("robots-group-review-required");
+	if (layout?.restrictiveGroups) {
+		const policies = reviewedRestrictiveRobotsGroups(new TextDecoder("utf-8", { fatal: true }).decode(body), layout).map(group => ({ ...group, policy: electionDocumentRobotsPolicy(Buffer.from(group.body), [], relativeDisallows) }));
+		return { delay: Math.max(...policies.map(({ policy }) => policy.delay)), allowed: (address: string) => policies.filter(group => !group.unrelated).every(({ policy }) => policy.allowed(address)) };
+	}
 	const rules: { allow: boolean; pattern: RegExp; length: number }[] = [];
 	let agents = 0;
 	let wildcardGroups = 0;

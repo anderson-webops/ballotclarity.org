@@ -1,4 +1,5 @@
 import type { ElectionDocumentRobotsLayout } from "./election-document-robots-layout.js";
+import { fultonWillisServiceDocument } from "./fulton-city-biography-sources.js";
 import { fultonFilingDocumentSource } from "./fulton-filing-context.js";
 import { fultonIvoryOfficialBiographyDocument, fultonOfficialBiographyDocument } from "./fulton-official-biography-sources.js";
 import { georgiaCandidateStatementDocuments } from "./georgia-candidate-statement-sources.js";
@@ -599,4 +600,5 @@ export const electionDocumentSources: readonly ElectionDocumentSource[] = [
 	fultonFilingDocumentSource,
 	fultonOfficialBiographyDocument,
 	fultonIvoryOfficialBiographyDocument,
+	fultonWillisServiceDocument,
 ];

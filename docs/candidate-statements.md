@@ -148,3 +148,11 @@ explicit one-document bounds and the exact publisher URL. The document remains
 subject to both index and document markers, link-policy fingerprints, publisher
 policies and meaningful-content review. This mode requests neither discovery
 links nor related articles, and remains off for existing sources.
+
+Publishers with separately grouped crawler restrictions can use an explicit
+`robotsLayout.restrictiveGroups` review. The worker intersects all applicable
+groups with the wildcard rules, uses the maximum reviewed crawl delay and holds
+changed layouts or policies. Only five recognized unrelated crawler identities
+may be excluded from path matching; their syntax and delays are still validated.
+AI, wildcard and unknown identities cannot be excluded. Existing sources keep
+their original layout behavior unless explicitly enrolled.

@@ -71,8 +71,9 @@ async function fixture(context: TestContext, sourceIds = ["nd-measure-documents-
 	for (const source of sources) {
 		const localUrls = sourceDocuments.get(source.id)!;
 		const sharedIndex = sources.filter(other => other.indexUrl === source.indexUrl);
-		const sharedAgents = source.robotsLayout?.sharedWildcardAgents.map(agent => `User-agent: ${agent}\n`).join("") ?? "";
-		for (const policy of source.policies) bodies.set(policy.url, policy.format === "pdf" ? pdf : Buffer.from(policy.format === "robots" ? sharedAgents + robots + (source.repeatWildcardGroup ? "\nUser-agent: *\nDisallow: /reviewed-private/\n" : "") + (source.relativeRobotsDisallows ?? []).map(pattern => `Disallow: ${pattern}\n`).join("") + (policy.otherRobotsAgents ?? source.otherRobotsAgents ?? []).map(agent => `\nUser-agent: ${agent}\nDisallow: /\n`).join("") : `<main${policy.regionId ? ` id="${policy.regionId}"` : ""}${policy.regionClass ? ` class="${policy.regionClass}"` : ""}><h1>${policy.id}</h1>Public policy factual text retained for explicit review. Changes need review.</main><footer>State policy</footer>`));
+		const sharedAgents = source.robotsLayout?.sharedWildcardAgents?.map(agent => `User-agent: ${agent}\n`).join("") ?? "";
+		const restrictiveGroups = source.robotsLayout?.restrictiveGroups?.map(group => `${group.agents.map(agent => `User-agent: ${agent}\n`).join("")}Disallow: ${group.unrelated ? "/" : "/private/"}\n`).join("\n");
+		for (const policy of source.policies) bodies.set(policy.url, policy.format === "pdf" ? pdf : Buffer.from(policy.format === "robots" ? restrictiveGroups ?? sharedAgents + robots + (source.repeatWildcardGroup ? "\nUser-agent: *\nDisallow: /reviewed-private/\n" : "") + (source.relativeRobotsDisallows ?? []).map(pattern => `Disallow: ${pattern}\n`).join("") + (policy.otherRobotsAgents ?? source.otherRobotsAgents ?? []).map(agent => `\nUser-agent: ${agent}\nDisallow: /\n`).join("") : `<main${policy.regionId ? ` id="${policy.regionId}"` : ""}${policy.regionClass ? ` class="${policy.regionClass}"` : ""}><h1>${policy.id}</h1>Public policy factual text retained for explicit review. Changes need review.</main><footer>State policy</footer>`));
 		bodies.set(source.indexUrl, Buffer.from(`<main><h1>${sharedIndex.flatMap(other => other.dateMarkers).join(" ")}</h1>${sharedIndex.flatMap(other => sourceDocuments.get(other.id)!).map(url => `<a href="${url}">Document</a>`).join("")}</main><footer>State election office</footer>`));
 		for (const url of localUrls) bodies.set(url, source.documentFormat === "html" ? Buffer.from(`<main>${source.indexIsDocument ? source.dateMarkers.join(" ") : ""}${source.documentDateMarkers!.join(" ")}${url === source.indexUrl && !source.indexIsDocument ? `<a href="${url}">Question listing</a>` : ""}</main><footer>Reviewed publisher notice</footer>`) : pdf);
 		const fingerprints = Object.fromEntries(source.policies.map(policy => [policy.id, electionDocumentPolicyFingerprint(bodies.get(policy.url)!, policy.format, policy.url, policy.regionId, policy.regionClass)]));
@@ -218,7 +219,7 @@ test("Kansas collection binds its exact November amendment publication and polic
 });
 
 test("reviewed document discovery is election-bound, same-host, bounded and additive", () => {
-	assert.deepEqual(electionDocumentSources.map(source => source.stateCode), ["ND", "MO", "NM", "UT", "MD", "VA", "VA", "WA", "OK", "CT", "OR", "GA", "MA", "CA", "KS", "MI", "TX", "NV", "FL", "OH", "NY", "AK", "DC", "WY", "WV", "AR", ...Array.from({ length: 22 }).fill("GA")]);
+	assert.deepEqual(electionDocumentSources.map(source => source.stateCode), ["ND", "MO", "NM", "UT", "MD", "VA", "VA", "WA", "OK", "CT", "OR", "GA", "MA", "CA", "KS", "MI", "TX", "NV", "FL", "OH", "NY", "AK", "DC", "WY", "WV", "AR", ...Array.from({ length: 23 }).fill("GA")]);
 	const source = electionDocumentSources[0]!;
 	const url = `https://${source.host}/sites/default/files/documents/elections/measures/analysis-2026-general-measure3.pdf`;
 	assert.deepEqual(discoverElectionDocuments(source, Buffer.from(`<main>2026 General Election <a href="${url}#page=1">New publication</a><a href="${url}">Repeated link</a><a href="https://elsewhere.invalid/file.pdf">Not allowed</a></main>`)), [url]);
@@ -860,7 +861,7 @@ test("retained binary seeds and daily cache reuse never fetch, import or relabel
 		}
 		await assert.rejects(seedElectionDocuments(input.plan, input.seed, epoch + 1000), /never replace/u);
 	}
-	assert.equal(documents, 118);
+	assert.equal(documents, 119);
 });
 
 test("reviewed single HTML documents collect without synthetic discovery links", async (context) => {
@@ -901,6 +902,27 @@ test("single document mode requires exact reviewed HTTPS HTML identity and singl
 	for (const change of [{ documentFormat: undefined }, { minimumDocuments: undefined }, { maximumDocuments: 2 }, { selectDocumentOptions: true as const }, { encodedDocumentPaths: [] }, { reviewedDocumentUrls: [] }, { documentPatterns: ["^/another-page$"] }]) assert.throws(() => electionDocumentPublisherHosts({ ...source, ...change }), /direct-document-review-required/u);
 	for (const address of [`${source.indexUrl}?download=1`, `${source.indexUrl}#content`, source.indexUrl.replace("https:", "http:"), source.indexUrl.replace(source.host, "unreviewed.invalid")]) assert.throws(() => electionDocumentPublisherHosts({ ...source, indexUrl: address }), /direct-document-review-required/u);
 	assert.notEqual(electionDocumentConfigurationSha256(source), electionDocumentConfigurationSha256({ ...source, indexIsDocument: undefined }));
+});
+
+test("reviewed city groups retain cached government context without publisher requests", async (context) => {
+	const input = await fixture(context, ["ga-fulton-willis-government-documents-2026"]);
+	await seedElectionDocuments(input.plan, input.seed, epoch);
+	const result = await collectElectionDocuments(input.plan, { now: () => epoch, fetchDocument: async () => assert.fail("Cached city references must not request publishers.") });
+	assert.equal(result.complete, true);
+	assert.equal(result.publisherRequests, 0);
+	assert.equal(result.imported, false);
+	assert.equal(result.published, false);
+	assert.deepEqual(result.observations[0]!.documents!.map(document => document.url), input.documentUrls);
+});
+
+test("an explicitly reviewed city AI denial cannot be lost during seeding", async (context) => {
+	const input = await fixture(context, ["ga-fulton-willis-government-documents-2026"]);
+	const capture = input.seed.captures.find(capture => capture.url.endsWith("robots.txt"))!;
+	const body = Buffer.from(`${input.bodies.get(capture.url)!.toString()}Disallow: /\n`);
+	await writeFile(capture.path, body);
+	capture.sha256 = hash(body);
+	input.plan.accessReviews[0]!.policyFingerprints.robots = electionDocumentPolicyFingerprint(body, "robots", capture.url);
+	await assert.rejects(seedElectionDocuments(input.plan, input.seed, epoch), /permitted observed source links/u);
 });
 
 test("conditional revalidation preserves bytes and capture dates, with per-host request spacing", async (context) => {

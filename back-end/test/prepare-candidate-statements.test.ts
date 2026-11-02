@@ -37,8 +37,9 @@ async function fixture(context: TestContext, referenceId = "ga-governor-statemen
 	for (const [index, sourceId] of collection.sourceIds.entries()) {
 		const publisher = electionDocumentSources.find(source => source.id === sourceId)!;
 		const document = reference.documents[index]!;
-		const shared = publisher.robotsLayout?.sharedWildcardAgents.map(agent => `User-agent: ${agent}\n`).join("") ?? "";
-		for (const policy of publisher.policies) bodies.set(policy.url, Buffer.from(policy.format === "robots" ? `${shared}User-agent: *\nDisallow: /private/\n${publisher.repeatWildcardGroup ? "\nUser-agent: *\nDisallow: /other/\n" : ""}` : `<main class="entry-content">Reviewed privacy and messaging policy with explicit publisher access and usage terms.</main>`));
+		const shared = publisher.robotsLayout?.sharedWildcardAgents?.map(agent => `User-agent: ${agent}\n`).join("") ?? "";
+		const restrictiveGroups = publisher.robotsLayout?.restrictiveGroups?.map(group => `${group.agents.map(agent => `User-agent: ${agent}\n`).join("")}Disallow: ${group.unrelated ? "/" : "/private/"}\n`).join("\n");
+		for (const policy of publisher.policies) bodies.set(policy.url, Buffer.from(policy.format === "robots" ? restrictiveGroups ?? `${shared}User-agent: *\nDisallow: /private/\n${publisher.repeatWildcardGroup ? "\nUser-agent: *\nDisallow: /other/\n" : ""}` : `<main class="entry-content">Reviewed privacy and messaging policy with explicit publisher access and usage terms.</main>`));
 		bodies.set(publisher.indexUrl, Buffer.from(`<main>${publisher.dateMarkers.join(" ")}<a href="${document.url}">Biography</a></main>`));
 		const body = Buffer.from(`<main class="entry-content">${publisher.indexIsDocument ? publisher.dateMarkers.join(" ") : ""}${publisher.documentDateMarkers!.join(" ")} Professional background. Further substantive candidate biography.</main>`);
 		bodies.set(document.url, body);

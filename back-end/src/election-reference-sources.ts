@@ -1,5 +1,5 @@
 import { congressionalBiographySources } from "./congressional-biographies.js";
-import { fultonWillisServiceReference } from "./fulton-city-biography-sources.js";
+import { fultonBakerServiceReference, fultonWillisServiceReference } from "./fulton-city-biography-sources.js";
 import { fultonFilingReferenceSource } from "./fulton-filing-context.js";
 import { fultonIvoryOfficialBiographyReference, fultonOfficialBiographyReference } from "./fulton-official-biography-sources.js";
 import { georgiaCandidateStatementReferences } from "./georgia-candidate-statement-sources.js";
@@ -27,6 +27,7 @@ export interface ElectionReferenceSource {
 		candidateName?: string;
 		kind: "candidate-statement" | "news-report" | "official-biography" | "public-dataset";
 		publishedDate?: string;
+		pdfMaximumPages?: number;
 		isCampaignWebsite?: true;
 	}[];
 }
@@ -250,4 +251,5 @@ export const electionReferenceSources: readonly ElectionReferenceSource[] = [
 	fultonOfficialBiographyReference,
 	fultonIvoryOfficialBiographyReference,
 	fultonWillisServiceReference,
+	fultonBakerServiceReference,
 ];

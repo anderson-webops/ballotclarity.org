@@ -40,3 +40,29 @@ export const fultonWillisServiceDocument: ElectionDocumentSource = {
 	minimumDocuments: 1,
 	maximumDocuments: 1,
 };
+
+const bakerRelease = "https://www.cityofsouthfultonga.gov/DocumentCenter/View/6247/NEWS-RELEASE---District-7-Vacant";
+
+export const fultonBakerServiceReference: ElectionReferenceSource = {
+	id: "ga-fulton-baker-government-service-2026",
+	stateCode: "GA",
+	electionDate: "2026-11-03",
+	optional: true,
+	allowOfficialCandidateBindings: true,
+	documents: [{ url: bakerRelease, pageUrl: `${bakerRelease}#page=1`, title: "District 7 vacancy notice", publisher: "City of South Fulton", candidateName: "Mark Baker", kind: "official-biography", publishedDate: "2022-05-10", pdfMaximumPages: 1 }],
+};
+
+export const fultonBakerServiceDocument: ElectionDocumentSource = {
+	id: "ga-fulton-baker-government-documents-2026",
+	stateCode: "GA",
+	electionDate: "2026-11-03",
+	host: "www.cityofsouthfultonga.gov",
+	indexUrl: bakerRelease,
+	indexIsDocument: true,
+	dateMarkers: [],
+	policies: [{ id: "robots", url: "https://www.cityofsouthfultonga.gov/robots.txt", format: "robots" }, { id: "site-links", url: "https://www.cityofsouthfultonga.gov/", format: "links" }],
+	robotsLayout: southFultonRobotsLayout,
+	documentPatterns: ["^/DocumentCenter/View/6247/NEWS-RELEASE---District-7-Vacant$"],
+	minimumDocuments: 1,
+	maximumDocuments: 1,
+};

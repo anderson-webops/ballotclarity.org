@@ -129,7 +129,7 @@ the parser's explicit date parameter does not enroll future sources automaticall
 
 `manage-election-references prepare-official-biographies REVIEW.json` and
 `collect-official-biographies REVIEW.json COLLECTION.json` reuse the reviewed
-HTML context pipeline for explicitly enrolled official-biography collections.
+context pipeline for explicitly enrolled official-biography collections.
 The review uses `type: "official-biography-preparation"`; its remaining fields
 match candidate-statement reviews. Output retains `official-biography` attribution,
 not campaign attribution. The collection must explicitly permit exact official
@@ -148,6 +148,20 @@ explicit one-document bounds and the exact publisher URL. The document remains
 subject to both index and document markers, link-policy fingerprints, publisher
 policies and meaningful-content review. This mode requests neither discovery
 links nor related articles, and remains off for existing sources.
+
+A single PDF may use the same exact singleton configuration with empty HTML
+`dateMarkers`. Its access review uses `indexPdf`, the SHA-256 of the original
+PDF, instead of `indexLinks`. MIME type, PDF signature, publisher policies and
+all existing transport bounds remain enforced. Changed PDF bytes hold collection
+before they can replace accepted evidence.
+
+An official reference document can declare `pdfMaximumPages` from 1 to 25.
+The preparation review retains its original-byte hash and `contentSha256`,
+computed by `candidatePdfContentSha256` from bounded Poppler layout text.
+This fingerprint preserves page boundaries. PDF documents omit HTML region
+selectors. The existing official-biography commands use the maintained
+`STATE_BALLOT_PDFTOTEXT` worker; public readers require no native tool or
+publisher request. Facts and exact candidate associations still require review.
 
 Publishers with separately grouped crawler restrictions can use an explicit
 `robotsLayout.restrictiveGroups` review. The worker intersects all applicable

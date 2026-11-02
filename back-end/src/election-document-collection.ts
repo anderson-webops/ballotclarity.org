@@ -87,7 +87,7 @@ export function electionDocumentPublisherHosts(source: ElectionDocumentSource) {
 
 function validateDocumentBounds(source: ElectionDocumentSource) {
 	if (source.indexIsDocument !== undefined) {
-		if (source.indexIsDocument !== true || source.documentFormat !== "html" || source.minimumDocuments !== 1 || source.maximumDocuments !== 1 || source.selectDocumentOptions || source.encodedDocumentPaths || source.reviewedDocumentUrls) throw new CollectionFailure("direct-document-review-required");
+		if (source.indexIsDocument !== true || source.minimumDocuments !== 1 || source.maximumDocuments !== 1 || source.selectDocumentOptions || source.encodedDocumentPaths || source.reviewedDocumentUrls || (source.documentFormat === undefined && source.dateMarkers.length !== 0)) throw new CollectionFailure("direct-document-review-required");
 		const url = new URL(source.indexUrl);
 		if (url.protocol !== "https:" || url.hostname !== source.host || url.username || url.password || url.port || url.search || url.hash || url.href !== source.indexUrl || !source.documentPatterns.some(pattern => new RegExp(pattern, "u").test(url.pathname))) throw new CollectionFailure("direct-document-review-required");
 	}
@@ -234,6 +234,10 @@ export function electionDocumentRobotsPolicy(body: Uint8Array, otherAgents: stri
 
 export function discoverElectionDocuments(source: ElectionDocumentSource, body: Uint8Array) {
 	validateDocumentBounds(source);
+	if (source.indexIsDocument && source.documentFormat === undefined) {
+		if (!body.byteLength || body.byteLength > maximumBytes || Buffer.from(body).subarray(0, 5).toString("ascii") !== "%PDF-") throw new CollectionFailure("document-format-changed");
+		return [source.indexUrl];
+	}
 	const document = html(body);
 	const text = stateHtmlText(document).replace(/\s+/gu, " ");
 	if (!source.dateMarkers.every(marker => text.includes(marker))) throw new CollectionFailure("index-election-changed");
@@ -308,7 +312,7 @@ async function directories(plan: ElectionDocumentPlan, now: number) {
 	for (const source of sources as ElectionDocumentSource[]) {
 		electionDocumentPublisherHosts(source);
 		const review = plan.accessReviews.find(review => review?.sourceId === source.id);
-		if (!review || !exact(review, ["sourceId", "reviewedAt", "configurationSha256", "policyFingerprints"]) || !validDate(review.reviewedAt, now) || now - Date.parse(review.reviewedAt) > 30 * day || review.configurationSha256 !== electionDocumentConfigurationSha256(source) || !objectValue(review.policyFingerprints) || !exact(review.policyFingerprints, [...source.policies.map(policy => policy.id), "indexLinks", ...(source.documentFormat === "html" ? ["documentLinks"] : [])]) || !Object.values(review.policyFingerprints).every(validHash)) throw new Error("An election document source requires a matching current access review.");
+		if (!review || !exact(review, ["sourceId", "reviewedAt", "configurationSha256", "policyFingerprints"]) || !validDate(review.reviewedAt, now) || now - Date.parse(review.reviewedAt) > 30 * day || review.configurationSha256 !== electionDocumentConfigurationSha256(source) || !objectValue(review.policyFingerprints) || !exact(review.policyFingerprints, [...source.policies.map(policy => policy.id), source.indexIsDocument && source.documentFormat === undefined ? "indexPdf" : "indexLinks", ...(source.documentFormat === "html" ? ["documentLinks"] : [])]) || !Object.values(review.policyFingerprints).every(validHash)) throw new Error("An election document source requires a matching current access review.");
 	}
 	for (const path of [plan.cacheDirectory, plan.outputRoot]) {
 		assertExternalStateDataDirectory(path);
@@ -349,7 +353,12 @@ function validateContent(source: ElectionDocumentSource, review: ElectionDocumen
 	const policy = source.policies.find(policy => policy.url === url);
 	if (policy && electionDocumentPolicyFingerprint(body, policy.format, url, policy.regionId, policy.regionClass) !== review.policyFingerprints[policy.id]) throw new CollectionFailure("publisher-policy-changed");
 	if (url === source.indexUrl) {
-		if (electionDocumentPolicyFingerprint(body, "links", url) !== review.policyFingerprints.indexLinks) throw new CollectionFailure("publisher-policy-links-changed");
+		if (source.indexIsDocument && source.documentFormat === undefined) {
+			if (hash(body) !== review.policyFingerprints.indexPdf) throw new CollectionFailure("reviewed-document-changed");
+		}
+		else if (electionDocumentPolicyFingerprint(body, "links", url) !== review.policyFingerprints.indexLinks) {
+			throw new CollectionFailure("publisher-policy-links-changed");
+		}
 		discoverElectionDocuments(source, body);
 	}
 	if (!policy && (url !== source.indexUrl || source.indexIsDocument)) {
@@ -430,7 +439,7 @@ export async function collectElectionDocuments(plan: ElectionDocumentPlan, optio
 				const publisher = publishers.get(address.hostname);
 				if (!publisher || (address.hostname !== source.host && !source.policies.some(policy => policy.url === url))) throw new CollectionFailure("document-link-changed");
 				const host = publisher.directory;
-				const isPdf = /\.pdf$/iu.test(address.pathname);
+				const isPdf = /\.pdf$/iu.test(address.pathname) || (url === source.indexUrl && source.indexIsDocument && source.documentFormat === undefined);
 				const path = capturePath(cache, source, url);
 				const raw = await optional(path);
 				let previous: Capture | null = null;

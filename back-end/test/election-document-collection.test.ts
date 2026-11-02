@@ -77,7 +77,8 @@ async function fixture(context: TestContext, sourceIds = ["nd-measure-documents-
 		bodies.set(source.indexUrl, Buffer.from(`<main><h1>${sharedIndex.flatMap(other => other.dateMarkers).join(" ")}</h1>${sharedIndex.flatMap(other => sourceDocuments.get(other.id)!).map(url => `<a href="${url}">Document</a>`).join("")}</main><footer>State election office</footer>`));
 		for (const url of localUrls) bodies.set(url, source.documentFormat === "html" ? Buffer.from(`<main>${source.indexIsDocument ? source.dateMarkers.join(" ") : ""}${source.documentDateMarkers!.join(" ")}${url === source.indexUrl && !source.indexIsDocument ? `<a href="${url}">Question listing</a>` : ""}</main><footer>Reviewed publisher notice</footer>`) : pdf);
 		const fingerprints = Object.fromEntries(source.policies.map(policy => [policy.id, electionDocumentPolicyFingerprint(bodies.get(policy.url)!, policy.format, policy.url, policy.regionId, policy.regionClass)]));
-		fingerprints.indexLinks = electionDocumentPolicyFingerprint(bodies.get(source.indexUrl)!, "links", source.indexUrl);
+		if (source.indexIsDocument && source.documentFormat === undefined) fingerprints.indexPdf = hash(bodies.get(source.indexUrl)!);
+		else fingerprints.indexLinks = electionDocumentPolicyFingerprint(bodies.get(source.indexUrl)!, "links", source.indexUrl);
 		if (source.documentFormat === "html") fingerprints.documentLinks = electionDocumentPolicyFingerprint(bodies.get(localUrls[0]!)!, "links", localUrls[0]!);
 		plan.accessReviews.push({ sourceId: source.id, reviewedAt: new Date(epoch).toISOString(), configurationSha256: electionDocumentConfigurationSha256(source), policyFingerprints: fingerprints });
 		const observedUrls = new Set([source.indexUrl, ...source.policies.map(policy => policy.url), ...localUrls]);
@@ -219,7 +220,7 @@ test("Kansas collection binds its exact November amendment publication and polic
 });
 
 test("reviewed document discovery is election-bound, same-host, bounded and additive", () => {
-	assert.deepEqual(electionDocumentSources.map(source => source.stateCode), ["ND", "MO", "NM", "UT", "MD", "VA", "VA", "WA", "OK", "CT", "OR", "GA", "MA", "CA", "KS", "MI", "TX", "NV", "FL", "OH", "NY", "AK", "DC", "WY", "WV", "AR", ...Array.from({ length: 23 }).fill("GA")]);
+	assert.deepEqual(electionDocumentSources.map(source => source.stateCode), ["ND", "MO", "NM", "UT", "MD", "VA", "VA", "WA", "OK", "CT", "OR", "GA", "MA", "CA", "KS", "MI", "TX", "NV", "FL", "OH", "NY", "AK", "DC", "WY", "WV", "AR", ...Array.from({ length: 24 }).fill("GA")]);
 	const source = electionDocumentSources[0]!;
 	const url = `https://${source.host}/sites/default/files/documents/elections/measures/analysis-2026-general-measure3.pdf`;
 	assert.deepEqual(discoverElectionDocuments(source, Buffer.from(`<main>2026 General Election <a href="${url}#page=1">New publication</a><a href="${url}">Repeated link</a><a href="https://elsewhere.invalid/file.pdf">Not allowed</a></main>`)), [url]);
@@ -861,7 +862,7 @@ test("retained binary seeds and daily cache reuse never fetch, import or relabel
 		}
 		await assert.rejects(seedElectionDocuments(input.plan, input.seed, epoch + 1000), /never replace/u);
 	}
-	assert.equal(documents, 119);
+	assert.equal(documents, 120);
 });
 
 test("reviewed single HTML documents collect without synthetic discovery links", async (context) => {

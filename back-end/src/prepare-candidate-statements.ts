@@ -7,9 +7,10 @@ import { collectElectionDocuments, electionDocumentPolicyFingerprint } from "./e
 import { electionDocumentSources } from "./election-document-sources.js";
 import { electionReferenceSources } from "./election-reference-sources.js";
 import { electionReferenceDocumentDigest, parseElectionReferenceSnapshot } from "./election-references.js";
+import { extractStateBallotPdfText, resolveStateBallotPdfExtractor } from "./state-ballot-pdf.js";
 import { configuredStateBallotSources } from "./state-ballot-registry.js";
 import { parseBundledStateSnapshot } from "./state-ballot-snapshot.js";
-import { assertExternalStateDataDirectory, readBoundedStateData } from "./state-ballot-storage.js";
+import { assertExternalStateDataDirectory, readBoundedStateData, readBoundedStateDataBytes } from "./state-ballot-storage.js";
 import { containsControlCharacters } from "./text-validation.js";
 
 const hash = (value: string | Uint8Array) => createHash("sha256").update(value).digest("hex");
@@ -24,7 +25,13 @@ export function candidateStatementContentSha256(body: string, address: string, r
 	return electionDocumentPolicyFingerprint(Buffer.from(body), regionClass || regionId ? "region" : "main", address, regionId, regionClass);
 }
 
-async function prepareReviewedCandidateContextFiles(path: string, kind: "candidate-statement" | "official-biography", now = Date.now(), validateOnly = false) {
+export function candidatePdfContentSha256(text: string, maximumPages: number) {
+	const pages = text.split("\f").filter(page => page.trim());
+	if (!Number.isSafeInteger(maximumPages) || maximumPages < 1 || maximumPages > 25 || !pages.length || pages.length > maximumPages || Buffer.byteLength(text) > 2 * 1024 * 1024 || text.includes("\uFFFD") || containsControlCharacters(text.replace(/[\n\r\t\f]/gu, ""))) throw new Error("Candidate PDF text exceeds its reviewed bounds.");
+	return hash(JSON.stringify(pages.map(page => page.replace(/\s+/gu, " ").trim())));
+}
+
+async function prepareReviewedCandidateContextFiles(path: string, kind: "candidate-statement" | "official-biography", now = Date.now(), validateOnly = false, extractor?: (body: Buffer, maximumPages: number) => Promise<string>) {
 	const plan = JSON.parse(await readBoundedStateData(path));
 	if (!object(plan) || !exact(plan, ["schemaVersion", "type", "sourceId", "reviewedAt", "candidateFiles", "documents", "claims", "outputDirectory"]) || plan.schemaVersion !== 1 || plan.type !== `${kind}-preparation` || typeof plan.sourceId !== "string" || typeof plan.reviewedAt !== "string" || !Number.isFinite(Date.parse(plan.reviewedAt)) || Date.parse(plan.reviewedAt) > now || now - Date.parse(plan.reviewedAt) > 30 * 86400000 || !Array.isArray(plan.candidateFiles) || !plan.candidateFiles.length || plan.candidateFiles.length > 25 || !plan.candidateFiles.every(file => typeof file === "string" && isAbsolute(file)) || !Array.isArray(plan.documents) || !Array.isArray(plan.claims) || !plan.claims.length || plan.claims.length > 250 || typeof plan.outputDirectory !== "string" || !isAbsolute(plan.outputDirectory)) throw new Error("Provide an explicit current candidate-statement preparation review and external output.");
 	const source = electionReferenceSources.find(source => source.id === plan.sourceId);
@@ -40,8 +47,18 @@ async function prepareReviewedCandidateContextFiles(path: string, kind: "candida
 	const documents: ElectionReferenceSnapshot["documents"] = [];
 	for (const [index, value] of plan.documents.entries()) {
 		if (!object(value) || !exact(value, ["url", "path", "sha256", "capturedAt", "contentSha256", ...(value.regionClass === undefined ? [] : ["regionClass"]), ...(value.regionId === undefined ? [] : ["regionId"])]) || value.url !== source.documents[index]!.url || typeof value.path !== "string" || !isAbsolute(value.path) || !validHash(value.sha256) || !validHash(value.contentSha256) || (value.regionClass !== undefined && typeof value.regionClass !== "string") || (value.regionId !== undefined && typeof value.regionId !== "string") || typeof value.capturedAt !== "string" || !Number.isFinite(Date.parse(value.capturedAt)) || Date.parse(value.capturedAt) > now) throw new Error("Candidate statement document identity and capture evidence are required.");
-		const body = await readBoundedStateData(value.path);
-		if (hash(body) !== value.sha256 || candidateStatementContentSha256(body, value.url as string, value.regionClass as string | undefined, value.regionId as string | undefined) !== value.contentSha256) throw new Error("Candidate statement content changed or its capture fingerprint is invalid.");
+		const document = source.documents[index]!;
+		if (document.pdfMaximumPages !== undefined) {
+			if (kind !== "official-biography" || !Number.isSafeInteger(document.pdfMaximumPages) || document.pdfMaximumPages < 1 || document.pdfMaximumPages > 25 || value.regionClass !== undefined || value.regionId !== undefined) throw new Error("Candidate PDFs require an explicit bounded official source.");
+			const body = await readBoundedStateDataBytes(value.path, 8 * 1024 * 1024);
+			if (hash(body) !== value.sha256 || !body.subarray(0, 5).equals(Buffer.from("%PDF-"))) throw new Error("Candidate PDF capture bytes changed.");
+			const text = extractor ? await extractor(body, document.pdfMaximumPages) : await extractStateBallotPdfText(body, await resolveStateBallotPdfExtractor(), undefined, "layout", document.pdfMaximumPages);
+			if (candidatePdfContentSha256(text, document.pdfMaximumPages) !== value.contentSha256) throw new Error("Candidate PDF content changed or its capture fingerprint is invalid.");
+		}
+		else {
+			const body = await readBoundedStateData(value.path);
+			if (hash(body) !== value.sha256 || candidateStatementContentSha256(body, value.url as string, value.regionClass as string | undefined, value.regionId as string | undefined) !== value.contentSha256) throw new Error("Candidate statement content changed or its capture fingerprint is invalid.");
+		}
 		documents.push({ url: value.url as string, sha256: value.sha256, capturedAt: value.capturedAt, includedRecordCount: 0 });
 	}
 	const records: ElectionReferenceSnapshot["records"] = [];
@@ -73,9 +90,9 @@ async function prepareReviewedCandidateContextFiles(path: string, kind: "candida
 	return { ...result, outputDirectory: plan.outputDirectory };
 }
 
-async function collectReviewedCandidateContextFiles(reviewPath: string, collectionPath: string, kind: "candidate-statement" | "official-biography", options: Parameters<typeof collectElectionDocuments>[1] = {}) {
+async function collectReviewedCandidateContextFiles(reviewPath: string, collectionPath: string, kind: "candidate-statement" | "official-biography", options: Parameters<typeof collectElectionDocuments>[1] = {}, extractor?: (body: Buffer, maximumPages: number) => Promise<string>) {
 	const now = options?.now ?? Date.now;
-	await prepareReviewedCandidateContextFiles(reviewPath, kind, now(), true);
+	await prepareReviewedCandidateContextFiles(reviewPath, kind, now(), true, extractor);
 	const reviewBody = await readBoundedStateData(reviewPath);
 	const plan = JSON.parse(reviewBody);
 	const collection = JSON.parse(await readBoundedStateData(collectionPath));
@@ -104,7 +121,7 @@ async function collectReviewedCandidateContextFiles(reviewPath: string, collecti
 	const path = join(outputRoot, `${kind}-plan-${randomUUID()}.json`);
 	await writeFile(path, `${JSON.stringify(preparedPlan, null, 2)}\n`, { flag: "wx" });
 	try {
-		return { ...await prepareReviewedCandidateContextFiles(path, kind, now()), collectionFile: result.file, preparationPlan: path, publisherRequests: result.publisherRequests };
+		return { ...await prepareReviewedCandidateContextFiles(path, kind, now(), false, extractor), collectionFile: result.file, preparationPlan: path, publisherRequests: result.publisherRequests };
 	}
 	catch (error) {
 		await writeFile(hold, `${JSON.stringify({ schemaVersion: 1, type: `${kind}-review-hold`, sourceId: source.id, reviewSha256: hash(reviewBody), capturedAt: result.collectedAt, collectionFile: result.file, reason: "Reviewed candidate content or identity changed; accepted references are unchanged." })}\n`, { flag: "wx" });
@@ -116,16 +133,16 @@ export function prepareCandidateStatementFiles(path: string, now = Date.now(), v
 	return prepareReviewedCandidateContextFiles(path, "candidate-statement", now, validateOnly);
 }
 
-export function prepareOfficialCandidateBiographyFiles(path: string, now = Date.now(), validateOnly = false) {
-	return prepareReviewedCandidateContextFiles(path, "official-biography", now, validateOnly);
+export function prepareOfficialCandidateBiographyFiles(path: string, now = Date.now(), validateOnly = false, extractor?: (body: Buffer, maximumPages: number) => Promise<string>) {
+	return prepareReviewedCandidateContextFiles(path, "official-biography", now, validateOnly, extractor);
 }
 
 export function collectCandidateStatementFiles(reviewPath: string, collectionPath: string, options: Parameters<typeof collectElectionDocuments>[1] = {}) {
 	return collectReviewedCandidateContextFiles(reviewPath, collectionPath, "candidate-statement", options);
 }
 
-export function collectOfficialCandidateBiographyFiles(reviewPath: string, collectionPath: string, options: Parameters<typeof collectElectionDocuments>[1] = {}) {
-	return collectReviewedCandidateContextFiles(reviewPath, collectionPath, "official-biography", options);
+export function collectOfficialCandidateBiographyFiles(reviewPath: string, collectionPath: string, options: Parameters<typeof collectElectionDocuments>[1] = {}, extractor?: (body: Buffer, maximumPages: number) => Promise<string>) {
+	return collectReviewedCandidateContextFiles(reviewPath, collectionPath, "official-biography", options, extractor);
 }
 
 export async function collectCandidateStatementBatchFile(path: string, options: Parameters<typeof collectElectionDocuments>[1] = {}) {

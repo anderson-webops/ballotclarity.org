@@ -13,8 +13,8 @@ const hash = (value: string) => createHash("sha256").update(value).digest("hex")
 const capturedAt = "2026-11-01T12:00:00.000Z";
 const record = (overrides: Partial<StateCandidateRecord> = {}): StateCandidateRecord => ({ id: hash("official").slice(0, 24), name: "Jane Example", office: "United States House of Representatives - District 5", district: "5", scope: "congressional", status: "listed", party: "Example", ...overrides });
 const official = (records = [record()]): StateBallotSnapshot => ({ source: configuredStateBallotSources.find(source => source.id === "ga-fulton-2026")!, sha256: hash("original"), retrievedAt: capturedAt, records });
-function references(overrides: Partial<ElectionReferenceSnapshot["records"][number]> = {}): ElectionReferenceSnapshot {
-	const source = electionReferenceSources.find(source => source.id === "us-cdir-ga-2026")!;
+function references(overrides: Partial<ElectionReferenceSnapshot["records"][number]> = {}, sourceId = "us-cdir-ga-2026"): ElectionReferenceSnapshot {
+	const source = electionReferenceSources.find(source => source.id === sourceId)!;
 	const documents = source.documents.map(document => ({ url: document.url, sha256: hash(document.url), capturedAt, includedRecordCount: 1 }));
 	return { schemaVersion: 1, type: "election-references", stateCode: "GA", sourceId: source.id, electionDate: source.electionDate, retrievedAt: capturedAt, sourceSha256: electionReferenceDocumentDigest(documents), recordCount: 1, documents, records: [{ id: hash("reference").slice(0, 24), name: "Jane Example", office: "U.S. Representative", jurisdiction: "Congressional District 5", scope: "congressional", facts: ["Professional background: teacher."], sourceDocumentIndex: 0, ...overrides }] };
 }
@@ -68,4 +68,60 @@ test("local facts require matching office and explicit jurisdiction, not just a 
 	assert.equal(matchingCandidateReferences(official([candidate]), candidate, [reference]).length, 1);
 	assert.equal(matchingCandidateReferences(official([candidate]), candidate, [references({ ...reference.records[0], jurisdiction: "Another Town" })]).length, 0);
 	assert.equal(matchingCandidateReferences(official([candidate]), candidate, [references({ ...reference.records[0], jurisdiction: undefined })]).length, 0);
+});
+
+function boundLocalReference(candidate: StateCandidateRecord) {
+	return references({ name: candidate.name, office: candidate.office, scope: "local", jurisdiction: candidate.jurisdiction, officialCandidate: { sourceId: "ga-fulton-2026", recordId: candidate.id } }, "ga-dolezal-statements-2026");
+}
+
+test("reviewed official IDs associate local backgrounds without inventing missing jurisdiction labels", () => {
+	const candidate = record({ scope: "local", office: "County Commissioner – District 1", district: "1", jurisdiction: undefined });
+	const snapshot = official([candidate]);
+	const before = JSON.stringify(snapshot);
+	const source = boundLocalReference(candidate);
+	const matched = matchingCandidateReferences(snapshot, candidate, [source]);
+	assert.equal(matched.length, 1);
+	assert.equal(matched[0]!.jurisdiction, undefined);
+	assert.equal("officialCandidate" in matched[0]!, false);
+	assert.equal(JSON.stringify(snapshot), before);
+	delete source.records[0]!.officialCandidate;
+	assert.equal(matchingCandidateReferences(snapshot, candidate, [source]).length, 0);
+});
+
+test("bound local references retain exact source, ID, name, office and district checks", () => {
+	const candidate = record({ scope: "local", office: "County Commissioner – District 1", district: "1", jurisdiction: undefined });
+	for (const update of [
+		{ officialCandidate: { sourceId: "ga-other-2026", recordId: candidate.id } },
+		{ officialCandidate: { sourceId: "ga-fulton-2026", recordId: hash("other").slice(0, 24) } },
+		{ name: "Jane Other" },
+		{ office: "County Commissioner – District 2" },
+		{ jurisdiction: "Another County" },
+	]) {
+		const source = boundLocalReference(candidate);
+		Object.assign(source.records[0]!, update);
+		assert.equal(matchingCandidateReferences(official([candidate]), candidate, [source]).length, 0);
+	}
+	const incorrectDistrict = { ...candidate, district: "2" };
+	assert.equal(matchingCandidateReferences(official([incorrectDistrict]), incorrectDistrict, [boundLocalReference(candidate)]).length, 0);
+});
+
+test("binding never overrides known jurisdiction conflicts or duplicate official identities", () => {
+	const candidate = record({ scope: "local", office: "County Chair", district: "", jurisdiction: "Fulton County" });
+	const reference = boundLocalReference(candidate);
+	reference.records[0]!.jurisdiction = "Another County";
+	assert.equal(matchingCandidateReferences(official([candidate]), candidate, [reference]).length, 0);
+	const unlabeled = { ...candidate, jurisdiction: undefined };
+	const duplicate = { ...unlabeled, id: hash("duplicate").slice(0, 24) };
+	assert.equal(matchingCandidateReferences(official([unlabeled, duplicate]), unlabeled, [boundLocalReference(unlabeled)]).length, 0);
+});
+
+test("binding fields require an exact bounded local candidate-statement shape", () => {
+	const candidate = record({ scope: "local", office: "County Chair", district: "", jurisdiction: undefined });
+	for (const binding of [null, {}, [], { sourceId: 123, recordId: candidate.id }, { sourceId: "ga-fulton-2026", recordId: "unknown" }, { sourceId: "ga-fulton-2026", recordId: candidate.id, extra: true }]) {
+		const reference = boundLocalReference(candidate);
+		Object.assign(reference.records[0]!, { officialCandidate: binding });
+		assert.throws(() => matchingCandidateReferences(official([candidate]), candidate, [reference]), /binding/u);
+	}
+	const noncampaign = references({ scope: "local", office: candidate.office, officialCandidate: { sourceId: "ga-fulton-2026", recordId: candidate.id } });
+	assert.throws(() => matchingCandidateReferences(official([candidate]), candidate, [noncampaign]), /binding/u);
 });

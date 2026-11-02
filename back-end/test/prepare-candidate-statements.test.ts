@@ -24,7 +24,8 @@ async function fixture(context: TestContext, referenceId = "ga-governor-statemen
 	context.after(() => rm(directory, { recursive: true, force: true }));
 	const reference = electionReferenceSources.find(source => source.id === referenceId)!;
 	const source = configuredStateBallotSources.find(source => source.id === "ga-fulton-2026")!;
-	const records = reference.documents.map(document => document.title.replace(/ campaign biography$/u, "")).map(name => ({ id: hash(name).slice(0, 24), name, office: referenceId.includes("mclaurin") ? "Lieutenant Governor" : "Governor", district: "", scope: "statewide" as const, status: "listed" as const }));
+	const local = referenceId.startsWith("ga-fulton-");
+	const records = reference.documents.map(document => document.title.replace(/ campaign biography$/u, "")).map(name => ({ id: hash(name).slice(0, 24), name, office: local ? "County Commissioner – District 1" : referenceId.includes("mclaurin") ? "Lieutenant Governor" : "Governor", district: local ? "1" : "", scope: local ? "local" as const : "statewide" as const, status: "listed" as const }));
 	const documents = source.documentUrls!.map((url, index) => ({ url, sha256: hash(url), retrievedAt: new Date(epoch).toISOString(), includedRecordCount: index ? 0 : records.length }));
 	const snapshot: StateBallotSnapshot = { source, records, documents, retrievedAt: new Date(epoch).toISOString(), sha256: hash(JSON.stringify(documents.map(({ url, sha256 }) => ({ url, sha256 })))) };
 	const candidateFile = join(directory, "official.json");
@@ -75,6 +76,17 @@ test("reviewed statement preparation preserves official identity and exact origi
 	assert.equal("incumbent" in snapshot.records[0]!, false);
 	assert.equal(snapshot.documents[0]!.sha256, input.review.documents[0]!.sha256);
 	await assert.rejects(prepareCandidateStatementFiles(input.reviewPath, epoch), /EEXIST/u);
+});
+
+test("local preparation preserves exact official binding without creating jurisdiction or eligibility facts", async (context) => {
+	const input = await fixture(context, "ga-fulton-goldman-statements-2026");
+	const result = await prepareCandidateStatementFiles(input.reviewPath, epoch);
+	const snapshot = parseElectionReferenceSnapshot(input.reference, await readFile(join(result.outputDirectory, result.file), "utf8"), epoch);
+	assert.deepEqual(snapshot.records[0]!.officialCandidate, { sourceId: "ga-fulton-2026", recordId: input.review.claims[0]!.recordId });
+	assert.equal(snapshot.records[0]!.jurisdiction, undefined);
+	for (const key of ["party", "incumbent", "status", "address", "districtMatch"]) assert.equal(key in snapshot.records[0]!, false);
+	assert.equal(snapshot.records[0]!.scope, "local");
+	assert.equal(snapshot.records[0]!.office, "County Commissioner – District 1");
 });
 
 test("changed evidence, unreviewed facts, stale reviews and unknown candidates fail closed", async (context) => {

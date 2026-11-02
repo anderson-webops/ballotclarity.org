@@ -54,7 +54,7 @@ export async function prepareCandidateStatementFiles(path: string, now = Date.no
 		identities.add(identity);
 		const documentIndex = Number(claim.documentIndex);
 		documents[documentIndex]!.includedRecordCount++;
-		records.push({ id: hash(`${source.id}:${identity}:${documentIndex}`).slice(0, 24), name: candidate.name, office: candidate.office, scope: candidate.scope, ...(candidate.jurisdiction ? { jurisdiction: candidate.jurisdiction } : {}), facts: claim.facts as string[], sourceDocumentIndex: documentIndex });
+		records.push({ id: hash(`${source.id}:${identity}:${documentIndex}`).slice(0, 24), name: candidate.name, office: candidate.office, scope: candidate.scope, ...(candidate.jurisdiction ? { jurisdiction: candidate.jurisdiction } : {}), ...(candidate.scope === "local" ? { officialCandidate: { sourceId: claim.officialSourceId, recordId: candidate.id } } : {}), facts: claim.facts as string[], sourceDocumentIndex: documentIndex });
 	}
 	const snapshot: ElectionReferenceSnapshot = { schemaVersion: 1, type: "election-references", stateCode: source.stateCode, sourceId: source.id, electionDate: source.electionDate, retrievedAt: new Date(Math.min(...documents.map(document => Date.parse(document.capturedAt)))).toISOString(), sourceSha256: electionReferenceDocumentDigest(documents), recordCount: records.length, documents, records };
 	parseElectionReferenceSnapshot(source, JSON.stringify(snapshot), now);

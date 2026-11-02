@@ -4,8 +4,9 @@ Official candidate details use `GET /api/state-records/:state/:id?source=SOURCE`
 The 24-character record ID resolves without a name hint or directory pagination.
 The response contains the official record, its original source metadata and
 separate `references`. Matching requires the same state, election, exact name,
-office scope and district. Local records also require an exact office and
-jurisdiction. Ambiguous identities and different elections do not attach.
+office scope and district. Local records require an exact office and either
+matching explicit jurisdictions or a reviewed exact official record binding when
+both jurisdiction labels are absent. Ambiguous identities and different elections do not attach.
 Reference storage failures preserve the official record and return a separate
 `referencesUnavailable` flag. Existing record throttling and no-store apply.
 
@@ -86,3 +87,19 @@ that shares the same directives. `robotsLayout.sharedWildcardAgents` supports on
 that exact ordered, consecutive header block. Every restriction remains in force.
 A separate agent group, changed header or unsupported directive still requires
 review. This setting never changes the request identity or overrides a denial.
+
+## Local candidate identity
+
+New local preparations retain `officialCandidate: { sourceId, recordId }` from
+the validated official input. This internal binding allows an exact association
+when an official publisher omits a separate jurisdiction label. It never creates
+a jurisdiction or personal ballot match. Name, office, scope, election, source
+and district checks still apply; conflicting known jurisdictions and duplicate
+official identities remain held. Unbound references still require explicit
+matching jurisdictions.
+
+The field is bounded and accepted only for local candidate-statement records.
+Public reference responses omit it. Legacy snapshots remain readable unchanged;
+new bound local snapshots require a compatible reader before import/publication.
+Five Fulton campaign collections use this association without changing any
+official candidate fields or source capture dates.

@@ -624,6 +624,26 @@ async function withResilienceBrowser(t: TestContext, run: (cdp: CdpSession) => P
 	}
 }
 
+async function resolvedLookupFixture(cdp: CdpSession) {
+	const requests: unknown[] = [];
+	const failures: unknown[] = [];
+	cdp.on("Fetch.requestPaused", ({ requestId, request }) => {
+		if (request.method !== "POST") {
+			void cdp.send("Fetch.continueRequest", { requestId }).catch(error => failures.push(String(error)));
+			return;
+		}
+		requests.push(JSON.parse(request.postData));
+		void cdp.send("Fetch.fulfillRequest", {
+			requestId,
+			responseCode: 200,
+			responseHeaders: [{ name: "content-type", value: "application/json" }, { name: "access-control-allow-origin", value: appBaseUrl }, { name: "access-control-allow-credentials", value: "true" }],
+			body: Buffer.from(JSON.stringify(nationwideLookupSnapshot.nationwideLookupResult)).toString("base64"),
+		}).catch(error => failures.push(String(error)));
+	});
+	await cdp.send("Fetch.enable", { patterns: [{ urlPattern: "*/location" }] });
+	return { requests, failures };
+}
+
 const hydratedCivicState = "document.querySelector('#__nuxt')?.__vue_app__?.config.globalProperties.$pinia?.state.value.civic?.isHydrated === true";
 
 test("guide startup restores browser context after hydration and keeps navigation responsive", async (context) => {
@@ -797,6 +817,7 @@ test("voter resilience: About is direct and Escape restores mobile navigation fo
 
 test("voter resilience: blocked storage does not prevent hydration or a successful lookup", async (t) => {
 	await withResilienceBrowser(t, async (cdp) => {
+		const fixture = await resolvedLookupFixture(cdp);
 		await cdp.send("Page.addScriptToEvaluateOnNewDocument", { source: `
 			const originalSetItem = Storage.prototype.setItem;
 			Storage.prototype.setItem = function (key, value) {
@@ -809,10 +830,14 @@ test("voter resilience: blocked storage does not prevent hydration or a successf
 		await waitForBodyText(cdp, /Changes will last only while this page is open/u, "memory-only notice");
 		await cdp.send("Runtime.evaluate", { expression: `
 			const input = document.querySelector('input[id^="address-lookup-"]');
-			input.value = '30022'; input.dispatchEvent(new Event('input', { bubbles: true }));
+			input.value = '84604'; input.dispatchEvent(new Event('input', { bubbles: true }));
 			input.form.requestSubmit();
 		` });
 		await waitForRuntimeCondition(cdp, "location.pathname", value => value !== "/", "lookup navigation despite storage failure");
+		await waitForBodyText(cdp, /Provo|Utah County/u, "resolved lookup content despite storage failure");
+		assert.equal(fixture.requests.length, 1);
+		assert.equal((fixture.requests[0] as { q: string }).q, "84604");
+		assert.deepEqual(fixture.failures, []);
 		assert.doesNotMatch(await getDocumentBodyText(cdp), /QuotaExceededError|Storage is full/u);
 	});
 });
@@ -894,6 +919,7 @@ test("voter resilience: search failures offer a retry and retain the query", asy
 
 test("voter resilience: a manual lookup cancels a slower automatic location guess", async (t) => {
 	await withResilienceBrowser(t, async (cdp) => {
+		const fixture = await resolvedLookupFixture(cdp);
 		await cdp.send("Page.addScriptToEvaluateOnNewDocument", { source: `
 			const originalFetch = window.fetch;
 			window.fetch = (input, options) => {
@@ -906,10 +932,14 @@ test("voter resilience: a manual lookup cancels a slower automatic location gues
 		await waitForRuntimeCondition(cdp, "typeof window.completeGuess === 'function'", Boolean, "automatic guess pending");
 		await cdp.send("Runtime.evaluate", { expression: `
 			const field = document.querySelector('input[id^="address-lookup-"]');
-			field.value = '30022'; field.dispatchEvent(new Event('input', { bubbles: true }));
+			field.value = '84604'; field.dispatchEvent(new Event('input', { bubbles: true }));
 			field.form.requestSubmit();
 		` });
 		await waitForRuntimeCondition(cdp, "location.pathname", value => value !== "/", "manual lookup navigation");
+		await waitForBodyText(cdp, /Provo|Utah County/u, "resolved manual lookup content");
+		assert.equal(fixture.requests.length, 1);
+		assert.equal((fixture.requests[0] as { q: string }).q, "84604");
+		assert.deepEqual(fixture.failures, []);
 		await cdp.send("Runtime.evaluate", { expression: "window.completeGuess()" });
 		await delay(200);
 		const result = await cdp.send("Runtime.evaluate", { expression: `({

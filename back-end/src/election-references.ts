@@ -18,6 +18,7 @@ interface ElectionReferenceRecord {
 	office: string;
 	scope: StateRecordScope;
 	jurisdiction?: string;
+	officialCandidate?: { sourceId: string; recordId: string };
 	facts: string[];
 	sourceDocumentIndex: number;
 }
@@ -77,8 +78,10 @@ export function parseElectionReferenceSnapshot(source: ElectionReferenceSource, 
 		throw new Error("Election reference capture provenance does not match its documents.");
 	const contributions = new Uint32Array(data.documents.length);
 	for (const record of data.records) {
-		if (!record || typeof record !== "object" || Array.isArray(record) || !exactKeys(record as unknown as Record<string, unknown>, ["id", "name", "office", "scope", "jurisdiction", "facts", "sourceDocumentIndex"]) || typeof record.id !== "string" || !/^[a-f0-9]{24}$/u.test(record.id) || !validText(record.name, 250) || !validText(record.office, 300) || !["statewide", "congressional", "state-senate", "state-house", "local"].includes(record.scope) || (record.jurisdiction !== undefined && !validText(record.jurisdiction, 300)) || !Array.isArray(record.facts) || (!record.facts.length && source.allowIdentityOnly !== true) || record.facts.length > 6 || !record.facts.every(fact => validText(fact, 600)) || !Number.isSafeInteger(record.sourceDocumentIndex) || record.sourceDocumentIndex < 0 || record.sourceDocumentIndex >= data.documents.length)
+		if (!record || typeof record !== "object" || Array.isArray(record) || !exactKeys(record as unknown as Record<string, unknown>, ["id", "name", "office", "scope", "jurisdiction", "officialCandidate", "facts", "sourceDocumentIndex"]) || typeof record.id !== "string" || !/^[a-f0-9]{24}$/u.test(record.id) || !validText(record.name, 250) || !validText(record.office, 300) || !["statewide", "congressional", "state-senate", "state-house", "local"].includes(record.scope) || (record.jurisdiction !== undefined && !validText(record.jurisdiction, 300)) || !Array.isArray(record.facts) || (!record.facts.length && source.allowIdentityOnly !== true) || record.facts.length > 6 || !record.facts.every(fact => validText(fact, 600)) || !Number.isSafeInteger(record.sourceDocumentIndex) || record.sourceDocumentIndex < 0 || record.sourceDocumentIndex >= data.documents.length)
 			throw new Error("Election reference fields are invalid.");
+		if (record.officialCandidate !== undefined && (!record.officialCandidate || typeof record.officialCandidate !== "object" || Array.isArray(record.officialCandidate) || Object.keys(record.officialCandidate).sort().join(",") !== "recordId,sourceId" || typeof record.officialCandidate.sourceId !== "string" || !/^[a-z0-9][a-z0-9-]{0,100}$/u.test(record.officialCandidate.sourceId) || typeof record.officialCandidate.recordId !== "string" || !/^[a-f\d]{24}$/u.test(record.officialCandidate.recordId) || record.scope !== "local" || source.documents[record.sourceDocumentIndex]?.kind !== "candidate-statement"))
+			throw new Error("Election reference official candidate binding is invalid.");
 		const member = data.documents[record.sourceDocumentIndex]!.member;
 		if (source.washingtonLocality && (record.scope !== "local" || record.jurisdiction !== `${source.washingtonLocality.countyDisplay} County`))
 			throw new Error("Election references do not match their configured Washington county context.");

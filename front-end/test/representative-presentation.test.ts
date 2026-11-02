@@ -39,6 +39,25 @@ test("biography omits provider wiring commentary while keeping sourced person fa
 	assert.equal(substantiveBiography(null).length, 0);
 });
 
+test("biography omits generated office metadata without changing the sourced office record", () => {
+	const metadata = {
+		id: "office-context:nikema-williams",
+		title: "Office and jurisdiction context",
+		summary: "Jurisdiction: Georgia. Chamber: Representative. District or seat: Representative Unknown district.",
+		sources: [],
+	};
+	const biography = {
+		id: "public-service",
+		title: "Public service",
+		summary: "Served on the Atlanta City Council.",
+		sources: [],
+	};
+	const person = { biography: [metadata, biography] };
+	assert.deepEqual(substantiveBiography(person), [biography]);
+	assert.deepEqual(person.biography, [metadata, biography]);
+	assert.deepEqual(substantiveBiography({ biography: [metadata] }), []);
+});
+
 const representatives: RepresentativeSummary[] = [
 	{
 		ballotStatusLabel: "Published ballot status unavailable in this area",

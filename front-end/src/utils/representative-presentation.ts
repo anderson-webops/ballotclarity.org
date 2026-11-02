@@ -28,7 +28,7 @@ export function resolveRepresentativeContentSummary(value: string | null | undef
 }
 
 export function substantiveBiography(person: Pick<PersonProfile, "biography"> | null | undefined) {
-	return (person?.biography ?? []).filter(block => Boolean(resolveRepresentativeContentSummary(block.summary)) && !/^(?:Provider-backed officeholder record|Office record|Congress\.gov office context|Federal finance and disclosure crosswalk)$/u.test(block.title));
+	return (person?.biography ?? []).filter(block => Boolean(resolveRepresentativeContentSummary(block.summary)) && !/^(?:Provider-backed officeholder record|Office record|Congress\.gov office context|Federal finance and disclosure crosswalk|Office and jurisdiction context)$/u.test(block.title));
 }
 
 export function resolveRepresentativePresentation(

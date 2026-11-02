@@ -1,5 +1,13 @@
 # Official state candidate records
 
+Reviewed scan-based snapshots can now use the bounded
+[document refresh command](reviewed-state-documents.md). Woodward County's forty
+reviewed records byte-match its three normally collected current samples.
+Recurring checks preserve exact IDs and original capture dates; changed scans
+produce a review exception rather than guessed candidates or an empty import.
+The existing source remains manual for substantive candidate review, with import,
+publication, future-cycle enrollment and scheduling separately controlled.
+
 Georgia's separately certified state/federal write-ins have a reusable offline
 preparer and scoped stored-data supplementation. The source remains manual while
 publisher policy is unresolved. See the

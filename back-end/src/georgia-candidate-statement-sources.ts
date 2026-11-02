@@ -32,6 +32,7 @@ const publications: readonly Publication[] = [
 	{ id: "fulton-henyard", name: "Tiffany A. Henyard", publisher: "Tiffany for Fulton", indexUrl: "https://tiffanyforfulton.com/", documentPath: "/", markers: ["Tiffany", "Fulton"], otherRobotsAgents: ["Googlebot", "Bingbot", "Twitterbot", "facebookexternalhit"] },
 	{ id: "fulton-sampson", name: "Aaron A. Sampson Jr", publisher: "Elect Aaron Sampson", indexUrl: "https://www.electaaronsampson.com/home", documentPath: "/meet-aaron", markers: ["Aaron Sampson", "Fulton County"], sharedGroup: true },
 	{ id: "fulton-malhotra", name: "Rohit Malhotra", publisher: "Rohit for Fulton", indexUrl: "https://www.voterohit.com/", documentPath: "/about", markers: ["Rohit", "Fulton"], sharedGroup: true },
+	{ id: "fulton-lynn-king", name: "Lynn King", publisher: "Write In Lynn King", indexUrl: "https://writeinlynnking.com/", documentPath: "/about/", markers: ["Lynn King", "District 5"] },
 ];
 
 export const georgiaCandidateStatementReferences: readonly ElectionReferenceSource[] = publications.map(publication => ({

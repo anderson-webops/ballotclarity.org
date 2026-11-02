@@ -3,7 +3,7 @@ import { electionReferenceSources } from "./election-reference-sources.js";
 import { createElectionReferenceStorage, parseElectionReferenceSnapshot } from "./election-references.js";
 import { collectOpenStatesFile } from "./openstates-collection.js";
 import { collectOpenStatesProfilesFile } from "./openstates-profile-collection.js";
-import { collectCandidateStatementBatchFile, collectCandidateStatementFiles, prepareCandidateStatementFiles } from "./prepare-candidate-statements.js";
+import { collectCandidateStatementBatchFile, collectCandidateStatementFiles, collectOfficialCandidateBiographyFiles, prepareCandidateStatementFiles, prepareOfficialCandidateBiographyFiles } from "./prepare-candidate-statements.js";
 import { prepareCongressionalBiographyFiles } from "./prepare-congressional-biographies.js";
 import { collectFultonFilingFiles, prepareFultonFilingFiles } from "./prepare-fulton-filings.js";
 import { prepareOpenStatesProfileFiles } from "./prepare-openstates-profiles.js";
@@ -14,6 +14,16 @@ import { prepareVoteGaCandidateLeadFiles } from "./votega-candidate-leads.js";
 
 async function main() {
 	const [command, ...requested] = process.argv.slice(2);
+	if (command === "prepare-official-biographies") {
+		if (requested.length !== 1) throw new Error("Use prepare-official-biographies REVIEW.json.");
+		console.log(JSON.stringify(await prepareOfficialCandidateBiographyFiles(requested[0]!)));
+		return;
+	}
+	if (command === "collect-official-biographies") {
+		if (requested.length !== 2) throw new Error("Use collect-official-biographies REVIEW.json COLLECTION.json.");
+		console.log(JSON.stringify(await collectOfficialCandidateBiographyFiles(requested[0]!, requested[1]!)));
+		return;
+	}
 	if (command === "prepare-fulton-filings") {
 		if (requested.length !== 1) throw new Error("Use prepare-fulton-filings REVIEW.json.");
 		console.log(JSON.stringify(await prepareFultonFilingFiles(requested[0]!)));

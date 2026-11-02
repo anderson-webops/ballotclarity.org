@@ -6,8 +6,8 @@ import { georgiaCandidateStatementDocuments, georgiaCandidateStatementReferences
 import { configuredStateBallotSources } from "../src/state-ballot-registry.js";
 
 test("reviewed Georgia biographies remain independent opt-in campaign collections", () => {
-	assert.equal(georgiaCandidateStatementReferences.length, 16);
-	assert.equal(georgiaCandidateStatementDocuments.length, 16);
+	assert.equal(georgiaCandidateStatementReferences.length, 17);
+	assert.equal(georgiaCandidateStatementDocuments.length, 17);
 	const hosts = new Set<string>();
 	for (const [index, reference] of georgiaCandidateStatementReferences.entries()) {
 		const source = georgiaCandidateStatementDocuments[index]!;
@@ -28,8 +28,8 @@ test("reviewed Georgia biographies remain independent opt-in campaign collection
 		assert(!configuredStateBallotSources.some(official => official.id === source.id || official.id === reference.id));
 		hosts.add(source.host);
 	}
-	assert.equal(hosts.size, 16);
+	assert.equal(hosts.size, 17);
 	assert.equal(georgiaCandidateStatementDocuments.filter(source => source.robotsLayout).length, 6);
-	assert.equal(georgiaCandidateStatementDocuments.filter(source => source.id.startsWith("ga-fulton-")).length, 5);
+	assert.equal(georgiaCandidateStatementDocuments.filter(source => source.id.startsWith("ga-fulton-")).length, 6);
 	for (const held of ["tylerharperga.com", "katherineforgeorgia.com", "stricklandforgeorgia.com"]) assert(!hosts.has(held));
 });

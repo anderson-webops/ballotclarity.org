@@ -1,5 +1,6 @@
 import { congressionalBiographySources } from "./congressional-biographies.js";
 import { fultonFilingReferenceSource } from "./fulton-filing-context.js";
+import { fultonOfficialBiographyReference } from "./fulton-official-biography-sources.js";
 import { georgiaCandidateStatementReferences } from "./georgia-candidate-statement-sources.js";
 import { openStatesBulkSources } from "./openstates-bulk.js";
 import { washingtonLocalStatementSources, washingtonStateStatementSources } from "./washington-statement-sources.js";
@@ -22,6 +23,7 @@ export interface ElectionReferenceSource {
 		pageUrl?: string;
 		title: string;
 		publisher: string;
+		candidateName?: string;
 		kind: "candidate-statement" | "news-report" | "official-biography" | "public-dataset";
 		publishedDate?: string;
 		isCampaignWebsite?: true;
@@ -244,4 +246,5 @@ export const electionReferenceSources: readonly ElectionReferenceSource[] = [
 	...washingtonLocalStatementSources,
 	...georgiaCandidateStatementReferences,
 	fultonFilingReferenceSource,
+	fultonOfficialBiographyReference,
 ];

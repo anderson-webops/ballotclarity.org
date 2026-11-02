@@ -21,7 +21,7 @@ const source = electionReferenceSources.find(item => item.stateCode === "ME")!;
 const newsSource = electionReferenceSources.find(item => item.stateCode === "LA")!;
 
 function fixture(collection: ElectionReferenceSource = source) {
-	const records = collection.documents.map((document, index) => ({ id: hash(`${collection.id}/${index}`).slice(0, 24), name: `Example ${index}`, office: "School Board", scope: "local" as const, jurisdiction: collection.washingtonLocality ? `${collection.washingtonLocality.countyDisplay} County` : "Example town", facts: [`Reported academic advising experience ${index}.`], sourceDocumentIndex: index }));
+	const records = collection.documents.map((document, index) => ({ id: hash(`${collection.id}/${index}`).slice(0, 24), name: document.candidateName ?? `Example ${index}`, office: "School Board", scope: "local" as const, jurisdiction: collection.washingtonLocality ? `${collection.washingtonLocality.countyDisplay} County` : "Example town", facts: [`Reported academic advising experience ${index}.`], sourceDocumentIndex: index }));
 	const documents = collection.documents.map(document => ({ url: document.url, sha256: hash(document.url), capturedAt: retrievedAt, includedRecordCount: 1 }));
 	return { schemaVersion: 1, type: "election-references", stateCode: collection.stateCode, sourceId: collection.id, electionDate: collection.electionDate, retrievedAt, sourceSha256: hash(JSON.stringify(documents.map(({ url, sha256 }) => ({ url, sha256 })))), recordCount: records.length, documents, records };
 }
@@ -38,6 +38,7 @@ test("references preserve candidate, reporting and official biography authorship
 		assert.equal("status" in page.records[0]!, false);
 		assert.equal("sourceSha256" in page.records[0]!, false);
 		assert.equal("sourceDocumentIndex" in page.records[0]!, false);
+		assert.equal("candidateName" in page.records[0]!.source, false);
 	}
 });
 

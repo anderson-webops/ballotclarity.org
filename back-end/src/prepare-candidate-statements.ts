@@ -24,11 +24,11 @@ export function candidateStatementContentSha256(body: string, address: string, r
 	return electionDocumentPolicyFingerprint(Buffer.from(body), regionClass || regionId ? "region" : "main", address, regionId, regionClass);
 }
 
-export async function prepareCandidateStatementFiles(path: string, now = Date.now(), validateOnly = false) {
+async function prepareReviewedCandidateContextFiles(path: string, kind: "candidate-statement" | "official-biography", now = Date.now(), validateOnly = false) {
 	const plan = JSON.parse(await readBoundedStateData(path));
-	if (!object(plan) || !exact(plan, ["schemaVersion", "type", "sourceId", "reviewedAt", "candidateFiles", "documents", "claims", "outputDirectory"]) || plan.schemaVersion !== 1 || plan.type !== "candidate-statement-preparation" || typeof plan.sourceId !== "string" || typeof plan.reviewedAt !== "string" || !Number.isFinite(Date.parse(plan.reviewedAt)) || Date.parse(plan.reviewedAt) > now || now - Date.parse(plan.reviewedAt) > 30 * 86400000 || !Array.isArray(plan.candidateFiles) || !plan.candidateFiles.length || plan.candidateFiles.length > 25 || !plan.candidateFiles.every(file => typeof file === "string" && isAbsolute(file)) || !Array.isArray(plan.documents) || !Array.isArray(plan.claims) || !plan.claims.length || plan.claims.length > 250 || typeof plan.outputDirectory !== "string" || !isAbsolute(plan.outputDirectory)) throw new Error("Provide an explicit current candidate-statement preparation review and external output.");
+	if (!object(plan) || !exact(plan, ["schemaVersion", "type", "sourceId", "reviewedAt", "candidateFiles", "documents", "claims", "outputDirectory"]) || plan.schemaVersion !== 1 || plan.type !== `${kind}-preparation` || typeof plan.sourceId !== "string" || typeof plan.reviewedAt !== "string" || !Number.isFinite(Date.parse(plan.reviewedAt)) || Date.parse(plan.reviewedAt) > now || now - Date.parse(plan.reviewedAt) > 30 * 86400000 || !Array.isArray(plan.candidateFiles) || !plan.candidateFiles.length || plan.candidateFiles.length > 25 || !plan.candidateFiles.every(file => typeof file === "string" && isAbsolute(file)) || !Array.isArray(plan.documents) || !Array.isArray(plan.claims) || !plan.claims.length || plan.claims.length > 250 || typeof plan.outputDirectory !== "string" || !isAbsolute(plan.outputDirectory)) throw new Error("Provide an explicit current candidate-statement preparation review and external output.");
 	const source = electionReferenceSources.find(source => source.id === plan.sourceId);
-	if (!source || source.documents.length > 25 || source.documents.some(document => document.kind !== "candidate-statement") || plan.documents.length !== source.documents.length) throw new Error("Candidate statements must match an existing candidate-provided collection.");
+	if (!source || source.documents.length > 25 || source.documents.some(document => document.kind !== kind) || (kind === "official-biography" && source.allowOfficialCandidateBindings !== true) || plan.documents.length !== source.documents.length) throw new Error("Candidate context must match its explicitly reviewed publication kind.");
 	const candidates = await Promise.all(plan.candidateFiles.map(async (file: string) => {
 		const body = await readBoundedStateData(file);
 		const metadata = JSON.parse(body);
@@ -53,6 +53,7 @@ export async function prepareCandidateStatementFiles(path: string, now = Date.no
 		if (!candidate || !["listed", "filed", "qualified", "write-in", "unopposed"].includes(candidate.status) || identities.has(identity)) throw new Error("Candidate statement identity is missing, inactive or duplicated.");
 		identities.add(identity);
 		const documentIndex = Number(claim.documentIndex);
+		if (kind === "official-biography" && source.documents[documentIndex]!.candidateName !== candidate.name) throw new Error("Official biography candidate identity requires its exact configured name.");
 		documents[documentIndex]!.includedRecordCount++;
 		records.push({ id: hash(`${source.id}:${identity}:${documentIndex}`).slice(0, 24), name: candidate.name, office: candidate.office, scope: candidate.scope, ...(candidate.jurisdiction ? { jurisdiction: candidate.jurisdiction } : {}), ...(candidate.scope === "local" ? { officialCandidate: { sourceId: claim.officialSourceId, recordId: candidate.id } } : {}), facts: claim.facts as string[], sourceDocumentIndex: documentIndex });
 	}
@@ -64,17 +65,17 @@ export async function prepareCandidateStatementFiles(path: string, now = Date.no
 	if (join(parent, basename(plan.outputDirectory)) !== plan.outputDirectory) throw new Error("Candidate statement output must use a physical directory.");
 	const filename = `election-references-${source.id}.json`;
 	const body = `${JSON.stringify(snapshot, null, 2)}\n`;
-	const result = { schemaVersion: 1, type: "candidate-statement-preparation-result", sourceId: source.id, reviewedAt: plan.reviewedAt, records: records.length, facts: records.reduce((count, record) => count + record.facts.length, 0), file: filename, sha256: hash(body), sourceConfigurationSha256: hash(JSON.stringify(source)), originalCandidates: candidates.map(input => ({ path: input.path, sha256: input.sha256 })), imported: false, publisherRequests: 0 };
+	const result = { schemaVersion: 1, type: `${kind}-preparation-result`, sourceId: source.id, reviewedAt: plan.reviewedAt, records: records.length, facts: records.reduce((count, record) => count + record.facts.length, 0), file: filename, sha256: hash(body), sourceConfigurationSha256: hash(JSON.stringify(source)), originalCandidates: candidates.map(input => ({ path: input.path, sha256: input.sha256 })), imported: false, publisherRequests: 0 };
 	if (validateOnly) return { ...result, outputDirectory: plan.outputDirectory, validateOnly: true };
 	await mkdir(plan.outputDirectory);
 	await writeFile(join(plan.outputDirectory, filename), body, { flag: "wx" });
-	await writeFile(join(plan.outputDirectory, "candidate-statement-preparation.json"), `${JSON.stringify(result, null, 2)}\n`, { flag: "wx" });
+	await writeFile(join(plan.outputDirectory, `${kind}-preparation.json`), `${JSON.stringify(result, null, 2)}\n`, { flag: "wx" });
 	return { ...result, outputDirectory: plan.outputDirectory };
 }
 
-export async function collectCandidateStatementFiles(reviewPath: string, collectionPath: string, options: Parameters<typeof collectElectionDocuments>[1] = {}) {
+async function collectReviewedCandidateContextFiles(reviewPath: string, collectionPath: string, kind: "candidate-statement" | "official-biography", options: Parameters<typeof collectElectionDocuments>[1] = {}) {
 	const now = options?.now ?? Date.now;
-	await prepareCandidateStatementFiles(reviewPath, now(), true);
+	await prepareReviewedCandidateContextFiles(reviewPath, kind, now(), true);
 	const reviewBody = await readBoundedStateData(reviewPath);
 	const plan = JSON.parse(reviewBody);
 	const collection = JSON.parse(await readBoundedStateData(collectionPath));
@@ -83,7 +84,7 @@ export async function collectCandidateStatementFiles(reviewPath: string, collect
 	if (source.documents.some(document => !electionDocumentSources.some(item => collection.sourceIds.includes(item.id) && item.host === new URL(document.url).hostname && item.documentPatterns.some(pattern => new RegExp(pattern, "u").test(new URL(document.url).pathname))))) throw new Error("Every reviewed statement needs a configured collector.");
 	if (typeof collection.cacheDirectory !== "string") throw new Error("A statement collection requires its reviewed external cache.");
 	assertExternalStateDataDirectory(collection.cacheDirectory);
-	const hold = join(collection.cacheDirectory, `candidate-statement-hold-${hash(reviewBody)}.json`);
+	const hold = join(collection.cacheDirectory, `${kind}-hold-${hash(reviewBody)}.json`);
 	try {
 		await readBoundedStateData(hold);
 		throw new Error("Candidate statement content is held for a new review.");
@@ -100,15 +101,31 @@ export async function collectCandidateStatementFiles(reviewPath: string, collect
 	});
 	const outputRoot = await realpath(collection.outputRoot);
 	const preparedPlan = { ...plan, documents, outputDirectory: join(outputRoot, `candidate-statements-${randomUUID()}`) };
-	const path = join(outputRoot, `candidate-statement-plan-${randomUUID()}.json`);
+	const path = join(outputRoot, `${kind}-plan-${randomUUID()}.json`);
 	await writeFile(path, `${JSON.stringify(preparedPlan, null, 2)}\n`, { flag: "wx" });
 	try {
-		return { ...await prepareCandidateStatementFiles(path, now()), collectionFile: result.file, preparationPlan: path, publisherRequests: result.publisherRequests };
+		return { ...await prepareReviewedCandidateContextFiles(path, kind, now()), collectionFile: result.file, preparationPlan: path, publisherRequests: result.publisherRequests };
 	}
 	catch (error) {
-		await writeFile(hold, `${JSON.stringify({ schemaVersion: 1, type: "candidate-statement-review-hold", sourceId: source.id, reviewSha256: hash(reviewBody), capturedAt: result.collectedAt, collectionFile: result.file, reason: "Reviewed candidate content or identity changed; accepted references are unchanged." })}\n`, { flag: "wx" });
+		await writeFile(hold, `${JSON.stringify({ schemaVersion: 1, type: `${kind}-review-hold`, sourceId: source.id, reviewSha256: hash(reviewBody), capturedAt: result.collectedAt, collectionFile: result.file, reason: "Reviewed candidate content or identity changed; accepted references are unchanged." })}\n`, { flag: "wx" });
 		throw error;
 	}
+}
+
+export function prepareCandidateStatementFiles(path: string, now = Date.now(), validateOnly = false) {
+	return prepareReviewedCandidateContextFiles(path, "candidate-statement", now, validateOnly);
+}
+
+export function prepareOfficialCandidateBiographyFiles(path: string, now = Date.now(), validateOnly = false) {
+	return prepareReviewedCandidateContextFiles(path, "official-biography", now, validateOnly);
+}
+
+export function collectCandidateStatementFiles(reviewPath: string, collectionPath: string, options: Parameters<typeof collectElectionDocuments>[1] = {}) {
+	return collectReviewedCandidateContextFiles(reviewPath, collectionPath, "candidate-statement", options);
+}
+
+export function collectOfficialCandidateBiographyFiles(reviewPath: string, collectionPath: string, options: Parameters<typeof collectElectionDocuments>[1] = {}) {
+	return collectReviewedCandidateContextFiles(reviewPath, collectionPath, "official-biography", options);
 }
 
 export async function collectCandidateStatementBatchFile(path: string, options: Parameters<typeof collectElectionDocuments>[1] = {}) {

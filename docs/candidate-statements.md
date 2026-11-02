@@ -124,3 +124,21 @@ Review freshness, exact candidates/offices, complete documents, bounded extracti
 changed-format holds and retained output apply independently of publication.
 Future elections require newly offered URLs and reviewed candidate associations;
 the parser's explicit date parameter does not enroll future sources automatically.
+
+## Official biographies
+
+`manage-election-references prepare-official-biographies REVIEW.json` and
+`collect-official-biographies REVIEW.json COLLECTION.json` reuse the reviewed
+HTML context pipeline for explicitly enrolled official-biography collections.
+The review uses `type: "official-biography-preparation"`; its remaining fields
+match candidate-statement reviews. Output retains `official-biography` attribution,
+not campaign attribution. The collection must explicitly permit exact official
+candidate bindings. Ordinary biography catalogs and campaign sources cannot be
+reclassified by changing a review label.
+
+The existing candidate-statement command, review, output and durable-hold formats
+are preserved. Both modes retain original captures, enforce meaningful-content
+hashes and exact current candidate identities, and hold changed content for review.
+They prepare independent external snapshots, with import, publication and recurring
+activation remaining separate. New cycles require newly reviewed source identity,
+content, access policy and candidate associations.

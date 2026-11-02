@@ -12,7 +12,7 @@ import { electionDocumentConfigurationSha256, electionDocumentPolicyFingerprint,
 import { electionDocumentSources } from "../src/election-document-sources.js";
 import { electionReferenceSources } from "../src/election-reference-sources.js";
 import { parseElectionReferenceSnapshot } from "../src/election-references.js";
-import { candidateStatementContentSha256, collectCandidateStatementBatchFile, collectCandidateStatementFiles, prepareCandidateStatementFiles } from "../src/prepare-candidate-statements.js";
+import { candidateStatementContentSha256, collectCandidateStatementBatchFile, collectCandidateStatementFiles, collectOfficialCandidateBiographyFiles, prepareCandidateStatementFiles, prepareOfficialCandidateBiographyFiles } from "../src/prepare-candidate-statements.js";
 import { configuredStateBallotSources } from "../src/state-ballot-registry.js";
 import { serializeStoredStateSnapshot } from "../src/state-ballot-storage.js";
 
@@ -25,7 +25,7 @@ async function fixture(context: TestContext, referenceId = "ga-governor-statemen
 	const reference = electionReferenceSources.find(source => source.id === referenceId)!;
 	const source = configuredStateBallotSources.find(source => source.id === "ga-fulton-2026")!;
 	const local = referenceId.startsWith("ga-fulton-");
-	const records = reference.documents.map(document => document.title.replace(/ campaign biography$/u, "")).map(name => ({ id: hash(name).slice(0, 24), name, office: local ? "County Commissioner – District 1" : referenceId.includes("mclaurin") ? "Lieutenant Governor" : "Governor", district: local ? "1" : "", scope: local ? "local" as const : "statewide" as const, status: "listed" as const }));
+	const records = reference.documents.map(document => document.title.replace(/ (?:campaign|official) biography$/u, "")).map(name => ({ id: hash(name).slice(0, 24), name, office: local ? "County Commissioner – District 1" : referenceId.includes("mclaurin") ? "Lieutenant Governor" : "Governor", district: local ? "1" : "", scope: local ? "local" as const : "statewide" as const, status: "listed" as const }));
 	const documents = source.documentUrls!.map((url, index) => ({ url, sha256: hash(url), retrievedAt: new Date(epoch).toISOString(), includedRecordCount: index ? 0 : records.length }));
 	const snapshot: StateBallotSnapshot = { source, records, documents, retrievedAt: new Date(epoch).toISOString(), sha256: hash(JSON.stringify(documents.map(({ url, sha256 }) => ({ url, sha256 })))) };
 	const candidateFile = join(directory, "official.json");
@@ -53,7 +53,7 @@ async function fixture(context: TestContext, referenceId = "ga-governor-statemen
 		collection.accessReviews.push({ sourceId, reviewedAt: new Date(epoch).toISOString(), configurationSha256: electionDocumentConfigurationSha256(publisher), policyFingerprints: fingerprints });
 		reviewed.push({ url: document.url, path: join(directory, hash(document.url)), sha256: hash(body), capturedAt: new Date(epoch).toISOString(), contentSha256: candidateStatementContentSha256(body.toString(), document.url, index ? undefined : "entry-content"), ...(index ? {} : { regionClass: "entry-content" }) });
 	}
-	const review = { schemaVersion: 1, type: "candidate-statement-preparation", sourceId: reference.id, reviewedAt: new Date(epoch).toISOString(), candidateFiles: [candidateFile], documents: reviewed, claims: records.map((record, documentIndex) => ({ officialSourceId: source.id, recordId: record.id, documentIndex, facts: ["Reviewed professional background."] })), outputDirectory: join(directory, "prepared") };
+	const review = { schemaVersion: 1, type: reference.documents.every(document => document.kind === "official-biography") ? "official-biography-preparation" : "candidate-statement-preparation", sourceId: reference.id, reviewedAt: new Date(epoch).toISOString(), candidateFiles: [candidateFile], documents: reviewed, claims: records.map((record, documentIndex) => ({ officialSourceId: source.id, recordId: record.id, documentIndex, facts: ["Reviewed professional background."] })), outputDirectory: join(directory, "prepared") };
 	const reviewPath = join(directory, "review.json");
 	const collectionPath = join(directory, "collection.json");
 	const save = async () => {
@@ -87,6 +87,57 @@ test("local preparation preserves exact official binding without creating jurisd
 	for (const key of ["party", "incumbent", "status", "address", "districtMatch"]) assert.equal(key in snapshot.records[0]!, false);
 	assert.equal(snapshot.records[0]!.scope, "local");
 	assert.equal(snapshot.records[0]!.office, "County Commissioner – District 1");
+});
+
+test("official biography preparation keeps government attribution and an exact internal candidate binding", async (context) => {
+	const input = await fixture(context, "ga-fulton-thorne-official-biography-2026");
+	const original = await readFile(input.review.candidateFiles[0]!);
+	await assert.rejects(prepareCandidateStatementFiles(input.reviewPath, epoch), /current/u);
+	const result = await prepareOfficialCandidateBiographyFiles(input.reviewPath, epoch);
+	assert.equal(result.type, "official-biography-preparation-result");
+	const body = await readFile(join(result.outputDirectory, result.file), "utf8");
+	const snapshot = parseElectionReferenceSnapshot(input.reference, body, epoch);
+	assert.deepEqual(snapshot.records[0]!.officialCandidate, { sourceId: "ga-fulton-2026", recordId: input.review.claims[0]!.recordId });
+	assert.equal(input.reference.documents[0]!.kind, "official-biography");
+	assert.equal(input.reference.documents[0]!.isCampaignWebsite, undefined);
+	assert.throws(() => parseElectionReferenceSnapshot({ ...input.reference, allowOfficialCandidateBindings: undefined }, body, epoch), /binding/u);
+	const wrongPerson = structuredClone(snapshot);
+	wrongPerson.records[0]!.name = "Someone Else";
+	assert.throws(() => parseElectionReferenceSnapshot(input.reference, JSON.stringify(wrongPerson), epoch), /configured name/u);
+	delete wrongPerson.records[0]!.officialCandidate;
+	assert.throws(() => parseElectionReferenceSnapshot(input.reference, JSON.stringify(wrongPerson), epoch), /configured name/u);
+	assert.deepEqual(await readFile(input.review.candidateFiles[0]!), original);
+	for (const key of ["party", "incumbent", "status", "address", "districtMatch"]) assert.equal(key in snapshot.records[0]!, false);
+});
+
+test("official biography collection reuses cached captures and holds changed substantive content", async (context) => {
+	const input = await fixture(context, "ga-fulton-thorne-official-biography-2026");
+	await seedElectionDocuments(input.collection, input.seed, epoch);
+	const accepted = await collectOfficialCandidateBiographyFiles(input.reviewPath, input.collectionPath, { now: () => epoch, fetchDocument: async () => assert.fail("Cached official biographies must not request publishers.") });
+	assert.equal(accepted.records, 1);
+	assert.equal(accepted.publisherRequests, 0);
+	const original = await readFile(join(accepted.outputDirectory, accepted.file));
+	let clock = epoch + 86400001;
+	await assert.rejects(collectOfficialCandidateBiographyFiles(input.reviewPath, input.collectionPath, { now: () => clock, sleep: async (delay) => {
+		clock += delay;
+	}, fetchDocument: async url => ({ status: 200, body: Buffer.from(input.bodies.get(url)!.toString().replace("Professional background.", "Changed professional background.")), contentType: url.endsWith("robots.txt") ? "text/plain" : "text/html", etag: "\"changed\"" }) }), /content changed/u);
+	await assert.rejects(collectOfficialCandidateBiographyFiles(input.reviewPath, input.collectionPath, { now: () => clock, fetchDocument: async () => assert.fail("Official biography holds must survive a new invocation.") }), /held/u);
+	assert.deepEqual(await readFile(join(accepted.outputDirectory, accepted.file)), original);
+});
+
+test("an official preparation label cannot reclassify a candidate-provided collection", async (context) => {
+	const input = await fixture(context);
+	input.review.type = "official-biography-preparation";
+	await input.save();
+	await assert.rejects(prepareOfficialCandidateBiographyFiles(input.reviewPath, epoch), /publication kind/u);
+});
+
+test("official biography claims reject another candidate with an otherwise valid official ID", async (context) => {
+	const input = await fixture(context, "ga-fulton-thorne-official-biography-2026");
+	const snapshot = JSON.parse(await readFile(input.review.candidateFiles[0]!, "utf8"));
+	snapshot.records[0].name = "Someone Else";
+	await writeFile(input.review.candidateFiles[0]!, JSON.stringify(snapshot));
+	await assert.rejects(prepareOfficialCandidateBiographyFiles(input.reviewPath, epoch), /configured name/u);
 });
 
 test("changed evidence, unreviewed facts, stale reviews and unknown candidates fail closed", async (context) => {

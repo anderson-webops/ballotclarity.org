@@ -12,6 +12,7 @@ import type { FultonCountyOfficeholderSnapshot } from "./fulton-county-officehol
 import type { FultonOfficeholderRepository } from "./fulton-officeholder-storage.js";
 import type { FultonOfficeholderSnapshot } from "./fulton-officeholders.js";
 import type { JudicialEvaluationRepository } from "./judicial-evaluations.js";
+import type { MagistrateCourtRepository } from "./magistrate-court-storage.js";
 import type { OpenStatesRepresentativeRecord } from "./openstates.js";
 import type { PublicRequestThrottle } from "./public-request-throttle.js";
 import type { StateBallotRepository } from "./state-ballot-repository.js";
@@ -140,6 +141,8 @@ import { createLdaClient } from "./lda.js";
 import { buildLocationGuessNotePrefix, createLocationGuessService } from "./location-guess.js";
 import { buildLocationLookupResponse, classifyLookupInput, findSupportedCoverageSummaries, validateLookupInput } from "./location-lookup.js";
 import { createLogger, createRequestLoggingMiddleware, sanitizeLogText } from "./logger.js";
+import { magistrateCourtPublication } from "./magistrate-court-directory.js";
+import { createMagistrateCourtRepository, MagistrateCourtUnavailableError } from "./magistrate-court-storage.js";
 import { getOfficialToolsForState, getStateAbbreviationForName, getStateNameForAbbreviation } from "./official-election-tools.js";
 import { createOpenFecClient } from "./openfec.js";
 import { createOpenStatesClient } from "./openstates.js";
@@ -171,6 +174,7 @@ import { createZipLookupLogger } from "./zip-lookup-logger.js";
 
 interface CreateAppOptions {
 	courtDirectoryRepository?: CourtDirectoryRepository | null;
+	magistrateCourtRepository?: MagistrateCourtRepository | null;
 	fultonCountyOfficeholderRepository?: FultonCountyOfficeholderRepository | null;
 	fultonOfficeholderRepository?: FultonOfficeholderRepository | null;
 	activeLookupCookieSecret?: string | null;
@@ -3029,6 +3033,7 @@ function buildSearchResponse(
 export async function createApp(options: CreateAppOptions = {}) {
 	const app = express() as BallotClarityApplication;
 	const courtDirectoryRepository = options.courtDirectoryRepository === undefined ? createCourtDirectoryRepository() : options.courtDirectoryRepository;
+	const magistrateCourtRepository = options.magistrateCourtRepository === undefined ? createMagistrateCourtRepository() : options.magistrateCourtRepository;
 	const countyCourtDirectory = async () => {
 		if (!courtDirectoryRepository) return undefined;
 		try {
@@ -3036,6 +3041,19 @@ export async function createApp(options: CreateAppOptions = {}) {
 			return { slug: snapshot.slug, title: snapshot.title, count: snapshot.judges.length };
 		}
 		catch { return undefined; }
+	};
+	const countyCourtDirectories = async () => {
+		const courts = [];
+		const state = await countyCourtDirectory();
+		if (state) courts.push(state);
+		if (magistrateCourtRepository) {
+			try {
+				const snapshot = await magistrateCourtRepository.getSnapshot();
+				courts.push({ slug: snapshot.slug, title: snapshot.title, count: snapshot.judges.length });
+			}
+			catch {}
+		}
+		return courts;
 	};
 	const fultonOfficeholderRepository = options.fultonOfficeholderRepository === undefined ? createFultonOfficeholderRepository() : options.fultonOfficeholderRepository;
 	const fultonCountyOfficeholderRepository = options.fultonCountyOfficeholderRepository === undefined ? createFultonCountyOfficeholderRepository() : options.fultonCountyOfficeholderRepository;
@@ -5479,10 +5497,15 @@ export async function createApp(options: CreateAppOptions = {}) {
 
 	app.get("/api/courts", async (_request, response) => {
 		const snapshot = courtDirectoryRepository ? await courtDirectoryRepository.getSnapshot() : null;
-		response.json({ courts: snapshot ? [{ slug: snapshot.slug, title: snapshot.title, count: snapshot.judges.length }] : [] });
+		const magistrates = magistrateCourtRepository ? await magistrateCourtRepository.getSnapshot() : null;
+		response.json({ courts: [snapshot, magistrates].filter(snapshot => snapshot !== null).map(snapshot => ({ slug: snapshot.slug, title: snapshot.title, count: snapshot.judges.length })) });
 	});
 
 	app.get("/api/courts/:slug", async (request, response) => {
+		if (magistrateCourtRepository && request.params.slug === magistrateCourtPublication.slug) {
+			response.json(await magistrateCourtRepository.getSnapshot());
+			return;
+		}
 		if (!courtDirectoryRepository || request.params.slug !== courtDirectoryPublication.slug) {
 			response.status(404).json({ message: "Court records are not available." });
 			return;
@@ -5519,9 +5542,11 @@ export async function createApp(options: CreateAppOptions = {}) {
 				const board = fultonOfficeholderRepository && countyMatch && inGeorgia ? fultonOfficeholderRepository.getSnapshot() : null;
 				const countyOffices = fultonCountyOfficeholderRepository && countyMatch && inGeorgia ? fultonCountyOfficeholderRepository.getSnapshot() : null;
 				const boardRecord = board || countyOffices ? buildPublicDistrictRecordFromSlug("fulton-county", currentSupplementalOfficeholders(), board, countyOffices) : null;
+				const courtDirectories = countyMatch && inGeorgia ? await countyCourtDirectories() : [];
 				response.json({
 					...nationwideDistrict,
-					courtDirectory: countyMatch && inGeorgia ? await countyCourtDirectory() : undefined,
+					courtDirectory: courtDirectories.find(court => court.slug === courtDirectoryPublication.slug),
+					courtDirectories: courtDirectories.length ? courtDirectories : undefined,
 					officeVacancies: boardRecord?.officeVacancies,
 					updatedAt: boardRecord?.updatedAt ?? nationwideDistrict.updatedAt,
 					sources: boardRecord ? uniqueSources([...nationwideDistrict.sources, ...boardRecord.sources]) : nationwideDistrict.sources,
@@ -5538,7 +5563,8 @@ export async function createApp(options: CreateAppOptions = {}) {
 
 		if (!result) {
 			const record = buildPublicDistrictRecordFromSlug(request.params.slug, currentSupplementalOfficeholders(), fultonOfficeholderRepository?.getSnapshot(), fultonCountyOfficeholderRepository?.getSnapshot()) ?? buildRouteFallbackDistrictRecordResponse(request.params.slug);
-			response.json({ ...record, courtDirectory: record.district.slug === "fulton-county" ? await countyCourtDirectory() : undefined });
+			const courtDirectories = record.district.slug === "fulton-county" ? await countyCourtDirectories() : [];
+			response.json({ ...record, courtDirectory: courtDirectories.find(court => court.slug === courtDirectoryPublication.slug), courtDirectories: courtDirectories.length ? courtDirectories : undefined });
 			return;
 		}
 
@@ -5777,7 +5803,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 		response.json(await adminRepository.getOverview());
 	});
 	app.get("/api/admin/operations", async (_request, response) => {
-		response.json(await buildAdminOperations({ candidates: stateBallotRepository, references: electionReferenceRepository, officeholders: fultonOfficeholderRepository, countyOfficeholders: fultonCountyOfficeholderRepository, courts: courtDirectoryRepository, dataDirectory: process.env.STATE_BALLOT_DATA_DIR || null }));
+		response.json(await buildAdminOperations({ candidates: stateBallotRepository, references: electionReferenceRepository, officeholders: fultonOfficeholderRepository, countyOfficeholders: fultonCountyOfficeholderRepository, courts: courtDirectoryRepository, magistrateCourts: magistrateCourtRepository, dataDirectory: process.env.STATE_BALLOT_DATA_DIR || null }));
 	});
 
 	app.get("/api/admin/audit", async (_request, response) => {
@@ -6312,7 +6338,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 		if (response.headersSent)
 			return;
 
-		if (error instanceof FultonOfficeholderUnavailableError || error instanceof FultonCountyOfficeholderUnavailableError || error instanceof CourtDirectoryUnavailableError) {
+		if (error instanceof FultonOfficeholderUnavailableError || error instanceof FultonCountyOfficeholderUnavailableError || error instanceof CourtDirectoryUnavailableError || error instanceof MagistrateCourtUnavailableError) {
 			response.status(503).json({ message: error.message, requestId: response.locals.requestId });
 			return;
 		}

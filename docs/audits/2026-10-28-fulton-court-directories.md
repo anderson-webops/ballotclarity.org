@@ -47,20 +47,21 @@ distinguish unconfigured data from an unavailable configured dependency.
   response in native collection. Cached search snippets are not accepted data.
 - The Probate Court's offered privacy URL returned HTTP 404. Automated
   integration remains held pending a complete policy review.
-- The Magistrate Court's active judge page and separate chief page are
-  accessible. Its staff directory has a different inventory; staff listings
-  are not substituted for current judge cards. Integration remains separate
-  work, with appointed judges distinguished from ballot candidates.
+- A November 2 follow-up integrates the Magistrate Court's active judge cards,
+  chief page and their specific linked profiles as a separate
+  [current-office source](../fulton-magistrate-court.md). A broader staff-directory
+  inventory is not substituted for the judge roster. Office records remain
+  separate from ballot candidates; elected versus appointed status is not inferred.
 - The Clerk's public legal disclaimer is accessible. Its current identity and
   document layout remain a separate integration task.
 
 ## National scope
 
-The current registry has 48 reusable election families spanning 39 states and DC.
+The current registry has 49 reusable election families spanning 40 states and DC.
 These are discovery/collection capabilities, not claims of complete ballots or
-future election certification. Eleven states lack reusable family discovery:
+future election certification. Ten states lack reusable family discovery:
 Alabama, Alaska, Colorado, Hawaii, Louisiana, Massachusetts, Minnesota,
-New Mexico, Oklahoma, Pennsylvania and West Virginia. Existing reviewed or
+New Mexico, Oklahoma and Pennsylvania. Existing reviewed or
 single-cycle sources remain available where supported. Publisher restrictions,
 TLS failures and access challenges retain their existing holds. This court
 directory does not change that denominator or replace statewide ballot work.

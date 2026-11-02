@@ -35,6 +35,7 @@ const districtPageData = computed(() => {
 });
 const pagePending = computed(() => guidePending.value || (!guideData.value && !lookupFallbackData.value));
 const pageError = computed(() => districtPageData.value ? null : guideError.value);
+const courtDirectories = computed(() => districtPageData.value?.courtDirectories ?? (districtPageData.value?.courtDirectory ? [districtPageData.value.courtDirectory] : []));
 const responsibilitiesHeading = computed(() => districtPageData.value?.mode === "nationwide"
 	? buildDistrictResponsibilitiesHeading(districtPageData.value.district)
 	: "Responsibilities");
@@ -142,9 +143,11 @@ usePageSeo({
 						</NuxtLink>
 						<UpdatedAt v-if="districtPageData.representatives.length || districtPageData.candidates.length || districtPageData.relatedContests.length" :value="districtPageData.updatedAt" label="District data updated on" footer />
 					</div>
-					<NuxtLink v-if="districtPageData.courtDirectory" :to="`/courts/${districtPageData.courtDirectory.slug}`" class="text-app-accent mt-6 underline inline-block focus-ring">
-						State Court judges ({{ districtPageData.courtDirectory.count }})
-					</NuxtLink>
+					<div v-if="courtDirectories.length" class="mt-6 flex flex-wrap gap-x-6 gap-y-3">
+						<NuxtLink v-for="court in courtDirectories" :key="court.slug" :to="`/courts/${court.slug}`" class="text-app-accent underline inline-block focus-ring">
+							{{ court.title.replace(/^Fulton County /u, "") }} judges ({{ court.count }})
+						</NuxtLink>
+					</div>
 				</header>
 
 				<section id="representatives" class="surface-panel">

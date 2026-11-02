@@ -31,6 +31,10 @@
 				"back-end/dist/manage-state-ballot-data.js",
 				"back-end/dist/manage-state-ballot-cycles.js",
 				"back-end/dist/manage-state-ballot-automation.js",
+				"back-end/dist/manage-magistrate-court.js",
+				"back-end/dist/collect-magistrate-court.js",
+				"back-end/dist/magistrate-court-directory.js",
+				"back-end/dist/magistrate-court-storage.js",
 				"back-end/dist/admin-operations.js",
 				"back-end/dist/export-state-ballot-sources.js",
 				"back-end/dist/check-state-ballot-sources.js",
@@ -41,6 +45,16 @@
 		}
 	],
 	"externalWritableState": [
+		{
+			"configuration": "MAGISTRATE_COURT_DATA_DIR",
+			"purpose": "Optional Magistrate Court snapshots, exact predecessors, captures, locks and collection journals",
+			"preservation": "Keep outside immutable releases and preserve independently across promotion and rollback"
+		},
+		{
+			"configuration": "COURT_DIRECTORY_DATA_DIR",
+			"purpose": "Independent optional State Court snapshots, exact predecessors, captures, locks and collection journals",
+			"preservation": "Keep outside immutable releases and preserve independently across promotion and rollback"
+		},
 		{
 			"configuration": "STATE_BALLOT_DATA_DIR",
 			"purpose": "Validated public candidate records and separately attributed election references, with source fingerprints and original capture dates",

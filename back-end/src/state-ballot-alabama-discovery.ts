@@ -23,6 +23,13 @@ export interface AlabamaReferenceElection {
 	countyBallots: { county: string; url: string }[];
 	statewideBackUrl: string;
 }
+export interface AlabamaPendingPublication {
+	status: "pending";
+	year: string;
+	pageUrl: string;
+	reason: "general-election-not-published" | "ballot-resources-not-published";
+}
+type AlabamaPublishedGeneralElection = Pick<AlabamaReferenceElection, "electionDate" | "pageUrl" | "sampleIndexUrl" | "certifications">;
 export interface AlabamaElectionReferences {
 	schemaVersion: 1;
 	type: "official-alabama-election-references";
@@ -33,6 +40,7 @@ export interface AlabamaElectionReferences {
 	retrievedAt: string;
 	documents: Omit<AlabamaCapturedDocument, "body">[];
 	elections: AlabamaReferenceElection[];
+	pendingPublications?: AlabamaPendingPublication[];
 	candidateExtractionPerformed: false;
 	candidateQualificationInferred: false;
 	individualBallotApplicabilityVerified: false;
@@ -109,10 +117,17 @@ export function alabamaAnnualPages(body: string) {
 	if (!pages.size || pages.size > 10) throw new Error("No bounded current/future Alabama annual pages are offered.");
 	return [...pages.entries()].sort(([first], [second]) => first.localeCompare(second));
 }
-export function alabamaGeneralElection(body: string, year: string) {
+export function alabamaGeneralElection(body: string, year: string): AlabamaPublishedGeneralElection;
+export function alabamaGeneralElection(body: string, year: string, pendingAsOf: number): AlabamaPublishedGeneralElection | AlabamaPendingPublication;
+export function alabamaGeneralElection(body: string, year: string, pendingAsOf?: number): AlabamaPublishedGeneralElection | AlabamaPendingPublication {
 	const content = main(body);
 	const headings = stateHtmlDescendants(content, node => /^h[1-4]$/u.test(node.nodeName));
 	const selected = headings.filter(node => /^General Election\s[–-]\s/u.test(text(node)));
+	const pending = (reason: AlabamaPendingPublication["reason"]): AlabamaPendingPublication => ({ status: "pending", year, pageUrl: `${alabamaDiscoveryUrl}/${year}`, reason });
+	const awaitingCutoff = new Date(`${year}-11-02T00:00:00Z`);
+	awaitingCutoff.setUTCDate(awaitingCutoff.getUTCDate() + (2 - awaitingCutoff.getUTCDay() + 7) % 7);
+	const futureYear = pendingAsOf !== undefined && Number.isFinite(pendingAsOf) && /^20\d{2}$/u.test(year) && Number(year) >= 2026 && Number(year) % 2 === 0 && Number(year) >= new Date(pendingAsOf).getUTCFullYear() && pendingAsOf < awaitingCutoff.getTime();
+	if (!selected.length && futureYear && headings.filter(node => node.nodeName === "h1" && text(node) === `${year} Election Information`).length === 1 && !/general\s*election/iu.test(text(content))) return pending("general-election-not-published");
 	if (selected.length !== 1) throw new Error("The regular Alabama general election must be explicit and unique.");
 	const date = /^General Election\s[–-]\sNovember ([2-8]), (20\d{2})$/u.exec(text(selected[0]));
 	const electionDate = date ? `${date[2]}-11-0${date[1]}` : null;
@@ -124,6 +139,7 @@ export function alabamaGeneralElection(body: string, year: string) {
 	) {
 		throw new Error("The Alabama general-election date conflicts with its offered year.");
 	}
+	const canPend = futureYear && Date.parse(`${electionDate}T00:00:00Z`) > pendingAsOf!;
 	const links: { label: string; url: string }[] = [];
 	let active = false;
 	for (const node of stateHtmlDescendants(
@@ -138,14 +154,13 @@ export function alabamaGeneralElection(body: string, year: string) {
 			links.push({ label: text(node), url: address(stateHtmlAttribute(node, "href")) });
 	}
 	const samples = links.filter(link => link.label === "Sample Ballots");
-	if (samples.length !== 1 || samples[0].url !== `${origin}/alabama-votes/${year}-general-election-sample-ballots`)
+	if ((!samples.length && !canPend) || samples.length > 1 || (samples.length === 1 && samples[0].url !== `${origin}/alabama-votes/${year}-general-election-sample-ballots`))
 		throw new Error("The Alabama sample-ballot page is not uniquely offered by the general-election section.");
 	const certifications = links.filter(link => /certif/iu.test(link.label));
 	const known
 		= /^(?:State Certification of (?:Democratic Party Candidates|Republican Party Candidates|Independent Candidate|Constitutional Amendments)|Certification of (?:Democratic|Republican) Party Candidates|Amended Certification of Democratic Party Candidates|Republican Party Amended Certification of Candidates)$/u;
 	if (
-		certifications.length < 3
-		|| certifications.length > 25
+		certifications.length > 25
 		|| certifications.some(
 			link =>
 				!known.test(link.label)
@@ -157,12 +172,18 @@ export function alabamaGeneralElection(body: string, year: string) {
 	) {
 		throw new Error("The complete Alabama certification inventory requires review.");
 	}
+	let missingParty = false;
 	for (const label of [
 		"State Certification of Democratic Party Candidates",
 		"State Certification of Republican Party Candidates"
 	]) {
-		if (certifications.filter(link => link.label === label).length !== 1)
-			throw new Error("The Alabama state-certified party inventory is incomplete.");
+		const count = certifications.filter(link => link.label === label).length;
+		if (count > 1) throw new Error("The Alabama state-certified party inventory is duplicated.");
+		if (!count) missingParty = true;
+	}
+	if (!samples.length || certifications.length < 3 || missingParty) {
+		if (canPend) return pending("ballot-resources-not-published");
+		throw new Error("The Alabama state-certified party inventory is incomplete.");
 	}
 	return { electionDate, pageUrl: `${alabamaDiscoveryUrl}/${year}`, sampleIndexUrl: samples[0].url, certifications };
 }
@@ -219,7 +240,7 @@ export function prepareAlabamaReferences(capture: unknown, now = Date.now()): Al
 		|| capture.schemaVersion !== 1
 		|| capture.type !== "alabama-election-reference-capture"
 		|| !Array.isArray(capture.documents)
-		|| capture.documents.length < 4
+		|| capture.documents.length < 3
 		|| capture.documents.length > 32
 	) {
 		throw new Error("The Alabama discovery capture is invalid.");
@@ -251,14 +272,19 @@ export function prepareAlabamaReferences(capture: unknown, now = Date.now()): Al
 	const permissions = electionDocumentRobotsPolicy(Buffer.from(robots.body));
 	const pages = alabamaAnnualPages(discovery.body);
 	const elections: AlabamaReferenceElection[] = [];
+	const pendingPublications: AlabamaPendingPublication[] = [];
 	const used = new Set([robots.url, discovery.url]);
 	for (const [year, url] of pages) {
 		const annual = documents.get(url);
 		if (!annual) throw new Error("The offered Alabama annual page is missing.");
-		const election = alabamaGeneralElection(annual.body, year);
+		const election = alabamaGeneralElection(annual.body, year, Date.parse(annual.capturedAt));
+		used.add(annual.url);
+		if ("status" in election) {
+			pendingPublications.push(election);
+			continue;
+		}
 		const sample = documents.get(election.sampleIndexUrl);
 		if (!sample) throw new Error("The offered Alabama sample index is missing.");
-		used.add(annual.url);
 		used.add(sample.url);
 		elections.push({ ...election, ...alabamaCountySamples(sample.body, year) });
 	}
@@ -282,6 +308,7 @@ export function prepareAlabamaReferences(capture: unknown, now = Date.now()): Al
 			.at(-1)!,
 		documents: provenance,
 		elections,
+		...(pendingPublications.length ? { pendingPublications } : {}),
 		candidateExtractionPerformed: false,
 		candidateQualificationInferred: false,
 		individualBallotApplicabilityVerified: false,

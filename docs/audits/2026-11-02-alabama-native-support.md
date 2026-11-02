@@ -17,6 +17,17 @@ The retained 2026 publications reproduce 67 county references and nine
 certification controls exactly. Synthetic offered 2028, 2030 and 2032 publications
 use the same parser without election-specific filename changes.
 
+Offered future annual pages may precede general-election resources. A uniquely
+identified annual page or an explicit future general-election section can remain
+pending until the required ballot and certification links are published. Pending
+years produce no inferred dates, source IDs, candidate facts or sample-URL probes.
+Ready current publications continue independently. Synchronization reports the
+pending publications explicitly and accepts their later complete publication.
+Election-day absence, access failures, malformed links, policy changes and the
+disappearance of already accepted unexpired publications retain their review
+holds rather than becoming ordinary waits. Earlier ready captures and catalogs
+retain their exact format and existing output when no publications are pending.
+
 ## Original-file analysis
 
 `verifyAlabamaOriginal` requires original PDF bytes, their SHA-256, the offered
@@ -78,7 +89,7 @@ County composites remain excluded from personalized ballot previews.
 
 ## Verification
 
-Thirty-nine maintained tests cover discovery, future dates, provenance, policy
+Fifty maintained tests cover discovery, future dates, provenance, policy
 changes, native object admission, lexical bounds, visibility, glyph mappings,
 closed office boundaries, unsupported painting and original-inspector cleanup.
 Retained-data verification also exercises the compiled worker on all three

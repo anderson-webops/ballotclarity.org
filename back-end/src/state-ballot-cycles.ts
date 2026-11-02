@@ -495,7 +495,7 @@ export function parseStateBallotCycleCatalog(value: unknown, now = Date.now()): 
 	const discovery = value.discovery;
 	if (!exactKeys(discovery, ["url", "sha256", "retrievedAt"]) || discovery.url !== family.discoveryUrl || typeof discovery.sha256 !== "string" || !/^[a-f0-9]{64}$/u.test(discovery.sha256) || typeof discovery.retrievedAt !== "string" || !Number.isFinite(Date.parse(discovery.retrievedAt)) || new Date(discovery.retrievedAt).toISOString() !== discovery.retrievedAt || Date.parse(discovery.retrievedAt) > now)
 		throw new Error("The election discovery provenance is invalid.");
-	if (!Array.isArray(value.elections) || (!value.elections.length && original.format !== "kanawha-pdf" && original.format !== "boone-xlsx" && original.format !== "orange-pdf" && original.format !== "maine-house-html" && original.format !== "nyc-pdf" && original.format !== "douglas-html" && original.format !== "hamilton-html" && original.format !== "pima-pdf" && original.format !== "chicago-pdf" && original.format !== "goffstown-pdf") || value.elections.length > 100)
+	if (!Array.isArray(value.elections) || (!value.elections.length && family.format !== "alabama-pdf" && original.format !== "kanawha-pdf" && original.format !== "boone-xlsx" && original.format !== "orange-pdf" && original.format !== "maine-house-html" && original.format !== "nyc-pdf" && original.format !== "douglas-html" && original.format !== "hamilton-html" && original.format !== "pima-pdf" && original.format !== "chicago-pdf" && original.format !== "goffstown-pdf") || value.elections.length > 100)
 		throw new Error("The election cycle catalog exceeds its bounds.");
 	if (family.format === "alabama-pdf") {
 		const dates = new Set<string>();

@@ -191,7 +191,7 @@ export async function syncStateBallotCycles(options: StateBallotCycleSyncOptions
 		if (observation?.failure && result.status !== "expired" && result.status !== "persistence-failed") result.status = "unavailable";
 	}
 	await batch?.complete();
-	return { familyId: catalog.familyId, catalogChanged, discovery: catalog.discovery, checkedAt: new Date(now()).toISOString(), ...(batch ? { deferredSources: batch.deferredSources } : {}), results };
+	return { familyId: catalog.familyId, catalogChanged, discovery: catalog.discovery, checkedAt: new Date(now()).toISOString(), ...(batch ? { deferredSources: batch.deferredSources, pendingPublications: readAlabamaDiscovery(body, now()).pendingPublications ?? [] } : {}), results };
 }
 
 export async function syncStateBallotCycleFamilies(options: StateBallotCycleSyncOptions[], priorityFamilies?: readonly string[]) {

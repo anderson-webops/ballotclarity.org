@@ -105,8 +105,8 @@ export async function fetchAlabamaCycleDiscovery(options: Options = {}) {
 	};
 	const index = await page(alabamaDiscoveryUrl);
 	for (const [year, url] of alabamaAnnualPages(index)) {
-		const annual = alabamaGeneralElection(await page(url), year);
-		await page(annual.sampleIndexUrl);
+		const annual = alabamaGeneralElection(await page(url), year, (options.now ?? Date.now)());
+		if (!("status" in annual)) await page(annual.sampleIndexUrl);
 	}
 	const body = JSON.stringify({ schemaVersion: 1, type: "alabama-election-reference-capture", documents });
 	readAlabamaDiscovery(body, (options.now ?? Date.now)());

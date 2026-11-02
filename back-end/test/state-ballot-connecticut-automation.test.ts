@@ -184,6 +184,40 @@ test("Connecticut refresh preserves exact legacy rollback bytes and keeps ordina
 	assert.equal(await readFile(target, "utf8"), originalBytes);
 });
 
+test("Connecticut public reads stay offline across stale imports, misses and restarts", async (context) => {
+	const directory = await mkdtemp(join(tmpdir(), "ballot-ct-public-reader-"));
+	context.after(() => rm(directory, { recursive: true, force: true }));
+	const parsed = parseConnecticutCandidateCapture(source, capture(), createStateCandidateRecord, now);
+	const storage = createStateBallotStorage(directory);
+	let requests = 0;
+	const options = { sources: [source], dataDirectory: directory, now: () => now + 2 * 86400000, fetchText: async () => {
+		requests++;
+		throw new Error("Public readers must remain offline.");
+	} };
+	const reader = createStateBallotRepository(options);
+	assert.equal(await reader.getSnapshot("CT"), null);
+	await storage.write({ source, ...parsed });
+	assert.deepEqual((await reader.getSnapshot("CT"))?.records, JSON.parse(JSON.stringify(parsed.records)));
+	assert.equal((await createStateBallotRepository(options).getSnapshot("CT"))?.retrievedAt, parsed.retrievedAt);
+	assert.equal(requests, 0);
+});
+
+test("Connecticut explicit collection still refreshes native imports without a family catalog", async (context) => {
+	const directory = await mkdtemp(join(tmpdir(), "ballot-ct-direct-collector-"));
+	context.after(() => rm(directory, { recursive: true, force: true }));
+	const storage = createStateBallotStorage(directory);
+	const parsed = parseConnecticutCandidateCapture(source, capture(), createStateCandidateRecord, now);
+	await storage.write({ source, ...parsed });
+	let requests = 0;
+	const collector = createStateBallotRepository({ sources: [source], dataDirectory: directory, now: () => now + 2 * 86400000, refreshReviewedLegacy: true, fetchText: async () => {
+		requests++;
+		return capture();
+	} });
+	assert.deepEqual((await collector.getSnapshot("CT"))?.records, parsed.records);
+	assert.equal(requests, 1);
+	assert.deepEqual((await storage.read(source))?.records, JSON.parse(JSON.stringify(parsed.records)));
+});
+
 test("Connecticut routine cycle sync records durable imports, idempotent cache reuse and rollback-safe failures", async (context) => {
 	const directory = await mkdtemp(join(tmpdir(), "ballot-ct-sync-test-"));
 	context.after(() => rm(directory, { recursive: true, force: true }));

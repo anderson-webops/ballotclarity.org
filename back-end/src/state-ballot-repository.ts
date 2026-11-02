@@ -192,8 +192,9 @@ export function createStateBallotRepository(options: StateBallotRepositoryOption
 			let body: string | undefined;
 			let capturedAt: string | undefined;
 			try {
-				const fultonPublicReader = source.format === "fulton-pdf" && !options.refreshReviewedLegacy;
-				if ((fultonPublicReader || ["alabama-pdf", "kanawha-pdf", "boone-xlsx", "orange-pdf", "maine-house-html", "nyc-pdf", "douglas-html", "hamilton-html", "pima-pdf", "goffstown-pdf", "chicago-pdf", "winnebago-pdf"].includes(source.format)) && !options.collectionIndexSha256?.[source.id]) {
+				const bulkPublication = source.format.endsWith("-pdf") || source.format.endsWith("-xlsx") || ["maine-house-html", "douglas-html", "hamilton-html", "iowa-johnson-html", "washoe-html"].includes(source.format);
+				const publicStoredReader = bulkPublication && !options.refreshReviewedLegacy && !options.collectionIndexSha256?.[source.id];
+				if (publicStoredReader) {
 					failureReason = "format";
 					stored = storage ? await storage.read(source) : null;
 					if (stored && Date.parse(stored.retrievedAt) > now()) throw new Error("Stored state ballot data has a future capture time.");

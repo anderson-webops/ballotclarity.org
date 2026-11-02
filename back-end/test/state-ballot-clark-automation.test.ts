@@ -159,6 +159,40 @@ test("Clark County migrates reviewed data durably, preserves its original envelo
 	}
 });
 
+test("Clark County public reads stay offline across stale imports, misses and restarts", async (context) => {
+	const directory = await mkdtemp(join(tmpdir(), "ballot-clark-public-reader-"));
+	context.after(() => rm(directory, { recursive: true, force: true }));
+	const parsed = parseClarkCandidateCapture(source, capture(), createStateCandidateRecord, now, previous);
+	const storage = createStateBallotStorage(directory);
+	let requests = 0;
+	const options = { sources: [source], dataDirectory: directory, now: () => now + 2 * 86400000, fetchText: async () => {
+		requests++;
+		throw new Error("Public readers must remain offline.");
+	} };
+	const reader = createStateBallotRepository(options);
+	assert.equal(await reader.getSnapshot("NV"), null);
+	await storage.write({ source, ...parsed });
+	assert.deepEqual((await reader.getSnapshot("NV"))?.records, JSON.parse(JSON.stringify(parsed.records)));
+	assert.equal((await createStateBallotRepository(options).getSnapshot("NV"))?.retrievedAt, parsed.retrievedAt);
+	assert.equal(requests, 0);
+});
+
+test("Clark County explicit collection still refreshes native imports without a family catalog", async (context) => {
+	const directory = await mkdtemp(join(tmpdir(), "ballot-clark-direct-collector-"));
+	context.after(() => rm(directory, { recursive: true, force: true }));
+	const storage = createStateBallotStorage(directory);
+	const parsed = parseClarkCandidateCapture(source, capture(), createStateCandidateRecord, now, previous);
+	await storage.write({ source, ...parsed });
+	let requests = 0;
+	const collector = createStateBallotRepository({ sources: [source], dataDirectory: directory, now: () => now + 2 * 86400000, refreshReviewedLegacy: true, fetchText: async () => {
+		requests++;
+		return capture();
+	} });
+	assert.deepEqual((await collector.getSnapshot("NV"))?.records, parsed.records);
+	assert.equal(requests, 1);
+	assert.deepEqual((await storage.read(source))?.records, JSON.parse(JSON.stringify(parsed.records)));
+});
+
 test("Clark County future publications wait without fabricating candidates and import once both offered documents exist", async () => {
 	const directory = await mkdtemp(join(tmpdir(), "ballot-clark-future-"));
 	try {

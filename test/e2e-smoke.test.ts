@@ -607,6 +607,7 @@ async function withResilienceBrowser(t: TestContext, run: (cdp: CdpSession) => P
 		await cdp.send("Page.enable");
 		await cdp.send("Runtime.enable");
 		await cdp.send("Network.enable");
+		await cdp.send("Network.setBlockedURLs", { urls: ["https://analytics.ballotclarity.org/*"] });
 		cdp.on("Runtime.exceptionThrown", event => diagnostics.push({ exception: event.exceptionDetails?.text, description: event.exceptionDetails?.exception?.description }));
 		cdp.on("Network.responseReceived", event => {
 			if (event.response?.status >= 400) diagnostics.push({ path: new URL(event.response.url).pathname, status: event.response.status });

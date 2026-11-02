@@ -193,7 +193,7 @@ test("Oregon routine imports are cached, preserve failed-refresh data and retain
 		let current = now;
 		let requests = 0;
 		let failed = false;
-		const repository = createStateBallotRepository({ sources: [source], dataDirectory: directory, ttlMs: 60000, now: () => current, fetchText: async () => {
+		const repository = createStateBallotRepository({ sources: [source], dataDirectory: directory, ttlMs: 60000, now: () => current, refreshReviewedLegacy: true, fetchText: async () => {
 			requests++;
 			if (failed) throw new Error("Synthetic policy change");
 			return capture();

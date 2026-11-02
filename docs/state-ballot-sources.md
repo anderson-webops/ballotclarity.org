@@ -1,5 +1,9 @@
 # Official state candidate records
 
+Bulk publication readers use accepted external snapshots without collecting or
+converting documents during visitor requests. Explicit workers retain collection
+and cycle-discovery duties. See the [reader-boundary and retained-data review](audits/2026-11-02-native-reader-boundary.md).
+
 Reviewed scan-based snapshots can now use the bounded
 [document refresh command](reviewed-state-documents.md). Woodward County's forty
 reviewed records byte-match its three normally collected current samples.

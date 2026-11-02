@@ -248,9 +248,13 @@ test("future catalogs survive hot/cold reload, retain changed unexpired publicat
 		process.env.STATE_BALLOT_ENABLED_SOURCES = source.id;
 		process.env.STATE_BALLOT_ENABLED_FAMILIES = source.id;
 		process.env.STATE_BALLOT_CYCLE_CATALOGS = JSON.stringify({ [source.id]: path });
-		const hot = createStateBallotRepository({ dataDirectory: directory, now: () => now, fetchText: async () => body });
+		const hot = createStateBallotRepository({ dataDirectory: directory, now: () => now, fetchText: async () => {
+			assert.fail("Public catalog readers must not collect publisher documents");
+		} });
 		assert.equal(await hot.getSnapshot("MO", instance.id), null);
 		await writeStateBallotCycleCatalog(path, catalog, now);
+		assert.equal(await hot.getSnapshot("MO", instance.id), null);
+		await syncStateBallotCycles({ familyId: source.id, catalogPath: path, dataDirectory: directory, now: () => now, fetchDiscovery: async () => body, fetchCandidates: async () => body });
 		assert.equal((await hot.getSnapshot("MO", instance.id))!.records.length, 8);
 		const cold = createStateBallotRepository({ dataDirectory: directory, now: () => now, fetchText: async () => {
 			throw new Error("already persisted");

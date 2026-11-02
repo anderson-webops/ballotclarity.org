@@ -1,4 +1,5 @@
 import type { ElectionDocumentRobotsLayout } from "./election-document-robots-layout.js";
+import { fultonFilingDocumentSource } from "./fulton-filing-context.js";
 import { georgiaCandidateStatementDocuments } from "./georgia-candidate-statement-sources.js";
 
 export interface ElectionDocumentSource {
@@ -593,4 +594,5 @@ export const electionDocumentSources: readonly ElectionDocumentSource[] = [
 		maximumDocuments: 1,
 	},
 	...georgiaCandidateStatementDocuments,
+	fultonFilingDocumentSource,
 ];

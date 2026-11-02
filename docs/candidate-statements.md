@@ -103,3 +103,24 @@ Public reference responses omit it. Legacy snapshots remain readable unchanged;
 new bound local snapshots require a compatible reader before import/publication.
 Five Fulton campaign collections use this association without changing any
 official candidate fields or source capture dates.
+# Official filing context
+
+`manage-election-references prepare-fulton-filings REVIEW.json` prepares an optional
+`ga-fulton-filing-context-2026` reference snapshot from the two reviewed county PDFs
+and an existing official candidate snapshot. `collect-fulton-filings REVIEW.json
+COLLECTION.json` refreshes those PDFs through the existing bounded document
+collector before preparation. Configure maintained Poppler with
+`STATE_BALLOT_PDFTOTEXT` only in the collection worker.
+
+The review has `schemaVersion: 1`, `type: "fulton-filing-context-preparation"`,
+`reviewedAt`, an absolute `candidateFile`, `documents`, `bindings` and an external
+`outputDirectory`. Each document contains its configured `url`, absolute `path`,
+original-byte `sha256` and `capturedAt`. Each binding contains `documentIndex`, the
+exact filing `name` and official `recordId`. Every published row must be reviewed.
+Only reported occupations become dated facts. Party, incumbency, qualification,
+addresses and contact information are not imported from filing context.
+
+Review freshness, exact candidates/offices, complete documents, bounded extraction,
+changed-format holds and retained output apply independently of publication.
+Future elections require newly offered URLs and reviewed candidate associations;
+the parser's explicit date parameter does not enroll future sources automatically.

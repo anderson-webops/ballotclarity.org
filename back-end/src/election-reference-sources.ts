@@ -1,4 +1,5 @@
 import { congressionalBiographySources } from "./congressional-biographies.js";
+import { fultonFilingReferenceSource } from "./fulton-filing-context.js";
 import { georgiaCandidateStatementReferences } from "./georgia-candidate-statement-sources.js";
 import { openStatesBulkSources } from "./openstates-bulk.js";
 import { washingtonLocalStatementSources, washingtonStateStatementSources } from "./washington-statement-sources.js";
@@ -9,6 +10,7 @@ export interface ElectionReferenceSource {
 	electionDate: string;
 	allowIdentityOnly?: boolean;
 	optional?: boolean;
+	allowOfficialCandidateBindings?: true;
 	washingtonLocality?: {
 		countyDisplay: string;
 		rosterJurisdiction: "County";
@@ -241,4 +243,5 @@ export const electionReferenceSources: readonly ElectionReferenceSource[] = [
 	...openStatesBulkSources,
 	...washingtonLocalStatementSources,
 	...georgiaCandidateStatementReferences,
+	fultonFilingReferenceSource,
 ];

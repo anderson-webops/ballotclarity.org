@@ -30,6 +30,7 @@
 				"back-end/dist/prepare-congressional-biographies.js",
 				"back-end/dist/manage-state-ballot-data.js",
 				"back-end/dist/manage-state-ballot-cycles.js",
+				"back-end/dist/state-ballot-alabama-native-worker.js",
 				"back-end/dist/manage-state-ballot-automation.js",
 				"back-end/dist/manage-magistrate-court.js",
 				"back-end/dist/collect-magistrate-court.js",
@@ -46,6 +47,11 @@
 		}
 	],
 	"externalWritableState": [
+		{
+			"configuration": "STATE_BALLOT_CYCLE_CATALOGS",
+			"purpose": "Per-family election discovery catalogs and bounded Alabama county-batch cursors",
+			"preservation": "Keep outside immutable releases and preserve accepted catalogs and source selection with compatible rollback configuration"
+		},
 		{
 			"configuration": "FULTON_COUNTY_OFFICEHOLDER_DIRECTORY",
 			"purpose": "Optional versioned county-office snapshots, exact predecessors, captures, locks and collection journals",

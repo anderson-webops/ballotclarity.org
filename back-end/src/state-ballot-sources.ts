@@ -8,7 +8,7 @@ export interface StateBallotSource {
 	electionDate: string;
 	url: string;
 	pageUrl: string;
-	format: "kanawha-pdf" | "boone-xlsx" | "orange-pdf" | "maine-house-html" | "nyc-pdf" | "douglas-html" | "hamilton-html" | "pima-pdf" | "goffstown-pdf" | "chicago-pdf" | "winnebago-pdf" | "east-greenwich-pdf" | "dane-pdf" | "pulaski-pdf" | "tuscola-pdf" | "dc-pdf" | "franklin-pdf" | "cassia-pdf" | "iowa-polk-pdf" | "iowa-johnson-html" | "washoe-html" | "clark-pdf" | "connecticut-pdf" | "oregon-pdf" | "texas-certified-pdf" | "vermont-xlsx" | "csv" | "maryland-local-csv" | "florida-local-tsv" | "delaware-html" | "michigan-html" | "new-mexico-html" | "virginia-html" | "virginia-local-html" | "fulton-pdf" | "certified-pdf" | "colorado-html" | "kentucky-html" | "kentucky-courts-html" | "north-dakota-html" | "utah-html" | "mississippi-csv" | "south-dakota-csv" | "hawaii-csv" | "illinois-tsv" | "montana-csv" | "reviewed-pdf" | "reviewed-xlsx" | "reviewed-image" | "pennsylvania-html" | "west-virginia-json" | "alaska-html" | "south-carolina-html" | "kansas-html" | "washington-html" | "arkansas-html" | "connecticut-ballots" | "oregon-ballots";
+	format: "alabama-pdf" | "kanawha-pdf" | "boone-xlsx" | "orange-pdf" | "maine-house-html" | "nyc-pdf" | "douglas-html" | "hamilton-html" | "pima-pdf" | "goffstown-pdf" | "chicago-pdf" | "winnebago-pdf" | "east-greenwich-pdf" | "dane-pdf" | "pulaski-pdf" | "tuscola-pdf" | "dc-pdf" | "franklin-pdf" | "cassia-pdf" | "iowa-polk-pdf" | "iowa-johnson-html" | "washoe-html" | "clark-pdf" | "connecticut-pdf" | "oregon-pdf" | "texas-certified-pdf" | "vermont-xlsx" | "csv" | "maryland-local-csv" | "florida-local-tsv" | "delaware-html" | "michigan-html" | "new-mexico-html" | "virginia-html" | "virginia-local-html" | "fulton-pdf" | "certified-pdf" | "colorado-html" | "kentucky-html" | "kentucky-courts-html" | "north-dakota-html" | "utah-html" | "mississippi-csv" | "south-dakota-csv" | "hawaii-csv" | "illinois-tsv" | "montana-csv" | "reviewed-pdf" | "reviewed-xlsx" | "reviewed-image" | "pennsylvania-html" | "west-virginia-json" | "alaska-html" | "south-carolina-html" | "kansas-html" | "washington-html" | "arkansas-html" | "connecticut-ballots" | "oregon-ballots";
 	defaultPriority?: number;
 	ballotPreview?: false;
 	recordRole?: "certified-writeins";
@@ -20,7 +20,7 @@ export interface StateBallotSource {
 	documentLinks?: readonly { label: string; url: string }[];
 	retrievalPolicy?: "manual-snapshot";
 	snapshotStorage?: "external";
-	withheldDistrictScopes?: readonly ("congressional" | "state-senate" | "state-house")[];
+	withheldDistrictScopes?: readonly ("congressional" | "state-senate" | "state-house" | "state-board-of-education")[];
 	withheldStatewideOffices?: readonly string[];
 	scopeNotice?: string;
 }

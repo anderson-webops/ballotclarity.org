@@ -135,7 +135,7 @@ export async function verifyAlabamaOriginal(
 				"message",
 				(value: ({ ok: true } & AlabamaNativeVerification) | { ok: false; error: string }) =>
 					value?.ok === true
-						? finish(undefined, value)
+						? finish(undefined, { result: value.result, proof: value.proof })
 						: finish(new Error(value?.error ?? "The Alabama native worker failed closed."))
 			);
 			worker.once("error", error => finish(error));

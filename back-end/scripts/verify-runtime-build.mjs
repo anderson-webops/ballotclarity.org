@@ -22,6 +22,7 @@ const requiredRuntimeFiles = [
 	"prepare-washington-statements.js",
 	"manage-state-ballot-data.js",
 	"manage-state-ballot-cycles.js",
+	"state-ballot-alabama-native-worker.js",
 	"manage-state-ballot-automation.js",
 	"manage-court-directory.js",
 	"court-directories.js",

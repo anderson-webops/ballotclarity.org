@@ -21,7 +21,7 @@ import { applicableStateRecordSupplements, readStateRecordSupplements } from "./
 import { containsControlCharacters } from "./text-validation.js";
 import { usStates } from "./us-states.js";
 
-const scopes = ["all", "statewide", "congressional", "state-senate", "state-house", "local"];
+const scopes = ["all", "statewide", "congressional", "state-senate", "state-house", "state-board-of-education", "local"];
 
 export function stateRecordDocumentLinks(source: StateBallotSource | undefined, snapshot?: StateBallotSnapshot) {
 	if (source?.format === "kanawha-pdf" && snapshot?.documents) {

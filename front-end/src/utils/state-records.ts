@@ -6,6 +6,7 @@ export const stateRecordScopes = [
 	{ value: "congressional", label: "Congress" },
 	{ value: "state-senate", label: "State Senate" },
 	{ value: "state-house", label: "State House" },
+	{ value: "state-board-of-education", label: "State education" },
 	{ value: "local", label: "Local and regional" },
 ];
 
@@ -43,8 +44,10 @@ export function readStateRecordQuery(query: Record<string, unknown>, states: rea
 
 export function stateRecordArea(record: PublicStateCandidateRecord) {
 	const office = record.office.toLowerCase();
+	const comparable = (value: string) => value.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
+	const officeWords = ` ${comparable(record.office)} `;
 	const areas = [record.jurisdiction, record.sourceDistrictLabel, !record.sourceDistrictLabel && record.district && !office.includes(record.district.toLowerCase()) ? `District ${record.district}` : ""];
-	return areas.find(area => area && !office.includes(area.toLowerCase())) || "";
+	return areas.find(area => area && !officeWords.includes(` ${comparable(area)} `)) || "";
 }
 
 export function stateRecordSummaryParts(record: PublicStateCandidateRecord) {

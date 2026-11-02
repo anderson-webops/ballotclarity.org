@@ -6,6 +6,7 @@ import { createHash } from "node:crypto";
 import { parse as parseCsv } from "csv-parse/sync";
 import { normalizePublicHref } from "./public-href.js";
 import { parseAdditionalStateRecords } from "./state-ballot-additional-records.js";
+import { parseAlabamaCandidateCapture } from "./state-ballot-alabama-collection.js";
 import { parseArkansasCandidateRecords } from "./state-ballot-arkansas.js";
 import { parseBooneCandidateCapture } from "./state-ballot-boone-collection.js";
 import { parseCassiaCandidateCapture } from "./state-ballot-cassia.js";
@@ -61,7 +62,7 @@ import { parseWashoeCandidateCapture } from "./state-ballot-washoe.js";
 import { parseWinnebagoCandidateCapture } from "./state-ballot-winnebago-collection.js";
 
 export type StateCandidateStatus = "listed" | "filed" | "qualified" | "write-in" | "withdrawn" | "disqualified" | "defeated" | "elected" | "unopposed" | "inactive" | "unrecognized";
-export type StateContestScope = "statewide" | "congressional" | "state-senate" | "state-house" | "local";
+export type StateContestScope = "statewide" | "congressional" | "state-senate" | "state-house" | "state-board-of-education" | "local";
 
 export interface StateCandidateRecord {
 	id: string;
@@ -136,7 +137,7 @@ function makeRecord(source: StateBallotSource, values: StateCandidateValues): St
 		geography.scope = "statewide";
 		geography.district = "";
 	}
-	const jurisdiction = geography.scope === "local" || source.format === "virginia-local-html" ? clean(values.jurisdiction) || undefined : undefined;
+	const jurisdiction = geography.scope === "local" || geography.scope === "state-board-of-education" || source.format === "virginia-local-html" ? clean(values.jurisdiction) || undefined : undefined;
 	const keyParts = [source.stateCode, source.electionDate, office.toLowerCase(), geography.district, name.toLowerCase(), party.toLowerCase()];
 	if (jurisdiction) keyParts.push(jurisdiction.toLowerCase());
 	if (source.format === "kentucky-courts-html") keyParts.push(clean(values.sourceDistrictLabel).toLowerCase());
@@ -477,6 +478,9 @@ export function parseStateCandidateRecords(source: StateBallotSource, body: stri
 	}
 	else if (source.format === "kanawha-pdf") {
 		records = parseKanawhaCandidateCapture(source, body, makeRecord).records;
+	}
+	else if (source.format === "alabama-pdf") {
+		records = parseAlabamaCandidateCapture(source, body, makeRecord).records;
 	}
 	else if (source.format === "boone-xlsx") {
 		records = parseBooneCandidateCapture(source, body, makeRecord).records;

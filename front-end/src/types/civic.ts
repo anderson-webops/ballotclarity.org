@@ -177,7 +177,7 @@ export interface BallotContentPreviewCandidate {
 	profileImages?: ProfileImage[];
 }
 
-export type StateRecordScope = "statewide" | "congressional" | "state-senate" | "state-house" | "local";
+export type StateRecordScope = "statewide" | "congressional" | "state-senate" | "state-house" | "state-board-of-education" | "local";
 
 export interface StateRecordState {
 	stateCode: string;

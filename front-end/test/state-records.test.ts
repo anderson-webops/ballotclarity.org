@@ -35,7 +35,9 @@ test("record query defaults, scope and offsets remain bounded", () => {
 	assert.equal(readStateRecordQuery({ scope: "ward", offset: "25001", q: ["private"] }, states).scope, "all");
 	assert.equal(readStateRecordQuery({ offset: "-1" }, states).offset, 0);
 	assert.equal(readStateRecordQuery({ q: "x".repeat(200) }, states).search.length, 120);
-	assert.equal(stateRecordScopes.length, 6);
+	assert.equal(stateRecordScopes.length, 7);
+	assert(stateRecordScopes.some(scope => scope.value === "state-board-of-education" && scope.label === "State education"));
+	assert.equal(readStateRecordQuery({ scope: "state-board-of-education" }, []).scope, "state-board-of-education");
 	assert.equal(stateRecordStatusLabels.withdrawn, "Withdrawn");
 });
 
@@ -55,6 +57,13 @@ test("record context retains jurisdictions but omits repeated office labels", ()
 	const record = { id: "example", name: "Example", office: "CITY COUNCIL", district: "", scope: "local" as const, status: "listed" as const, jurisdiction: "Bangor" };
 	assert.equal(stateRecordArea(record), "Bangor");
 	assert.equal(stateRecordArea({ ...record, office: "BANGOR CITY COUNCIL" }), "");
+});
+
+test("county district summaries ignore punctuation-only duplication without merging distinct districts", () => {
+	const record = { id: "example", name: "Example", office: "Member, Macon County Commission, District 2", district: "2", scope: "local" as const, status: "listed" as const, jurisdiction: "Macon County Commission District 2" };
+	assert.equal(stateRecordArea(record), "");
+	assert.equal(stateRecordArea({ ...record, jurisdiction: "Macon County Commission District 20" }), "Macon County Commission District 20");
+	assert.equal(stateRecordArea({ ...record, office: "Macon County Commission District 20" }), "Macon County Commission District 2");
 });
 
 test("record context retains a published district when the jurisdiction repeats the office", () => {

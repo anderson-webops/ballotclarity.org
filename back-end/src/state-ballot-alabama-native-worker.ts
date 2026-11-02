@@ -16,6 +16,7 @@ export function analyzeAlabamaObjects(objects: string, input: AlabamaSourceIdent
 			schemaVersion: 1 as const,
 			type: "alabama-original-native-verification" as const,
 			sourceSha256: input.sourceSha256,
+			reviewSha256: alabamaHash(JSON.stringify(result)),
 			objectsSha256: alabamaHash(objects),
 			objectProof: content.objectProof,
 			glyphs: content.glyphs.length,

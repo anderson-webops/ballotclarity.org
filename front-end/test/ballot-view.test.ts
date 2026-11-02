@@ -13,6 +13,8 @@ const context = { result: "resolved", inputKind: "zip", lookupQuery: "98101", lo
 
 test("ballot cards use a source-bound dedicated record instead of making the name a campaign link", () => {
 	assert.deepEqual(buildBallotCandidateTarget(preview, candidate), { path: "/record/WA/candidate-1", query: { source: "wa-general-2026", name: "Synthetic Candidate" } });
+	assert.equal(buildBallotCandidateTarget(preview, { ...candidate, sourceId: "certified-supplement" })?.query.source, "certified-supplement");
+	assert.equal(buildBallotCandidateTarget(preview, { ...candidate, sourceId: "../invalid" }), null);
 });
 
 test("other providers receive dedicated pages with ZIP-only lookup context and no raw address", () => {

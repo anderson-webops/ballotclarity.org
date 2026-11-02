@@ -16,6 +16,7 @@ import { validatePimaDocumentUrl } from "./state-ballot-pima-discovery.js";
 import { isActiveStateCandidateRecord } from "./state-ballot-records.js";
 import { configuredStateBallotSources } from "./state-ballot-registry.js";
 import { orderStateBallotSources } from "./state-ballot-source-state.js";
+import { applicableStateRecordSupplements, readStateRecordSupplements } from "./state-ballot-supplements.js";
 import { containsControlCharacters } from "./text-validation.js";
 import { usStates } from "./us-states.js";
 
@@ -118,7 +119,7 @@ function publicRecord(record: StateCandidateRecord, source: StateBallotSource): 
 	};
 }
 
-export function buildStateRecordPage(snapshot: StateBallotSnapshot, filters: ReturnType<typeof parseStateRecordFilters>) {
+export function buildStateRecordPage(snapshot: StateBallotSnapshot, filters: ReturnType<typeof parseStateRecordFilters>, recordSources?: ReadonlyMap<string, StateBallotSource>) {
 	const matching = snapshot.records.filter(record => (filters.status === "all" || isActiveStateCandidateRecord(record))
 		&& (filters.scope === "all" || record.scope === filters.scope)
 		&& (!filters.search || [record.name, record.office, record.party, record.incumbent || reportedFultonIncumbency(record, snapshot.source) ? "incumbent" : "", record.district, record.jurisdiction, record.sourceAreaLabel, record.sourceDistrictLabel, record.sourceStatus].join(" ").toLowerCase().includes(filters.search)));
@@ -129,7 +130,10 @@ export function buildStateRecordPage(snapshot: StateBallotSnapshot, filters: Ret
 		inactive: snapshot.records.filter(record => !isActiveStateCandidateRecord(record)).length,
 		offset,
 		limit: filters.limit,
-		records: matching.slice(offset, offset + filters.limit).map(record => publicRecord(record, snapshot.source)),
+		records: matching.slice(offset, offset + filters.limit).map((record) => {
+			const source = recordSources?.get(record.id) ?? snapshot.source;
+			return { ...publicRecord(record, source), ...(source.id !== snapshot.source.id ? { sourceId: source.id } : {}) };
+		}),
 	};
 }
 
@@ -169,8 +173,13 @@ export function registerStateRecordRoutes(app: Express, repository: StateBallotR
 			return;
 		}
 		let sourceId: string | undefined;
+		let includeSupplements = false;
 		try {
-			if (Object.keys(request.query).some(key => key.startsWith("source[")))
+			if (request.query.includeSupplements !== undefined) {
+				if (!["true", "false"].includes(singleQuery(request.query.includeSupplements, ""))) throw new Error("The supplement selection must be a single boolean.");
+				includeSupplements = request.query.includeSupplements === "true";
+			}
+			if (Object.keys(request.query).some(key => key.startsWith("source[") || key.startsWith("includeSupplements[")))
 				throw new Error("The selected candidate source must be a single value.");
 			if (request.query.source !== undefined) {
 				sourceId = singleQuery(request.query.source, "");
@@ -201,7 +210,13 @@ export function registerStateRecordRoutes(app: Express, repository: StateBallotR
 				if (!selected || snapshot.source.stateCode !== stateCode || (sourceId === undefined && source && snapshot.source.electionDate !== source.electionDate))
 					throw new Error("The repository returned a mismatched candidate source.");
 				payload.source = { stateCode, stateName: state[1], configured: true, id: selected.id, label: selected.label, url: selected.pageUrl, electionDate: selected.electionDate, scopeNotice: selected.scopeNotice, documentLinks: stateRecordDocumentLinks(selected, snapshot), sourceAsOfDate: snapshot.sourceAsOfDate };
-				Object.assign(payload, buildStateRecordPage(snapshot, filters));
+				const retained = includeSupplements ? await readStateRecordSupplements(snapshot, repository!) : { snapshots: [], unavailable: false };
+				const supplements = applicableStateRecordSupplements(snapshot, retained.snapshots);
+				const recordSources = new Map(supplements.flatMap(item => item.records.map(record => [record.id, item.source] as const)));
+				Object.assign(payload, buildStateRecordPage({ ...snapshot, records: [...snapshot.records, ...supplements.flatMap(item => item.records)] }, filters, recordSources));
+				if (supplements.length) payload.source.documentLinks = [...(payload.source.documentLinks ?? []), ...supplements.flatMap(item => stateRecordDocumentLinks(item.source, item) ?? [])];
+				if (supplements.length) payload.supplementalSources = supplements.map(item => ({ id: item.source.id, retrievedAt: item.retrievedAt, sha256: item.sha256 }));
+				if (retained.unavailable) payload.supplementsUnavailable = true;
 				if (portraits) payload.records = await portraits(stateCode, payload.records);
 				payload.available = true;
 				payload.source.retrievedAt = snapshot.retrievedAt;

@@ -1,5 +1,10 @@
 # Official state candidate records
 
+Georgia's separately certified state/federal write-ins have a reusable offline
+preparer and scoped stored-data supplementation. The source remains manual while
+publisher policy is unresolved. See the
+[certificate review](audits/2026-11-01-georgia-certified-writeins.md).
+
 ## Orange County qualified candidates
 
 `ca-orange-2026` follows the county's actual election selector and reviewed

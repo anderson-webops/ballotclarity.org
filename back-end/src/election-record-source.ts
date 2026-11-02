@@ -2,6 +2,7 @@ import type { StateBallotSource } from "./state-ballot-sources.js";
 import type { JurisdictionSummary } from "./types/civic.js";
 import { getStateAbbreviationForName } from "./official-election-tools.js";
 import { orderStateBallotSources } from "./state-ballot-source-state.js";
+import { stateRecordSupplementSources } from "./state-ballot-supplements.js";
 
 export function electionRecordSource(date: string, jurisdiction: Pick<JurisdictionSummary, "name" | "state" | "jurisdictionType"> | null | undefined, sources: readonly StateBallotSource[]) {
 	if (!jurisdiction) return undefined;
@@ -16,5 +17,5 @@ export function electionRecordSource(date: string, jurisdiction: Pick<Jurisdicti
 		return false;
 	});
 	const source = orderStateBallotSources(matches)[0];
-	return source ? { stateCode: source.stateCode, sourceId: source.id } : undefined;
+	return source ? { stateCode: source.stateCode, sourceId: source.id, ...(stateRecordSupplementSources(source, sources).length ? { includeSupplements: true as const } : {}) } : undefined;
 }

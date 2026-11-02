@@ -57,6 +57,7 @@ import {
 	supportsPendingStateBallotRecords
 } from "./state-ballot-source-state.js";
 import { createStateBallotStorage } from "./state-ballot-storage.js";
+import { applicableStateRecordSupplements, readStateRecordSupplements, stateRecordOfficeKey } from "./state-ballot-supplements.js";
 import { parseTexasCandidateCapture } from "./state-ballot-texas.js";
 import { parseTuscolaCandidateCapture } from "./state-ballot-tuscola-collection.js";
 import { parseVermontCandidateCapture } from "./state-ballot-vermont.js";
@@ -77,7 +78,7 @@ export interface StateBallotSnapshot {
 }
 
 export interface StateBallotRepository {
-	getStoredSnapshots?: (stateCode: string) => Promise<StateBallotSnapshot[]>;
+	getStoredSnapshots?: (stateCode: string, sourceIds?: readonly string[]) => Promise<StateBallotSnapshot[]>;
 	sources?: readonly StateBallotSource[];
 	inspectSources?: () => Promise<AdminOperationDataset[]>;
 	isAwaitingRecords?: (sourceId: string) => boolean;
@@ -323,9 +324,9 @@ export function createStateBallotRepository(options: StateBallotRepositoryOption
 				return item;
 			}));
 		},
-		async getStoredSnapshots(stateCode) {
+		async getStoredSnapshots(stateCode, sourceIds) {
 			const snapshots: StateBallotSnapshot[] = [];
-			for (const source of currentSources().filter(item => item.stateCode === stateCode && Date.parse(`${item.electionDate}T00:00:00Z`) + 2 * 86400000 > now())) {
+			for (const source of currentSources().filter(item => item.stateCode === stateCode && (sourceIds ? sourceIds.includes(item.id) : Date.parse(`${item.electionDate}T00:00:00Z`) + 2 * 86400000 > now()))) {
 				if (configurationFailures.has(stateCode)) throw new Error("The state election catalog is unavailable.");
 				const retained = cached.get(source.id);
 				const snapshot = storage ? await storage.read(source) : retained && retained.expiresAt > now() ? retained.snapshot : null;
@@ -428,6 +429,31 @@ export async function attachStateBallotPreview(lookup: LocationLookupResponse, r
 		: null;
 	if (!preview)
 		return lookup;
+	if (snapshot) {
+		const supplements = await readStateRecordSupplements(snapshot, repository);
+		let addedSupplement = false;
+		const targets = new Map(preview.contests.flatMap((contest) => {
+			const record = snapshot.records.find(record => record.office === contest.title && record.scope === contest.scope);
+			return record ? [[stateRecordOfficeKey(record), contest] as const] : [];
+		}));
+		for (const supplement of applicableStateRecordSupplements(snapshot, supplements.snapshots)) {
+			const additional = buildStateBallotPreview(supplement, {
+				districtMatches: lookup.inputKind === "address" && !lookup.detectedFromIp
+					? electionDistrictMatches(stateCode, supplement.source.electionDate, lookup.districtMatches ?? [], lookup.electionDistrictMatches)
+					: [],
+			});
+			for (const contest of additional?.contests ?? []) {
+				const record = supplement.records.find(record => record.office === contest.title && record.scope === contest.scope);
+				const target = record ? targets.get(stateRecordOfficeKey(record)) : undefined;
+				if (!target) continue;
+				addedSupplement = true;
+				target.candidates.push(...contest.candidates.map(candidate => ({ ...candidate, sourceId: supplement.source.id })));
+				target.sourceLabels = [...new Set([...(target.sourceLabels ?? []), supplement.source.label])];
+			}
+		}
+		if (addedSupplement && snapshot.source.id.startsWith("ga-fulton-") && snapshot.source.scopeNotice) preview.disclaimer = preview.disclaimer.replace(` ${snapshot.source.scopeNotice}`, "");
+		preview.candidateCount = preview.contests.reduce((total, contest) => total + contest.candidates.length, 0);
+	}
 	if (portraits && snapshot) {
 		const selected = new Set(preview.contests.flatMap(contest => contest.candidates.map(candidate => candidate.id)));
 		const images = new Map((await portraits(stateCode, snapshot.records.filter(record => selected.has(record.id)))).map(record => [record.id, record.profileImages]));

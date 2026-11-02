@@ -43,7 +43,7 @@
 		"@types/node": "^24.13.6",
 		"@vueuse/nuxt": "^14.4.0",
 		"eslint-plugin-format": "^2.0.1",
-		"nuxt": "^4.5.2",
+		"nuxt": "^4.6.3",
 		"tsx": "^4.23.15",
 		"typescript": "^6.0.3",
 		"vue-tsc": "^3.3.11"

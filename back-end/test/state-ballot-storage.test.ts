@@ -152,6 +152,23 @@ test("every reviewed source requires external data regardless of its retained le
 	assert.equal(requests, 0);
 });
 
+test("explicit stored-source reads retain historical supplements without making discovery or publisher requests", async (context) => {
+	const directory = await mkdtemp(join(tmpdir(), "ballot-historical-source-"));
+	context.after(() => rm(directory, { recursive: true, force: true }));
+	const snapshot = loadReviewedStateFixture("IL");
+	await createStateBallotStorage(directory).write(snapshot);
+	let requests = 0;
+	const repository = createStateBallotRepository({ sources: [snapshot.source], dataDirectory: directory, now: () => Date.parse("2026-12-01T12:00:00Z"), fetchText: async () => {
+		requests += 1;
+		throw new Error("Historical reads never collect.");
+	} });
+	assert.ok(repository.getStoredSnapshots);
+	assert.deepEqual(await repository.getStoredSnapshots("IL"), []);
+	assert.deepEqual(await repository.getStoredSnapshots("IL", [snapshot.source.id]), [snapshot]);
+	assert.deepEqual(await repository.getStoredSnapshots("IL", ["another-source"]), []);
+	assert.equal(requests, 0);
+});
+
 test("reviewed imports and replacements appear immediately without a restart or cache-clock advance", async (context) => {
 	const directory = await mkdtemp(join(tmpdir(), "ballot-state-reload-"));
 	context.after(() => rm(directory, { recursive: true, force: true }));

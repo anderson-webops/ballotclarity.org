@@ -162,6 +162,7 @@ export interface ElectionLogisticsCandidate {
 export type BallotContentPreviewStatus = "official_source_unverified" | "provider_unverified";
 
 export interface BallotContentPreviewCandidate {
+	sourceId?: string;
 	incumbent?: true;
 	ballotDesignation?: string;
 	ballotStatus?: "listed" | "filed" | "qualified" | "write-in" | "withdrawn" | "disqualified" | "defeated" | "elected" | "unopposed" | "inactive" | "unrecognized";
@@ -191,6 +192,7 @@ export interface StateRecordStatesResponse {
 }
 
 export interface PublicStateCandidateRecord {
+	sourceId?: string;
 	personProfileSlug?: string;
 	profileImages?: ProfileImage[];
 	id: string;
@@ -260,6 +262,8 @@ export interface ElectionReferencesResponse {
 }
 
 export interface StateRecordsResponse {
+	supplementsUnavailable?: true;
+	supplementalSources?: { id: string; retrievedAt: string; sha256: string }[];
 	awaitingRecords?: boolean;
 	available: boolean;
 	source: StateRecordState & { id?: string; label?: string; url?: string; retrievedAt?: string; sourceAsOfDate?: string; scopeNotice?: string; documentLinks?: { label: string; url: string; pageAnchor?: "page-" }[] };
@@ -1338,7 +1342,7 @@ export interface RepresentativesResponse {
 }
 
 export interface BallotResponse {
-	candidateRecordSource?: { stateCode: string; sourceId: string };
+	candidateRecordSource?: { stateCode: string; sourceId: string; includeSupplements?: true };
 	coverageLimits?: string[];
 	scope?: "statewide" | "local";
 	guideContent: GuideContentSummary | null;

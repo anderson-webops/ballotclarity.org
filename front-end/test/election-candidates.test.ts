@@ -38,6 +38,15 @@ test("office contents labels stay short while retaining district and unexpired-s
 	}
 });
 
+test("source-specific publication labels cannot split the same statewide office, while local jurisdictions stay distinct", () => {
+	const base: PublicStateCandidateRecord = { id: "ordinary", name: "Ordinary Candidate", office: "Governor", scope: "statewide", district: "", status: "listed", jurisdiction: "County consolidated publication" };
+	const groups = groupElectionCandidates([base, { ...base, id: "certified", name: "Certified Write-in", jurisdiction: undefined, status: "write-in" }]);
+	assert.equal(groups[0]!.offices.length, 1);
+	assert.equal(groups[0]!.offices[0]!.candidates.length, 2);
+	assert.equal(groups[0]!.offices[0]!.anchorId, "candidate-office-ordinary");
+	assert.equal(groupElectionCandidates([{ ...base, scope: "local", jurisdiction: "First County" }, { ...base, id: "other-local", scope: "local", jurisdiction: "Second County" }])[0]!.offices.length, 2);
+});
+
 test("known state records load automatically while explicit selections and invalid inputs retain precedence", () => {
 	const states = [{ stateCode: "GA", stateName: "Georgia", configured: true }, { stateCode: "WA", stateName: "Washington", configured: true }];
 	assert.equal(readRecoverableStateRecordQuery({}, states, "Georgia").stateCode, "GA");

@@ -26,8 +26,9 @@ levy text remain separate work.
 
 ## Bounded native prerequisite
 
-`readKanawhaTestDocument` is an offline preparer, not an enabled source family.
-It reuses maintained bounded QPDF and Poppler workers. The reviewed PDF uses one
+`readKanawhaTestDocument` is the native preparer used by the
+[managed source family](2026-10-27-kanawha-automation.md). It reuses maintained
+bounded QPDF and Poppler workers. The reviewed PDF uses one
 unembedded Helvetica Type 1 font with WinAnsi encoding. Unknown font dictionaries,
 custom Unicode maps, active/optional content, encryption, attachments, forms and
 changed page boundaries require review. The native object inspector retains its
@@ -39,7 +40,10 @@ complete contest blocks, literal party codes and valid question-choice pairs.
 Duplicate identities and unfamiliar fields require review. Future examples are
 synthetic, not observed future publications. Empty validated candidate blocks
 stay empty rather than generating people or successful application imports.
-Structural validation is not a claim of complete future rendering fidelity.
+The subsequent rendering guard reconciles native drawing instructions and
+Poppler word positions, including the reviewed table borders and printed
+coordinate rounding. New drawing operators, hidden text, substantive overlays,
+overlapping labels and changed mappings require review.
 
 ## Collection review
 
@@ -64,11 +68,10 @@ does not establish permission for that reuse; no candidate text was collected
 or republished. Independence's independently published index and privacy/SMS
 policies remain separate leads, with its existing 78 records preserved.
 
-## Remaining integration
+## Integration and remaining content
 
-Reliable unattended import still needs date-bound discovery from actually
-offered report links, recurring policy checks, capture/snapshot provenance,
-durable waiting and retention, verified native rendering, source configuration
-and real-data API/browser acceptance. Existing source counts, canonical data,
-the pending server packet and the accepted runtime are unchanged by this
-preparation. No source URL or future election date is guessed.
+The managed family connects offered-link discovery, explicit printed dates,
+recurring policy review, native verification, durable waiting and repeatable
+imports. It preserves the earlier preparation evidence and statewide hold.
+Complete question wording, levy analyses and personal ballot-style matching
+remain separate work. No future source URL or election date is guessed.

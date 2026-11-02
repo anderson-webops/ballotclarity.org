@@ -644,6 +644,7 @@ test("guide startup restores browser context after hydration and keeps navigatio
 		for (const route of ["/elections/2026-fulton-county-general", "/locations/fulton-county-georgia", "/elections/2026-fulton-county-general"]) {
 			await navigateAndWait(cdp, `${appBaseUrl}${route}`, "guide context direct load", route.startsWith("/locations/") ? `${appBaseUrl}/elections/2026-fulton-county-general?location=fulton-county-georgia` : `${appBaseUrl}${route}`);
 			await waitForRuntimeCondition(cdp, hydratedCivicState, Boolean, "guide context ready");
+			await waitForRuntimeCondition(cdp, "document.readyState", state => state === "complete", "guide document load complete");
 			const heartbeat = await cdp.send("Runtime.evaluate", { expression: "new Promise(resolve => setTimeout(() => resolve({ writes: window.__guideStorageWrites, ready: document.readyState }), 50))", awaitPromise: true, returnByValue: true });
 			assert.equal(heartbeat.result.value.ready, "complete");
 			assert.ok(heartbeat.result.value.writes < 20, `Guide persistence remains bounded on ${route}`);

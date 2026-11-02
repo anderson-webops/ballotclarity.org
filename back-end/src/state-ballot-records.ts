@@ -33,6 +33,7 @@ import {
 } from "./state-ballot-html.js";
 import { parseIowaJohnsonCandidateCapture } from "./state-ballot-iowa-johnson.js";
 import { parseIowaPolkCandidateCapture } from "./state-ballot-iowa-polk.js";
+import { parseKanawhaCandidateCapture } from "./state-ballot-kanawha-collection.js";
 import { kentuckySourceElectionId, parseKentuckyCandidateRecords } from "./state-ballot-kentucky.js";
 import { parseMaineHouseCapture } from "./state-ballot-maine-house.js";
 import { parseMarylandCandidateRecords } from "./state-ballot-maryland.js";
@@ -473,6 +474,9 @@ export function parseStateCandidateRecords(source: StateBallotSource, body: stri
 	}
 	else if (source.format === "texas-certified-pdf") {
 		records = parseTexasCandidateCapture(source, body).records;
+	}
+	else if (source.format === "kanawha-pdf") {
+		records = parseKanawhaCandidateCapture(source, body, makeRecord).records;
 	}
 	else if (source.format === "boone-xlsx") {
 		records = parseBooneCandidateCapture(source, body, makeRecord).records;

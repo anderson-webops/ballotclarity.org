@@ -107,6 +107,8 @@ test("Kanawha PDF structure requires the reviewed standard font, resources and p
 		(value: ReturnType<typeof structure>) => { Object.assign(value.qpdf[1], { "obj:4 0 R": { value: { "/JavaScript": "unknown" } } }); },
 		(value: ReturnType<typeof structure>) => { Object.assign(value.qpdf[1], { "obj:2 0 R": { value: { "/BaseFont": "/Unknown", "/Encoding": "/WinAnsiEncoding", "/Subtype": "/Type1", "/Type": "/Font" } } }); },
 		(value: ReturnType<typeof structure>) => { Object.assign(value.qpdf[1], { "obj:1 0 R": { value: { "/Type": "/Page", "/MediaBox": [0, 0, 612, 792], "/CropBox": [0, 0, 10, 10] } } }); },
+		(value: ReturnType<typeof structure>) => { Object.assign(value.qpdf[1], { "obj:4 0 R": { value: { "/Type": "/Pages", "/CropBox": [0, 0, 10, 10] } } }); },
+		(value: ReturnType<typeof structure>) => { Object.assign(value.qpdf[1], { "obj:4 0 R": { value: { "/Type": "/Pages", "/Rotate": 90 } } }); },
 		(value: ReturnType<typeof structure>) => { value.pages.push({ object: "missing" }); },
 	]) {
 		const value = structure();

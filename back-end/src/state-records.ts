@@ -10,6 +10,7 @@ import { createPublicRequestThrottle } from "./public-request-throttle.js";
 import { validateChicagoDocumentUrl } from "./state-ballot-chicago-collection.js";
 import { validateGoffstownDocumentUrl } from "./state-ballot-goffstown-discovery.js";
 import { validateHamiltonDocumentUrl } from "./state-ballot-hamilton-collection.js";
+import { validateKanawhaDocumentUrl } from "./state-ballot-kanawha-discovery.js";
 import { validateNycDocumentUrl } from "./state-ballot-nyc-collection.js";
 import { validateOrangeDocumentUrl } from "./state-ballot-orange-discovery.js";
 import { validatePimaDocumentUrl } from "./state-ballot-pima-discovery.js";
@@ -23,6 +24,12 @@ import { usStates } from "./us-states.js";
 const scopes = ["all", "statewide", "congressional", "state-senate", "state-house", "local"];
 
 export function stateRecordDocumentLinks(source: StateBallotSource | undefined, snapshot?: StateBallotSnapshot) {
+	if (source?.format === "kanawha-pdf" && snapshot?.documents) {
+		return snapshot.documents.map((document) => {
+			validateKanawhaDocumentUrl(document.url, source.electionDate.slice(0, 4));
+			return { label: "Test report", url: document.url };
+		});
+	}
 	if (source?.format === "orange-pdf" && snapshot?.documents) {
 		return snapshot.documents.map((document) => {
 			validateOrangeDocumentUrl(document.url, source.electionDate);

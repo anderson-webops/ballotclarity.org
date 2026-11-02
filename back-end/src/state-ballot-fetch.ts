@@ -26,6 +26,7 @@ import { fetchHamiltonCandidateCapture } from "./state-ballot-hamilton-collectio
 import { parseStateHtml, stateHtmlAttribute, stateHtmlDescendants, stateHtmlText } from "./state-ballot-html.js";
 import { fetchIowaJohnsonCandidateCapture } from "./state-ballot-iowa-johnson.js";
 import { fetchIowaPolkCandidateCapture } from "./state-ballot-iowa-polk.js";
+import { fetchKanawhaCandidateCapture } from "./state-ballot-kanawha-collection.js";
 import { fetchKansasCandidateCapture } from "./state-ballot-kansas.js";
 import { fetchKentuckyCandidateCapture } from "./state-ballot-kentucky.js";
 import { fetchMaineHouseCapture } from "./state-ballot-maine-house.js";
@@ -220,6 +221,7 @@ export async function fetchStateBallotSourceText(source: StateBallotSource, requ
 	if (source.stateCode === "VA") return fetchVirginiaCandidateCapture(source, request);
 	if (source.format === "oregon-pdf") return fetchOregonCandidateCapture(source, { requestText: request });
 	if (source.format === "fulton-pdf") return fetchFultonCandidateCapture(source, { requestText: request });
+	if (source.format === "kanawha-pdf") return fetchKanawhaCandidateCapture(source);
 	if (source.format === "boone-xlsx") return fetchBooneCandidateCapture(source);
 	if (source.format === "vermont-xlsx") return fetchVermontCandidateCapture(source, undefined, { requestText: request });
 	if (source.format === "texas-certified-pdf") return fetchTexasCandidateCapture(source, undefined, { requestText: request });

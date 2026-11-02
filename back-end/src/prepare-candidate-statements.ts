@@ -17,10 +17,11 @@ const validHash = (value: unknown): value is string => typeof value === "string"
 const object = (value: unknown): value is Record<string, unknown> => !!value && typeof value === "object" && !Array.isArray(value);
 const exact = (value: Record<string, unknown>, keys: string[]) => Object.keys(value).sort().join(",") === keys.sort().join(",");
 
-export function candidateStatementContentSha256(body: string, address: string, regionClass?: string) {
+export function candidateStatementContentSha256(body: string, address: string, regionClass?: string, regionId?: string) {
 	if (Buffer.byteLength(body) > 2 * 1024 * 1024) throw new Error("Candidate statement HTML exceeds its size limit.");
 	if (regionClass !== undefined && (!/^[\w-]{1,100}$/iu.test(regionClass))) throw new Error("Candidate statement content regions require an exact reviewed class.");
-	return electionDocumentPolicyFingerprint(Buffer.from(body), regionClass ? "region" : "main", address, undefined, regionClass);
+	if ((regionId !== undefined && !/^[a-z][\w.-]{0,100}$/iu.test(regionId)) || (regionClass !== undefined && regionId !== undefined)) throw new Error("Candidate statement content requires one exact reviewed region.");
+	return electionDocumentPolicyFingerprint(Buffer.from(body), regionClass || regionId ? "region" : "main", address, regionId, regionClass);
 }
 
 export async function prepareCandidateStatementFiles(path: string, now = Date.now(), validateOnly = false) {
@@ -38,9 +39,9 @@ export async function prepareCandidateStatementFiles(path: string, now = Date.no
 	if (new Set(candidates.map(input => input.snapshot.source.id)).size !== candidates.length) throw new Error("Official statement inputs must be distinct.");
 	const documents: ElectionReferenceSnapshot["documents"] = [];
 	for (const [index, value] of plan.documents.entries()) {
-		if (!object(value) || !exact(value, ["url", "path", "sha256", "capturedAt", "contentSha256", ...(value.regionClass === undefined ? [] : ["regionClass"])]) || value.url !== source.documents[index]!.url || typeof value.path !== "string" || !isAbsolute(value.path) || !validHash(value.sha256) || !validHash(value.contentSha256) || (value.regionClass !== undefined && typeof value.regionClass !== "string") || typeof value.capturedAt !== "string" || !Number.isFinite(Date.parse(value.capturedAt)) || Date.parse(value.capturedAt) > now) throw new Error("Candidate statement document identity and capture evidence are required.");
+		if (!object(value) || !exact(value, ["url", "path", "sha256", "capturedAt", "contentSha256", ...(value.regionClass === undefined ? [] : ["regionClass"]), ...(value.regionId === undefined ? [] : ["regionId"])]) || value.url !== source.documents[index]!.url || typeof value.path !== "string" || !isAbsolute(value.path) || !validHash(value.sha256) || !validHash(value.contentSha256) || (value.regionClass !== undefined && typeof value.regionClass !== "string") || (value.regionId !== undefined && typeof value.regionId !== "string") || typeof value.capturedAt !== "string" || !Number.isFinite(Date.parse(value.capturedAt)) || Date.parse(value.capturedAt) > now) throw new Error("Candidate statement document identity and capture evidence are required.");
 		const body = await readBoundedStateData(value.path);
-		if (hash(body) !== value.sha256 || candidateStatementContentSha256(body, value.url as string, value.regionClass as string | undefined) !== value.contentSha256) throw new Error("Candidate statement content changed or its capture fingerprint is invalid.");
+		if (hash(body) !== value.sha256 || candidateStatementContentSha256(body, value.url as string, value.regionClass as string | undefined, value.regionId as string | undefined) !== value.contentSha256) throw new Error("Candidate statement content changed or its capture fingerprint is invalid.");
 		documents.push({ url: value.url as string, sha256: value.sha256, capturedAt: value.capturedAt, includedRecordCount: 0 });
 	}
 	const records: ElectionReferenceSnapshot["records"] = [];
@@ -108,4 +109,32 @@ export async function collectCandidateStatementFiles(reviewPath: string, collect
 		await writeFile(hold, `${JSON.stringify({ schemaVersion: 1, type: "candidate-statement-review-hold", sourceId: source.id, reviewSha256: hash(reviewBody), capturedAt: result.collectedAt, collectionFile: result.file, reason: "Reviewed candidate content or identity changed; accepted references are unchanged." })}\n`, { flag: "wx" });
 		throw error;
 	}
+}
+
+export async function collectCandidateStatementBatchFile(path: string, options: Parameters<typeof collectElectionDocuments>[1] = {}) {
+	const batch = JSON.parse(await readBoundedStateData(path));
+	if (!object(batch) || !exact(batch, ["schemaVersion", "type", "entries"]) || batch.schemaVersion !== 1 || batch.type !== "candidate-statement-collection-batch" || !Array.isArray(batch.entries) || !batch.entries.length || batch.entries.length > 25) throw new Error("Provide an explicit bounded candidate statement batch.");
+	const sources = new Set<string>();
+	let cacheDirectory: string | undefined;
+	let outputRoot: string | undefined;
+	for (const entry of batch.entries) {
+		if (!object(entry) || !exact(entry, ["sourceId", "reviewPath", "collectionPath"]) || typeof entry.sourceId !== "string" || !electionReferenceSources.some(source => source.id === entry.sourceId && source.documents.every(document => document.kind === "candidate-statement")) || sources.has(entry.sourceId) || typeof entry.reviewPath !== "string" || !isAbsolute(entry.reviewPath) || typeof entry.collectionPath !== "string" || !isAbsolute(entry.collectionPath)) throw new Error("Statement batch entries need distinct configured identities and absolute review/collection paths.");
+		const review = JSON.parse(await readBoundedStateData(entry.reviewPath));
+		const collection = JSON.parse(await readBoundedStateData(entry.collectionPath));
+		if (!object(review) || review.sourceId !== entry.sourceId || !object(collection) || typeof collection.cacheDirectory !== "string" || !isAbsolute(collection.cacheDirectory) || typeof collection.outputRoot !== "string" || !isAbsolute(collection.outputRoot)) throw new Error("Statement batch reviews and external collection directories must match.");
+		cacheDirectory ??= collection.cacheDirectory;
+		outputRoot ??= collection.outputRoot;
+		if (cacheDirectory !== collection.cacheDirectory || outputRoot !== collection.outputRoot) throw new Error("Statement batches share one bounded cache and output root to preserve publisher spacing and custody.");
+		sources.add(entry.sourceId);
+	}
+	const entries = [];
+	for (const entry of batch.entries) {
+		try {
+			entries.push({ sourceId: entry.sourceId as string, status: "prepared" as const, preparation: await collectCandidateStatementFiles(entry.reviewPath as string, entry.collectionPath as string, options) });
+		}
+		catch (error) {
+			entries.push({ sourceId: entry.sourceId as string, status: "held" as const, reason: error instanceof Error ? error.message.slice(0, 1000) : "Candidate statement review or collection requires attention." });
+		}
+	}
+	return { schemaVersion: 1, type: "candidate-statement-batch-result", complete: entries.every(entry => entry.status === "prepared"), entries, imported: false, published: false };
 }

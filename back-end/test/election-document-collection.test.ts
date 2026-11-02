@@ -71,7 +71,8 @@ async function fixture(context: TestContext, sourceIds = ["nd-measure-documents-
 	for (const source of sources) {
 		const localUrls = sourceDocuments.get(source.id)!;
 		const sharedIndex = sources.filter(other => other.indexUrl === source.indexUrl);
-		for (const policy of source.policies) bodies.set(policy.url, policy.format === "pdf" ? pdf : Buffer.from(policy.format === "robots" ? robots + (source.repeatWildcardGroup ? "\nUser-agent: *\nDisallow: /reviewed-private/\n" : "") + (source.relativeRobotsDisallows ?? []).map(pattern => `Disallow: ${pattern}\n`).join("") + (policy.otherRobotsAgents ?? source.otherRobotsAgents ?? []).map(agent => `\nUser-agent: ${agent}\nDisallow: /\n`).join("") : `<main${policy.regionId ? ` id="${policy.regionId}"` : ""}${policy.regionClass ? ` class="${policy.regionClass}"` : ""}><h1>${policy.id}</h1>Public policy factual text retained for explicit review. Changes need review.</main><footer>State policy</footer>`));
+		const sharedAgents = source.robotsLayout?.sharedWildcardAgents.map(agent => `User-agent: ${agent}\n`).join("") ?? "";
+		for (const policy of source.policies) bodies.set(policy.url, policy.format === "pdf" ? pdf : Buffer.from(policy.format === "robots" ? sharedAgents + robots + (source.repeatWildcardGroup ? "\nUser-agent: *\nDisallow: /reviewed-private/\n" : "") + (source.relativeRobotsDisallows ?? []).map(pattern => `Disallow: ${pattern}\n`).join("") + (policy.otherRobotsAgents ?? source.otherRobotsAgents ?? []).map(agent => `\nUser-agent: ${agent}\nDisallow: /\n`).join("") : `<main${policy.regionId ? ` id="${policy.regionId}"` : ""}${policy.regionClass ? ` class="${policy.regionClass}"` : ""}><h1>${policy.id}</h1>Public policy factual text retained for explicit review. Changes need review.</main><footer>State policy</footer>`));
 		bodies.set(source.indexUrl, Buffer.from(`<main><h1>${sharedIndex.flatMap(other => other.dateMarkers).join(" ")}</h1>${sharedIndex.flatMap(other => sourceDocuments.get(other.id)!).map(url => `<a href="${url}">Document</a>`).join("")}</main><footer>State election office</footer>`));
 		for (const url of localUrls) bodies.set(url, source.documentFormat === "html" ? Buffer.from(`<main>${source.documentDateMarkers!.join(" ")}${url === source.indexUrl ? `<a href="${url}">Question listing</a>` : ""}</main><footer>Reviewed publisher notice</footer>`) : pdf);
 		const fingerprints = Object.fromEntries(source.policies.map(policy => [policy.id, electionDocumentPolicyFingerprint(bodies.get(policy.url)!, policy.format, policy.url, policy.regionId, policy.regionClass)]));
@@ -217,7 +218,7 @@ test("Kansas collection binds its exact November amendment publication and polic
 });
 
 test("reviewed document discovery is election-bound, same-host, bounded and additive", () => {
-	assert.deepEqual(electionDocumentSources.map(source => source.stateCode), ["ND", "MO", "NM", "UT", "MD", "VA", "VA", "WA", "OK", "CT", "OR", "GA", "MA", "CA", "KS", "MI", "TX", "NV", "FL", "OH", "NY", "AK", "DC", "WY", "WV", "AR", "GA", "GA"]);
+	assert.deepEqual(electionDocumentSources.map(source => source.stateCode), ["ND", "MO", "NM", "UT", "MD", "VA", "VA", "WA", "OK", "CT", "OR", "GA", "MA", "CA", "KS", "MI", "TX", "NV", "FL", "OH", "NY", "AK", "DC", "WY", "WV", "AR", ...Array.from({ length: 13 }).fill("GA")]);
 	const source = electionDocumentSources[0]!;
 	const url = `https://${source.host}/sites/default/files/documents/elections/measures/analysis-2026-general-measure3.pdf`;
 	assert.deepEqual(discoverElectionDocuments(source, Buffer.from(`<main>2026 General Election <a href="${url}#page=1">New publication</a><a href="${url}">Repeated link</a><a href="https://elsewhere.invalid/file.pdf">Not allowed</a></main>`)), [url]);
@@ -859,7 +860,7 @@ test("retained binary seeds and daily cache reuse never fetch, import or relabel
 		}
 		await assert.rejects(seedElectionDocuments(input.plan, input.seed, epoch + 1000), /never replace/u);
 	}
-	assert.equal(documents, 97);
+	assert.equal(documents, 108);
 });
 
 test("conditional revalidation preserves bytes and capture dates, with per-host request spacing", async (context) => {

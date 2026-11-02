@@ -1,4 +1,5 @@
 import { congressionalBiographySources } from "./congressional-biographies.js";
+import { georgiaCandidateStatementReferences } from "./georgia-candidate-statement-sources.js";
 import { openStatesBulkSources } from "./openstates-bulk.js";
 import { washingtonLocalStatementSources, washingtonStateStatementSources } from "./washington-statement-sources.js";
 
@@ -239,4 +240,5 @@ export const electionReferenceSources: readonly ElectionReferenceSource[] = [
 	},
 	...openStatesBulkSources,
 	...washingtonLocalStatementSources,
+	...georgiaCandidateStatementReferences,
 ];

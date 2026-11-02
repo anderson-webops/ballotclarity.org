@@ -3,7 +3,7 @@ import { electionReferenceSources } from "./election-reference-sources.js";
 import { createElectionReferenceStorage, parseElectionReferenceSnapshot } from "./election-references.js";
 import { collectOpenStatesFile } from "./openstates-collection.js";
 import { collectOpenStatesProfilesFile } from "./openstates-profile-collection.js";
-import { collectCandidateStatementFiles, prepareCandidateStatementFiles } from "./prepare-candidate-statements.js";
+import { collectCandidateStatementBatchFile, collectCandidateStatementFiles, prepareCandidateStatementFiles } from "./prepare-candidate-statements.js";
 import { prepareCongressionalBiographyFiles } from "./prepare-congressional-biographies.js";
 import { prepareOpenStatesProfileFiles } from "./prepare-openstates-profiles.js";
 import { prepareOpenStatesReferenceFiles } from "./prepare-openstates-references.js";
@@ -13,6 +13,13 @@ import { prepareVoteGaCandidateLeadFiles } from "./votega-candidate-leads.js";
 
 async function main() {
 	const [command, ...requested] = process.argv.slice(2);
+	if (command === "collect-statement-batch") {
+		if (requested.length !== 1) throw new Error("Use collect-statement-batch BATCH.json. Independent holds preserve accepted content and do not block other reviewed sources.");
+		const result = await collectCandidateStatementBatchFile(requested[0]!);
+		console.log(JSON.stringify(result));
+		if (!result.complete) process.exitCode = 1;
+		return;
+	}
 	if (command === "collect-statements") {
 		if (requested.length !== 2) throw new Error("Use collect-statements REVIEW.json COLLECTION.json. Changed content stops preparation and accepted references remain unchanged.");
 		console.log(JSON.stringify(await collectCandidateStatementFiles(requested[0]!, requested[1]!)));

@@ -1,3 +1,4 @@
+import type { ElectionDocumentRobotsLayout } from "./election-document-robots-layout.js";
 import type { ElectionDocumentSource } from "./election-document-sources.js";
 import type { StateHtmlNode } from "./state-ballot-html.js";
 import { Buffer } from "node:buffer";
@@ -5,6 +6,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { mkdir, open, readdir, realpath, rename, unlink } from "node:fs/promises";
 import { isAbsolute, join } from "node:path";
 import { setTimeout } from "node:timers/promises";
+import { reviewedWildcardRobotsAgents, reviewedWildcardRobotsGroup } from "./election-document-robots-layout.js";
 import { electionDocumentSources } from "./election-document-sources.js";
 import { fetchRemoteSourceDocument, RemoteSourceDocumentPolicyError } from "./remote-json-source.js";
 import { parseStateHtml, stateHtmlAttribute, stateHtmlDescendants, stateHtmlText } from "./state-ballot-html.js";
@@ -61,6 +63,10 @@ export function electionDocumentPublisherHosts(source: ElectionDocumentSource) {
 	validateDocumentBounds(source);
 	if (source.repeatWildcardGroup !== undefined && source.repeatWildcardGroup !== true) throw new CollectionFailure("robots-group-review-required");
 	if (source.preambleCrawlDelay !== undefined && source.preambleCrawlDelay !== true) throw new CollectionFailure("robots-group-review-required");
+	if (source.robotsLayout !== undefined) {
+		if (source.otherRobotsAgents?.length || source.repeatWildcardGroup || source.preambleCrawlDelay || source.policies.some(policy => policy.otherRobotsAgents?.length)) throw new CollectionFailure("robots-group-review-required");
+		reviewedWildcardRobotsAgents(source.robotsLayout);
+	}
 	if (source.policies.some(policy => policy.otherRobotsAgents !== undefined && (policy.format !== "robots" || !Array.isArray(policy.otherRobotsAgents)))) throw new CollectionFailure("robots-group-review-required");
 	if (source.documentFormat === undefined && source.documentDateMarkers !== undefined)
 		throw new Error("HTML election markers cannot be applied to a default PDF source.");
@@ -158,10 +164,11 @@ function validateRelativeRobotsDisallows(values: string[] = []) {
 		throw new CollectionFailure("robots-relative-rule-review-required");
 }
 
-export function electionDocumentRobotsPolicy(body: Uint8Array, otherAgents: string[] = [], relativeDisallows: string[] = [], repeatWildcardGroup?: true, preambleCrawlDelay?: true) {
+export function electionDocumentRobotsPolicy(body: Uint8Array, otherAgents: string[] = [], relativeDisallows: string[] = [], repeatWildcardGroup?: true, preambleCrawlDelay?: true, layout?: ElectionDocumentRobotsLayout) {
 	validateRelativeRobotsDisallows(relativeDisallows);
 	if (repeatWildcardGroup !== undefined && repeatWildcardGroup !== true) throw new CollectionFailure("robots-group-review-required");
 	if (preambleCrawlDelay !== undefined && preambleCrawlDelay !== true) throw new CollectionFailure("robots-group-review-required");
+	if (layout && (otherAgents.length || repeatWildcardGroup || preambleCrawlDelay)) throw new CollectionFailure("robots-group-review-required");
 	const rules: { allow: boolean; pattern: RegExp; length: number }[] = [];
 	let agents = 0;
 	let wildcardGroups = 0;
@@ -171,7 +178,7 @@ export function electionDocumentRobotsPolicy(body: Uint8Array, otherAgents: stri
 	const reviewedAgents = otherAgents.map(agent => agent.toLowerCase());
 	const observedAgents = new Set<string>();
 	if (new Set(reviewedAgents).size !== reviewedAgents.length || reviewedAgents.some(agent => (!/^[a-z_-]+$/u.test(agent) && agent !== "*semrush*") || /ballot|gpt|chatgpt|openai|oai|claude|anthropic/u.test(agent))) throw new CollectionFailure("robots-group-review-required");
-	for (const raw of new TextDecoder("utf-8", { fatal: true }).decode(body).split(/\r?\n/u)) {
+	for (const raw of reviewedWildcardRobotsGroup(new TextDecoder("utf-8", { fatal: true }).decode(body), layout).split(/\r?\n/u)) {
 		const line = raw.split("#", 1)[0]!.trim();
 		if (!line) continue;
 		const separator = line.indexOf(":");
@@ -373,7 +380,7 @@ export async function seedElectionDocuments(plan: ElectionDocumentPlan, seed: El
 			const allowed = new Set([source.indexUrl, ...source.policies.map(policy => policy.url), ...discoverElectionDocuments(source, index.body)]);
 			const permissions = new Map(source.policies.filter(policy => policy.format === "robots").map((policy) => {
 				const robots = prepared.find(item => item.source.id === source.id && item.input.url === policy.url)!;
-				return [new URL(policy.url).hostname, electionDocumentRobotsPolicy(robots.body, policy.otherRobotsAgents ?? source.otherRobotsAgents, source.relativeRobotsDisallows, source.repeatWildcardGroup, source.preambleCrawlDelay)];
+				return [new URL(policy.url).hostname, electionDocumentRobotsPolicy(robots.body, policy.otherRobotsAgents ?? source.otherRobotsAgents, source.relativeRobotsDisallows, source.repeatWildcardGroup, source.preambleCrawlDelay, source.robotsLayout)];
 			}));
 			for (const item of prepared.filter(item => item.source.id === source.id)) {
 				if (!allowed.has(item.input.url) || !permissions.get(new URL(item.input.url).hostname)?.allowed(item.input.url)) throw new Error("A retained document is outside its permitted observed source links.");
@@ -480,7 +487,7 @@ export async function collectElectionDocuments(plan: ElectionDocumentPlan, optio
 				const permissions = new Map<string, ReturnType<typeof electionDocumentRobotsPolicy>>();
 				for (const policy of source.policies.filter(policy => policy.format === "robots")) {
 					const robots = await capture(policy.url);
-					const permission = electionDocumentRobotsPolicy(robots.body, policy.otherRobotsAgents ?? source.otherRobotsAgents, source.relativeRobotsDisallows, source.repeatWildcardGroup, source.preambleCrawlDelay);
+					const permission = electionDocumentRobotsPolicy(robots.body, policy.otherRobotsAgents ?? source.otherRobotsAgents, source.relativeRobotsDisallows, source.repeatWildcardGroup, source.preambleCrawlDelay, source.robotsLayout);
 					const hostname = new URL(policy.url).hostname;
 					publishers.get(hostname)!.delay = permission.delay;
 					permissions.set(hostname, permission);

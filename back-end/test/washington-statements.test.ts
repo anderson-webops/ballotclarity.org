@@ -72,7 +72,7 @@ test("Stevens statements pin four observed races to an optional, explicit county
 	assert.deepEqual(source.washingtonLocality, { countyDisplay: "Stevens", rosterJurisdiction: "County", statementJurisdiction: "Countywide", statementJurisdictionType: "CTY" });
 	assert.deepEqual(source.documents.map(document => new URL(document.url).searchParams.get("r")), ["186880", "186881", "186882", "186883"]);
 	assert.ok(source.documents.every(document => document.kind === "candidate-statement" && document.title.startsWith("Stevens County · ") && document.pageUrl?.startsWith("https://voter.votewa.gov/genericvoterguide.aspx?e=899&c=#/candidates/")));
-	assert.equal(electionReferenceSources.at(-1), source);
+	assert.equal(electionReferenceSources.find(reference => reference.id === source.id), source);
 });
 
 test("local profiles preserve exact official IDs and both published labels without inferring eligibility", () => {

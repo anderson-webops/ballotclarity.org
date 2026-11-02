@@ -12,31 +12,32 @@ import { electionDocumentConfigurationSha256, electionDocumentPolicyFingerprint,
 import { electionDocumentSources } from "../src/election-document-sources.js";
 import { electionReferenceSources } from "../src/election-reference-sources.js";
 import { parseElectionReferenceSnapshot } from "../src/election-references.js";
-import { candidateStatementContentSha256, collectCandidateStatementFiles, prepareCandidateStatementFiles } from "../src/prepare-candidate-statements.js";
+import { candidateStatementContentSha256, collectCandidateStatementBatchFile, collectCandidateStatementFiles, prepareCandidateStatementFiles } from "../src/prepare-candidate-statements.js";
 import { configuredStateBallotSources } from "../src/state-ballot-registry.js";
 import { serializeStoredStateSnapshot } from "../src/state-ballot-storage.js";
 
 const epoch = Date.parse("2026-11-01T12:00:00Z");
 const hash = (body: string | Uint8Array) => createHash("sha256").update(body).digest("hex");
 
-async function fixture(context: TestContext) {
+async function fixture(context: TestContext, referenceId = "ga-governor-statements-2026") {
 	const directory = await realpath(await mkdtemp(join(tmpdir(), "candidate-statements-")));
 	context.after(() => rm(directory, { recursive: true, force: true }));
-	const reference = electionReferenceSources.find(source => source.id === "ga-governor-statements-2026")!;
+	const reference = electionReferenceSources.find(source => source.id === referenceId)!;
 	const source = configuredStateBallotSources.find(source => source.id === "ga-fulton-2026")!;
-	const records = ["Rick Jackson", "Keisha Lance Bottoms"].map(name => ({ id: hash(name).slice(0, 24), name, office: "Governor", district: "", scope: "statewide" as const, status: "listed" as const }));
+	const records = reference.documents.map(document => document.title.replace(/ campaign biography$/u, "")).map(name => ({ id: hash(name).slice(0, 24), name, office: referenceId.includes("mclaurin") ? "Lieutenant Governor" : "Governor", district: "", scope: "statewide" as const, status: "listed" as const }));
 	const documents = source.documentUrls!.map((url, index) => ({ url, sha256: hash(url), retrievedAt: new Date(epoch).toISOString(), includedRecordCount: index ? 0 : records.length }));
 	const snapshot: StateBallotSnapshot = { source, records, documents, retrievedAt: new Date(epoch).toISOString(), sha256: hash(JSON.stringify(documents.map(({ url, sha256 }) => ({ url, sha256 })))) };
 	const candidateFile = join(directory, "official.json");
 	await writeFile(candidateFile, serializeStoredStateSnapshot(snapshot));
-	const collection: ElectionDocumentPlan = { schemaVersion: 1, type: "election-document-collection", sourceIds: ["ga-jackson-campaign-documents-2026", "ga-bottoms-campaign-documents-2026"], cacheDirectory: join(directory, "cache"), outputRoot: join(directory, "collected"), accessReviews: [] };
+	const collection: ElectionDocumentPlan = { schemaVersion: 1, type: "election-document-collection", sourceIds: reference.documents.map(document => electionDocumentSources.find(source => source.host === new URL(document.url).hostname && source.documentPatterns.some(pattern => new RegExp(pattern, "u").test(new URL(document.url).pathname)))!.id), cacheDirectory: join(directory, "cache"), outputRoot: join(directory, "collected"), accessReviews: [] };
 	const seed: ElectionDocumentSeed = { schemaVersion: 1, type: "election-document-seed", captures: [] };
 	const bodies = new Map<string, Buffer>();
 	const reviewed = [];
 	for (const [index, sourceId] of collection.sourceIds.entries()) {
 		const publisher = electionDocumentSources.find(source => source.id === sourceId)!;
 		const document = reference.documents[index]!;
-		for (const policy of publisher.policies) bodies.set(policy.url, Buffer.from(policy.format === "robots" ? `User-agent: *\nDisallow: /private/\n${publisher.repeatWildcardGroup ? "\nUser-agent: *\nDisallow: /other/\n" : ""}` : `<main class="entry-content">Reviewed privacy and messaging policy with explicit publisher access and usage terms.</main>`));
+		const shared = publisher.robotsLayout?.sharedWildcardAgents.map(agent => `User-agent: ${agent}\n`).join("") ?? "";
+		for (const policy of publisher.policies) bodies.set(policy.url, Buffer.from(policy.format === "robots" ? `${shared}User-agent: *\nDisallow: /private/\n${publisher.repeatWildcardGroup ? "\nUser-agent: *\nDisallow: /other/\n" : ""}` : `<main class="entry-content">Reviewed privacy and messaging policy with explicit publisher access and usage terms.</main>`));
 		bodies.set(publisher.indexUrl, Buffer.from(`<main>${publisher.dateMarkers.join(" ")}<a href="${document.url}">Biography</a></main>`));
 		const body = Buffer.from(`<main class="entry-content">${publisher.documentDateMarkers!.join(" ")} Professional background. Further substantive candidate biography.</main>`);
 		bodies.set(document.url, body);
@@ -157,4 +158,55 @@ test("reviewed preamble crawl delays preserve all wildcard restrictions", () => 
 	assert.equal(policy.allowed("https://rickjackson.com/other/data"), false);
 	assert.equal(policy.allowed("https://rickjackson.com/about/"), true);
 	for (const value of ["bad", "-1", "10000"]) assert.throws(() => electionDocumentRobotsPolicy(Buffer.from(`Crawl-delay: ${value}\nUser-agent: *\nDisallow:\n`), [], [], true, true));
+});
+
+test("a reviewed stable content ID supports publishers without a main while refusing ambiguous regions", () => {
+	const body = "<div id=main><p>Published professional background and education for the named candidate.</p></div>";
+	const address = "https://example.org/about";
+	assert.equal(candidateStatementContentSha256(body, address, undefined, "main"), electionDocumentPolicyFingerprint(Buffer.from(body), "region", address, "main"));
+	assert.throws(() => candidateStatementContentSha256(body, address), /unavailable/u);
+	assert.throws(() => candidateStatementContentSha256(body, address, "content", "main"), /one exact/u);
+	assert.throws(() => candidateStatementContentSha256(body, address, undefined, "main #other"), /one exact/u);
+	assert.throws(() => candidateStatementContentSha256(`${body}${body}`, address, undefined, "main"), /unavailable/u);
+});
+
+test("independent statement batches preserve successful sources when another review is held", async (context) => {
+	const governor = await fixture(context);
+	const lieutenant = await fixture(context, "ga-mclaurin-statements-2026");
+	lieutenant.collection.cacheDirectory = governor.collection.cacheDirectory;
+	lieutenant.collection.outputRoot = governor.collection.outputRoot;
+	await lieutenant.save();
+	await seedElectionDocuments({ ...governor.collection, sourceIds: [...governor.collection.sourceIds, ...lieutenant.collection.sourceIds], accessReviews: [...governor.collection.accessReviews, ...lieutenant.collection.accessReviews] }, { ...governor.seed, captures: [...governor.seed.captures, ...lieutenant.seed.captures] }, epoch);
+	const entries = [governor, lieutenant].map(input => ({ sourceId: input.reference.id, reviewPath: input.reviewPath, collectionPath: input.collectionPath }));
+	const batch = join(governor.directory, "batch.json");
+	await writeFile(batch, JSON.stringify({ schemaVersion: 1, type: "candidate-statement-collection-batch", entries }));
+	const options = { now: () => epoch, fetchDocument: async () => assert.fail("Cached batches must not contact publishers.") };
+	const accepted = await collectCandidateStatementBatchFile(batch, options);
+	assert.equal(accepted.complete, true);
+	assert.deepEqual(accepted.entries.map(entry => entry.status), ["prepared", "prepared"]);
+	assert.equal(accepted.imported, false);
+	assert.equal(accepted.published, false);
+	const first = accepted.entries[0]!;
+	assert.equal(first.status, "prepared");
+	if (first.status !== "prepared") assert.fail("Expected prepared output.");
+	const original = await readFile(join(first.preparation.outputDirectory, first.preparation.file));
+	governor.review.documents[0]!.contentSha256 = hash("changed");
+	await governor.save();
+	const partial = await collectCandidateStatementBatchFile(batch, options);
+	assert.equal(partial.complete, false);
+	assert.deepEqual(partial.entries.map(entry => entry.status), ["held", "prepared"]);
+	assert.deepEqual(await readFile(join(first.preparation.outputDirectory, first.preparation.file)), original);
+});
+
+test("statement batches reject duplicate identities and split publisher clocks before requests", async (context) => {
+	const governor = await fixture(context);
+	const lieutenant = await fixture(context, "ga-mclaurin-statements-2026");
+	const first = { sourceId: governor.reference.id, reviewPath: governor.reviewPath, collectionPath: governor.collectionPath };
+	const second = { sourceId: lieutenant.reference.id, reviewPath: lieutenant.reviewPath, collectionPath: lieutenant.collectionPath };
+	const batch = join(governor.directory, "batch.json");
+	const options = { now: () => epoch, fetchDocument: async () => assert.fail("Invalid batches must fail before requests.") };
+	for (const entries of [[first, first], [first, second], Array.from({ length: 26 }).fill(first)]) {
+		await writeFile(batch, JSON.stringify({ schemaVersion: 1, type: "candidate-statement-collection-batch", entries }));
+		await assert.rejects(collectCandidateStatementBatchFile(batch, options));
+	}
 });

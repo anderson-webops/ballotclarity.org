@@ -26,7 +26,8 @@ reference snapshot without network requests or import. The review contains:
   same state and election.
 - `documents` in configured order, each with exact `url`, absolute `path`, raw
   `sha256`, original `capturedAt` and reviewed `contentSha256`. An optional exact
-  `regionClass` identifies a reviewed content region when the page has no main.
+  `regionClass` or `regionId` identifies one reviewed content region when the
+  page has no main. These selectors are mutually exclusive.
 - `claims`, each with `officialSourceId`, `recordId`, `documentIndex` and one to
   six short, attributed, reviewed factual paraphrases.
 - An absolute, physical, external `outputDirectory` that does not already exist.
@@ -62,3 +63,26 @@ scoped to that configured publisher; all other sources retain strict defaults.
 Future cycles need configured official candidate identity, offered publication
 URLs and current publisher/content reviews. This pipeline automates unchanged
 approved content, not editorial judgments, future nominees or new reuse rights.
+
+## Independent collections
+
+Eleven additional Georgia statewide candidates have separate opt-in publication
+definitions. A held publisher leaves the other candidates' accepted content
+available. These campaign statements remain distinct from official ballot
+qualification and current-office records.
+
+`manage-election-references collect-statement-batch BATCH.json` processes up to 25
+independent reviews. The exact contract is `schemaVersion: 1`,
+`type: "candidate-statement-collection-batch"` and `entries`, each containing a
+distinct configured `sourceId` plus absolute `reviewPath` and `collectionPath`.
+Every collection shares one external cache and output root, preserving host
+spacing, storage locks and evidence. Configuration errors stop before requests;
+individual review or publisher holds are reported without blocking other entries.
+The command exits unsuccessfully if any entry is held and performs no import or
+publication.
+
+Some reviewed publishers list several named robots agents followed by a wildcard
+that shares the same directives. `robotsLayout.sharedWildcardAgents` supports only
+that exact ordered, consecutive header block. Every restriction remains in force.
+A separate agent group, changed header or unsupported directive still requires
+review. This setting never changes the request identity or overrides a denial.

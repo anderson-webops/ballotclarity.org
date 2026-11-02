@@ -1,3 +1,6 @@
+import type { ElectionDocumentRobotsLayout } from "./election-document-robots-layout.js";
+import { georgiaCandidateStatementDocuments } from "./georgia-candidate-statement-sources.js";
+
 export interface ElectionDocumentSource {
 	id: string;
 	stateCode: string;
@@ -9,6 +12,7 @@ export interface ElectionDocumentSource {
 	otherRobotsAgents?: string[];
 	repeatWildcardGroup?: true;
 	preambleCrawlDelay?: true;
+	robotsLayout?: ElectionDocumentRobotsLayout;
 	relativeRobotsDisallows?: string[];
 	documentPatterns: string[];
 	selectDocumentOptions?: true;
@@ -588,4 +592,5 @@ export const electionDocumentSources: readonly ElectionDocumentSource[] = [
 		minimumDocuments: 1,
 		maximumDocuments: 1,
 	},
+	...georgiaCandidateStatementDocuments,
 ];

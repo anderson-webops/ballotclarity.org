@@ -69,12 +69,12 @@ export function parseAutomationRun(value: unknown, now = Date.now()): AdminAutom
 	return row;
 }
 
-export async function readAutomationRun(directory: string, now = Date.now()) {
+export async function readAutomationRun(directory: string, now?: number) {
 	try {
 		assertExternalStateDataDirectory(await realpath(directory));
 		return parseAutomationRun(
 			JSON.parse((await readBoundedStateDataBytes(automationRunPath(directory), 256 * 1024)).toString("utf8")),
-			now
+			now ?? Date.now()
 		);
 	}
 	catch (error) {

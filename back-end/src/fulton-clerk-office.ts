@@ -50,7 +50,7 @@ function content(root: StateHtmlNode) {
 }
 
 function policyInventory(root: StateHtmlNode, url: string) {
-	const links = stateHtmlDescendants(root, node => node.nodeName === "a" && /privacy|terms of (?:use|service)|copyright|disclaimer|acceptable use|legal notice/iu.test(stateHtmlText(node))).map(node => new URL(stateHtmlAttribute(node, "href"), url).href).sort();
+	const links = stateHtmlDescendants(root, node => node.nodeName === "a" && /privacy|terms|copyright|disclaimer|acceptable use|legal notice/iu.test(stateHtmlText(node))).filter(node => !(clean(stateHtmlText(node)) === "Glossary of Legal Terms" && new URL(stateHtmlAttribute(node, "href"), url).href === `${origin}/161/Glossary-of-Legal-Terms`)).map(node => new URL(stateHtmlAttribute(node, "href"), url).href).sort();
 	const expected: string[] = [fultonClerkPublication.policies[1].url];
 	if (fultonClerkPublication.policies.slice(1).some(policy => policy.url === url)) expected.push(fultonClerkPublication.policies[2].url);
 	if (JSON.stringify(links) !== JSON.stringify(expected.sort())) return reject();

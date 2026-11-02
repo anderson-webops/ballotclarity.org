@@ -57,6 +57,14 @@ must agree, and the profile heading must corroborate that identity. Changes,
 incomplete publications, ambiguous names and interrupted-run cooldown preserve
 last-good records for intervention.
 
+The existing `collect DIRECTORY` command retains its four-office network scope.
+Expanded collection requires explicit `collect DIRECTORY --include-clerk`
+selection after separate host/source approval. Importing five-office data does
+not opt an existing scheduler into the new host. A stale five-office inventory
+requires that explicit scope before any publisher request; it is never silently
+downgraded or partially refreshed. This is a one-time source-scope choice, not
+an election-year or person-specific edit.
+
 Only the Clerk's name, role and official profile link are published. Promotional
 biography, personal contacts, protected photos, party, appointment/election
 status, terms and ballot qualification are excluded. The homepage's land-record

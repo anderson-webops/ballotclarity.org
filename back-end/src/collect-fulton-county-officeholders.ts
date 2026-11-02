@@ -13,13 +13,15 @@ import { parseStateHtml, stateHtmlDescendants, stateHtmlText } from "./state-bal
 
 const digest = (value: string) => createHash("sha256").update(value).digest("hex");
 
-export async function collectFultonCountyOfficeholders({ directory, now = Date.now, request = fetchRemoteSourceText, pause = setTimeout }: { directory: string; now?: () => number; request?: typeof fetchRemoteSourceText; pause?: (milliseconds: number) => Promise<unknown> }) {
+export async function collectFultonCountyOfficeholders({ directory, includeClerk = false, now = Date.now, request = fetchRemoteSourceText, pause = setTimeout }: { directory: string; includeClerk?: boolean; now?: () => number; request?: typeof fetchRemoteSourceText; pause?: (milliseconds: number) => Promise<unknown> }) {
+	if (typeof includeClerk !== "boolean") throw new Error("The Clerk collection scope must be explicitly selected.");
 	return withFultonCountyOfficeholderLock(directory, async (canonical) => {
 		let lastImportAt: string | null = null;
 		try {
 			const current = readFultonCountyOfficeholderEnvelope(canonical, now());
 			lastImportAt = current.importedAt;
 			if (Date.parse(current.snapshot.retrievedAt) + fultonCountyOfficeholderPublication.minimumRefreshIntervalMs > now()) return { collected: false, publisherRequests: 0, retrievedAt: current.snapshot.retrievedAt };
+			if (current.snapshot.schemaVersion === 3 && !includeClerk) throw new Error("Expanded Clerk collection requires explicit scope approval.");
 		}
 		catch (error) { if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error; }
 		const runDirectory = join(canonical, "county-office-automation");
@@ -34,7 +36,7 @@ export async function collectFultonCountyOfficeholders({ directory, now = Date.n
 			const documents: FultonCountyOfficeholderCapture["documents"] = [];
 			const get = async (url: string) => {
 				if (documents.length) await pause(new URL(url).hostname === "www.fultonclerk.org" ? fultonClerkPublication.minimumRequestIntervalMs : 11000);
-				const body = await request(url, { allowedHosts: ["fultoncountyga.gov", "www.fultonclerk.org"], maxBytes: fultonCountyOfficeholderPublication.maximumDocumentBytes, maxRedirects: 0, timeoutMs: 15000 });
+				const body = await request(url, { allowedHosts: includeClerk ? ["fultoncountyga.gov", "www.fultonclerk.org"] : ["fultoncountyga.gov"], maxBytes: fultonCountyOfficeholderPublication.maximumDocumentBytes, maxRedirects: 0, timeoutMs: 15000 });
 				documents.push({ url, body, capturedAt: new Date(now()).toISOString(), sha256: digest(body) });
 				if (Buffer.byteLength(JSON.stringify(documents)) > fultonClerkPublication.maximumCaptureBytes) throw new Error("The Fulton county-office capture exceeds its bounds.");
 				return body;
@@ -49,7 +51,7 @@ export async function collectFultonCountyOfficeholders({ directory, now = Date.n
 				}
 				if (digest(region) !== policy.sha256) throw new Error("The county-office publisher policy requires review.");
 			}
-			for (const definition of fultonCountyOfficeholderPublication.offices) {
+			for (const definition of fultonCountyOfficeholderPublication.offices.slice(0, includeClerk ? 5 : 4)) {
 				if (definition.id === "clerk") {
 					for (const [index, policy] of fultonClerkPublication.policies.entries()) verifyFultonClerkPolicy(await get(policy.url), index, now());
 					const home = await get(fultonClerkPublication.url);
@@ -60,7 +62,7 @@ export async function collectFultonCountyOfficeholders({ directory, now = Date.n
 				const office = parseFultonCountyOffice(await get(definition.pageUrl), definition);
 				if (office.person && "profilePrefix" in definition) await get(office.person.officialWebsiteUrl);
 			}
-			const capture: FultonCountyOfficeholderCapture = { schemaVersion: 3, type: "fulton-county-officeholder-capture", documents };
+			const capture: FultonCountyOfficeholderCapture = { schemaVersion: includeClerk ? 3 : 2, type: "fulton-county-officeholder-capture", documents };
 			const snapshot = prepareFultonCountyOfficeholders(capture, now());
 			prepared = true;
 			const captures = join(canonical, "county-office-captures");

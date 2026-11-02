@@ -7,9 +7,10 @@ import { readBoundedStateData } from "./state-ballot-storage.js";
 
 async function main() {
 	const [command, directory, file, ...extra] = process.argv.slice(2);
-	if (!directory || extra.length || (command === "import" ? !file : file !== undefined) || !["collect", "import", "export", "csv"].includes(command ?? "")) throw new Error("Use collect DIRECTORY, import DIRECTORY SNAPSHOT.json, export DIRECTORY, or csv DIRECTORY.");
+	const includeClerk = command === "collect" && file === "--include-clerk";
+	if (!directory || extra.length || (command === "import" ? !file : command === "collect" ? file !== undefined && !includeClerk : file !== undefined) || !["collect", "import", "export", "csv"].includes(command ?? "")) throw new Error("Use collect DIRECTORY [--include-clerk], import DIRECTORY SNAPSHOT.json, export DIRECTORY, or csv DIRECTORY.");
 	if (command === "collect") {
-		console.log(JSON.stringify(await collectFultonCountyOfficeholders({ directory })));
+		console.log(JSON.stringify(await collectFultonCountyOfficeholders({ directory, includeClerk })));
 	}
 	else if (command === "import") {
 		const body = await readBoundedStateData(file!);

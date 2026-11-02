@@ -56,6 +56,9 @@ test("reviewed robots and every substantive copyright condition stay bound", () 
 	assert.throws(() => verifyFultonClerkPolicy(`${magistrateTestRobots}\nDisallow: /`, 0));
 	const notice = (year: number) => `<div id="moduleContent">CivicPlus Content Management System © 1997-${year} CivicPlus. All rights reserved. All content © 2006-${year} Fulton County Superior Court, GA and its representatives. All rights reserved.</div><a href="/182/Legal-Disclaimer">Legal Disclaimer</a>${footer}`;
 	verifyFultonClerkPolicy(notice(2030), 1, Date.parse("2030-01-01"));
+	verifyFultonClerkPolicy(notice(2030).replace("</div>", "</div><a href='/161/Glossary-of-Legal-Terms'>Glossary of Legal Terms</a>"), 1, Date.parse("2030-01-01"));
+	assert.throws(() => verifyFultonClerkPolicy(notice(2030).replace("</div>", "</div><a href='/terms'>Terms</a>"), 1, Date.parse("2030-01-01")));
+	assert.throws(() => verifyFultonClerkPolicy(notice(2030).replace("</div>", "</div><a href='/161/Glossary-of-Legal-Terms'>Terms</a>"), 1, Date.parse("2030-01-01")));
 	for (const body of [notice(2030).replace("All rights reserved.", "All rights transferred."), notice(2030).replace("2006-2030", "2006-2029"), notice(2033), notice(2030).replace("</div>", " Automated access prohibited.</div>"), notice(2030).replace("Copyright Notices</a>", "Copyright Notices</a><a href='/privacy'>Privacy</a>")]) assert.throws(() => verifyFultonClerkPolicy(body, 1, Date.parse("2030-01-01")));
 	assert.throws(() => verifyFultonClerkPolicy("Changed legal disclaimer", 2));
 	assert.equal(fultonClerkPublication.minimumRequestIntervalMs, 20000);
@@ -109,7 +112,7 @@ test("an interrupted county collection waits without new requests or clock chang
 		const bytes = `${JSON.stringify({ schemaVersion: 1, type: "ballot-automation-run", status: "running", startedAt, finishedAt: null, lastImportAt: new Date(countyOfficeTestTime).toISOString(), lastSuccessAt: null, nextRunAt: null, results: [] })}\n`;
 		await writeFile(join(journal, "automation-run.json"), bytes);
 		let requests = 0;
-		await assert.rejects(collectFultonCountyOfficeholders({ directory, now: () => Date.parse(startedAt) + 1000, request: async () => {
+		await assert.rejects(collectFultonCountyOfficeholders({ directory, includeClerk: true, now: () => Date.parse(startedAt) + 1000, request: async () => {
 			requests++;
 			throw new Error("Unexpected publisher request");
 		} }), /next permitted retry/u);
@@ -124,4 +127,24 @@ test("CSV identifies retrieval time rather than implying a publication date", ()
 	const csv = fultonCountyOfficeholderCsv(exampleCompleteCountyOfficeholders());
 	assert.match(csv.split("\n")[0]!, /"retrievedAt"/u);
 	assert.doesNotMatch(csv, /sourceAsOf|nominee|qualified|appointed|party/iu);
+});
+
+test("a retained five-office inventory cannot widen the legacy collector's network scope", async () => {
+	const directory = await mkdtemp(join(tmpdir(), "ballot-clerk-scope-"));
+	try {
+		await importFultonCountyOfficeholders(directory, exampleCompleteCountyOfficeholders(), countyOfficeTestTime);
+		const before = await readFile(join(directory, "fulton-county-offices.json"), "utf8");
+		let requests = 0;
+		await assert.rejects(collectFultonCountyOfficeholders({ directory, now: () => countyOfficeTestTime + 7 * 3600000, request: async () => {
+			requests++;
+			throw new Error("Unexpected publisher request");
+		} }), /explicit scope approval/u);
+		assert.equal(requests, 0);
+		assert.equal(await readFile(join(directory, "fulton-county-offices.json"), "utf8"), before);
+	}
+	finally { await rm(directory, { recursive: true, force: true }); }
+});
+
+test("Clerk collection rejects nonboolean programmatic scope before any requests", async () => {
+	await assert.rejects(collectFultonCountyOfficeholders({ directory: "/unused", includeClerk: "false" as unknown as boolean }), /explicitly selected/u);
 });

@@ -135,7 +135,7 @@ test("PDF preparation rejects changed text, bytes, identity, regions, dates and 
 	const document = input.review.documents[0]!;
 	Object.assign(document, { regionId: "main" });
 	await input.save();
-	await assert.rejects(prepareOfficialCandidateBiographyFiles(input.reviewPath, epoch, true, input.extractor), /bounded official/u);
+	await assert.rejects(prepareOfficialCandidateBiographyFiles(input.reviewPath, epoch, true, input.extractor), /bounded named/u);
 	delete (document as unknown as { regionId?: string }).regionId;
 	input.review.claims[0]!.recordId = "b".repeat(24);
 	await input.save();

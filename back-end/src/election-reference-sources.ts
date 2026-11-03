@@ -2,6 +2,7 @@ import { congressionalBiographySources } from "./congressional-biographies.js";
 import { fultonBakerServiceReference, fultonWillisServiceReference } from "./fulton-city-biography-sources.js";
 import { fultonFilingReferenceSource } from "./fulton-filing-context.js";
 import { fultonIvoryOfficialBiographyReference, fultonOfficialBiographyReference } from "./fulton-official-biography-sources.js";
+import { fultonQuestionnaireReference } from "./fulton-questionnaire-sources.js";
 import { georgiaCandidateStatementReferences } from "./georgia-candidate-statement-sources.js";
 import { openStatesBulkSources } from "./openstates-bulk.js";
 import { washingtonLocalStatementSources, washingtonStateStatementSources } from "./washington-statement-sources.js";
@@ -252,4 +253,5 @@ export const electionReferenceSources: readonly ElectionReferenceSource[] = [
 	fultonIvoryOfficialBiographyReference,
 	fultonWillisServiceReference,
 	fultonBakerServiceReference,
+	fultonQuestionnaireReference,
 ];

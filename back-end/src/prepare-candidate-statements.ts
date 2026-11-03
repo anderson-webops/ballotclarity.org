@@ -49,7 +49,7 @@ async function prepareReviewedCandidateContextFiles(path: string, kind: "candida
 		if (!object(value) || !exact(value, ["url", "path", "sha256", "capturedAt", "contentSha256", ...(value.regionClass === undefined ? [] : ["regionClass"]), ...(value.regionId === undefined ? [] : ["regionId"])]) || value.url !== source.documents[index]!.url || typeof value.path !== "string" || !isAbsolute(value.path) || !validHash(value.sha256) || !validHash(value.contentSha256) || (value.regionClass !== undefined && typeof value.regionClass !== "string") || (value.regionId !== undefined && typeof value.regionId !== "string") || typeof value.capturedAt !== "string" || !Number.isFinite(Date.parse(value.capturedAt)) || Date.parse(value.capturedAt) > now) throw new Error("Candidate statement document identity and capture evidence are required.");
 		const document = source.documents[index]!;
 		if (document.pdfMaximumPages !== undefined) {
-			if (kind !== "official-biography" || !Number.isSafeInteger(document.pdfMaximumPages) || document.pdfMaximumPages < 1 || document.pdfMaximumPages > 25 || value.regionClass !== undefined || value.regionId !== undefined) throw new Error("Candidate PDFs require an explicit bounded official source.");
+			if (!document.candidateName || !Number.isSafeInteger(document.pdfMaximumPages) || document.pdfMaximumPages < 1 || document.pdfMaximumPages > 25 || value.regionClass !== undefined || value.regionId !== undefined) throw new Error("Candidate PDFs require an explicit bounded named source.");
 			const body = await readBoundedStateDataBytes(value.path, 8 * 1024 * 1024);
 			if (hash(body) !== value.sha256 || !body.subarray(0, 5).equals(Buffer.from("%PDF-"))) throw new Error("Candidate PDF capture bytes changed.");
 			const text = extractor ? await extractor(body, document.pdfMaximumPages) : await extractStateBallotPdfText(body, await resolveStateBallotPdfExtractor(), undefined, "layout", document.pdfMaximumPages);
@@ -70,7 +70,7 @@ async function prepareReviewedCandidateContextFiles(path: string, kind: "candida
 		if (!candidate || !["listed", "filed", "qualified", "write-in", "unopposed"].includes(candidate.status) || identities.has(identity)) throw new Error("Candidate statement identity is missing, inactive or duplicated.");
 		identities.add(identity);
 		const documentIndex = Number(claim.documentIndex);
-		if (kind === "official-biography" && source.documents[documentIndex]!.candidateName !== candidate.name) throw new Error("Official biography candidate identity requires its exact configured name.");
+		if ((kind === "official-biography" || source.documents[documentIndex]!.pdfMaximumPages !== undefined) && source.documents[documentIndex]!.candidateName !== candidate.name) throw new Error("Candidate context identity requires its exact configured name.");
 		documents[documentIndex]!.includedRecordCount++;
 		records.push({ id: hash(`${source.id}:${identity}:${documentIndex}`).slice(0, 24), name: candidate.name, office: candidate.office, scope: candidate.scope, ...(candidate.jurisdiction ? { jurisdiction: candidate.jurisdiction } : {}), ...(candidate.scope === "local" ? { officialCandidate: { sourceId: claim.officialSourceId, recordId: candidate.id } } : {}), facts: claim.facts as string[], sourceDocumentIndex: documentIndex });
 	}
@@ -129,16 +129,16 @@ async function collectReviewedCandidateContextFiles(reviewPath: string, collecti
 	}
 }
 
-export function prepareCandidateStatementFiles(path: string, now = Date.now(), validateOnly = false) {
-	return prepareReviewedCandidateContextFiles(path, "candidate-statement", now, validateOnly);
+export function prepareCandidateStatementFiles(path: string, now = Date.now(), validateOnly = false, extractor?: (body: Buffer, maximumPages: number) => Promise<string>) {
+	return prepareReviewedCandidateContextFiles(path, "candidate-statement", now, validateOnly, extractor);
 }
 
 export function prepareOfficialCandidateBiographyFiles(path: string, now = Date.now(), validateOnly = false, extractor?: (body: Buffer, maximumPages: number) => Promise<string>) {
 	return prepareReviewedCandidateContextFiles(path, "official-biography", now, validateOnly, extractor);
 }
 
-export function collectCandidateStatementFiles(reviewPath: string, collectionPath: string, options: Parameters<typeof collectElectionDocuments>[1] = {}) {
-	return collectReviewedCandidateContextFiles(reviewPath, collectionPath, "candidate-statement", options);
+export function collectCandidateStatementFiles(reviewPath: string, collectionPath: string, options: Parameters<typeof collectElectionDocuments>[1] = {}, extractor?: (body: Buffer, maximumPages: number) => Promise<string>) {
+	return collectReviewedCandidateContextFiles(reviewPath, collectionPath, "candidate-statement", options, extractor);
 }
 
 export function collectOfficialCandidateBiographyFiles(reviewPath: string, collectionPath: string, options: Parameters<typeof collectElectionDocuments>[1] = {}, extractor?: (body: Buffer, maximumPages: number) => Promise<string>) {

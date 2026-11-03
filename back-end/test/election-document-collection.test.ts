@@ -220,7 +220,7 @@ test("Kansas collection binds its exact November amendment publication and polic
 });
 
 test("reviewed document discovery is election-bound, same-host, bounded and additive", () => {
-	assert.deepEqual(electionDocumentSources.map(source => source.stateCode), ["ND", "MO", "NM", "UT", "MD", "VA", "VA", "WA", "OK", "CT", "OR", "GA", "MA", "CA", "KS", "MI", "TX", "NV", "FL", "OH", "NY", "AK", "DC", "WY", "WV", "AR", ...Array.from({ length: 24 }).fill("GA")]);
+	assert.deepEqual(electionDocumentSources.map(source => source.stateCode), ["ND", "MO", "NM", "UT", "MD", "VA", "VA", "WA", "OK", "CT", "OR", "GA", "MA", "CA", "KS", "MI", "TX", "NV", "FL", "OH", "NY", "AK", "DC", "WY", "WV", "AR", ...Array.from({ length: 25 }).fill("GA")]);
 	const source = electionDocumentSources[0]!;
 	const url = `https://${source.host}/sites/default/files/documents/elections/measures/analysis-2026-general-measure3.pdf`;
 	assert.deepEqual(discoverElectionDocuments(source, Buffer.from(`<main>2026 General Election <a href="${url}#page=1">New publication</a><a href="${url}">Repeated link</a><a href="https://elsewhere.invalid/file.pdf">Not allowed</a></main>`)), [url]);
@@ -862,7 +862,7 @@ test("retained binary seeds and daily cache reuse never fetch, import or relabel
 		}
 		await assert.rejects(seedElectionDocuments(input.plan, input.seed, epoch + 1000), /never replace/u);
 	}
-	assert.equal(documents, 120);
+	assert.equal(documents, 128);
 });
 
 test("reviewed single HTML documents collect without synthetic discovery links", async (context) => {

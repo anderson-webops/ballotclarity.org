@@ -2,6 +2,7 @@ import type { ElectionDocumentRobotsLayout } from "./election-document-robots-la
 import { fultonBakerServiceDocument, fultonWillisServiceDocument } from "./fulton-city-biography-sources.js";
 import { fultonFilingDocumentSource } from "./fulton-filing-context.js";
 import { fultonIvoryOfficialBiographyDocument, fultonOfficialBiographyDocument } from "./fulton-official-biography-sources.js";
+import { fultonQuestionnaireDocument } from "./fulton-questionnaire-sources.js";
 import { georgiaCandidateStatementDocuments } from "./georgia-candidate-statement-sources.js";
 
 export interface ElectionDocumentSource {
@@ -597,6 +598,7 @@ export const electionDocumentSources: readonly ElectionDocumentSource[] = [
 		maximumDocuments: 1,
 	},
 	...georgiaCandidateStatementDocuments,
+	fultonQuestionnaireDocument,
 	fultonFilingDocumentSource,
 	fultonOfficialBiographyDocument,
 	fultonIvoryOfficialBiographyDocument,

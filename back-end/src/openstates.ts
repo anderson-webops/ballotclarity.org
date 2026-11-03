@@ -28,7 +28,7 @@ interface OpenStatesPerson {
 		district?: string;
 		org_classification?: string;
 		division_id?: string;
-	};
+	} | null;
 	jurisdiction?: {
 		name?: string;
 	};
@@ -60,6 +60,10 @@ interface OpenStatesClientOptions {
 	apiKey?: string;
 	fetchImpl?: typeof fetch;
 	timeoutMs?: number;
+}
+
+function hasCurrentRole(person: OpenStatesPerson) {
+	return Boolean(person.current_role?.title?.trim() || person.current_role?.org_classification?.trim());
 }
 
 function mapRepresentative(person: OpenStatesPerson): OpenStatesRepresentativeRecord {
@@ -171,7 +175,7 @@ export function createOpenStatesClient({
 				lng: String(longitude)
 			});
 
-			return (payload.results ?? []).map(mapRepresentative).map(toLocationRepresentative);
+			return (payload.results ?? []).filter(hasCurrentRole).map(mapRepresentative).map(toLocationRepresentative);
 		},
 		async listPeopleByJurisdiction(jurisdiction: string, options = {}) {
 			const perPage = Math.min(Math.max(options.perPage ?? 50, 1), 50);
@@ -194,7 +198,7 @@ export function createOpenStatesClient({
 				people.push(...(payload.results ?? []));
 			}
 
-			return people.map(mapRepresentative);
+			return people.filter(hasCurrentRole).map(mapRepresentative);
 		},
 		async searchPeopleByName(name: string, options = {}) {
 			const trimmedName = name.trim();
@@ -203,14 +207,13 @@ export function createOpenStatesClient({
 				return [];
 
 			const payload = await fetchOpenStates("/people", {
-				...(options.current === false ? {} : { current: "true" }),
 				...(options.jurisdiction ? { jurisdiction: options.jurisdiction } : {}),
 				name: trimmedName,
 				page: "1",
 				per_page: String(Math.min(Math.max(options.perPage ?? 10, 1), 50)),
 			});
 
-			return (payload.results ?? []).map(mapRepresentative);
+			return (payload.results ?? []).filter(person => options.current === false || hasCurrentRole(person)).map(mapRepresentative);
 		}
 	};
 }

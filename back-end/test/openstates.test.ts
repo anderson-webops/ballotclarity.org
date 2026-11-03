@@ -76,3 +76,35 @@ test("createOpenStatesClient includes the provider response body in lookup error
 		/Open States lookup failed: 400 Bad Request - \{"detail":"invalid per_page, must be in \[1, 50\]"\}/i
 	);
 });
+
+test("current officeholder requests exclude historical and empty roles without discarding valid older records", async () => {
+	const people = [
+		{ id: "former-missing", name: "Alex Example", updated_at: "2026-11-02", links: [{ url: "https://example.org/former-office" }] },
+		{ id: "former-null", name: "Alex Example", current_role: null },
+		{ id: "empty-role", name: "Alex Example", current_role: {} },
+		{ id: "blank-role", name: "Alex Example", current_role: { title: " ", org_classification: " " } },
+		{ id: "current-role", name: "Alex Example", updated_at: "2021-10-08", current_role: { title: "Senator", org_classification: "upper", district: "4" }, links: [{ url: "https://example.org/current-office" }] }
+	];
+	const requests: URL[] = [];
+	const client = createOpenStatesClient({ apiKey: "test-openstates-key", fetchImpl: (async (resource) => {
+		requests.push(new URL(String(resource)));
+		return new Response(JSON.stringify({ results: people }), { status: 200 });
+	}) as typeof fetch });
+	assert.ok(client);
+	for (const records of [await client.searchPeopleByName("Alex Example"), await client.lookupPeopleByCoordinates(0, 0), await client.listPeopleByJurisdiction("Georgia")]) {
+		assert.deepEqual(records.map(record => record.id), ["current-role"]);
+		assert.equal(records[0]?.officialWebsiteUrl, "https://example.org/current-office");
+		assert.equal(records[0]?.updatedAt, "2021-10-08");
+	}
+	assert(requests.every(request => !request.searchParams.has("current")));
+	assert.deepEqual((await client.searchPeopleByName("Alex Example", { current: false })).map(record => record.id), people.map(person => person.id));
+});
+
+test("jurisdiction pagination checks the current role on every page", async () => {
+	const client = createOpenStatesClient({ apiKey: "test-openstates-key", fetchImpl: (async (resource) => {
+		const page = new URL(String(resource)).searchParams.get("page");
+		return new Response(JSON.stringify({ pagination: { max_page: 2 }, results: page === "1" ? [{ id: "former", name: "Former Person" }] : [{ id: "current", name: "Current Person", current_role: { org_classification: "lower", district: "4" } }] }), { status: 200 });
+	}) as typeof fetch });
+	assert.ok(client);
+	assert.deepEqual((await client.listPeopleByJurisdiction("Georgia")).map(record => record.id), ["current"]);
+});

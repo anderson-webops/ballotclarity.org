@@ -34,6 +34,29 @@ export const stateBallotPdfGridContract = Object.freeze({
 	role: "bounded collection worker; no network or script execution while reading geometry",
 });
 
+function filledRectangleRules(tokens: string[], point: (horizontal: number, vertical: number) => readonly [number, number]) {
+	let cursor = 0;
+	let rectangles = 0;
+	while (cursor < tokens.length) {
+		if (rectangles && tokens.length - cursor === 3 && tokens[cursor] === "M") {
+			point(Number(tokens[cursor + 1]), Number(tokens[cursor + 2]));
+			return true;
+		}
+		if (tokens.length - cursor < 13 || tokens[cursor] !== "M" || [3, 6, 9].some(offset => tokens[cursor + offset] !== "L") || tokens[cursor + 12] !== "Z") return false;
+		const corners = [0, 3, 6, 9].map(offset => point(Number(tokens[cursor + offset + 1]), Number(tokens[cursor + offset + 2])));
+		const horizontal = [...new Set(corners.map(corner => corner[0]))];
+		const vertical = [...new Set(corners.map(corner => corner[1]))];
+		if (horizontal.length !== 2 || vertical.length !== 2 || new Set(corners.map(corner => corner.join(","))).size !== 4 || corners.some((corner, index) => corner[0] !== corners[(index + 1) % 4]![0] && corner[1] !== corners[(index + 1) % 4]![1])) return false;
+		const rectangleWidth = Math.abs(horizontal[0]! - horizontal[1]!);
+		const rectangleHeight = Math.abs(vertical[0]! - vertical[1]!);
+		if (Math.min(rectangleWidth, rectangleHeight) > 3 || Math.max(rectangleWidth, rectangleHeight) <= 10) return false;
+		cursor += 13;
+		rectangles++;
+		if (rectangles > 250) throw new Error("The ballot grid has too many compound rectangle rules.");
+	}
+	return rectangles > 0;
+}
+
 function svgRectangles(body: string, width: number, height: number, minimumCells = 30, allowFilledRules = false): Rectangle[] {
 	if (Buffer.byteLength(body) > stateBallotPdfGridContract.maximumSvgBytes) throw new Error("The ballot grid SVG exceeds its bounds.");
 	const document = parseStateHtml(body);
@@ -61,17 +84,7 @@ function svgRectangles(body: string, width: number, height: number, minimumCells
 		};
 		const tokens = definition.match(/[MLZ]|[-+]?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?/gu) ?? [];
 		if (tokens.length > 20000) throw new Error("The ballot grid path exceeds its bounds.");
-		if (filled) {
-			if (![13, 16].includes(tokens.length) || tokens[0] !== "M" || [3, 6, 9].some(index => tokens[index] !== "L") || tokens[12] !== "Z" || (tokens.length === 16 && tokens[13] !== "M")) continue;
-			const corners = [0, 3, 6, 9].map(index => point(Number(tokens[index + 1]), Number(tokens[index + 2])));
-			const horizontal = [...new Set(corners.map(corner => corner[0]))];
-			const vertical = [...new Set(corners.map(corner => corner[1]))];
-			if (horizontal.length !== 2 || vertical.length !== 2 || new Set(corners.map(corner => corner.join(","))).size !== 4 || corners.some((corner, index) => corner[0] !== corners[(index + 1) % 4]![0] && corner[1] !== corners[(index + 1) % 4]![1])) continue;
-			const rectangleWidth = Math.abs(horizontal[0]! - horizontal[1]!);
-			const rectangleHeight = Math.abs(vertical[0]! - vertical[1]!);
-			if (Math.min(rectangleWidth, rectangleHeight) > 3 || Math.max(rectangleWidth, rectangleHeight) <= 10) continue;
-			if (tokens.length === 16) point(Number(tokens[14]), Number(tokens[15]));
-		}
+		if (filled && !filledRectangleRules(tokens, point)) continue;
 		let previous: readonly [number, number] | undefined;
 		let beginning: readonly [number, number] | undefined;
 		let command: string | undefined;

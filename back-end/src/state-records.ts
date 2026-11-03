@@ -8,6 +8,7 @@ import type { PublicStateCandidateRecord, StateQuestionsResponse, StateRecordsRe
 import { normalizePublicHref } from "./public-href.js";
 import { createPublicRequestThrottle } from "./public-request-throttle.js";
 import { validateBoulderCandidateUrl } from "./state-ballot-boulder.js";
+import { validateBucksDocumentUrl } from "./state-ballot-bucks.js";
 import { validateChicagoDocumentUrl } from "./state-ballot-chicago-collection.js";
 import { validateGoffstownDocumentUrl } from "./state-ballot-goffstown-discovery.js";
 import { validateHamiltonDocumentUrl } from "./state-ballot-hamilton-collection.js";
@@ -25,6 +26,12 @@ import { usStates } from "./us-states.js";
 const scopes = ["all", "statewide", "congressional", "state-senate", "state-house", "state-board-of-education", "local"];
 
 export function stateRecordDocumentLinks(source: StateBallotSource | undefined, snapshot?: StateBallotSnapshot) {
+	if (source?.format === "bucks-pdf" && snapshot?.documents) {
+		return snapshot.documents.map((document) => {
+			validateBucksDocumentUrl(document.url, source.electionDate);
+			return { label: "Candidate list", url: document.url };
+		});
+	}
 	if (source?.format === "boulder-html" && snapshot?.documents) {
 		return snapshot.documents.map((document) => {
 			validateBoulderCandidateUrl(document.url, source.electionDate);

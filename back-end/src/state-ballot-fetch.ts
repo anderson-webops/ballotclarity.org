@@ -5,6 +5,7 @@ import { fetchRemoteSourceText } from "./remote-json-source.js";
 import { fetchAlabamaCandidateCapture } from "./state-ballot-alabama-collection.js";
 import { fetchBooneCandidateCapture } from "./state-ballot-boone-collection.js";
 import { fetchBoulderCandidateCapture } from "./state-ballot-boulder-collection.js";
+import { fetchBucksCandidateCapture } from "./state-ballot-bucks-collection.js";
 import { fetchCassiaCandidateCapture } from "./state-ballot-cassia.js";
 import { fetchCertifiedPdfCapture } from "./state-ballot-certified-pdf.js";
 import { fetchChicagoCandidateCapture } from "./state-ballot-chicago-collection.js";
@@ -214,6 +215,7 @@ export async function fetchStateBallotSourceText(source: StateBallotSource, requ
 	if (source.format === "iowa-polk-pdf") return fetchIowaPolkCandidateCapture(source, { requestText: request });
 	if (source.format === "iowa-johnson-html") return fetchIowaJohnsonCandidateCapture(source, { requestText: request });
 	if (source.format === "boulder-html") return fetchBoulderCandidateCapture(source, { requestText: request });
+	if (source.format === "bucks-pdf") return fetchBucksCandidateCapture(source);
 	if (source.format === "washoe-html") return fetchWashoeCandidateCapture(source, { requestText: request });
 	if (source.format === "clark-pdf") return fetchClarkCandidateCapture(source, { requestText: request });
 	if (source.format === "connecticut-pdf") return fetchConnecticutCandidateCapture(source, { requestText: request });

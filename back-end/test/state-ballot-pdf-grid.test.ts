@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import process from "node:process";
 import test from "node:test";
-import { readStateBallotPdfGrid, stateBallotPdfGridContract } from "../src/state-ballot-pdf-grid.js";
+import { readStateBallotPdfGrid, readStateBallotPdfTables, stateBallotPdfGridContract } from "../src/state-ballot-pdf-grid.js";
 import { extractStateBallotPdfSvg, extractStateBallotPdfText, resolveStateBallotPdfSvgExtractor, StateBallotPdfCapabilityError } from "../src/state-ballot-pdf.js";
 
 function fixture() {
@@ -35,6 +35,22 @@ function fixture() {
 	const page = `<page width="${width}" height="${height}">${words.map(word => `<word xMin="${word.left}" yMin="${word.top}" xMax="${word.left + 10}" yMax="${word.top + 8}">${word.text}</word>`).join("")}</page>`;
 	return { svg, page, corpus: `<html><body>${page}</body></html>`, path };
 }
+
+test("table geometry preserves compound filled borders without accepting other filled shapes", () => {
+	const rectangle = (left: number, top: number, width: number, height: number) => `M ${left} ${top} L ${left + width} ${top} L ${left + width} ${top + height} L ${left} ${top + height} Z`;
+	const rules = [...[50, 400, 650].map(left => rectangle(left, 100, 1, 91)), ...[100, 130, 160, 190].map(top => rectangle(50, top, 601, 1))];
+	const words = [105, 135, 165].flatMap((top, index) => [60, 410].map((left, column) => `<word xMin="${left}" yMin="${top}" xMax="${left + 30}" yMax="${top + 10}">Cell${index}${column}</word>`)).join("");
+	const outside = Array.from({ length: 50 }, (_, index) => `<word xMin="${20 + (index % 10) * 40}" yMin="${300 + Math.floor(index / 10) * 20}" xMax="${50 + (index % 10) * 40}" yMax="${310 + Math.floor(index / 10) * 20}">Footer${index}</word>`).join("");
+	const corpus = `<html><page width="800" height="600">${words}${outside}</page></html>`;
+	const drawing = (paths: string[]) => `<svg viewBox="0 0 800 600">${paths.map(path => `<path fill="rgb(0%, 0%, 0%)" d="${path}"/>`).join("")}</svg>`;
+	const individual = readStateBallotPdfTables(corpus, [drawing(rules)]);
+	const compound = readStateBallotPdfTables(corpus, [drawing([`${rules.join(" ")} M 50 190`])]);
+	assert.equal(compound[0]!.cells.length, 6);
+	assert.deepEqual(compound, individual);
+	for (const invalid of [rectangle(50, 100, 100, 100), "M 50 100 L 100 110 L 130 160 L 50 190 Z", "M 50 100 L 500 100 Z"])
+		assert.equal(readStateBallotPdfTables(corpus, [drawing([`${rules.join(" ")} ${invalid}`])])[0]!.cells.length, 0);
+	assert.throws(() => readStateBallotPdfTables(corpus, [drawing([Array.from<string>({ length: 251 }).fill(rules[0]!).join(" ")])]), /compound rectangle/u);
+});
 
 test("PDF grids reconcile physical cells and raw logical order without retaining outer frames", () => {
 	const { svg, corpus } = fixture();

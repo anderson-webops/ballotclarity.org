@@ -8,11 +8,13 @@ import { hamiltonSource } from "./state-ballot-hamilton-collection.js";
 import { kanawhaSource } from "./state-ballot-kanawha-discovery.js";
 import { maineHouseSource } from "./state-ballot-maine-house.js";
 import { nycSource } from "./state-ballot-nyc-collection.js";
+import { oklahomaSource } from "./state-ballot-oklahoma.js";
 import { orangeSource } from "./state-ballot-orange-discovery.js";
 import { pimaSource } from "./state-ballot-pima-collection.js";
 import { stateBallotSources } from "./state-ballot-sources.js";
 
 export const additionalStateBallotSources: readonly StateBallotSource[] = [
+	oklahomaSource("2026-11-03"),
 	everettSource("2026-11-03"),
 	bucksSource("2026-11-03"),
 	boulderSource("2026-11-03"),

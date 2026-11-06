@@ -44,6 +44,7 @@ import {
 import { fetchMichiganCandidateCapture } from "./state-ballot-michigan.js";
 import { fetchNorthCarolinaCandidateCapture } from "./state-ballot-north-carolina.js";
 import { fetchNycCandidateCapture } from "./state-ballot-nyc-collection.js";
+import { fetchOklahomaCandidateCapture } from "./state-ballot-oklahoma-collection.js";
 import { fetchOrangeCandidateCapture } from "./state-ballot-orange-collection.js";
 import { fetchOregonCandidateCapture } from "./state-ballot-oregon-collection.js";
 import { fetchPimaCandidateCapture } from "./state-ballot-pima-collection.js";
@@ -215,6 +216,7 @@ export async function fetchStateBallotSourceText(source: StateBallotSource, requ
 	if (source.format === "cassia-pdf") return fetchCassiaCandidateCapture(source, { requestText: request });
 	if (source.format === "iowa-polk-pdf") return fetchIowaPolkCandidateCapture(source, { requestText: request });
 	if (source.format === "iowa-johnson-html") return fetchIowaJohnsonCandidateCapture(source, { requestText: request });
+	if (source.format === "oklahoma-html") return fetchOklahomaCandidateCapture(source);
 	if (source.format === "boulder-html") return fetchBoulderCandidateCapture(source, { requestText: request });
 	if (source.format === "everett-pdf") return fetchEverettCandidateCapture(source);
 	if (source.format === "bucks-pdf") return fetchBucksCandidateCapture(source);

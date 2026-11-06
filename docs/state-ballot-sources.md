@@ -472,6 +472,18 @@ the accepted data for review. Future unpublished or empty validated workbooks
 wait durably. See the [collection review](audits/2026-10-27-boone-automation.md)
 and earlier [native preparation](audits/2026-10-27-boone-candidate-preparation.md).
 
+## Oklahoma statewide recurring source
+
+The independently published [State Election Board list](https://hosting.okelections.gov/electionlist.html)
+adds 294 named candidate/office entries alongside Woodward's reviewed samples.
+`ok-seb-2026` retains 2,576 printed references across 77 county contexts, including
+112 local entries in 40 counties. Date-bound general-election discovery, policy
+checks, external persistence and archived-catalog retention support future
+cycles without deriving nominees or winners from results. Judicial-retention
+names and substantive measure text remain separate evidence. The source's
+September 24 publication clock and November 6 captures are preserved. See the
+[source and collection review](audits/2026-11-06-oklahoma-statewide.md).
+
 ## Colorado candidate collection hold
 
 The Secretary of State's [terms of use](https://www.coloradosos.gov/pubs/info_center/terms.html)

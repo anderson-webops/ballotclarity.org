@@ -48,6 +48,7 @@ import {
 } from "./state-ballot-michigan.js";
 import { readNorthCarolinaCandidateCapture } from "./state-ballot-north-carolina.js";
 import { parseNycCandidateCapture } from "./state-ballot-nyc-collection.js";
+import { parseOklahomaCandidateCapture } from "./state-ballot-oklahoma-collection.js";
 import { parseOrangeCandidateCapture } from "./state-ballot-orange-collection.js";
 import { parseOregonCandidateCapture } from "./state-ballot-oregon-collection.js";
 import { parseOregonCandidateRecords } from "./state-ballot-oregon.js";
@@ -466,6 +467,9 @@ export function parseStateCandidateRecords(source: StateBallotSource, body: stri
 	if (source.format === "iowa-polk-pdf") return parseIowaPolkCandidateCapture(source, body, makeRecord).records;
 	if (source.format === "iowa-johnson-html") {
 		records = parseIowaJohnsonCandidateCapture(source, body, makeRecord).records;
+	}
+	else if (source.format === "oklahoma-html") {
+		records = parseOklahomaCandidateCapture(source, body, makeRecord).records;
 	}
 	else if (source.format === "boulder-html") {
 		records = parseBoulderCandidateCapture(source, body, makeRecord).records;

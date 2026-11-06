@@ -14,6 +14,7 @@ import { validateGoffstownDocumentUrl } from "./state-ballot-goffstown-discovery
 import { validateHamiltonDocumentUrl } from "./state-ballot-hamilton-collection.js";
 import { validateKanawhaDocumentUrl } from "./state-ballot-kanawha-discovery.js";
 import { validateNycDocumentUrl } from "./state-ballot-nyc-collection.js";
+import { validateOklahomaSource } from "./state-ballot-oklahoma.js";
 import { validateOrangeDocumentUrl } from "./state-ballot-orange-discovery.js";
 import { validatePimaDocumentUrl } from "./state-ballot-pima-discovery.js";
 import { isActiveStateCandidateRecord } from "./state-ballot-records.js";
@@ -26,6 +27,10 @@ import { usStates } from "./us-states.js";
 const scopes = ["all", "statewide", "congressional", "state-senate", "state-house", "state-board-of-education", "local"];
 
 export function stateRecordDocumentLinks(source: StateBallotSource | undefined, snapshot?: StateBallotSnapshot) {
+	if (source?.format === "oklahoma-html") {
+		validateOklahomaSource(source);
+		return [{ label: "Candidate list", url: source.pageUrl }];
+	}
 	if (source?.format === "everett-pdf" && snapshot?.documents) return [{ label: "Sample ballots", url: source.pageUrl }];
 	if (source?.format === "bucks-pdf" && snapshot?.documents) {
 		return snapshot.documents.map((document) => {

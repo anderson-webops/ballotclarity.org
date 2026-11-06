@@ -134,6 +134,7 @@ test("optional Stevens imports preserve healthy collections and fingerprint the 
 });
 
 test("public aggregation exposes partial availability without hiding healthy profiles", async (context) => {
+	context.mock.method(Date, "now", () => Date.parse("2026-10-30T12:00:00Z"));
 	const first = fixture(congressional);
 	const second = fixture(legislative);
 	const third = fixture(statewide, "Statewide");

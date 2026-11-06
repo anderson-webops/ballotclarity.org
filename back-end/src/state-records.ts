@@ -225,7 +225,7 @@ export function registerStateRecordRoutes(app: Express, repository: StateBallotR
 		};
 		try {
 			payload.source.documentLinks = stateRecordDocumentLinks(source);
-			const snapshot = source && repository ? await repository.getSnapshot(stateCode, sourceId) : null;
+			const snapshot = source && repository ? await repository.getSnapshot(stateCode, sourceId) ?? (sourceId === undefined ? await repository.getSnapshot(stateCode, source.id) : null) : null;
 			if (snapshot) {
 				const selected = sources.find(item => item.id === snapshot.source.id && item.stateCode === stateCode && item.electionDate === snapshot.source.electionDate && (sourceId === undefined || item.id === sourceId));
 				if (!selected || snapshot.source.stateCode !== stateCode || (sourceId === undefined && source && snapshot.source.electionDate !== source.electionDate))

@@ -105,7 +105,9 @@ for (const source of sources) {
 		assert.equal(execFileSync(process.execPath, ["--import", "tsx", exporter, source.stateCode], { env: environment, encoding: "utf8" }), expected);
 		const cacheFile = join(directory, `${source.id}.json`);
 		const before = hash(await readFile(cacheFile, "utf8"));
-		const refresh = spawnSync(process.execPath, ["--import", "tsx", manager, "refresh", source.stateCode], { env: environment, encoding: "utf8", stdio: "pipe" });
+		const clock = join(directory, "fixture-clock.mjs");
+		await writeFile(clock, `Date.now = () => ${now};\n`);
+		const refresh = spawnSync(process.execPath, ["--import", clock, "--import", "tsx", manager, "refresh", source.stateCode], { env: environment, encoding: "utf8", stdio: "pipe" });
 		assert.equal(refresh.status, 1);
 		assert.equal(JSON.parse(refresh.stdout).records, 9);
 		assert.equal(JSON.parse(refresh.stdout).retrievedAt, payload(source.stateCode).retrievedAt);

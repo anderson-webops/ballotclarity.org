@@ -177,10 +177,21 @@ export function createStateBallotRepository(options: StateBallotRepositoryOption
 	if (!Number.isSafeInteger(ttlMs) || ttlMs <= 0 || ttlMs > 24 * 60 * 60 * 1000)
 		throw new Error("State source cache lifetime must be between one millisecond and one day.");
 
-	async function loadSnapshot(source: StateBallotSource) {
+	async function loadSnapshot(source: StateBallotSource, allowArchived = false) {
 		const electionEnd = Date.parse(`${source.electionDate}T00:00:00Z`) + 2 * 24 * 60 * 60 * 1000;
-		if (!Number.isFinite(electionEnd) || now() >= electionEnd)
+		if (!Number.isFinite(electionEnd))
 			return null;
+		if (now() >= electionEnd) {
+			if (!allowArchived || options.refreshReviewedLegacy) return null;
+			try {
+				const retained = storage ? await storage.read(source) : cached.get(source.id)?.snapshot;
+				return retained && indexMatches(source, retained) && Date.parse(retained.retrievedAt) <= now() ? retained : null;
+			}
+			catch {
+				options.onUnavailable?.(source.stateCode, "format");
+				return null;
+			}
+		}
 		const entry = cached.get(source.id);
 		if (source.retrievalPolicy !== "manual-snapshot" && entry && entry.expiresAt > now() && indexMatches(source, entry.snapshot))
 			return entry.snapshot;
@@ -344,7 +355,7 @@ export function createStateBallotRepository(options: StateBallotRepositoryOption
 			const ordered = sourceId === undefined ? orderStateBallotSources(matching, now()) : matching;
 			const currentDate = ordered.find(source => Date.parse(`${source.electionDate}T00:00:00Z`) + 2 * 86400000 > now())?.electionDate;
 			for (const source of ordered.filter(source => sourceId !== undefined || source.electionDate === currentDate)) {
-				const snapshot = await loadSnapshot(source);
+				const snapshot = await loadSnapshot(source, sourceId !== undefined);
 				if (snapshot)
 					return snapshot;
 			}

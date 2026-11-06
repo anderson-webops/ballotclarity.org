@@ -7,8 +7,9 @@ import { basename, dirname, isAbsolute, join, resolve } from "node:path";
 import { parse } from "csv-parse/sync";
 import { readReviewedSantaFeCandidates } from "./reviewed-santa-fe-candidates.js";
 import { readCambridgeCandidateDocument } from "./state-ballot-cambridge.js";
+import { readEverettCandidateDocuments } from "./state-ballot-everett.js";
 import { serializeStateBallotSnapshots } from "./state-ballot-export.js";
-import { extractStateBallotPdfText, resolveStateBallotPdfExtractor } from "./state-ballot-pdf.js";
+import { extractStateBallotPdfSvg, extractStateBallotPdfText, extractStateBallotPdfXml, resolveStateBallotPdfExtractor, resolveStateBallotPdfSvgExtractor, resolveStateBallotPdfXmlExtractor } from "./state-ballot-pdf.js";
 import { createStateCandidateRecord } from "./state-ballot-records.js";
 import { configuredStateBallotSources, legacyReviewedStateBallotSource } from "./state-ballot-registry.js";
 import { parseBundledStateSnapshot } from "./state-ballot-snapshot.js";
@@ -28,7 +29,7 @@ interface PreparationPlan {
 	type: "reviewed-candidate-preparation";
 	sourceId: string;
 	sourceConfigurationSha256: string;
-	input: { path: string; sha256: string; format?: "santa-fe-master-pdf" | "cambridge-candidates-pdf" };
+	input: { path: string; sha256: string; format?: "santa-fe-master-pdf" | "cambridge-candidates-pdf" | "everett-ballots-pdf" };
 	documents: ReviewedDocument[];
 	outputDirectory: string;
 	outputName: string;
@@ -48,7 +49,7 @@ const quote = (value: string) => `"${(/^\s*[=+@-]/u.test(value) ? `'${value}` : 
 function parsePlan(value: unknown, now: number): PreparationPlan {
 	if (!objectValue(value) || !exactKeys(value, ["schemaVersion", "type", "sourceId", "sourceConfigurationSha256", "input", "documents", "outputDirectory", "outputName"])
 		|| value.schemaVersion !== 1 || value.type !== "reviewed-candidate-preparation" || typeof value.sourceId !== "string" || !sha256Value(value.sourceConfigurationSha256)
-		|| !objectValue(value.input) || !exactKeys(value.input, ["santa-fe-master-pdf", "cambridge-candidates-pdf"].includes(String(value.input.format)) ? ["path", "sha256", "format"] : ["path", "sha256"]) || !absolutePath(value.input.path) || !sha256Value(value.input.sha256)
+		|| !objectValue(value.input) || !exactKeys(value.input, ["santa-fe-master-pdf", "cambridge-candidates-pdf", "everett-ballots-pdf"].includes(String(value.input.format)) ? ["path", "sha256", "format"] : ["path", "sha256"]) || !absolutePath(value.input.path) || !sha256Value(value.input.sha256)
 		|| !absolutePath(value.outputDirectory) || typeof value.outputName !== "string" || !/^[a-z0-9][a-z0-9-]{0,99}$/u.test(value.outputName)
 		|| !Array.isArray(value.documents) || !value.documents.length || value.documents.length > 100 || !Number.isFinite(now)) {
 		throw new Error("Candidate preparation requires an exact, pinned local review plan.");
@@ -66,7 +67,7 @@ function parsePlan(value: unknown, now: number): PreparationPlan {
 	return value as unknown as PreparationPlan;
 }
 
-export async function prepareReviewedCandidateFiles(planPath: string, now = Date.now(), options: { extractSantaFePdf?: (bytes: Buffer) => Promise<string>; extractCambridgePdf?: (bytes: Buffer) => Promise<string> } = {}) {
+export async function prepareReviewedCandidateFiles(planPath: string, now = Date.now(), options: { extractSantaFePdf?: (bytes: Buffer) => Promise<string>; extractCambridgePdf?: (bytes: Buffer) => Promise<string>; extractEverettPdf?: (bytes: Buffer) => Promise<{ xml: string; svg: string }> } = {}) {
 	if (!absolutePath(planPath)) throw new Error("Use an absolute candidate preparation plan path.");
 	const plan = parsePlan(JSON.parse((await readBoundedStateDataBytes(planPath)).toString("utf8")), now);
 	const configured = configuredStateBallotSources.find(source => source.id === plan.sourceId);
@@ -83,6 +84,7 @@ export async function prepareReviewedCandidateFiles(planPath: string, now = Date
 	const input = await readBoundedStateDataBytes(plan.input.path);
 	if (digest(input) !== plan.input.sha256) throw new Error("Candidate input bytes do not match their review.");
 	let native: ReturnType<typeof readReviewedSantaFeCandidates> | undefined;
+	let everett: ReturnType<typeof readEverettCandidateDocuments> | undefined;
 	if (plan.input.format === "santa-fe-master-pdf") {
 		const master = plan.documents[0]!;
 		if (source.stateCode !== "NM" || source.id !== `nm-santa-fe-samples-${source.electionDate.slice(0, 4)}` || master.url !== source.url || master.path !== plan.input.path || master.sha256 !== plan.input.sha256 || master.url !== `https://www.santafecountynm.gov/uploads/documents/GENERAL_${source.electionDate.slice(0, 4)}-Master_Ballot_List.pdf`) throw new Error("Native Santa Fe preparation requires its exact reviewed master PDF.");
@@ -98,7 +100,16 @@ export async function prepareReviewedCandidateFiles(planPath: string, now = Date
 		native = { pageCount: parsed.pageCount, evidence: parsed.records.map((record, index) => ({ record, page: parsed.claims[index]!.page })) };
 		if (native.pageCount !== document.pageCount || native.evidence.some(item => !document.reviewedPages.includes(item.page))) throw new Error("The Cambridge publication requires the exact page count and reviewed candidate pages.");
 	}
-	const rows = native
+	else if (plan.input.format === "everett-ballots-pdf") {
+		const first = plan.documents[0]!;
+		if (source.stateCode !== "MA" || source.id !== `ma-everett-${source.electionDate.slice(0, 4)}` || first.path !== plan.input.path || first.sha256 !== plan.input.sha256) throw new Error("Native Everett preparation requires the exact reviewed ballot set.");
+		const extract = options.extractEverettPdf ?? (async (bytes: Buffer) => ({ xml: await extractStateBallotPdfXml(bytes, await resolveStateBallotPdfXmlExtractor()), svg: await extractStateBallotPdfSvg(bytes, await resolveStateBallotPdfSvgExtractor(), 1) }));
+		const documents = [];
+		for (const document of plan.documents) documents.push({ url: document.url, ...await extract(await readBoundedStateDataBytes(document.path)) });
+		everett = readEverettCandidateDocuments(source, documents, createStateCandidateRecord);
+		if (plan.documents.some((document, index) => document.pageCount !== everett!.pageCounts[index] || !document.reviewedPages.includes(1))) throw new Error("The Everett ballots require exact page counts and reviewed candidate pages.");
+	}
+	const rows = native || everett
 		? []
 		: parse(input, {
 			bom: true,
@@ -108,28 +119,30 @@ export async function prepareReviewedCandidateFiles(planPath: string, now = Date
 				return header;
 			},
 		}) as Record<string, string>[];
-	if (!native && (!rows.length || rows.length > 25_000)) throw new Error("Candidate review CSV has an invalid record count.");
-	const evidence = native
-		? native.evidence.map(item => ({ ...item, document: plan.documents[0]!, row: null }))
-		: rows.map((row, index) => {
-				const document = plan.documents.find(document => document.url === row.documentUrl);
-				if (!document || !/^[1-9]\d{0,3}$/u.test(row.page!) || !document.reviewedPages.includes(Number(row.page))) throw new Error("Each candidate requires an exact reviewed source page.");
-				const values = Object.fromEntries(columns.map(column => [column, clean(row[column]!)]));
-				if (!values.name || values.name.length > 250 || !values.office || values.office.length > 300 || values.district!.length > 40
-					|| !scopes.has(values.scope!) || !statuses.has(values.status!) || (values.scope === "statewide" && values.district)
-					|| columns.filter(column => !["name", "office", "district", "documentUrl", "page"].includes(column)).some(column => values[column]!.length > 300)) {
-					throw new Error("Candidate review rows require explicit bounded identity, scope and status fields.");
-				}
-				const identity = [source.id, source.stateCode, source.electionDate, ...[values.name, values.office, values.party, values.district, values.scope, values.jurisdiction, values.ballotDesignation].map(value => value!.toLocaleLowerCase("en-US"))];
-				const record: StateCandidateRecord = { id: digest(JSON.stringify(identity)).slice(0, 24), name: values.name, office: values.office, district: values.district!, scope: values.scope as StateCandidateRecord["scope"], status: values.status as StateCandidateRecord["status"] };
-				for (const column of ["party", "jurisdiction", "ballotDesignation", "sourceStatus", "sourceDistrictLabel", "sourceAreaLabel"] as const) {
-					if (values[column]) record[column] = values[column];
-				}
-				return { record, document, page: Number(row.page), row: index + 1 };
-			});
-	const records = evidence.map(item => item.record);
+	if (!native && !everett && (!rows.length || rows.length > 25_000)) throw new Error("Candidate review CSV has an invalid record count.");
+	const evidence = everett
+		? everett.claims.map(item => ({ record: item.record, document: plan.documents[item.documentIndex]!, page: item.page, row: null }))
+		: native
+			? native.evidence.map(item => ({ ...item, document: plan.documents[0]!, row: null }))
+			: rows.map((row, index) => {
+					const document = plan.documents.find(document => document.url === row.documentUrl);
+					if (!document || !/^[1-9]\d{0,3}$/u.test(row.page!) || !document.reviewedPages.includes(Number(row.page))) throw new Error("Each candidate requires an exact reviewed source page.");
+					const values = Object.fromEntries(columns.map(column => [column, clean(row[column]!)]));
+					if (!values.name || values.name.length > 250 || !values.office || values.office.length > 300 || values.district!.length > 40
+						|| !scopes.has(values.scope!) || !statuses.has(values.status!) || (values.scope === "statewide" && values.district)
+						|| columns.filter(column => !["name", "office", "district", "documentUrl", "page"].includes(column)).some(column => values[column]!.length > 300)) {
+						throw new Error("Candidate review rows require explicit bounded identity, scope and status fields.");
+					}
+					const identity = [source.id, source.stateCode, source.electionDate, ...[values.name, values.office, values.party, values.district, values.scope, values.jurisdiction, values.ballotDesignation].map(value => value!.toLocaleLowerCase("en-US"))];
+					const record: StateCandidateRecord = { id: digest(JSON.stringify(identity)).slice(0, 24), name: values.name, office: values.office, district: values.district!, scope: values.scope as StateCandidateRecord["scope"], status: values.status as StateCandidateRecord["status"] };
+					for (const column of ["party", "jurisdiction", "ballotDesignation", "sourceStatus", "sourceDistrictLabel", "sourceAreaLabel"] as const) {
+						if (values[column]) record[column] = values[column];
+					}
+					return { record, document, page: Number(row.page), row: index + 1 };
+				});
+	const records = everett?.records ?? evidence.map(item => item.record);
 	if (new Set(records.map(record => record.id)).size !== records.length) throw new Error("Candidate review CSV has duplicate contest identities; review rather than silently merging them.");
-	const documents = plan.documents.map(document => ({ url: document.url, sha256: document.sha256, retrievedAt: document.capturedAt, includedRecordCount: evidence.filter(item => item.document === document).length }));
+	const documents = plan.documents.map(document => ({ url: document.url, sha256: document.sha256, retrievedAt: document.capturedAt, includedRecordCount: evidence.filter(item => item.document === document && (!everett || evidence.find(candidate => candidate.record.id === item.record.id) === item)).length }));
 	const retrievedAt = new Date(Math.min(...documents.map(document => Date.parse(document.retrievedAt)))).toISOString();
 	const snapshot: StateBallotSnapshot = { source, retrievedAt, sha256: digest(JSON.stringify(documents.map(({ url, sha256 }) => ({ url, sha256 })))), records, documents };
 	const snapshotBody = serializeStoredStateSnapshot(snapshot);

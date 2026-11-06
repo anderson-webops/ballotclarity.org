@@ -22,7 +22,7 @@ export function registerStateRecordDetailRoutes(app: Express, repository: StateB
 		}
 		try {
 			const preferred = sources.find(source => source.stateCode === stateCode && (sourceId === undefined || source.id === sourceId));
-			const snapshot = preferred && repository ? await repository.getSnapshot(stateCode, sourceId as string | undefined) : null;
+			const snapshot = preferred && repository ? await repository.getSnapshot(stateCode, sourceId as string | undefined) ?? (sourceId === undefined ? await repository.getSnapshot(stateCode, preferred.id) : null) : null;
 			if (!snapshot) {
 				response.status(404).json({ message: "The candidate record is unavailable." });
 				return;

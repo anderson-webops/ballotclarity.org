@@ -676,6 +676,7 @@ test("guide startup restores browser context after hydration and keeps navigatio
 
 test("state records: every candidate is visible with election, provenance, and limited-coverage disclosure", async (t) => {
 	await withResilienceBrowser(t, async (cdp) => {
+		await cdp.send("Page.addScriptToEvaluateOnNewDocument", { source: "Date.now = () => Date.parse('2026-10-30T12:00:00Z');" });
 		const snapshot = structuredClone(nationwideLookupSnapshot);
 		Object.assign(snapshot.nationwideLookupResult, {
 			availability: { ...snapshot.nationwideLookupResult.availability, ballotCandidates: { label: "Ballot candidate data", detail: "Official state records", status: "limited" } },
@@ -1844,6 +1845,7 @@ test("nationwide lookup context survives client navigation across results, distr
 		await cdp.send("Page.enable");
 		await cdp.send("Runtime.enable");
 
+		await cdp.send("Page.addScriptToEvaluateOnNewDocument", { source: "Date.now = () => Date.parse('2026-04-18T12:44:00Z');" });
 		await navigateAndWait(cdp, appBaseUrl, "nationwide-context initial page load");
 		await delay(500);
 		await cdp.send("Network.enable");
@@ -1861,13 +1863,13 @@ test("nationwide lookup context survives client navigation across results, distr
 			returnByValue: true
 		});
 		await waitForDocumentReady(cdp, `${appBaseUrl}/results`, "nationwide-context results navigation");
-		await waitForBodyText(cdp, /representatives/, "nationwide-context results hydration");
+		await waitForBodyText(cdp, /7 officials/u, "nationwide-context results hydration");
 
 		const resultsText = await getDocumentBodyText(cdp);
 		assert.match(resultsText, /Provo, Utah/);
-		assert.match(resultsText, /representatives/);
-		assert.match(resultsText, /7 representatives/);
-		assert.match(resultsText, /Your area/i);
+		assert.match(resultsText, /Representatives/u);
+		assert.match(resultsText, /7 officials/u);
+		assert.match(resultsText, /Matched by ZIP code/u);
 
 		await navigateAndWait(cdp, `${appBaseUrl}/districts`, "nationwide-context districts navigation");
 		await waitForBodyText(cdp, /Provo city/, "nationwide-context districts hydration");

@@ -89,7 +89,7 @@ export async function createReviewedFixtureRepository(context: TestContext, opti
 	context.after(() => rm(directory, { recursive: true, force: true }));
 	const storage = createStateBallotStorage(directory);
 	for (const descriptor of catalog.descriptors) await storage.write(loadReviewedStateFixture(descriptor.stateCode));
-	return createStateBallotRepository({ ...options, dataDirectory: directory });
+	return createStateBallotRepository({ now: () => Date.parse("2026-10-30T12:00:00Z"), ...options, dataDirectory: directory });
 }
 
 export function readReviewedTransferFixture(name: string) {

@@ -17,14 +17,22 @@ export const everettDocumentUrls = [
 	"https://cityofeverett.com/wp-content/uploads/2026/09/STATE-BALLOT-WD-1-PCT-3.pdf",
 ] as const;
 
+export function validateEverettDocumentUrl(address: string, year: string) {
+	assert(/^20\d{2}$/u.test(year) && address.length <= 2048);
+	const url = new URL(address);
+	assert(url.origin === "https://cityofeverett.com" && url.href === address && !url.username && !url.password && !url.search && !url.hash && new RegExp(`^/wp-content/uploads/${year}/(?:0[1-9]|1[0-2])/[A-Za-z0-9-]+[.]pdf$`, "u").test(url.pathname));
+}
+
+export function everettAutomaticSource(electionDate: string): StateBallotSource {
+	assert(/^20\d{2}-11-0[2-8]$/u.test(electionDate) && Number(electionDate.slice(0, 4)) % 2 === 0 && new Date(`${electionDate}T00:00:00Z`).getUTCDay() === 2);
+	return { stateCode: "MA", id: electionDate === "2026-11-03" ? "ma-everett-2026" : `ma-everett-general-${electionDate}`, label: "Everett election ballots", electionDate, url: everettIndexUrl, pageUrl: everettIndexUrl, format: "everett-pdf", snapshotStorage: "external", placeName: "Everett city", withheldDistrictScopes: ["state-senate", "state-house"], defaultPriority: -20 };
+}
+
 export function everettSource(electionDate: string, documentUrls: readonly string[] = everettDocumentUrls): StateBallotSource {
 	assert(/^20\d{2}-\d{2}-\d{2}$/u.test(electionDate));
 	assert.equal(new Date(`${electionDate}T00:00:00Z`).toISOString().slice(0, 10), electionDate);
 	assert(documentUrls.length > 0 && documentUrls.length <= 20 && new Set(documentUrls).size === documentUrls.length);
-	for (const address of documentUrls) {
-		const url = new URL(address);
-		assert(url.origin === "https://cityofeverett.com" && url.href === address && !url.search && !url.hash && new RegExp(`^/wp-content/uploads/${electionDate.slice(0, 4)}/(?:0[1-9]|1[0-2])/[A-Za-z0-9-]+[.]pdf$`, "u").test(url.pathname));
-	}
+	for (const address of documentUrls) validateEverettDocumentUrl(address, electionDate.slice(0, 4));
 	return { stateCode: "MA", id: `ma-everett-${electionDate.slice(0, 4)}`, label: "Everett election ballots", electionDate, url: documentUrls[0], pageUrl: everettIndexUrl, format: "reviewed-pdf", retrievalPolicy: "manual-snapshot", snapshotStorage: "external", placeName: "Everett city", documentUrls: [...documentUrls], withheldDistrictScopes: ["state-senate", "state-house"], defaultPriority: -20 };
 }
 
@@ -124,14 +132,16 @@ function geography(claim: ReturnType<typeof readEverettCandidateDocument>["recor
 }
 
 export function validateEverettSource(source: StateBallotSource) {
-	const expected = everettSource(source.electionDate, source.documentUrls);
+	const expected = source.format === "everett-pdf" ? everettAutomaticSource(source.electionDate) : everettSource(source.electionDate, source.documentUrls);
 	assert.deepEqual(source, expected, "The Everett source configuration requires review.");
 	return expected;
 }
 
 export function readEverettCandidateDocuments(source: StateBallotSource, documents: readonly EverettNativeDocument[], factory: Factory, glyphApprovals?: EverettGlyphCatalog) {
 	const expected = validateEverettSource(source);
-	assert(documents.length === expected.documentUrls!.length && documents.every((document, index) => document.url === expected.documentUrls![index]));
+	assert(documents.length > 0 && documents.length <= 20 && new Set(documents.map(document => document.url)).size === documents.length);
+	if (expected.documentUrls) assert(documents.length === expected.documentUrls.length && documents.every((document, index) => document.url === expected.documentUrls![index]));
+	for (const document of documents) validateEverettDocumentUrl(document.url, source.electionDate.slice(0, 4));
 	const records = new Map<string, StateCandidateRecord>();
 	const areas = new Map<string, Set<string>>();
 	const claims: { record: StateCandidateRecord; documentIndex: number; page: 1; styleLabel: string }[] = [];

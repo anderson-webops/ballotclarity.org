@@ -17,6 +17,31 @@ preparer and scoped stored-data supplementation. The source remains manual while
 publisher policy is unresolved. See the
 [certificate review](audits/2026-11-01-georgia-certified-writeins.md).
 
+## Everett, Massachusetts
+
+`ma-everett-2026` has a policy-bound recurring reader for the city's independent
+public election library. Its three November 2026 samples reconcile 24 distinct
+candidate/ticket records and all 66 original candidate occurrences. Public
+readers use persisted records; collection and native document verification run
+only in explicit workers.
+
+The current-document table supplies its read-only request controls and complete
+pagination. Discovery follows offered sample links and the election date printed
+inside each ballot. Future sources use date-bound identities. Empty libraries
+create no guessed election; changed policies, formats, glyphs or disappearing
+accepted styles require review. Existing manual snapshots retain an immutable
+backup during migration.
+
+The reader currently supports the reviewed twelve-office, single-candidate-page
+state-election layout. Other election layouts and newly encountered font shapes
+remain review exceptions. The future-date fixtures establish configuration and
+identity handling, not coverage of unpublished future ballots. Named legislative
+districts retain their matching hold, as do the existing Massachusetts state,
+Cambridge and Somerville acquisition/reuse restrictions.
+
+See [recurring collection review](audits/2026-11-06-everett-recurring-collection.md).
+Host selection, substantive acceptance and scheduling remain separate approvals.
+
 ## Bucks County, Pennsylvania
 
 `pa-bucks-2026` independently collects the county's 31 published ballot entries,

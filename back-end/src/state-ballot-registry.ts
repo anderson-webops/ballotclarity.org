@@ -3,7 +3,7 @@ import { booneSource } from "./state-ballot-boone-discovery.js";
 import { boulderSource } from "./state-ballot-boulder.js";
 import { bucksSource } from "./state-ballot-bucks.js";
 import { douglasSource } from "./state-ballot-douglas-collection.js";
-import { everettSource } from "./state-ballot-everett.js";
+import { everettAutomaticSource, everettSource } from "./state-ballot-everett.js";
 import { hamiltonSource } from "./state-ballot-hamilton-collection.js";
 import { kanawhaSource } from "./state-ballot-kanawha-discovery.js";
 import { maineHouseSource } from "./state-ballot-maine-house.js";
@@ -295,6 +295,7 @@ export const additionalStateBallotSources: readonly StateBallotSource[] = [
 ];
 
 function automaticReviewedSource(source: StateBallotSource): StateBallotSource {
+	if (source.id === "ma-everett-2026") return everettAutomaticSource(source.electionDate);
 	if (source.id === "ri-east-greenwich-2026") return { ...source, format: "east-greenwich-pdf", url: source.pageUrl, retrievalPolicy: undefined, documentUrls: undefined, documentLinks: undefined, snapshotStorage: "external" };
 	if (source.id === "wi-town-dane-2026") return { ...source, format: "dane-pdf", url: "https://townofdane.gov/news-notices/", retrievalPolicy: undefined, documentUrls: undefined, documentLinks: undefined, snapshotStorage: "external" };
 	if (source.id === "ar-pulaski-candidates-2026") return { ...source, format: "pulaski-pdf", countyName: "Pulaski County", url: "https://votepulaskiar.gov/", pageUrl: "https://votepulaskiar.gov/", retrievalPolicy: undefined, documentUrls: undefined, documentLinks: undefined, snapshotStorage: "external" };
@@ -308,7 +309,7 @@ function automaticReviewedSource(source: StateBallotSource): StateBallotSource {
 }
 
 export function legacyReviewedStateBallotSource(source: StateBallotSource) {
-	const legacy = [...stateBallotSources, ...additionalStateBallotSources].find(item => ["ri-east-greenwich-2026", "wi-town-dane-2026", "ar-pulaski-candidates-2026", "mi-tuscola-candidates-2026", "dc-boe-2026", "oh-franklin-2026", "id-cassia-2026", "nv-clark-2026", "ct-sots-2026", "ga-fulton-2026", "mo-sos-2026", "nj-doe-2026-federal", "tx-sos-2026", "or-sos-multnomah-2026"].includes(item.id) && item.id === source.id);
+	const legacy = [...stateBallotSources, ...additionalStateBallotSources].find(item => ["ma-everett-2026", "ri-east-greenwich-2026", "wi-town-dane-2026", "ar-pulaski-candidates-2026", "mi-tuscola-candidates-2026", "dc-boe-2026", "oh-franklin-2026", "id-cassia-2026", "nv-clark-2026", "ct-sots-2026", "ga-fulton-2026", "mo-sos-2026", "nj-doe-2026-federal", "tx-sos-2026", "or-sos-multnomah-2026"].includes(item.id) && item.id === source.id);
 	return legacy && JSON.stringify(source) === JSON.stringify(automaticReviewedSource(legacy)) ? legacy : null;
 }
 
@@ -316,4 +317,4 @@ export function legacyFultonReviewedSource(source: StateBallotSource) {
 	return source.id === "ga-fulton-2026" ? legacyReviewedStateBallotSource(source) : null;
 }
 
-export const configuredStateBallotSources: readonly StateBallotSource[] = [...stateBallotSources.map(source => ["ri-east-greenwich-2026", "wi-town-dane-2026", "ar-pulaski-candidates-2026", "dc-boe-2026", "oh-franklin-2026", "id-cassia-2026", "nv-clark-2026", "ct-sots-2026", "ga-fulton-2026", "mo-sos-2026", "nj-doe-2026-federal", "tx-sos-2026", "or-sos-multnomah-2026"].includes(source.id) ? automaticReviewedSource(source) : source), ...additionalStateBallotSources.map(source => ["mi-tuscola-candidates-2026", "ar-pulaski-candidates-2026"].includes(source.id) ? automaticReviewedSource(source) : source)];
+export const configuredStateBallotSources: readonly StateBallotSource[] = [...stateBallotSources.map(source => ["ri-east-greenwich-2026", "wi-town-dane-2026", "ar-pulaski-candidates-2026", "dc-boe-2026", "oh-franklin-2026", "id-cassia-2026", "nv-clark-2026", "ct-sots-2026", "ga-fulton-2026", "mo-sos-2026", "nj-doe-2026-federal", "tx-sos-2026", "or-sos-multnomah-2026"].includes(source.id) ? automaticReviewedSource(source) : source), ...additionalStateBallotSources.map(source => ["ma-everett-2026", "mi-tuscola-candidates-2026", "ar-pulaski-candidates-2026"].includes(source.id) ? automaticReviewedSource(source) : source)];

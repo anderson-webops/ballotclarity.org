@@ -23,6 +23,7 @@ import { fetchDaneCandidateCapture } from "./state-ballot-dane-collection.js";
 import { fetchDcCandidateCapture } from "./state-ballot-dc-collection.js";
 import { fetchDouglasCandidateCapture } from "./state-ballot-douglas-collection.js";
 import { fetchEastGreenwichCandidateCapture } from "./state-ballot-east-greenwich-collection.js";
+import { fetchEverettCandidateCapture } from "./state-ballot-everett-collection.js";
 import { fetchFranklinCandidateCapture } from "./state-ballot-franklin-collection.js";
 import { fetchFultonCandidateCapture } from "./state-ballot-fulton.js";
 import { fetchGoffstownCandidateCapture } from "./state-ballot-goffstown-collection.js";
@@ -215,6 +216,7 @@ export async function fetchStateBallotSourceText(source: StateBallotSource, requ
 	if (source.format === "iowa-polk-pdf") return fetchIowaPolkCandidateCapture(source, { requestText: request });
 	if (source.format === "iowa-johnson-html") return fetchIowaJohnsonCandidateCapture(source, { requestText: request });
 	if (source.format === "boulder-html") return fetchBoulderCandidateCapture(source, { requestText: request });
+	if (source.format === "everett-pdf") return fetchEverettCandidateCapture(source);
 	if (source.format === "bucks-pdf") return fetchBucksCandidateCapture(source);
 	if (source.format === "washoe-html") return fetchWashoeCandidateCapture(source, { requestText: request });
 	if (source.format === "clark-pdf") return fetchClarkCandidateCapture(source, { requestText: request });

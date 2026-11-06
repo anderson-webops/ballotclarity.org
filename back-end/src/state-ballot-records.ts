@@ -22,6 +22,7 @@ import { parseDaneCandidateCapture } from "./state-ballot-dane-collection.js";
 import { parseDcCandidateCapture } from "./state-ballot-dc-collection.js";
 import { parseDouglasCandidateCapture } from "./state-ballot-douglas-collection.js";
 import { parseEastGreenwichCandidateCapture } from "./state-ballot-east-greenwich-collection.js";
+import { parseEverettCandidateCapture } from "./state-ballot-everett-collection.js";
 import { parseFloridaLocalCandidateRecords } from "./state-ballot-florida-local.js";
 import { parseFranklinCandidateCapture } from "./state-ballot-franklin-collection.js";
 import { parseFultonCandidateCapture } from "./state-ballot-fulton.js";
@@ -468,6 +469,9 @@ export function parseStateCandidateRecords(source: StateBallotSource, body: stri
 	}
 	else if (source.format === "boulder-html") {
 		records = parseBoulderCandidateCapture(source, body, makeRecord).records;
+	}
+	else if (source.format === "everett-pdf") {
+		records = parseEverettCandidateCapture(source, body, makeRecord).records;
 	}
 	else if (source.format === "bucks-pdf") {
 		records = parseBucksCandidateCapture(source, body, makeRecord).records;

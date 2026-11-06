@@ -35,6 +35,10 @@ restart, using verified local snapshots without publisher requests. Automatic
 current-ballot lookup retains its election-window cutoff. Future captures,
 changed source configurations and invalid stored data fail closed.
 
+The [recurring collection review](2026-11-06-everett-recurring-collection.md)
+supersedes the original discovery limitation below while preserving this cohort's
+facts, source files and original preparation evidence.
+
 The historical 2026 cohort is a reviewed external snapshot. Publication,
 automatic import and scheduling remain unapproved by preparation. Public record
 readers use persisted facts and invoke neither native extraction nor publisher

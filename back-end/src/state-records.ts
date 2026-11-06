@@ -26,6 +26,7 @@ import { usStates } from "./us-states.js";
 const scopes = ["all", "statewide", "congressional", "state-senate", "state-house", "state-board-of-education", "local"];
 
 export function stateRecordDocumentLinks(source: StateBallotSource | undefined, snapshot?: StateBallotSnapshot) {
+	if (source?.format === "everett-pdf" && snapshot?.documents) return [{ label: "Sample ballots", url: source.pageUrl }];
 	if (source?.format === "bucks-pdf" && snapshot?.documents) {
 		return snapshot.documents.map((document) => {
 			validateBucksDocumentUrl(document.url, source.electionDate);

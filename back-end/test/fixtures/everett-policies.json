@@ -1,0 +1,11 @@
+{
+  "robots": "# START YOAST BLOCK\r\n# ---------------------------\r\nUser-agent: *\r\nCrawl-delay: 10\r\n\r\n# Events Calendar crawl traps (match anywhere in the URL, not just first param)\r\nDisallow: /*ical=1\r\nDisallow: /*outlook-ical=1\r\nDisallow: /*tribe-bar-date=\r\nDisallow: /*eventDisplay=past\r\nDisallow: /*eventDisplay=day\r\nDisallow: /*eventDate=\r\nDisallow: /*post_type=tribe_events\r\nDisallow: /calendar/day/\r\nDisallow: /calendar/*/day/\r\nDisallow: /events/*/embed/\r\nDisallow: /calendar/week/\r\nDisallow: /calendar/month/\r\nDisallow: /calendar/list/page/\r\nDisallow: /calendar/today/\r\nDisallow: /*tribe_paged=\r\nDisallow: /*tribe-bar-search=\r\n\r\n# Internal search results\r\nDisallow: /?s=\r\nDisallow: /*&s=\r\nDisallow: /search/\r\n\r\nSitemap: https://cityofeverett.com/sitemap_index.xml\r\n# ---------------------------\r\n# END YOAST BLOCK",
+  "policyLinks": [
+    "http://www.mass.gov/eopss/consumer-prot-and-bus-lic/license-type/csl/building-codebbrs.html",
+    "https://cityofeverett.com/city-hall/departments/city-clerk/business-certificates-licenses-permits/",
+    "https://cityofeverett.com/city-hall/departments/city-clerk/dog-licenses/"
+  ],
+  "footers": [
+    "Address: City Hall, 484 Broadway, Everett, MA 02149 Phone: tel:+16173942270 (617) 394-2270 ©2026 City Of Everett | /accessibility/ Accessibility https://x.com/EverettGov_MA City of Everett X page https://www.facebook.com/cityofeverettma City of Everett Facebook page https://www.instagram.com/cityofeverettma/ City of Everett Instagram page Hours of Operation Monday: 8 AM–7:30 PM Tuesday: 8 AM–5 PM Wednesday: 8 AM–5 PM Thursday: 8 AM–7:30 PM Friday: Closed Saturday: Closed Sunday: Closed Quick Links https://cityofeverett.com/how-do-i/pay/ Pay page https://cityofeverett.com/city-hall/departments/human-resources/job-opportunities/ Job Opportunities https://cityofeverett.com/calendar/ Calendar https://everettma.qscend.com/311/request/add 311 Request https://cityofeverett.com/city-hall/departments/city-clerk/agenda/ Agendas & Minutes https://cityofeverett.com/city-hall/departments/parking/residential-parking-stickers/ Residential Parking Stickers https://cityofeverett.com/business-development/community-resources/bid-opportunities/ Bid Opportunities Subscribe to Our Newsletter By T-F https://temperandforge.com Web Design"
+  ]
+}

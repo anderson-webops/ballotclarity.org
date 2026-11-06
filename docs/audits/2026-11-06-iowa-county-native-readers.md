@@ -61,6 +61,44 @@ records, establish winners, or link people to current officeholder profiles.
 
 This module is a maintained ingestion primitive. Publisher policy enrollment,
 actual offered-election discovery, complete document-set selection, recurring
-collection, original-PDF crop/visibility verification, durable snapshot integration and public route acceptance remain
+collection, full render/visibility acceptance, durable snapshot integration and public route acceptance remain
 separate work. Existing Story, Johnson and Polk configurations and the
 state-publisher access hold are unchanged.
+
+## Original-page and second-path validation
+
+`state-ballot-iowa-county-proof.ts` reads the bounded original qpdf page graph
+and compares a second Poppler text extraction against the maintained reader.
+Both original pages must have distinct object references, reviewed 612-by-1008
+media boxes, zero rotation and unit scale. Monona's original crop box is
+18.573, 66.596, 593.28, 974.929 points; Woodbury uses the full media box.
+Missing objects, inheritance cycles, altered boxes and unsupported page
+inventories fail closed.
+
+The second extraction independently reconstructs the columns, then reconciles
+every candidate, party, joint ticket, retention question, office, vote limit,
+vacancy designation and the complete measure-column text. Every named person's
+page, column and vertical position must agree. Fonts, original-page geometry,
+input bytes, nesting, text inventories and parsing work remain bounded. The two
+reviewed decorative watermark forms are handled separately from ordinary black
+text.
+
+The explicit `iowa-county` XML worker profile requests point-scale output
+and permits two pages. Its qpdf geometry profile requests original page-object
+metadata without decoded image streams, retaining the four-MiB output bound.
+For example, the first Monona PDF's image-inclusive qpdf output exceeds 22 MiB;
+page geometry does not require those image bytes. Existing extraction profiles
+retain their own arguments and limits. These profiles do not register a
+publisher or run on a public request.
+
+All 87 retained samples pass this validation, preserving all 3,895 person or
+ticket-member claims and the 139 source-context entries. Synthetic regressions
+cover altered identities, parties, offices, tickets, vote limits, questions,
+crop/scale/rotation, font changes, duplicate pages, cyclic inheritance and bounded
+worker behavior. Synthetic future-date cases establish parser compatibility,
+rather than an actually offered future publication.
+
+These checks establish agreement between two native extraction paths and the
+reviewed original-page geometry. They do not independently establish rendered
+paint order, opacity, clipping or occlusion. Full rendering acceptance and the
+remaining collector/storage integration continue as separate requirements.

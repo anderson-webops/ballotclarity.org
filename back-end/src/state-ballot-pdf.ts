@@ -108,22 +108,22 @@ export async function resolveStateBallotPdfObjectInspector(value = process.env.S
 	return resolveStateBallotPdfExtractor(value);
 }
 
-export async function extractStateBallotPdfXml(bytes: Buffer, executable: string, profile: "standard" | "chicago" | "nyc" | "orange" = "standard") {
-	if (!["standard", "chicago", "nyc", "orange"].includes(profile)) throw new Error("The native PDF worker profile is unsupported.");
-	const body = await runPdfExtractor(bytes, executable, ["-xml", "-i", "-stdout", "-", "-"], stateBallotPdfCollectorContract.timeoutMs, true, profile === "orange" ? orangeNativePdfCollectorContract.maximumXmlBytes : stateBallotPdfCollectorContract.maximumTextBytes);
+export async function extractStateBallotPdfXml(bytes: Buffer, executable: string, profile: "standard" | "chicago" | "nyc" | "orange" | "iowa-county" = "standard") {
+	if (!["standard", "chicago", "nyc", "orange", "iowa-county"].includes(profile)) throw new Error("The native PDF worker profile is unsupported.");
+	const body = await runPdfExtractor(bytes, executable, ["-xml", ...(profile === "iowa-county" ? ["-zoom", "1.0"] : []), "-i", "-stdout", "-", "-"], stateBallotPdfCollectorContract.timeoutMs, true, profile === "orange" ? orangeNativePdfCollectorContract.maximumXmlBytes : stateBallotPdfCollectorContract.maximumTextBytes);
 	const pages = [...body.matchAll(/<page\b/gu)].length;
-	if (!pages || pages > (profile === "orange" ? orangeNativePdfCollectorContract.maximumPages : profile === "chicago" ? chicagoNativePdfCollectorContract.maximumPages : profile === "nyc" ? nycNativePdfCollectorContract.maximumPages : stateBallotNativePdfCollectorContract.maximumPages)) throw new Error("The native PDF page inventory exceeds its bounds.");
+	if (!pages || pages > (profile === "iowa-county" ? 2 : profile === "orange" ? orangeNativePdfCollectorContract.maximumPages : profile === "chicago" ? chicagoNativePdfCollectorContract.maximumPages : profile === "nyc" ? nycNativePdfCollectorContract.maximumPages : stateBallotNativePdfCollectorContract.maximumPages)) throw new Error("The native PDF page inventory exceeds its bounds.");
 	return body;
 }
 
-export async function inspectStateBallotPdfObjects(bytes: Buffer, executable: string, profile: "standard" | "chicago" | "nyc" | "orange" = "standard") {
-	if (!["standard", "chicago", "nyc", "orange"].includes(profile)) throw new Error("The native PDF worker profile is unsupported.");
+export async function inspectStateBallotPdfObjects(bytes: Buffer, executable: string, profile: "standard" | "chicago" | "nyc" | "orange" | "iowa-county" = "standard") {
+	if (!["standard", "chicago", "nyc", "orange", "iowa-county"].includes(profile)) throw new Error("The native PDF worker profile is unsupported.");
 	if (!bytes.subarray(0, 5).equals(Buffer.from("%PDF-")) || bytes.length > stateBallotPdfCollectorContract.maximumPdfBytes) throw new Error("The PDF inspection input exceeds its bounds.");
 	const directory = await mkdtemp(join(tmpdir(), "ballot-pdf-inspection-"));
 	try {
 		const filename = join(directory, "document.pdf");
 		await writeFile(filename, bytes, { flag: "wx", mode: 0o600 });
-		return await runPdfExtractor(bytes, executable, ["--json=2", "--json-stream-data=inline", "--decode-level=generalized", filename], stateBallotPdfCollectorContract.timeoutMs, false, profile === "orange" ? orangeNativePdfCollectorContract.maximumObjectBytes : profile === "chicago" ? chicagoNativePdfCollectorContract.maximumObjectBytes : profile === "nyc" ? nycNativePdfCollectorContract.maximumObjectBytes : stateBallotNativePdfCollectorContract.maximumOutputBytes);
+		return await runPdfExtractor(bytes, executable, ["--json=2", ...(profile === "iowa-county" ? ["--json-stream-data=none"] : ["--json-stream-data=inline", "--decode-level=generalized"]), filename], stateBallotPdfCollectorContract.timeoutMs, false, profile === "orange" ? orangeNativePdfCollectorContract.maximumObjectBytes : profile === "chicago" ? chicagoNativePdfCollectorContract.maximumObjectBytes : profile === "nyc" ? nycNativePdfCollectorContract.maximumObjectBytes : stateBallotNativePdfCollectorContract.maximumOutputBytes);
 	}
 	finally {
 		await rm(directory, { recursive: true, force: true });

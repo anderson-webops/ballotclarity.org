@@ -118,7 +118,7 @@ function validName(value: string) {
 }
 const edges = (county: IowaSampleCounty) => (county === "Woodbury" ? [33, 215, 395, 577] : [19, 211, 403, 593.28]);
 
-function checkedContext(context: IowaSampleContext, layout: string) {
+function checkedSampleContext(context: IowaSampleContext) {
 	assert(["Monona", "Woodbury"].includes(context.county), "The Iowa sample county requires review.");
 	assert(
 		/^20\d{2}-11-0[2-8]$/u.test(context.electionDate)
@@ -134,6 +134,10 @@ function checkedContext(context: IowaSampleContext, layout: string) {
 		&& !containsControlCharacters(context.style),
 		"The Iowa ballot-style label requires review."
 	);
+}
+
+function checkedContext(context: IowaSampleContext, layout: string) {
+	checkedSampleContext(context);
 	assert(
 		Buffer.byteLength(layout) <= 4 * 1024 * 1024 && !containsControlCharacters(layout.replace(/[\n\r\t\f]/gu, "")),
 		"The Iowa sample text exceeds its bounds."
@@ -318,6 +322,12 @@ export function readIowaCountySample(bbox: string, layout: string, context: Iowa
 		&& new RegExp(`${context.county} County|County of ${context.county}`, "iu").test(nativeIdentity),
 		"The Iowa native and layout identities disagree."
 	);
+	return readIowaSampleFields(pages, context);
+}
+
+export function readIowaSampleFields(pages: IowaSampleLine[][][], context: IowaSampleContext): IowaSampleRead {
+	checkedSampleContext(context);
+	assert(pages.length === 2 && pages.every(page => page.length === 3), "The Iowa sample column inventory requires review.");
 	const records: IowaSampleChoice[] = [];
 	const claims: IowaSampleClaim[] = [];
 	const contests: IowaSampleContest[] = [];

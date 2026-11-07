@@ -7,7 +7,8 @@ import process from "node:process";
 import { isDeepStrictEqual } from "node:util";
 import { fairbanksCandidateRenderPages, readFairbanksBallotCandidates } from "./fairbanks-ballot-candidates.js";
 import { readFairbanksPublicationCapture } from "./fairbanks-election-publications.js";
-import { extractStateBallotPdfText, resolveStateBallotPdfExtractor } from "./state-ballot-pdf.js";
+import { inspectFairbanksPdfGeometry } from "./fairbanks-pdf-geometry.js";
+import { extractStateBallotPdfSvg, extractStateBallotPdfText, inspectStateBallotPdfObjects, resolveStateBallotPdfExtractor, resolveStateBallotPdfObjectInspector } from "./state-ballot-pdf.js";
 import { assertExternalStateDataDirectory, readBoundedStateDataBytes } from "./state-ballot-storage.js";
 
 const hash = (value: string | Uint8Array) => createHash("sha256").update(value).digest("hex");
@@ -93,6 +94,8 @@ export async function prepareFairbanksCandidateFiles(planPath: string) {
 	const text = await resolveStateBallotPdfExtractor();
 	const renderer = await resolveStateBallotPdfExtractor(process.env.STATE_BALLOT_PDFTOPPM);
 	const reader = await resolveStateBallotPdfExtractor(process.env.STATE_BALLOT_TESSERACT);
+	const inspector = await resolveStateBallotPdfObjectInspector();
+	const vector = await resolveStateBallotPdfExtractor(process.env.STATE_BALLOT_PDFTOCAIRO);
 	const deadline = Date.now() + 180000;
 	const version = await execute(reader, ["--version"], deadline);
 	if (!/^tesseract 5\.\d+\.\d+\b/u.test(version)) throw new Error("Fairbanks native preparation requires maintained Tesseract 5.");
@@ -101,6 +104,9 @@ export async function prepareFairbanksCandidateFiles(planPath: string) {
 		const documents = [];
 		for (const source of bundle.capture.documents) {
 			const bytes = Buffer.from(source.body, "base64");
+			if (deadline - Date.now() < 12000) throw new Error("Fairbanks native preparation exceeded its duration bound.");
+			const geometry = inspectFairbanksPdfGeometry(await inspectStateBallotPdfObjects(bytes, inspector, "metadata"), source.kind);
+			if (geometry.pages.length !== source.text.split("\f").filter((page: string) => page.trim()).length) throw new Error("The Fairbanks inspected page inventory changed.");
 			const remaining = Math.min(12000, deadline - Date.now());
 			if (remaining < 1) throw new Error("Fairbanks native preparation exceeded its duration bound.");
 			const bbox = await extractStateBallotPdfText(bytes, text, remaining, "bbox-layout", source.kind === "sample" ? 4 : 20);
@@ -115,17 +121,19 @@ export async function prepareFairbanksCandidateFiles(planPath: string) {
 			}
 			const pages = [];
 			for (const page of required) {
+				if (deadline - Date.now() < 12000) throw new Error("Fairbanks native preparation exceeded its duration bound.");
+				const svg = await extractStateBallotPdfSvg(bytes, vector, page.page);
 				const prefix = join(temporary, `${source.kind}-${page.page}`);
 				await execute(renderer, ["-r", "300", "-f", String(page.page), "-l", String(page.page), "-singlefile", "-png", path, prefix], deadline);
 				const png = await readBoundedStateDataBytes(`${prefix}.png`, 12 * 1024 * 1024);
 				if (png.length < 33 || !png.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10])) || Math.abs(png.readUInt32BE(16) - page.width * 300 / 72) > 1 || Math.abs(png.readUInt32BE(20) - page.height * 300 / 72) > 1) throw new Error("The Fairbanks rendered page dimensions changed.");
 				const ocr = await execute(reader, [`${prefix}.png`, "stdout", "-l", "eng", "--psm", "11", "tsv"], deadline);
-				pages.push({ ...page, dpi: 300 as const, pngSha256: hash(png), ocr });
+				pages.push({ ...page, dpi: 300 as const, pngSha256: hash(png), ocr, svg });
 			}
-			documents.push({ kind: source.kind, sourceSha256: source.sha256, bbox, pages });
+			documents.push({ kind: source.kind, sourceSha256: source.sha256, geometry, bbox, pages });
 		}
 		const prepared = readFairbanksBallotCandidates(bundle.capture, documents);
-		const body = Buffer.from(`${JSON.stringify({ schemaVersion: 1, type: "fairbanks-native-preparation-bundle", publicationBundleSha256: plan.publicationBundle.sha256, tools: { textSha256: hash(await readFile(text)), rendererSha256: hash(await readFile(renderer)), readerSha256: hash(await readFile(reader)), readerVersion: version.split("\n")[0] }, prepared, documents }, null, 2)}\n`);
+		const body = Buffer.from(`${JSON.stringify({ schemaVersion: 2, type: "fairbanks-native-preparation-bundle", publicationBundleSha256: plan.publicationBundle.sha256, tools: { textSha256: hash(await readFile(text)), rendererSha256: hash(await readFile(renderer)), vectorSha256: hash(await readFile(vector)), inspectorSha256: hash(await readFile(inspector)), readerSha256: hash(await readFile(reader)), readerVersion: version.split("\n")[0] }, prepared, documents }, null, 2)}\n`);
 		if (body.length > 8 * 1024 * 1024) throw new Error("The Fairbanks native evidence exceeds its output bound.");
 		const stored = await immutable(directory, body, prepared.electionDate);
 		return { ...stored, records: prepared.records.length, renderedPages: prepared.proof.length, imported: false, published: false };

@@ -19,8 +19,9 @@ hashes. It has no import, publication, geography-assignment or scheduling author
 
 The compiled command is `back-end/dist/prepare-fairbanks-ballot-candidates.js`.
 Its separately confined collection role provides absolute maintained executable
-paths in `STATE_BALLOT_PDFTOTEXT`, `STATE_BALLOT_PDFTOPPM` and
-`STATE_BALLOT_TESSERACT`. The last executable must report Tesseract 5. English
+paths in `STATE_BALLOT_PDFTOTEXT`, `STATE_BALLOT_PDFTOPPM`,
+`STATE_BALLOT_PDFTOCAIRO`, `STATE_BALLOT_QPDF` and `STATE_BALLOT_TESSERACT`.
+The last executable must report Tesseract 5. English
 sparse-text recognition uses a fixed 300 DPI rendering and page-segmentation
 mode 11. Conversion is sequential, single-threaded for recognition, bounded to
 30 seconds per subprocess and 180 seconds across preparation. Byte, page,
@@ -53,17 +54,30 @@ missing pages, changed media dimensions and uncertain primary fields hold the
 entire preparation for review. Native family enrollment and public publication
 retain their separate acceptance requirements.
 
+An independent rendered-oval inventory accounts for every named candidate and
+blank write-in row within the printed candidate region. A missing native row
+remains held even when recognition also misses its text. Unassigned recognized
+words, extra or missing selection marks, clipping, hidden marks, low-contrast
+strokes and later path paint covering a mark require review. Page metadata must
+retain the reviewed media box, full crop, zero rotation and unit scale. These
+checks are specific to the reviewed publisher layout; unfamiliar rendering
+structures remain review work rather than expanding automatic acceptance.
+
 ## Durable Evidence
 
 The immutable output includes the pinned source-bundle hash, original source
-clocks, native coordinates, rendered-image hashes, recognition output and tool
-fingerprints. Intermediate PDFs and images are temporary. Output installation
+clocks, page geometry, native coordinates, rendered-image hashes, recognition
+output, vector evidence and tool fingerprints in a version-2 bundle. Earlier
+version-1 evidence stays immutable. Intermediate PDFs and images are temporary. Output installation
 is synchronized and atomic, supports identical retries and rejects conflicts.
 Previous evidence remains intact after conversion or persistence failure.
 
 The independent borough publication and the notice supply 22 named October 6,
-2026 candidates across 11 offices. Four rendered pages corroborate 130 fields,
-including the repeated borough slate. The future-cycle fixture changes the
+2026 candidates across 11 offices. Four rendered pages corroborate 134 fields
+and 57 selection rows, including the repeated borough slate and blank write-ins.
+Local copies with altered crop, rotation, page units, Unicode font mapping,
+covered candidate text or covered selection marks all reject preparation while
+preserving the accepted output. The future-cycle fixture changes the
 printed date and term years without changing the parser or candidate names in
 configuration. These are preparation results, separate from a registered recurring
 candidate source and protected production import.

@@ -1,13 +1,14 @@
 import type { FairbanksPublicationCapture } from "./fairbanks-election-publications.js";
 import { Buffer } from "node:buffer";
 import { createHash } from "node:crypto";
+import { inspectFairbanksSelectionMarks } from "./fairbanks-ballot-marks.js";
 import { readFairbanksPublicationCapture } from "./fairbanks-election-publications.js";
 import { stateHtmlAttribute as attribute, stateHtmlDescendants as descendants, parseStateHtml, stateHtmlText } from "./state-ballot-html.js";
 import { containsControlCharacters } from "./text-validation.js";
 
 interface NativeLine { text: string; left: number; top: number; right: number; bottom: number }
 interface NativePage { page: number; width: number; height: number; lines: NativeLine[] }
-export interface FairbanksRenderedPage { page: number; width: number; height: number; dpi: 300; pngSha256: string; ocr: string }
+export interface FairbanksRenderedPage { page: number; width: number; height: number; dpi: 300; pngSha256: string; ocr: string; svg: string }
 export interface FairbanksCandidateDocument { kind: "sample" | "notice"; sourceSha256: string; bbox: string; pages: FairbanksRenderedPage[] }
 export interface FairbanksPreparedCandidate {
 	electionDate: string;
@@ -80,10 +81,16 @@ function renderedWords(proof: FairbanksRenderedPage, page: NativePage) {
 	});
 }
 function corroborate(lines: NativeLine[], words: ReturnType<typeof renderedWords>, minimumConfidence = 70) {
+	const assigned = new Set<(typeof words)[number]>();
 	for (const line of lines) {
 		const matched = words.filter(word => (word.left + word.right) / 2 >= line.left - 1 && (word.left + word.right) / 2 <= line.right + 1 && (word.top + word.bottom) / 2 >= line.top - 1 && (word.top + word.bottom) / 2 <= line.bottom + 1).sort((first, second) => first.left - second.left);
 		requireValue(matched.length > 0 && matched.every(word => word.confidence >= (line.text === "Write-In" ? 0 : minimumConfidence)) && comparable(matched.map(word => word.text).join(" ")) === comparable(line.text), `printed field disagreement at ${line.left}/${line.top}`);
+		for (const word of matched) {
+			requireValue(!assigned.has(word), "overlapping native field assignment");
+			assigned.add(word);
+		}
 	}
+	return assigned;
 }
 function office(lines: NativeLine[], position: number, jurisdiction: string) {
 	const line = lines[position]!;
@@ -113,6 +120,7 @@ function office(lines: NativeLine[], position: number, jurisdiction: string) {
 function parseOffices(lines: NativeLine[], jurisdiction: string, electionDate: string) {
 	const candidates: Array<{ name: string; office: string; voteLimit: number; termYears: number; termEndYear: number }> = [];
 	const fields: NativeLine[] = [];
+	const decisions: NativeLine[] = [];
 	let position = 0;
 	while (position < lines.length) {
 		const heading = office(lines, position, jurisdiction);
@@ -129,25 +137,27 @@ function parseOffices(lines: NativeLine[], jurisdiction: string, electionDate: s
 			const name = lines[position]!.text;
 			requireValue(/^\p{L}[\p{L}\p{M} .,'’"()-]{2,160}$/u.test(name) && name.includes(" ") && !/\b(?:SEAT|BOARD|COUNCIL|BOROUGH|Vote|Term|Instructions|PROPOSITION|BALLOT)\b/u.test(name), "candidate line");
 			candidates.push({ name, office: heading.caption, voteLimit: Number(limit[2]), termYears: Number(term[1]), termEndYear: Number(term[3]) });
+			decisions.push(lines[position]!);
 			fields.push(lines[position++]!);
 			requireValue(++count <= 50, "office candidate bound");
 		}
 		requireValue(count > 0, "empty candidate office");
 		let writeIns = 0;
 		while (lines[position]?.text === "Write-In") {
+			decisions.push(lines[position]!);
 			fields.push(lines[position++]!);
 			writeIns++;
 		}
 		requireValue(writeIns === Number(limit[2]), "blank write-in inventory");
 	}
-	return { candidates, fields };
+	return { candidates, fields, decisions };
 }
 
 export function readFairbanksBallotCandidates(capture: FairbanksPublicationCapture, documents: FairbanksCandidateDocument[], now = Date.now()) {
 	const inventory = readFairbanksPublicationCapture(capture, now);
 	requireValue(Array.isArray(documents) && documents.length === 2, "native document set");
 	const records: FairbanksPreparedCandidate[] = [];
-	const proof: Array<{ kind: string; page: number; jurisdiction: string; fields: number; candidates: number; bboxSha256: string; pngSha256: string; ocrSha256: string }> = [];
+	const proof: Array<{ kind: string; page: number; jurisdiction: string; fields: number; candidates: number; selectionMarks: number; bboxSha256: string; pngSha256: string; ocrSha256: string; svgSha256: string }> = [];
 	const year = inventory.electionDate.slice(0, 4);
 	const day = Number(inventory.electionDate.slice(-2));
 	const month = inventory.electionDate.slice(5, 7) === "10" ? "OCTOBER" : "NOVEMBER";
@@ -171,9 +181,13 @@ export function readFairbanksBallotCandidates(capture: FairbanksPublicationCaptu
 			const rendered = document.pages.find(proof => proof.page === page.page);
 			requireValue(rendered, "missing rendered page");
 			const words = renderedWords(rendered, page);
+			const marks = inspectFairbanksSelectionMarks(rendered.svg, page.width, page.height);
 			const duplicate = document.kind === "notice" && jurisdiction === "Fairbanks North Star Borough";
 			const endings = page.lines.filter(line => line.text === "END OF BALLOT" || line.text === "CONTINUE VOTING ON NEXT SIDE");
 			requireValue(endings.length === 1 && endings[0]!.top > scopes[0]!.bottom, "printed ballot ending");
+			const instructions = page.lines.filter(line => line.text === "may ask for a new ballot." && line.top > scopes[0]!.bottom && line.bottom < scopes[0]!.bottom + 100);
+			requireValue(instructions.length === 1, "candidate-region instruction boundary");
+			corroborate(instructions, words, 0);
 			let columns = [[200, 600]];
 			if (jurisdiction === "Fairbanks North Star Borough") {
 				const assembly = page.lines.find(line => /^BOROUGH ASSEMBLY SEAT [A-Z]$/u.test(line.text));
@@ -187,6 +201,7 @@ export function readFairbanksBallotCandidates(capture: FairbanksPublicationCaptu
 			}
 			let candidateCount = 0;
 			let fieldCount = 0;
+			let selectionCount = 0;
 			corroborate([dates[0]!, scopes[0]!], words, duplicate ? 0 : 70);
 			for (const [left, right] of columns) {
 				const ordered = page.lines.filter(line => line.left >= left! && line.right <= right! && line.top > scopes[0]!.bottom + 25 && line.top < endings[0]!.top).sort((first, second) => first.top - second.top || first.left - second.left);
@@ -196,7 +211,20 @@ export function readFairbanksBallotCandidates(capture: FairbanksPublicationCaptu
 				const last = tail.findIndex(line => line.text === "CITY OF NORTH POLE" || line.text === "END OF BALLOT" || /CONTINUE VOTING ON NEXT SIDE/u.test(line.text));
 				const lines = last < 0 ? tail : tail.slice(0, last);
 				const parsed = parseOffices(lines, jurisdiction, inventory.electionDate);
-				corroborate(parsed.fields, words, duplicate ? 0 : 70);
+				const assigned = corroborate(parsed.fields, words, duplicate ? 0 : 70);
+				const regionLeft = Math.min(...parsed.fields.map(line => line.left)) - 1;
+				const regionBottom = last < 0 ? endings[0]!.top : tail[last]!.top;
+				const visible = marks.filter(mark => (mark.left + mark.right) / 2 >= left! && (mark.left + mark.right) / 2 < right! && (mark.top + mark.bottom) / 2 > instructions[0]!.bottom && (mark.top + mark.bottom) / 2 < regionBottom);
+				const decisions = new Set<(typeof marks)[number]>();
+				for (const line of parsed.decisions) {
+					const matched = visible.filter(mark => mark.right <= line.left + 1 && mark.right >= line.left - 30 && (mark.top + mark.bottom) / 2 >= line.top - 1 && (mark.top + mark.bottom) / 2 <= line.bottom + 1);
+					requireValue(matched.length === 1 && !decisions.has(matched[0]!), "candidate selection correspondence");
+					decisions.add(matched[0]!);
+				}
+				requireValue(decisions.size === visible.length, "unaccounted printed candidate selection");
+				selectionCount += visible.length;
+				const unexpected = words.filter(word => (word.left + word.right) / 2 >= regionLeft && (word.left + word.right) / 2 < right! && (word.top + word.bottom) / 2 > instructions[0]!.bottom && (word.top + word.bottom) / 2 < regionBottom && !assigned.has(word));
+				requireValue(unexpected.length === 0, `unaccounted printed candidate-region words ${JSON.stringify(unexpected.slice(0, 5).map(word => ({ text: word.text, left: word.left, top: word.top })))}`);
 				candidateCount += parsed.candidates.length;
 				fieldCount += parsed.fields.length;
 				if (document.kind === "notice" && jurisdiction === "Fairbanks North Star Borough") {
@@ -207,7 +235,7 @@ export function readFairbanksBallotCandidates(capture: FairbanksPublicationCaptu
 				}
 			}
 			if (document.kind === "notice" && jurisdiction === "Fairbanks North Star Borough") requireValue(candidateCount === records.filter(record => record.jurisdiction === jurisdiction).length, "borough publication completeness disagreement");
-			proof.push({ kind: document.kind, page: page.page, jurisdiction, fields: fieldCount + 2, candidates: candidateCount, bboxSha256: hash(document.bbox), pngSha256: rendered.pngSha256, ocrSha256: hash(rendered.ocr) });
+			proof.push({ kind: document.kind, page: page.page, jurisdiction, fields: fieldCount + 3, candidates: candidateCount, selectionMarks: selectionCount, bboxSha256: hash(document.bbox), pngSha256: rendered.pngSha256, ocrSha256: hash(rendered.ocr), svgSha256: hash(rendered.svg) });
 		}
 	}
 	requireValue(proof.length === 4 && new Set(proof.map(page => page.jurisdiction)).size === 3 && records.length > 0 && records.length <= 500 && new Set(records.map(record => `${record.jurisdiction}|${record.office}|${record.name}`)).size === records.length, "complete municipal candidate inventory");

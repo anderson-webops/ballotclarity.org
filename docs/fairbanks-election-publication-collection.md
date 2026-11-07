@@ -57,7 +57,9 @@ has three questions; the North Pole sample has one. Municipalities remain distin
 
 The prepared CSV and question inventory are review inputs. The separate
 [native candidate preparer](fairbanks-native-candidates.md) corroborates printed
-fields from retained originals. Complete font/paint-layer acceptance, registered
+fields and the complete candidate selection-row inventory from retained originals.
+Changed crop, rotation, page units, font mapping and covered text/selection rows
+have bounded rejection checks. General font/paint-layer proofs, registered
 candidate snapshots, geographic assignment, native measure preparation,
 substantive approval and recurring enrollment remain open.
 The automatic candidate-family catalog and its coverage counts are unchanged.

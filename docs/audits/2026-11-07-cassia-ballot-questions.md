@@ -27,6 +27,9 @@ identities, district scope and original clocks. They establish reusable behavior
 not availability of actual future publications. Existing publisher-policy and
 bounded-collection requirements remain in effect.
 
+Future candidate-only publications retain their candidates with an empty question
+inventory. An accepted question inventory disappearing still requires review.
+
 The current reader accepts both candidate-only and question-bearing snapshots.
 Older readers require their exact prior snapshot for rollback. Host substantive
 review, import, publication, geographic assignment, recurring scheduling and

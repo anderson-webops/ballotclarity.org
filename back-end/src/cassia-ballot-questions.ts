@@ -21,7 +21,7 @@ function questionId(source: StateBallotSource, question: Omit<StateBallotQuestio
 export function readCassiaQuestionMetadata(source: StateBallotSource, data: Record<string, unknown>) {
 	requireValue(data.sourceAsOf === undefined && data.sourceAsOfDate === undefined, "unsupported source clock");
 	if (data.ballotQuestions === undefined) return {};
-	requireValue(source.stateCode === "ID" && source.format === "cassia-pdf" && data.retrievalPolicy === "automatic" && Array.isArray(data.ballotQuestions) && data.ballotQuestions.length > 0 && data.ballotQuestions.length <= 100 && Array.isArray(data.documents), "stored inventory");
+	requireValue(source.stateCode === "ID" && source.format === "cassia-pdf" && data.retrievalPolicy === "automatic" && Array.isArray(data.ballotQuestions) && data.ballotQuestions.length <= 100 && Array.isArray(data.documents), "stored inventory");
 	const urls = data.documents.map(document => document?.url);
 	const fields = "audience,choices,explicitlyAdvisory,id,officialText,pages,sourceUrl,title,voterApplicabilityVerified";
 	const ballotQuestions = data.ballotQuestions.map((value: unknown): StateBallotQuestion => {

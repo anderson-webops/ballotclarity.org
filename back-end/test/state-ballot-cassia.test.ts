@@ -188,6 +188,21 @@ test("Cassia repeated wording, changed choices and disappeared accepted question
 	repeated[5]!.officialText += " Changed";
 	assert.throws(() => buildCassiaBallotQuestions(source, repeated, result.documents), /contradictory repeated wording/u);
 });
+test("Cassia future candidate-only ballots import without creating questions while prior questions remain protected", () => {
+	const date = "2030-11-05";
+	const future = selected(date);
+	const value = capture(date);
+	value.discovery = discovery(date, false, documentUrls(date).slice(0, 1));
+	value.documents = value.documents.slice(0, 1);
+	const candidatePage = /<page\b[^>]*>[\s\S]*?<\/page>/u.exec(value.documents[0]!.text)![0];
+	value.documents[0]!.text = `<doc>${candidatePage}</doc>`;
+	value.documents[0]!.sha256 = hash(value.documents[0]!.text);
+	const result = parseCassiaCandidateCapture(future, JSON.stringify(value), now);
+	assert.equal(result.records.length, 12);
+	assert.deepEqual(result.ballotQuestions, []);
+	assert.deepEqual(parseBundledStateSnapshot(future, serializeStoredStateSnapshot({ source: future, ...result }), "automatic").ballotQuestions, []);
+	assert.throws(() => parseCassiaCandidateCapture(future, JSON.stringify(value), now, parsed(date).ballotQuestions), /accepted question changed or disappeared/u);
+});
 test("Cassia discovery binds actual offered dates and links, explicit pending states, legal inventory and complete document sets", () => {
 	assert.equal(cassiaPolicyFingerprint(footer, "legal-inventory"), cassiaPolicyReceipts[2].sha256);
 	assert.equal(readCassiaDiscovery(JSON.stringify(discovery()), now).elections[0]!.cassiaDocuments.length, 3);

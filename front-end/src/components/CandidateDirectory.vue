@@ -136,7 +136,7 @@ async function retryRecords() {
 					As of {{ formatDate(data.source.sourceAsOfDate) }}
 				</p>
 				<NuxtLink v-if="data.questionCount" :to="{ path: '/questions', query: { state: filters.stateCode, source: data.source.id } }" class="text-app-accent py-2 rounded-md underline underline-offset-3 min-h-11 inline-block focus-ring">
-					Questions ({{ data.questionCount }})
+					{{ data.source.questionKind === 'notice' ? 'Election notices' : 'Questions' }} ({{ data.questionCount }})
 				</NuxtLink>
 			</div>
 			<UpdatedAt v-if="data.source.retrievedAt" :value="data.source.retrievedAt" label="Ballot data updated on" footer />

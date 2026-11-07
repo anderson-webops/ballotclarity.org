@@ -1,5 +1,11 @@
 # Official state candidate records
 
+Tuscola's recurring reader also retains twelve distinct sample-ballot questions.
+Franklin's versioned collector adds fifty-one certified election notices, keeping
+summary/fiscal text distinct from full ballot wording and printed choices. Both
+use their own document/page citations and preserve accepted data on missing or
+changed publications. See the [native question and notice review](audits/2026-11-07-franklin-tuscola-questions.md).
+
 Fairbanks has an independent [recurring candidate family](fairbanks-recurring-candidates.md)
 backed by paired official publications and rendered-row corroboration. The
 historical October 6, 2026 source contains 22 named candidates across eleven

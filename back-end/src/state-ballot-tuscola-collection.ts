@@ -1,3 +1,4 @@
+import type { StateBallotQuestion } from "./state-ballot-questions.js";
 import type { StateCandidateRecord } from "./state-ballot-records.js";
 import type { StateBallotSource } from "./state-ballot-sources.js";
 import { Buffer } from "node:buffer";
@@ -17,6 +18,7 @@ import {
 } from "./state-ballot-pdf.js";
 import { StateBallotAwaitingRecordsError } from "./state-ballot-source-state.js";
 import { readTuscolaCandidateDocuments } from "./state-ballot-tuscola.js";
+import { readTuscolaBallotQuestions } from "./tuscola-ballot-questions.js";
 
 const origin = "https://www.tuscolacounty.org";
 export const tuscolaDiscoveryUrl = `${origin}/elections/`;
@@ -410,7 +412,8 @@ export function parseTuscolaCandidateCapture(
 	source: StateBallotSource,
 	body: string,
 	now = Date.now(),
-	previous: readonly StateCandidateRecord[] = []
+	previous: readonly StateCandidateRecord[] = [],
+	previousQuestions: readonly StateBallotQuestion[] = []
 ) {
 	validateTuscolaSource(source);
 	if (Buffer.byteLength(body) > 24 * 1024 * 1024)
@@ -444,6 +447,7 @@ export function parseTuscolaCandidateCapture(
 		throw new Error("An accepted Tuscola candidate disappeared; retain the accepted data for review.");
 	return {
 		records: parsed.records,
+		ballotQuestions: readTuscolaBallotQuestions(source, documents[1]!.text, documents[1]!.url, previousQuestions),
 		retrievedAt: new Date(Math.min(...documents.map(document => Date.parse(document.retrievedAt)))).toISOString(),
 		sha256: hash(JSON.stringify(documents.map(({ url, sha256 }) => ({ url, sha256 })))),
 		documents: documents.map(({ url, sha256, retrievedAt }, index) => ({

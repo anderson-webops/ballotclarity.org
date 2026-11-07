@@ -91,7 +91,7 @@ watch([mounted, sections], ([ready, items]) => {
 						Sources
 					</NuxtLink>
 					<NuxtLink v-if="data?.questionCount" :to="{ path: '/questions', query: sourceQuery }" class="text-app-accent py-2 underline focus-ring">
-						Questions ({{ data.questionCount }})
+						{{ data.source.questionKind === 'notice' ? 'Election notices' : 'Questions' }} ({{ data.questionCount }})
 					</NuxtLink>
 				</div>
 			</aside>

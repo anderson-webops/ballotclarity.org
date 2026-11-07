@@ -16,6 +16,7 @@ import { createStateBallotRepository } from "../src/state-ballot-repository.js";
 import { StateBallotAwaitingRecordsError } from "../src/state-ballot-source-state.js";
 import { createStateBallotStorage, serializeStoredStateSnapshot } from "../src/state-ballot-storage.js";
 import { franklinFixture } from "./helpers/franklin-fixture.js";
+import { franklinIssuesFixture } from "./helpers/franklin-issues-fixture.js";
 
 const source = configuredStateBallotSources.find(source => source.id === "oh-franklin-2026")!;
 const footer = readFileSync(new URL("./fixtures/franklin-policy-footer.html", import.meta.url), "utf8");
@@ -40,6 +41,76 @@ function selected(value: ReturnType<typeof fixture>): StateBallotSource {
 async function capture(value: ReturnType<typeof fixture>) {
 	return fetchFranklinCandidateCapture(selected(value), { discovery: JSON.stringify(value), now: () => nowFor(value) });
 }
+function withIssues(year = 2026) {
+	const value = fixture(year);
+	value.schemaVersion = 2;
+	const url = `${origin}/getmedia/44444444-4444-4444-4444-444444444444/${year}-General-Certified-Questions-and-Issues`;
+	value.pages[0]!.body = value.pages[0]!.body.replace("<h2>Archives</h2>", `<a href="${url}">${year} General - Certified Questions and Issues (PDF)</a><h2>Archives</h2>`);
+	value.pages[0]!.sha256 = hash(value.pages[0]!.body);
+	value.documents[0]!.push({ url, text: JSON.stringify(franklinIssuesFixture(year)), sha256: "d".repeat(64), retrievedAt: value.index.retrievedAt });
+	return value;
+}
+
+test("Franklin versioned discovery collects all offered notice documents while retaining legacy replay", async () => {
+	for (const year of [2026, 2028]) {
+		const value = withIssues(year);
+		const target = selected(value);
+		const parsed = parseFranklinCandidateCapture(target, await capture(value), createStateCandidateRecord, nowFor(value));
+		assert.equal(parsed.records.length, 5);
+		assert.equal(parsed.ballotQuestions!.length, 2);
+		assert.deepEqual(parsed.documents.map(document => document.includedRecordCount), [3, 2, 0]);
+		assert.equal(readFranklinDiscovery(JSON.stringify(value), nowFor(value)).elections[0]!.franklinDocuments[2]!.kind, "questions");
+		value.documents[0]!.pop();
+		await assert.rejects(capture(value), /incomplete/u);
+		value.schemaVersion = 1;
+		const legacy = await capture(value);
+		assert.equal(parseFranklinCandidateCapture(target, legacy, createStateCandidateRecord, nowFor(value)).ballotQuestions, undefined);
+		assert.throws(() => parseFranklinCandidateCapture(target, legacy, createStateCandidateRecord, nowFor(value), parsed.ballotQuestions), /notices disappeared/u);
+	}
+});
+
+test("Franklin's fresh collector includes the actual certified-issues link and its native extractor", async () => {
+	const value = withIssues();
+	const requested: string[] = [];
+	const kinds: string[] = [];
+	const body = await fetchFranklinCycleDiscovery({ now: () => nowFor(value), sleep: async () => {}, requestDocument: async (url) => {
+		requested.push(url);
+		return { status: url.endsWith("/robots.txt") ? 404 : 200, body: url.endsWith("/robots.txt") ? Buffer.alloc(0) : Buffer.from(`%PDF-${url}`), contentType: "application/pdf", etag: undefined };
+	}, requestText: async url => url === franklinDiscoveryUrl ? value.index.body : value.pages[0]!.body, extractor: async (bytes, kind) => {
+		kinds.push(kind);
+		return value.documents[0]!.find(document => bytes.toString().endsWith(document.url))!.text;
+	} });
+	assert.equal(requested.length, 4);
+	assert.equal(new Set(requested).size, 4);
+	assert.deepEqual(kinds, ["candidates", "notice", "questions"]);
+	assert.equal(JSON.parse(body).schemaVersion, 2);
+	assert.equal(readFranklinDiscovery(body, nowFor(value)).elections[0]!.franklinDocuments.length, 3);
+});
+
+test("Franklin's recurring issue imports survive restart and retain accepted notices on disappearance", async (context) => {
+	const directory = await mkdtemp(join(tmpdir(), "franklin-notice-cycle-"));
+	context.after(() => rm(directory, { recursive: true }));
+	const value = withIssues();
+	const options = { familyId: source.id, dataDirectory: directory, catalogPath: join(directory, "cycles.json"), now: () => nowFor(value), fetchDiscovery: async () => JSON.stringify(value) };
+	const first = await syncStateBallotCycles(options);
+	assert.equal(first.results[0]!.status, "available");
+	const storage = createStateBallotStorage(directory);
+	const accepted = (await storage.read(source))!;
+	assert.equal(accepted.ballotQuestions!.length, 2);
+	const serialized = serializeStoredStateSnapshot(accepted);
+	const restarted = createStateBallotRepository({ sources: [source], dataDirectory: directory, now: () => nowFor(value), fetchText: async () => {
+		throw new Error("Cached reads must not fetch.");
+	} });
+	assert.equal(serializeStoredStateSnapshot((await restarted.getSnapshot("OH", source.id))!), serialized);
+	assert.equal((await syncStateBallotCycles(options)).results[0]!.imported, false);
+	const catalog = await readFile(options.catalogPath);
+	value.pages[0]!.body = value.pages[0]!.body.replace(/<a href="[^"]+">2026 General - Certified Questions and Issues \(PDF\)<\/a>/u, "");
+	value.pages[0]!.sha256 = hash(value.pages[0]!.body);
+	value.documents[0]!.pop();
+	await assert.rejects(syncStateBallotCycles(options), /notices disappeared/u);
+	assert.equal(serializeStoredStateSnapshot((await storage.read(source))!), serialized);
+	assert.ok((await readFile(options.catalogPath)).equals(catalog));
+});
 
 test("Franklin's policy fingerprint retains complete legal/footer evidence while normalizing only reviewed opaque contacts", () => {
 	assert.equal(franklinPolicyFingerprint(footer), franklinPolicyReceipts[1].sha256);

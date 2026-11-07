@@ -267,7 +267,7 @@ export interface StateRecordsResponse {
 	supplementalSources?: { id: string; retrievedAt: string; sha256: string }[];
 	awaitingRecords?: boolean;
 	available: boolean;
-	source: StateRecordState & { id?: string; label?: string; url?: string; retrievedAt?: string; sourceAsOfDate?: string; scopeNotice?: string; documentLinks?: { label: string; url: string; pageAnchor?: "page-" }[] };
+	source: StateRecordState & { id?: string; label?: string; url?: string; retrievedAt?: string; sourceAsOfDate?: string; questionKind?: "notice"; scopeNotice?: string; documentLinks?: { label: string; url: string; pageAnchor?: "page-" }[] };
 	questionCount?: number;
 	total: number;
 	matched: number;
@@ -289,7 +289,8 @@ export interface PublicBallotQuestion {
 	audience: string;
 	title: string;
 	officialText: string;
-	choices: [string, string, ...string[]];
+	choices: [string, string, ...string[]] | [];
+	textKind?: "notice";
 	pages: number[];
 	sourceUrl?: string;
 	explicitlyAdvisory: boolean;

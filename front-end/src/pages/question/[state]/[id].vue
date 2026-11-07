@@ -16,17 +16,18 @@ const { data, error, pending, refresh } = await useAsyncData(
 	{ default: () => null }
 );
 const question = computed(() => data.value?.questions.find(item => item.id === id.value));
+const notice = computed(() => question.value?.textKind === "notice");
 const heading = computed(() => ballotQuestionHeading(question.value?.title ?? "Ballot question", question.value?.audience));
 const paragraphs = computed(() => ballotQuestionParagraphs(question.value?.officialText ?? ""));
 const backTo = computed(() => ({ path: "/questions", query: { state: state.value, source: source.value } }));
 const documentUrl = computed(() => ballotQuestionDocument(data.value?.source, question.value));
-usePageSeo({ title: heading.value.title, description: "Official ballot question wording and source.", path: route.path, robots: "noindex,follow" });
+usePageSeo(() => ({ title: heading.value.title, description: notice.value ? "Official election notice and source." : "Official ballot question wording and source.", path: route.path, robots: "noindex,follow" }));
 </script>
 
 <template>
 	<article class="app-shell section-gap max-w-3xl space-y-12">
 		<NuxtLink :to="backTo" class="text-app-accent underline underline-offset-3 focus-ring">
-			Ballot questions
+			{{ notice ? 'Election notices' : 'Ballot questions' }}
 		</NuxtLink>
 		<p v-if="pending" role="status">
 			Loading question…
@@ -54,13 +55,13 @@ usePageSeo({ title: heading.value.title, description: "Official ballot question 
 					Election: {{ formatDate(data.source.electionDate) }}
 				</p>
 			</header>
-			<section class="space-y-6" aria-label="Official question">
+			<section class="space-y-6" :aria-label="notice ? 'Official notice' : 'Official question'">
 				<div class="text-lg leading-8 space-y-6">
 					<p v-for="(paragraph, index) in paragraphs" :key="index" class="whitespace-pre-line">
 						{{ paragraph }}
 					</p>
 				</div>
-				<ul class="pl-5 list-disc space-y-2" aria-label="Ballot choices">
+				<ul v-if="question.choices.length" class="pl-5 list-disc space-y-2" aria-label="Ballot choices">
 					<li v-for="choice in question.choices" :key="choice">
 						{{ choice }}
 					</li>
@@ -68,7 +69,7 @@ usePageSeo({ title: heading.value.title, description: "Official ballot question 
 			</section>
 			<section class="pt-8 border-t border-app-line space-y-4 dark:border-app-line-dark" aria-label="Source">
 				<SafeExternalLink v-if="documentUrl" :href="documentUrl" class="text-app-accent underline underline-offset-3 focus-ring">
-					Official question · {{ question.pages.length > 1 ? 'Pages' : 'Page' }} {{ question.pages.join(', ') }}
+					{{ notice ? 'Official notice' : 'Official question' }} · Page {{ question.pages[0] }}
 				</SafeExternalLink>
 				<p v-if="data?.source.sourceAsOfDate" class="text-sm text-app-muted dark:text-app-muted-dark">
 					Source as of {{ formatDate(data.source.sourceAsOfDate) }}

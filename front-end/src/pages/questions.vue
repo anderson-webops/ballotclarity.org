@@ -17,14 +17,15 @@ const groups = computed(() => {
 	for (const question of data.value?.questions ?? []) grouped.set(question.audience, [...(grouped.get(question.audience) ?? []), question]);
 	return [...grouped].map(([audience, questions]) => ({ audience, label: audience.replace(/^To the Voters of (?:the )?/u, "").replace(/:$/u, ""), questions }));
 });
-usePageSeo({ title: "Ballot questions", description: "Official question wording and published voter audiences.", path: "/questions", robots: "noindex,follow" });
+const title = computed(() => data.value?.source.questionKind === "notice" ? "Election notices" : "Ballot questions");
+usePageSeo(() => ({ title: title.value, description: "Official election publications and their stated jurisdictions.", path: "/questions", robots: "noindex,follow" }));
 </script>
 
 <template>
 	<section class="app-shell section-gap max-w-4xl space-y-10">
 		<header class="space-y-4">
 			<h1 class="text-5xl text-app-ink font-serif dark:text-app-text-dark">
-				Ballot questions
+				{{ title }}
 			</h1>
 			<p v-if="data?.source.label" class="text-app-muted dark:text-app-muted-dark">
 				{{ data.source.label }}
@@ -53,7 +54,7 @@ usePageSeo({ title: "Ballot questions", description: "Official question wording 
 				<h2 v-if="groups.length > 1" class="text-2xl text-app-ink font-serif dark:text-app-text-dark">
 					{{ group.label }}
 				</h2>
-				<ul class="border-t border-app-line divide-app-line divide-y dark:border-app-line-dark dark:divide-app-line-dark" aria-label="Ballot questions">
+				<ul class="border-t border-app-line divide-app-line divide-y dark:border-app-line-dark dark:divide-app-line-dark" :aria-label="title">
 					<li v-for="question in group.questions" :key="question.id">
 						<NuxtLink :to="{ path: `/question/${state}/${question.id}`, query: { source } }" class="py-7 rounded-md block focus-ring">
 							<component :is="groups.length > 1 ? 'h3' : 'h2'" class="text-xl text-app-ink font-serif dark:text-app-text-dark">

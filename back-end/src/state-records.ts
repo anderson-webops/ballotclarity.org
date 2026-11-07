@@ -12,6 +12,7 @@ import { validateBucksDocumentUrl } from "./state-ballot-bucks.js";
 import { validateCassiaDocumentUrl, validateCassiaSource } from "./state-ballot-cassia.js";
 import { validateChicagoDocumentUrl } from "./state-ballot-chicago-collection.js";
 import { validateFairbanksSource } from "./state-ballot-fairbanks.js";
+import { validateFranklinDocumentUrl, validateFranklinSource } from "./state-ballot-franklin-collection.js";
 import { validateGoffstownDocumentUrl } from "./state-ballot-goffstown-discovery.js";
 import { validateHamiltonDocumentUrl } from "./state-ballot-hamilton-collection.js";
 import { validateKanawhaDocumentUrl } from "./state-ballot-kanawha-discovery.js";
@@ -23,12 +24,29 @@ import { isActiveStateCandidateRecord } from "./state-ballot-records.js";
 import { configuredStateBallotSources } from "./state-ballot-registry.js";
 import { orderStateBallotSources } from "./state-ballot-source-state.js";
 import { applicableStateRecordSupplements, readStateRecordSupplements } from "./state-ballot-supplements.js";
+import { validateTuscolaDocumentUrl, validateTuscolaSource } from "./state-ballot-tuscola-collection.js";
 import { containsControlCharacters } from "./text-validation.js";
 import { usStates } from "./us-states.js";
 
 const scopes = ["all", "statewide", "congressional", "state-senate", "state-house", "state-board-of-education", "local"];
 
 export function stateRecordDocumentLinks(source: StateBallotSource | undefined, snapshot?: StateBallotSnapshot) {
+	if (source?.format === "tuscola-pdf" && snapshot?.documents) {
+		validateTuscolaSource(source);
+		if (snapshot.source.id !== source.id || snapshot.documents.length !== 2) throw new Error("The Tuscola source publications require review.");
+		return snapshot.documents.map((document, index) => {
+			validateTuscolaDocumentUrl(document.url, index ? "samples" : "candidates", source.electionDate.slice(0, 4));
+			return { label: index ? "Sample ballot" : "Candidate list", url: document.url };
+		});
+	}
+	if (source?.format === "franklin-pdf" && snapshot?.documents) {
+		validateFranklinSource(source);
+		if (snapshot.source.id !== source.id || ![2, 3].includes(snapshot.documents.length)) throw new Error("The Franklin source publications require review.");
+		return snapshot.documents.map((document, index) => {
+			validateFranklinDocumentUrl(document.url);
+			return { label: ["Candidate list", "Absentee notice", "Certified issues"][index]!, url: document.url };
+		});
+	}
 	if (source?.format === "cassia-pdf" && snapshot?.documents) {
 		validateCassiaSource(source);
 		if (snapshot.source.id !== source.id || !snapshot.documents.length || snapshot.documents.length > 12) throw new Error("The Cassia source publications require review.");
@@ -264,6 +282,7 @@ export function registerStateRecordRoutes(app: Express, repository: StateBallotR
 				payload.available = true;
 				payload.source.retrievedAt = snapshot.retrievedAt;
 				payload.questionCount = snapshot.ballotQuestions?.length;
+				if (snapshot.ballotQuestions?.length && snapshot.ballotQuestions.every(question => question.textKind === "notice")) payload.source.questionKind = "notice";
 			}
 			else if (source && repository?.isAwaitingRecords?.(source.id)) {
 				payload.awaitingRecords = true;
@@ -289,7 +308,7 @@ export function registerStateRecordRoutes(app: Express, repository: StateBallotR
 			if (snapshot && (snapshot.source.id !== source.id || snapshot.source.stateCode !== stateCode || snapshot.source.electionDate !== source.electionDate)) throw new Error("The question source is mismatched.");
 			const payload: StateQuestionsResponse = {
 				available: Boolean(snapshot?.ballotQuestions?.length),
-				source: { stateCode, stateName: state[1], configured: true, id: source.id, label: source.label, url: source.pageUrl, electionDate: source.electionDate, retrievedAt: snapshot?.retrievedAt, sourceAsOfDate: snapshot?.sourceAsOfDate, documentLinks: stateRecordDocumentLinks(source, snapshot ?? undefined) },
+				source: { stateCode, stateName: state[1], configured: true, id: source.id, label: source.label, url: source.pageUrl, electionDate: source.electionDate, retrievedAt: snapshot?.retrievedAt, sourceAsOfDate: snapshot?.sourceAsOfDate, ...(snapshot?.ballotQuestions?.length && snapshot.ballotQuestions.every(question => question.textKind === "notice") ? { questionKind: "notice" as const } : {}), documentLinks: stateRecordDocumentLinks(source, snapshot ?? undefined) },
 				questions: snapshot?.ballotQuestions?.filter(question => id === undefined || question.id === id) ?? [],
 			};
 			response.json(payload);

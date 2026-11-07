@@ -4,6 +4,7 @@ import type { StateBallotSource } from "./state-ballot-sources.js";
 import { createHash } from "node:crypto";
 import { readCassiaQuestionMetadata } from "./cassia-ballot-questions.js";
 import { readFairbanksQuestionMetadata } from "./fairbanks-ballot-questions.js";
+import { readFranklinNoticeMetadata } from "./franklin-election-notices.js";
 import { normalizePublicHref } from "./public-href.js";
 import { validateAlabamaStoredSnapshot } from "./state-ballot-alabama-collection.js";
 import { validateBooneStoredSnapshot } from "./state-ballot-boone-discovery.js";
@@ -41,6 +42,7 @@ import { pulaskiDocumentDigest, validatePulaskiDocumentUrl, validatePulaskiSourc
 import { tuscolaDocumentDigest, validateTuscolaDocumentUrl, validateTuscolaSource } from "./state-ballot-tuscola-collection.js";
 import { validateWashoeSource } from "./state-ballot-washoe.js";
 import { validateWinnebagoDocumentUrl, validateWinnebagoElection, validateWinnebagoSource, winnebagoDocumentDigest } from "./state-ballot-winnebago-collection.js";
+import { readTuscolaQuestionMetadata } from "./tuscola-ballot-questions.js";
 
 const recordFields = new Set(["id", "name", "office", "party", "incumbent", "district", "scope", "status", "sourceStatus", "ballotDesignation", "jurisdiction", "candidateUrl", "sourceCandidateId", "sourceDistrictLabel", "sourceDivision", "sourceAreaLabel", "termYears", "termEnd", "seats", "voteLimit"]);
 const snapshotFields = new Set(["schemaVersion", "stateCode", "sourceId", "electionDate", "sourceUrl", "retrievalPolicy", "retrievedAt", "sourceSha256", "recordCount", "records", "documents", "collectionIndexSha256", "ballotQuestions", "sourceAsOfDate", "sourceAsOf"]);
@@ -65,8 +67,8 @@ export function parseBundledStateSnapshot(source: StateBallotSource, body: strin
 	let documents: StateBallotSnapshot["documents"];
 	if (source.format === "maine-house-html") validateMaineHouseSnapshot(source, data);
 	if (source.format === "douglas-html") validateDouglasStoredSnapshot(source, data);
-	const metadata = source.format === "cassia-pdf" ? readCassiaQuestionMetadata(source, data) : source.format === "fairbanks-pdf" ? readFairbanksQuestionMetadata(source, data) : source.format === "oklahoma-html" ? readOklahomaSnapshotMetadata(source, data) : source.format === "kanawha-pdf" ? readKanawhaSnapshotMetadata(source, data) : source.format === "fulton-pdf" ? readFultonSnapshotMetadata(source, data) : source.format === "orange-pdf" ? readOrangeSnapshotMetadata(source, data) : source.format === "nyc-pdf" ? readNycSnapshotMetadata(source, data) : source.format === "hamilton-html" ? readHamiltonSnapshotMetadata(source, data) : source.format === "pima-pdf" ? readPimaSnapshotMetadata(source, data) : source.format === "goffstown-pdf" ? readGoffstownSnapshotMetadata(source, data) : source.format === "chicago-pdf" ? readChicagoSnapshotMetadata(source, data) : {};
-	if (!["cassia-pdf", "fairbanks-pdf", "oklahoma-html", "kanawha-pdf", "boone-xlsx", "orange-pdf", "maine-house-html", "nyc-pdf", "hamilton-html", "pima-pdf", "goffstown-pdf", "chicago-pdf", "fulton-pdf"].includes(source.format) && ["ballotQuestions", "sourceAsOfDate", "sourceAsOf"].some(key => data[key] !== undefined)) throw new Error("This source does not support Chicago snapshot metadata.");
+	const metadata = source.format === "tuscola-pdf" ? readTuscolaQuestionMetadata(source, data) : source.format === "franklin-pdf" ? readFranklinNoticeMetadata(source, data) : source.format === "cassia-pdf" ? readCassiaQuestionMetadata(source, data) : source.format === "fairbanks-pdf" ? readFairbanksQuestionMetadata(source, data) : source.format === "oklahoma-html" ? readOklahomaSnapshotMetadata(source, data) : source.format === "kanawha-pdf" ? readKanawhaSnapshotMetadata(source, data) : source.format === "fulton-pdf" ? readFultonSnapshotMetadata(source, data) : source.format === "orange-pdf" ? readOrangeSnapshotMetadata(source, data) : source.format === "nyc-pdf" ? readNycSnapshotMetadata(source, data) : source.format === "hamilton-html" ? readHamiltonSnapshotMetadata(source, data) : source.format === "pima-pdf" ? readPimaSnapshotMetadata(source, data) : source.format === "goffstown-pdf" ? readGoffstownSnapshotMetadata(source, data) : source.format === "chicago-pdf" ? readChicagoSnapshotMetadata(source, data) : {};
+	if (!["tuscola-pdf", "franklin-pdf", "cassia-pdf", "fairbanks-pdf", "oklahoma-html", "kanawha-pdf", "boone-xlsx", "orange-pdf", "maine-house-html", "nyc-pdf", "hamilton-html", "pima-pdf", "goffstown-pdf", "chicago-pdf", "fulton-pdf"].includes(source.format) && ["ballotQuestions", "sourceAsOfDate", "sourceAsOf"].some(key => data[key] !== undefined)) throw new Error("This source does not support Chicago snapshot metadata.");
 	if (["alabama-pdf", "kanawha-pdf", "boone-xlsx", "orange-pdf", "maine-house-html", "nyc-pdf", "douglas-html", "hamilton-html", "pima-pdf", "goffstown-pdf", "chicago-pdf"].includes(source.format)) {
 		if (!data.collectionIndexSha256) throw new Error("The Chicago publication fingerprint is missing.");
 	}
@@ -154,11 +156,11 @@ export function parseBundledStateSnapshot(source: StateBallotSource, body: strin
 	}
 	else if (source.format === "franklin-pdf") {
 		validateFranklinSource(source);
-		if (!Array.isArray(data.documents) || data.documents.length !== 2) throw new Error("The stored Franklin County publication set is invalid.");
+		if (!Array.isArray(data.documents) || ![2, 3].includes(data.documents.length) || (data.documents.length === 3 && (!data.ballotQuestions || data.documents[2]?.includedRecordCount !== 0))) throw new Error("The stored Franklin County publication set is invalid.");
 		const documents = data.documents.map((item: unknown, index) => {
 			if (!item || typeof item !== "object" || Array.isArray(item) || !("url" in item) || typeof item.url !== "string" || !("sha256" in item) || typeof item.sha256 !== "string") throw new Error("The stored Franklin County publication is invalid.");
 			validateFranklinDocumentUrl(item.url);
-			return { kind: index ? "notice" as const : "candidates" as const, url: item.url, sha256: item.sha256 };
+			return { kind: (["candidates", "notice", "questions"] as const)[index]!, url: item.url, sha256: item.sha256 };
 		});
 		if (data.collectionIndexSha256 !== franklinDocumentDigest(documents)) throw new Error("The stored Franklin County publication fingerprint is invalid.");
 	}

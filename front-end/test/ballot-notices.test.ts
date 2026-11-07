@@ -2,7 +2,7 @@ import type { BallotContentPreview, GuideContentSummary } from "../src/types/civ
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
-import { ballotInformationDisclaimer, ballotSourceNotes, hasBallotInformation } from "../src/utils/ballot-notices.ts";
+import { ballotInformationDisclaimer, ballotSourceNotes, hasBallotInformation, publicCoverageLimit } from "../src/utils/ballot-notices.ts";
 import { buildResultsSummaryItems, limitedBallotNotice } from "../src/utils/results-summary.ts";
 
 function preview(disclaimer = "Filing does not establish ballot qualification."): BallotContentPreview {
@@ -13,6 +13,23 @@ function guide(verifiedContestPackage = false): GuideContentSummary {
 	const layer = { count: 0, detail: "", hasContent: false, label: "", status: "official_logistics_only" as const };
 	return { candidates: layer, contests: layer, guideShell: { ...layer, hasContent: true }, measures: layer, officialLogistics: layer, mixedContent: false, publishedGuideShell: true, verifiedContestPackage, summary: "" };
 }
+
+test("measure coverage boilerplate stays out of visible notes without changing retained limitations", () => {
+	const notes = ["Selected local questions only; other races and ballot questions are not included."];
+	assert.equal(publicCoverageLimit(notes), "");
+	assert.deepEqual(notes, ["Selected local questions only; other races and ballot questions are not included."]);
+	assert.equal(publicCoverageLimit(["Statewide measures only; local candidates and measures are not included."]), "");
+	assert.equal(publicCoverageLimit(["Districtwide measures only; candidate races are not included."]), "");
+	assert.equal(publicCoverageLimit(), "");
+	assert.equal(publicCoverageLimit([""]), "");
+});
+
+test("specific geographic and decision limitations remain visible after generic notes", () => {
+	const local = "Applies to Fulton County outside Atlanta.";
+	assert.equal(publicCoverageLimit(["Selected local questions only; other races and ballot questions are not included.", local]), local);
+	assert.equal(publicCoverageLimit(["Advisory question; this vote does not enact a law."]), "Advisory question; this vote does not enact a law.");
+	assert.equal(publicCoverageLimit(["Exact district assignment requires an address."]), "Exact district assignment requires an address.");
+});
 
 test("actual official candidate records replace the limited-information message without implying verified coverage", () => {
 	const record = preview();

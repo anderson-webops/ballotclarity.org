@@ -78,3 +78,20 @@ The public application continues reading its existing approved external data.
 Adding this worker changes neither public API routes nor reader-time publisher
 access. Scheduling remains external to the voter application; one daily run is
 sufficient while a reviewed election publication is being monitored.
+
+## Native Measure Review
+
+The [native preparation adapter](../maui-measure-guide-preparation.md) now binds
+short conditional interpretations to exact question and resolution hashes. Eight
+county questions can become native measure and contest records, with original
+official text, PDF-page citations, draft workflows and machine-verifiable
+provenance. New or changed material remains an editorial exception. Publication,
+import and scheduling approvals remain separate.
+
+Resolution 25-217, CD1 illustrates why the original legislation matters. Its
+proposed section 13-18 excludes the first day and includes the last; when the last
+day is a weekend or holiday, the period runs until 4:30 p.m. on the next business
+day. Specified dates and section 4-3.3 are excepted. The prepared explanation
+describes that endpoint rule rather than suggesting all intervening weekends are
+removed from a period. It retains the official question verbatim alongside that
+explanation. Original question pages and legislative text remain the evidence.

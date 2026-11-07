@@ -53,7 +53,7 @@ test("statewide guides retain a visible local-coverage limitation", () => {
 	assert.match(plan, /fullAreaGuideLabels\(data\?\.location\.state\)\.limitation/);
 });
 
-test("partial local guides retain their limitation on ballot, overview and printed plan", () => {
+test("specific local limitations remain available on ballot, overview and printed plan", () => {
 	const hero = readFileSync(new URL("../src/components/ElectionHero.vue", import.meta.url), "utf8");
 	const ballot = readFileSync(new URL("../src/pages/ballot/[slug].vue", import.meta.url), "utf8");
 	const overview = readFileSync(new URL("../src/pages/elections/[slug].vue", import.meta.url), "utf8");
@@ -61,10 +61,10 @@ test("partial local guides retain their limitation on ballot, overview and print
 	assert.match(hero, /Partial ballot information/u);
 	assert.match(hero, /props\.coverageLimits\?\.length/u);
 	assert.match(ballot, /:coverage-limits="data\.coverageLimits"/u);
-	assert.match(overview, /data\.value\?\.coverageLimits\?\.\[0\]/u);
-	assert.ok(overview.indexOf("? limitedBallotNotice") < overview.indexOf("data.value?.coverageLimits?.[0]"));
-	assert.match(plan, /v-else-if="data\?\.coverageLimits\?\.length"/u);
-	assert.match(plan, /\{\{ data\.coverageLimits\[0\] \}\}/u);
+	assert.match(overview, /publicCoverageLimit\(data\.value\?\.coverageLimits\)/u);
+	assert.ok(overview.indexOf("? limitedBallotNotice") < overview.indexOf("publicCoverageLimit(data.value?.coverageLimits)"));
+	assert.match(plan, /v-else-if="publicCoverageLimit\(data\?\.coverageLimits\)"/u);
+	assert.match(plan, /\{\{ publicCoverageLimit\(data\?\.coverageLimits\) \}\}/u);
 });
 
 test("direct guide entry restores saved choices before persisting its context", () => {

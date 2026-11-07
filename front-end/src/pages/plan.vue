@@ -2,6 +2,7 @@
 import type { BallotPlanSelection, Contest } from "~/types/civic";
 import { storeToRefs } from "pinia";
 import { buildCompareRoute } from "~/stores/civic";
+import { publicCoverageLimit } from "~/utils/ballot-notices";
 import { fullAreaGuideLabels } from "~/utils/guide-scope";
 import { measureDecisionEffectLabel, measureDecisionLabel, measureDetailPath } from "~/utils/measure-content";
 import { buildPlanUnavailableMessaging } from "~/utils/plan-messaging";
@@ -161,8 +162,8 @@ function unplannedContestPath(contest: Contest) {
 			<p v-if="data?.scope === 'statewide'" class="text-sm text-app-muted mt-2 dark:text-app-muted-dark">
 				{{ fullAreaGuideLabels(data?.location.state).limitation }}
 			</p>
-			<p v-else-if="data?.coverageLimits?.length" class="text-sm text-app-muted mt-2 dark:text-app-muted-dark">
-				{{ data.coverageLimits[0] }}
+			<p v-else-if="publicCoverageLimit(data?.coverageLimits)" class="text-sm text-app-muted mt-2 dark:text-app-muted-dark">
+				{{ publicCoverageLimit(data?.coverageLimits) }}
 			</p>
 			<div class="mt-5 flex flex-wrap gap-x-6 gap-y-3 items-center print-hidden">
 				<button v-if="data" type="button" class="btn-primary" @click="printPlan">

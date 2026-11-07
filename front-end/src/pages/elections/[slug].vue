@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { ElectionSectionLink } from "~/utils/election-candidates";
+import { publicCoverageLimit } from "~/utils/ballot-notices";
 import { electionTimeZone } from "~/utils/election-time-zone";
 import { buildKeyDateTimeline, calendarDaysUntil, describeDaysAway } from "~/utils/election-timeline";
 import { fullAreaGuideLabels } from "~/utils/guide-scope";
@@ -27,7 +28,7 @@ const guideStatusNote = computed(() => data.value?.candidateRecordSource || juri
 		? fullAreaGuideLabels(data.value?.location.state).limitation
 		: !data.value?.guideContent?.verifiedContestPackage && data.value?.guideContent?.publishedGuideShell
 				? limitedBallotNotice
-				: data.value?.coverageLimits?.[0] ?? "");
+				: publicCoverageLimit(data.value?.coverageLimits));
 const clock = useElectionClock();
 const now = computed(() => new Date(clock.value));
 const timeZone = computed(() => electionTimeZone(data.value?.election, displayTimeZone.value));

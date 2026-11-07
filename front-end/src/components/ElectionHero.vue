@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Election, GuideContentSummary, LocationSelection } from "~/types/civic";
+import { publicCoverageLimit } from "~/utils/ballot-notices";
 import { fullAreaGuideLabels } from "~/utils/guide-scope";
 import { limitedBallotNotice } from "~/utils/results-summary";
 
@@ -42,8 +43,10 @@ const facts = computed(() => hasVerifiedContestPackage.value
 const confirmationCaveat = computed(() => {
 	if (props.scope === "statewide")
 		return `${areaGuideLabels.value.limitation} Confirm your ballot with your election office.`;
-	if (hasVerifiedContestPackage.value && props.coverageLimits?.length)
-		return `${props.coverageLimits[0]} Confirm your ballot with your election office.`;
+	if (hasVerifiedContestPackage.value && props.coverageLimits?.length) {
+		const limit = publicCoverageLimit(props.coverageLimits);
+		return limit ? `${limit} Confirm your ballot with your election office.` : "";
+	}
 
 	if (props.location.lookupMode === "zip-preview")
 		return "ZIP codes can span districts. Confirm your exact ballot with the official election tools.";
@@ -79,7 +82,7 @@ function printBallot() {
 				</div>
 			</dl>
 			<div class="election-hero__meta">
-				<p class="election-hero__status" :class="`election-hero__status--${guideStatus.tone}`">
+				<p v-if="!hasVerifiedContestPackage || props.scope === 'statewide' || !props.coverageLimits?.length || publicCoverageLimit(props.coverageLimits)" class="election-hero__status" :class="`election-hero__status--${guideStatus.tone}`">
 					<span :class="guideStatus.tone === 'success' ? 'i-carbon-checkmark-filled' : 'i-carbon-warning-alt'" aria-hidden="true" />
 					{{ guideStatus.label }}
 				</p>

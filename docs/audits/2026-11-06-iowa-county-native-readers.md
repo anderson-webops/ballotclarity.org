@@ -132,3 +132,34 @@ paint order, opacity, clipping or occlusion. Full rendering acceptance and the
 protected host enrollment, import, publication, and scheduling continue as
 separate requirements. The source collector/storage integration described above
 passes local original-response replay and all-record API reconciliation.
+
+## Rendered appearance component
+
+`state-ballot-iowa-county-visual.ts` adds a separately tested, fail-closed
+appearance checker. It reconciles native words with approved Cairo glyph-path
+hashes in original crop coordinates, then verifies opacity, clipping, paint order
+and conservative text contrast. It bounds page structure, references, paths,
+images and expanded paint work. Raw PDFs, font outlines, SVGs and review images
+remain outside Git; source contains the 614 reviewed character-shape hashes.
+
+All 174 retained pages have been rendered and their 77,499 ordinary-text words
+reconcile with those shapes, including the larger election heading. Monona's
+bounded red watermark and separate header-image mask are accounted for as
+distinct paint effects. Woodbury's grey watermark participates in the actual
+paint order instead of being discarded before contrast checks.
+
+The complete appearance component currently passes Monona's 28 pages and holds
+Woodbury's 146 pages for geometric review. Thin grid lines touch instruction
+descenders, and an instruction arrow's conservative paint bounds intersect nearby
+text. These are unresolved proof intersections, not findings that the printed
+names are wrong. No text-specific bypass or blanket artwork exemption is used.
+Precise artwork intersection handling remains necessary before both counties can
+use this component as a mandatory automatic-collection gate.
+
+Maintained regressions reject unchanged glyph placements hidden by parent
+opacity, later opaque paint or empty clipping. They also cover altered/unknown
+characters, duplicate glyphs, compound cancelling clips, contrast, watermark
+layering, images, malformed references and resource bounds. The component remains
+independent of the existing collector until the remaining real-page acceptance
+and capture-proof integration are complete. Existing reader, snapshot and public
+route behavior is unchanged; automatic host enrollment remains held.

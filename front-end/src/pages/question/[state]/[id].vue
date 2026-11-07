@@ -2,6 +2,7 @@
 import type { StateQuestionsResponse } from "~/types/civic";
 import { ballotQuestionDocument } from "~/utils/ballot-question-document";
 import { ballotQuestionHeading } from "~/utils/ballot-question-heading";
+import { ballotQuestionParagraphs } from "~/utils/ballot-question-paragraphs";
 
 const route = useRoute();
 const api = useApiClient();
@@ -16,7 +17,7 @@ const { data, error, pending, refresh } = await useAsyncData(
 );
 const question = computed(() => data.value?.questions.find(item => item.id === id.value));
 const heading = computed(() => ballotQuestionHeading(question.value?.title ?? "Ballot question", question.value?.audience));
-const paragraphs = computed(() => question.value?.officialText.split(/\n\s*\n/u).filter(Boolean) ?? []);
+const paragraphs = computed(() => ballotQuestionParagraphs(question.value?.officialText ?? ""));
 const backTo = computed(() => ({ path: "/questions", query: { state: state.value, source: source.value } }));
 const documentUrl = computed(() => ballotQuestionDocument(data.value?.source, question.value));
 usePageSeo({ title: heading.value.title, description: "Official ballot question wording and source.", path: route.path, robots: "noindex,follow" });
@@ -55,7 +56,7 @@ usePageSeo({ title: heading.value.title, description: "Official ballot question 
 			</header>
 			<section class="space-y-6" aria-label="Official question">
 				<div class="text-lg leading-8 space-y-6">
-					<p v-for="(paragraph, index) in paragraphs" :key="index">
+					<p v-for="(paragraph, index) in paragraphs" :key="index" class="whitespace-pre-line">
 						{{ paragraph }}
 					</p>
 				</div>

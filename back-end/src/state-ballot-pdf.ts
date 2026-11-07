@@ -93,8 +93,8 @@ export async function resolveStateBallotPdfSvgExtractor(value = process.env.STAT
 	catch { throw new StateBallotPdfCapabilityError("Configure an absolute maintained Poppler pdftocairo path in the bounded grid collection worker."); }
 }
 
-export async function extractStateBallotPdfSvg(bytes: Buffer, executable: string, page: number, timeoutMs: number = stateBallotPdfCollectorContract.timeoutMs, profile: "standard" | "nyc" | "orange" = "standard") {
-	if (!["standard", "nyc", "orange"].includes(profile) || !Number.isInteger(page) || page < 1 || page > (profile === "orange" ? orangeNativePdfCollectorContract.maximumPages : profile === "nyc" ? nycNativePdfCollectorContract.maximumPages : stateBallotPdfCollectorContract.maximumPages)) throw new Error("The PDF grid page exceeds its reviewed bounds.");
+export async function extractStateBallotPdfSvg(bytes: Buffer, executable: string, page: number, timeoutMs: number = stateBallotPdfCollectorContract.timeoutMs, profile: "standard" | "nyc" | "orange" | "iowa-county" = "standard") {
+	if (!["standard", "nyc", "orange", "iowa-county"].includes(profile) || !Number.isInteger(page) || page < 1 || page > (profile === "iowa-county" ? 2 : profile === "orange" ? orangeNativePdfCollectorContract.maximumPages : profile === "nyc" ? nycNativePdfCollectorContract.maximumPages : stateBallotPdfCollectorContract.maximumPages)) throw new Error("The PDF grid page exceeds its reviewed bounds.");
 	return runPdfExtractor(bytes, executable, ["-svg", "-f", String(page), "-l", String(page), "-", "-"], timeoutMs, true, profile === "orange" ? orangeNativePdfCollectorContract.maximumSvgBytes : stateBallotPdfCollectorContract.maximumTextBytes);
 }
 

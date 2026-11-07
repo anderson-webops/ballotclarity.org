@@ -1,4 +1,5 @@
 import type { StateHtmlNode } from "./state-ballot-html.js";
+import type { IowaInkShape } from "./state-ballot-iowa-county-ink.js";
 import type { IowaSampleCounty } from "./state-ballot-iowa-county-native.js";
 import type { IowaSampleGeometry } from "./state-ballot-iowa-county-proof.js";
 import { Buffer } from "node:buffer";
@@ -10,6 +11,7 @@ import {
 	stateHtmlText
 } from "./state-ballot-html.js";
 import { iowaSvgGlyphApprovals } from "./state-ballot-iowa-county-glyphs.js";
+import { iowaInkOverlaps, iowaInkShape } from "./state-ballot-iowa-county-ink.js";
 import { validateIowaSampleGeometry } from "./state-ballot-iowa-county-proof.js";
 import { orangePathCommands } from "./state-ballot-orange-shapes.js";
 import { winnebagoGlyphBounds } from "./state-ballot-winnebago-visual.js";
@@ -34,6 +36,9 @@ interface Glyph {
 	filtered: boolean;
 	transformed: boolean;
 	assigned: boolean;
+	path: string;
+	matrix: Matrix;
+	ink?: IowaInkShape;
 }
 interface Paint {
 	box: Box;
@@ -42,6 +47,9 @@ interface Paint {
 	paint: number;
 	stroke: boolean;
 	overlay: boolean;
+	ink?: IowaInkShape;
+	strokeRadius?: number;
+	rectangular?: boolean;
 }
 interface State {
 	matrix: Matrix;
@@ -66,19 +74,24 @@ export interface IowaRenderedPageProof {
 	watermarkLayers: number;
 	images: number;
 	minimumContrast: number;
+	ruleContacts: number;
 }
 const digest = (value: string) => createHash("sha256").update(value).digest("hex");
 function enclosed(inner: Box, outer: Box) {
-	return inner[0] >= outer[0] - 0.01
+	return (
+		inner[0] >= outer[0] - 0.01
 		&& inner[1] >= outer[1] - 0.01
 		&& inner[2] <= outer[2] + 0.01
-		&& inner[3] <= outer[3] + 0.01;
+		&& inner[3] <= outer[3] + 0.01
+	);
 }
 function overlaps(first: Box, second: Box) {
-	return first[0] < second[2] - 0.01
+	return (
+		first[0] < second[2] - 0.01
 		&& first[2] > second[0] + 0.01
 		&& first[1] < second[3] - 0.01
-		&& first[3] > second[1] + 0.01;
+		&& first[3] > second[1] + 0.01
+	);
 }
 function reject(detail: string): never {
 	throw new Error(`The Iowa rendered ${detail} requires review.`);
@@ -179,6 +192,19 @@ function subpaths(path: string) {
 function pathText(commands: ReturnType<typeof orangePathCommands>) {
 	return commands.map(command => `${command.kind} ${command.values.join(" ")}`).join(" ");
 }
+function rectangularPath(commands: ReturnType<typeof orangePathCommands>) {
+	const points = commands.filter(command => ["M", "L"].includes(command.kind)).map(command => command.values);
+	return (
+		commands.map(command => command.kind).join("") === "MLLLZ"
+		&& points.length === 4
+		&& new Set(points.map(point => point.join(","))).size === 4
+		&& new Set(points.map(point => point[0])).size === 2
+		&& new Set(points.map(point => point[1])).size === 2
+		&& points.every(
+			(point, index) => point[0] === points[(index + 3) % 4]![0] || point[1] === points[(index + 3) % 4]![1]
+		)
+	);
+}
 function boundedTree(body: string) {
 	const tree = parseStateHtml(body);
 	const pending = [{ node: tree, depth: 0 }];
@@ -212,6 +238,32 @@ function strokeTangents(start: number[], command: ReturnType<typeof orangePathCo
 	};
 }
 
+export function iowaRenderedWords(bbox: string, geometry: IowaSampleGeometry, page: number) {
+	if (Buffer.byteLength(bbox) > 4 * 1024 * 1024 || ![1, 2].includes(page)) return reject("word bounds");
+	const nativePages = descendants(boundedTree(bbox), node => node.nodeName === "page");
+	if (nativePages.length !== 2) return reject("native page set");
+	const offsetX = geometry.cropBox[0]!;
+	const offsetY = 1008 - geometry.cropBox[3]!;
+	const words = descendants(nativePages[page - 1]!, node => node.nodeName === "word")
+		.map(node => ({
+			text: stateHtmlText(node).normalize("NFKC").replace(/\s/gu, ""),
+			box: [
+				number(attribute(node, "xmin")) - offsetX,
+				number(attribute(node, "ymin")) - offsetY,
+				number(attribute(node, "xmax")) - offsetX,
+				number(attribute(node, "ymax")) - offsetY
+			] as Box
+		}))
+		.filter(word => word.box[3] - word.box[1] <= 32);
+	if (
+		!words.length
+		|| words.length > 10000
+		|| words.some(word => !word.text || word.box[0] >= word.box[2] || word.box[1] >= word.box[3])
+	) {
+		return reject("word inventory");
+	}
+	return words;
+}
 export function inspectIowaSampleSvg(
 	bbox: string,
 	svg: string,
@@ -220,6 +272,7 @@ export function inspectIowaSampleSvg(
 	page: number,
 	approvals: Readonly<Record<string, string>> = iowaSvgGlyphApprovals
 ): IowaRenderedPageProof {
+	const started = Date.now();
 	if (
 		!["Monona", "Woodbury"].includes(county)
 		|| ![1, 2].includes(page)
@@ -267,7 +320,7 @@ export function inspectIowaSampleSvg(
 				const path = paths[0] ? attribute(paths[0], "d") : "";
 				return [
 					attribute(node, "id"),
-					{ box: path.trim() ? bounds(path) : null, sequence: approvals[digest(path)] }
+					{ path, box: path.trim() ? bounds(path) : null, sequence: approvals[digest(path)] }
 				] as const;
 			})
 	);
@@ -395,7 +448,14 @@ export function inspectIowaSampleSvg(
 		references: []
 	};
 	const pending = [{ node: root, state: initial }];
-	const addPaint = (box: Box, state: State, paintColor: Color | undefined, alpha: number, stroke: boolean) => {
+	const addPaint = (
+		box: Box,
+		state: State,
+		paintColor: Color | undefined,
+		alpha: number,
+		stroke: boolean,
+		detail: Pick<Paint, "ink" | "strokeRadius" | "rectangular"> = {}
+	) => {
 		for (const clip of state.clips) {
 			box = [
 				Math.max(box[0], clip.box[0]),
@@ -405,12 +465,13 @@ export function inspectIowaSampleSvg(
 			];
 		}
 		if (box[0] < box[2] && box[1] < box[3])
-			paints.push({ box, color: paintColor, alpha, paint: ++paint, stroke, overlay: state.overlay });
+			paints.push({ box, color: paintColor, alpha, paint: ++paint, stroke, overlay: state.overlay, ...detail });
 	};
 	while (pending.length) {
 		const current = pending.pop()!;
 		const node = current.node;
 		const tag = node.nodeName.toLowerCase();
+		if (Date.now() - started > 30000) return reject("processing duration");
 		if (++visited > 100000 || paints.length > 30000 || glyphs.length > 20000) return reject("paint bounds");
 		if (tag === "defs") {
 			attributes(node, []);
@@ -490,7 +551,9 @@ export function inspectIowaSampleSvg(
 						transformed: state.matrix.some(
 							(value, index) => Math.abs(value - initial.matrix[index]!) > 1e-9
 						),
-						assigned: false
+						assigned: false,
+						path: definition.path,
+						matrix
 					});
 					if (state.overlay) {
 						if (
@@ -539,8 +602,11 @@ export function inspectIowaSampleSvg(
 			return reject("unverified paint effects");
 		if (tag === "rect") {
 			attributes(node, ["x", "y", "width", "height", "fill", "fill-opacity"]);
-			if (state.fill)
-				addPaint(transformed(rectangle(node), state.matrix), state, state.color, state.alpha, false);
+			if (state.fill) {
+				addPaint(transformed(rectangle(node), state.matrix), state, state.color, state.alpha, false, {
+					rectangular: true
+				});
+			}
 			continue;
 		}
 		if (tag === "path") {
@@ -567,7 +633,11 @@ export function inspectIowaSampleSvg(
 						state,
 						state.color,
 						state.alpha,
-						false
+						false,
+						{
+							ink: rectangularPath(group) ? undefined : iowaInkShape(group, state.matrix),
+							rectangular: rectangularPath(group)
+						}
 					);
 				}
 				if (attribute(node, "stroke") && attribute(node, "stroke") !== "none") {
@@ -604,7 +674,16 @@ export function inspectIowaSampleSvg(
 							state,
 							strokeColor,
 							1,
-							true
+							true,
+							{
+								ink: iowaInkShape(segment, state.matrix, false),
+								strokeRadius:
+									expansion
+									* (attribute(node, "stroke-linejoin") === "miter"
+										|| attribute(node, "stroke-linecap") === "square"
+										? Math.SQRT2
+										: 1)
+							}
 						);
 						position = end;
 						start = group[0]!.values;
@@ -620,22 +699,7 @@ export function inspectIowaSampleSvg(
 		}
 		for (const child of [...(node.childNodes ?? [])].reverse()) pending.push({ node: child, state });
 	}
-	const nativePages = descendants(boundedTree(bbox), node => node.nodeName === "page");
-	if (nativePages.length !== 2) return reject("native page set");
-	const offsetX = geometry.cropBox[0]!;
-	const offsetY = 1008 - geometry.cropBox[3]!;
-	const words = descendants(nativePages[page - 1]!, node => node.nodeName === "word")
-		.map(node => ({
-			text: stateHtmlText(node).normalize("NFKC").replace(/\s/gu, ""),
-			box: [
-				number(attribute(node, "xmin")) - offsetX,
-				number(attribute(node, "ymin")) - offsetY,
-				number(attribute(node, "xmax")) - offsetX,
-				number(attribute(node, "ymax")) - offsetY
-			] as Box
-		}))
-		.filter(word => word.box[3] - word.box[1] <= 32);
-	if (!words.length || words.length > 10000) return reject("word inventory");
+	const words = iowaRenderedWords(bbox, geometry, page);
 	for (const glyph of glyphs.filter(glyph => glyph.box[3] - glyph.box[1] > 20)) {
 		if (
 			glyph.color.join(",") !== (county === "Monona" ? "176,0,0" : "211,211,211")
@@ -660,6 +724,7 @@ export function inspectIowaSampleSvg(
 	let characters = 0;
 	let matchedGlyphs = 0;
 	let minimumContrast = 21;
+	let ruleContacts = 0;
 	for (const word of words) {
 		const matches = glyphs
 			.filter(
@@ -677,6 +742,7 @@ export function inspectIowaSampleSvg(
 			return reject(`character identity on page ${page} at ${word.box[0]}/${word.box[1]}`);
 		}
 		for (const glyph of matches) {
+			if (Date.now() - started > 30000) return reject("processing duration");
 			if (
 				glyph.color.join(",") !== "0,0,0"
 				|| glyph.alpha !== 1
@@ -688,17 +754,47 @@ export function inspectIowaSampleSvg(
 			}
 			if (glyph.clips.some(clip => !clip.rectangular || !enclosed(glyph.box, clip.box)))
 				return reject(`text clipping on page ${page} at ${word.box[0]}/${word.box[1]}`);
-			const intersecting = paints.filter(item => overlaps(glyph.box, item.box));
-			if (intersecting.some(item => !item.overlay && item.paint > glyph.paint))
-				return reject(`text occlusion on page ${page} at ${word.box[0]}/${word.box[1]}`);
+			const intersecting = paints.filter((item) => {
+				if (!overlaps(glyph.box, item.box)) return false;
+				if (!item.ink) return true;
+				glyph.ink ??= iowaInkShape(glyph.path, glyph.matrix);
+				return iowaInkOverlaps(glyph.ink, item.ink, item.strokeRadius);
+			});
+			const blackRuleContact = (item: Paint) =>
+				item.stroke
+				&& item.alpha === 1
+				&& item.color?.join(",") === "0,0,0"
+				&& item.strokeRadius !== undefined
+				&& item.strokeRadius <= 0.31
+				&& (item.box[1] >= glyph.y + 0.25
+					|| (item.ink?.edges.length === 1
+						&& (item.box[2] <= glyph.box[0] + 0.1
+							|| item.box[0] >= glyph.box[2] - 0.1
+							|| item.box[3] <= glyph.box[1] + 0.1
+							|| item.box[1] >= glyph.box[3] - 0.1)));
+			if (intersecting.some(item => !item.overlay && item.paint > glyph.paint && !blackRuleContact(item))) {
+				return reject(
+					`text occlusion on page ${page} at ${word.box[0]}/${word.box[1]} (${JSON.stringify({
+						word: word.text,
+						sequence: glyph.sequence,
+						box: glyph.box,
+						baseline: glyph.y,
+						paints: intersecting
+							.filter(item => !item.overlay && item.paint > glyph.paint)
+							.slice(0, 5)
+							.map(item => ({ box: item.box, radius: item.strokeRadius, stroke: item.stroke }))
+					})})`
+				);
+			}
+			ruleContacts += intersecting.filter(blackRuleContact).length;
 			if (intersecting.some(item => !item.color)) return reject("image intersection");
 			const covering = intersecting
-				.filter(item => !item.overlay && !item.stroke && enclosed(glyph.box, item.box))
+				.filter(item => !item.overlay && item.rectangular && enclosed(glyph.box, item.box))
 				.sort((first, second) => second.paint - first.paint)[0];
 			const backgrounds = [
 				covering?.color ?? ([255, 255, 255] as Color),
 				...intersecting
-					.filter(item => !item.overlay && item.paint > (covering?.paint ?? 0))
+					.filter(item => !item.overlay && !blackRuleContact(item) && item.paint > (covering?.paint ?? 0))
 					.map(item => item.color!)
 			];
 			const overlay = intersecting.some(item => item.overlay);
@@ -738,6 +834,7 @@ export function inspectIowaSampleSvg(
 		glyphs: matchedGlyphs,
 		watermarkLayers,
 		images,
-		minimumContrast: Math.floor(minimumContrast * 1000) / 1000
+		minimumContrast: Math.floor(minimumContrast * 1000) / 1000,
+		ruleContacts
 	};
 }

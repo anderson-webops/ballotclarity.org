@@ -170,6 +170,30 @@ test("native page inventory and input bounds are required", () => {
 	);
 	assert.throws(() => sample.inspect(sample.svg, "<g>".repeat(40) + sample.bbox + "</g>".repeat(40)), /DOM bounds/u);
 });
+test("thin black tangential rules preserve ink while middle, deeper and white covers fail", () => {
+	const sample = fixture();
+	const stroke = (horizontal: number, color = "rgb(0%, 0%, 0%)") =>
+		`<path fill="none" stroke="${color}" stroke-width="0.36" stroke-linecap="butt" stroke-linejoin="round" d="M ${horizontal} 90 L ${horizontal} 105"/>`;
+	const allowed = sample.svg.replace("</svg>", `${stroke(49.9)}</svg>`);
+	assert.equal(sample.inspect(allowed).ruleContacts, 1);
+	for (const paint of [stroke(50), stroke(52), stroke(49.9, "rgb(100%, 100%, 100%)")])
+		assert.throws(() => sample.inspect(sample.svg.replace("</svg>", `${paint}</svg>`)), /occlusion/u);
+});
+test("underlines below the baseline preserve descenders without accepting erased or thickened text", () => {
+	const sample = fixture();
+	const path = "M 0 -6 L 4 -6 L 4 2 L 0 2 Z";
+	const svg = sample.svg.replace(outline, path);
+	const bbox = sample.bbox.replaceAll("ymax=\"100\"", "ymax=\"102\"");
+	const inspect = (paint: string) =>
+		inspectIowaSampleSvg(bbox, svg.replace("</svg>", `${paint}</svg>`), sample.geometry, "Woodbury", 1, {
+			[hash(path)]: "A"
+		});
+	const stroke = (top: number, width = 0.36, color = "rgb(0%, 0%, 0%)") =>
+		`<path fill="none" stroke="${color}" stroke-width="${width}" stroke-linecap="butt" stroke-linejoin="round" d="M 45 ${top} L 60 ${top}"/>`;
+	assert.equal(inspect(stroke(101)).ruleContacts, 1);
+	for (const paint of [stroke(97), stroke(101, 0.8), stroke(101, 0.36, "rgb(100%, 100%, 100%)")])
+		assert.throws(() => inspect(paint), /occlusion/u);
+});
 test("Monona's reviewed translucent red watermark preserves contrast without allowing arbitrary mask paint", () => {
 	const sample = fixture("Monona");
 	const definitions

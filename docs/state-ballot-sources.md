@@ -280,6 +280,23 @@ imports, and the first automatic replacement retains its reviewed recovery envel
 The original raw-document collector's policy hold remains separate. See the
 [automation review](audits/2026-10-26-franklin-automation.md).
 
+## Monona and Woodbury Counties, Iowa
+
+The independently published Monona and Woodbury County sample families add 139
+candidate/ticket and judicial-retention entries across 87 two-page documents,
+including 76 local candidate entries. Their explicit workers validate original
+page geometry, two native text paths and rendered glyph identity, paint order,
+clipping and contrast before emitting source-bound capture-version-two evidence.
+All 174 retained pages and 77,499 ordinary-text words reconcile.
+
+Actual offered general-election pages drive date-bound future discovery. Policy
+changes, unsupported artwork or characters and disappearing choices retain
+accepted snapshots for review. Public reads remain offline, using persisted
+facts without publisher requests or converters. Existing Iowa precedence and
+state-publisher holds remain intact; personal ballot applicability is separately
+verified. See the [county collection review](audits/2026-11-06-iowa-county-native-readers.md).
+Host enrollment, data acceptance and scheduling remain distinct approvals.
+
 ## Johnson County, Iowa
 
 The independent [county general-election page](https://johnsoncountyiowa.gov/november-3-2026-general-election)

@@ -98,6 +98,22 @@ for (const county of ["Monona", "Woodbury"] as const) {
 		stored.documents[0].styles.pop();
 		assert.throws(() => parseBundledStateSnapshot(fixture.source, JSON.stringify(stored), "automatic"), /index/u);
 	});
+	test(`${county} requires appearance-bound capture version two and exact page evidence`, () => {
+		const fixture = iowaCountyFixture(county);
+		const parse = (value: unknown) => parseIowaCountyCandidateCapture(fixture.source, JSON.stringify(value), createStateCandidateRecord, fixture.now);
+		assert.throws(() => parse({ ...fixture.capture, schemaVersion: 1 }), /contract/u);
+		for (const field of ["bboxSha256", "geometrySha256", "wordInventorySha256", "svgSha256", "words", "characters", "minimumContrast", "ruleContacts"]) {
+			const changed = structuredClone(fixture.capture);
+			const proof = changed.documents[0]!.appearance.pages[0]! as unknown as Record<string, unknown>;
+			proof[field] = ["minimumContrast", "ruleContacts"].includes(field) ? -1 : typeof proof[field] === "string" ? "changed" : Number(proof[field]) + 1;
+			assert.throws(() => parse(changed));
+		}
+		const changed = structuredClone(fixture.capture);
+		changed.documents[0]!.appearance.pages.pop();
+		assert.throws(() => parse(changed), /appearance/u);
+		changed.documents[0]!.appearance = { ...fixture.capture.documents[0]!.appearance, sourceSha256: "0".repeat(64) };
+		assert.throws(() => parse(changed), /appearance/u);
+	});
 
 	test(`${county} robot-policy changes fail before requesting any election content`, async () => {
 		const urls: string[] = [];

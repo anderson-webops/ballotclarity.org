@@ -148,18 +148,46 @@ bounded red watermark and separate header-image mask are accounted for as
 distinct paint effects. Woodbury's grey watermark participates in the actual
 paint order instead of being discarded before contrast checks.
 
-The complete appearance component currently passes Monona's 28 pages and holds
-Woodbury's 146 pages for geometric review. Thin grid lines touch instruction
-descenders, and an instruction arrow's conservative paint bounds intersect nearby
-text. These are unresolved proof intersections, not findings that the printed
-names are wrong. No text-specific bypass or blanket artwork exemption is used.
-Precise artwork intersection handling remains necessary before both counties can
-use this component as a mandatory automatic-collection gate.
+All 174 pages now pass complete appearance checks. Curved voting-instruction
+ovals had conservative bounds intersecting nearby letters; exact ink contours
+separate their empty corners from painted areas. Cubic subdivision encloses each
+curve within 0.001 point of its linear approximation. Intersections within the
+combined uncertainty remain review exceptions. Glyph counters, winding,
+transforms, stroke radii and comparison work are independently bounded.
+
+Thin same-black rules preserve original glyph ink. Their accepted contacts are
+limited to strokes at most 0.31 point in radius lying entirely below the baseline
+by 0.25 point, or single straight strokes entering an outer glyph edge by at
+most 0.1 point. Larger, central, filled, white or translucent covers remain
+rejected. These geometric conditions account for 2,579 contacts across the
+retained pages, including a printed initial touching a vertical table border;
+they do not depend on a person's name or an instruction's wording. Only proven
+rectangular fills can establish complete replacement backgrounds for contrast.
 
 Maintained regressions reject unchanged glyph placements hidden by parent
 opacity, later opaque paint or empty clipping. They also cover altered/unknown
 characters, duplicate glyphs, compound cancelling clips, contrast, watermark
-layering, images, malformed references and resource bounds. The component remains
-independent of the existing collector until the remaining real-page acceptance
-and capture-proof integration are complete. Existing reader, snapshot and public
-route behavior is unchanged; automatic host enrollment remains held.
+layering, images, malformed references and resource bounds.
+
+## Mandatory collection evidence
+
+The explicit collector now requires the separate maintained `pdftocairo`
+capability when samples are available. Its Iowa profile permits exactly two
+pages, bounded output and at most 128 MiB of combined rendered output. Each
+appearance check has a thirty-second processing limit. Pending publication still
+requires no converters, and public readers continue to use persisted facts.
+
+New acquisitions use capture version two. Each original PDF has a source-bound
+appearance envelope with two ordered page summaries, exact native-word and
+geometry fingerprints, SVG hashes, word/character inventories, rule contacts and
+contrast counters. Capture parsing requires this evidence and rejects legacy or
+incomplete captures. The summaries are assertions produced by the trusted
+collection worker; independent appearance reproduction requires the original
+PDF and maintained rendering tools. They are not a substitute for authenticated
+custody or substantive source review.
+
+Existing normalized snapshots retain their schema, stable identities and
+original acquisition clocks. Changed fields, visibility failures, disappearing
+choices, publisher outages and persistence failures retain accepted data for
+review. Host enrollment, substantive import/publication and recurring scheduling
+remain separately controlled.

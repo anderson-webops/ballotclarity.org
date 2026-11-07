@@ -1,5 +1,6 @@
 import type { StateCandidateValues } from "./state-ballot-additional-records.js";
 import type { StateHtmlNode } from "./state-ballot-html.js";
+import type { IowaSampleAppearance } from "./state-ballot-iowa-county-appearance.js";
 import type { IowaSampleContext, IowaSampleDocument } from "./state-ballot-iowa-county-native.js";
 import type { IowaSampleGeometry, IowaSampleNativeProof } from "./state-ballot-iowa-county-proof.js";
 import type { StateCandidateRecord } from "./state-ballot-records.js";
@@ -10,9 +11,10 @@ import { createHash } from "node:crypto";
 import { setTimeout as wait } from "node:timers/promises";
 import { fetchRemoteSourceDocument } from "./remote-json-source.js";
 import { stateHtmlAttribute as attribute, stateHtmlDescendants as descendants, parseStateHtml, stateHtmlText } from "./state-ballot-html.js";
+import { buildIowaSampleAppearance, validateIowaSampleAppearance } from "./state-ballot-iowa-county-appearance.js";
 import { readIowaCountySample, readIowaCountySamples } from "./state-ballot-iowa-county-native.js";
 import { inspectIowaSampleGeometry, verifyIowaSampleNative } from "./state-ballot-iowa-county-proof.js";
-import { extractStateBallotPdfText, extractStateBallotPdfXml, inspectStateBallotPdfObjects, resolveStateBallotPdfExtractor, resolveStateBallotPdfObjectInspector, resolveStateBallotPdfXmlExtractor } from "./state-ballot-pdf.js";
+import { extractStateBallotPdfSvg, extractStateBallotPdfText, extractStateBallotPdfXml, inspectStateBallotPdfObjects, resolveStateBallotPdfExtractor, resolveStateBallotPdfObjectInspector, resolveStateBallotPdfSvgExtractor, resolveStateBallotPdfXmlExtractor } from "./state-ballot-pdf.js";
 import { StateBallotAwaitingRecordsError } from "./state-ballot-source-state.js";
 import { containsControlCharacters } from "./text-validation.js";
 
@@ -23,13 +25,13 @@ export interface IowaCountyElection { electionId: null; electionDate: string; pa
 export interface IowaCountyPage { url: string; body: string; sha256: string; retrievedAt: string }
 type Page = IowaCountyPage;
 interface Discovery { schemaVersion: 1; type: "iowa-county-discovery"; county: County; policies: unknown; index: Page; indexes: Page[]; pages: Page[] }
-interface CapturedSample extends IowaSampleDocument { visible: string; geometry: IowaSampleGeometry[]; objectsSha256: string; proof: IowaSampleNativeProof }
+interface CapturedSample extends IowaSampleDocument { visible: string; geometry: IowaSampleGeometry[]; objectsSha256: string; proof: IowaSampleNativeProof; appearance: IowaSampleAppearance }
 interface Options {
 	request?: typeof fetchRemoteSourceDocument;
 	sleep?: (milliseconds: number) => Promise<void>;
 	now?: () => number;
 	discovery?: string;
-	extract?: (bytes: Buffer) => Promise<{ layout: string; bbox: string; visible: string; objects: string }>;
+	extract?: (bytes: Buffer) => Promise<{ layout: string; bbox: string; visible: string; objects: string; appearance: IowaSampleAppearance }>;
 }
 const hash = (value: string | Uint8Array) => createHash("sha256").update(value).digest("hex");
 const clean = (value: string) => value.normalize("NFKC").replace(/\s+/gu, " ").trim();
@@ -247,9 +249,24 @@ export async function fetchIowaCountyCandidateCapture(source: StateBallotSource,
 	const discovery = options.discovery ?? await fetchIowaCountyCycleDiscovery(county, options);
 	const selected = readIowaCountyDiscovery(discovery, county, now()).elections.find((election: IowaCountyElection) => election.electionDate === source.electionDate);
 	assert(selected && selected.pageUrl === source.pageUrl, "The Iowa selected election is not offered.");
-	if (!selected.iowaCountyDocuments.length) return JSON.stringify({ schemaVersion: 1, type: "iowa-county-candidate-capture", discovery: JSON.parse(discovery), documents: [] });
-	const tools = options.extract ? null : { text: await resolveStateBallotPdfExtractor(), xml: await resolveStateBallotPdfXmlExtractor(), objects: await resolveStateBallotPdfObjectInspector() };
-	const extract = options.extract ?? (async (bytes: Buffer) => ({ layout: await extractStateBallotPdfText(bytes, tools!.text, 12000, "layout", 2), bbox: await extractStateBallotPdfText(bytes, tools!.text, 12000, "bbox-layout", 2), visible: await extractStateBallotPdfXml(bytes, tools!.xml, "iowa-county"), objects: await inspectStateBallotPdfObjects(bytes, tools!.objects, "iowa-county") }));
+	if (!selected.iowaCountyDocuments.length) return JSON.stringify({ schemaVersion: 2, type: "iowa-county-candidate-capture", discovery: JSON.parse(discovery), documents: [] });
+	const tools = options.extract ? null : { text: await resolveStateBallotPdfExtractor(), xml: await resolveStateBallotPdfXmlExtractor(), objects: await resolveStateBallotPdfObjectInspector(), svg: await resolveStateBallotPdfSvgExtractor() };
+	let renderedBytes = 0;
+	const extract = options.extract ?? (async (bytes: Buffer) => {
+		const layout = await extractStateBallotPdfText(bytes, tools!.text, 12000, "layout", 2);
+		const bbox = await extractStateBallotPdfText(bytes, tools!.text, 12000, "bbox-layout", 2);
+		const visible = await extractStateBallotPdfXml(bytes, tools!.xml, "iowa-county");
+		const objects = await inspectStateBallotPdfObjects(bytes, tools!.objects, "iowa-county");
+		const geometry = inspectIowaSampleGeometry(objects, county);
+		const svgs: string[] = [];
+		for (const page of [1, 2]) {
+			const svg = await extractStateBallotPdfSvg(bytes, tools!.svg, page, 12000, "iowa-county");
+			renderedBytes += Buffer.byteLength(svg);
+			assert(renderedBytes <= 128 * 1024 * 1024, "The Iowa combined rendering exceeds its bounds.");
+			svgs.push(svg);
+		}
+		return { layout, bbox, visible, objects, appearance: buildIowaSampleAppearance(hash(bytes), bbox, geometry, county, svgs) };
+	});
 	const documents: CapturedSample[] = [];
 	let totalBytes = 0;
 	const started = now();
@@ -265,28 +282,30 @@ export async function fetchIowaCountyCandidateCapture(source: StateBallotSource,
 		const geometry = inspectIowaSampleGeometry(native.objects, county);
 		const objectsSha256 = hash(native.objects);
 		const proof = verifyIowaSampleNative(parsed, native.visible, geometry, objectsSha256, context);
-		const document = { url: link.url, sha256: hash(response.body), retrievedAt, style: context.style, bbox: native.bbox, layout: native.layout, visible: native.visible, geometry, objectsSha256, proof };
+		validateIowaSampleAppearance(native.appearance, hash(response.body), native.bbox, geometry, county);
+		const document = { url: link.url, sha256: hash(response.body), retrievedAt, style: context.style, bbox: native.bbox, layout: native.layout, visible: native.visible, geometry, objectsSha256, proof, appearance: native.appearance };
 		totalBytes += Buffer.byteLength(JSON.stringify(document));
 		assert(totalBytes <= 24 * 1024 * 1024, "The Iowa combined native acquisition exceeds its bounds.");
 		documents.push(document);
 	}
-	return JSON.stringify({ schemaVersion: 1, type: "iowa-county-candidate-capture", discovery: JSON.parse(discovery), documents });
+	return JSON.stringify({ schemaVersion: 2, type: "iowa-county-candidate-capture", discovery: JSON.parse(discovery), documents });
 }
 
 export function parseIowaCountyCandidateCapture(source: StateBallotSource, body: string, factory: Factory, now = Date.now(), previous?: { records: StateCandidateRecord[]; documents?: { url: string; styles?: string[] }[] }) {
 	const county = validateIowaCountySource(source);
 	assert(Buffer.byteLength(body) <= 32 * 1024 * 1024, "The Iowa native capture exceeds its bounds.");
 	const capture = JSON.parse(body);
-	assert(exact(capture, ["schemaVersion", "type", "discovery", "documents"]) && capture.schemaVersion === 1 && capture.type === "iowa-county-candidate-capture" && Array.isArray(capture.documents), "The Iowa native capture contract requires review.");
+	assert(exact(capture, ["schemaVersion", "type", "discovery", "documents"]) && capture.schemaVersion === 2 && capture.type === "iowa-county-candidate-capture" && Array.isArray(capture.documents), "The Iowa native capture contract requires review.");
 	const selected = readIowaCountyDiscovery(JSON.stringify(capture.discovery), county, now).elections.find((election: IowaCountyElection) => election.electionDate === source.electionDate);
 	assert(selected && selected.pageUrl === source.pageUrl && capture.documents.length === selected.iowaCountyDocuments.length, "The Iowa sample set is incomplete.");
 	if (!capture.documents.length) throw new StateBallotAwaitingRecordsError(source.id);
 	const documents = capture.documents.map((document: unknown, index: number) => {
-		assert(exact(document, ["url", "sha256", "retrievedAt", "style", "bbox", "layout", "visible", "geometry", "objectsSha256", "proof"]) && document.url === selected.iowaCountyDocuments[index]!.url && document.style === selected.iowaCountyDocuments[index]!.styles[0] && typeof document.bbox === "string" && typeof document.layout === "string" && typeof document.visible === "string" && typeof document.objectsSha256 === "string", "The Iowa sample identity or native fields require review.");
+		assert(exact(document, ["url", "sha256", "retrievedAt", "style", "bbox", "layout", "visible", "geometry", "objectsSha256", "proof", "appearance"]) && document.url === selected.iowaCountyDocuments[index]!.url && document.style === selected.iowaCountyDocuments[index]!.styles[0] && typeof document.bbox === "string" && typeof document.layout === "string" && typeof document.visible === "string" && typeof document.objectsSha256 === "string", "The Iowa sample identity or native fields require review.");
 		const typed = document as unknown as CapturedSample;
 		const context: IowaSampleContext = { county, electionDate: source.electionDate, style: typed.style };
 		const parsed = readIowaCountySample(typed.bbox, typed.layout, context);
 		assert.deepEqual(verifyIowaSampleNative(parsed, typed.visible, typed.geometry, typed.objectsSha256, context), typed.proof, "The Iowa native proof changed.");
+		validateIowaSampleAppearance(typed.appearance, typed.sha256, typed.bbox, typed.geometry, county);
 		return typed;
 	});
 	const parsed = readIowaCountySamples(documents, { county, electionDate: source.electionDate }, now);

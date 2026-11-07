@@ -317,11 +317,15 @@ Host enrollment, data acceptance and scheduling remain distinct approvals.
 The independent [county general-election page](https://johnsoncountyiowa.gov/november-3-2026-general-election)
 adds 102 automatically collected candidate/office records, including seventy
 local/regional entries, while retaining the existing Story County source.
-Six measure references, nine empty offices and a not-on-ballot Senate seat remain
-separate. The reusable `ia-johnson-2026` family uses offered dates/links, current
-policies and durable external imports without a converter. Local eligibility,
+Nine empty offices and a not-on-ballot Senate seat remain separate. Native ballot
+collection now resolves six questions from 93 actual published sample styles,
+with literal YES/NO choices and precise page citations. The reusable
+`ia-johnson-2026` family uses offered dates/links, current policies and durable
+external imports. Its explicit collection worker uses maintained Poppler for
+sample PDFs and stores originals outside Git. Local eligibility,
 missing parties and regional judicial districts are not inferred. See the
-[source review](audits/2026-10-26-iowa-johnson-candidates.md).
+[candidate source review](audits/2026-10-26-iowa-johnson-candidates.md) and
+[native-question review](audits/2026-11-07-johnson-native-questions.md).
 
 Congressional ballot matching uses election-session geography separately from
 current officeholder districts. Census's current geography can describe the next

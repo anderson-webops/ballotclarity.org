@@ -27,8 +27,8 @@ usePageSeo(() => ({ title: title.value, description: "Official election publicat
 			<h1 class="text-5xl text-app-ink font-serif dark:text-app-text-dark">
 				{{ title }}
 			</h1>
-			<p v-if="data?.source.label" class="text-app-muted dark:text-app-muted-dark">
-				{{ data.source.label }}
+			<p v-if="groups.length === 1" class="text-app-muted dark:text-app-muted-dark">
+				{{ groups[0]?.label }}
 			</p>
 			<p v-if="data?.source.sourceAsOfDate" class="text-sm text-app-muted dark:text-app-muted-dark">
 				Source as of {{ formatDate(data.source.sourceAsOfDate) }}

@@ -1,12 +1,17 @@
 import type { StateCandidateValues } from "./state-ballot-additional-records.js";
 import type { StateHtmlNode } from "./state-ballot-html.js";
+import type { JohnsonCollectionOptions } from "./state-ballot-johnson-collection.js";
 import type { StateCandidateRecord } from "./state-ballot-records.js";
+import type { StateBallotSnapshot } from "./state-ballot-repository.js";
 import type { StateBallotSource } from "./state-ballot-sources.js";
 import { Buffer } from "node:buffer";
 import { createHash } from "node:crypto";
 import { electionDocumentPolicyFingerprint, electionDocumentRobotsPolicy } from "./election-document-collection.js";
+import { johnsonDocumentDigest, readJohnsonBallotEvidence } from "./johnson-ballot-publications.js";
+import { buildJohnsonBallotQuestions } from "./johnson-ballot-questions.js";
 import { fetchRemoteSourceText } from "./remote-json-source.js";
 import { stateHtmlAttribute as attribute, stateHtmlDescendants as descendants, parseStateHtml, stateHtmlText } from "./state-ballot-html.js";
+import { fetchJohnsonNativeCapture } from "./state-ballot-johnson-collection.js";
 import { StateBallotAwaitingRecordsError } from "./state-ballot-source-state.js";
 
 export const iowaJohnsonDiscoveryUrl = "https://johnsoncountyiowa.gov/auditor/elections";
@@ -294,13 +299,25 @@ export function readIowaJohnsonCandidatePage(source: StateBallotSource, body: st
 	if (!records.length || records.length > 2500 || new Set(records.map(record => record.id)).size !== records.length || emptyOffices.length > 200) throw new Error("The Johnson County candidate set is empty, duplicated or outside its bounds.");
 	return { records, emptyOffices, excludedOffices, questions };
 }
-export function parseIowaJohnsonCandidateCapture(source: StateBallotSource, body: string, factory: Factory, now = Date.now()) {
+export function parseIowaJohnsonCandidateCapture(source: StateBallotSource, body: string, factory: Factory, now = Date.now(), previous?: Pick<StateBallotSnapshot, "records" | "documents" | "ballotQuestions">) {
 	validateIowaJohnsonSource(source);
-	const discovery = readIowaJohnsonDiscovery(body, now);
+	if (Buffer.byteLength(body) > 12 * 1024 * 1024) throw new Error("The Johnson County capture exceeds its bounds.");
+	const value = JSON.parse(body);
+	const native = value.schemaVersion === 2;
+	if (native && (!exact(value, ["schemaVersion", "type", "discovery", "ballots"]) || value.type !== "iowa-johnson-candidate-capture")) throw new Error("The Johnson County native capture contract requires review.");
+	const discovery = readIowaJohnsonDiscovery(native ? JSON.stringify(value.discovery) : body, now);
 	const page = discovery.pages.find(page => page.url === source.pageUrl);
 	if (!page) throw new Error("The Johnson County capture does not offer the selected election.");
-	const { records } = readIowaJohnsonCandidatePage(source, page.body, factory);
-	return { records, sha256: page.sha256, retrievedAt: page.retrievedAt, collectionIndexSha256: page.sha256, documents: [{ url: page.url, sha256: page.sha256, retrievedAt: page.retrievedAt, includedRecordCount: records.length }] };
+	const { records, questions } = readIowaJohnsonCandidatePage(source, page.body, factory);
+	if (!native) {
+		if (previous?.ballotQuestions?.length) throw new Error("The accepted Johnson County ballot questions disappeared; retain the prior snapshot.");
+		return { records, sha256: page.sha256, retrievedAt: page.retrievedAt, collectionIndexSha256: page.sha256, documents: [{ url: page.url, sha256: page.sha256, retrievedAt: page.retrievedAt, includedRecordCount: records.length }] };
+	}
+	const evidence = readJohnsonBallotEvidence(source, value.ballots, page.body, now);
+	const ballotQuestions = buildJohnsonBallotQuestions(source, evidence.documents, questions, previous?.ballotQuestions);
+	const documents = [{ url: page.url, sha256: page.sha256, retrievedAt: page.retrievedAt, includedRecordCount: records.length }, ...[...evidence.resources, ...evidence.documents].map(document => ({ url: document.url, sha256: document.sha256, retrievedAt: document.retrievedAt, includedRecordCount: 0 }))].map(document => ({ ...document, retrievedAt: previous?.documents?.find(item => item.url === document.url && item.sha256 === document.sha256)?.retrievedAt ?? document.retrievedAt }));
+	const sha256 = johnsonDocumentDigest(documents);
+	return { records, ballotQuestions, documents, sha256, collectionIndexSha256: sha256, retrievedAt: new Date(Math.min(...documents.map(document => Date.parse(document.retrievedAt)))).toISOString() };
 }
 export async function fetchIowaJohnsonCycleDiscovery(options: { requestText?: TextRequest; wait?: (milliseconds: number) => Promise<void>; now?: () => number } = {}) {
 	const request = options.requestText ?? fetchRemoteSourceText;
@@ -328,9 +345,18 @@ export async function fetchIowaJohnsonCycleDiscovery(options: { requestText?: Te
 	readIowaJohnsonDiscovery(capture, now());
 	return capture;
 }
-export async function fetchIowaJohnsonCandidateCapture(source: StateBallotSource, options: Parameters<typeof fetchIowaJohnsonCycleDiscovery>[0] & { discovery?: string } = {}) {
+export async function fetchIowaJohnsonCandidateCapture(source: StateBallotSource, options: Parameters<typeof fetchIowaJohnsonCycleDiscovery>[0] & JohnsonCollectionOptions & { discovery?: string } = {}) {
 	validateIowaJohnsonSource(source);
 	const capture = options.discovery ?? await fetchIowaJohnsonCycleDiscovery(options);
-	if (!readIowaJohnsonDiscovery(capture, (options.now ?? Date.now)()).pages.some(page => page.url === source.pageUrl)) throw new Error("The county publication does not offer this candidate source.");
-	return capture;
+	const page = readIowaJohnsonDiscovery(capture, (options.now ?? Date.now)()).pages.find(page => page.url === source.pageUrl);
+	if (!page) throw new Error("The county publication does not offer this candidate source.");
+	const { createStateCandidateRecord } = await import("./state-ballot-records.js");
+	try {
+		readIowaJohnsonCandidatePage(source, page.body, createStateCandidateRecord);
+	}
+	catch (error) {
+		if (error instanceof StateBallotAwaitingRecordsError && error.sourceId === source.id) return capture;
+		throw error;
+	}
+	return fetchJohnsonNativeCapture(source, capture, options);
 }

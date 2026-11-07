@@ -5,6 +5,8 @@ import type { StateCandidateRecord } from "./state-ballot-records.js";
 import type { StateBallotRepository, StateBallotSnapshot } from "./state-ballot-repository.js";
 import type { StateBallotSource } from "./state-ballot-sources.js";
 import type { PublicStateCandidateRecord, StateQuestionsResponse, StateRecordsResponse } from "./types/civic.js";
+import { johnsonBallotMapUrl, validateJohnsonStoredDocuments } from "./johnson-ballot-publications.js";
+import { johnsonSampleStyle } from "./johnson-ballot-questions.js";
 import { normalizePublicHref } from "./public-href.js";
 import { createPublicRequestThrottle } from "./public-request-throttle.js";
 import { validateBoulderCandidateUrl } from "./state-ballot-boulder.js";
@@ -15,6 +17,7 @@ import { validateFairbanksSource } from "./state-ballot-fairbanks.js";
 import { validateFranklinDocumentUrl, validateFranklinSource } from "./state-ballot-franklin-collection.js";
 import { validateGoffstownDocumentUrl } from "./state-ballot-goffstown-discovery.js";
 import { validateHamiltonDocumentUrl } from "./state-ballot-hamilton-collection.js";
+import { validateIowaJohnsonSource } from "./state-ballot-iowa-johnson.js";
 import { validateKanawhaDocumentUrl } from "./state-ballot-kanawha-discovery.js";
 import { validateNycDocumentUrl } from "./state-ballot-nyc-collection.js";
 import { validateOklahomaSource } from "./state-ballot-oklahoma.js";
@@ -31,6 +34,18 @@ import { usStates } from "./us-states.js";
 const scopes = ["all", "statewide", "congressional", "state-senate", "state-house", "state-board-of-education", "local"];
 
 export function stateRecordDocumentLinks(source: StateBallotSource | undefined, snapshot?: StateBallotSnapshot) {
+	if (source?.format === "iowa-johnson-html" && snapshot?.documents) {
+		validateIowaJohnsonSource(source);
+		if (snapshot.source.id !== source.id) throw new Error("The Johnson County publication source is mismatched.");
+		validateJohnsonStoredDocuments(source, { documents: snapshot.documents, ballotQuestions: snapshot.ballotQuestions, sourceSha256: snapshot.sha256, collectionIndexSha256: snapshot.collectionIndexSha256 });
+		const candidates = { label: "Candidate list", url: source.pageUrl };
+		if (snapshot.documents.length === 1) return [candidates];
+		const questions = [...new Set(snapshot.ballotQuestions?.map(question => question.sourceUrl))].map((url) => {
+			if (!url || !snapshot.documents!.some(document => document.url === url)) throw new Error("The Johnson County question publication is missing.");
+			return { label: `Ballot style ${johnsonSampleStyle(url, source.electionDate)}`, url };
+		});
+		return [{ label: "Sample ballot lookup", url: johnsonBallotMapUrl }, candidates, ...questions];
+	}
 	if (source?.format === "tuscola-pdf" && snapshot?.documents) {
 		validateTuscolaSource(source);
 		if (snapshot.source.id !== source.id || snapshot.documents.length !== 2) throw new Error("The Tuscola source publications require review.");

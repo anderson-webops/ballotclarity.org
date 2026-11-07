@@ -3,7 +3,7 @@ import type { LocationLookupResponse } from "../src/types/civic.js";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, realpath, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -150,7 +150,7 @@ test("A changed access policy stops the ordinary pinned transport before candida
 	await assert.rejects(fetchIowaJohnsonCycleDiscovery({ requestText: async () => {
 		throw new Error("publisher unavailable");
 	}, wait: async () => {} }), /publisher unavailable/u);
-	assert.equal(await fetchIowaJohnsonCandidateCapture(source, { discovery: capture(), now: () => now }), capture());
+	await assert.rejects(fetchIowaJohnsonCandidateCapture(source, { discovery: capture(), now: () => now }), /external Johnson County collection evidence directory/u);
 });
 
 test("The scheduled family persists current data, preserves cached clocks and validates every metadata field on cold reads", async () => {
@@ -217,7 +217,7 @@ test("County preference uses a verified Johnson County match and preserves unrel
 });
 
 test("Explicit future waiting pages persist as pending and automatically import when the same published page gains records", async () => {
-	const directory = await mkdtemp(join(tmpdir(), "ballot-ia-johnson-pending-"));
+	const directory = await realpath(await mkdtemp(join(tmpdir(), "ballot-ia-johnson-pending-")));
 	try {
 		const futureNow = Date.parse("2028-10-26T05:00:00.000Z");
 		const futureUrl = source.pageUrl.replace("november-3-2026", "november-7-2028");

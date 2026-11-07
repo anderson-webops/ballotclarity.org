@@ -22,7 +22,7 @@ import { validateOrangeDocumentUrl } from "./state-ballot-orange-discovery.js";
 import { validatePimaDocumentUrl } from "./state-ballot-pima-discovery.js";
 import { isActiveStateCandidateRecord } from "./state-ballot-records.js";
 import { configuredStateBallotSources } from "./state-ballot-registry.js";
-import { orderStateBallotSources } from "./state-ballot-source-state.js";
+import { orderStateBallotSources, stateBallotSourceIsCurrent } from "./state-ballot-source-state.js";
 import { applicableStateRecordSupplements, readStateRecordSupplements } from "./state-ballot-supplements.js";
 import { validateTuscolaDocumentUrl, validateTuscolaSource } from "./state-ballot-tuscola-collection.js";
 import { containsControlCharacters } from "./text-validation.js";
@@ -214,7 +214,7 @@ export function registerStateRecordRoutes(app: Express, repository: StateBallotR
 		const sources = currentSources();
 		response.json({ states: usStates.map(([stateCode, stateName]) => {
 			const options = sources.filter(source => source.stateCode === stateCode);
-			return { stateCode, stateName, configured: Boolean(options.length), electionDate: options[0]?.electionDate, sources: options.map(({ id, label, electionDate }) => ({ id, label, electionDate })) };
+			return { stateCode, stateName, configured: Boolean(options.length), electionDate: options.find(source => stateBallotSourceIsCurrent(source, now()))?.electionDate, sources: options.map(({ id, label, electionDate }) => ({ id, label, electionDate })) };
 		}) });
 	});
 	app.get("/api/state-records/:stateCode", async (request, response) => {
@@ -252,7 +252,7 @@ export function registerStateRecordRoutes(app: Express, repository: StateBallotR
 			response.status(400).json({ message: error instanceof Error ? error.message : "The selected candidate source is invalid." });
 			return;
 		}
-		const source = sources.find(source => source.stateCode === stateCode && (sourceId === undefined || source.id === sourceId));
+		const source = sources.find(source => source.stateCode === stateCode && (sourceId === undefined ? stateBallotSourceIsCurrent(source, now()) : source.id === sourceId));
 		const payload: StateRecordsResponse = {
 			available: false,
 			source: { stateCode, stateName: state[1], configured: Boolean(source), id: source?.id, label: source?.label, url: source?.pageUrl, electionDate: source?.electionDate, scopeNotice: source?.scopeNotice },
@@ -265,10 +265,10 @@ export function registerStateRecordRoutes(app: Express, repository: StateBallotR
 		};
 		try {
 			payload.source.documentLinks = stateRecordDocumentLinks(source);
-			const snapshot = source && repository ? await repository.getSnapshot(stateCode, sourceId) ?? (sourceId === undefined ? await repository.getSnapshot(stateCode, source.id) : null) : null;
+			const snapshot = source && repository ? await repository.getSnapshot(stateCode, sourceId) : null;
 			if (snapshot) {
 				const selected = sources.find(item => item.id === snapshot.source.id && item.stateCode === stateCode && item.electionDate === snapshot.source.electionDate && (sourceId === undefined || item.id === sourceId));
-				if (!selected || snapshot.source.stateCode !== stateCode || (sourceId === undefined && source && snapshot.source.electionDate !== source.electionDate))
+				if (!selected || snapshot.source.stateCode !== stateCode || (sourceId === undefined && (!stateBallotSourceIsCurrent(selected, now()) || (source && snapshot.source.electionDate !== source.electionDate))))
 					throw new Error("The repository returned a mismatched candidate source.");
 				payload.source = { stateCode, stateName: state[1], configured: true, id: selected.id, label: selected.label, url: selected.pageUrl, electionDate: selected.electionDate, scopeNotice: selected.scopeNotice, documentLinks: stateRecordDocumentLinks(selected, snapshot), sourceAsOfDate: snapshot.sourceAsOfDate };
 				const retained = includeSupplements ? await readStateRecordSupplements(snapshot, repository!) : { snapshots: [], unavailable: false };

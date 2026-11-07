@@ -25,7 +25,7 @@ export function fairbanksNativeSample(year = 2026) {
 		schemaVersion: 1,
 		type: "fairbanks-election-publication-capture",
 		accessReview: { ...fairbanksPublicationAccessReview, reviewedAt: new Date(Date.parse(current) - 1000).toISOString() },
-		policies: [page("https://www.fnsb.gov/robots.txt", fixture("robots.txt").replace(/\n/gu, "\r\n")), page("https://www.fnsb.gov/accessibility", fixture("accessibility.html"))],
+		policies: [page("https://www.fnsb.gov/robots.txt", fixture("robots.txt").replace(/\r?\n/gu, "\r\n")), page("https://www.fnsb.gov/accessibility", fixture("accessibility.html"))],
 		index: page(fairbanksElectionIndexUrl, index),
 		documents: urls.map((url, position) => {
 			const body = `%PDF-1.7\nSynthetic native ${position}`;

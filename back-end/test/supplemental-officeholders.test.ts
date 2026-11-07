@@ -38,6 +38,7 @@ test("state-scoped supplemental merging preserves provider matches without attac
 });
 
 test("Oregon lookup, saved context and linked district/official directories never inherit Utah Senate 24", async (context) => {
+	context.mock.method(Date, "now", () => Date.parse("2026-10-21T12:00:00Z"));
 	const app = await createApp({
 		activeLookupCookieSecret: "synthetic-local-state-scope-cookie-secret-long-enough",
 		adminMfaEncryptionKey: "synthetic-local-state-scope-mfa-key-long-enough",

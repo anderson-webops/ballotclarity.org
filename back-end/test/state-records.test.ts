@@ -41,7 +41,7 @@ function snapshot(): StateBallotSnapshot {
 
 async function serve(repository: StateBallotRepository | null, throttle?: ReturnType<typeof createPublicRequestThrottle>) {
 	const app = express();
-	registerStateRecordRoutes(app, repository, throttle);
+	registerStateRecordRoutes(app, repository, throttle, () => Date.parse("2026-10-21T21:00:00Z"));
 	const server = app.listen(0, "127.0.0.1");
 	await once(server, "listening");
 	const address = server.address();

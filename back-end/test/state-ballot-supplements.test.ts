@@ -68,7 +68,7 @@ test("opt-in record pagination preserves each certificate's source, capture cloc
 
 test("ZIP previews attach statewide write-ins with correct record links, never other districts or local candidates", async () => {
 	const lookup = { result: "resolved", inputKind: "zip", location: { state: "GA" }, districtMatches: [] } as unknown as LocationLookupResponse;
-	await attachStateBallotPreview(lookup, repository());
+	await attachStateBallotPreview(lookup, repository(), undefined, () => Date.parse("2026-11-02T12:00:00Z"));
 	const preview = lookup.ballotContentPreviews![0]!;
 	assert.equal(preview.candidateCount, 4);
 	assert.deepEqual(preview.contests.flatMap(contest => contest.candidates.filter(candidate => candidate.sourceId).map(candidate => [candidate.id, candidate.sourceId])), [["fourth", supplementSource.id], ["fifth", supplementSource.id]]);

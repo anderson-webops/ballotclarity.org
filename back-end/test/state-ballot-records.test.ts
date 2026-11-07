@@ -118,7 +118,7 @@ test("state previews expose matched records without claiming a verified guide or
 		guideAvailability: "not-published",
 		guideContent: null,
 	} as unknown as LocationLookupResponse;
-	await attachStateBallotPreview(lookup, repository);
+	await attachStateBallotPreview(lookup, repository, undefined, () => testNow);
 	assert.equal(lookup.ballotContentPreviews?.length, 1);
 	assert.equal(lookup.guideAvailability, "not-published");
 	assert.equal(JSON.stringify(lookup.ballotContentPreviews).includes("Private street address"), false);
@@ -218,7 +218,7 @@ test("ZIP and IP lookups do not turn centroid districts into a personal ballot",
 	const districtMatches = [{ id: "lower:7", label: "State House 7", districtCode: "7", districtType: "state-house", sourceSystem: "Fixture" }];
 	for (const [inputKind, detectedFromIp, expectedCount] of [["zip", false, 1], ["address", true, 1], ["address", false, 2]] as const) {
 		const lookup = { result: "resolved", inputKind, detectedFromIp, location: { state: "North Carolina" }, districtMatches } as LocationLookupResponse;
-		await attachStateBallotPreview(lookup, repository);
+		await attachStateBallotPreview(lookup, repository, undefined, () => testNow);
 		assert.equal(lookup.ballotContentPreviews?.[0]?.candidateCount, expectedCount);
 	}
 	const ambiguous = { result: "resolved", inputKind: "zip", location: { state: "North Carolina" }, selectionOptions: [{}] } as LocationLookupResponse;

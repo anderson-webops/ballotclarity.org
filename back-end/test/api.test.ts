@@ -31,7 +31,8 @@ function findRepoRoot() {
 	return existsSync(join(cwd, "front-end")) ? cwd : join(cwd, "..");
 }
 
-test("state candidate records populate lookup and active-cookie routes without promoting guide coverage", async () => {
+test("state candidate records populate lookup and active-cookie routes without promoting guide coverage", async (context) => {
+	context.mock.method(Date, "now", () => Date.parse("2026-10-20T12:00:00Z"));
 	let sourceReads = 0;
 	const isolatedApp = await createApp({
 		addressEnrichmentService: {

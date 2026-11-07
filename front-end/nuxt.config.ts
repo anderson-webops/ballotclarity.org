@@ -174,6 +174,13 @@ export default defineNuxtConfig({
 					"cache-control": "no-store"
 				}
 			},
+			"/release.json": {
+				redirect: "/deployment.json",
+				headers: {
+					...securityHeaders,
+					"cache-control": "no-store"
+				}
+			},
 			"/_nuxt/**": {
 				headers: {
 					...securityHeaders,

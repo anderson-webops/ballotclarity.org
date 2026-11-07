@@ -26,8 +26,8 @@ async function serve(options: { snapshot?: StateBallotSnapshot | null; candidate
 		return null;
 	} };
 	const app = express();
-	registerStateRecordRoutes(app, candidates, createPublicRequestThrottle({ maxRequests: options.maximum ?? 30, maxBuckets: 10, windowMs: 60_000 }));
-	registerStateRecordDetailRoutes(app, candidates, references);
+	registerStateRecordRoutes(app, candidates, createPublicRequestThrottle({ maxRequests: options.maximum ?? 30, maxBuckets: 10, windowMs: 60_000 }), () => Date.parse("2026-11-01T12:00:00Z"));
+	registerStateRecordDetailRoutes(app, candidates, references, undefined, () => Date.parse("2026-11-01T12:00:00Z"));
 	const server = app.listen(0, "127.0.0.1");
 	await once(server, "listening");
 	const address = server.address();

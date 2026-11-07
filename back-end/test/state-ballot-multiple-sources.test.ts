@@ -38,7 +38,7 @@ function snapshot(source = county): StateBallotSnapshot {
 
 async function serve(repository: StateBallotRepository) {
 	const app = express();
-	registerStateRecordRoutes(app, repository);
+	registerStateRecordRoutes(app, repository, undefined, () => now);
 	const server = app.listen(0, "127.0.0.1");
 	await once(server, "listening");
 	const address = server.address();

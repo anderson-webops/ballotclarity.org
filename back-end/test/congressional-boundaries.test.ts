@@ -50,7 +50,8 @@ test("Missouri uses the unchanged 119th plan while uncorrected 120th products st
 	assert.deepEqual(electionDistrictMatches("MO", "2028-11-07", [district(120)], [district(121)]), [district(121)]);
 });
 
-test("public ballot attachment uses election districts while leaving current representatives and source holds intact", async () => {
+test("public ballot attachment uses election districts while leaving current representatives and source holds intact", async (context) => {
+	context.mock.method(Date, "now", () => Date.parse("2026-10-20T12:00:00Z"));
 	const snapshot: StateBallotSnapshot = { source: { id: "synthetic-nc-general", stateCode: "NC", electionDate: "2026-11-03", label: "Synthetic official source", format: "csv", url: "https://example.gov/candidates.csv", pageUrl: "https://example.gov/election" }, retrievedAt: "2026-10-25T00:00:00Z", sha256: "a".repeat(64), records: [
 		{ id: "statewide", name: "Statewide Example", office: "United States Senate", district: "", scope: "statewide", status: "qualified" },
 		{ id: "current", name: "Current District Example", office: "United States House", district: "37", scope: "congressional", status: "qualified" },

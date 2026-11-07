@@ -65,6 +65,7 @@ import { configuredStateBallotSources, legacyReviewedStateBallotSource } from ".
 import {
 	orderStateBallotSources,
 	StateBallotAwaitingRecordsError,
+	stateBallotSourceIsCurrent,
 	supportsPendingStateBallotRecords
 } from "./state-ballot-source-state.js";
 import { createStateBallotStorage } from "./state-ballot-storage.js";
@@ -188,7 +189,7 @@ export function createStateBallotRepository(options: StateBallotRepositoryOption
 		const electionEnd = Date.parse(`${source.electionDate}T00:00:00Z`) + 2 * 24 * 60 * 60 * 1000;
 		if (!Number.isFinite(electionEnd))
 			return null;
-		if (now() >= electionEnd) {
+		if (!stateBallotSourceIsCurrent(source, now())) {
 			if (!allowArchived || options.refreshReviewedLegacy) return null;
 			try {
 				const retained = storage ? await storage.read(source) : cached.get(source.id)?.snapshot;
@@ -349,7 +350,7 @@ export function createStateBallotRepository(options: StateBallotRepositoryOption
 		},
 		async getStoredSnapshots(stateCode, sourceIds) {
 			const snapshots: StateBallotSnapshot[] = [];
-			for (const source of currentSources().filter(item => item.stateCode === stateCode && (sourceIds ? sourceIds.includes(item.id) : Date.parse(`${item.electionDate}T00:00:00Z`) + 2 * 86400000 > now()))) {
+			for (const source of currentSources().filter(item => item.stateCode === stateCode && (sourceIds ? sourceIds.includes(item.id) : stateBallotSourceIsCurrent(item, now())))) {
 				if (configurationFailures.has(stateCode)) throw new Error("The state election catalog is unavailable.");
 				const retained = cached.get(source.id);
 				const snapshot = storage ? await storage.read(source) : retained && retained.expiresAt > now() ? retained.snapshot : null;
@@ -360,7 +361,7 @@ export function createStateBallotRepository(options: StateBallotRepositoryOption
 		async getSnapshot(stateCode, sourceId) {
 			const matching = currentSources().filter(source => source.stateCode === stateCode.toUpperCase() && (sourceId === undefined || source.id === sourceId));
 			const ordered = sourceId === undefined ? orderStateBallotSources(matching, now()) : matching;
-			const currentDate = ordered.find(source => Date.parse(`${source.electionDate}T00:00:00Z`) + 2 * 86400000 > now())?.electionDate;
+			const currentDate = ordered.find(source => stateBallotSourceIsCurrent(source, now()))?.electionDate;
 			for (const source of ordered.filter(source => sourceId !== undefined || source.electionDate === currentDate)) {
 				const snapshot = await loadSnapshot(source, sourceId !== undefined);
 				if (snapshot)
@@ -425,7 +426,8 @@ export function buildStateBallotPreview(snapshot: StateBallotSnapshot, lookup: P
 	};
 }
 
-export async function attachStateBallotPreview(lookup: LocationLookupResponse, repository: StateBallotRepository | null, portraits?: RecordPortraitResolver) {
+export async function attachStateBallotPreview(lookup: LocationLookupResponse, repository: StateBallotRepository | null, portraits?: RecordPortraitResolver, now: () => number = Date.now) {
+	if (lookup.ballotContentPreviews) lookup.ballotContentPreviews = lookup.ballotContentPreviews.filter(preview => !preview.electionDate || stateBallotSourceIsCurrent({ electionDate: preview.electionDate }, now()));
 	if (!repository || lookup.result !== "resolved" || !lookup.location || lookup.selectionOptions?.length)
 		return lookup;
 	const state = lookup.location.state;
@@ -435,13 +437,14 @@ export async function attachStateBallotPreview(lookup: LocationLookupResponse, r
 	const countyNames = new Set((lookup.districtMatches ?? []).filter(match => match.districtType.toLowerCase() === "county").map(match => match.label.normalize("NFKC").trim().toLowerCase()));
 	const matchesPlace = (source: StateBallotSource) => lookup.inputKind === "address" && !lookup.detectedFromIp && Boolean(source.placeName && lookup.districtMatches?.some(match => match.districtType.toLowerCase() === "place" && match.label.normalize("NFKC").trim().toLowerCase() === source.placeName!.toLowerCase()));
 
-	const preferred = orderStateBallotSources((repository.sources ?? []).filter(source => source.ballotPreview !== false && ((countyNames.size === 1 && !lookup.detectedFromIp && source.countyName && countyNames.has(source.countyName.normalize("NFKC").trim().toLowerCase())) || matchesPlace(source)) && source.stateCode === stateCode && Date.parse(`${source.electionDate}T00:00:00Z`) + 2 * 86400000 > Date.now())).sort((first, second) => Number(matchesPlace(second)) - Number(matchesPlace(first)));
+	const preferred = orderStateBallotSources((repository.sources ?? []).filter(source => source.ballotPreview !== false && ((countyNames.size === 1 && !lookup.detectedFromIp && source.countyName && countyNames.has(source.countyName.normalize("NFKC").trim().toLowerCase())) || matchesPlace(source)) && source.stateCode === stateCode && stateBallotSourceIsCurrent(source, now())), now()).sort((first, second) => Number(matchesPlace(second)) - Number(matchesPlace(first)));
 	let snapshot: StateBallotSnapshot | null = null;
 	for (const source of preferred) {
 		snapshot = await repository.getSnapshot(stateCode, source.id);
 		if (snapshot) break;
 	}
 	snapshot ??= await repository.getSnapshot(stateCode);
+	if (snapshot && !stateBallotSourceIsCurrent(snapshot.source, now())) snapshot = null;
 	if (snapshot?.source.placeName && !matchesPlace(snapshot.source)) snapshot = null;
 	const preview = snapshot
 		? buildStateBallotPreview(snapshot, {

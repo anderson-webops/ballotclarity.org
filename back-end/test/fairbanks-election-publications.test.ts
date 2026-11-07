@@ -11,7 +11,7 @@ import { fairbanksElectionIndexUrl, fairbanksPublicationAccessReview, fetchFairb
 const clock = "2026-11-07T08:00:00.000Z";
 const now = Date.parse(clock);
 const readFixture = (name: string) => readFileSync(new URL(`./fixtures/${name}`, import.meta.url), "utf8");
-const robots = readFixture("fairbanks-publication-robots.txt").replace(/\n/gu, "\r\n");
+const robots = readFixture("fairbanks-publication-robots.txt").replace(/\r?\n/gu, "\r\n");
 const accessibility = readFixture("fairbanks-publication-accessibility.html");
 const legal = readFixture("fairbanks-publication-legal.html");
 const origin = "https://www.fnsb.gov";

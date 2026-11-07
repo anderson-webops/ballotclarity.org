@@ -1,5 +1,11 @@
 # Reusable election cycles
 
+Juneau's `ak-juneau-2026` family follows the annual certified-candidate link
+actually published by its independent municipal index. Candidate dates remain
+bound to the October municipal slate, separately from November state notices.
+The 2026 edition is historical; future dates require an offered certified roster.
+See the [Juneau source review](audits/2026-11-07-juneau-automation.md).
+
 Chicago's `il-chicago-2026` family follows explicitly dated full-list controls on
 the city candidate index, independently of newer filing reports and the blocked
 Illinois state portal. Policy-bound collection persists candidates and questions
@@ -9,10 +15,10 @@ converters nor publisher requests. Actual offered future dates generate source
 identities without annual URL edits. See the [collection review](audits/2026-10-27-chicago-automation.md).
 
 External election catalogs opt the automatic candidate repository into reusable
-source families. The current 84 source definitions retain explicit source/state
+source families. The current 85 source definitions retain explicit source/state
 allowlists; reusable discovery does not widen an exact-source allowlist.
 
-Fifty-eight families across forty-seven states and D.C. are supported. Some
+Fifty-nine families across forty-eight states and D.C. are supported. Some
 families cover only a county, municipality or one chamber, not an entire state:
 
 | Family | Discovery | Elections |

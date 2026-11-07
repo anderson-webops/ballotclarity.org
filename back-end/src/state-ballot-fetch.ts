@@ -33,6 +33,7 @@ import { fetchIndependenceCandidateCapture } from "./state-ballot-independence.j
 import { fetchIowaCountyCandidateCapture } from "./state-ballot-iowa-county.js";
 import { fetchIowaJohnsonCandidateCapture } from "./state-ballot-iowa-johnson.js";
 import { fetchIowaPolkCandidateCapture } from "./state-ballot-iowa-polk.js";
+import { fetchJuneauCandidateCapture } from "./state-ballot-juneau.js";
 import { fetchKanawhaCandidateCapture } from "./state-ballot-kanawha-collection.js";
 import { fetchKansasCandidateCapture } from "./state-ballot-kansas.js";
 import { fetchKentuckyCandidateCapture } from "./state-ballot-kentucky.js";
@@ -219,6 +220,7 @@ export async function fetchStateBallotSourceText(source: StateBallotSource, requ
 	if (source.format === "cassia-pdf") return fetchCassiaCandidateCapture(source, { requestText: request });
 	if (source.format === "iowa-county-pdf") return fetchIowaCountyCandidateCapture(source);
 	if (source.format === "iowa-polk-pdf") return fetchIowaPolkCandidateCapture(source, { requestText: request });
+	if (source.format === "juneau-html") return fetchJuneauCandidateCapture(source, { requestText: request });
 	if (source.format === "los-ranchos-html") return fetchLosRanchosCandidateCapture(source, { requestText: request });
 	if (source.format === "independence-html") return fetchIndependenceCandidateCapture(source, { requestText: request });
 	if (source.format === "iowa-johnson-html") return fetchIowaJohnsonCandidateCapture(source, { requestText: request });

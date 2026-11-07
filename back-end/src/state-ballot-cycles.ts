@@ -71,6 +71,7 @@ import { independenceDiscoveryUrl, independenceSource, readIndependenceDiscovery
 import { iowaCountyDiscoveryUrls, iowaCountySource, readIowaCountyDiscovery, validateIowaCountyElection, validateIowaCountySource } from "./state-ballot-iowa-county.js";
 import { iowaJohnsonDiscoveryUrl, readIowaJohnsonDiscovery, validateIowaJohnsonElection, validateIowaJohnsonSource } from "./state-ballot-iowa-johnson.js";
 import { iowaPolkDiscoveryUrl, readIowaPolkDiscovery, validateIowaPolkElection, validateIowaPolkSource } from "./state-ballot-iowa-polk.js";
+import { juneauDiscoveryUrl, juneauSource, readJuneauDiscovery, validateJuneauElection, validateJuneauSource } from "./state-ballot-juneau.js";
 import { readKanawhaDiscovery } from "./state-ballot-kanawha-collection.js";
 import { kanawhaDiscoveryUrl, kanawhaSource, validateKanawhaElection, validateKanawhaSource } from "./state-ballot-kanawha-discovery.js";
 import {
@@ -156,6 +157,7 @@ const washington = configuredStateBallotSources.find(source => source.id === "wa
 export const stateBallotCycleDiscoveryUrl = "https://voter.votewa.gov/CandidateList.aspx";
 const digest = (value: string) => createHash("sha256").update(value).digest("hex");
 const cycleFamilies = [
+	{ source: configuredStateBallotSources.find(source => source.id === "ak-juneau-2026")!, format: "juneau-html", discoveryUrl: juneauDiscoveryUrl, prefix: "ak-juneau-municipal", electionLabel: "Municipal Election", formId: null },
 	{ source: configuredStateBallotSources.find(source => source.id === "nm-los-ranchos-2025")!, format: "los-ranchos-html", discoveryUrl: losRanchosDiscoveryUrl, prefix: "nm-los-ranchos-local", electionLabel: "Regular Local Election", formId: null },
 	{ source: configuredStateBallotSources.find(source => source.id === "mn-independence-city-2026")!, format: "independence-html", discoveryUrl: independenceDiscoveryUrl, prefix: "mn-independence-city-general", electionLabel: "City Council Candidates", formId: null },
 	...(["Monona", "Woodbury"] as const).map(county => ({ source: configuredStateBallotSources.find(source => source.id === iowaCountySource(county).id)!, format: "iowa-county-pdf", discoveryUrl: iowaCountyDiscoveryUrls[county], prefix: `ia-${county.toLowerCase()}-samples-general`, electionLabel: "General Election", formId: null })),
@@ -306,6 +308,10 @@ export function getStateBallotCycleFamily(familyId: string) {
 	else if (family.format === "iowa-polk-pdf") {
 		validateIowaPolkSource(family.source);
 	}
+	else if (family.format === "juneau-html") {
+		validateJuneauSource(family.source);
+		targetValid = true;
+	}
 	else if (family.format === "los-ranchos-html") {
 		validateLosRanchosSource(family.source);
 	}
@@ -402,7 +408,7 @@ export function getStateBallotCycleFamily(familyId: string) {
 	else {
 		targetValid = targetValid && new RegExp(`^${family.discoveryUrl.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&")}\\?e=[1-9]\\d{0,8}$`, "u").test(family.source.url);
 	}
-	if (!targetValid || family.source.format !== family.format || family.source.retrievalPolicy || (family.source.stateCode !== "FL" && family.source.postBody) || (family.source.documentUrls?.length && !["los-ranchos-html", "independence-html", "iowa-polk-pdf", "iowa-johnson-html", "washoe-html"].includes(family.format) && !["KY", "VA", "GA", "MO", "NJ", "VT", "TX", "OR"].includes(family.source.stateCode)) || (family.source.documentLinks?.length && family.source.stateCode !== "GA"))
+	if (!targetValid || family.source.format !== family.format || family.source.retrievalPolicy || (family.source.stateCode !== "FL" && family.source.postBody) || (family.source.documentUrls?.length && !["juneau-html", "los-ranchos-html", "independence-html", "iowa-polk-pdf", "iowa-johnson-html", "washoe-html"].includes(family.format) && !["KY", "VA", "GA", "MO", "NJ", "VT", "TX", "OR"].includes(family.source.stateCode)) || (family.source.documentLinks?.length && family.source.stateCode !== "GA"))
 		throw new Error("The automatic election source family is unsupported or has changed.");
 	return family;
 }
@@ -539,7 +545,7 @@ export function parseStateBallotCycleCatalog(value: unknown, now = Date.now()): 
 	const discovery = value.discovery;
 	if (!exactKeys(discovery, ["url", "sha256", "retrievedAt"]) || discovery.url !== family.discoveryUrl || typeof discovery.sha256 !== "string" || !/^[a-f0-9]{64}$/u.test(discovery.sha256) || typeof discovery.retrievedAt !== "string" || !Number.isFinite(Date.parse(discovery.retrievedAt)) || new Date(discovery.retrievedAt).toISOString() !== discovery.retrievedAt || Date.parse(discovery.retrievedAt) > now)
 		throw new Error("The election discovery provenance is invalid.");
-	if (!Array.isArray(value.elections) || (!value.elections.length && original.format !== "iowa-county-pdf" && original.format !== "oklahoma-html" && original.format !== "everett-pdf" && family.format !== "alabama-pdf" && original.format !== "kanawha-pdf" && original.format !== "boone-xlsx" && original.format !== "orange-pdf" && original.format !== "maine-house-html" && original.format !== "nyc-pdf" && original.format !== "douglas-html" && original.format !== "hamilton-html" && original.format !== "pima-pdf" && original.format !== "chicago-pdf" && original.format !== "goffstown-pdf") || value.elections.length > 100)
+	if (!Array.isArray(value.elections) || (!value.elections.length && original.format !== "juneau-html" && original.format !== "iowa-county-pdf" && original.format !== "oklahoma-html" && original.format !== "everett-pdf" && family.format !== "alabama-pdf" && original.format !== "kanawha-pdf" && original.format !== "boone-xlsx" && original.format !== "orange-pdf" && original.format !== "maine-house-html" && original.format !== "nyc-pdf" && original.format !== "douglas-html" && original.format !== "hamilton-html" && original.format !== "pima-pdf" && original.format !== "chicago-pdf" && original.format !== "goffstown-pdf") || value.elections.length > 100)
 		throw new Error("The election cycle catalog exceeds its bounds.");
 	if (family.format === "alabama-pdf") {
 		const dates = new Set<string>();
@@ -713,6 +719,14 @@ export function parseStateBallotCycleCatalog(value: unknown, now = Date.now()): 
 		}
 		return value as unknown as StateBallotCycleCatalog;
 	}
+	if (original.format === "juneau-html") {
+		for (const election of value.elections) {
+			validateJuneauElection(election);
+			if (dates.has(election.electionDate)) throw new Error("The Juneau elections are duplicated.");
+			dates.add(election.electionDate);
+		}
+		return value as unknown as StateBallotCycleCatalog;
+	}
 	if (original.format === "los-ranchos-html") {
 		for (const election of value.elections) {
 			validateLosRanchosElection(election);
@@ -858,6 +872,11 @@ export function discoverWashingtonElectionCycles(body: string, now = Date.now())
 }
 
 export function discoverStateBallotElectionCycles(body: string, familyId: string, now = Date.now()): StateBallotCycleCatalog {
+	if (familyId === "ak-juneau-2026") {
+		const family = getStateBallotCycleFamily(familyId);
+		const capture = readJuneauDiscovery(body, now);
+		return parseStateBallotCycleCatalog({ schemaVersion: 1, type: "state-ballot-cycle-catalog", familyId, sourceConfigurationSha256: digest(JSON.stringify(family.source)), discovery: { url: family.discoveryUrl, sha256: digest(body), retrievedAt: capture.index.retrievedAt }, elections: capture.elections }, now);
+	}
 	if (familyId === "nm-los-ranchos-2025") {
 		const family = getStateBallotCycleFamily(familyId);
 		const capture = readLosRanchosDiscovery(body, now);
@@ -1153,6 +1172,10 @@ export function stateBallotCycleSources(catalog: StateBallotCycleCatalog, now = 
 		if (family.format === "iowa-polk-pdf") {
 			validateIowaPolkElection(election);
 			return { ...family.source, id: `${family.prefix}-${election.electionDate}`, label: `${family.source.label} (${election.electionDate.slice(0, 4)})`, electionDate: election.electionDate, url: election.pageUrl, pageUrl: election.pageUrl };
+		}
+		if (family.format === "juneau-html") {
+			validateJuneauElection(election);
+			return juneauSource(election.electionDate);
 		}
 		if (family.format === "los-ranchos-html") {
 			validateLosRanchosElection(election);

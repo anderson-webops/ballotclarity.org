@@ -87,6 +87,7 @@ import {
 	kentuckySourceElectionId,
 	readKentuckyElectionDiscovery
 } from "./state-ballot-kentucky.js";
+import { losRanchosDiscoveryUrl, losRanchosSource, readLosRanchosDiscovery, validateLosRanchosElection, validateLosRanchosSource } from "./state-ballot-los-ranchos.js";
 import { maineHouseSource, maineHouseUrls, readMaineHouseDiscovery, validateMaineHouseElection, validateMaineHouseSource } from "./state-ballot-maine-house.js";
 import {
 	marylandCandidateRosterUrl,
@@ -155,6 +156,7 @@ const washington = configuredStateBallotSources.find(source => source.id === "wa
 export const stateBallotCycleDiscoveryUrl = "https://voter.votewa.gov/CandidateList.aspx";
 const digest = (value: string) => createHash("sha256").update(value).digest("hex");
 const cycleFamilies = [
+	{ source: configuredStateBallotSources.find(source => source.id === "nm-los-ranchos-2025")!, format: "los-ranchos-html", discoveryUrl: losRanchosDiscoveryUrl, prefix: "nm-los-ranchos-local", electionLabel: "Regular Local Election", formId: null },
 	{ source: configuredStateBallotSources.find(source => source.id === "mn-independence-city-2026")!, format: "independence-html", discoveryUrl: independenceDiscoveryUrl, prefix: "mn-independence-city-general", electionLabel: "City Council Candidates", formId: null },
 	...(["Monona", "Woodbury"] as const).map(county => ({ source: configuredStateBallotSources.find(source => source.id === iowaCountySource(county).id)!, format: "iowa-county-pdf", discoveryUrl: iowaCountyDiscoveryUrls[county], prefix: `ia-${county.toLowerCase()}-samples-general`, electionLabel: "General Election", formId: null })),
 	{ source: configuredStateBallotSources.find(source => source.id === "ok-seb-2026")!, format: "oklahoma-html", discoveryUrl: oklahomaDiscoveryUrl, prefix: "ok-seb-general", electionLabel: "General Election", formId: null },
@@ -304,6 +306,9 @@ export function getStateBallotCycleFamily(familyId: string) {
 	else if (family.format === "iowa-polk-pdf") {
 		validateIowaPolkSource(family.source);
 	}
+	else if (family.format === "los-ranchos-html") {
+		validateLosRanchosSource(family.source);
+	}
 	else if (family.format === "independence-html") {
 		validateIndependenceSource(family.source);
 	}
@@ -397,7 +402,7 @@ export function getStateBallotCycleFamily(familyId: string) {
 	else {
 		targetValid = targetValid && new RegExp(`^${family.discoveryUrl.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&")}\\?e=[1-9]\\d{0,8}$`, "u").test(family.source.url);
 	}
-	if (!targetValid || family.source.format !== family.format || family.source.retrievalPolicy || (family.source.stateCode !== "FL" && family.source.postBody) || (family.source.documentUrls?.length && !["independence-html", "iowa-polk-pdf", "iowa-johnson-html", "washoe-html"].includes(family.format) && !["KY", "VA", "GA", "MO", "NJ", "VT", "TX", "OR"].includes(family.source.stateCode)) || (family.source.documentLinks?.length && family.source.stateCode !== "GA"))
+	if (!targetValid || family.source.format !== family.format || family.source.retrievalPolicy || (family.source.stateCode !== "FL" && family.source.postBody) || (family.source.documentUrls?.length && !["los-ranchos-html", "independence-html", "iowa-polk-pdf", "iowa-johnson-html", "washoe-html"].includes(family.format) && !["KY", "VA", "GA", "MO", "NJ", "VT", "TX", "OR"].includes(family.source.stateCode)) || (family.source.documentLinks?.length && family.source.stateCode !== "GA"))
 		throw new Error("The automatic election source family is unsupported or has changed.");
 	return family;
 }
@@ -708,6 +713,14 @@ export function parseStateBallotCycleCatalog(value: unknown, now = Date.now()): 
 		}
 		return value as unknown as StateBallotCycleCatalog;
 	}
+	if (original.format === "los-ranchos-html") {
+		for (const election of value.elections) {
+			validateLosRanchosElection(election);
+			if (dates.has(election.electionDate)) throw new Error("The Los Ranchos elections are duplicated.");
+			dates.add(election.electionDate);
+		}
+		return value as unknown as StateBallotCycleCatalog;
+	}
 	if (original.format === "independence-html") {
 		for (const election of value.elections) {
 			validateIndependenceElection(election);
@@ -845,6 +858,11 @@ export function discoverWashingtonElectionCycles(body: string, now = Date.now())
 }
 
 export function discoverStateBallotElectionCycles(body: string, familyId: string, now = Date.now()): StateBallotCycleCatalog {
+	if (familyId === "nm-los-ranchos-2025") {
+		const family = getStateBallotCycleFamily(familyId);
+		const capture = readLosRanchosDiscovery(body, now);
+		return parseStateBallotCycleCatalog({ schemaVersion: 1, type: "state-ballot-cycle-catalog", familyId, sourceConfigurationSha256: digest(JSON.stringify(family.source)), discovery: { url: family.discoveryUrl, sha256: digest(body), retrievedAt: capture.index.retrievedAt }, elections: capture.elections }, now);
+	}
 	if (familyId === "mn-independence-city-2026") {
 		const family = getStateBallotCycleFamily(familyId);
 		const capture = readIndependenceDiscovery(body, now);
@@ -1135,6 +1153,10 @@ export function stateBallotCycleSources(catalog: StateBallotCycleCatalog, now = 
 		if (family.format === "iowa-polk-pdf") {
 			validateIowaPolkElection(election);
 			return { ...family.source, id: `${family.prefix}-${election.electionDate}`, label: `${family.source.label} (${election.electionDate.slice(0, 4)})`, electionDate: election.electionDate, url: election.pageUrl, pageUrl: election.pageUrl };
+		}
+		if (family.format === "los-ranchos-html") {
+			validateLosRanchosElection(election);
+			return losRanchosSource(election.electionDate);
 		}
 		if (family.format === "independence-html") {
 			validateIndependenceElection(election);

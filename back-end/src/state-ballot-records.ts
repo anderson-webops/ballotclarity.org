@@ -41,6 +41,7 @@ import { parseIowaJohnsonCandidateCapture } from "./state-ballot-iowa-johnson.js
 import { parseIowaPolkCandidateCapture } from "./state-ballot-iowa-polk.js";
 import { parseKanawhaCandidateCapture } from "./state-ballot-kanawha-collection.js";
 import { kentuckySourceElectionId, parseKentuckyCandidateRecords } from "./state-ballot-kentucky.js";
+import { parseLosRanchosCandidateCapture } from "./state-ballot-los-ranchos.js";
 import { parseMaineHouseCapture } from "./state-ballot-maine-house.js";
 import { parseMarylandCandidateRecords } from "./state-ballot-maryland.js";
 import {
@@ -468,6 +469,7 @@ export function parseStateCandidateRecords(source: StateBallotSource, body: stri
 	if (source.format === "cassia-pdf") return parseCassiaCandidateCapture(source, body).records;
 	if (source.format === "iowa-county-pdf") return parseIowaCountyCandidateCapture(source, body, makeRecord).records;
 	if (source.format === "iowa-polk-pdf") return parseIowaPolkCandidateCapture(source, body, makeRecord).records;
+	if (source.format === "los-ranchos-html") return parseLosRanchosCandidateCapture(source, body, makeRecord).records;
 	if (source.format === "independence-html") return parseIndependenceCandidateCapture(source, body, makeRecord).records;
 	if (source.format === "iowa-johnson-html") {
 		records = parseIowaJohnsonCandidateCapture(source, body, makeRecord).records;

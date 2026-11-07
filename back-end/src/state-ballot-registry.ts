@@ -8,6 +8,7 @@ import { hamiltonSource } from "./state-ballot-hamilton-collection.js";
 import { independenceSource } from "./state-ballot-independence.js";
 import { iowaCountySource } from "./state-ballot-iowa-county.js";
 import { kanawhaSource } from "./state-ballot-kanawha-discovery.js";
+import { losRanchosSource } from "./state-ballot-los-ranchos.js";
 import { maineHouseSource } from "./state-ballot-maine-house.js";
 import { nycSource } from "./state-ballot-nyc-collection.js";
 import { oklahomaSource } from "./state-ballot-oklahoma.js";
@@ -16,6 +17,7 @@ import { pimaSource } from "./state-ballot-pima-collection.js";
 import { stateBallotSources } from "./state-ballot-sources.js";
 
 export const additionalStateBallotSources: readonly StateBallotSource[] = [
+	losRanchosSource(),
 	independenceSource(),
 	oklahomaSource("2026-11-03"),
 	iowaCountySource("Monona"),

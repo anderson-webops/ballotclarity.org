@@ -289,8 +289,9 @@ export interface PublicBallotQuestion {
 	audience: string;
 	title: string;
 	officialText: string;
-	choices: [string, string];
+	choices: [string, string, ...string[]];
 	pages: number[];
+	sourceUrl?: string;
 	explicitlyAdvisory: boolean;
 	voterApplicabilityVerified: false;
 }

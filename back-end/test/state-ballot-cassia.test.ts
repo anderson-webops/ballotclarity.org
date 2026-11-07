@@ -6,6 +6,7 @@ import { mkdir, mkdtemp, readdir, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
+import { buildCassiaBallotQuestions } from "../src/cassia-ballot-questions.js";
 import { cassiaDiscoveryUrl, cassiaPolicyFingerprint, cassiaPolicyReceipts, fetchCassiaCandidateCapture, fetchCassiaCycleDiscovery, parseCassiaCandidateCapture, readCassiaCandidateDocuments, readCassiaDiscovery } from "../src/state-ballot-cassia.js";
 import { syncStateBallotCycles } from "../src/state-ballot-cycle-sync.js";
 import { discoverStateBallotElectionCycles, getStateBallotCycleFamily, parseStateBallotCycleCatalog, stateBallotCycleSources } from "../src/state-ballot-cycles.js";
@@ -108,7 +109,7 @@ function questionPage(fire = false, date = source.electionDate) {
 	return page(entries);
 }
 function schoolDocument(date = source.electionDate) {
-	return `<doc>${page([...header(date), [45, 150, "EXAMPLE JOINT SCHOOL DISTRICT NO. 381"], [45, 180, "SUPPLEMENTAL LEVY ELECTION"], [45, 235, `November ${Number(date.slice(-2))}, ${date.slice(0, 4)}`], [45, 480, "IN FAVOR OF AUTHORIZING A SUPPLEMENTAL LEVY EXAMPLE"], [45, 510, "AGAINST AUTHORIZING A SUPPLEMENTAL LEVY EXAMPLE"]])}</doc>`;
+	return `<doc>${page([...header(date), [45, 150, "EXAMPLE JOINT SCHOOL DISTRICT NO. 381"], [45, 180, "SUPPLEMENTAL LEVY ELECTION"], [45, 235, `November ${Number(date.slice(-2))}, ${date.slice(0, 4)}`], [45, 280, "The Board of Trustees of Example Joint School District seeks authorization."], [45, 320, "QUESTION: Shall the Board of Trustees levy a supplemental levy?"], [45, 480, "IN FAVOR OF AUTHORIZING A SUPPLEMENTAL LEVY EXAMPLE"], [45, 510, "AGAINST AUTHORIZING A SUPPLEMENTAL LEVY EXAMPLE"]])}</doc>`;
 }
 function documentUrls(date = source.electionDate) {
 	return legacy.documentUrls!.map(url => url.replace("/2026/", `/${date.slice(0, 4)}/`));
@@ -151,7 +152,41 @@ test("Cassia retains every supporting document and repeated question without tur
 	assert.equal(result.questions.length, 10);
 	assert.equal(result.questions.filter(item => item.scope === "local").length, 2);
 	assert.deepEqual(result.questions.filter(item => item.title === "Idaho advisory question").map(item => item.choices.length), [6, 6]);
+	assert.equal(result.ballotQuestions.length, 6);
+	assert.equal(result.ballotQuestions.find(item => item.explicitlyAdvisory)!.choices.length, 6);
+	assert.deepEqual(result.ballotQuestions.map(item => item.sourceUrl), [documentUrls()[0], documentUrls()[0], documentUrls()[0], documentUrls()[0], documentUrls()[1], documentUrls()[2]]);
+	assert.ok(result.ballotQuestions.every(item => item.voterApplicabilityVerified === false));
 	assert.deepEqual(parseBundledStateSnapshot(source, serializeStoredStateSnapshot({ source, ...result }), "automatic").records, JSON.parse(JSON.stringify(result.records)));
+});
+test("Cassia stored questions retain complete text, precise sources and actual choice counts across restart", () => {
+	const result = parsed();
+	const snapshot = JSON.parse(serializeStoredStateSnapshot({ source, ...result }));
+	assert.deepEqual(parseBundledStateSnapshot(source, JSON.stringify(snapshot), "automatic").ballotQuestions, result.ballotQuestions);
+	for (const mutate of [
+		(value: typeof snapshot) => { value.ballotQuestions[0].officialText += " Changed"; },
+		(value: typeof snapshot) => { value.ballotQuestions[0].sourceUrl = documentUrls()[1]; },
+		(value: typeof snapshot) => { value.ballotQuestions[0].sourceUrl = "https://example.test/ballot.pdf"; },
+		(value: typeof snapshot) => { value.ballotQuestions[0].audience = "Cassia County"; },
+		(value: typeof snapshot) => { value.ballotQuestions[0].voterApplicabilityVerified = true; },
+		(value: typeof snapshot) => { value.ballotQuestions[0].pages = [0]; },
+		(value: typeof snapshot) => { value.ballotQuestions[3].choices.pop(); },
+		(value: typeof snapshot) => { value.ballotQuestions.push(value.ballotQuestions[0]); },
+	]) {
+		const changed = structuredClone(snapshot);
+		mutate(changed);
+		assert.throws(() => parseBundledStateSnapshot(source, JSON.stringify(changed), "automatic"), /question requires review/u);
+	}
+	delete snapshot.ballotQuestions;
+	assert.equal(parseBundledStateSnapshot(source, JSON.stringify(snapshot), "automatic").ballotQuestions, undefined);
+});
+test("Cassia repeated wording, changed choices and disappeared accepted questions require review", () => {
+	const result = parsed();
+	assert.deepEqual(buildCassiaBallotQuestions(source, result.questions, result.documents, result.ballotQuestions), result.ballotQuestions);
+	for (const questions of [result.questions.filter(item => item.scope === "statewide"), result.questions.map(item => ({ ...item, officialText: `${item.officialText} Changed` })), result.questions.map(item => ({ ...item, choices: item.title === "Idaho advisory question" ? [...item.choices].reverse() : item.choices }))])
+		assert.throws(() => buildCassiaBallotQuestions(source, questions, result.documents, result.ballotQuestions), /accepted question changed or disappeared/u);
+	const repeated = structuredClone(result.questions);
+	repeated[5]!.officialText += " Changed";
+	assert.throws(() => buildCassiaBallotQuestions(source, repeated, result.documents), /contradictory repeated wording/u);
 });
 test("Cassia discovery binds actual offered dates and links, explicit pending states, legal inventory and complete document sets", () => {
 	assert.equal(cassiaPolicyFingerprint(footer, "legal-inventory"), cassiaPolicyReceipts[2].sha256);
@@ -181,6 +216,9 @@ test("Cassia future elections use offered links and preserve typed district isol
 	const catalog = discoverStateBallotElectionCycles(JSON.stringify(discovery(date)), source.id, now);
 	assert.equal(parseStateBallotCycleCatalog(catalog, now).elections[0]!.cassiaDocuments![0]!.url, documentUrls(date)[0]);
 	assert.equal(parsed(date).records.length, 12);
+	assert.equal(parsed(date).ballotQuestions.length, 6);
+	assert.notEqual(parsed(date).ballotQuestions[0]!.id, parsed().ballotQuestions[0]!.id);
+	assert.ok(parsed(date).ballotQuestions.every(item => item.sourceUrl!.includes("/2030/")));
 	const preview = buildStateBallotPreview({ source: future, ...parsed(date) }, { districtMatches: [{ id: "county-16031", label: "Cassia County", districtType: "county", districtCode: "5", sourceSystem: "test" }] })!;
 	assert.equal(preview.contests.some(item => item.title.includes("Magistrate")), false);
 });
@@ -269,8 +307,9 @@ test("Cassia keeps reviewed legacy reads offline and preserves a recoverable ori
 	const directory = await mkdtemp(join(tmpdir(), "ballot-cassia-legacy-"));
 	try {
 		assert.deepEqual(legacyReviewedStateBallotSource(source), legacy);
-		const { collectionIndexSha256, ...facts } = parsed();
+		const { collectionIndexSha256, ballotQuestions, ...facts } = parsed();
 		assert.ok(collectionIndexSha256);
+		assert.equal(ballotQuestions.length, 6);
 		const storage = createStateBallotStorage(directory);
 		await storage.write({ source: legacy, ...facts });
 		const originalFiles = await readdir(directory);
@@ -332,6 +371,22 @@ test("Cassia refreshes changed PDF contents at the same URL after expiry instead
 		assert.equal(result.results[0]!.imported, true);
 		assert.equal(result.results[0]!.retrievedAt, new Date(later).toISOString());
 		assert.ok((await createStateBallotStorage(directory).read(source))!.records.some(item => item.name === "Revised Example"));
+	}
+	finally { await rm(directory, { recursive: true }); }
+});
+test("Cassia rejects changed or disappeared accepted question text while retaining exact restartable snapshots", async () => {
+	const directory = await mkdtemp(join(tmpdir(), "ballot-cassia-question-retention-"));
+	try {
+		const options = { familyId: source.id, catalogPath: join(directory, "cycles.json"), dataDirectory: directory, now: () => now, fetchDiscovery: async () => JSON.stringify(discovery()), fetchCandidates: async () => JSON.stringify(capture()) };
+		await syncStateBallotCycles(options);
+		const storage = createStateBallotStorage(directory);
+		const before = serializeStoredStateSnapshot((await storage.read(source))!);
+		const changed = capture();
+		changed.documents[1]!.text = changed.documents[1]!.text.replace(">supplemental</word>", ">different</word>");
+		changed.documents[1]!.sha256 = hash(changed.documents[1]!.text);
+		const result = await syncStateBallotCycles({ ...options, now: () => now + 2 * 86400000, fetchCandidates: async () => JSON.stringify(changed) });
+		assert.equal(result.results[0]!.status, "unavailable");
+		assert.equal(serializeStoredStateSnapshot((await createStateBallotStorage(directory).read(source))!), before);
 	}
 	finally { await rm(directory, { recursive: true }); }
 });

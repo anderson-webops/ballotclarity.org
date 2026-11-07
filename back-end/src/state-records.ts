@@ -9,6 +9,7 @@ import { normalizePublicHref } from "./public-href.js";
 import { createPublicRequestThrottle } from "./public-request-throttle.js";
 import { validateBoulderCandidateUrl } from "./state-ballot-boulder.js";
 import { validateBucksDocumentUrl } from "./state-ballot-bucks.js";
+import { validateCassiaDocumentUrl, validateCassiaSource } from "./state-ballot-cassia.js";
 import { validateChicagoDocumentUrl } from "./state-ballot-chicago-collection.js";
 import { validateFairbanksSource } from "./state-ballot-fairbanks.js";
 import { validateGoffstownDocumentUrl } from "./state-ballot-goffstown-discovery.js";
@@ -28,6 +29,14 @@ import { usStates } from "./us-states.js";
 const scopes = ["all", "statewide", "congressional", "state-senate", "state-house", "state-board-of-education", "local"];
 
 export function stateRecordDocumentLinks(source: StateBallotSource | undefined, snapshot?: StateBallotSnapshot) {
+	if (source?.format === "cassia-pdf" && snapshot?.documents) {
+		validateCassiaSource(source);
+		if (snapshot.source.id !== source.id || !snapshot.documents.length || snapshot.documents.length > 12) throw new Error("The Cassia source publications require review.");
+		return snapshot.documents.map((document, index) => {
+			validateCassiaDocumentUrl(document.url, source.electionDate);
+			return { label: index === 0 ? "Sample ballot" : /School/iu.test(document.url) ? "School ballot" : /Fire/iu.test(document.url) ? "Fire ballot" : "Supporting ballot", url: document.url };
+		});
+	}
 	if (source?.format === "fairbanks-pdf" && snapshot?.documents) {
 		validateFairbanksSource(source);
 		if (snapshot.documents.length !== 2 || snapshot.documents.some((document, index) => document.url !== source.documentUrls?.[index])) throw new Error("The Fairbanks source publications require review.");

@@ -1,8 +1,11 @@
+import type { CassiaQuestionEvidence } from "./cassia-ballot-questions.js";
+import type { StateBallotQuestion } from "./state-ballot-questions.js";
 import type { StateCandidateRecord, StateContestScope } from "./state-ballot-records.js";
 import type { StateBallotSource } from "./state-ballot-sources.js";
 import { Buffer } from "node:buffer";
 import { createHash } from "node:crypto";
 import { setTimeout as wait } from "node:timers/promises";
+import { buildCassiaBallotQuestions } from "./cassia-ballot-questions.js";
 import { fetchRemoteSourceDocument, fetchRemoteSourceText } from "./remote-json-source.js";
 import { stateHtmlAttribute as attribute, stateHtmlDescendants as descendants, parseStateHtml, stateHtmlText } from "./state-ballot-html.js";
 import { extractStateBallotPdfText, fetchStateBallotPdfDocument, resolveStateBallotPdfExtractor } from "./state-ballot-pdf.js";
@@ -25,7 +28,7 @@ interface PdfCapture { url: string; text: string; sha256: string; retrievedAt: s
 interface Word { text: string; left: number; top: number; right: number; bottom: number }
 interface WordPage { width: number; height: number; words: Word[] }
 interface Line { top: number; text: string }
-interface Question { title: string; scope: "statewide" | "local"; choices: string[]; textSha256: string; sourceDocumentIndex: number; pageNumber: number }
+interface Question extends CassiaQuestionEvidence { scope: "statewide" | "local"; textSha256: string }
 interface Options {
 	requestText?: (url: string, options: { allowedHosts: string[]; maxBytes: number; maxRedirects: number; timeoutMs: number }) => Promise<string>;
 	requestDocument?: typeof fetchRemoteSourceDocument;
@@ -309,9 +312,11 @@ function questionPage(page: WordPage, boundaries: number[], sourceDocumentIndex:
 			while (end < column.length && !/^(?:House Joint Resolution [1-9]\d{0,2}|PROPOSITION [1-9]\d{0,2}|IDAHO ADVISORY QUESTION|[A-Z][A-Z &'’-]+(?:FIRE|DISTRICT))$/u.test(column[end]!.text)) end++;
 			const section = column.slice(index + 1, end);
 			let choices: string[];
+			let wording: Line[];
 			if (title === "IDAHO ADVISORY QUESTION") {
 				const instruction = section.findIndex(line => line.text === "choose only one answer");
 				if (instruction < 1) throw new Error("The Cassia advisory voting instruction requires review.");
+				wording = section.slice(0, instruction).map(line => ({ ...line, text: line.text.replace(/\s+Please$/u, "") }));
 				choices = [];
 				let previous = -Infinity;
 				for (const line of section.slice(instruction + 1)) {
@@ -324,8 +329,9 @@ function questionPage(page: WordPage, boundaries: number[], sourceDocumentIndex:
 			else {
 				choices = section.filter(line => /^(?:Yes|No)$/u.test(line.text)).map(line => line.text);
 				if (choices.join("|") !== "Yes|No") throw new Error("The Cassia question choices require review.");
+				wording = section.filter(line => !/^(?:Yes|No)$/u.test(line.text));
 			}
-			result.push({ title: title.replace(/^PROPOSITION/u, "Proposition").replace(/^IDAHO ADVISORY QUESTION$/u, "Idaho advisory question"), scope: "statewide", choices, textSha256: hash(section.map(line => line.text).join(" ")), sourceDocumentIndex, pageNumber });
+			result.push({ title: title.replace(/^PROPOSITION/u, "Proposition").replace(/^IDAHO ADVISORY QUESTION$/u, "Idaho advisory question"), audience: "Idaho", officialText: wording.map(line => line.text).join(" "), scope: "statewide", choices, textSha256: hash(section.map(line => line.text).join(" ")), sourceDocumentIndex, pageNumber });
 			index = end - 1;
 		}
 	}
@@ -340,7 +346,10 @@ function localQuestion(source: StateBallotSource, page: WordPage, sourceDocument
 	if (!heading || !body.includes("SUPPLEMENTAL LEVY ELECTION") || !body.includes(date) || !body.includes("CASSIA COUNTY STATE OF IDAHO") || !body.includes("SAMPLE BALLOT")) throw new Error("The Cassia supplemental question requires review.");
 	const choices = full.filter(line => /^(?:IN FAVOR OF|AGAINST) AUTHORIZING A SUPPLEMENTAL LEVY /u.test(line.text)).map(line => line.text);
 	if (choices.length !== 2 || !choices[0]!.startsWith("IN FAVOR OF ") || !choices[1]!.startsWith("AGAINST ")) throw new Error("The Cassia local question choices require review.");
-	return { title: `${heading.text} supplemental levy`, scope: "local", choices, textSha256: hash(body), sourceDocumentIndex, pageNumber };
+	const start = full.findIndex(line => line.text.startsWith("The Board of Trustees of "));
+	const end = full.findIndex(line => line.text.startsWith("IN FAVOR OF "));
+	if (start < 0 || end <= start || !full.slice(start, end).some(line => line.text.startsWith("QUESTION: Shall "))) throw new Error("The Cassia school question wording requires review.");
+	return { title: `${heading.text} supplemental levy`, audience: heading.text, officialText: full.slice(start, end).map(line => line.text).join("\n"), scope: "local", choices, textSha256: hash(body), sourceDocumentIndex, pageNumber };
 }
 function fireQuestion(source: StateBallotSource, page: WordPage, boundaries: number[], sourceDocumentIndex: number, pageNumber: number): Question {
 	const column = columns(page, boundaries)[2]!.filter(line => line.text !== "VOTE BOTH SIDES" && !/^Typ:\d+ Seq:\d+ Spl:\d+$/u.test(line.text));
@@ -353,7 +362,8 @@ function fireQuestion(source: StateBallotSource, page: WordPage, boundaries: num
 	const againstStart = section.findIndex(line => line.text.startsWith("AGAINST "));
 	if (choiceStart < 1 || againstStart <= choiceStart) throw new Error("The Cassia fire question choices require review.");
 	const choices = [section.slice(choiceStart, againstStart), section.slice(againstStart)].map(value => value.map(line => line.text).join(" "));
-	return { title: `${section[0]!.text} ${section[1]!.text} temporary override levy`, scope: "local", choices, textSha256: hash(body), sourceDocumentIndex, pageNumber };
+	const audience = `${section[0]!.text} ${section[1]!.text}`;
+	return { title: `${audience} temporary override levy`, audience, officialText: section.slice(2, choiceStart).map(line => line.text).join(" "), scope: "local", choices, textSha256: hash(body), sourceDocumentIndex, pageNumber };
 }
 export function readCassiaCandidateDocuments(source: StateBallotSource, documents: string[]) {
 	validateCassiaSource(source);
@@ -396,7 +406,7 @@ export async function fetchCassiaCandidateCapture(source: StateBallotSource, opt
 	}
 	return JSON.stringify({ schemaVersion: 1, type: "cassia-candidate-capture", discovery: JSON.parse(discovery), documents });
 }
-export function parseCassiaCandidateCapture(source: StateBallotSource, body: string, now = Date.now()) {
+export function parseCassiaCandidateCapture(source: StateBallotSource, body: string, now = Date.now(), previous?: StateBallotQuestion[]) {
 	validateCassiaSource(source);
 	if (Buffer.byteLength(body) > 32 * 1024 * 1024) throw new Error("The Cassia candidate capture exceeds its bounds.");
 	const capture = JSON.parse(body);
@@ -410,5 +420,5 @@ export function parseCassiaCandidateCapture(source: StateBallotSource, body: str
 		return document as unknown as PdfCapture;
 	});
 	const facts = readCassiaCandidateDocuments(source, documents.map(document => document.text));
-	return { ...facts, retrievedAt: new Date(Math.min(...documents.map(document => Date.parse(document.retrievedAt)))).toISOString(), sha256: hash(JSON.stringify(documents.map(({ url, sha256 }) => ({ url, sha256 })))), documents: documents.map(({ url, sha256, retrievedAt }, index) => ({ url, sha256, retrievedAt, includedRecordCount: index ? 0 : facts.records.length })), collectionIndexSha256: cassiaDocumentDigest(election.cassiaDocuments) };
+	return { ...facts, ballotQuestions: buildCassiaBallotQuestions(source, facts.questions, documents, previous), retrievedAt: new Date(Math.min(...documents.map(document => Date.parse(document.retrievedAt)))).toISOString(), sha256: hash(JSON.stringify(documents.map(({ url, sha256 }) => ({ url, sha256 })))), documents: documents.map(({ url, sha256, retrievedAt }, index) => ({ url, sha256, retrievedAt, includedRecordCount: index ? 0 : facts.records.length })), collectionIndexSha256: cassiaDocumentDigest(election.cassiaDocuments) };
 }

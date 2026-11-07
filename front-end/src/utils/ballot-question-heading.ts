@@ -1,4 +1,9 @@
 export function ballotQuestionHeading(title: string, audience = "") {
+	if (audience && title.startsWith(`${audience} `)) {
+		const topic = title.slice(audience.length + 1);
+		if (["supplemental levy", "temporary override levy"].includes(topic))
+			return { title: topic.charAt(0).toLocaleUpperCase("en-US") + topic.slice(1), reference: "" };
+	}
 	const proposition = /^(Proposition (?:[1-9]\d?|[A-Z])): A CITIZENS[’'] INITIATIVE PROPOSITION (?:THAT )?(.+)$/u.exec(title);
 	if (proposition) {
 		const topic = proposition[2]!.toLocaleLowerCase("en-US");

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { StateQuestionsResponse } from "~/types/civic";
+import { ballotQuestionDocument } from "~/utils/ballot-question-document";
 import { ballotQuestionHeading } from "~/utils/ballot-question-heading";
 
 const route = useRoute();
@@ -17,11 +18,7 @@ const question = computed(() => data.value?.questions.find(item => item.id === i
 const heading = computed(() => ballotQuestionHeading(question.value?.title ?? "Ballot question", question.value?.audience));
 const paragraphs = computed(() => question.value?.officialText.split(/\n\s*\n/u).filter(Boolean) ?? []);
 const backTo = computed(() => ({ path: "/questions", query: { state: state.value, source: source.value } }));
-const documentUrl = computed(() => {
-	const link = data.value?.source.documentLinks?.[0];
-	const url = link?.url;
-	return url && question.value ? `${url}#${link?.pageAnchor === "page-" ? "page-" : "page="}${question.value.pages[0]}` : data.value?.source.url;
-});
+const documentUrl = computed(() => ballotQuestionDocument(data.value?.source, question.value));
 usePageSeo({ title: heading.value.title, description: "Official ballot question wording and source.", path: route.path, robots: "noindex,follow" });
 </script>
 

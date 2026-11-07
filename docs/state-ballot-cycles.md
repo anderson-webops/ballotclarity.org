@@ -525,6 +525,17 @@ Unfamiliar layouts or office types remain review exceptions. Current facts and
 all supporting/question-only documents reconcile with the original packet.
 See `docs/audits/2026-10-26-idaho-cassia-automation.md` for scope and boundaries.
 
+Cassia question snapshots also retain complete native wording, literal choices,
+printed audiences and the exact PDF/page for each question. Repeated statewide
+questions reconcile across general and supplemental ballots; the advisory keeps
+all published options. School and fire questions retain their district scope
+without assigning voter eligibility. Changes to accepted wording or choices,
+or disappearing questions, retain the previous snapshot for review. New cycles
+derive their dates and document links from offered publications. Candidate-only
+snapshots remain readable; reverting the runtime requires the corresponding prior
+snapshot when it predates question support. See the
+[question integration review](audits/2026-11-07-cassia-ballot-questions.md).
+
 ## Goffstown, New Hampshire
 
 `nh-goffstown-2026` adds offered-date/document discovery, bounded native collection,

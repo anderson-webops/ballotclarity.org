@@ -11,6 +11,7 @@ import express from "express";
 import { createPublicRequestThrottle } from "../src/public-request-throttle.js";
 import { fetchStateBallotSourceText } from "../src/state-ballot-fetch.js";
 import { isActiveStateCandidateRecord, parseStateCandidateRecords } from "../src/state-ballot-records.js";
+import { configuredStateBallotSources } from "../src/state-ballot-registry.js";
 import { buildStateBallotPreview, createStateBallotRepository } from "../src/state-ballot-repository.js";
 import { loadBundledStateSnapshot, parseBundledStateSnapshot } from "../src/state-ballot-snapshot.js";
 import { stateBallotSources } from "../src/state-ballot-sources.js";
@@ -166,6 +167,15 @@ test("source document links match reviewed provenance and reject unsafe or misma
 	assert.throws(() => stateRecordDocumentLinks({ ...configured, documentLinks: configured.documentLinks!.map(link => ({ ...link, url: "javascript:alert(1)" })) }), /document links/u);
 	assert.throws(() => stateRecordDocumentLinks({ ...configured, documentLinks: configured.documentLinks!.map(link => ({ ...link, label: "\n" })) }), /document links/u);
 	assert.throws(() => stateRecordDocumentLinks({ ...configured, documentLinks: [...configured.documentLinks!].reverse() }), /document links/u);
+});
+test("Cassia question sources expose exact offered general, school and fire PDFs", () => {
+	const cassia = configuredStateBallotSources.find(item => item.id === "id-cassia-2026")!;
+	const legacy = stateBallotSources.find(item => item.id === cassia.id)!;
+	const snapshot: StateBallotSnapshot = { source: cassia, retrievedAt: "2026-10-26T00:00:00.000Z", sha256: "0".repeat(64), records: [], documents: legacy.documentUrls!.map(url => ({ url, sha256: "0".repeat(64), retrievedAt: "2026-10-26T00:00:00.000Z", includedRecordCount: 0 })) };
+	assert.deepEqual(stateRecordDocumentLinks(cassia, snapshot)?.map(item => item.url), legacy.documentUrls);
+	assert.deepEqual(stateRecordDocumentLinks(cassia, snapshot)?.map(item => item.label), ["Sample ballot", "School ballot", "Fire ballot"]);
+	assert.throws(() => stateRecordDocumentLinks(cassia, { ...snapshot, documents: [{ ...snapshot.documents![0]!, url: "https://other.test/ballot.pdf" }] }), /requires review/u);
+	assert.throws(() => stateRecordDocumentLinks(cassia, { ...snapshot, documents: [] }), /require review/u);
 });
 
 test("missing candidate data retains all configured original-source links without fetching publishers", async (context) => {

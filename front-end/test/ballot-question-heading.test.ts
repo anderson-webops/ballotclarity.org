@@ -11,6 +11,11 @@ test("other states and local question headings retain their exact identity", () 
 	for (const title of ["City of Palmetto Ad Valorem Tax Exemption", "Question 1", "Proposition 2", "Charter Amendment 4", "House Resolution 32", "1. Unknown citation (Other Resolution 32)"])
 		assert.deepEqual(ballotQuestionHeading(title), { title, reference: "" });
 });
+test("local levy headings use the topic while their printed district remains a separate audience", () => {
+	assert.deepEqual(ballotQuestionHeading("EXAMPLE JOINT SCHOOL DISTRICT NO. 381 supplemental levy", "EXAMPLE JOINT SCHOOL DISTRICT NO. 381"), { title: "Supplemental levy", reference: "" });
+	assert.deepEqual(ballotQuestionHeading("EXAMPLE RURAL FIRE PROTECTION DISTRICT temporary override levy", "EXAMPLE RURAL FIRE PROTECTION DISTRICT"), { title: "Temporary override levy", reference: "" });
+	assert.deepEqual(ballotQuestionHeading("EXAMPLE RURAL FIRE PROTECTION DISTRICT different topic", "EXAMPLE RURAL FIRE PROTECTION DISTRICT"), { title: "EXAMPLE RURAL FIRE PROTECTION DISTRICT different topic", reference: "" });
+});
 
 test("printed initiative headings show the distinguishing topic and proposition identifier", () => {
 	assert.deepEqual(ballotQuestionHeading("Proposition 1: A CITIZENS’ INITIATIVE PROPOSITION ESTABLISHING MAXIMUM ALLOWABLE TAX REVENUES", "Fairbanks North Star Borough"), { title: "Establishing maximum allowable tax revenues", reference: "Proposition 1" });

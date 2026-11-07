@@ -17,7 +17,7 @@ const day = 86_400_000;
 const hash = (body: string | Uint8Array) => createHash("sha256").update(body).digest("hex");
 const compact = (value: string) => value.replace(/\s+/gu, " ").trim();
 const object = (value: unknown): value is Record<string, unknown> => Boolean(value) && typeof value === "object" && !Array.isArray(value);
-const articlePattern = /^\/blog\/f\/[a-z0-9-]*maui-county-charter-amendments[a-z0-9-]*$/u;
+const articlePattern = /^\/blog\/f\/[a-z0-9-]*maui-county-charter-amendments?(?:-[a-z0-9]+)*$/u;
 const resolutionPattern = /^(?:Reso|Resolution)\s+(\d{2}-\d{1,4}(?:,\s*(?:CD|FD)\d){0,3})\b/iu;
 const months = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
 const counts = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen", "twenty"];
@@ -120,7 +120,7 @@ function readArticle(body: string, url: string, year: number) {
 	if (!object(content) || !Array.isArray(content.blocks) || content.blocks.length > 200 || content.blocks.some(block => !object(block) || typeof block.text !== "string" || block.text.length > 10_000)) throw new Error("Maui article content changed.");
 	const blocks = content.blocks.map(block => compact(block.text));
 	const declarations = blocks.filter(text => /general election ballot will include/iu.test(text));
-	const date = declarations.length === 1 ? declarations[0]!.match(/\b(20\d{2})\)[\s\S]{0,200}?\b([A-Z][a-z]+)\.?\s+(\d{1,2})\s+general election ballot will include\s+([a-z]+|\d{1,2})\s+proposed amendments to the Maui County Charter\./u) : null;
+	const date = declarations.length === 1 ? declarations[0]!.match(/\b(20\d{2})\)[\s\S]{0,200}?\b([A-Z][a-z]+)\.?\s+(\d{1,2})\s+general election ballot will include\s+([a-z]+|\d{1,2})\s+proposed amendments? to the Maui County Charter\./u) : null;
 	if (!date || Number(date[1]) !== year) throw new Error("Maui election date and measure count need explicit county evidence.");
 	const month = months.indexOf(date[2]!.slice(0, 3).toLowerCase()) + 1;
 	const electionDate = `${year}-${String(month).padStart(2, "0")}-${date[3]!.padStart(2, "0")}`;

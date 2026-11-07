@@ -54,6 +54,22 @@ test("Maui discovers a synthetic future election from explicit county publicatio
 	assert.equal(result.resultsInferred, false);
 });
 
+test("Maui supports a future cycle with one amendment and a singular offered article path", () => {
+	const capture = fixture();
+	const singleUrl = articleUrl.replace("two-proposed", "one-proposed").replace("charter-amendments", "charter-amendment");
+	const single = { ...post, fullContent: JSON.stringify({ blocks: [{ text: "WAILUKU, Hawaii (Sept. 17, 2028), Councilmember reports that the Nov. 7 general election ballot will include one proposed amendment to the Maui County Charter." }, question(1)] }) };
+	for (const document of capture.documents) {
+		if (document.url.endsWith("charter-amendments")) document.body = index.replace(/<h4>Maui: Procedure 2<\/h4>[\s\S]+$/u, "");
+		if (document.url.endsWith("sitemap.blog.xml")) document.body = xml([singleUrl]);
+		if (document.url === articleUrl) {
+			document.url = singleUrl;
+			document.body = article(single).replace(articleUrl, singleUrl);
+		}
+		document.sha256 = hash(document.body);
+	}
+	assert.equal(readMauiCharterCapture(capture, now).questions.length, 1);
+});
+
 for (const [label, url, replace, replacement] of [
 	["missing election year", "charter-amendments", "2028 Charter Amendments", "Charter Amendments"],
 	["missing question", articleUrl, "Resolution 28-2", "Unidentified question"],

@@ -55,9 +55,11 @@ two selections; the other ten offices permit one. All printed terms are three
 years. Blank write-in lines remain separate from named people. The borough sample
 has three questions; the North Pole sample has one. Municipalities remain distinct.
 
-The prepared CSV and question inventory are review inputs. Native person parsing,
-font/visible-glyph acceptance, candidate snapshots, geographic assignment, native
-measure preparation, substantive approval and recurring enrollment remain open.
+The prepared CSV and question inventory are review inputs. The separate
+[native candidate preparer](fairbanks-native-candidates.md) corroborates printed
+fields from retained originals. Complete font/paint-layer acceptance, registered
+candidate snapshots, geographic assignment, native measure preparation,
+substantive approval and recurring enrollment remain open.
 The automatic candidate-family catalog and its coverage counts are unchanged.
 
 Synthetic 2027 October and November fixtures test actually printed dates and

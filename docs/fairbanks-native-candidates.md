@@ -1,0 +1,69 @@
+# Fairbanks Native Candidate Preparation
+
+`prepare-fairbanks-ballot-candidates` prepares historical or future candidate
+review inputs from an exact retained Fairbanks publication bundle. It performs
+no publisher requests and retains the original acquisition clocks and document
+hashes. It has no import, publication, geography-assignment or scheduling authority.
+
+```json
+{
+  "schemaVersion": 1,
+  "type": "fairbanks-native-candidate-preparation",
+  "publicationBundle": {
+    "path": "/external/fairbanks-publications.json",
+    "sha256": "EXACT_PUBLICATION_BUNDLE_SHA256"
+  },
+  "outputDirectory": "/external/fairbanks-native"
+}
+```
+
+The compiled command is `back-end/dist/prepare-fairbanks-ballot-candidates.js`.
+Its separately confined collection role provides absolute maintained executable
+paths in `STATE_BALLOT_PDFTOTEXT`, `STATE_BALLOT_PDFTOPPM` and
+`STATE_BALLOT_TESSERACT`. The last executable must report Tesseract 5. English
+sparse-text recognition uses a fixed 300 DPI rendering and page-segmentation
+mode 11. Conversion is sequential, single-threaded for recognition, bounded to
+30 seconds per subprocess and 180 seconds across preparation. Byte, page,
+geometry, output and temporary-storage bounds remain explicit.
+
+## Fields And Source Agreement
+
+Native coordinates identify ballot pages and columns, independently of prose
+elsewhere in the notice. Exact rendered-word comparison corroborates the printed
+date, municipality, office, term, selection limit and candidate name. Primary
+facts require a recognition confidence of at least 70, an engine threshold rather
+than a probability of correctness. Differences in spacing, periods, typographic
+apostrophes, dash style and case are normalized only for comparison; the source
+name and punctuation remain unchanged in the prepared record.
+
+Blank write-in lines must match their literal printed label and expected count.
+They contribute no candidate records. Their recognition confidence is not used
+to establish a person. The notice's second borough copy must match the complete
+primary borough slate and every printed field exactly. Low-confidence duplicate
+text can corroborate an already established primary fact; it creates no new fact.
+
+Party affiliation, incumbency, winners and uncontested status are never inferred.
+The borough, Fairbanks city and North Pole records remain separate. A two-selection
+office retains that limit. The geographic labels identify the publication's
+municipality, not a personalized ballot assignment.
+
+This is field-level rendered corroboration, not a general proof of every PDF
+font, paint layer or viewer's appearance. Unknown headings, disagreeing copies,
+missing pages, changed media dimensions and uncertain primary fields hold the
+entire preparation for review. Native family enrollment and public publication
+retain their separate acceptance requirements.
+
+## Durable Evidence
+
+The immutable output includes the pinned source-bundle hash, original source
+clocks, native coordinates, rendered-image hashes, recognition output and tool
+fingerprints. Intermediate PDFs and images are temporary. Output installation
+is synchronized and atomic, supports identical retries and rejects conflicts.
+Previous evidence remains intact after conversion or persistence failure.
+
+The independent borough publication and the notice supply 22 named October 6,
+2026 candidates across 11 offices. Four rendered pages corroborate 130 fields,
+including the repeated borough slate. The future-cycle fixture changes the
+printed date and term years without changing the parser or candidate names in
+configuration. These are preparation results, separate from a registered recurring
+candidate source and protected production import.

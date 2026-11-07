@@ -23,6 +23,7 @@ import { parseDcCandidateCapture } from "./state-ballot-dc-collection.js";
 import { parseDouglasCandidateCapture } from "./state-ballot-douglas-collection.js";
 import { parseEastGreenwichCandidateCapture } from "./state-ballot-east-greenwich-collection.js";
 import { parseEverettCandidateCapture } from "./state-ballot-everett-collection.js";
+import { parseFairbanksCandidateCapture } from "./state-ballot-fairbanks.js";
 import { parseFloridaLocalCandidateRecords } from "./state-ballot-florida-local.js";
 import { parseFranklinCandidateCapture } from "./state-ballot-franklin-collection.js";
 import { parseFultonCandidateCapture } from "./state-ballot-fulton.js";
@@ -470,6 +471,7 @@ export function parseStateCandidateRecords(source: StateBallotSource, body: stri
 	if (source.format === "cassia-pdf") return parseCassiaCandidateCapture(source, body).records;
 	if (source.format === "iowa-county-pdf") return parseIowaCountyCandidateCapture(source, body, makeRecord).records;
 	if (source.format === "iowa-polk-pdf") return parseIowaPolkCandidateCapture(source, body, makeRecord).records;
+	if (source.format === "fairbanks-pdf") return parseFairbanksCandidateCapture(source, body, makeRecord).records;
 	if (source.format === "juneau-html") return parseJuneauCandidateCapture(source, body, makeRecord).records;
 	if (source.format === "los-ranchos-html") return parseLosRanchosCandidateCapture(source, body, makeRecord).records;
 	if (source.format === "independence-html") return parseIndependenceCandidateCapture(source, body, makeRecord).records;

@@ -1,4 +1,5 @@
 import type { FairbanksPublicationCapture } from "./fairbanks-election-publications.js";
+import type { inspectFairbanksPdfGeometry } from "./fairbanks-pdf-geometry.js";
 import { Buffer } from "node:buffer";
 import { createHash } from "node:crypto";
 import { inspectFairbanksSelectionMarks } from "./fairbanks-ballot-marks.js";
@@ -9,7 +10,7 @@ import { containsControlCharacters } from "./text-validation.js";
 interface NativeLine { text: string; left: number; top: number; right: number; bottom: number }
 interface NativePage { page: number; width: number; height: number; lines: NativeLine[] }
 export interface FairbanksRenderedPage { page: number; width: number; height: number; dpi: 300; pngSha256: string; ocr: string; svg: string }
-export interface FairbanksCandidateDocument { kind: "sample" | "notice"; sourceSha256: string; bbox: string; pages: FairbanksRenderedPage[] }
+export interface FairbanksCandidateDocument { kind: "sample" | "notice"; sourceSha256: string; geometry: ReturnType<typeof inspectFairbanksPdfGeometry>; bbox: string; pages: FairbanksRenderedPage[] }
 export interface FairbanksPreparedCandidate {
 	electionDate: string;
 	jurisdiction: string;

@@ -1,3 +1,4 @@
+import type { FairbanksPublicationCapture } from "./fairbanks-election-publications.js";
 import { Buffer } from "node:buffer";
 import { spawn } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
@@ -49,7 +50,9 @@ async function execute(executable: string, arguments_: string[], deadline: numbe
 		});
 	});
 }
-async function immutable(directory: string, body: Buffer, electionDate: string) {
+export async function storeFairbanksCandidateEvidence(directory: string, body: Buffer, electionDate: string) {
+	assertExternalStateDataDirectory(directory);
+	if (await realpath(directory) !== directory || !/^20\d{2}-\d{2}-\d{2}$/u.test(electionDate) || !Number.isFinite(Date.parse(`${electionDate}T00:00:00Z`)) || new Date(`${electionDate}T00:00:00Z`).toISOString().slice(0, 10) !== electionDate || body.length > 12 * 1024 * 1024) throw new Error("The Fairbanks evidence storage contract requires review.");
 	const digest = hash(body);
 	const path = join(directory, `fairbanks-candidates-${electionDate}-${digest}.json`);
 	const temporary = join(directory, `.${randomUUID()}.tmp`);
@@ -87,10 +90,19 @@ export async function prepareFairbanksCandidateFiles(planPath: string) {
 	const bundle = JSON.parse(original.toString("utf8"));
 	const inventory = readFairbanksPublicationCapture(bundle.capture);
 	if (!isDeepStrictEqual(inventory, bundle.inventory)) throw new Error("The Fairbanks publication inventory changed.");
-	assertExternalStateDataDirectory(plan.outputDirectory);
-	await mkdir(plan.outputDirectory, { recursive: true, mode: 0o700 });
-	const directory = await realpath(plan.outputDirectory);
-	if (directory !== plan.outputDirectory) throw new Error("Fairbanks native output requires an unlinked physical directory.");
+	const evidence = await prepareFairbanksCandidateEvidence(bundle.capture, plan.outputDirectory);
+	const body = Buffer.from(`${JSON.stringify({ schemaVersion: 2, type: "fairbanks-native-preparation-bundle", publicationBundleSha256: plan.publicationBundle.sha256, ...evidence }, null, 2)}\n`);
+	if (body.length > 8 * 1024 * 1024) throw new Error("The Fairbanks native evidence exceeds its output bound.");
+	const stored = await storeFairbanksCandidateEvidence(plan.outputDirectory, body, evidence.prepared.electionDate);
+	return { ...stored, records: evidence.prepared.records.length, renderedPages: evidence.prepared.proof.length, imported: false, published: false };
+}
+
+export async function prepareFairbanksCandidateEvidence(capture: FairbanksPublicationCapture, outputDirectory: string, now = Date.now()) {
+	readFairbanksPublicationCapture(capture, now);
+	assertExternalStateDataDirectory(outputDirectory);
+	await mkdir(outputDirectory, { recursive: true, mode: 0o700 });
+	const directory = await realpath(outputDirectory);
+	if (directory !== outputDirectory) throw new Error("Fairbanks native output requires an unlinked physical directory.");
 	const text = await resolveStateBallotPdfExtractor();
 	const renderer = await resolveStateBallotPdfExtractor(process.env.STATE_BALLOT_PDFTOPPM);
 	const reader = await resolveStateBallotPdfExtractor(process.env.STATE_BALLOT_TESSERACT);
@@ -102,7 +114,7 @@ export async function prepareFairbanksCandidateFiles(planPath: string) {
 	const temporary = await mkdtemp(join(directory, ".fairbanks-native-"));
 	try {
 		const documents = [];
-		for (const source of bundle.capture.documents) {
+		for (const source of capture.documents) {
 			const bytes = Buffer.from(source.body, "base64");
 			if (deadline - Date.now() < 12000) throw new Error("Fairbanks native preparation exceeded its duration bound.");
 			const geometry = inspectFairbanksPdfGeometry(await inspectStateBallotPdfObjects(bytes, inspector, "metadata"), source.kind);
@@ -132,11 +144,8 @@ export async function prepareFairbanksCandidateFiles(planPath: string) {
 			}
 			documents.push({ kind: source.kind, sourceSha256: source.sha256, geometry, bbox, pages });
 		}
-		const prepared = readFairbanksBallotCandidates(bundle.capture, documents);
-		const body = Buffer.from(`${JSON.stringify({ schemaVersion: 2, type: "fairbanks-native-preparation-bundle", publicationBundleSha256: plan.publicationBundle.sha256, tools: { textSha256: hash(await readFile(text)), rendererSha256: hash(await readFile(renderer)), vectorSha256: hash(await readFile(vector)), inspectorSha256: hash(await readFile(inspector)), readerSha256: hash(await readFile(reader)), readerVersion: version.split("\n")[0] }, prepared, documents }, null, 2)}\n`);
-		if (body.length > 8 * 1024 * 1024) throw new Error("The Fairbanks native evidence exceeds its output bound.");
-		const stored = await immutable(directory, body, prepared.electionDate);
-		return { ...stored, records: prepared.records.length, renderedPages: prepared.proof.length, imported: false, published: false };
+		const prepared = readFairbanksBallotCandidates(capture, documents, now);
+		return { tools: { textSha256: hash(await readFile(text)), rendererSha256: hash(await readFile(renderer)), vectorSha256: hash(await readFile(vector)), inspectorSha256: hash(await readFile(inspector)), readerSha256: hash(await readFile(reader)), readerVersion: version.split("\n")[0] }, prepared, documents };
 	}
 	finally {
 		await rm(temporary, { recursive: true, force: true });

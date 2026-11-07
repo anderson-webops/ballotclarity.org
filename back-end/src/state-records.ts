@@ -10,6 +10,7 @@ import { createPublicRequestThrottle } from "./public-request-throttle.js";
 import { validateBoulderCandidateUrl } from "./state-ballot-boulder.js";
 import { validateBucksDocumentUrl } from "./state-ballot-bucks.js";
 import { validateChicagoDocumentUrl } from "./state-ballot-chicago-collection.js";
+import { validateFairbanksSource } from "./state-ballot-fairbanks.js";
 import { validateGoffstownDocumentUrl } from "./state-ballot-goffstown-discovery.js";
 import { validateHamiltonDocumentUrl } from "./state-ballot-hamilton-collection.js";
 import { validateKanawhaDocumentUrl } from "./state-ballot-kanawha-discovery.js";
@@ -27,6 +28,11 @@ import { usStates } from "./us-states.js";
 const scopes = ["all", "statewide", "congressional", "state-senate", "state-house", "state-board-of-education", "local"];
 
 export function stateRecordDocumentLinks(source: StateBallotSource | undefined, snapshot?: StateBallotSnapshot) {
+	if (source?.format === "fairbanks-pdf" && snapshot?.documents) {
+		validateFairbanksSource(source);
+		if (snapshot.documents.length !== 2 || snapshot.documents.some((document, index) => document.url !== source.documentUrls?.[index])) throw new Error("The Fairbanks source publications require review.");
+		return [{ label: "Sample ballot", url: snapshot.documents[1]!.url }, { label: "Election office", url: source.pageUrl }];
+	}
 	if (source?.format === "oklahoma-html") {
 		validateOklahomaSource(source);
 		return [{ label: "Candidate list", url: source.pageUrl }];

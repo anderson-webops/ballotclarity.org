@@ -24,6 +24,7 @@ import { fetchDcCandidateCapture } from "./state-ballot-dc-collection.js";
 import { fetchDouglasCandidateCapture } from "./state-ballot-douglas-collection.js";
 import { fetchEastGreenwichCandidateCapture } from "./state-ballot-east-greenwich-collection.js";
 import { fetchEverettCandidateCapture } from "./state-ballot-everett-collection.js";
+import { fetchFairbanksCandidateCapture } from "./state-ballot-fairbanks.js";
 import { fetchFranklinCandidateCapture } from "./state-ballot-franklin-collection.js";
 import { fetchFultonCandidateCapture } from "./state-ballot-fulton.js";
 import { fetchGoffstownCandidateCapture } from "./state-ballot-goffstown-collection.js";
@@ -220,6 +221,7 @@ export async function fetchStateBallotSourceText(source: StateBallotSource, requ
 	if (source.format === "cassia-pdf") return fetchCassiaCandidateCapture(source, { requestText: request });
 	if (source.format === "iowa-county-pdf") return fetchIowaCountyCandidateCapture(source);
 	if (source.format === "iowa-polk-pdf") return fetchIowaPolkCandidateCapture(source, { requestText: request });
+	if (source.format === "fairbanks-pdf") return fetchFairbanksCandidateCapture(source, { requestText: (url, options) => request(String(url), { allowedHosts: [...(options?.allowedHosts ?? ["www.fnsb.gov"])], maxBytes: options?.maxBytes ?? 2 * 1024 * 1024, maxRedirects: options?.maxRedirects ?? 0, timeoutMs: options?.timeoutMs ?? 30000 }) });
 	if (source.format === "juneau-html") return fetchJuneauCandidateCapture(source, { requestText: request });
 	if (source.format === "los-ranchos-html") return fetchLosRanchosCandidateCapture(source, { requestText: request });
 	if (source.format === "independence-html") return fetchIndependenceCandidateCapture(source, { requestText: request });

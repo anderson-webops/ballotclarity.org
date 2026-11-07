@@ -11,7 +11,10 @@ import { assertExternalStateDataDirectory, readBoundedStateDataBytes } from "./s
 import { containsControlCharacters } from "./text-validation.js";
 
 const origin = "https://www.fnsb.gov";
-export const fairbanksElectionIndexUrl = `${origin}/elections`;
+export function fairbanksPublicationIndexUrl() {
+	return "https://www.fnsb.gov/elections";
+}
+export const fairbanksElectionIndexUrl = fairbanksPublicationIndexUrl();
 const hash = (body: string | Uint8Array) => createHash("sha256").update(body).digest("hex");
 const digest = (value: unknown): value is string => typeof value === "string" && /^[a-f\d]{64}$/u.test(value);
 const object = (value: unknown): value is Record<string, unknown> => Boolean(value) && typeof value === "object" && !Array.isArray(value);

@@ -7,11 +7,11 @@ const sources = configuredStateBallotSources.filter(source => source.retrievalPo
 const now = () => Date.parse("2026-10-28T12:00:00.000Z");
 
 test("every configured bulk-publication reader avoids publisher work when no snapshot exists", async () => {
-	assert.equal(new Set(sources.map(source => source.format)).size, 32);
+	assert.equal(new Set(sources.map(source => source.format)).size, 33);
 	assert(sources.some(source => source.id === "ma-everett-2026" && source.format === "everett-pdf"));
 	for (const source of sources) {
 		let requests = 0;
-		const repository = createStateBallotRepository({ sources: [source], dataDirectory: null, now, fetchText: async () => {
+		const repository = createStateBallotRepository({ sources: [source], dataDirectory: null, now: () => Math.min(now(), Date.parse(`${source.electionDate}T00:00:00Z`) - 86400000), fetchText: async () => {
 			requests++;
 			throw new Error("A public reader must not collect native publications.");
 		} });
@@ -23,7 +23,7 @@ test("every configured bulk-publication reader avoids publisher work when no sna
 test("every configured bulk-publication direct collector retains its explicit collection boundary", async () => {
 	for (const source of sources) {
 		let requests = 0;
-		const repository = createStateBallotRepository({ sources: [source], dataDirectory: null, now, refreshReviewedLegacy: true, fetchText: async () => {
+		const repository = createStateBallotRepository({ sources: [source], dataDirectory: null, now: () => Math.min(now(), Date.parse(`${source.electionDate}T00:00:00Z`) - 86400000), refreshReviewedLegacy: true, fetchText: async () => {
 			requests++;
 			throw new Error("Controlled publisher outage.");
 		} });
@@ -37,7 +37,7 @@ test("explicit collection never bypasses an external source's manual-import poli
 	assert(manualSources.length > 0);
 	for (const source of manualSources) {
 		let requests = 0;
-		const repository = createStateBallotRepository({ sources: [source], dataDirectory: null, now, refreshReviewedLegacy: true, fetchText: async () => {
+		const repository = createStateBallotRepository({ sources: [source], dataDirectory: null, now: () => Math.min(now(), Date.parse(`${source.electionDate}T00:00:00Z`) - 86400000), refreshReviewedLegacy: true, fetchText: async () => {
 			requests++;
 			throw new Error("A manual source must stay offline.");
 		} });

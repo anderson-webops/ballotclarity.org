@@ -79,5 +79,6 @@ Local copies with altered crop, rotation, page units, Unicode font mapping,
 covered candidate text or covered selection marks all reject preparation while
 preserving the accepted output. The future-cycle fixture changes the
 printed date and term years without changing the parser or candidate names in
-configuration. These are preparation results, separate from a registered recurring
-candidate source and protected production import.
+configuration. The [recurring candidate family](fairbanks-recurring-candidates.md)
+uses these checks for external snapshots and stored-data API reads. Protected
+cohort approval, production import, publication and scheduling remain separate.

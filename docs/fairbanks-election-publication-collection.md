@@ -3,7 +3,9 @@
 The explicit `collect-fairbanks-election-publications` worker collects the two
 original publications actually offered by the independent borough election index.
 Public visitors continue reading accepted stored data without contacting publishers
-or running converters. Candidate parsing/import is a separate, unfinished stage.
+or running converters. The separate
+[recurring candidate family](fairbanks-recurring-candidates.md) normalizes
+verified candidate evidence into external snapshots with independent approval gates.
 
 Run the compiled `back-end/dist/collect-fairbanks-election-publications.js` with
 one JSON plan:
@@ -59,10 +61,11 @@ The prepared CSV and question inventory are review inputs. The separate
 [native candidate preparer](fairbanks-native-candidates.md) corroborates printed
 fields and the complete candidate selection-row inventory from retained originals.
 Changed crop, rotation, page units, font mapping and covered text/selection rows
-have bounded rejection checks. General font/paint-layer proofs, registered
-candidate snapshots, geographic assignment, native measure preparation,
-substantive approval and recurring enrollment remain open.
-The automatic candidate-family catalog and its coverage counts are unchanged.
+have bounded rejection checks. The registered candidate family supplies native
+collection, external snapshots, future discovery and stored-data readers.
+Universal PDF appearance proof is not claimed. Geographic assignment, native
+measure preparation, substantive cohort approval and protected recurring
+scheduling remain separate.
 
 Synthetic 2027 October and November fixtures test actually printed dates and
 schedule changes. They establish no future publication, winner or legal change.

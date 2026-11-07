@@ -39,3 +39,13 @@ app and is not misrepresented as a website-specific robot prohibition.
 No new public-source enrollment, candidate qualification, incumbency inference,
 personal school-board matching, import, publication or scheduling is established
 by this review. The captured robots publications remain private evidence.
+
+## November 7 access recheck
+
+The normal identified downloader received HTTP 406 for the Fulton school-board
+page. Its fresh robots file returned HTTP 200, 57,404 bytes, SHA-256
+`4a9cbbcf2a745c8b20725c6fb30728756ca2eebf08203dc6c36cffd6f46e4b52`.
+The body still has five named legacy crawler groups and two wildcard groups,
+but its bytes differ from the earlier capture. The denied page was not retried
+with another identity or access route. Publisher access, policy review and photo
+reuse remain held; this recheck adds no officeholders or candidate records.

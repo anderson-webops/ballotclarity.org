@@ -592,6 +592,14 @@ strict source/form/header bindings, privacy exclusions, probe expiry and rollbac
 
 ## Enabled sources
 
+Minnesota also has an additive, policy-bound city-reference collector for
+[Independence's published council candidates](https://www.ci.independence.mn.us/government/elections).
+It retains five named 2026 references and the one explicit incumbent, with unknown
+parties and no ballot previews. Its offered-date discovery supports future
+editions without annual URL changes. The existing 78-record reviewed sample
+source, primary-source order and geographic limits remain unchanged. See the
+[collection review](audits/2026-11-07-independence-city-automation.md).
+
 These adapters read official public candidate lists for the November 3, 2026
 general election. Raw primary vote totals, FEC registration, campaign-finance
 filings and third-party forecasts are not used to guess nominees. Explicit

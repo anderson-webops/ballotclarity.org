@@ -9,14 +9,15 @@ converters nor publisher requests. Actual offered future dates generate source
 identities without annual URL edits. See the [collection review](audits/2026-10-27-chicago-automation.md).
 
 External election catalogs opt the automatic candidate repository into reusable
-source families. The current 74 source definitions retain explicit source/state
+source families. The current 83 source definitions retain explicit source/state
 allowlists; reusable discovery does not widen an exact-source allowlist.
 
-Forty-eight families across thirty-nine states and D.C. are supported. Some
+Fifty-seven families across forty-six states and D.C. are supported. Some
 families cover only a county, municipality or one chamber, not an entire state:
 
 | Family | Discovery | Elections |
 | --- | --- | --- |
+| `mn-independence-city-2026` | [Independence election index](https://www.ci.independence.mn.us/government/elections) | The named city-council statement list and an independently labeled general-election date on the same page; factual references only, with explicit incumbency, unknown parties and ballot previews disabled. Offered future dates reuse the URL, policy checks and external storage; expired editions remain archived. The separate 78-record reviewed sample source remains unchanged. See the [collection review](audits/2026-11-07-independence-city-automation.md). |
 | `in-boone-2026` | [Boone County election index](https://boonecounty.in.gov/offices/clerk/election-information/) | Actually offered filing workbook and sample ballots, with the general date read from consistent official ballot headers; 86 filing entries, including one explicit exclusion, not certified or personalized ballots. See the [collection review](audits/2026-10-27-boone-automation.md). |
 | `ca-orange-2026` | [Orange County filing log](https://ocvote.gov/candidates/candidate-filing-log-printable-version) | Published election controls and complete dated candidate reports; native visible-content reconciliation, durable imports and source-bound future cycles. See the [collection review](audits/2026-10-27-orange-automation.md). |
 | `me-house-clerk-2026` | [Maine House Clerk candidate list](https://mainelegislature.org/house/Documents/CandidateList) | Unofficial House references, with legislature numbers mapped to the reviewed constitutional schedule; not a printed candidate-page election date or ballot qualification. See the [collection review](audits/2026-10-27-maine-house-automation.md). |

@@ -1,5 +1,9 @@
 # Official state candidate records
 
+Fairbanks has an independent [publication collector](fairbanks-election-publication-collection.md)
+and reviewed historical candidate/question inventories. Native candidate parsing
+and import remain unfinished; automatic candidate-family counts are unchanged.
+
 Bulk publication readers use accepted external snapshots without collecting or
 converting documents during visitor requests. Explicit workers retain collection
 and cycle-discovery duties. See the [reader-boundary and retained-data review](audits/2026-11-02-native-reader-boundary.md).

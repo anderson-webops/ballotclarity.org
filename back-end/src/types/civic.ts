@@ -854,12 +854,21 @@ export interface ElectionsResponse {
 	elections: ElectionSummary[];
 }
 
+export interface CountyAreaScope {
+	kind: "county-excluding-municipalities";
+	stateCode: string;
+	countyName: string;
+	excludedMunicipalities: string[];
+	matching: "reference-only";
+}
+
 export interface JurisdictionSummary {
 	slug: string;
 	name: string;
 	displayName: string;
 	state: string;
 	jurisdictionType: string;
+	countyAreaScope?: CountyAreaScope;
 	description: string;
 	nextElectionName: string;
 	nextElectionSlug: string;

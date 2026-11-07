@@ -1264,6 +1264,7 @@ export function buildGuidePackageRecord(
 					description: jurisdiction.description,
 					displayName: jurisdiction.displayName,
 					jurisdictionType: jurisdiction.jurisdictionType,
+					...(jurisdiction.countyAreaScope ? { countyAreaScope: jurisdiction.countyAreaScope } : {}),
 					name: jurisdiction.name,
 					nextElectionName: jurisdiction.nextElectionName,
 					nextElectionSlug: jurisdiction.nextElectionSlug,

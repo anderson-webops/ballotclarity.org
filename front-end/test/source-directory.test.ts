@@ -4,7 +4,8 @@ import {
 	formatSourceCitationType,
 	formatSourcePublicationKind,
 	formatSourcePublisherType,
-	groupSourceDirectoryItems
+	groupSourceDirectoryItems,
+	sourceDisplayDate
 } from "../src/utils/source-directory.ts";
 
 test("source directory helpers format source metadata for the public directory", () => {
@@ -15,6 +16,13 @@ test("source directory helpers format source metadata for the public directory",
 	assert.equal(formatSourcePublisherType("third-party civic infrastructure"), "Third-party civic infrastructure");
 	assert.equal(formatSourceCitationType("page"), "Public page");
 	assert.equal(formatSourceCitationType("candidate"), "Candidate page");
+});
+
+test("source dates preserve known dates and omit missing or invalid publication clocks", () => {
+	for (const value of ["2026-11-03", "2024-02-29", "2026-10-27T22:28:06.403Z", "2026-10-27T18:28:06-04:00"])
+		assert.equal(sourceDisplayDate(value), value);
+	for (const value of [undefined, null, "", "unknown", "1", "2026-02-30", "2026-13-01", "2026-11-03Tinvalid", " 2026-11-03"])
+		assert.equal(sourceDisplayDate(value), null);
 });
 
 test("groupSourceDirectoryItems keeps curated records ahead of published provenance records", () => {

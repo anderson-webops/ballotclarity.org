@@ -1,9 +1,11 @@
 import type { AdditionalCoverageGuide, CoverageRepository, CoverageSnapshot } from "./coverage-repository.js";
-import type { Measure, Source } from "./types/civic.js";
+import type { CountyAreaScope, Measure, Source } from "./types/civic.js";
 import { Buffer } from "node:buffer";
 import { createHash } from "node:crypto";
 import { mkdir, realpath, writeFile } from "node:fs/promises";
 import { basename, dirname, isAbsolute, join } from "node:path";
+import { isDeepStrictEqual } from "node:util";
+import { countyAreaIdentity, countyAreaLabel, isCountyAreaScope } from "./county-area-scope.js";
 import { buildEmptyCoverageSnapshot, coverageElections, coverageJurisdictions, coverageSnapshotMetadataPath, isSupportedMeasureBallotOptions, isSupportedMeasureDecisionEffect, parseCoverageSnapshot } from "./coverage-repository.js";
 import { validateCoverageSnapshotForPublication } from "./coverage-snapshot-validation.js";
 import { buildDefaultGuidePackageSeed, buildGuidePackageRecord } from "./guide-packages.js";
@@ -12,7 +14,7 @@ import { assertExternalStateDataDirectory, readBoundedStateData, readBoundedStat
 import { usStates } from "./us-states.js";
 
 interface PinnedFile { path: string; sha256: string }
-interface LocalJurisdiction { jurisdictionType: "county" | "city" | "town" | "township" | "village" | "school-district" | "intermediate-school-district" | "special-district" | "independent-city"; name: string; slug: string }
+interface LocalJurisdiction { jurisdictionType: "county" | "county-area" | "city" | "town" | "township" | "village" | "school-district" | "intermediate-school-district" | "special-district" | "independent-city"; name: string; slug: string; countyAreaScope?: CountyAreaScope }
 interface DocumentInput extends PinnedFile { key: string; url: string; capturedAt: string }
 interface GuideInput extends PinnedFile { stateCode: string; electionDate: string; jurisdiction?: LocalJurisdiction; summaryAsExplanation: boolean; documents: DocumentInput[] }
 interface PreparationPlan { schemaVersion: 1; type: "state-measure-guide-preparation"; baseSnapshot: PinnedFile | null; inputs: GuideInput[]; outputDirectory: string; outputName: string; primaryAugmentation?: { electionSlug: string; jurisdictionSlug: string } }
@@ -55,14 +57,21 @@ function publicDocumentUrl(value: unknown): value is string {
 }
 
 function localJurisdiction(value: unknown, stateCode: string): value is LocalJurisdiction {
+	if (record(value) && value.jurisdictionType === "county-area") {
+		return Object.keys(value).sort().join(",") === "countyAreaScope,jurisdictionType,name,slug"
+			&& isCountyAreaScope(value.countyAreaScope, stateCode) && value.name === countyAreaLabel(value.countyAreaScope)
+			&& typeof value.name === "string" && value.name.length <= 120
+			&& typeof value.slug === "string" && slugPattern.test(value.slug) && value.slug.startsWith(`${stateCode.toLowerCase()}-`);
+	}
 	return record(value) && Object.keys(value).sort().join(",") === "jurisdictionType,name,slug"
 		&& ["county", "city", "town", "township", "village", "school-district", "intermediate-school-district", "special-district", "independent-city"].includes(value.jurisdictionType as string)
 		&& typeof value.name === "string" && value.name === value.name.trim() && value.name.length > 0 && value.name.length <= 120
 		&& typeof value.slug === "string" && slugPattern.test(value.slug) && value.slug.startsWith(`${stateCode.toLowerCase()}-`);
 }
 
-function electionScope(stateCode: string, date: string, jurisdictionType: string, name: string) {
+function electionScope(stateCode: string, date: string, jurisdictionType: string, name: string, countyAreaScope?: CountyAreaScope) {
 	const kind = jurisdictionType.trim().toLowerCase();
+	if (kind === "county-area" && countyAreaScope) return `${stateCode}:${date}:${kind}:${countyAreaIdentity(countyAreaScope)}`;
 	return `${stateCode}:${date}:${kind}:${kind === "state" ? "statewide" : name.toLowerCase().replace(/\s+/gu, " ").trim()}`;
 }
 
@@ -129,7 +138,7 @@ function parseDraft(value: unknown, input: GuideInput, now: number): MeasureDraf
 	const draftJurisdiction = value.jurisdiction;
 	if ((draftJurisdiction !== undefined && !localJurisdiction(draftJurisdiction, input.stateCode))
 		|| Boolean(draftJurisdiction) !== Boolean(input.jurisdiction)
-		|| (input.jurisdiction && (!record(draftJurisdiction) || (["jurisdictionType", "name", "slug"] as const).some(field => draftJurisdiction[field] !== input.jurisdiction![field])))) {
+		|| (input.jurisdiction && !isDeepStrictEqual(draftJurisdiction, input.jurisdiction))) {
 		throw new Error("Local draft and plan must bind the same exact jurisdiction; local content cannot be assigned statewide.");
 	}
 	const locationName = input.jurisdiction ? `${input.jurisdiction.name}, ${stateName}` : stateName;
@@ -182,12 +191,12 @@ export async function prepareStateMeasureGuideFiles(planPath: string, now = Date
 	const primaryJurisdiction = base?.jurisdiction;
 	const primaryLocation = base?.location;
 	const primaryState = primaryJurisdiction ? usStates.find(state => state[0] === primaryJurisdiction.state || state[1] === primaryJurisdiction.state)?.[0] : null;
-	const primaryScope = primaryElection && primaryJurisdiction && primaryState ? electionScope(primaryState, primaryElection.date, primaryJurisdiction.jurisdictionType, primaryJurisdiction.name) : null;
+	const primaryScope = primaryElection && primaryJurisdiction && primaryState ? electionScope(primaryState, primaryElection.date, primaryJurisdiction.jurisdictionType, primaryJurisdiction.name, primaryJurisdiction.countyAreaScope) : null;
 	if (plan.primaryAugmentation && (!base || !primaryElection || !primaryJurisdiction || !primaryLocation || !primaryScope || primaryElection.slug !== plan.primaryAugmentation.electionSlug
 		|| primaryJurisdiction.slug !== plan.primaryAugmentation.jurisdictionSlug || primaryElection.jurisdictionSlug !== primaryJurisdiction.slug
 		|| coverageElections(base).filter((election) => {
 			const jurisdiction = coverageJurisdictions(base).find(item => item.slug === election.jurisdictionSlug);
-			return jurisdiction && electionScope(primaryState!, election.date, jurisdiction.jurisdictionType, jurisdiction.name) === primaryScope
+			return jurisdiction && electionScope(primaryState!, election.date, jurisdiction.jurisdictionType, jurisdiction.name, jurisdiction.countyAreaScope) === primaryScope
 				&& (jurisdiction.state === primaryState || jurisdiction.state === primaryJurisdiction.state);
 		}).length !== 1)) {
 		throw new Error("Primary augmentation must identify one unambiguous primary election and jurisdiction in the pinned base.");
@@ -196,7 +205,7 @@ export async function prepareStateMeasureGuideFiles(planPath: string, now = Date
 		? coverageElections(base).flatMap((election) => {
 				const jurisdiction = coverageJurisdictions(base).find(item => item.slug === election.jurisdictionSlug);
 				const stateCode = usStates.find(state => state[0] === jurisdiction?.state || state[1] === jurisdiction?.state)?.[0];
-				return jurisdiction && stateCode ? [electionScope(stateCode, election.date, jurisdiction.jurisdictionType, jurisdiction.name)] : [];
+				return jurisdiction && stateCode ? [electionScope(stateCode, election.date, jurisdiction.jurisdictionType, jurisdiction.name, jurisdiction.countyAreaScope)] : [];
 			})
 		: []);
 	const additions: AdditionalCoverageGuide[] = [];
@@ -206,7 +215,7 @@ export async function prepareStateMeasureGuideFiles(planPath: string, now = Date
 	const mappings = [];
 	const pdfDocuments = new Set<string>();
 	for (const input of plan.inputs) {
-		const scope = electionScope(input.stateCode, input.electionDate, input.jurisdiction?.jurisdictionType ?? "state", input.jurisdiction?.name ?? "");
+		const scope = electionScope(input.stateCode, input.electionDate, input.jurisdiction?.jurisdictionType ?? "state", input.jurisdiction?.name ?? "", input.jurisdiction?.countyAreaScope);
 		if (plan.primaryAugmentation ? scope !== primaryScope : existingScopes.has(scope))
 			throw new Error(plan.primaryAugmentation ? "Primary augmentation must retain the exact primary state, date and jurisdiction scope." : "An existing election scope requires a separately reviewed replacement; preparation is append-only.");
 		existingScopes.add(scope);
@@ -266,6 +275,8 @@ export async function prepareStateMeasureGuideFiles(planPath: string, now = Date
 		const dataTimes = measures.flatMap(measure => typeof measure.freshness.dataLastUpdatedAt === "string" ? [measure.freshness.dataLastUpdatedAt] : []);
 		const freshness = { contentLastVerifiedAt: measures.map(measure => measure.freshness.contentLastVerifiedAt).sort(byInstant)[0]!, dataLastUpdatedAt: dataTimes.length === measures.length ? dataTimes.sort(byInstant).at(-1) : undefined, nextReviewAt: measures.map(measure => measure.freshness.nextReviewAt).sort(byInstant)[0]!, status: "incomplete" as const, statusLabel: "Partial sourced explanation", statusNote: "" };
 		additions.push({ coverageLimits: [input.jurisdiction ? "Selected local questions only; other races and ballot questions are not included." : input.stateCode === "DC" ? "Districtwide measures only; candidate races are not included." : "Statewide measures only; local candidates and measures are not included."], election: { ...summary, description: "", keyDates: [], officialResources: resources, changeLog: [], freshness, contests: measures.map(measure => ({ slug: measure.contestSlug, title: measure.title, office: input.jurisdiction ? "Local ballot measure" : `${areaScopeLabel} ballot measure`, jurisdiction: "Ballot measure", type: "measure", description: "", roleGuide: { summary: "", whyItMatters: "", decisionAreas: [] }, measures: [measure] })) }, jurisdiction: { slug: jurisdictionSlug, name: areaName, displayName: locationName, state: stateName, jurisdictionType: input.jurisdiction?.jurisdictionType ?? "state", description: "", nextElectionName: summary.name, nextElectionSlug: electionSlug, updatedAt: draft.reviewedAt, officialOffice: { name: "", address: "", phone: "", email: "", hours: "", website: resources[0]?.url ?? "" }, officialResources: resources, votingMethods: [], upcomingElections: [summary], archivedGuides: [], coverageNotes: [] }, location: { slug: jurisdictionSlug, displayName: locationName, state: stateName, coverageLabel: input.jurisdiction ? "Selected local questions" : `${areaScopeLabel} measures`, lookupMode: "coverage-selection", requiresOfficialConfirmation: true } });
+		if (input.jurisdiction?.countyAreaScope)
+			additions.at(-1)!.jurisdiction.countyAreaScope = structuredClone(input.jurisdiction.countyAreaScope);
 		holds.push({ stateCode: input.stateCode, jurisdiction: input.jurisdiction ?? null, sourceDraftSha256: input.sha256, unresolvedFields: draft.unresolvedFields ?? [], unmappedQuestions: draft.unmappedQuestions ?? [] });
 	}
 	const updatedAt = [...additions.map(guide => guide.election.updatedAt), ...(base ? [base.updatedAt] : [])].sort(byInstant).at(-1)!;

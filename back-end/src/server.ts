@@ -1094,7 +1094,12 @@ function buildSourceDirectory(
 		additionalCitations,
 	);
 	const curatedSources = buildCuratedPublicSourceRecords(updatedAt);
-	const publishedProvenanceSources = sources
+	const publishedProvenanceSources = uniqueSources([
+		...sources,
+		...candidates.flatMap(collectCandidateSources),
+		...measures.flatMap(collectMeasureSources),
+		...contests.flatMap(collectContestSources),
+	])
 		.map(source => ({
 			...source,
 			citationCount: (citations.get(source.id) ?? []).length,

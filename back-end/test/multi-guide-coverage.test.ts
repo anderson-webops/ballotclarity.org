@@ -99,6 +99,49 @@ test("publication validation inspects nested additional guides, not only the pri
 	assert.ok(validation.unsafePublicHrefMatches.some(match => match.path.includes("additionalGuides[1]")));
 });
 
+for (const published of [false, true]) {
+	test(`partial-county APIs preserve explicit scope and separate publication from location matching: ${published}`, async () => {
+		const data = snapshot();
+		const guide = data.additionalGuides![0]!;
+		const countyAreaScope = { kind: "county-excluding-municipalities" as const, stateCode: "ND", countyName: "Cass County", excludedMunicipalities: ["Fargo"], matching: "reference-only" as const };
+		Object.assign(guide.jurisdiction, { jurisdictionType: "county-area", name: "Cass County outside Fargo", displayName: "Cass County outside Fargo, North Dakota", countyAreaScope });
+		guide.location.displayName = guide.jurisdiction.displayName;
+		guide.election.locationName = guide.jurisdiction.displayName;
+		const coverage = await repository(data);
+		const workflows = buildDefaultGuidePackageSeed(coverage).map(workflow => published && workflow.electionSlug === guide.election.slug ? { ...workflow, status: "published" as const } : workflow);
+		const application = await createApp({ activeLookupCookieSecret: "synthetic-scoped-guide-cookie-not-real", adminMfaEncryptionKey: "synthetic-scoped-guide-mfa-not-real", adminDbPath: ":memory:", coverageRepository: coverage, contentSeed: [], guidePackageSeed: workflows, addressEnrichmentService: null, congressClient: null, googleCivicClient: null, ldaClient: null, openFecClient: null, openStatesClient: null, stateBallotRepository: null, electionReferenceRepository: null, locationGuessOptions: { mode: "disabled" }, zipLookupLogger: { enabled: false, logPath: ":memory:", async record() {} }, zipLocationService: {
+			async lookupZip(postalCode) {
+				return { postalCode, matches: [{ id: postalCode, postalCode, countyName: "Cass County", locality: "Fargo", stateAbbreviation: "ND", stateName: "North Dakota", sourceSystem: "Isolated geography fixture", districtMatches: [], representativeMatches: [] }] };
+			},
+		} });
+		const listener = application.listen(0, "127.0.0.1");
+		await once(listener, "listening");
+		const origin = `http://127.0.0.1:${(listener.address() as AddressInfo).port}`;
+		try {
+			const measure = guide.election.contests[0]!.measures![0]!;
+			for (const path of [`/api/jurisdictions/${guide.jurisdiction.slug}`, `/api/measures/${measure.slug}`, `/api/ballot?election=${guide.election.slug}`, `/api/sources/${measure.sources[0]!.id}`]) {
+				const response = await fetch(`${origin}${path}`);
+				assert.equal(response.status, published ? 200 : 404, path);
+				if (published && path.startsWith("/api/jurisdictions")) assert.deepEqual((await response.json()).countyAreaScope, countyAreaScope);
+				if (published && path.startsWith("/api/sources")) assert.equal((await response.json()).source.url, measure.sources[0]!.url);
+			}
+			const sources = await (await fetch(`${origin}/api/sources`)).json();
+			assert.equal(sources.sources.some((item: { id: string }) => item.id === measure.sources[0]!.id), published);
+			const jurisdictions = await (await fetch(`${origin}/api/jurisdictions`)).json();
+			assert.equal(jurisdictions.jurisdictions.some((item: { slug: string }) => item.slug === guide.jurisdiction.slug), published);
+			if (published) assert.deepEqual(jurisdictions.jurisdictions.find((item: { slug: string }) => item.slug === guide.jurisdiction.slug).countyAreaScope, countyAreaScope);
+			const response = await fetch(`${origin}/api/location`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ q: "58102" }) });
+			assert.equal(response.status, 200);
+			assert.equal((await response.json()).electionSlug, undefined);
+		}
+		finally {
+			listener.closeAllConnections();
+			await new Promise<void>(accept => listener.close(() => accept()));
+			await application.closeResources();
+		}
+	});
+}
+
 for (const publishedStates of [[], ["north-dakota"], ["north-dakota", "idaho"]]) {
 	test(`additional public routes require their own publication: ${publishedStates.join(",") || "none"}`, async () => {
 		const data = snapshot();

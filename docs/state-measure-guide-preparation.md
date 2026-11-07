@@ -21,7 +21,8 @@ The JSON object requires `schemaVersion: 1`,
   not a hardcoded 2026 state list. Native drafts must remain explicitly unpublished
   and unapproved for automatic import.
 - Local inputs also require a matching `jurisdiction` object in both plan and
-  native draft: `jurisdictionType` (`county`, `city`, `town` or `independent-city`), `name` and a
+  native draft: `jurisdictionType` (`county`, `city`, `town`, `township`, `village`,
+  `school-district`, `intermediate-school-district`, `special-district` or `independent-city`), `name` and a
   state-prefixed `slug`. Measure locations must name that same area and state.
   Omitting, changing or broadening a local scope to statewide is rejected.
 - Each document supplies its native dictionary `key`, absolute capture `path`,
@@ -43,6 +44,41 @@ The JSON object requires `schemaVersion: 1`,
   limits.
 
 ## Outputs
+
+### Partial-county reference areas
+
+A question limited to a county outside named municipalities uses
+`jurisdictionType: "county-area"`. Both the plan and native draft carry this
+exact `countyAreaScope` object on their jurisdiction:
+
+```json
+{
+  "kind": "county-excluding-municipalities",
+  "stateCode": "GA",
+  "countyName": "Fulton County",
+  "excludedMunicipalities": ["Atlanta"],
+  "matching": "reference-only"
+}
+```
+
+Its jurisdiction name is `Fulton County outside Atlanta`; display and measure
+location add `, Georgia`. Other states, counties, exclusions and election dates
+are configuration. Exclusions stay in the package, jurisdiction API summaries,
+review manifest and scope identity. An equivalent area under another slug cannot
+duplicate an existing election scope. A whole-county package remains separate.
+
+These are explicit reference pages. Address, postal-city and ZIP lookup do not
+select them, including a ZIP centroid outside the excluded city or a city that
+crosses county boundaries. Verified residential applicability needs a separate
+boundary-aware matching contract. Removing scope metadata, changing its matching
+mode or relabeling the area as a whole county fails parsing and publication
+validation. This runtime accepts the scope; earlier matchers also leave the new
+jurisdiction kind unmatched. Keep the exact compatible data/runtime rollback pair.
+
+Preparation retains draft publication and import states and the original evidence
+clocks. It establishes neither the election result nor individual voter eligibility.
+
+### Generated files
 
 Standalone preparation emits six flat files: guide bundle, draft workflows,
 review diagnostics/holds, measure/source CSV, manifest and checksums. The bundle

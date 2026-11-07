@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { formatSourceCitationType, formatSourcePublicationKind, formatSourcePublisherType } from "~/utils/source-directory";
+import { formatSourceCitationType, formatSourcePublicationKind, formatSourcePublisherType, sourceDisplayDate } from "~/utils/source-directory";
 
 const siteUrl = useSiteUrl();
 const sourceId = useRouteStringParam("id");
 const { formatDate } = useFormatters();
 const { data, pending, error } = await useSourceRecord(sourceId);
+const sourceDate = computed(() => sourceDisplayDate(data.value?.source.date));
 const errorStatusCode = computed(() => {
 	const sourceError = error.value as { status?: number; statusCode?: number } | null;
 
@@ -80,12 +81,12 @@ usePageSeo({
 								{{ data.source.publisher }}
 							</p>
 						</div>
-						<div class="content-block">
+						<div v-if="sourceDate" class="content-block">
 							<p class="text-xs text-app-muted tracking-[0.06em] font-semibold uppercase dark:text-app-muted-dark">
-								Directory updated
+								Date
 							</p>
 							<p class="text-sm text-app-ink font-semibold mt-3 dark:text-app-text-dark">
-								{{ formatDate(data.source.date) }}
+								{{ formatDate(sourceDate) }}
 							</p>
 						</div>
 						<div class="content-block">

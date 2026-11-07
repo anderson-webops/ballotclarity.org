@@ -14,6 +14,7 @@ import type {
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, dirname, resolve } from "node:path";
 import { isDeepStrictEqual } from "node:util";
+import { assertJurisdictionCountyArea } from "./county-area-scope.js";
 import {
 	demoCandidates,
 	demoDataSources,
@@ -139,6 +140,7 @@ export function coverageJurisdictionSummaries(snapshot: CoverageSnapshot): Juris
 			displayName: jurisdiction.displayName,
 			state: jurisdiction.state,
 			jurisdictionType: jurisdiction.jurisdictionType,
+			...(jurisdiction.countyAreaScope ? { countyAreaScope: jurisdiction.countyAreaScope } : {}),
 			description: jurisdiction.description,
 			nextElectionName: jurisdiction.nextElectionName,
 			nextElectionSlug: jurisdiction.nextElectionSlug,
@@ -352,6 +354,8 @@ export function parseCoverageSnapshot(raw: unknown): CoverageSnapshot {
 		throw new Error("Coverage snapshot must include updatedAt.");
 
 	validateAdditionalGuides(snapshot as CoverageSnapshot);
+	for (const jurisdiction of [snapshot.jurisdiction, ...snapshot.jurisdictionSummaries, ...(snapshot.additionalGuides ?? []).map(guide => guide.jurisdiction)])
+		assertJurisdictionCountyArea(jurisdiction);
 	const measures = [...snapshot.measures, ...coverageElections(snapshot as CoverageSnapshot).flatMap(election => (election.contests ?? []).flatMap(contest => contest.measures ?? []))];
 	if (measures.some(measure => isRecord(measure) && !isSupportedMeasureBallotOptions(measure.ballotOptions)))
 		throw new Error("Measures must retain a supported binary ballot-option pair; non-binary choices require a separate contract.");

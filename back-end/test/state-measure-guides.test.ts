@@ -7,7 +7,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
-import { buildSeedCoverageSnapshot, parseCoverageSnapshot, readCoverageSnapshotMetadata } from "../src/coverage-repository.js";
+import { buildSeedCoverageSnapshot, coverageJurisdictionSummaries, parseCoverageSnapshot, readCoverageSnapshotMetadata } from "../src/coverage-repository.js";
 import { buildFultonOfficialLogisticsOnlySnapshot } from "../src/fulton-reviewed-coverage.js";
 import { prepareStateMeasureGuideFiles } from "../src/state-measure-guides.js";
 
@@ -60,6 +60,93 @@ function primaryFixture() {
 	saveBase();
 	return { ...workspace, base, basePath, primaryAugmentation, jurisdiction, saveBase };
 }
+
+function countyAreaFixture() {
+	const workspace = fixture();
+	const countyAreaScope = { kind: "county-excluding-municipalities", stateCode: "ND", countyName: "Cass County", excludedMunicipalities: ["Fargo"], matching: "reference-only" };
+	const jurisdiction = { jurisdictionType: "county-area", name: "Cass County outside Fargo", slug: "nd-cass-outside-fargo", countyAreaScope };
+	Object.assign(workspace.draft, { jurisdiction: structuredClone(jurisdiction) });
+	Object.assign(workspace.plan.inputs[0]!, { jurisdiction: structuredClone(jurisdiction) });
+	workspace.draft.measures[0]!.location = "Cass County outside Fargo, North Dakota";
+	workspace.save();
+	return { ...workspace, jurisdiction };
+}
+
+test("county-area preparation preserves exclusions, reference-only scope and original clocks across cycles", async () => {
+	for (const electionDate of ["2026-11-03", "2028-11-07"]) {
+		const workspace = countyAreaFixture();
+		try {
+			workspace.draft.electionDate = electionDate;
+			workspace.plan.inputs[0]!.electionDate = electionDate;
+			workspace.save();
+			await prepareStateMeasureGuideFiles(workspace.planPath, now);
+			const guide = workspace.read("guides").guides[0];
+			assert.deepEqual(guide.jurisdiction.countyAreaScope, workspace.jurisdiction.countyAreaScope);
+			assert.equal(guide.jurisdiction.jurisdictionType, "county-area");
+			assert.equal(guide.location.displayName, "Cass County outside Fargo, North Dakota");
+			assert.equal(guide.location.lookupMode, "coverage-selection");
+			assert.equal(guide.location.requiresOfficialConfirmation, true);
+			assert.equal(guide.election.date, electionDate);
+			assert.equal(guide.election.updatedAt, workspace.draft.reviewedAt);
+			assert.equal(guide.election.contests[0].measures[0].freshness.dataLastUpdatedAt, workspace.draft.measures[0]!.freshness.dataLastUpdatedAt);
+			assert.deepEqual(workspace.read("manifest").inputDrafts[0].jurisdiction.countyAreaScope, workspace.jurisdiction.countyAreaScope);
+			assert.equal(workspace.read("manifest").publicationApproved, false);
+			assert.equal(workspace.read("manifest").automaticImportApproved, false);
+			assert.equal(workspace.read("workflows")[0].status, "draft");
+		}
+		finally { workspace.dispose(); }
+	}
+});
+
+test("county-area preparation rejects dropped or changed exclusions and broader jurisdiction kinds", async () => {
+	for (const change of ["scope", "municipality", "matching", "kind", "state", "name"]) {
+		const workspace = countyAreaFixture();
+		try {
+			const jurisdiction = JSON.parse(JSON.stringify(workspace.jurisdiction));
+			if (change === "scope") delete jurisdiction.countyAreaScope;
+			if (change === "municipality") jurisdiction.countyAreaScope.excludedMunicipalities = ["Another City"];
+			if (change === "matching") jurisdiction.countyAreaScope.matching = "address";
+			if (change === "kind") jurisdiction.jurisdictionType = "county";
+			if (change === "state") jurisdiction.countyAreaScope.stateCode = "GA";
+			if (change === "name") jurisdiction.name = "Cass County";
+			Object.assign(workspace.draft, { jurisdiction });
+			workspace.save();
+			await assert.rejects(prepareStateMeasureGuideFiles(workspace.planPath, now), /same exact jurisdiction/u, change);
+			assert.equal(existsSync(workspace.plan.outputDirectory), false);
+		}
+		finally { workspace.dispose(); }
+	}
+});
+
+test("partial-county content appends beside a whole-county guide without replacing it", async () => {
+	const workspace = countyAreaFixture();
+	try {
+		const base = buildFultonOfficialLogisticsOnlySnapshot();
+		const before = JSON.stringify(base);
+		const basePath = join(workspace.directory, "base.json");
+		writeFileSync(basePath, before);
+		workspace.plan.baseSnapshot = { path: basePath, sha256: hash(before) };
+		workspace.save();
+		await prepareStateMeasureGuideFiles(workspace.planPath, now);
+		const result = parseCoverageSnapshot(workspace.read("coverage"));
+		assert.deepEqual(result.election, base.election);
+		assert.deepEqual(result.jurisdiction, base.jurisdiction);
+		assert.deepEqual(result.location, base.location);
+		assert.deepEqual(coverageJurisdictionSummaries(result).at(-1)?.countyAreaScope, workspace.jurisdiction.countyAreaScope);
+		assert.equal(readFileSync(basePath, "utf8"), before);
+		const changed = structuredClone(result);
+		delete changed.additionalGuides![0]!.jurisdiction.countyAreaScope;
+		assert.throws(() => parseCoverageSnapshot(changed), /County-area/u);
+		workspace.plan.baseSnapshot = { path: join(workspace.plan.outputDirectory, "measure-review-coverage.json"), sha256: hash(readFileSync(join(workspace.plan.outputDirectory, "measure-review-coverage.json"))) };
+		workspace.plan.outputDirectory = join(workspace.directory, "duplicate");
+		const renamed = { ...workspace.jurisdiction, slug: "nd-same-county-renamed" };
+		Object.assign(workspace.draft, { jurisdiction: renamed });
+		Object.assign(workspace.plan.inputs[0]!, { jurisdiction: renamed });
+		workspace.save();
+		await assert.rejects(prepareStateMeasureGuideFiles(workspace.planPath, now), /existing election scope/u);
+	}
+	finally { workspace.dispose(); }
+});
 
 test("explicit primary augmentation adds only reviewed measure content and preserves existing identities and clocks", async () => {
 	const workspace = primaryFixture();

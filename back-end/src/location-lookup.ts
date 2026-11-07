@@ -226,6 +226,8 @@ export function findSupportedCoverageSummaries(jurisdictionSummaries: Jurisdicti
 
 	return matchingStateSummaries.filter((summary) => {
 		const jurisdictionType = summary.jurisdictionType.trim().toLowerCase();
+		if (jurisdictionType === "county-area" || summary.countyAreaScope !== undefined)
+			return false;
 		if (jurisdictionType === "state")
 			return true;
 

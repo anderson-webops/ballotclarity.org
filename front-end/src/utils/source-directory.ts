@@ -15,6 +15,14 @@ export function formatSourcePublicationKind(kind: SourcePublicationKind) {
 	return kind === "curated-global" ? "Curated global record" : "Published page record";
 }
 
+export function sourceDisplayDate(value: string | null | undefined) {
+	if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}(?:$|T)/u.test(value)) return null;
+	const calendarDate = value.slice(0, 10);
+	const parsedDate = new Date(`${calendarDate}T00:00:00Z`);
+	if (!Number.isFinite(parsedDate.getTime()) || parsedDate.toISOString().slice(0, 10) !== calendarDate || !Number.isFinite(Date.parse(value))) return null;
+	return value;
+}
+
 export function formatSourcePublisherType(type: SourcePublisherType) {
 	switch (type) {
 		case "ballot-clarity source record":

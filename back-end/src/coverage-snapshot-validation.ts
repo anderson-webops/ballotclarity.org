@@ -4,6 +4,7 @@ import type {
 	CoverageSnapshotMetadata,
 } from "./coverage-repository.js";
 import type { AdminContentItem, GuideContentSummary } from "./types/civic.js";
+import { assertJurisdictionCountyArea } from "./county-area-scope.js";
 import { coverageElections, coverageJurisdictions } from "./coverage-repository.js";
 import { buildDefaultGuidePackageSeed, buildGuidePackageRecord } from "./guide-packages.js";
 import { normalizePublicHref } from "./public-href.js";
@@ -240,6 +241,14 @@ export function validateCoverageSnapshotForPublication(
 ): CoverageSnapshotValidationResult {
 	const errors: string[] = [];
 	const warnings: string[] = [];
+	for (const jurisdiction of [snapshot.jurisdiction, ...snapshot.jurisdictionSummaries, ...(snapshot.additionalGuides ?? []).map(guide => guide.jurisdiction)]) {
+		try {
+			assertJurisdictionCountyArea(jurisdiction);
+		}
+		catch (error) {
+			errors.push(error instanceof Error ? error.message : "Invalid partial-county scope.");
+		}
+	}
 	const referenceArchiveMatches = findReferenceArchiveMatches(snapshot);
 	const placeholderUrlMatches = findPlaceholderUrlMatches(snapshot);
 	const unsafePublicHrefMatches = findUnsafePublicHrefMatches(snapshot);

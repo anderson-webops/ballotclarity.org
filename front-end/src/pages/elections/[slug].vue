@@ -21,7 +21,7 @@ const sectionLinks = computed<ElectionSectionLink[]>(() => [
 watch(() => data.value?.candidateRecordSource?.sourceId, () => {
 	candidateSections.value = [];
 });
-const guideStatusNote = computed(() => data.value?.candidateRecordSource
+const guideStatusNote = computed(() => data.value?.candidateRecordSource || jurisdiction.value?.countyAreaScope
 	? ""
 	: data.value?.scope === "statewide"
 		? fullAreaGuideLabels(data.value?.location.state).limitation

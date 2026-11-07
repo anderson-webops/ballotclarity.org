@@ -29,6 +29,7 @@ import { fetchFultonCandidateCapture } from "./state-ballot-fulton.js";
 import { fetchGoffstownCandidateCapture } from "./state-ballot-goffstown-collection.js";
 import { fetchHamiltonCandidateCapture } from "./state-ballot-hamilton-collection.js";
 import { parseStateHtml, stateHtmlAttribute, stateHtmlDescendants, stateHtmlText } from "./state-ballot-html.js";
+import { fetchIowaCountyCandidateCapture } from "./state-ballot-iowa-county.js";
 import { fetchIowaJohnsonCandidateCapture } from "./state-ballot-iowa-johnson.js";
 import { fetchIowaPolkCandidateCapture } from "./state-ballot-iowa-polk.js";
 import { fetchKanawhaCandidateCapture } from "./state-ballot-kanawha-collection.js";
@@ -214,6 +215,7 @@ export async function fetchStateBallotSourceText(source: StateBallotSource, requ
 	if (source.format === "dc-pdf") return fetchDcCandidateCapture(source, { requestText: request });
 	if (source.format === "franklin-pdf") return fetchFranklinCandidateCapture(source, { requestText: request });
 	if (source.format === "cassia-pdf") return fetchCassiaCandidateCapture(source, { requestText: request });
+	if (source.format === "iowa-county-pdf") return fetchIowaCountyCandidateCapture(source);
 	if (source.format === "iowa-polk-pdf") return fetchIowaPolkCandidateCapture(source, { requestText: request });
 	if (source.format === "iowa-johnson-html") return fetchIowaJohnsonCandidateCapture(source, { requestText: request });
 	if (source.format === "oklahoma-html") return fetchOklahomaCandidateCapture(source);

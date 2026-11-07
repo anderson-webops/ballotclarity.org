@@ -35,6 +35,7 @@ import {
 	stateHtmlTableRows,
 	stateHtmlText as textContent
 } from "./state-ballot-html.js";
+import { parseIowaCountyCandidateCapture } from "./state-ballot-iowa-county.js";
 import { parseIowaJohnsonCandidateCapture } from "./state-ballot-iowa-johnson.js";
 import { parseIowaPolkCandidateCapture } from "./state-ballot-iowa-polk.js";
 import { parseKanawhaCandidateCapture } from "./state-ballot-kanawha-collection.js";
@@ -464,6 +465,7 @@ export function parseStateCandidateRecords(source: StateBallotSource, body: stri
 	if (source.format === "dc-pdf") return parseDcCandidateCapture(source, body, makeRecord).records;
 	if (source.format === "franklin-pdf") return parseFranklinCandidateCapture(source, body, makeRecord).records;
 	if (source.format === "cassia-pdf") return parseCassiaCandidateCapture(source, body).records;
+	if (source.format === "iowa-county-pdf") return parseIowaCountyCandidateCapture(source, body, makeRecord).records;
 	if (source.format === "iowa-polk-pdf") return parseIowaPolkCandidateCapture(source, body, makeRecord).records;
 	if (source.format === "iowa-johnson-html") {
 		records = parseIowaJohnsonCandidateCapture(source, body, makeRecord).records;

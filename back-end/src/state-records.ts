@@ -31,6 +31,7 @@ export function stateRecordDocumentLinks(source: StateBallotSource | undefined, 
 		validateOklahomaSource(source);
 		return [{ label: "Candidate list", url: source.pageUrl }];
 	}
+	if (source?.format === "iowa-county-pdf" && snapshot?.documents) return [{ label: "Sample ballots", url: source.pageUrl }];
 	if (source?.format === "everett-pdf" && snapshot?.documents) return [{ label: "Sample ballots", url: source.pageUrl }];
 	if (source?.format === "bucks-pdf" && snapshot?.documents) {
 		return snapshot.documents.map((document) => {

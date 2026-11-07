@@ -7,7 +7,7 @@ const sources = configuredStateBallotSources.filter(source => source.retrievalPo
 const now = () => Date.parse("2026-10-28T12:00:00.000Z");
 
 test("every configured bulk-publication reader avoids publisher work when no snapshot exists", async () => {
-	assert.equal(new Set(sources.map(source => source.format)).size, 31);
+	assert.equal(new Set(sources.map(source => source.format)).size, 32);
 	assert(sources.some(source => source.id === "ma-everett-2026" && source.format === "everett-pdf"));
 	for (const source of sources) {
 		let requests = 0;

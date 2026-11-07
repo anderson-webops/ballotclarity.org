@@ -59,11 +59,39 @@ The Monona county filing announcement and its older statewide/federal report
 remain independent sources. Sample-ballot status does not upgrade filing
 records, establish winners, or link people to current officeholder profiles.
 
-This module is a maintained ingestion primitive. Publisher policy enrollment,
-actual offered-election discovery, complete document-set selection, recurring
-collection, full render/visibility acceptance, durable snapshot integration and public route acceptance remain
-separate work. Existing Story, Johnson and Polk configurations and the
-state-publisher access hold are unchanged.
+The county source families connect the reader to offered-election discovery,
+explicit collection, external durable snapshots and public record routes.
+Existing Story, Johnson and Polk configurations and the state-publisher access
+hold remain intact. Full render/visibility acceptance and protected import,
+publication and recurring-schedule approval remain separate requirements.
+
+## Source families and storage
+
+`ia-monona-samples-2026` and `ia-woodbury-samples-2026` read only the independently
+published county samples. A future family member requires an actual offered,
+date-bound general-election page. Discovery follows the publisher's own
+upcoming/history navigation, preserves all PDF style aliases and distinguishes
+an announced election from a published sample set. A removed unexpired sample
+or alias holds the accepted catalog for review.
+
+Collection checks the reviewed robots response, legal footer/link inventory and
+linked notice before election requests. It uses ordinary HTTPS, explicit hosts,
+strict redirect rejection, serial twenty-second request spacing and bounded
+native converters. Access failures, policy changes, unsupported content and
+disappearing choices retain accepted data for review. Pending publication does
+not require a configured converter.
+
+Native collection runs only in explicit workers. Public record requests read
+persisted snapshots, including archived sources and offline restarts, without
+starting publisher requests or native processes. Snapshot storage preserves
+the original PDF hashes, capture clocks, complete style-alias inventory and its
+index fingerprint. Persistence failures retain the prior accepted snapshot.
+
+The county union is not used as a personalized ballot. Lower default priority
+preserves existing Iowa directory precedence. Public provenance offers the
+official county sample index rather than dozens of PDF links; judicial
+retention is identified in the office label. No person-to-ballot-style or
+current-officeholder relationship is inferred.
 
 ## Original-page and second-path validation
 

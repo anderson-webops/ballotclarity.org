@@ -29,7 +29,7 @@ export function fairbanksNativeSample(year = 2026) {
 		index: page(fairbanksElectionIndexUrl, index),
 		documents: urls.map((url, position) => {
 			const body = `%PDF-1.7\nSynthetic native ${position}`;
-			return { ...page(url, body), body: Buffer.from(body).toString("base64"), kind: position === 0 ? "sample" : "notice", text: `${position ? `Notice of Elections\nTuesday, ${printed}` : `REGULAR ELECTION - ${printed.toUpperCase()}`}\nFairbanks North Star Borough\f${position ? "Other page\fOther page\fOther page\f" : "Questions\f"}` };
+			return { ...page(url, body), body: Buffer.from(body).toString("base64"), kind: position === 0 ? "sample" : "notice", text: `${position ? `Notice of Elections\nTuesday, ${printed}` : `REGULAR ELECTION - ${printed.toUpperCase()}`}\nFairbanks North Star Borough\f${position ? "Other page\fOther page\fOther page\f" : ""}` };
 		})
 	};
 	const line = (text: string, left: number, top: number, width = 170): Line => ({ text, left, top, right: left + width, bottom: top + 8 });
@@ -40,7 +40,7 @@ export function fairbanksNativeSample(year = 2026) {
 	const asXml = (lines: Line[], width = 792, height = 792) => `<page width="${width}" height="${height}">${lines.map(value => `<line xmin="${value.left}" ymin="${value.top}" xmax="${value.right}" ymax="${value.bottom}">${value.text}</line>`).join("")}</page>`;
 	const proof = (lines: Line[], number: number, width = 792, height = 792) => ({ page: number, width, height, dpi: 300 as const, pngSha256: hash("Synthetic rendered fixture"), ocr: `${columns}\n${lines.map((value, index) => `5\t1\t1\t1\t${index + 1}\t1\t${value.left * 300 / 72}\t${value.top * 300 / 72}\t${(value.right - value.left) * 300 / 72}\t${(value.bottom - value.top) * 300 / 72}\t96\t${value.text}`).join("\n")}\n`, svg: `<svg width="${width}pt" height="${height}pt" viewBox="0 0 ${width} ${height}">${lines.filter(value => /^(?:Jordan Avery|Alex Morgan|Casey Reed|Morgan Lane|Taylor Park|Write-In)$/u.test(value.text)).map(value => fairbanksOval(value.left, value.top)).join("")}</svg>` });
 	const documents: FairbanksCandidateDocument[] = [
-		{ kind: "sample", geometry: geometryData("sample", 2), sourceSha256: capture.documents[0]!.sha256, bbox: `<doc>${asXml(borough, 612, 1008)}${asXml([line("Questions", 50, 50)], 612, 1008)}</doc>`, pages: [proof(borough, 1, 612, 1008)] },
+		{ kind: "sample", geometry: geometryData("sample", 1), sourceSha256: capture.documents[0]!.sha256, bbox: `<doc>${asXml(borough, 612, 1008)}</doc>`, pages: [proof(borough, 1, 612, 1008)] },
 		{ kind: "notice", geometry: geometryData("notice", 4), sourceSha256: capture.documents[1]!.sha256, bbox: `<doc>${asXml([line("Notice", 50, 50)])}${asXml(borough)}${asXml(withInstructions(false))}${asXml(withInstructions(true))}</doc>`, pages: [proof(borough, 2), proof(withInstructions(false), 3), proof(withInstructions(true), 4)] }
 	];
 	return { capture, documents, now: Date.parse(current), electionDate };

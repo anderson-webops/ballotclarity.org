@@ -58,3 +58,8 @@ private to the collection role, outside public API payloads and release assets.
 Source enrollment, substantive cohort approval, production import, publication
 and recurring scheduling retain their existing independent gates. This source
 does not enable scheduling or import merely by being included in a release.
+
+The same retained native evidence now supplies [ballot questions](fairbanks-ballot-questions.md),
+including official yes/no effects and actual combined-notice page links. Earlier
+candidate-only snapshots remain readable. Reversible data adoption preserves
+the earlier snapshot alongside any older runtime that rejects question metadata.

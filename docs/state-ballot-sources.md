@@ -4,8 +4,10 @@ Fairbanks has an independent [recurring candidate family](fairbanks-recurring-ca
 backed by paired official publications and rendered-row corroboration. The
 historical October 6, 2026 source contains 22 named candidates across eleven
 offices and three municipalities. Future cycles follow published dates and
-offered documents. Question integration, substantive cohort approval, production
-import, publication and scheduling remain separate work.
+offered documents. The [question reader](fairbanks-ballot-questions.md) also retains
+three borough propositions and one North Pole proposition with official effects.
+Substantive cohort approval, reversible production import/publication and
+scheduling remain separate work.
 
 Bulk publication readers use accepted external snapshots without collecting or
 converting documents during visitor requests. Explicit workers retain collection

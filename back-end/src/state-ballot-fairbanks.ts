@@ -2,6 +2,7 @@ import type { FairbanksCandidateDocument } from "./fairbanks-ballot-candidates.j
 import type { prepareFairbanksCandidateEvidence } from "./fairbanks-candidate-preparation.js";
 import type { FairbanksPublicationAccessReview, FairbanksPublicationCapture, fetchFairbanksElectionPublications } from "./fairbanks-election-publications.js";
 import type { StateCandidateValues } from "./state-ballot-additional-records.js";
+import type { StateBallotQuestion } from "./state-ballot-questions.js";
 import type { StateCandidateRecord } from "./state-ballot-records.js";
 import type { StateBallotSource } from "./state-ballot-sources.js";
 import { Buffer } from "node:buffer";
@@ -11,6 +12,7 @@ import { join } from "node:path";
 import process from "node:process";
 import { isDeepStrictEqual } from "node:util";
 import { readFairbanksBallotCandidates } from "./fairbanks-ballot-candidates.js";
+import { readFairbanksBallotQuestions } from "./fairbanks-ballot-questions.js";
 import { fairbanksPublicationIndexUrl, readFairbanksPublicationCapture } from "./fairbanks-election-publications.js";
 
 type Factory = (source: StateBallotSource, values: StateCandidateValues) => StateCandidateRecord | null;
@@ -79,9 +81,11 @@ export function readFairbanksCandidateCapture(body: string, now = Date.now()) {
 	geometry(documents, discovery.capture);
 	const prepared = readFairbanksBallotCandidates(discovery.capture, documents, now);
 	requireValue(isDeepStrictEqual(prepared, value.native.prepared), "native evidence result binding");
-	return { ...(value as unknown as CandidateCapture), prepared, election: discovery.elections[0]! };
+	const selected = discovery.elections[0]!;
+	const ballotQuestions = readFairbanksBallotQuestions({ id: fairbanksSource(selected.electionDate, selected.fairbanksDocuments.map(document => document.url)).id, electionDate: selected.electionDate }, discovery.capture, documents);
+	return { ...(value as unknown as CandidateCapture), prepared, ballotQuestions, election: selected };
 }
-export function parseFairbanksCandidateCapture(source: StateBallotSource, body: string, factory: Factory, now = Date.now(), previous?: { records: readonly StateCandidateRecord[]; documents?: readonly { url: string; sha256: string; retrievedAt: string }[] }) {
+export function parseFairbanksCandidateCapture(source: StateBallotSource, body: string, factory: Factory, now = Date.now(), previous?: { records: readonly StateCandidateRecord[]; ballotQuestions?: readonly StateBallotQuestion[]; documents?: readonly { url: string; sha256: string; retrievedAt: string }[] }) {
 	validateFairbanksSource(source);
 	const result = readFairbanksCandidateCapture(body, now);
 	requireValue(result.election.electionDate === source.electionDate && isDeepStrictEqual(result.election.fairbanksDocuments.map(item => item.url), source.documentUrls), "source and captured election agreement");
@@ -93,8 +97,9 @@ export function parseFairbanksCandidateCapture(source: StateBallotSource, body: 
 	});
 	requireValue(new Set(records.map(record => record.id)).size === records.length, "duplicate candidate identity");
 	if (previous?.records.some(record => !records.some(item => item.id === record.id))) throw new Error("An accepted Fairbanks candidate disappeared; retain the snapshot for review.");
+	if (previous?.ballotQuestions?.some(question => !result.ballotQuestions.some(item => item.id === question.id))) throw new Error("An accepted Fairbanks question changed or disappeared; retain the snapshot for review.");
 	const documents = result.capture.documents.map(document => ({ url: document.url, sha256: document.sha256, retrievedAt: previous?.documents?.find(item => item.url === document.url && item.sha256 === document.sha256)?.retrievedAt ?? document.capturedAt, includedRecordCount: result.prepared.records.filter(record => record.sourceUrl === document.url).length }));
-	return { records, documents, retrievedAt: new Date(Math.min(...documents.map(document => Date.parse(document.retrievedAt)))).toISOString(), sha256: fairbanksDocumentDigest(documents), collectionIndexSha256: fairbanksDocumentDigest(documents) };
+	return { records, ...(result.ballotQuestions.length ? { ballotQuestions: result.ballotQuestions } : {}), documents, retrievedAt: new Date(Math.min(...documents.map(document => Date.parse(document.retrievedAt)))).toISOString(), sha256: fairbanksDocumentDigest(documents), collectionIndexSha256: fairbanksDocumentDigest(documents) };
 }
 export function validateFairbanksStoredSnapshot(source: StateBallotSource, data: Record<string, unknown>) {
 	validateFairbanksSource(source);
@@ -159,7 +164,8 @@ async function collectFairbanksCandidates(source: StateBallotSource, options: Co
 	const native = previous && reuse ? { ...previous.native, prepared: readFairbanksBallotCandidates(capture, previous.native.documents, now) } : await (options.prepare ?? prepareFairbanksCandidateEvidence)(capture, directory, now);
 	if (previous?.election.electionDate === source.electionDate && previous.prepared.records.some(record => !native.prepared.records.some(item => item.name === record.name && item.office === record.office && item.jurisdiction === record.jurisdiction))) throw new Error("An accepted Fairbanks candidate disappeared; retain the evidence for review.");
 	const body = Buffer.from(JSON.stringify({ schemaVersion: 1, type: "fairbanks-candidate-capture", capture, native }));
-	readFairbanksCandidateCapture(body.toString("utf8"), now);
+	const accepted = readFairbanksCandidateCapture(body.toString("utf8"), now);
+	if (previous?.election.electionDate === source.electionDate && previous.ballotQuestions.some(question => !accepted.ballotQuestions.some(item => item.id === question.id))) throw new Error("An accepted Fairbanks question changed or disappeared; retain the evidence for review.");
 	const contentUnchanged = previous && reuse && previous.capture.index.sha256 === capture.index.sha256 && previous.capture.policies.every((policy, index) => policy.sha256 === capture.policies[index]!.sha256) && isDeepStrictEqual(previous.capture.accessReview, capture.accessReview);
 	if (!contentUnchanged) await storeFairbanksCandidateEvidence(directory, body, source.electionDate);
 	const temporary = join(directory, `.${randomUUID()}.capture.tmp`);

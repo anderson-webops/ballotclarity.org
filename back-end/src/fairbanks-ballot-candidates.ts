@@ -35,7 +35,7 @@ const comparable = (value: string) => clean(value).replace(/[.\s]/gu, "").replac
 function requireValue(condition: unknown, detail: string): asserts condition {
 	if (!condition) throw new Error(`The Fairbanks native ballot requires review: ${detail}.`);
 }
-function nativePages(body: string): NativePage[] {
+export function readFairbanksNativePages(body: string): NativePage[] {
 	requireValue(typeof body === "string" && Buffer.byteLength(body) <= 4 * 1024 * 1024, "native text bounds");
 	const tree = parseStateHtml(body);
 	const pending = [{ node: tree, depth: 0 }];
@@ -63,7 +63,7 @@ function nativePages(body: string): NativePage[] {
 
 export function fairbanksCandidateRenderPages(body: string, kind: "sample" | "notice") {
 	requireValue(kind === "sample" || kind === "notice", "publication kind");
-	const pages = nativePages(body).filter(page => page.lines.some(line => line.text === "OFFICIAL BALLOT"));
+	const pages = readFairbanksNativePages(body).filter(page => page.lines.some(line => line.text === "OFFICIAL BALLOT"));
 	requireValue(pages.length === (kind === "sample" ? 1 : 3), "offered ballot page inventory");
 	return pages.map(({ page, width, height }) => ({ page, width, height }));
 }
@@ -165,7 +165,7 @@ export function readFairbanksBallotCandidates(capture: FairbanksPublicationCaptu
 	for (const [position, document] of documents.entries()) {
 		const original = capture.documents[position]!;
 		requireValue(document.kind === original.kind && document.sourceSha256 === original.sha256 && Array.isArray(document.pages), "original document binding");
-		const pages = nativePages(document.bbox);
+		const pages = readFairbanksNativePages(document.bbox);
 		requireValue(pages.length === original.text.split("\f").filter(value => value.trim()).length && new Set(document.pages.map(page => page.page)).size === document.pages.length, "native and rendered page inventory");
 		const requiredPages = fairbanksCandidateRenderPages(document.bbox, document.kind);
 		requireValue(document.pages.length === requiredPages.length && document.pages.every((proof, index) => proof.page === requiredPages[index]!.page), "complete ordered rendered ballot set");

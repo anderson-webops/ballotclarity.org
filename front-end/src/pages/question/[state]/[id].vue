@@ -14,7 +14,7 @@ const { data, error, pending, refresh } = await useAsyncData(
 	{ default: () => null }
 );
 const question = computed(() => data.value?.questions.find(item => item.id === id.value));
-const heading = computed(() => ballotQuestionHeading(question.value?.title ?? "Ballot question"));
+const heading = computed(() => ballotQuestionHeading(question.value?.title ?? "Ballot question", question.value?.audience));
 const paragraphs = computed(() => question.value?.officialText.split(/\n\s*\n/u).filter(Boolean) ?? []);
 const backTo = computed(() => ({ path: "/questions", query: { state: state.value, source: source.value } }));
 const documentUrl = computed(() => {

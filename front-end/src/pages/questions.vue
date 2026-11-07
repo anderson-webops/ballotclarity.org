@@ -57,10 +57,10 @@ usePageSeo({ title: "Ballot questions", description: "Official question wording 
 					<li v-for="question in group.questions" :key="question.id">
 						<NuxtLink :to="{ path: `/question/${state}/${question.id}`, query: { source } }" class="py-7 rounded-md block focus-ring">
 							<component :is="groups.length > 1 ? 'h3' : 'h2'" class="text-xl text-app-ink font-serif dark:text-app-text-dark">
-								{{ ballotQuestionHeading(question.title).title }}
+								{{ ballotQuestionHeading(question.title, question.audience).title }}
 							</component>
-							<p v-if="ballotQuestionHeading(question.title).reference" class="text-sm text-app-muted mt-3 dark:text-app-muted-dark">
-								{{ ballotQuestionHeading(question.title).reference }}
+							<p v-if="ballotQuestionHeading(question.title, question.audience).reference" class="text-sm text-app-muted mt-3 dark:text-app-muted-dark">
+								{{ ballotQuestionHeading(question.title, question.audience).reference }}
 							</p>
 						</NuxtLink>
 					</li>

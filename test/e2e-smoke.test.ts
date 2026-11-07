@@ -2181,6 +2181,26 @@ test("public district and representative routes resolve direct loads without gen
 	assert.doesNotMatch(influenceHtml, /Representative profile not found/i);
 });
 
+test("participation guides render their distinct roles and reject unknown activities", async () => {
+	for (const [path, heading] of [
+		["/get-involved", "Get involved"],
+		["/get-involved/meetings", "Attend a meeting"],
+		["/get-involved/serve", "Serve locally"],
+		["/get-involved/run", "Run for office"]
+	]) {
+		const response = await fetch(`${appBaseUrl}${path}`);
+		assert.equal(response.status, 200);
+		const html = await response.text();
+		assert.match(html, new RegExp(`<h1[^>]*>\\s*${heading}\\s*</h1>`, "u"));
+		assert.match(html, /href="\/get-involved"/u);
+	}
+	const serve = await (await fetch(`${appBaseUrl}/get-involved/serve`)).text();
+	for (const role of ["Democratic post seats", "Republican precinct roles", "Government boards", "Election worker"])
+		assert.ok(serve.includes(role));
+	const missing = await fetch(`${appBaseUrl}/get-involved/unknown-activity`);
+	assert.equal(missing.status, 404);
+});
+
 test("sitemap returns 200 and only advertises valid source-backed public routes", async () => {
 	const response = await fetch(`${appBaseUrl}/sitemap.xml`);
 	const body = await response.text();
@@ -2188,6 +2208,8 @@ test("sitemap returns 200 and only advertises valid source-backed public routes"
 
 	assert.equal(response.status, 200);
 	assert.match(body, /<urlset[^>]*>/);
+	for (const path of ["/get-involved", "/get-involved/meetings", "/get-involved/serve", "/get-involved/run"])
+		assert.ok(body.includes(`<loc>${appBaseUrl}${path}</loc>`));
 	assert.match(body, new RegExp(`<loc>${appBaseUrl}/elections/2026-fulton-county-general</loc>`));
 	assert.match(body, new RegExp(`<loc>${appBaseUrl}/locations/fulton-county-georgia</loc>`));
 	assert.match(body, new RegExp(`<loc>${appBaseUrl}/sources/open-states</loc>`));

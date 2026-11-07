@@ -182,5 +182,10 @@ async function selectHomeLookupOption(option: LocationLookupSelectionOption) {
 				</p>
 			</div>
 		</section>
+		<nav class="app-shell mt-12" aria-label="Civic participation">
+			<NuxtLink to="/get-involved" prefetch-on="interaction" class="text-lg text-app-accent rounded-sm underline underline-offset-3 focus-ring">
+				Get involved
+			</NuxtLink>
+		</nav>
 	</div>
 </template>

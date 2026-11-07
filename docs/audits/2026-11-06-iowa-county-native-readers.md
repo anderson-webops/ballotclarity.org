@@ -129,4 +129,6 @@ rather than an actually offered future publication.
 These checks establish agreement between two native extraction paths and the
 reviewed original-page geometry. They do not independently establish rendered
 paint order, opacity, clipping or occlusion. Full rendering acceptance and the
-remaining collector/storage integration continue as separate requirements.
+protected host enrollment, import, publication, and scheduling continue as
+separate requirements. The source collector/storage integration described above
+passes local original-response replay and all-record API reconciliation.

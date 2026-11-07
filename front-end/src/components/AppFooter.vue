@@ -46,6 +46,7 @@ const howItWorksLinks = [
 ];
 
 const projectLinks = [
+	{ label: "Get involved", to: "/get-involved" },
 	{ label: "Voting help", to: "/help" },
 	{ label: "About", to: "/about" },
 	{ label: "Accessibility", to: "/accessibility" },

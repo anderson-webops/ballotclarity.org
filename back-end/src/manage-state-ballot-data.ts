@@ -1,11 +1,12 @@
 import process from "node:process";
+import { withStateBallotAutomationLock } from "./state-ballot-automation-lock.js";
 import { importNativeStateBallotSnapshot } from "./state-ballot-native-import.js";
 import { legacyReviewedStateBallotSource } from "./state-ballot-registry.js";
 import { createStateBallotRepository, resolveStateBallotConfiguration } from "./state-ballot-repository.js";
 import { parseBundledStateSnapshot } from "./state-ballot-snapshot.js";
 import { createStateBallotStorage, readBoundedStateData } from "./state-ballot-storage.js";
 
-async function main() {
+async function manageStateBallotData() {
 	const configuration = resolveStateBallotConfiguration();
 	if (!configuration.dataDirectory)
 		throw new Error("STATE_BALLOT_DATA_DIR is required for persistent candidate data.");
@@ -54,6 +55,13 @@ async function main() {
 		console.log(JSON.stringify({ state: source.stateCode, sourceId: source.id, action: snapshot ? "available" : "unavailable", records: snapshot?.records.length ?? 0, retrievedAt: snapshot?.retrievedAt ?? null }));
 		if (!snapshot || (await repository.inspectSources!()).find(item => item.id === source.id)?.failure) process.exitCode = 1;
 	}
+}
+
+async function main() {
+	const directory = process.env.STATE_BALLOT_DATA_DIR;
+	if (!directory) throw new Error("STATE_BALLOT_DATA_DIR is required for persistent candidate data.");
+	if (process.argv[2] === "import-native") return manageStateBallotData();
+	return withStateBallotAutomationLock(directory, "automation.lock", manageStateBallotData);
 }
 
 main().catch((error: unknown) => {

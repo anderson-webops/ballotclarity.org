@@ -1,11 +1,11 @@
 import process from "node:process";
+import { withStateBallotAutomationLock } from "./state-ballot-automation-lock.js";
 import { syncStateBallotCycleFamilies } from "./state-ballot-cycle-sync.js";
 import { getStateBallotCycleFamily, stateBallotCycleCatalogLocations } from "./state-ballot-cycles.js";
 import { stateBallotPriorityFamilies } from "./state-ballot-priority.js";
 import { resolveStateBallotConfiguration } from "./state-ballot-repository.js";
 
-async function main() {
-	if (process.argv.length !== 2) throw new Error("Election-cycle synchronization accepts configuration through the environment only.");
+async function syncCycles() {
 	const configuration = resolveStateBallotConfiguration();
 	const locations = stateBallotCycleCatalogLocations();
 	const dataDirectory = configuration.dataDirectory;
@@ -19,6 +19,13 @@ async function main() {
 	const results = await syncStateBallotCycleFamilies(locations.map(location => ({ ...location, dataDirectory, enabledSourceIds: enabledFamilies?.includes(location.familyId) ? undefined : process.env.STATE_BALLOT_ENABLED_SOURCES?.split(",").map(value => value.trim()) })), stateBallotPriorityFamilies());
 	console.log(JSON.stringify(results.length === 1 && results[0]?.status === "completed" ? results[0] : { families: results }));
 	if (results.some(result => result.status === "failed" || result.results.some(item => item.status === "unavailable" || item.status === "persistence-failed"))) process.exitCode = 1;
+}
+
+async function main() {
+	if (process.argv.length !== 2) throw new Error("Election-cycle synchronization accepts configuration through the environment only.");
+	const directory = process.env.STATE_BALLOT_DATA_DIR;
+	if (!directory) throw new Error("An election cycle catalog and STATE_BALLOT_DATA_DIR are required.");
+	return withStateBallotAutomationLock(directory, "automation.lock", syncCycles);
 }
 
 main().catch((error: unknown) => {

@@ -7,6 +7,15 @@ uses the same coordination file without deleting it or guessing whether a PID
 has expired. This applies to both one-pass and `--watch` invocations, independently
 of source family, election year or publication format.
 
+The state-data manager's reviewed import, native import and explicit refresh,
+and the election-cycle synchronization command share that ownership. Each command
+refuses a competing worker before collection or dataset/catalog replacement.
+Reviewed import, refresh and cycle synchronization read their configuration inside
+the critical section; native imports retain their existing source-bound locked
+write contract. Failures release ownership while preserving accepted data.
+This coordinates all supported candidate-management entry points with recurring
+automation without changing source selection or substantive approval.
+
 The four Fulton officeholder feeds use the same process-held ownership for
 collection and manual import: the county commission, county constitutional
 offices, State Court and Magistrate Court. Each retains its existing coordination

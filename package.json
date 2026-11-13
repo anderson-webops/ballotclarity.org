@@ -82,22 +82,22 @@
 		"deepmerge": "file:vendor/deepmerge"
 	},
 	"devDependencies": {
-		"@antfu/eslint-config": "^9.5.1",
-		"@unocss/eslint-plugin": "^66.10.5",
-		"axe-core": "^4.13.0",
+		"@antfu/eslint-config": "^10.0.0",
+		"@unocss/eslint-plugin": "^66.12.0",
+		"axe-core": "^4.14.0",
 		"braces": "file:vendor/braces",
-		"commander": "15.0.0",
-		"eslint": "^10.11.0",
+		"commander": "15.1.0",
+		"eslint": "^10.14.0",
 		"eslint-config-prettier": "^10.1.8",
-		"eslint-plugin-prettier": "^5.5.6",
+		"eslint-plugin-prettier": "^5.5.7",
 		"eslint-plugin-vue": "^10.11.0",
-		"globals": "^17.12.0",
+		"globals": "^17.14.0",
 		"listhen": "file:vendor/listhen",
-		"prettier": "^3.9.8",
-		"puppeteer": "^25.11.0",
+		"prettier": "^3.9.10",
+		"puppeteer": "^25.17.0",
 		"tsx": "^4.23.15",
 		"typescript": "^6.0.3",
-		"typescript-eslint": "^8.70.0"
+		"typescript-eslint": "^8.72.2"
 	},
 	"overrides": {
 		"deepmerge": "$deepmerge",

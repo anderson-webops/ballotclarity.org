@@ -27,6 +27,8 @@
 				"back-end/dist/fulton-election-calendar.js",
 				"back-end/dist/fulton-election-calendar-storage.js",
 				"back-end/dist/fulton-election-calendar-operations.js",
+				"back-end/dist/fulton-municipal-runoff.js",
+				"back-end/dist/prepare-fulton-municipal-runoff.js",
 				"back-end/dist/prepare-state-measure-guides.js",
 				"back-end/dist/state-measure-guides.js",
 				"back-end/dist/election-document-collection.js",

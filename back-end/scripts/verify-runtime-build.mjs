@@ -16,6 +16,8 @@ const requiredRuntimeFiles = [
 	"fulton-election-calendar.js",
 	"fulton-election-calendar-storage.js",
 	"fulton-election-calendar-operations.js",
+	"fulton-municipal-runoff.js",
+	"prepare-fulton-municipal-runoff.js",
 	"prepare-state-measure-guides.js",
 	"state-measure-guides.js",
 	"election-document-collection.js",

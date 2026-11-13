@@ -109,11 +109,8 @@
 			".": "^8.3.4",
 			"esbuild": "^0.28.2"
 		},
-		"nuxt": {
-			"unimport": "7.0.1"
-		},
 		"nitropack": {
-			".": "2.13.4",
+			".": "2.13.6",
 			"archiver": "$archiver"
 		},
 		"simple-git": "4.0.2",

@@ -22,6 +22,11 @@
 				"back-end/dist/server.js",
 				"back-end/dist/manage-election-references.js",
 				"back-end/dist/manage-election-documents.js",
+				"back-end/dist/manage-fulton-election-calendar.js",
+				"back-end/dist/collect-fulton-election-calendar.js",
+				"back-end/dist/fulton-election-calendar.js",
+				"back-end/dist/fulton-election-calendar-storage.js",
+				"back-end/dist/fulton-election-calendar-operations.js",
 				"back-end/dist/prepare-state-measure-guides.js",
 				"back-end/dist/state-measure-guides.js",
 				"back-end/dist/election-document-collection.js",
@@ -47,6 +52,11 @@
 		}
 	],
 	"externalWritableState": [
+		{
+			"configuration": "FULTON_ELECTION_CALENDAR_DIRECTORY",
+			"purpose": "Optional source-calendar captures, previous envelopes, collection journals and read-only administrative inspection",
+			"preservation": "Keep outside immutable releases, preserve exact source clocks and retain matching rollback configuration independently of deadline publication"
+		},
 		{
 			"configuration": "STATE_BALLOT_CYCLE_CATALOGS",
 			"purpose": "Per-family election discovery catalogs and bounded Alabama county-batch cursors",

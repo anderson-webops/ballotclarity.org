@@ -1887,14 +1887,18 @@ export interface AdminOperationDataset {
 	label: string;
 	stateCode: string;
 	electionDate: string;
-	kind: "candidates" | "references" | "officeholders";
+	kind: "candidates" | "references" | "officeholders" | "calendars";
 	mode: "automatic" | "reviewed";
-	status: "current" | "stale" | "missing" | "pending" | "error" | "archived";
+	status: "current" | "stale" | "missing" | "pending" | "error" | "archived" | "review";
 	records: number | null;
 	retrievedAt: string | null;
 	lastAttemptAt: string | null;
 	lastImportAt: string | null;
 	failure: string | null;
+	collectionState?: "unreported" | "running" | "succeeded" | "failed" | "invalid";
+	lastSuccessAt?: string | null;
+	sourceUrl?: string;
+	reviewIssues?: { id: string; label: string; printedDate: string; electionDate: string; reason: string }[];
 }
 export interface AdminAutomationResult {
 	sourceId: string;

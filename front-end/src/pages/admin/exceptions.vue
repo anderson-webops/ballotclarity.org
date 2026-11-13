@@ -1,10 +1,12 @@
 <script setup lang="ts">
+import { adminDatasetStatus } from "~/utils/admin-dataset";
+
 definePageMeta({ layout: "admin", middleware: "admin" });
 const operations = await useAdminOperations();
 const review = await useAdminReview();
 const corrections = await useAdminCorrections();
 const packages = await useAdminGuidePackages();
-const collectionIssues = computed(() => operations.data.value?.datasets.filter(item => item.status === "error" || (item.mode === "automatic" && ["missing", "stale"].includes(item.status))) ?? []);
+const collectionIssues = computed(() => operations.data.value?.datasets.filter(item => ["error", "review"].includes(item.status) || (item.mode === "automatic" && ["missing", "stale"].includes(item.status))) ?? []);
 const readerIssues = computed(() => corrections.data.value?.corrections.filter(item => item.status !== "resolved") ?? []);
 const publicationIssues = computed(() => packages.data.value?.packages.filter(item => item.workflow.status !== "published") ?? []);
 usePageSeo({ title: "Exceptions", path: "/admin/exceptions", robots: "noindex,nofollow" });
@@ -24,7 +26,7 @@ usePageSeo({ title: "Exceptions", path: "/admin/exceptions", robots: "noindex,no
 			<AdminLoadState :pending="operations.pending.value" :error="Boolean(operations.error.value)" label="collection status" @retry="operations.refresh()" />
 			<template v-if="operations.data.value && !operations.error.value && !operations.pending.value">
 				<p v-if="['invalid', 'failed', 'overdue'].includes(operations.data.value.automation.status)" role="alert">
-					Automation {{ operations.data.value.automation.status }}. <NuxtLink to="/admin" class="underline focus-ring">
+					Candidate collection {{ operations.data.value.automation.status }}. <NuxtLink to="/admin" class="underline focus-ring">
 						Operations
 					</NuxtLink>
 				</p>
@@ -37,7 +39,7 @@ usePageSeo({ title: "Exceptions", path: "/admin/exceptions", robots: "noindex,no
 							<h3 class="text-xl font-semibold">
 								{{ item.label }}
 							</h3><p class="text-app-muted mt-2 dark:text-app-muted-dark">
-								{{ item.failure || item.status }} · {{ item.stateCode }}
+								{{ item.failure || adminDatasetStatus(item) }} · {{ item.stateCode }}
 							</p>
 						</NuxtLink>
 					</li>

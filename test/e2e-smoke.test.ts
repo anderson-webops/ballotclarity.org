@@ -1434,7 +1434,7 @@ test("built app exposes a protected admin portal when admin env is configured", 
 	assert.match(dashboardHtml, /Operations/);
 	assert.match(dashboardHtml, /Exceptions/);
 	assert.match(dashboardHtml, /Settings/);
-	assert.match(dashboardHtml, /Automation/);
+	assert.match(dashboardHtml, /Candidate collection/);
 	assert.match(dashboardHtml, /Latest data/);
 	const reviewsResponse = await fetch(`${appBaseUrl}/api/admin/packages`, { headers: { cookie: changedSessionCookie || "" } });
 	assert.equal(reviewsResponse.status, 200);

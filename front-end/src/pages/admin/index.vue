@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { adminDatasetCount, adminDatasetStatus } from "~/utils/admin-dataset";
+
 definePageMeta({ layout: "admin", middleware: "admin" });
 const { data, error, pending, refresh } = await useAdminOperations();
 const available = computed(() => data.value?.datasets.filter(item => item.records !== null && item.status !== "archived") ?? []);
@@ -43,16 +45,16 @@ usePageSeo({ title: "Operations", path: "/admin", robots: "noindex,nofollow" });
 			<section class="space-y-6">
 				<div class="flex gap-4 items-center justify-between">
 					<h2 class="text-3xl font-serif">
-						Automation
+						Candidate collection
 					</h2><NuxtLink to="/admin/exceptions" class="underline focus-ring">
 						Exceptions
 					</NuxtLink>
 				</div>
 				<p v-if="data.automation.status === 'unreported'">
-					No automation run has been reported.
+					No candidate collection run has been reported.
 				</p>
 				<p v-else-if="data.automation.status === 'invalid'" role="alert">
-					Automation evidence could not be validated.
+					Candidate collection evidence could not be validated.
 				</p>
 				<p v-else class="capitalize" :role="['failed', 'overdue'].includes(data.automation.status) ? 'alert' : undefined">
 					{{ data.automation.status }}
@@ -78,7 +80,7 @@ usePageSeo({ title: "Operations", path: "/admin", robots: "noindex,nofollow" });
 							<h3 class="text-xl font-semibold">
 								{{ item.label }}
 							</h3><p class="text-app-muted mt-2 dark:text-app-muted-dark">
-								{{ item.stateCode }} · {{ item.records }} records · {{ item.status === 'current' ? 'Available' : item.status }}
+								{{ item.stateCode }} · {{ adminDatasetCount(item) }} · {{ adminDatasetStatus(item) }}
 							</p>
 						</NuxtLink>
 					</li>

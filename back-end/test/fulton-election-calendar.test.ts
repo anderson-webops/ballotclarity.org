@@ -11,8 +11,8 @@ function printed(value: string, year = false) {
 	return `${weekdays[date.getUTCDay()]}, ${months[date.getUTCMonth()]} ${date.getUTCDate()}${year ? `, ${date.getUTCFullYear()}` : ""}`;
 }
 function markup(year = 2026) {
-	const election = year === 2028 ? "2028-11-07" : "2026-11-03";
-	const runoff = year === 2028 ? "2028-12-05" : "2026-12-01";
+	const election = year === 2032 ? "2032-11-02" : year === 2028 ? "2028-11-07" : "2026-11-03";
+	const runoff = year === 2032 ? "2032-11-30" : year === 2028 ? "2028-12-05" : "2026-12-01";
 	const row = (date: string, label: string, note = "") => `${printed(date)}<br>${label}<br>${note ? `${note}<br>` : ""}`;
 	const group = (date: string) => [
 		row(`${year}-10-05`, "Voter Registration Deadline"),
@@ -22,7 +22,7 @@ function markup(year = 2026) {
 		row(date, "Last day for an Absentee Ballot submitted by mail"),
 		row(date, "Election Day")
 	].join("");
-	return `<main><h1>Registration and Elections Key Election Dates</h1><p>Upcoming Elections: ${printed(election, true)} - General Election</p><div class="text "><p>Key Dates for General Election</p><p>${group(election)}${row(`${year}-11-11`, "Logic and Accuracy Testing of Voting Equipment")}</p><hr><p>General Runoff Election<br>${group(runoff)}${row(`${year}-12-07`, "Last day To Return UOCAVA Absentee Ballot", `(must be postmarked by ${months[11]} ${Number(runoff.slice(-2))}, ${year})`)}${printed(`${year}-12-10`)} - ${printed(`${year}-12-14`)}<br>Risk Limiting Audit</p><span id="PING_CONTENT_MB_MAIN" style="display: none;"></span></div></main>${footer}`;
+	return `<main><h1>Registration and Elections Key Election Dates</h1><p>Upcoming Elections: ${printed(election, true)} - General Election</p><div class="text "><p>Key Dates for General Election</p><p>${group(election)}${row(`${year}-11-11`, "Logic and Accuracy Testing of Voting Equipment")}</p><hr><p>General Runoff Election<br>${group(runoff)}${row(`${year}-12-07`, "Last day To Return UOCAVA Absentee Ballot", `(must be postmarked by ${months[new Date(runoff).getUTCMonth()]} ${Number(runoff.slice(-2))}, ${year})`)}${printed(`${year}-12-10`)} - ${printed(`${year}-12-14`)}<br>Risk Limiting Audit</p><span id="PING_CONTENT_MB_MAIN" style="display: none;"></span></div></main>${footer}`;
 }
 const index = (year = 2026) => `<main><a href="${fultonCalendarPublication.calendarUrl}">More about ${year} Key Election dates</a></main>${footer}`;
 
@@ -61,6 +61,16 @@ test("a synthetic offered later cycle reuses the parser while dates, heading, ed
 	assert.throws(() => parseFultonCalendarPage(markup().replace("November 3, 2026 - General", "November 4, 2026 - General"), 2026));
 	assert.throws(() => parseFultonCalendarPage(markup().replace("postmarked by December 1", "postmarked by December 2"), 2026));
 	assert.throws(() => parseFultonCalendarPage(markup().replace("December 1, 2026)", "December 1, 2027)"), 2026));
+});
+
+test("an explicitly offered later November runoff works without calculating an unannounced election", () => {
+	const sections = parseFultonCalendarPage(markup(2032), readFultonCalendarIndex(index(2032)));
+	assert.deepEqual(sections.map(section => section.electionDate), ["2032-11-02", "2032-11-30"]);
+	assert.equal(sections[1]!.entries.find(entry => entry.note)!.note, "(must be postmarked by November 30, 2032)");
+	const sameDate = markup(2032).replaceAll("Tuesday, November 30", "Tuesday, November 2").replace("postmarked by November 30", "postmarked by November 2");
+	assert.throws(() => parseFultonCalendarPage(sameDate, 2032), /must follow/u);
+	const earlierDate = markup(2032).replaceAll("Tuesday, November 30", "Tuesday, October 26").replace("postmarked by November 30", "postmarked by October 26");
+	assert.throws(() => parseFultonCalendarPage(earlierDate, 2032));
 });
 
 test("missing, duplicated and unfamiliar events, hidden facts and active content require review", () => {

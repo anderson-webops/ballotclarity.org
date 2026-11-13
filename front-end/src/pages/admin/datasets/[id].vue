@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { adminDatasetCount, adminDatasetStatus } from "~/utils/admin-dataset";
+
 definePageMeta({ layout: "admin", middleware: "admin" });
 const id = useRouteStringParam("id");
 const { data, error, pending, refresh } = await useAdminOperations();
@@ -17,6 +19,24 @@ usePageSeo({ title: "Dataset", path: "/admin/datasets", robots: "noindex,nofollo
 		</header>
 		<AdminLoadState :pending="pending" :error="Boolean(error)" label="dataset status" @retry="refresh()" />
 		<template v-if="item && !error && !pending">
+			<p v-if="item.failure" role="alert">
+				{{ item.failure }}
+			</p>
+			<section v-if="item.reviewIssues?.length" class="space-y-6" aria-labelledby="date-review-heading">
+				<h2 id="date-review-heading" class="text-3xl font-serif">
+					Date review
+				</h2>
+				<ul class="divide-app-line divide-y dark:divide-app-line-dark">
+					<li v-for="issue in item.reviewIssues" :key="issue.id" class="py-6 space-y-3">
+						<h3 class="text-xl font-semibold">
+							{{ issue.label }}
+						</h3>
+						<p>{{ issue.printedDate }} · Election {{ issue.electionDate }}</p>
+						<p>{{ issue.reason }}</p>
+					</li>
+				</ul>
+			</section>
+			<a v-if="item.kind === 'calendars' && item.sourceUrl" :href="item.sourceUrl" class="btn-secondary">Official calendar</a>
 			<dl class="space-y-6">
 				<div>
 					<dt class="font-semibold">
@@ -30,20 +50,25 @@ usePageSeo({ title: "Dataset", path: "/admin/datasets", robots: "noindex,nofollo
 							· {{ item.electionDate }}
 						</template>
 					</dd>
-				</div><div>
+				</div><div v-if="item.kind !== 'calendars'">
 					<dt class="font-semibold">
 						Import mode
 					</dt><dd>{{ item.mode === 'automatic' ? 'Approved automatic collection' : 'Reviewed external import' }}</dd>
 				</div><div>
 					<dt class="font-semibold">
 						Status
-					</dt><dd>{{ item.status === 'pending' ? 'Awaiting records' : `${item.status} · ${item.records === null ? 'Not imported' : `${item.records} records`}` }}</dd>
+					</dt><dd>{{ item.status === 'pending' ? adminDatasetStatus(item) : `${adminDatasetStatus(item)} · ${adminDatasetCount(item)}` }}</dd>
+				</div><div v-if="item.collectionState">
+					<dt class="font-semibold">
+						Collection
+					</dt><dd class="capitalize">
+						{{ item.collectionState }}
+					</dd>
 				</div>
-			</dl><p v-if="item.failure" role="alert">
-				{{ item.failure }}
-			</p><div class="space-y-4">
-				<UpdatedAt v-if="item.retrievedAt" :value="item.retrievedAt" label="Source retrieved" /><UpdatedAt v-if="item.lastAttemptAt" :value="item.lastAttemptAt" label="Collection attempted" /><UpdatedAt v-if="item.lastImportAt" :value="item.lastImportAt" label="Imported" />
-			</div><NuxtLink :to="item.kind === 'officeholders' ? '/districts/fulton-county' : { path: '/records', query: { state: item.stateCode, ...(item.kind === 'candidates' ? { source: item.id } : {}) } }" class="btn-secondary">
+			</dl><div class="space-y-4">
+				<UpdatedAt v-if="item.retrievedAt" :value="item.retrievedAt" label="Source retrieved" /><UpdatedAt v-if="item.lastAttemptAt" :value="item.lastAttemptAt" label="Collection attempted" /><UpdatedAt v-if="item.lastSuccessAt" :value="item.lastSuccessAt" label="Successful collection" /><UpdatedAt v-if="item.lastImportAt" :value="item.lastImportAt" label="Imported" />
+			</div>
+			<NuxtLink v-if="item.kind !== 'calendars'" :to="item.kind === 'officeholders' ? '/districts/fulton-county' : { path: '/records', query: { state: item.stateCode, ...(item.kind === 'candidates' ? { source: item.id } : {}) } }" class="btn-secondary">
 				View records
 			</NuxtLink>
 		</template>

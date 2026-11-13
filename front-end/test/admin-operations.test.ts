@@ -45,3 +45,13 @@ test("new publication reviews select a loaded election rather than asking for in
 test("automation timestamps have separate rows rather than adjoining inline labels", () => {
 	assert.match(source("src/pages/admin/index.vue"), /<div class="flex flex-col gap-4 items-start">\s*<UpdatedAt/u);
 });
+
+test("calendar review is reachable without showing an unrelated candidate-directory link", () => {
+	assert.match(source("src/pages/admin/exceptions.vue"), /\["error", "review"\]/u);
+	assert.match(source("src/pages/admin/datasets/index.vue"), /"calendars"/u);
+	const detail = source("src/pages/admin/datasets/[id].vue");
+	assert.match(detail, /item\.reviewIssues\?\.length/u);
+	assert.match(detail, /item\.kind !== 'calendars'/u);
+	assert.match(detail, /Official calendar/u);
+	assert.doesNotMatch(detail, /<details/u);
+});

@@ -1,8 +1,10 @@
 <script setup lang="ts">
+import { adminDatasetCount, adminDatasetStatus } from "~/utils/admin-dataset";
+
 definePageMeta({ layout: "admin", middleware: "admin" });
 const { data, error, pending, refresh } = await useAdminOperations();
 const search = ref("");
-const groups = computed(() => ["officeholders", "candidates", "references"].map(kind => ({ kind, items: (data.value?.datasets ?? []).filter(item => item.kind === kind && [item.label, item.stateCode, item.id].join(" ").toLowerCase().includes(search.value.trim().toLowerCase())) })));
+const groups = computed(() => ["officeholders", "candidates", "references", "calendars"].map(kind => ({ kind, items: (data.value?.datasets ?? []).filter(item => item.kind === kind && [item.label, item.stateCode, item.id].join(" ").toLowerCase().includes(search.value.trim().toLowerCase())) })).filter(group => group.kind !== "calendars" || group.items.length));
 usePageSeo({ title: "Datasets", path: "/admin/datasets", robots: "noindex,nofollow" });
 </script>
 
@@ -20,7 +22,7 @@ usePageSeo({ title: "Datasets", path: "/admin/datasets", robots: "noindex,nofoll
 		<template v-if="data && !error && !pending">
 			<section v-for="group in groups" :key="group.kind" class="space-y-6">
 				<h2 class="text-3xl font-serif">
-					{{ group.kind === 'officeholders' ? 'Current officeholders' : group.kind === 'candidates' ? 'Candidate data' : 'Reference collections' }}
+					{{ group.kind === 'officeholders' ? 'Current officeholders' : group.kind === 'candidates' ? 'Candidate data' : group.kind === 'calendars' ? 'Calendars' : 'Reference collections' }}
 				</h2><p v-if="!group.items.length">
 					No matching datasets.
 				</p><ul class="divide-app-line divide-y dark:divide-app-line-dark">
@@ -29,7 +31,7 @@ usePageSeo({ title: "Datasets", path: "/admin/datasets", robots: "noindex,nofoll
 							<h3 class="text-xl font-semibold">
 								{{ item.label }}
 							</h3><p class="text-app-muted mt-2 dark:text-app-muted-dark">
-								{{ item.stateCode }} · {{ item.status === 'pending' ? 'Awaiting records' : `${item.records === null ? 'Not imported' : `${item.records} records`} · ${item.status}` }}
+								{{ item.stateCode }} · {{ item.status === 'pending' ? adminDatasetStatus(item) : `${adminDatasetCount(item)} · ${adminDatasetStatus(item)}` }}
 							</p>
 						</NuxtLink>
 					</li>

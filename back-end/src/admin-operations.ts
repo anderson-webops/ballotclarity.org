@@ -1,6 +1,7 @@
 import type { CourtDirectoryRepository } from "./court-directory-storage.js";
 import type { ElectionReferenceRepository } from "./election-references.js";
 import type { FultonCountyOfficeholderRepository } from "./fulton-county-officeholder-storage.js";
+import type { FultonCalendarRepository } from "./fulton-election-calendar-operations.js";
 import type { FultonOfficeholderRepository } from "./fulton-officeholder-storage.js";
 import type { MagistrateCourtRepository } from "./magistrate-court-storage.js";
 import type { StateBallotRepository } from "./state-ballot-repository.js";
@@ -112,6 +113,7 @@ export async function buildAdminOperations(options: {
 	courts?: CourtDirectoryRepository | null;
 	magistrateCourts?: MagistrateCourtRepository | null;
 	countyOfficeholders?: FultonCountyOfficeholderRepository | null;
+	calendars?: FultonCalendarRepository | null;
 	officeholders?: FultonOfficeholderRepository | null;
 	candidates: StateBallotRepository | null;
 	references: ElectionReferenceRepository | null;
@@ -124,6 +126,7 @@ export async function buildAdminOperations(options: {
 		...((await options.references?.inspectSources?.()) ?? []),
 		...((await options.officeholders?.inspectSources?.()) ?? []),
 		...((await options.countyOfficeholders?.inspectSources?.()) ?? []),
+		...((await options.calendars?.inspectSources()) ?? []),
 		...((await options.courts?.inspectSources()) ?? []),
 		...((await options.magistrateCourts?.inspectSources()) ?? [])
 	];
@@ -149,6 +152,7 @@ export async function buildAdminOperations(options: {
 							? "overdue"
 							: run.status;
 	for (const dataset of datasets) {
+		if (dataset.kind === "calendars") continue;
 		const result = run?.results.find(result => result.sourceId === dataset.id);
 		if (run && result && result.status !== "cached" && run.startedAt >= (dataset.lastAttemptAt ?? "")) dataset.lastAttemptAt = run.startedAt;
 		if (run?.finishedAt && result?.status === "imported" && run.finishedAt > (dataset.lastImportAt ?? "")) dataset.lastImportAt = run.finishedAt;

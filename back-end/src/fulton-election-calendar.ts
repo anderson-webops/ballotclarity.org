@@ -154,7 +154,7 @@ function section(title: FultonCalendarSection["title"], values: string[], year: 
 	}
 	if (requiredLabels.some(label => !rows.some(row => row.label === label))) throw new Error("The Fulton calendar omits a required election event.");
 	const electionDate = rows.find(row => row.label === "Election Day")?.date;
-	if (!electionDate || (title === "General Election" ? !/^20\d{2}-11-0[2-8]$/u.test(electionDate) : !/^20\d{2}-12-0[1-7]$/u.test(electionDate)) || new Date(electionDate).getUTCDay() !== 2) throw new Error("The Fulton calendar election date requires review.");
+	if (!electionDate || (title === "General Election" ? !/^20\d{2}-11-0[2-8]$/u.test(electionDate) : !/^20\d{2}-(?:11|12)-\d{2}$/u.test(electionDate)) || new Date(electionDate).getUTCDay() !== 2) throw new Error("The Fulton calendar election date requires review.");
 	for (const row of rows) {
 		if (!row.note) continue;
 		const note = /^\(must be postmarked by (\w+) ([1-9]\d?), (20\d{2})\)$/u.exec(row.note)!;
@@ -183,6 +183,7 @@ export function parseFultonCalendarPage(body: string, year: number): FultonCalen
 	if (boundary < 0 || values.lastIndexOf("General Runoff Election") !== boundary) throw new Error("The Fulton calendar runoff section is missing or ambiguous.");
 	const sections = [section("General Election", values.slice(0, boundary), year), section("General Runoff Election", values.slice(boundary + 1), year)];
 	if (sections[0]!.electionDate !== expected.date) throw new Error("The Fulton calendar event date disagrees with its heading.");
+	if (sections[1]!.electionDate <= sections[0]!.electionDate) throw new Error("The Fulton calendar runoff date must follow its general election.");
 	return sections;
 }
 

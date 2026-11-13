@@ -1,4 +1,5 @@
 import process from "node:process";
+import { importNativeStateBallotSnapshot } from "./state-ballot-native-import.js";
 import { legacyReviewedStateBallotSource } from "./state-ballot-registry.js";
 import { createStateBallotRepository, resolveStateBallotConfiguration } from "./state-ballot-repository.js";
 import { parseBundledStateSnapshot } from "./state-ballot-snapshot.js";
@@ -10,6 +11,14 @@ async function main() {
 		throw new Error("STATE_BALLOT_DATA_DIR is required for persistent candidate data.");
 	const [command, ...requested] = process.argv.slice(2);
 	const storage = createStateBallotStorage(configuration.dataDirectory);
+	if (command === "import-native") {
+		const [sourceId, path, ...extra] = requested;
+		const source = configuration.sources.find(source => source.id === sourceId);
+		if (!source || !path || extra.length || source.retrievalPolicy === "manual-snapshot") throw new Error("Use import-native ENABLED_AUTOMATIC_SOURCE SNAPSHOT.json.");
+		const snapshot = await importNativeStateBallotSnapshot(source, await readBoundedStateData(path), configuration.dataDirectory);
+		console.log(JSON.stringify({ state: source.stateCode, sourceId: source.id, action: "imported", records: snapshot.records.length, questions: snapshot.ballotQuestions?.length ?? 0, retrievedAt: snapshot.retrievedAt }));
+		return;
+	}
 	if (command === "import") {
 		if (!requested.length)
 			throw new Error("Provide at least one reviewed snapshot file.");
@@ -29,7 +38,7 @@ async function main() {
 		return;
 	}
 	if (command !== "refresh")
-		throw new Error("Use refresh [STATE ...] or import SNAPSHOT.json [...].");
+		throw new Error("Use refresh [STATE ...], import SNAPSHOT.json [...], or import-native SOURCE SNAPSHOT.json.");
 	const states = requested.map(state => state.toUpperCase());
 	if (states.some(state => !configuration.sources.some(source => source.stateCode === state && source.retrievalPolicy !== "manual-snapshot")))
 		throw new Error("Refresh accepts enabled automatic sources only; reviewed sources require import.");

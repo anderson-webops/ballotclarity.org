@@ -14,13 +14,17 @@ const jurisdictionSlug = computed(() => data.value?.election.jurisdictionSlug);
 const { data: jurisdiction } = await useJurisdiction(jurisdictionSlug);
 const officialResources = computed(() => [...new Map([...(data.value?.election.officialResources ?? []), ...(jurisdiction.value?.officialResources ?? [])].map(resource => [resource.url || resource.label, resource])).values()]);
 const candidateSections = ref<ElectionSectionLink[]>([]);
+const questionSections = ref<ElectionSectionLink[]>([]);
 const sectionLinks = computed<ElectionSectionLink[]>(() => [
-	...(data.value?.candidateRecordSource ? candidateSections.value : []),
+	...(data.value?.candidateRecordSource ? candidateSections.value.slice(0, 1) : []),
+	...questionSections.value,
+	...(data.value?.candidateRecordSource ? candidateSections.value.slice(1) : []),
 	...(data.value?.guideContent?.verifiedContestPackage && data.value.election.contests.length ? [{ href: "#ballot-items", label: "Ballot items" }] : []),
 	...(officialResources.value.length || jurisdiction.value?.officialOffice.phone ? [{ href: "#voting-info", label: "Voting info" }] : [])
 ]);
-watch(() => data.value?.candidateRecordSource?.sourceId, () => {
+watch(() => [data.value?.candidateRecordSource?.stateCode, data.value?.candidateRecordSource?.sourceId, data.value?.election.date], () => {
 	candidateSections.value = [];
+	questionSections.value = [];
 });
 const guideStatusNote = computed(() => data.value?.candidateRecordSource || jurisdiction.value?.countyAreaScope
 	? ""
@@ -140,8 +144,9 @@ usePageSeo({
 						</ul>
 					</nav>
 				</aside>
-				<div v-if="data.candidateRecordSource" class="election-overview-candidates min-w-0">
+				<div v-if="data.candidateRecordSource" class="election-overview-candidates min-w-0 space-y-20">
 					<ElectionCandidateRecords :source="data.candidateRecordSource" @sections="candidateSections = $event" />
+					<ElectionBallotQuestions :source="data.candidateRecordSource" :election-date="data.election.date" @sections="questionSections = $event" />
 				</div>
 			</div>
 			<section v-if="data.guideContent?.verifiedContestPackage && data.election.contests.length" aria-labelledby="ballot-items" class="surface-panel">

@@ -25,8 +25,12 @@ require no editorial clicks; interpretive content and ballot publication retain
 their separate approval, rights and geographic checks.
 
 The runner requires `STATE_BALLOT_DATA_DIR` outside the release. A per-directory
-exclusive lock prevents overlapping jobs. A retained crash lock requires operator
-review rather than speculative automatic takeover. `automation-run.json` is
+process-held lock prevents overlapping jobs and releases through the operating
+system on normal exit or abrupt process death. Its small, private SQLite
+coordination file persists between runs; it contains no election data. Existing
+legacy PID locks and unrecognized state still require operator review and remain
+unchanged. The lock's one-time transition and rollback requirements are documented
+in [automation locking](automation-locking.md). `automation-run.json` is
 written atomically with bounded typed results and source-neutral failure codes.
 Last successful collection/import clocks advance only after a fresh successful
 durable import, not an unchanged cached read. A watcher records its actual next

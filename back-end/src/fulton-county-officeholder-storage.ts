@@ -3,12 +3,13 @@ import type { AdminOperationDataset } from "./types/civic.js";
 import { Buffer } from "node:buffer";
 import { createHash, randomUUID } from "node:crypto";
 import { closeSync, constants, fstatSync, openSync, readSync, realpathSync } from "node:fs";
-import { mkdir, open, readFile, rename, unlink } from "node:fs/promises";
+import { open, readFile, rename, unlink } from "node:fs/promises";
 import { isAbsolute, join } from "node:path";
 import process from "node:process";
 import { readAutomationRun } from "./admin-operations.js";
 import { fultonClerkPublication } from "./fulton-clerk-office.js";
 import { fultonCountyOfficeholderPublication, validateFultonCountyOfficeholderSnapshot } from "./fulton-county-officeholders.js";
+import { withStateBallotAutomationLock } from "./state-ballot-automation-lock.js";
 import { assertExternalStateDataDirectory } from "./state-ballot-storage.js";
 
 export interface FultonCountyOfficeholderRepository {
@@ -105,21 +106,7 @@ async function atomicFile(path: string, body: string) {
 
 export async function withFultonCountyOfficeholderLock<Result>(directory: string, work: (canonical: string) => Promise<Result>) {
 	if (!isAbsolute(directory)) throw new Error("The Fulton county-office directory must be absolute.");
-	assertExternalStateDataDirectory(directory);
-	await mkdir(directory, { recursive: true });
-	const canonical = realpathSync(directory);
-	assertExternalStateDataDirectory(canonical);
-	const path = join(canonical, ".fulton-county-offices.lock");
-	const token = randomUUID();
-	const lock = await open(path, "wx", 0o600);
-	try {
-		await lock.writeFile(token);
-		return await work(canonical);
-	}
-	finally {
-		await lock.close();
-		if (await readFile(path, "utf8") === token) await unlink(path);
-	}
+	return withStateBallotAutomationLock(directory, ".fulton-county-offices.lock", work);
 }
 
 export async function writeFultonCountyOfficeholders(directory: string, snapshot: FultonCountyOfficeholderSnapshot, acquisition: "collected" | "imported", now = Date.now()) {

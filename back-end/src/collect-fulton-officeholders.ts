@@ -31,7 +31,7 @@ export async function collectFultonOfficeholders({ directory, now = Date.now, re
 		await mkdir(runDirectory, { recursive: true });
 		if (await realpath(runDirectory) !== runDirectory) throw new Error("The Fulton collection journal must not be redirected.");
 		const previousRun = await readAutomationRun(runDirectory, now());
-		if (previousRun?.status === "failed" && Date.parse(previousRun.startedAt) + fultonOfficeholderPublication.minimumRefreshIntervalMs > now()) throw new Error("The failed Fulton collection is awaiting its next permitted retry.");
+		if (previousRun && ["failed", "running"].includes(previousRun.status) && Date.parse(previousRun.startedAt) + fultonOfficeholderPublication.minimumRefreshIntervalMs > now()) throw new Error("The failed or interrupted Fulton collection is awaiting its next permitted retry.");
 		const startedAt = new Date(now()).toISOString();
 		const prior = { schemaVersion: 1 as const, type: "ballot-automation-run" as const, startedAt, lastImportAt, lastSuccessAt: previousRun?.lastSuccessAt ?? null, nextRunAt: null };
 		await writeAutomationRun(runDirectory, { ...prior, status: "running", finishedAt: null, results: [] }, now());

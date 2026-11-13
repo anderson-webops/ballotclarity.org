@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -140,6 +140,29 @@ test("blocked refresh retains last-good records and import clocks, records failu
 	assert.equal(datasets[0]!.lastImportAt, new Date(officeholderTestTime).toISOString());
 });
 
+test("an interrupted commission collection preserves data and cooldown before the next permitted request", async (context) => {
+	const directory = await mkdtemp(join(tmpdir(), "fulton-board-interruption-"));
+	context.after(() => rm(directory, { recursive: true, force: true }));
+	await importFultonOfficeholders(directory, exampleFultonOfficeholders(), officeholderTestTime);
+	const before = await readFile(join(directory, "fulton-board.json"));
+	const journal = join(directory, "automation");
+	await mkdir(journal);
+	const startedAt = officeholderTestTime + fultonOfficeholderPublication.minimumRefreshIntervalMs + 1;
+	const receipt = `${JSON.stringify({ schemaVersion: 1, type: "ballot-automation-run", status: "running", startedAt: new Date(startedAt).toISOString(), finishedAt: null, lastImportAt: new Date(officeholderTestTime).toISOString(), lastSuccessAt: null, nextRunAt: null, results: [] })}\n`;
+	await writeFile(join(journal, "automation-run.json"), receipt);
+	let requests = 0;
+	const request = async () => {
+		requests++;
+		throw new Error("Fixture publisher outage");
+	};
+	await assert.rejects(collectFultonOfficeholders({ directory, now: () => startedAt + 1, request }), /next permitted retry/u);
+	assert.equal(requests, 0);
+	assert.equal(await readFile(join(journal, "automation-run.json"), "utf8"), receipt);
+	await assert.rejects(collectFultonOfficeholders({ directory, now: () => startedAt + fultonOfficeholderPublication.minimumRefreshIntervalMs, request }), /Fixture publisher outage/u);
+	assert.equal(requests, 1);
+	assert.ok((await readFile(join(directory, "fulton-board.json"))).equals(before));
+});
+
 test("a changed publisher policy stops before any roster request", async (context) => {
 	const directory = await mkdtemp(join(tmpdir(), "fulton-officeholders-policy-"));
 	context.after(() => rm(directory, { recursive: true }));
@@ -168,6 +191,6 @@ test("a second collector cannot replace a lock owned by an active collector", as
 	const directory = await mkdtemp(join(tmpdir(), "fulton-officeholders-lock-"));
 	context.after(() => rm(directory, { recursive: true }));
 	await withFultonOfficeholderLock(directory, async () => {
-		await assert.rejects(() => withFultonOfficeholderLock(directory, async () => {}), { code: "EEXIST" });
+		await assert.rejects(() => withFultonOfficeholderLock(directory, async () => {}), /already running/u);
 	});
 });

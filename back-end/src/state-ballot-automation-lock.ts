@@ -7,7 +7,8 @@ import { assertExternalStateDataDirectory, readBoundedStateDataBytes } from "./s
 
 const applicationId = 1111706673;
 const format = "ballot-automation-lock-v1";
-const activeDirectories = new Set<string>();
+const lockNames = ["automation.lock", ".fulton-board.lock", ".fulton-county-offices.lock", ".court-directory.lock", ".magistrate-court.lock"];
+const activeFilenames = new Set<string>();
 
 async function initializeLock(directory: string, filename: string) {
 	const temporary = join(directory, `.automation-lock-${randomUUID()}.sqlite`);
@@ -35,14 +36,15 @@ async function initializeLock(directory: string, filename: string) {
 	}
 }
 
-export async function acquireStateBallotAutomationLock(directory: string) {
+export async function acquireStateBallotAutomationLock(directory: string, lockName = "automation.lock") {
+	if (!lockNames.includes(lockName)) throw new Error("The automation coordination filename requires review.");
 	assertExternalStateDataDirectory(directory);
 	await mkdir(directory, { recursive: true });
 	const canonical = await realpath(directory);
 	assertExternalStateDataDirectory(canonical);
-	if (activeDirectories.has(canonical)) throw new Error("Approved-data automation is already running for this directory.");
-	activeDirectories.add(canonical);
-	const filename = join(canonical, "automation.lock");
+	const filename = join(canonical, lockName);
+	if (activeFilenames.has(filename)) throw new Error("Approved-data automation is already running for this resource.");
+	activeFilenames.add(filename);
 	let database: DatabaseSync | undefined;
 	try {
 		try {
@@ -83,14 +85,22 @@ export async function acquireStateBallotAutomationLock(directory: string) {
 				}
 				finally {
 					held.close();
-					activeDirectories.delete(canonical);
+					activeFilenames.delete(filename);
 				}
 			}
 		};
 	}
 	catch (error) {
 		database?.close();
-		activeDirectories.delete(canonical);
+		activeFilenames.delete(filename);
 		throw error;
 	}
+}
+
+export async function withStateBallotAutomationLock<Result>(directory: string, lockName: string, work: (canonical: string) => Promise<Result>) {
+	const lock = await acquireStateBallotAutomationLock(directory, lockName);
+	try {
+		return await work(lock.directory);
+	}
+	finally { await lock.release(); }
 }

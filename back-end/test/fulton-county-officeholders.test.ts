@@ -121,7 +121,7 @@ test("county-office snapshot symlinks, invalid envelopes and overlapping collect
 		await rm(join(directory, "fulton-county-offices.json"));
 		await writeFile(join(directory, "fulton-county-offices.json"), "{}");
 		assert.throws(() => readFultonCountyOfficeholderEnvelope(directory));
-		await withFultonCountyOfficeholderLock(directory, async () => assert.rejects(withFultonCountyOfficeholderLock(directory, async () => {}), /EEXIST/u));
+		await withFultonCountyOfficeholderLock(directory, async () => assert.rejects(withFultonCountyOfficeholderLock(directory, async () => {}), /already running/u));
 		assert.equal(countyOfficeHash(await readFile(target, "utf8")), countyOfficeHash(JSON.stringify(exampleCountyOfficeholders())));
 	}
 	finally { await rm(directory, { recursive: true, force: true }); }

@@ -110,7 +110,7 @@ test("warm court imports and competing collectors make no publisher requests", a
 		} })).collected, false);
 		assert.equal(requests, 0);
 		await withCourtDirectoryLock(directory, async () => {
-			await assert.rejects(collectCourtDirectory({ directory }), /EEXIST/u);
+			await assert.rejects(collectCourtDirectory({ directory }), /already running/u);
 		});
 		assert.equal((await readCourtDirectoryEnvelope(directory, courtTestTime)).envelope.acquisition, "imported");
 	}

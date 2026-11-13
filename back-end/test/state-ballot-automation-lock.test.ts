@@ -98,3 +98,29 @@ test("unknown database versions and identities are refused before opening the pe
 		assert.ok((await readFile(filename)).equals(bytes));
 	}
 });
+
+test("named feed coordination rejects unsupported paths before creating external state", async (context) => {
+	const parent = await realpath(await mkdtemp(join(tmpdir(), "ballot-lock-names-")));
+	context.after(() => rm(parent, { recursive: true, force: true }));
+	const directory = join(parent, "unused");
+	for (const name of ["", "../automation.lock", "/automation.lock", "unknown.lock", "nested/automation.lock"])
+		await assert.rejects(acquireStateBallotAutomationLock(directory, name), /filename requires review/u);
+	await assert.rejects(lstat(directory), { code: "ENOENT" });
+});
+
+test("canonical aliases of named resources retain independent owners", async (context) => {
+	const parent = await realpath(await mkdtemp(join(tmpdir(), "ballot-lock-named-alias-")));
+	context.after(() => rm(parent, { recursive: true, force: true }));
+	const board = await acquireStateBallotAutomationLock(join(parent, "data"), ".fulton-board.lock");
+	await symlink(board.directory, join(parent, "alias"));
+	const court = await acquireStateBallotAutomationLock(join(parent, "alias"), ".court-directory.lock");
+	try {
+		await assert.rejects(acquireStateBallotAutomationLock(join(parent, "alias"), ".fulton-board.lock"), /already running/u);
+		await court.release();
+		await assert.rejects(acquireStateBallotAutomationLock(board.directory, ".fulton-board.lock"), /already running/u);
+	}
+	finally {
+		await court.release();
+		await board.release();
+	}
+});

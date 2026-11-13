@@ -2,11 +2,12 @@ import type { CourtDirectorySnapshot } from "./court-directories.js";
 import type { AdminOperationDataset } from "./types/civic.js";
 import { Buffer } from "node:buffer";
 import { createHash, randomUUID } from "node:crypto";
-import { mkdir, open, readFile, realpath, rename, unlink } from "node:fs/promises";
+import { mkdir, open, realpath, rename, unlink } from "node:fs/promises";
 import { isAbsolute, join } from "node:path";
 import process from "node:process";
 import { readAutomationRun } from "./admin-operations.js";
 import { courtDirectoryPublication, validateCourtDirectorySnapshot } from "./court-directories.js";
+import { withStateBallotAutomationLock } from "./state-ballot-automation-lock.js";
 import { assertExternalStateDataDirectory, readBoundedStateDataBytes } from "./state-ballot-storage.js";
 
 export interface CourtDirectoryRepository {
@@ -78,17 +79,7 @@ export function createCourtDirectoryRepository(directory = process.env.COURT_DIR
 
 export async function withCourtDirectoryLock<Result>(directory: string, work: (canonical: string) => Promise<Result>) {
 	const canonical = await canonicalDirectory(directory, true);
-	const path = join(canonical, ".court-directory.lock");
-	const token = randomUUID();
-	const lock = await open(path, "wx", 0o600);
-	try {
-		await lock.writeFile(token);
-		return await work(canonical);
-	}
-	finally {
-		await lock.close();
-		if (await readFile(path, "utf8") === token) await unlink(path);
-	}
+	return withStateBallotAutomationLock(canonical, ".court-directory.lock", work);
 }
 
 async function atomicFile(path: string, body: string | Buffer) {

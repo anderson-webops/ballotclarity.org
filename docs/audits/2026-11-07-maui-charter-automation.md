@@ -79,6 +79,37 @@ Adding this worker changes neither public API routes nor reader-time publisher
 access. Scheduling remains external to the voter application; one daily run is
 sufficient while a reviewed election publication is being monitored.
 
+## Repeatable Collection And Review
+
+The same plan now supports durable recurring collection. A private, process-held
+lock excludes overlapping workers and releases ownership after process exit.
+Both successful and failed attempts observe a 24-hour minimum retry interval.
+A failed or interrupted run retains its prior successful capture reference and
+last-success timestamp. Invalid stored evidence requires review before another
+publisher request.
+
+`maui-collection-run.json` records attempts, bounded request counts, outcomes and
+the exact retained capture. Unchanged document hashes reuse the original bytes
+and capture clocks while advancing only the successful-check clock. Changed
+captures retain earlier originals in a bounded archive of at most 256 captures
+and 128 MiB, including their review entries. Capacity exhaustion preserves data
+and requires an explicit retention decision.
+
+Each new question inventory creates an immutable `maui-review-*.json` entry.
+Added, changed and removed resolution identities bind both current and earlier
+original evidence. Changed website markup with unchanged questions reuses the
+same review entry. A future election receives its own inventory and review;
+earlier editorial approval remains tied to its exact election and evidence.
+Queue entries retain `publicationApproved: false` and
+`automaticImportApproved: false`.
+
+The compiled command accepts the original `PLAN.json` invocation and the explicit
+`collect PLAN.json`, `status PLAN.json` and `inventory PLAN.json` forms. Collection
+continues returning the pinned `path`, `sha256`, question count and election date
+needed by native preparation. Status and inventory inspect retained private
+evidence without publisher requests. Native preparation remains the separately
+pinned, offline step described in the preparation contract below.
+
 ## Native Measure Review
 
 The [native preparation adapter](../maui-measure-guide-preparation.md) now binds

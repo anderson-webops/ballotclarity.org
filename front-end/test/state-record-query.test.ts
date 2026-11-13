@@ -2,7 +2,7 @@ import type { StateRecordState } from "../src/types/civic.ts";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
-import { readRecoverableStateRecordQuery, stateRecordSourceMismatch } from "../src/utils/state-record-query.ts";
+import { readRecoverableStateRecordQuery, stateRecordSourceMismatch, stateRecordSourceSelectionRequired } from "../src/utils/state-record-query.ts";
 import { readStateRecordQuery } from "../src/utils/state-records.ts";
 
 const states: StateRecordState[] = [
@@ -74,8 +74,28 @@ test("an available response cannot silently substitute another explicitly reques
 
 test("a retired source exposes an explicit replacement choice even with one eligible publisher", () => {
 	const page = readFileSync(new URL("../src/components/CandidateDirectory.vue", import.meta.url), "utf8");
-	assert.match(page, /v-if="sourceOptions.length > 1 \|\| unavailableSource"/u);
+	assert.match(page, /v-if="showSourceSelection \|\| unavailableSource"/u);
 	assert.match(page, /v-if="unavailableSource" :value="filters.sourceId" disabled/u);
 	assert.match(page, /Unavailable source/u);
 	assert.match(page, /v-if="stateError \|\| error \|\| sourceMismatch"/u);
+});
+
+test("a sole historical election remains selectable without automatically selecting its records", () => {
+	const historical = states[1]!;
+	assert.equal(stateRecordSourceSelectionRequired(historical), true);
+	assert.equal(readRecoverableStateRecordQuery({ state: "AL" }, states).sourceId, undefined);
+	assert.equal(stateRecordSourceSelectionRequired({ ...historical, electionDate: "2026-11-03" }), false);
+	assert.equal(stateRecordSourceSelectionRequired({ ...historical, electionDate: "2028-11-07" }), true);
+	assert.equal(stateRecordSourceSelectionRequired(states[0]), false);
+	assert.equal(stateRecordSourceSelectionRequired(undefined), false);
+});
+
+test("multiple publications expose the selector even when their election dates agree", () => {
+	const source = states[1]!.sources![0]!;
+	assert.equal(stateRecordSourceSelectionRequired({ ...states[1]!, electionDate: source.electionDate, sources: [source, { ...source, id: "al-county-2026" }] }), true);
+	const page = readFileSync(new URL("../src/components/CandidateDirectory.vue", import.meta.url), "utf8");
+	assert.match(page, /stateRecordSourceSelectionRequired\(selectedStateData.value\)/u);
+	assert.match(page, /<option value="">\s+Current election\s+<\/option>/u);
+	assert.match(page, /formatDate\(source.electionDate\)/u);
+	assert.doesNotMatch(page, /Date\.now\(|new Date\(/u);
 });

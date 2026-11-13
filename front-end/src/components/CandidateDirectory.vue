@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { isSampleBallotDocument, recordPublications, recordSourceNotice } from "~/utils/record-publications";
-import { readRecoverableStateRecordQuery, stateRecordSourceMismatch } from "~/utils/state-record-query";
+import { readRecoverableStateRecordQuery, stateRecordSourceMismatch, stateRecordSourceSelectionRequired } from "~/utils/state-record-query";
 import { readStateRecordQuery, stateRecordScopes, stateRecordSummaryParts } from "~/utils/state-records";
 
 const route = useRoute();
@@ -16,7 +16,9 @@ const referenceFilters = computed(() => ({ stateCode: filters.value.stateCode, s
 const { data: referenceData, error: referenceError, pending: referencePending, refresh: refreshReferences } = await useElectionReferences(referenceFilters);
 const selectedState = ref(filters.value.stateCode);
 const selectedSource = ref(filters.value.sourceId ?? "");
-const sourceOptions = computed(() => stateData.value?.states.find(state => state.stateCode === selectedState.value)?.sources ?? []);
+const selectedStateData = computed(() => stateData.value?.states.find(state => state.stateCode === selectedState.value));
+const sourceOptions = computed(() => selectedStateData.value?.sources ?? []);
+const showSourceSelection = computed(() => stateRecordSourceSelectionRequired(selectedStateData.value));
 const unavailableSource = computed(() => Boolean(sourceOptions.value.length && filters.value.sourceId && !sourceOptions.value.some(source => source.id === filters.value.sourceId)));
 const searchInput = ref(filters.value.search);
 const selectedScope = ref(filters.value.scope);
@@ -81,17 +83,17 @@ async function retryRecords() {
 					</option>
 				</select>
 			</div>
-			<div v-if="sourceOptions.length > 1 || unavailableSource" class="sm:col-span-2">
-				<label for="record-source" class="text-sm text-app-ink font-semibold dark:text-app-text-dark">Source</label>
+			<div v-if="showSourceSelection || unavailableSource" class="sm:col-span-2">
+				<label for="record-source" class="text-sm text-app-ink font-semibold dark:text-app-text-dark">Election</label>
 				<select id="record-source" v-model="selectedSource" class="text-base text-app-ink mt-2 px-3 border border-app-line rounded-lg bg-app-panel h-12 w-full dark:text-app-text-dark dark:border-app-line-dark dark:bg-app-panel-dark focus-ring" @change="applyFilters()">
 					<option v-if="unavailableSource" :value="filters.sourceId" disabled>
 						Unavailable source
 					</option>
-					<option v-if="sourceOptions.length > 1" value="">
-						Automatic
+					<option value="">
+						Current election
 					</option>
 					<option v-for="source in sourceOptions" :key="source.id" :value="source.id">
-						{{ source.label }}
+						{{ formatDate(source.electionDate) }} · {{ source.label }}
 					</option>
 				</select>
 			</div>

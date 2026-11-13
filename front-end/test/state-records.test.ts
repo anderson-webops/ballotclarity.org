@@ -47,7 +47,7 @@ test("source links retain explicit selection, including invalid inputs that must
 	assert.equal(readStateRecordQuery({ source: "x".repeat(200) }, states).sourceId?.length, 120);
 	assert.equal(readStateRecordQuery({ state: "Maine" }, states).sourceId, undefined);
 	const page = readFileSync(new URL("../src/components/CandidateDirectory.vue", import.meta.url), "utf8");
-	assert.match(page, /v-if="sourceOptions.length > 1 \|\| unavailableSource"/u);
+	assert.match(page, /v-if="showSourceSelection \|\| unavailableSource"/u);
 	assert.match(page, /for="record-source"/u);
 	assert.match(page, /selectedSource.value = "";\s+await applyFilters\(\)/u);
 	assert.match(page, /source: selectedSource.value/u);

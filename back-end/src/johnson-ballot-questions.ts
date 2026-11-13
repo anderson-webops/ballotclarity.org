@@ -76,17 +76,19 @@ export function readJohnsonSampleQuestions(source: StateBallotSource, document: 
 }
 export function buildJohnsonBallotQuestions(source: StateBallotSource, documents: readonly JohnsonSampleText[], headings: readonly JohnsonQuestionHeading[], previous: readonly StateBallotQuestion[] = []) {
 	const questions: StateBallotQuestion[] = [];
-	for (const document of documents) {
-		for (const question of readJohnsonSampleQuestions(source, document, headings)) {
-			const existing = questions.find(item => item.title === question.title);
-			if (existing) requireValue(existing.audience === question.audience && existing.officialText === question.officialText && isDeepStrictEqual(existing.choices, question.choices), "conflicting repeated question");
-			else questions.push(question);
-		}
+	const occurrences = documents.flatMap(document => readJohnsonSampleQuestions(source, document, headings));
+	for (const question of occurrences) {
+		const existing = questions.find(item => item.title === question.title);
+		if (existing) requireValue(existing.audience === question.audience && existing.officialText === question.officialText && isDeepStrictEqual(existing.choices, question.choices), "conflicting repeated question");
+		else questions.push(question);
 	}
 	requireValue(questions.length === headings.length && questions.length <= 100 && new Set(questions.map(question => question.id)).size === questions.length, "complete distinct advertised issue inventory");
 	for (const prior of previous) {
 		const current = questions.find(question => question.title === prior.title && question.audience === prior.audience);
 		requireValue(current && current.officialText === prior.officialText && isDeepStrictEqual(current.choices, prior.choices), "accepted question changed or disappeared");
+		const retained = occurrences.find(question => isDeepStrictEqual(question, prior));
+		requireValue(retained, "accepted question source changed or disappeared");
+		questions[questions.indexOf(current)] = retained;
 	}
 	return questions;
 }

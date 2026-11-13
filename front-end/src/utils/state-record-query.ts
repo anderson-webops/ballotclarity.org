@@ -1,6 +1,11 @@
 import type { StateRecordState } from "~/types/civic";
 import { readStateRecordQuery } from "./state-records";
 
+export function stateRecordSourceSelectionRequired(state: StateRecordState | undefined) {
+	const sources = state?.sources ?? [];
+	return sources.length > 1 || sources.some(source => source.electionDate !== state?.electionDate);
+}
+
 export function readRecoverableStateRecordQuery(query: Record<string, unknown>, states: readonly StateRecordState[], selectedState?: string) {
 	const filters = readStateRecordQuery(query.state === undefined && selectedState ? { ...query, state: selectedState } : query, states);
 	const state = states.find(state => state.stateCode === filters.stateCode);

@@ -8,7 +8,7 @@ import { join } from "node:path";
 import test from "node:test";
 import express from "express";
 import { johnsonBallotHash, johnsonBallotMapUrl, johnsonSampleInventory } from "../src/johnson-ballot-publications.js";
-import { johnsonSampleStyle } from "../src/johnson-ballot-questions.js";
+import { buildJohnsonBallotQuestions, johnsonSampleStyle } from "../src/johnson-ballot-questions.js";
 import { fetchIowaJohnsonCandidateCapture, parseIowaJohnsonCandidateCapture, readIowaJohnsonCandidatePage } from "../src/state-ballot-iowa-johnson.js";
 import { createStateCandidateRecord } from "../src/state-ballot-records.js";
 import { createStateBallotRepository } from "../src/state-ballot-repository.js";
@@ -18,6 +18,27 @@ import { registerStateRecordRoutes, stateRecordDocumentLinks } from "../src/stat
 import { johnsonBallotFixture } from "./helpers/johnson-ballot-fixture.js";
 
 const parse = (fixture: ReturnType<typeof johnsonBallotFixture>) => parseIowaJohnsonCandidateCapture(fixture.source, fixture.body(), createStateCandidateRecord, fixture.now);
+
+test("An added earlier sample style preserves each accepted question's identity and still-published citation", () => {
+	const fixture = johnsonBallotFixture();
+	const headings = readIowaJohnsonCandidatePage(fixture.source, fixture.discovery.pages[0]!.body, createStateCandidateRecord).questions;
+	const first = fixture.ballots.documents[0]!;
+	const second = { ...first, url: first.url.replace("Style01", "Style02"), raw: first.raw.replace("Ballot Style 1", "Ballot Style 2"), layout: first.layout.replace("Ballot Style 1", "Ballot Style 2") };
+	const previous = buildJohnsonBallotQuestions(fixture.source, [second], headings);
+	assert.deepEqual(buildJohnsonBallotQuestions(fixture.source, [first, second], headings, previous), previous);
+	assert.deepEqual(buildJohnsonBallotQuestions(fixture.source, [second, first], headings, previous), previous);
+});
+
+test("An accepted question's removed or altered citation requires review even when another sample repeats its wording", () => {
+	const fixture = johnsonBallotFixture();
+	const headings = readIowaJohnsonCandidatePage(fixture.source, fixture.discovery.pages[0]!.body, createStateCandidateRecord).questions;
+	const first = fixture.ballots.documents[0]!;
+	const second = { ...first, url: first.url.replace("Style01", "Style02"), raw: first.raw.replace("Ballot Style 1", "Ballot Style 2"), layout: first.layout.replace("Ballot Style 1", "Ballot Style 2") };
+	const previous = buildJohnsonBallotQuestions(fixture.source, [second], headings);
+	assert.throws(() => buildJohnsonBallotQuestions(fixture.source, [first], headings, previous), /accepted question source changed or disappeared/u);
+	assert.throws(() => buildJohnsonBallotQuestions(fixture.source, [first, second], headings, previous.map(question => ({ ...question, id: "0".repeat(24) }))), /accepted question source changed or disappeared/u);
+});
+
 function resourceBody(fixture: ReturnType<typeof johnsonBallotFixture>, index: number, change: (body: string) => string) {
 	const resource = fixture.ballots.resources[index]!;
 	resource.body = change(resource.body);

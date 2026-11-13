@@ -1,5 +1,10 @@
 # Reusable election cycles
 
+Fulton's separate [calendar collector](fulton-election-calendar.md) follows the
+county's explicitly labeled rolling publication across future cycles. Its
+source inventory retains conflicting dates for review, independently of
+candidate rosters, runoff occurrence and approved voter-deadline publication.
+
 Juneau's `ak-juneau-2026` family follows the annual certified-candidate link
 actually published by its independent municipal index. Candidate dates remain
 bound to the October municipal slate, separately from November state notices.

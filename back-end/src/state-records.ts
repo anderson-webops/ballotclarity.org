@@ -15,6 +15,7 @@ import { validateCassiaDocumentUrl, validateCassiaSource } from "./state-ballot-
 import { validateChicagoDocumentUrl } from "./state-ballot-chicago-collection.js";
 import { validateFairbanksSource } from "./state-ballot-fairbanks.js";
 import { validateFranklinDocumentUrl, validateFranklinSource } from "./state-ballot-franklin-collection.js";
+import { fultonMunicipalDocumentUrl, validateFultonMunicipalSource } from "./state-ballot-fulton-municipal.js";
 import { validateGoffstownDocumentUrl } from "./state-ballot-goffstown-discovery.js";
 import { validateHamiltonDocumentUrl } from "./state-ballot-hamilton-collection.js";
 import { validateIowaJohnsonSource } from "./state-ballot-iowa-johnson.js";
@@ -69,6 +70,11 @@ export function stateRecordDocumentLinks(source: StateBallotSource | undefined, 
 			validateCassiaDocumentUrl(document.url, source.electionDate);
 			return { label: index === 0 ? "Sample ballot" : /School/iu.test(document.url) ? "School ballot" : /Fire/iu.test(document.url) ? "Fire ballot" : "Supporting ballot", url: document.url };
 		});
+	}
+	if (source?.format === "fulton-municipal-pdf" && snapshot?.documents) {
+		validateFultonMunicipalSource(source);
+		if (snapshot.documents.length !== 1) throw new Error("The municipal sample ballot requires review.");
+		return [{ label: "Sample ballot", url: fultonMunicipalDocumentUrl(snapshot.documents[0]!.url) }];
 	}
 	if (source?.format === "fairbanks-pdf" && snapshot?.documents) {
 		validateFairbanksSource(source);

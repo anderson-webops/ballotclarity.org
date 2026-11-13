@@ -4,7 +4,7 @@ import { getStateBallotCycleFamily } from "./state-ballot-cycles.js";
 
 export function stateBallotPriorityFamilies(environment: NodeJS.ProcessEnv = process.env) {
 	const configured = environment.STATE_BALLOT_PRIORITY_FAMILIES;
-	if (configured === undefined) return ["ga-fulton-2026"];
+	if (configured === undefined) return ["ga-fulton-2026", "ga-fulton-municipal-runoff-2025-12-02"];
 	if (Buffer.byteLength(configured) > 8192) throw new Error("The collection priority exceeds its bounds.");
 	if (!configured.trim()) return [];
 	const families = configured.split(",").map(value => value.trim());
@@ -13,7 +13,7 @@ export function stateBallotPriorityFamilies(environment: NodeJS.ProcessEnv = pro
 	return families;
 }
 
-export function prioritizeStateBallotWork<Item>(items: readonly Item[], identify: (item: Item) => string, familyIds: readonly string[] = ["ga-fulton-2026"]) {
+export function prioritizeStateBallotWork<Item>(items: readonly Item[], identify: (item: Item) => string, familyIds: readonly string[] = ["ga-fulton-2026", "ga-fulton-municipal-runoff-2025-12-02"]) {
 	const families = familyIds.map(getStateBallotCycleFamily);
 	const rank = (item: Item) => {
 		const id = identify(item);

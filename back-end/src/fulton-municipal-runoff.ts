@@ -4,7 +4,7 @@ import { createHash } from "node:crypto";
 import { stateHtmlAttribute as attribute, stateHtmlDescendants as descendants, parseStateHtml, stateHtmlText } from "./state-ballot-html.js";
 import { containsControlCharacters } from "./text-validation.js";
 
-interface NativeField { text: string; left: number; top: number; width: number; height: number; size: number; family: string; bold: boolean }
+export interface FultonMunicipalNativeField { text: string; left: number; top: number; width: number; height: number; size: number; family: string; bold: boolean }
 export interface FultonMunicipalContest {
 	id: string;
 	municipality: string;
@@ -33,7 +33,7 @@ export interface FultonMunicipalRunoffInventory {
 const hash = (value: string | Buffer) => createHash("sha256").update(value).digest("hex");
 const clean = (value: string) => value.replace(/\s+/gu, " ").trim();
 
-function nativeFields(body: string): NativeField[] {
+export function fultonMunicipalNativeFields(body: string): FultonMunicipalNativeField[] {
 	assert(Buffer.byteLength(body) <= 2 * 1024 * 1024 && !body.includes("\uFFFD") && !containsControlCharacters(body.replace(/[\r\n\t]/gu, "")), "The municipal ballot text exceeds its bounds.");
 	assert(/^<\?xml[^>]+>\s*<!DOCTYPE pdf2xml SYSTEM "pdf2xml.dtd">/u.test(body) && /<\/pdf2xml>\s*$/u.test(body) && !/<!ENTITY|<!DOCTYPE[^>]*\[|<(?:script|style|image|img|iframe|object|foreignObject|animate|set)\b/iu.test(body), "The municipal native document is unsupported.");
 	const tree = parseStateHtml(body);
@@ -68,7 +68,7 @@ export function prepareFultonMunicipalRunoff(body: string, source: FultonMunicip
 	const url = new URL(source.url);
 	assert(url.href === source.url && url.protocol === "https:" && ["fultoncountyga.gov", "www.fultoncountyga.gov"].includes(url.hostname) && !url.port && !url.username && !url.password && !url.search && !url.hash && /^\/-\/media\/[\w/-]+\.pdf$/u.test(url.pathname), "Use the exact official municipal ballot PDF URL.");
 	assert(/^[a-f\d]{64}$/u.test(source.sha256) && Number.isSafeInteger(source.bytes) && source.bytes > 0 && source.bytes <= 12 * 1024 * 1024 && Number.isFinite(Date.parse(source.retrievedAt)) && new Date(source.retrievedAt).toISOString() === source.retrievedAt, "The municipal source evidence is invalid.");
-	const fields = nativeFields(body);
+	const fields = fultonMunicipalNativeFields(body);
 	assert.equal(fields.filter(field => field.text === "COMPOSITE SAMPLE BALLOT").length, 1);
 	assert.equal(fields.filter(field => field.text === "Fulton County, Georgia").length, 1);
 	const elections = fields.filter(field => field.text.startsWith("Municipal General Runoff Election - "));
@@ -81,7 +81,7 @@ export function prepareFultonMunicipalRunoff(body: string, source: FultonMunicip
 	const headings = fields.filter(field => field.text === "General Election Runoff");
 	assert(headings.length > 0 && headings.length <= 15 && headings.every(field => field.top > elections[0]!.top + 30 && field.bold && field.family === "Arial" && field.size === 18));
 	const beginning = Math.min(...headings.map(field => field.top));
-	const columns = [[], [], []] as NativeField[][];
+	const columns = [[], [], []] as FultonMunicipalNativeField[][];
 	for (const field of fields.filter(field => field.top >= beginning)) {
 		if (field.text === "SAMPLE" && field.size === 285 && field.family === "Arial") continue;
 		const center = field.left + field.width / 2;
@@ -96,7 +96,7 @@ export function prepareFultonMunicipalRunoff(body: string, source: FultonMunicip
 		let contest: FultonMunicipalContest | null = null;
 		let voted = false;
 		let previousTop = -1;
-		let candidateField: NativeField | null = null;
+		let candidateField: FultonMunicipalNativeField | null = null;
 		const finish = () => {
 			if (!contest) return;
 			assert(voted && (contest.office === "Mayor" ? !contest.district : /^District [1-9]\d?(?: At Large)?$/u.test(contest.district)) && contest.candidates.length === 2, "The municipal runoff contest is incomplete or unfamiliar.");

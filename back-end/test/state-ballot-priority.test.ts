@@ -13,7 +13,7 @@ const washington = "wa-general-2026";
 const montana = "mt-general-2026";
 
 test("collection priority defaults to Fulton and validates only approved distinct family IDs", () => {
-	assert.deepEqual(stateBallotPriorityFamilies({}), [fulton]);
+	assert.deepEqual(stateBallotPriorityFamilies({}), [fulton, "ga-fulton-municipal-runoff-2025-12-02"]);
 	assert.deepEqual(stateBallotPriorityFamilies({ STATE_BALLOT_PRIORITY_FAMILIES: ` ${montana}, ${fulton} ` }), [montana, fulton]);
 	assert.deepEqual(stateBallotPriorityFamilies({ STATE_BALLOT_PRIORITY_FAMILIES: "" }), []);
 	for (const value of [`${fulton},${fulton}`, `${fulton},`, "unknown-family", "ga-fulton-general-2030-11-05", "*", "x".repeat(8193)]) assert.throws(() => stateBallotPriorityFamilies({ STATE_BALLOT_PRIORITY_FAMILIES: value }));

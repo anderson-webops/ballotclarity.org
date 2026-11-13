@@ -10,6 +10,7 @@ import type { EastGreenwichElection } from "./state-ballot-east-greenwich-collec
 import type { EverettElection } from "./state-ballot-everett-collection.js";
 import type { FairbanksElection } from "./state-ballot-fairbanks.js";
 import type { FranklinElection } from "./state-ballot-franklin-collection.js";
+import type { FultonMunicipalElection } from "./state-ballot-fulton-municipal.js";
 import type { FultonElection } from "./state-ballot-fulton.js";
 import type { GoffstownCandidateElection } from "./state-ballot-goffstown-collection.js";
 import type { HamiltonElection } from "./state-ballot-hamilton-collection.js";
@@ -61,6 +62,7 @@ import { readEverettDiscovery, validateEverettElection } from "./state-ballot-ev
 import { everettAutomaticSource, everettIndexUrl, validateEverettSource } from "./state-ballot-everett.js";
 import { fairbanksSource, readFairbanksCycleDiscovery, validateFairbanksElection, validateFairbanksSource } from "./state-ballot-fairbanks.js";
 import { franklinDiscoveryUrl, readFranklinDiscovery, validateFranklinElection, validateFranklinSource } from "./state-ballot-franklin-collection.js";
+import { fultonMunicipalSource, readFultonMunicipalDiscovery, validateFultonMunicipalElection, validateFultonMunicipalSource } from "./state-ballot-fulton-municipal.js";
 import {
 	fultonDiscoveryUrl,
 	readFultonElectionDiscovery,
@@ -160,6 +162,7 @@ const washington = configuredStateBallotSources.find(source => source.id === "wa
 export const stateBallotCycleDiscoveryUrl = "https://voter.votewa.gov/CandidateList.aspx";
 const digest = (value: string) => createHash("sha256").update(value).digest("hex");
 const cycleFamilies = [
+	{ source: configuredStateBallotSources.find(source => source.id === fultonMunicipalSource().id)!, format: "fulton-municipal-pdf", discoveryUrl: fultonDiscoveryUrl, prefix: "ga-fulton-municipal-runoff", electionLabel: "Municipal General Runoff Election", formId: null },
 	{ source: configuredStateBallotSources.find(source => source.id === "ak-fairbanks-2026")!, format: "fairbanks-pdf", discoveryUrl: fairbanksPublicationIndexUrl(), prefix: "ak-fairbanks-municipal", electionLabel: "Municipal Election", formId: null },
 	{ source: configuredStateBallotSources.find(source => source.id === "ak-juneau-2026")!, format: "juneau-html", discoveryUrl: juneauDiscoveryUrl, prefix: "ak-juneau-municipal", electionLabel: "Municipal Election", formId: null },
 	{ source: configuredStateBallotSources.find(source => source.id === "nm-los-ranchos-2025")!, format: "los-ranchos-html", discoveryUrl: losRanchosDiscoveryUrl, prefix: "nm-los-ranchos-local", electionLabel: "Regular Local Election", formId: null },
@@ -311,6 +314,10 @@ export function getStateBallotCycleFamily(familyId: string) {
 	}
 	else if (family.format === "iowa-polk-pdf") {
 		validateIowaPolkSource(family.source);
+	}
+	else if (family.format === "fulton-municipal-pdf") {
+		validateFultonMunicipalSource(family.source);
+		targetValid = true;
 	}
 	else if (family.format === "fairbanks-pdf") {
 		validateFairbanksSource(family.source);
@@ -464,7 +471,7 @@ export interface StateBallotCycleCatalog {
 	familyId: string;
 	sourceConfigurationSha256: string;
 	discovery: { url: string; sha256: string; retrievedAt: string };
-	elections: { fairbanksDocuments?: FairbanksElection["fairbanksDocuments"]; electionId: string | null; electionDate: string; oklahomaContentSha256?: string; everettDocumentUrls?: EverettElection["everettDocumentUrls"]; everettIndexSha256?: string; alabamaElection?: AlabamaReferenceElection; kanawhaDocuments?: KanawhaElection["kanawhaDocuments"]; booneDocuments?: BooneElection["booneDocuments"]; reports?: VirginiaElection["reports"]; allOfficesUrl?: string | null; documents?: FultonElection["documents"]; pageUrl?: string | null; boulderContentSha256?: string | null; bucksContentSha256?: string | null; pdfDocuments?: CertifiedPdfElection["pdfDocuments"]; workbookUrl?: string; texasDocuments?: TexasElection["texasDocuments"]; oregonDocuments?: OregonElection["oregonDocuments"]; cassiaDocuments?: CassiaElection["cassiaDocuments"]; iowaCountyDocuments?: IowaCountyElection["iowaCountyDocuments"]; polkDocuments?: IowaPolkElection["polkDocuments"]; franklinDocuments?: FranklinElection["franklinDocuments"]; maineHouseLegislature?: MaineHouseElection["maineHouseLegislature"]; maineHouseContentSha256?: MaineHouseElection["maineHouseContentSha256"]; orangeDocuments?: OrangeElection["orangeDocuments"]; nycDocuments?: NycElection["nycDocuments"]; douglasDocuments?: DouglasElection["douglasDocuments"]; hamiltonDocuments?: HamiltonElection["hamiltonDocuments"]; pimaDocuments?: PimaElection["pimaDocuments"]; goffstownDocuments?: GoffstownCandidateElection["goffstownDocuments"]; chicagoDocuments?: ChicagoElection["chicagoDocuments"]; winnebagoDocuments?: WinnebagoElection["winnebagoDocuments"]; eastGreenwichDocuments?: EastGreenwichElection["eastGreenwichDocuments"]; daneDocuments?: DaneElection["daneDocuments"]; pulaskiDocuments?: PulaskiElection["pulaskiDocuments"]; tuscolaDocuments?: TuscolaElection["tuscolaDocuments"]; dcDocuments?: DcElection["dcDocuments"] }[];
+	elections: { municipalDocument?: FultonMunicipalElection["municipalDocument"]; fairbanksDocuments?: FairbanksElection["fairbanksDocuments"]; electionId: string | null; electionDate: string; oklahomaContentSha256?: string; everettDocumentUrls?: EverettElection["everettDocumentUrls"]; everettIndexSha256?: string; alabamaElection?: AlabamaReferenceElection; kanawhaDocuments?: KanawhaElection["kanawhaDocuments"]; booneDocuments?: BooneElection["booneDocuments"]; reports?: VirginiaElection["reports"]; allOfficesUrl?: string | null; documents?: FultonElection["documents"]; pageUrl?: string | null; boulderContentSha256?: string | null; bucksContentSha256?: string | null; pdfDocuments?: CertifiedPdfElection["pdfDocuments"]; workbookUrl?: string; texasDocuments?: TexasElection["texasDocuments"]; oregonDocuments?: OregonElection["oregonDocuments"]; cassiaDocuments?: CassiaElection["cassiaDocuments"]; iowaCountyDocuments?: IowaCountyElection["iowaCountyDocuments"]; polkDocuments?: IowaPolkElection["polkDocuments"]; franklinDocuments?: FranklinElection["franklinDocuments"]; maineHouseLegislature?: MaineHouseElection["maineHouseLegislature"]; maineHouseContentSha256?: MaineHouseElection["maineHouseContentSha256"]; orangeDocuments?: OrangeElection["orangeDocuments"]; nycDocuments?: NycElection["nycDocuments"]; douglasDocuments?: DouglasElection["douglasDocuments"]; hamiltonDocuments?: HamiltonElection["hamiltonDocuments"]; pimaDocuments?: PimaElection["pimaDocuments"]; goffstownDocuments?: GoffstownCandidateElection["goffstownDocuments"]; chicagoDocuments?: ChicagoElection["chicagoDocuments"]; winnebagoDocuments?: WinnebagoElection["winnebagoDocuments"]; eastGreenwichDocuments?: EastGreenwichElection["eastGreenwichDocuments"]; daneDocuments?: DaneElection["daneDocuments"]; pulaskiDocuments?: PulaskiElection["pulaskiDocuments"]; tuscolaDocuments?: TuscolaElection["tuscolaDocuments"]; dcDocuments?: DcElection["dcDocuments"] }[];
 }
 
 function exactKeys(value: unknown, names: string[]): value is Record<string, unknown> {
@@ -553,7 +560,7 @@ export function parseStateBallotCycleCatalog(value: unknown, now = Date.now()): 
 	const discovery = value.discovery;
 	if (!exactKeys(discovery, ["url", "sha256", "retrievedAt"]) || discovery.url !== family.discoveryUrl || typeof discovery.sha256 !== "string" || !/^[a-f0-9]{64}$/u.test(discovery.sha256) || typeof discovery.retrievedAt !== "string" || !Number.isFinite(Date.parse(discovery.retrievedAt)) || new Date(discovery.retrievedAt).toISOString() !== discovery.retrievedAt || Date.parse(discovery.retrievedAt) > now)
 		throw new Error("The election discovery provenance is invalid.");
-	if (!Array.isArray(value.elections) || (!value.elections.length && original.format !== "juneau-html" && original.format !== "iowa-county-pdf" && original.format !== "oklahoma-html" && original.format !== "everett-pdf" && family.format !== "alabama-pdf" && original.format !== "kanawha-pdf" && original.format !== "boone-xlsx" && original.format !== "orange-pdf" && original.format !== "maine-house-html" && original.format !== "nyc-pdf" && original.format !== "douglas-html" && original.format !== "hamilton-html" && original.format !== "pima-pdf" && original.format !== "chicago-pdf" && original.format !== "goffstown-pdf") || value.elections.length > 100)
+	if (!Array.isArray(value.elections) || (!value.elections.length && original.format !== "fulton-municipal-pdf" && original.format !== "juneau-html" && original.format !== "iowa-county-pdf" && original.format !== "oklahoma-html" && original.format !== "everett-pdf" && family.format !== "alabama-pdf" && original.format !== "kanawha-pdf" && original.format !== "boone-xlsx" && original.format !== "orange-pdf" && original.format !== "maine-house-html" && original.format !== "nyc-pdf" && original.format !== "douglas-html" && original.format !== "hamilton-html" && original.format !== "pima-pdf" && original.format !== "chicago-pdf" && original.format !== "goffstown-pdf") || value.elections.length > 100)
 		throw new Error("The election cycle catalog exceeds its bounds.");
 	if (family.format === "alabama-pdf") {
 		const dates = new Set<string>();
@@ -727,6 +734,14 @@ export function parseStateBallotCycleCatalog(value: unknown, now = Date.now()): 
 		}
 		return value as unknown as StateBallotCycleCatalog;
 	}
+	if (original.format === "fulton-municipal-pdf") {
+		for (const election of value.elections) {
+			validateFultonMunicipalElection(election);
+			if (dates.has(election.electionDate)) throw new Error("The municipal runoff dates are duplicated.");
+			dates.add(election.electionDate);
+		}
+		return value as unknown as StateBallotCycleCatalog;
+	}
 	if (original.format === "fairbanks-pdf") {
 		for (const election of value.elections) {
 			validateFairbanksElection(election);
@@ -888,6 +903,11 @@ export function discoverWashingtonElectionCycles(body: string, now = Date.now())
 }
 
 export function discoverStateBallotElectionCycles(body: string, familyId: string, now = Date.now()): StateBallotCycleCatalog {
+	if (familyId === fultonMunicipalSource().id) {
+		const family = getStateBallotCycleFamily(familyId);
+		const capture = readFultonMunicipalDiscovery(body, now);
+		return parseStateBallotCycleCatalog({ schemaVersion: 1, type: "state-ballot-cycle-catalog", familyId, sourceConfigurationSha256: digest(JSON.stringify(family.source)), discovery: { url: family.discoveryUrl, sha256: digest(body), retrievedAt: capture.index.retrievedAt }, elections: capture.elections }, now);
+	}
 	if (familyId === "ak-fairbanks-2026") {
 		const family = getStateBallotCycleFamily(familyId);
 		const capture = readFairbanksCycleDiscovery(body, now);
@@ -1193,6 +1213,10 @@ export function stateBallotCycleSources(catalog: StateBallotCycleCatalog, now = 
 		if (family.format === "iowa-polk-pdf") {
 			validateIowaPolkElection(election);
 			return { ...family.source, id: `${family.prefix}-${election.electionDate}`, label: `${family.source.label} (${election.electionDate.slice(0, 4)})`, electionDate: election.electionDate, url: election.pageUrl, pageUrl: election.pageUrl };
+		}
+		if (family.format === "fulton-municipal-pdf") {
+			validateFultonMunicipalElection(election);
+			return fultonMunicipalSource(election.electionDate);
 		}
 		if (family.format === "fairbanks-pdf") {
 			validateFairbanksElection(election);

@@ -96,7 +96,7 @@ for (const source of sources) {
 		const file = join(directory, "reviewed.json");
 		const body = JSON.stringify(payload(source.stateCode));
 		await writeFile(file, body);
-		const environment = { ...process.env, STATE_BALLOT_DATA_DIR: directory, STATE_BALLOT_ENABLED_STATES: source.stateCode, STATE_BALLOT_PDFTOTEXT: "" };
+		const environment = { ...process.env, STATE_BALLOT_DATA_DIR: directory, STATE_BALLOT_ENABLED_STATES: source.stateCode, STATE_BALLOT_ENABLED_SOURCES: source.id, STATE_BALLOT_PDFTOTEXT: "" };
 		const manager = fileURLToPath(new URL("../src/manage-state-ballot-data.ts", import.meta.url));
 		const exporter = fileURLToPath(new URL("../src/export-state-ballot-sources.ts", import.meta.url));
 		const imported = execFileSync(process.execPath, ["--import", "tsx", manager, "import", file], { env: environment, encoding: "utf8" });

@@ -5,6 +5,7 @@ import { bucksSource } from "./state-ballot-bucks.js";
 import { douglasSource } from "./state-ballot-douglas-collection.js";
 import { everettAutomaticSource, everettSource } from "./state-ballot-everett.js";
 import { fairbanksSource } from "./state-ballot-fairbanks.js";
+import { fultonMunicipalSource } from "./state-ballot-fulton-municipal-source.js";
 import { hamiltonSource } from "./state-ballot-hamilton-collection.js";
 import { independenceSource } from "./state-ballot-independence.js";
 import { iowaCountySource } from "./state-ballot-iowa-county.js";
@@ -19,6 +20,7 @@ import { pimaSource } from "./state-ballot-pima-collection.js";
 import { stateBallotSources } from "./state-ballot-sources.js";
 
 export const additionalStateBallotSources: readonly StateBallotSource[] = [
+	fultonMunicipalSource(),
 	fairbanksSource(),
 	juneauSource(),
 	losRanchosSource(),

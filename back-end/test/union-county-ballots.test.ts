@@ -7,6 +7,8 @@ import test from "node:test";
 import { collectUnionBallotEvidence } from "../src/collect-union-ballot-evidence.js";
 import { prepareUnionBallotCorroboration } from "../src/prepare-union-ballot-corroboration.js";
 import { prepareUnionBallotQuestions } from "../src/prepare-union-ballot-questions.js";
+import { prepareUnionChoiceReview } from "../src/prepare-union-choice-review.js";
+import { readUnionChoiceContext, unionOfficeCorroborated } from "../src/union-ballot-choice-context.js";
 import { readUnionSampleQuestion } from "../src/union-ballot-questions.js";
 import { readUnionBallotCells, reconcileUnionBallotReferences } from "../src/union-ballot-witnesses.js";
 import { collectUnionSampleBatch, readUnionSampleCatalog, readUnionSampleEdition, unionCountyPolicyHash, unionCountyPolicyUrls, unionSampleLandingUrl } from "../src/union-county-ballots.js";
@@ -95,6 +97,62 @@ function questionDocument(form: number, change: (words: Word[]) => Word[] = word
 		{ value: "DECLARACIÓN INTERPRETATIVA:", left: 286, top: 1099, width: 190, size: 17 },
 		{ value: "La aprobación restablece el límite anual; el rechazo conserva la ordenanza.", left: 128, top: 1120, width: 500, size: 14.88 },
 	])]);
+}
+
+function contextDocument(form: number, change: (words: Word[]) => Word[] = words => words) {
+	const municipality = catalog.documents.find(source => source.form === form)!.claims[0]!.municipality;
+	const nonpartisan = municipality === "Hillside";
+	const shift = nonpartisan ? 329 : 0;
+	const fields: Word[] = [
+		{ value: "7th Congressional District - November 5, 2030", left: 617, top: 230, width: 590, size: 30 },
+		...[["A", 692, "Democrat"], ["B", 834, "Republican"], ["C", 976, "Nomination by Petition"]].flatMap(([letter, center, label]) => [
+			{ value: String(letter), left: Number(center) - 12, top: 285, width: 24, size: 40 },
+			{ value: String(label), left: Number(center) - (label === "Nomination by Petition" ? 63 : 27), top: 320, width: label === "Nomination by Petition" ? 126 : 54, size: 12.9 },
+		]),
+		{ value: "United States Senator", left: 382, top: 356, width: 97, size: 10.692 },
+		{ value: "6 Year Term - Vote for One", left: 385, top: 367, width: 90, size: 8.379 },
+		{ value: "Member of House", left: 394, top: 386, width: 74, size: 10.692 },
+		{ value: "of Representatives", left: 393, top: 396, width: 76, size: 10.692 },
+		{ value: "2 Year Term - Vote for One", left: 385, top: 409, width: 90, size: 8.379 },
+		{ value: "Sheriff", left: 417, top: 426, width: 27, size: 10.692 },
+		{ value: "3 Year Term - Vote for One", left: 385, top: 438, width: 90, size: 8.379 },
+		{ value: "County Clerk", left: 404, top: 461, width: 53, size: 10.692 },
+		{ value: "5 Year Term - Vote for One", left: 385, top: 473, width: 90, size: 8.379 },
+		{ value: "Members of", left: 405, top: 519, width: 50, size: 10.692 },
+		{ value: "Board of County", left: 397, top: 529, width: 67, size: 10.692 },
+		{ value: "Commissioners", left: 398, top: 539, width: 64, size: 10.692 },
+		{ value: "3 Year Term - Vote for Three", left: 383, top: 554, width: 95, size: 8.379 },
+		...Array.from({ length: 7 }, (_, index) => index + 1).flatMap(row => [
+			{ value: String(row === 1 ? "Cory" : `Person${row}`), left: 650, top: 346 + (row - 1) * 35, width: 70, size: 12.5 },
+			{ value: String(row === 1 ? "BOOKER" : "EXAMPLE"), left: 650, top: 356 + (row - 1) * 35, width: 70, size: 18.75 },
+			{ value: `${row}A`, left: 739, top: 355 + (row - 1) * 35, width: 13, size: 21.1 },
+		]),
+		{ value: "Veronica", left: 940, top: 346, width: 75, size: 12.5 },
+		{ value: "FERNANDEZ", left: 940, top: 356, width: 80, size: 18.75 },
+		{ value: "1C", left: 1024, top: 355, width: 13, size: 21.1 },
+		{ value: `OFFICIAL SCHOOL ELECTION BALLOT - ${municipality.toUpperCase()}`, left: nonpartisan ? 1006 : 407, top: 809, width: nonpartisan ? 468 : 1034, size: 23 },
+		{ value: "OFFICE TITLE", left: 639 + shift, top: 858, width: 118, size: 21 },
+		{ value: "Members of", left: 613 + shift, top: 933, width: 50, size: 10.8426 },
+		{ value: "Board of Education", left: 599 + shift, top: 945, width: 80, size: 10.8426 },
+		{ value: "3 Year Term - Vote for Three", left: 594 + shift, top: 961, width: 90, size: 8.28 },
+		{ value: "Anne Marie", left: 850 + shift, top: 919, width: 80, size: 12.5 },
+		{ value: "WEISS", left: 850 + shift, top: 930, width: 80, size: 18.75 },
+		{ value: nonpartisan ? "1E" : "1-1", left: 948 + shift, top: 924, width: 14, size: 21.5 },
+		{ value: "NO PETITION FILED", left: 1030 + shift, top: 975, width: 100, size: 12.5 },
+		{ value: "2-1", left: 1140 + shift, top: 975, width: 14, size: 21.5 },
+		...(nonpartisan
+			? [
+					{ value: "OFFICIAL MUNICIPAL NON-PARTISAN ELECTION BALLOT - HILLSIDE", left: 155, top: 786, width: 682, size: 23 },
+					{ value: "OFFICE TITLE", left: 236, top: 858, width: 118, size: 21 },
+					{ value: "1st Ward Council Member", left: 168, top: 925, width: 109, size: 10.8426 },
+					{ value: "Unexpired Term - Vote for One", left: 174, top: 937, width: 97, size: 8.28 },
+					{ value: "Local", left: 450, top: 915, width: 60, size: 12.5 },
+					{ value: "CITIZEN", left: 450, top: 925, width: 60, size: 18.75 },
+					{ value: "1C", left: 540, top: 924, width: 14, size: 21.5 },
+				]
+			: []),
+	];
+	return document(form, words => [...words.filter(word => word.top <= 210), ...change(fields)]);
 }
 
 function reference(name: string, position: string, municipality: string, kind: "general" | "school" = "school") {
@@ -371,6 +429,124 @@ test("Union complete pinned question preparation is repeatable and rejects confl
 		assert.deepEqual(await readdir(plan.outputRoot), before);
 		await writeFile(capturePath, original);
 		assert.deepEqual(await readFile(capturePath), original);
+	}
+	finally { await rm(root, { recursive: true, force: true }); }
+});
+
+test("Union choice evidence binds printed offices, multi-seat rows, Congress districts and literal party headers", () => {
+	const source = catalog.documents[0]!;
+	const input = contextDocument(source.form);
+	const cells = readUnionChoiceContext(input.bbox, input.layout, source, edition.electionDate);
+	assert.equal(cells.find(cell => cell.position === "1A")!.printedPartyOrColumn, "Democrat");
+	assert.equal(cells.find(cell => cell.position === "1C")!.printedPartyOrColumn, "Nomination by Petition");
+	assert.ok(["5A", "6A", "7A"].every(position => cells.find(cell => cell.position === position)!.printedOffice === "Members of Board of County Commissioners"));
+	const house = cells.find(cell => cell.position === "2A")!;
+	assert.equal(house.congressionalDistrict, 7);
+	assert.ok(unionOfficeCorroborated("MEMBER OF HOUSE OF REPRESENTATIVES (7 th CONGRESSIONAL DISTRICT)", house));
+	assert.ok(!unionOfficeCorroborated("MEMBER OF HOUSE OF REPRESENTATIVES (8 th CONGRESSIONAL DISTRICT)", house));
+	assert.ok(unionOfficeCorroborated("School Board", cells.find(cell => cell.position === "1-1")!));
+	const swapped = contextDocument(source.form, words => words.map(word => word.value === "Democrat" ? { ...word, value: "Republican" } : word));
+	assert.equal(readUnionChoiceContext(swapped.bbox, swapped.layout, source, edition.electionDate).find(cell => cell.position === "1A")!.printedPartyOrColumn, "Republican");
+});
+
+test("Union lower nonpartisan and school panels preserve distinct office and party evidence", () => {
+	const source = catalog.documents.find(document => document.claims[0]!.municipality === "Hillside")!;
+	const input = contextDocument(source.form);
+	const cells = readUnionChoiceContext(input.bbox, input.layout, source, edition.electionDate);
+	const municipal = cells.find(cell => cell.observedName === "Local CITIZEN")!;
+	const school = cells.find(cell => cell.observedName === "Anne Marie WEISS")!;
+	assert.equal(municipal.position, "1C");
+	assert.equal(municipal.panel, "municipal-nonpartisan");
+	assert.equal(municipal.printedPartyOrColumn, "Non-Partisan");
+	assert.equal(school.panel, "school");
+	assert.equal(school.printedPartyOrColumn, "");
+	assert.ok(unionOfficeCorroborated("1 st Ward Council Member", municipal));
+	assert.ok(!unionOfficeCorroborated("2 nd Ward Council Member", municipal));
+	assert.ok(!unionOfficeCorroborated("Member of Council - unexpired", { ...municipal, printedSelections: ["3 Year Term - Vote for One"] }));
+});
+
+test("Union office word boundaries separate merged bilingual lines and preserve long publication footers", () => {
+	const source = catalog.documents[0]!;
+	const input = contextDocument(source.form, words => [...words, { value: "10th Ward Council Member", left: 375, top: 600, width: 113, size: 10.692 }, { value: "3 Year Term - Vote for One", left: 385, top: 612, width: 90, size: 8.379 }, { value: "Town", left: 650, top: 591, width: 70, size: 12.5 }, { value: "PERSON", left: 650, top: 601, width: 70, size: 18.75 }, { value: "8A", left: 739, top: 600, width: 13, size: 21.1 },]);
+	const spanish = "<word xmin=\"492\" xmax=\"620\" ymin=\"600\" ymax=\"610.692\">Miembro del Consejo Barrio 10</word>";
+	const merged = input.bbox.replace(/(<line xmin="375" xmax=")488(" ymin="600"[^>]*>)(.*?)(<\/line>)/u, (_match, prefix, suffix, content, closing) => `${prefix}620${suffix}${content}${spanish}${closing}`);
+	assert.notEqual(merged, input.bbox);
+	const footer = "<line xmin=\"373\" xmax=\"580\" ymin=\"700\" ymax=\"712.134416\"><word xmin=\"373\" xmax=\"405\" ymin=\"700\" ymax=\"712.134416\">Master</word><word xmin=\"408\" xmax=\"425\" ymin=\"700\" ymax=\"712.134416\">7th</word><word xmin=\"428\" xmax=\"432\" ymin=\"700\" ymax=\"712.134416\">-</word><word xmin=\"435\" xmax=\"535\" ymin=\"700\" ymax=\"712.134416\">Berkeley Heights,</word><word xmin=\"538\" xmax=\"560\" ymin=\"700\" ymax=\"712.134416\">Form</word><word xmin=\"563\" xmax=\"570\" ymin=\"700\" ymax=\"712.134416\">1</word></line>";
+	const bbox = merged.replace("</page>", `${footer}</page>`);
+	const layout = input.layout.replace("\f", "\nMiembro del Consejo Barrio 10\nMaster 7th - Berkeley Heights, Form 1\f");
+	const cells = readUnionChoiceContext(bbox, layout, source, edition.electionDate);
+	assert.equal(cells.find(cell => cell.position === "8A")!.printedOffice, "10th Ward Council Member");
+});
+
+test("Union office evidence rejects changed row counts, clipped columns, unknown parties and missing lower headers", () => {
+	const source = catalog.documents[0]!;
+	for (const change of [
+		(words: Word[]) => words.map(word => word.value === "3 Year Term - Vote for Three" && word.top < 700 ? { ...word, value: "3 Year Term - Vote for Two" } : word),
+		(words: Word[]) => words.map(word => word.value === "Democrat" ? { ...word, value: "Unreviewed Party" } : word),
+		(words: Word[]) => words.filter(word => !word.value.startsWith("OFFICIAL SCHOOL")),
+		(words: Word[]) => words.map(word => word.value === "Sheriff" ? { ...word, width: 100 } : word),
+		(words: Word[]) => words.filter(word => word.value !== "7A"),
+		(words: Word[]) => words.map(word => word.value.startsWith("7th Congressional") ? { ...word, value: "7th Congressional District - November 6, 2030" } : word),
+	]) {
+		const input = contextDocument(source.form, change);
+		assert.throws(() => readUnionChoiceContext(input.bbox, input.layout, source, edition.electionDate));
+	}
+	const input = contextDocument(source.form);
+	assert.throws(() => readUnionChoiceContext(input.bbox, input.layout.replace("County Clerk", "County Office"), source, edition.electionDate));
+});
+
+test("Union office/party review preserves parent facts and clocks across exact replay while retaining source-only classifications", async () => {
+	const root = await mkdtemp(join(tmpdir(), "union-choice-context-"));
+	try {
+		const collectionPath = join(root, "collect.json");
+		await writeFile(collectionPath, JSON.stringify({ schemaVersion: 1, type: "union-sample-ballot-collection", outputRoot: join(root, "intakes"), forms: catalog.documents.map(document => document.form), accessReview: review, catalogSha256: catalog.sha256 }));
+		const collect: typeof collectUnionSampleBatch = async (forms, access, expected, options) => collectUnionSampleBatch(forms, access, expected, { ...network().options, onCapture: options!.onCapture });
+		const intake = await collectUnionBallotEvidence(collectionPath, { collect });
+		const capturePath = join(intake.outputDirectory, "capture.json");
+		const captured = await readFile(capturePath);
+		const local = reference("Local Citizen", "1C", "Hillside", "general");
+		const parentReferences = [references[0]!, { ...reference("Veronica Fernandez", "1C", "UNION COUNTY", "general"), partyCode: "Ind" }, reference("Anne Marie Weiss", "1-1", "Winfield"), reference("Ann Marie Weiss", "1-1", "Winfield"), { ...local, office: "1st Ward Council Member", partyCode: "" }];
+		const parentBody = JSON.stringify({ schemaVersion: 1, type: "union-ballot-corroboration-review", publicationApproved: false, qualificationVerified: false, catalog, references: parentReferences.map(reference => ({ reference })) });
+		const parentPath = join(root, "parent.json");
+		await writeFile(parentPath, parentBody);
+		const plan = { schemaVersion: 1, type: "union-choice-context-review", candidateCorroboration: { path: parentPath, sha256: hash(parentBody) }, ballotCaptures: [{ path: capturePath, sha256: hash(captured) }], outputRoot: join(root, "prepared") };
+		const path = join(root, "prepare.json");
+		await writeFile(path, JSON.stringify(plan));
+		const options = { now: () => Date.parse("2030-10-02T00:00:00Z"), extract: async (body: Buffer, format: "layout" | "bbox-layout") => {
+			const form = Number(/form-(\d+)$/u.exec(body.toString())?.[1]);
+			const input = contextDocument(form);
+			return format === "layout" ? input.layout : input.bbox;
+		} };
+		const first = await prepareUnionChoiceReview(path, options);
+		const second = await prepareUnionChoiceReview(path, options);
+		assert.equal(first.sha256, second.sha256);
+		assert.equal(first.officesCorroborated, 4);
+		assert.equal(first.partiesCorroborated, 1);
+		assert.deepEqual(first.partyStatusCounts, { "corroborated": 1, "petition-column-only": 1, "blank-retained": 1, "no-name-match": 1, "explicit-nonpartisan": 1 });
+		const report = JSON.parse(await readFile(join(first.outputDirectory, "choice-context.json"), "utf8"));
+		assert.deepEqual(report.references.map((row: { reference: unknown }) => row.reference), parentReferences);
+		assert.equal(report.publisherRequests, 0);
+		assert.equal(report.qualificationVerified, false);
+		assert.equal(report.publicationApproved, false);
+		assert.equal(report.references[0].witnesses[0].capturedAt, JSON.parse(captured.toString()).inputs.find((input: { role: string }) => input.role === "form-1").capturedAt);
+		assert.deepEqual(await readFile(join(first.outputDirectory, "choice-context.csv")), await readFile(join(second.outputDirectory, "choice-context.csv")));
+		assert.deepEqual(await readFile(join(first.outputDirectory, "unlinked-printed-choices.csv")), await readFile(join(second.outputDirectory, "unlinked-printed-choices.csv")));
+		assert.equal(report.excludedPositionCells.length, 22);
+		assert.ok(report.unlinkedSampleChoices.some((cell: { observedName: string }) => cell.observedName === "Person2 EXAMPLE"));
+		assert.ok(report.unlinkedSampleChoices.every((cell: { observedName: string }) => cell.observedName !== "NO PETITION FILED" && cell.observedName !== "Ann Marie Weiss"));
+		const changed = await prepareUnionChoiceReview(path, { ...options, extract: async (body, format) => (await options.extract(body, format)).replaceAll("Democrat", "Republican") });
+		const changedReport = JSON.parse(await readFile(join(changed.outputDirectory, "choice-context.json"), "utf8"));
+		assert.equal(changedReport.references[0].reference.partyCode, "Dem");
+		assert.equal(changedReport.references[0].partyStatus, "review-required");
+		assert.equal(changedReport.references[0].partyCorroborated, false);
+		const before = await readdir(plan.outputRoot);
+		for (const altered of [{ ...plan, extra: true }, { ...plan, candidateCorroboration: { path: parentPath, sha256: "0".repeat(64) } }, { ...plan, ballotCaptures: [] }]) {
+			await writeFile(path, JSON.stringify(altered));
+			await assert.rejects(prepareUnionChoiceReview(path, options));
+		}
+		assert.deepEqual(await readdir(plan.outputRoot), before);
+		assert.deepEqual(await readFile(capturePath), captured);
+		assert.equal(await readFile(parentPath, "utf8"), parentBody);
 	}
 	finally { await rm(root, { recursive: true, force: true }); }
 });

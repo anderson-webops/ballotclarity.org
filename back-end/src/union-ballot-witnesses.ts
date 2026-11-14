@@ -6,10 +6,11 @@ import { stateHtmlAttribute as attribute, stateHtmlDescendants as descendants, p
 const canonical = (value: string) => value.normalize("NFKC").toLocaleUpperCase("en-US").replace(/[^\p{L}\p{N}]/gu, "");
 interface Word { value: string; left: number; right: number; top: number; bottom: number }
 export interface UnionBallotCell { page: number; position: string; observedName: string; nameWordCount: number }
+export interface UnionBallotLocatedCell extends UnionBallotCell { left: number; right: number; top: number; bottom: number }
 function reject(): never {
 	throw new Error("The Union County visible sample-ballot evidence requires review.");
 }
-export function readUnionBallotCells(body: string, layout: string, document: UnionSampleDocument, electionDate: string) {
+export function readUnionBallotLocatedCells(body: string, layout: string, document: UnionSampleDocument, electionDate: string) {
 	if (Buffer.byteLength(body) > 4 * 1024 * 1024 || Buffer.byteLength(layout) > 4 * 1024 * 1024 || !/^20\d{2}-11-0[2-8]$/u.test(electionDate)) return reject();
 	const date = `NOVEMBER ${Number(electionDate.slice(8))}, ${electionDate.slice(0, 4)}`;
 	const visible = layout.normalize("NFKC").toLocaleUpperCase("en-US");
@@ -33,15 +34,18 @@ export function readUnionBallotCells(body: string, layout: string, document: Uni
 	if (!canonical(header).includes(canonical(`USED ON ${date}`)) || !canonical(header).includes(canonical(municipalities[0]!))) return reject();
 	const markers = words.filter(word => /^\d{1,2}(?:[A-Z]|-\d{1,2})$/u.test(word.value) && word.top > 240 && word.bottom < 1030 && word.bottom - word.top > 10 && word.bottom - word.top < 24);
 	if (!markers.length || markers.length > 150) return reject();
-	const cells: UnionBallotCell[] = [];
+	const cells: UnionBallotLocatedCell[] = [];
 	for (const marker of markers) {
 		const selected = words.filter(word => word.left >= marker.left - 140 && word.right <= marker.left + 1 && word.top >= marker.top - 12 && word.top <= marker.bottom && [12.5, 18.75].some(size => Math.abs(word.bottom - word.top - size) < 0.05)).sort((left, right) => left.top - right.top || left.left - right.left);
 		if (selected.some(word => !canonical(visible).includes(canonical(word.value)))) return reject();
 		const observedName = selected.map(word => word.value).join(" ");
 		if (observedName.length > 250) return reject();
-		cells.push({ page: 1, position: marker.value, observedName, nameWordCount: selected.length });
+		cells.push({ page: 1, position: marker.value, observedName, nameWordCount: selected.length, left: marker.left, right: marker.right, top: marker.top, bottom: marker.bottom });
 	}
 	return cells;
+}
+export function readUnionBallotCells(body: string, layout: string, document: UnionSampleDocument, electionDate: string): UnionBallotCell[] {
+	return readUnionBallotLocatedCells(body, layout, document, electionDate).map(({ page, position, observedName, nameWordCount }) => ({ page, position, observedName, nameWordCount }));
 }
 
 export function reconcileUnionBallotReferences(references: (UnionCandidateReference & { kind: "general" | "school"; electionDate: string })[], catalog: UnionSampleCatalog, samples: { form: number; cells: UnionBallotCell[]; sourceUrl: string; sourceSha256: string; capturedAt: string }[]) {

@@ -1034,6 +1034,10 @@ The same complete captures support [bilingual public-question preparation](union
 Elizabeth's rent-increase question and official interpretive statement reconcile
 across all six offered city forms. This separate research output preserves both
 languages and original sample citations without asserting legal or voter applicability.
+Separate [office and party-column comparison](union-county-choice-review.md)
+corroborates 183 offices and 110 Democrat/Republican list codes across the complete
+sample set. Petition columns, explicit nonpartisan panels and blank school parties
+remain distinct; the Ann/Anne discrepancy and publication/applicability review stay open.
 
 Polk County, Iowa's [dated voter-information publication](https://www.polkcountyiowa.gov/county-auditor/election/news-and-press-releases/general-election-november-3-2026-voter-information/)
 adds an independent `ia-polk-2026` source. Its complete candidate PDF and the first

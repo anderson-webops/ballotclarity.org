@@ -4,37 +4,62 @@ import { randomUUID } from "node:crypto";
 import { mkdir, open, realpath, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import process from "node:process";
+import { readParishQuestionReferences } from "./louisiana-parish-questions.js";
 import { collectParishSampleBatch, parishSampleHash, parishSampleIndexUrl, parishSamplePolicyUrls, readParishCandidateReferences, readParishSampleIndex, resolveParishSampleDocument } from "./louisiana-parish-samples.js";
 import { acquireStateBallotAutomationLock } from "./state-ballot-automation-lock.js";
-import { extractStateBallotPdfText, resolveStateBallotPdfExtractor } from "./state-ballot-pdf.js";
+import { extractStateBallotPdfText, extractStateBallotPdfXml, resolveStateBallotPdfExtractor, resolveStateBallotPdfXmlExtractor } from "./state-ballot-pdf.js";
 import { assertExternalStateDataDirectory, readBoundedStateDataBytes } from "./state-ballot-storage.js";
 
 type ParishCapture = Awaited<ReturnType<typeof collectParishSampleBatch>>;
 type Extract = (body: Buffer) => Promise<string>;
 const nativeExtract: Extract = async body => extractStateBallotPdfText(body, await resolveStateBallotPdfExtractor(), undefined, "raw");
+const nativeXml: Extract = async body => extractStateBallotPdfXml(body, await resolveStateBallotPdfXmlExtractor());
 
-async function prepare(capture: ParishCapture, extract: Extract) {
+async function prepare(capture: ParishCapture, extract: Extract, questionXml?: Extract) {
 	const references = [];
 	const preparation = [];
+	const questionReferences = [];
+	const questionPreparation = [];
 	for (const result of capture.results) {
 		if (result.status !== "collected") {
 			preparation.push({ parish: result.parish, status: "collection-held", reason: result.reason });
+			if (questionXml) questionPreparation.push({ parish: result.parish, status: "collection-held", reason: result.reason });
 			continue;
 		}
 		const input = capture.captures.find(document => document.url === result.documentUrl);
 		if (!input || input.sha256 !== result.sha256 || input.capturedAt !== result.capturedAt) throw new Error("Parish document provenance is inconsistent.");
+		let text: string;
 		try {
-			const text = await extract(input.body);
+			text = await extract(input.body);
+		}
+		catch (error) {
+			const failure = { parish: result.parish, status: "held", reason: error instanceof Error ? error.message : "Parish native extraction requires review." };
+			preparation.push(failure);
+			if (questionXml) questionPreparation.push(failure);
+			continue;
+		}
+		try {
 			const records = readParishCandidateReferences(text, result.parish, capture.catalog.electionDate);
 			references.push(...records.map(record => ({ parish: result.parish, electionDate: capture.catalog.electionDate, ...record, sourceStatus: "unofficial-reference", sourceUrl: input.url, sourceSha256: input.sha256, capturedAt: input.capturedAt })));
 			preparation.push({ parish: result.parish, status: "prepared", records: records.length });
 		}
 		catch (error) { preparation.push({ parish: result.parish, status: "held", reason: error instanceof Error ? error.message : "Parish native preparation requires review." }); }
+		if (questionXml) {
+			try {
+				const questions = readParishQuestionReferences(text, await questionXml(input.body), result.parish, capture.catalog.electionDate);
+				questionReferences.push(...questions.map(question => ({ parish: result.parish, electionDate: capture.catalog.electionDate, ...question, sourceStatus: "unofficial-reference", sourceUrl: input.url, sourceSha256: input.sha256, capturedAt: input.capturedAt })));
+				questionPreparation.push({ parish: result.parish, status: "prepared", records: questions.length, heldRecords: questions.filter(question => question.reviewStatus === "held").length });
+			}
+			catch (error) { questionPreparation.push({ parish: result.parish, status: "held", reason: error instanceof Error ? error.message : "Parish question preparation requires review." }); }
+		}
 	}
 	const columns = ["parish", "electionDate", "id", "name", "office", "statedParty", "voteFor", "sourcePage", "sourceStatus", "sourceUrl", "sourceSha256", "capturedAt"] as const;
 	const quote = (value: string | number | undefined) => `"${String(value ?? "").replaceAll("\"", "\"\"")}"`;
 	const csv = `${[columns.join(","), ...references.map(record => columns.map(column => quote(record[column])).join(","))].join("\n")}\n`;
-	return { references, preparation, csv, csvSha256: parishSampleHash(csv) };
+	if (!questionXml) return { references, preparation, csv, csvSha256: parishSampleHash(csv) };
+	const questionColumns = ["parish", "electionDate", "id", "title", "text", "sourcePage", "reviewStatus", "holdReason", "sourceStatus", "sourceUrl", "sourceSha256", "capturedAt"] as const;
+	const questionCsv = `${[...questionColumns, "choice1", "choice2"].join(",")}\n${questionReferences.map(question => [...questionColumns.map(column => quote(question[column])), ...question.choices.map(quote)].join(",")).join("\n")}${questionReferences.length ? "\n" : ""}`;
+	return { references, preparation, csv, csvSha256: parishSampleHash(csv), questionReferences, questionPreparation, questionCsv, questionCsvSha256: parishSampleHash(questionCsv) };
 }
 
 async function persistOutput(directory: string, filename: string, body: string) {
@@ -46,9 +71,9 @@ async function persistOutput(directory: string, filename: string, body: string) 
 	finally { await handle.close(); }
 }
 
-export async function prepareLouisianaParishSamples(path: string, options: { extract?: Extract } = {}) {
+export async function prepareLouisianaParishSamples(path: string, options: { extract?: Extract; questionXml?: Extract } = {}) {
 	const plan = JSON.parse((await readBoundedStateDataBytes(path, 32768)).toString("utf8"));
-	if (!plan || Object.keys(plan).sort().join(",") !== "capturePath,captureSha256,outputRoot,schemaVersion,type" || plan.schemaVersion !== 1 || plan.type !== "louisiana-parish-sample-research-preparation" || typeof plan.capturePath !== "string" || typeof plan.outputRoot !== "string" || typeof plan.captureSha256 !== "string" || !/^[a-f\d]{64}$/u.test(plan.captureSha256)) throw new Error("Provide a pinned parish research preparation plan.");
+	if (!plan || Object.keys(plan).filter(key => key !== "includeQuestions").sort().join(",") !== "capturePath,captureSha256,outputRoot,schemaVersion,type" || (plan.includeQuestions !== undefined && typeof plan.includeQuestions !== "boolean") || plan.schemaVersion !== 1 || plan.type !== "louisiana-parish-sample-research-preparation" || typeof plan.capturePath !== "string" || typeof plan.outputRoot !== "string" || typeof plan.captureSha256 !== "string" || !/^[a-f\d]{64}$/u.test(plan.captureSha256)) throw new Error("Provide a pinned parish research preparation plan.");
 	const directory = await realpath(dirname(plan.capturePath));
 	assertExternalStateDataDirectory(directory);
 	const original = await readBoundedStateDataBytes(plan.capturePath, 4 * 1024 * 1024);
@@ -75,23 +100,25 @@ export async function prepareLouisianaParishSamples(path: string, options: { ext
 		if (result.status === "collected" && (!result.navigation || resolveParishSampleDocument(result.navigation.location, report.catalog.electionDate, index.contentSecurityPolicy, result.navigation.contentSecurityPolicy) !== result.documentUrl)) throw new Error("Parish captured navigation changed.");
 	}
 	if (parishSampleHash(await readBoundedStateDataBytes(join(directory, "candidate-references.csv"), 4 * 1024 * 1024)) !== report.csvSha256) throw new Error("Parish original CSV hash changed.");
-	const prepared = await prepare({ ...report, captures }, options.extract ?? nativeExtract);
+	if (report.questionCsvSha256 !== undefined && parishSampleHash(await readBoundedStateDataBytes(join(directory, "question-references.csv"), 4 * 1024 * 1024)) !== report.questionCsvSha256) throw new Error("Parish original question CSV hash changed.");
+	const prepared = await prepare({ ...report, captures }, options.extract ?? nativeExtract, plan.includeQuestions ? options.questionXml ?? nativeXml : undefined);
 	const lock = await acquireStateBallotAutomationLock(plan.outputRoot);
 	try {
 		const outputDirectory = join(lock.directory, `prepared-${plan.captureSha256.slice(0, 16)}-${randomUUID()}`);
 		await mkdir(outputDirectory, { mode: 0o700 });
-		const { csv, ...facts } = prepared;
+		const { csv, questionCsv, ...facts } = prepared;
 		const body = `${JSON.stringify({ schemaVersion: 1, type: "louisiana-parish-sample-research-preparation", sourceCaptureSha256: plan.captureSha256, publisher: report.publisher, catalog: report.catalog, inputs: report.inputs, results: report.results, ...facts, official: false, personalApplicabilityVerified: false, officialQualificationVerified: false, automaticImportApproved: false, publicationApproved: false, publisherRequestsDuringPreparation: 0 }, null, 2)}\n`;
 		await persistOutput(outputDirectory, "candidate-references.csv", csv);
+		if (questionCsv !== undefined) await persistOutput(outputDirectory, "question-references.csv", questionCsv);
 		await persistOutput(outputDirectory, "preparation.json", body);
-		return { status: "research-prepared", outputDirectory, referenceRecords: prepared.references.length, preparedParishes: prepared.preparation.filter(result => result.status === "prepared").length, heldParishes: prepared.preparation.filter(result => result.status !== "prepared").length, preparationSha256: parishSampleHash(body), publisherRequests: 0, imported: false, publicationApproved: false };
+		return { status: "research-prepared", outputDirectory, referenceRecords: prepared.references.length, preparedParishes: prepared.preparation.filter(result => result.status === "prepared").length, heldParishes: prepared.preparation.filter(result => result.status !== "prepared").length, ...(prepared.questionReferences ? { questionReferences: prepared.questionReferences.length, preparedQuestions: prepared.questionReferences.filter(question => question.reviewStatus === "prepared").length, heldQuestions: prepared.questionReferences.filter(question => question.reviewStatus === "held").length } : {}), preparationSha256: parishSampleHash(body), publisherRequests: 0, imported: false, publicationApproved: false };
 	}
 	finally { await lock.release(); }
 }
 
-export async function collectLouisianaParishSamples(path: string, options: { collect?: typeof collectParishSampleBatch; extract?: (body: Buffer) => Promise<string> } = {}) {
+export async function collectLouisianaParishSamples(path: string, options: { collect?: typeof collectParishSampleBatch; extract?: Extract; questionXml?: Extract } = {}) {
 	const plan = JSON.parse((await readBoundedStateDataBytes(path, 32768)).toString("utf8"));
-	if (!plan || Object.keys(plan).sort().join(",") !== "accessReview,outputRoot,parishes,schemaVersion,type" || plan.schemaVersion !== 1 || plan.type !== "louisiana-parish-sample-research-collection" || typeof plan.outputRoot !== "string" || !Array.isArray(plan.parishes) || !plan.accessReview || Object.keys(plan.accessReview).sort().join(",") !== "privacy,robots,secureNavigation,terms") throw new Error("Provide a reviewed parish research collection plan.");
+	if (!plan || Object.keys(plan).filter(key => key !== "includeQuestions").sort().join(",") !== "accessReview,outputRoot,parishes,schemaVersion,type" || (plan.includeQuestions !== undefined && typeof plan.includeQuestions !== "boolean") || plan.schemaVersion !== 1 || plan.type !== "louisiana-parish-sample-research-collection" || typeof plan.outputRoot !== "string" || !Array.isArray(plan.parishes) || !plan.accessReview || Object.keys(plan.accessReview).sort().join(",") !== "privacy,robots,secureNavigation,terms") throw new Error("Provide a reviewed parish research collection plan.");
 	const extract = options.extract ?? nativeExtract;
 	const lock = await acquireStateBallotAutomationLock(plan.outputRoot);
 	try {
@@ -122,10 +149,11 @@ export async function collectLouisianaParishSamples(path: string, options: { col
 		}
 		const capture = await (options.collect ?? collectParishSampleBatch)(plan.parishes, plan.accessReview, { onCapture: persist });
 		for (const document of capture.captures) await persist(document);
-		const { references, preparation, csv, csvSha256 } = await prepare(capture, extract);
+		const { references, preparation, csv, csvSha256, questionCsv, ...questionFacts } = await prepare(capture, extract, plan.includeQuestions ? options.questionXml ?? nativeXml : undefined);
 		const { captures, ...metadata } = capture;
 		await persistOutput(outputDirectory, "candidate-references.csv", csv);
-		const report = { ...metadata, inputs, preparation, references, csvSha256, rightsReview: "factual research only", personalApplicabilityVerified: false, officialQualificationVerified: false };
+		if (questionCsv !== undefined) await persistOutput(outputDirectory, "question-references.csv", questionCsv);
+		const report = { ...metadata, inputs, preparation, references, csvSha256, ...questionFacts, rightsReview: "factual research only", personalApplicabilityVerified: false, officialQualificationVerified: false };
 		const reportBody = `${JSON.stringify(report, null, 2)}\n`;
 		await persistOutput(outputDirectory, "capture.json", reportBody);
 		return { status: "research-collected", outputDirectory, capturedParishes: capture.results.filter(result => result.status === "collected").length, heldParishes: capture.results.filter(result => result.status === "held").length, preparedParishes: preparation.filter(result => result.status === "prepared").length, referenceRecords: references.length, captureSha256: parishSampleHash(reportBody), imported: false, publicationApproved: false };

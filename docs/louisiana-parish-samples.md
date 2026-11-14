@@ -105,8 +105,39 @@ candidate-row structure. A candidate group must follow a recognized office
 heading directly. Reviewed court/jurisdiction continuations and explicit seat
 counts remain separate from explanatory paragraphs; unknown associations are held.
 Collection and preparation outcomes remain separate, so a retained PDF can still
-require native review. Questions remain in the original evidence and are not
-silently converted into application measures.
+require native review. Questions remain separate from application measures.
+
+## Optional question research
+
+Set `includeQuestions: true` in either plan to write `question-references.csv`
+alongside candidate output. `STATE_BALLOT_PDFTOHTML` selects the absolute
+maintained Poppler XML executable. Visible XML and raw extraction must agree on
+the complete title, wording, ordered Yes/No choices, page and inventory. Both
+extractors use the same Poppler engine; agreement is a format cross-check rather
+than independent confirmation of publisher accuracy. Original document hashes and
+capture times remain authoritative. The XML path is bounded to twenty pages and
+4 MiB, with the existing twelve-second native worker timeout.
+The first page's visible Election Day date must match the selected edition in
+the reviewed position and typography. A matching date elsewhere in the document
+does not satisfy that check.
+
+Question records retain literal titles, full text and numbered propositions,
+including local-option questions and nested service areas. Publication parish
+identifies the source guide, not the electorate. A simple municipal heading that
+conflicts with the body's named authority remains a held record with its original
+text. Other jurisdictional applicability requires independent review. A printed
+election-date conflict holds the entire document's preparation. Unknown styles,
+incomplete wording, missing choices and inventory drift require review rather
+than partial extraction. Candidate preparation remains independent of question
+format or native-XML availability.
+
+Manifest `questionPreparation` entries distinguish collection holds, document
+preparation holds and individual held records. A prepared record establishes
+extraction consistency only. Neither question nor candidate preparation supplies
+official certification, results, fiscal interpretation, personal ballot matching
+or publication approval. An omitted option preserves the original candidate-only
+output format. Offline preparation also verifies an original question CSV digest
+when the pinned capture includes it.
 
 The research manifest retains `official: false`, `officialQualificationVerified:
 false`, `personalApplicabilityVerified: false`, `publicationApproved: false` and

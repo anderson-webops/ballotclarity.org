@@ -189,6 +189,50 @@ test("parish CLI preserves exact external evidence and release-independent resea
 	await assert.rejects(collectLouisianaParishSamples(path), /reviewed parish/u);
 });
 
+test("optional parish questions preserve candidate output, original hashes and offline retries", async (context) => {
+	const directory = await realpath(await mkdtemp(join(tmpdir(), "parish-questions-")));
+	context.after(() => rm(directory, { force: true, recursive: true }));
+	const questionXml = `<pdf2xml producer="poppler"><page number="1"><fontspec id="1" family="ABCDEF+Rockwell" size="18" color="#4a95d7"/><fontspec id="2" family="ABCDEF+NunitoSans" size="15" color="#231f20"/><fontspec id="3" family="ABCDEF+FontAwesome6Pro" size="21" color="#000000"/><fontspec id="4" family="ABCDEF+NunitoSans-SemiBold" size="17" color="#231f20"/><fontspec id="5" family="ABCDEF+Rockwell" size="25" color="#252d69"/><fontspec id="6" family="ABCDEF+Rockwell" size="29" color="#252d69"/><text font="5" top="355" left="58">ELECTION DAY</text><text font="6" top="401" left="58">December 14, 2030</text><text font="1">Parishwide Proposition</text><text font="2">Shall this proposition be adopted?</text><text font="3">■</text><text font="4">Yes</text><text font="3">■</text><text font="4">No</text></page></pdf2xml>`;
+	const input = network();
+	const path = join(directory, "plan.json");
+	const plan = { schemaVersion: 1, type: "louisiana-parish-sample-research-collection", outputRoot: join(directory, "captured"), parishes: ["West Carroll", "St Charles"], accessReview: review, includeQuestions: true };
+	await writeFile(path, JSON.stringify(plan));
+	const result = await collectLouisianaParishSamples(path, { collect: (selected, accessReview) => collectParishSampleBatch(selected, accessReview, input.options), extract: async () => native, questionXml: async () => questionXml });
+	const report = JSON.parse(await readFile(join(result.outputDirectory, "capture.json"), "utf8"));
+	assert.equal(report.references.length, 3);
+	assert.equal(report.questionReferences.length, 1);
+	assert.deepEqual(report.questionReferences[0].choices, ["Yes", "No"]);
+	assert.equal(report.questionPreparation[1].status, "collection-held");
+	assert.equal(report.questionReferences[0].sourceSha256, report.references[0].sourceSha256);
+	const csv = await readFile(join(result.outputDirectory, "question-references.csv"));
+	assert.equal(parishSampleHash(csv), report.questionCsvSha256);
+	const preparationPath = join(directory, "prepare.json");
+	const preparation = { schemaVersion: 1, type: "louisiana-parish-sample-research-preparation", capturePath: join(result.outputDirectory, "capture.json"), captureSha256: result.captureSha256, outputRoot: join(directory, "prepared"), includeQuestions: true };
+	await writeFile(preparationPath, JSON.stringify(preparation));
+	const requestCount = input.requests.length;
+	const first = await prepareLouisianaParishSamples(preparationPath, { extract: async () => native, questionXml: async () => questionXml });
+	const second = await prepareLouisianaParishSamples(preparationPath, { extract: async () => native, questionXml: async () => questionXml });
+	assert.equal(first.preparedQuestions, 1);
+	assert.equal(first.heldQuestions, 0);
+	assert.equal(first.preparationSha256, second.preparationSha256);
+	assert.deepEqual(await readFile(join(first.outputDirectory, "question-references.csv")), csv);
+	assert.equal(input.requests.length, requestCount);
+	const candidateHeld = await prepareLouisianaParishSamples(preparationPath, { extract: async () => native.replace("Aldermen,Village of Example", "Unknown office"), questionXml: async () => questionXml });
+	assert.equal(candidateHeld.referenceRecords, 0);
+	assert.equal(candidateHeld.preparedQuestions, 1);
+	const unavailable = await prepareLouisianaParishSamples(preparationPath, { extract: async () => native, questionXml: async () => {
+		throw new Error("Native XML unavailable.");
+	} });
+	assert.equal(unavailable.referenceRecords, 3);
+	assert.equal(unavailable.preparedQuestions, 0);
+	assert.equal(JSON.parse(await readFile(join(unavailable.outputDirectory, "preparation.json"), "utf8")).questionPreparation[0].reason, "Native XML unavailable.");
+	await writeFile(preparationPath, JSON.stringify({ ...preparation, includeQuestions: "yes" }));
+	await assert.rejects(prepareLouisianaParishSamples(preparationPath), /pinned parish/u);
+	await writeFile(preparationPath, JSON.stringify(preparation));
+	await writeFile(join(result.outputDirectory, "question-references.csv"), "altered question evidence");
+	await assert.rejects(prepareLouisianaParishSamples(preparationPath), /original question CSV hash changed/u);
+});
+
 test("parish native preparation retains explicit wrapped court and city headings", () => {
 	const text = native.replace("U.S.Representative,5th Congressional District", "District Judge,12th Judicial District\nCourt,Division B").replace("Aldermen,Village of Example", "Councilman District F,\nCity of Example").replace("– Republican", "–Republican").replace("U.S. Representative Runoff & Open General", "Municipal General");
 	const records = readParishCandidateReferences(text, "West Carroll", "2030-12-14");

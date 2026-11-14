@@ -24,6 +24,7 @@ const requiredRuntimeFiles = [
 	"prepare-kauai-disclosures.js",
 	"kauai-candidate-disclosures.js",
 	"louisiana-parish-samples.js",
+	"louisiana-parish-questions.js",
 	"collect-louisiana-parish-samples.js",
 	"prepare-state-measure-guides.js",
 	"state-measure-guides.js",

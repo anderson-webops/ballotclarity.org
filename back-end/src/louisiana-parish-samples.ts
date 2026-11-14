@@ -179,7 +179,7 @@ export async function collectParishSampleBatch(parishes: string[], accessReview:
 	return { schemaVersion: 1, type: "louisiana-parish-sample-research-capture", publisher: "Power Coalition for Equity and Justice", official: false, catalog, captures, results, automaticImportApproved: false, publicationApproved: false };
 }
 
-export function readParishCandidateReferences(text: string, parish: string, electionDate: string) {
+export function readParishSamplePages(text: string, parish: string, electionDate: string) {
 	const date = /^(20\d{2})-(\d{2})-(\d{2})$/u.exec(electionDate);
 	if (!date || !parishNames.includes(parish) || Buffer.byteLength(text) > 4 * 1024 * 1024 || /[^\P{Cc}\n\r\t\f]/u.test(text)) throw new Error("Parish candidate evidence requires review.");
 	const compact = text.replace(/\s+/gu, "").toLowerCase();
@@ -189,6 +189,11 @@ export function readParishCandidateReferences(text: string, parish: string, elec
 	const pages = text.split("\f");
 	if (!pages.at(-1)?.trim()) pages.pop();
 	if (!pages.length || pages.length > 50) throw new Error("Parish sample page bound exceeded.");
+	return pages;
+}
+
+export function readParishCandidateReferences(text: string, parish: string, electionDate: string) {
+	const pages = readParishSamplePages(text, parish, electionDate);
 	const records: { id: string; name: string; office: string; statedParty: string; sourcePage: number; voteFor?: number }[] = [];
 	for (const [pageIndex, page] of pages.entries()) {
 		let office = "";

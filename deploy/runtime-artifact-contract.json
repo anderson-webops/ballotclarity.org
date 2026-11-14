@@ -35,6 +35,7 @@
 				"back-end/dist/prepare-kauai-disclosures.js",
 				"back-end/dist/kauai-candidate-disclosures.js",
 				"back-end/dist/louisiana-parish-samples.js",
+				"back-end/dist/louisiana-parish-questions.js",
 				"back-end/dist/collect-louisiana-parish-samples.js",
 				"back-end/dist/prepare-state-measure-guides.js",
 				"back-end/dist/state-measure-guides.js",

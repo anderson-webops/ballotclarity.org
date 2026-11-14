@@ -68,6 +68,22 @@ async function capture(pin: Pin, now: number) {
 	});
 	return { pin: { path: original.path, sha256: original.sha256 }, catalog, samples, timings: inputs.map(input => input.metadata) };
 }
+export async function loadUnionBallotCaptures(pins: unknown, now: number) {
+	if (!Array.isArray(pins) || !pins.length || pins.length > 5 || !Number.isFinite(now)) throw new Error("Provide bounded Union ballot capture pins and a valid clock.");
+	const batches = [];
+	for (const pin of pins) batches.push(await capture(pin as Pin, now));
+	const completed = new Map<string, number>();
+	for (const input of batches.flatMap(batch => batch.timings)) {
+		const host = new URL(input.url).hostname;
+		if (Date.parse(input.requestedAt) - (completed.get(host) ?? -Infinity) < (host === "unioncountyvotes.com" ? 30000 : 1000)) throw new Error("Union captured request spacing requires review.");
+		completed.set(host, Date.parse(input.capturedAt));
+	}
+	const catalog = batches[0]!.catalog;
+	if (batches.some(batch => batch.catalog.sha256 !== catalog.sha256)) throw new Error("Union source catalogs differ between batches.");
+	const originals = batches.flatMap(batch => batch.samples);
+	if (new Set(originals.map(input => input.document.form)).size !== originals.length || originals.length !== catalog.documents.length || originals.some(input => !catalog.documents.some(document => document.form === input.document.form))) throw new Error("Union ballot preparation requires the complete exact sample set.");
+	return { batches, catalog, originals };
+}
 async function persist(directory: string, name: string, body: string) {
 	const handle = await open(join(directory, name), "wx", 0o600);
 	try {
@@ -85,18 +101,7 @@ export async function prepareUnionBallotCorroboration(path: string, options: { e
 	const candidates = JSON.parse(parent.body.toString("utf8"));
 	const keys = ["stateCode", "publicationCounty", "kind", "electionDate", "page", "position", "name", "office", "jurisdictionLabel", "partyCode", "termLabel", "sourceAsOfDate", "sourceUrl", "sourceSha256", "capturedAt"];
 	if (candidates.schemaVersion !== 1 || candidates.type !== "union-candidate-research-preparation" || candidates.publicationApproved !== false || candidates.qualificationVerified !== false || !Array.isArray(candidates.references) || !candidates.references.length || candidates.references.length > 2000 || candidates.references.some((reference: unknown) => !exact(reference, keys) || reference.stateCode !== "NJ" || reference.publicationCounty !== "Union County" || keys.filter(key => key !== "page").some(key => typeof reference[key] !== "string" || String(reference[key]).length > 1000) || !Number.isSafeInteger(reference.page) || Number(reference.page) < 1 || !validHash(reference.sourceSha256) || !Number.isFinite(Date.parse(String(reference.capturedAt))) || Date.parse(String(reference.capturedAt)) > now)) throw new Error("Union candidate-reference evidence requires review.");
-	const batches = [];
-	for (const pin of plan.ballotCaptures) batches.push(await capture(pin as Pin, now));
-	const completed = new Map<string, number>();
-	for (const input of batches.flatMap(batch => batch.timings)) {
-		const host = new URL(input.url).hostname;
-		if (Date.parse(input.requestedAt) - (completed.get(host) ?? -Infinity) < (host === "unioncountyvotes.com" ? 30000 : 1000)) throw new Error("Union captured request spacing requires review.");
-		completed.set(host, Date.parse(input.capturedAt));
-	}
-	const catalog = batches[0]!.catalog;
-	if (batches.some(batch => batch.catalog.sha256 !== catalog.sha256)) throw new Error("Union source catalogs differ between batches.");
-	const originals = batches.flatMap(batch => batch.samples);
-	if (new Set(originals.map(input => input.document.form)).size !== originals.length || originals.length !== catalog.documents.length || originals.some(input => !catalog.documents.some(document => document.form === input.document.form))) throw new Error("Union ballot corroboration requires the complete exact sample set.");
+	const { batches, catalog, originals } = await loadUnionBallotCaptures(plan.ballotCaptures, now);
 	const samples: { form: number; cells: UnionBallotCell[]; sourceUrl: string; sourceSha256: string; capturedAt: string }[] = [];
 	for (const input of originals) {
 		const extract = options.extract ?? native;

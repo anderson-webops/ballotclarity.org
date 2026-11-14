@@ -1030,6 +1030,10 @@ comparison corroborates 183 entries; the school list prints Ann Marie Weiss whil
 Winfield's sample prints Anne Marie WEISS, which remains explicit review evidence.
 Office/party corroboration, final qualification, reviewed integration and personal
 ballot selection remain separate; the existing federal source is unchanged.
+The same complete captures support [bilingual public-question preparation](union-county-ballot-questions.md).
+Elizabeth's rent-increase question and official interpretive statement reconcile
+across all six offered city forms. This separate research output preserves both
+languages and original sample citations without asserting legal or voter applicability.
 
 Polk County, Iowa's [dated voter-information publication](https://www.polkcountyiowa.gov/county-auditor/election/news-and-press-releases/general-election-november-3-2026-voter-information/)
 adds an independent `ia-polk-2026` source. Its complete candidate PDF and the first

@@ -88,6 +88,78 @@ context; no personal district mapping is inferred.
 
 ## November 14, 2026 review
 
+### Final sample corroboration
+
+The clerk's [sample index](https://unioncountyvotes.com/sample-ballots-2/) offers
+an explicit current general-election edition. Its complete November 3 catalog
+contains 42 distinct county-hosted PDF forms and 61 published municipality/ward/
+district labels across all 21 municipalities. Repeated links retain every offered
+label. Those labels describe the source's publication, without assigning a ballot
+style to a voter.
+
+`back-end/dist/collect-union-ballot-evidence.js` accepts a strict JSON plan with
+`schemaVersion: 1`, `type: "union-sample-ballot-collection"`, external `outputRoot`,
+`forms` (one to 25 distinct offered form identifiers), `catalogSha256` (an expected
+semantic catalog hash or `null` for initial discovery), and `accessReview` containing
+`unionRobots`, `unionPrivacy`, `countyRobots` and `countyPrivacy` fingerprints.
+Future editions follow the current index's actual link, election date and complete
+municipal inventory. The collector never synthesizes an unpublished PDF URL.
+
+Each batch checks both hosts' complete reviewed robots policies, legal-link
+inventories and privacy regions before acquiring samples. New policy links,
+changed policy text, ambiguous editions, missing municipalities or changed catalog
+pins hold collection. Each batch starts with a 31-second guard. Subsequent requests
+wait at least 31 seconds after the clerk host's response and 1.1 seconds after the
+county host's response, rechecking early timer wakeups. Consecutive batches use the
+same process-held output-root lock and new immutable intake directories. A PDF is
+bounded to 12 MiB, each policy/index to two MiB and total batch bodies to 64 MiB;
+the transport keeps the existing 20-second, exact-host, validated HTTPS boundary.
+Failed intakes retain their originals and metadata without a completed manifest.
+
+The offline command is `back-end/dist/prepare-union-ballot-corroboration.js`:
+
+```json
+{
+  "schemaVersion": 1,
+  "type": "union-ballot-corroboration",
+  "candidatePreparation": {
+    "path": "/external-research/candidates/preparation.json",
+    "sha256": "<candidate-preparation SHA-256>"
+  },
+  "ballotCaptures": [
+    { "path": "/external-research/batch-1/capture.json", "sha256": "<capture SHA-256>" },
+    { "path": "/external-research/batch-2/capture.json", "sha256": "<capture SHA-256>" }
+  ],
+  "outputRoot": "/external-research/corroborated"
+}
+```
+
+Captures are chronological, contain disjoint selections and share one exact
+catalog. Their union must supply every offered form. Preparation checks all parent
+pins, original bytes, complete policy/source inventories and original clocks,
+including the clerk's 30-second policy minimum and a one-second county minimum
+between retained responses and subsequent requests. Native extraction validates
+the actual form, election date, municipality, single-page dimensions and positioned
+name cells against ordinary visible layout. Blank write-in slots create no people.
+
+The CSV and JSON preserve original candidate-list fields and every matching
+sample's source URL, hash, capture clock, page, position and published labels.
+Comparison normalizes case, punctuation and whitespace, with no fuzzy matching or
+name correction. Mismatches retain the visible same-position evidence. The output
+explicitly leaves office/party corroboration, ballot qualification, personal
+applicability, publication and automatic import unapproved. Public requests run
+neither this preparation nor publisher acquisition.
+
+Actual two-batch collection retained all 42 native forms. Full comparison
+corroborates 183 of the 184 earlier references by visible name and position. The
+remaining school-list entry is **Ann Marie Weiss**, while Winfield form 42 prints
+**Anne Marie WEISS** at position 1-1. Both original spellings remain intact for
+review; this discrepancy establishes neither a withdrawal nor a replacement.
+Roselle's Antoinette Bowers is corroborated after positioned extraction separates
+her first/last-name lines from the adjacent candidate's first name.
+
+### Candidate-list originals
+
 Ordinary native acquisition returned both official lists. The general list is
 dated September 3 and supplies 125 named entries across twenty-nine pages. The
 school list is dated August 12 and supplies 59 entries across eighteen pages.
@@ -97,11 +169,11 @@ of wrapped names, blank parties, repeated ward positions and nomination notices.
 
 Both publications retain a warning about confirming positions after September 1.
 The school list predates that date. These outputs are candidate-reference research;
-final ballot qualification, position confirmation and personal applicability
-remain unverified. Single-name lists establish no unopposed or elected status.
+the lists alone verify neither final ballot qualification nor position confirmation
+or personal applicability. Single-name lists establish no unopposed or elected status.
 Incumbency and results are not inferred. Existing federal New Jersey records stay
-unchanged; independent ballot corroboration and reviewed integration precede
-publication or recurring host activation.
+unchanged. The sample corroboration above remains separate from reviewed
+integration, publication and recurring host activation.
 
 Source acquisition, offline preparation, substantive review, import, publication
 and scheduling remain separate milestones. Raw source bytes and research data

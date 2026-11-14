@@ -1025,8 +1025,11 @@ and school-board publications supply 184 named entries with retained pages,
 original dates and literal party codes. Reusable collection follows actually
 offered editions and preserves all prior evidence. Both lists carry a position-
 confirmation warning, and the school list predates its stated confirmation date.
-Final ballot corroboration and reviewed integration remain separate; the existing
-federal source, candidate qualification and personal ballot selection are unchanged.
+All 42 offered final sample forms are retained separately. Native name-and-position
+comparison corroborates 183 entries; the school list prints Ann Marie Weiss while
+Winfield's sample prints Anne Marie WEISS, which remains explicit review evidence.
+Office/party corroboration, final qualification, reviewed integration and personal
+ballot selection remain separate; the existing federal source is unchanged.
 
 Polk County, Iowa's [dated voter-information publication](https://www.polkcountyiowa.gov/county-auditor/election/news-and-press-releases/general-election-november-3-2026-voter-information/)
 adds an independent `ia-polk-2026` source. Its complete candidate PDF and the first

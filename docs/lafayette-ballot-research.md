@@ -86,3 +86,9 @@ numbering and wording were checked against rendered pages. These versioned
 witnesses corroborate the adopted calls without changing the offline preparer's
 research-only contract. Recurring acquisition, final sample-ballot reconciliation
 and publication remain separately reviewed outcomes.
+
+The [measure-guide preparer](lafayette-measure-guides.md) reuses these original
+source pins and explicit editorial review to assemble separate parish/city native
+drafts through the existing guide pipeline. It preserves conflicting publisher
+labels as review evidence and leaves final-ballot verification, import and
+publication independently gated.

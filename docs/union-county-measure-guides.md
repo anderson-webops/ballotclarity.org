@@ -7,6 +7,42 @@ The recurring worker's generated question plan supplies the complete capture
 pins, so callers reuse discovered editions rather than maintain annual URLs or
 form lists.
 
+## Recurring preparation
+
+`back-end/dist/manage-union-ballot-automation.js guides PROFILE.json GUIDE-POLICY.json`
+uses the collection worker's latest complete preparation. The existing collection
+profile and candidate-import enrollment remain unchanged. The separate,
+owner-private guide policy binds that profile and exact dated editorial reviews:
+
+```json
+{
+  "schemaVersion": 1,
+  "type": "union-measure-automation-policy",
+  "profileSha256": "<profile SHA-256>",
+  "reviews": [],
+  "baseSnapshot": null
+}
+```
+
+Each review entry is `{ "path": "/private/editorial.json", "sha256": "<SHA-256>" }`;
+one review is selected by the actually prepared election date. An empty selection
+produces a source-bound review template. New editions use the same worker/profile
+and automatically selected capture pins; their substantive review remains dated
+and source-specific. A pinned `baseSnapshot` supports the append-only proposal
+described below.
+
+The coordinator retains a hashed file inventory and the latest/previous complete
+guide proposals in private `question-guides` storage. Unchanged inputs verify and
+reuse those files without converter or publisher requests, preserving original
+clocks. New or changed questions produce held proposals while retaining the last
+complete guide. Failed attempts report `failed`, preserve ready data and retry
+after the profile's bounded interval. Source outages, invalid profiles, altered
+editorial files, changed capture pins and corrupted prepared output stay held.
+The existing process-held worker lock and shared storage quota cover this path.
+Guide preparation grants no import, publication or personal-ballot authority.
+
+## Standalone preparation
+
 ```json
 {
   "schemaVersion": 1,

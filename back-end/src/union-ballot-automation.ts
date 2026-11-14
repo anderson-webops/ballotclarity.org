@@ -82,7 +82,9 @@ async function preparedFiles(directory: string, value: unknown, now: number): Pr
 		paths.add(file.path);
 		const path = join(directory, "runs", value.runId, file.path);
 		if (await realpath(path) !== path) throw new Error("Union prepared output cannot use redirected storage.");
-		const body = await readBoundedStateDataBytes(path);
+		const metadata = await lstat(path);
+		if (!metadata.isFile() || metadata.size !== file.bytes) throw new Error("Union prepared output bytes changed.");
+		const body = await readBoundedStateDataBytes(path, Number(file.bytes));
 		if (body.length !== file.bytes || hash(body) !== file.sha256) throw new Error("Union prepared output bytes changed.");
 		const name = file.path.split("/").at(-1)!;
 		if (bodies.has(name) || (name.startsWith("questions.") ? !file.path.startsWith("questions/") : !file.path.startsWith("candidates/"))) throw new Error("Union prepared output roles changed.");
@@ -112,7 +114,7 @@ async function readState(directory: string, now: number): Promise<State | null> 
 	await preparedFiles(directory, value.previousPrepared, now);
 	return value as unknown as State;
 }
-async function capacity(directory: string) {
+export async function assertUnionAutomationCapacity(directory: string) {
 	let bytes = 0;
 	let count = 0;
 	async function scan(parent: string, depth: number) {
@@ -165,7 +167,7 @@ export async function runUnionBallotAutomation(planPath: string, options: { capt
 	try {
 		const previous = await readState(lock.directory, now());
 		if (!options.captures && previous && previous.status !== "running" && now() < Date.parse(previous.nextCheckAt)) return { ...previous, skipped: true, publisherRequests: 0, imported: false, publicationApproved: false, recurringImportEnabled: false };
-		await capacity(lock.directory);
+		await assertUnionAutomationCapacity(lock.directory);
 		const pendingIssues = (previous?.issues ?? []).filter(issue => !issue.endsWith("-failed") && issue !== "interrupted-run-retained");
 		if (previous?.latestPrepared && !pendingIssues.length) pendingIssues.push("source-document-changed");
 		if (previous?.status === "running") pendingIssues.push("interrupted-run-retained");

@@ -24,6 +24,7 @@ import { readUnionSampleQuestion } from "../src/union-ballot-questions.js";
 import { readUnionBallotCells, reconcileUnionBallotReferences } from "../src/union-ballot-witnesses.js";
 import { collectUnionSampleBatch, collectUnionSampleWindow, readUnionSampleCatalog, readUnionSampleEdition, unionCountyPolicyHash, unionCountyPolicyUrls, unionSampleLandingUrl } from "../src/union-county-ballots.js";
 import { unionCandidateHash as hash, unionCandidateOrigin, unionCandidatePolicyHash, unionCandidatePolicyUrls } from "../src/union-county-candidates.js";
+import { prepareUnionAutomatedMeasureGuides } from "../src/union-measure-automation.js";
 import { prepareUnionMeasureGuideFiles } from "../src/union-measure-guides.js";
 
 const municipalities = ["Berkeley Heights", "Clark", "Cranford", "Elizabeth", "Fanwood", "Garwood", "Hillside", "Kenilworth", "Linden", "Mountainside", "New Providence", "Plainfield", "Rahway", "Roselle", "Roselle Park", "Scotch Plains", "Springfield", "Summit", "Union", "Westfield", "Winfield"];
@@ -94,8 +95,8 @@ function document(form: number, change: (words: Word[]) => Word[] = words => wor
 	return { layout: `${words.map(word => word.value).join("\n")}\f`, bbox: `<doc><page width="1824" height="1284">${words.map(word => `<line xmin="${word.left}" xmax="${word.left + (word.width ?? 50)}" ymin="${word.top}" ymax="${word.top + (word.size ?? 10)}"><word xmin="${word.left}" xmax="${word.left + (word.width ?? 50)}" ymin="${word.top}" ymax="${word.top + (word.size ?? 10)}">${escape(word.value)}</word></line>`).join("")}</page></doc>` };
 }
 
-function questionDocument(form: number, change: (words: Word[]) => Word[] = words => words) {
-	return document(form, words => [...words.map(word => word.top > 750 ? { ...word, left: word.left + 700 } : word), ...change([
+function questionFields(): Word[] {
+	return [
 		{ value: "PUBLIC QUESTION TO BE VOTED UPON", left: 220, top: 805, width: 320, size: 20 },
 		{ value: "PREGUNTA PÚBLICA PARA VOTACIÓN", left: 237, top: 823, width: 285, size: 19 },
 		{ value: "QUESTION:", left: 350, top: 847, width: 65, size: 17 },
@@ -108,7 +109,11 @@ function questionDocument(form: number, change: (words: Word[]) => Word[] = word
 		{ value: "¿Debe limitarse el aumento anual del alquiler municipal a veinte dólares?", left: 128, top: 1030, width: 500, size: 14.88 },
 		{ value: "DECLARACIÓN INTERPRETATIVA:", left: 286, top: 1099, width: 190, size: 17 },
 		{ value: "La aprobación restablece el límite anual; el rechazo conserva la ordenanza.", left: 128, top: 1120, width: 500, size: 14.88 },
-	])]);
+	];
+}
+
+function questionDocument(form: number, change: (words: Word[]) => Word[] = words => words) {
+	return document(form, words => [...words.map(word => word.top > 750 ? { ...word, left: word.left + 700 } : word), ...change(questionFields())]);
 }
 
 function contextDocument(form: number, change: (words: Word[]) => Word[] = words => words) {
@@ -186,6 +191,245 @@ async function automationFixture(root: string) {
 	};
 	return { path, directory, extract };
 }
+
+async function automatedQuestionFixture(root: string) {
+	const fixture = await automationFixture(root);
+	let questionChanged = false;
+	let future = false;
+	let denied = false;
+	const later = (value: string) => value.replaceAll("2030", "2034").replaceAll("november-5", "november-7").replaceAll("November 5", "November 7").replaceAll("NOVEMBER 5", "NOVEMBER 7");
+	const net = network((url) => {
+		if (denied && url === documentUrl(1)) return { status: 403 };
+		if (future && url === unionSampleLandingUrl) return { body: later(landing) };
+		if (future && url === later(edition.url)) return { body: later(editionBody) };
+		return questionChanged && /FORM-(?:2|22)\.pdf$/u.test(url) ? { body: `%PDF-form-${/FORM-(\d+)/u.exec(url)![1]}-changed` } : undefined;
+	});
+	const extract = async (body: Buffer, format: "layout" | "bbox-layout") => {
+		const form = Number(/form-(\d+)/u.exec(body.toString())?.[1]);
+		const parsed = contextDocument(form, fields => [
+			...fields.map(word => [2, 22].includes(form) && word.top > 750 ? { ...word, left: word.value.startsWith("OFFICIAL SCHOOL") ? 700 : word.left + 150 } : word),
+			...([2, 22].includes(form) ? questionFields().map(word => ({ ...word, value: word.value.replace("twenty dollars?", questionChanged ? "thirty dollars?" : "twenty dollars?") })) : []),
+		]);
+		const bodyText = format === "layout" ? parsed.layout : parsed.bbox;
+		return future ? later(bodyText) : bodyText;
+	};
+	const options = { now: net.options.now, pause: net.options.sleep, collection: net.options, extract };
+	const prepared = await runUnionBallotAutomation(fixture.path, options);
+	const policyPath = join(await realpath(root), "guide-policy.json");
+	const policy = { schemaVersion: 1, type: "union-measure-automation-policy", profileSha256: hash(await readFile(fixture.path)), reviews: [] as { path: string; sha256: string }[], baseSnapshot: null as { path: string; sha256: string } | null };
+	await writeFile(policyPath, JSON.stringify(policy), { mode: 0o600 });
+	function changeQuestion() {
+		questionChanged = true;
+	}
+	function useFutureEdition() {
+		future = true;
+	}
+	function denyPublisher(value: boolean) {
+		denied = value;
+	}
+	return { ...fixture, net, options, prepared, policyPath, policy, changeQuestion, useFutureEdition, denyPublisher };
+}
+
+async function approvedAutomatedQuestionFixture(root: string) {
+	const fixture = await automatedQuestionFixture(root);
+	const pending = await prepareUnionAutomatedMeasureGuides(fixture.path, fixture.policyPath, fixture.options);
+	const file = pending.lastAttempt!.files.find(file => file.path.endsWith("/review-template.json"))!;
+	const template = JSON.parse(await readFile(join(fixture.directory, "question-guides", file.path), "utf8"));
+	const editorial = { ...template, reviewedAt: new Date(fixture.net.options.now()).toISOString(), questions: template.questions.map((row: object) => ({ ...row, jurisdictionType: "township", title: "Rent increases", summary: "Would change the proposed rent cap.", yesMeaning: "Approve the proposed limit.", noMeaning: "Leave the ordinance unchanged." })) };
+	const reviewPath = join(await realpath(root), "editorial.json");
+	await writeFile(reviewPath, JSON.stringify(editorial));
+	fixture.policy.reviews.push({ path: reviewPath, sha256: hash(await readFile(reviewPath)) });
+	await writeFile(fixture.policyPath, JSON.stringify(fixture.policy));
+	const ready = await prepareUnionAutomatedMeasureGuides(fixture.path, fixture.policyPath, fixture.options);
+	assert.equal(ready.status, "prepared-for-review");
+	return { ...fixture, ready, editorial, reviewPath };
+}
+
+test("Union scheduled question changes preserve the last complete native guide for review", async (context) => {
+	const root = await realpath(await mkdtemp(join(tmpdir(), "union-guide-change-")));
+	context.after(() => rm(root, { recursive: true, force: true }));
+	const fixture = await approvedAutomatedQuestionFixture(root);
+	fixture.changeQuestion();
+	await fixture.net.options.sleep(21600001);
+	await runUnionBallotAutomation(fixture.path, fixture.options);
+	const held = await prepareUnionAutomatedMeasureGuides(fixture.path, fixture.policyPath, fixture.options);
+	assert.equal(held.status, "editorial-review-required");
+	assert.equal(held.lastAttempt!.preparedGuides, 0);
+	assert.deepEqual(held.latestReady, fixture.ready.latestReady);
+	assert.equal(held.publicationApproved, false);
+});
+
+test("Union scheduled guide failures retain ready data, back off and recover without a new source clock", async (context) => {
+	const root = await realpath(await mkdtemp(join(tmpdir(), "union-guide-retry-")));
+	context.after(() => rm(root, { recursive: true, force: true }));
+	const fixture = await approvedAutomatedQuestionFixture(root);
+	const basePath = join(root, "base.json");
+	await writeFile(basePath, JSON.stringify(buildFultonOfficialLogisticsOnlySnapshot()));
+	fixture.policy.baseSnapshot = { path: basePath, sha256: hash(await readFile(basePath)) };
+	await writeFile(fixture.policyPath, JSON.stringify(fixture.policy));
+	let conversions = 0;
+	const failedOptions = { now: fixture.net.options.now, extract: async () => {
+		conversions++;
+		throw new Error("Native converter unavailable");
+	} };
+	await assert.rejects(prepareUnionAutomatedMeasureGuides(fixture.path, fixture.policyPath, failedOptions), /converter unavailable/u);
+	const held = await prepareUnionAutomatedMeasureGuides(fixture.path, fixture.policyPath, failedOptions);
+	assert.equal(held.status, "failed");
+	assert.equal(held.skipped, true);
+	assert.equal(conversions, 1);
+	assert.deepEqual(held.latestReady, fixture.ready.latestReady);
+	await fixture.net.options.sleep(21600001);
+	const recovered = await prepareUnionAutomatedMeasureGuides(fixture.path, fixture.policyPath, fixture.options);
+	assert.equal(recovered.status, "prepared-for-review");
+	assert.deepEqual(recovered.previousReady, fixture.ready.latestReady);
+	const originalGuide = fixture.ready.latestReady!.files.find(file => file.path.endsWith("/union-measures-guides.json"))!;
+	const recoveredGuide = recovered.latestReady!.files.find(file => file.path.endsWith("/union-measures-guides.json"))!;
+	assert.deepEqual(await readFile(join(fixture.directory, "question-guides", recoveredGuide.path)), await readFile(join(fixture.directory, "question-guides", originalGuide.path)));
+	const proposedCoverage = recovered.latestReady!.files.find(file => file.path.endsWith("/union-measures-coverage.json"))!;
+	assert.deepEqual(JSON.parse(await readFile(join(fixture.directory, "question-guides", proposedCoverage.path), "utf8")).election, buildFultonOfficialLogisticsOnlySnapshot().election);
+});
+
+test("Union scheduled guide integrity and configuration holds reject work before conversion", async (context) => {
+	const root = await realpath(await mkdtemp(join(tmpdir(), "union-guide-integrity-")));
+	context.after(() => rm(root, { recursive: true, force: true }));
+	const fixture = await approvedAutomatedQuestionFixture(root);
+	const statePath = join(fixture.directory, "question-guides", "state.json");
+	const stateBefore = await readFile(statePath);
+	const noConversion = { now: fixture.net.options.now, extract: async () => {
+		throw new Error("Unexpected conversion");
+	} };
+	for (const policy of [{ ...fixture.policy, profileSha256: "0".repeat(64) }, { ...fixture.policy, publicationApproved: true }, { ...fixture.policy, reviews: [...fixture.policy.reviews, fixture.policy.reviews[0]] }]) {
+		const path = join(root, "bad-policy.json");
+		await writeFile(path, JSON.stringify(policy), { mode: 0o600 });
+		await assert.rejects(prepareUnionAutomatedMeasureGuides(fixture.path, path, noConversion));
+	}
+	const linked = join(root, "linked-policy.json");
+	await symlink(fixture.policyPath, linked);
+	await assert.rejects(prepareUnionAutomatedMeasureGuides(fixture.path, linked, noConversion), /owner-private/u);
+	const lock = await acquireStateBallotAutomationLock(fixture.directory);
+	try {
+		await assert.rejects(prepareUnionAutomatedMeasureGuides(fixture.path, fixture.policyPath, noConversion));
+	}
+	finally { await lock.release(); }
+	assert.deepEqual(await readFile(statePath), stateBefore);
+	const reviewBefore = await readFile(fixture.reviewPath);
+	await writeFile(fixture.reviewPath, "tampered");
+	await assert.rejects(prepareUnionAutomatedMeasureGuides(fixture.path, fixture.policyPath, noConversion), /editorial review bytes changed/u);
+	await writeFile(fixture.reviewPath, reviewBefore);
+	const file = fixture.ready.latestReady!.files.find(file => file.path.endsWith("/union-measures-guides.json"))!;
+	await writeFile(join(fixture.directory, "question-guides", file.path), "tampered");
+	await assert.rejects(prepareUnionAutomatedMeasureGuides(fixture.path, fixture.policyPath, noConversion), /output bytes changed/u);
+	assert.deepEqual(await readFile(statePath), stateBefore);
+});
+
+test("Union scheduled future editions reuse the profile and keep prior-cycle editorial review scoped", async (context) => {
+	const root = await realpath(await mkdtemp(join(tmpdir(), "union-guide-future-")));
+	context.after(() => rm(root, { recursive: true, force: true }));
+	const fixture = await approvedAutomatedQuestionFixture(root);
+	const profileBefore = await readFile(fixture.path);
+	const policyBefore = await readFile(fixture.policyPath);
+	await fixture.net.options.sleep(Date.parse("2034-10-01T00:00:00Z") - fixture.net.options.now());
+	fixture.useFutureEdition();
+	const later = await runUnionBallotAutomation(fixture.path, fixture.options);
+	assert.equal(later.latestPrepared!.electionDate, "2034-11-07");
+	const held = await prepareUnionAutomatedMeasureGuides(fixture.path, fixture.policyPath, fixture.options);
+	assert.equal(held.status, "editorial-review-required");
+	assert.deepEqual(held.latestReady, fixture.ready.latestReady);
+	assert.deepEqual(await readFile(fixture.path), profileBefore);
+	assert.deepEqual(await readFile(fixture.policyPath), policyBefore);
+	const template = held.lastAttempt!.files.find(file => file.path.endsWith("/review-template.json"))!;
+	const next = JSON.parse(await readFile(join(fixture.directory, "question-guides", template.path), "utf8"));
+	assert.equal(next.electionDate, "2034-11-07");
+	const reviewed = { ...next, reviewedAt: new Date(fixture.net.options.now()).toISOString(), questions: next.questions.map((row: object) => ({ ...fixture.editorial.questions[0], ...row, jurisdictionType: "township", title: "Rent increases", summary: "Would change the later proposed rent cap.", yesMeaning: "Approve the proposed limit.", noMeaning: "Leave the ordinance unchanged." })) };
+	const path = join(root, "future-editorial.json");
+	await writeFile(path, JSON.stringify(reviewed));
+	fixture.policy.reviews.push({ path, sha256: hash(await readFile(path)) });
+	await writeFile(fixture.policyPath, JSON.stringify(fixture.policy));
+	const prepared = await prepareUnionAutomatedMeasureGuides(fixture.path, fixture.policyPath, fixture.options);
+	assert.equal(prepared.status, "prepared-for-review");
+	assert.deepEqual(prepared.previousReady, fixture.ready.latestReady);
+	const guide = prepared.latestReady!.files.find(file => file.path.endsWith("/union-measures-guides.json"))!;
+	assert.equal(JSON.parse(await readFile(join(fixture.directory, "question-guides", guide.path), "utf8")).guides[0].election.date, "2034-11-07");
+	assert.deepEqual(await readFile(fixture.path), profileBefore);
+});
+
+test("Union scheduled publisher outages preserve guide custody and recover through the same profile", async (context) => {
+	const root = await realpath(await mkdtemp(join(tmpdir(), "union-guide-publisher-")));
+	context.after(() => rm(root, { recursive: true, force: true }));
+	const fixture = await approvedAutomatedQuestionFixture(root);
+	const path = join(fixture.directory, "question-guides", "state.json");
+	const previous = await readFile(path);
+	fixture.denyPublisher(true);
+	await fixture.net.options.sleep(21600001);
+	await assert.rejects(runUnionBallotAutomation(fixture.path, fixture.options));
+	await assert.rejects(prepareUnionAutomatedMeasureGuides(fixture.path, fixture.policyPath, fixture.options), /complete successful worker/u);
+	assert.deepEqual(await readFile(path), previous);
+	fixture.denyPublisher(false);
+	await fixture.net.options.sleep(21600001);
+	await runUnionBallotAutomation(fixture.path, fixture.options);
+	const recovered = await prepareUnionAutomatedMeasureGuides(fixture.path, fixture.policyPath, fixture.options);
+	assert.equal(recovered.skipped, true);
+	assert.deepEqual(recovered.latestReady, fixture.ready.latestReady);
+	assert.deepEqual(await readFile(path), previous);
+});
+
+test("Union scheduled guide preparation rejects capture-plan drift before native work", async (context) => {
+	const root = await realpath(await mkdtemp(join(tmpdir(), "union-guide-pins-")));
+	context.after(() => rm(root, { recursive: true, force: true }));
+	const fixture = await automatedQuestionFixture(root);
+	const path = join(fixture.directory, "runs", fixture.prepared.latestPrepared!.runId, "question-plan.json");
+	const plan = JSON.parse(await readFile(path, "utf8"));
+	plan.ballotCaptures[0].sha256 = "0".repeat(64);
+	await writeFile(path, JSON.stringify(plan));
+	await assert.rejects(prepareUnionAutomatedMeasureGuides(fixture.path, fixture.policyPath, { now: fixture.net.options.now, extract: async () => {
+		throw new Error("Unexpected conversion");
+	} }), /capture pins differ/u);
+	const state = JSON.parse(await readFile(join(fixture.directory, "question-guides", "state.json"), "utf8"));
+	assert.equal(state.lastAttempt.status, "failed");
+	assert.equal(state.latestReady, null);
+});
+
+test("Union scheduled question guides derive capture plans and reuse unchanged review proposals without extraction", async (context) => {
+	const root = await realpath(await mkdtemp(join(tmpdir(), "union-scheduled-guides-")));
+	context.after(() => rm(root, { recursive: true, force: true }));
+	const fixture = await automatedQuestionFixture(root);
+	const requests = fixture.net.requests.length;
+	const first = await prepareUnionAutomatedMeasureGuides(fixture.path, fixture.policyPath, fixture.options);
+	assert.equal(first.lastAttempt!.status, "editorial-review-required");
+	assert.equal(first.lastAttempt!.preparedGuides, 0);
+	assert.equal(first.latestReady, null);
+	const statePath = join(fixture.directory, "question-guides", "state.json");
+	const stateBefore = await readFile(statePath);
+	const repeat = await prepareUnionAutomatedMeasureGuides(fixture.path, fixture.policyPath, { now: fixture.net.options.now, extract: async () => {
+		throw new Error("Cached guides must not invoke converters");
+	} });
+	assert.equal(repeat.skipped, true);
+	assert.deepEqual(await readFile(statePath), stateBefore);
+	const templatePath = first.lastAttempt!.files.find(file => file.path.endsWith("/review-template.json"))!.path;
+	const template = JSON.parse(await readFile(join(fixture.directory, "question-guides", templatePath), "utf8"));
+	const reviewed = { ...template, reviewedAt: new Date(fixture.net.options.now()).toISOString(), questions: template.questions.map((row: object) => ({ ...row, jurisdictionType: "township", title: "Rent increases", summary: "Would change the proposed rent cap.", yesMeaning: "Approve the proposed limit.", noMeaning: "Leave the ordinance unchanged." })) };
+	const reviewPath = join(root, "editorial.json");
+	await writeFile(reviewPath, JSON.stringify(reviewed));
+	fixture.policy.reviews.push({ path: reviewPath, sha256: hash(await readFile(reviewPath)) });
+	await writeFile(fixture.policyPath, JSON.stringify(fixture.policy));
+	const ready = await prepareUnionAutomatedMeasureGuides(fixture.path, fixture.policyPath, fixture.options);
+	assert.equal(ready.lastAttempt!.status, "prepared-for-review");
+	assert.equal(ready.latestReady!.preparedGuides, 1);
+	assert.equal(ready.publicationApproved, false);
+	assert.equal(ready.automaticImportApproved, false);
+	assert.equal(ready.imported, false);
+	const generated = ready.latestReady!.files.find(file => file.path.endsWith("/assembly/union-measures-guides.json"))!;
+	const guide = JSON.parse(await readFile(join(fixture.directory, "question-guides", generated.path), "utf8")).guides[0];
+	assert.equal(guide.jurisdiction.name, "Clark");
+	assert.equal(guide.jurisdiction.jurisdictionType, "township");
+	assert.deepEqual((await inspectUnionBallotAutomation(fixture.path, fixture.net.options.now())).state!.latestPrepared, fixture.prepared.latestPrepared);
+	assert.equal(fixture.net.requests.length, requests);
+	const cachedReady = await prepareUnionAutomatedMeasureGuides(fixture.path, fixture.policyPath, { now: fixture.net.options.now, extract: async () => {
+		throw new Error("Cached guides must not invoke converters");
+	} });
+	assert.equal(cachedReady.skipped, true);
+	assert.deepEqual(cachedReady.latestReady, ready.latestReady);
+});
 
 test("Union native questions assemble reviewed municipal measures while preserving a pinned Fulton base", async (context) => {
 	const root = await realpath(await mkdtemp(join(tmpdir(), "union-native-measures-")));

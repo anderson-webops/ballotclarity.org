@@ -2,9 +2,15 @@ import process from "node:process";
 import { readBoundedStateDataBytes } from "./state-ballot-storage.js";
 import { inspectUnionBallotAutomation, runUnionBallotAutomation } from "./union-ballot-automation.js";
 import { enrollUnionBallotImport, syncUnionBallotImport } from "./union-ballot-import.js";
+import { prepareUnionAutomatedMeasureGuides } from "./union-measure-automation.js";
 
 async function main() {
 	const [command, plan, pins, ...extra] = process.argv.slice(2);
+	if (command === "guides") {
+		if (!plan || !pins || extra.length) throw new Error("Use manage-union-ballot-automation guides PROFILE.json GUIDE-POLICY.json.");
+		console.log(JSON.stringify(await prepareUnionAutomatedMeasureGuides(plan, pins)));
+		return;
+	}
 	if (command === "enroll" || command === "sync") {
 		if (!plan || !pins || extra.length) throw new Error("Use manage-union-ballot-automation enroll|sync PROFILE.json IMPORT-POLICY.json.");
 		console.log(JSON.stringify(command === "enroll" ? await enrollUnionBallotImport(plan, pins) : await syncUnionBallotImport(plan, pins)));

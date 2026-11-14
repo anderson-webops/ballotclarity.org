@@ -77,6 +77,11 @@ collection path.
 [Municipal question guides](union-county-measure-guides.md) turn that evidence and
 an exact editorial review into native measure/guide proposals. They preserve the
 candidate import enrollment and its separate publication boundaries.
+Its `guides` command derives complete capture pins from the persisted worker
+state, reuses source-bound editorial review and retains hashed ready proposals.
+Unchanged proposals need no converters; new questions and future editions retain
+their own substantive review. The guide policy is separate from the existing
+collection profile and candidate-import approval.
 
 Use one physical, external, owner-private profile directory for this Union worker. Process-held
 ownership spans collection and preparation. A scheduled early invocation returns

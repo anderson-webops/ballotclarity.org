@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { Buffer } from "node:buffer";
-import { mkdtemp, readdir, readFile, rm, symlink, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readdir, readFile, realpath, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -9,12 +9,14 @@ import { prepareUnionBallotCorroboration } from "../src/prepare-union-ballot-cor
 import { prepareUnionBallotQuestions } from "../src/prepare-union-ballot-questions.js";
 import { buildUnionCandidateSnapshot, prepareUnionCandidateSnapshot } from "../src/prepare-union-candidate-snapshot.js";
 import { prepareUnionChoiceReview } from "../src/prepare-union-choice-review.js";
+import { acquireStateBallotAutomationLock } from "../src/state-ballot-automation-lock.js";
 import { parseBundledStateSnapshot } from "../src/state-ballot-snapshot.js";
 import { unionSampleSource } from "../src/state-ballot-union-source.js";
+import { inspectUnionBallotAutomation, readUnionBallotAutomationPlan, runUnionBallotAutomation } from "../src/union-ballot-automation.js";
 import { readUnionChoiceContext, unionOfficeCorroborated } from "../src/union-ballot-choice-context.js";
 import { readUnionSampleQuestion } from "../src/union-ballot-questions.js";
 import { readUnionBallotCells, reconcileUnionBallotReferences } from "../src/union-ballot-witnesses.js";
-import { collectUnionSampleBatch, readUnionSampleCatalog, readUnionSampleEdition, unionCountyPolicyHash, unionCountyPolicyUrls, unionSampleLandingUrl } from "../src/union-county-ballots.js";
+import { collectUnionSampleBatch, collectUnionSampleWindow, readUnionSampleCatalog, readUnionSampleEdition, unionCountyPolicyHash, unionCountyPolicyUrls, unionSampleLandingUrl } from "../src/union-county-ballots.js";
 import { unionCandidateHash as hash, unionCandidateOrigin, unionCandidatePolicyHash, unionCandidatePolicyUrls } from "../src/union-county-candidates.js";
 
 const municipalities = ["Berkeley Heights", "Clark", "Cranford", "Elizabeth", "Fanwood", "Garwood", "Hillside", "Kenilworth", "Linden", "Mountainside", "New Providence", "Plainfield", "Rahway", "Roselle", "Roselle Park", "Scotch Plains", "Springfield", "Summit", "Union", "Westfield", "Winfield"];
@@ -45,8 +47,8 @@ function network(change?: (url: string) => { body?: string; status?: number; con
 			now += 250;
 			requests.push({ url, requestedAt, completedAt: now });
 			const form = /FORM-(\d+)\.pdf$/u.exec(url)?.[1];
-			const original = url === unionCandidatePolicyUrls[0] ? unionRobots : url === unionCandidatePolicyUrls[1] ? unionPrivacy : url === unionCountyPolicyUrls[0] ? countyRobots : url === unionCountyPolicyUrls[1] ? countyLink : url === unionCountyPolicyUrls[2] ? countyPrivacy : url === unionSampleLandingUrl ? landing : url === edition.url ? editionBody : form ? `%PDF-form-${form}` : assert.fail("Unexpected source URL");
 			const altered = change?.(url);
+			const original = url === unionCandidatePolicyUrls[0] ? unionRobots : url === unionCandidatePolicyUrls[1] ? unionPrivacy : url === unionCountyPolicyUrls[0] ? countyRobots : url === unionCountyPolicyUrls[1] ? countyLink : url === unionCountyPolicyUrls[2] ? countyPrivacy : url === unionSampleLandingUrl ? landing : url === edition.url ? editionBody : form ? `%PDF-form-${form}` : altered?.body ?? assert.fail("Unexpected source URL");
 			return { status: altered?.status ?? 200, body: Buffer.from(altered?.body ?? original), contentType: altered?.contentType ?? (form ? "application/pdf" : "text/html"), etag: undefined };
 		},
 	};
@@ -164,6 +166,216 @@ function candidateSamples() {
 		return { document: source, sha256: hash(`sample-${source.form}`), capturedAt: "2030-10-01T00:00:00.000Z", cells: readUnionChoiceContext(input.bbox, input.layout, source, edition.electionDate) };
 	});
 }
+
+async function automationFixture(root: string) {
+	const path = join(root, "automation.json");
+	const directory = join(await realpath(root), "automation");
+	await mkdir(directory, { mode: 0o700 });
+	await writeFile(path, JSON.stringify({ schemaVersion: 1, type: "union-ballot-automation", directory, accessReview: review, intervalMs: 21600000 }));
+	const extract = async (body: Buffer, format: "layout" | "bbox-layout") => {
+		const form = Number(/form-(\d+)/u.exec(body.toString("utf8"))?.[1]);
+		const input = contextDocument(form);
+		return format === "layout" ? input.layout : input.bbox;
+	};
+	return { path, directory, extract };
+}
+
+test("Union discovery windows collect every offered form in batches of at most twenty-five", async () => {
+	const extra = Array.from({ length: 5 }, (_, index) => `<li><a href="${documentUrl(index + 23)}">District ${index + 3}</a></li>`).join("");
+	const large = editionBody.replace(`<li><a href="${documentUrl(22)}">District 2</a></li>`, `<li><a href="${documentUrl(22)}">District 2</a></li>${extra}`);
+	const net = network(url => url === edition.url ? { body: large } : undefined);
+	const first = await collectUnionSampleWindow(0, review, null, net.options);
+	const second = await collectUnionSampleWindow(25, review, first.catalog.sha256, net.options);
+	assert.equal(first.catalog.documents.length, 27);
+	assert.equal(first.selected.length, 25);
+	assert.deepEqual(second.selected.map(document => document.form), [26, 27]);
+	assert.equal(new Set([...first.selected, ...second.selected].map(document => document.form)).size, 27);
+	const lastCompleted = new Map<string, number>();
+	for (const request of net.requests) {
+		const host = new URL(request.url).hostname;
+		assert.ok(request.requestedAt - (lastCompleted.get(host) ?? -Infinity) >= (host === "unioncountyvotes.com" ? 30000 : 1000));
+		lastCompleted.set(host, request.completedAt);
+	}
+	for (const offset of [-1, 1, 99, 100]) await assert.rejects(collectUnionSampleWindow(offset, review, null, net.options));
+	await assert.rejects(collectUnionSampleWindow(25, review, "0".repeat(64), net.options));
+});
+
+test("Union recurring preparation discovers its edition, persists both outputs and reuses exact content across checks", async (context) => {
+	const root = await mkdtemp(join(tmpdir(), "union-recurring-"));
+	context.after(() => rm(root, { recursive: true, force: true }));
+	const fixture = await automationFixture(root);
+	const net = network();
+	const options = { now: net.options.now, pause: net.options.sleep, collection: net.options, extract: fixture.extract };
+	assert.equal((await inspectUnionBallotAutomation(fixture.path, net.options.now())).state, null);
+	const first = await runUnionBallotAutomation(fixture.path, options);
+	assert.equal(first.status, "prepared-review-required");
+	assert.equal(first.publisherRequests, catalog.documents.length + 7);
+	assert.equal(first.latestPrepared!.files.length, 6);
+	assert.equal(first.latestPrepared!.candidates, buildUnionCandidateSnapshot(catalog, candidateSamples()).snapshot.recordCount);
+	assert.equal(first.latestPrepared!.questions, 0);
+	assert.deepEqual(first.issues, ["initial-review-required"]);
+	const state = await readFile(join(fixture.directory, "state.json"));
+	const count = net.requests.length;
+	const cached = await runUnionBallotAutomation(fixture.path, options);
+	assert.equal(cached.skipped, true);
+	assert.equal(cached.publisherRequests, 0);
+	assert.equal(net.requests.length, count);
+	assert.deepEqual(await readFile(join(fixture.directory, "state.json")), state);
+	await net.options.sleep(21600001);
+	const unchangedExtract = async () => {
+		throw new Error("Unchanged sources require no native reprocessing.");
+	};
+	const reused = await runUnionBallotAutomation(fixture.path, { ...options, extract: unchangedExtract });
+	assert.equal(reused.status, "unchanged");
+	assert.deepEqual(reused.issues, first.issues);
+	assert.deepEqual(reused.latestPrepared, first.latestPrepared);
+	assert.notEqual(reused.lastCollectedAt, first.lastCollectedAt);
+	assert.equal((await inspectUnionBallotAutomation(fixture.path, net.options.now())).state!.status, "unchanged");
+	assert.equal(reused.imported, false);
+	assert.equal(reused.publicationApproved, false);
+	assert.equal(reused.recurringImportEnabled, false);
+});
+
+test("Union publisher denial, policy changes and native failures preserve the previous prepared cohort", async (context) => {
+	const root = await mkdtemp(join(tmpdir(), "union-recurring-failure-"));
+	context.after(() => rm(root, { recursive: true, force: true }));
+	const fixture = await automationFixture(root);
+	let mode = "normal";
+	const net = network(url => mode === "denied" && url === documentUrl(1) ? { status: 403 } : mode === "policy" && url === unionCandidatePolicyUrls[0] ? { body: "User-agent: * Disallow: /" } : mode === "native" && /FORM-\d+\.pdf$/u.test(url) ? { body: `%PDF-form-${/FORM-(\d+)/u.exec(url)![1]}-changed` } : undefined);
+	const options = { now: net.options.now, pause: net.options.sleep, collection: net.options, extract: fixture.extract };
+	const first = await runUnionBallotAutomation(fixture.path, options);
+	const invalidExtract = async () => {
+		throw new Error("Changed native layout.");
+	};
+	for (const failure of ["denied", "policy", "native"]) {
+		mode = failure;
+		await net.options.sleep(21600001);
+		const before = net.requests.length;
+		await assert.rejects(runUnionBallotAutomation(fixture.path, failure === "native" ? { ...options, extract: invalidExtract } : options));
+		const inspected = await inspectUnionBallotAutomation(fixture.path, net.options.now());
+		assert.equal(inspected.state!.status, "failed");
+		assert.equal(inspected.state!.failure, failure === "native" ? "preparation" : "collection");
+		assert.deepEqual(inspected.state!.latestPrepared, first.latestPrepared);
+		assert.equal(inspected.publicationApproved, false);
+		if (failure === "policy") assert.equal(net.requests.length - before, 1);
+		if (failure === "denied") assert.equal(net.requests.at(-1)!.url, documentUrl(1));
+	}
+});
+
+test("Union recurring ownership and prepared-file integrity reject work before new publisher requests", async (context) => {
+	const root = await mkdtemp(join(tmpdir(), "union-recurring-integrity-"));
+	context.after(() => rm(root, { recursive: true, force: true }));
+	const fixture = await automationFixture(root);
+	const net = network();
+	const options = { now: net.options.now, pause: net.options.sleep, collection: net.options, extract: fixture.extract };
+	const held = await acquireStateBallotAutomationLock(fixture.directory);
+	await assert.rejects(runUnionBallotAutomation(fixture.path, options), /already running/u);
+	assert.equal(net.requests.length, 0);
+	await held.release();
+	const first = await runUnionBallotAutomation(fixture.path, options);
+	const path = join(fixture.directory, "runs", first.latestPrepared!.runId, first.latestPrepared!.files[0]!.path);
+	const original = await readFile(path);
+	await writeFile(path, `${original.toString("utf8")} `);
+	const requests = net.requests.length;
+	await assert.rejects(inspectUnionBallotAutomation(fixture.path, net.options.now()), /bytes changed/u);
+	await assert.rejects(runUnionBallotAutomation(fixture.path, options), /bytes changed/u);
+	assert.equal(net.requests.length, requests);
+	await writeFile(path, original);
+	assert.equal((await inspectUnionBallotAutomation(fixture.path, net.options.now())).state!.status, "prepared-review-required");
+});
+
+test("Union recurring recovery keeps prior outputs and applies an interrupted-request cooldown", async (context) => {
+	const root = await mkdtemp(join(tmpdir(), "union-recurring-recovery-"));
+	context.after(() => rm(root, { recursive: true, force: true }));
+	const fixture = await automationFixture(root);
+	const net = network();
+	const options = { now: net.options.now, pause: net.options.sleep, collection: net.options, extract: fixture.extract };
+	const first = await runUnionBallotAutomation(fixture.path, options);
+	const path = join(fixture.directory, "state.json");
+	const state = JSON.parse(await readFile(path, "utf8"));
+	await writeFile(path, JSON.stringify({ ...state, status: "running", finishedAt: null }));
+	const requests = net.requests.length;
+	const started = net.options.now();
+	const recovered = await runUnionBallotAutomation(fixture.path, options);
+	assert.equal(recovered.status, "unchanged");
+	assert.ok(recovered.issues.includes("interrupted-run-retained"));
+	assert.deepEqual(recovered.latestPrepared, first.latestPrepared);
+	assert.ok(net.requests[requests]!.requestedAt - started >= 51000);
+});
+
+test("Union source changes queue candidate disappearance without importing or erasing earlier evidence", async (context) => {
+	const root = await mkdtemp(join(tmpdir(), "union-recurring-changes-"));
+	context.after(() => rm(root, { recursive: true, force: true }));
+	const fixture = await automationFixture(root);
+	let changed = false;
+	const net = network(url => changed && /FORM-\d+\.pdf$/u.test(url) ? { body: `%PDF-form-${/FORM-(\d+)/u.exec(url)![1]}-changed` } : undefined);
+	const options = { now: net.options.now, pause: net.options.sleep, collection: net.options, extract: fixture.extract };
+	const first = await runUnionBallotAutomation(fixture.path, options);
+	changed = true;
+	await net.options.sleep(21600001);
+	const next = await runUnionBallotAutomation(fixture.path, { ...options, extract: async (body, format) => {
+		const form = Number(/form-(\d+)/u.exec(body.toString("utf8"))?.[1]);
+		const input = contextDocument(form, words => words.filter(word => !["Veronica", "FERNANDEZ"].includes(word.value)));
+		return format === "layout" ? input.layout : input.bbox;
+	} });
+	assert.equal(next.status, "prepared-review-required");
+	assert.ok(next.issues.includes("candidate-removed"));
+	assert.deepEqual(next.previousPrepared, first.latestPrepared);
+	assert.equal(next.latestPrepared!.candidates, first.latestPrepared!.candidates - 1);
+	assert.equal(next.recurringImportEnabled, false);
+	assert.equal(next.publicationApproved, false);
+});
+
+test("Union recurring profiles use bounded external storage and explicit policy fingerprints", async (context) => {
+	const root = await mkdtemp(join(tmpdir(), "union-recurring-plan-"));
+	context.after(() => rm(root, { recursive: true, force: true }));
+	const fixture = await automationFixture(root);
+	const valid = JSON.parse(await readFile(fixture.path, "utf8"));
+	assert.equal((await readUnionBallotAutomationPlan(fixture.path)).intervalMs, 21600000);
+	for (const changed of [{ ...valid, intervalMs: 1 }, { ...valid, forms: [1] }, { ...valid, directory: "relative" }, { ...valid, accessReview: { ...review, unionPrivacy: "invalid" } }]) {
+		await writeFile(fixture.path, JSON.stringify(changed));
+		await assert.rejects(readUnionBallotAutomationPlan(fixture.path));
+	}
+});
+
+test("Union automation rejects shared storage permissions without modifying them or contacting publishers", async (context) => {
+	const root = await mkdtemp(join(tmpdir(), "union-recurring-permissions-"));
+	context.after(() => rm(root, { recursive: true, force: true }));
+	const fixture = await automationFixture(root);
+	const directory = join(await realpath(root), "shared");
+	await mkdir(directory, { mode: 0o755 });
+	const plan = JSON.parse(await readFile(fixture.path, "utf8"));
+	await writeFile(fixture.path, JSON.stringify({ ...plan, directory }));
+	const net = network();
+	await assert.rejects(runUnionBallotAutomation(fixture.path, { now: net.options.now, collection: net.options }), /private owner-controlled/u);
+	await assert.rejects(inspectUnionBallotAutomation(fixture.path, net.options.now()), /private owner-controlled/u);
+	assert.equal(net.requests.length, 0);
+	assert.deepEqual(await readdir(directory), []);
+});
+
+test("Union recurring discovery follows a later offered election without annual profile edits and holds regressions", async (context) => {
+	const root = await mkdtemp(join(tmpdir(), "union-recurring-future-"));
+	context.after(() => rm(root, { recursive: true, force: true }));
+	const fixture = await automationFixture(root);
+	const later = (value: string) => value.replaceAll("2030", "2034").replaceAll("november-5", "november-7").replaceAll("November 5", "November 7").replaceAll("NOVEMBER 5", "NOVEMBER 7");
+	let future = false;
+	const net = network(url => future && url === unionSampleLandingUrl ? { body: later(landing) } : future && url === later(edition.url) ? { body: later(editionBody) } : undefined);
+	const options = { now: net.options.now, pause: net.options.sleep, collection: net.options, extract: fixture.extract };
+	const first = await runUnionBallotAutomation(fixture.path, options);
+	const planBefore = await readFile(fixture.path);
+	await net.options.sleep(Date.parse("2034-10-01T00:00:00Z") - net.options.now());
+	future = true;
+	const laterRun = await runUnionBallotAutomation(fixture.path, { ...options, extract: async (body, format) => later(await fixture.extract(body, format)) });
+	assert.equal(laterRun.latestPrepared!.electionDate, "2034-11-07");
+	assert.equal(laterRun.latestPrepared!.candidates, first.latestPrepared!.candidates);
+	assert.ok(laterRun.issues.includes("new-election-review-required"));
+	assert.deepEqual(laterRun.previousPrepared, first.latestPrepared);
+	assert.deepEqual(await readFile(fixture.path), planBefore);
+	future = false;
+	await net.options.sleep(21600001);
+	await assert.rejects(runUnionBallotAutomation(fixture.path, options), /older Union source/u);
+	assert.deepEqual((await inspectUnionBallotAutomation(fixture.path, net.options.now())).state!.latestPrepared, laterRun.latestPrepared);
+});
 
 test("Union sample directory source preserves historical scope and leaves existing federal selection preferred", () => {
 	const source = unionSampleSource();

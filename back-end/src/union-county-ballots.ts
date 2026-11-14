@@ -139,8 +139,17 @@ export function readUnionSampleCatalog(body: string, edition: UnionSampleEdition
 
 export interface UnionBallotCapture { role: string; url: string; sha256: string; capturedAt: string; requestedAt: string; body: Buffer }
 export interface UnionBallotAccessReview { unionRobots: string; unionPrivacy: string; countyRobots: string; countyPrivacy: string }
-export async function collectUnionSampleBatch(forms: number[], review: UnionBallotAccessReview, expectedCatalog: string | null, options: { request?: typeof fetchRemoteSourceDocument; now?: () => number; sleep?: (milliseconds: number) => Promise<void>; onCapture?: (capture: UnionBallotCapture) => Promise<void> } = {}) {
-	if (!Array.isArray(forms) || !forms.length || forms.length > 25 || forms.some(form => !Number.isSafeInteger(form) || form < 1 || form > 99) || new Set(forms).size !== forms.length || !review || Object.keys(review).sort().join(",") !== "countyPrivacy,countyRobots,unionPrivacy,unionRobots" || Object.values(review).some(value => !/^[a-f0-9]{64}$/u.test(value)) || (expectedCatalog !== null && !/^[a-f0-9]{64}$/u.test(expectedCatalog))) return reject();
+export interface UnionBallotCollectionOptions { request?: typeof fetchRemoteSourceDocument; now?: () => number; sleep?: (milliseconds: number) => Promise<void>; onCapture?: (capture: UnionBallotCapture) => Promise<void> }
+export async function collectUnionSampleBatch(forms: number[], review: UnionBallotAccessReview, expectedCatalog: string | null, options: UnionBallotCollectionOptions = {}) {
+	if (!Array.isArray(forms) || !forms.length || forms.length > 25 || forms.some(form => !Number.isSafeInteger(form) || form < 1 || form > 99) || new Set(forms).size !== forms.length) return reject();
+	return collectUnionSelectedSamples(catalog => forms.map(form => catalog.documents.find(document => document.form === form) ?? reject()), review, expectedCatalog, options);
+}
+export async function collectUnionSampleWindow(offset: number, review: UnionBallotAccessReview, expectedCatalog: string | null, options: UnionBallotCollectionOptions = {}) {
+	if (!Number.isSafeInteger(offset) || offset < 0 || offset > 98 || offset % 25 !== 0) return reject();
+	return collectUnionSelectedSamples(catalog => catalog.documents.slice(offset, offset + 25), review, expectedCatalog, options);
+}
+async function collectUnionSelectedSamples(select: (catalog: UnionSampleCatalog) => UnionSampleDocument[], review: UnionBallotAccessReview, expectedCatalog: string | null, options: UnionBallotCollectionOptions) {
+	if (!review || Object.keys(review).sort().join(",") !== "countyPrivacy,countyRobots,unionPrivacy,unionRobots" || Object.values(review).some(value => !/^[a-f0-9]{64}$/u.test(value)) || (expectedCatalog !== null && !/^[a-f0-9]{64}$/u.test(expectedCatalog))) return reject();
 	const now = options.now ?? Date.now;
 	const previous = new Map<string, number>();
 	const captures: UnionBallotCapture[] = [];
@@ -171,7 +180,8 @@ export async function collectUnionSampleBatch(forms: number[], review: UnionBall
 	const edition = readUnionSampleEdition(await request("sample-landing", unionSampleLandingUrl));
 	const catalog = readUnionSampleCatalog(await request("sample-edition", edition.url), edition);
 	if (expectedCatalog !== null && catalog.sha256 !== expectedCatalog) return reject();
-	const selected = forms.map(form => catalog.documents.find(document => document.form === form) ?? reject());
+	const selected = select(catalog);
+	if (!selected.length || selected.length > 25) return reject();
 	for (const document of selected) await request(`form-${document.form}`, document.url, true);
 	return { catalog, selected, captures, imported: false, publicationApproved: false, personalApplicabilityVerified: false };
 }

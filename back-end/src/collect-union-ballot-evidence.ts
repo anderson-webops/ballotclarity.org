@@ -1,11 +1,11 @@
-import type { UnionBallotCapture } from "./union-county-ballots.js";
+import type { UnionBallotCapture, UnionBallotCollectionOptions } from "./union-county-ballots.js";
 import { randomUUID } from "node:crypto";
 import { mkdir, open } from "node:fs/promises";
 import { join } from "node:path";
 import process from "node:process";
 import { acquireStateBallotAutomationLock } from "./state-ballot-automation-lock.js";
 import { readBoundedStateDataBytes } from "./state-ballot-storage.js";
-import { collectUnionSampleBatch } from "./union-county-ballots.js";
+import { collectUnionSampleBatch, collectUnionSampleWindow } from "./union-county-ballots.js";
 import { unionCandidateHash } from "./union-county-candidates.js";
 
 async function persist(directory: string, name: string, body: string | Uint8Array) {
@@ -16,9 +16,10 @@ async function persist(directory: string, name: string, body: string | Uint8Arra
 	}
 	finally { await handle.close(); }
 }
-export async function collectUnionBallotEvidence(path: string, options: { collect?: typeof collectUnionSampleBatch } = {}) {
+export async function collectUnionBallotEvidence(path: string, options: { collect?: typeof collectUnionSampleBatch; collectWindow?: typeof collectUnionSampleWindow; collection?: Omit<UnionBallotCollectionOptions, "onCapture"> } = {}) {
 	const plan = JSON.parse((await readBoundedStateDataBytes(path, 32768)).toString("utf8"));
-	if (!plan || Object.keys(plan).sort().join(",") !== "accessReview,catalogSha256,forms,outputRoot,schemaVersion,type" || plan.schemaVersion !== 1 || plan.type !== "union-sample-ballot-collection" || typeof plan.outputRoot !== "string") throw new Error("Provide an exact Union sample-ballot collection plan.");
+	const window = plan?.type === "union-sample-ballot-window";
+	if (!plan || typeof plan !== "object" || Array.isArray(plan) || Object.keys(plan).sort().join(",") !== (window ? "accessReview,catalogSha256,outputRoot,schemaVersion,type,windowOffset" : "accessReview,catalogSha256,forms,outputRoot,schemaVersion,type") || plan.schemaVersion !== 1 || (!window && plan.type !== "union-sample-ballot-collection") || typeof plan.outputRoot !== "string") throw new Error("Provide an exact Union sample-ballot collection plan.");
 	const lock = await acquireStateBallotAutomationLock(plan.outputRoot);
 	try {
 		const outputDirectory = join(lock.directory, `intake-${Date.now()}-${randomUUID()}`);
@@ -37,7 +38,7 @@ export async function collectUnionBallotEvidence(path: string, options: { collec
 			await persist(outputDirectory, `${capture.role}.metadata.json`, `${JSON.stringify(input, null, 2)}\n`);
 			inputs.push(input);
 		}
-		const collected = await (options.collect ?? collectUnionSampleBatch)(plan.forms, plan.accessReview, plan.catalogSha256, { onCapture });
+		const collected = window ? await (options.collectWindow ?? collectUnionSampleWindow)(plan.windowOffset, plan.accessReview, plan.catalogSha256, { ...options.collection, onCapture }) : await (options.collect ?? collectUnionSampleBatch)(plan.forms, plan.accessReview, plan.catalogSha256, { ...options.collection, onCapture });
 		if (inputs.length !== collected.captures.length || inputs.length !== collected.selected.length + 7) throw new Error("Union sample-ballot capture inventory is incomplete.");
 		const body = `${JSON.stringify({ schemaVersion: 1, type: "union-sample-ballot-capture", catalog: collected.catalog, selected: collected.selected, accessReview: plan.accessReview, inputs, imported: false, publicationApproved: false, personalApplicabilityVerified: false }, null, 2)}\n`;
 		await persist(outputDirectory, "capture.json", body);

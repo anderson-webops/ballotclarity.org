@@ -1,0 +1,14 @@
+import process from "node:process";
+import { readBoundedStateDataBytes } from "./state-ballot-storage.js";
+import { inspectUnionBallotAutomation, runUnionBallotAutomation } from "./union-ballot-automation.js";
+
+async function main() {
+	const [command, plan, pins, ...extra] = process.argv.slice(2);
+	if (!plan || extra.length || !["run", "inspect", "prepare"].includes(command ?? "") || (command === "prepare" ? !pins : Boolean(pins))) throw new Error("Use manage-union-ballot-automation run|inspect PLAN.json or prepare PLAN.json CAPTURE-PINS.json.");
+	const result = command === "inspect" ? await inspectUnionBallotAutomation(plan) : await runUnionBallotAutomation(plan, command === "prepare" ? { captures: JSON.parse((await readBoundedStateDataBytes(pins!, 32768)).toString("utf8")) } : {});
+	console.log(JSON.stringify(result));
+}
+main().catch((error: unknown) => {
+	console.error(error instanceof Error ? error.message : "Union ballot automation failed.");
+	process.exitCode = 1;
+});

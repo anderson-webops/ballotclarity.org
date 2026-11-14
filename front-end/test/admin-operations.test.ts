@@ -55,3 +55,18 @@ test("calendar review is reachable without showing an unrelated candidate-direct
 	assert.match(detail, /Official calendar/u);
 	assert.doesNotMatch(detail, /<details/u);
 });
+
+test("measure operations show preparation and review without presenting an unrelated candidate list or completed import", () => {
+	const datasets = source("src/pages/admin/datasets/index.vue");
+	assert.match(datasets, /"measures"/u);
+	assert.match(datasets, /\.filter\(group => group\.items\.length\)/u);
+	assert.match(datasets, /v-if="!groups\.length"/u);
+	assert.doesNotMatch(datasets, /v-if="!group\.items\.length"/u);
+	const detail = source("src/pages/admin/datasets/[id].vue");
+	assert.match(detail, /Official questions/u);
+	assert.match(detail, /item\.preparationState/u);
+	assert.match(detail, /item\.lastPreparedAt/u);
+	assert.match(detail, /item\.kind !== 'measures'/u);
+	assert.match(detail, /v-if="issue\.printedDate"/u);
+	assert.doesNotMatch(detail, /<details/u);
+});

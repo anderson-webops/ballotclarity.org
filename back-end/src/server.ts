@@ -14,6 +14,7 @@ import type { FultonOfficeholderRepository } from "./fulton-officeholder-storage
 import type { FultonOfficeholderSnapshot } from "./fulton-officeholders.js";
 import type { JudicialEvaluationRepository } from "./judicial-evaluations.js";
 import type { MagistrateCourtRepository } from "./magistrate-court-storage.js";
+import type { MauiMeasureRepository } from "./maui-measure-operations.js";
 import type { OpenStatesRepresentativeRecord } from "./openstates.js";
 import type { PublicRequestThrottle } from "./public-request-throttle.js";
 import type { StateBallotRepository } from "./state-ballot-repository.js";
@@ -145,6 +146,7 @@ import { buildLocationLookupResponse, classifyLookupInput, findSupportedCoverage
 import { createLogger, createRequestLoggingMiddleware, sanitizeLogText } from "./logger.js";
 import { magistrateCourtPublication } from "./magistrate-court-directory.js";
 import { createMagistrateCourtRepository, MagistrateCourtUnavailableError } from "./magistrate-court-storage.js";
+import { createMauiMeasureRepository } from "./maui-measure-operations.js";
 import { getOfficialToolsForState, getStateAbbreviationForName, getStateNameForAbbreviation } from "./official-election-tools.js";
 import { createOpenFecClient } from "./openfec.js";
 import { createOpenStatesClient } from "./openstates.js";
@@ -180,6 +182,7 @@ interface CreateAppOptions {
 	magistrateCourtRepository?: MagistrateCourtRepository | null;
 	fultonCountyOfficeholderRepository?: FultonCountyOfficeholderRepository | null;
 	fultonCalendarRepository?: FultonCalendarRepository | null;
+	mauiMeasureRepository?: MauiMeasureRepository | null;
 	fultonOfficeholderRepository?: FultonOfficeholderRepository | null;
 	activeLookupCookieSecret?: string | null;
 	adminApiKey?: string | null;
@@ -3067,6 +3070,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 	const fultonOfficeholderRepository = options.fultonOfficeholderRepository === undefined ? createFultonOfficeholderRepository() : options.fultonOfficeholderRepository;
 	const fultonCountyOfficeholderRepository = options.fultonCountyOfficeholderRepository === undefined ? createFultonCountyOfficeholderRepository() : options.fultonCountyOfficeholderRepository;
 	const fultonCalendarRepository = options.fultonCalendarRepository === undefined ? createFultonCalendarRepository() : options.fultonCalendarRepository;
+	const mauiMeasureRepository = options.mauiMeasureRepository === undefined ? createMauiMeasureRepository() : options.mauiMeasureRepository;
 	const currentSupplementalOfficeholders = () => resolveFultonCountySupplementalOfficeholders(fultonCountyOfficeholderRepository?.getSnapshot() ?? null, resolveFultonSupplementalOfficeholders(fultonOfficeholderRepository?.getSnapshot() ?? null));
 	const lookupSupplementalOfficeholders = (stateCode: string, districts: LocationDistrictMatch[]) => stateCode === "GA" && districts.some(district => district.districtType === "county" && ["121", "13121"].includes(district.districtCode)) ? currentSupplementalOfficeholders() : listSupplementalOfficeholders();
 	const releaseIdentity = options.releaseIdentity ?? loadReleaseIdentity();
@@ -5814,7 +5818,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 		response.json(await adminRepository.getOverview());
 	});
 	app.get("/api/admin/operations", async (_request, response) => {
-		response.json(await buildAdminOperations({ candidates: stateBallotRepository, references: electionReferenceRepository, officeholders: fultonOfficeholderRepository, countyOfficeholders: fultonCountyOfficeholderRepository, calendars: fultonCalendarRepository, courts: courtDirectoryRepository, magistrateCourts: magistrateCourtRepository, dataDirectory: process.env.STATE_BALLOT_DATA_DIR || null }));
+		response.json(await buildAdminOperations({ candidates: stateBallotRepository, references: electionReferenceRepository, officeholders: fultonOfficeholderRepository, countyOfficeholders: fultonCountyOfficeholderRepository, calendars: fultonCalendarRepository, measures: mauiMeasureRepository, courts: courtDirectoryRepository, magistrateCourts: magistrateCourtRepository, dataDirectory: process.env.STATE_BALLOT_DATA_DIR || null }));
 	});
 
 	app.get("/api/admin/audit", async (_request, response) => {

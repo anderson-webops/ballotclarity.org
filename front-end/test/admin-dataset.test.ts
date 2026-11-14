@@ -22,3 +22,12 @@ test("candidate and reference summaries retain their record and import semantics
 		assert.equal(adminDatasetStatus({ ...item, status: "pending" }), "Awaiting records");
 	}
 });
+
+test("measure summaries distinguish source questions and native preparation from imported records", () => {
+	const item: AdminOperationDataset = { ...dataset, kind: "measures", records: 8, preparationState: "prepared" };
+	assert.equal(adminDatasetCount(item), "8 questions");
+	assert.equal(adminDatasetCount({ ...item, records: null }), "Not collected");
+	assert.equal(adminDatasetStatus({ ...item, status: "pending", preparationState: "running" }), "Preparing");
+	assert.equal(adminDatasetStatus({ ...item, status: "pending", preparationState: "unreported" }), "Collecting");
+	assert.equal(adminDatasetStatus({ ...item, status: "missing" }), "Not collected");
+});

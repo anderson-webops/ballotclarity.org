@@ -1836,7 +1836,7 @@ export interface AdminOperationDataset {
 	label: string;
 	stateCode: string;
 	electionDate: string;
-	kind: "candidates" | "references" | "officeholders" | "calendars";
+	kind: "candidates" | "references" | "officeholders" | "calendars" | "measures";
 	mode: "automatic" | "reviewed";
 	status: "current" | "stale" | "missing" | "pending" | "error" | "archived" | "review";
 	records: number | null;
@@ -1846,8 +1846,10 @@ export interface AdminOperationDataset {
 	failure: string | null;
 	collectionState?: "unreported" | "running" | "succeeded" | "failed" | "invalid";
 	lastSuccessAt?: string | null;
+	preparationState?: "unreported" | "running" | "prepared" | "review" | "failed" | "invalid";
+	lastPreparedAt?: string | null;
 	sourceUrl?: string;
-	reviewIssues?: { id: string; label: string; printedDate: string; electionDate: string; reason: string }[];
+	reviewIssues?: { id: string; label: string; printedDate?: string; electionDate: string; reason: string }[];
 }
 export interface AdminAutomationResult {
 	sourceId: string;

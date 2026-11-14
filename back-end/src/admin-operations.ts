@@ -4,6 +4,7 @@ import type { FultonCountyOfficeholderRepository } from "./fulton-county-officeh
 import type { FultonCalendarRepository } from "./fulton-election-calendar-operations.js";
 import type { FultonOfficeholderRepository } from "./fulton-officeholder-storage.js";
 import type { MagistrateCourtRepository } from "./magistrate-court-storage.js";
+import type { MauiMeasureRepository } from "./maui-measure-operations.js";
 import type { StateBallotRepository } from "./state-ballot-repository.js";
 import type { AdminAutomationRun, AdminOperationsResponse } from "./types/civic.js";
 import { randomUUID } from "node:crypto";
@@ -114,6 +115,7 @@ export async function buildAdminOperations(options: {
 	magistrateCourts?: MagistrateCourtRepository | null;
 	countyOfficeholders?: FultonCountyOfficeholderRepository | null;
 	calendars?: FultonCalendarRepository | null;
+	measures?: MauiMeasureRepository | null;
 	officeholders?: FultonOfficeholderRepository | null;
 	candidates: StateBallotRepository | null;
 	references: ElectionReferenceRepository | null;
@@ -127,6 +129,7 @@ export async function buildAdminOperations(options: {
 		...((await options.officeholders?.inspectSources?.()) ?? []),
 		...((await options.countyOfficeholders?.inspectSources?.()) ?? []),
 		...((await options.calendars?.inspectSources()) ?? []),
+		...((await options.measures?.inspectSources()) ?? []),
 		...((await options.courts?.inspectSources()) ?? []),
 		...((await options.magistrateCourts?.inspectSources()) ?? [])
 	];
@@ -152,7 +155,7 @@ export async function buildAdminOperations(options: {
 							? "overdue"
 							: run.status;
 	for (const dataset of datasets) {
-		if (dataset.kind === "calendars") continue;
+		if (dataset.kind === "calendars" || dataset.kind === "measures") continue;
 		const result = run?.results.find(result => result.sourceId === dataset.id);
 		if (run && result && result.status !== "cached" && run.startedAt >= (dataset.lastAttemptAt ?? "")) dataset.lastAttemptAt = run.startedAt;
 		if (run?.finishedAt && result?.status === "imported" && run.finishedAt > (dataset.lastImportAt ?? "")) dataset.lastImportAt = run.finishedAt;

@@ -24,19 +24,24 @@ usePageSeo({ title: "Dataset", path: "/admin/datasets", robots: "noindex,nofollo
 			</p>
 			<section v-if="item.reviewIssues?.length" class="space-y-6" aria-labelledby="date-review-heading">
 				<h2 id="date-review-heading" class="text-3xl font-serif">
-					Date review
+					{{ item.kind === 'calendars' ? 'Date review' : 'Review' }}
 				</h2>
 				<ul class="divide-app-line divide-y dark:divide-app-line-dark">
 					<li v-for="issue in item.reviewIssues" :key="issue.id" class="py-6 space-y-3">
 						<h3 class="text-xl font-semibold">
 							{{ issue.label }}
 						</h3>
-						<p>{{ issue.printedDate }} · Election {{ issue.electionDate }}</p>
+						<p>
+							<template v-if="issue.printedDate">
+								{{ issue.printedDate }} ·
+							</template>Election {{ issue.electionDate }}
+						</p>
 						<p>{{ issue.reason }}</p>
 					</li>
 				</ul>
 			</section>
 			<a v-if="item.kind === 'calendars' && item.sourceUrl" :href="item.sourceUrl" class="btn-secondary">Official calendar</a>
+			<a v-if="item.kind === 'measures' && item.sourceUrl" :href="item.sourceUrl" class="btn-secondary">Official questions</a>
 			<dl class="space-y-6">
 				<div>
 					<dt class="font-semibold">
@@ -50,7 +55,7 @@ usePageSeo({ title: "Dataset", path: "/admin/datasets", robots: "noindex,nofollo
 							· {{ item.electionDate }}
 						</template>
 					</dd>
-				</div><div v-if="item.kind !== 'calendars'">
+				</div><div v-if="item.kind !== 'calendars' && item.kind !== 'measures'">
 					<dt class="font-semibold">
 						Import mode
 					</dt><dd>{{ item.mode === 'automatic' ? 'Approved automatic collection' : 'Reviewed external import' }}</dd>
@@ -64,11 +69,17 @@ usePageSeo({ title: "Dataset", path: "/admin/datasets", robots: "noindex,nofollo
 					</dt><dd class="capitalize">
 						{{ item.collectionState }}
 					</dd>
+				</div><div v-if="item.preparationState">
+					<dt class="font-semibold">
+						Preparation
+					</dt><dd class="capitalize">
+						{{ item.preparationState === 'review' ? 'Review required' : item.preparationState === 'unreported' ? 'Not prepared' : item.preparationState }}
+					</dd>
 				</div>
 			</dl><div class="space-y-4">
-				<UpdatedAt v-if="item.retrievedAt" :value="item.retrievedAt" label="Source retrieved" /><UpdatedAt v-if="item.lastAttemptAt" :value="item.lastAttemptAt" label="Collection attempted" /><UpdatedAt v-if="item.lastSuccessAt" :value="item.lastSuccessAt" label="Successful collection" /><UpdatedAt v-if="item.lastImportAt" :value="item.lastImportAt" label="Imported" />
+				<UpdatedAt v-if="item.retrievedAt" :value="item.retrievedAt" label="Source retrieved" /><UpdatedAt v-if="item.lastAttemptAt" :value="item.lastAttemptAt" label="Collection attempted" /><UpdatedAt v-if="item.lastSuccessAt" :value="item.lastSuccessAt" label="Successful collection" /><UpdatedAt v-if="item.lastPreparedAt" :value="item.lastPreparedAt" label="Prepared" /><UpdatedAt v-if="item.lastImportAt" :value="item.lastImportAt" label="Imported" />
 			</div>
-			<NuxtLink v-if="item.kind !== 'calendars'" :to="item.kind === 'officeholders' ? '/districts/fulton-county' : { path: '/records', query: { state: item.stateCode, ...(item.kind === 'candidates' ? { source: item.id } : {}) } }" class="btn-secondary">
+			<NuxtLink v-if="item.kind !== 'calendars' && item.kind !== 'measures'" :to="item.kind === 'officeholders' ? '/districts/fulton-county' : { path: '/records', query: { state: item.stateCode, ...(item.kind === 'candidates' ? { source: item.id } : {}) } }" class="btn-secondary">
 				View records
 			</NuxtLink>
 		</template>

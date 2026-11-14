@@ -21,7 +21,7 @@ function fixture() {
 	for (const name of ["server.js", "manage-election-references.js", "manage-election-documents.js", "manage-state-ballot-cycles.js", "manage-state-ballot-automation.js", "admin-operations.js", "prepare-state-measure-guides.js", "state-measure-guides.js", "election-document-collection.js", "election-document-sources.js", "congressional-biographies.js", "prepare-congressional-biographies.js", "washington-statements.js", "washington-statement-sources.js", "prepare-washington-statements.js", "manage-state-ballot-data.js", "export-state-ballot-sources.js", "check-state-ballot-sources.js"]) write(root, `dist/${name}`, "export {};\n");
 	for (const name of ["manage-fulton-election-calendar.js", "collect-fulton-election-calendar.js", "fulton-election-calendar.js", "fulton-election-calendar-storage.js", "fulton-election-calendar-operations.js", "state-ballot-alabama-native-worker.js", "manage-court-directory.js", "court-directories.js", "court-directory-storage.js", "collect-court-directory.js", "private-handoff-protocol.js", "private-handoff-storage.js", "private-handoff-client.js", "private-handoff-receiver.js", "private-handoff-verification.js", "manage-private-handoff.js"]) write(root, `dist/${name}`, "export {};\n");
 	write(root, "dist/release-identity.json", '{"version":"development","commit":"0000000000000000000000000000000000000000"}\n');
-	for (const name of ["fulton-municipal-runoff.js", "fulton-municipal-evidence.js", "state-ballot-fulton-municipal.js", "state-ballot-fulton-municipal-source.js", "prepare-fulton-municipal-runoff.js"]) write(root, `dist/${name}`, "export {};\n");
+	for (const name of ["fulton-municipal-runoff.js", "fulton-municipal-evidence.js", "state-ballot-fulton-municipal.js", "state-ballot-fulton-municipal-source.js", "prepare-fulton-municipal-runoff.js", "prepare-kauai-disclosures.js", "kauai-candidate-disclosures.js"]) write(root, `dist/${name}`, "export {};\n");
 	return root;
 }
 
@@ -60,7 +60,7 @@ test("compiled runtime verification independently refuses bundled election data 
 			assert.match(spawnSync(process.execPath, [join(root, "scripts/verify-runtime-build.mjs")], { encoding: "utf8" }).stderr, /missing required runtime files/u);
 			write(root, `dist/${name}`, "export {};\n");
 		}
-		for (const name of ["fulton-municipal-runoff.js", "fulton-municipal-evidence.js", "state-ballot-fulton-municipal.js", "state-ballot-fulton-municipal-source.js", "prepare-fulton-municipal-runoff.js"]) {
+		for (const name of ["fulton-municipal-runoff.js", "fulton-municipal-evidence.js", "state-ballot-fulton-municipal.js", "state-ballot-fulton-municipal-source.js", "prepare-fulton-municipal-runoff.js", "prepare-kauai-disclosures.js", "kauai-candidate-disclosures.js"]) {
 			rmSync(join(root, `dist/${name}`));
 			assert.match(spawnSync(process.execPath, [join(root, "scripts/verify-runtime-build.mjs")], { encoding: "utf8" }).stderr, /missing required runtime files/u);
 			write(root, `dist/${name}`, "export {};\n");

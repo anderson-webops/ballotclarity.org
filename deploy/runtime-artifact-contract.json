@@ -32,6 +32,8 @@
 				"back-end/dist/state-ballot-fulton-municipal.js",
 				"back-end/dist/state-ballot-fulton-municipal-source.js",
 				"back-end/dist/prepare-fulton-municipal-runoff.js",
+				"back-end/dist/prepare-kauai-disclosures.js",
+				"back-end/dist/kauai-candidate-disclosures.js",
 				"back-end/dist/prepare-state-measure-guides.js",
 				"back-end/dist/state-measure-guides.js",
 				"back-end/dist/election-document-collection.js",

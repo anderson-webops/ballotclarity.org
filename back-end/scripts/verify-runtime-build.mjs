@@ -21,6 +21,8 @@ const requiredRuntimeFiles = [
 	"state-ballot-fulton-municipal.js",
 	"state-ballot-fulton-municipal-source.js",
 	"prepare-fulton-municipal-runoff.js",
+	"prepare-kauai-disclosures.js",
+	"kauai-candidate-disclosures.js",
 	"prepare-state-measure-guides.js",
 	"state-measure-guides.js",
 	"election-document-collection.js",

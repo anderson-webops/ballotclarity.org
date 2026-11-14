@@ -1827,3 +1827,13 @@ reviewed raw-document collection configuration, never a results import. See
 CTCL direct feeds, Ballotpedia, and Democracy Works remain prospective licensed or
 permissioned integrations. No access requests, accounts, subscriptions, external
 messages, or Google Civic bulk collection were performed.
+
+## Kauaʻi disclosure research
+
+The independent county Board of Ethics packet supplies 26 named people and 27
+disclosure events in a July 9, 2026 memorandum. The reusable offline
+[preparation contract](kauai-disclosure-research.md) exports pinned CSV/JSON
+research while preserving original names, dates and page evidence. These records
+establish disclosure receipt, not general-election qualification. The newer
+November 20 packet remains an unreviewed external publication. Hawaii's statewide
+candidate-portal permission hold and ballot-source configuration stay unchanged.

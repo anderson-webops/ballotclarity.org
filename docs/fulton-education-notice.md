@@ -1,5 +1,40 @@
 # Fulton education-tax notice preparation
 
+`collect-fulton-education-notice.js` acquires the reviewed policy inputs, county
+index and explicitly offered notice, then prepares CSV/JSON in an external data
+directory. A stable plan can select `latest-published` across compatible future
+editions; explicit ISO dates retain a particular edition.
+
+```sh
+node back-end/dist/collect-fulton-education-notice.js /external-data/notice-collection.json
+```
+
+```json
+{
+  "schemaVersion": 1,
+  "type": "fulton-education-notice-collection",
+  "directory": "/external-data/fulton-education-notices",
+  "electionDate": "latest-published"
+}
+```
+
+Collection uses the existing public-address-pinned HTTPS transport, exact
+reviewed policies, four requests, eleven-second request pacing and a six-hour
+minimum refresh/retry interval. A process-held external lock and fsynced attempt
+journal preserve retry bounds through interruption. Captures, research and prior
+current pointers remain outside Git and runtime releases. Identical documents
+retain original capture clocks; successful checks have a separate timestamp.
+Policy changes, publisher denial/redirects, malformed documents, date regression,
+changed fiscal facts or disappearing projects retain the prior current evidence
+for review. Archive limits are 256 captures and 128 MiB, with capacity reserved
+before publisher access; retention review preserves existing evidence.
+
+The current pointer becomes available only after pinned offline validation and
+CSV/JSON persistence. These outputs remain research, with import/publication
+approval false. Host scheduling and substantive adoption retain their separate
+approval boundaries. Latest-published can select a historical notice; it does
+not establish that its election is current or that its proposal passed.
+
 The maintained `prepare-fulton-education-notice.js` command discovers explicitly
 offered ESPLOST notice editions from the county election index and prepares
 hash-pinned original captures offline. Discovery retains the literal published
@@ -36,8 +71,8 @@ capture manifest also retains `sourceIndexUrl`, `publisherRequests: 4`,
 `importApproved: false`. Preparation independently verifies those inputs against
 the unchanged county policy receipts, current offered-link selection and robots
 permissions. The capture's assertions alone do not establish those properties.
-Acquisition and separately approved recurring scheduling remain outside this
-offline command; use the existing reviewed, paced HTTPS transport for acquisition.
+The collection command supplies this capture format directly; the offline
+command remains network-free. Recurring scheduling retains separate approval.
 
 `STATE_BALLOT_PDFTOTEXT` identifies the maintained native Poppler executable.
 Extraction is bounded to twenty pages, 4 MiB of text and the existing twelve-second

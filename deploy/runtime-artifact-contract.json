@@ -29,6 +29,7 @@
 				"back-end/dist/fulton-source-policy.js",
 				"back-end/dist/fulton-education-notice.js",
 				"back-end/dist/prepare-fulton-education-notice.js",
+				"back-end/dist/collect-fulton-education-notice.js",
 				"back-end/dist/fulton-election-calendar-storage.js",
 				"back-end/dist/fulton-election-calendar-operations.js",
 				"back-end/dist/fulton-municipal-runoff.js",

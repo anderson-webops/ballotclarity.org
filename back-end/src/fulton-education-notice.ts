@@ -45,7 +45,7 @@ export function discoverFultonEducationNotices(body: string) {
 		const links = stateHtmlDescendants(section, node => node.nodeName === "a").map(node => new URL(stateHtmlAttribute(node, "href"), fultonEducationNoticeIndexUrl)).filter(url => url.pathname.endsWith(".pdf"));
 		if (dates.length !== 1 || links.length !== 1) throw new Error("The education notice must have one explicit election and offered PDF.");
 		const url = links[0]!;
-		if (url.origin !== "https://fultoncountyga.gov" || url.username || url.password || url.port || url.search || url.hash || !/^\/-\/media\/[\w/-]+\.pdf$/u.test(url.pathname)) throw new Error("The education notice must retain its exact public HTTPS address.");
+		if (url.origin !== "https://fultoncountyga.gov" || url.href.length > 2048 || url.username || url.password || url.port || url.search || url.hash || !/^\/-\/media\/[\w/-]+\.pdf$/u.test(url.pathname)) throw new Error("The education notice must retain its exact public HTTPS address.");
 		return { electionDate: date(dates[0]![1]!), url: url.href };
 	});
 	if (new Set(notices.map(notice => notice.electionDate)).size !== notices.length || new Set(notices.map(notice => notice.url)).size !== notices.length) throw new Error("The education-notice editions are ambiguous.");

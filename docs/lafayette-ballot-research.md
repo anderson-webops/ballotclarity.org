@@ -58,3 +58,31 @@ and the printed electorate description. It establishes neither official
 qualification nor geographic matching. Unknown offices, parties, extra columns
 or repeated names require review. No candidate is inferred when that table is
 absent. All candidate references retain the original guide-page citation.
+
+## Independent council records
+
+The government's [council document archive](https://apps.lafayettela.gov/obcouncil/index.html)
+offers a public full-text page and a dated meeting query. Its public client and
+configuration identify `/obcouncil/api` as the anonymous search service. Future
+research can follow the offered meeting-date choices instead of constructing
+annual PDF names or enumerating document IDs.
+
+The observed meeting query uses `QueryID: 101`, with keyword `ID: 102` for the
+literal offered meeting date, `KeywordOperator: "="`, and a bounded `QueryLimit`.
+`/Keywords` supplies the date choices and `/CustomQuery/KeywordSearch` returns
+document identities. A truncated result is incomplete research. Resolution names
+and dates require reconciliation with the returned minutes and downloaded files;
+search matches alone establish neither adoption nor ballot qualification.
+
+The separate full-text route uses `DocTypeID`, not `QueryID`. Native document
+downloads use the IDs actually returned by the public search. Preserve original
+bytes, response status, capture clocks and source links while excluding cookies
+and other transport headers from shared packets. Recheck the offered contract
+and publisher policy before enrolling collection.
+
+The [November 14 review](audits/2026-11-14-lafayette-ballot-research.md) verified
+signed, clerk-certified parish and city calls. Both are scanned PDFs, so their
+numbering and wording were checked against rendered pages. These versioned
+witnesses corroborate the adopted calls without changing the offline preparer's
+research-only contract. Recurring acquisition, final sample-ballot reconciliation
+and publication remain separately reviewed outcomes.

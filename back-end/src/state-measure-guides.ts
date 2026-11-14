@@ -21,7 +21,8 @@ interface PinnedFile { path: string; sha256: string }
 interface LocalJurisdiction { jurisdictionType: "county" | "county-area" | "city" | "town" | "township" | "village" | "school-district" | "intermediate-school-district" | "special-district" | "independent-city"; name: string; slug: string; countyAreaScope?: CountyAreaScope }
 interface DocumentInput extends PinnedFile { key: string; url: string; capturedAt: string }
 interface GuideInput extends PinnedFile { stateCode: string; electionDate: string; jurisdiction?: LocalJurisdiction; summaryAsExplanation: boolean; documents: DocumentInput[] }
-interface PreparationPlan { schemaVersion: 1; type: "state-measure-guide-preparation"; baseSnapshot: PinnedFile | null; inputs: GuideInput[]; outputDirectory: string; outputName: string; primaryAugmentation?: { electionSlug: string; jurisdictionSlug: string }; questionSnapshot?: PinnedFile & { sourceId: string; electionSlugs: string[] } }
+interface FiscalSupplementTarget { electionSlug: string; jurisdictionSlug: string; measureSlug: string }
+interface PreparationPlan { schemaVersion: 1; type: "state-measure-guide-preparation"; baseSnapshot: PinnedFile | null; inputs: GuideInput[]; outputDirectory: string; outputName: string; primaryAugmentation?: { electionSlug: string; jurisdictionSlug: string }; fiscalSupplement?: FiscalSupplementTarget; questionSnapshot?: PinnedFile & { sourceId: string; electionSlugs: string[] } }
 interface DraftDocument { url: string; sha256: string; capturedAt: string; publicationDate?: string | null; reviewedPages?: number[] }
 interface MeasureDraft { schemaVersion: 1; type: "state-measure-draft"; stateCode: string; electionDate: string; jurisdiction?: LocalJurisdiction; reviewedAt: string; publicationApproved: false; automaticImportApproved: false; measures: Measure[]; documents: Record<string, DraftDocument>; unresolvedFields?: unknown[]; unmappedQuestions?: unknown[] }
 
@@ -82,6 +83,7 @@ function electionScope(stateCode: string, date: string, jurisdictionType: string
 function parsePlan(value: unknown): PreparationPlan {
 	const keys = ["baseSnapshot", "inputs", "outputDirectory", "outputName", "schemaVersion", "type"];
 	if (record(value) && Object.hasOwn(value, "primaryAugmentation")) keys.push("primaryAugmentation");
+	if (record(value) && Object.hasOwn(value, "fiscalSupplement")) keys.push("fiscalSupplement");
 	if (record(value) && Object.hasOwn(value, "questionSnapshot")) keys.push("questionSnapshot");
 	if (!record(value) || Object.keys(value).sort().join(",") !== keys.sort().join(",") || value.schemaVersion !== 1 || value.type !== "state-measure-guide-preparation"
 		|| (value.baseSnapshot !== null && !pinned(value.baseSnapshot)) || !Array.isArray(value.inputs) || !value.inputs.length || value.inputs.length > 250
@@ -90,6 +92,12 @@ function parsePlan(value: unknown): PreparationPlan {
 	}
 	const primaryAugmentation = value.primaryAugmentation;
 	const questionSnapshot = value.questionSnapshot;
+	const fiscalSupplement = value.fiscalSupplement;
+	if (Object.hasOwn(value, "fiscalSupplement") && (value.baseSnapshot === null || value.inputs.length !== 1 || Object.hasOwn(value, "primaryAugmentation") || !record(fiscalSupplement)
+		|| Object.keys(fiscalSupplement).sort().join(",") !== "electionSlug,jurisdictionSlug,measureSlug"
+		|| !["electionSlug", "jurisdictionSlug", "measureSlug"].every(key => typeof fiscalSupplement[key] === "string" && slugPattern.test(fiscalSupplement[key])))) {
+		throw new Error("Fiscal supplementation requires a pinned base, one input and exact election, jurisdiction and measure identities.");
+	}
 	if (Object.hasOwn(value, "questionSnapshot") && (!pinned(questionSnapshot) || !record(questionSnapshot) || Object.keys(questionSnapshot).sort().join(",") !== "electionSlugs,path,sha256,sourceId"
 		|| typeof questionSnapshot.sourceId !== "string" || !slugPattern.test(questionSnapshot.sourceId) || !Array.isArray(questionSnapshot.electionSlugs) || !questionSnapshot.electionSlugs.length || questionSnapshot.electionSlugs.length > 250
 		|| questionSnapshot.electionSlugs.some(slug => typeof slug !== "string" || !slugPattern.test(slug)) || new Set(questionSnapshot.electionSlugs).size !== questionSnapshot.electionSlugs.length)) {
@@ -182,6 +190,67 @@ function csvCell(value: string) {
 	return `"${(/^[\t\r\n]|^\s*[=+\-@]/u.test(value) ? `'${value}` : value).replace(/"/gu, "\"\"")}"`;
 }
 
+function supplementFiscalMeasure(base: CoverageSnapshot, addition: AdditionalCoverageGuide, target: FiscalSupplementTarget) {
+	const elections = coverageElections(base).filter(election => election.slug === target.electionSlug && election.jurisdictionSlug === target.jurisdictionSlug);
+	const jurisdictions = coverageJurisdictions(base).filter(jurisdiction => jurisdiction.slug === target.jurisdictionSlug);
+	const election = elections[0];
+	const jurisdiction = jurisdictions[0];
+	const location = base.election?.slug === target.electionSlug ? base.location : base.additionalGuides?.find(guide => guide.election.slug === target.electionSlug)?.location;
+	const stateCode = usStates.find(state => state[0] === jurisdiction?.state || state[1] === jurisdiction?.state)?.[0];
+	const inputState = usStates.find(state => state[0] === addition.jurisdiction.state || state[1] === addition.jurisdiction.state)?.[0];
+	const matchingScopes = stateCode && jurisdiction && election
+		? coverageElections(base).filter((item) => {
+			const area = coverageJurisdictions(base).find(candidate => candidate.slug === item.jurisdictionSlug);
+			const state = usStates.find(candidate => candidate[0] === area?.state || candidate[1] === area?.state)?.[0];
+			return area && state && electionScope(state, item.date, area.jurisdictionType, area.name, area.countyAreaScope) === electionScope(stateCode, election.date, jurisdiction.jurisdictionType, jurisdiction.name, jurisdiction.countyAreaScope);
+		}).length
+		: 0;
+	if (elections.length !== 1 || jurisdictions.length !== 1 || !election || !jurisdiction || !location || !stateCode || !inputState
+		|| matchingScopes !== 1
+		|| electionScope(stateCode, election.date, jurisdiction.jurisdictionType, jurisdiction.name, jurisdiction.countyAreaScope) !== electionScope(inputState, addition.election.date, addition.jurisdiction.jurisdictionType, addition.jurisdiction.name, addition.jurisdiction.countyAreaScope)
+		|| addition.election.contests.length !== 1 || addition.election.contests[0]?.measures?.length !== 1) {
+		throw new Error("Fiscal supplementation must retain one exact existing election and jurisdiction scope.");
+	}
+	const incoming = addition.election.contests[0].measures[0]!;
+	const occurrences = coverageElections(base).flatMap(item => item.contests.flatMap(contest => (contest.measures ?? []).filter(measure => measure.slug === target.measureSlug).map(measure => ({ election: item, contest, measure }))));
+	const previous = occurrences[0]?.measure;
+	if (incoming.slug !== target.measureSlug || occurrences.length !== 1 || occurrences[0]!.election.slug !== target.electionSlug || occurrences[0]!.contest.slug !== incoming.contestSlug || !previous
+		|| !Array.isArray(previous.fiscalSummary) || !Array.isArray(previous.sources)
+		|| !isDeepStrictEqual({ ...previous, fiscalSummary: [], sources: [] }, { ...incoming, fiscalSummary: [], sources: [] })) {
+		throw new Error("Fiscal supplementation must preserve all existing nonfiscal measure fields and identities.");
+	}
+	const roots = base.measures.filter(measure => measure.slug === target.measureSlug);
+	if (roots.length > 1 || (roots.length && !isDeepStrictEqual(roots[0], previous))) throw new Error("Existing root and contest measure copies require reconciliation.");
+	if (!incoming.fiscalSummary.length || incoming.fiscalSummary.length > 100 || (previous.fiscalSummary.length && !isDeepStrictEqual(previous.fiscalSummary, incoming.fiscalSummary))) throw new Error("Existing fiscal rows require a separate replacement review.");
+	if (!isDeepStrictEqual(incoming.sources.slice(0, previous.sources.length), previous.sources) || !incoming.sources.every(source => record(source) && typeof source.id === "string") || new Set(incoming.sources.map(source => source.id)).size !== incoming.sources.length) throw new Error("Fiscal supplementation must preserve every original citation.");
+	const fiscalIds = new Set<string>();
+	for (const row of incoming.fiscalSummary) {
+		if (!record(row) || Object.keys(row).sort().join(",") !== "horizon,id,label,note,scope,sources,value" || typeof row.id !== "string" || !/^[a-z0-9][a-z0-9-]{0,200}$/u.test(row.id) || fiscalIds.has(row.id)
+			|| !["label", "value", "scope", "horizon", "note"].every(key => typeof row[key] === "string" && String(row[key]).length <= 8192) || !row.label.trim() || !row.value.trim()
+			|| !Array.isArray(row.sources) || !row.sources.length || row.sources.length > 20
+			|| !row.sources.every(source => record(source) && source.authority === "official-government" && incoming.sources.some(existing => isDeepStrictEqual(existing, source)))) {
+			throw new Error("Fiscal supplementation requires bounded, distinct fiscal rows with pinned official citations.");
+		}
+		fiscalIds.add(row.id);
+	}
+	const existingSources = new Map(sourcesIn(base, false).map(source => [source.id, source]));
+	const newSources = sourcesIn(addition);
+	for (const source of newSources) {
+		const previousSource = existingSources.get(source.id);
+		if (previousSource && !isDeepStrictEqual(previousSource, source)) throw new Error("Fiscal supplementation cannot change an existing source identity.");
+	}
+	const snapshot = structuredClone(base);
+	const changedElection = coverageElections(snapshot).find(item => item.slug === target.electionSlug)!;
+	for (const contest of changedElection.contests) {
+		if (contest.measures?.some(measure => measure.slug === target.measureSlug)) contest.measures = contest.measures.map(measure => measure.slug === target.measureSlug ? structuredClone(incoming) : measure);
+	}
+	snapshot.measures = snapshot.measures.map(measure => measure.slug === target.measureSlug ? structuredClone(incoming) : measure);
+	const rootSources = new Set(snapshot.sources.map(source => source.id));
+	snapshot.sources.push(...newSources.filter(source => !rootSources.has(source.id)));
+	const coverageLimits = base.additionalGuides?.find(guide => guide.election.slug === target.electionSlug)?.coverageLimits ?? ["Local races and ballot questions may be missing."];
+	return { snapshot: parseCoverageSnapshot(snapshot), guides: [{ election: changedElection, jurisdiction: structuredClone(jurisdiction), location: structuredClone(location), coverageLimits: structuredClone(coverageLimits) }] };
+}
+
 export async function prepareStateMeasureGuideFiles(planPath: string, now = Date.now()) {
 	const planBody = await readBoundedStateData(planPath);
 	const plan = parsePlan(json(planBody));
@@ -227,7 +296,7 @@ export async function prepareStateMeasureGuideFiles(planPath: string, now = Date
 	const pdfDocuments = new Set<string>();
 	for (const input of plan.inputs) {
 		const scope = electionScope(input.stateCode, input.electionDate, input.jurisdiction?.jurisdictionType ?? "state", input.jurisdiction?.name ?? "", input.jurisdiction?.countyAreaScope);
-		if (plan.primaryAugmentation ? scope !== primaryScope : existingScopes.has(scope))
+		if (!plan.fiscalSupplement && (plan.primaryAugmentation ? scope !== primaryScope : existingScopes.has(scope)))
 			throw new Error(plan.primaryAugmentation ? "Primary augmentation must retain the exact primary state, date and jurisdiction scope." : "An existing election scope requires a separately reviewed replacement; preparation is append-only.");
 		existingScopes.add(scope);
 		const draft = parseStateMeasureDraft(json((await readPinned(input)).toString("utf8")), input, now);
@@ -264,8 +333,8 @@ export async function prepareStateMeasureGuideFiles(planPath: string, now = Date
 		const stateName = usStates.find(state => state[0] === input.stateCode)![1];
 		const areaScopeLabel = input.stateCode === "DC" ? "Districtwide" : "Statewide";
 		const areaSlug = input.jurisdiction?.slug ?? `${input.stateCode.toLowerCase()}-${areaScopeLabel.toLowerCase()}`;
-		const electionSlug = plan.primaryAugmentation?.electionSlug ?? `${areaSlug}-measures-${input.electionDate}`;
-		const jurisdictionSlug = plan.primaryAugmentation?.jurisdictionSlug ?? `${areaSlug}-${input.electionDate}`;
+		const electionSlug = plan.fiscalSupplement?.electionSlug ?? plan.primaryAugmentation?.electionSlug ?? `${areaSlug}-measures-${input.electionDate}`;
+		const jurisdictionSlug = plan.fiscalSupplement?.jurisdictionSlug ?? plan.primaryAugmentation?.jurisdictionSlug ?? `${areaSlug}-${input.electionDate}`;
 		const areaName = input.jurisdiction?.name ?? stateName;
 		const locationName = input.jurisdiction ? `${areaName}, ${stateName}` : stateName;
 		const resources = structuredClone(getOfficialToolsForState(input.stateCode));
@@ -293,7 +362,10 @@ export async function prepareStateMeasureGuideFiles(planPath: string, now = Date
 	const updatedAt = [...additions.map(guide => guide.election.updatedAt), ...(base ? [base.updatedAt] : [])].sort(byInstant).at(-1)!;
 	let snapshot: CoverageSnapshot;
 	let guides = additions;
-	if (plan.primaryAugmentation && base && primaryElection && primaryJurisdiction && primaryLocation) {
+	if (plan.fiscalSupplement && base) {
+		({ snapshot, guides } = supplementFiscalMeasure(base, additions[0]!, plan.fiscalSupplement));
+	}
+	else if (plan.primaryAugmentation && base && primaryElection && primaryJurisdiction && primaryLocation) {
 		const existingContests = coverageElections(base).flatMap(election => election.contests);
 		const contestIds = new Set(existingContests.map(contest => contest.slug));
 		const measureIds = new Set([...base.measures, ...existingContests.flatMap(contest => contest.measures ?? [])].map(measure => measure.slug));
@@ -332,7 +404,7 @@ export async function prepareStateMeasureGuideFiles(planPath: string, now = Date
 	}
 	const repository = reviewRepository(snapshot);
 	const workflowIds = new Set(guides.map(guide => guide.election.slug));
-	const workflows = buildDefaultGuidePackageSeed(repository).filter(workflow => workflowIds.has(workflow.electionSlug)).map(workflow => plan.primaryAugmentation
+	const workflows = buildDefaultGuidePackageSeed(repository).filter(workflow => workflowIds.has(workflow.electionSlug)).map(workflow => plan.primaryAugmentation || plan.fiscalSupplement
 		? {
 				coverageLimits: [...(guides[0]!.coverageLimits ?? [])],
 				coverageNotes: [],
@@ -374,7 +446,7 @@ export async function prepareStateMeasureGuideFiles(planPath: string, now = Date
 		const body = `${JSON.stringify(snapshot, null, 2)}\n`;
 		files.push({ name, body }, { name: basename(coverageSnapshotMetadataPath(name)), body: `${JSON.stringify({ ...metadata, contentSha256: hash(body) }, null, 2)}\n` });
 	}
-	const manifest = { schemaVersion: 1, type: "state-measure-guide-preparation-result", preparedAt: new Date(now).toISOString(), mode: plan.primaryAugmentation ? "augment-pinned-primary-review-only" : base ? "append-to-pinned-base-review-only" : "standalone-review-only", baseSnapshotSha256: plan.baseSnapshot?.sha256 ?? null, ...(plan.primaryAugmentation ? { primaryAugmentation: plan.primaryAugmentation, existingPrimaryMetadataPreserved: true, existingPrimaryContestsPreserved: true } : {}), inputDrafts: plan.inputs.map(input => ({ stateCode: input.stateCode, electionDate: input.electionDate, jurisdiction: input.jurisdiction ?? null, sha256: input.sha256, summaryAsExplanation: input.summaryAsExplanation })), documents: captures, holds, mappings, guides: guides.length, measures: additions.reduce((total, guide) => total + guide.election.contests.length, 0), existingPrimaryPreserved: base ? !plan.primaryAugmentation : null, existingAdditionalGuidesPreserved: base?.additionalGuides?.length ?? 0, files: files.map(file => ({ name: file.name, bytes: Buffer.byteLength(file.body), sha256: hash(file.body) })), publisherRequests: 0, imported: false, publicationApproved: false, automaticImportApproved: false, primaryReplacementApproved: false };
+	const manifest = { schemaVersion: 1, type: "state-measure-guide-preparation-result", preparedAt: new Date(now).toISOString(), mode: plan.fiscalSupplement ? "supplement-pinned-measure-fiscal-review-only" : plan.primaryAugmentation ? "augment-pinned-primary-review-only" : base ? "append-to-pinned-base-review-only" : "standalone-review-only", baseSnapshotSha256: plan.baseSnapshot?.sha256 ?? null, ...(plan.primaryAugmentation ? { primaryAugmentation: plan.primaryAugmentation, existingPrimaryMetadataPreserved: true, existingPrimaryContestsPreserved: true } : {}), ...(plan.fiscalSupplement ? { fiscalSupplement: plan.fiscalSupplement, existingNonfiscalMeasureFieldsPreserved: true, existingElectionMetadataPreserved: true } : {}), inputDrafts: plan.inputs.map(input => ({ stateCode: input.stateCode, electionDate: input.electionDate, jurisdiction: input.jurisdiction ?? null, sha256: input.sha256, summaryAsExplanation: input.summaryAsExplanation })), documents: captures, holds, mappings, guides: guides.length, measures: additions.reduce((total, guide) => total + guide.election.contests.length, 0), existingPrimaryPreserved: base ? !plan.primaryAugmentation && (!plan.fiscalSupplement || plan.fiscalSupplement.electionSlug !== base.election?.slug) : null, existingAdditionalGuidesPreserved: (base?.additionalGuides?.length ?? 0) - (base?.additionalGuides?.some(guide => guide.election.slug === plan.fiscalSupplement?.electionSlug) ? 1 : 0), files: files.map(file => ({ name: file.name, bytes: Buffer.byteLength(file.body), sha256: hash(file.body) })), publisherRequests: 0, imported: false, publicationApproved: false, automaticImportApproved: false, primaryReplacementApproved: false };
 	files.push({ name: `${prefix}-manifest.json`, body: `${JSON.stringify(manifest, null, 2)}\n` });
 	files.push({ name: `${prefix}-SHA256SUMS`, body: `${files.map(file => `${hash(file.body)}  ${file.name}`).join("\n")}\n` });
 	if (files.some(file => Buffer.byteLength(file.body) > 12 * 1024 * 1024)) throw new Error("Prepared output exceeds the existing local data file bound.");

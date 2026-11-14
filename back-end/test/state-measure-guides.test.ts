@@ -43,7 +43,7 @@ function fixture() {
 
 function primaryFixture() {
 	const workspace = fixture();
-	const base = buildSeedCoverageSnapshot();
+	const base = structuredClone(buildSeedCoverageSnapshot());
 	assert.ok(base.election && base.jurisdiction && base.location);
 	const jurisdiction = { jurisdictionType: "county", name: base.jurisdiction.name, slug: "ga-primary-fixture" };
 	workspace.draft.stateCode = "GA";
@@ -63,6 +63,30 @@ function primaryFixture() {
 	return { ...workspace, base, basePath, primaryAugmentation, jurisdiction, saveBase };
 }
 
+function fiscalFixture() {
+	const workspace = primaryFixture();
+	workspace.plan.inputs[0]!.summaryAsExplanation = false;
+	Reflect.deleteProperty(workspace.plan, "primaryAugmentation");
+	const originalMeasure = structuredClone(workspace.draft.measures[0]!);
+	workspace.base.election!.contests.push({ slug: originalMeasure.contestSlug, title: originalMeasure.title, office: "Local measure", jurisdiction: "Ballot measure", type: "measure", description: "", roleGuide: { summary: "", whyItMatters: "", decisionAreas: [] }, measures: [structuredClone(originalMeasure)] });
+	workspace.base.measures.push(structuredClone(originalMeasure));
+	workspace.base.sources.push(...structuredClone(originalMeasure.sources));
+	const fiscalSupplement = { ...workspace.primaryAugmentation, measureSlug: originalMeasure.slug };
+	Object.assign(workspace.plan, { fiscalSupplement });
+	const url = "https://www.eac.gov/fiscal-fixture.pdf";
+	const body = "%PDF-1.7\nIsolated fiscal source fixture\n";
+	const path = join(workspace.directory, "fiscal.pdf");
+	writeFileSync(path, body);
+	const source = { id: "fixture-fiscal-source", title: "Official fiscal fixture", publisher: "Isolated publisher", authority: "official-government" as const, type: "official record" as const, sourceSystem: "Isolated fiscal notice", date: "", url: `${url}#page=2` };
+	const capturedAt = "2026-10-22T13:00:00.000Z";
+	Object.assign(workspace.draft.documents, { fiscal: { url, sha256: hash(body), capturedAt, publicationDate: null, reviewedPages: [2] } });
+	workspace.plan.inputs[0]!.documents.push({ key: "fiscal", path, url, sha256: hash(body), capturedAt });
+	workspace.draft.measures[0]!.sources.push(source);
+	workspace.draft.measures[0]!.fiscalSummary = [{ id: "fixture-maximum-principal", label: "Maximum principal", value: "$123.00", scope: "School bonds", horizon: "2028", note: "", sources: [source] }];
+	workspace.saveBase();
+	return { ...workspace, fiscalSupplement, originalMeasure };
+}
+
 function countyAreaFixture() {
 	const workspace = fixture();
 	const countyAreaScope = { kind: "county-excluding-municipalities", stateCode: "ND", countyName: "Cass County", excludedMunicipalities: ["Fargo"], matching: "reference-only" };
@@ -73,6 +97,179 @@ function countyAreaFixture() {
 	workspace.save();
 	return { ...workspace, jurisdiction };
 }
+
+test("fiscal supplementation preserves the pinned primary, all nonfiscal fields and original source clocks", async () => {
+	const workspace = fiscalFixture();
+	try {
+		const before = readFileSync(workspace.basePath);
+		const result = await prepareStateMeasureGuideFiles(workspace.planPath, now);
+		assert.equal(result.mode, "supplement-pinned-measure-fiscal-review-only");
+		const merged = workspace.read("coverage");
+		const target = merged.election.contests.find((contest: { slug: string }) => contest.slug === workspace.originalMeasure.contestSlug).measures[0];
+		assert.deepEqual(target.fiscalSummary, workspace.draft.measures[0]!.fiscalSummary);
+		assert.deepEqual(merged.measures.find((measure: { slug: string }) => measure.slug === target.slug), target);
+		assert.deepEqual({ ...target, fiscalSummary: [], sources: workspace.originalMeasure.sources }, workspace.originalMeasure);
+		const restored = structuredClone(merged);
+		restored.election.contests.at(-1).measures = [workspace.originalMeasure];
+		restored.measures[restored.measures.length - 1] = workspace.originalMeasure;
+		restored.sources = restored.sources.slice(0, -1);
+		assert.deepEqual(restored, JSON.parse(before.toString()));
+		assert.deepEqual(readFileSync(workspace.basePath), before);
+		assert.equal(workspace.read("workflows")[0].status, "draft");
+		assert.equal(workspace.read("workflows")[0].reviewedAt, undefined);
+		assert.equal(workspace.read("manifest").existingElectionMetadataPreserved, true);
+		assert.equal(workspace.read("manifest").existingNonfiscalMeasureFieldsPreserved, true);
+		assert.equal(workspace.read("manifest").primaryReplacementApproved, false);
+		assert.equal(readCoverageSnapshotMetadata(join(workspace.plan.outputDirectory, "measure-review-coverage.json")).status, "unknown");
+		workspace.plan.baseSnapshot = { path: join(workspace.plan.outputDirectory, "measure-review-coverage.json"), sha256: hash(readFileSync(join(workspace.plan.outputDirectory, "measure-review-coverage.json"))) };
+		workspace.plan.outputDirectory = join(workspace.directory, "repeat");
+		workspace.save();
+		await prepareStateMeasureGuideFiles(workspace.planPath, now);
+		assert.deepEqual(workspace.read("coverage"), merged);
+	}
+	finally { workspace.dispose(); }
+});
+
+test("fiscal supplementation targets additional statewide guides and future dates without changing the primary", async () => {
+	for (const electionDate of ["2026-11-03", "2030-11-05"]) {
+		const workspace = fiscalFixture();
+		try {
+			const contest = workspace.base.election!.contests.pop()!;
+			const original = structuredClone(workspace.originalMeasure);
+			original.location = "North Dakota";
+			contest.measures = [original];
+			workspace.base.measures.pop();
+			workspace.draft.stateCode = "ND";
+			workspace.draft.electionDate = electionDate;
+			workspace.draft.measures[0]!.location = "North Dakota";
+			workspace.plan.inputs[0]!.stateCode = "ND";
+			workspace.plan.inputs[0]!.electionDate = electionDate;
+			Reflect.deleteProperty(workspace.draft, "jurisdiction");
+			Reflect.deleteProperty(workspace.plan.inputs[0]!, "jurisdiction");
+			Object.assign(workspace.fiscalSupplement, { electionSlug: `nd-fixture-${electionDate}`, jurisdictionSlug: "nd-statewide-fixture" });
+			const jurisdiction = { ...structuredClone(workspace.base.jurisdiction!), slug: workspace.fiscalSupplement.jurisdictionSlug, state: "North Dakota", name: "North Dakota", displayName: "North Dakota", jurisdictionType: "state" as const };
+			workspace.base.additionalGuides = [{ election: { ...structuredClone(workspace.base.election!), slug: workspace.fiscalSupplement.electionSlug, jurisdictionSlug: jurisdiction.slug, date: electionDate, contests: [contest] }, jurisdiction, location: { ...structuredClone(workspace.base.location!), slug: jurisdiction.slug, state: "North Dakota", displayName: "North Dakota" }, coverageLimits: ["Selected statewide measures"] }];
+			workspace.saveBase();
+			await prepareStateMeasureGuideFiles(workspace.planPath, now);
+			const merged = workspace.read("coverage");
+			const pinned = JSON.parse(readFileSync(workspace.basePath, "utf8"));
+			assert.deepEqual(merged.election, pinned.election);
+			assert.deepEqual(merged.jurisdiction, pinned.jurisdiction);
+			assert.deepEqual(merged.location, pinned.location);
+			assert.equal(merged.additionalGuides[0].election.date, electionDate);
+			assert.equal(merged.additionalGuides[0].election.contests[0].measures[0].fiscalSummary[0].value, "$123.00");
+			assert.equal(workspace.read("manifest").existingPrimaryPreserved, true);
+			assert.equal(workspace.read("workflows")[0].status, "draft");
+		}
+		finally { workspace.dispose(); }
+	}
+});
+
+test("fiscal supplementation reproduces an existing explicit explanation mapping without rewriting the base", async () => {
+	for (const enabled of [false, true]) {
+		const workspace = fiscalFixture();
+		try {
+			workspace.base.election!.contests.at(-1)!.measures![0]!.plainLanguageExplanation = workspace.originalMeasure.summary;
+			workspace.base.measures.at(-1)!.plainLanguageExplanation = workspace.originalMeasure.summary;
+			workspace.plan.inputs[0]!.summaryAsExplanation = enabled;
+			workspace.draft.measures[0]!.fiscalSummary[0]!.id = "f".repeat(160);
+			workspace.saveBase();
+			if (enabled) {
+				await prepareStateMeasureGuideFiles(workspace.planPath, now);
+				assert.equal(workspace.read("coverage").election.contests.at(-1).measures[0].plainLanguageExplanation, workspace.originalMeasure.summary);
+				assert.equal(workspace.read("manifest").mappings.length, 1);
+			}
+			else {
+				await assert.rejects(prepareStateMeasureGuideFiles(workspace.planPath, now), /nonfiscal measure fields/u);
+				assert.equal(existsSync(workspace.plan.outputDirectory), false);
+			}
+		}
+		finally { workspace.dispose(); }
+	}
+});
+
+test("fiscal supplementation holds wording, vote meaning, freshness, identity and citation changes", async () => {
+	for (const mode of ["ballotSummary", "yesMeaning", "noMeaning", "summary", "freshness", "source", "root", "duplicate", "prior-fiscal"]) {
+		const workspace = fiscalFixture();
+		try {
+			const measure = workspace.draft.measures[0]!;
+			if (["ballotSummary", "yesMeaning", "noMeaning", "summary"].includes(mode)) Reflect.set(measure, mode, "Changed existing claim.");
+			if (mode === "freshness") measure.freshness.contentLastVerifiedAt = "2026-10-22T14:00:00.000Z";
+			if (mode === "source") measure.sources.shift();
+			if (mode === "root") workspace.base.measures.at(-1)!.summary = "Conflicting root copy.";
+			if (mode === "duplicate") workspace.base.election!.contests.push(structuredClone(workspace.base.election!.contests.at(-1)!));
+			if (mode === "prior-fiscal") {
+				workspace.base.election!.contests.at(-1)!.measures![0]!.fiscalSummary = [{ ...structuredClone(measure.fiscalSummary[0]!), value: "$99.00" }];
+				workspace.base.measures.at(-1)!.fiscalSummary = structuredClone(workspace.base.election!.contests.at(-1)!.measures![0]!.fiscalSummary);
+			}
+			workspace.saveBase();
+			await assert.rejects(prepareStateMeasureGuideFiles(workspace.planPath, now));
+			assert.equal(existsSync(workspace.plan.outputDirectory), false, mode);
+		}
+		finally { workspace.dispose(); }
+	}
+});
+
+test("fiscal supplementation refuses unsafe rows, uncited facts and conflicting source identities", async () => {
+	for (const mode of ["empty", "duplicate-id", "extra-row-field", "blank-value", "no-citation", "unbound-citation", "unofficial", "source-collision", "too-many", "long-id"]) {
+		const workspace = fiscalFixture();
+		try {
+			const measure = workspace.draft.measures[0]!;
+			const row = measure.fiscalSummary[0]!;
+			if (mode === "empty") measure.fiscalSummary = [];
+			if (mode === "duplicate-id") measure.fiscalSummary.push(structuredClone(row));
+			if (mode === "extra-row-field") Object.assign(row, { approved: true });
+			if (mode === "blank-value") row.value = "";
+			if (mode === "no-citation") row.sources = [];
+			if (mode === "unbound-citation") row.sources = [{ ...row.sources[0]!, id: "unbound-fiscal-source" }];
+			if (mode === "unofficial") row.sources[0]!.authority = "candidate-campaign";
+			if (mode === "source-collision") workspace.base.sources.push({ ...row.sources[0]!, publisher: "Conflicting publisher" });
+			if (mode === "too-many") measure.fiscalSummary = Array.from({ length: 101 }, (_, index) => ({ ...structuredClone(row), id: `fiscal-${index}` }));
+			if (mode === "long-id") row.id = "f".repeat(202);
+			workspace.saveBase();
+			await assert.rejects(prepareStateMeasureGuideFiles(workspace.planPath, now));
+			assert.equal(existsSync(workspace.plan.outputDirectory), false, mode);
+		}
+		finally { workspace.dispose(); }
+	}
+});
+
+test("fiscal supplementation requires exact target scope and a pinned, unambiguous single input", async () => {
+	for (const mode of ["no-base", "two-inputs", "two-measures", "both-modes", "approval", "election", "jurisdiction", "measure", "state", "date", "kind", "name", "duplicate-scope"]) {
+		const workspace = fiscalFixture();
+		try {
+			if (mode === "no-base") workspace.plan.baseSnapshot = null;
+			if (mode === "two-inputs") workspace.plan.inputs.push(structuredClone(workspace.plan.inputs[0]!));
+			if (mode === "two-measures") workspace.draft.measures.push({ ...structuredClone(workspace.draft.measures[0]!), slug: "other-measure", contestSlug: "other-contest" });
+			if (mode === "both-modes") Object.assign(workspace.plan, { primaryAugmentation: workspace.primaryAugmentation });
+			if (mode === "approval") Object.assign(workspace.fiscalSupplement, { approved: true });
+			if (mode === "election") workspace.fiscalSupplement.electionSlug = "other-election";
+			if (mode === "jurisdiction") workspace.fiscalSupplement.jurisdictionSlug = "other-area";
+			if (mode === "measure") workspace.fiscalSupplement.measureSlug = "other-measure";
+			if (mode === "state") workspace.base.jurisdiction!.state = "North Dakota";
+			if (mode === "date") workspace.base.election!.date = "2030-11-05";
+			if (mode === "kind") workspace.base.jurisdiction!.jurisdictionType = "city";
+			if (mode === "name") workspace.base.jurisdiction!.name = "Another County";
+			if (mode === "duplicate-scope") workspace.base.additionalGuides = [{ election: { ...structuredClone(workspace.base.election!), slug: "same-scope-alias", jurisdictionSlug: "same-area-alias", contests: [] }, jurisdiction: { ...structuredClone(workspace.base.jurisdiction!), slug: "same-area-alias" }, location: { ...structuredClone(workspace.base.location!), slug: "same-area-alias" } }];
+			if (["state", "date", "kind", "name", "duplicate-scope"].includes(mode)) workspace.saveBase();
+			else workspace.save();
+			await assert.rejects(prepareStateMeasureGuideFiles(workspace.planPath, now));
+			assert.equal(existsSync(workspace.plan.outputDirectory), false, mode);
+		}
+		finally { workspace.dispose(); }
+	}
+});
+
+test("ordinary append-only preparation still rejects an existing scope without explicit fiscal supplementation", async () => {
+	const workspace = fiscalFixture();
+	try {
+		Reflect.deleteProperty(workspace.plan, "fiscalSupplement");
+		workspace.save();
+		await assert.rejects(prepareStateMeasureGuideFiles(workspace.planPath, now), /existing election scope/u);
+		assert.equal(existsSync(workspace.plan.outputDirectory), false);
+	}
+	finally { workspace.dispose(); }
+});
 
 test("optional native-question binding pins complete wording and refuses drift before creating output", async () => {
 	const workspace = fixture();

@@ -4,6 +4,9 @@
 education-measure draft with the maintained collector's original notice capture.
 It produces a separate native draft, fiscal CSV, review record and hash manifest.
 Those outputs feed the existing measure-guide preparation and review workflow.
+The [fiscal supplement target](state-measure-guide-preparation.md#fiscal-supplementation-of-an-existing-measure)
+joins them to the complete pinned ballot review while preserving its other
+questions, records and original metadata.
 
 ```json
 {

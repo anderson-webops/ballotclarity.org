@@ -122,6 +122,44 @@ normal coverage promotion rejects it. Exported workflows concern only newly adde
 guides and always start in draft. Existing publication decisions are not exported
 or changed.
 
+## Fiscal supplementation of an existing measure
+
+Optional `fiscalSupplement` selects one existing measure in a pinned base:
+
+```json
+{
+  "fiscalSupplement": {
+    "electionSlug": "existing-election",
+    "jurisdictionSlug": "existing-jurisdiction",
+    "measureSlug": "existing-measure"
+  }
+}
+```
+
+The plan supplies one native measure input and its original document captures,
+using the same state/date/jurisdiction and citation validation as ordinary
+preparation. The target may be primary or an additional guide, including a
+statewide or explicitly scoped local jurisdiction. This option and
+`primaryAugmentation` are mutually exclusive. Ordinary preparation remains
+append-only when neither option is selected.
+
+Mode `supplement-pinned-measure-fiscal-review-only` fills empty fiscal rows or
+accepts an identical repeat. Changed existing fiscal rows remain a separate
+replacement review. Every other measure field, including wording, Yes/No
+meanings, scope and freshness, remains exact; original citations remain an exact
+prefix and supporting official citations may be appended. Root and contest
+copies must agree. Duplicate scope aliases, conflicting source identities,
+uncited or malformed rows and unrelated content changes fail before output.
+The existing explicit `summaryAsExplanation` mapping can reproduce a mapping
+already present in the base; it cannot change the base explanation.
+
+Other records, election metadata, location, jurisdiction and source clocks remain
+intact. The result includes the complete proposed coverage snapshot, its original
+question reconciliation when configured, and a new draft workflow for the target
+election. Base publication approval is not inherited. Output metadata stays
+unknown and publication, import, primary replacement and scheduling retain their
+existing independent approval gates.
+
 ## Explicit primary augmentation
 
 An optional `primaryAugmentation` object supplies the pinned base's exact

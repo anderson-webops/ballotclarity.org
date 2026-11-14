@@ -142,13 +142,13 @@ async function retryRecords() {
 				</NuxtLink>
 			</div>
 			<UpdatedAt v-if="data.source.retrievedAt" :value="data.source.retrievedAt" label="Ballot data updated on" footer />
-			<p v-if="data.awaitingRecords" class="text-sm text-app-muted dark:text-app-muted-dark" role="status">
+			<p v-if="data.awaitingRecords && !referenceData?.available" class="text-sm text-app-muted dark:text-app-muted-dark" role="status">
 				No records yet.
 			</p>
-			<p v-else-if="!data.available" class="text-sm text-app-muted dark:text-app-muted-dark" role="status">
+			<p v-else-if="!data.available && !referenceData?.available" class="text-sm text-app-muted dark:text-app-muted-dark" role="status">
 				Official candidate records are unavailable for this {{ data.source.id ? "source" : "state" }}.
 			</p>
-			<template v-else>
+			<template v-else-if="data.available">
 				<p id="record-count" class="text-sm text-app-muted dark:text-app-muted-dark" role="status">
 					{{ recordRange }}
 				</p>

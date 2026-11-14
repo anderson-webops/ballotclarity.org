@@ -1,6 +1,6 @@
 import process from "node:process";
-import { electionReferenceSources } from "./election-reference-sources.js";
 import { createElectionReferenceStorage, parseElectionReferenceSnapshot } from "./election-references.js";
+import { configuredElectionReferenceSources } from "./louisiana-parish-reference-catalog.js";
 import { collectOpenStatesFile } from "./openstates-collection.js";
 import { collectOpenStatesProfilesFile } from "./openstates-profile-collection.js";
 import { collectCandidateStatementBatchFile, collectCandidateStatementFiles, collectOfficialCandidateBiographyFiles, prepareCandidateStatementFiles, prepareOfficialCandidateBiographyFiles } from "./prepare-candidate-statements.js";
@@ -91,6 +91,7 @@ async function main() {
 	const directory = process.env.STATE_BALLOT_DATA_DIR;
 	if (!directory) throw new Error("STATE_BALLOT_DATA_DIR is required for persistent election references.");
 	const storage = createElectionReferenceStorage(directory);
+	const electionReferenceSources = await configuredElectionReferenceSources();
 	if (command === "import") {
 		if (!requested.length) throw new Error("Provide at least one reviewed reference snapshot.");
 		for (const path of requested) {

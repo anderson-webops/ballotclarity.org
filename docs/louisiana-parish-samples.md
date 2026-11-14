@@ -1,5 +1,10 @@
 # Louisiana parish sample research
 
+Prepared candidate research connects to the existing Directory/reference API
+through the optional [dated parish reference catalog](louisiana-parish-references.md).
+Its offline preparer retains original evidence and leaves import/publication
+approval separate.
+
 [Power Coalition for Equity and Justice](https://powercoalition.org/sampleballots/)
 publishes independently authored parish-wide sample guides. This nonprofit
 publication is an unofficial factual research source. It is separate from the

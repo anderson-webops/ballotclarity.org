@@ -38,12 +38,14 @@ export async function searchRetainedRecords(options: {
 			catch { incomplete = true; }
 			try {
 				const snapshots = options.references?.getSnapshots ? await options.references.getSnapshots(stateCode) : options.references ? [await options.references.getSnapshot(stateCode)].filter(snapshot => snapshot !== null) : [];
-				const linked = new Set(visible.flatMap(({ snapshot, record }) => matchingCandidateReferences(snapshot, record, snapshots).map(reference => `${reference.source.collectionId}:${reference.id}`)));
+				const sources = await options.references?.getSources?.(stateCode);
+				const linked = new Set(visible.flatMap(({ snapshot, record }) => matchingCandidateReferences(snapshot, record, snapshots, sources).map(reference => `${reference.source.collectionId}:${reference.id}`)));
 				for (const snapshot of snapshots) {
 					for (const record of snapshot.records) {
 						if (items.length >= 100) break;
 						if (linked.has(`${snapshot.sourceId}:${record.id}`)) continue;
-						if (![record.name, record.office, ...record.facts].join(" ").normalize("NFKC").toLowerCase().includes(query)) continue;
+						const sourceTitle = sources?.find(source => source.id === snapshot.sourceId)?.documents[record.sourceDocumentIndex]?.title;
+						if (![record.name, record.office, ...record.facts, sourceTitle].join(" ").normalize("NFKC").toLowerCase().includes(query)) continue;
 						const parameters = new URLSearchParams({ kind: "reference", source: snapshot.sourceId, name: record.name });
 						items.push({ id: `${snapshot.sourceId}:${record.id}`, type: "candidate", title: record.name, href: `/record/${stateCode}/${record.id}?${parameters}`, meta: [record.office, stateName].join(" · "), summary: record.facts[0] ?? "", updatedAt: snapshot.retrievedAt });
 					}

@@ -6,7 +6,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { mkdir, open, realpath, rename, unlink } from "node:fs/promises";
 import { join } from "node:path";
 import process from "node:process";
-import { electionReferenceSources } from "./election-reference-sources.js";
+import { configuredElectionReferenceSources } from "./louisiana-parish-reference-catalog.js";
 import { openStatesProfileLinks, openStatesProfileRecordId, validateOpenStatesProfileMember } from "./openstates-profile-evidence.js";
 import { normalizePublicHref } from "./public-href.js";
 import { assertExternalStateDataDirectory, readBoundedStateData } from "./state-ballot-storage.js";
@@ -37,6 +37,7 @@ export interface ElectionReferenceSnapshot {
 }
 
 export interface ElectionReferenceRepository {
+	getSources?: (stateCode?: string) => Promise<readonly ElectionReferenceSource[]>;
 	inspectSources?: () => Promise<AdminOperationDataset[]>;
 	getSnapshot: (stateCode: string) => Promise<ElectionReferenceSnapshot | null>;
 	getSnapshots?: (stateCode: string) => Promise<ElectionReferenceSnapshot[]>;
@@ -152,15 +153,15 @@ export function selectElectionReferenceSources(sources: readonly ElectionReferen
 	return active.filter(source => source.electionDate === electionDate);
 }
 
-export function createElectionReferenceRepository(options: { dataDirectory?: string | null; now?: () => number; sources?: readonly ElectionReferenceSource[] } = {}): ElectionReferenceRepository {
+export function createElectionReferenceRepository(options: { dataDirectory?: string | null; now?: () => number; sources?: readonly ElectionReferenceSource[]; catalogPath?: string | null } = {}): ElectionReferenceRepository {
 	const directory = options.dataDirectory === undefined ? process.env.STATE_BALLOT_DATA_DIR || null : options.dataDirectory;
 	const storage = directory ? createElectionReferenceStorage(directory) : null;
 	const now = options.now ?? Date.now;
-	const sources = options.sources ?? electionReferenceSources;
+	const getSources = async (stateCode?: string) => options.sources ?? configuredElectionReferenceSources(options.catalogPath, stateCode);
 	async function getSnapshots(stateCode: string) {
 		if (!storage) return [];
 		const captureTime = now();
-		const active = selectElectionReferenceSources(sources, stateCode, captureTime);
+		const active = selectElectionReferenceSources(await getSources(stateCode), stateCode, captureTime);
 		const snapshots: ElectionReferenceSnapshot[] = [];
 		let failed = false;
 		for (const source of active) {
@@ -176,8 +177,10 @@ export function createElectionReferenceRepository(options: { dataDirectory?: str
 		return snapshots;
 	}
 	return {
+		getSources,
 		getSnapshots,
 		async inspectSources() {
+			const sources = await getSources();
 			return Promise.all(sources.map(async (source): Promise<AdminOperationDataset> => {
 				const item: AdminOperationDataset = { id: source.id, label: source.documents[0]?.title ?? source.id, stateCode: source.stateCode, electionDate: source.electionDate, kind: "references", mode: "reviewed", status: "missing", records: null, retrievedAt: null, lastAttemptAt: null, lastImportAt: null, failure: null };
 				try {
@@ -212,7 +215,7 @@ export function buildElectionReferencePages(collections: readonly { source: Elec
 		parseElectionReferenceSnapshot(source, JSON.stringify(snapshot));
 		return snapshot.records.map(record => ({ source, snapshot, record }));
 	});
-	const matching = entries.filter(({ record }) => (filters.scope === "all" || record.scope === filters.scope) && (!filters.search || [record.name, record.office, record.jurisdiction, ...record.facts].join(" ").toLowerCase().includes(filters.search)));
+	const matching = entries.filter(({ record, source }) => (filters.scope === "all" || record.scope === filters.scope) && (!filters.search || [record.name, record.office, record.jurisdiction, ...record.facts, source.documents[record.sourceDocumentIndex]?.title].join(" ").toLowerCase().includes(filters.search)));
 	const offset = filters.offset >= matching.length ? Math.max(0, Math.floor((matching.length - 1) / filters.limit) * filters.limit) : filters.offset;
 	const records: PublicElectionReference[] = matching.slice(offset, offset + filters.limit).map(({ source, snapshot, record }) => {
 		const captured = snapshot.documents[record.sourceDocumentIndex]!;

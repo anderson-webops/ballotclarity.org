@@ -35,10 +35,10 @@ export function registerElectionReferenceRoutes(app: Express, repository: Electi
 			response.status(400).json({ message: error instanceof Error ? error.message : "The selected information filter is invalid." });
 			return;
 		}
-		const sources = electionReferenceSources.filter(item => item.stateCode === stateCode);
-		const selected = selectElectionReferenceSources(sources, stateCode);
-		const payload: ElectionReferencesResponse = { available: false, collections: selected.map(source => source.id), stateCode, electionDate: selected[0]?.electionDate, total: 0, matched: 0, offset: filters.offset, limit: filters.limit, records: [] };
 		try {
+			const sources = (repository?.getSources ? await repository.getSources(stateCode) : electionReferenceSources).filter(item => item.stateCode === stateCode);
+			const selected = selectElectionReferenceSources(sources, stateCode);
+			const payload: ElectionReferencesResponse = { available: false, collections: selected.map(source => source.id), stateCode, electionDate: selected[0]?.electionDate, total: 0, matched: 0, offset: filters.offset, limit: filters.limit, records: [] };
 			const snapshots = sources.length && repository ? repository.getSnapshots ? await repository.getSnapshots(stateCode) : [await repository.getSnapshot(stateCode)].filter(item => item !== null) : [];
 			if (snapshots.length) {
 				const collections = snapshots.map((snapshot) => {

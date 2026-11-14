@@ -55,6 +55,8 @@ test("references render even when official candidate data is unavailable", () =>
 	assert.match(page, /useElectionReferences\(referenceFilters\)/u);
 	assert.doesNotMatch(page, /href="#candidate-information-heading"/u);
 	assert.match(page, /Official candidate records are unavailable/u);
+	assert.match(page, /v-else-if="!data.available && !referenceData\?\.available"/u);
+	assert.match(page, /<template v-else-if="data.available">/u);
 	const component = readFileSync(new URL("../src/components/ElectionReferences.vue", import.meta.url), "utf8");
 	assert.match(component, /path: `\/record\//u);
 	assert.match(component, /aria-labelledby="candidate-information-heading"/u);

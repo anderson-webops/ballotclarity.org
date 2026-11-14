@@ -13,6 +13,7 @@ const clean = (text: string) => text.replace(/\s+/gu, " ").trim();
 const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 const maximumBytes = 12 * 1024 * 1024;
 const parishNames = "Acadia|Allen|Ascension|Assumption|Avoyelles|Beauregard|Bienville|Bossier|Caddo|Calcasieu|Caldwell|Cameron|Catahoula|Claiborne|Concordia|De Soto|East Baton Rouge|East Carroll|East Feliciana|Evangeline|Franklin|Grant|Iberia|Iberville|Jackson|Jefferson|Jefferson Davis|Lafayette|Lafourche|La Salle|Lincoln|Livingston|Madison|Morehouse|Natchitoches|Orleans|Ouachita|Plaquemines|Pointe Coupee|Rapides|Red River|Richland|Sabine|St Bernard|St Charles|St Helena|St James|St John the Baptist|St Landry|St Martin|St Mary|St Tammany|Tangipahoa|Tensas|Terrebonne|Union|Vermilion|Vernon|Washington|Webster|West Baton Rouge|West Carroll|West Feliciana|Winn".split("|");
+export const parishSampleParishes: readonly string[] = parishNames;
 
 export interface ParishSampleAccessReview {
 	robots: string;

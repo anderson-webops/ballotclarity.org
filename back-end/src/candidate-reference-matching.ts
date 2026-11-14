@@ -1,3 +1,4 @@
+import type { ElectionReferenceSource } from "./election-reference-sources.js";
 import type { ElectionReferenceSnapshot } from "./election-references.js";
 import type { StateCandidateRecord } from "./state-ballot-records.js";
 import type { StateBallotSnapshot } from "./state-ballot-repository.js";
@@ -36,16 +37,16 @@ function sameOffice(record: StateCandidateRecord, reference: Pick<PublicElection
 	return seat !== null && (!/\bdistrict\s+\d/iu.test(record.office) || explicit === seat) && seat === referenceDistrict(reference);
 }
 
-export function matchingCandidateReferences(snapshot: StateBallotSnapshot, candidate: StateCandidateRecord, snapshots: readonly ElectionReferenceSnapshot[]) {
+export function matchingCandidateReferences(snapshot: StateBallotSnapshot, candidate: StateCandidateRecord, snapshots: readonly ElectionReferenceSnapshot[], sources: readonly ElectionReferenceSource[] = electionReferenceSources) {
 	if (!compatibleScope(candidate.scope) || !snapshot.records.some(record => record.id === candidate.id)) return [];
 	const possibleIdentities = snapshot.records.filter(record => name(record.name) === name(candidate.name) && record.scope === candidate.scope && (record.scope === "statewide" ? office(record.office) === office(candidate.office) : record.scope === "local" ? normalized(record.jurisdiction ?? "") === normalized(candidate.jurisdiction ?? "") && office(record.office) === office(candidate.office) : district(record.district) !== null && district(record.district) === district(candidate.district)));
 	if (possibleIdentities.length !== 1) return [];
 	const collections = snapshots.filter(reference => reference.electionDate === snapshot.source.electionDate).map((reference) => {
-		const source = electionReferenceSources.find(source => source.id === reference.sourceId && source.stateCode === snapshot.source.stateCode && source.electionDate === snapshot.source.electionDate);
+		const source = sources.find(source => source.id === reference.sourceId && source.stateCode === snapshot.source.stateCode && source.electionDate === snapshot.source.electionDate);
 		if (!source || reference.stateCode !== snapshot.source.stateCode) throw new Error("Candidate background belongs to a different configured state or election.");
 		parseElectionReferenceSnapshot(source, JSON.stringify(reference));
 		return { source, snapshot: reference };
-	});
+	}).filter(({ source }) => source.candidateMatching !== false);
 	if (!collections.length) return [];
 	const matches = collections.flatMap(({ source, snapshot: reference }) => {
 		const selected = reference.records.filter((record) => {

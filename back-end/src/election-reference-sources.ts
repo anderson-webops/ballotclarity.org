@@ -14,6 +14,7 @@ export interface ElectionReferenceSource {
 	allowIdentityOnly?: boolean;
 	optional?: boolean;
 	allowOfficialCandidateBindings?: true;
+	candidateMatching?: false;
 	washingtonLocality?: {
 		countyDisplay: string;
 		rosterJurisdiction: "County";

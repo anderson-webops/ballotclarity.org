@@ -45,6 +45,13 @@ function legalLinks(body: string, origin: string, expected: string[]) {
 	const links = [...new Set(descendants(document(body), node => node.nodeName === "a" && /privacy|terms|copyright|disclaimer/iu.test(`${stateHtmlText(node)} ${attribute(node, "href")}`)).map(node => new URL(attribute(node, "href"), origin).href))].sort();
 	if (links.join("\n") !== [...expected].sort().join("\n")) return reject();
 }
+export function lafayetteGuideLocalDate(clock: number) {
+	if (!Number.isFinite(clock)) return reject();
+	const parts = new Intl.DateTimeFormat("en-US", { timeZone: "America/Chicago", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(clock);
+	const value = ["year", "month", "day"].map(kind => parts.find(part => part.type === kind)?.value).join("-");
+	if (!validDate(value)) return reject();
+	return value;
+}
 export function lafayetteGuidePolicyHash(body: string, kind: keyof typeof lafayetteGuidePolicyUrls) {
 	if (kind === "robots") {
 		if (body.trim()) return reject();
@@ -140,10 +147,11 @@ export async function collectLafayetteGuideResearch(planPath: string, options: O
 			const capture = await request(lafayetteGuidePolicyUrls[kind]);
 			if (capture.status !== 200 || !/^text\/(?:html|plain)$/u.test(capture.contentType) || lafayetteGuidePolicyHash(capture.body.toString("utf8"), kind) !== review[kind]) return reject();
 		}
-		const preferredYear = Number((value.electionDate ?? new Date(now()).toISOString()).slice(0, 4));
+		const today = lafayetteGuideLocalDate(now());
+		const preferredYear = Number((value.electionDate ?? today).slice(0, 4));
 		const hub = discoverAcadianaElectionHub(html(await request(lafayetteGuideIndexUrl)), preferredYear);
 		const edition = discoverAcadianaBallotGuides(html(await request(hub.url)), hub);
-		const selected = value.electionDate === null ? edition.guides.find(guide => guide.electionDate >= new Date(now()).toISOString().slice(0, 10)) : edition.guides.find(guide => guide.electionDate === value.electionDate);
+		const selected = value.electionDate === null ? edition.guides.find(guide => guide.electionDate >= today) : edition.guides.find(guide => guide.electionDate === value.electionDate);
 		let preparation: Awaited<ReturnType<typeof prepareLafayetteBallotResearch>> | null = null;
 		if (selected) {
 			if (!edition.governmentLinked) return reject();

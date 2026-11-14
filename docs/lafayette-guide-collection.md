@@ -13,7 +13,9 @@ status. Obtain policy approval separately; collection does not grant reuse right
 Policies are checked again on every run. New legal links, changed policy text or
 new information-site robots rules stop preparation for review.
 
-`electionDate: null` selects the earliest offered guide dated today or later.
+`electionDate: null` selects the earliest offered guide dated today or later,
+using Lafayette's `America/Chicago` calendar date through local midnight and
+daylight-saving transitions.
 An explicitly offered current-year hub takes precedence over a newer-year hub;
 an explicit ISO date selects its offered year for retained historical research.
 Missing and expired

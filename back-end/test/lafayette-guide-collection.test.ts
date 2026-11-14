@@ -4,7 +4,7 @@ import { mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
-import { collectLafayetteGuideResearch, discoverAcadianaBallotGuides, discoverAcadianaElectionHub, lafayetteGuideIndexUrl, lafayetteGuidePolicyHash, lafayetteGuidePolicyUrls } from "../src/lafayette-guide-collection.js";
+import { collectLafayetteGuideResearch, discoverAcadianaBallotGuides, discoverAcadianaElectionHub, lafayetteGuideIndexUrl, lafayetteGuideLocalDate, lafayetteGuidePolicyHash, lafayetteGuidePolicyUrls } from "../src/lafayette-guide-collection.js";
 
 const privacyLink = `<a href="${lafayetteGuidePolicyUrls.privacy}">Privacy Policy</a>`;
 const privacy = `${privacyLink}<div id="main-content"><h1>Privacy Policy</h1><p>${"Reviewed publisher privacy statement. ".repeat(5)}</p></div>`;
@@ -108,7 +108,7 @@ test("Lafayette persists bounded originals, native research, source clocks and r
 test("Lafayette default selection excludes expired guides while explicit history remains preparable", async () => {
 	const local = await fixture();
 	try {
-		const pending = await collectLafayetteGuideResearch(local.planPath, { ...local.options, now: () => Date.parse("2030-12-15T00:00:00Z") });
+		const pending = await collectLafayetteGuideResearch(local.planPath, { ...local.options, now: () => Date.parse("2030-12-15T06:00:00Z") });
 		assert.equal(pending.status, "awaiting-offered-guide");
 		assert.equal(pending.preparation, null);
 		assert.equal(local.requests.length, 4);
@@ -116,6 +116,14 @@ test("Lafayette default selection excludes expired guides while explicit history
 		assert.equal((await collectLafayetteGuideResearch(local.planPath, local.options)).preparation?.measures, 1);
 	}
 	finally { await rm(local.root, { recursive: true, force: true }); }
+});
+test("Lafayette current-edition dates follow local midnight through UTC rollover and daylight saving", () => {
+	assert.equal(lafayetteGuideLocalDate(Date.parse("2030-12-15T01:00:00Z")), "2030-12-14");
+	assert.equal(lafayetteGuideLocalDate(Date.parse("2030-12-15T05:59:59.999Z")), "2030-12-14");
+	assert.equal(lafayetteGuideLocalDate(Date.parse("2030-12-15T06:00:00Z")), "2030-12-15");
+	assert.equal(lafayetteGuideLocalDate(Date.parse("2030-06-15T04:59:59.999Z")), "2030-06-14");
+	assert.equal(lafayetteGuideLocalDate(Date.parse("2030-06-15T05:00:00Z")), "2030-06-15");
+	assert.throws(() => lafayetteGuideLocalDate(Number.NaN));
 });
 test("Lafayette pending collection invents neither a missing guide nor unrelated publisher requests", async () => {
 	const local = await fixture();

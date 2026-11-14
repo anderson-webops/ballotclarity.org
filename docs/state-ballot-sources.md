@@ -1,5 +1,10 @@
 # Official state candidate records
 
+Union County's complete sample set also has a separately selected historical
+directory source and [reusable snapshot preparation](union-county-candidate-snapshots.md).
+The existing New Jersey federal source stays preferred; Union's school, municipal
+and county records retain their printed scope without personal ballot previews.
+
 Tuscola's recurring reader also retains twelve distinct sample-ballot questions.
 Franklin's versioned collector adds fifty-one certified election notices, keeping
 summary/fiscal text distinct from full ballot wording and printed choices. Both

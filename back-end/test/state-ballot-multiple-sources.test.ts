@@ -48,7 +48,7 @@ async function serve(repository: StateBallotRepository) {
 
 test("county sources are additive and their reviewed configuration retains each original document", () => {
 	assert.equal(stateBallotSources.length, 50);
-	assert.equal(configuredStateBallotSources.length, 87);
+	assert.equal(configuredStateBallotSources.length, 88);
 	const goffstown = configuredStateBallotSources.find(source => source.id === "nh-goffstown-2026")!;
 	assert.equal(goffstown.format, "goffstown-pdf");
 	assert.equal(goffstown.retrievalPolicy, undefined);
@@ -91,11 +91,12 @@ test("county sources are additive and their reviewed configuration retains each 
 	delete texasOriginalFields.withheldDistrictScopes;
 	assert.deepEqual({ ...texasOriginalFields, format: "reviewed-pdf", retrievalPolicy: "manual-snapshot" }, stateBallotSources.find(source => source.id === texas.id));
 	assert.equal(configuredStateBallotSources.find(source => source.id === "ga-fulton-2026")!.format, "fulton-pdf");
-	assert.ok(configuredStateBallotSources.filter(source => ["MO", "NJ"].includes(source.stateCode)).every(source => source.format === "certified-pdf"));
-	assert.equal(new Set(configuredStateBallotSources.map(source => source.id)).size, 87);
+	assert.ok(configuredStateBallotSources.filter(source => source.stateCode === "MO" || source.id === "nj-doe-2026-federal").every(source => source.format === "certified-pdf"));
+	assert.equal(configuredStateBallotSources.find(source => source.id === "nj-union-2026-11-03")!.ballotPreview, false);
+	assert.equal(new Set(configuredStateBallotSources.map(source => source.id)).size, 88);
 	assert.equal(new Set(configuredStateBallotSources.map(source => source.stateCode)).size, 51);
 	const reviewed = additionalStateBallotSources.filter(source => source.retrievalPolicy === "manual-snapshot");
-	assert.equal(reviewed.length, 8);
+	assert.equal(reviewed.length, 9);
 	assert.equal(reviewed.filter(source => source.recordRole === "certified-writeins").length, 1);
 	assert.equal(additionalStateBallotSources.filter(source => !source.retrievalPolicy).length, 29);
 	const winnebago = configuredStateBallotSources.find(source => source.id === "il-winnebago-2026")!;
@@ -108,7 +109,12 @@ test("county sources are additive and their reviewed configuration retains each 
 	assert.equal(chicago.placeName, "Chicago city");
 	assert.equal(chicago.countyName, undefined);
 	assert.deepEqual(resolveStateBallotConfiguration({ STATE_BALLOT_ENABLED_STATES: "IL" }).sources.map(source => source.id), ["il-sbe-2026", chicago.id, winnebago.id]);
-	for (const source of reviewed.filter(source => source.recordRole !== "certified-writeins" && !source.placeName)) {
+	const union = configuredStateBallotSources.find(source => source.id === "nj-union-2026-11-03")!;
+	assert.equal(union.documentUrls?.length, 42);
+	assert.equal(union.defaultPriority, -20);
+	assert.equal(union.ballotPreview, false);
+	assert.equal(union.documentLinks, undefined);
+	for (const source of reviewed.filter(source => source.recordRole !== "certified-writeins" && !source.placeName && source.ballotPreview !== false)) {
 		assert.equal(source.retrievalPolicy, "manual-snapshot");
 		assert.equal(source.snapshotStorage, "external");
 		assert.equal(source.documentUrls?.length, [parish.id, "ky-warren-candidates-2026", "ar-pulaski-candidates-2026"].includes(source.id) ? 1 : 2);
@@ -165,7 +171,7 @@ test("Pulaski retains Washington County and withholds unverified local and distr
 });
 
 test("state and source allowlists validate independently and intersect without replacing primary entries", () => {
-	assert.equal(resolveStateBallotConfiguration({}).sources.length, 87);
+	assert.equal(resolveStateBallotConfiguration({}).sources.length, 88);
 	assert.equal(resolveStateBallotConfiguration({ STATE_BALLOT_ENABLED_STATES: "NC,NM" }).sources.length, 5);
 	assert.deepEqual(resolveStateBallotConfiguration({ STATE_BALLOT_ENABLED_SOURCES: ` ${county.id},${otherCounty.id} ` }).sources, [county, otherCounty]);
 	assert.deepEqual(resolveStateBallotConfiguration({ STATE_BALLOT_ENABLED_STATES: "LA", STATE_BALLOT_ENABLED_SOURCES: parish.id }).sources, [parish]);
@@ -234,6 +240,10 @@ test("manual source failure and recovery cannot leak or erase a neighboring coun
 test("reviewed county previews never assign local or unverified legislative records by numeric coincidence", () => {
 	for (const source of additionalStateBallotSources.filter(source => source.retrievalPolicy === "manual-snapshot" && source.recordRole !== "certified-writeins" && !source.placeName)) {
 		const preview = buildStateBallotPreview(snapshot(source), { districtMatches: ["congressional", "state-senate", "state-house"].map(districtType => ({ id: `example-${districtType}`, label: "Example", districtType, districtCode: "1", sourceSystem: "census-geocoder" })) });
+		if (source.ballotPreview === false) {
+			assert.equal(preview, null);
+			continue;
+		}
 		assert.equal(preview?.candidateCount, 1);
 		assert.equal(preview?.id, source.id);
 		assert.equal(preview?.sourceUrl, source.pageUrl);

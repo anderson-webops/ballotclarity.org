@@ -20,7 +20,7 @@ converters nor publisher requests. Actual offered future dates generate source
 identities without annual URL edits. See the [collection review](audits/2026-10-27-chicago-automation.md).
 
 External election catalogs opt the automatic candidate repository into reusable
-source families. The current 87 source definitions retain explicit source/state
+source families. The current 88 source definitions retain explicit source/state
 allowlists; reusable discovery does not widen an exact-source allowlist.
 
 Sixty-one families across forty-eight states and D.C. are supported. Some

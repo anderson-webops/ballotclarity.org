@@ -7,7 +7,10 @@ import test from "node:test";
 import { collectUnionBallotEvidence } from "../src/collect-union-ballot-evidence.js";
 import { prepareUnionBallotCorroboration } from "../src/prepare-union-ballot-corroboration.js";
 import { prepareUnionBallotQuestions } from "../src/prepare-union-ballot-questions.js";
+import { buildUnionCandidateSnapshot, prepareUnionCandidateSnapshot } from "../src/prepare-union-candidate-snapshot.js";
 import { prepareUnionChoiceReview } from "../src/prepare-union-choice-review.js";
+import { parseBundledStateSnapshot } from "../src/state-ballot-snapshot.js";
+import { unionSampleSource } from "../src/state-ballot-union-source.js";
 import { readUnionChoiceContext, unionOfficeCorroborated } from "../src/union-ballot-choice-context.js";
 import { readUnionSampleQuestion } from "../src/union-ballot-questions.js";
 import { readUnionBallotCells, reconcileUnionBallotReferences } from "../src/union-ballot-witnesses.js";
@@ -154,6 +157,101 @@ function contextDocument(form: number, change: (words: Word[]) => Word[] = words
 	];
 	return document(form, words => [...words.filter(word => word.top <= 210), ...change(fields)]);
 }
+
+function candidateSamples() {
+	return catalog.documents.map((source) => {
+		const input = contextDocument(source.form);
+		return { document: source, sha256: hash(`sample-${source.form}`), capturedAt: "2030-10-01T00:00:00.000Z", cells: readUnionChoiceContext(input.bbox, input.layout, source, edition.electionDate) };
+	});
+}
+
+test("Union sample directory source preserves historical scope and leaves existing federal selection preferred", () => {
+	const source = unionSampleSource();
+	assert.equal(source.id, "nj-union-2026-11-03");
+	assert.equal(source.documentUrls!.length, 42);
+	assert.equal(source.ballotPreview, false);
+	assert.equal(source.retrievalPolicy, "manual-snapshot");
+	assert.equal(source.defaultPriority, -20);
+	assert.equal(unionSampleSource(catalog).electionDate, "2030-11-05");
+	assert.throws(() => unionSampleSource({ ...catalog, edition: { ...edition, electionDate: "2030-11-06" } }));
+	assert.throws(() => unionSampleSource({ ...catalog, documents: [...catalog.documents, catalog.documents[0]!] }));
+	assert.throws(() => unionSampleSource({ ...catalog, documents: catalog.documents.map((source, index) => index ? source : { ...source, url: "https://elsewhere.example/ballot.pdf" }) }));
+});
+
+test("Union directory snapshots deduplicate repeated sample choices and retain every source witness", () => {
+	const samples = candidateSamples();
+	const first = buildUnionCandidateSnapshot(catalog, samples);
+	const repeated = buildUnionCandidateSnapshot(catalog, [...samples].reverse());
+	assert.deepEqual(repeated, first);
+	assert.ok(first.evidence.length > first.snapshot.recordCount);
+	assert.equal(first.snapshot.documents.reduce((count, document) => count + document.includedRecordCount, 0), first.snapshot.recordCount);
+	const parsed = parseBundledStateSnapshot(first.source, JSON.stringify(first.snapshot));
+	assert.equal(parsed.records.length, first.snapshot.recordCount);
+	assert.ok(parsed.records.every(record => record.status === "listed" && record.incumbent === undefined));
+	assert.ok(parsed.records.some(record => record.name === "Anne Marie WEISS"));
+	assert.ok(parsed.records.every(record => record.name !== "Ann Marie Weiss"));
+	assert.ok(parsed.records.every(record => !/NO NOMINATION|NO PETITION|WRITE.?IN/iu.test(record.name)));
+	assert.equal(parsed.records.find(record => record.name === "Cory BOOKER")!.party, "Democrat");
+	const petition = parsed.records.find(record => record.name === "Veronica FERNANDEZ")!;
+	assert.equal(petition.party, undefined);
+	assert.match(petition.ballotDesignation!, /Nomination by Petition/u);
+	assert.ok(parsed.records.filter(record => record.office === "Members of Board of Education").every(record => record.party === undefined));
+	assert.equal(parsed.records.find(record => record.name === "Local CITIZEN")!.party, "Non-Partisan");
+	assert.ok(parsed.records.filter(record => record.scope === "congressional").every(record => record.district === "7"));
+	assert.ok(parsed.records.filter(record => record.scope === "congressional").every(record => record.office.endsWith(" - District 7")));
+	assert.equal(first.snapshot.retrievedAt, "2030-10-01T00:00:00.000Z");
+});
+
+test("Union candidate snapshots hold incomplete, repeated, conflicting and altered sample evidence", () => {
+	const samples = candidateSamples();
+	assert.throws(() => buildUnionCandidateSnapshot(catalog, samples.slice(1)));
+	assert.throws(() => buildUnionCandidateSnapshot(catalog, [samples[0]!, ...samples.slice(0, -1)]));
+	for (const mutate of [
+		(sample: typeof samples[number]) => { sample.sha256 = "invalid"; },
+		(sample: typeof samples[number]) => { sample.document = { ...sample.document, url: "https://elsewhere.example/ballot.pdf" }; },
+		(sample: typeof samples[number]) => { sample.cells.push(sample.cells[0]!); },
+		(sample: typeof samples[number]) => { sample.cells.find(cell => cell.position === "1A")!.printedPartyOrColumn = "Unreviewed"; },
+		(sample: typeof samples[number]) => { sample.cells.find(cell => cell.position === "2A")!.congressionalDistrict = null; },
+		(sample: typeof samples[number]) => { sample.cells.find(cell => cell.position === "1A")!.printedSelections = ["2 Year Term - Vote for One"]; },
+	]) {
+		const changed = structuredClone(samples);
+		mutate(changed[1]!);
+		assert.throws(() => buildUnionCandidateSnapshot(catalog, changed));
+	}
+});
+
+test("Union candidate CLI preparation emits replayable import data with separate review and unchanged capture clocks", async () => {
+	const root = await mkdtemp(join(tmpdir(), "union-candidate-snapshot-"));
+	try {
+		const collectionPath = join(root, "collect.json");
+		await writeFile(collectionPath, JSON.stringify({ schemaVersion: 1, type: "union-sample-ballot-collection", outputRoot: join(root, "intakes"), forms: catalog.documents.map(source => source.form), accessReview: review, catalogSha256: catalog.sha256 }));
+		const collect: typeof collectUnionSampleBatch = async (forms, access, expected, options) => collectUnionSampleBatch(forms, access, expected, { ...network().options, onCapture: options!.onCapture });
+		const intake = await collectUnionBallotEvidence(collectionPath, { collect });
+		const capturePath = join(intake.outputDirectory, "capture.json");
+		const original = await readFile(capturePath);
+		const path = join(root, "plan.json");
+		const plan = { schemaVersion: 1, type: "union-candidate-snapshot-preparation", ballotCaptures: [{ path: capturePath, sha256: hash(original) }], outputRoot: join(root, "prepared") };
+		await writeFile(path, JSON.stringify(plan));
+		const options = { now: () => Date.parse("2030-10-02T00:00:00Z"), extract: async (body: Buffer, format: "layout" | "bbox-layout") => {
+			const form = Number(body.toString("utf8").split("-").at(-1));
+			const input = contextDocument(form);
+			return format === "layout" ? input.layout : input.bbox;
+		} };
+		const first = await prepareUnionCandidateSnapshot(path, options);
+		const repeated = await prepareUnionCandidateSnapshot(path, options);
+		assert.equal(repeated.sha256, first.sha256);
+		for (const name of [`${first.sourceId}.json`, "source.json", "candidate-evidence.csv", "review.json"]) assert.deepEqual(await readFile(join(first.outputDirectory, name)), await readFile(join(repeated.outputDirectory, name)));
+		const report = JSON.parse(await readFile(join(first.outputDirectory, "review.json"), "utf8"));
+		assert.equal(report.publisherRequests, 0);
+		assert.equal(report.identitiesMergedWithEarlierLists, false);
+		for (const key of ["qualificationVerified", "voterApplicabilityVerified", "imported", "publicationApproved", "automaticImportApproved"]) assert.equal(report[key], false);
+		assert.equal(report.evidence.length, first.sourceOccurrences);
+		assert.deepEqual(await readFile(capturePath), original);
+		await writeFile(path, JSON.stringify({ ...plan, ballotCaptures: [{ path: capturePath, sha256: "0".repeat(64) }] }));
+		await assert.rejects(prepareUnionCandidateSnapshot(path, options));
+	}
+	finally { await rm(root, { recursive: true, force: true }); }
+});
 
 function reference(name: string, position: string, municipality: string, kind: "general" | "school" = "school") {
 	return { stateCode: "NJ", publicationCounty: "Union County", kind, electionDate: edition.electionDate, page: 1, name, position, office: kind === "school" ? "School Board" : "United States Senator", jurisdictionLabel: municipality === "UNION COUNTY" ? municipality : `TOWNSHIP OF ${municipality.toUpperCase()}`, partyCode: kind === "school" ? "" : "Dem", termLabel: "3 Yrs", sourceAsOfDate: "2030-08-12", sourceUrl: `${unionCandidateOrigin}/wp-content/uploads/2030/08/SCHOOL.pdf`, sourceSha256: "a".repeat(64), capturedAt: "2030-09-30T00:00:00.000Z" };

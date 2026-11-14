@@ -18,8 +18,10 @@ import { oklahomaSource } from "./state-ballot-oklahoma.js";
 import { orangeSource } from "./state-ballot-orange-discovery.js";
 import { pimaSource } from "./state-ballot-pima-collection.js";
 import { stateBallotSources } from "./state-ballot-sources.js";
+import { unionSampleSource } from "./state-ballot-union-source.js";
 
 export const additionalStateBallotSources: readonly StateBallotSource[] = [
+	unionSampleSource(),
 	fultonMunicipalSource(),
 	fairbanksSource(),
 	juneauSource(),

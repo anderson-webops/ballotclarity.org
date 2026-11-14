@@ -3,7 +3,8 @@ import { Buffer } from "node:buffer";
 import { createHash, randomUUID } from "node:crypto";
 import { link, lstat, mkdir, open, readdir, realpath, rename, unlink } from "node:fs/promises";
 import { join } from "node:path";
-import { fultonCalendarPublication, readFultonCalendarCapture } from "./fulton-election-calendar.js";
+import { fultonCalendarPublication } from "./fulton-election-calendar-publication.js";
+import { readFultonCalendarCapture } from "./fulton-election-calendar.js";
 import { withStateBallotAutomationLock } from "./state-ballot-automation-lock.js";
 import { assertExternalStateDataDirectory, readBoundedStateDataBytes } from "./state-ballot-storage.js";
 

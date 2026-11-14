@@ -3,13 +3,13 @@ import type { OpenStatesProfileMember } from "./openstates-profile-evidence.js";
 import type { AdminOperationDataset, PublicElectionReference, StateRecordScope } from "./types/civic.js";
 import { Buffer } from "node:buffer";
 import { createHash, randomUUID } from "node:crypto";
-import { mkdir, open, realpath, rename, unlink } from "node:fs/promises";
+import { lstat, mkdir, open, realpath, rename, unlink } from "node:fs/promises";
 import { join } from "node:path";
 import process from "node:process";
 import { configuredElectionReferenceSources } from "./louisiana-parish-reference-catalog.js";
 import { openStatesProfileLinks, openStatesProfileRecordId, validateOpenStatesProfileMember } from "./openstates-profile-evidence.js";
 import { normalizePublicHref } from "./public-href.js";
-import { assertExternalStateDataDirectory, readBoundedStateData } from "./state-ballot-storage.js";
+import { assertExternalStateDataDirectory, readBoundedStateDataBytes } from "./state-ballot-storage.js";
 import { containsControlCharacters } from "./text-validation.js";
 
 interface ElectionReferenceRecord {
@@ -38,9 +38,21 @@ export interface ElectionReferenceSnapshot {
 
 export interface ElectionReferenceRepository {
 	getSources?: (stateCode?: string) => Promise<readonly ElectionReferenceSource[]>;
+	getElections?: (stateCode: string) => Promise<string[]>;
 	inspectSources?: () => Promise<AdminOperationDataset[]>;
-	getSnapshot: (stateCode: string) => Promise<ElectionReferenceSnapshot | null>;
-	getSnapshots?: (stateCode: string) => Promise<ElectionReferenceSnapshot[]>;
+	getSnapshot: (stateCode: string, selection?: ElectionReferenceSelection) => Promise<ElectionReferenceSnapshot | null>;
+	getSnapshots?: (stateCode: string, selection?: ElectionReferenceSelection) => Promise<ElectionReferenceSnapshot[]>;
+}
+
+export interface ElectionReferenceSelection {
+	sourceId?: string;
+	electionDate?: string;
+}
+
+export function parseElectionReferenceSelection(query: Record<string, unknown>): ElectionReferenceSelection {
+	if (query.source !== undefined && (typeof query.source !== "string" || !/^[a-z0-9][a-z0-9-]{0,100}$/u.test(query.source))) throw new Error("The selected information source is invalid.");
+	if (query.electionDate !== undefined && (typeof query.electionDate !== "string" || !/^20\d{2}-\d{2}-\d{2}$/u.test(query.electionDate) || !Number.isFinite(Date.parse(query.electionDate)) || new Date(query.electionDate).toISOString().slice(0, 10) !== query.electionDate)) throw new Error("The selected information election is invalid.");
+	return { ...(query.source === undefined ? {} : { sourceId: query.source as string }), ...(query.electionDate === undefined ? {} : { electionDate: query.electionDate as string }) };
 }
 
 const maximumBytes = 12 * 1024 * 1024;
@@ -111,7 +123,12 @@ export function createElectionReferenceStorage(directory: string) {
 	return {
 		async read(source: ElectionReferenceSource, now = Date.now()) {
 			try {
-				const envelope = JSON.parse(await readBoundedStateData(await location(source, false)));
+				const path = await location(source, false);
+				const metadata = await lstat(path);
+				if (!metadata.isFile() || metadata.size < 1 || metadata.size > maximumBytes) throw new Error("Stored election references must be a regular file within their size limit.");
+				const body = await readBoundedStateDataBytes(path, metadata.size);
+				if (body.length !== metadata.size) throw new Error("Stored election reference bytes changed during reading.");
+				const envelope = JSON.parse(body.toString("utf8"));
 				if (!envelope || Array.isArray(envelope) || typeof envelope !== "object" || Object.keys(envelope).sort().join(",") !== "snapshot,sourceConfigurationSha256" || envelope.sourceConfigurationSha256 !== digest(JSON.stringify(source)) || typeof envelope.snapshot !== "string") throw new Error("Stored election references do not match their configured collection.");
 				return parseElectionReferenceSnapshot(source, envelope.snapshot, now);
 			}
@@ -147,8 +164,10 @@ export function createElectionReferenceStorage(directory: string) {
 	};
 }
 
-export function selectElectionReferenceSources(sources: readonly ElectionReferenceSource[], stateCode: string, now = Date.now()) {
-	const active = sources.filter(source => source.stateCode === stateCode.toUpperCase() && now < Date.parse(`${source.electionDate}T00:00:00Z`) + 2 * 24 * 60 * 60 * 1000);
+export function selectElectionReferenceSources(sources: readonly ElectionReferenceSource[], stateCode: string, now = Date.now(), selection: ElectionReferenceSelection = {}) {
+	const matching = sources.filter(source => source.stateCode === stateCode.toUpperCase());
+	if (selection.sourceId || selection.electionDate) return matching.filter(source => (!selection.sourceId || source.id === selection.sourceId) && (!selection.electionDate || source.electionDate === selection.electionDate));
+	const active = matching.filter(source => now < Date.parse(`${source.electionDate}T00:00:00Z`) + 2 * 24 * 60 * 60 * 1000);
 	const electionDate = active.map(source => source.electionDate).sort()[0];
 	return active.filter(source => source.electionDate === electionDate);
 }
@@ -158,10 +177,10 @@ export function createElectionReferenceRepository(options: { dataDirectory?: str
 	const storage = directory ? createElectionReferenceStorage(directory) : null;
 	const now = options.now ?? Date.now;
 	const getSources = async (stateCode?: string) => options.sources ?? configuredElectionReferenceSources(options.catalogPath, stateCode);
-	async function getSnapshots(stateCode: string) {
+	async function getSnapshots(stateCode: string, selection: ElectionReferenceSelection = {}) {
 		if (!storage) return [];
 		const captureTime = now();
-		const active = selectElectionReferenceSources(await getSources(stateCode), stateCode, captureTime);
+		const active = selectElectionReferenceSources(await getSources(stateCode), stateCode, captureTime, selection);
 		const snapshots: ElectionReferenceSnapshot[] = [];
 		let failed = false;
 		for (const source of active) {
@@ -179,6 +198,26 @@ export function createElectionReferenceRepository(options: { dataDirectory?: str
 	return {
 		getSources,
 		getSnapshots,
+		async getElections(stateCode) {
+			if (!storage) return [];
+			const sources = (await getSources(stateCode)).filter(source => source.stateCode === stateCode.toUpperCase());
+			const dates = [...new Set(sources.map(source => source.electionDate))].sort().reverse();
+			const available: string[] = [];
+			let failed = false;
+			for (const date of dates) {
+				for (const source of sources.filter(source => source.electionDate === date)) {
+					try {
+						if (await storage.read(source, now())) {
+							available.push(date);
+							break;
+						}
+					}
+					catch { failed = true; }
+				}
+			}
+			if (failed && !available.length) throw new Error("Election reference catalogs are unavailable.");
+			return available;
+		},
 		async inspectSources() {
 			const sources = await getSources();
 			return Promise.all(sources.map(async (source): Promise<AdminOperationDataset> => {
@@ -198,8 +237,8 @@ export function createElectionReferenceRepository(options: { dataDirectory?: str
 				return item;
 			}));
 		},
-		async getSnapshot(stateCode) {
-			return (await getSnapshots(stateCode))[0] ?? null;
+		async getSnapshot(stateCode, selection) {
+			return (await getSnapshots(stateCode, selection))[0] ?? null;
 		},
 	};
 }

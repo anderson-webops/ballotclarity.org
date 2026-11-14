@@ -193,7 +193,7 @@ test("absent optional service data does not create a retry warning, while missin
 	registerElectionReferenceRoutes(app, {
 		async getSnapshot() { return available[0] ?? null; },
 		async getSnapshots() { return available; },
-	});
+	}, undefined, undefined, () => now);
 	const server = app.listen(0, "127.0.0.1");
 	context.after(() => new Promise<void>(resolve => server.close(() => resolve())));
 	await new Promise<void>(resolve => server.once("listening", resolve));

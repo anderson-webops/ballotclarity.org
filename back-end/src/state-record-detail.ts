@@ -42,7 +42,8 @@ export function registerStateRecordDetailRoutes(app: Express, repository: StateB
 				references: [],
 			};
 			try {
-				const retained = references?.getSnapshots ? await references.getSnapshots(stateCode) : references ? [await references.getSnapshot(stateCode)].filter(item => item !== null) : [];
+				const selection = sourceId === undefined ? undefined : { electionDate: selected.electionDate };
+				const retained = references?.getSnapshots ? await references.getSnapshots(stateCode, selection) : references ? [await references.getSnapshot(stateCode, selection)].filter(item => item !== null) : [];
 				payload.references = matchingCandidateReferences(snapshot, record, retained, await references?.getSources?.(stateCode));
 			}
 			catch { payload.referencesUnavailable = true; }

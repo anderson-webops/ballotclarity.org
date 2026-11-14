@@ -22,7 +22,7 @@ const { data, error, pending, refresh } = await useAsyncData(
 		if (isReference.value) {
 			if (!search.value.trim()) return null;
 			const result = await findRecordDetail<PublicElectionReference, ElectionReferencesResponse>(
-				offset => api(`/election-references/${stateCode.value}`, { query: { q: search.value, scope: "all", offset, limit: 100 } }),
+				offset => api(`/election-references/${stateCode.value}`, { query: { source: sourceId.value, q: search.value, scope: "all", offset, limit: 100 } }),
 				record => record.id === recordId.value && (!sourceId.value || record.source.collectionId === sourceId.value)
 			);
 			return result ? { reference: result.record, official: null, source: null, electionDate: result.page.electionDate, references: [], referencesUnavailable: false } : null;

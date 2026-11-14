@@ -357,7 +357,7 @@ test("public reference routes remain available independently of official candida
 		async getSnapshot(code) {
 			return code === "LA" ? snapshot : null;
 		},
-	});
+	}, undefined, undefined, () => Date.parse(retrievedAt));
 	const server = app.listen(0, "127.0.0.1");
 	context.after(() => new Promise<void>(resolve => server.close(() => resolve())));
 	await once(server, "listening");

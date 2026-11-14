@@ -111,7 +111,11 @@ test("the actual parish reference route, detail data and search honor current-el
 		const body = await response.json();
 		assert.equal(body.available, instant < cutoff);
 		assert.equal(body.records.length, instant < cutoff ? 2 : 0);
+		const historical = await fetch(`${url}&source=${source.id}`);
+		assert.equal(historical.status, 200);
+		assert.equal((await historical.json()).records.length, 2);
 	}
+	assert.deepEqual((await (await fetch(`${url.split("?")[0]}/catalog`)).json()).elections, [electionDate]);
 	clock = cutoff - 1;
 	const search = await searchRetainedRecords({ query: "Caddo", stateCode: "LA", candidates: null, references: repository });
 	assert.equal(search.incomplete, false);

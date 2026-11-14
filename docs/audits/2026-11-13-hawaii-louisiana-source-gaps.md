@@ -1,5 +1,32 @@
 # Hawaii And Louisiana Independent Source Review
 
+## November 14 Additional Independent Hawaii Leads
+
+The Campaign Spending Commission's [statement-of-intents catalog](https://catalog.data.gov/dataset/statement-of-intents-filed-by-hawaii-state-and-county-candidates)
+offers an attributed public dataset. Its Hawaii open-data robots policy excludes
+`/api/`; the ordinary, published dataset page returned HTTP 403 with a required
+verification challenge. Neither the API nor workbook was requested. Federal
+catalog search metadata and its dated descriptions disagree about freshness;
+they establish a lead rather than a current candidate roster. Financial intent
+filings remain separate from ballot qualification.
+
+The Legislature's ordinary robots request returned HTTP 403. No legislator
+directory or biography was requested there. The independently published
+[Legislative Reference Bureau index](https://lrb.hawaii.gov/par/) has an allowing
+robots policy, but its footer adopts the same [statewide terms](https://portal.ehawaii.gov/page/terms-of-use/)
+that restrict automated access. Its linked current-legislature page and PDFs were
+left unrequested after policy review. Existing statewide holds remain intact.
+
+[Civil Beat's terms](https://www.civilbeat.org/civil-beat-terms-service/) expressly
+restrict scraping and AI use without permission. Candidate questionnaires were
+not requested. Publisher permission or a separately permitted independent source
+is needed for these leads. No new Hawaii candidates or inferred nominees/results
+are created from indexed search snippets or copies of held publishers' data.
+
+Already retained permitted reference material can remain reachable through
+[explicit historical election selection](../election-reference-history.md), while
+default/current and personal selection continue to honor expiry.
+
 Reviewed November 13, 2026, using ordinary HTTPS acquisition and current bodies.
 
 ## Hawaii

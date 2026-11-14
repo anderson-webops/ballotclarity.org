@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { isSampleBallotDocument, recordPublications, recordSourceNotice } from "~/utils/record-publications";
+import { readReferenceElection, referenceElectionControl, referenceElectionQuery } from "~/utils/reference-election";
 import { readRecoverableStateRecordQuery, stateRecordSourceMismatch, stateRecordSourceSelectionRequired } from "~/utils/state-record-query";
 import { readStateRecordQuery, stateRecordScopes, stateRecordSummaryParts } from "~/utils/state-records";
 
@@ -8,17 +9,22 @@ const civicStore = useCivicStore();
 const { formatDate } = useFormatters();
 const { data: stateData, error: stateError, refresh: refreshStates } = await useStateRecordStates();
 const filters = computed(() => readRecoverableStateRecordQuery(route.query, stateData.value?.states ?? [], civicStore.isHydrated ? civicStore.selectedLocation?.state : undefined));
-const { data, error, pending, refresh } = await useStateRecords(filters);
+const referenceElection = computed(() => readReferenceElection(route.query.referenceElection, route.query.source));
+const candidateFilters = computed(() => ({ ...filters.value, stateCode: referenceElection.value === undefined ? filters.value.stateCode : "" }));
+const { data, error, pending, refresh } = await useStateRecords(candidateFilters);
 const sourceMismatch = computed(() => stateRecordSourceMismatch(route.query.source, data.value));
 const sampleBallot = computed(() => sourceMismatch.value ? undefined : recordPublications(data.value?.source).find(isSampleBallotDocument));
 const notice = computed(() => recordSourceNotice(data.value?.source));
-const referenceFilters = computed(() => ({ stateCode: filters.value.stateCode, search: filters.value.search, scope: filters.value.scope, offset: readStateRecordQuery({ offset: route.query.referenceOffset }, []).offset }));
+const sourceElection = computed(() => stateData.value?.states.find(state => state.stateCode === filters.value.stateCode)?.sources?.find(source => source.id === filters.value.sourceId)?.electionDate);
+const referenceFilters = computed(() => ({ stateCode: filters.value.stateCode, search: filters.value.search, scope: filters.value.scope, electionDate: referenceElection.value ?? sourceElection.value, offset: readStateRecordQuery({ offset: route.query.referenceOffset }, []).offset }));
+const { data: referenceCatalog, error: catalogError, refresh: refreshCatalog } = await useElectionReferenceCatalog(() => filters.value.stateCode);
 const { data: referenceData, error: referenceError, pending: referencePending, refresh: refreshReferences } = await useElectionReferences(referenceFilters);
 const selectedState = ref(filters.value.stateCode);
-const selectedSource = ref(filters.value.sourceId ?? "");
+const selectedSource = ref(referenceElectionControl(filters.value.sourceId, referenceElection.value));
 const selectedStateData = computed(() => stateData.value?.states.find(state => state.stateCode === selectedState.value));
 const sourceOptions = computed(() => selectedStateData.value?.sources ?? []);
-const showSourceSelection = computed(() => stateRecordSourceSelectionRequired(selectedStateData.value));
+const referenceDates = computed(() => referenceCatalog.value?.stateCode === selectedState.value ? referenceCatalog.value.elections : []);
+const showSourceSelection = computed(() => stateRecordSourceSelectionRequired(selectedStateData.value) || Boolean(referenceDates.value.length));
 const unavailableSource = computed(() => Boolean(sourceOptions.value.length && filters.value.sourceId && !sourceOptions.value.some(source => source.id === filters.value.sourceId)));
 const searchInput = ref(filters.value.search);
 const selectedScope = ref(filters.value.scope);
@@ -26,9 +32,9 @@ const includeInactive = ref(filters.value.status === "all");
 const invalidState = computed(() => typeof route.query.state === "string" && Boolean(route.query.state) && !filters.value.stateCode);
 const recordRange = computed(() => data.value?.matched ? `${data.value.offset + 1}–${Math.min(data.value.offset + data.value.records.length, data.value.matched)} of ${data.value.matched}` : "0 records");
 
-watch(filters, (value) => {
+watch([filters, referenceElection], ([value]) => {
 	selectedState.value = value.stateCode;
-	selectedSource.value = value.sourceId ?? "";
+	selectedSource.value = referenceElectionControl(value.sourceId, referenceElection.value);
 	searchInput.value = value.search;
 	selectedScope.value = value.scope;
 	includeInactive.value = value.status === "all";
@@ -40,7 +46,7 @@ async function applyFilters(offset = 0) {
 		query: {
 			type: "candidate",
 			state: selectedState.value,
-			...(selectedSource.value ? { source: selectedSource.value } : {}),
+			...referenceElectionQuery(selectedSource.value),
 			...(searchInput.value.trim() ? { q: searchInput.value.trim() } : {}),
 			...(selectedScope.value !== "all" ? { scope: selectedScope.value } : {}),
 			...(includeInactive.value ? { status: "all" } : {}),
@@ -57,6 +63,11 @@ async function changeState() {
 async function retryRecords() {
 	await refreshStates();
 	await refresh();
+}
+
+async function retryReferences() {
+	await refreshCatalog();
+	await refreshReferences();
 }
 </script>
 
@@ -95,6 +106,11 @@ async function retryRecords() {
 					<option v-for="source in sourceOptions" :key="source.id" :value="source.id">
 						{{ formatDate(source.electionDate) }} · {{ source.label }}
 					</option>
+					<optgroup v-if="referenceDates.length" label="Profiles">
+						<option v-for="date in referenceDates" :key="date" :value="referenceElectionControl(undefined, date)">
+							{{ formatDate(date) }}
+						</option>
+					</optgroup>
 				</select>
 			</div>
 			<div class="sm:col-span-2">
@@ -106,7 +122,7 @@ async function retryRecords() {
 					</button>
 				</div>
 			</div>
-			<label v-if="data?.inactive || includeInactive" class="text-sm text-app-ink flex gap-2 items-center dark:text-app-text-dark sm:col-span-2">
+			<label v-if="referenceElection === undefined && (data?.inactive || includeInactive)" class="text-sm text-app-ink flex gap-2 items-center dark:text-app-text-dark sm:col-span-2">
 				<input v-model="includeInactive" type="checkbox" class="h-4 w-4 focus-ring" @change="applyFilters()">
 				Include inactive records
 			</label>
@@ -142,10 +158,10 @@ async function retryRecords() {
 				</NuxtLink>
 			</div>
 			<UpdatedAt v-if="data.source.retrievedAt" :value="data.source.retrievedAt" label="Ballot data updated on" footer />
-			<p v-if="data.awaitingRecords && !referenceData?.available" class="text-sm text-app-muted dark:text-app-muted-dark" role="status">
+			<p v-if="data.awaitingRecords && !referenceData?.available && !referenceDates.length" class="text-sm text-app-muted dark:text-app-muted-dark" role="status">
 				No records yet.
 			</p>
-			<p v-else-if="!data.available && !referenceData?.available" class="text-sm text-app-muted dark:text-app-muted-dark" role="status">
+			<p v-else-if="!data.available && !referenceData?.available && !referenceDates.length" class="text-sm text-app-muted dark:text-app-muted-dark" role="status">
 				Official candidate records are unavailable for this {{ data.source.id ? "source" : "state" }}.
 			</p>
 			<template v-else-if="data.available">
@@ -181,6 +197,6 @@ async function retryRecords() {
 				</nav>
 			</template>
 		</template>
-		<ElectionReferences v-if="filters.stateCode" :state-code="filters.stateCode" :data="referenceData" :error="Boolean(referenceError)" :pending="referencePending" @retry="refreshReferences()" />
+		<ElectionReferences v-if="filters.stateCode" :state-code="filters.stateCode" :data="referenceData" :error="Boolean(referenceError || catalogError && !referenceData?.available)" :pending="referencePending" @retry="retryReferences()" />
 	</section>
 </template>

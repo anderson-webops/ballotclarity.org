@@ -45,6 +45,36 @@ The JSON object requires `schemaVersion: 1`,
 
 ## Outputs
 
+### Native-question reconciliation
+
+An optional `questionSnapshot` pins a separately retained candidate/question
+snapshot and explicitly selects the prepared elections to compare:
+
+```json
+{
+  "path": "/external-data/native-snapshot.json",
+  "sha256": "<exact native snapshot SHA-256>",
+  "sourceId": "<enabled source or configured future-cycle source>",
+  "electionSlugs": ["<prepared election slug>"]
+}
+```
+
+The existing source/state allowlists and configured cycle catalogs resolve that
+source. The snapshot retains its original capture clocks and exact election.
+Complete official wording is compared with every selected measure's
+`ballotSummary`, normalizing whitespace only. Choice order/labels, advisory
+effect, root/contest copies and question-document provenance must agree. Duplicate
+wording, duplicate bindings, omitted questions and unrecognized measures require
+review and leave the output directory uncreated. Notices and nonbinary questions
+retain their own contracts rather than becoming binary measures.
+
+Successful preparation adds `-question-reconciliation.json` and `.csv` outputs,
+included in the normal manifest and checksums. These retain original source
+hashes, clocks, printed pages, choices and declared jurisdiction, including
+county exclusions. They verify wording coverage, with scope verification,
+publication, import and voter applicability still unapproved. Existing plans
+without `questionSnapshot` retain their original output format.
+
 ### Partial-county reference areas
 
 A question limited to a county outside named municipalities uses

@@ -27,6 +27,7 @@ const requiredRuntimeFiles = [
 	"collect-louisiana-parish-samples.js",
 	"prepare-state-measure-guides.js",
 	"state-measure-guides.js",
+	"state-measure-question-reconciliation.js",
 	"election-document-collection.js",
 	"election-document-sources.js",
 	"congressional-biographies.js",

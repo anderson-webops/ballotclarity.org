@@ -38,6 +38,7 @@
 				"back-end/dist/collect-louisiana-parish-samples.js",
 				"back-end/dist/prepare-state-measure-guides.js",
 				"back-end/dist/state-measure-guides.js",
+				"back-end/dist/state-measure-question-reconciliation.js",
 				"back-end/dist/election-document-collection.js",
 				"back-end/dist/election-document-sources.js",
 				"back-end/dist/congressional-biographies.js",

@@ -9,6 +9,8 @@ import test from "node:test";
 import { fileURLToPath } from "node:url";
 import { buildSeedCoverageSnapshot, coverageJurisdictionSummaries, parseCoverageSnapshot, readCoverageSnapshotMetadata } from "../src/coverage-repository.js";
 import { buildFultonOfficialLogisticsOnlySnapshot } from "../src/fulton-reviewed-coverage.js";
+import { fultonQuestionId } from "../src/state-ballot-fulton-questions.js";
+import { configuredStateBallotSources } from "../src/state-ballot-registry.js";
 import { prepareStateMeasureGuideFiles } from "../src/state-measure-guides.js";
 
 const now = Date.parse("2026-10-23T10:00:00Z");
@@ -71,6 +73,46 @@ function countyAreaFixture() {
 	workspace.save();
 	return { ...workspace, jurisdiction };
 }
+
+test("optional native-question binding pins complete wording and refuses drift before creating output", async () => {
+	const workspace = fixture();
+	try {
+		const source = configuredStateBallotSources.find(source => source.id === "ga-fulton-2026")!;
+		workspace.draft.stateCode = "GA";
+		workspace.plan.inputs[0]!.stateCode = "GA";
+		workspace.draft.measures[0]!.location = "Georgia";
+		workspace.draft.measures[0]!.ballotSummary = "Shall a stated approval threshold be changed?";
+		const question = { audience: "Fulton County consolidated sample ballot", title: "Synthetic approval threshold", officialText: workspace.draft.measures[0]!.ballotSummary, choices: ["Yes", "No"], pages: [1], explicitlyAdvisory: false, voterApplicabilityVerified: false };
+		const documents = source.documentUrls!.map((url, index) => ({ url, sha256: hash(`Synthetic document ${index}`), retrievedAt: "2026-10-22T12:00:00.000Z", includedRecordCount: index ? 0 : 1 }));
+		const snapshot = { schemaVersion: 1, sourceId: source.id, stateCode: "GA", electionDate: source.electionDate, sourceUrl: source.pageUrl, retrievalPolicy: "automatic", retrievedAt: documents[0]!.retrievedAt, sourceSha256: hash(JSON.stringify(documents.map(({ url, sha256 }) => ({ url, sha256 })))), recordCount: 1, records: [{ id: "1".repeat(24), name: "Synthetic Candidate", office: "Governor", district: "", scope: "statewide", status: "listed" }], documents, ballotQuestions: [{ ...question, id: fultonQuestionId(source, question as Parameters<typeof fultonQuestionId>[1]) }] };
+		const snapshotPath = join(workspace.directory, "native.json");
+		const body = JSON.stringify(snapshot);
+		writeFileSync(snapshotPath, body);
+		const binding = { path: snapshotPath, sha256: hash(body), sourceId: source.id, electionSlugs: ["ga-statewide-measures-2026-11-03"] };
+		Object.assign(workspace.plan, { questionSnapshot: binding });
+		workspace.save();
+		await prepareStateMeasureGuideFiles(workspace.planPath, now);
+		const report = workspace.read("question-reconciliation");
+		assert.equal(report.wordingReconciled, true);
+		assert.equal(report.nativeSnapshotSha256, hash(body));
+		assert.equal(report.publicationApproved, false);
+		assert.equal(report.scopeVerificationComplete, false);
+		assert.match(readFileSync(join(workspace.plan.outputDirectory, "measure-review-question-reconciliation.csv"), "utf8"), /Synthetic approval threshold|Shall a stated approval threshold/u);
+		assert.ok(workspace.read("manifest").files.some((file: { name: string }) => file.name === "measure-review-question-reconciliation.json"));
+		const original = readFileSync(join(workspace.plan.outputDirectory, "measure-review-guides.json"));
+		workspace.plan.outputDirectory = join(workspace.directory, "changed-output");
+		workspace.draft.measures[0]!.ballotSummary = "Shall a different threshold be changed?";
+		workspace.save();
+		await assert.rejects(prepareStateMeasureGuideFiles(workspace.planPath, now), /reconciliation requires review/u);
+		assert.equal(existsSync(workspace.plan.outputDirectory), false);
+		assert.deepEqual(readFileSync(join(workspace.directory, "prepared", "measure-review-guides.json")), original);
+		binding.sha256 = "0".repeat(64);
+		workspace.save();
+		await assert.rejects(prepareStateMeasureGuideFiles(workspace.planPath, now), /digest does not match/u);
+		assert.equal(existsSync(workspace.plan.outputDirectory), false);
+	}
+	finally { workspace.dispose(); }
+});
 
 test("county-area preparation preserves exclusions, reference-only scope and original clocks across cycles", async () => {
 	for (const electionDate of ["2026-11-03", "2028-11-07"]) {

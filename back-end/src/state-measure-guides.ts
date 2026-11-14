@@ -4,20 +4,24 @@ import { Buffer } from "node:buffer";
 import { createHash } from "node:crypto";
 import { mkdir, realpath, writeFile } from "node:fs/promises";
 import { basename, dirname, isAbsolute, join } from "node:path";
+import process from "node:process";
 import { isDeepStrictEqual } from "node:util";
 import { countyAreaIdentity, countyAreaLabel, isCountyAreaScope } from "./county-area-scope.js";
 import { buildEmptyCoverageSnapshot, coverageElections, coverageJurisdictions, coverageSnapshotMetadataPath, isSupportedMeasureBallotOptions, isSupportedMeasureDecisionEffect, parseCoverageSnapshot } from "./coverage-repository.js";
 import { validateCoverageSnapshotForPublication } from "./coverage-snapshot-validation.js";
 import { buildDefaultGuidePackageSeed, buildGuidePackageRecord } from "./guide-packages.js";
 import { getOfficialToolsForState } from "./official-election-tools.js";
+import { resolveStateBallotConfiguration } from "./state-ballot-repository.js";
+import { parseBundledStateSnapshot } from "./state-ballot-snapshot.js";
 import { assertExternalStateDataDirectory, readBoundedStateData, readBoundedStateDataBytes } from "./state-ballot-storage.js";
+import { reconcileStateMeasureQuestions } from "./state-measure-question-reconciliation.js";
 import { usStates } from "./us-states.js";
 
 interface PinnedFile { path: string; sha256: string }
 interface LocalJurisdiction { jurisdictionType: "county" | "county-area" | "city" | "town" | "township" | "village" | "school-district" | "intermediate-school-district" | "special-district" | "independent-city"; name: string; slug: string; countyAreaScope?: CountyAreaScope }
 interface DocumentInput extends PinnedFile { key: string; url: string; capturedAt: string }
 interface GuideInput extends PinnedFile { stateCode: string; electionDate: string; jurisdiction?: LocalJurisdiction; summaryAsExplanation: boolean; documents: DocumentInput[] }
-interface PreparationPlan { schemaVersion: 1; type: "state-measure-guide-preparation"; baseSnapshot: PinnedFile | null; inputs: GuideInput[]; outputDirectory: string; outputName: string; primaryAugmentation?: { electionSlug: string; jurisdictionSlug: string } }
+interface PreparationPlan { schemaVersion: 1; type: "state-measure-guide-preparation"; baseSnapshot: PinnedFile | null; inputs: GuideInput[]; outputDirectory: string; outputName: string; primaryAugmentation?: { electionSlug: string; jurisdictionSlug: string }; questionSnapshot?: PinnedFile & { sourceId: string; electionSlugs: string[] } }
 interface DraftDocument { url: string; sha256: string; capturedAt: string; publicationDate?: string | null; reviewedPages?: number[] }
 interface MeasureDraft { schemaVersion: 1; type: "state-measure-draft"; stateCode: string; electionDate: string; jurisdiction?: LocalJurisdiction; reviewedAt: string; publicationApproved: false; automaticImportApproved: false; measures: Measure[]; documents: Record<string, DraftDocument>; unresolvedFields?: unknown[]; unmappedQuestions?: unknown[] }
 
@@ -78,12 +82,19 @@ function electionScope(stateCode: string, date: string, jurisdictionType: string
 function parsePlan(value: unknown): PreparationPlan {
 	const keys = ["baseSnapshot", "inputs", "outputDirectory", "outputName", "schemaVersion", "type"];
 	if (record(value) && Object.hasOwn(value, "primaryAugmentation")) keys.push("primaryAugmentation");
+	if (record(value) && Object.hasOwn(value, "questionSnapshot")) keys.push("questionSnapshot");
 	if (!record(value) || Object.keys(value).sort().join(",") !== keys.sort().join(",") || value.schemaVersion !== 1 || value.type !== "state-measure-guide-preparation"
 		|| (value.baseSnapshot !== null && !pinned(value.baseSnapshot)) || !Array.isArray(value.inputs) || !value.inputs.length || value.inputs.length > 250
 		|| typeof value.outputDirectory !== "string" || !isAbsolute(value.outputDirectory) || typeof value.outputName !== "string" || !slugPattern.test(value.outputName)) {
 		throw new Error("Provide a valid state-measure guide preparation plan.");
 	}
 	const primaryAugmentation = value.primaryAugmentation;
+	const questionSnapshot = value.questionSnapshot;
+	if (Object.hasOwn(value, "questionSnapshot") && (!pinned(questionSnapshot) || !record(questionSnapshot) || Object.keys(questionSnapshot).sort().join(",") !== "electionSlugs,path,sha256,sourceId"
+		|| typeof questionSnapshot.sourceId !== "string" || !slugPattern.test(questionSnapshot.sourceId) || !Array.isArray(questionSnapshot.electionSlugs) || !questionSnapshot.electionSlugs.length || questionSnapshot.electionSlugs.length > 250
+		|| questionSnapshot.electionSlugs.some(slug => typeof slug !== "string" || !slugPattern.test(slug)) || new Set(questionSnapshot.electionSlugs).size !== questionSnapshot.electionSlugs.length)) {
+		throw new Error("Question reconciliation requires a pinned native snapshot, source and exact election selections.");
+	}
 	if (Object.hasOwn(value, "primaryAugmentation") && (value.baseSnapshot === null || value.inputs.length !== 1 || !record(primaryAugmentation)
 		|| Object.keys(primaryAugmentation).sort().join(",") !== "electionSlug,jurisdictionSlug"
 		|| !["electionSlug", "jurisdictionSlug"].every(key => typeof primaryAugmentation[key] === "string" && slugPattern.test(primaryAugmentation[key])))) {
@@ -310,6 +321,15 @@ export async function prepareStateMeasureGuideFiles(planPath: string, now = Date
 	else {
 		snapshot = parseCoverageSnapshot({ ...(base ?? buildEmptyCoverageSnapshot(updatedAt)), additionalGuides: [...(base?.additionalGuides ?? []), ...additions], updatedAt });
 	}
+	let questionReconciliation;
+	if (plan.questionSnapshot) {
+		const source = resolveStateBallotConfiguration(process.env, now).sources.find(item => item.id === plan.questionSnapshot!.sourceId);
+		if (!source) throw new Error("Question reconciliation requires an explicitly configured and enabled source.");
+		const native = parseBundledStateSnapshot(source, (await readPinned(plan.questionSnapshot)).toString("utf8"), source.retrievalPolicy === "manual-snapshot" ? "manual-snapshot" : "automatic");
+		if (!pastInstant(native.retrievedAt, now) || native.documents?.some(document => !pastInstant(document.retrievedAt, now))) throw new Error("Question reconciliation preserves original nonfuture capture clocks.");
+		questionReconciliation = reconcileStateMeasureQuestions(native, snapshot, plan.questionSnapshot.electionSlugs);
+		if (!questionReconciliation.wordingReconciled) throw new Error(`Measure/question reconciliation requires review: ${[...new Set(questionReconciliation.findings.map(finding => finding.code))].join(", ")}.`);
+	}
 	const repository = reviewRepository(snapshot);
 	const workflowIds = new Set(guides.map(guide => guide.election.slug));
 	const workflows = buildDefaultGuidePackageSeed(repository).filter(workflow => workflowIds.has(workflow.electionSlug)).map(workflow => plan.primaryAugmentation
@@ -340,6 +360,11 @@ export async function prepareStateMeasureGuideFiles(planPath: string, now = Date
 		{ name: `${prefix}-review.json`, body: `${JSON.stringify({ validation, guideDiagnostics: workflows.map(workflow => ({ electionSlug: workflow.electionSlug, ...buildGuidePackageRecord(workflow, repository, []).diagnostics })), holds, mappings, publicationApproved: false, automaticImportApproved: false }, null, 2)}\n` },
 		{ name: `${prefix}-provenance.csv`, body: `${[csvHeader, ...csvRows].map(row => row.map(csvCell).join(",")).join("\n")}\n` },
 	];
+	if (questionReconciliation) {
+		const result = { ...questionReconciliation, nativeSnapshotSha256: plan.questionSnapshot!.sha256, outputCoverageSha256: hash(`${JSON.stringify(snapshot, null, 2)}\n`) };
+		const rows = [["stateCode", "electionDate", "questionId", "measureSlug", "electionSlug", "jurisdictionSlug", "jurisdictionType", "jurisdictionName", "yesLabel", "noLabel", "pages", "sourceUrl", "documentSha256", "capturedAt", "normalizedTextSha256", "officialText"], ...result.matches.map(match => [result.stateCode, result.electionDate, match.questionId, match.measureSlug, match.electionSlug, match.jurisdictionSlug, match.jurisdictionType, match.jurisdictionName, match.choices[0] ?? "", match.choices[1] ?? "", match.pages.join(";"), match.sourceUrl, match.documentSha256 ?? "", match.originalCapturedAt ?? "", match.normalizedTextSha256, match.officialText])];
+		files.push({ name: `${prefix}-question-reconciliation.json`, body: `${JSON.stringify(result, null, 2)}\n` }, { name: `${prefix}-question-reconciliation.csv`, body: `${rows.map(row => row.map(csvCell).join(",")).join("\n")}\n` });
+	}
 	if (base) {
 		const name = `${prefix}-coverage.json`;
 		const body = `${JSON.stringify(snapshot, null, 2)}\n`;

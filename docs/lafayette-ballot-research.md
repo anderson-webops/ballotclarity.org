@@ -1,5 +1,8 @@
 # Lafayette ballot research preparation
 
+The [policy-bound collector](lafayette-guide-collection.md) follows actually
+offered future guides and prepares pinned local research inputs.
+
 The offline `back-end/dist/prepare-lafayette-ballot-research.js PLAN.json` command
 reconciles One Acadiana's dated native PDF with the government's independently
 published proposition questions. It produces `research.json`, `measures.csv`,

@@ -284,6 +284,15 @@ export interface StateRecordDetailResponse {
 	referencesUnavailable?: true;
 }
 
+export interface PublicBallotQuestionArea {
+	kind: "state" | "county" | "county-area" | "city";
+	stateCode: string;
+	name: string;
+	basis: "printed-question";
+	evidence: string;
+	excludedMunicipalities?: string[];
+}
+
 export interface PublicBallotQuestion {
 	id: string;
 	audience: string;
@@ -295,6 +304,7 @@ export interface PublicBallotQuestion {
 	sourceUrl?: string;
 	explicitlyAdvisory: boolean;
 	voterApplicabilityVerified: false;
+	publishedArea?: PublicBallotQuestionArea;
 }
 
 export interface StateQuestionsResponse {

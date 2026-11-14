@@ -363,6 +363,10 @@ export async function prepareStateMeasureGuideFiles(planPath: string, now = Date
 	if (questionReconciliation) {
 		const result = { ...questionReconciliation, nativeSnapshotSha256: plan.questionSnapshot!.sha256, outputCoverageSha256: hash(`${JSON.stringify(snapshot, null, 2)}\n`) };
 		const rows = [["stateCode", "electionDate", "questionId", "measureSlug", "electionSlug", "jurisdictionSlug", "jurisdictionType", "jurisdictionName", "yesLabel", "noLabel", "pages", "sourceUrl", "documentSha256", "capturedAt", "normalizedTextSha256", "officialText"], ...result.matches.map(match => [result.stateCode, result.electionDate, match.questionId, match.measureSlug, match.electionSlug, match.jurisdictionSlug, match.jurisdictionType, match.jurisdictionName, match.choices[0] ?? "", match.choices[1] ?? "", match.pages.join(";"), match.sourceUrl, match.documentSha256 ?? "", match.originalCapturedAt ?? "", match.normalizedTextSha256, match.officialText])];
+		if (result.matches.some(match => match.publishedArea)) {
+			rows[0]!.push("printedAreaKind", "printedArea", "excludedMunicipalities", "printedAreaEvidence");
+			for (const [index, match] of result.matches.entries()) rows[index + 1]!.push(match.publishedArea?.kind ?? "", match.publishedArea?.name ?? "", match.publishedArea?.excludedMunicipalities?.join("; ") ?? "", match.publishedArea?.evidence ?? "");
+		}
 		files.push({ name: `${prefix}-question-reconciliation.json`, body: `${JSON.stringify(result, null, 2)}\n` }, { name: `${prefix}-question-reconciliation.csv`, body: `${rows.map(row => row.map(csvCell).join(",")).join("\n")}\n` });
 	}
 	if (base) {

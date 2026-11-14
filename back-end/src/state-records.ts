@@ -7,6 +7,7 @@ import type { StateBallotSource } from "./state-ballot-sources.js";
 import type { PublicStateCandidateRecord, StateQuestionsResponse, StateRecordsResponse } from "./types/civic.js";
 import { johnsonBallotMapUrl, validateJohnsonStoredDocuments } from "./johnson-ballot-publications.js";
 import { johnsonSampleStyle } from "./johnson-ballot-questions.js";
+import { publishedBallotQuestionArea } from "./public-ballot-question-area.js";
 import { normalizePublicHref } from "./public-href.js";
 import { createPublicRequestThrottle } from "./public-request-throttle.js";
 import { validateBoulderCandidateUrl } from "./state-ballot-boulder.js";
@@ -330,7 +331,10 @@ export function registerStateRecordRoutes(app: Express, repository: StateBallotR
 			const payload: StateQuestionsResponse = {
 				available: Boolean(snapshot?.ballotQuestions?.length),
 				source: { stateCode, stateName: state[1], configured: true, id: source.id, label: source.label, url: source.pageUrl, electionDate: source.electionDate, retrievedAt: snapshot?.retrievedAt, sourceAsOfDate: snapshot?.sourceAsOfDate, ...(snapshot?.ballotQuestions?.length && snapshot.ballotQuestions.every(question => question.textKind === "notice") ? { questionKind: "notice" as const } : {}), documentLinks: stateRecordDocumentLinks(source, snapshot ?? undefined) },
-				questions: snapshot?.ballotQuestions?.filter(question => id === undefined || question.id === id) ?? [],
+				questions: snapshot?.ballotQuestions?.filter(question => id === undefined || question.id === id).map((question) => {
+					const publishedArea = publishedBallotQuestionArea(source, question);
+					return publishedArea ? { ...question, publishedArea } : question;
+				}) ?? [],
 			};
 			response.json(payload);
 		}

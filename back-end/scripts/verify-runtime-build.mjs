@@ -34,6 +34,7 @@ const requiredRuntimeFiles = [
 	"prepare-state-measure-guides.js",
 	"state-measure-guides.js",
 	"state-measure-question-reconciliation.js",
+	"public-ballot-question-area.js",
 	"election-document-collection.js",
 	"election-document-sources.js",
 	"congressional-biographies.js",

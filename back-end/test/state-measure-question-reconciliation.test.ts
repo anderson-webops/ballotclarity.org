@@ -39,6 +39,23 @@ test("question reconciliation retains source wording, scope and original clocks 
 	assert.equal(createHash("sha256").update(JSON.stringify(input)).digest("hex"), before);
 });
 
+test("question reconciliation keeps printed city evidence distinct from a county guide and personal eligibility", () => {
+	for (const date of ["2026-11-03", "2034-11-07"]) {
+		const input = fixture(date);
+		const text = "Shall the Act be approved which authorizes the City of Example Town, Georgia, to exercise redevelopment powers?";
+		Object.assign(input.native.ballotQuestions![0]!, { audience: "Fulton County consolidated sample ballot", title: "City of Example Town Redevelopment Powers", officialText: text });
+		input.measure.ballotSummary = text;
+		input.coverage.measures[0]!.ballotSummary = text;
+		const result = reconcileStateMeasureQuestions(input.native, input.coverage, input.slugs);
+		assert.equal(result.wordingReconciled, true);
+		assert.equal(result.matches[0]!.publishedArea!.name, "Example Town");
+		assert.equal(result.matches[0]!.jurisdictionName, "Fulton County");
+		assert.equal(result.matches[0]!.originalCapturedAt, input.native.documents![0]!.retrievedAt);
+		assert.equal(result.scopeVerificationComplete, false);
+		assert.equal(result.voterApplicabilityVerified, false);
+	}
+});
+
 test("question reconciliation tolerates whitespace while holding changed numbers and missing words", () => {
 	const input = fixture();
 	input.native.ballotQuestions![0]!.officialText = "Shall the tax\n\nbe renewed for five years?";

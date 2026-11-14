@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { StateQuestionsResponse } from "~/types/civic";
 import { ballotQuestionDocument } from "~/utils/ballot-question-document";
+import { ballotQuestionAreaLabel } from "~/utils/ballot-question-groups";
 import { ballotQuestionHeading } from "~/utils/ballot-question-heading";
 import { ballotQuestionParagraphs } from "~/utils/ballot-question-paragraphs";
 
@@ -48,8 +49,8 @@ usePageSeo(() => ({ title: heading.value.title, description: notice.value ? "Off
 				<p v-if="heading.reference" class="text-sm text-app-muted dark:text-app-muted-dark">
 					{{ heading.reference }}
 				</p>
-				<p class="text-app-muted dark:text-app-muted-dark">
-					{{ question.audience }}
+				<p class="text-app-ink dark:text-app-text-dark">
+					{{ ballotQuestionAreaLabel(question) ?? question.audience }}
 				</p>
 				<p v-if="data?.source.electionDate" class="text-sm text-app-muted dark:text-app-muted-dark">
 					Election: {{ formatDate(data.source.electionDate) }}

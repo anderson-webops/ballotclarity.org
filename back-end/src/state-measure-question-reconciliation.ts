@@ -2,6 +2,7 @@ import type { CoverageSnapshot } from "./coverage-repository.js";
 import type { StateBallotSnapshot } from "./state-ballot-repository.js";
 import { createHash } from "node:crypto";
 import { coverageElections, coverageJurisdictions } from "./coverage-repository.js";
+import { publishedBallotQuestionArea } from "./public-ballot-question-area.js";
 import { usStates } from "./us-states.js";
 
 const clean = (value: string) => value.replace(/\s+/gu, " ").trim();
@@ -49,7 +50,8 @@ export function reconcileStateMeasureQuestions(native: StateBallotSnapshot, cove
 					if (root.ballotSummary !== measure.ballotSummary || JSON.stringify(root.ballotOptions) !== JSON.stringify(measure.ballotOptions) || root.decisionEffect !== measure.decisionEffect || root.contestSlug !== measure.contestSlug)
 						findings.push({ code: "root-measure-copy-mismatch", measureSlug: measure.slug, questionId: question.id });
 				}
-				matches.push({ questionId: question.id, questionTitle: question.title, measureSlug: measure.slug, electionSlug: election.slug, jurisdictionSlug: jurisdiction.slug, jurisdictionType: jurisdiction.jurisdictionType, jurisdictionName: jurisdiction.name, ...(jurisdiction.countyAreaScope ? { countyAreaScope: structuredClone(jurisdiction.countyAreaScope) } : {}), officialText: question.officialText, normalizedTextSha256: hash(clean(question.officialText)), choices: question.choices, pages: question.pages, sourceUrl, documentSha256: document?.sha256 ?? null, originalCapturedAt: document?.retrievedAt ?? null, voterApplicabilityVerified: false });
+				const publishedArea = publishedBallotQuestionArea(native.source, question);
+				matches.push({ questionId: question.id, questionTitle: question.title, measureSlug: measure.slug, electionSlug: election.slug, jurisdictionSlug: jurisdiction.slug, jurisdictionType: jurisdiction.jurisdictionType, jurisdictionName: jurisdiction.name, ...(jurisdiction.countyAreaScope ? { countyAreaScope: structuredClone(jurisdiction.countyAreaScope) } : {}), ...(publishedArea ? { publishedArea } : {}), officialText: question.officialText, normalizedTextSha256: hash(clean(question.officialText)), choices: question.choices, pages: question.pages, sourceUrl, documentSha256: document?.sha256 ?? null, originalCapturedAt: document?.retrievedAt ?? null, voterApplicabilityVerified: false });
 			}
 		}
 	}

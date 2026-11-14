@@ -2,7 +2,7 @@ import type { PublicBallotQuestion, StateQuestionsResponse } from "../src/types/
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
-import { groupBallotQuestions } from "../src/utils/ballot-question-groups.js";
+import { ballotQuestionAreaLabel, groupBallotQuestions } from "../src/utils/ballot-question-groups.js";
 import { electionQuestions } from "../src/utils/election-questions.js";
 
 const question = (id: string, audience: string): PublicBallotQuestion => ({ id, audience, title: `Question ${id}`, officialText: "Shall this question be decided?", choices: ["Yes", "No"], pages: [1], explicitlyAdvisory: false, voterApplicabilityVerified: false });
@@ -18,6 +18,25 @@ test("question groups preserve exact audience distinctions, source order and ori
 	assert.equal(groups[0]!.audience, questions[0]!.audience);
 	assert.equal(groups[1]!.questions[0]!.voterApplicabilityVerified, false);
 	assert.deepEqual(groupBallotQuestions([]), []);
+});
+
+test("printed area groups distinguish statewide, county, exclusions and city records without filtering questions", () => {
+	const item = (id: string, kind: NonNullable<PublicBallotQuestion["publishedArea"]>["kind"], name: string): PublicBallotQuestion => ({ ...question(id, "Fulton County consolidated sample ballot"), publishedArea: { kind, stateCode: "GA", name, basis: "printed-question", evidence: "Synthetic source text" } });
+	const questions = [item("transport", "county-area", "Fulton County outside Atlanta"), item("city", "city", "Example Town"), item("state-first", "state", "Georgia"), item("county", "county", "Fulton County"), item("state-second", "state", "Georgia")];
+	const groups = groupBallotQuestions(questions);
+	assert.deepEqual(groups.map(group => group.label), ["Georgia", "Fulton County", "Fulton County outside Atlanta", "Example Town"]);
+	assert.deepEqual(groups[0]!.questions.map(item => item.id), ["state-first", "state-second"]);
+	assert.equal(groups.flatMap(group => group.questions).length, questions.length);
+	assert.equal(groups.at(-1)!.questions[0], questions[1]);
+	assert.ok(questions.every(item => item.voterApplicabilityVerified === false));
+});
+
+test("area presentation retains older payloads and empty-label fallbacks", () => {
+	const old = question("old", "Published sample");
+	assert.equal(ballotQuestionAreaLabel(old), null);
+	const changed = { ...old, publishedArea: { kind: "state" as const, stateCode: "GA", name: "", basis: "printed-question" as const, evidence: "Source text" } };
+	assert.equal(ballotQuestionAreaLabel(changed), null);
+	assert.deepEqual(groupBallotQuestions([changed]).map(group => group.label), ["Published sample"]);
 });
 
 test("election questions require the exact selected state, source and election date", () => {

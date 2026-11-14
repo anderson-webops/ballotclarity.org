@@ -1,4 +1,5 @@
 import type { StateBallotSource } from "../src/state-ballot-sources.js";
+import type { PublicBallotQuestion } from "../src/types/civic.js";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { once } from "node:events";
@@ -146,6 +147,7 @@ test("Fulton question records remain browsable independently of reviewed measure
 	context.after(() => rm(directory, { recursive: true }));
 	const parsed = parseFultonCandidateCapture(source, capture());
 	await createStateBallotStorage(directory).write({ source, ...parsed });
+	const storedBefore = await readFile(join(directory, `${source.id}.json`), "utf8");
 	let requests = 0;
 	const now = Date.parse(timestamp) + 1000;
 	const repository = createStateBallotRepository({ sources: [source], dataDirectory: directory, now: () => now, fetchText: async () => {
@@ -170,15 +172,17 @@ test("Fulton question records remain browsable independently of reviewed measure
 	assert.equal(response.status, 200);
 	assert.equal(response.headers.get("cache-control"), "no-store");
 	const payload = await response.json();
-	assert.deepEqual(payload.questions, parsed.ballotQuestions);
+	assert.deepEqual(payload.questions.map(({ publishedArea: _area, ...record }: PublicBallotQuestion) => record), parsed.ballotQuestions);
+	assert.equal(payload.questions.filter((question: PublicBallotQuestion) => question.publishedArea?.name === "Georgia").length, 2);
 	assert.equal(payload.source.documentLinks[0].url, source.documentUrls![0]);
 	for (const question of parsed.ballotQuestions) {
 		const detail = await (await fetch(`${origin}/api/state-records/GA/questions?source=${source.id}&id=${question.id}`)).json();
-		assert.deepEqual(detail.questions, [question]);
+		assert.deepEqual(detail.questions.map(({ publishedArea: _area, ...record }: PublicBallotQuestion) => record), [question]);
 		assert.equal(detail.questions[0].voterApplicabilityVerified, false);
 		assert.equal(detail.measures, undefined);
 	}
 	assert.equal((await fetch(`${origin}/api/state-records/WA/questions?source=${source.id}`)).status, 400);
 	assert.equal((await fetch(`${origin}/api/state-records/GA/questions?source=${source.id}&id=invalid`)).status, 400);
 	assert.equal(requests, 0);
+	assert.equal(await readFile(join(directory, `${source.id}.json`), "utf8"), storedBefore);
 });

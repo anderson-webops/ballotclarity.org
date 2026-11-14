@@ -6,7 +6,7 @@ import { setTimeout } from "node:timers/promises";
 import { acquireStateBallotAutomationLock } from "./state-ballot-automation-lock.js";
 import { assertExternalStateDataDirectory, readBoundedStateDataBytes } from "./state-ballot-storage.js";
 
-export const fultonPublisherRequestPolicy = { minimumIntervalMs: 11000, maximumWaitMs: 30000, maximumEntries: 16 } as const;
+export const fultonPublisherRequestPolicy = { minimumIntervalMs: 11000, maximumWaitMs: 30000, maximumInitializationWaitMs: 2000, maximumEntries: 16 } as const;
 interface Options { directory?: string; now?: () => number; pause?: (milliseconds: number) => Promise<unknown>; maximumWaitMs?: number }
 interface Attempt { schemaVersion: 1; publisher: "fultoncountyga.gov"; lastStartedAt: string; finishedAt: string | null; attempts: number }
 
@@ -39,6 +39,25 @@ async function complete(directory: string, attempt: Attempt, now: () => number) 
 	await persist(directory, { ...attempt, finishedAt: new Date(finishedAt).toISOString() });
 }
 
+async function inventory(directory: string) {
+	const deadline = performance.now() + fultonPublisherRequestPolicy.maximumInitializationWaitMs;
+	for (;;) {
+		const entries = await readdir(directory);
+		if (entries.length > fultonPublisherRequestPolicy.maximumEntries) throw new Error("The Fulton request storage inventory requires review.");
+		const initializing = entries.filter(name => /^\.automation-lock-[a-f\d]{8}(?:-[a-f\d]{4}){3}-[a-f\d]{12}\.sqlite(?:-journal)?$/u.test(name));
+		if (!initializing.length) return entries;
+		for (const name of initializing) {
+			try {
+				const metadata = await lstat(join(directory, name));
+				if (!metadata.isFile() || metadata.isSymbolicLink() || metadata.nlink > 2 || metadata.size > 65536 || (metadata.mode & 0o077) !== 0 || metadata.uid !== process.getuid?.()) throw new Error("The Fulton request initialization metadata requires review.");
+			}
+			catch (error) { if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error; }
+		}
+		if (performance.now() >= deadline) throw new Error("The Fulton request initialization is incomplete and requires review.");
+		await setTimeout(10);
+	}
+}
+
 export async function coordinateFultonPublisherRequest<Result>(work: () => Promise<Result>, options: Options = {}) {
 	const directory = options.directory ?? process.env.FULTON_PUBLISHER_REQUEST_DIRECTORY;
 	if (!directory) throw new Error("Configure the shared Fulton publisher request directory before collection.");
@@ -63,7 +82,7 @@ export async function coordinateFultonPublisherRequest<Result>(work: () => Promi
 	}
 	try {
 		const canonical = lock.directory;
-		const entries = await readdir(canonical);
+		const entries = await inventory(canonical);
 		if (entries.length > fultonPublisherRequestPolicy.maximumEntries || entries.some(name => !["automation.lock", "last-request.json", "initialized"].includes(name) && !/^\.request-[a-f\d-]{36}\.tmp$/u.test(name))) throw new Error("The Fulton request storage inventory requires review.");
 		for (const name of entries) {
 			const entry = await lstat(join(canonical, name));

@@ -16,6 +16,8 @@ publisher identity, attempt count and start/completion times. It stores no URLs 
 Failed requests still consume their slot. Process exit releases ownership, while
 the journal preserves completed-request timing after restart. An interrupted
 request requires a fresh full interval after ownership recovery.
+Simultaneous first-time initialization gets a bounded two-second settling window;
+incomplete or unsafe initializer files remain intact for review.
 
 The directory is private, external and explicitly configured once for all workers.
 Missing configuration, unsafe metadata, a clock rollback, malformed journals or

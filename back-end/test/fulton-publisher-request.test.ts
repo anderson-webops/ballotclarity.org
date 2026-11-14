@@ -166,6 +166,20 @@ test("unsafe storage, symlinks and excess inventory preserve existing files", as
 	await assert.rejects(coordinateFultonPublisherRequest(async () => assert.fail(), { directory: "relative" }), /absolute directory/u);
 });
 
+test("concurrent private initialization files finish before inventory review while abandoned files stay held", async (context) => {
+	const directory = await temporary();
+	context.after(() => rm(directory, { recursive: true, force: true }));
+	const filename = join(directory, ".automation-lock-00000000-0000-0000-0000-000000000001.sqlite");
+	await writeFile(filename, "Controlled initialization fixture", { mode: 0o600 });
+	const pending = coordinateFultonPublisherRequest(async () => "initialized", { directory });
+	await setTimeout(30);
+	await unlink(filename);
+	assert.equal(await pending, "initialized");
+	await writeFile(filename, "Retained interrupted initialization", { mode: 0o600 });
+	await assert.rejects(coordinateFultonPublisherRequest(async () => assert.fail(), { directory }), /initialization is incomplete/u);
+	assert.equal(await readFile(filename, "utf8"), "Retained interrupted initialization");
+});
+
 test("independent process death releases ownership while retaining its reserved start", { timeout: 20000 }, async (context) => {
 	const directory = await temporary();
 	context.after(() => rm(directory, { recursive: true, force: true }));

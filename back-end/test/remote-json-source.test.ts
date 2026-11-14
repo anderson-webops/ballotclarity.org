@@ -40,7 +40,7 @@ test("Fulton native text and document aliases share a durable publisher interval
 	process.env.FULTON_PUBLISHER_REQUEST_DIRECTORY = directory;
 	assert.equal(await fetchRemoteSourceText("https://fultoncountyga.gov/robots.txt", options), "retained test body");
 	assert.equal((await fetchRemoteSourceDocument("https://www.fultoncountyga.gov/example.pdf", options)).body.toString(), "retained test body");
-	assert.ok(starts[1]! - starts[0]! >= 10950);
+	assert.ok(starts[1]! - starts[0]! >= 11000);
 	assert.equal(resolutions, 2);
 	assert.equal(JSON.parse(await readFile(join(directory, "last-request.json"), "utf8")).attempts, 2);
 	await assert.rejects(fetchRemoteSourceDocument("https://fultoncountyga.gov/example.pdf", { ...options, allowedHosts: [] }), /allowed bounded/u);

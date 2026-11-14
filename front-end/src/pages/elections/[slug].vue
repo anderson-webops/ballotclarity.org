@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { ElectionSectionLink } from "~/utils/election-candidates";
 import { publicCoverageLimit } from "~/utils/ballot-notices";
+import { electionContestPath } from "~/utils/election-contest-path";
 import { electionTimeZone } from "~/utils/election-time-zone";
 import { buildKeyDateTimeline, calendarDaysUntil, describeDaysAway } from "~/utils/election-timeline";
 import { fullAreaGuideLabels } from "~/utils/guide-scope";
@@ -154,7 +155,7 @@ usePageSeo({
 					Ballot items
 				</h2>
 				<div class="mt-6 gap-8 grid xl:grid-cols-2">
-					<NuxtLink v-for="contest in data.election.contests" :key="contest.slug" :to="`/contest/${contest.slug}`" class="content-block block focus-ring">
+					<NuxtLink v-for="contest in data.election.contests" :key="contest.slug" :to="electionContestPath(contest, data.election.slug)" class="content-block block focus-ring">
 						<h3 class="text-xl text-app-ink font-semibold dark:text-app-text-dark">
 							{{ contest.type === 'measure' ? contest.title : contest.office }}
 						</h3>

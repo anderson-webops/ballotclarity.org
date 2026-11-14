@@ -74,6 +74,10 @@ review. Personal ballot matching stays disabled. The generic cycle-sync command
 directs this family to the enrolled Union worker rather than starting a second
 collection path.
 
+[Municipal question guides](union-county-measure-guides.md) turn that evidence and
+an exact editorial review into native measure/guide proposals. They preserve the
+candidate import enrollment and its separate publication boundaries.
+
 Use one physical, external, owner-private profile directory for this Union worker. Process-held
 ownership spans collection and preparation. A scheduled early invocation returns
 the prior result without advancing its source-check clock. Profiles enforce a

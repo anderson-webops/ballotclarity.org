@@ -610,7 +610,8 @@ test("District of Columbia measure preparation uses districtwide scope without c
 		assert.equal(guide.election.name, "District of Columbia districtwide measures");
 		assert.equal(guide.election.contests[0].office, "Districtwide ballot measure");
 		assert.equal(guide.location.coverageLabel, "Districtwide measures");
-		assert.deepEqual(guide.coverageLimits, ["Districtwide measures only; candidate races are not included."]);
+		assert.deepEqual(guide.coverageLimits, []);
+		assert.equal(guide.election.freshness.statusLabel, "");
 		assert.equal(workspace.read("workflows")[0].status, "draft");
 		assert.equal(workspace.read("manifest").publicationApproved, false);
 		assert.equal(workspace.read("manifest").automaticImportApproved, false);
@@ -633,7 +634,8 @@ test("local measure preparation preserves its exact area instead of assigning it
 		assert.equal(guide.location.displayName, "Example, North Dakota");
 		assert.equal(guide.location.requiresOfficialConfirmation, true);
 		assert.equal(guide.election.slug, "nd-example-measures-2026-11-03");
-		assert.ok(guide.coverageLimits[0].includes("other races and ballot questions"));
+		assert.deepEqual(guide.coverageLimits, []);
+		assert.equal(guide.location.coverageLabel, "Ballot questions");
 	}
 	finally { workspace.dispose(); }
 });
@@ -816,7 +818,7 @@ test("standalone preparation preserves evidence and never emits a primary-replac
 		const workflows = workspace.read("workflows");
 		assert.equal(workflows[0].status, "draft");
 		assert.equal(workflows[0].publishedAt, undefined);
-		assert.ok(workflows[0].coverageLimits[0].includes("local candidates and measures are not included"));
+		assert.deepEqual(workflows[0].coverageLimits, []);
 		const review = workspace.read("review");
 		assert.deepEqual(review.holds[0].unresolvedFields, workspace.draft.unresolvedFields);
 		assert.deepEqual(review.holds[0].unmappedQuestions, workspace.draft.unmappedQuestions);

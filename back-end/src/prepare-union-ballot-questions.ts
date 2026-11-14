@@ -22,10 +22,8 @@ async function persist(directory: string, name: string, body: string) {
 	}
 	finally { await handle.close(); }
 }
-export async function prepareUnionBallotQuestions(path: string, options: { extract?: Extract; now?: () => number } = {}) {
-	const plan = JSON.parse((await readBoundedStateDataBytes(path, 32768)).toString("utf8"));
-	if (!plan || typeof plan !== "object" || Array.isArray(plan) || Object.keys(plan).sort().join(",") !== "ballotCaptures,outputRoot,schemaVersion,type" || plan.schemaVersion !== 1 || plan.type !== "union-ballot-question-preparation" || typeof plan.outputRoot !== "string") throw new Error("Provide an exact Union public-question preparation plan.");
-	const { batches, catalog, originals } = await loadUnionBallotCaptures(plan.ballotCaptures, (options.now ?? Date.now)());
+export async function readUnionQuestionPreparation(ballotCaptures: unknown, options: { extract?: Extract; now?: () => number } = {}) {
+	const { batches, catalog, originals } = await loadUnionBallotCaptures(ballotCaptures, (options.now ?? Date.now)());
 	const records: { id: string; electionDate: string; question: UnionSampleQuestion; sources: { form: number; sourceUrl: string; sourceSha256: string; capturedAt: string; page: 1; publishedLabels: typeof catalog.documents[number]["claims"] }[] }[] = [];
 	const inventory: { form: number; sourceUrl: string; sourceSha256: string; capturedAt: string; questionPanels: number }[] = [];
 	for (const input of originals) {
@@ -45,6 +43,12 @@ export async function prepareUnionBallotQuestions(path: string, options: { extra
 	const columns = ["id", "electionDate", "municipality", "printedHeading", "officialTextEn", "interpretiveStatementEn", "officialTextEs", "interpretiveStatementEs", "printedChoices", "sampleForms", "sourceUrls", "sourceSha256s", "sourceCapturedAt", "sourcePages"];
 	const csv = `${columns.map(quote).join(",")}\n${records.map(record => [record.id, record.electionDate, record.question.municipality, record.question.printedHeading, record.question.officialText.en, record.question.interpretiveStatement.en, record.question.officialText.es, record.question.interpretiveStatement.es, record.question.printedChoices.join(";"), record.sources.map(source => source.form).join(";"), record.sources.map(source => source.sourceUrl).join(";"), record.sources.map(source => source.sourceSha256).join(";"), record.sources.map(source => source.capturedAt).join(";"), record.sources.map(source => source.page).join(";")].map(quote).join(",")).join("\n")}${records.length ? "\n" : ""}`;
 	const result = { schemaVersion: 1, type: "union-public-question-research-preparation", electionDate: catalog.edition.electionDate, ballotCaptureHashes: batches.map(batch => batch.pin.sha256), catalogSha256: catalog.sha256, questions: records, inventory, questionCount: records.length, sampleFormsReviewed: originals.length, questionForms: inventory.filter(source => source.questionPanels).map(source => source.form), csvSha256: hash(csv), publisherRequests: 0, translationEquivalenceVerified: false, currentLawIndependentlyVerified: false, voterApplicabilityVerified: false, substantiveReviewComplete: false, imported: false, publicationApproved: false, automaticImportApproved: false };
+	return { result, csv, originals };
+}
+export async function prepareUnionBallotQuestions(path: string, options: { extract?: Extract; now?: () => number } = {}) {
+	const plan = JSON.parse((await readBoundedStateDataBytes(path, 32768)).toString("utf8"));
+	if (!plan || typeof plan !== "object" || Array.isArray(plan) || Object.keys(plan).sort().join(",") !== "ballotCaptures,outputRoot,schemaVersion,type" || plan.schemaVersion !== 1 || plan.type !== "union-ballot-question-preparation" || typeof plan.outputRoot !== "string") throw new Error("Provide an exact Union public-question preparation plan.");
+	const { result, csv } = await readUnionQuestionPreparation(plan.ballotCaptures, options);
 	const lock = await acquireStateBallotAutomationLock(plan.outputRoot);
 	try {
 		const outputDirectory = join(lock.directory, `prepared-${randomUUID()}`);
@@ -52,7 +56,7 @@ export async function prepareUnionBallotQuestions(path: string, options: { extra
 		const body = `${JSON.stringify(result, null, 2)}\n`;
 		await persist(outputDirectory, "questions.csv", csv);
 		await persist(outputDirectory, "questions.json", body);
-		return { outputDirectory, questions: records.length, sampleForms: originals.length, questionForms: result.questionForms, sha256: hash(body), publisherRequests: 0, imported: false, publicationApproved: false };
+		return { outputDirectory, questions: result.questionCount, sampleForms: result.sampleFormsReviewed, questionForms: result.questionForms, sha256: hash(body), publisherRequests: 0, imported: false, publicationApproved: false };
 	}
 	finally { await lock.release(); }
 }

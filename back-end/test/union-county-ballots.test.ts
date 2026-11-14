@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 import { collectUnionBallotEvidence } from "../src/collect-union-ballot-evidence.js";
+import { buildFultonOfficialLogisticsOnlySnapshot } from "../src/fulton-reviewed-coverage.js";
 import { prepareUnionBallotCorroboration } from "../src/prepare-union-ballot-corroboration.js";
 import { prepareUnionBallotQuestions } from "../src/prepare-union-ballot-questions.js";
 import { buildUnionCandidateSnapshot, prepareUnionCandidateSnapshot } from "../src/prepare-union-candidate-snapshot.js";
@@ -23,6 +24,7 @@ import { readUnionSampleQuestion } from "../src/union-ballot-questions.js";
 import { readUnionBallotCells, reconcileUnionBallotReferences } from "../src/union-ballot-witnesses.js";
 import { collectUnionSampleBatch, collectUnionSampleWindow, readUnionSampleCatalog, readUnionSampleEdition, unionCountyPolicyHash, unionCountyPolicyUrls, unionSampleLandingUrl } from "../src/union-county-ballots.js";
 import { unionCandidateHash as hash, unionCandidateOrigin, unionCandidatePolicyHash, unionCandidatePolicyUrls } from "../src/union-county-candidates.js";
+import { prepareUnionMeasureGuideFiles } from "../src/union-measure-guides.js";
 
 const municipalities = ["Berkeley Heights", "Clark", "Cranford", "Elizabeth", "Fanwood", "Garwood", "Hillside", "Kenilworth", "Linden", "Mountainside", "New Providence", "Plainfield", "Rahway", "Roselle", "Roselle Park", "Scotch Plains", "Springfield", "Summit", "Union", "Westfield", "Winfield"];
 const privacyLink = `<a href="${unionCandidatePolicyUrls[1]}">Privacy Policy</a>`;
@@ -184,6 +186,57 @@ async function automationFixture(root: string) {
 	};
 	return { path, directory, extract };
 }
+
+test("Union native questions assemble reviewed municipal measures while preserving a pinned Fulton base", async (context) => {
+	const root = await realpath(await mkdtemp(join(tmpdir(), "union-native-measures-")));
+	context.after(() => rm(root, { recursive: true, force: true }));
+	const networkFixture = network();
+	const collectionPlan = join(root, "collect.json");
+	await writeFile(collectionPlan, JSON.stringify({ schemaVersion: 1, type: "union-sample-ballot-collection", outputRoot: join(root, "captures"), forms: catalog.documents.map(source => source.form), accessReview: review, catalogSha256: catalog.sha256 }));
+	const collected = await collectUnionBallotEvidence(collectionPlan, { collect: async (forms, access, expected, options) => collectUnionSampleBatch(forms, access, expected, { ...networkFixture.options, onCapture: options!.onCapture }) });
+	const capturePath = join(collected.outputDirectory, "capture.json");
+	const captureBytes = await readFile(capturePath);
+	const base = buildFultonOfficialLogisticsOnlySnapshot();
+	const basePath = join(root, "base.json");
+	await writeFile(basePath, JSON.stringify(base));
+	const baseBytes = await readFile(basePath);
+	const plan = { schemaVersion: 1, type: "union-measure-guide-preparation", ballotCaptures: [{ path: capturePath, sha256: hash(captureBytes) }], review: null as { path: string; sha256: string } | null, baseSnapshot: { path: basePath, sha256: hash(baseBytes) }, outputDirectory: join(root, "pending"), outputName: "union-example" };
+	const planPath = join(root, "plan.json");
+	await writeFile(planPath, JSON.stringify(plan));
+	const options = { now: () => Date.parse("2030-10-02T00:00:00.000Z"), extract: async (body: Buffer, format: "layout" | "bbox-layout") => {
+		const form = Number(/form-(\d+)$/u.exec(body.toString())?.[1]);
+		const parsed = [2, 22].includes(form) ? questionDocument(form) : document(form);
+		return format === "layout" ? parsed.layout : parsed.bbox;
+	} };
+	const pending = await prepareUnionMeasureGuideFiles(planPath, options);
+	assert.equal(pending.status, "editorial-review-required");
+	assert.equal(pending.preparedGuides, 0);
+	const template = JSON.parse(await readFile(join(pending.outputDirectory, "review-template.json"), "utf8"));
+	const reviewed = { ...template, reviewedAt: "2030-10-02T00:00:00.000Z", questions: template.questions.map((row: object) => ({ ...row, jurisdictionType: "township", title: "Rent increases", summary: "Would limit the rent increase described in the question.", yesMeaning: "Approve the proposed rent limit.", noMeaning: "Leave the ordinance unchanged." })) };
+	const reviewPath = join(root, "review.json");
+	await writeFile(reviewPath, JSON.stringify(reviewed));
+	await writeFile(planPath, JSON.stringify({ ...plan, review: { path: reviewPath, sha256: hash(await readFile(reviewPath)) }, outputDirectory: join(root, "reviewed") }));
+	const prepared = await prepareUnionMeasureGuideFiles(planPath, options);
+	assert.equal(prepared.status, "prepared-for-review");
+	assert.equal(prepared.questions, 1);
+	assert.equal(prepared.preparedGuides, 1);
+	const guide = JSON.parse(await readFile(join(prepared.outputDirectory, "assembly", "union-example-guides.json"), "utf8")).guides[0];
+	assert.equal(guide.jurisdiction.name, "Clark");
+	assert.equal(guide.jurisdiction.jurisdictionType, "township");
+	assert.deepEqual(guide.coverageLimits, []);
+	assert.equal(guide.election.contests[0].measures[0].sources.length, 1);
+	assert.equal(guide.election.contests[0].measures[0].currentLawOverview, "");
+	const coverage = JSON.parse(await readFile(join(prepared.outputDirectory, "assembly", "union-example-coverage.json"), "utf8"));
+	assert.deepEqual(coverage.election, base.election);
+	assert.deepEqual(coverage.jurisdiction, base.jurisdiction);
+	assert.deepEqual(await readFile(basePath), baseBytes);
+	assert.deepEqual(await readFile(capturePath), captureBytes);
+	assert.equal(prepared.publisherRequests, 0);
+	assert.equal(prepared.publicationApproved, false);
+	assert.equal(prepared.automaticImportApproved, false);
+	await writeFile(reviewPath, "altered");
+	await assert.rejects(prepareUnionMeasureGuideFiles(planPath, options), /review bytes changed/u);
+});
 
 async function importFixture(root: string, fixture: Awaited<ReturnType<typeof automationFixture>>, snapshotSha256: string, allowFutureElections = true) {
 	const directory = join(await realpath(root), "snapshots");

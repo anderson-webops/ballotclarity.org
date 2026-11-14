@@ -25,6 +25,7 @@ const exact = (value: unknown, keys: string[]): value is Record<string, unknown>
 const validDate = (value: unknown): value is string => typeof value === "string" && /^20\d{2}-\d{2}-\d{2}$/u.test(value) && Number.isFinite(Date.parse(value)) && new Date(value).toISOString().slice(0, 10) === value;
 const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 type AccessReview = Record<keyof typeof lafayetteGuidePolicyUrls, string> & { infoRobots: 404 };
+interface CollectionPlan { schemaVersion: 1; type: "lafayette-guide-collection"; outputRoot: string; electionDate: string | null; accessReview: AccessReview }
 interface Capture { url: string; status: number; sha256: string; bytes: number; capturedAt: string; contentType: string; location: string | null; path: string }
 interface Options { fetchDocument?: typeof fetchRemoteSourceDocument; sleep?: (milliseconds: number) => Promise<void>; now?: () => number; extract?: (body: Buffer) => Promise<string> }
 
@@ -109,10 +110,14 @@ async function persist(directory: string, name: string, body: string | Buffer) {
 	}
 	finally { await handle.close(); }
 }
-export async function collectLafayetteGuideResearch(planPath: string, options: Options = {}) {
+export async function readLafayetteGuideCollectionPlan(planPath: string) {
 	const value: unknown = JSON.parse((await readBoundedStateDataBytes(planPath, 32768)).toString("utf8"));
 	if (!exact(value, ["schemaVersion", "type", "outputRoot", "electionDate", "accessReview"]) || value.schemaVersion !== 1 || value.type !== "lafayette-guide-collection" || typeof value.outputRoot !== "string" || (value.electionDate !== null && !validDate(value.electionDate)) || !exact(value.accessReview, [...Object.keys(lafayetteGuidePolicyUrls), "infoRobots"]) || value.accessReview.infoRobots !== 404 || !Object.keys(lafayetteGuidePolicyUrls).every(kind => validHash((value.accessReview as Record<string, unknown>)[kind]))) return reject();
-	const review = value.accessReview as unknown as AccessReview;
+	return value as unknown as CollectionPlan;
+}
+export async function collectLafayetteGuideResearch(planPath: string, options: Options = {}) {
+	const value = await readLafayetteGuideCollectionPlan(planPath);
+	const review = value.accessReview;
 	const lock = await acquireStateBallotAutomationLock(value.outputRoot);
 	const captures: Capture[] = [];
 	let outputDirectory: string | undefined;

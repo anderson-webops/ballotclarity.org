@@ -1,5 +1,8 @@
 # Lafayette guide collection
 
+The [managed preparation command](lafayette-guide-automation.md) combines this
+collector with reviewed guide assembly, repeat handling and durable status.
+
 `back-end/dist/collect-lafayette-guide-research.js PLAN.json` discovers the
 elections hub actually linked by One Acadiana's advocacy page, then follows its
 explicitly dated ballot-guide PDF. Compatible future editions use the same

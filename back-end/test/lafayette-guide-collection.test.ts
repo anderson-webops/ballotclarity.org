@@ -1,10 +1,14 @@
 import assert from "node:assert/strict";
 import { Buffer } from "node:buffer";
-import { mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
+import { createHash, randomUUID } from "node:crypto";
+import { mkdir, mkdtemp, open, readdir, readFile, realpath, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
+import { inspectLafayetteGuideAutomation, runLafayetteGuideAutomation } from "../src/lafayette-guide-automation.js";
 import { collectLafayetteGuideResearch, discoverAcadianaBallotGuides, discoverAcadianaElectionHub, lafayetteGuideIndexUrl, lafayetteGuideLocalDate, lafayetteGuidePolicyHash, lafayetteGuidePolicyUrls } from "../src/lafayette-guide-collection.js";
+import { buildLafayetteMeasureDrafts } from "../src/lafayette-measure-guides.js";
+import { readLafayetteBallotResearch } from "../src/prepare-lafayette-ballot-research.js";
 
 const privacyLink = `<a href="${lafayetteGuidePolicyUrls.privacy}">Privacy Policy</a>`;
 const privacy = `${privacyLink}<div id="main-content"><h1>Privacy Policy</h1><p>${"Reviewed publisher privacy statement. ".repeat(5)}</p></div>`;
@@ -216,6 +220,211 @@ test("Lafayette process-held ownership prevents overlapping runs against one out
 		await assert.rejects(collectLafayetteGuideResearch(local.planPath, local.options), /already running/u);
 		release!();
 		assert.equal((await first).status, "prepared-for-review");
+	}
+	finally {
+		release?.();
+		await rm(local.root, { recursive: true, force: true });
+	}
+});
+
+async function managedFixture() {
+	const local = await fixture();
+	const root = await realpath(local.root);
+	const hash = (body: string | Uint8Array) => createHash("sha256").update(body).digest("hex");
+	const profilePath = join(root, "managed-profile.json");
+	const profile = { ...local.plan, outputRoot: join(root, "managed-captures") };
+	const profileBody = JSON.stringify(profile);
+	await writeFile(profilePath, profileBody, { mode: 0o600 });
+	const pdf = Buffer.from("%PDF-1.4\nSynthetic single-page call fixture\n%%EOF");
+	const document = { path: join(root, "call.pdf"), sha256: hash(pdf), area: "Lafayette Parish", resolution: "PR-001-2030", url: "https://apps.lafayettela.gov/obcouncil/api/Document/901/", capturedAt: "2026-11-01T12:00:00.000Z" };
+	await writeFile(document.path, pdf, { mode: 0o600 });
+	const capturedAt = "2026-11-01T12:00:00.000Z";
+	const research = { ...readLafayetteBallotResearch(guideText, government, "2030-12-14"), sources: { guide: { url: guideUrl, sha256: hash(local.responses.get(guideUrl)!.body), capturedAt }, governmentPage: { url: governmentUrl, sha256: hash(government), capturedAt } } };
+	const template = buildLafayetteMeasureDrafts(research, [document], null).template;
+	const review = { ...template, reviewedAt: "2026-11-02T12:00:00.000Z", questions: template.questions.map(row => ({ ...row, callPropositionNumber: 1, questionPages: [1], noticePage: 1, certificationPage: 1, summary: "Continue the 1.25-mill public-facilities tax for 2031–2040.", yesMeaning: "Approve this ten-year tax continuation.", noMeaning: "Do not approve this tax continuation." })) };
+	const reviewPath = join(root, "review.json");
+	const reviewBody = JSON.stringify(review);
+	await writeFile(reviewPath, reviewBody, { mode: 0o600 });
+	const policy = { schemaVersion: 1, type: "lafayette-guide-automation-policy", profileSha256: hash(profileBody), intervalMs: 3600000, cohorts: [{ electionDate: "2030-12-14", review: { path: reviewPath, sha256: hash(reviewBody) }, documents: [document] }], baseSnapshot: null };
+	const policyPath = join(root, "policy.json");
+	await writeFile(policyPath, JSON.stringify(policy), { mode: 0o600 });
+	let clock = Date.parse("2026-11-14T12:00:00.000Z");
+	const options = { now: () => clock, collection: local.options, preparation: { extract: local.options.extract, inspect: async () => 1 } };
+	return { ...local, profile, profilePath, policy, policyPath, options, advance: () => {
+		clock += 3600000;
+	}, hash };
+}
+
+test("managed Lafayette collection composes native guides and unchanged repeats preserve the prepared clock", async () => {
+	const local = await managedFixture();
+	try {
+		const first = await runLafayetteGuideAutomation(local.profilePath, local.policyPath, local.options);
+		assert.equal(first.status, "prepared-for-review");
+		assert.equal(first.latestPrepared?.guides, 1);
+		assert.equal(first.publicationApproved, false);
+		const requests = local.requests.length;
+		const early = await runLafayetteGuideAutomation(local.profilePath, local.policyPath, local.options);
+		assert.equal(early.skipped, true);
+		assert.equal(local.requests.length, requests);
+		local.advance();
+		const repeated = await runLafayetteGuideAutomation(local.profilePath, local.policyPath, local.options);
+		assert.equal(repeated.status, "unchanged");
+		assert.equal(repeated.latestPrepared?.runId, first.latestPrepared?.runId);
+		assert.equal(repeated.latestPrepared?.createdAt, first.latestPrepared?.createdAt);
+		assert.equal(local.requests.length, requests + 12);
+		assert.equal((await inspectLafayetteGuideAutomation(local.profilePath, local.options.now())).status, "unchanged");
+	}
+	finally { await rm(local.root, { recursive: true, force: true }); }
+});
+
+test("managed Lafayette source failure retains prior prepared files and defers repeated requests", async () => {
+	const local = await managedFixture();
+	try {
+		const first = await runLafayetteGuideAutomation(local.profilePath, local.policyPath, local.options);
+		const original = JSON.stringify(first.latestPrepared);
+		local.advance();
+		await assert.rejects(runLafayetteGuideAutomation(local.profilePath, local.policyPath, { ...local.options, collect: async () => {
+			throw new Error("Publisher unavailable.");
+		} }), /Publisher unavailable/u);
+		const held = await inspectLafayetteGuideAutomation(local.profilePath, local.options.now());
+		assert.equal(held.status, "failed");
+		assert.equal(JSON.stringify(held.latestPrepared), original);
+		assert.match(held.lastAttempt?.error ?? "", /Publisher unavailable/u);
+		const requests = local.requests.length;
+		assert.equal((await runLafayetteGuideAutomation(local.profilePath, local.policyPath, local.options)).skipped, true);
+		assert.equal(local.requests.length, requests);
+	}
+	finally { await rm(local.root, { recursive: true, force: true }); }
+});
+
+test("managed Lafayette future editions retain prior guides while new call and editorial evidence awaits review", async () => {
+	const local = await managedFixture();
+	try {
+		const first = await runLafayetteGuideAutomation(local.profilePath, local.policyPath, local.options);
+		local.advance();
+		const futureHub = hub.url.replaceAll("2030", "2034");
+		const futureGuide = guideUrl.replaceAll("2030", "2034");
+		local.responses.set(lafayetteGuideIndexUrl, response(index.replaceAll("2030", "2034")));
+		local.responses.set(futureHub, response(hubBody.replaceAll("2030", "2034")));
+		local.responses.set(governmentUrl, response(government.replaceAll("2030", "2034").replaceAll("2031", "2035").replaceAll("2040", "2044")));
+		const result = await runLafayetteGuideAutomation(local.profilePath, local.policyPath, { ...local.options, collection: { ...local.options.collection, extract: async () => guideText.replaceAll("2030", "2034").replaceAll("2031", "2035").replaceAll("2040", "2044"), fetchDocument: async (url, limits) => url === futureGuide ? response("%PDF-1.4\nFuture synthetic guide", "application/pdf") : local.options.collection.fetchDocument(url, limits) } });
+		assert.equal(result.status, "editorial-review-required");
+		assert.equal(result.lastAttempt?.electionDate, "2034-12-14");
+		assert.equal(result.lastAttempt?.guides, 0);
+		assert.equal(result.latestPrepared?.runId, first.latestPrepared?.runId);
+		assert.equal(result.lastAttempt?.files.length, 1);
+	}
+	finally { await rm(local.root, { recursive: true, force: true }); }
+});
+
+test("managed Lafayette stored proposal and original capture tampering stop before publisher requests", async () => {
+	for (const target of ["proposal", "capture"] as const) {
+		const local = await managedFixture();
+		try {
+			const first = await runLafayetteGuideAutomation(local.profilePath, local.policyPath, local.options);
+			const attempt = first.latestPrepared!;
+			const file = target === "proposal" ? join(local.profile.outputRoot, "measure-automation", attempt.files[0]!.path) : join(local.profile.outputRoot, attempt.capture!.path);
+			await writeFile(file, `${await readFile(file, "utf8")}\n`);
+			const requests = local.requests.length;
+			await assert.rejects(runLafayetteGuideAutomation(local.profilePath, local.policyPath, local.options), /changed/u);
+			assert.equal(local.requests.length, requests);
+		}
+		finally { await rm(local.root, { recursive: true, force: true }); }
+	}
+});
+
+test("managed Lafayette profile and call pins reject changes before collection", async () => {
+	for (const target of ["profile", "call"] as const) {
+		const local = await managedFixture();
+		try {
+			const file = target === "profile" ? local.profilePath : local.policy.cohorts[0]!.documents[0]!.path;
+			await writeFile(file, `${await readFile(file, "utf8")}\n`);
+			await assert.rejects(runLafayetteGuideAutomation(local.profilePath, local.policyPath, local.options));
+			assert.equal(local.requests.length, 0);
+		}
+		finally { await rm(local.root, { recursive: true, force: true }); }
+	}
+});
+
+test("managed Lafayette interrupted receipts become a deferred failure while complete proposals remain readable", async () => {
+	const local = await managedFixture();
+	try {
+		const first = await runLafayetteGuideAutomation(local.profilePath, local.policyPath, local.options);
+		const directory = join(local.profile.outputRoot, "measure-automation");
+		const path = join(directory, "state.json");
+		const state = JSON.parse(await readFile(path, "utf8"));
+		state.lastAttempt = { ...state.lastAttempt, runId: `run-${randomUUID()}`, status: "started", electionDate: null, inputSha256: null, capture: null, guides: 0, files: [], error: null };
+		await mkdir(join(directory, state.lastAttempt.runId), { mode: 0o700 });
+		await writeFile(path, JSON.stringify(state));
+		assert.equal((await inspectLafayetteGuideAutomation(local.profilePath, local.options.now())).status, "incomplete-attempt");
+		const recovered = await runLafayetteGuideAutomation(local.profilePath, local.policyPath, local.options);
+		assert.equal(recovered.status, "failed");
+		assert.equal(recovered.skipped, true);
+		assert.equal(recovered.latestPrepared?.runId, first.latestPrepared?.runId);
+		assert.match(recovered.lastAttempt?.error ?? "", /did not finish/u);
+	}
+	finally { await rm(local.root, { recursive: true, force: true }); }
+});
+
+test("managed Lafayette capacity holds retain complete proposals without deleting saved evidence", async () => {
+	const local = await managedFixture();
+	try {
+		const first = await runLafayetteGuideAutomation(local.profilePath, local.policyPath, local.options);
+		const oversized = await open(join(local.profile.outputRoot, "retained-fixture.bin"), "wx", 0o600);
+		try {
+			await oversized.truncate(256 * 1024 * 1024 + 1);
+		}
+		finally { await oversized.close(); }
+		local.advance();
+		const requests = local.requests.length;
+		await assert.rejects(runLafayetteGuideAutomation(local.profilePath, local.policyPath, local.options), /archival/u);
+		assert.equal(local.requests.length, requests);
+		assert.equal((await inspectLafayetteGuideAutomation(local.profilePath, local.options.now())).latestPrepared?.runId, first.latestPrepared?.runId);
+	}
+	finally { await rm(local.root, { recursive: true, force: true }); }
+});
+
+test("managed Lafayette stale editorial bindings preserve complete proposals and produce review material", async () => {
+	const local = await managedFixture();
+	try {
+		const first = await runLafayetteGuideAutomation(local.profilePath, local.policyPath, local.options);
+		const pin = local.policy.cohorts[0]!.review;
+		const review = JSON.parse(await readFile(pin.path, "utf8"));
+		review.questions[0].questionSha256 = "a".repeat(64);
+		const body = JSON.stringify(review);
+		await writeFile(pin.path, body);
+		pin.sha256 = local.hash(body);
+		await writeFile(local.policyPath, JSON.stringify(local.policy));
+		const result = await runLafayetteGuideAutomation(local.profilePath, local.policyPath, local.options);
+		assert.equal(result.status, "editorial-review-required");
+		assert.equal(result.lastAttempt?.guides, 0);
+		assert.equal(result.latestPrepared?.runId, first.latestPrepared?.runId);
+		assert.ok(result.lastAttempt!.files.length >= 2);
+	}
+	finally { await rm(local.root, { recursive: true, force: true }); }
+});
+
+test("managed Lafayette coordination prevents duplicate collection and proposal preparation", async () => {
+	const local = await managedFixture();
+	let entered: (() => void) | undefined;
+	let release: (() => void) | undefined;
+	const started = new Promise<void>((resolve) => {
+		entered = resolve;
+	});
+	const waiting = new Promise<void>((resolve) => {
+		release = resolve;
+	});
+	try {
+		const first = runLafayetteGuideAutomation(local.profilePath, local.policyPath, { ...local.options, collect: async (plan, options) => {
+			entered!();
+			await waiting;
+			return collectLafayetteGuideResearch(plan, options);
+		} });
+		await started;
+		await assert.rejects(runLafayetteGuideAutomation(local.profilePath, local.policyPath, local.options), /already running/u);
+		release!();
+		assert.equal((await first).status, "prepared-for-review");
+		assert.equal(local.requests.length, 12);
 	}
 	finally {
 		release?.();

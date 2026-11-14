@@ -1019,6 +1019,15 @@ years speculatively or treats a portal's default election as the requested one.
 
 ## Other sources and access limits
 
+Union County, New Jersey adds an independent, official
+[candidate-reference collection](union-county-candidate-research.md). Its general
+and school-board publications supply 184 named entries with retained pages,
+original dates and literal party codes. Reusable collection follows actually
+offered editions and preserves all prior evidence. Both lists carry a position-
+confirmation warning, and the school list predates its stated confirmation date.
+Final ballot corroboration and reviewed integration remain separate; the existing
+federal source, candidate qualification and personal ballot selection are unchanged.
+
 Polk County, Iowa's [dated voter-information publication](https://www.polkcountyiowa.gov/county-auditor/election/news-and-press-releases/general-election-november-3-2026-voter-information/)
 adds an independent `ia-polk-2026` source. Its complete candidate PDF and the first
 listed precinct's sample reconcile 87 records, including 34 local/regional

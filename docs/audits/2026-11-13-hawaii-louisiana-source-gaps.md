@@ -55,3 +55,39 @@ does not supply any retained candidate names or a complete qualified roster.
 
 Publisher-cleared original bytes and independent factual/rights review are
 needed before native preparation. The statewide source hold remains separate.
+
+## November 14 Additional Policy Observations
+
+Honolulu's current robots document explicitly excludes GPTBot from the complete
+site. Hawaiʻi County's independently hosted elections-site robots request returns
+HTTP 403. Neither election index nor any candidate document was requested from
+those hosts. Caddo Clerk's robots document has explicit AI-search bot exclusions;
+source use remains held for policy review, without requesting its election index.
+
+The independent Power Coalition sample index offers a dated December 12, 2026
+section and parish-specific public download controls. Its own robots and linked
+privacy/mobile-service terms were reviewed separately. The
+[research collection contract](../louisiana-parish-samples.md) preserves unofficial
+status, original evidence and exceptions, while leaving state-portal and official
+parish-source restrictions unchanged.
+
+## November 14 independent parish research
+
+The independent Power Coalition catalog offers 35 parish selections for December
+12, 2026. Three paced batches retained 34 original PDFs. Native preparation
+exports 252 candidate-reference rows across 33 parishes, retaining repeated
+federal names as separate publication references. Every exported name/party/page
+and office fragment agrees with positioned PDF text; both outputs use maintained
+Poppler, so this is layout corroboration rather than an independent publisher.
+Ten rendered pages were examined for date, heading, city-school, judicial-section
+and multi-seat semantics.
+
+Caldwell's December-named guide prints November 3 as Election Day and remains
+held. St Charles has a malformed public download control and remains uncollected.
+East Baton Rouge mixes a congressional runoff with a state-senate special primary;
+the index label does not establish a single election stage for every office.
+The reviewed research export preserves original clocks, literal parties and
+printed seat counts. Qualification, personalized applicability, measure conversion,
+publication and recurring host activation remain separate. The maintained
+[collection and offline-preparation contract](../louisiana-parish-samples.md)
+supports future offered editions and preserves these source exceptions.

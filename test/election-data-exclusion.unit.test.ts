@@ -23,6 +23,7 @@ function fixture() {
 	write(root, "dist/release-identity.json", '{"version":"development","commit":"0000000000000000000000000000000000000000"}\n');
 	write(root, "dist/collect-fulton-education-notice.js", "export {};\n");
 	write(root, "dist/public-ballot-question-area.js", "export {};\n");
+	write(root, "dist/fulton-publisher-request.js", "export {};\n");
 	for (const name of ["fulton-municipal-runoff.js", "fulton-municipal-evidence.js", "state-ballot-fulton-municipal.js", "state-ballot-fulton-municipal-source.js", "prepare-fulton-municipal-runoff.js", "prepare-kauai-disclosures.js", "kauai-candidate-disclosures.js", "louisiana-parish-samples.js", "louisiana-parish-questions.js", "collect-louisiana-parish-samples.js", "state-measure-question-reconciliation.js", "fulton-election-calendar-publication.js", "fulton-source-policy.js", "fulton-education-notice.js", "prepare-fulton-education-notice.js"]) write(root, `dist/${name}`, "export {};\n");
 	return root;
 }
@@ -52,6 +53,9 @@ test("compiled runtime verification independently refuses bundled election data 
 		assert.notEqual(refused.status, 0);
 		assert.match(refused.stderr, /outside the compiled runtime/u);
 		rmSync(join(root, "dist/data/state-ballots"), { recursive: true });
+		rmSync(join(root, "dist/fulton-publisher-request.js"));
+		assert.match(spawnSync(process.execPath, [join(root, "scripts/verify-runtime-build.mjs")], { encoding: "utf8" }).stderr, /missing required runtime files/u);
+		write(root, "dist/fulton-publisher-request.js", "export {};\n");
 		rmSync(join(root, "dist/public-ballot-question-area.js"));
 		assert.match(spawnSync(process.execPath, [join(root, "scripts/verify-runtime-build.mjs")], { encoding: "utf8" }).stderr, /missing required runtime files/u);
 		write(root, "dist/public-ballot-question-area.js", "export {};\n");

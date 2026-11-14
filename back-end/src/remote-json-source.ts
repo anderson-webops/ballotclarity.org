@@ -301,6 +301,14 @@ async function readBoundedJsonBody(
 	})(), timeoutMs, () => response.body.destroy?.());
 }
 
+async function coordinatePublisher<Result>(url: URL, work: () => Promise<Result>) {
+	if (["fultoncountyga.gov", "www.fultoncountyga.gov"].includes(url.hostname)) {
+		const { coordinateFultonPublisherRequest } = await import("./fulton-publisher-request.js");
+		return coordinateFultonPublisherRequest(work);
+	}
+	return work();
+}
+
 export async function fetchRemoteJsonText(
 	source: string | URL,
 	options: FetchRemoteJsonOptions = {}
@@ -326,35 +334,38 @@ export async function fetchRemoteJsonText(
 	for (let redirectCount = 0; ; redirectCount += 1) {
 		if (options.allowedHosts && !options.allowedHosts.includes(currentUrl.hostname.toLowerCase()))
 			throw new Error("Remote source hostname is outside the configured source allowlist.");
-		const addresses = await resolvePublicAddresses(currentUrl, resolveAddresses);
-		const response = await withTimeout(transport({
-			address: addresses[0]!.address,
-			...(postBody ? { postBody } : {}),
-			timeoutMs,
-			url: currentUrl,
-		}), timeoutMs);
+		const body = await coordinatePublisher(currentUrl, async () => {
+			const addresses = await withTimeout(resolvePublicAddresses(currentUrl, resolveAddresses), timeoutMs);
+			const response = await withTimeout(transport({
+				address: addresses[0]!.address,
+				...(postBody ? { postBody } : {}),
+				timeoutMs,
+				url: currentUrl,
+			}), timeoutMs);
 
-		if (redirectStatuses.has(response.statusCode)) {
-			const location = response.headers.location;
-			response.body.destroy?.();
+			if (redirectStatuses.has(response.statusCode)) {
+				const location = response.headers.location;
+				response.body.destroy?.();
 
-			if (!location)
-				throw new Error("Remote coverage source redirect did not include a location.");
+				if (!location)
+					throw new Error("Remote coverage source redirect did not include a location.");
 
-			if (redirectCount >= maxRedirects)
-				throw new Error(`Remote coverage source exceeded ${maxRedirects} redirects.`);
+				if (redirectCount >= maxRedirects)
+					throw new Error(`Remote coverage source exceeded ${maxRedirects} redirects.`);
 
-			currentUrl = parseRemoteJsonUrl(new URL(location, currentUrl));
-			if ([301, 302, 303].includes(response.statusCode)) postBody = undefined;
-			continue;
-		}
+				currentUrl = parseRemoteJsonUrl(new URL(location, currentUrl));
+				if ([301, 302, 303].includes(response.statusCode)) postBody = undefined;
+				return undefined;
+			}
 
-		if (response.statusCode < 200 || response.statusCode >= 300) {
-			response.body.destroy?.();
-			throw new Error(`Unable to fetch live coverage snapshot: HTTP ${response.statusCode}.`);
-		}
+			if (response.statusCode < 200 || response.statusCode >= 300) {
+				response.body.destroy?.();
+				throw new Error(`Unable to fetch live coverage snapshot: HTTP ${response.statusCode}.`);
+			}
 
-		return await readBoundedJsonBody(response, maxBytes, timeoutMs, options.requireJson ?? true, false, options.textEncoding) as string;
+			return await readBoundedJsonBody(response, maxBytes, timeoutMs, options.requireJson ?? true, false, options.textEncoding) as string;
+		});
+		if (body !== undefined) return body;
 	}
 }
 
@@ -370,15 +381,17 @@ export async function fetchRemoteSourceDocument(source: string, options: Pick<Fe
 	const timeoutMs = options.timeoutMs ?? 30_000;
 	if (!options.allowedHosts?.includes(url.hostname) || new URL(source).hash || url.port || !Number.isSafeInteger(maxBytes) || maxBytes < 1 || maxBytes > 12 * 1024 * 1024 || !Number.isSafeInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > 60_000 || (options.etag !== undefined && (!/^(?:W\/)?"[\x21\x23-\x7E]{0,500}"$/u.test(options.etag))))
 		throw new Error("Provide an allowed bounded public document request.");
-	const addresses = await resolvePublicAddresses(url, options.resolveAddresses ?? (hostname => lookup(hostname, { all: true, verbatim: true })));
-	const response = await withTimeout((options.transport ?? requestPinnedRemoteJson)({ address: addresses[0]!.address, document: true, timeoutMs, url, ...(options.etag ? { etag: options.etag } : {}) }), timeoutMs);
-	try {
-		const body = response.statusCode === 200 ? await readBoundedJsonBody(response, maxBytes, timeoutMs, false, true) as Buffer : Buffer.alloc(0);
-		return { status: response.statusCode, body, contentType: typeof response.headers["content-type"] === "string" ? response.headers["content-type"].split(";")[0]!.trim().toLowerCase() : "", etag: typeof response.headers.etag === "string" && /^(?:W\/)?"[\x21\x23-\x7E]{0,500}"$/u.test(response.headers.etag) ? response.headers.etag : undefined, ...(typeof response.headers.location === "string" && /^[\x21-\x7E]{1,2048}$/u.test(response.headers.location) ? { location: response.headers.location } : {}), ...(typeof response.headers["content-security-policy"] === "string" && /^[\x20-\x7E]{1,4096}$/u.test(response.headers["content-security-policy"]) ? { contentSecurityPolicy: response.headers["content-security-policy"] } : {}) };
-	}
-	catch (error) {
-		if (error instanceof Error && /byte limit|compressed content encoding/u.test(error.message)) throw new RemoteSourceDocumentPolicyError("The public document exceeds its reviewed body or encoding bounds.");
-		throw error;
-	}
-	finally { response.body.destroy?.(); }
+	return coordinatePublisher(url, async () => {
+		const addresses = await withTimeout(resolvePublicAddresses(url, options.resolveAddresses ?? (hostname => lookup(hostname, { all: true, verbatim: true }))), timeoutMs);
+		const response = await withTimeout((options.transport ?? requestPinnedRemoteJson)({ address: addresses[0]!.address, document: true, timeoutMs, url, ...(options.etag ? { etag: options.etag } : {}) }), timeoutMs);
+		try {
+			const body = response.statusCode === 200 ? await readBoundedJsonBody(response, maxBytes, timeoutMs, false, true) as Buffer : Buffer.alloc(0);
+			return { status: response.statusCode, body, contentType: typeof response.headers["content-type"] === "string" ? response.headers["content-type"].split(";")[0]!.trim().toLowerCase() : "", etag: typeof response.headers.etag === "string" && /^(?:W\/)?"[\x21\x23-\x7E]{0,500}"$/u.test(response.headers.etag) ? response.headers.etag : undefined, ...(typeof response.headers.location === "string" && /^[\x21-\x7E]{1,2048}$/u.test(response.headers.location) ? { location: response.headers.location } : {}), ...(typeof response.headers["content-security-policy"] === "string" && /^[\x20-\x7E]{1,4096}$/u.test(response.headers["content-security-policy"]) ? { contentSecurityPolicy: response.headers["content-security-policy"] } : {}) };
+		}
+		catch (error) {
+			if (error instanceof Error && /byte limit|compressed content encoding/u.test(error.message)) throw new RemoteSourceDocumentPolicyError("The public document exceeds its reviewed body or encoding bounds.");
+			throw error;
+		}
+		finally { response.body.destroy?.(); }
+	});
 }

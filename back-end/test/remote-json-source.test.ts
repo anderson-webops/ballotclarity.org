@@ -1,5 +1,8 @@
 import assert from "node:assert/strict";
 import { Buffer } from "node:buffer";
+import { mkdtemp, readFile, realpath, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { Readable } from "node:stream";
 import test from "node:test";
 import {
@@ -13,6 +16,54 @@ import {
 } from "../src/remote-json-source.js";
 
 const publicResolver = async () => [{ address: "93.184.216.34", family: 4 }];
+
+test("Fulton native text and document aliases share a durable publisher interval before DNS", { timeout: 20000 }, async (context) => {
+	const directory = await realpath(await mkdtemp(join(tmpdir(), "fulton-native-requests-")));
+	const previous = process.env.FULTON_PUBLISHER_REQUEST_DIRECTORY;
+	context.after(async () => {
+		if (previous === undefined) delete process.env.FULTON_PUBLISHER_REQUEST_DIRECTORY;
+		else process.env.FULTON_PUBLISHER_REQUEST_DIRECTORY = previous;
+		await rm(directory, { recursive: true, force: true });
+	});
+	delete process.env.FULTON_PUBLISHER_REQUEST_DIRECTORY;
+	let resolutions = 0;
+	const starts: number[] = [];
+	const options = { allowedHosts: ["fultoncountyga.gov", "www.fultoncountyga.gov"], resolveAddresses: async () => {
+		resolutions++;
+		return publicResolver();
+	}, transport: async () => {
+		starts.push(Date.now());
+		return response({ body: "retained test body", contentType: "text/plain" });
+	} };
+	for (const request of [fetchRemoteSourceText, fetchRemoteSourceDocument]) await assert.rejects(request("https://fultoncountyga.gov/robots.txt", options), /Configure the shared Fulton/u);
+	assert.equal(resolutions, 0);
+	process.env.FULTON_PUBLISHER_REQUEST_DIRECTORY = directory;
+	assert.equal(await fetchRemoteSourceText("https://fultoncountyga.gov/robots.txt", options), "retained test body");
+	assert.equal((await fetchRemoteSourceDocument("https://www.fultoncountyga.gov/example.pdf", options)).body.toString(), "retained test body");
+	assert.ok(starts[1]! - starts[0]! >= 10950);
+	assert.equal(resolutions, 2);
+	assert.equal(JSON.parse(await readFile(join(directory, "last-request.json"), "utf8")).attempts, 2);
+	await assert.rejects(fetchRemoteSourceDocument("https://fultoncountyga.gov/example.pdf", { ...options, allowedHosts: [] }), /allowed bounded/u);
+	assert.equal(resolutions, 2);
+});
+
+test("native DNS resolution has the same bounded deadline as the HTTP operation", async () => {
+	for (const request of [fetchRemoteSourceText, fetchRemoteSourceDocument]) await assert.rejects(request("https://example.com/export", { allowedHosts: ["example.com"], timeoutMs: 5, resolveAddresses: () => new Promise(() => undefined), transport: async () => assert.fail("Timed-out DNS must never open a publisher request") }), /timed out/u);
+});
+
+test("redirects into Fulton require the configured gate before a second-host request", async (context) => {
+	const previous = process.env.FULTON_PUBLISHER_REQUEST_DIRECTORY;
+	delete process.env.FULTON_PUBLISHER_REQUEST_DIRECTORY;
+	context.after(() => {
+		if (previous !== undefined) process.env.FULTON_PUBLISHER_REQUEST_DIRECTORY = previous;
+	});
+	const hosts: string[] = [];
+	await assert.rejects(fetchRemoteSourceText("https://example.com/start", { allowedHosts: ["example.com", "fultoncountyga.gov"], resolveAddresses: async (hostname) => {
+		hosts.push(hostname);
+		return publicResolver();
+	}, transport: async () => response({ statusCode: 302, location: "https://fultoncountyga.gov/policy" }) }), /Configure the shared Fulton/u);
+	assert.deepEqual(hosts, ["example.com"]);
+});
 
 const challenge = "<html><head><meta name=\"ROBOTS\" content=\"NOINDEX, NOFOLLOW\"></head><body><iframe id=\"main-iframe\" src=\"/_Incapsula_Resource?incident_id=synthetic\">Request unsuccessful. Incapsula incident ID: synthetic</iframe></body></html>";
 

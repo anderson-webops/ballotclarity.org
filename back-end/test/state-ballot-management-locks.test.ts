@@ -52,6 +52,7 @@ syncBuiltinESMExports();
 		HOME: process.env.HOME,
 		TMPDIR: process.env.TMPDIR,
 		STATE_BALLOT_DATA_DIR: directory,
+		FULTON_PUBLISHER_REQUEST_DIRECTORY: join(directory, "publisher-requests"),
 		STATE_BALLOT_ENABLED_STATES: "GA",
 		STATE_BALLOT_ENABLED_SOURCES: source.id,
 		STATE_BALLOT_CYCLE_CATALOGS: JSON.stringify({ [source.id]: join(directory, "cycles.json") })
@@ -126,6 +127,8 @@ test("a forcibly stopped cycle command releases ownership for a cold reviewed im
 		assert.equal(enteredTransport, true);
 		await assert.rejects(acquireStateBallotAutomationLock(current.directory), /database is locked/u);
 		const marker = await readFile(join(current.directory, "automation.lock"));
+		const publisherJournal = await readFile(join(current.directory, "publisher-requests/last-request.json"));
+		assert.equal(JSON.parse(publisherJournal.toString()).finishedAt, null);
 		const stopped = once(worker, "exit");
 		worker.kill("SIGKILL");
 		assert.equal((await stopped)[1], "SIGKILL");
@@ -135,6 +138,7 @@ test("a forcibly stopped cycle command releases ownership for a cold reviewed im
 		assert.equal(imported.status, 0, imported.stderr);
 		assert.deepEqual((await createStateBallotStorage(current.directory).read(reviewedSource))!.records, current.snapshot.records);
 		assert.ok((await readFile(join(current.directory, "automation.lock"))).equals(marker));
+		assert.ok((await readFile(join(current.directory, "publisher-requests/last-request.json"))).equals(publisherJournal));
 		assert.equal(await readFile(current.requests, "utf8"), "request\n");
 	}
 	finally {

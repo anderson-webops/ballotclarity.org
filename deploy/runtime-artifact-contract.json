@@ -27,6 +27,7 @@
 				"back-end/dist/fulton-election-calendar.js",
 				"back-end/dist/fulton-election-calendar-publication.js",
 				"back-end/dist/fulton-source-policy.js",
+				"back-end/dist/fulton-publisher-request.js",
 				"back-end/dist/fulton-education-notice.js",
 				"back-end/dist/prepare-fulton-education-notice.js",
 				"back-end/dist/collect-fulton-education-notice.js",
@@ -69,6 +70,11 @@
 		}
 	],
 	"externalWritableState": [
+		{
+			"configuration": "FULTON_PUBLISHER_REQUEST_DIRECTORY",
+			"purpose": "Shared private request journal and process ownership for all native Fulton publisher collection",
+			"preservation": "Retain outside immutable releases with matching worker configuration and recovery evidence; historical data reads remain independent"
+		},
 		{
 			"configuration": "FULTON_ELECTION_CALENDAR_DIRECTORY",
 			"purpose": "Optional source-calendar captures, previous envelopes, collection journals and read-only administrative inspection",

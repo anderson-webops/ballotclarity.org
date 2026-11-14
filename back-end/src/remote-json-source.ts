@@ -152,6 +152,10 @@ function requestPinnedRemoteJson({
 	url,
 }: RemoteJsonTransportInput): Promise<RemoteJsonResponse> {
 	return new Promise((resolve, reject) => {
+		let deadline: NodeJS.Timeout | undefined;
+		const clearDeadline = () => {
+			if (deadline) clearTimeout(deadline);
+		};
 		const request = httpsRequest({
 			headers: {
 				"Accept": document ? "application/pdf, text/html, text/plain" : "application/json, application/*+json, text/csv, text/plain, text/html, application/octet-stream",
@@ -169,6 +173,7 @@ function requestPinnedRemoteJson({
 				? undefined
 				: normalizeHostname(url.hostname),
 		}, (response: IncomingMessage) => {
+			clearDeadline();
 			resolve({
 				body: response,
 				headers: response.headers,
@@ -176,15 +181,23 @@ function requestPinnedRemoteJson({
 			});
 		});
 
+		deadline = setTimeout(() => {
+			request.destroy(new Error(`Remote coverage source timed out after ${timeoutMs}ms.`));
+		}, timeoutMs);
+		deadline.unref();
 		request.setTimeout(timeoutMs, () => {
 			request.destroy(new Error(`Remote coverage source timed out after ${timeoutMs}ms.`));
 		});
-		request.once("error", reject);
+		request.once("close", clearDeadline);
+		request.once("error", (error) => {
+			clearDeadline();
+			reject(error);
+		});
 		request.end(postBody);
 	});
 }
 
-async function withTimeout<T>(operation: Promise<T>, timeoutMs: number) {
+async function withTimeout<T>(operation: Promise<T>, timeoutMs: number, onTimeout?: () => void) {
 	let timeout: NodeJS.Timeout | undefined;
 
 	try {
@@ -193,6 +206,10 @@ async function withTimeout<T>(operation: Promise<T>, timeoutMs: number) {
 			new Promise<never>((_resolve, reject) => {
 				timeout = setTimeout(() => {
 					reject(new Error(`Remote coverage source timed out after ${timeoutMs}ms.`));
+					try {
+						onTimeout?.();
+					}
+					catch {}
 				}, timeoutMs);
 				timeout.unref();
 			}),
@@ -281,7 +298,7 @@ async function readBoundedJsonBody(
 			if (textEncoding !== "utf-8-or-windows-1252" || body.subarray(0, 3).equals(Buffer.from([0xEF, 0xBB, 0xBF])) || body.some(byte => [0x81, 0x8D, 0x8F, 0x90, 0x9D].includes(byte))) throw error;
 			return new TextDecoder("windows-1252", { fatal: true, ignoreBOM: true }).decode(body);
 		}
-	})(), timeoutMs);
+	})(), timeoutMs, () => response.body.destroy?.());
 }
 
 export async function fetchRemoteJsonText(

@@ -38,3 +38,20 @@ These results add no candidates, inferred runoff participants, ballot matches,
 election results or new statewide permissions. Previously retained St. Charles
 material and its access hold remain unchanged. Independent named-candidate
 collection for Louisiana remains unfinished.
+
+## Calcasieu Follow-up
+
+The independently authored [Calcasieu qualified-candidate index](https://www.calcasieuclerk.gov/qualified-candidates)
+explicitly identifies the November 3, 2026 election and offers a local candidate
+photo-directory PDF. Its ordinary robots and index requests both returned HTTP
+200. The PDF link returned HTTP 301 to the clerk's offered `filesusr.com` document
+host; that host's robots request returned HTTP 403. The PDF was not requested
+from the blocked host, and no alternative host, identity or cached copy was used.
+
+The visible final-list label combines "FRIDAY" with August 6, 2026, which falls
+on Thursday. Preserve the literal label and leave the publisher's revision
+instant unverified. The heading establishes an intended election context; it
+does not supply any retained candidate names or a complete qualified roster.
+
+Publisher-cleared original bytes and independent factual/rights review are
+needed before native preparation. The statewide source hold remains separate.

@@ -96,6 +96,10 @@ implementation, personal applicability, publication and import approval remain
 separate. Supplementary notice facts preserve the consolidated sample's existing
 literal wording and original source identity.
 
+[Fiscal supplementation](fulton-education-measure-supplement.md) connects the
+captured notice to an existing unpublished measure draft and the maintained
+measure-guide preparation workflow, preserving the original draft and clocks.
+
 The source-policy receipts and calendar publication configuration now live in
 dependency-light modules. Existing exports and the calendar configuration digest
 remain compatible, while independently started workers avoid import-order

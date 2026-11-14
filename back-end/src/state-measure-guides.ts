@@ -139,7 +139,7 @@ function sourcesIn(value: unknown, officialOnly = true): Source[] {
 	return [...sources.values()];
 }
 
-function parseDraft(value: unknown, input: GuideInput, now: number): MeasureDraft {
+export function parseStateMeasureDraft(value: unknown, input: Pick<GuideInput, "stateCode" | "electionDate" | "jurisdiction">, now: number): MeasureDraft {
 	if (!record(value) || value.schemaVersion !== 1 || value.type !== "state-measure-draft" || value.stateCode !== input.stateCode || value.electionDate !== input.electionDate
 		|| !pastInstant(value.reviewedAt, now) || value.publicationApproved !== false || value.automaticImportApproved !== false || !record(value.documents)
 		|| !Array.isArray(value.measures) || !value.measures.length || value.measures.length > 1000) {
@@ -230,7 +230,7 @@ export async function prepareStateMeasureGuideFiles(planPath: string, now = Date
 		if (plan.primaryAugmentation ? scope !== primaryScope : existingScopes.has(scope))
 			throw new Error(plan.primaryAugmentation ? "Primary augmentation must retain the exact primary state, date and jurisdiction scope." : "An existing election scope requires a separately reviewed replacement; preparation is append-only.");
 		existingScopes.add(scope);
-		const draft = parseDraft(json((await readPinned(input)).toString("utf8")), input, now);
+		const draft = parseStateMeasureDraft(json((await readPinned(input)).toString("utf8")), input, now);
 		if (new Set(input.documents.map(document => document.key)).size !== input.documents.length || input.documents.length !== Object.keys(draft.documents).length)
 			throw new Error("Provide exactly one pinned capture for every native draft document.");
 		for (const document of input.documents) {

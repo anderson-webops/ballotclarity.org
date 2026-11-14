@@ -18,6 +18,7 @@ const requiredRuntimeFiles = [
 	"fulton-source-policy.js",
 	"fulton-education-notice.js",
 	"prepare-fulton-education-notice.js",
+	"prepare-fulton-education-measure.js",
 	"collect-fulton-education-notice.js",
 	"fulton-election-calendar-storage.js",
 	"fulton-election-calendar-operations.js",

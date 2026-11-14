@@ -30,6 +30,7 @@
 				"back-end/dist/fulton-publisher-request.js",
 				"back-end/dist/fulton-education-notice.js",
 				"back-end/dist/prepare-fulton-education-notice.js",
+				"back-end/dist/prepare-fulton-education-measure.js",
 				"back-end/dist/collect-fulton-education-notice.js",
 				"back-end/dist/fulton-election-calendar-storage.js",
 				"back-end/dist/fulton-election-calendar-operations.js",

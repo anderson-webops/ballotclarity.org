@@ -23,11 +23,14 @@ External election catalogs opt the automatic candidate repository into reusable
 source families. The current 88 source definitions retain explicit source/state
 allowlists; reusable discovery does not widen an exact-source allowlist.
 
-Sixty-one families across forty-eight states and D.C. are supported. Some
+Sixty-two families across forty-eight states and D.C. are supported. Union's
+reviewed family uses its separately enrolled preparation/import worker; the
+other sixty-one use the existing cycle-sync paths. Some
 families cover only a county, municipality or one chamber, not an entire state:
 
 | Family | Discovery | Elections |
 | --- | --- | --- |
+| `nj-union-2026-11-03` | [Union County sample-ballot index](https://unioncountyvotes.com/sample-ballots/) | Complete offered editions, bounded collection and native candidate/question preparation. Explicit baseline/profile enrollment enables compatible future candidate imports and dated historical access; question publication, personal applicability and host scheduling remain separate. See [enrolled Union automation](union-county-ballot-automation.md). |
 | `ga-fulton-municipal-runoff-2025-12-02` | [Fulton County sample ballots](https://fultoncountyga.gov/inside-fulton-county/fulton-county-departments/registration-and-elections/sample-ballots) | Actually offered municipal-runoff publications with native/rendered agreement, explicit printed dates, scoped offices and incumbency. Empty indexes create no assumed runoff. Historical access, personal-applicability holds and separately approved scheduling remain distinct. See [municipal collection](fulton-municipal-runoff.md). |
 | `nm-los-ranchos-2025` | [Los Ranchos election information](https://www.losranchosnm.gov/1195/Election-Info) | Explicit odd-year Regular Local Election dates, matching candidate alphabet-cycle and guide-year markers. The retained 2025 slate is historical; the newer 2026 general-election notice does not date those candidates. Future named slates reuse the same collector, with personal ballot previews disabled. |
 | `mn-independence-city-2026` | [Independence election index](https://www.ci.independence.mn.us/government/elections) | The named city-council statement list and an independently labeled general-election date on the same page; factual references only, with explicit incumbency, unknown parties and ballot previews disabled. Offered future dates reuse the URL, policy checks and external storage; expired editions remain archived. The separate 78-record reviewed sample source remains unchanged. See the [collection review](audits/2026-11-07-independence-city-automation.md). |

@@ -86,6 +86,7 @@ interface StateBallotCycleSyncOptions {
 
 export async function fetchStateBallotCycleDiscovery(request: typeof fetchRemoteSourceText = fetchRemoteSourceText, familyId = "wa-general-2026") {
 	const family = getStateBallotCycleFamily(familyId);
+	if (family.source.id === "nj-union-2026-11-03") throw new Error("Use the enrolled Union worker to collect, prepare and import this reviewed family.");
 	if (family.format === "alabama-pdf") return fetchAlabamaCycleDiscovery();
 	if (family.format === "maine-house-html") return fetchMaineHouseDiscovery();
 	if (family.format === "orange-pdf") return fetchOrangeCycleDiscovery();
@@ -160,6 +161,7 @@ export async function fetchStateBallotCycleDiscovery(request: typeof fetchRemote
 }
 
 export async function syncStateBallotCycles(options: StateBallotCycleSyncOptions) {
+	if (options.familyId === "nj-union-2026-11-03") throw new Error("Use the enrolled Union worker to collect, prepare and import this reviewed family.");
 	assertExternalStateDataDirectory(options.dataDirectory);
 	const now = options.now ?? Date.now;
 	const family = getStateBallotCycleFamily(options.familyId ?? "wa-general-2026");

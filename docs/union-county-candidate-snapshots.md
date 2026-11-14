@@ -2,7 +2,8 @@
 
 [Recurring preparation](union-county-ballot-automation.md) discovers and collects
 complete offered editions, prepares both candidates and questions, and retains
-changes for review. The historical directory source remains a manual import.
+changes for review. Separately enrolled candidate imports register compatible
+later editions through the standard external cycle catalog.
 
 `nj-union-2026-11-03` adds a separately selected historical directory source.
 The existing New Jersey federal source retains its default priority. Union's

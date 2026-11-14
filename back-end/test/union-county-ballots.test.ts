@@ -10,10 +10,15 @@ import { prepareUnionBallotQuestions } from "../src/prepare-union-ballot-questio
 import { buildUnionCandidateSnapshot, prepareUnionCandidateSnapshot } from "../src/prepare-union-candidate-snapshot.js";
 import { prepareUnionChoiceReview } from "../src/prepare-union-choice-review.js";
 import { acquireStateBallotAutomationLock } from "../src/state-ballot-automation-lock.js";
+import { fetchStateBallotCycleDiscovery, syncStateBallotCycles } from "../src/state-ballot-cycle-sync.js";
+import { parseStateBallotCycleCatalog, readStateBallotCycleCatalog, stateBallotCycleSources } from "../src/state-ballot-cycles.js";
+import { createStateBallotRepository, resolveStateBallotConfiguration } from "../src/state-ballot-repository.js";
 import { parseBundledStateSnapshot } from "../src/state-ballot-snapshot.js";
+import { createStateBallotStorage } from "../src/state-ballot-storage.js";
 import { unionSampleSource } from "../src/state-ballot-union-source.js";
 import { inspectUnionBallotAutomation, readUnionBallotAutomationPlan, runUnionBallotAutomation } from "../src/union-ballot-automation.js";
 import { readUnionChoiceContext, unionOfficeCorroborated } from "../src/union-ballot-choice-context.js";
+import { enrollUnionBallotImport, syncUnionBallotImport } from "../src/union-ballot-import.js";
 import { readUnionSampleQuestion } from "../src/union-ballot-questions.js";
 import { readUnionBallotCells, reconcileUnionBallotReferences } from "../src/union-ballot-witnesses.js";
 import { collectUnionSampleBatch, collectUnionSampleWindow, readUnionSampleCatalog, readUnionSampleEdition, unionCountyPolicyHash, unionCountyPolicyUrls, unionSampleLandingUrl } from "../src/union-county-ballots.js";
@@ -168,10 +173,10 @@ function candidateSamples() {
 }
 
 async function automationFixture(root: string) {
-	const path = join(root, "automation.json");
+	const path = join(await realpath(root), "automation.json");
 	const directory = join(await realpath(root), "automation");
 	await mkdir(directory, { mode: 0o700 });
-	await writeFile(path, JSON.stringify({ schemaVersion: 1, type: "union-ballot-automation", directory, accessReview: review, intervalMs: 21600000 }));
+	await writeFile(path, JSON.stringify({ schemaVersion: 1, type: "union-ballot-automation", directory, accessReview: review, intervalMs: 21600000 }), { mode: 0o600 });
 	const extract = async (body: Buffer, format: "layout" | "bbox-layout") => {
 		const form = Number(/form-(\d+)/u.exec(body.toString("utf8"))?.[1]);
 		const input = contextDocument(form);
@@ -179,6 +184,208 @@ async function automationFixture(root: string) {
 	};
 	return { path, directory, extract };
 }
+
+async function importFixture(root: string, fixture: Awaited<ReturnType<typeof automationFixture>>, snapshotSha256: string, allowFutureElections = true) {
+	const directory = join(await realpath(root), "snapshots");
+	await mkdir(directory, { mode: 0o700 });
+	const path = join(await realpath(root), "import-policy.json");
+	const value = { schemaVersion: 1, type: "union-ballot-import-policy", profileSha256: hash(await readFile(fixture.path)), baselineSnapshotSha256: snapshotSha256, dataDirectory: directory, catalogPath: join(directory, "union-cycles.json"), allowFutureElections };
+	await writeFile(path, JSON.stringify(value), { mode: 0o600 });
+	return { path, value, directory };
+}
+
+test("Union reviewed enrollment imports complete candidate data and repeated synchronization retains exact clocks", async (context) => {
+	const root = await mkdtemp(join(tmpdir(), "union-import-"));
+	context.after(() => rm(root, { recursive: true, force: true }));
+	const fixture = await automationFixture(root);
+	const net = network();
+	const options = { now: net.options.now, pause: net.options.sleep, collection: net.options, extract: fixture.extract };
+	const prepared = (await runUnionBallotAutomation(fixture.path, options)).latestPrepared!;
+	const approval = await importFixture(root, fixture, prepared.files[0]!.sha256);
+	const before = net.requests.length;
+	await assert.rejects(syncUnionBallotImport(fixture.path, approval.path, options), /Enroll/u);
+	assert.equal(net.requests.length, before);
+	const first = await enrollUnionBallotImport(fixture.path, approval.path, options.now);
+	assert.equal(first.imported, true);
+	assert.equal(first.records, prepared.candidates);
+	assert.equal(first.personalBallotApproved, false);
+	assert.equal(first.publicationApproved, false);
+	const catalog = readStateBallotCycleCatalog(approval.value.catalogPath, options.now())!;
+	const source = stateBallotCycleSources(catalog, options.now())[0]!;
+	const stored = await createStateBallotStorage(approval.directory).read(source);
+	assert.equal(stored!.retrievedAt, prepared.capturedAt);
+	assert.equal(stored!.records.length, prepared.candidates);
+	const receiptBefore = await readFile(join(fixture.directory, "accepted-import.json"));
+	const repeated = await syncUnionBallotImport(fixture.path, approval.path, options);
+	assert.equal(repeated.imported, false);
+	assert.equal(repeated.importedAt, first.importedAt);
+	assert.equal(net.requests.length, before);
+	assert.deepEqual(await readFile(join(fixture.directory, "accepted-import.json")), receiptBefore);
+	assert.equal((await inspectUnionBallotAutomation(fixture.path, options.now())).state!.issues[0], "initial-review-required");
+});
+
+test("Union enrolled imports discover later elections with unchanged approvals and preserve historical offline access", async (context) => {
+	const root = await mkdtemp(join(tmpdir(), "union-import-future-"));
+	context.after(() => rm(root, { recursive: true, force: true }));
+	const fixture = await automationFixture(root);
+	const later = (value: string) => value.replaceAll("2030", "2034").replaceAll("november-5", "november-7").replaceAll("November 5", "November 7").replaceAll("NOVEMBER 5", "NOVEMBER 7");
+	let future = false;
+	const net = network(url => future && url === unionSampleLandingUrl ? { body: later(landing) } : future && url === later(edition.url) ? { body: later(editionBody) } : undefined);
+	const options = { now: net.options.now, pause: net.options.sleep, collection: net.options, extract: fixture.extract };
+	const first = (await runUnionBallotAutomation(fixture.path, options)).latestPrepared!;
+	const approval = await importFixture(root, fixture, first.files[0]!.sha256);
+	await enrollUnionBallotImport(fixture.path, approval.path, options.now);
+	const policyBefore = await readFile(approval.path);
+	const profileBefore = await readFile(fixture.path);
+	await net.options.sleep(Date.parse("2034-10-01T00:00:00Z") - options.now());
+	future = true;
+	const imported = await syncUnionBallotImport(fixture.path, approval.path, { ...options, extract: async (body, format) => later(await fixture.extract(body, format)) });
+	assert.equal(imported.electionDate, "2034-11-07");
+	assert.equal(imported.imported, true);
+	assert.deepEqual(await readFile(approval.path), policyBefore);
+	assert.deepEqual(await readFile(fixture.path), profileBefore);
+	const catalog = readStateBallotCycleCatalog(approval.value.catalogPath, options.now())!;
+	assert.deepEqual(catalog.elections.map(item => item.electionDate), ["2030-11-05", "2034-11-07"]);
+	const configuration = resolveStateBallotConfiguration({ STATE_BALLOT_DATA_DIR: approval.directory, STATE_BALLOT_ENABLED_STATES: "NJ", STATE_BALLOT_ENABLED_SOURCES: unionSampleSource().id, STATE_BALLOT_ENABLED_FAMILIES: unionSampleSource().id, STATE_BALLOT_CYCLE_CATALOGS: JSON.stringify({ [unionSampleSource().id]: approval.value.catalogPath }) }, options.now());
+	assert.ok(configuration.sources.some(source => source.id === imported.sourceId));
+	const repository = createStateBallotRepository({ ...configuration, now: options.now, fetchText: async () => {
+		throw new Error("Public reads stay offline.");
+	} });
+	assert.equal((await repository.getSnapshot("NJ"))!.source.id, imported.sourceId);
+	assert.equal((await repository.getSnapshot("NJ", "nj-union-2030-11-05"))!.records.length, first.candidates);
+	await net.options.sleep(Date.parse("2034-11-10T00:00:00Z") - options.now());
+	assert.equal(await repository.getSnapshot("NJ"), null);
+	assert.equal((await repository.getSnapshot("NJ", imported.sourceId))!.records.length, imported.records);
+});
+
+test("Union recurring candidate disappearance preserves accepted data, catalog and enrollment", async (context) => {
+	const root = await mkdtemp(join(tmpdir(), "union-import-removal-"));
+	context.after(() => rm(root, { recursive: true, force: true }));
+	const fixture = await automationFixture(root);
+	let changed = false;
+	const net = network(url => changed && /FORM-\d+\.pdf$/u.test(url) ? { body: `%PDF-form-${/FORM-(\d+)/u.exec(url)![1]}-changed` } : undefined);
+	const options = { now: net.options.now, pause: net.options.sleep, collection: net.options, extract: fixture.extract };
+	const first = (await runUnionBallotAutomation(fixture.path, options)).latestPrepared!;
+	const approval = await importFixture(root, fixture, first.files[0]!.sha256);
+	const accepted = await enrollUnionBallotImport(fixture.path, approval.path, options.now);
+	const paths = [join(approval.directory, `${accepted.sourceId}.json`), approval.value.catalogPath, join(fixture.directory, "accepted-import.json")];
+	const before = await Promise.all(paths.map(path => readFile(path)));
+	changed = true;
+	await net.options.sleep(21600001);
+	await assert.rejects(syncUnionBallotImport(fixture.path, approval.path, { ...options, extract: async (body, format) => {
+		const form = Number(/form-(\d+)/u.exec(body.toString("utf8"))?.[1]);
+		const input = contextDocument(form, words => words.filter(word => !["Veronica", "FERNANDEZ"].includes(word.value)));
+		return format === "layout" ? input.layout : input.bbox;
+	} }), /candidate disappeared or changed/u);
+	assert.deepEqual(await Promise.all(paths.map(path => readFile(path))), before);
+	assert.ok((await inspectUnionBallotAutomation(fixture.path, options.now())).state!.issues.includes("candidate-removed"));
+	const changedPrepared = (await inspectUnionBallotAutomation(fixture.path, options.now())).state!.latestPrepared!;
+	await writeFile(approval.path, JSON.stringify({ ...approval.value, baselineSnapshotSha256: changedPrepared.files[0]!.sha256 }));
+	const reviewed = await enrollUnionBallotImport(fixture.path, approval.path, options.now);
+	assert.equal(reviewed.records, first.candidates - 1);
+	assert.equal((await readdir(join(fixture.directory, "imports"))).filter(name => name.startsWith("receipt-")).length, 1);
+});
+
+test("Union approvals reject changed profiles, baselines and enrollment without publisher requests", async (context) => {
+	const root = await mkdtemp(join(tmpdir(), "union-import-approval-"));
+	context.after(() => rm(root, { recursive: true, force: true }));
+	const fixture = await automationFixture(root);
+	const net = network();
+	const options = { now: net.options.now, pause: net.options.sleep, collection: net.options, extract: fixture.extract };
+	const prepared = (await runUnionBallotAutomation(fixture.path, options)).latestPrepared!;
+	const approval = await importFixture(root, fixture, "0".repeat(64));
+	const count = net.requests.length;
+	await assert.rejects(enrollUnionBallotImport(fixture.path, approval.path, options.now), /exact reviewed baseline/u);
+	await writeFile(approval.path, JSON.stringify({ ...approval.value, baselineSnapshotSha256: prepared.files[0]!.sha256 }));
+	await enrollUnionBallotImport(fixture.path, approval.path, options.now);
+	await writeFile(approval.path, JSON.stringify({ ...approval.value, baselineSnapshotSha256: prepared.files[0]!.sha256, allowFutureElections: false }));
+	await assert.rejects(syncUnionBallotImport(fixture.path, approval.path, options), /enrollment requires review/u);
+	await writeFile(fixture.path, `${await readFile(fixture.path, "utf8")}\n`);
+	await assert.rejects(syncUnionBallotImport(fixture.path, approval.path, options), /reviewed collection profile/u);
+	assert.equal(net.requests.length, count);
+});
+
+test("Union future catalogs retain source allowlists and reject cross-host, duplicate and baseline changes", async (context) => {
+	const root = await mkdtemp(join(tmpdir(), "union-import-catalog-"));
+	context.after(() => rm(root, { recursive: true, force: true }));
+	const fixture = await automationFixture(root);
+	const net = network();
+	const options = { now: net.options.now, pause: net.options.sleep, collection: net.options, extract: fixture.extract };
+	const prepared = (await runUnionBallotAutomation(fixture.path, options)).latestPrepared!;
+	const approval = await importFixture(root, fixture, prepared.files[0]!.sha256);
+	await enrollUnionBallotImport(fixture.path, approval.path, options.now);
+	const catalog = readStateBallotCycleCatalog(approval.value.catalogPath, options.now())!;
+	for (const elections of [[...catalog.elections, ...catalog.elections], [{ ...catalog.elections[0], unionDocuments: ["https://example.com/ballot.pdf"] }], [{ ...catalog.elections[0], electionDate: "2026-11-03" }]]) assert.throws(() => parseStateBallotCycleCatalog({ ...catalog, elections }, options.now()));
+	const exactOnly = resolveStateBallotConfiguration({ STATE_BALLOT_ENABLED_STATES: "NJ", STATE_BALLOT_ENABLED_SOURCES: "nj-doe-2026-federal", STATE_BALLOT_CYCLE_CATALOGS: JSON.stringify({ [unionSampleSource().id]: approval.value.catalogPath }) }, options.now());
+	assert.deepEqual(exactOnly.sources.map(source => source.id), ["nj-doe-2026-federal"]);
+	await assert.rejects(fetchStateBallotCycleDiscovery(async () => {
+		throw new Error("No publisher request is authorized.");
+	}, unionSampleSource().id), /enrolled Union worker/u);
+	await assert.rejects(syncStateBallotCycles({ familyId: unionSampleSource().id, dataDirectory: approval.directory, catalogPath: approval.value.catalogPath }), /enrolled Union worker/u);
+});
+
+test("Union cycle-specific approval holds later offered editions without changing accepted snapshots", async (context) => {
+	const root = await mkdtemp(join(tmpdir(), "union-import-scoped-"));
+	context.after(() => rm(root, { recursive: true, force: true }));
+	const fixture = await automationFixture(root);
+	const later = (value: string) => value.replaceAll("2030", "2034").replaceAll("november-5", "november-7").replaceAll("November 5", "November 7").replaceAll("NOVEMBER 5", "NOVEMBER 7");
+	let future = false;
+	const net = network(url => future && url === unionSampleLandingUrl ? { body: later(landing) } : future && url === later(edition.url) ? { body: later(editionBody) } : undefined);
+	const options = { now: net.options.now, pause: net.options.sleep, collection: net.options, extract: fixture.extract };
+	const prepared = (await runUnionBallotAutomation(fixture.path, options)).latestPrepared!;
+	const approval = await importFixture(root, fixture, prepared.files[0]!.sha256, false);
+	const accepted = await enrollUnionBallotImport(fixture.path, approval.path, options.now);
+	const paths = [join(approval.directory, `${accepted.sourceId}.json`), approval.value.catalogPath, join(fixture.directory, "accepted-import.json")];
+	const before = await Promise.all(paths.map(path => readFile(path)));
+	await net.options.sleep(Date.parse("2034-10-01T00:00:00Z") - options.now());
+	future = true;
+	await assert.rejects(syncUnionBallotImport(fixture.path, approval.path, { ...options, extract: async (body, format) => later(await fixture.extract(body, format)) }), /outside this import approval/u);
+	assert.deepEqual(await Promise.all(paths.map(path => readFile(path))), before);
+});
+
+test("Union source outages preserve accepted imports and recover through the same enrolled profile", async (context) => {
+	const root = await mkdtemp(join(tmpdir(), "union-import-outage-"));
+	context.after(() => rm(root, { recursive: true, force: true }));
+	const fixture = await automationFixture(root);
+	let denied = false;
+	const net = network(url => denied && url === documentUrl(1) ? { status: 403 } : undefined);
+	const options = { now: net.options.now, pause: net.options.sleep, collection: net.options, extract: fixture.extract };
+	const prepared = (await runUnionBallotAutomation(fixture.path, options)).latestPrepared!;
+	const approval = await importFixture(root, fixture, prepared.files[0]!.sha256);
+	const first = await enrollUnionBallotImport(fixture.path, approval.path, options.now);
+	const paths = [join(approval.directory, `${first.sourceId}.json`), approval.value.catalogPath, join(fixture.directory, "accepted-import.json")];
+	const before = await Promise.all(paths.map(path => readFile(path)));
+	denied = true;
+	await net.options.sleep(21600001);
+	await assert.rejects(syncUnionBallotImport(fixture.path, approval.path, options));
+	assert.deepEqual(await Promise.all(paths.map(path => readFile(path))), before);
+	denied = false;
+	await net.options.sleep(21600001);
+	const recovered = await syncUnionBallotImport(fixture.path, approval.path, options);
+	assert.equal(recovered.imported, false);
+	assert.equal(recovered.importedAt, first.importedAt);
+	assert.deepEqual(await Promise.all(paths.map(path => readFile(path))), before);
+});
+
+test("Union importer respects both process-held owners and detects altered prepared bytes", async (context) => {
+	const root = await mkdtemp(join(tmpdir(), "union-import-ownership-"));
+	context.after(() => rm(root, { recursive: true, force: true }));
+	const fixture = await automationFixture(root);
+	const net = network();
+	const options = { now: net.options.now, pause: net.options.sleep, collection: net.options, extract: fixture.extract };
+	const prepared = (await runUnionBallotAutomation(fixture.path, options)).latestPrepared!;
+	const approval = await importFixture(root, fixture, prepared.files[0]!.sha256);
+	for (const directory of [fixture.directory, approval.directory]) {
+		const held = await acquireStateBallotAutomationLock(directory);
+		try {
+			await assert.rejects(enrollUnionBallotImport(fixture.path, approval.path, options.now), /already running/u);
+		}
+		finally { await held.release(); }
+	}
+	await writeFile(join(fixture.directory, "runs", prepared.runId, prepared.files[0]!.path), "altered");
+	await assert.rejects(enrollUnionBallotImport(fixture.path, approval.path, options.now), /prepared output bytes changed/u);
+	await assert.rejects(readFile(join(fixture.directory, "accepted-import.json")), { code: "ENOENT" });
+});
 
 test("Union discovery windows collect every offered form in batches of at most twenty-five", async () => {
 	const extra = Array.from({ length: 5 }, (_, index) => `<li><a href="${documentUrl(index + 23)}">District ${index + 3}</a></li>`).join("");

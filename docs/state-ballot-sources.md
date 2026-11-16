@@ -771,10 +771,10 @@ Protected host automation may invoke permitted sources on a schedule to populate
 data without waiting for a visitor. This source change does not install a
 scheduler or configure the hosted service.
 
-The routine worker and multi-family cycle synchronization process Fulton County
-first by default, including future elections discovered through the same family.
+The routine worker and multi-family cycle synchronization retain configured
+order by default, without a standing jurisdiction priority.
 `STATE_BALLOT_PRIORITY_FAMILIES` optionally lists approved family IDs in priority
-order; an explicitly empty value retains configured order. Unprioritized work
+order; an absent or explicitly empty value retains configured order. Unprioritized work
 keeps its existing relative order, and a failed priority source does not prevent
 the remaining independent work. This setting changes collection order only,
 not enabled sources, publisher permission, request spacing, freshness, review,

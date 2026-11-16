@@ -73,7 +73,7 @@ test("municipal source and cycle registration preserve historical access and ind
 	const family = getStateBallotCycleFamily(source.id);
 	assert.equal(family.format, "fulton-municipal-pdf");
 	assert.equal(source.ballotPreview, false);
-	assert.deepEqual(prioritizeStateBallotWork(["mt-general-2026", "ga-fulton-municipal-runoff-2032-11-30", "ga-fulton-general-2032-11-02"], value => value), ["ga-fulton-general-2032-11-02", "ga-fulton-municipal-runoff-2032-11-30", "mt-general-2026"]);
+	assert.deepEqual(prioritizeStateBallotWork(["mt-general-2026", "ga-fulton-municipal-runoff-2032-11-30", "ga-fulton-general-2032-11-02"], value => value), ["mt-general-2026", "ga-fulton-municipal-runoff-2032-11-30", "ga-fulton-general-2032-11-02"]);
 	validateFultonMunicipalSource(fultonMunicipalSource("2032-11-30"));
 	assert.throws(() => validateFultonMunicipalSource({ ...source, ballotPreview: undefined }));
 	assert.throws(() => fultonMunicipalSource("2032-12-01"));

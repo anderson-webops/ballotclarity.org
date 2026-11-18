@@ -112,13 +112,15 @@ export function readLafayetteBallotResearch(guideText: string, governmentHtml: s
 	return { schemaVersion: 1, type: "lafayette-ballot-research", electionDate, rows, candidateReferences: candidates(pages[0]!, electionDate), conflicts, unresolvedResolutions, exactQuestionSetsAgree: true, officialCertificationVerified: false, personalApplicabilityVerified: false, automaticImportApproved: false, publicationApproved: false };
 }
 
-function pin(value: unknown): value is Pin {
-	return exact(value, ["path", "sha256", "url", "capturedAt"]) && typeof value.path === "string" && isAbsolute(value.path) && typeof value.sha256 === "string" && /^[a-f\d]{64}$/u.test(value.sha256) && typeof value.url === "string" && typeof value.capturedAt === "string" && Number.isFinite(Date.parse(value.capturedAt)) && new Date(value.capturedAt).toISOString() === value.capturedAt && Date.parse(value.capturedAt) <= Date.now();
+function pin(value: unknown, now: number): value is Pin {
+	return exact(value, ["path", "sha256", "url", "capturedAt"]) && typeof value.path === "string" && isAbsolute(value.path) && typeof value.sha256 === "string" && /^[a-f\d]{64}$/u.test(value.sha256) && typeof value.url === "string" && typeof value.capturedAt === "string" && Number.isFinite(Date.parse(value.capturedAt)) && new Date(value.capturedAt).toISOString() === value.capturedAt && Date.parse(value.capturedAt) <= now;
 }
 
-export async function prepareLafayetteBallotResearch(path: string, extract?: (bytes: Buffer) => Promise<string>) {
-	const value: unknown = JSON.parse((await readBoundedStateDataBytes(path, 32768)).toString("utf8"));
-	if (!exact(value, ["schemaVersion", "type", "electionDate", "guide", "governmentPage", "outputDirectory"]) || value.schemaVersion !== 1 || value.type !== "lafayette-ballot-research-preparation" || !date(value.electionDate) || !pin(value.guide) || !pin(value.governmentPage) || typeof value.outputDirectory !== "string") throw new Error("Provide pinned Lafayette publications and an external output directory.");
+export async function readLafayetteBallotResearchFiles(path: string, extract?: (bytes: Buffer) => Promise<string>, now = Date.now(), expectedSha256?: string) {
+	const original = await readBoundedStateDataBytes(path, 32768);
+	if (expectedSha256 !== undefined && hash(original) !== expectedSha256) throw new Error("The Lafayette research plan bytes changed.");
+	const value: unknown = JSON.parse(original.toString("utf8"));
+	if (!exact(value, ["schemaVersion", "type", "electionDate", "guide", "governmentPage", "outputDirectory"]) || value.schemaVersion !== 1 || value.type !== "lafayette-ballot-research-preparation" || !date(value.electionDate) || !pin(value.guide, now) || !pin(value.governmentPage, now) || typeof value.outputDirectory !== "string") throw new Error("Provide pinned Lafayette publications and an external output directory.");
 	const plan = value as unknown as Plan;
 	const guideUrl = new URL(plan.guide.url);
 	const edition = new Intl.DateTimeFormat("en-US", { timeZone: "UTC", month: "short" }).format(new Date(plan.electionDate)) + plan.electionDate.slice(0, 4);
@@ -131,6 +133,12 @@ export async function prepareLafayetteBallotResearch(path: string, extract?: (by
 	const guideText = await (extract ?? (async bytes => extractStateBallotPdfText(bytes, await resolveStateBallotPdfExtractor(), undefined, "layout", 20)))(guide);
 	const result = readLafayetteBallotResearch(guideText, government.toString("utf8"), plan.electionDate);
 	const report = { ...result, sources: { guide: { url: plan.guide.url, sha256: plan.guide.sha256, capturedAt: plan.guide.capturedAt }, governmentPage: { url: plan.governmentPage.url, sha256: plan.governmentPage.sha256, capturedAt: plan.governmentPage.capturedAt } } };
+	return { plan, report, inputBytes: guide.byteLength + government.byteLength };
+}
+
+export async function prepareLafayetteBallotResearch(path: string, extract?: (bytes: Buffer) => Promise<string>) {
+	const { plan, report } = await readLafayetteBallotResearchFiles(path, extract);
+	const result = report;
 	const fields = ["id", "electionDate", "area", "title", "guideNumber", "governmentNumber", "guidePage", "numberingStatus", "questionSha256", "fiscal"] as const;
 	const csv = `${[fields.join(","), ...result.rows.map(row => fields.map(field => `"${(typeof row[field] === "object" ? JSON.stringify(row[field]) : String(row[field])).replaceAll("\"", "\"\"")}"`).join(","))].join("\n")}\n`;
 	const candidateFields = ["id", "electionDate", "name", "partyAsPrinted", "office", "printedVoterArea", "guidePage"] as const;

@@ -551,7 +551,7 @@ function parseKentucky(source: StateBallotSource, body: string) {
 	if (!Array.isArray(envelope.documents) || JSON.stringify(envelope.documents.map(document => document.url)) !== JSON.stringify(source.documentUrls))
 		throw new Error("The official candidate document set is incomplete.");
 	return envelope.documents.flatMap((item) => {
-		if (typeof item.body !== "string" || typeof item.url !== "string") throw new Error("The official candidate document is invalid.");
+		if (typeof item.body !== "string" || typeof item.url !== "string") throw new TypeError("The official candidate document is invalid.");
 		const document = parseHtml(item.body);
 		const election = descendants(document, node => node.nodeName === "select" && attribute(node, "name") === "ctl00$MainContent$ddlElection")[0];
 		const selected = election && descendants(election, node => node.nodeName === "option" && Boolean(node.attrs?.some(item => item.name === "selected")))[0];

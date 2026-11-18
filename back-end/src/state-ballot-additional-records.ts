@@ -91,7 +91,7 @@ function parseUtah(source: StateBallotSource, body: string, factory: RecordFacto
 
 function readExport(source: StateBallotSource, body: string) {
 	const envelope = JSON.parse(body) as { page?: unknown; records?: unknown };
-	if (typeof envelope.page !== "string" || typeof envelope.records !== "string") throw new Error("The official export envelope is invalid.");
+	if (typeof envelope.page !== "string" || typeof envelope.records !== "string") throw new TypeError("The official export envelope is invalid.");
 	buildPublicStateExportForm(source, envelope.page);
 	const table = parseCsv(envelope.records, {
 		bom: true,

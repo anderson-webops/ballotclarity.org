@@ -164,7 +164,7 @@ test("every state and DC have a reversible identity and an official election-off
 	}
 	assert.deepEqual(getOfficialToolsForState("ZZ"), []);
 	assert.equal(getStateAbbreviationForName("Unknown"), undefined);
-	assert.match(getOfficialToolsForState("UT")[0]!.url, /vote\.utah\.gov/u);
+	assert.equal(new URL(getOfficialToolsForState("UT")[0]!.url).hostname, "vote.utah.gov");
 });
 
 test("North Dakota offers the official measure guide without losing its election-office directory", () => {
@@ -192,7 +192,7 @@ test("Kansas links the exact amendment publication while retaining election offi
 	assert.equal(resources[0]!.url, "https://www.sos.ks.gov/elections/proposed-constitutional-amendments.html");
 	assert.equal(resources[0]!.note, undefined);
 	assert.equal(resources[1]!.label, "Kansas election offices");
-	assert.match(resources[1]!.url, /www\.eac\.gov/u);
+	assert.equal(new URL(resources[1]!.url).hostname, "www.eac.gov");
 });
 
 test("California links its qualification register without claiming a native guide or losing office contacts", () => {
@@ -207,7 +207,7 @@ test("California links its qualification register without claiming a native guid
 	});
 	assert.equal(resources[0]!.note, undefined);
 	assert.equal(resources[1]!.label, "California election offices");
-	assert.match(resources[1]!.url, /www\.eac\.gov/u);
+	assert.equal(new URL(resources[1]!.url).hostname, "www.eac.gov");
 });
 
 test("inactive, unknown, and unopposed Florida filings never appear as ballot candidates", () => {

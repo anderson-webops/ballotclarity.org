@@ -187,7 +187,7 @@ function validateAdditionalGuides(snapshot: CoverageSnapshot) {
 		return;
 
 	if (!Array.isArray(snapshot.additionalGuides))
-		throw new Error("Coverage snapshot additionalGuides must be an array.");
+		throw new TypeError("Coverage snapshot additionalGuides must be an array.");
 
 	const electionSlugs = new Set(snapshot.election
 		? [snapshot.election.slug]
@@ -397,10 +397,10 @@ export function parseCoverageSnapshot(raw: unknown): CoverageSnapshot {
 	const snapshot = raw as Partial<CoverageSnapshot>;
 
 	if (!Array.isArray(snapshot.candidates) || !Array.isArray(snapshot.measures) || !Array.isArray(snapshot.sources))
-		throw new Error("Coverage snapshot must include candidates, measures, and sources arrays.");
+		throw new TypeError("Coverage snapshot must include candidates, measures, and sources arrays.");
 
 	if (!Array.isArray(snapshot.electionSummaries) || !Array.isArray(snapshot.jurisdictionSummaries))
-		throw new Error("Coverage snapshot must include electionSummaries and jurisdictionSummaries arrays.");
+		throw new TypeError("Coverage snapshot must include electionSummaries and jurisdictionSummaries arrays.");
 
 	if (snapshot.election !== null && snapshot.election !== undefined && (!isRecord(snapshot.election) || typeof snapshot.election.slug !== "string"))
 		throw new Error("Coverage snapshot election must be null or an object with a slug.");

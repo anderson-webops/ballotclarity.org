@@ -326,9 +326,9 @@ if (process.argv[1]?.endsWith("collect-louisiana-parish-samples.ts") || process.
 		(preparationMode
 			? prepareLouisianaParishSamples(path)
 			: collectLouisianaParishSamples(path)).then(result => console.log(JSON.stringify(result))).catch((error: unknown) => {
-			console.error(error instanceof Error
+			console.error(JSON.stringify(error instanceof Error
 				? error.message
-				: "Parish research collection failed.");
+				: "Parish research collection failed."));
 			process.exitCode = 1;
 		});
 	}

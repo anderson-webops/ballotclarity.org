@@ -308,9 +308,9 @@ if (process.argv[1]?.endsWith("collect-fulton-education-notice.ts") || process.a
 		if (!path || extra.length) throw new Error("Use collect-fulton-education-notice PLAN.json.");
 		return collectFultonEducationNotice(path);
 	}).then(result => console.log(JSON.stringify(result))).catch((error: unknown) => {
-		console.error(error instanceof Error
+		console.error(JSON.stringify(error instanceof Error
 			? error.message
-			: "Education notice collection failed.");
+			: "Education notice collection failed."));
 		process.exitCode = 1;
 	});
 }

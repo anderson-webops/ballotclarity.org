@@ -136,7 +136,7 @@ export async function prepareUnionBallotCorroboration(path: string, options: { e
 		throw new Error("Provide an exact Union ballot corroboration plan.");
 	}
 	const now = (options.now ?? Date.now)();
-	if (!Number.isFinite(now)) throw new Error("Union evidence preparation clock is invalid.");
+	if (!Number.isFinite(now)) throw new TypeError("Union evidence preparation clock is invalid.");
 	const parent = await pinned(plan.candidatePreparation);
 	const candidates = JSON.parse(parent.body.toString("utf8"));
 	const keys = [

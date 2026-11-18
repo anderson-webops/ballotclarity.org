@@ -122,7 +122,7 @@ function parseJournal(raw: unknown, targetPath: string): CoveragePromotionJourna
 	}
 
 	if (typeof raw.previousSnapshotPresent !== "boolean" || typeof raw.previousMetadataPresent !== "boolean")
-		throw new Error("Coverage promotion journal is missing prior-pair presence state.");
+		throw new TypeError("Coverage promotion journal is missing prior-pair presence state.");
 
 	if (
 		(raw.previousSnapshotPresent && (typeof raw.previousSnapshotSha256 !== "string" || !SHA256_PATTERN.test(raw.previousSnapshotSha256)))

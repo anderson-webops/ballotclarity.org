@@ -33,8 +33,8 @@ async function main() {
 	console.log(JSON.stringify(result));
 }
 main().catch((error: unknown) => {
-	console.error(error instanceof Error
+	console.error(JSON.stringify(error instanceof Error
 		? error.message
-		: "Union ballot automation failed.");
+		: "Union ballot automation failed."));
 	process.exitCode = 1;
 });

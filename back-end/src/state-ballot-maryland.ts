@@ -84,10 +84,11 @@ export function readMarylandYearLinks(body: string) {
 
 export function readMarylandYearPage(url: string, body: string) {
 	const year = /^https:\/\/elections\.maryland\.gov\/elections\/(20\d{2})\/(?:index\.html)?$/u.exec(url)?.[1];
+	if (!year) throw new Error("The Maryland election year and heading disagree.");
 	const document = parseStateHtml(body);
 	const heading = descendants(document, node => node.nodeName === "h1");
 	const cycle = heading.length === 1
-		? new RegExp(`^${year} (Gubernatorial|Presidential) Election$`, "u").exec(text(heading[0]!))?.[1]
+		? new RegExp(`^${RegExp.escape(year)} (Gubernatorial|Presidential) Election$`, "u").exec(text(heading[0]!))?.[1]
 		: null;
 	if (!year || !cycle) throw new Error("The Maryland election year and heading disagree.");
 	main(body, `${year} ${cycle} Election`);
@@ -108,7 +109,7 @@ export function readMarylandYearPage(url: string, body: string) {
 	const candidatesUrl = links.length === 1
 		? new URL(attribute(links[0]!, "href"), url)
 		: null;
-	if (!candidatesUrl || candidatesUrl.origin !== new URL(marylandDiscoveryUrl).origin || candidatesUrl.search || candidatesUrl.hash || !new RegExp(`^/elections/${year}/general_candidates/(?:index\\.html)?$`, "u").test(candidatesUrl.pathname)) throw new Error("The Maryland published general-candidate link is missing or changed.");
+	if (!candidatesUrl || candidatesUrl.origin !== new URL(marylandDiscoveryUrl).origin || candidatesUrl.search || candidatesUrl.hash || !new RegExp(`^/elections/${RegExp.escape(year)}/general_candidates/(?:index\\.html)?$`, "u").test(candidatesUrl.pathname)) throw new Error("The Maryland published general-candidate link is missing or changed.");
 	return { electionDate, electionId: `${year}_${cycle === "Gubernatorial"
 		? "GG"
 		: "PG"}`, candidatesUrl: candidatesUrl.href };

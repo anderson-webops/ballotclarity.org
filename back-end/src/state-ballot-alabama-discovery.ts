@@ -179,7 +179,7 @@ export function alabamaGeneralElection(body: string, year: string, pendingAsOf?:
 		|| certifications.some(
 			link =>
 				!known.test(link.label)
-				|| !new RegExp(`^${origin}/sites/default/files/election-${year}/[A-Za-z0-9_.-]+\\.pdf$`, "u").test(
+				|| !new RegExp(`^${RegExp.escape(origin)}/sites/default/files/election-${RegExp.escape(year)}/[A-Za-z0-9_.-]+\\.pdf$`, "u").test(
 					link.url
 				)
 		)

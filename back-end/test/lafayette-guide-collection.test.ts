@@ -275,7 +275,7 @@ test("Lafayette retains evidence on access, policy, redirect, document and wordi
 			assert.equal(failure.status, "review-required");
 			assert.ok(failure.captures.some((capture: { url: string }) => capture.url === url));
 			assert.equal(failure.imported, false);
-			assert.ok(!local.requests.includes("https://unreviewed.example/"));
+			assert.ok(local.requests.every(request => request !== "https://unreviewed.example/"));
 		}
 		finally { await rm(local.root, { recursive: true, force: true }); }
 	}

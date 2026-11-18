@@ -2,6 +2,15 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { classifyRepresentative } from "../src/representative-classification.js";
 
+test("jurisdiction suffix matching handles long whitespace without repeated backtracking", { timeout: 2000 }, () => {
+	const spacing = " ".repeat(100000);
+	for (const suffix of ["county", "city", "county commission district 7", "county commission district invalid"]) {
+		const districtLabel = `Sample${spacing}${suffix}`;
+		assert.equal(typeof classifyRepresentative({ districtLabel, officeTitle: "Sheriff", districtType: "county", stateCode: "GA" }).officeDisplayLabel, "string");
+	}
+	assert.equal(classifyRepresentative({ districtLabel: "Fulton\t County", officeTitle: "Sheriff", districtType: "county", stateCode: "GA" }).officeDisplayLabel, "Fulton County Sheriff");
+});
+
 test("countywide agency roles retain their sourced identity", () => {
 	for (const officeTitle of [
 		"Sheriff",

@@ -81,7 +81,7 @@ export function handoffEndpoint(value: unknown): string {
 	if (process.env.NODE_TLS_REJECT_UNAUTHORIZED === "0")
 		throw new Error("Private handoff delivery requires certificate verification.");
 	if (typeof value !== "string")
-		throw new Error("The handoff endpoint is not configured; finish server enrollment first.");
+		throw new TypeError("The handoff endpoint is not configured; finish server enrollment first.");
 	const url = new URL(value);
 	if (
 		url.protocol !== "https:"

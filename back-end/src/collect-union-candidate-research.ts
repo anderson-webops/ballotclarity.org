@@ -168,7 +168,7 @@ export async function prepareUnionCandidateResearch(path: string, options: { ext
 	const parent = await realpath(dirname(plan.capturePath));
 	const captures: UnionCandidateCapture[] = [];
 	const now = (options.now ?? Date.now)();
-	if (!Number.isFinite(now)) throw new Error("Union candidate preparation clock is invalid.");
+	if (!Number.isFinite(now)) throw new TypeError("Union candidate preparation clock is invalid.");
 	for (const input of report.inputs as CapturedInput[]) {
 		if (!exact(input, [
 			"url",
@@ -254,9 +254,9 @@ if (process.argv[1]?.endsWith("collect-union-candidate-research.ts") || process.
 		(preparation
 			? prepareUnionCandidateResearch(path)
 			: collectUnionCandidateResearch(path)).then(result => console.log(JSON.stringify(result))).catch((error: unknown) => {
-			console.error(error instanceof Error
+			console.error(JSON.stringify(error instanceof Error
 				? error.message
-				: "Union candidate research failed.");
+				: "Union candidate research failed."));
 			process.exitCode = 1;
 		});
 	}

@@ -14,7 +14,7 @@ import { parseStateHtml, stateHtmlDescendants, stateHtmlText } from "./state-bal
 const digest = (value: string) => createHash("sha256").update(value).digest("hex");
 
 export async function collectFultonCountyOfficeholders({ directory, includeClerk = false, now = Date.now, request = fetchRemoteSourceText, pause = setTimeout }: { directory: string; includeClerk?: boolean; now?: () => number; request?: typeof fetchRemoteSourceText; pause?: (milliseconds: number) => Promise<unknown> }) {
-	if (typeof includeClerk !== "boolean") throw new Error("The Clerk collection scope must be explicitly selected.");
+	if (typeof includeClerk !== "boolean") throw new TypeError("The Clerk collection scope must be explicitly selected.");
 	return withFultonCountyOfficeholderLock(directory, async (canonical) => {
 		let lastImportAt: string | null = null;
 		try {

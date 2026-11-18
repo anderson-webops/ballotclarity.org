@@ -22,8 +22,8 @@ export interface RepresentativeClassification {
 }
 
 const districtNumberPattern = /(\d+)/;
-const countySuffixPattern = /\s+county(?:\s+commission\s+district\s+\d+)?$/i;
-const citySuffixPattern = /\s+city$/i;
+const countySuffixPattern = /(?<!\s)\s+county(?:\s+commission\s+district\s+\d+)?$/i;
+const citySuffixPattern = /(?<!\s)\s+city$/i;
 const congressionalCodePattern = /\b[a-z]{2}-\d+\b/;
 const stateDistrictCodePattern = /\b([A-Z]{2})-\d+\b/;
 const stateDistrictNamePattern = /^(?:senator|representative)\s+([A-Z][A-Z .'-]+)$/i;

@@ -119,7 +119,7 @@ export async function prepareLouisianaParishReferences(path: string, options: Pa
 			const report = JSON.parse((await readBoundedStateDataBytes(join(prepared.outputDirectory, "preparation.json"), 4 * 1024 * 1024)).toString("utf8"));
 			preparations.push({ captureSha256: pin.sha256, preparationSha256: prepared.preparationSha256 });
 			const clock = report.inputs.find((input: { url: string }) => input.url === parishSampleIndexUrl)?.capturedAt;
-			if (typeof clock !== "string" || !Number.isFinite(Date.parse(clock))) throw new Error("Parish reference catalog has no original capture clock.");
+			if (typeof clock !== "string" || !Number.isFinite(Date.parse(clock))) throw new TypeError("Parish reference catalog has no original capture clock.");
 			for (const result of report.preparation) {
 				const key = `${report.catalog.electionDate}:${result.parish}`;
 				const previous = selected.get(key);

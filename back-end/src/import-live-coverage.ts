@@ -75,9 +75,9 @@ export async function runImportLiveCoverage(argv = process.argv) {
 		console.log(`Wrote coverage snapshot metadata to ${metadataPath}.`);
 	}
 	catch (error) {
-		console.error(error instanceof Error
+		console.error(JSON.stringify(error instanceof Error
 			? error.message
-			: "Unable to import live coverage snapshot.");
+			: "Unable to import live coverage snapshot."));
 		process.exit(1);
 	}
 }

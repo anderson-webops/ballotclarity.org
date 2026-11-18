@@ -104,6 +104,7 @@ function getWslDrivesMountPoint() {
 
 async function open(target, options = {}) {
   let command;
+  let disposeBrowserLauncher;
   const cliArguments = [];
   const childProcessOptions = {};
   if (process.platform === "darwin") {
@@ -139,22 +140,12 @@ async function open(target, options = {}) {
     command = "xdg-open";
     const useSystemXdgOpen = process.versions.electron || process.platform === "android";
     if (!useSystemXdgOpen) {
-      command = node_path.join(os__default.tmpdir(), "xdg-open");
-      if (!fs__default.existsSync(command)) {
-        try {
-          fs__default.writeFileSync(
-            node_path.join(os__default.tmpdir(), "xdg-open"),
-            await import('../chunks/xdg-open.cjs').then((r) => r.xdgOpenScript()),
-            "utf8"
-          );
-          fs__default.chmodSync(
-            command,
-            493
-            /* rwx r-x r-x */
-          );
-        } catch {
-          command = "xdg-open";
-        }
+      try {
+        const launcher = await import('../chunks/private-xdg-open.mjs').then((module) => module.prepareXdgOpen());
+        command = launcher.command;
+        disposeBrowserLauncher = launcher.dispose;
+      } catch {
+        command = "xdg-open";
       }
     }
     if (!options.wait) {
@@ -163,7 +154,17 @@ async function open(target, options = {}) {
     }
   }
   cliArguments.push(target);
-  const subprocess = childProcess__default.spawn(command, cliArguments, childProcessOptions);
+  let subprocess;
+  try {
+    subprocess = childProcess__default.spawn(command, cliArguments, childProcessOptions);
+  } catch (error) {
+    disposeBrowserLauncher?.();
+    throw error;
+  }
+  if (disposeBrowserLauncher) {
+    subprocess.once("error", disposeBrowserLauncher);
+    subprocess.once("close", disposeBrowserLauncher);
+  }
   if (options.wait) {
     return new Promise((resolve, reject) => {
       subprocess.once("error", reject);

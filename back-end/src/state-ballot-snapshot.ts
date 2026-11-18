@@ -353,7 +353,7 @@ export function parseBundledStateSnapshot(source: StateBallotSource, body: strin
 	else if (source.format === "everett-pdf") {
 		if (!Array.isArray(data.documents) || !data.documents.length || data.documents.length > 20 || new Set(data.documents.map(document => document?.url)).size !== data.documents.length) throw new Error("The stored Everett ballot styles are invalid.");
 		for (const document of data.documents) {
-			if (typeof document?.url !== "string") throw new Error("The stored Everett publication is invalid.");
+			if (typeof document?.url !== "string") throw new TypeError("The stored Everett publication is invalid.");
 			validateEverettDocumentUrl(document.url, source.electionDate.slice(0, 4));
 		}
 		if (data.collectionIndexSha256 !== everettHash(JSON.stringify({

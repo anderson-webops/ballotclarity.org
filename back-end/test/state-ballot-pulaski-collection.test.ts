@@ -101,6 +101,8 @@ test("Pulaski policy changes and denied transports stop before election document
 test("Pulaski rejects mismatched dates, unknown controls, stale provenance and disappearing accepted candidates", async () => {
 	for (const mutate of [
 		(value: ReturnType<typeof pulaskiDiscoveryFixture>) => value.calendar.text = value.calendar.text.replace("November 3", "November 4"),
+		(value: ReturnType<typeof pulaskiDiscoveryFixture>) => value.calendar.text = value.calendar.text.replace("www.votepulaskiar.gov", "www.votepulaskiar.gov.example"),
+		(value: ReturnType<typeof pulaskiDiscoveryFixture>) => value.calendar.text = value.calendar.text.replace("www.votepulaskiar.gov", "example.www.votepulaskiar.gov"),
 		(value: ReturnType<typeof pulaskiDiscoveryFixture>) => value.index.body = value.index.body.replace("Notice of Election 2026 General", "Notice of Election 2028 General"),
 		(value: ReturnType<typeof pulaskiDiscoveryFixture>) => value.notices[0]!.url += "?download=1",
 		(value: ReturnType<typeof pulaskiDiscoveryFixture>) => value.calendar.retrievedAt = "2030-01-01T00:00:00.000Z"

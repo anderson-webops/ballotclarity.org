@@ -191,7 +191,7 @@ async function collectReviewedCandidateContextFiles(reviewPath: string, collecti
 	const source = electionReferenceSources.find(source => source.id === plan.sourceId)!;
 	if (!Array.isArray(collection.sourceIds) || collection.sourceIds.length > source.documents.length || collection.sourceIds.some((id: unknown) => !electionDocumentSources.some(item => item.id === id && item.stateCode === source.stateCode && item.electionDate === source.electionDate && source.documents.some(document => new URL(document.url).hostname === item.host && item.documentPatterns.some(pattern => new RegExp(pattern, "u").test(new URL(document.url).pathname)))))) throw new Error("Statement collection must be limited to the reviewed candidate publications.");
 	if (source.documents.some(document => !electionDocumentSources.some(item => collection.sourceIds.includes(item.id) && item.host === new URL(document.url).hostname && item.documentPatterns.some(pattern => new RegExp(pattern, "u").test(new URL(document.url).pathname))))) throw new Error("Every reviewed statement needs a configured collector.");
-	if (typeof collection.cacheDirectory !== "string") throw new Error("A statement collection requires its reviewed external cache.");
+	if (typeof collection.cacheDirectory !== "string") throw new TypeError("A statement collection requires its reviewed external cache.");
 	assertExternalStateDataDirectory(collection.cacheDirectory);
 	const hold = join(collection.cacheDirectory, `${kind}-hold-${hash(reviewBody)}.json`);
 	try {

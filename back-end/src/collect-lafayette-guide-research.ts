@@ -8,9 +8,9 @@ if (!planPath || extra.length) {
 }
 else {
 	collectLafayetteGuideResearch(planPath).then(result => console.log(JSON.stringify(result))).catch((error: unknown) => {
-		console.error(error instanceof Error
+		console.error(JSON.stringify(error instanceof Error
 			? error.message
-			: "Lafayette guide collection failed.");
+			: "Lafayette guide collection failed."));
 		process.exitCode = 1;
 	});
 }

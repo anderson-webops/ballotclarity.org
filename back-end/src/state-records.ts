@@ -205,7 +205,7 @@ export function stateRecordDocumentLinks(source: StateBallotSource | undefined, 
 
 function singleQuery(value: unknown, fallback: string) {
 	if (value === undefined) return fallback;
-	if (typeof value !== "string") throw new Error("Each filter must have a single value.");
+	if (typeof value !== "string") throw new TypeError("Each filter must have a single value.");
 	return value;
 }
 

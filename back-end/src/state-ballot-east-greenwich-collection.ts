@@ -53,7 +53,7 @@ function sourceFor(electionDate: string): StateBallotSource {
 }
 export function validateEastGreenwichDocumentUrl(value: string, precinct: string) {
 	const url = new URL(value);
-	if (!/^09\d{2}$/u.test(precinct) || url.origin !== `https://${host}` || url.href !== value || url.username || url.password || url.search || url.hash || !new RegExp(`^/DocumentCenter/View/[1-9]\\d{0,8}/General-Election-Precinct-${precinct}-Sample-Ballot-PDF$`, "u").test(url.pathname)) throw new Error("The offered East Greenwich document requires review.");
+	if (!/^09\d{2}$/u.test(precinct) || url.origin !== `https://${host}` || url.href !== value || url.username || url.password || url.search || url.hash || !new RegExp(`^/DocumentCenter/View/[1-9]\\d{0,8}/General-Election-Precinct-${RegExp.escape(precinct)}-Sample-Ballot-PDF$`, "u").test(url.pathname)) throw new Error("The offered East Greenwich document requires review.");
 }
 export function validateEastGreenwichElection(value: unknown): asserts value is EastGreenwichElection {
 	if (!exact(value, [

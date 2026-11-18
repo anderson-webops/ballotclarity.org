@@ -570,7 +570,7 @@ function parseOptionalText(
 		return null;
 
 	if (typeof value !== "string")
-		throw new Error(`${fieldLabel} must be text${options.nullable ? " or null" : ""}.`);
+		throw new TypeError(`${fieldLabel} must be text${options.nullable ? " or null" : ""}.`);
 
 	if (value.includes("\0") || value.length > maximumLength)
 		throw new Error(`${fieldLabel} must be ${maximumLength.toLocaleString("en-US")} characters or fewer and contain no invalid control characters.`);
@@ -583,7 +583,7 @@ function parseOptionalBoolean(value: unknown, fieldLabel: string) {
 		return undefined;
 
 	if (typeof value !== "boolean")
-		throw new Error(`${fieldLabel} must be true or false.`);
+		throw new TypeError(`${fieldLabel} must be true or false.`);
 
 	return value;
 }

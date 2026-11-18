@@ -90,8 +90,8 @@ async function main() {
 }
 
 main().catch((error: unknown) => {
-	console.error(error instanceof Error
+	console.error(JSON.stringify(error instanceof Error
 		? error.message
-		: "Office inventory management failed.");
+		: "Office inventory management failed."));
 	process.exitCode = 1;
 });

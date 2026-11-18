@@ -109,7 +109,7 @@ export function iowaPolkPolicyFingerprint(body: string, region: "content-grid-it
 		new URL(attribute(node, "href"), origin).href
 	]).filter(([label, url]) => {
 		const application = /^(20\d{2}) Polk County Dog License Application$/u.exec(label!);
-		return !application || new URL(url!).origin !== origin || !new RegExp(`^${origin}/media/[a-z0-9]{8}/${application[1]}-polk-county-dog-application\\.pdf$`, "u").test(url!);
+		return !application || new URL(url!).origin !== origin || !new RegExp(`^${RegExp.escape(origin)}/media/[a-z0-9]{8}/${RegExp.escape(application[1])}-polk-county-dog-application\\.pdf$`, "u").test(url!);
 	});
 	return hash(JSON.stringify({
 		footer: footer.replace(/\b20\d{2}(?= Polk County Iowa\b)/u, "YYYY"),

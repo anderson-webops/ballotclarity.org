@@ -23,15 +23,15 @@ function dictionary(value: unknown): AlabamaPdfDictionary {
 	return value;
 }
 function finiteNumber(value: unknown): number {
-	if (typeof value !== "number" || !Number.isFinite(value)) throw new Error("Invalid PDF numeric property.");
+	if (typeof value !== "number" || !Number.isFinite(value)) throw new TypeError("Invalid PDF numeric property.");
 	return value;
 }
 function booleanValue(value: unknown): boolean {
-	if (typeof value !== "boolean") throw new Error("Invalid PDF boolean property.");
+	if (typeof value !== "boolean") throw new TypeError("Invalid PDF boolean property.");
 	return value;
 }
 function stringValue(value: unknown): string {
-	if (typeof value !== "string") throw new Error("Invalid PDF string property.");
+	if (typeof value !== "string") throw new TypeError("Invalid PDF string property.");
 	return value;
 }
 function numericToken(value: AlabamaToken): number {
@@ -510,7 +510,7 @@ export function readAlabamaContent(value: unknown): AlabamaContent {
 				throw new Error("Unsupported font encoding.");
 			}
 			const reference = descriptor["/FontFile2"];
-			if (typeof reference !== "string") throw new Error("Missing TrueType font-program identity.");
+			if (typeof reference !== "string") throw new TypeError("Missing TrueType font-program identity.");
 			if (!programCache.has(reference)) {
 				if (programCache.size >= 16) throw new Error("The Alabama native font-program budget is exceeded.");
 				const program = stream(reference);

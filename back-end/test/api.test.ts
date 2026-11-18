@@ -118,7 +118,7 @@ test("state candidate records populate lookup and active-cookie routes without p
 		assert.equal(body.ballotContentPreviews[0].providerId, "official-state-nc");
 		assert.equal(body.ballotContentPreviews[0].candidateCount, 1);
 		assert.equal(body.availability.ballotCandidates.status, "limited");
-		assert.ok(body.actions.some((action: { url: string }) => action.url.includes("eac.gov")));
+		assert.ok(body.actions.some((action: { url: string }) => new URL(action.url).hostname === "www.eac.gov"));
 		const cookie = response.headers.getSetCookie().map(value => value.split(";", 1)[0]).join("; ");
 		assert.ok(cookie.includes("ballot-clarity-nationwide-lookup="));
 		const active = await fetch(`${origin}/api/location/active`, {

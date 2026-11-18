@@ -17,7 +17,7 @@ const exact = (value: unknown, keys: string[]): value is Record<string, unknown>
 export async function readFultonEducationNoticeCapture(capturePath: string, captureSha256: string, electionDate: string, options: { extract?: (body: Buffer) => Promise<string>; now?: () => number } = {}) {
 	if (!/^[a-f\d]{64}$/u.test(captureSha256) || (electionDate !== "latest-published" && !/^20\d{2}-\d{2}-\d{2}$/u.test(electionDate))) throw new Error("Provide a pinned Fulton education-notice capture.");
 	const now = (options.now ?? Date.now)();
-	if (!Number.isFinite(now)) throw new Error("The education-notice verification clock is invalid.");
+	if (!Number.isFinite(now)) throw new TypeError("The education-notice verification clock is invalid.");
 	const directory = await realpath(dirname(capturePath));
 	assertExternalStateDataDirectory(directory);
 	const original = await readBoundedStateDataBytes(capturePath, 4 * 1024 * 1024);

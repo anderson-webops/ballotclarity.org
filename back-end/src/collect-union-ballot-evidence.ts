@@ -82,9 +82,9 @@ if (process.argv[1]?.endsWith("collect-union-ballot-evidence.ts") || process.arg
 	}
 	else {
 		collectUnionBallotEvidence(path).then(result => console.log(JSON.stringify(result))).catch((error: unknown) => {
-			console.error(error instanceof Error
+			console.error(JSON.stringify(error instanceof Error
 				? error.message
-				: "Union sample-ballot collection failed.");
+				: "Union sample-ballot collection failed."));
 			process.exitCode = 1;
 		});
 	}

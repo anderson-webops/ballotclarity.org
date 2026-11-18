@@ -857,7 +857,7 @@ export function getStateBallotCycleFamily(familyId: string) {
 		targetValid = targetValid && family.source.url === family.discoveryUrl;
 	}
 	else {
-		targetValid = targetValid && new RegExp(`^${family.discoveryUrl.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&")}\\?e=[1-9]\\d{0,8}$`, "u").test(family.source.url);
+		targetValid = targetValid && new RegExp(`^${RegExp.escape(family.discoveryUrl)}\\?e=[1-9]\\d{0,8}$`, "u").test(family.source.url);
 	}
 	if (!targetValid || family.source.format !== family.format || family.source.retrievalPolicy || (family.source.stateCode !== "FL" && family.source.postBody) || (family.source.documentUrls?.length && ![
 		"fairbanks-pdf",

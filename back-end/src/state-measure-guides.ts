@@ -181,7 +181,7 @@ function sourcesIn(value: unknown, officialOnly = true): Source[] {
 		else if (record(current.value)) {
 			for (const [key, child] of Object.entries(current.value)) {
 				if (key === "sources") {
-					if (!Array.isArray(child)) throw new Error("Measure citations must be source arrays.");
+					if (!Array.isArray(child)) throw new TypeError("Measure citations must be source arrays.");
 					for (const source of child) {
 						if (!record(source) || typeof source.id !== "string" || !source.id.trim() || (officialOnly && (![
 							"title",

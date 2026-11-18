@@ -138,7 +138,7 @@ export async function verifyAlabamaOriginal(
 						? finish(undefined, { result: value.result, proof: value.proof })
 						: finish(new Error(value?.error ?? "The Alabama native worker failed closed."))
 			);
-			worker.once("error", error => finish(error));
+			worker.once("error", error => finish(error instanceof Error ? error : new Error("The Alabama native worker failed.")));
 			worker.once("exit", code =>
 				finish(new Error(`The Alabama native worker exited without a proof (${code}).`)));
 		});

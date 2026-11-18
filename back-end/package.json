@@ -77,5 +77,9 @@
 		"esbuild": "0.28.2",
 		"qs": "6.17.1",
 		"proxy-addr": "2.0.8"
+	},
+	"allowScripts": {
+		"esbuild@0.28.2": true,
+		"fsevents@2.3.3": true
 	}
 }

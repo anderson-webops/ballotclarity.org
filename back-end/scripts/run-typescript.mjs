@@ -10,7 +10,10 @@ const metadata = require('typescript-native/package.json')
 
 assert.match(metadata.version, /^7\./u)
 const entrypoint = path.join(path.dirname(metadataPath), metadata.bin.tsc)
-const result = spawnSync(process.execPath, [entrypoint, ...process.argv.slice(2)], { stdio: 'inherit' })
+const result = spawnSync(process.execPath, [
+  entrypoint,
+  ...process.argv.slice(2),
+], { stdio: 'inherit' })
 if (result.error)
   throw result.error
 if (result.signal)

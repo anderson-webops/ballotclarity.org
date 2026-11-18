@@ -97,6 +97,7 @@ export function prepareFultonMunicipalRunoff(body: string, source: FultonMunicip
 		let voted = false;
 		let previousTop = -1;
 		let candidateField: FultonMunicipalNativeField | null = null;
+		const latestCandidate = (): FultonMunicipalContest["candidates"][number] | undefined => contest?.candidates.at(-1);
 		const finish = () => {
 			if (!contest) return;
 			assert(voted && (contest.office === "Mayor" ? !contest.district : /^District [1-9]\d?(?: At Large)?$/u.test(contest.district)) && contest.candidates.length === 2, "The municipal runoff contest is incomplete or unfamiliar.");
@@ -136,7 +137,7 @@ export function prepareFultonMunicipalRunoff(body: string, source: FultonMunicip
 				voted = true;
 			}
 			else if (field.text === "(Incumbent)" && !field.bold && field.family === "ArialMT" && field.size === 12) {
-				const candidate = contest?.candidates.at(-1);
+				const candidate = latestCandidate();
 				assert(candidate && candidateField && !candidate.incumbent && field.top - candidateField.top <= 24 && Math.abs(field.left - candidateField.left) <= 1);
 				candidate.incumbent = true;
 			}

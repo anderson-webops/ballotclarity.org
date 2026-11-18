@@ -30,8 +30,13 @@ function readManifest(assetRoot) {
 	assert.equal(manifest.source.dirty, false);
 	assert.deepEqual(manifest.services, expectedServices.services);
 	assert.deepEqual(manifest.externalWritableState, expectedServices.externalWritableState);
-	assert.equal(manifest.toolchain.node, "v24.18.1");
-	assert.equal(manifest.toolchain.npm, "12.0.2");
+	assert.deepEqual(manifest.toolchain, {
+		node: `v${expectedServices.runtime.node}`,
+		npm: expectedServices.runtime.npmBuildOnly,
+		npmBuildProfile: expectedServices.runtime.npmBuildProfile,
+		npmBuildLockSha256: expectedServices.runtime.npmBuildLockSha256,
+		npmBuildPayloadSha256: expectedServices.runtime.npmBuildPayloadSha256,
+	});
 	assert.ok(Array.isArray(manifest.files) && manifest.files.length > 0);
 	return manifest;
 }
@@ -50,8 +55,9 @@ function assetPath(assetRoot, name) {
 export function writeReceipt(assetRoot) {
 	assert.equal(process.platform, "linux");
 	assert.equal(process.arch, "arm64");
-	assert.equal(process.version, "v24.18.1");
-	assert.equal(execFileSync("npm", ["--version"], { encoding: "utf8" }).trim(), "12.0.2");
+	assert.equal(process.version, `v${expectedServices.runtime.node}`);
+	assert.equal(execFileSync("npm", ["--version"], { encoding: "utf8" }).trim(), expectedServices.runtime.npmBuildOnly);
+	execFileSync(process.execPath, [resolve(sourceRoot, "scripts/check-build-toolchain.mjs")]);
 	assert.ok(process.report.getReport().header.glibcVersionRuntime);
 	const manifest = readManifest(assetRoot);
 	const archive = archiveName(manifest.source.commit);
@@ -94,7 +100,7 @@ function verifyAssetReceipt(assetRoot, commit, published) {
 	assert.equal(receipt.hostCapabilitiesVerified, false);
 	assert.deepEqual(receipt.checks, requiredChecks);
 	assert.deepEqual(receipt.source, manifest.source);
-	assert.deepEqual(receipt.runtime, { os: "linux", architecture: "arm64", libc: "glibc", node: "v24.18.1" });
+	assert.deepEqual(receipt.runtime, { os: "linux", architecture: "arm64", libc: "glibc", node: `v${expectedServices.runtime.node}` });
 	assert.deepEqual(receipt.archive, {
 		name: archiveName(commit),
 		size: statSync(assetPath(assetRoot, archiveName(commit))).size,

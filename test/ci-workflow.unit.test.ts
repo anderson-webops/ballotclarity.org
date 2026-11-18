@@ -72,6 +72,8 @@ test("CI verifies the deploy host's ARM64 native dependency path", () => {
 	assert.match(workflow, /runs-on: ubuntu-24\.04-arm/);
 	assert.match(workflow, /run: npm run verify:native-bindings/);
 	assert.match(workflow, /run: npm run build/);
+	assert.match(workflow, /name: Verify the exact retained release with Node 26/);
+	assert.match(workflow, /run: node scripts\/verify-retained-release\.mjs/);
 });
 
 test("CodeQL uses the extended JavaScript security suite with least-privilege permissions", () => {

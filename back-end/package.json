@@ -2,10 +2,10 @@
 	"name": "back-end",
 	"version": "1.0.0",
 	"private": true,
-	"packageManager": "npm@12.0.2",
+	"packageManager": "npm@12.2.2",
 	"engines": {
-		"node": ">=24.18.1 <25",
-		"npm": ">=12.0.2 <13"
+		"node": ">=26.13.1 <27",
+		"npm": ">=12.2.2 <13"
 	},
 	"description": "Express API for the Ballot Clarity civic-information service",
 	"license": "MIT",
@@ -40,41 +40,42 @@
 		"providers:test:local": "DOTENV_CONFIG_PATH=../.env node -r dotenv/config dist/test-providers.js",
 		"start": "node dist/server.js",
 		"start:local": "DOTENV_CONFIG_PATH=../.env node -r dotenv/config dist/server.js",
-		"build": "tsc -p tsconfig.json && node ./scripts/copy-runtime-assets.mjs && node ../scripts/write-release-identity.mjs backend && node ./scripts/verify-runtime-build.mjs",
-		"watch": "tsc -w",
+		"build": "node scripts/run-typescript.mjs -p tsconfig.json && node ./scripts/copy-runtime-assets.mjs && node ../scripts/write-release-identity.mjs backend && node ./scripts/verify-runtime-build.mjs",
+		"watch": "node scripts/run-typescript.mjs -w",
 		"dev": "DOTENV_CONFIG_PATH=../.env tsx watch -r dotenv/config src/server.ts",
 		"lint": "eslint \"src/**/*.{js,ts}\" \"test/**/*.ts\"",
 		"lint-fix": "eslint \"src/**/*.{js,ts}\" \"test/**/*.ts\" --fix",
-		"typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json --noEmit",
+		"typecheck": "node scripts/run-typescript.mjs -p tsconfig.json --noEmit && node scripts/run-typescript.mjs -p tsconfig.test.json --noEmit",
 		"test": "STATE_BALLOT_LOOKUP_ENABLED=false node --test --import tsx test/*.test.ts",
 		"states:check": "tsx src/check-state-ballot-sources.ts",
 		"states:export": "tsx src/export-state-ballot-sources.ts"
 	},
 	"dependencies": {
-		"cors": "^2.8.5",
+		"cors": "^2.8.6",
 		"csv-parse": "^7.0.3",
 		"dotenv": "^18.0.10",
 		"express": "^5.3.0",
 		"express-rate-limit": "^8.7.4",
 		"parse5": "^8.1.1",
 		"pg": "^8.23.1",
-		"read-excel-file": "^9.3.15",
+		"read-excel-file": "^9.3.17",
 		"tar-stream": "^3.2.2",
 		"yaml": "^2.9.1"
 	},
 	"devDependencies": {
 		"@types/cors": "^2.8.19",
-		"@types/express": "^5.0.3",
-		"@types/node": "^24.19.2",
+		"@types/express": "^5.0.6",
+		"@types/node": "^26.6.6",
 		"@types/pg": "^8.23.1",
 		"@types/tar-stream": "^3.1.5",
 		"tsx": "^4.23.15",
-		"typescript": "^6.0.3"
+		"typescript": "^6.0.3",
+		"typescript-native": "npm:typescript@^7.0.2"
 	},
 	"overrides": {
 		"body-parser": "2.4.0",
 		"esbuild": "0.28.2",
-		"qs": "6.16.1",
+		"qs": "6.17.1",
 		"proxy-addr": "2.0.8"
 	}
 }

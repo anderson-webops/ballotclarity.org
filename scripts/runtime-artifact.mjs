@@ -193,6 +193,7 @@ export function assertCleanSourceCheckout(root = projectRoot) {
 function buildManifest(outputRoot, contract, source, sourceRoot = projectRoot) {
 	const files = listArtifactFiles(outputRoot);
 	assertNoPrivateOrWritableContent(outputRoot, files);
+	run(process.execPath, [resolve(sourceRoot, "scripts/check-build-toolchain.mjs")], { cwd: sourceRoot });
 
 	return {
 		schemaVersion: 1,
@@ -200,6 +201,9 @@ function buildManifest(outputRoot, contract, source, sourceRoot = projectRoot) {
 		toolchain: {
 			node: process.version,
 			npm: runNpm(["--version"], { capture: true, cwd: sourceRoot }),
+			npmBuildProfile: contract.runtime.npmBuildProfile,
+			npmBuildLockSha256: contract.runtime.npmBuildLockSha256,
+			npmBuildPayloadSha256: contract.runtime.npmBuildPayloadSha256,
 		},
 		services: contract.services,
 		externalWritableState: contract.externalWritableState,

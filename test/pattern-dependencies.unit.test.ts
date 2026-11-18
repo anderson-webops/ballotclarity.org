@@ -18,7 +18,7 @@ test("patched matching preserves the object API and patterns used by lint, traci
 	assert.equal(new Minimatch("src/**/*.ts").match("src/nested/example.ts"), true);
 });
 
-test("patched import-x keeps allow and forbid rules active in both module formats", async (context) => {
+test("upstream import-x keeps allow and forbid rules active in both module formats", async (context) => {
 	const directory = await mkdtemp(join(tmpdir(), "ballot-import-rule-"));
 	context.after(() => rm(directory, { recursive: true, force: true }));
 	await mkdir(join(directory, "nested"));

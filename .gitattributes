@@ -9,6 +9,8 @@
 *.json text eol=lf
 *.md text eol=lf
 *.mjs text eol=lf
+*.py text eol=lf
+*.sh text eol=lf
 *.mts text eol=lf
 *.sql text eol=lf
 *.ts text eol=lf
@@ -31,3 +33,7 @@ vendor/*/LICENSE text eol=lf
 *.jpeg binary
 *.png binary
 *.webp binary
+*.tgz binary
+*.gpg binary
+vendor/unimport/tag.git binary
+vendor/unimport/commit.git binary

@@ -14,13 +14,13 @@ function digest(bytes) {
 	return createHash("sha256").update(bytes).digest("hex");
 }
 
-function fixture() {
+function fixture(toolchainOverrides = {}) {
 	const root = mkdtempSync(join(tmpdir(), "ballot-runtime-receipt-"));
 	const archiveBytes = Buffer.from("synthetic archive fixture");
 	const manifest = {
 		schemaVersion: 1,
 		source: { commit, dirty: false, tree: "b".repeat(40) },
-		toolchain: { node: "v24.18.1", npm: "12.0.2" },
+		toolchain: { node: "v26.13.1", npm: "12.2.2", npmBuildProfile: contract.runtime.npmBuildProfile, npmBuildLockSha256: contract.runtime.npmBuildLockSha256, npmBuildPayloadSha256: contract.runtime.npmBuildPayloadSha256, ...toolchainOverrides },
 		services: contract.services,
 		externalWritableState: contract.externalWritableState,
 		files: [{ path: "back-end/dist/server.js", sha256: "c".repeat(64), size: 1, mode: 0o644 }],
@@ -31,7 +31,7 @@ function fixture() {
 		scope: "source-artifact-only",
 		hostCapabilitiesVerified: false,
 		source: manifest.source,
-		runtime: { os: "linux", architecture: "arm64", libc: "glibc", node: "v24.18.1" },
+		runtime: { os: "linux", architecture: "arm64", libc: "glibc", node: "v26.13.1" },
 		archive: { name: archive, size: archiveBytes.length, sha256: digest(archiveBytes) },
 		manifestSha256: digest(manifestBytes),
 		checks: [
@@ -74,6 +74,18 @@ test("rejects altered release assets", () => {
 	}
 	finally {
 		rmSync(root, { recursive: true, force: true });
+	}
+});
+
+test("current receipt admission rejects obsolete or unqualified build profiles with valid checksums", () => {
+	for (const overrides of [{ node: "v24.18.1" }, { npm: "12.0.2" }, { npmBuildLockSha256: "0".repeat(64) }, { npmBuildPayloadSha256: "0".repeat(64) }]) {
+		const root = fixture(overrides);
+		try {
+			assert.throws(() => verifyReceipt(root, commit));
+		}
+		finally {
+			rmSync(root, { recursive: true, force: true });
+		}
 	}
 });
 

@@ -1,0 +1,18 @@
+{
+	"schemaVersion": 1,
+	"repository": "anderson-webops/ballotclarity.org",
+	"tag": "v1.14.115",
+	"commit": "42e3b41b2af2cebc4b644e4f65e10f0d07705b82",
+	"archive": "ballot-clarity-42e3b41b2af2cebc4b644e4f65e10f0d07705b82-linux-arm64.tar.gz",
+	"assets": {
+		"acceptance-receipt.json": "c9de24fc5e108b1b47fac530f61bb1c0525906165421d885603ebf429e4afc06",
+		"attestation-bundle.jsonl": "701d49798128b6394ec35b2dd1ef168caeab5b42b02609717af1aaa905f51df4",
+		"ballot-clarity-42e3b41b2af2cebc4b644e4f65e10f0d07705b82-linux-arm64.tar.gz": "5c00e75b891fb6de506e6799ced0f2645ac37156c450da81b9431b47f2e34dd3",
+		"runtime-manifest.json": "b115cb21de93ab9144550456a04ca03d72d00af16d79ab18093ea50695869845",
+		"SHA256SUMS": "3acca9872ef15ed5745895bd08a09687d1c85a1f16709db4098e053e05ce4202"
+	},
+	"verifierInputs": {
+		"scripts/runtime-release-receipt.mjs": "157543ddddb98380dd76cbc139c79129cac484f8e7622934fab48411d229a4dc",
+		"deploy/runtime-artifact-contract.json": "bf45bff4a3891efead828685c5c3cb45ac70a9105c3d7f0679e0b374049f372b"
+	}
+}

@@ -2,7 +2,11 @@ import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
 export function evaluateAuditReport(report) {
-	const vulnerabilityNames = Object.keys(report?.vulnerabilities ?? {}).sort();
+	const complete = report?.vulnerabilities !== null
+		&& typeof report?.vulnerabilities === "object"
+		&& !Array.isArray(report.vulnerabilities)
+		&& !report.error;
+	const vulnerabilityNames = complete ? Object.keys(report.vulnerabilities).sort() : ["audit-unavailable"];
 
 	return {
 		allowed: [],
@@ -10,7 +14,9 @@ export function evaluateAuditReport(report) {
 		total: vulnerabilityNames.length,
 		unexpected: vulnerabilityNames.map(name => ({
 			name,
-			reason: "Every npm audit finding must be remediated before release."
+			reason: complete
+				? "Every npm audit finding must be remediated before release."
+				: "A complete npm audit result is required before release."
 		}))
 	};
 }
@@ -25,9 +31,9 @@ export function formatAuditEvaluation(evaluation) {
 	].join("\n");
 }
 
-export function readNpmAuditReport() {
+export function readNpmAuditReport(execute = execFileSync) {
 	try {
-		return JSON.parse(execFileSync("npm", ["audit", "--workspaces", "--json"], {
+		return JSON.parse(execute("npm", ["audit", "--workspaces", "--include-workspace-root", "--json"], {
 			encoding: "utf8",
 			stdio: ["ignore", "pipe", "pipe"]
 		}));

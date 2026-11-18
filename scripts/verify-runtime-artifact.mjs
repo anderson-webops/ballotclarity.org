@@ -87,6 +87,52 @@ async function stopProcess(processHandle, label) {
 	}
 }
 
+async function verifyCompiledAdminBoundary(origin) {
+	const session = await fetch(`${origin}/api/admin/session`, {
+		headers: { cookie: "__Host-ballot_clarity_admin_session=invalid-synthetic-session" },
+	});
+	assert.equal(session.status, 200);
+	assert.equal(session.headers.get("cache-control"), "no-store, private");
+	assert.deepEqual(await session.json(), {
+		authenticated: false,
+		configured: true,
+		displayName: null,
+		role: null,
+		username: null,
+	});
+	const cases = [
+		{ name: "missing origin", headers: {}, body: "{}", status: 403 },
+		{ name: "hostile origin", headers: { origin: "https://untrusted.invalid" }, body: "{}", status: 403 },
+		{ name: "contradictory browser provenance", headers: { origin, "sec-fetch-site": "cross-site" }, body: "{}", status: 403 },
+		{ name: "malformed JSON", headers: { origin, "content-type": "application/json" }, body: "{", status: 400 },
+		{ name: "unsupported content type", headers: { origin, "content-type": "application/x-www-form-urlencoded" }, body: "username=fixture", status: 415 },
+		{ name: "oversized JSON", headers: { origin, "content-type": "application/json" }, body: JSON.stringify({ value: "x".repeat(64 * 1024) }), status: 413 },
+	];
+	for (const entry of cases) {
+		const response = await fetch(`${origin}/api/admin/session`, {
+			method: "POST",
+			headers: entry.headers,
+			body: entry.body,
+		});
+		assert.equal(response.status, entry.status, entry.name);
+		assert.equal(response.headers.get("cache-control"), "no-store, private", entry.name);
+		assert.equal(response.headers.get("set-cookie"), null, entry.name);
+		await response.arrayBuffer();
+	}
+	const logout = await fetch(`${origin}/api/admin/session`, { method: "DELETE", headers: { origin } });
+	assert.equal(logout.status, 200);
+	assert.equal(logout.headers.get("cache-control"), "no-store, private");
+	const clearedCookie = logout.headers.get("set-cookie") ?? "";
+	assert.match(clearedCookie, /^__Host-ballot_clarity_admin_session=;/u);
+	assert.match(clearedCookie, /(?:^|;\s*)Max-Age=0(?:;|$)/u);
+	assert.match(clearedCookie, /(?:^|;\s*)Path=\/(?:;|$)/u);
+	assert.match(clearedCookie, /(?:^|;\s*)HttpOnly(?:;|$)/iu);
+	assert.match(clearedCookie, /(?:^|;\s*)Secure(?:;|$)/iu);
+	assert.match(clearedCookie, /(?:^|;\s*)SameSite=Strict(?:;|$)/iu);
+	await logout.arrayBuffer();
+	console.log("Compiled admin guest, origin, bounded-body and cookie boundaries passed.");
+}
+
 const temporaryRoot = mkdtempSync(join(tmpdir(), "ballot-clarity-runtime-acceptance-"));
 const suppliedArtifactRoot = process.argv[2] ? resolve(process.argv[2]) : undefined;
 const artifactRoot = suppliedArtifactRoot ?? join(temporaryRoot, "ballot-clarity-runtime");
@@ -225,6 +271,7 @@ try {
 	assert.equal(frontendRelease.status, 200);
 	assert.equal(frontendRelease.headers.get("cache-control"), "no-store");
 	assert.deepEqual(await frontendRelease.json(), releaseIdentity);
+	await verifyCompiledAdminBoundary(frontendBaseUrl);
 
 	await stopProcess(frontendProcess, "Compiled frontend");
 	frontendProcess = undefined;

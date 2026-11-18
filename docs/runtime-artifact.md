@@ -11,10 +11,12 @@ Qualification of a new runtime leaves previous artifacts and custody receipts in
 
 The backend uses the native TypeScript 7 compiler. Vue's language service and
 TypeScript ESLint retain the TypeScript 6 API required by their published peer
-contracts. Nuxt 4/Nitro 2 likewise retain the H3 1 application API; development
-tools that require H3 2 resolve their independent supported graph. These are
-consumer compatibility boundaries, reviewed again when their parent supports
-the successor API.
+contracts. The frontend directly selects stable H3 2.0.8. Nuxt 4/Nitro 2 and
+the listener retain their separately resolved H3 1 dependencies under the
+parents' supported contracts. Built-app administration tests and unpacked runtime
+guest-session, origin, bounded-body and cookie checks qualify these graphs
+together. Parent dependency boundaries are reviewed when their upstream adopts
+the successor API; a global override does not substitute for that migration.
 
 The auto-import compiler is reproduced from its signed upstream 7.0.3 source
 using the canonical template's qualified recipe. CI retains registry signature

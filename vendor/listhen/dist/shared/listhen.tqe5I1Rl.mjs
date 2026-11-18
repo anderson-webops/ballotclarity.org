@@ -1,4 +1,4 @@
-import { join, extname } from 'node:path';
+import { extname } from 'node:path';
 import consola$1, { consola } from 'consola';
 import { createServer as createServer$1 } from 'node:http';
 import { createServer } from 'node:https';
@@ -10,7 +10,7 @@ import { defu } from 'defu';
 import { colors, getColor } from 'consola/utils';
 import { renderUnicodeCompact } from 'uqr';
 import childProcess from 'node:child_process';
-import fs, { statSync, readFileSync, accessSync, constants, promises, existsSync } from 'node:fs';
+import { statSync, readFileSync, accessSync, constants, promises, existsSync } from 'node:fs';
 import os, { networkInterfaces } from 'node:os';
 import { relative, join as join$1, dirname, resolve } from 'pathe';
 import { provider } from 'std-env';
@@ -92,7 +92,6 @@ function getWslDrivesMountPoint() {
 
 async function open(target, options = {}) {
   let command;
-  let disposeBrowserLauncher;
   const cliArguments = [];
   const childProcessOptions = {};
   if (process.platform === "darwin") {
@@ -126,15 +125,9 @@ async function open(target, options = {}) {
     target = Buffer.from(encodedArguments.join(" "), "utf16le").toString("base64");
   } else {
     command = "xdg-open";
-    const useSystemXdgOpen = process.versions.electron || process.platform === "android";
-    if (!useSystemXdgOpen) {
-      try {
-        const launcher = await import('../chunks/private-xdg-open.mjs').then((module) => module.prepareXdgOpen());
-        command = launcher.command;
-        disposeBrowserLauncher = launcher.dispose;
-      } catch {
-        command = "xdg-open";
-      }
+    if (!process.versions.electron && process.platform !== "android") {
+      command = "/bin/sh";
+      cliArguments.push("-c", await import('../chunks/xdg-open.mjs').then((module) => module.xdgOpenScript()), "xdg-open");
     }
     if (!options.wait) {
       childProcessOptions.stdio = "ignore";
@@ -142,17 +135,7 @@ async function open(target, options = {}) {
     }
   }
   cliArguments.push(target);
-  let subprocess;
-  try {
-    subprocess = childProcess.spawn(command, cliArguments, childProcessOptions);
-  } catch (error) {
-    disposeBrowserLauncher?.();
-    throw error;
-  }
-  if (disposeBrowserLauncher) {
-    subprocess.once("error", disposeBrowserLauncher);
-    subprocess.once("close", disposeBrowserLauncher);
-  }
+  const subprocess = childProcess.spawn(command, cliArguments, childProcessOptions);
   if (options.wait) {
     return new Promise((resolve, reject) => {
       subprocess.once("error", reject);

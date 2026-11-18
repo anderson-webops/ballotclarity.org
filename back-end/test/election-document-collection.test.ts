@@ -182,7 +182,8 @@ test("West Virginia collects only its reviewed SOS amendment notice", async (con
 	assert.deepEqual(electionDocumentPublisherHosts(source), ["sos.wv.gov", "www.wv.gov"]);
 	assert.equal(source.documentFormat, "html");
 	assert.deepEqual([source.minimumDocuments, source.maximumDocuments], [1, 1]);
-	assert.ok(!input.seed.captures.some(capture => ["apps.sos.wv.gov", "candidates.wvsos.gov"].some(host => new URL(capture.url).hostname === host)));
+	const unapprovedHosts = new Set(["apps.sos.wv.gov", "candidates.wvsos.gov"]);
+	assert.ok(!input.seed.captures.some(capture => unapprovedHosts.has(new URL(capture.url).hostname)));
 	assert.equal((await seedElectionDocuments(input.plan, input.seed, epoch)).seeded, 12);
 	const result = await collectElectionDocuments(input.plan, {
 		now: () => epoch + 1000,

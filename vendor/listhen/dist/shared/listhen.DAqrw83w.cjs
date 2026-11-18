@@ -26,7 +26,6 @@ function _interopDefaultCompat (e) { return e && typeof e === 'object' && 'defau
 const consola__default = /*#__PURE__*/_interopDefaultCompat(consola);
 const addShutdown__default = /*#__PURE__*/_interopDefaultCompat(addShutdown);
 const childProcess__default = /*#__PURE__*/_interopDefaultCompat(childProcess);
-const fs__default = /*#__PURE__*/_interopDefaultCompat(fs);
 const os__default = /*#__PURE__*/_interopDefaultCompat(os);
 const selfsigned__default = /*#__PURE__*/_interopDefaultCompat(selfsigned);
 
@@ -104,7 +103,6 @@ function getWslDrivesMountPoint() {
 
 async function open(target, options = {}) {
   let command;
-  let disposeBrowserLauncher;
   const cliArguments = [];
   const childProcessOptions = {};
   if (process.platform === "darwin") {
@@ -138,15 +136,9 @@ async function open(target, options = {}) {
     target = Buffer.from(encodedArguments.join(" "), "utf16le").toString("base64");
   } else {
     command = "xdg-open";
-    const useSystemXdgOpen = process.versions.electron || process.platform === "android";
-    if (!useSystemXdgOpen) {
-      try {
-        const launcher = await import('../chunks/private-xdg-open.mjs').then((module) => module.prepareXdgOpen());
-        command = launcher.command;
-        disposeBrowserLauncher = launcher.dispose;
-      } catch {
-        command = "xdg-open";
-      }
+    if (!process.versions.electron && process.platform !== "android") {
+      command = "/bin/sh";
+      cliArguments.push("-c", await import('../chunks/xdg-open.cjs').then((module) => module.xdgOpenScript()), "xdg-open");
     }
     if (!options.wait) {
       childProcessOptions.stdio = "ignore";
@@ -154,17 +146,7 @@ async function open(target, options = {}) {
     }
   }
   cliArguments.push(target);
-  let subprocess;
-  try {
-    subprocess = childProcess__default.spawn(command, cliArguments, childProcessOptions);
-  } catch (error) {
-    disposeBrowserLauncher?.();
-    throw error;
-  }
-  if (disposeBrowserLauncher) {
-    subprocess.once("error", disposeBrowserLauncher);
-    subprocess.once("close", disposeBrowserLauncher);
-  }
+  const subprocess = childProcess__default.spawn(command, cliArguments, childProcessOptions);
   if (options.wait) {
     return new Promise((resolve, reject) => {
       subprocess.once("error", reject);

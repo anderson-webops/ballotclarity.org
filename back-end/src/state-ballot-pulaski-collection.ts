@@ -95,7 +95,7 @@ function offered(body: string) {
 }
 function calendarDates(document: Pdf, now: number) {
 	const pages = document.text.split("\f").filter(page => page.trim());
-	if (!pages.length || pages.length > 20 || !clean(document.text).split(" ").some(token => token === "www.votepulaskiar.gov")) throw new Error("The Pulaski calendar identity requires review.");
+	if (!pages.length || pages.length > 20 || !new Set(clean(document.text).split(" ")).has("www.votepulaskiar.gov")) throw new Error("The Pulaski calendar identity requires review.");
 	const result: string[] = [];
 	const lines = document.text.split(/\r?\n/u).map(clean).filter(Boolean);
 	for (const [index, line] of lines.entries()) {

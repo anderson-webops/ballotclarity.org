@@ -99,7 +99,7 @@
 		"eslint-plugin-prettier": "^5.5.7",
 		"eslint-plugin-vue": "^10.12.1",
 		"globals": "^17.14.0",
-		"listhen": "file:vendor/listhen",
+		"listhen": "file:vendor/listhen-1.10.1-webops.3.tgz",
 		"prettier": "^3.10.1",
 		"puppeteer": "^25.18.1",
 		"tsx": "^4.23.15",

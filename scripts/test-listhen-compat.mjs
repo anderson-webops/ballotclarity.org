@@ -1,14 +1,13 @@
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
 import { X509Certificate } from 'node:crypto'
-import { lstat, mkdir, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises'
-import { request } from 'node:https'
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
-import { dirname, join, resolve } from 'node:path'
+import { join, resolve } from 'node:path'
 import process from 'node:process'
 import { after, test } from 'node:test'
-import { prepareXdgOpen } from '../vendor/listhen/dist/chunks/private-xdg-open.mjs'
-import { xdgOpenScript } from '../vendor/listhen/dist/chunks/xdg-open.mjs'
+import { rootCertificates } from 'node:tls'
+import { getSecureResponse } from './trusted-https-test-client.mjs'
 
 const require = createRequire(import.meta.url)
 const projectRoot = resolve(import.meta.dirname, '..')
@@ -18,21 +17,6 @@ const scratchDirectories = []
 after(async () => {
   await Promise.all(scratchDirectories.map(directory => rm(directory, { force: true, recursive: true })))
 })
-
-function getSecureResponse(url, certificate) {
-  return new Promise((resolveResponse, rejectResponse) => {
-    const client = request(url, { ca: certificate }, (response) => {
-      let body = ''
-      response.setEncoding('utf8')
-      response.on('data', (chunk) => {
-        body += chunk
-      })
-      response.on('end', () => resolveResponse({ status: response.statusCode, body }))
-    })
-    client.on('error', rejectResponse)
-    client.end()
-  })
-}
 
 async function withListener(listen, https, callback) {
   const listener = await listen((_request, response) => response.end('ok'), {
@@ -50,37 +34,28 @@ async function withListener(listen, https, callback) {
   }
 }
 
-test('browser launchers use private exclusive executables and preserve unrelated temporary files', async () => {
+test('both entrypoints use their trusted bundled browser helper without shared temporary execution', async () => {
   await mkdir(scratchRoot, { recursive: true })
-  const directory = await mkdtemp(join(scratchRoot, 'listhen-launcher-'))
-  scratchDirectories.push(directory)
-  const original = process.env.TMPDIR
-  const ownerFile = join(directory, 'owner-file')
-  await writeFile(ownerFile, 'Retained owner content')
-  await symlink(ownerFile, join(directory, 'xdg-open'))
-  process.env.TMPDIR = directory
-  try {
-    const first = prepareXdgOpen()
-    const second = prepareXdgOpen()
-    try {
-      assert.notEqual(first.command, second.command)
-      assert.equal((await lstat(dirname(first.command))).mode & 0o777, 0o700)
-      assert.equal((await lstat(first.command)).mode & 0o777, 0o700)
-      assert.equal(await readFile(first.command, 'utf8'), xdgOpenScript())
-      assert.equal(await readFile(ownerFile, 'utf8'), 'Retained owner content')
-      first.dispose()
-      first.dispose()
-      await assert.rejects(lstat(first.command), { code: 'ENOENT' })
-      assert.equal(await readFile(second.command, 'utf8'), xdgOpenScript())
-    }
-    finally {
-      first.dispose()
-      second.dispose()
-    }
-  }
-  finally {
-    if (original === undefined) delete process.env.TMPDIR
-    else process.env.TMPDIR = original
+  for (const entrypoint of ['commonjs', 'esm']) {
+    const directory = await mkdtemp(join(scratchRoot, 'listhen-open-'))
+    scratchDirectories.push(directory)
+    const result = spawnSync(process.execPath, [
+      join(projectRoot, 'scripts/fixtures/listhen-browser.mjs'),
+      entrypoint,
+    ], {
+      cwd: projectRoot,
+      env: {
+        PATH: process.env.PATH,
+        TMPDIR: directory,
+        HOME: directory,
+        NODE_ENV: 'test',
+      },
+      encoding: 'utf8',
+      timeout: 20_000,
+    })
+    assert.equal(result.signal, null)
+    assert.equal(result.status, 0, result.stderr)
+    assert.match(result.stdout, /Trusted browser launcher selected/u)
   }
 })
 
@@ -95,14 +70,17 @@ test('local listhen fork preserves HTTP and certificate modes without node-forge
   const rootPackage = JSON.parse(await readFile(join(projectRoot, 'package.json'), 'utf8'))
   const forkPackage = JSON.parse(await readFile(join(projectRoot, 'vendor/listhen/package.json'), 'utf8'))
   const lockfile = JSON.parse(await readFile(join(projectRoot, 'package-lock.json'), 'utf8'))
-  assert.equal(rootPackage.devDependencies.listhen, 'file:vendor/listhen')
+  assert.equal(rootPackage.devDependencies.listhen, 'file:vendor/listhen-1.10.1-webops.3.tgz')
   assert.equal(rootPackage.overrides.listhen, '$listhen')
   assert.equal(forkPackage.dependencies['node-forge'], undefined)
   assert.equal(forkPackage.dependencies.selfsigned, '5.5.0')
   assert.ok(Object.entries(lockfile.packages).every(([path, entry]) =>
     !/(?:^|\/)node_modules\/node-forge$/u.test(path) && !entry.dependencies?.['node-forge']))
 
-  const cli = spawnSync(process.execPath, [join(projectRoot, 'vendor/listhen/bin/listhen.mjs'), '--help'], { encoding: 'utf8' })
+  const cli = spawnSync(process.execPath, [
+    join(projectRoot, 'node_modules/listhen/bin/listhen.mjs'),
+    '--help',
+  ], { encoding: 'utf8' })
   assert.equal(cli.status, 0, cli.stderr)
   assert.match(`${cli.stdout}\n${cli.stderr}`, /listhen|Usage/iu)
 
@@ -116,8 +94,19 @@ test('local listhen fork preserves HTTP and certificate modes without node-forge
   const directory = await mkdtemp(join(scratchRoot, 'listhen-compat-'))
   scratchDirectories.push(directory)
   let certificate
-  await withListener(esm.listen, { domains: ['localhost', '127.0.0.1', '::1'], validityDays: 1 }, async (listener) => {
-    assert.deepEqual(await getSecureResponse(listener.url, listener.https.cert), { status: 200, body: 'ok' })
+  await withListener(esm.listen, {
+    domains: ['localhost', '127.0.0.1', '::1'],
+    validityDays: 1,
+  }, async (listener) => {
+    certificate = listener.https
+    await assert.rejects(getSecureResponse(listener.url), error =>
+      /SELF_SIGNED_CERT|UNABLE_TO_VERIFY_LEAF_SIGNATURE|UNABLE_TO_GET_ISSUER_CERT/u.test(error.code))
+    await assert.rejects(getSecureResponse(listener.url, rootCertificates[0]), error =>
+      /SELF_SIGNED_CERT|UNABLE_TO_VERIFY_LEAF_SIGNATURE|UNABLE_TO_GET_ISSUER_CERT/u.test(error.code))
+    await assert.rejects(getSecureResponse(listener.url, listener.https.cert, 'wrong-host.invalid'), {
+      code: 'ERR_TLS_CERT_ALTNAME_INVALID',
+    })
+    assert.deepEqual(await getSecureResponse(listener.url, certificate.cert), { status: 200, body: 'ok' })
     const issued = new X509Certificate(listener.https.cert)
     assert.equal(issued.checkHost('localhost'), 'localhost')
     assert.equal(issued.checkIP('127.0.0.1'), '127.0.0.1')
@@ -147,12 +136,6 @@ test('local listhen fork preserves HTTP and certificate modes without node-forge
   const pfxExport = spawnSync('openssl', [
     'pkcs12',
     '-export',
-    '-keypbe',
-    'AES-256-CBC',
-    '-certpbe',
-    'AES-256-CBC',
-    '-macalg',
-    'SHA256',
     '-inkey',
     keyPath,
     '-in',

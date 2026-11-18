@@ -1,5 +1,21 @@
 # Dependency Audit Notes
 
+## 2026-11-18 current qualification
+
+The published v1.14.116 baseline uses Node 26.13.1 and the locked npm 12.2.2
+build profile, current compatible workspace/root tooling and the native
+TypeScript 7 backend compiler. Its complete root/backend full and production
+audits pass with zero known vulnerabilities. Earlier dated sections retain
+their historical advisory, version and release scope.
+
+The next application dependency milestone selects stable H3 2.0.8 directly in
+the frontend. The published Nuxt 4.6.4/Nitro 2.13.6 and listener consumers retain
+their own supported H3 1 ranges. The production graph and its compiled admin
+routes must pass clean installation, signatures, full/production audits, the
+existing browser suite and exact unpacked current/retained runtime acceptance
+before integration and publication. See `runtime-artifact.md` for the active
+runtime and independent service-path contract.
+
 ## 2026-10-01 registry advisory refresh
 
 The current root and standalone back-end locks now resolve `fast-uri@3.1.8`, `serialize-javascript@7.1.2`, `brace-expansion@5.0.12`, and `ip-address@10.7.3` where applicable. This clears five package-level findings, and the standalone back-end full and production audits return zero findings.

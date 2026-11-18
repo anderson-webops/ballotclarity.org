@@ -23,7 +23,7 @@ test("information pagination has its own bounded offset and does not move offici
 	const component = readFileSync(new URL("../src/components/ElectionReferences.vue", import.meta.url), "utf8");
 	const page = readFileSync(new URL("../src/components/CandidateDirectory.vue", import.meta.url), "utf8");
 	assert.match(page, /route.query.referenceOffset/u);
-	assert.match(component, /\.\.\.route.query, type: "candidate", referenceOffset/u);
+	assert.match(component, /\.\.\.route.query,\s*type:\s*"candidate",\s*referenceOffset/u);
 	assert.match(component, /aria-label="Candidate information pages"/u);
 	assert.equal(readStateRecordQuery({ offset: "25001" }, []).offset, 0);
 	assert.equal(readStateRecordQuery({ offset: "-1" }, []).offset, 0);
@@ -51,7 +51,7 @@ test("identity-only references omit empty fact lists without placeholder explana
 test("references render even when official candidate data is unavailable", () => {
 	const page = readFileSync(new URL("../src/components/CandidateDirectory.vue", import.meta.url), "utf8");
 	assert.match(page, /<ElectionReferences v-if="filters.stateCode"/u);
-	assert.match(page, /search: filters.value.search, scope: filters.value.scope/u);
+	assert.match(page, /search:\s*filters.value.search,\s*scope:\s*filters.value.scope/u);
 	assert.match(page, /useElectionReferences\(referenceFilters\)/u);
 	assert.doesNotMatch(page, /href="#candidate-information-heading"/u);
 	assert.match(page, /Official candidate records are unavailable/u);

@@ -158,7 +158,7 @@ test("candidate contents follow available groups after mounting without extra so
 	assert.match(candidates, /href: "#candidates-heading", label: "Candidates"/u);
 	assert.match(candidates, /href: `#candidate-level-\$\{group.id\}`/u);
 	assert.match(candidates, /children: group.offices.map/u);
-	assert.match(candidates, /label: electionOfficeLabel\(office.title\), title: office.title/u);
+	assert.match(candidates, /label:\s*electionOfficeLabel\(office.title\),\s*title:\s*office.title/u);
 	assert.match(candidates, /<h4 :id="office.anchorId" tabindex="-1"/u);
 	assert.match(candidates, /<h3 :id="`candidate-level-\$\{level.id\}`" tabindex="-1"/u);
 	assert.doesNotMatch(candidates, /MutationObserver|watchEffect/u);

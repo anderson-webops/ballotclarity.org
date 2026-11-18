@@ -24,11 +24,11 @@ test("source status is metadata while the original publication remains a distinc
 test("district and representative pages omit empty source sections and navigation", () => {
 	const district = source("pages/districts/[slug].vue");
 	assert.match(district, /<section v-if="districtPageData.sources.length" id="sources"/u);
-	assert.match(district, /\.\.\.\(districtPageData.value.sources.length\s*\? \[\{ href: "#sources"/u);
+	assert.match(district, /\.\.\.\(districtPageData.value.sources.length\s*\?\s*\[\s*\{\s*href:\s*"#sources"/u);
 	const person = source("pages/representatives/[slug]/index.vue");
 	assert.match(person, /<section v-if="person.sources.length" id="sources"/u);
-	assert.match(person, /\.\.\.\(person.value.sources.length \? \[\{ href: "#sources"/u);
+	assert.match(person, /\.\.\.\(person.value.sources.length\s*\?\s*\[\s*\{\s*href:\s*"#sources"/u);
 	assert.match(person, /<SourceDrawer v-if="person.sources.length" :sources="person.sources"/u);
 	assert.match(person, /<section v-if="hasBackground" id="biography"/u);
-	assert.match(person, /\.\.\.\(hasBackground.value \? \[\{ href: "#biography"/u);
+	assert.match(person, /\.\.\.\(hasBackground.value\s*\?\s*\[\s*\{\s*href:\s*"#biography"/u);
 });

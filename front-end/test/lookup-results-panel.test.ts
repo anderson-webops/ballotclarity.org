@@ -24,10 +24,10 @@ test("lookup availability cards hide low-value limited cards", () => {
 
 test("lookup availability cards expose page links for actionable categories", () => {
 	assert.match(lookupResultsPanel, /href: buildLookupAwareTarget\("\/results"\)[\s\S]+?id: "civic-results"/);
-	assert.match(lookupResultsPanel, /href: props\.lookup\.representativeMatches\.length \? buildLookupAwareTarget\("\/representatives"\) : undefined[\s\S]+?id: "representatives"/);
+	assert.match(lookupResultsPanel, /href:\s*props\.lookup\.representativeMatches\.length\s*\?\s*buildLookupAwareTarget\("\/representatives"\)\s*:\s*undefined[\s\S]+?id: "representatives"/);
 	assert.match(lookupResultsPanel, /href: buildOfficialLogisticsHref\(\)[\s\S]+?id: "official-logistics"/);
 	assert.match(lookupResultsPanel, /href: buildCandidateDataHref\(\)[\s\S]+?id: "ballot-candidates"/);
-	assert.match(lookupResultsPanel, /href: props\.lookup\.representativeMatches\.length \? buildLookupAwareTarget\("\/representatives"\) : undefined[\s\S]+?id: "finance-influence"/);
+	assert.match(lookupResultsPanel, /href:\s*props\.lookup\.representativeMatches\.length\s*\?\s*buildLookupAwareTarget\("\/representatives"\)\s*:\s*undefined[\s\S]+?id: "finance-influence"/);
 	assert.match(lookupResultsPanel, /href: buildLocalGuideHref\(\)[\s\S]+?id: "local-guide"/);
 	assert.match(lookupResultsPanel, /const NuxtLinkComponent = resolveComponent\("NuxtLink"\)/);
 	assert.match(lookupResultsPanel, /:is="card\.href \? NuxtLinkComponent : 'article'"/);

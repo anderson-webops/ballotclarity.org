@@ -55,7 +55,7 @@ test("corrections queue distinguishes loading, authentication, errors and a veri
 		]
 	}), "ready");
 	assert.match(correctionsPage, /@retry="retryQueue"/);
-	assert.match(correctionsPage, /Promise\.all\(\[refreshSession\(\), refresh\(\)\]\)/);
+	assert.match(correctionsPage, /Promise\.all\(\[\s*refreshSession\(\),\s*refresh\(\)\s*\]\)/);
 	assert.match(correctionsPage, /v-if="queueState === 'empty'"/);
 	assert.match(correctionsPage, /v-else-if="queueState === 'ready'"/);
 });

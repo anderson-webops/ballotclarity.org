@@ -28,10 +28,10 @@ test("one election control keeps profile selection distinct from official source
 
 test("reference detail requests bind their source and directory controls reuse available stored dates", () => {
 	const detail = readFileSync(new URL("../src/pages/record/[state]/[id].vue", import.meta.url), "utf8");
-	assert.match(detail, /query: \{ source: sourceId.value, q: search.value/u);
+	assert.match(detail, /query:\s*\{\s*source:\s*sourceId.value,\s*q:\s*search.value/u);
 	const directory = readFileSync(new URL("../src/components/CandidateDirectory.vue", import.meta.url), "utf8");
 	assert.match(directory, /<optgroup v-if="referenceDates.length" label="Profiles">/u);
-	assert.match(directory, /referenceElection.value === undefined \? filters.value.stateCode : ""/u);
+	assert.match(directory, /referenceElection.value === undefined\s*\?\s*filters.value.stateCode\s*:\s*""/u);
 	assert.match(directory, /electionDate: referenceElection.value \?\? sourceElection.value/u);
 	assert.match(directory, /\.\.\.referenceElectionQuery\(selectedSource.value\)/u);
 	assert.doesNotMatch(directory, /watchEffect|show more|Past profiles are/u);
